@@ -287,20 +287,7 @@ impl TransactionService {
                             return Err(ProtocolError::MissingField {
                                 name: "req",
                                 description: "Transaction message must contain a request.",
-                            }
-                                .into_status());
-                            //
-                            // let result = self.response_sender.send(Err(error)).await;
-                            // if let Err(send_error) = result {
-                            //     event!(Level::DEBUG, ?send_error, "Failed to send error to client");
-                            // }
-                            // return Ok();
-                            //
-                            //
-                            // close_service_with_error!(
-                            //         self,
-                            //
-                            //     );
+                            }.into_status());
                         }
                         Some(req) => match self.handle_request(request_id, req).await {
                             Err(err) => return Err(err),
@@ -771,68 +758,76 @@ impl TransactionService {
                 && self.transaction.is_some()
         );
         let interrupt = self.query_interrupt_receiver.clone();
-        if let Some(Transaction::Schema(schema_transaction)) = self.transaction.take() {
-            Ok(spawn_blocking(move || {
-                let TransactionSchema {
-                    snapshot,
-                    type_manager,
-                    thing_manager,
-                    function_manager,
-                    database,
-                    transaction_options,
-                } = schema_transaction;
+        match self.transaction.take() {
+            Some(Transaction::Schema(schema_transaction)) => {
+                Ok(spawn_blocking(move || {
+                    let TransactionSchema {
+                        snapshot,
+                        type_manager,
+                        thing_manager,
+                        function_manager,
+                        database,
+                        transaction_options,
+                    } = schema_transaction;
 
-                let (snapshot, result) = Self::execute_write_query_in(
-                    Arc::into_inner(snapshot).unwrap(),
-                    &type_manager,
-                    thing_manager.clone(),
-                    &function_manager,
-                    &pipeline,
-                    interrupt,
-                );
+                    let (snapshot, result) = Self::execute_write_query_in(
+                        Arc::into_inner(snapshot).unwrap(),
+                        &type_manager,
+                        thing_manager.clone(),
+                        &function_manager,
+                        &pipeline,
+                        interrupt,
+                    );
 
-                let transaction = Transaction::Schema(TransactionSchema::from(
-                    snapshot,
-                    type_manager,
-                    thing_manager,
-                    function_manager,
-                    database,
-                    transaction_options,
-                ));
-                (transaction, result)
-            }))
-        } else if let Some(Transaction::Write(write_transaction)) = self.transaction.take() {
-            Ok(spawn_blocking(move || {
-                let TransactionWrite {
-                    snapshot,
-                    type_manager,
-                    thing_manager,
-                    function_manager,
-                    database,
-                    transaction_options,
-                } = write_transaction;
+                    let transaction = Transaction::Schema(TransactionSchema::from(
+                        snapshot,
+                        type_manager,
+                        thing_manager,
+                        function_manager,
+                        database,
+                        transaction_options,
+                    ));
+                    (transaction, result)
+                }))
+            },
+            Some(Transaction::Write(write_transaction)) => {
+                Ok(spawn_blocking(move || {
+                    let TransactionWrite {
+                        snapshot,
+                        type_manager,
+                        thing_manager,
+                        function_manager,
+                        database,
+                        transaction_options,
+                    } = write_transaction;
 
-                let (snapshot, result) = Self::execute_write_query_in(
-                    Arc::into_inner(snapshot).unwrap(),
-                    &type_manager,
-                    thing_manager.clone(),
-                    &function_manager,
-                    &pipeline,
-                    interrupt,
-                );
+                    let (snapshot, result) = Self::execute_write_query_in(
+                        Arc::into_inner(snapshot).unwrap(),
+                        &type_manager,
+                        thing_manager.clone(),
+                        &function_manager,
+                        &pipeline,
+                        interrupt,
+                    );
 
-                let transaction = Transaction::Write(TransactionWrite::from(
-                    Arc::new(snapshot),
-                    type_manager,
-                    thing_manager,
-                    function_manager,
-                    database,
-                    transaction_options,
-                ));
-                (transaction, result)
-            }))
-        } else {
-            Err(TransactionServiceError::SchemaQueryRequiresSchemaTransaction {})
+                    let transaction = Transaction::Write(TransactionWrite::from(
+                        Arc::new(snapshot),
+                        type_manager,
+                        thing_manager,
+                        function_manager,
+                        database,
+                        transaction_options,
+                    ));
+                    (transaction, result)
+                }))
+            },
+            Some(Transaction::Read(transaction)) => {
+                self.transaction = Some(Transaction::Read(transaction));
+                Err(TransactionServiceError::WriteQueryRequiresSchemaOrWriteTransaction {})
+            },
+            None => {
+                Err(TransactionServiceError::NoOpenTransaction {} )
+            }
         }
     }
 
@@ -1252,15 +1247,16 @@ typedb_error!(
         SchemaQueryRequiresSchemaTransaction(7, "Schema modification queries require schema transactions."),
         WriteQueryRequiresSchemaOrWriteTransaction(8, "Data modification queries require either write or schema transactions."),
         TxnAbortSchemaQueryFailed(9, "Aborting transaction due to failed schema query.", ( typedb_source : QueryError )),
-        QueryInterrupted(10, "Query was interrupted by a transaction close, rollback, or commit."),
+        NoOpenTransaction(10, "Operation failed - no open transaction."),
+        QueryInterrupted(11, "Query was interrupted by a transaction close, rollback, or commit."),
         QueryStreamNotFound(
-            11,
+            12,
             r#"
             Query stream with id '{query_request_id}' was not found in the transaction.
             The stream could have already finished, or the transaction could be closed, committed, rolled back (or this is a bug).
             "#,
             query_request_id: Uuid
         ),
-        ServiceClosingFailedQueueCleanup(12, "The operation failed since the service is closing."),
+        ServiceClosingFailedQueueCleanup(13, "The operation failed since the service is closing."),
     }
 );
