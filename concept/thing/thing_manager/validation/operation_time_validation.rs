@@ -377,12 +377,24 @@ impl OperationTimeValidation {
         owner: &impl ObjectAPI<'a>,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
+        count: u64,
     ) -> Result<(), DataValidationError> {
         if let Some(constraint) = owner
             .type_()
             .get_owned_attribute_type_constraint_unique(snapshot, thing_manager.type_manager(), attribute_type.clone())
             .map_err(DataValidationError::ConceptRead)?
         {
+            if count > 1 {
+                return Err(DataValidation::create_data_validation_uniqueness_error(
+                    snapshot,
+                    thing_manager.type_manager(),
+                    &constraint,
+                    owner.clone().into_owned_object(),
+                    attribute_type,
+                    value,
+                ));
+            }
+
             let root_owner_type = constraint.source().owner();
             let root_owner_subtypes = root_owner_type
                 .get_subtypes_transitive(snapshot, thing_manager.type_manager())

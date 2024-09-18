@@ -188,6 +188,7 @@ impl DurabilityService for WAL {
     }
 
     fn delete_durability(self) -> Result<(), DurabilityServiceError> {
+        drop(self.fsync_thread);
         let files = Arc::into_inner(self.files).unwrap().into_inner().unwrap();
         files.delete().map_err(|err| DurabilityServiceError::DeleteFailed { source: Arc::new(err) })
     }
