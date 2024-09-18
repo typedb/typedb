@@ -52,15 +52,17 @@ impl PartialEq for dyn TypeDBError {
 
 impl Eq for dyn TypeDBError {}
 
-impl Debug for dyn TypeDBError {
+impl Debug for dyn TypeDBError + '_ {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         Display::fmt(self, f)
     }
 }
 
-impl Display for dyn TypeDBError {
+impl Display for dyn TypeDBError + '_ {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        if self.source().is_some() {
+        if self.source_typedb_error().is_some() {
+            write!(f, "{}\nCause: \n\t {:?}", self.format_code_and_description(), self.source_typedb_error().unwrap() as &dyn TypeDBError)
+        } else if self.source().is_some() {
             write!(f, "{}\nCause: \n\t {:?}", self.format_code_and_description(), self.source().unwrap())
         } else {
             write!(f, "{}", self.format_code_and_description())
@@ -100,7 +102,7 @@ macro_rules! typedb_error {
            };
         }
 
-        impl error::TypeDBError for $name {
+        impl ::error::TypeDBError for $name {
 
             fn variant_name(&self) -> &'static str {
                 match self {
@@ -155,12 +157,12 @@ macro_rules! typedb_error {
                 error
             }
 
-            fn source_typedb_error(&self) -> Option<&(dyn error::TypeDBError + Send + 'static)> {
+            fn source_typedb_error(&self) -> Option<&(dyn ::error::TypeDBError + Send + 'static)> {
                 let error = match self {
                     $(
                         $( Self::$variant { typedb_source, .. } => {
                             let typedb_source: &$typedb_source = typedb_source;
-                            Some(typedb_source as &(dyn error::TypeDBError + Send))
+                            Some(typedb_source as &(dyn ::error::TypeDBError + Send))
                         } )?
                     )*
                     _ => None
@@ -171,7 +173,7 @@ macro_rules! typedb_error {
 
         impl std::fmt::Debug for $name {
            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                std::fmt::Debug::fmt(self as &dyn error::TypeDBError, f)
+                std::fmt::Debug::fmt(self as &dyn ::error::TypeDBError, f)
             }
         }
     };

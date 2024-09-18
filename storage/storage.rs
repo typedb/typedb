@@ -13,9 +13,11 @@ use std::{
     error::Error,
     fmt, fs, io,
     path::{Path, PathBuf},
-    sync::{atomic::Ordering, Arc},
+    sync::{Arc, atomic::Ordering},
     time::Duration,
 };
+use ::error::typedb_error;
+use ::error::TypeDBError;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use isolation_manager::IsolationConflict;
@@ -33,15 +35,16 @@ use crate::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{
-        iterator::KeyspaceRangeIterator, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, Keyspaces,
+        iterator::KeyspaceRangeIterator, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, Keyspaces, KeyspaceSet,
     },
     recovery::{
-        checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
-        commit_replay::{apply_commits, load_commit_data_from, CommitRecoveryError},
+        checkpoint::{Checkpoint, CheckpointCreateError, },
+        commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
     },
     sequence_number::SequenceNumber,
-    snapshot::{write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot},
+    snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, write::Write, WriteSnapshot},
 };
+use crate::recovery::checkpoint::CheckpointLoadError;
 
 pub mod durability_client;
 pub mod error;
@@ -123,15 +126,15 @@ impl<Durability> MVCCStorage<Durability> {
                     .map_err(|err| StorageDirectoryRecreate { name: name.to_owned(), source: Arc::new(err) })?;
                 let keyspaces = Self::create_keyspaces::<KS>(name, &storage_dir)?;
                 let commits = load_commit_data_from(SequenceNumber::MIN.next(), &durability_client)
-                    .map_err(|err| RecoverFromDurability { name: name.to_owned(), source: err })?;
+                    .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
                 let next_sequence_number = commits.keys().max().cloned().unwrap_or(SequenceNumber::MIN).next();
-                apply_commits(commits, &durability_client, &keyspaces)
-                    .map_err(|err| RecoverFromDurability { name: name.to_owned(), source: err })?;
+                apply_recovered(commits, &durability_client, &keyspaces)
+                    .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
                 (keyspaces, next_sequence_number)
             }
             Some(checkpoint) => checkpoint
                 .recover_storage::<KS, _>(&storage_dir, &durability_client)
-                .map_err(|error| RecoverFromCheckpoint { name: name.to_owned(), source: error })?,
+                .map_err(|error| RecoverFromCheckpoint { name: name.to_owned(), typedb_source: error })?,
         };
 
         let isolation_manager = IsolationManager::new(next_sequence_number);
@@ -208,26 +211,26 @@ impl<Durability> MVCCStorage<Durability> {
     {
         use StorageCommitError::{Durability, Internal, Keyspace, MVCCRead};
 
-        self.set_initial_put_status(&snapshot).map_err(|error| MVCCRead { source: error })?;
+        self.set_initial_put_status(&snapshot).map_err(|error| MVCCRead { name: self.name.clone(), source: error })?;
         let commit_record = snapshot.into_commit_record();
 
         let commit_sequence_number = self
             .durability_client
             .sequenced_write(&commit_record)
-            .map_err(|error| Durability { name: self.name.to_string(), source: error })?;
+            .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
 
         let sync_notifier = self.durability_client.request_sync();
         let validated_commit = self
             .isolation_manager
             .validate_commit(commit_sequence_number, commit_record, &self.durability_client)
-            .map_err(|error| Durability { name: self.name.to_owned(), source: error })?;
+            .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
         let result = match validated_commit {
             ValidatedCommit::Write(write_batches) => {
                 sync_notifier.recv().unwrap(); // Ensure WAL is persisted before inserting to the KV store
                                                // Write to the k-v store
                 self.keyspaces
                     .write(write_batches)
-                    .map_err(|error| Keyspace { name: self.name.to_owned(), source: Arc::new(error) })?;
+                    .map_err(|error| Keyspace { name: self.name.clone(), source: Arc::new(error) })?;
 
                 // Inform the isolation manager and increment the watermark
                 self.isolation_manager
@@ -235,13 +238,13 @@ impl<Durability> MVCCStorage<Durability> {
                     .map_err(|error| Internal { name: self.name.clone(), source: Arc::new(error) })?;
 
                 Self::persist_commit_status(true, commit_sequence_number, &self.durability_client)
-                    .map_err(|error| Durability { name: self.name.clone(), source: error })?;
+                    .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
 
                 Ok(commit_sequence_number)
             }
             ValidatedCommit::Conflict(conflict) => {
                 Self::persist_commit_status(false, commit_sequence_number, &self.durability_client)
-                    .map_err(|error| Durability { name: self.name.clone(), source: error })?;
+                    .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
                 Err(StorageCommitError::Isolation { name: self.name.clone(), conflict })
             }
         };
@@ -306,11 +309,11 @@ impl<Durability> MVCCStorage<Durability> {
     {
         use StorageDeleteError::{DirectoryDelete, DurabilityDelete, KeyspaceDelete};
 
-        self.keyspaces.delete().map_err(|errs| KeyspaceDelete { name: self.name.clone(), source: errs })?;
+        self.keyspaces.delete().map_err(|errs| KeyspaceDelete { name: self.name.clone(), errors: errs })?;
 
         self.durability_client
             .delete_durability()
-            .map_err(|err| DurabilityDelete { name: self.name.clone(), source: err })?;
+            .map_err(|err| DurabilityDelete { name: self.name.clone(), typedb_source: err })?;
 
         if self.path.exists() {
             std::fs::remove_dir_all(&self.path).map_err(|error| {
@@ -421,130 +424,58 @@ impl<Durability> MVCCStorage<Durability> {
         self.isolation_manager.reset();
         self.keyspaces
             .reset()
-            .map_err(|err| StorageResetError::KeyspaceError { name: self.name.to_owned(), source: err })?;
+            .map_err(|err| StorageResetError::KeyspaceError { name: self.name.clone(), source: err })?;
         self.durability_client
             .reset()
-            .map_err(|err| StorageResetError::Durability { name: self.name.to_owned(), source: err })?;
+            .map_err(|err| StorageResetError::Durability { name: self.name.clone(), typedb_source: err })?;
         Ok(())
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum StorageOpenError {
-    StorageDirectoryExists { name: String, path: PathBuf },
-    StorageDirectoryCreate { name: String, source: Arc<io::Error> },
-    StorageDirectoryRecreate { name: String, source: Arc<io::Error> },
+typedb_error!(
+    pub StorageOpenError(component = "Storage open", prefix = "STO") {
+        StorageDirectoryExists(1, "Failed to open database '{name}' in directory '{path:?}'", name: String, path: PathBuf),
+        StorageDirectoryCreate(2, "Failed to create database '{name}'.", name: String, ( source: Arc<io::Error> )),
+        StorageDirectoryRecreate(3, "Failed to recreate database '{name}'.", name: String, ( source: Arc<io::Error> )),
 
-    DurabilityClientOpen { name: String, source: Arc<io::Error> },
-    DurabilityClientRead { name: String, source: DurabilityClientError },
-    DurabilityClientWrite { name: String, source: DurabilityClientError },
+        DurabilityClientOpen(4, "Failed to open durability client for database '{name}'.", name: String, (source: Arc<io::Error>)),
+        DurabilityClientRead(5, "Failed to read from durability client for database '{name}'.", name: String, (typedb_source: DurabilityClientError)),
+        DurabilityClientWrite(6, "Failed to write to durability client for database '{name}'.", name: String, (typedb_source: DurabilityClientError)),
 
-    KeyspaceOpen { name: String, source: KeyspaceOpenError },
+        KeyspaceOpen(7, "Failed to open keyspace '{name}'.", name: String, (source: KeyspaceOpenError)),
 
-    CheckpointCreate { name: String, source: CheckpointCreateError },
+        CheckpointCreate(8, "Failed to create checkpoint for database '{name}'.", name: String, (source: CheckpointCreateError)),
 
-    RecoverFromCheckpoint { name: String, source: CheckpointLoadError },
-    RecoverFromDurability { name: String, source: CommitRecoveryError },
-
-    Commit { source: StorageCommitError },
-}
-
-impl fmt::Display for StorageOpenError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        RecoverFromCheckpoint(9, "Failed to recover from checkpoint for database '{name}'.", name: String, (typedb_source: CheckpointLoadError)),
+        RecoverFromDurability(10, "Failed to recover from durability logs for database '{name}'.", name: String, (typedb_source: StorageRecoveryError)),
     }
-}
+);
 
-impl Error for StorageOpenError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::StorageDirectoryExists { .. } => None,
-            Self::StorageDirectoryCreate { source, .. } => Some(source),
-            Self::StorageDirectoryRecreate { source, .. } => Some(source),
-            Self::DurabilityClientOpen { source, .. } => Some(source),
-            Self::DurabilityClientRead { source, .. } => Some(source),
-            Self::DurabilityClientWrite { source, .. } => Some(source),
-            Self::KeyspaceOpen { source, .. } => Some(source),
-            Self::RecoverFromCheckpoint { source, .. } => Some(source),
-            Self::RecoverFromDurability { source, .. } => Some(source),
-            Self::CheckpointCreate { source, .. } => Some(source),
-            Self::Commit { source, .. } => Some(source),
-        }
+typedb_error!(
+    pub StorageCommitError(component = "Storage commit", prefix = "STC") {
+        Internal(1, "Commit in database '{name}' failed with internal error.", name: String, (source: Arc<dyn Error + Send + Sync + 'static>)),
+        Isolation(2, "Commit in database '{name}' failed with isolation conflict: {conflict}", name: String, conflict: IsolationConflict),
+        IO(3, "Commit in database '{name}' failed with I/O error'.", name: String, ( source: Arc<io::Error> )),
+        MVCCRead(4, "Commit in database '{name}' failed due to failed read from MVCC storage layer.", name: String, ( source: MVCCReadError )),
+        Keyspace(5, "Commit in database '{name}' failed due to a storage keyspace error.", name: String, ( source: Arc<KeyspaceError> )),
+        Durability(6, "Commit in database '{name}' failed due to error in durability client.", name: String, ( typedb_source: DurabilityClientError )),
     }
-}
+);
 
-#[derive(Debug, Clone)]
-pub enum StorageCommitError {
-    Internal { name: String, source: Arc<dyn Error + Send + Sync + 'static> },
-    Isolation { name: String, conflict: IsolationConflict },
-    IO { name: String, source: Arc<io::Error> },
-    MVCCRead { source: MVCCReadError },
-    Keyspace { name: String, source: Arc<KeyspaceError> },
-    Durability { name: String, source: DurabilityClientError },
-}
-
-impl fmt::Display for StorageCommitError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+typedb_error!(
+    pub StorageDeleteError(component = "Storage delete", prefix = "STD") {
+        DurabilityDelete(1, "Deleting storage of database '{name}' failed partway while deleting durability records.", name: String,  (typedb_source : DurabilityClientError )),
+        KeyspaceDelete(2, "Deleting storage of database '{name}' failed partway while deleting keyspaces: {errors:?}", name: String, errors: Vec<KeyspaceDeleteError> ),
+        DirectoryDelete(3, "Deleting storage of database '{name}' failed partway while deleting directory.", name: String, ( source: Arc<io::Error> )),
     }
-}
+);
 
-impl Error for StorageCommitError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::Internal { source, .. } => Some(&**source),
-            Self::Isolation { .. } => None,
-            Self::IO { source, .. } => Some(source),
-            Self::MVCCRead { source, .. } => Some(source),
-            Self::Keyspace { source, .. } => Some(source),
-            Self::Durability { source, .. } => Some(source),
-        }
+typedb_error!(
+    pub StorageResetError(component = "Storage reset", prefix = "STR") {
+        KeyspaceError(1, "Resetting storage of database '{name}' failed partway while resetting keyspace.", name: String, ( source: KeyspaceError )),
+        Durability(2, "Resetting storage of database '{name}' failed partway while resetting durability records.", name: String, ( typedb_source : DurabilityClientError )),
     }
-}
-
-#[derive(Debug, Clone)]
-pub enum StorageDeleteError {
-    DurabilityDelete { name: String, source: DurabilityClientError },
-    KeyspaceDelete { name: String, source: Vec<KeyspaceDeleteError> },
-    DirectoryDelete { name: String, source: Arc<io::Error> },
-}
-
-impl fmt::Display for StorageDeleteError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for StorageDeleteError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::KeyspaceDelete { source, .. } => Some(source.first().unwrap()), // TODO: there are technically many sources?
-            Self::DirectoryDelete { source, .. } => Some(source),
-            Self::DurabilityDelete { source, .. } => Some(source),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum StorageResetError {
-    KeyspaceError { name: String, source: KeyspaceError },
-    Durability { name: String, source: DurabilityClientError },
-}
-
-impl fmt::Display for StorageResetError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for StorageResetError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::KeyspaceError { source, .. } => Some(source),
-            Self::Durability { source, .. } => Some(source),
-        }
-    }
-}
+);
 
 /// MVCC keys are made of three parts: the [KEY][SEQ][OP]
 pub struct MVCCKey<'bytes> {
@@ -654,10 +585,10 @@ mod tests {
         durability_client::{DurabilityClient, WALClient},
         isolation_manager::{CommitRecord, CommitType},
         key_value::StorageKeyArray,
-        keyspace::{KeyspaceId, KeyspaceSet, Keyspaces},
+        keyspace::{KeyspaceId, Keyspaces, KeyspaceSet},
+        MVCCStorage,
         snapshot::buffer::OperationsBuffer,
         write_batches::WriteBatches,
-        MVCCStorage,
     };
 
     macro_rules! test_keyspace_set {

@@ -11,9 +11,11 @@ use std::{
     io::{Read, Write},
     sync::{mpsc, Arc},
 };
+use std::io::Cursor;
 
 use durability::{wal::WAL, DurabilityRecordType, DurabilityService, DurabilityServiceError, RawRecord};
 use itertools::Itertools;
+use error::typedb_error;
 
 use crate::sequence_number::SequenceNumber;
 
@@ -222,10 +224,7 @@ impl DurabilityClient for WALClient {
         &self,
     ) -> Result<Option<Record>, DurabilityClientError> {
         match self.wal.find_last_type(Record::RECORD_TYPE) {
-            Ok(Some(raw_record)) => match Record::deserialise_from(&mut &*raw_record.bytes) {
-                Ok(record) => Ok(Some(record)),
-                Err(err) => Err(DurabilityClientError::SerializeError { source: Arc::new(err) }),
-            },
+            Ok(Some(raw_record)) => Some(Self::deserialise_record::<Record>(&raw_record.bytes)).transpose(),
             Ok(None) => Ok(None),
             Err(err) => Err(DurabilityClientError::ServiceError { source: err }),
         }
@@ -240,42 +239,16 @@ impl DurabilityClient for WALClient {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum DurabilityClientError {
-    #[non_exhaustive]
-    SerializeError {
-        source: Arc<bincode::Error>,
-    },
-    ServiceError {
-        source: DurabilityServiceError,
-    },
-    CompressionError {
-        source: Arc<io::Error>,
-    },
-    DeleteFailed {
-        source: Arc<io::Error>,
-    },
-}
-
-impl fmt::Display for DurabilityClientError {
-    fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+typedb_error!(
+    pub DurabilityClientError(component = "Durability client", prefix = "DUC") {
+        SerializeError(1, "Durability client failed to serialise/deserialise durability record", ( source: Arc<bincode::Error> )),
+        ServiceError(2, "Error from durability service.", ( source: DurabilityServiceError )),
+        CompressionError(3, "Error while compressing durability record.", ( source: Arc<io::Error> )),
     }
-}
+);
 
 impl From<bincode::Error> for DurabilityClientError {
     fn from(source: bincode::Error) -> Self {
         Self::SerializeError { source: Arc::new(source) }
-    }
-}
-
-impl Error for DurabilityClientError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::SerializeError { source, .. } => Some(source),
-            Self::ServiceError { source, .. } => Some(source),
-            Self::CompressionError { source, .. } => Some(source),
-            Self::DeleteFailed { source, .. } => Some(source),
-        }
     }
 }

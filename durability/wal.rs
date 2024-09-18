@@ -367,6 +367,7 @@ impl FileReader {
             return Ok(None);
         }
         let RecordHeader { sequence_number, len, record_type } = self.read_header()?;
+        dbg!(&sequence_number);
 
         let mut buf = vec![0; len as usize];
         self.reader.read_exact(&mut buf)?;

@@ -18,7 +18,9 @@ async fn main() {
 
     let config = get_configuration();
 
-    let result = server::typedb::Server::open(config).unwrap().serve().await;
+    let open_result =server::typedb::Server::open(config);
+
+    let result = open_result.unwrap().serve().await;
     match result {
         Ok(_) => println!("Exited."),
         Err(err) => println!("Exited with error: {:?}", err),
