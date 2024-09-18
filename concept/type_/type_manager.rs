@@ -2493,10 +2493,47 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_relates_is_inherited(snapshot, self, relates.relation(), specialised.role())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        OperationTimeValidation::validate_specialised_relates_is_not_specialising(
+            snapshot,
+            self,
+            relates.relation(),
+            specialised.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+        let old_supertype = relates.role().get_supertype(snapshot, self)?;
         self.set_role_type_supertype(snapshot, thing_manager, relates.role(), specialised.role())?;
+
         let specialising_relates = self.set_relates(snapshot, thing_manager, relates.relation(), specialised.role())?;
         self.set_relates_annotation_abstract(snapshot, thing_manager, specialising_relates)?;
+
+        if let Some(old_supertype) = old_supertype {
+            self.unset_specialising_relates_when_unset_specialise_if_no_subtypes(
+                snapshot,
+                relates.relation(),
+                old_supertype,
+            )?;
+        }
+
+        Ok(())
+    }
+
+    fn unset_specialising_relates_when_unset_specialise_if_no_subtypes(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relation_type: RelationType<'static>,
+        specialised_role_type: RoleType<'static>,
+    ) -> Result<(), ConceptWriteError> {
+        if specialised_role_type.get_subtypes(snapshot, self)?.len() == 0 {
+            let specialising_relates = relation_type
+                .get_relates_role_name_declared(
+                    snapshot,
+                    self,
+                    specialised_role_type.get_label(snapshot, self)?.name.as_str(),
+                )?
+                .ok_or(ConceptReadError::CorruptMissingMandatorySpecialisingRelatesForRole)?;
+            self.unset_relates_unchecked(snapshot, specialising_relates)?;
+        }
         Ok(())
     }
 
@@ -2557,11 +2594,7 @@ impl TypeManager {
         let relation_type = relates.relation();
         if let Some(supertype) = role_type.get_supertype(snapshot, self)? {
             self.unset_role_type_supertype(snapshot, thing_manager, role_type)?;
-
-            let specialising_relates = relation_type
-                .get_relates_role_name_declared(snapshot, self, supertype.get_label(snapshot, self)?.name.as_str())?
-                .ok_or(ConceptReadError::CorruptMissingMandatorySpecialisingRelatesForRole)?;
-            self.unset_relates_unchecked(snapshot, specialising_relates)?;
+            self.unset_specialising_relates_when_unset_specialise_if_no_subtypes(snapshot, relation_type, supertype)?;
         }
         Ok(())
     }

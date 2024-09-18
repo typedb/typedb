@@ -1867,6 +1867,19 @@ impl OperationTimeValidation {
         }
     }
 
+    pub(crate) fn validate_specialised_relates_is_not_specialising(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        relation_type: RelationType<'static>,
+        specialised_relates: Relates<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        if !specialised_relates.is_specialising(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)? {
+            Ok(())
+        } else {
+            Err(SchemaValidationError::RelatesIsAlreadySpecialisedByASupertype(relation_type, specialised_relates))
+        }
+    }
+
     pub(crate) fn validate_value_type_compatible_with_inherited_value_type(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
