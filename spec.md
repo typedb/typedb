@@ -62,6 +62,7 @@
 <details>
   <summary> <b>Table of contents</b> <i>(Detailed)</i> </summary>
 
+
 <!-- vim-markdown-toc GFM -->
 
 * [Introduction](#introduction)
@@ -93,9 +94,7 @@
             * [Cardinality](#cardinality)
                 * [**Case CARD_DEF**](#case-card_def)
                 * [**Case CARD_LIST_DEF**](#case-card_list_def)
-                * [**Case PLAYS_AS_DEF**](#case-plays_as_def)
-                * [**Case OWNS_AS_DEF**](#case-owns_as_def)
-            * [Behavior flags](#behavior-flags)
+            * [Modalities](#modalities-2)
                 * [**Case UNIQUE_DEF**](#case-unique_def)
                 * [**Case KEY_DEF**](#case-key_def)
                 * [**Case SUBKEY_DEF**](#case-subkey_def)
@@ -127,9 +126,7 @@
             * [Cardinality](#cardinality-1)
                 * [**Case CARD_UNDEF**](#case-card_undef)
                 * [**Case CARD_LIST_UNDEF**](#case-card_list_undef)
-                * [**Case PLAYS_AS_UNDEF**](#case-plays_as_undef)
-                * [**Case OWNS_AS_UNDEF**](#case-owns_as_undef)
-            * [Behavior flags](#behavior-flags-1)
+            * [Modalities](#modalities-3)
                 * [**Case UNIQUE_UNDEF**](#case-unique_undef)
                 * [**Case KEY_UNDEF**](#case-key_undef)
                 * [**Case SUBKEY_UNDEF**](#case-subkey_undef)
@@ -160,9 +157,7 @@
             * [Cardinality](#cardinality-2)
                 * [**Case CARD_REDEF**](#case-card_redef)
                 * [**Case CARD_LIST_REDEF**](#case-card_list_redef)
-                * [**Case PLAYS_AS_REDEF**](#case-plays_as_redef)
-                * [**Case OWNS_AS_REDEF**](#case-owns_as_redef)
-            * [Behavior flags](#behavior-flags-2)
+            * [Modalities](#modalities-4)
             * [Values](#values-2)
                 * [**Case OWNS_VALUES_REDEF**](#case-owns_values_redef)
                 * [**Case VALUE_VALUES_REDEF**](#case-value_values_redef)
@@ -195,8 +190,6 @@
         * [Constraints](#constraints-3)
             * [Cardinality](#cardinality-3)
                 * [**Case CARD_PATT**](#case-card_patt)
-                * [**Case PLAYS_AS_PATT**](#case-plays_as_patt)
-                * [**Case OWNS_AS_PATT**](#case-owns_as_patt)
             * [Bevavior flags](#bevavior-flags)
                 * [**Case UNIQUE_PATT**](#case-unique_patt)
                 * [**Case KEY_PATT**](#case-key_patt)
@@ -483,6 +476,8 @@ The following is purely for keeping track of certain information in the type sys
 
     > If $`\diamond(\mathcal{J})`$ is true then this means $`\mathcal{J}`$ is _abstractly true_ in the type system, where "abstractly true" is a special truth-value which entails certain special behaviours in the database.
 
+_Remark_: **Key**, **subkey**, **unique** could also be modalities, but for simplicity (and to reduce the amount of symbols in our grammar), we'll leave them be and only keep track of them in pure TypeQL.
+
 ## Rule system
 
 This section describes the **rules** that govern the interaction of statements.
@@ -561,7 +556,10 @@ Beside the rules below, subtyping ($`\leq`$) is transitive and reflexive.
 
 ### Modalities
 
-There are no specific rules relating to the abstractness modality. It's just a tool for keeping track of certain properties.
+There are no specific rules relating to modalities.
+They are just a tool for keeping track of additional properties.
+
+_Remark_: Recall from an earlier remark, **key**, **subkey**, **unique** could also be modalities, but for simplicity (and to reduce the amount of symbols in our grammar), we'll leave them be and only keep track of them in pure TypeQL.
 
 
 # Schema definition language
@@ -691,19 +689,7 @@ _Remark 2: For cardinality, and for most other constraints, we should reject red
 * `A owns B[] @card(n...m)` postulates $n \leq \mathrm{len}(l) \leq m$ whenever $`l : [B](a:O_B)`$ for $`a : A`$
   * **defaults** to `@card(0..)` if omitted ("many")
 
-<!--
-##### **Case PLAYS_AS_DEF**
-* `A plays B:I as C:J` postulates $`c :_! C(a:J)`$ is impossible when $`a:A`$, ***requiring*** that $B \lneq C$, $`A \leq D`$, $`D <_! J`$.
-  * **Invalidated** when $`A <_! J'`$ for $`B(I) \lneq C'(J') \leq C(J)`$.
-
-##### **Case OWNS_AS_DEF**
-* `A owns B as C` postulates $`c :_! C(a:O_C)`$ is impossible when $`a:A`$, ***requiring*** that $B \lneq C$, $`A \leq D`$, $`D <_! O_C`$.
-  * **Invalidated** when $`A <_! O_{C'}`$ for $`B \lneq C' \leq C`$.
-
-_Comment: both preceding cases are kinda complicated/unnatural ... as reflected by the math._
--->
-
-#### Behavior flags
+#### Modalities
 
 ##### **Case UNIQUE_DEF**
 * `A owns B @unique` postulates that if $`b : B(a:O_B)`$ for some $`a : A`$ then this $`a`$ is unique (for fixed $`b`$).
@@ -898,15 +884,8 @@ _In each case, `undefine` removes the postulated condition (restoring the defaul
 * `@card(n..m) from A relates I[]`
 * `@card(n...m) from A owns B[]`
 
-<!--
-##### **Case PLAYS_AS_UNDEF**
-* `as C from A plays B`
 
-##### **Case OWNS_AS_UNDEF**
-* `as C from A owns B`
--->
-
-#### Behavior flags
+#### Modalities
 
 ##### **Case UNIQUE_UNDEF**
 * `@unique from A owns B`
@@ -1058,15 +1037,8 @@ _In each case, `redefine` redefines the postulated condition._
 * `A relates I[] @card(n..m)`
 * `A owns B[] @card(n...m)`
 
-<!--
-##### **Case PLAYS_AS_REDEF**
-* `A plays B as C`
 
-##### **Case OWNS_AS_REDEF**
-* `A owns B as C`
--->
-
-#### Behavior flags
+#### Modalities
 
 Cannot redefine `@unique`, `@key`, `@abstract`, or `@distinct`.
 
@@ -1360,19 +1332,6 @@ _Remark: the usefulness of constraint patterns seems overall low, could think of
 * `A owns B @card(n...m)` is satisfied if ...
 * `$A relates $I[] @card(n..m)` is satisfied if ...
 * `$A owns $B[] @card(n...m)` is satisfied if ...
--->
-
-<!--
-##### **Case PLAYS_AS_PATT**
-
-_Notation: for readability, we simply write $`X`$ in place of $`m(X)`$ in this case and the next._
-
-* `$A plays $B:$I as $C:$J` is satisfied if $A \leq A' <_! D' \leq D$ for some $`D`$s, and $I \leq I' <_! J' \leq J$, with $`A^{(')} \leq {I^{(')}}`$, $`D^{(')} \leq {J^{(')}}`$, and schema directly contains the constraint `A' plays B':I' as C':J'` for relation types $B \leq B' \leq_! C' \leq C$.
-
-##### **Case OWNS_AS_PATT**
-* `$A owns $B as $C` is satisfied if $A \leq A' <_! D' \leq D$ for some $`D`$s, and $B \leq B' <_! C' \leq C$, with $`A^{(')} \leq O_{B^{(')}}`$, $`D^{(')} \leq O_{C^{(')}}`$, and schema directly contains the constraint `A' owns B' as C'`.
-
-_Remark: these two are still not a natural constraint, as foreshadowed by a previous remark!_
 -->
 
 #### Bevavior flags
