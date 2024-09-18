@@ -1880,6 +1880,18 @@ impl OperationTimeValidation {
         }
     }
 
+    pub(crate) fn validate_relates_is_not_specialising_to_manage_annotations(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        relates: Relates<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        if !relates.is_specialising(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)? {
+            Ok(())
+        } else {
+            Err(SchemaValidationError::CannotManageAnnotationsForSpecialisingRelates(relates))
+        }
+    }
+
     pub(crate) fn validate_value_type_compatible_with_inherited_value_type(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,

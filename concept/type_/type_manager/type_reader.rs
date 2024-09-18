@@ -746,8 +746,9 @@ impl TypeReader {
                     RoleType::new(capability.canonical_to().into_vertex()),
                 );
                 let role_ordering = Self::get_type_ordering(snapshot, relates.role())?;
+                let is_specialising = Self::is_relates_specialising(snapshot, relates.clone())?;
 
-                for default_constraint in get_relates_default_constraints(capability, role_ordering) {
+                for default_constraint in get_relates_default_constraints(capability, role_ordering, is_specialising) {
                     if !out_constraints
                         .iter()
                         .any(|set_constraint| set_constraint.category() == default_constraint.category())

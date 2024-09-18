@@ -100,6 +100,9 @@ impl From<ConceptReadError> for ConceptWriteError {
             ConceptReadError::CorruptMissingMandatoryRootRelatesForRole => Self::ConceptRead { source: error },
             ConceptReadError::CorruptMissingMandatoryScopeForRoleTypeLabel => Self::ConceptRead { source: error },
             ConceptReadError::CorruptMissingMandatorySpecialisingRelatesForRole => Self::ConceptRead { source: error },
+            ConceptReadError::CorruptMissingMandatoryCardinalityForNonSpecialisingCapability => {
+                Self::ConceptRead { source: error }
+            }
             ConceptReadError::CorruptFoundHasWithoutOwns => Self::ConceptRead { source: error },
             ConceptReadError::CorruptFoundLinksWithoutPlays => Self::ConceptRead { source: error },
             ConceptReadError::CorruptFoundLinksWithoutRelates => Self::ConceptRead { source: error },
@@ -132,6 +135,7 @@ pub enum ConceptReadError {
     CorruptMissingMandatoryRootRelatesForRole,
     CorruptMissingMandatoryScopeForRoleTypeLabel,
     CorruptMissingMandatorySpecialisingRelatesForRole,
+    CorruptMissingMandatoryCardinalityForNonSpecialisingCapability,
     CorruptFoundHasWithoutOwns,
     CorruptFoundLinksWithoutPlays,
     CorruptFoundLinksWithoutRelates,
@@ -171,6 +175,7 @@ impl Error for ConceptReadError {
             Self::CorruptMissingMandatoryRootRelatesForRole => None,
             Self::CorruptMissingMandatoryScopeForRoleTypeLabel => None,
             Self::CorruptMissingMandatorySpecialisingRelatesForRole => None,
+            Self::CorruptMissingMandatoryCardinalityForNonSpecialisingCapability => None,
             Self::CorruptFoundHasWithoutOwns => None,
             Self::CorruptFoundLinksWithoutPlays => None,
             Self::CorruptFoundLinksWithoutRelates => None,

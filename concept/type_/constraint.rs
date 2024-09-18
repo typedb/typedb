@@ -361,24 +361,16 @@ pub(crate) fn get_cardinality_constraints<C: Constraint<T>, T: Hash + Eq>(
     filter_by_constraint_category!(constraints.into_iter(), Cardinality).collect()
 }
 
-pub(crate) fn get_cardinality_constraint_opt<'a, C: Constraint<T> + 'a, T: Hash + Eq>(
-    source: T,
-    constraints: impl IntoIterator<Item = &'a C>,
-) -> Option<C> {
+pub(crate) fn get_cardinality_constraint<'a, CAP: Capability<'static>>(
+    capability: CAP,
+    constraints: impl IntoIterator<Item = &'a CapabilityConstraint<CAP>>,
+) -> Option<CapabilityConstraint<CAP>> {
     filter_by_constraint_category!(constraints.into_iter(), Cardinality)
-        .filter_map(|constraint| match &constraint.source() == &source {
+        .filter_map(|constraint| match &constraint.source() == &capability {
             true => Some(constraint.clone()),
             false => None,
         })
         .next()
-}
-
-pub(crate) fn get_cardinality_constraint<'a, CAP: Capability<'static>>(
-    capability: CAP,
-    constraints: impl IntoIterator<Item = &'a CapabilityConstraint<CAP>>,
-) -> CapabilityConstraint<CAP> {
-    get_cardinality_constraint_opt(capability, constraints)
-        .expect("Expected a cardinality constraint for each capability")
 }
 
 pub(crate) fn get_abstract_constraints<C: Constraint<T>, T: Hash + Eq>(
@@ -489,11 +481,16 @@ pub(crate) fn get_plays_default_constraints<CAP: Capability<'static>>(
 pub(crate) fn get_relates_default_constraints<CAP: Capability<'static>>(
     source: CAP,
     role_ordering: Ordering,
+    is_specialising: bool,
 ) -> HashSet<CapabilityConstraint<CAP>> {
-    let mut constraints = HashSet::from([CapabilityConstraint::new(
-        ConstraintDescription::Cardinality(Relates::get_default_cardinality(role_ordering)),
-        source.clone(),
-    )]);
+    let mut constraints = if is_specialising {
+        HashSet::new()
+    } else {
+        HashSet::from([CapabilityConstraint::new(
+            ConstraintDescription::Cardinality(Relates::get_default_cardinality_for_non_specialising(role_ordering)),
+            source.clone(),
+        )])
+    };
 
     if let Some(default_distinct) = Relates::get_default_distinct(role_ordering) {
         constraints.insert(CapabilityConstraint::new(ConstraintDescription::Distinct(default_distinct), source));

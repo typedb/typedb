@@ -1054,11 +1054,35 @@ impl TypeManager {
         snapshot: &impl ReadableSnapshot,
         capability: CAP,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
-        let constraints = capability.get_constraints(snapshot, self)?;
-        Ok(get_cardinality_constraint(capability.clone(), constraints.into_iter())
+        Ok(self
+            .get_capability_cardinality_constraint(snapshot, capability)?
+            .ok_or(ConceptReadError::CorruptMissingMandatoryCardinalityForNonSpecialisingCapability)?
             .description()
             .unwrap_cardinality()
             .map_err(|source| ConceptReadError::Constraint { source })?)
+    }
+
+    pub(crate) fn get_relates_cardinality(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relates: Relates<'static>,
+    ) -> Result<AnnotationCardinality, ConceptReadError> {
+        match relates.is_specialising(snapshot, self)? {
+            true => {
+                debug_assert!(self.get_capability_cardinality_constraint(snapshot, relates.clone())?.is_none());
+                self.get_capability_cardinality(snapshot, relates.role().get_relates_root(snapshot, self)?)
+            }
+            false => self.get_capability_cardinality(snapshot, relates),
+        }
+    }
+
+    fn get_capability_cardinality_constraint<CAP: Capability<'static>>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        capability: CAP,
+    ) -> Result<Option<CapabilityConstraint<CAP>>, ConceptReadError> {
+        let constraints = capability.get_constraints(snapshot, self)?;
+        Ok(get_cardinality_constraint(capability.clone(), constraints.into_iter()))
     }
 
     pub(crate) fn get_is_key(
@@ -1282,7 +1306,7 @@ impl TypeManager {
                 self,
                 thing_manager,
                 relates.clone().into_owned(),
-                get_relates_default_constraints(relates.clone(), ordering),
+                get_relates_default_constraints(relates.clone(), ordering, false),
             )
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }
@@ -2402,8 +2426,18 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         relates: Relates<'static>,
+        is_manual: bool,
     ) -> Result<(), ConceptWriteError> {
         let annotation = Annotation::Abstract(AnnotationAbstract);
+
+        if is_manual {
+            OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(
+                snapshot,
+                self,
+                relates.clone(),
+            )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        }
 
         self.validate_set_capability_annotation_general(snapshot, relates.clone(), annotation.clone())?;
 
@@ -2434,6 +2468,13 @@ impl TypeManager {
         relates: Relates<'static>,
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Abstract;
+
+        OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(
+            snapshot,
+            self,
+            relates.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_no_abstract_subtypes_to_unset_abstract_annotation(
             snapshot,
@@ -2493,6 +2534,7 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_relates_is_inherited(snapshot, self, relates.relation(), specialised.role())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         OperationTimeValidation::validate_specialised_relates_is_not_specialising(
             snapshot,
             self,
@@ -2505,7 +2547,7 @@ impl TypeManager {
         self.set_role_type_supertype(snapshot, thing_manager, relates.role(), specialised.role())?;
 
         let specialising_relates = self.set_relates(snapshot, thing_manager, relates.relation(), specialised.role())?;
-        self.set_relates_annotation_abstract(snapshot, thing_manager, specialising_relates)?;
+        self.set_relates_annotation_abstract(snapshot, thing_manager, specialising_relates, false)?;
 
         if let Some(old_supertype) = old_supertype {
             self.unset_specialising_relates_when_unset_specialise_if_no_subtypes(
@@ -2683,6 +2725,13 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         let annotation = Annotation::Distinct(AnnotationDistinct);
 
+        OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(
+            snapshot,
+            self,
+            relates.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         self.validate_set_capability_annotation_general(snapshot, relates.clone(), annotation.clone())?;
 
         OperationTimeValidation::validate_relates_distinct_constraint_ordering(
@@ -2706,13 +2755,30 @@ impl TypeManager {
         self.set_capability_annotation(snapshot, relates, annotation)
     }
 
-    pub(crate) fn unset_capability_annotation_distinct<CAP: Capability<'static>>(
+    pub(crate) fn unset_owns_annotation_distinct(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        capability: CAP,
+        owns: Owns<'static>,
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Distinct;
-        self.unset_capability_annotation(snapshot, capability, annotation_category)
+        self.unset_capability_annotation(snapshot, owns, annotation_category)
+    }
+
+    pub(crate) fn unset_relates_annotation_distinct(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relates: Relates<'static>,
+    ) -> Result<(), ConceptWriteError> {
+        let annotation_category = AnnotationCategory::Distinct;
+
+        OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(
+            snapshot,
+            self,
+            relates.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        self.unset_capability_annotation(snapshot, relates, annotation_category)
     }
 
     pub(crate) fn set_owns_annotation_unique(
@@ -2943,6 +3009,13 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         let annotation = Annotation::Cardinality(cardinality);
 
+        OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(
+            snapshot,
+            self,
+            relates.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         self.validate_set_capability_annotation_general(snapshot, relates.clone(), annotation.clone())?;
         self.validate_updated_capability_cardinality_against_schema(snapshot, relates.clone(), cardinality)?;
 
@@ -2966,8 +3039,16 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         let annotation_category = AnnotationCategory::Cardinality;
 
+        OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(
+            snapshot,
+            self,
+            relates.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         if self.get_relates_annotation_declared_by_category(snapshot, relates.clone(), annotation_category)?.is_some() {
-            let updated_cardinality = Relates::get_default_cardinality(relates.role().get_ordering(snapshot, self)?);
+            let updated_cardinality =
+                Relates::get_default_cardinality_for_non_specialising(relates.role().get_ordering(snapshot, self)?);
 
             if updated_cardinality != relates.get_cardinality(snapshot, self)? {
                 self.validate_updated_capability_cardinality_against_schema(

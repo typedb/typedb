@@ -105,14 +105,13 @@ impl<'a> Relates<'a> {
         thing_manager: &ThingManager,
         annotation: RelatesAnnotation,
     ) -> Result<(), ConceptWriteError> {
-        debug_assert!(
-            !self.is_specialising(snapshot, type_manager)?,
-            "Only non-specialising relates can have manually set annotations!"
-        );
         match annotation {
-            RelatesAnnotation::Abstract(_) => {
-                type_manager.set_relates_annotation_abstract(snapshot, thing_manager, self.clone().into_owned())?
-            }
+            RelatesAnnotation::Abstract(_) => type_manager.set_relates_annotation_abstract(
+                snapshot,
+                thing_manager,
+                self.clone().into_owned(),
+                true,
+            )?,
             RelatesAnnotation::Distinct(_) => {
                 type_manager.set_relates_annotation_distinct(snapshot, thing_manager, self.clone().into_owned())?
             }
@@ -140,7 +139,7 @@ impl<'a> Relates<'a> {
                 type_manager.unset_relates_annotation_abstract(snapshot, self.clone().into_owned())?
             }
             RelatesAnnotation::Distinct(_) => {
-                type_manager.unset_capability_annotation_distinct(snapshot, self.clone().into_owned())?
+                type_manager.unset_relates_annotation_distinct(snapshot, self.clone().into_owned())?
             }
             RelatesAnnotation::Cardinality(_) => {
                 type_manager.unset_relates_annotation_cardinality(snapshot, thing_manager, self.clone().into_owned())?
@@ -149,7 +148,7 @@ impl<'a> Relates<'a> {
         Ok(())
     }
 
-    pub fn get_default_cardinality(role_ordering: Ordering) -> AnnotationCardinality {
+    pub fn get_default_cardinality_for_non_specialising(role_ordering: Ordering) -> AnnotationCardinality {
         match role_ordering {
             Ordering::Unordered => Self::DEFAULT_UNORDERED_CARDINALITY,
             Ordering::Ordered => Self::DEFAULT_ORDERED_CARDINALITY,
@@ -245,7 +244,7 @@ impl<'a> Capability<'a> for Relates<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
-        type_manager.get_capability_cardinality(snapshot, self.clone().into_owned())
+        type_manager.get_relates_cardinality(snapshot, self.clone().into_owned())
     }
 }
 

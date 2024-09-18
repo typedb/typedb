@@ -158,7 +158,7 @@ impl<'a> Owns<'a> {
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match owns_annotation {
             OwnsAnnotation::Distinct(_) => {
-                type_manager.unset_capability_annotation_distinct(snapshot, self.clone().into_owned())?
+                type_manager.unset_owns_annotation_distinct(snapshot, self.clone().into_owned())?
             }
             OwnsAnnotation::Key(_) => {
                 type_manager.unset_owns_annotation_key(snapshot, thing_manager, self.clone().into_owned())?
