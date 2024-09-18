@@ -1270,7 +1270,7 @@ impl TypeManager {
         TypeWriter::storage_put_label(snapshot, role_type.clone(), label);
         TypeWriter::storage_put_type_vertex_property(snapshot, role_type.clone(), Some(ordering));
 
-        if let Err(relates_err) = self.set_relates(snapshot, thing_manager, relation_type, role_type.clone()) {
+        if let Err(relates_err) = self.set_relates(snapshot, thing_manager, relation_type, role_type.clone(), false) {
             TypeWriter::storage_unput_type_vertex_property(snapshot, role_type.clone(), Some(ordering));
             TypeWriter::storage_unput_label(snapshot, role_type.clone(), &label);
             TypeWriter::storage_unput_vertex(snapshot, role_type);
@@ -1286,11 +1286,12 @@ impl TypeManager {
         thing_manager: &ThingManager,
         relation_type: RelationType<'static>,
         role_type: RoleType<'static>,
+        is_specialising: bool,
     ) -> Result<Relates<'static>, ConceptWriteError> {
         let relates = Relates::new(relation_type.clone(), role_type.clone());
         let exists = relation_type.get_relates(snapshot, self)?.contains(&relates);
 
-        if !exists {
+        if !exists && !is_specialising {
             OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_capabilities(
                 snapshot,
                 self,
@@ -2546,7 +2547,8 @@ impl TypeManager {
         let old_supertype = relates.role().get_supertype(snapshot, self)?;
         self.set_role_type_supertype(snapshot, thing_manager, relates.role(), specialised.role())?;
 
-        let specialising_relates = self.set_relates(snapshot, thing_manager, relates.relation(), specialised.role())?;
+        let specialising_relates =
+            self.set_relates(snapshot, thing_manager, relates.relation(), specialised.role(), true)?;
         self.set_relates_annotation_abstract(snapshot, thing_manager, specialising_relates, false)?;
 
         if let Some(old_supertype) = old_supertype {
