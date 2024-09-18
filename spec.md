@@ -344,14 +344,14 @@ This document specifies the behaviour of TypeDB and its query language TypeQL.
 
 # The type system
 
-The type system is a mathematical system, which we describe in this section with a reasonable level of formality (not all details are included, and some basic mathematical rules are taken for granted: for example, the rule of equality, i.e. if $a = b$ then $a$ and $b$ are exchangeable for all purposes in our type system.)
+TypeDB's type system is a [logical system](https://en.wikipedia.org/wiki/Formal_system#Deductive_system), which we describe in this section with a reasonable level of formality (not all details are included, and some basic mathematical rules are taken for granted: for example, the rule of equality, i.e. if $a = b$ then $a$ and $b$ are exchangeable for all purposes in our type system.)
 
 The type system comprises two **components**:
 
-* A grammar for (mathematical) statements.
-* A rule system for inferring which statement are true.
+* A **grammar** for (mathematical) statements.
+* A **rule system** for inferring which statement are _true_.
 
-_IMPORTANT_: Not all parts of the type system introduced in this section are exposed to the user through TypeQL, but most parts are. This is similar to not all parts of the mathematical definition of the borrow checker in Rust being reflected in actual Rust syntax... defining the meaning of language often takes more language than the original language itself!
+_IMPORTANT_: Not all parts of the type system introduced in this section are exposed to the user through TypeQL (but most parts are). This shouldn't be surprising. As an analogy: the inner workings (or formal specification) of the borrow checker in Rust is not exposed in actual Rust. In other words,  defining the meaning of language often "needs more" language than the original language itself.
 
 ## Grammar and notations
 
@@ -359,7 +359,7 @@ _IMPORTANT_: Not all parts of the type system introduced in this section are exp
 
 We discuss the grammar for statements relating to types, and explain them in natural language statements.
 
-* **Ordinary kinds**. We write 
+* **Ordinary type kinds**. We write 
   $`A : \mathbf{Kind}`$ to mean the statement:
   > $`A`$ is a type of kind $`\mathbf{Kind}`$. 
 
@@ -458,10 +458,10 @@ _Remark for nerds: list types are not algebraic types... they are so-called indu
 
 We discuss the grammar for statements relating to list types, and explain them in natural language statements.
 
-* **List types**. For any $`A : \mathbf{Type}`$, we write $`[A] : \mathbf{List}`$ to mean
+* **List types**. For any $`A : \mathbf{Alg}`$, we write $`[A] : \mathbf{List}`$ to mean
   > the type of $`A`$-lists, i.e. the type which contains lists $`[a_0, a_1, ...]`$ of elements $`a_i : A`$.
 
-    Note: We could include $`\mathbf{List}`$ in $`\mathbf{Kind}`$ but for simplicity we don't.
+    _Example_: Since $`\mathsf{Person} + \mathsf{City} : \mathbf{Alg}`$ we may consider $`[\mathsf{Person} + \mathsf{City}] : \mathbf{List}`$ — these are lists of persons or cities.
 
 * **Dependency on list types**: We allow $`A : \mathbf{Kind}([I])`$, and thus our type system has types $`A(x:[I]) : \mathbf{Kind}`$.
     > $`A(x:[I])`$ is a type depending on lists $`x : [I]`$.
