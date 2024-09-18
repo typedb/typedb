@@ -292,11 +292,13 @@ impl Database<WALClient> {
             _statistics_updater: IntervalRunner::new(update_statistics, Self::STATISTICS_UPDATE_INTERVAL),
         };
 
-        let checkpoint_sequence_number = checkpoint
-            .as_ref()
-            .unwrap()
-            .read_sequence_number()
-            .map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?;
+        let checkpoint_sequence_number = match checkpoint {
+            None => SequenceNumber::MIN,
+            Some(checkpoint) => {
+                checkpoint.read_sequence_number()
+                    .map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?
+            }
+        };
         if checkpoint_sequence_number < wal_last_sequence_number {
             database.checkpoint().map_err(|err| CheckpointCreate { name: name.to_string(), source: err })?;
         }
