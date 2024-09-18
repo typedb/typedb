@@ -2918,7 +2918,7 @@ impl OperationTimeValidation {
         );
 
         // TODO #7138: It is EXCEPTIONALLY memory-greedy and should be optimized before a non-alpha release!
-        let mut unique_values = HashSet::new();
+        let mut unique_values = HashMap::new();
 
         for object_type in object_types {
             let mut object_iterator = thing_manager.get_objects_in(snapshot, object_type.clone().into_owned());
@@ -3025,8 +3025,9 @@ impl OperationTimeValidation {
                         )
                         .map_err(DataValidationError::ConceptRead)?
                         {
-                            let new = unique_values.insert(value.clone().into_owned());
-                            if !new {
+                            let previous_owner =
+                                unique_values.insert(value.clone().into_owned(), object.as_reference().into_owned());
+                            if previous_owner.unwrap_or(object.as_reference()) != object {
                                 return Err(DataValidation::create_data_validation_uniqueness_error(
                                     snapshot,
                                     type_manager,

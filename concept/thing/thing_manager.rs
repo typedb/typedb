@@ -1611,7 +1611,6 @@ impl ThingManager {
             owner,
             attribute.type_(),
             value.as_reference(),
-            count,
         )
         .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 

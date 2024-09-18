@@ -377,24 +377,12 @@ impl OperationTimeValidation {
         owner: &impl ObjectAPI<'a>,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
-        count: u64,
     ) -> Result<(), DataValidationError> {
         if let Some(constraint) = owner
             .type_()
             .get_owned_attribute_type_constraint_unique(snapshot, thing_manager.type_manager(), attribute_type.clone())
             .map_err(DataValidationError::ConceptRead)?
         {
-            if count > 1 {
-                return Err(DataValidation::create_data_validation_uniqueness_error(
-                    snapshot,
-                    thing_manager.type_manager(),
-                    &constraint,
-                    owner.clone().into_owned_object(),
-                    attribute_type,
-                    value,
-                ));
-            }
-
             let root_owner_type = constraint.source().owner();
             let root_owner_subtypes = root_owner_type
                 .get_subtypes_transitive(snapshot, thing_manager.type_manager())
@@ -410,9 +398,15 @@ impl OperationTimeValidation {
                 TypeAPI::chain_types(root_attribute_type.clone(), root_attribute_subtypes.into_iter().cloned())
                     .collect();
 
+            let owner = owner.clone().into_owned_object();
+
             for checked_owner_type in owner_and_subtypes {
                 let mut objects = thing_manager.get_objects_in(snapshot, checked_owner_type.clone());
                 while let Some(object) = objects.next().transpose().map_err(DataValidationError::ConceptRead)? {
+                    if object == owner {
+                        continue;
+                    }
+
                     for checked_attribute_type in &attribute_and_subtypes {
                         if object
                             .has_attribute_with_value(
