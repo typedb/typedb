@@ -352,10 +352,10 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
             };
 
             let mut objects_with_interface_supertypes_and_constraints: HashMap<<$capability_type<'static> as Capability<'static>>::ObjectType, HashSet<CapabilityConstraint<$capability_type<'static>>>> = HashMap::new();
-            let all_interface_supertypes = collect_object_types_with_interface_type_and_supertypes_constraints(
+            collect_object_types_with_interface_type_and_supertypes_constraints(
                 snapshot,
                 type_manager,
-                unset_supertype,
+                unset_supertype.clone(),
                 &mut objects_with_interface_supertypes_and_constraints,
             )
             .map_err(SchemaValidationError::ConceptRead)?;
@@ -369,6 +369,9 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
             )
             .map_err(SchemaValidationError::ConceptRead)?;
 
+            let unset_supertype_root = unset_supertype.get_supertype_root(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?.unwrap_or(unset_supertype);
+            let unset_supertype_root_subtypes = unset_supertype_root.get_subtypes_transitive(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
+            let affected_interface_types = TypeAPI::chain_types(unset_supertype_root, unset_supertype_root_subtypes.into_iter().cloned()).collect();
             let updated_supertypes = HashMap::from([(interface_type, None)]);
 
             for (affected_object_type, constraints) in objects_with_interface_supertypes_and_constraints.into_iter() {
@@ -390,7 +393,7 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
                     type_manager,
                     thing_manager,
                     &HashSet::from([affected_object_type]),
-                    &all_interface_supertypes,
+                    &affected_interface_types,
                     &updated_supertypes,
                     &affected_constraints,
                 )
@@ -425,7 +428,7 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
             )?;
 
             let mut objects_with_interface_supertypes_and_constraints: HashMap<<$capability_type<'static> as Capability<'static>>::ObjectType, HashSet<CapabilityConstraint<$capability_type<'static>>>> = HashMap::new();
-            let all_interface_supertypes = collect_object_types_with_interface_type_and_supertypes_constraints(
+            collect_object_types_with_interface_type_and_supertypes_constraints(
                 snapshot,
                 type_manager,
                 interface_supertype.clone(),
@@ -433,8 +436,10 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
             )
             .map_err(SchemaValidationError::ConceptRead)?;
 
+            let all_interface_supertype_subtypes = interface_supertype.get_subtypes_transitive(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
+
             let mut objects_with_interface_subtypes_and_constraints: HashSet<<$capability_type<'static> as Capability<'static>>::ObjectType> = HashSet::new();
-            let all_interface_subtypes = collect_object_types_with_interface_type_and_subtypes::<$capability_type<'static>>(
+            collect_object_types_with_interface_type_and_subtypes::<$capability_type<'static>>(
                 snapshot,
                 type_manager,
                 interface_type.clone(),
@@ -442,6 +447,15 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
             )
             .map_err(SchemaValidationError::ConceptRead)?;
 
+            let supertype_root = interface_supertype.get_supertype_root(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?.unwrap_or(interface_supertype.clone());
+            let supertype_root_subtypes = supertype_root.get_subtypes_transitive(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
+            let all_supertype_root_subtypes =
+                TypeAPI::chain_types(supertype_root, supertype_root_subtypes.into_iter().cloned());
+            let interface_subtypes = interface_type.get_subtypes_transitive(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
+            let all_interface_subtypes =
+                TypeAPI::chain_types(interface_type.clone(), interface_subtypes.into_iter().cloned());
+
+            let affected_interface_types = all_supertype_root_subtypes.chain(all_interface_subtypes).collect();
             let updated_supertypes = HashMap::from([(interface_type, Some(interface_supertype))]);
 
             for (affected_object_type, constraints) in objects_with_interface_supertypes_and_constraints.into_iter() {
@@ -454,7 +468,7 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
                     type_manager,
                     thing_manager,
                     &HashSet::from([affected_object_type]),
-                    &all_interface_supertypes.iter().chain(all_interface_subtypes.iter()).cloned().collect(),
+                    &affected_interface_types,
                     &updated_supertypes,
                     &get_checked_constraints(constraints.into_iter()),
                 )
@@ -522,19 +536,18 @@ fn collect_object_types_with_interface_type_and_subtypes<CAP: Capability<'static
     type_manager: &TypeManager,
     interface_type: CAP::InterfaceType,
     out_object_types: &mut HashSet<CAP::ObjectType>,
-) -> Result<HashSet<CAP::InterfaceType>, ConceptReadError> {
+) -> Result<(), ConceptReadError> {
     let interface_subtypes = interface_type.get_subtypes_transitive(snapshot, type_manager)?;
-    let all_interface_subtypes: HashSet<CAP::InterfaceType> =
-        TypeAPI::chain_types(interface_type, interface_subtypes.into_iter().cloned()).collect();
+    let all_interface_subtypes = TypeAPI::chain_types(interface_type, interface_subtypes.into_iter().cloned());
 
-    for interface_subtype in &all_interface_subtypes {
+    for interface_subtype in all_interface_subtypes {
         out_object_types.extend(
             TypeReader::get_object_types_with_capabilities_for_interface::<CAP>(snapshot, interface_subtype.clone())?
                 .into_keys(),
         );
     }
 
-    Ok(all_interface_subtypes)
+    Ok(())
 }
 
 fn collect_object_types_with_interface_type_and_supertypes_constraints<CAP: Capability<'static>>(
@@ -542,12 +555,11 @@ fn collect_object_types_with_interface_type_and_supertypes_constraints<CAP: Capa
     type_manager: &TypeManager,
     interface_type: CAP::InterfaceType,
     out_object_types: &mut HashMap<CAP::ObjectType, HashSet<CapabilityConstraint<CAP>>>,
-) -> Result<HashSet<CAP::InterfaceType>, ConceptReadError> {
+) -> Result<(), ConceptReadError> {
     let interface_supertypes = interface_type.get_supertypes_transitive(snapshot, type_manager)?;
-    let all_interface_supertypes: HashSet<CAP::InterfaceType> =
-        TypeAPI::chain_types(interface_type, interface_supertypes.into_iter().cloned()).collect();
+    let all_interface_supertypes = TypeAPI::chain_types(interface_type, interface_supertypes.into_iter().cloned());
 
-    for interface_supertype in &all_interface_supertypes {
+    for interface_supertype in all_interface_supertypes {
         for object_type_with_interface_supertype in
             TypeReader::get_object_types_with_capabilities_for_interface::<CAP>(snapshot, interface_supertype.clone())?
                 .into_keys()
@@ -563,7 +575,7 @@ fn collect_object_types_with_interface_type_and_supertypes_constraints<CAP: Capa
         }
     }
 
-    Ok(all_interface_supertypes)
+    Ok(())
 }
 
 pub struct OperationTimeValidation {}

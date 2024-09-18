@@ -129,6 +129,14 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<Self>>, ConceptReadError>;
 
+    fn get_supertype_root<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<Option<Self>, ConceptReadError> {
+        Ok(self.get_supertypes_transitive(snapshot, type_manager)?.into_iter().cloned().last())
+    }
+
     fn get_subtypes<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
