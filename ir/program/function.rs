@@ -5,13 +5,16 @@
  */
 
 use std::{
-    collections::{BTreeSet, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet},
     sync::Arc,
 };
 
 use answer::{variable::Variable, Type};
 
-use crate::program::block::{FunctionalBlock, VariableRegistry};
+use crate::{
+    pattern::Vertex,
+    program::block::{FunctionalBlock, VariableRegistry},
+};
 
 pub type PlaceholderTypeQLReturnOperation = String;
 
@@ -66,11 +69,11 @@ pub enum ReturnOperation {
 impl ReturnOperation {
     pub fn output_annotations(
         &self,
-        function_variable_annotations: &HashMap<Variable, Arc<HashSet<Type>>>,
+        function_variable_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
     ) -> Vec<BTreeSet<Type>> {
         match self {
             ReturnOperation::Stream(vars) => {
-                let inputs = vars.iter().map(|v| function_variable_annotations.get(v).unwrap());
+                let inputs = vars.iter().map(|&var| function_variable_annotations.get(&Vertex::Variable(var)).unwrap());
                 inputs
                     .map(|types_as_arced_hashset| BTreeSet::from_iter(types_as_arced_hashset.iter().cloned()))
                     .collect()

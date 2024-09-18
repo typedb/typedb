@@ -5,26 +5,27 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet},
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
+use answer::variable::Variable;
 use concept::type_::type_manager::TypeManager;
-use ir::program::{
-    block::{FunctionalBlock, VariableRegistry},
-    function::Function,
+use ir::{
+    pattern::Vertex,
+    program::{
+        block::{FunctionalBlock, VariableRegistry},
+        function::Function,
+    },
 };
 use storage::snapshot::ReadableSnapshot;
 
-use super::pattern_type_inference::infer_types_for_block;
 use crate::match_::inference::{
     annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+    pattern_type_inference::infer_types_for_block,
     type_annotations::{FunctionAnnotations, TypeAnnotations},
     FunctionTypeInferenceError, TypeInferenceError,
 };
-
-pub(crate) type VertexAnnotations = BTreeMap<Variable, BTreeSet<Type>>;
 
 // TODO: Deprecate
 pub fn infer_types<Snapshot: ReadableSnapshot>(
@@ -98,7 +99,7 @@ pub fn infer_types_for_function(
         function.block(),
         function.variable_registry(),
         type_manager,
-        &HashMap::new(),
+        &BTreeMap::new(),
         indexed_annotated_functions,
         local_functions,
     )
@@ -107,7 +108,7 @@ pub fn infer_types_for_function(
         typedb_source: err,
     })?;
     let body_annotations = TypeAnnotations::build(root_tig);
-    let return_annotations = function.return_operation().output_annotations(body_annotations.variable_annotations());
+    let return_annotations = function.return_operation().output_annotations(body_annotations.vertex_annotations());
     Ok(FunctionAnnotations { return_annotations, block_annotations: body_annotations })
 }
 
@@ -116,7 +117,7 @@ pub fn infer_types_for_match_block(
     variable_registry: &VariableRegistry,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    previous_stage_variable_annotations: &HashMap<Variable, Arc<HashSet<answer::Type>>>,
+    previous_stage_variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     annotated_schema_functions: &IndexedAnnotatedFunctions,
     annotated_preamble_functions: &AnnotatedUnindexedFunctions,
 ) -> Result<TypeAnnotations, TypeInferenceError> {
@@ -132,8 +133,8 @@ pub fn infer_types_for_match_block(
     let type_annotations = TypeAnnotations::build(root_tig);
     debug_assert!(match_block
         .scope_context()
-        .referenced_variables()
-        .all(|v| type_annotations.variable_annotations_of(v).is_some()));
+        .referenced_variables() // FIXME vertices?
+        .all(|var| type_annotations.vertex_annotations_of(&Vertex::Variable(var)).is_some()));
     Ok(type_annotations)
 }
 
@@ -307,7 +308,7 @@ pub mod tests {
                 (constraint2, ConstraintTypeAnnotations::LeftRightFiltered(lra2)),
             ]),
         );
-        assert_eq!(expected_annotations.variable_annotations(), type_annotations.variable_annotations());
+        assert_eq!(expected_annotations.vertex_annotations(), type_annotations.vertex_annotations());
         assert_eq!(expected_annotations.constraint_annotations(), type_annotations.constraint_annotations());
     }
 
@@ -377,7 +378,7 @@ pub mod tests {
             let f_var_animal_type = var_from_registry(f_ir.variable_registry(), "called_animal_type").unwrap();
             let f_var_name = var_from_registry(f_ir.variable_registry(), "called_name").unwrap();
             assert_eq!(
-                *f_annotations.block_annotations.variable_annotations(),
+                *f_annotations.block_annotations.vertex_annotations(),
                 HashMap::from([
                     (f_var_animal, Arc::new(HashSet::from([type_cat.clone()]))),
                     (f_var_animal_type, Arc::new(HashSet::from([type_cat.clone()]))),
@@ -404,7 +405,7 @@ pub mod tests {
                 .unwrap(),
             );
             assert_eq!(
-                *annotations_without_schema_cache.variable_annotations(),
+                *annotations_without_schema_cache.vertex_annotations(),
                 HashMap::from([(var_animal, Arc::new(HashSet::from(object_types.clone()))),])
             );
         }
@@ -422,7 +423,7 @@ pub mod tests {
             )
             .unwrap();
             assert_eq!(
-                entry_annotations.variable_annotations(),
+                entry_annotations.vertex_annotations(),
                 &HashMap::from([(var_animal, Arc::new(HashSet::from([type_cat.clone()])))]),
             );
         }
@@ -437,7 +438,7 @@ pub mod tests {
                 infer_types(&entry, vec![], &snapshot, &type_manager, &schema_cache, &entry_context.variable_registry)
                     .unwrap();
             assert_eq!(
-                *entry_annotations.variable_annotations(),
+                *entry_annotations.vertex_annotations(),
                 HashMap::from([(var_animal, Arc::new(HashSet::from([type_cat.clone()])))]),
             );
         }

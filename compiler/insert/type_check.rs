@@ -80,8 +80,8 @@ fn validate_has_insertable(
 ) -> Result<(), TypeInferenceError> {
     // TODO: Improve. This is extremely coarse and likely to rule out many valid combinations
     // Esp when doing queries using type variables.
-    let input_owner_types = input_annotations_variables.get(&has.owner()).unwrap();
-    let input_attr_types = input_annotations_variables.get(&has.attribute()).unwrap();
+    let input_owner_types = input_annotations_variables.get(&has.owner().as_variable().unwrap()).unwrap();
+    let input_attr_types = input_annotations_variables.get(&has.attribute().as_variable().unwrap()).unwrap();
 
     let mut invalid_iter = input_owner_types.iter().flat_map(|left_type| {
         input_attr_types
@@ -125,9 +125,9 @@ fn validate_links_insertable(
 ) -> Result<(), TypeInferenceError> {
     // TODO: Improve. This is extremely coarse and likely to rule out many valid combinations
     // Esp when doing queries using type variables.
-    let input_relation_types = input_annotations_variables.get(&links.relation()).unwrap();
-    let input_player_types = input_annotations_variables.get(&links.player()).unwrap();
-    let input_role_types = input_annotations_variables.get(&links.role_type()).unwrap();
+    let input_relation_types = input_annotations_variables.get(&links.relation().as_variable().unwrap()).unwrap();
+    let input_player_types = input_annotations_variables.get(&links.player().as_variable().unwrap()).unwrap();
+    let input_role_types = input_annotations_variables.get(&links.role_type().as_variable().unwrap()).unwrap();
 
     let invalid_relation_role_iter = input_relation_types.iter().flat_map(|relation_type| {
         input_role_types

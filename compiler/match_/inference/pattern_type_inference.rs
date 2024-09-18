@@ -5,14 +5,16 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    borrow::Cow,
+    collections::{BTreeMap, BTreeSet, HashMap},
+    ops::{Deref, DerefMut},
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type as TypeAnnotation, Type};
+use answer::{variable::Variable, Type as TypeAnnotation};
 use concept::type_::type_manager::TypeManager;
 use ir::{
-    pattern::{conjunction::Conjunction, constraint::Constraint},
+    pattern::{conjunction::Conjunction, constraint::Constraint, Vertex},
     program::block::{FunctionalBlock, VariableRegistry},
 };
 use itertools::chain;
@@ -25,14 +27,81 @@ use crate::match_::inference::{
     TypeInferenceError,
 };
 
-pub(crate) type VertexAnnotations = BTreeMap<Variable, BTreeSet<Type>>;
+#[derive(Debug, Default)]
+pub(crate) struct VertexAnnotations {
+    annotations: BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>,
+}
+
+impl VertexAnnotations {
+    pub(crate) fn add_or_intersect(
+        &mut self,
+        vertex: &Vertex<Variable>,
+        new_annotations: Cow<'_, BTreeSet<TypeAnnotation>>,
+    ) -> bool {
+        if let Some(existing_annotations) = self.get_mut(&vertex) {
+            let size_before = existing_annotations.len();
+            existing_annotations.retain(|x| new_annotations.contains(x));
+            existing_annotations.len() == size_before
+        } else {
+            self.insert(vertex.clone(), new_annotations.into_owned());
+            true
+        }
+    }
+}
+
+impl Deref for VertexAnnotations {
+    type Target = BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.annotations
+    }
+}
+
+impl DerefMut for VertexAnnotations {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.annotations
+    }
+}
+
+impl IntoIterator for VertexAnnotations {
+    type Item = <BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>> as IntoIterator>::Item;
+    type IntoIter = <BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>> as IntoIterator>::IntoIter;
+    fn into_iter(self) -> Self::IntoIter {
+        self.annotations.into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a VertexAnnotations {
+    type Item = <&'a BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>> as IntoIterator>::Item;
+    type IntoIter = <&'a BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>> as IntoIterator>::IntoIter;
+    fn into_iter(self) -> Self::IntoIter {
+        (&self.annotations).into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a mut VertexAnnotations {
+    type Item = <&'a mut BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>> as IntoIterator>::Item;
+    type IntoIter = <&'a mut BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>> as IntoIterator>::IntoIter;
+    fn into_iter(self) -> Self::IntoIter {
+        (&mut self.annotations).into_iter()
+    }
+}
+
+impl<T> From<T> for VertexAnnotations
+where
+    BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>: From<T>,
+{
+    fn from(t: T) -> Self {
+        Self { annotations: t.into() }
+    }
+}
 
 pub(crate) fn infer_types_for_block<'graph>(
     snapshot: &impl ReadableSnapshot,
     block: &'graph FunctionalBlock,
     variable_registry: &VariableRegistry,
     type_manager: &TypeManager,
-    previous_stage_variable_annotations: &HashMap<Variable, Arc<HashSet<TypeAnnotation>>>,
+    previous_stage_variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<TypeAnnotation>>>,
     schema_functions: &IndexedAnnotatedFunctions,
     local_function_cache: Option<&AnnotatedUnindexedFunctions>,
 ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
@@ -48,10 +117,8 @@ pub(crate) fn infer_types_for_block<'graph>(
 }
 
 fn run_type_inference(tig: &mut TypeInferenceGraph<'_>) {
-    let mut is_modified = tig.prune_vertices_from_constraints();
-    while is_modified {
+    while tig.prune_vertices_from_constraints() {
         tig.prune_constraints_from_vertices();
-        is_modified = tig.prune_vertices_from_constraints();
     }
 
     // Then do it for the nested negations & optionals
@@ -82,17 +149,17 @@ impl<'this> TypeInferenceGraph<'this> {
     fn prune_vertices_from_constraints(&mut self) -> bool {
         let mut is_modified = false;
         for edge in &mut self.edges {
-            is_modified = is_modified || edge.prune_vertices_from_self(&mut self.vertices);
+            is_modified |= edge.prune_vertices_from_self(&mut self.vertices);
         }
         for nested_graph in &mut self.nested_disjunctions {
-            is_modified = is_modified || nested_graph.prune_vertices_from_self(&mut self.vertices);
+            is_modified |= nested_graph.prune_vertices_from_self(&mut self.vertices);
         }
         is_modified
     }
 
     pub(crate) fn collect_type_annotations(
         self,
-        variable_annotations: &mut HashMap<Variable, Arc<HashSet<Type>>>,
+        vertex_annotations: &mut BTreeMap<Vertex<Variable>, Arc<BTreeSet<TypeAnnotation>>>,
         constraint_annotations: &mut HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
     ) {
         let TypeInferenceGraph { vertices, edges, nested_disjunctions, nested_negations, nested_optionals, .. } = self;
@@ -103,7 +170,7 @@ impl<'this> TypeInferenceGraph<'this> {
             if let Constraint::Links(links) = edge.constraint {
                 if let Some((other_left_right, other_right_left)) = combine_links_edges.remove(&edge.right) {
                     let lrf_annotation = {
-                        if edge.left == links.relation() {
+                        if &edge.left == links.relation() {
                             LeftRightFilteredAnnotations::build(
                                 left_to_right,
                                 right_to_left,
@@ -131,22 +198,22 @@ impl<'this> TypeInferenceGraph<'this> {
         });
 
         vertices.into_iter().for_each(|(variable, types)| {
-            variable_annotations.entry(variable).or_insert_with(|| Arc::new(types.into_iter().collect()));
+            vertex_annotations.entry(variable).or_insert_with(|| Arc::new(types.into_iter().collect()));
         });
 
         chain(
             chain(nested_negations, nested_optionals),
             nested_disjunctions.into_iter().flat_map(|disjunction| disjunction.disjunction),
         )
-        .for_each(|nested| nested.collect_type_annotations(variable_annotations, constraint_annotations));
+        .for_each(|nested| nested.collect_type_annotations(vertex_annotations, constraint_annotations));
     }
 }
 
 #[derive(Debug)]
 pub struct TypeInferenceEdge<'this> {
     pub(crate) constraint: &'this Constraint<Variable>,
-    pub(crate) left: Variable,
-    pub(crate) right: Variable,
+    pub(crate) left: Vertex<Variable>,
+    pub(crate) right: Vertex<Variable>,
     pub(crate) left_to_right: BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
     pub(crate) right_to_left: BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
 }
@@ -156,8 +223,8 @@ impl<'this> TypeInferenceEdge<'this> {
 
     pub(crate) fn build(
         constraint: &'this Constraint<Variable>,
-        left: Variable,
-        right: Variable,
+        left: Vertex<Variable>,
+        right: Vertex<Variable>,
         initial_left_to_right: BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
         initial_right_to_left: BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
     ) -> TypeInferenceEdge<'this> {
@@ -207,7 +274,6 @@ impl<'this> TypeInferenceEdge<'this> {
         }
     }
 
-    // prune_vertices
     fn prune_vertices_from_self(&self, vertices: &mut VertexAnnotations) -> bool {
         let mut is_modified = false;
         {
@@ -248,7 +314,7 @@ impl<'this> TypeInferenceEdge<'this> {
 pub(crate) struct NestedTypeInferenceGraphDisjunction<'this> {
     pub(crate) disjunction: Vec<TypeInferenceGraph<'this>>,
     pub(crate) shared_variables: BTreeSet<Variable>,
-    pub(crate) shared_vertex_annotations: BTreeMap<Variable, BTreeSet<TypeAnnotation>>,
+    pub(crate) shared_vertex_annotations: VertexAnnotations,
 }
 
 impl<'this> NestedTypeInferenceGraphDisjunction<'this> {
@@ -292,7 +358,10 @@ pub mod tests {
 
     use answer::{variable::Variable, Type as TypeAnnotation};
     use ir::{
-        pattern::constraint::{Constraint, IsaKind, SubKind},
+        pattern::{
+            constraint::{Constraint, IsaKind, SubKind},
+            Vertex,
+        },
         program::{block::FunctionalBlock, function_signature::HashMapFunctionSignatureIndex},
         translation::TranslationContext,
     };
@@ -302,6 +371,7 @@ pub mod tests {
         annotated_functions::IndexedAnnotatedFunctions,
         pattern_type_inference::{
             infer_types_for_block, NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
+            VertexAnnotations,
         },
         tests::{
             managers,
@@ -314,8 +384,8 @@ pub mod tests {
 
     pub(crate) fn expected_edge(
         constraint: &Constraint<Variable>,
-        left: Variable,
-        right: Variable,
+        left: Vertex<Variable>,
+        right: Vertex<Variable>,
         left_right_type_pairs: Vec<(TypeAnnotation, TypeAnnotation)>,
     ) -> TypeInferenceEdge<'_> {
         let mut left_to_right = BTreeMap::new();
@@ -358,9 +428,12 @@ pub mod tests {
                 .collect_tuple()
                 .unwrap();
 
-            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type).unwrap();
+            conjunction
+                .constraints_mut()
+                .add_isa(IsaKind::Subtype, var_animal, Vertex::Variable(var_animal_type))
+                .unwrap();
             conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT).unwrap();
-            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, Vertex::Variable(var_name_type)).unwrap();
             conjunction.constraints_mut().add_label(var_name_type, LABEL_NAME).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
@@ -379,11 +452,11 @@ pub mod tests {
 
             let expected_tig = TypeInferenceGraph {
                 conjunction: block.conjunction(),
-                vertices: BTreeMap::from([
-                    (var_animal, BTreeSet::from([type_cat.clone()])),
-                    (var_name, BTreeSet::from([type_catname.clone()])),
-                    (var_animal_type, BTreeSet::from([type_cat.clone()])),
-                    (var_name_type, BTreeSet::from([type_name.clone()])),
+                vertices: VertexAnnotations::from([
+                    (Vertex::Variable(var_animal), BTreeSet::from([type_cat.clone()])),
+                    (Vertex::Variable(var_name), BTreeSet::from([type_catname.clone()])),
+                    (Vertex::Variable(var_animal_type), BTreeSet::from([type_cat.clone()])),
+                    (Vertex::Variable(var_name_type), BTreeSet::from([type_name.clone()])),
                 ]),
                 edges: vec![
                     expected_edge(
@@ -708,7 +781,7 @@ pub mod tests {
                 },
             ];
             let expected_graph = TypeInferenceGraph {
-                conjunction: conjunction,
+                conjunction,
                 vertices: BTreeMap::from([
                     (var_animal, BTreeSet::from([type_cat.clone(), type_dog.clone()])),
                     (var_name, BTreeSet::from([type_catname.clone(), type_dogname.clone()])),

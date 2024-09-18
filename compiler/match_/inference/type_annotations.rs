@@ -5,42 +5,42 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
     sync::Arc,
 };
 
 use answer::{variable::Variable, Type};
-use ir::pattern::constraint::Constraint;
+use ir::pattern::{constraint::Constraint, Vertex};
 
 use crate::match_::inference::pattern_type_inference::TypeInferenceGraph;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypeAnnotations {
-    variables: HashMap<Variable, Arc<HashSet<Type>>>,
+    vertex: BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
     constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
 }
 
 impl TypeAnnotations {
     pub(crate) fn build(inference_graph: TypeInferenceGraph<'_>) -> Self {
-        let mut vertex_annotations = HashMap::new();
+        let mut vertex_annotations = BTreeMap::new();
         let mut constraint_annotations = HashMap::new();
         inference_graph.collect_type_annotations(&mut vertex_annotations, &mut constraint_annotations);
         Self::new(vertex_annotations, constraint_annotations)
     }
 
     pub fn new(
-        variables: HashMap<Variable, Arc<HashSet<Type>>>,
+        variables: BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
         constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
     ) -> Self {
-        TypeAnnotations { variables, constraints }
+        TypeAnnotations { vertex: variables, constraints }
     }
 
-    pub fn variable_annotations(&self) -> &HashMap<Variable, Arc<HashSet<Type>>> {
-        &self.variables
+    pub fn vertex_annotations(&self) -> &BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>> {
+        &self.vertex
     }
 
-    pub fn variable_annotations_of(&self, variable: Variable) -> Option<&Arc<HashSet<Type>>> {
-        self.variables.get(&variable)
+    pub fn vertex_annotations_of(&self, vertex: &Vertex<Variable>) -> Option<&Arc<BTreeSet<Type>>> {
+        self.vertex.get(vertex)
     }
 
     pub fn constraint_annotations(&self) -> &HashMap<Constraint<Variable>, ConstraintTypeAnnotations> {
@@ -114,10 +114,10 @@ impl LeftRightAnnotations {
 pub struct LeftRightFilteredAnnotations {
     // Filtered edges are encoded as  (left,right,filter) and (right,left,filter).
     pub(crate) left_to_right: Arc<BTreeMap<Type, Vec<Type>>>,
-    pub(crate) filters_on_right: Arc<BTreeMap<Type, HashSet<Type>>>, // The key is the type of the right variable
+    pub(crate) filters_on_right: Arc<BTreeMap<Type, BTreeSet<Type>>>, // The key is the type of the right variable
 
     pub(crate) right_to_left: Arc<BTreeMap<Type, Vec<Type>>>,
-    pub(crate) filters_on_left: Arc<BTreeMap<Type, HashSet<Type>>>, // The key is the type of the left variable
+    pub(crate) filters_on_left: Arc<BTreeMap<Type, BTreeSet<Type>>>, // The key is the type of the left variable
 }
 
 impl LeftRightFilteredAnnotations {
@@ -157,7 +157,7 @@ impl LeftRightFilteredAnnotations {
         self.left_to_right.clone()
     }
 
-    pub fn filters_on_right(&self) -> Arc<BTreeMap<Type, HashSet<Type>>> {
+    pub fn filters_on_right(&self) -> Arc<BTreeMap<Type, BTreeSet<Type>>> {
         self.filters_on_right.clone()
     }
 
@@ -165,7 +165,7 @@ impl LeftRightFilteredAnnotations {
         self.right_to_left.clone()
     }
 
-    pub fn filters_on_left(&self) -> Arc<BTreeMap<Type, HashSet<Type>>> {
+    pub fn filters_on_left(&self) -> Arc<BTreeMap<Type, BTreeSet<Type>>> {
         self.filters_on_left.clone()
     }
 }

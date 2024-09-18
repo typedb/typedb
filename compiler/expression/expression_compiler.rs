@@ -9,11 +9,14 @@ use std::collections::HashMap;
 use answer::variable::Variable;
 use encoding::value::{value_type::ValueTypeCategory, ValueEncodable};
 use ir::{
-    pattern::expression::{
-        BuiltInCall, BuiltInFunctionID, Expression, ExpressionTree, ListConstructor, ListIndex, ListIndexRange,
-        Operation, Operator,
+    pattern::{
+        expression::{
+            BuiltInCall, BuiltInFunctionID, Expression, ExpressionTree, ListConstructor, ListIndex, ListIndexRange,
+            Operation, Operator,
+        },
+        ParameterID,
     },
-    program::{ParameterID, ParameterRegistry},
+    program::block::ParameterRegistry,
 };
 
 use crate::expression::{

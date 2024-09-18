@@ -4,15 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, sync::Arc};
-
-use answer::variable::Variable;
-use concept::thing::statistics::Statistics;
-use ir::program::block::{FunctionalBlock, VariableRegistry};
-
-use self::{inference::type_annotations::TypeAnnotations, planner::pattern_plan::MatchProgram};
-use crate::expression::compiled_expression::CompiledExpression;
-
 pub mod inference;
 pub mod instructions;
 mod optimisation;

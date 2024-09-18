@@ -186,23 +186,20 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         relation: Variable,
         player: Variable,
-        role_type: Vertex<Variable>,
+        role_type: Variable,
     ) -> Result<&Links<Variable>, PatternDefinitionError> {
-        let role_type_var = role_type.as_variable();
         let links = Constraint::from(Links::new(relation, player, role_type));
 
         debug_assert!(
             self.context.is_variable_available(self.constraints.scope, relation)
                 && self.context.is_variable_available(self.constraints.scope, player)
+                && self.context.is_variable_available(self.constraints.scope, role_type)
         );
 
         self.context.set_variable_category(relation, VariableCategory::Object, links.clone())?;
         self.context.set_variable_category(player, VariableCategory::Object, links.clone())?;
 
-        if let Some(role_type) = role_type_var {
-            debug_assert!(self.context.is_variable_available(self.constraints.scope, role_type));
-            self.context.set_variable_category(role_type, VariableCategory::RoleType, links.clone())?;
-        }
+        self.context.set_variable_category(role_type, VariableCategory::RoleType, links.clone())?;
 
         let constraint = self.constraints.add_constraint(links);
         Ok(constraint.as_links().unwrap())
@@ -319,12 +316,12 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
         if let Some(owner_type) = owner_type_var {
             debug_assert!(self.context.is_variable_available(self.constraints.scope, owner_type));
-            self.context.set_variable_category(owner_type, VariableCategory::ThingType, owns.clone().into())?;
+            self.context.set_variable_category(owner_type, VariableCategory::ThingType, owns.clone())?;
         };
 
         if let Some(attribute_type) = attribute_type_var {
             debug_assert!(self.context.is_variable_available(self.constraints.scope, attribute_type));
-            self.context.set_variable_category(attribute_type, VariableCategory::ThingType, owns.clone().into())?;
+            self.context.set_variable_category(attribute_type, VariableCategory::ThingType, owns.clone())?;
         };
 
         let constraint = self.constraints.add_constraint(owns);
@@ -342,12 +339,12 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
         if let Some(relation_type) = relation_type_var {
             debug_assert!(self.context.is_variable_available(self.constraints.scope, relation_type));
-            self.context.set_variable_category(relation_type, VariableCategory::ThingType, relates.clone().into())?;
+            self.context.set_variable_category(relation_type, VariableCategory::ThingType, relates.clone())?;
         };
 
         if let Some(role_type) = role_type_var {
             debug_assert!(self.context.is_variable_available(self.constraints.scope, role_type));
-            self.context.set_variable_category(role_type, VariableCategory::ThingType, relates.clone().into())?;
+            self.context.set_variable_category(role_type, VariableCategory::ThingType, relates.clone())?;
         };
 
         let constraint = self.constraints.add_constraint(relates);
@@ -365,12 +362,12 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
         if let Some(player_type) = player_type_var {
             debug_assert!(self.context.is_variable_available(self.constraints.scope, player_type));
-            self.context.set_variable_category(player_type, VariableCategory::ThingType, plays.clone().into())?;
+            self.context.set_variable_category(player_type, VariableCategory::ThingType, plays.clone())?;
         };
 
         if let Some(role_type) = role_type_var {
             debug_assert!(self.context.is_variable_available(self.constraints.scope, role_type));
-            self.context.set_variable_category(role_type, VariableCategory::ThingType, plays.clone().into())?;
+            self.context.set_variable_category(role_type, VariableCategory::ThingType, plays.clone())?;
         };
 
         let constraint = self.constraints.add_constraint(plays);
@@ -957,8 +954,12 @@ pub struct Links<ID> {
 }
 
 impl<ID: IrID> Links<ID> {
-    pub fn new(relation: ID, player: ID, role_type: Vertex<ID>) -> Self {
-        Self { relation: Vertex::Variable(relation), player: Vertex::Variable(player), role_type }
+    pub fn new(relation: ID, player: ID, role_type: ID) -> Self {
+        Self {
+            relation: Vertex::Variable(relation),
+            player: Vertex::Variable(player),
+            role_type: Vertex::Variable(role_type),
+        }
     }
 
     pub fn relation(&self) -> &Vertex<ID> {

@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     sync::Arc,
 };
 
@@ -54,13 +54,13 @@ impl<ID: IrID> ConstantInstruction<ID> {
 pub struct IsaInstruction<ID> {
     pub isa: Isa<ID>,
     pub inputs: Inputs<ID>,
-    types: Arc<HashSet<Type>>,
+    types: Arc<BTreeSet<Type>>,
     pub checks: Vec<CheckInstruction<ID>>,
 }
 
 impl IsaInstruction<Variable> {
     pub fn new(isa: Isa<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let types = type_annotations.variable_annotations_of(isa.type_()).unwrap().clone();
+        let types = type_annotations.vertex_annotations_of(isa.type_()).unwrap().clone();
         Self { isa, inputs, types, checks: Vec::new() }
     }
 }
@@ -70,7 +70,7 @@ impl<ID> IsaInstruction<ID> {
         self.checks.push(check)
     }
 
-    pub fn types(&self) -> &Arc<HashSet<Type>> {
+    pub fn types(&self) -> &Arc<BTreeSet<Type>> {
         &self.types
     }
 }
@@ -91,13 +91,13 @@ impl<ID: IrID> IsaInstruction<ID> {
 pub struct IsaReverseInstruction<ID> {
     pub isa: Isa<ID>,
     pub inputs: Inputs<ID>,
-    types: Arc<HashSet<Type>>,
+    types: Arc<BTreeSet<Type>>,
     pub checks: Vec<CheckInstruction<ID>>,
 }
 
 impl IsaReverseInstruction<Variable> {
     pub fn new(isa: Isa<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let types = type_annotations.variable_annotations_of(isa.thing()).unwrap().clone();
+        let types = type_annotations.vertex_annotations_of(isa.thing()).unwrap().clone();
         Self { isa, inputs, types, checks: Vec::new() }
     }
 }
@@ -107,7 +107,7 @@ impl<ID> IsaReverseInstruction<ID> {
         self.checks.push(check)
     }
 
-    pub fn types(&self) -> &Arc<HashSet<Type>> {
+    pub fn types(&self) -> &Arc<BTreeSet<Type>> {
         &self.types
     }
 }
@@ -129,7 +129,7 @@ pub struct HasInstruction<ID> {
     pub has: Has<ID>,
     pub inputs: Inputs<ID>,
     owner_to_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>,
-    attribute_types: Arc<HashSet<Type>>,
+    attribute_types: Arc<BTreeSet<Type>>,
     pub checks: Vec<CheckInstruction<ID>>,
 }
 
@@ -137,7 +137,7 @@ impl HasInstruction<Variable> {
     pub fn new(has: Has<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
         let edge_annotations = type_annotations.constraint_annotations_of(has.clone().into()).unwrap().as_left_right();
         let owner_to_attribute_types = edge_annotations.left_to_right();
-        let attribute_types = type_annotations.variable_annotations_of(has.attribute()).unwrap().clone();
+        let attribute_types = type_annotations.vertex_annotations_of(has.attribute()).unwrap().clone();
         Self { has, inputs, owner_to_attribute_types, attribute_types, checks: Vec::new() }
     }
 }
@@ -151,7 +151,7 @@ impl<ID> HasInstruction<ID> {
         &self.owner_to_attribute_types
     }
 
-    pub fn attribute_types(&self) -> &Arc<HashSet<Type>> {
+    pub fn attribute_types(&self) -> &Arc<BTreeSet<Type>> {
         &self.attribute_types
     }
 }
@@ -174,7 +174,7 @@ pub struct HasReverseInstruction<ID> {
     pub has: Has<ID>,
     pub inputs: Inputs<ID>,
     attribute_to_owner_types: Arc<BTreeMap<Type, Vec<Type>>>,
-    owner_types: Arc<HashSet<Type>>,
+    owner_types: Arc<BTreeSet<Type>>,
     pub checks: Vec<CheckInstruction<ID>>,
 }
 
@@ -182,7 +182,7 @@ impl HasReverseInstruction<Variable> {
     pub fn new(has: Has<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
         let edge_annotations = &type_annotations.constraint_annotations_of(has.clone().into()).unwrap().as_left_right();
         let attribute_to_owner_types = edge_annotations.right_to_left().clone();
-        let owner_types = type_annotations.variable_annotations_of(has.owner()).unwrap().clone();
+        let owner_types = type_annotations.vertex_annotations_of(has.owner()).unwrap().clone();
         Self { has, inputs, attribute_to_owner_types, owner_types, checks: Vec::new() }
     }
 }
@@ -196,7 +196,7 @@ impl<ID> HasReverseInstruction<ID> {
         &self.attribute_to_owner_types
     }
 
-    pub fn owner_types(&self) -> &Arc<HashSet<Type>> {
+    pub fn owner_types(&self) -> &Arc<BTreeSet<Type>> {
         &self.owner_types
     }
 }
@@ -219,8 +219,8 @@ pub struct LinksInstruction<ID> {
     pub links: Links<ID>,
     pub inputs: Inputs<ID>,
     relation_to_player_types: Arc<BTreeMap<Type, Vec<Type>>>,
-    player_to_role_types: Arc<BTreeMap<Type, HashSet<Type>>>,
-    player_types: Arc<HashSet<Type>>,
+    player_to_role_types: Arc<BTreeMap<Type, BTreeSet<Type>>>,
+    player_types: Arc<BTreeSet<Type>>,
     pub checks: Vec<CheckInstruction<ID>>,
 }
 
@@ -230,7 +230,7 @@ impl LinksInstruction<Variable> {
             type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_left_right_filtered();
         let player_to_role_types = edge_annotations.filters_on_right();
         let relation_to_player_types = edge_annotations.left_to_right();
-        let player_types = type_annotations.variable_annotations_of(links.player()).unwrap().clone();
+        let player_types = type_annotations.vertex_annotations_of(links.player()).unwrap().clone();
         Self { links, inputs, relation_to_player_types, player_types, player_to_role_types, checks: Vec::new() }
     }
 }
@@ -244,11 +244,11 @@ impl<ID> LinksInstruction<ID> {
         &self.relation_to_player_types
     }
 
-    pub fn player_types(&self) -> &Arc<HashSet<Type>> {
+    pub fn player_types(&self) -> &Arc<BTreeSet<Type>> {
         &self.player_types
     }
 
-    pub fn relation_to_role_types(&self) -> &Arc<BTreeMap<Type, HashSet<Type>>> {
+    pub fn relation_to_role_types(&self) -> &Arc<BTreeMap<Type, BTreeSet<Type>>> {
         &self.player_to_role_types
     }
 }
@@ -272,8 +272,8 @@ pub struct LinksReverseInstruction<ID> {
     pub links: Links<ID>,
     pub inputs: Inputs<ID>,
     player_to_relation_types: Arc<BTreeMap<Type, Vec<Type>>>,
-    relation_to_role_types: Arc<BTreeMap<Type, HashSet<Type>>>,
-    relation_types: Arc<HashSet<Type>>,
+    relation_to_role_types: Arc<BTreeMap<Type, BTreeSet<Type>>>,
+    relation_types: Arc<BTreeSet<Type>>,
     pub checks: Vec<CheckInstruction<ID>>,
 }
 
@@ -283,7 +283,7 @@ impl LinksReverseInstruction<Variable> {
             type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_left_right_filtered().clone();
         let relation_to_role_types = edge_annotations.filters_on_left();
         let player_to_relation_types = edge_annotations.right_to_left();
-        let relation_types = type_annotations.variable_annotations_of(links.relation()).unwrap().clone();
+        let relation_types = type_annotations.vertex_annotations_of(links.relation()).unwrap().clone();
         Self { links, inputs, player_to_relation_types, relation_types, relation_to_role_types, checks: Vec::new() }
     }
 }
@@ -297,11 +297,11 @@ impl<ID> LinksReverseInstruction<ID> {
         &self.player_to_relation_types
     }
 
-    pub fn relation_types(&self) -> &Arc<HashSet<Type>> {
+    pub fn relation_types(&self) -> &Arc<BTreeSet<Type>> {
         &self.relation_types
     }
 
-    pub fn relation_to_role_types(&self) -> &Arc<BTreeMap<Type, HashSet<Type>>> {
+    pub fn relation_to_role_types(&self) -> &Arc<BTreeMap<Type, BTreeSet<Type>>> {
         &self.relation_to_role_types
     }
 }

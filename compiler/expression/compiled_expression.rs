@@ -5,8 +5,8 @@
  */
 
 use answer::variable::Variable;
-use encoding::value::{value::Value, value_type::ValueTypeCategory};
-use ir::program::ParameterID;
+use encoding::value::value_type::ValueTypeCategory;
+use ir::pattern::ParameterID;
 
 use crate::expression::instructions::op_codes::ExpressionOpCode;
 

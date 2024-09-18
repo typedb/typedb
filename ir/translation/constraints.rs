@@ -348,11 +348,9 @@ pub(super) fn add_typeql_relation(
             typeql::statement::thing::RolePlayer::Typed(type_ref, player_var) => {
                 let type_ = match type_ref {
                     TypeRefAny::Type(TypeRef::Named(NamedType::Label(name))) => {
-                        Vertex::Variable(register_type_role_name_var(constraints, name)?)
+                        register_type_role_name_var(constraints, name)?
                     }
-                    TypeRefAny::Type(TypeRef::Variable(var)) => {
-                        Vertex::Variable(register_typeql_var(constraints, var)?)
-                    }
+                    TypeRefAny::Type(TypeRef::Variable(var)) => register_typeql_var(constraints, var)?,
                     TypeRefAny::Type(TypeRef::Named(NamedType::Role(name))) => {
                         return Err(PatternDefinitionError::ScopedRoleNameInRelation {
                             declaration: role_player.clone(),
@@ -370,7 +368,7 @@ pub(super) fn add_typeql_relation(
             typeql::statement::thing::RolePlayer::Untyped(var) => {
                 let player = register_typeql_var(constraints, var)?;
                 let role_type = constraints.create_anonymous_variable()?;
-                constraints.add_links(relation, player, Vertex::Variable(role_type))?;
+                constraints.add_links(relation, player, role_type)?;
             }
         }
     }

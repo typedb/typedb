@@ -16,11 +16,23 @@ use crate::{
     graph::type_::property::TypeVertexPropertyEncoding, layout::infix::Infix, value::string_bytes::StringBytes, AsBytes,
 };
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct Label<'a> {
     pub name: StringBytes<'a, LABEL_NAME_STRING_INLINE>,
     pub scope: Option<StringBytes<'a, LABEL_SCOPE_STRING_INLINE>>,
     pub scoped_name: StringBytes<'a, LABEL_SCOPED_NAME_STRING_INLINE>,
+}
+
+impl<'a> Ord for Label<'a> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.scoped_name().as_str().cmp(other.scoped_name().as_str())
+    }
+}
+
+impl<'a> PartialOrd for Label<'a> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl<'a> Label<'a> {

@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeSet, HashMap, HashSet},
     error::Error,
     fmt::{Display, Formatter},
 };
@@ -13,7 +13,6 @@ use std::{
 use answer::{variable::Variable, Type};
 use encoding::graph::type_::Kind;
 use ir::pattern::{constraint::Isa, ParameterID};
-use itertools::Itertools;
 
 use crate::VariablePosition;
 
@@ -52,8 +51,8 @@ pub(crate) fn get_thing_source(
     }
 }
 
-pub(crate) fn get_kinds_from_annotations(annotations: &HashSet<Type>) -> Vec<Kind> {
-    annotations.iter().map(Type::kind).unique().collect_vec()
+pub(crate) fn get_kinds_from_annotations(annotations: &BTreeSet<Type>) -> HashSet<Kind> {
+    annotations.iter().map(Type::kind).collect()
 }
 
 #[derive(Debug, Clone)]

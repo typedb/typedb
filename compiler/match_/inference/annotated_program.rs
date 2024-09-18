@@ -134,12 +134,12 @@ pub mod tests {
                 .get_annotations(function_id.as_usize())
                 .unwrap()
                 .block_annotations
-                .variable_annotations_of(var_f_c)
+                .vertex_annotations_of(var_f_c)
                 .unwrap()
         );
         assert_eq!(
             &Arc::new(HashSet::from([type_cat.clone()])),
-            entry_annotations.variable_annotations_of(var_x).unwrap(),
+            entry_annotations.vertex_annotations_of(var_x).unwrap(),
         );
     }
 }

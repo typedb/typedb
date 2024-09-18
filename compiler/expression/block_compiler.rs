@@ -11,12 +11,9 @@ use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::{
         conjunction::Conjunction, expression::ExpressionTree, nested_pattern::NestedPattern,
-        variable_category::VariableCategory,
+        variable_category::VariableCategory, Vertex,
     },
-    program::{
-        block::{FunctionalBlock, VariableRegistry},
-        ParameterRegistry,
-    },
+    program::block::{FunctionalBlock, ParameterRegistry, VariableRegistry},
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
@@ -79,12 +76,11 @@ fn index_expressions<'block>(
 ) -> Result<(), ExpressionCompileError> {
     for constraint in conjunction.constraints() {
         if let Some(expression_binding) = constraint.as_expression_binding() {
-            if index.contains_key(&expression_binding.left()) {
-                Err(ExpressionCompileError::MultipleAssignmentsForSingleVariable {
-                    assign_variable: expression_binding.left(),
-                })?;
+            let &Vertex::Variable(left) = expression_binding.left() else { unreachable!() };
+            if index.contains_key(&left) {
+                Err(ExpressionCompileError::MultipleAssignmentsForSingleVariable { assign_variable: left })?;
             }
-            index.insert(expression_binding.left(), expression_binding.expression());
+            index.insert(left, expression_binding.expression());
         }
     }
     for nested in conjunction.nested_patterns() {
@@ -141,7 +137,7 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
         } else {
             Ok(())
         }
-    } else if let Some(types) = context.type_annotations.variable_annotations_of(variable) {
+    } else if let Some(types) = context.type_annotations.vertex_annotations_of(&Vertex::Variable(variable)) {
         let vec = types
             .iter()
             .map(|type_| match type_ {

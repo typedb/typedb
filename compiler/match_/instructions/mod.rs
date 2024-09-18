@@ -8,7 +8,7 @@ use std::{collections::HashMap, ops::Deref};
 
 use ir::pattern::{
     constraint::{Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding},
-    IrID,
+    IrID, Vertex,
 };
 
 use crate::match_::planner::pattern_plan::InstructionAPI;
@@ -59,10 +59,6 @@ pub enum ConstraintInstruction<ID> {
     // RolePlayerIndex(IR, IterateBounds)
     FunctionCallBinding(FunctionCallBinding<ID>),
 
-    // rhs derived from lhs. We need to decide if rhs will always be sorted
-    ComparisonGenerator(Comparison<ID>),
-    // lhs derived from rhs
-    ComparisonGeneratorReverse(Comparison<ID>),
     // lhs and rhs are known
     ComparisonCheck(Comparison<ID>),
 
@@ -105,17 +101,15 @@ impl<ID: IrID> ConstraintInstruction<ID> {
                 links.ids_foreach(|var, _| apply(var))
             }
             Self::FunctionCallBinding(call) => call.ids_assigned().for_each(apply),
-            Self::ComparisonGenerator(comparison) => apply(comparison.lhs()),
-            Self::ComparisonGeneratorReverse(comparison) => apply(comparison.rhs()),
             Self::ComparisonCheck(comparison) => {
-                apply(comparison.lhs());
-                apply(comparison.rhs())
+                comparison.lhs().as_variable().map(&mut apply);
+                comparison.rhs().as_variable().map(apply);
             }
             Self::ExpressionBinding(binding) => binding.ids_assigned().for_each(apply),
         }
     }
 
-    pub(crate) fn input_variables_foreach(&self, mut apply: impl FnMut(ID)) {
+    pub(crate) fn input_variables_foreach(&self, apply: impl FnMut(ID)) {
         match self {
             Self::TypeList(_) => (),
             | Self::Sub(type_::SubInstruction { inputs, .. })
@@ -136,8 +130,6 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             }
             Self::ComparisonCheck(_) => (),
             Self::FunctionCallBinding(call) => call.function_call().argument_ids().for_each(apply),
-            Self::ComparisonGenerator(comparison) => apply(comparison.rhs()),
-            Self::ComparisonGeneratorReverse(comparison) => apply(comparison.lhs()),
             Self::ExpressionBinding(binding) => binding.expression().variables().for_each(apply),
         }
     }
@@ -194,11 +186,9 @@ impl<ID: IrID> ConstraintInstruction<ID> {
                 })
             }
             Self::FunctionCallBinding(call) => call.ids_assigned().for_each(apply),
-            Self::ComparisonGenerator(comparison) => apply(comparison.lhs()),
-            Self::ComparisonGeneratorReverse(comparison) => apply(comparison.rhs()),
             Self::ComparisonCheck(comparison) => {
-                apply(comparison.lhs());
-                apply(comparison.rhs())
+                comparison.lhs().as_variable().map(&mut apply);
+                comparison.rhs().as_variable().map(apply);
             }
             Self::ExpressionBinding(binding) => binding.ids_assigned().for_each(apply),
         }
@@ -222,8 +212,6 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             Self::Links(inner) => inner.add_check(check),
             Self::LinksReverse(inner) => inner.add_check(check),
             Self::FunctionCallBinding(_) => todo!(),
-            Self::ComparisonGenerator(_) => todo!(),
-            Self::ComparisonGeneratorReverse(_) => todo!(),
             Self::ComparisonCheck(_) => todo!(),
             Self::ExpressionBinding(_) => todo!(),
         }
@@ -247,8 +235,6 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             Self::Links(inner) => ConstraintInstruction::Links(inner.map(mapping)),
             Self::LinksReverse(inner) => ConstraintInstruction::LinksReverse(inner.map(mapping)),
             Self::FunctionCallBinding(_) => todo!(),
-            Self::ComparisonGenerator(_) => todo!(),
-            Self::ComparisonGeneratorReverse(_) => todo!(),
             Self::ComparisonCheck(_) => todo!(),
             Self::ExpressionBinding(_) => todo!(),
         }
@@ -274,9 +260,7 @@ impl<ID: IrID + Copy> InstructionAPI<ID> for ConstraintInstruction<ID> {
             Self::Links(thing::LinksInstruction { links, .. })
             | Self::LinksReverse(thing::LinksReverseInstruction { links, .. }) => links.clone().into(),
             Self::FunctionCallBinding(call) => call.clone().into(),
-            Self::ComparisonGenerator(cmp) | Self::ComparisonGeneratorReverse(cmp) | Self::ComparisonCheck(cmp) => {
-                cmp.clone().into()
-            }
+            Self::ComparisonCheck(cmp) => cmp.clone().into(),
             Self::ExpressionBinding(binding) => binding.clone().into(),
         }
     }
@@ -284,30 +268,32 @@ impl<ID: IrID + Copy> InstructionAPI<ID> for ConstraintInstruction<ID> {
 
 #[derive(Debug, Clone)]
 pub enum CheckInstruction<ID> {
-    Sub { subtype: ID, supertype: ID },
-    Owns { owner: ID, attribute: ID },
-    Relates { relation: ID, role_type: ID },
-    Plays { player: ID, role_type: ID },
+    Sub { subtype: Vertex<ID>, supertype: Vertex<ID> },
+    Owns { owner: Vertex<ID>, attribute: Vertex<ID> },
+    Relates { relation: Vertex<ID>, role_type: Vertex<ID> },
+    Plays { player: Vertex<ID>, role_type: Vertex<ID> },
 
-    Isa { type_: ID, thing: ID },
-    Has { owner: ID, attribute: ID },
-    Links { relation: ID, player: ID, role: ID },
+    Isa { type_: Vertex<ID>, thing: Vertex<ID> },
+    Has { owner: Vertex<ID>, attribute: Vertex<ID> },
+    Links { relation: Vertex<ID>, player: Vertex<ID>, role: Vertex<ID> },
 
-    Comparison { lhs: ID, rhs: ID, comparator: Comparator },
+    Comparison { lhs: Vertex<ID>, rhs: Vertex<ID>, comparator: Comparator },
 }
 
 impl<ID: IrID> CheckInstruction<ID> {
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> CheckInstruction<T> {
         match self {
             Self::Comparison { lhs, rhs, comparator } => {
-                CheckInstruction::Comparison { lhs: mapping[&lhs], rhs: mapping[&rhs], comparator }
+                CheckInstruction::Comparison { lhs: lhs.map(mapping), rhs: rhs.map(mapping), comparator }
             }
             Self::Has { owner, attribute } => {
-                CheckInstruction::Has { owner: mapping[&owner], attribute: mapping[&attribute] }
+                CheckInstruction::Has { owner: owner.map(mapping), attribute: attribute.map(mapping) }
             }
-            Self::Links { relation, player, role } => {
-                CheckInstruction::Links { relation: mapping[&relation], player: mapping[&player], role: mapping[&role] }
-            }
+            Self::Links { relation, player, role } => CheckInstruction::Links {
+                relation: relation.map(mapping),
+                player: player.map(mapping),
+                role: role.map(mapping),
+            },
             _ => todo!(),
         }
     }

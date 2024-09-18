@@ -133,7 +133,7 @@ fn annotate_stage(
                 preamble_function_annotations,
             )
             .map_err(|source| QueryError::QueryTypeInference { typedb_source: source })?;
-            block_annotations.variable_annotations().iter().for_each(|(k, v)| {
+            block_annotations.vertex_annotations().iter().for_each(|(k, v)| {
                 running_variable_annotations.insert(*k, v.clone());
             });
             let (compiled_expressions, variable_value_types) =
@@ -155,12 +155,12 @@ fn annotate_stage(
             block.conjunction().constraints().iter().for_each(|constraint| match constraint {
                 Constraint::Isa(isa) => {
                     running_variable_annotations
-                        .insert(isa.thing(), insert_annotations.variable_annotations_of(isa.thing()).unwrap().clone());
+                        .insert(isa.thing(), insert_annotations.vertex_annotations_of(isa.thing()).unwrap().clone());
                 }
                 Constraint::RoleName(role_name) => {
                     running_variable_annotations.insert(
                         role_name.left(),
-                        insert_annotations.variable_annotations_of(role_name.left()).unwrap().clone(),
+                        insert_annotations.vertex_annotations_of(role_name.left()).unwrap().clone(),
                     );
                 }
                 _ => {}
