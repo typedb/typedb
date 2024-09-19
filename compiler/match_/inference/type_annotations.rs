@@ -124,14 +124,14 @@ pub struct LeftRightFilteredAnnotations {
 impl LeftRightFilteredAnnotations {
     pub(crate) fn build(
         relation_to_role: BTreeMap<Type, BTreeSet<Type>>,
-        mut role_to_relation: BTreeMap<Type, BTreeSet<Type>>,
+        role_to_relation: BTreeMap<Type, BTreeSet<Type>>,
         player_to_role: BTreeMap<Type, BTreeSet<Type>>,
-        mut role_to_player: BTreeMap<Type, BTreeSet<Type>>,
+        role_to_player: BTreeMap<Type, BTreeSet<Type>>,
     ) -> Self {
         let left_to_right = relation_to_role
             .iter()
             .map(|(relation, role_set)| {
-                (relation.clone(), role_set.iter().flat_map(|role| role_to_player.remove(role).unwrap()).collect())
+                (relation.clone(), role_set.iter().flat_map(|role| role_to_player[role].clone()).collect())
             })
             .collect();
         let filters_on_left =
@@ -140,7 +140,7 @@ impl LeftRightFilteredAnnotations {
         let right_to_left = player_to_role
             .iter()
             .map(|(player, role_set)| {
-                (player.clone(), role_set.iter().flat_map(|role| role_to_relation.remove(role).unwrap()).collect())
+                (player.clone(), role_set.iter().flat_map(|role| role_to_relation[role].clone()).collect())
             })
             .collect();
         let filters_on_right =
