@@ -156,8 +156,6 @@ macro_rules! check_boolean {
     };
 }
 pub(crate) use check_boolean;
-use concept::type_::{attribute_type::AttributeTypeAnnotation, constraint::ConstraintDescription};
-use primitive::either::Either;
 
 impl FromStr for Boolean {
     type Err = String;

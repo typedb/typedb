@@ -281,8 +281,7 @@ pub async fn type_constraints_contain(
                 .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
                 .unwrap()
                 .into_iter()
-                .find(|constraint| &constraint.description() == &expected_constraint)
-                .is_some();
+                .any(|constraint| &constraint.description() == &expected_constraint);
             assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
         });
     });
@@ -304,8 +303,7 @@ pub async fn type_constraint_categories_contain(
                 .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
                 .unwrap()
                 .into_iter()
-                .find(|constraint| constraint.category() == expected_constraint_category)
-                .is_some();
+                .any(|constraint| constraint.category() == expected_constraint_category);
             assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
         });
     });

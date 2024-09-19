@@ -7,7 +7,7 @@
 use std::sync::Arc;
 
 use concept::type_::{
-    annotation, annotation::Annotation, constraint::Constraint, owns::OwnsAnnotation, Capability, Ordering, OwnerAPI,
+    annotation, annotation::Annotation, constraint::Constraint, Capability, Ordering, OwnerAPI,
     TypeAPI,
 };
 use cucumber::gherkin::Step;
@@ -16,7 +16,6 @@ use macro_rules_attribute::apply;
 
 use super::thing_type::get_as_object_type;
 use crate::{
-    concept::type_::BehaviourConceptTestExecutionError,
     generic_step, params,
     params::check_boolean,
     transaction_context::{with_read_tx, with_schema_tx},
@@ -178,8 +177,7 @@ pub async fn get_constraints_for_owned_attribute_contains(
             .get_owned_attribute_type_constraints(tx.snapshot.as_ref(), &tx.type_manager, attr_type)
             .unwrap()
             .into_iter()
-            .find(|constraint| &constraint.description() == &expected_constraint)
-            .is_some();
+            .any(|constraint| &constraint.description() == &expected_constraint);
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
@@ -206,8 +204,7 @@ pub async fn get_constraint_categories_for_owned_attribute_contains(
             .get_owned_attribute_type_constraints(tx.snapshot.as_ref(), &tx.type_manager, attr_type)
             .unwrap()
             .into_iter()
-            .find(|constraint| constraint.category() == expected_constraint_category)
-            .is_some();
+            .any(|constraint| constraint.category() == expected_constraint_category);
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
@@ -235,8 +232,7 @@ pub async fn get_owns_constraints_contains(
             .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .into_iter()
-            .find(|constraint| &constraint.description() == &expected_constraint)
-            .is_some();
+            .any(|constraint| &constraint.description() == &expected_constraint);
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
@@ -264,8 +260,7 @@ pub async fn get_owns_constraint_categories_contains(
             .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .into_iter()
-            .find(|constraint| constraint.category() == expected_constraint_category)
-            .is_some();
+            .any(|constraint| constraint.category() == expected_constraint_category);
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }

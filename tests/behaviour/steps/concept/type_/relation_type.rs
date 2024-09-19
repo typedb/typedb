@@ -6,17 +6,12 @@
 
 use std::sync::Arc;
 
-use concept::{
-    error::ConceptWriteError,
-    type_::{
-        annotation::{Annotation, DefaultFrom},
+use concept::type_::{
+        annotation::Annotation,
         constraint::Constraint,
         object_type::ObjectType,
-        relates::{Relates, RelatesAnnotation},
-        role_type::RoleTypeAnnotation,
         Capability, KindAPI, Ordering, TypeAPI,
-    },
-};
+    };
 use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
@@ -676,8 +671,7 @@ pub async fn relation_get_constraints_for_related_role_contain(
             .get_related_role_type_constraints(tx.snapshot.as_ref(), &tx.type_manager, role_type)
             .unwrap()
             .into_iter()
-            .find(|constraint| &constraint.description() == &expected_constraint)
-            .is_some();
+            .any(|constraint| &constraint.description() == &expected_constraint);
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
@@ -705,8 +699,7 @@ pub async fn relation_constraint_categories_for_related_role_contain(
             .get_related_role_type_constraints(tx.snapshot.as_ref(), &tx.type_manager, role_type)
             .unwrap()
             .into_iter()
-            .find(|constraint| constraint.category() == expected_constraint_category)
-            .is_some();
+            .any(|constraint| constraint.category() == expected_constraint_category);
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
@@ -737,8 +730,7 @@ pub async fn relation_role_constraints_contain(
             .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .into_iter()
-            .find(|constraint| &constraint.description() == &expected_constraint)
-            .is_some();
+            .any(|constraint| &constraint.description() == &expected_constraint);
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
@@ -771,8 +763,7 @@ pub async fn relation_role_constraint_categories_contain(
             .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .into_iter()
-            .find(|constraint| constraint.category() == expected_constraint_category)
-            .is_some();
+            .any(|constraint| constraint.category() == expected_constraint_category);
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
@@ -865,7 +856,7 @@ pub async fn relation_role_declared_annotation_categories_contain(
             .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .into_iter()
-            .map(|annotation| Annotation::from(annotation.clone()).category())
+            .map(|annotation| Annotation::from(*annotation).category())
             .contains(&parsed_annotation_category);
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
