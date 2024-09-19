@@ -170,7 +170,7 @@ impl SubExecutor {
                     unreachable!("Subtype must be a type")
                 };
 
-                let type_manager = context.thing_manager().type_manager();
+                let type_manager = context.type_manager();
                 let supertypes = get_supertypes(snapshot, type_manager, &sub, self.sub.sub_kind())?;
                 let sub_with_super = supertypes.into_iter().map(|sup| Ok((sub.clone(), sup))).collect_vec(); // TODO cache this
 

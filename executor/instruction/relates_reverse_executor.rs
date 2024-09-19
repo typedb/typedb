@@ -117,7 +117,7 @@ impl RelatesReverseExecutor {
 
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let type_manager = context.thing_manager().type_manager();
+                let type_manager = context.type_manager();
                 let relates: Vec<_> = self
                     .role_relation_types
                     .keys()

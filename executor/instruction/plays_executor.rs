@@ -140,7 +140,7 @@ impl PlaysExecutor {
 
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let type_manager = context.thing_manager().type_manager();
+                let type_manager = context.type_manager();
                 let plays: Vec<_> = self
                     .player_role_types
                     .keys()
@@ -174,7 +174,7 @@ impl PlaysExecutor {
                     unreachable!("Player in `plays` must be a type")
                 };
 
-                let type_manager = context.thing_manager().type_manager();
+                let type_manager = context.type_manager();
                 let plays = match player {
                     Type::Entity(player) => player.get_plays(snapshot, type_manager)?,
                     Type::Relation(player) => player.get_plays(snapshot, type_manager)?,

@@ -129,7 +129,7 @@ impl PlaysReverseExecutor {
 
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let type_manager = context.thing_manager().type_manager();
+                let type_manager = context.type_manager();
                 let plays: Vec<_> = self
                     .role_player_types
                     .keys()
@@ -159,7 +159,7 @@ impl PlaysReverseExecutor {
                     unreachable!("Role in `plays` must be an role type")
                 };
 
-                let type_manager = context.thing_manager().type_manager();
+                let type_manager = context.type_manager();
                 let plays = role.get_plays(snapshot, type_manager)?.to_owned();
 
                 let iterator = plays.into_iter().sorted_by_key(|plays| plays.player()).map(Ok as _);

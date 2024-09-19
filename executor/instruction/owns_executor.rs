@@ -142,7 +142,7 @@ impl OwnsExecutor {
 
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let type_manager = context.thing_manager().type_manager();
+                let type_manager = context.type_manager();
                 let owns: Vec<_> = self
                     .owner_attribute_types
                     .keys()
@@ -175,7 +175,7 @@ impl OwnsExecutor {
                     unreachable!("Owner in `owns` must be a type")
                 };
 
-                let type_manager = context.thing_manager().type_manager();
+                let type_manager = context.type_manager();
                 let owns = match owner {
                     Type::Entity(entity) => entity.get_owns(snapshot, type_manager)?,
                     Type::Relation(relation) => relation.get_owns(snapshot, type_manager)?,

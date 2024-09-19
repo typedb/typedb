@@ -141,7 +141,7 @@ impl RelatesExecutor {
 
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let type_manager = context.thing_manager().type_manager();
+                let type_manager = context.type_manager();
                 let relates: Vec<_> = self
                     .relation_role_types
                     .keys()
@@ -174,7 +174,7 @@ impl RelatesExecutor {
                     unreachable!("Relation in `relates` must be a relation type")
                 };
 
-                let type_manager = context.thing_manager().type_manager();
+                let type_manager = context.type_manager();
                 let relates = relation.get_relates(snapshot, type_manager)?;
 
                 let iterator =

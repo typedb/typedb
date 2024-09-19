@@ -127,7 +127,7 @@ impl OwnsReverseExecutor {
 
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let type_manager = context.thing_manager().type_manager();
+                let type_manager = context.type_manager();
                 let owns: Vec<_> = self
                     .attribute_owner_types
                     .keys()
@@ -157,7 +157,7 @@ impl OwnsReverseExecutor {
                     unreachable!("Attribute in `owns` must be an attribute type")
                 };
 
-                let type_manager = context.thing_manager().type_manager();
+                let type_manager = context.type_manager();
                 let owns = attribute.get_owns(snapshot, type_manager)?.values().cloned().collect_vec();
 
                 let iterator = owns.into_iter().sorted_by_key(|owns| owns.owner()).map(Ok as _);

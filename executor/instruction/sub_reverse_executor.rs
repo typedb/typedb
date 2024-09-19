@@ -144,7 +144,7 @@ impl SubReverseExecutor {
                     unreachable!("Subtype must be a type")
                 };
 
-                let type_manager = context.thing_manager().type_manager();
+                let type_manager = context.type_manager();
                 let subtypes = get_subtypes(&**context.snapshot(), type_manager, &sup, self.sub.sub_kind())?;
                 let sub_with_super = subtypes.into_iter().map(|sub| Ok((sub, sup.clone()))).collect_vec(); // TODO cache this
                 let as_tuples: SubReverseBoundedSortedSuper = NarrowingTupleIterator(
