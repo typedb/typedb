@@ -2,6 +2,7 @@
 
 <!-- TODO
 * Add function calls to expressions
+* Add vector search and embedding models
 [DONE] * Ensure role player set semantics
 [DONE]  * idempotency non-list inserts
 * Improve explanation of dependent list types
@@ -694,8 +695,12 @@ _Remark 2: For cardinality, and for most other constraints, we should reject red
 ##### **Case UNIQUE_DEF**
 * `A owns B @unique` postulates that if $`b : B(a:O_B)`$ for some $`a : A`$ then this $`a`$ is unique (for fixed $`b`$).
 
+_Note_. This is "uniqueness by value" (not uniqueness by direct-typed attributed).
+
 ##### **Case KEY_DEF**
 * `A owns B @key` postulates that if $`b : B(a:O_B)`$ for some $`a : A`$ then this $`a`$ is unique, and also $`|B(a:O_B) = 1`$.
+
+_Note_. This is "keyness by value" (not keyqueness by direct-typed attributed).
 
 ##### **Case SUBKEY_DEF**
 * `A owns B1 @subkey(<LABEL>); A owns B2 @subkey(<LABEL>)` postulates that if $`b : B_1(a:O_{B_1}) \times B_2(a:O_{B_2})`$ for some $`a : A`$ then this $`a`$ is unique, and also $`|B_1(a:O_{B_1}) \times B_2(a:O_{B_2})| = 1`$. **Generalizes** to $`n`$ subkeys.
