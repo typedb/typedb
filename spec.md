@@ -6,7 +6,7 @@
 [DONE]  * idempotency non-list inserts
 * Improve explanation of dependent list types
 [DONE] * distinct, select distinct
-[DONE] * simplify match semantics. in cmaps have
+[DONE] * simplify match semantics. in crows have
   * type vars (typed by type kinds)
   * instance vars (always have direct type)
   * value vars (always have value type)
@@ -39,7 +39,7 @@
     * [Redefine semantics](#redefine-semantics)
     * [Labels and aliases](#labels-and-aliases)
 * [Pattern matching language](#pattern-matching-language)
-    * [Basics: Patterns, variables, concept maps, satisfaction](#basics-patterns-variables-concept-maps-satisfaction)
+    * [Basics: Patterns, variables, concept rows, satisfaction](#basics-patterns-variables-concept-rows-satisfaction)
     * [Pattern semantics](#pattern-semantics)
     * [Match semantics](#match-semantics)
     * [Functions semantics](#functions-semantics)
@@ -100,7 +100,7 @@
                 * [**Case SUBKEY_DEF**](#case-subkey_def)
                 * [**Case TYP_ABSTRACT_DEF**](#case-typ_abstract_def)
                 * [**Case GEN_ABSTRACT_DEF** (General abstractness)](#case-gen_abstract_def-general-abstractness)
-                * [**Case REL_ABSTRACT_DEF** (--UNEXPOSED)](#case-rel_abstract_def---unexposed)
+                * [**Case REL_ABSTRACT_DEF**](#case-rel_abstract_def)
                 * [**Case PLAYS_ABSTRACT_DEF**](#case-plays_abstract_def)
                 * [**Case OWNS_ABSTRACT_DEF**](#case-owns_abstract_def)
                 * [**Case DISTINCT_DEF**](#case-distinct_def)
@@ -174,10 +174,10 @@
         * [Undefine](#undefine)
         * [Redefine](#redefine)
 * [Pattern matching language](#pattern-matching-language)
-    * [Basics: Patterns, variables, concept maps, satisfaction](#basics-patterns-variables-concept-maps-satisfaction)
+    * [Basics: Patterns, variables, concept rows, satisfaction](#basics-patterns-variables-concept-rows-satisfaction)
         * [Statements, patterns](#statements-patterns)
         * [Variables](#variables)
-        * [Typed concept maps](#typed-concept-maps)
+        * [Typed concept rows](#typed-concept-rows)
         * [Pattern satisfication, typing conditions, answer](#pattern-satisfication-typing-conditions-answer)
         * [Optionality and boundedness](#optionality-and-boundedness)
     * [Pattern semantics](#pattern-semantics)
@@ -306,7 +306,7 @@
         * [Attribute instance value / attribute value](#attribute-instance-value--attribute-value)
         * [Data element / element](#data-element--element)
         * [Concept](#concept)
-        * [Concept map](#concept-map)
+        * [Concept row](#concept-row)
         * [Stream](#stream)
         * [Answer set](#answer-set)
         * [Answer](#answer)
@@ -713,7 +713,7 @@ _System property_
 * _Schema constraint_: 
   * If a schema declaration violates the above (making something both abstract and non-abstract) then we reject that declaration.
 
-##### **Case REL_ABSTRACT_DEF** (--UNEXPOSED)
+##### **Case REL_ABSTRACT_DEF**
 * `B relates I @abstract` is equivalent to $`\diamond(B : \mathbf{Rel}(I))`$. It is an inferred statements (i.e. cannot be declared). It entails no constraints beyond the general case.
 * `B relates I[] @abstract` is equivalent to $`\diamond(B : \mathbf{Rel}([I]))`$. It is an inferred statements (i.e. cannot be declared). It entails no constraints beyond the general case.
 
@@ -1112,7 +1112,7 @@ redefine marriage:spouse label marriage:super_spouse;
 
 This section first describes the pattern matching language of TypeDB, which relies on _variables_.
 
-## Basics: Patterns, variables, concept maps, satisfaction
+## Basics: Patterns, variables, concept rows, satisfaction
 
 ### Statements, patterns
 
@@ -1155,10 +1155,10 @@ _Remark 1_. The code variable `$x` will be written as $`x`$ in math notation (wi
 
 _Remark 2_. Currently, only implicit named anon vars (`$_`) can be used by the user (under the hood, general anon vars do exist though!). (STICKY: discuss!)
 
-### Typed concept maps
+### Typed concept rows
 
 * _Concepts_. A **concept** is a type or an element in a type.
-* _Typed concept maps_. An **typed concept map** (cmap) $`m`$ is a mapping variables to non-dependently typed concepts
+* _Typed concept rows_. An **typed concept row** (abbreviated 'crow') $`m`$ is a mapping variables to non-dependently typed concepts ('row entries')
   ```
   m = ($x->a:T, $y->b:S, ...)
   ```
@@ -1171,7 +1171,7 @@ _Remark 2_. Currently, only implicit named anon vars (`$_`) can be used by the u
 
 ### Pattern satisfication, typing conditions, answer
 
-* _Satisfaction_. A cmap `m` may **satisfy** a pattern `P` if
+* _Satisfaction_. A crow `m` may **satisfy** a pattern `P` if
   1. Its typing assignemt satisfies the typing condition below
   1. Its concept assignment satisfis the "pattern semantics" described in the next section.
  
@@ -1237,8 +1237,8 @@ $x has color $y;
 // STICKY: are we happy with this?
 -->
 
-* _Answers_. A cmap `m` that satisfies a pattern `P` is an **answer** to the pattern if:
-  * **The map is minimal** in that no concept map with less variables satisfies `P`
+* _Answers_. A crow `m` that satisfies a pattern `P` is an **answer** to the pattern if:
+  * **The row is minimal** in that no concept row with less variables satisfies `P`
   * All variables in `m` are **bound outside a negation** in `P`
 
 _Example_: Consider the pattern `$x isa Person;` (this pattern comprises a single statement). Than `($x -> p)` satisfies the pattern if `p` is an element of the type `Person` (i.e. $p : \mathsf{Person}$). The answer `($x -> p, $y -> p)` also satisfies the pattern, but it is not proper minimal.
@@ -1264,7 +1264,7 @@ _Key principle_:
 
 ## Pattern semantics
 
-Given a cmap `m` and pattern `P` we say `m` ***satisfies*** `P` if (in addition to the typing conditions in outlined in "Pattern satisfication" above) the following conditions are met.
+Given a crow `m` and pattern `P` we say `m` ***satisfies*** `P` if (in addition to the typing conditions in outlined in "Pattern satisfication" above) the following conditions are met.
 
 _Remark (Replacing **var**s with concepts)_. When discussing pattern semantics, we always consider **fully variablized** statements (e.g. `$x isa $X`, `$X sub $Y`). This also determines satisfaction of **partially assigned** versions of these statements (e.g. `$x isa A`, `$X sub A`, `A sub $Y`, or `x isa $A`).
 
@@ -1553,9 +1553,9 @@ _Remark_: this generalize to a chain of $`k`$ `or` clauses.
 
 A `match` clause comprises a pattern `P`.
 
-* _Input cmaps_: The clause can take as input a stream `{ m }` of concept maps `m`.
+* _Input crows_: The clause can take as input a stream `{ m }` of concept rows `m`.
 
-* _Output cmaps_: For each `m`: 
+* _Output crows_: For each `m`: 
   * replace all patterns in `P` with concepts from `m`. 
   * Compute the stream of answer `{ m' }`. 
   * The final output stream will be `{ (m,m') }`.
@@ -1609,40 +1609,40 @@ _Syntax_:
   * `offset <int>`
   * `sort $x, $y` (sorts first in `$x`, then in `$y`)
   * `select $x, $y`
-* Each `<OP>` stage takes the concept map set from the previous stage and return a concept map set for the 
-  * These concept map set operatioins are described in "Operators"
-* The final output concept map set of the last operator is called the **body concept map set**
+* Each `<OP>` stage takes the concept row set from the previous stage and return a concept row set for the 
+  * These concept row set operatioins are described in "Operators"
+* The final output concept row set of the last operator is called the **body concept row set**
 
 ### Stream-return
 
 * `return { $x, $y, ... }`
   * performs a `select` of the listed variables (See "Select")
-  * return resulting concept map set
+  * return resulting concept row set
 
 ### Single-return
 
 * `return <AGG> , ... , <AGG>;` where `<AGG>` is one of the following **aggregate functions**:
   * `check`:
     * output type `bool`
-    * returns `true` if concept map set non-empty
+    * returns `true` if concept row set non-empty
   * `sum($x)`:
     * output type `double` or `int`
-    * returns sum of all non-empty `m($x)` in concept map `m`
+    * returns sum of all non-empty `m($x)` in concept row `m`
     * `$x` can be optional
     * empty sums yield `0.0` or `0`
   * `mean($x)`:
     * output type `double?`
-    * returns mean of all non-empty `m($x)` in concept map `m`
+    * returns mean of all non-empty `m($x)` in concept row `m`
     * `$x` can be optional
     * empty mean return $\emptyset$
   * `median($x)`, 
     * output type `double?` or `int?` (depending on type of `$x`)
-    * returns median of all non-empty `m($x)` in concept map `m`
+    * returns median of all non-empty `m($x)` in concept row `m`
     * `$x` can be optional
     * empty medians return $\emptyset$
   * `first($x)`
     * `A?` for any `A`
-    * returns sum of all non-empty `m($x)` in concept map `m`
+    * returns sum of all non-empty `m($x)` in concept row `m`
     * `$x` can be optional
     * if no `m($x)`is set, return $\emptyset$
   * `count`
@@ -1650,13 +1650,13 @@ _Syntax_:
     * returns count of all answers
   * `count($x)`
     * output type `long`
-    * returns count of all non-empty `m($x)` in concept map `m`
+    * returns count of all non-empty `m($x)` in concept row `m`
     * `$x` can be optional
   * `list($x)`
     * output type `[A]`
-    * returns list of all non-empty `m($x)` in concept map `m`
+    * returns list of all non-empty `m($x)` in concept row `m`
     * `$x` can be optional
-* Each `<AGG>` reduces the concept map `{ m }` passed to it from the function's body to a single concept in the specified way.
+* Each `<AGG>` reduces the concept row `{ m }` passed to it from the function's body to a single concept in the specified way.
 
 ### Recursion and recursive semantics
 
@@ -1673,10 +1673,10 @@ The semantics in this case is computed "stratum by stratum" from lower strata to
 
 An `insert` clause comprises collection of _insert statements_
 
-* _Input cmap_: The clause can take as input a stream `{ m }` of concept maps `m`, in which case 
-  * the clause is **executed** for each map `m` in the stream individually
+* _Input crow_: The clause can take as input a stream `{ m }` of concept rows `m`, in which case 
+  * the clause is **executed** for each row `m` in the stream individually
 
-* _Extending input map_: Insert clauses can extend bindings of the input concept map `m` in two ways
+* _Extending input row_: Insert clauses can extend bindings of the input concept row `m` in two ways
   * `$x` is the subject of an `isa` statement in the `insert` clause, in which case $`m(x) =`$ _newly-inserted-concept_ (see "Case **ISA_INS**")
   * `$x` is the subject of an `=` assignment statement in the `insert` clause, in which case $`m(x) =`$ _assigned-value_ (see "Case **ASSIGN_INS**")
 
@@ -1691,7 +1691,7 @@ An `insert` clause comprises collection of _insert statements_
   * Executions of statements will modify the database state by 
     * adding elements
     * refining dependencies
-  * (Execution can also affect the state of concept map `m` as mentioned above)
+  * (Execution can also affect the state of concept row `m` as mentioned above)
   * Modification are buffered in transaction (see "Transactions")
   * Violation of system properties or schema constraints will lead to failing transactions (see "Transactions")
 
@@ -1722,7 +1722,7 @@ _System property_:
 
 _System property_:
 
-1. `$x` cannot be bound elsewhere (i.e. `$x` cannot be bound in the input map `m` nor in other `isa` or `=` statements).
+1. `$x` cannot be bound elsewhere (i.e. `$x` cannot be bound in the input row `m` nor in other `isa` or `=` statements).
 
 #### **Case ATT_ISA_INS**
 * `<EXPR> isa $T` adds new $`v :_! m(T)`$, $`m(T) : \mathbf{Att}`$, where `v` is the result of evaluating
@@ -1799,13 +1799,13 @@ _Remark_. We want to get rid of this constraint (STICKY).
 
 A `delete` clause comprises collection of _delete statements_.
 
-* _Input cmaps_: The clause can take as input a stream `{ m }` of concept maps `m`: 
-  * the clause is **executed** for each map `m` in the stream individually
+* _Input crows_: The clause can take as input a stream `{ m }` of concept rows `m`: 
+  * the clause is **executed** for each row `m` in the stream individually
 
-* _Updating input maps_: Delete clauses can update bindings of their input concept map `m`
-  * Executing `delete $x;` will remove `$x` from `m` (but `$x` may still appear in other cmaps `m'` of the input stream)
+* _Updating input rows_: Delete clauses can update bindings of their input concept row `m`
+  * Executing `delete $x;` will remove `$x` from `m` (but `$x` may still appear in other crows `m'` of the input stream)
 
-_Remark_: Previously, it was suggested: if `$x` is in `m` and $`m(x)`$ is deleted from $`T_m(x)`$ by the end of the execution of the clause (for _all_ input maps of the input stream) then we set $`m(x) = \emptyset`$ and $`T_m(x) = \emptyset`$.
+_Remark_: Previously, it was suggested: if `$x` is in `m` and $`m(x)`$ is deleted from $`T_m(x)`$ by the end of the execution of the clause (for _all_ input rows of the input stream) then we set $`m(x) = \emptyset`$ and $`T_m(x) = \emptyset`$.
 Fundamental question: **is it better to silently remove vars? Or throw an error if vars pointing to deleted concepts are used?** (STICKY)
 * Only for `delete $x;` can we statically say that `$x` must not be re-used
 * Other question: would this interact with try? idea: take $`m(x) = \emptyset`$ if it points to a previously deleted concept
@@ -1904,10 +1904,10 @@ Orphaned relation and attribute instance (i.e. those with insufficient dependenc
 
 A `update` clause comprises collection of _update statements_.
 
-* _Input cmap_: The clause can take as input a stream `{ m }` of concept maps `m`, in which case 
-  * the clause is **executed** for each map `m` in the stream individually
+* _Input crow_: The clause can take as input a stream `{ m }` of concept rows `m`, in which case 
+  * the clause is **executed** for each row `m` in the stream individually
 
-* _Updating input maps_: Update clauses do not update bindings of their input cmap `m`
+* _Updating input rows_: Update clauses do not update bindings of their input crow `m`
 
 * _Execution_: An `update` clause is executed by executing its statements individually in any order.
   * STICKY: this might be non-deterministic if the same thing is updated multiple times, solution outlined here: throw error if that's the case!
@@ -2012,7 +2012,7 @@ fetch {
 }
 ```
 
-* The `fetch` clause takes as input a cmap stream `{ m }`
+* The `fetch` clause takes as input a crow stream `{ m }`
 * It output a stream `{ doc<m> }` of JSON documents (one for each `m` in the input stream)
 * The `fetch` clause is **terminal**
 
@@ -2097,29 +2097,29 @@ Operators (unlike clauses) are **pure**: they do not depend on the DB (i.e. they
 
 `select $x1, $x2, ...`
  
-* input stream of maps `{ m }`
-* output stream of maps `{ p(m) }` for each `m` in the input, where `p(m)` only keeps the given variables that are among `$x1, $x2, ...`
+* input stream of rows `{ m }`
+* output stream of rows `{ p(m) }` for each `m` in the input, where `p(m)` only keeps the given variables that are among `$x1, $x2, ...`
 
 #### Deselect 
 
 `deselect $x1, $x2, ...`
  
-* input stream of maps `{ m }`
-* output stream of maps `{ p(m) }` for each `m` in the input, where `p(m)` only keeps the given variables that are **not** among `$x1, $x2, ...`
+* input stream of rows `{ m }`
+* output stream of rows `{ p(m) }` for each `m` in the input, where `p(m)` only keeps the given variables that are **not** among `$x1, $x2, ...`
 
 #### Distinct
 
 `deselect $x1, $x2, ...`
  
-* input stream of maps `{ m }`
-* output stream of maps `{ n }` for each distinct map in the input (in other words: duplicates are removed)
+* input stream of rows `{ m }`
+* output stream of rows `{ n }` for each distinct row in the input (in other words: duplicates are removed)
 
 #### Sort
 
 `sort $x1, $x2, ...`
  
-* input stream of maps `{ m }`
-* output stream of maps `{ n }` obtained by ordering the input stream:
+* input stream of rows `{ m }`
+* output stream of rows `{ n }` obtained by ordering the input stream:
   * first on values `m($x1)`
   * then on values `m($x2)`,
   * ...
@@ -2130,54 +2130,54 @@ Operators (unlike clauses) are **pure**: they do not depend on the DB (i.e. they
 
 `limit <NUM>`
 
-* outputs input stream, truncates after `<NUM>` concept maps
+* outputs input stream, truncates after `<NUM>` concept rows
 
 #### Offset
 
 `limit <NUM>`
 
-* outputs input stream, offset by `<NUM>` concept maps
+* outputs input stream, offset by `<NUM>` concept rows
 
 _Remark_: Offset is only useful when streams (and the order of answers) are fully deterministic.
 
 #### Reduce
 
-* The `reduce` operator takes as input a stream of maps `{ m }`
-* It outputs a stream of new concepts maps
+* The `reduce` operator takes as input a stream of rows `{ m }`
+* It outputs a stream of new concept rows
 
 ##### **Case RED_DEFAULT**
 ```
 reduce $x_1=<AGG>, ... , $x_k=<AGG>;
 ``` 
 
-In this case, we output a ***single concept*** map `($x_1 -> <EL>, $x_2 -> <EL>, ...)`, where `<EL>` is a output element (i.e. instance, value, or list, but _never_ type) constructed as follows:
+In this case, we output a ***single concept*** row `($x_1 -> <EL>, $x_2 -> <EL>, ...)`, where `<EL>` is a output element (i.e. instance, value, or list, but _never_ type) constructed as follows:
 
 
 * `<AGG>` is one of the following **aggregate functions**:
   * `check`:
     * output type `bool`
-    * outputs `true` if concept map stream is non-empty
+    * outputs `true` if concept row stream is non-empty
   * `check($x)`:
     * output type `bool`
-    * outputs `true` if concept map stream contains a map `m` with non-empty `m($x)`
+    * outputs `true` if concept row stream contains a row `m` with non-empty entry `m($x)` for `$x`
   * `sum($x)`:
     * output type `double` or `int`
-    * outputs sum of all non-empty `m($x)` in concept map `m`
+    * outputs sum of all non-empty `m($x)` in concept row `m`
     * `$x` can be optional
     * empty sums yield `0.0` or `0`
   * `mean($x)`:
     * output type `double?`
-    * outputs mean of all non-empty `m($x)` in concept map `m`
+    * outputs mean of all non-empty `m($x)` in concept row `m`
     * `$x` can be optional
     * empty mean yield empty output ($\emptyset$)
   * `median($x)`, 
     * output type `double?` or `int?` (depending on type of `$x`)
-    * outputs median of all non-empty `m($x)` in concept map `m`
+    * outputs median of all non-empty `m($x)` in concept row `m`
     * `$x` can be optional
     * empty medians output $\emptyset$
   * `first($x)`
     * output type `A?` or `A[]?` for any (simple) type `A : Type`
-    * outputs first concept of all non-empty `m($x)` in concept map `m`
+    * outputs first concept of all non-empty `m($x)` in concept row `m`
     * `$x` can be optional
     * if no `m($x)`is set this outputs empty result ($`\emptyset`$)
   * `count`
@@ -2185,13 +2185,13 @@ In this case, we output a ***single concept*** map `($x_1 -> <EL>, $x_2 -> <EL>,
     * outputs count of all answers
   * `count($x)`
     * output type `long`
-    * outputs count of all non-empty `m($x)` in concept map `m`
+    * outputs count of all non-empty `m($x)` in concept row `m`
     * `$x` can be optional
   * `list($x)`
     * output type `[A]`
-    * returns list of all non-empty `m($x)` in concept map `m`
+    * returns list of all non-empty `m($x)` in concept row `m`
     * `$x` can be optional
-* Each `<AGG>` reduces the concept map `{ m }` passsed to it from the function's body to a single value in the specified way.
+* Each `<AGG>` reduces the concept row `{ m }` passsed to it from the function's body to a single value in the specified way.
 
 ##### **Case RED_GROUP**
 ```
@@ -2199,7 +2199,7 @@ reduce $x_1=<AGG>, ... , $x_k=<AGG> within $y_1, $y_2, ...;
 ``` 
 
 In this case, we output the following:
-* for each distinct tuple of elements `el_1, el_2, ...` assigned to `$y_1, $y_2, ...` by maps in the stream, we perform the aggregates as described above over _all maps `m`_ for which `m($y_1) = el_1, m($y__2) = el_2, ...` and then output the resulting concept map `($y_1 -> el_1, $y_2 = el_2, ..., $x_1 -> <CPT>, $x_2 -> <CPT>, ...)`
+* for each distinct tuple of elements `el_1, el_2, ...` assigned to `$y_1, $y_2, ...` by rows in the stream, we perform the aggregates as described above over _all rows `m`_ for which `m($y_1) = el_1, m($y__2) = el_2, ...` and then output the resulting concept row `($y_1 -> el_1, $y_2 = el_2, ..., $x_1 -> <CPT>, $x_2 -> <CPT>, ...)`
 
 ## Transactions
 
@@ -2268,17 +2268,17 @@ Any element in any type (i.e. value or instance).
 
 A element or a type.
 
-### Concept map
+### Concept row
 
 Mapping of variables to concepts
 
 ### Stream
 
-An ordered concept map.
+An ordered concept row.
 
 ### Answer set
 
-The set of concept maps that satisfy a pattern in the minimal way.
+The set of concept rows that satisfy a pattern in the minimal way.
 
 ### Answer 
 
