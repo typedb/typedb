@@ -508,7 +508,13 @@ pub(crate) fn type_get_constraints_closest_source<'a, T: KindAPI<'static>>(
         .into_iter()
         .map(|constraint| constraint.source())
         .sorted_by(|lhs, rhs| {
-            lhs.inheritance_cmp(snapshot, type_manager, rhs.clone()).unwrap_or(std::cmp::Ordering::Equal)
+            if lhs.is_subtype_transitive_of(snapshot, type_manager, rhs.clone()).unwrap_or(false) {
+                std::cmp::Ordering::Less
+            } else if lhs.is_supertype_transitive_of(snapshot, type_manager, rhs.clone()).unwrap_or(false) {
+                std::cmp::Ordering::Greater
+            } else {
+                std::cmp::Ordering::Equal
+            }
         })
         .next()
 }

@@ -203,21 +203,6 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         Ok(self == &other || self.is_subtype_transitive_of(snapshot, type_manager, other)?)
     }
 
-    fn inheritance_cmp<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-        other: Self,
-    ) -> Result<std::cmp::Ordering, ConceptReadError> {
-        Ok(if self.is_subtype_transitive_of(snapshot, type_manager, other.clone())? {
-            std::cmp::Ordering::Less
-        } else if self.is_supertype_transitive_of(snapshot, type_manager, other.clone())? {
-            std::cmp::Ordering::Greater
-        } else {
-            std::cmp::Ordering::Equal
-        })
-    }
-
     fn chain_types<C: IntoIterator<Item = Self>>(first: Self, others: C) -> impl Iterator<Item = Self> {
         iter::once(first).chain(others.into_iter())
     }

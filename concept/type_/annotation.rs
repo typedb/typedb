@@ -252,7 +252,7 @@ impl AnnotationRegex {
         matches!(value_type, Some(ValueType::String))
     }
 
-    // Can try to implement the check, but allow everything now!
+    // TODO: Can try to implement the check, but allow everything now!
     pub fn narrowed_correctly_by(&self, _other: &Self) -> bool {
         true
     }

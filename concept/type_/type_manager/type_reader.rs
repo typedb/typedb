@@ -536,7 +536,6 @@ impl TypeReader {
                     | Infix::PropertyLabel
                     | Infix::PropertyValueType
                     | Infix::PropertyOrdering
-                    | Infix::PropertyIsAbstract
                     | Infix::PropertyHasOrder
                     | Infix::PropertyLinksOrder => {
                         unreachable!("Retrieved unexpected infixes while reading annotations.")
@@ -623,7 +622,6 @@ impl TypeReader {
                     | Infix::PropertyLabel
                     | Infix::PropertyValueType
                     | Infix::PropertyOrdering
-                    | Infix::PropertyIsAbstract
                     | Infix::PropertyHasOrder
                     | Infix::PropertyLinksOrder => {
                         unreachable!("Retrieved unexpected infixes while reading annotations.")
