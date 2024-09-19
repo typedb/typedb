@@ -83,15 +83,15 @@ pub fn execute_delete(
     // Row multiplicity doesn't matter. You can't delete the same thing twice
     for instruction in &program.connection_instructions {
         match instruction {
-            ConnectionInstruction::Has(has) => has.execute(snapshot, thing_manager, input_output_row, parameters)?,
+            ConnectionInstruction::Has(has) => has.execute(snapshot, thing_manager, parameters, input_output_row)?,
             ConnectionInstruction::RolePlayer(role_player) => {
-                role_player.execute(snapshot, thing_manager, input_output_row, parameters)?
+                role_player.execute(snapshot, thing_manager, parameters, input_output_row)?
             }
         }
     }
 
     for instruction in &program.concept_instructions {
-        instruction.execute(snapshot, thing_manager, input_output_row, parameters)?;
+        instruction.execute(snapshot, thing_manager, parameters, input_output_row)?;
     }
 
     Ok(())

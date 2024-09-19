@@ -54,8 +54,8 @@ pub trait AsWriteInstruction {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        row: &mut Row<'_>,
         parameters: &ParameterRegistry,
+        row: &mut Row<'_>,
     ) -> Result<(), WriteError>;
 }
 
@@ -65,8 +65,8 @@ impl AsWriteInstruction for PutAttribute {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        row: &mut Row<'_>,
         parameters: &ParameterRegistry,
+        row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
         let attribute_type = try_unwrap_as!(answer::Type::Attribute: get_type(row, &self.type_)).unwrap();
         let inserted = thing_manager
@@ -83,8 +83,8 @@ impl AsWriteInstruction for PutObject {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        row: &mut Row<'_>,
         parameters: &ParameterRegistry,
+        row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
         let inserted = match get_type(row, &self.type_) {
             Type::Entity(entity_type) => {
@@ -112,8 +112,8 @@ impl AsWriteInstruction for compiler::insert::instructions::Has {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        row: &mut Row<'_>,
         parameters: &ParameterRegistry,
+        row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
         let owner_thing = get_thing(row, &self.owner);
         let attribute = get_thing(row, &self.attribute);
@@ -130,8 +130,8 @@ impl AsWriteInstruction for compiler::insert::instructions::RolePlayer {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        row: &mut Row<'_>,
         parameters: &ParameterRegistry,
+        row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
         let relation_thing = try_unwrap_as!(answer::Thing::Relation : get_thing(row, &self.relation)).unwrap();
         let player_thing = get_thing(row, &self.player).as_object();
@@ -148,8 +148,8 @@ impl AsWriteInstruction for compiler::delete::instructions::ThingInstruction {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        row: &mut Row<'_>,
         parameters: &ParameterRegistry,
+        row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
         let thing = get_thing(row, &self.thing).clone();
         match thing {
@@ -180,8 +180,8 @@ impl AsWriteInstruction for compiler::delete::instructions::Has {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        row: &mut Row<'_>,
         parameters: &ParameterRegistry,
+        row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
         // TODO: Lists
         let attribute = get_thing(row, &self.attribute).as_attribute();
@@ -197,8 +197,8 @@ impl AsWriteInstruction for compiler::delete::instructions::RolePlayer {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        row: &mut Row<'_>,
         parameters: &ParameterRegistry,
+        row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
         // TODO: Lists
         let Object::Relation(relation) = get_thing(row, &self.relation).as_object() else { unreachable!() };

@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::{BTreeMap, BTreeSet, HashSet},
     iter,
     marker::PhantomData,
     sync::Arc,
@@ -14,10 +14,7 @@ use std::{
 
 use answer::{variable_value::VariableValue, Type};
 use compiler::match_::instructions::type_::OwnsReverseInstruction;
-use concept::{
-    error::ConceptReadError,
-    type_::{object_type::ObjectType, owns::Owns},
-};
+use concept::{error::ConceptReadError, type_::owns::Owns};
 use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
@@ -48,8 +45,8 @@ pub(crate) struct OwnsReverseExecutor {
 pub(super) type OwnsReverseUnboundedSortedAttribute = OwnsTupleIterator<
     AsNarrowingIterator<
         iter::Map<
-            iter::Flatten<vec::IntoIter<HashMap<ObjectType<'static>, Owns<'static>>>>,
-            fn((ObjectType<'static>, Owns<'static>)) -> Result<Owns<'static>, ConceptReadError>,
+            iter::Flatten<vec::IntoIter<HashSet<Owns<'static>>>>,
+            fn(Owns<'static>) -> Result<Owns<'static>, ConceptReadError>,
         >,
         Result<AsHkt![Owns<'_>], ConceptReadError>,
     >,
@@ -137,7 +134,7 @@ impl OwnsReverseExecutor {
                 let iterator = owns.into_iter().flatten().map(Ok as _);
                 let as_tuples: OwnsReverseUnboundedSortedAttribute =
                     AsNarrowingIterator::<_, Result<Owns<'_>, _>>::new(iterator)
-                        .try_filter::<_, OwnsFilterFn, AsHkt![Owns<'_>], _>(filter_for_row)
+                        .try_filter::<_, OwnsFilterFn, Owns<'_>, _>(filter_for_row)
                         .map(owns_to_tuple_attribute_owner);
                 Ok(TupleIterator::OwnsReverseUnbounded(SortedTupleIterator::new(
                     as_tuples,
@@ -158,7 +155,7 @@ impl OwnsReverseExecutor {
                 };
 
                 let type_manager = context.type_manager();
-                let owns = attribute.get_owns(snapshot, type_manager)?.values().cloned().collect_vec();
+                let owns = attribute.get_owns(snapshot, type_manager)?.to_owned();
 
                 let iterator = owns.into_iter().sorted_by_key(|owns| owns.owner()).map(Ok as _);
                 let as_tuples: OwnsReverseBoundedSortedOwner =

@@ -110,20 +110,20 @@ fn execute_insert(
     for instruction in &program.concept_instructions {
         match instruction {
             ConceptInstruction::PutAttribute(isa_attr) => {
-                isa_attr.execute(snapshot, thing_manager, row, parameters)?;
+                isa_attr.execute(snapshot, thing_manager, parameters, row)?;
             }
             ConceptInstruction::PutObject(isa_object) => {
-                isa_object.execute(snapshot, thing_manager, row, parameters)?;
+                isa_object.execute(snapshot, thing_manager, parameters, row)?;
             }
         }
     }
     for instruction in &program.connection_instructions {
         match instruction {
             ConnectionInstruction::Has(has) => {
-                has.execute(snapshot, thing_manager, row, parameters)?;
+                has.execute(snapshot, thing_manager, parameters, row)?;
             }
             ConnectionInstruction::RolePlayer(role_player) => {
-                role_player.execute(snapshot, thing_manager, row, parameters)?;
+                role_player.execute(snapshot, thing_manager, parameters, row)?;
             }
         };
     }

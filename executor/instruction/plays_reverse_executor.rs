@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::{BTreeMap, BTreeSet, HashSet},
     iter,
     marker::PhantomData,
     sync::Arc,
@@ -14,11 +14,7 @@ use std::{
 
 use answer::{variable_value::VariableValue, Type};
 use compiler::match_::instructions::type_::PlaysReverseInstruction;
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::plays::Plays};
-use concept::{
-    error::ConceptReadError,
-    type_::{object_type::ObjectType, plays::Plays},
-};
+use concept::{error::ConceptReadError, type_::plays::Plays};
 use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;

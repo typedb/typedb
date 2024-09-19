@@ -146,8 +146,7 @@ impl RelatesReverseExecutor {
                     unreachable!("Role in `relates` must be an role type")
                 };
 
-                let type_manager = thing_manager.type_manager();
-                let relates = role.get_relates_root(snapshot, type_manager)?;
+                let relates = role.get_relates_root(snapshot, context.type_manager())?;
 
                 let as_tuples: RelatesReverseBoundedSortedRelation =
                     lending_iterator::once::<Result<Relates<'_>, _>>(Ok(relates))

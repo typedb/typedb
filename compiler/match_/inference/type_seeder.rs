@@ -1073,7 +1073,6 @@ impl BinaryConstraint for Comparison<Variable> {
             TypeAnnotation::Attribute(attribute) => attribute.get_value_type_without_source(seeder.snapshot, seeder.type_manager)?,
             _ => return Ok(()), // It can't be another type => Do nothing and let type-inference clean it up
         };
-        };
         if let Some(value_type) = left_value_type {
             let comparable_types = ValueTypeCategory::comparable_categories(value_type.category());
             for subattr in seeder.type_manager.get_attribute_types(seeder.snapshot)?.iter() {
