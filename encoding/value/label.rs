@@ -16,7 +16,7 @@ use crate::{
     graph::type_::property::TypeVertexPropertyEncoding, layout::infix::Infix, value::string_bytes::StringBytes, AsBytes,
 };
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Hash, PartialEq, Eq)]
 pub struct Label<'a> {
     pub name: StringBytes<'a, LABEL_NAME_STRING_INLINE>,
     pub scope: Option<StringBytes<'a, LABEL_SCOPE_STRING_INLINE>>,
@@ -123,6 +123,12 @@ impl<'a> TypeVertexPropertyEncoding<'a> for Label<'a> {
 
     fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
         Some(Bytes::Array(ByteArray::from(self.scoped_name().bytes())))
+    }
+}
+
+impl<'a> fmt::Debug for Label<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Label[{}]", self.scoped_name())
     }
 }
 

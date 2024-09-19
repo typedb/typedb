@@ -173,10 +173,10 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         let has = Has::new(owner, attribute);
 
         debug_assert!(self.context.is_variable_available(self.constraints.scope, owner));
-        self.context.set_variable_category(owner, VariableCategory::Thing, has.clone().into())?;
+        self.context.set_variable_category(owner, VariableCategory::Object, has.clone().into())?;
 
         debug_assert!(self.context.is_variable_available(self.constraints.scope, attribute));
-        self.context.set_variable_category(attribute, VariableCategory::Thing, has.clone().into())?;
+        self.context.set_variable_category(attribute, VariableCategory::Attribute, has.clone().into())?;
 
         let constraint = self.constraints.add_constraint(has);
         Ok(constraint.as_has().unwrap())

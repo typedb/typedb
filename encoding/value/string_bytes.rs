@@ -18,7 +18,7 @@ This is the natural representation we want, which guarantees that:
 So we automatically have the correct sort order for strings, where longer strings come after shorter ones
 with the same prefix.
  */
-#[derive(Debug, Clone, Eq, Hash)]
+#[derive(Clone, Eq, Hash)]
 pub struct StringBytes<'a, const INLINE_LENGTH: usize> {
     bytes: Bytes<'a, INLINE_LENGTH>,
 }
@@ -71,8 +71,14 @@ impl<'a, const B: usize, const A: usize> PartialEq<StringBytes<'a, B>> for Strin
     }
 }
 
-impl<'a, const INLINE_LENGTH: usize> fmt::Display for StringBytes<'a, INLINE_LENGTH> {
+impl<'a, const INLINE_LENGTH: usize> fmt::Debug for StringBytes<'a, INLINE_LENGTH> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "bytes(len={}, str='{}')", self.length(), self.as_str())
+    }
+}
+
+impl<'a, const INLINE_LENGTH: usize> fmt::Display for StringBytes<'a, INLINE_LENGTH> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
     }
 }

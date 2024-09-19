@@ -27,7 +27,7 @@ use crate::match_::inference::{
     TypeInferenceError,
 };
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Eq, PartialEq)]
 pub(crate) struct VertexAnnotations {
     annotations: BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>,
 }
@@ -75,7 +75,7 @@ impl<'a> IntoIterator for &'a VertexAnnotations {
     type Item = <&'a BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>> as IntoIterator>::Item;
     type IntoIter = <&'a BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>> as IntoIterator>::IntoIter;
     fn into_iter(self) -> Self::IntoIter {
-        (&self.annotations).into_iter()
+        self.annotations.iter()
     }
 }
 
@@ -83,7 +83,7 @@ impl<'a> IntoIterator for &'a mut VertexAnnotations {
     type Item = <&'a mut BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>> as IntoIterator>::Item;
     type IntoIter = <&'a mut BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>> as IntoIterator>::IntoIter;
     fn into_iter(self) -> Self::IntoIter {
-        (&mut self.annotations).into_iter()
+        self.annotations.iter_mut()
     }
 }
 

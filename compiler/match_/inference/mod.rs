@@ -214,12 +214,9 @@ pub mod tests {
                 .unwrap();
 
             // Ownerships
-            let animal_owns =
-                animal.set_owns(&mut snapshot, type_manager, thing_manager, name.clone(), Ordering::Unordered).unwrap();
-            let cat_owns =
-                cat.set_owns(&mut snapshot, type_manager, thing_manager, catname.clone(), Ordering::Unordered).unwrap();
-            let dog_owns =
-                dog.set_owns(&mut snapshot, type_manager, thing_manager, dogname.clone(), Ordering::Unordered).unwrap();
+            animal.set_owns(&mut snapshot, type_manager, thing_manager, name.clone(), Ordering::Unordered).unwrap();
+            cat.set_owns(&mut snapshot, type_manager, thing_manager, catname.clone(), Ordering::Unordered).unwrap();
+            dog.set_owns(&mut snapshot, type_manager, thing_manager, dogname.clone(), Ordering::Unordered).unwrap();
 
             // Relations
             let fears = type_manager.create_relation_type(&mut snapshot, &Label::build(LABEL_FEARS)).unwrap();
