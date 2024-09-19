@@ -29,7 +29,7 @@ use crate::{
         tuple::{has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, Tuple, TuplePositions},
         BinaryIterateMode, Checker, VariableModes,
     },
-    pipeline::stage::StageContext,
+    pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
     VariablePosition,
 };
@@ -117,7 +117,7 @@ impl HasReverseExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        context: &StageContext<impl ReadableSnapshot + 'static>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         let filter = self.filter_fn.clone();

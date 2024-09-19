@@ -30,7 +30,7 @@ use crate::{
         tuple::{plays_to_tuple_role_player, TuplePositions},
         BinaryIterateMode, Checker, VariableModes,
     },
-    pipeline::stage::StageContext,
+    pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
     VariablePosition,
 };
@@ -115,7 +115,7 @@ impl PlaysReverseExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        context: &StageContext<impl ReadableSnapshot + 'static>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         let filter = self.filter_fn.clone();

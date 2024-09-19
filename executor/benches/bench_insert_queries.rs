@@ -26,7 +26,7 @@ use executor::{
     pipeline::{
         initial::InitialStage,
         insert::InsertStageExecutor,
-        stage::{StageAPI, StageContext},
+        stage::{ExecutionContext, StageAPI},
         PipelineExecutionError,
     },
     row::MaybeOwnedRow,
@@ -134,7 +134,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     println!("Insert output row schema: {:?}", &insert_plan.output_row_schema);
 
     let snapshot = Arc::new(snapshot);
-    let initial = InitialStage::new(StageContext { snapshot, thing_manager, parameters: Arc::default() });
+    let initial = InitialStage::new(ExecutionContext { snapshot, thing_manager, parameters: Arc::default() });
     let insert_executor = InsertStageExecutor::new(insert_plan, initial);
     let (output_iter, context) =
         insert_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match err {

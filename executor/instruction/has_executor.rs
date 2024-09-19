@@ -38,7 +38,7 @@ use crate::{
         },
         BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
-    pipeline::stage::StageContext,
+    pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
     VariablePosition,
 };
@@ -143,7 +143,7 @@ impl HasExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        context: &StageContext<impl ReadableSnapshot + 'static>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         let filter = self.filter_fn.clone();

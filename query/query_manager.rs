@@ -8,16 +8,13 @@ use std::{collections::HashMap, sync::Arc};
 
 use compiler::VariablePosition;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use executor::{
-    pipeline::{
-        delete::DeleteStageExecutor,
-        initial::InitialStage,
-        insert::InsertStageExecutor,
-        match_::MatchStageExecutor,
-        modifiers::{LimitStageExecutor, OffsetStageExecutor, SelectStageExecutor, SortStageExecutor},
-        stage::{ReadPipelineStage, StageContext, WritePipelineStage},
-    },
-    write::{delete::DeleteExecutor, insert::InsertExecutor},
+use executor::pipeline::{
+    delete::DeleteStageExecutor,
+    initial::InitialStage,
+    insert::InsertStageExecutor,
+    match_::MatchStageExecutor,
+    modifiers::{LimitStageExecutor, OffsetStageExecutor, SelectStageExecutor, SortStageExecutor},
+    stage::{ExecutionContext, ReadPipelineStage, WritePipelineStage},
 };
 use function::function_manager::FunctionManager;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
@@ -105,10 +102,14 @@ impl QueryManager {
 
         // 3: Compile
         let variable_registry = Arc::new(variable_registry);
-        let CompiledPipeline { compiled_functions, compiled_stages, output_variable_positions } =
-            compile_pipeline(thing_manager.statistics(), variable_registry, annotated_preamble, annotated_stages)?;
+        let CompiledPipeline { compiled_functions, compiled_stages, output_variable_positions } = compile_pipeline(
+            thing_manager.statistics(),
+            variable_registry.clone(),
+            annotated_preamble,
+            annotated_stages,
+        )?;
 
-        let context = StageContext { snapshot, thing_manager, parameters: Arc::new(parameters) };
+        let context = ExecutionContext::new(snapshot, thing_manager, Arc::new(parameters));
         let mut last_stage = ReadPipelineStage::Initial(InitialStage::new(context));
         for compiled_stage in compiled_stages {
             match compiled_stage {
@@ -145,8 +146,8 @@ impl QueryManager {
 
         let named_outputs = output_variable_positions
             .iter()
-            .filter_map(|(variable, position)| {
-                variable_registry.variable_names().get(variable).map(|name| (name.clone(), position.clone()))
+            .filter_map(|(variable, &position)| {
+                variable_registry.variable_names().get(variable).map(|name| (name.clone(), position))
             })
             .collect::<HashMap<_, _>>();
         Ok((last_stage, named_outputs))
@@ -218,7 +219,7 @@ impl QueryManager {
                 Err(err) => return Err((snapshot, err)),
             };
 
-        let context = StageContext { snapshot: Arc::new(snapshot), thing_manager, parameters: Arc::new(parameters) };
+        let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::new(parameters));
         let mut previous_stage = WritePipelineStage::Initial(InitialStage::new(context));
         for compiled_stage in compiled_stages {
             match compiled_stage {
@@ -237,31 +238,31 @@ impl QueryManager {
                     previous_stage = WritePipelineStage::Delete(Box::new(delete_stage));
                 }
                 CompiledStage::Filter(filter_program) => {
-                    let filter_stage = SelectStageExecutor::new(filter_program, last_stage);
-                    last_stage = WritePipelineStage::Select(Box::new(filter_stage));
+                    let filter_stage = SelectStageExecutor::new(filter_program, previous_stage);
+                    previous_stage = WritePipelineStage::Select(Box::new(filter_stage));
                 }
                 CompiledStage::Sort(sort_program) => {
-                    let sort_stage = SortStageExecutor::new(sort_program, last_stage);
-                    last_stage = WritePipelineStage::Sort(Box::new(sort_stage));
+                    let sort_stage = SortStageExecutor::new(sort_program, previous_stage);
+                    previous_stage = WritePipelineStage::Sort(Box::new(sort_stage));
                 }
                 CompiledStage::Offset(offset_program) => {
-                    let offset_stage = OffsetStageExecutor::new(offset_program, last_stage);
-                    last_stage = WritePipelineStage::Offset(Box::new(offset_stage));
+                    let offset_stage = OffsetStageExecutor::new(offset_program, previous_stage);
+                    previous_stage = WritePipelineStage::Offset(Box::new(offset_stage));
                 }
                 CompiledStage::Limit(limit_program) => {
-                    let limit_stage = LimitStageExecutor::new(limit_program, last_stage);
-                    last_stage = WritePipelineStage::Limit(Box::new(limit_stage));
+                    let limit_stage = LimitStageExecutor::new(limit_program, previous_stage);
+                    previous_stage = WritePipelineStage::Limit(Box::new(limit_stage));
                 }
             }
         }
 
         let named_outputs = output_variable_positions
             .iter()
-            .filter_map(|(variable, position)| {
-                variable_registry.variable_names().get(variable).map(|name| (name.clone(), position.clone()))
+            .filter_map(|(variable, &position)| {
+                variable_registry.variable_names().get(variable).map(|name| (name.clone(), position))
             })
             .collect::<HashMap<_, _>>();
-        Ok((last_stage, named_outputs))
+        Ok((previous_stage, named_outputs))
     }
 }
 

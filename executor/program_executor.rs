@@ -15,7 +15,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     error::ReadExecutionError, function_executor::FunctionExecutor, pattern_executor::PatternExecutor,
-    pipeline::stage::StageContext, row::MaybeOwnedRow, ExecutionInterrupt, VariablePosition,
+    pipeline::stage::ExecutionContext, row::MaybeOwnedRow, ExecutionInterrupt, VariablePosition,
 };
 
 pub struct ProgramExecutor {
@@ -47,7 +47,7 @@ impl ProgramExecutor {
 
     pub fn into_iterator(
         self,
-        context: StageContext<impl ReadableSnapshot + 'static>,
+        context: ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: ExecutionInterrupt,
     ) -> impl for<'a> LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, &'a ReadExecutionError>> {
         self.entry.into_iterator(context, interrupt)

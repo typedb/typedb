@@ -33,7 +33,7 @@ use crate::{
         tuple::{owns_to_tuple_owner_attribute, OwnsToTupleFn, TuplePositions, TupleResult},
         BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
-    pipeline::stage::StageContext,
+    pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
     VariablePosition,
 };
@@ -128,7 +128,7 @@ impl OwnsExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        context: &StageContext<impl ReadableSnapshot + 'static>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         let filter = self.filter_fn.clone();

@@ -16,7 +16,7 @@ use encoding::{
     value::{label::Label, value::Value},
 };
 use executor::{
-    pipeline::stage::{StageAPI, StageContext, StageIterator},
+    pipeline::stage::{ExecutionContext, StageAPI, StageIterator},
     ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
@@ -85,7 +85,7 @@ fn test_insert() {
             &query,
         )
         .unwrap();
-    let (mut iterator, StageContext { snapshot, .. }) =
+    let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     assert!(matches!(iterator.next(), Some(Ok(_))));
     assert!(matches!(iterator.next(), None));
@@ -160,7 +160,7 @@ fn test_match() {
             &query,
         )
         .unwrap();
-    let (iterator, StageContext { snapshot, .. }) =
+    let (iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let _ = iterator.count();
     // must consume iterator to ensure operation completed
@@ -180,7 +180,7 @@ fn test_match() {
             &match_,
         )
         .unwrap();
-    let (iterator, StageContext { snapshot, .. }) =
+    let (iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let batch = iterator.collect_owned().unwrap();
     assert_eq!(batch.len(), 3);
@@ -197,7 +197,8 @@ fn test_match() {
             &match_,
         )
         .unwrap();
-    let (iterator, StageContext { .. }) = pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let (iterator, ExecutionContext { .. }) =
+        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let batch = iterator.collect_owned().unwrap();
     assert_eq!(batch.len(), 1);
 }
@@ -223,7 +224,7 @@ fn test_match_delete_has() {
             &insert_query,
         )
         .unwrap();
-    let (mut iterator, StageContext { snapshot, .. }) =
+    let (mut iterator, ExecutionContext { snapshot, .. }) =
         insert_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
     assert!(matches!(iterator.next(), Some(Ok(_))));
@@ -258,7 +259,7 @@ fn test_match_delete_has() {
         )
         .unwrap();
 
-    let (mut iterator, StageContext { snapshot, .. }) =
+    let (mut iterator, ExecutionContext { snapshot, .. }) =
         delete_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     assert!(matches!(iterator.next(), Some(Ok(_))));
     assert!(matches!(iterator.next(), None));

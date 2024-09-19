@@ -13,7 +13,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     batch::Batch,
     pipeline::{
-        stage::{StageAPI, StageContext},
+        stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator,
     },
     row::MaybeOwnedRow,
@@ -42,7 +42,8 @@ where
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, StageContext<Snapshot>), (PipelineExecutionError, StageContext<Snapshot>)> {
+    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
+    {
         let Self { previous, program, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
         // accumulate once, then we will operate in-place
@@ -130,7 +131,8 @@ where
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, StageContext<Snapshot>), (PipelineExecutionError, StageContext<Snapshot>)> {
+    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
+    {
         let Self { offset_program, previous, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
         Ok((OffsetStageIterator::new(previous_iterator, offset_program.offset), context))
@@ -189,7 +191,8 @@ where
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, StageContext<Snapshot>), (PipelineExecutionError, StageContext<Snapshot>)> {
+    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
+    {
         let Self { limit_program, previous, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
         Ok((LimitStageIterator::new(previous_iterator, limit_program.limit), context))
@@ -247,7 +250,8 @@ where
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, StageContext<Snapshot>), (PipelineExecutionError, StageContext<Snapshot>)> {
+    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
+    {
         let Self { previous, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
         Ok((SelectStageIterator::new(previous_iterator), context))

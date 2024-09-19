@@ -11,7 +11,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     pattern_executor::{PatternExecutor, PatternIterator},
     pipeline::{
-        stage::{StageAPI, StageContext},
+        stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator,
     },
     row::MaybeOwnedRow,
@@ -39,7 +39,8 @@ where
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, StageContext<Snapshot>), (PipelineExecutionError, StageContext<Snapshot>)> {
+    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
+    {
         let Self { previous: previous_stage, program, .. } = self;
         let (previous_iterator, context) = previous_stage.into_iterator(interrupt.clone())?;
         let iterator = previous_iterator;
@@ -48,7 +49,7 @@ where
 }
 
 pub struct MatchStageIterator<Snapshot: ReadableSnapshot + 'static, Iterator> {
-    context: StageContext<Snapshot>,
+    context: ExecutionContext<Snapshot>,
     program: MatchProgram,
     source_iterator: Iterator,
     current_iterator: Option<Peekable<PatternIterator<Snapshot>>>,
@@ -59,7 +60,7 @@ impl<Snapshot: ReadableSnapshot + 'static, Iterator> MatchStageIterator<Snapshot
     fn new(
         iterator: Iterator,
         program: MatchProgram,
-        context: StageContext<Snapshot>,
+        context: ExecutionContext<Snapshot>,
         interrupt: ExecutionInterrupt,
     ) -> Self {
         Self { context, program, source_iterator: iterator, current_iterator: None, interrupt }
@@ -75,7 +76,7 @@ where
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         while !self.current_iterator.as_mut().is_some_and(|iter| iter.peek().is_some()) {
-            let StageContext { snapshot, thing_manager, .. } = &self.context;
+            let ExecutionContext { snapshot, thing_manager, .. } = &self.context;
             // TODO: use the start to initialise the next iterator
             let _source_next = self.source_iterator.next()?;
             let iterator = PatternExecutor::new(&self.program, snapshot, thing_manager)

@@ -20,7 +20,7 @@ use crate::{
         tuple::{type_to_tuple, TuplePositions, TupleResult, TypeToTupleFn},
         VariableModes,
     },
-    pipeline::stage::StageContext,
+    pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
     VariablePosition,
 };
@@ -51,7 +51,7 @@ impl TypeListExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        _: &StageContext<impl ReadableSnapshot + 'static>,
+        _: &ExecutionContext<impl ReadableSnapshot + 'static>,
         _: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         Ok(TupleIterator::Type(SortedTupleIterator::new(

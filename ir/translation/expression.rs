@@ -17,7 +17,7 @@ use crate::{
             BuiltInCall, BuiltInFunctionID, Expression, ExpressionTree, ExpressionTreeNodeId, ListConstructor,
             ListIndex, ListIndexRange, Operation, Operator,
         },
-        ParameterID, Vertex
+        ParameterID, Vertex,
     },
     program::function_signature::FunctionSignatureIndex,
     translation::{

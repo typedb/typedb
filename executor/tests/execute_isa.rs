@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{BTreeMap, HashMap},
+    sync::Arc,
+};
 
 use compiler::{
     match_::{
@@ -24,7 +27,10 @@ use compiler::{
     VariablePosition,
 };
 use encoding::value::label::Label;
-use executor::{error::ReadExecutionError, program_executor::ProgramExecutor, row::MaybeOwnedRow, ExecutionInterrupt};
+use executor::{
+    error::ReadExecutionError, pipeline::stage::ExecutionContext, program_executor::ProgramExecutor,
+    row::MaybeOwnedRow, ExecutionInterrupt,
+};
 use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
@@ -77,8 +83,8 @@ fn traverse_isa_unbounded_sorted_thing() {
     let var_dog = conjunction.get_or_declare_variable("dog").unwrap();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
-    let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type).unwrap().clone();
-    conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.scoped_name().as_str()).unwrap();
+    let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type.into()).unwrap().clone();
+    conjunction.constraints_mut().add_label(var_dog_type.into(), DOG_LABEL.scoped_name().as_str()).unwrap();
     let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
@@ -88,7 +94,7 @@ fn traverse_isa_unbounded_sorted_thing() {
         &translation_context.variable_registry,
         &snapshot,
         &type_manager,
-        &HashMap::new(),
+        &BTreeMap::new(),
         &IndexedAnnotatedFunctions::empty(),
         &AnnotatedUnindexedFunctions::empty(),
     )
@@ -116,7 +122,8 @@ fn traverse_isa_unbounded_sorted_thing() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
@@ -145,7 +152,7 @@ fn traverse_isa_unbounded_sorted_type() {
     let var_dog = conjunction.get_or_declare_variable("dog").unwrap();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
-    let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type).unwrap().clone();
+    let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type.into()).unwrap().clone();
     conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.scoped_name().as_str()).unwrap();
     let entry = builder.finish();
 
@@ -156,7 +163,7 @@ fn traverse_isa_unbounded_sorted_type() {
         &translation_context.variable_registry,
         &snapshot,
         &type_manager,
-        &HashMap::new(),
+        &BTreeMap::new(),
         &IndexedAnnotatedFunctions::empty(),
         &AnnotatedUnindexedFunctions::empty(),
     )
@@ -184,7 +191,8 @@ fn traverse_isa_unbounded_sorted_type() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
@@ -215,8 +223,9 @@ fn traverse_isa_bounded_thing() {
 
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa_from_type =
-        conjunction.constraints_mut().add_isa(IsaKind::Exact, var_thing, var_type_from).unwrap().clone();
-    let isa_to_type = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_thing, var_type_to).unwrap().clone();
+        conjunction.constraints_mut().add_isa(IsaKind::Exact, var_thing, var_type_from.into()).unwrap().clone();
+    let isa_to_type =
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_thing, var_type_to.into()).unwrap().clone();
     let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
@@ -226,7 +235,7 @@ fn traverse_isa_bounded_thing() {
         &translation_context.variable_registry,
         &snapshot,
         &type_manager,
-        &HashMap::new(),
+        &BTreeMap::new(),
         &IndexedAnnotatedFunctions::empty(),
         &AnnotatedUnindexedFunctions::empty(),
     )
@@ -266,7 +275,8 @@ fn traverse_isa_bounded_thing() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
@@ -299,7 +309,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
     let var_dog = conjunction.get_or_declare_variable("dog").unwrap();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
-    let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type).unwrap().clone();
+    let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type.into()).unwrap().clone();
     conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.scoped_name().as_str()).unwrap();
     let entry = builder.finish();
 
@@ -310,7 +320,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
         &translation_context.variable_registry,
         &snapshot,
         &type_manager,
-        &HashMap::new(),
+        &BTreeMap::new(),
         &IndexedAnnotatedFunctions::empty(),
         &AnnotatedUnindexedFunctions::empty(),
     )
@@ -338,7 +348,8 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
@@ -367,7 +378,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
     let var_dog = conjunction.get_or_declare_variable("dog").unwrap();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
-    let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type).unwrap().clone();
+    let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type.into()).unwrap().clone();
     conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.scoped_name().as_str()).unwrap();
     let entry = builder.finish();
 
@@ -378,7 +389,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
         &translation_context.variable_registry,
         &snapshot,
         &type_manager,
-        &HashMap::new(),
+        &BTreeMap::new(),
         &IndexedAnnotatedFunctions::empty(),
         &AnnotatedUnindexedFunctions::empty(),
     )
@@ -406,7 +417,8 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
@@ -437,8 +449,9 @@ fn traverse_isa_reverse_bounded_type_exact() {
 
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa_from_thing =
-        conjunction.constraints_mut().add_isa(IsaKind::Exact, var_thing_from, var_type).unwrap().clone();
-    let isa_to_thing = conjunction.constraints_mut().add_isa(IsaKind::Exact, var_thing_to, var_type).unwrap().clone();
+        conjunction.constraints_mut().add_isa(IsaKind::Exact, var_thing_from, var_type.into()).unwrap().clone();
+    let isa_to_thing =
+        conjunction.constraints_mut().add_isa(IsaKind::Exact, var_thing_to, var_type.into()).unwrap().clone();
     let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
@@ -448,7 +461,7 @@ fn traverse_isa_reverse_bounded_type_exact() {
         &translation_context.variable_registry,
         &snapshot,
         &type_manager,
-        &HashMap::new(),
+        &BTreeMap::new(),
         &IndexedAnnotatedFunctions::empty(),
         &AnnotatedUnindexedFunctions::empty(),
     )
@@ -487,7 +500,8 @@ fn traverse_isa_reverse_bounded_type_exact() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
@@ -521,8 +535,9 @@ fn traverse_isa_reverse_bounded_type_subtype() {
 
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa_from_thing =
-        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_thing_from, var_type).unwrap().clone();
-    let isa_to_thing = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_thing_to, var_type).unwrap().clone();
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_thing_from, var_type.into()).unwrap().clone();
+    let isa_to_thing =
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_thing_to, var_type.into()).unwrap().clone();
     let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
@@ -532,7 +547,7 @@ fn traverse_isa_reverse_bounded_type_subtype() {
         &translation_context.variable_registry,
         &snapshot,
         &type_manager,
-        &HashMap::new(),
+        &BTreeMap::new(),
         &IndexedAnnotatedFunctions::empty(),
         &AnnotatedUnindexedFunctions::empty(),
     )
@@ -571,7 +586,8 @@ fn traverse_isa_reverse_bounded_type_subtype() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();

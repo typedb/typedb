@@ -6,7 +6,7 @@
 
 use std::sync::Arc;
 
-use concept::thing::thing_manager::ThingManager;
+use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use ir::program::block::ParameterRegistry;
 use lending_iterator::LendingIterator;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
@@ -29,13 +29,17 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct StageContext<Snapshot> {
+pub struct ExecutionContext<Snapshot> {
     pub snapshot: Arc<Snapshot>,
     pub thing_manager: Arc<ThingManager>,
     pub parameters: Arc<ParameterRegistry>,
 }
 
-impl<Snapshot> StageContext<Snapshot> {
+impl<Snapshot> ExecutionContext<Snapshot> {
+    pub fn new(snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>, parameters: Arc<ParameterRegistry>) -> Self {
+        Self { snapshot, thing_manager, parameters }
+    }
+
     pub(crate) fn snapshot(&self) -> &Arc<Snapshot> {
         &self.snapshot
     }
@@ -44,12 +48,16 @@ impl<Snapshot> StageContext<Snapshot> {
         &self.thing_manager
     }
 
+    pub(crate) fn type_manager(&self) -> &TypeManager {
+        &self.thing_manager.type_manager()
+    }
+
     pub(crate) fn parameters(&self) -> &ParameterRegistry {
         &self.parameters
     }
 }
 
-impl<Snapshot> Clone for StageContext<Snapshot> {
+impl<Snapshot> Clone for ExecutionContext<Snapshot> {
     fn clone(&self) -> Self {
         let Self { snapshot, thing_manager, parameters } = self;
         Self { snapshot: snapshot.clone(), thing_manager: thing_manager.clone(), parameters: parameters.clone() }
@@ -62,7 +70,7 @@ pub trait StageAPI<Snapshot> {
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, StageContext<Snapshot>), (PipelineExecutionError, StageContext<Snapshot>)>;
+    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>;
 }
 
 pub trait StageIterator:
@@ -112,7 +120,8 @@ impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineSt
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, StageContext<Snapshot>), (PipelineExecutionError, StageContext<Snapshot>)> {
+    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
+    {
         match self {
             ReadPipelineStage::Initial(stage) => {
                 let (iterator, snapshot) = stage.into_iterator(interrupt)?;
@@ -187,7 +196,8 @@ impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineS
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, StageContext<Snapshot>), (PipelineExecutionError, StageContext<Snapshot>)> {
+    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
+    {
         match self {
             WritePipelineStage::Initial(stage) => {
                 let (iterator, context) = stage.into_iterator(interrupt)?;

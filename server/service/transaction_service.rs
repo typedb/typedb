@@ -24,7 +24,7 @@ use error::typedb_error;
 use executor::{
     batch::Batch,
     pipeline::{
-        stage::{ReadPipelineStage, StageAPI, StageContext, StageIterator},
+        stage::{ExecutionContext, ReadPipelineStage, StageAPI, StageIterator},
         PipelineExecutionError,
     },
     ExecutionInterrupt,
@@ -854,8 +854,8 @@ impl TransactionService {
         };
 
         let (iterator, snapshot) = match pipeline.into_iterator(interrupt) {
-            Ok((iterator, StageContext { snapshot, .. })) => (iterator, snapshot),
-            Err((err, StageContext { snapshot, .. })) => {
+            Ok((iterator, ExecutionContext { snapshot, .. })) => (iterator, snapshot),
+            Err((err, ExecutionContext { snapshot, .. })) => {
                 return (
                     Arc::into_inner(snapshot).unwrap(),
                     Err(QueryError::WritePipelineExecutionError { typedb_source: err }),

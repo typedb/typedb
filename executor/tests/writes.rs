@@ -20,7 +20,7 @@ use executor::{
     pipeline::{
         delete::DeleteStageExecutor,
         insert::InsertStageExecutor,
-        stage::{StageAPI, StageContext, StageIterator},
+        stage::{ExecutionContext, StageAPI, StageIterator},
         PipelineExecutionError,
     },
     row::MaybeOwnedRow,
@@ -89,11 +89,11 @@ fn setup_schema(storage: Arc<MVCCStorage<WALClient>>) {
 
 struct ShimStage<Snapshot> {
     rows: Vec<Result<MaybeOwnedRow<'static>, PipelineExecutionError>>,
-    context: StageContext<Snapshot>,
+    context: ExecutionContext<Snapshot>,
 }
 
 impl<Snapshot> ShimStage<Snapshot> {
-    fn new(rows: Vec<Vec<VariableValue<'static>>>, context: StageContext<Snapshot>) -> Self {
+    fn new(rows: Vec<Vec<VariableValue<'static>>>, context: ExecutionContext<Snapshot>) -> Self {
         let rows = rows.into_iter().map(|values| Ok(MaybeOwnedRow::new_owned(values, 1))).collect();
         Self { rows, context }
     }
@@ -126,7 +126,8 @@ impl<Snapshot> StageAPI<Snapshot> for ShimStage<Snapshot> {
     fn into_iterator(
         self,
         _: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, StageContext<Snapshot>), (PipelineExecutionError, StageContext<Snapshot>)> {
+    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
+    {
         Ok((ShimIterator(AsNarrowingIterator::new(self.rows)), self.context))
     }
 }
@@ -176,7 +177,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let snapshot = Arc::new(snapshot);
     let initial = ShimStage::new(
         input_rows,
-        StageContext { snapshot, thing_manager, parameters: Arc::new(translation_context.parameters) },
+        ExecutionContext { snapshot, thing_manager, parameters: Arc::new(translation_context.parameters) },
     );
     let insert_executor = InsertStageExecutor::new(insert_plan, initial);
     let (output_iter, context) =
@@ -251,7 +252,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     let snapshot = Arc::new(snapshot);
     let initial = ShimStage::new(
         input_rows,
-        StageContext { snapshot, thing_manager, parameters: Arc::new(translation_context.parameters) },
+        ExecutionContext { snapshot, thing_manager, parameters: Arc::new(translation_context.parameters) },
     );
     let delete_executor = DeleteStageExecutor::new(delete_plan, initial);
     let (output_iter, context) =

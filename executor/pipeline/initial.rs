@@ -11,7 +11,7 @@ use lending_iterator::{LendingIterator, Once};
 
 use crate::{
     pipeline::{
-        stage::{StageAPI, StageContext},
+        stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator,
     },
     row::MaybeOwnedRow,
@@ -19,11 +19,11 @@ use crate::{
 };
 
 pub struct InitialStage<Snapshot> {
-    context: StageContext<Snapshot>,
+    context: ExecutionContext<Snapshot>,
 }
 
 impl<Snapshot> InitialStage<Snapshot> {
-    pub fn new(context: StageContext<Snapshot>) -> Self {
+    pub fn new(context: ExecutionContext<Snapshot>) -> Self {
         Self { context }
     }
 }
@@ -34,7 +34,8 @@ impl<Snapshot> StageAPI<Snapshot> for InitialStage<Snapshot> {
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, StageContext<Snapshot>), (PipelineExecutionError, StageContext<Snapshot>)> {
+    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
+    {
         Ok((InitialIterator::new(), self.context))
     }
 }

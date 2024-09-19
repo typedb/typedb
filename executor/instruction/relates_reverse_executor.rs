@@ -26,7 +26,7 @@ use crate::{
         tuple::{relates_to_tuple_role_relation, TuplePositions},
         BinaryIterateMode, Checker, VariableModes,
     },
-    pipeline::stage::StageContext,
+    pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
     VariablePosition,
 };
@@ -103,7 +103,7 @@ impl RelatesReverseExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        context: &StageContext<impl ReadableSnapshot + 'static>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         let filter = self.filter_fn.clone();

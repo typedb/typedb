@@ -28,7 +28,10 @@ use crate::{
         sub_executor::{NarrowingTupleIterator, SubTupleIterator, EXTRACT_SUB, EXTRACT_SUPER},
         tuple::{sub_to_tuple_super_sub, TuplePositions},
         BinaryIterateMode, Checker, FilterFn, VariableModes,
-    }, pipeline::stage::StageContext, row::MaybeOwnedRow, VariablePosition
+    },
+    pipeline::stage::ExecutionContext,
+    row::MaybeOwnedRow,
+    VariablePosition,
 };
 
 pub(crate) struct SubReverseExecutor {
@@ -101,7 +104,7 @@ impl SubReverseExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        context: &StageContext<impl ReadableSnapshot + 'static>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         let filter = self.filter_fn.clone();

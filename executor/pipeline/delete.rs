@@ -13,7 +13,7 @@ use storage::snapshot::WritableSnapshot;
 
 use crate::{
     pipeline::{
-        stage::{StageAPI, StageContext},
+        stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator, WrittenRowsIterator,
     },
     row::Row,
@@ -42,7 +42,8 @@ where
     fn into_iterator(
         self,
         mut interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, StageContext<Snapshot>), (PipelineExecutionError, StageContext<Snapshot>)> {
+    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
+    {
         let (previous_iterator, mut context) = self.previous.into_iterator(interrupt.clone())?;
         // accumulate once, then we will operate in-place
         let mut batch = match previous_iterator.collect_owned() {

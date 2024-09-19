@@ -35,7 +35,7 @@ use crate::{
         tuple::{links_to_tuple_player_relation_role, links_to_tuple_relation_player_role, TuplePositions},
         Checker, TernaryIterateMode, VariableModes,
     },
-    pipeline::stage::StageContext,
+    pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
     VariablePosition,
 };
@@ -131,7 +131,7 @@ impl LinksReverseExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        context: &StageContext<impl ReadableSnapshot + 'static>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         let filter = self.filter_fn.clone();

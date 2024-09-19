@@ -18,7 +18,7 @@ use storage::snapshot::WritableSnapshot;
 use crate::{
     batch::Batch,
     pipeline::{
-        stage::{StageAPI, StageContext},
+        stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator, WrittenRowsIterator,
     },
     row::{MaybeOwnedRow, Row},
@@ -51,7 +51,8 @@ where
     fn into_iterator(
         self,
         mut interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, StageContext<Snapshot>), (PipelineExecutionError, StageContext<Snapshot>)> {
+    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
+    {
         let Self { program, previous } = self;
         let (previous_iterator, mut context) = previous.into_iterator(interrupt.clone())?;
         let mut batch = match prepare_output_rows(program.output_width() as u32, previous_iterator) {

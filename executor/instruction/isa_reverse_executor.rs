@@ -24,7 +24,7 @@ use crate::{
         tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, TuplePositions},
         BinaryIterateMode, Checker, VariableModes,
     },
-    pipeline::stage::StageContext,
+    pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
     VariablePosition,
 };
@@ -80,7 +80,7 @@ impl IsaReverseExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        context: &StageContext<impl ReadableSnapshot + 'static>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         let filter_for_row = self.checker.filter_for_row(context, &row);
@@ -166,7 +166,7 @@ impl IsaReverseExecutor {
                             Err(err) => Err(err.clone()),
                         },
                     ))
-                    .map(isa_to_tuple_thing_type);
+                    .map(isa_to_tuple_type_thing);
                 Ok(TupleIterator::IsaReverseBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),

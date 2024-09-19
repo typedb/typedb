@@ -15,7 +15,7 @@ use crate::{
         tuple::{Tuple, TuplePositions, TupleResult},
         VariableModes,
     },
-    pipeline::stage::StageContext,
+    pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
     VariablePosition,
 };
@@ -43,7 +43,7 @@ impl ConstantExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        _: &StageContext<impl ReadableSnapshot + 'static>,
+        _: &ExecutionContext<impl ReadableSnapshot + 'static>,
         _: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         Ok(TupleIterator::Constant(SortedTupleIterator::new(

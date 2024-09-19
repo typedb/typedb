@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
     sync::Arc,
 };
 
@@ -28,7 +28,7 @@ pub fn check_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     block: &FunctionalBlock,
-    input_annotations_variables: &HashMap<Variable, Arc<HashSet<answer::Type>>>,
+    input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
     insert_annotations: &TypeAnnotations,
 ) -> Result<(), TypeInferenceError> {
@@ -74,7 +74,7 @@ fn validate_has_insertable(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     has: &Has<Variable>,
-    input_annotations_variables: &HashMap<Variable, Arc<HashSet<answer::Type>>>,
+    input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
     left_right: &LeftRightAnnotations,
 ) -> Result<(), TypeInferenceError> {
@@ -119,7 +119,7 @@ fn validate_links_insertable(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     links: &Links<Variable>,
-    input_annotations_variables: &HashMap<Variable, Arc<HashSet<answer::Type>>>,
+    input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
     left_right_filtered: &LeftRightFilteredAnnotations,
 ) -> Result<(), TypeInferenceError> {

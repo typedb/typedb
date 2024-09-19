@@ -362,7 +362,7 @@ impl Costed for ThingPlanner {
 
         for bound in &self.bound_value_equal {
             if bound == &Input::Fixed {
-                branching_factor  /= self.expected_size;
+                branching_factor /= self.expected_size;
             } else if matches!(bound, Input::Variable(var) if inputs.contains(var)) {
                 let b = match &elements[bound.as_variable().unwrap()] {
                     PlannerVertex::Constant => 1.0,

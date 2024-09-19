@@ -24,7 +24,7 @@ use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
     instruction::{iterator::TupleIterator, InstructionExecutor},
-    pipeline::stage::StageContext,
+    pipeline::stage::ExecutionContext,
     row::{MaybeOwnedRow, Row},
     ExecutionInterrupt, SelectedPositions, VariablePosition,
 };
@@ -74,7 +74,7 @@ impl PatternExecutor {
 
     pub fn into_iterator<Snapshot: ReadableSnapshot + 'static>(
         self,
-        context: StageContext<Snapshot>,
+        context: ExecutionContext<Snapshot>,
         interrupt: ExecutionInterrupt,
     ) -> PatternIterator<Snapshot> {
         PatternIterator::new(
@@ -84,7 +84,7 @@ impl PatternExecutor {
 
     fn compute_next_batch(
         &mut self,
-        context: &StageContext<impl ReadableSnapshot + 'static>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         let programs_len = self.program_executors.len();
@@ -179,14 +179,14 @@ impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for PatternIterator<S
 
 pub(crate) struct BatchIterator<Snapshot> {
     executor: PatternExecutor,
-    context: StageContext<Snapshot>,
+    context: ExecutionContext<Snapshot>,
     interrupt: ExecutionInterrupt,
 }
 
 impl<Snapshot> BatchIterator<Snapshot> {
     pub(crate) fn new(
         executor: PatternExecutor,
-        context: StageContext<Snapshot>,
+        context: ExecutionContext<Snapshot>,
         interrupt: ExecutionInterrupt,
     ) -> Self {
         Self { executor, context, interrupt }
@@ -267,7 +267,7 @@ impl ProgramExecutor {
     fn batch_from(
         &mut self,
         input_batch: FixedBatch,
-        context: &StageContext<impl ReadableSnapshot + 'static>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         match self {
             ProgramExecutor::SortedJoin(sorted) => sorted.batch_from(input_batch, context),
@@ -281,7 +281,7 @@ impl ProgramExecutor {
 
     fn batch_continue(
         &mut self,
-        context: &StageContext<impl ReadableSnapshot + 'static>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         match self {
             ProgramExecutor::SortedJoin(sorted) => sorted.batch_continue(context),
@@ -352,7 +352,7 @@ impl IntersectionExecutor {
     fn batch_from(
         &mut self,
         input_batch: FixedBatch,
-        context: &StageContext<impl ReadableSnapshot + 'static>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         debug_assert!(self.output.is_none() && (self.input.is_none() || self.input.as_mut().unwrap().peek().is_none()));
         self.input = Some(Peekable::new(FixedBatchRowIterator::new(Ok(input_batch))));
@@ -364,7 +364,7 @@ impl IntersectionExecutor {
 
     fn batch_continue(
         &mut self,
-        context: &StageContext<impl ReadableSnapshot + 'static>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         debug_assert!(self.output.is_none());
         self.may_compute_next_batch(context)?;
@@ -373,7 +373,7 @@ impl IntersectionExecutor {
 
     fn may_compute_next_batch(
         &mut self,
-        context: &StageContext<impl ReadableSnapshot + 'static>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<(), ReadExecutionError> {
         if self.compute_next_row(context)? {
             // don't allocate batch until 1 answer is confirmed
@@ -397,7 +397,7 @@ impl IntersectionExecutor {
 
     fn compute_next_row(
         &mut self,
-        context: &StageContext<impl ReadableSnapshot + 'static>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<bool, ReadExecutionError> {
         if self.cartesian_iterator.is_active() {
             let found = self.cartesian_iterator.find_next(context, &self.instruction_executors)?;
@@ -514,7 +514,7 @@ impl IntersectionExecutor {
 
     fn may_create_intersection_iterators(
         &mut self,
-        context: &StageContext<impl ReadableSnapshot + 'static>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<(), ReadExecutionError> {
         debug_assert!(self.iterators.is_empty());
         let peek = self.input.as_mut().unwrap().peek();
@@ -567,7 +567,7 @@ impl IntersectionExecutor {
 
     fn may_activate_cartesian(
         &mut self,
-        context: &StageContext<impl ReadableSnapshot + 'static>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<(), ReadExecutionError> {
         if self.iterators.len() == 1 {
             // don't delegate to cartesian iterator and incur new iterator costs if there cannot be a cartesian product
@@ -625,7 +625,7 @@ impl CartesianIterator {
 
     fn activate(
         &mut self,
-        context: &StageContext<impl ReadableSnapshot + 'static>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         iterator_executors: &[InstructionExecutor],
         source_intersection: &[VariableValue<'static>],
         source_multiplicity: u64,
@@ -670,7 +670,7 @@ impl CartesianIterator {
 
     fn find_next(
         &mut self,
-        context: &StageContext<impl ReadableSnapshot + 'static>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         executors: &[InstructionExecutor],
     ) -> Result<bool, ReadExecutionError> {
         debug_assert!(self.is_active);
@@ -704,7 +704,7 @@ impl CartesianIterator {
 
     fn reopen_iterator(
         &self,
-        context: &StageContext<impl ReadableSnapshot + 'static>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         executor: &InstructionExecutor,
     ) -> Result<TupleIterator, ReadExecutionError> {
         let mut reopened = executor

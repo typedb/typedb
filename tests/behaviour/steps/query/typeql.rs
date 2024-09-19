@@ -30,7 +30,7 @@ use executor::{
     batch::Batch,
     error::ReadExecutionError,
     pipeline::{
-        stage::{StageAPI, StageContext, WritePipelineStage, WriteStageIterator},
+        stage::{ExecutionContext, StageAPI, WritePipelineStage, WriteStageIterator},
         PipelineExecutionError,
     },
     program_executor::ProgramExecutor,
@@ -141,7 +141,7 @@ fn execute_read_query(
                 }
             })
             .unwrap();
-        let (_iterator, StageContext { snapshot, .. }) =
+        let (_iterator, ExecutionContext { snapshot, .. }) =
             pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
         ((), snapshot)
     });
