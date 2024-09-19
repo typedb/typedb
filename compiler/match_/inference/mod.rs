@@ -41,6 +41,7 @@ typedb_error!(
             left_type: String,
             right_type: String
         ),
+        DetectedUnsatisfiablePattern(5, "Type-inference derived an empty-set for some variable"),
     }
 );
 
