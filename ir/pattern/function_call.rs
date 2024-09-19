@@ -8,8 +8,10 @@ use std::{collections::BTreeMap, fmt, hash::Hash};
 
 use itertools::Itertools;
 
-use crate::pattern::Vertex;
-use crate::{pattern::IrID, program::function_signature::FunctionID};
+use crate::{
+    pattern::{IrID, Vertex},
+    program::function_signature::FunctionID,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FunctionCall<ID> {
