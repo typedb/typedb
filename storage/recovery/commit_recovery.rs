@@ -63,15 +63,13 @@ pub fn load_commit_data_from(
                     let RecoveryCommitStatus::Pending(record) = record else {
                         unreachable!("found second commit status for a record")
                     };
-                    event!(Level::TRACE, "Recovered committed transaction record that will be reapplied.");
                     recovered_commits.insert(commit_record_sequence_number, RecoveryCommitStatus::Validated(record));
                 } else {
-                    event!(Level::TRACE, "Recovered aborted transaction record that will be skipped.");
                     recovered_commits.insert(commit_record_sequence_number, RecoveryCommitStatus::Rejected);
                 }
             }
             not_storage_record => {
-                event!(Level::TRACE, "Recovery will skip Durability record of type {not_storage_record} that is not a recognised storage-layer record.");
+                // skip, not storage record
             }
         }
     }
@@ -83,6 +81,7 @@ pub(crate) fn apply_recovered(
     durability_client: &impl DurabilityClient,
     keyspaces: &Keyspaces,
 ) -> Result<(), StorageRecoveryError> {
+    event!(Level::TRACE, "Applying recovered commits");
     use StorageRecoveryError::{DurabilityClientRead, DurabilityClientWrite, KeyspaceWrite};
 
     if recovered_commits.is_empty() {
