@@ -27,29 +27,6 @@ use crate::match_::inference::{
     FunctionTypeInferenceError, TypeInferenceError,
 };
 
-// TODO: Deprecate
-pub fn infer_types<Snapshot: ReadableSnapshot>(
-    entry: &FunctionalBlock,
-    functions: Vec<Function>,
-    snapshot: &Snapshot,
-    type_manager: &TypeManager,
-    annotated_schema_functions: &IndexedAnnotatedFunctions,
-    variable_registry: &VariableRegistry,
-) -> Result<(TypeAnnotations, AnnotatedUnindexedFunctions), TypeInferenceError> {
-    // let preamble_functions = infer_types_for_functions(functions, snapshot, type_manager, annotated_schema_functions)?;
-    // let root_tig = infer_types_for_block(
-    //     snapshot,
-    //     entry,
-    //     variable_registry,
-    //     type_manager,
-    //     &HashMap::new(),
-    //     annotated_schema_functions,
-    //     Some(&preamble_functions),
-    // )?;
-    // Ok((TypeAnnotations::build(root_tig), preamble_functions))
-    todo!()
-}
-
 pub fn infer_types_for_functions(
     functions: Vec<Function>,
     snapshot: &impl ReadableSnapshot,
@@ -141,7 +118,7 @@ pub fn infer_types_for_match_block(
 #[cfg(test)]
 pub mod tests {
     use std::{
-        collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+        collections::{BTreeMap, BTreeSet, HashMap},
         sync::Arc,
     };
 
@@ -158,6 +135,7 @@ pub mod tests {
         pattern::{
             constraint::{Constraint, IsaKind, Links},
             variable_category::{VariableCategory, VariableOptionality},
+            Vertex,
         },
         program::{
             block::{FunctionalBlock, VariableRegistry},
@@ -169,37 +147,19 @@ pub mod tests {
     use itertools::Itertools;
 
     use crate::match_::inference::{
-        annotated_functions::IndexedAnnotatedFunctions,
+        annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         pattern_type_inference::{
             infer_types_for_block, tests::expected_edge, NestedTypeInferenceGraphDisjunction, TypeInferenceGraph,
+            VertexAnnotations,
         },
         tests::{
             managers,
             schema_consts::{setup_types, LABEL_CAT},
             setup_storage,
         },
-        type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations},
-        type_inference::{infer_types, infer_types_for_function, TypeAnnotations},
+        type_annotations::{ConstraintTypeAnnotations, LeftRightFilteredAnnotations},
+        type_inference::{infer_types_for_function, infer_types_for_match_block, TypeAnnotations},
     };
-
-    pub(crate) fn expected_left_right_annotation(
-        constraint: &Constraint<Variable>,
-        left: Variable,
-        right: Variable,
-        types: Vec<(Type, Type)>,
-    ) -> ConstraintTypeAnnotations {
-        let mut left_to_right = BTreeMap::new();
-        let mut right_to_left = BTreeMap::new();
-        for (l, r) in &types {
-            left_to_right.insert(l.clone(), Vec::new());
-            right_to_left.insert(r.clone(), Vec::new());
-        }
-        for (l, r) in &types {
-            left_to_right.get_mut(l).unwrap().push(r.clone());
-            right_to_left.get_mut(r).unwrap().push(l.clone());
-        }
-        ConstraintTypeAnnotations::LeftRight(LeftRightAnnotations::new(left_to_right, right_to_left))
-    }
 
     #[test]
     fn test_translation() {
@@ -217,22 +177,22 @@ pub mod tests {
         let constraint2 = Constraint::Links(Links::new(var_relation, var_player, var_role_type));
         let nested1 = TypeInferenceGraph {
             conjunction: dummy.conjunction(),
-            vertices: BTreeMap::from([
-                (var_relation, BTreeSet::from([type_rel_0.clone()])),
-                (var_role_type, BTreeSet::from([type_role_0.clone()])),
-                (var_player, BTreeSet::from([type_player_0.clone()])),
+            vertices: VertexAnnotations::from([
+                (var_relation.into(), BTreeSet::from([type_rel_0.clone()])),
+                (var_role_type.into(), BTreeSet::from([type_role_0.clone()])),
+                (var_player.into(), BTreeSet::from([type_player_0.clone()])),
             ]),
             edges: vec![
                 expected_edge(
                     &constraint1,
-                    var_relation,
-                    var_role_type,
+                    var_relation.into(),
+                    var_role_type.into(),
                     vec![(type_rel_0.clone(), type_role_0.clone())],
                 ),
                 expected_edge(
                     &constraint1,
-                    var_player,
-                    var_role_type,
+                    var_player.into(),
+                    var_role_type.into(),
                     vec![(type_player_0.clone(), type_role_0.clone())],
                 ),
             ],
@@ -240,26 +200,26 @@ pub mod tests {
             nested_negations: vec![],
             nested_optionals: vec![],
         };
-        let vertex_annotations = BTreeMap::from([
-            (var_relation, BTreeSet::from([type_rel_1.clone()])),
-            (var_role_type, BTreeSet::from([type_role_1.clone()])),
-            (var_player, BTreeSet::from([type_player_1.clone()])),
+        let vertex_annotations = VertexAnnotations::from([
+            (var_relation.into(), BTreeSet::from([type_rel_1.clone()])),
+            (var_role_type.into(), BTreeSet::from([type_role_1.clone()])),
+            (var_player.into(), BTreeSet::from([type_player_1.clone()])),
         ]);
-        let shared_variables: BTreeSet<Variable> = vertex_annotations.keys().copied().collect();
+        let shared_variables = vertex_annotations.keys().filter_map(Vertex::as_variable).collect();
         let nested2 = TypeInferenceGraph {
             conjunction: dummy.conjunction(),
             vertices: vertex_annotations.clone(),
             edges: vec![
                 expected_edge(
                     &constraint1,
-                    var_relation,
-                    var_role_type,
+                    var_relation.into(),
+                    var_role_type.into(),
                     vec![(type_rel_1.clone(), type_role_1.clone())],
                 ),
                 expected_edge(
                     &constraint1,
-                    var_player,
-                    var_role_type,
+                    var_player.into(),
+                    var_role_type.into(),
                     vec![(type_player_1.clone(), type_role_1.clone())],
                 ),
             ],
@@ -269,10 +229,10 @@ pub mod tests {
         };
         let tig = TypeInferenceGraph {
             conjunction: dummy.conjunction(),
-            vertices: BTreeMap::from([
-                (var_relation, BTreeSet::from([type_rel_0.clone(), type_rel_1.clone()])),
-                (var_role_type, BTreeSet::from([type_role_0.clone(), type_role_1.clone()])),
-                (var_player, BTreeSet::from([type_player_0.clone(), type_player_1.clone()])),
+            vertices: VertexAnnotations::from([
+                (var_relation.into(), BTreeSet::from([type_rel_0.clone(), type_rel_1.clone()])),
+                (var_role_type.into(), BTreeSet::from([type_role_0.clone(), type_role_1.clone()])),
+                (var_player.into(), BTreeSet::from([type_player_0.clone(), type_player_1.clone()])),
             ]),
             edges: vec![],
             nested_disjunctions: vec![NestedTypeInferenceGraphDisjunction {
@@ -287,21 +247,27 @@ pub mod tests {
 
         let lra1 = LeftRightFilteredAnnotations {
             left_to_right: Arc::new(BTreeMap::from([(type_rel_0.clone(), vec![type_player_0.clone()])])),
-            filters_on_right: Arc::new(BTreeMap::from([(type_player_0.clone(), HashSet::from([type_role_0.clone()]))])),
+            filters_on_right: Arc::new(BTreeMap::from([(
+                type_player_0.clone(),
+                BTreeSet::from([type_role_0.clone()]),
+            )])),
             right_to_left: Arc::new(BTreeMap::from([(type_player_0.clone(), vec![type_rel_0.clone()])])),
-            filters_on_left: Arc::new(BTreeMap::from([(type_rel_0.clone(), HashSet::from([type_role_0.clone()]))])),
+            filters_on_left: Arc::new(BTreeMap::from([(type_rel_0.clone(), BTreeSet::from([type_role_0.clone()]))])),
         };
         let lra2 = LeftRightFilteredAnnotations {
             left_to_right: Arc::new(BTreeMap::from([(type_rel_1.clone(), vec![type_player_1.clone()])])),
-            filters_on_right: Arc::new(BTreeMap::from([(type_player_1.clone(), HashSet::from([type_role_1.clone()]))])),
+            filters_on_right: Arc::new(BTreeMap::from([(
+                type_player_1.clone(),
+                BTreeSet::from([type_role_1.clone()]),
+            )])),
             right_to_left: Arc::new(BTreeMap::from([(type_player_1.clone(), vec![type_rel_1.clone()])])),
-            filters_on_left: Arc::new(BTreeMap::from([(type_rel_1.clone(), HashSet::from([type_role_1.clone()]))])),
+            filters_on_left: Arc::new(BTreeMap::from([(type_rel_1.clone(), BTreeSet::from([type_role_1.clone()]))])),
         };
         let expected_annotations = TypeAnnotations::new(
-            HashMap::from([
-                (var_relation, Arc::new(HashSet::from([type_rel_0.clone(), type_rel_1.clone()]))),
-                (var_role_type, Arc::new(HashSet::from([type_role_0.clone(), type_role_1.clone()]))),
-                (var_player, Arc::new(HashSet::from([type_player_0.clone(), type_player_1.clone()]))),
+            BTreeMap::from([
+                (var_relation.into(), Arc::new(BTreeSet::from([type_rel_0.clone(), type_rel_1.clone()]))),
+                (var_role_type.into(), Arc::new(BTreeSet::from([type_role_0.clone(), type_role_1.clone()]))),
+                (var_player.into(), Arc::new(BTreeSet::from([type_player_0.clone(), type_player_1.clone()]))),
             ]),
             HashMap::from([
                 (constraint1, ConstraintTypeAnnotations::LeftRightFiltered(lra1)),
@@ -317,9 +283,8 @@ pub mod tests {
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
 
-        let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), (type_fears, _, _)) =
+        let ((type_animal, type_cat, type_dog), (type_name, type_catname, _), (type_fears, _, _)) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
-        let animal_types = [type_animal.clone(), type_cat.clone(), type_dog.clone()];
         let object_types = [type_animal.clone(), type_cat.clone(), type_dog.clone(), type_fears.clone()];
 
         let (with_no_cache, with_local_cache, with_schema_cache) = [
@@ -336,7 +301,7 @@ pub mod tests {
             let f_var_animal_type = f_conjunction.get_or_declare_variable("called_animal_type").unwrap();
             let f_var_name = f_conjunction.get_or_declare_variable("called_name").unwrap();
             f_conjunction.constraints_mut().add_label(f_var_animal_type, LABEL_CAT).unwrap();
-            f_conjunction.constraints_mut().add_isa(IsaKind::Subtype, f_var_animal, f_var_animal_type).unwrap();
+            f_conjunction.constraints_mut().add_isa(IsaKind::Subtype, f_var_animal, f_var_animal_type.into()).unwrap();
             f_conjunction.constraints_mut().add_has(f_var_animal, f_var_name).unwrap();
             let f_ir = Function::new(
                 "fn_test",
@@ -368,25 +333,6 @@ pub mod tests {
         .unwrap();
 
         let snapshot = storage.open_snapshot_read();
-        let f_annotations = {
-            let (_, _, f_ir) = &with_no_cache;
-            let f_annotations =
-                infer_types_for_function(f_ir, &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
-                    .unwrap();
-            let isa = f_ir.block().conjunction().constraints()[0].clone();
-            let f_var_animal = var_from_registry(f_ir.variable_registry(), "called_animal").unwrap();
-            let f_var_animal_type = var_from_registry(f_ir.variable_registry(), "called_animal_type").unwrap();
-            let f_var_name = var_from_registry(f_ir.variable_registry(), "called_name").unwrap();
-            assert_eq!(
-                *f_annotations.block_annotations.vertex_annotations(),
-                HashMap::from([
-                    (f_var_animal, Arc::new(HashSet::from([type_cat.clone()]))),
-                    (f_var_animal_type, Arc::new(HashSet::from([type_cat.clone()]))),
-                    (f_var_name, Arc::new(HashSet::from([type_catname.clone()])))
-                ])
-            );
-            f_annotations
-        };
 
         {
             // Local inference only
@@ -398,7 +344,7 @@ pub mod tests {
                     &entry,
                     &entry_context.variable_registry,
                     &type_manager,
-                    &HashMap::new(),
+                    &BTreeMap::new(),
                     &IndexedAnnotatedFunctions::empty(),
                     None,
                 )
@@ -406,40 +352,83 @@ pub mod tests {
             );
             assert_eq!(
                 *annotations_without_schema_cache.vertex_annotations(),
-                HashMap::from([(var_animal, Arc::new(HashSet::from(object_types.clone()))),])
+                BTreeMap::from([(var_animal.into(), Arc::new(BTreeSet::from(object_types.clone())))])
             );
         }
+
         {
             // With schema cache
             let (entry, entry_context, f_ir) = with_local_cache;
+
+            let f_annotations =
+                infer_types_for_function(&f_ir, &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
+                    .unwrap();
+            let f_var_animal = var_from_registry(f_ir.variable_registry(), "called_animal").unwrap();
+            let f_var_animal_type = var_from_registry(f_ir.variable_registry(), "called_animal_type").unwrap();
+            let f_var_name = var_from_registry(f_ir.variable_registry(), "called_name").unwrap();
+
+            assert_eq!(
+                *f_annotations.block_annotations.vertex_annotations(),
+                BTreeMap::from([
+                    (f_var_animal.into(), Arc::new(BTreeSet::from([type_cat.clone()]))),
+                    (f_var_animal_type.into(), Arc::new(BTreeSet::from([type_cat.clone()]))),
+                    (f_var_name.into(), Arc::new(BTreeSet::from([type_catname.clone(), type_name.clone()])))
+                ])
+            );
+
             let var_animal = var_from_registry(&entry_context.variable_registry, "animal").unwrap();
-            let (entry_annotations, annotated_functions) = infer_types(
+            let local_cache = AnnotatedUnindexedFunctions::new(Box::new([f_ir]), Box::new([f_annotations]));
+            let entry_annotations = infer_types_for_match_block(
                 &entry,
-                vec![f_ir],
+                &entry_context.variable_registry,
                 &snapshot,
                 &type_manager,
+                &BTreeMap::new(),
                 &IndexedAnnotatedFunctions::empty(),
-                &entry_context.variable_registry,
+                &local_cache,
             )
             .unwrap();
             assert_eq!(
                 entry_annotations.vertex_annotations(),
-                &HashMap::from([(var_animal, Arc::new(HashSet::from([type_cat.clone()])))]),
+                &BTreeMap::from([(var_animal.into(), Arc::new(BTreeSet::from([type_cat.clone()])))]),
             );
         }
 
         {
             // With schema cache
             let (entry, entry_context, f_ir) = with_schema_cache;
-            let var_animal = var_from_registry(&entry_context.variable_registry, "animal").unwrap();
-            let f_id = FunctionID::Schema(DefinitionKey::build(Prefix::DefinitionFunction, DefinitionID::build(0)));
-            let schema_cache = IndexedAnnotatedFunctions::new(Box::new([Some(f_ir)]), Box::new([Some(f_annotations)]));
-            let (entry_annotations, annotated_functions) =
-                infer_types(&entry, vec![], &snapshot, &type_manager, &schema_cache, &entry_context.variable_registry)
+
+            let f_annotations =
+                infer_types_for_function(&f_ir, &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
                     .unwrap();
+            let f_var_animal = var_from_registry(f_ir.variable_registry(), "called_animal").unwrap();
+            let f_var_animal_type = var_from_registry(f_ir.variable_registry(), "called_animal_type").unwrap();
+            let f_var_name = var_from_registry(f_ir.variable_registry(), "called_name").unwrap();
+
+            assert_eq!(
+                *f_annotations.block_annotations.vertex_annotations(),
+                BTreeMap::from([
+                    (f_var_animal.into(), Arc::new(BTreeSet::from([type_cat.clone()]))),
+                    (f_var_animal_type.into(), Arc::new(BTreeSet::from([type_cat.clone()]))),
+                    (f_var_name.into(), Arc::new(BTreeSet::from([type_catname.clone(), type_name.clone()])))
+                ])
+            );
+
+            let var_animal = var_from_registry(&entry_context.variable_registry, "animal").unwrap();
+            let schema_cache = IndexedAnnotatedFunctions::new(Box::new([Some(f_ir)]), Box::new([Some(f_annotations)]));
+            let entry_annotations = infer_types_for_match_block(
+                &entry,
+                &entry_context.variable_registry,
+                &snapshot,
+                &type_manager,
+                &BTreeMap::new(),
+                &schema_cache,
+                &AnnotatedUnindexedFunctions::empty(),
+            )
+            .unwrap();
             assert_eq!(
                 *entry_annotations.vertex_annotations(),
-                HashMap::from([(var_animal, Arc::new(HashSet::from([type_cat.clone()])))]),
+                BTreeMap::from([(var_animal.into(), Arc::new(BTreeSet::from([type_cat.clone()])))]),
             );
         }
 

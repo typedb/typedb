@@ -27,7 +27,7 @@ use crate::match_::inference::{
     TypeInferenceError,
 };
 
-#[derive(Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub(crate) struct VertexAnnotations {
     annotations: BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>,
 }
