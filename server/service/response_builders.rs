@@ -9,11 +9,16 @@ pub(crate) mod connection {
 
     use crate::service::ConnectionID;
 
-    pub(crate) fn connection_open_res(connection_id: ConnectionID, receive_time: Instant) -> typedb_protocol::connection::open::Res {
+    pub(crate) fn connection_open_res(
+        connection_id: ConnectionID,
+        receive_time: Instant,
+        databases_all_res: typedb_protocol::database_manager::all::Res,
+    ) -> typedb_protocol::connection::open::Res {
         let processing_millis = Instant::now().duration_since(receive_time).as_millis();
         typedb_protocol::connection::open::Res {
             connection_id: Some(typedb_protocol::ConnectionId { id: Vec::from(connection_id) }),
             server_duration_millis: processing_millis as u64,
+            databases_all: Some(databases_all_res),
         }
     }
 }
@@ -59,15 +64,7 @@ pub(crate) mod database_manager {
         typedb_protocol::database_manager::all::Res {
             databases: database_names
                 .into_iter()
-                .map(|name| typedb_protocol::DatabaseReplicas {
-                    name: name,
-                    replicas: Vec::from([typedb_protocol::database_replicas::Replica {
-                        address: server_address.to_string(),
-                        primary: true,
-                        preferred: true,
-                        term: 0,
-                    }]),
-                })
+                .map(|name| database_replicas(name, server_address))
                 .collect(),
         }
     }
@@ -76,8 +73,22 @@ pub(crate) mod database_manager {
         typedb_protocol::database_manager::contains::Res { contains }
     }
 
-    pub(crate) fn database_create_res() -> typedb_protocol::database_manager::create::Res {
-        typedb_protocol::database_manager::create::Res {}
+    pub(crate) fn database_replicas(name: String, server_address: &SocketAddr) -> typedb_protocol::DatabaseReplicas {
+        typedb_protocol::DatabaseReplicas {
+            name: name,
+            replicas: Vec::from([typedb_protocol::database_replicas::Replica {
+                address: server_address.to_string(),
+                primary: true,
+                preferred: true,
+                term: 0,
+            }]),
+        }
+    }
+
+    pub(crate) fn database_create_res(name: String, server_address: &SocketAddr) -> typedb_protocol::database_manager::create::Res {
+        typedb_protocol::database_manager::create::Res {
+            database: Some(database_replicas(name, server_address))
+        }
     }
 }
 
@@ -227,7 +238,7 @@ pub(crate) mod transaction {
     ) -> typedb_protocol::transaction::Server {
         transaction_server_res_part(
             req_id,
-            typedb_protocol::transaction::res_part::ResPart::QueryRes(res_part)
+            typedb_protocol::transaction::res_part::ResPart::QueryRes(res_part),
         )
     }
 

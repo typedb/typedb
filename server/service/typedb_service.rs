@@ -73,7 +73,11 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         } else {
             event!(Level::TRACE, "Successful connection_open");
             // generate a connection ID per 'connection_open' to be able to trace different connections by the same user
-            Ok(Response::new(connection_open_res(self.generate_connection_id(), receive_time)))
+            Ok(Response::new(connection_open_res(
+                self.generate_connection_id(),
+                receive_time,
+                database_all_res(&self.address, self.database_manager.database_names())
+            )))
         }
     }
 
@@ -113,8 +117,8 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         request: Request<typedb_protocol::database_manager::create::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::create::Res>, Status> {
         let message = request.into_inner();
-        self.database_manager.create_database(message.name);
-        Ok(Response::new(database_create_res()))
+        self.database_manager.create_database(message.name.clone());
+        Ok(Response::new(database_create_res(message.name, &self.address)))
     }
 
     async fn database_schema(
