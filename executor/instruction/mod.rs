@@ -8,16 +8,12 @@ use std::{
     collections::HashMap,
     marker::PhantomData,
     ops::{Bound, RangeBounds},
-    sync::Arc,
 };
 
 use answer::variable_value::VariableValue;
 use compiler::match_::instructions::{CheckInstruction, ConstraintInstruction};
-use concept::{
-    error::ConceptReadError,
-    thing::{object::ObjectAPI, thing_manager::ThingManager},
-};
-use ir::pattern::constraint::Comparator;
+use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use ir::pattern::{constraint::Comparator, Vertex};
 use lending_iterator::higher_order::{FnHktHelper, Hkt};
 use storage::snapshot::ReadableSnapshot;
 
@@ -32,6 +28,7 @@ use crate::{
         relates_reverse_executor::RelatesReverseExecutor, sub_executor::SubExecutor,
         sub_reverse_executor::SubReverseExecutor, type_list_executor::TypeListExecutor,
     },
+    pipeline::stage::StageContext,
     row::MaybeOwnedRow,
     VariablePosition,
 };
@@ -143,8 +140,6 @@ impl InstructionExecutor {
                 thing_manager,
             )?)),
             ConstraintInstruction::FunctionCallBinding(_function_call) => todo!(),
-            ConstraintInstruction::ComparisonGenerator(_comparison) => todo!(),
-            ConstraintInstruction::ComparisonGeneratorReverse(_comparison) => todo!(),
             ConstraintInstruction::ComparisonCheck(_comparison) => todo!(),
             ConstraintInstruction::ExpressionBinding(_expression_binding) => todo!(),
         }
@@ -152,27 +147,26 @@ impl InstructionExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &StageContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         match self {
-            Self::Constant(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::TypeList(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::Sub(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::SubReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::Owns(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::OwnsReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::Relates(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::RelatesReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::Plays(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::PlaysReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::Isa(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::IsaReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::Has(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::HasReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::Links(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::LinksReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::Constant(executor) => executor.get_iterator(context, row),
+            Self::TypeList(executor) => executor.get_iterator(context, row),
+            Self::Sub(executor) => executor.get_iterator(context, row),
+            Self::SubReverse(executor) => executor.get_iterator(context, row),
+            Self::Owns(executor) => executor.get_iterator(context, row),
+            Self::OwnsReverse(executor) => executor.get_iterator(context, row),
+            Self::Relates(executor) => executor.get_iterator(context, row),
+            Self::RelatesReverse(executor) => executor.get_iterator(context, row),
+            Self::Plays(executor) => executor.get_iterator(context, row),
+            Self::PlaysReverse(executor) => executor.get_iterator(context, row),
+            Self::Isa(executor) => executor.get_iterator(context, row),
+            Self::IsaReverse(executor) => executor.get_iterator(context, row),
+            Self::Has(executor) => executor.get_iterator(context, row),
+            Self::HasReverse(executor) => executor.get_iterator(context, row),
+            Self::Links(executor) => executor.get_iterator(context, row),
+            Self::LinksReverse(executor) => executor.get_iterator(context, row),
             Self::FunctionCallBinding(_executor) => todo!(),
         }
     }
@@ -279,20 +273,26 @@ pub(crate) enum BinaryIterateMode {
 
 impl BinaryIterateMode {
     pub(crate) fn new(
-        from_var: VariablePosition,
-        to_var: VariablePosition,
+        from_vertex: &Vertex<VariablePosition>,
+        to_vertex: &Vertex<VariablePosition>,
         var_modes: &VariableModes,
         sort_by: Option<VariablePosition>,
     ) -> BinaryIterateMode {
-        debug_assert!(var_modes.len() == 2);
+        // TODO
+        // debug_assert!(var_modes.len() == 2);
         debug_assert!(!var_modes.all_inputs());
 
-        let is_from_bound = var_modes.get(from_var) == Some(&VariableMode::Input);
-        debug_assert!(var_modes.get(to_var) != Some(&VariableMode::Input));
+        let is_from_bound = match from_vertex {
+            &Vertex::Variable(from_var) => var_modes.get(from_var) == Some(&VariableMode::Input),
+            Vertex::Label(_) | Vertex::Parameter(_) => true,
+        };
+
+        // TODO
+        // debug_assert!(var_modes.get(to_var) != Some(&VariableMode::Input));
 
         if is_from_bound {
             Self::BoundFrom
-        } else if sort_by == Some(to_var) {
+        } else if sort_by.is_some_and(|sort_var| Some(sort_var) == to_vertex.as_variable()) {
             Self::UnboundInverted
         } else {
             Self::Unbound
@@ -318,22 +318,32 @@ pub(crate) enum TernaryIterateMode {
 
 impl TernaryIterateMode {
     pub(crate) fn new(
-        from_var: VariablePosition,
-        to_var: VariablePosition,
+        from_vertex: &Vertex<VariablePosition>,
+        to_vertex: &Vertex<VariablePosition>,
         var_modes: &VariableModes,
         sort_by: Option<VariablePosition>,
     ) -> TernaryIterateMode {
-        debug_assert!(var_modes.len() == 3);
+        // TODO
+        // debug_assert!(var_modes.len() == 3);
+
         debug_assert!(!var_modes.all_inputs());
-        let is_from_bound = var_modes.get(from_var) == Some(&VariableMode::Input);
-        let is_to_bound = var_modes.get(to_var) == Some(&VariableMode::Input);
+
+        let is_from_bound = match from_vertex {
+            &Vertex::Variable(from_var) => var_modes.get(from_var) == Some(&VariableMode::Input),
+            Vertex::Label(_) | Vertex::Parameter(_) => true,
+        };
+
+        let is_to_bound = match to_vertex {
+            &Vertex::Variable(to_var) => var_modes.get(to_var) == Some(&VariableMode::Input),
+            Vertex::Label(_) | Vertex::Parameter(_) => true,
+        };
 
         if is_to_bound {
             assert!(is_from_bound);
             Self::BoundFromBoundTo
         } else if is_from_bound {
             Self::BoundFrom
-        } else if sort_by == Some(to_var) {
+        } else if sort_by.is_some_and(|sort_var| Some(sort_var) == to_vertex.as_variable()) {
             Self::UnboundInverted
         } else {
             Self::Unbound
@@ -379,10 +389,11 @@ impl<T: Hkt> Checker<T> {
             (if select_a_min { a_min } else { b_min }, if select_a_max { a_max } else { b_max })
         }
 
+        /*
         let mut range = (Bound::Unbounded, Bound::Unbounded);
         for check in &self.checks {
             match *check {
-                CheckInstruction::Comparison { lhs, rhs, comparator } if lhs == target => {
+                CheckInstruction::Comparison { lhs, rhs, comparator } if lhs == Vertex::Variable(target) => {
                     let rhs = row.get(rhs).to_owned();
                     let comp_range = match comparator {
                         Comparator::Equal => (Bound::Included(rhs.clone()), Bound::Included(rhs)),
@@ -399,22 +410,27 @@ impl<T: Hkt> Checker<T> {
             }
         }
         range
+        */
+        todo!() as (Bound<VariableValue<'_>>, Bound<VariableValue<'_>>)
     }
 
     fn filter_for_row(
         &self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &StageContext<impl ReadableSnapshot + 'static>,
         row: &MaybeOwnedRow<'_>,
     ) -> Box<FilterFn<T>> {
         type BoxExtractor<T> = Box<dyn for<'a> Fn(&'a <T as Hkt>::HktSelf<'_>) -> VariableValue<'a>>;
         let mut filters: Vec<Box<dyn Fn(&T::HktSelf<'_>) -> Result<bool, ConceptReadError>>> =
             Vec::with_capacity(self.checks.len());
         for check in &self.checks {
-            match *check {
+            match check {
                 CheckInstruction::Comparison { lhs, rhs, comparator } => {
-                    let lhs_extractor = self.extractors[&lhs];
-                    let rhs = row.get(rhs).to_owned();
+                    let lhs_extractor = self.extractors[&lhs.as_variable().unwrap()];
+                    let rhs = match rhs {
+                        &Vertex::Variable(pos) => row.get(pos).to_owned(),
+                        &Vertex::Parameter(param) => VariableValue::Value(context.parameters()[param].to_owned()),
+                        Vertex::Label(_) => unreachable!(),
+                    };
                     let cmp: fn(&VariableValue<'_>, &VariableValue<'_>) -> bool = match comparator {
                         Comparator::Equal => |a, b| a == b,
                         Comparator::Less => |a, b| a < b,
@@ -427,6 +443,8 @@ impl<T: Hkt> Checker<T> {
                     filters.push(Box::new(move |value| Ok(cmp(&lhs_extractor(value), &rhs))));
                 }
                 CheckInstruction::Has { owner, attribute } => {
+                    todo!()
+                    /*
                     let maybe_owner_extractor = self.extractors.get(&owner);
                     let maybe_attribute_extractor = self.extractors.get(&attribute);
                     let snapshot = snapshot.clone();
@@ -454,8 +472,11 @@ impl<T: Hkt> Checker<T> {
                             )
                         }
                     }));
+                    */
                 }
                 CheckInstruction::Links { relation, player, role } => {
+                    todo!()
+                    /*
                     let maybe_relation_extractor = self.extractors.get(&relation);
                     let maybe_player_extractor = self.extractors.get(&player);
                     let maybe_role_extractor = self.extractors.get(&role);
@@ -492,6 +513,7 @@ impl<T: Hkt> Checker<T> {
                             )
                         }
                     }));
+                    */
                 }
                 _ => todo!(),
             }

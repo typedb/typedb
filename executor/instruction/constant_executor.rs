@@ -4,11 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::Arc;
-
 use answer::variable_value::VariableValue;
 use compiler::match_::instructions::thing::ConstantInstruction;
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use concept::error::ConceptReadError;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -17,6 +15,7 @@ use crate::{
         tuple::{Tuple, TuplePositions, TupleResult},
         VariableModes,
     },
+    pipeline::stage::StageContext,
     row::MaybeOwnedRow,
     VariablePosition,
 };
@@ -38,14 +37,13 @@ impl ConstantExecutor {
         debug_assert!(!variable_modes.all_inputs());
         let ConstantInstruction { var, value, .. } = constant;
         debug_assert_eq!(Some(var), _sort_by);
-        let tuple_positions = TuplePositions::Single([var]);
+        let tuple_positions = TuplePositions::Single([Some(var)]);
         Self { variable_modes, tuple_positions, value }
     }
 
     pub(crate) fn get_iterator(
         &self,
-        _: &Arc<impl ReadableSnapshot + 'static>,
-        _: &Arc<ThingManager>,
+        _: &StageContext<impl ReadableSnapshot + 'static>,
         _: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         Ok(TupleIterator::Constant(SortedTupleIterator::new(

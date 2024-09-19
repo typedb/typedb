@@ -6,7 +6,7 @@
 
 use std::{
     cmp::Ordering,
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
     marker::PhantomData,
     sync::Arc,
 };
@@ -38,6 +38,7 @@ use crate::{
         },
         Checker, FilterFn, TernaryIterateMode, VariableModes,
     },
+    pipeline::stage::StageContext,
     row::MaybeOwnedRow,
     VariablePosition,
 };
@@ -51,7 +52,7 @@ pub(crate) struct LinksExecutor {
     tuple_positions: TuplePositions,
 
     relation_player_types: Arc<BTreeMap<Type, Vec<Type>>>, // vecs are in sorted order
-    player_types: Arc<HashSet<Type>>,
+    player_types: Arc<BTreeSet<Type>>,
 
     filter_fn: Arc<LinksFilterFn>,
     relation_cache: Option<Vec<Relation<'static>>>,
@@ -104,18 +105,23 @@ impl LinksExecutor {
         let LinksInstruction { links, checks, .. } = links;
         let iterate_mode = TernaryIterateMode::new(links.relation(), links.player(), &variable_modes, sort_by);
         let filter_fn = create_links_filter_relations_players_roles(relation_player_types.clone(), player_role_types);
+
+        let relation = links.relation().as_variable().unwrap();
+        let player = links.player().as_variable().unwrap();
+        let role_type = links.role_type().as_variable().unwrap();
+
         let output_tuple_positions = if iterate_mode == TernaryIterateMode::UnboundInverted {
-            TuplePositions::Triple([links.player(), links.relation(), links.role_type()])
+            TuplePositions::Triple([Some(player), Some(relation), Some(role_type)])
         } else {
-            TuplePositions::Triple([links.relation(), links.player(), links.role_type()])
+            TuplePositions::Triple([Some(relation), Some(player), Some(role_type)])
         };
 
         let checker = Checker::<(Relation<'_>, RolePlayer<'_>, _)> {
             checks,
             extractors: HashMap::from([
-                (links.relation(), EXTRACT_RELATION),
-                (links.player(), EXTRACT_PLAYER),
-                (links.role_type(), EXTRACT_ROLE),
+                (relation, EXTRACT_RELATION),
+                (player, EXTRACT_PLAYER),
+                (role_type, EXTRACT_ROLE),
             ]),
             _phantom_data: PhantomData,
         };
@@ -150,16 +156,18 @@ impl LinksExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &StageContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_for_row(snapshot, thing_manager, &row);
+        let check = self.checker.filter_for_row(context, &row);
         let filter_for_row: Box<LinksFilterFn> = Box::new(move |item| match filter(item) {
             Ok(true) => check(item),
             fail => fail,
         });
+
+        let snapshot = &**context.snapshot();
+        let thing_manager = context.thing_manager();
 
         match self.iterate_mode {
             TernaryIterateMode::Unbound => {
@@ -168,7 +176,7 @@ impl LinksExecutor {
                 let key_range =
                     KeyRange::new_inclusive(first_from_type.as_relation_type(), last_key_from_type.as_relation_type());
                 // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
-                let iterator = thing_manager.get_links_by_relation_type_range(&**snapshot, key_range);
+                let iterator = thing_manager.get_links_by_relation_type_range(snapshot, key_range);
                 let as_tuples: LinksUnboundedSortedRelation = iterator
                     .try_filter::<_, LinksFilterFn, (Relation<'_>, RolePlayer<'_>, _), _>(filter_for_row)
                     .map(links_to_tuple_relation_player_role);
@@ -188,7 +196,7 @@ impl LinksExecutor {
                 if let Some([relation]) = self.relation_cache.as_deref() {
                     // no heap allocs needed if there is only 1 iterator
                     let iterator = thing_manager.get_links_by_relation_and_player_type_range(
-                        &**snapshot,
+                        snapshot,
                         relation.as_reference(),
                         // TODO: this should be just the types owned by the one instance's type in the cache!
                         player_type_range,
@@ -208,7 +216,7 @@ impl LinksExecutor {
                     let iterators = relations
                         .map(|relation| {
                             Ok(Peekable::new(thing_manager.get_links_by_relation_and_player_type_range(
-                                &**snapshot,
+                                snapshot,
                                 relation.as_reference(),
                                 player_type_range.clone(),
                             )))
@@ -230,15 +238,16 @@ impl LinksExecutor {
             }
 
             TernaryIterateMode::BoundFrom => {
-                debug_assert!(row.len() > self.links.relation().as_usize());
+                let relation = self.links.relation().as_variable().unwrap();
+                debug_assert!(row.len() > relation.as_usize());
                 let (min_player_type, max_player_type) = min_max_types(&*self.player_types);
                 let player_type_range =
                     KeyRange::new_inclusive(min_player_type.as_object_type(), max_player_type.as_object_type());
 
-                let iterator = match row.get(self.links.relation()) {
+                let iterator = match row.get(relation) {
                     VariableValue::Thing(Thing::Relation(relation)) => thing_manager
                         .get_links_by_relation_and_player_type_range(
-                            &**snapshot,
+                            snapshot,
                             relation.as_reference(),
                             player_type_range,
                         ),
@@ -255,11 +264,13 @@ impl LinksExecutor {
             }
 
             TernaryIterateMode::BoundFromBoundTo => {
-                debug_assert!(row.len() > self.links.relation().as_usize());
-                debug_assert!(row.len() > self.links.player().as_usize());
-                let relation = row.get(self.links.relation()).as_thing().as_relation();
-                let player = row.get(self.links.player()).as_thing().as_object();
-                let iterator = thing_manager.get_links_by_relation_and_player(&**snapshot, relation, player);
+                let relation = self.links.relation().as_variable().unwrap();
+                let player = self.links.player().as_variable().unwrap();
+                debug_assert!(row.len() > relation.as_usize());
+                debug_assert!(row.len() > player.as_usize());
+                let relation = row.get(relation).as_thing().as_relation();
+                let player = row.get(player).as_thing().as_object();
+                let iterator = thing_manager.get_links_by_relation_and_player(snapshot, relation, player);
                 let as_tuples: LinksBoundedRelationSortedPlayer = iterator
                     .try_filter::<_, LinksFilterFn, (Relation<'_>, RolePlayer<'_>, _), _>(filter_for_row)
                     .map(links_to_tuple_relation_player_role);
@@ -275,7 +286,7 @@ impl LinksExecutor {
 
 fn create_links_filter_relations_players_roles(
     relation_to_player: Arc<BTreeMap<Type, Vec<Type>>>,
-    player_to_role: Arc<BTreeMap<Type, HashSet<Type>>>,
+    player_to_role: Arc<BTreeMap<Type, BTreeSet<Type>>>,
 ) -> Arc<LinksFilterFn> {
     Arc::new(move |result| {
         let (rel, rp) = match result {

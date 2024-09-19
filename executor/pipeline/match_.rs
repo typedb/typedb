@@ -4,9 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
-
-use compiler::{match_::planner::pattern_plan::MatchProgram, VariablePosition};
+use compiler::match_::planner::pattern_plan::MatchProgram;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
@@ -84,11 +82,8 @@ where
                 .map_err(|err| PipelineExecutionError::InitialisingMatchIterator { source: err });
             match iterator {
                 Ok(iterator) => {
-                    self.current_iterator = Some(Peekable::new(iterator.into_iterator(
-                        snapshot.clone(),
-                        thing_manager.clone(),
-                        self.interrupt.clone(),
-                    )));
+                    self.current_iterator =
+                        Some(Peekable::new(iterator.into_iterator(self.context.clone(), self.interrupt.clone())));
                 }
                 Err(err) => return Some(Err(err)),
             };

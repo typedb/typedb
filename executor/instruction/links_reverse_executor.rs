@@ -6,7 +6,7 @@
 
 use std::{
     cmp::Ordering,
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
     marker::PhantomData,
     sync::Arc,
 };
@@ -22,12 +22,7 @@ use concept::{
     },
 };
 use itertools::{Itertools, MinMaxResult};
-use lending_iterator::{
-    adaptors::{Filter, Map},
-    higher_order::FnHktHelper,
-    kmerge::KMergeBy,
-    AsHkt, LendingIterator, Peekable,
-};
+use lending_iterator::{kmerge::KMergeBy, AsHkt, LendingIterator, Peekable};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
@@ -37,12 +32,10 @@ use crate::{
         links_executor::{
             LinksFilterFn, LinksOrderingFn, LinksTupleIterator, EXTRACT_PLAYER, EXTRACT_RELATION, EXTRACT_ROLE,
         },
-        tuple::{
-            links_to_tuple_player_relation_role, links_to_tuple_relation_player_role, LinksToTupleFn, TuplePositions,
-            TupleResult,
-        },
+        tuple::{links_to_tuple_player_relation_role, links_to_tuple_relation_player_role, TuplePositions},
         Checker, TernaryIterateMode, VariableModes,
     },
+    pipeline::stage::StageContext,
     row::MaybeOwnedRow,
     VariablePosition,
 };
@@ -56,7 +49,7 @@ pub(crate) struct LinksReverseExecutor {
     tuple_positions: TuplePositions,
 
     player_relation_types: Arc<BTreeMap<Type, Vec<Type>>>, // vecs are in sorted order
-    relation_types: Arc<HashSet<Type>>,
+    relation_types: Arc<BTreeSet<Type>>,
 
     filter_fn: Arc<LinksFilterFn>,
     player_cache: Option<Vec<Object<'static>>>,
@@ -87,18 +80,23 @@ impl LinksReverseExecutor {
         let LinksReverseInstruction { links, checks, .. } = links_reverse;
         let iterate_mode = TernaryIterateMode::new(links.player(), links.relation(), &variable_modes, sort_by);
         let filter_fn = create_links_filter_relations_players_roles(player_relation_types.clone(), relation_role_types);
+
+        let relation = links.relation().as_variable().unwrap();
+        let player = links.player().as_variable().unwrap();
+        let role_type = links.role_type().as_variable().unwrap();
+
         let output_tuple_positions = if iterate_mode == TernaryIterateMode::UnboundInverted {
-            TuplePositions::Triple([links.relation(), links.player(), links.role_type()])
+            TuplePositions::Triple([Some(player), Some(relation), Some(role_type)])
         } else {
-            TuplePositions::Triple([links.player(), links.relation(), links.role_type()])
+            TuplePositions::Triple([Some(relation), Some(player), Some(role_type)])
         };
 
         let checker = Checker::<(Relation<'_>, RolePlayer<'_>, _)> {
             checks,
             extractors: HashMap::from([
-                (links.relation(), EXTRACT_RELATION),
-                (links.player(), EXTRACT_PLAYER),
-                (links.role_type(), EXTRACT_ROLE),
+                (relation, EXTRACT_RELATION),
+                (player, EXTRACT_PLAYER),
+                (role_type, EXTRACT_ROLE),
             ]),
             _phantom_data: PhantomData,
         };
@@ -133,16 +131,19 @@ impl LinksReverseExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &StageContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_for_row(snapshot, thing_manager, &row);
+        let check = self.checker.filter_for_row(context, &row);
         let filter_for_row: Box<LinksFilterFn> = Box::new(move |item| match filter(item) {
             Ok(true) => check(item),
             fail => fail,
         });
+
+        let snapshot = &**context.snapshot();
+        let thing_manager = context.thing_manager();
+
         match self.iterate_mode {
             TernaryIterateMode::Unbound => {
                 let min_player_type = self.player_relation_types.first_key_value().unwrap().0;
@@ -150,7 +151,7 @@ impl LinksReverseExecutor {
                 let key_range =
                     KeyRange::new_inclusive(min_player_type.as_object_type(), max_player_type.as_object_type());
                 // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
-                let iterator = thing_manager.get_links_reverse_by_player_type_range(&**snapshot, key_range);
+                let iterator = thing_manager.get_links_reverse_by_player_type_range(snapshot, key_range);
                 let as_tuples: LinksReverseUnboundedSortedPlayer = iterator
                     .try_filter::<_, LinksFilterFn, (Relation<'_>, RolePlayer<'_>, _), _>(filter_for_row)
                     .map(links_to_tuple_player_relation_role);
@@ -171,7 +172,7 @@ impl LinksReverseExecutor {
                 if let Some([player]) = self.player_cache.as_deref() {
                     // no heap allocs needed if there is only 1 iterator
                     let filtered = thing_manager.get_links_reverse_by_player_and_relation_type_range(
-                        &**snapshot,
+                        snapshot,
                         player.as_reference(),
                         // TODO: this should be just the types owned by the one instance's type in the cache!
                         relation_type_range,
@@ -191,7 +192,7 @@ impl LinksReverseExecutor {
                     let iterators = relations
                         .map(|relation| {
                             Ok(Peekable::new(thing_manager.get_links_reverse_by_player_and_relation_type_range(
-                                &**snapshot,
+                                snapshot,
                                 relation.as_reference(),
                                 relation_type_range.clone(),
                             )))
@@ -213,14 +214,15 @@ impl LinksReverseExecutor {
             }
 
             TernaryIterateMode::BoundFrom => {
-                debug_assert!(row.len() > self.links.player().as_usize());
+                let player = self.links.player().as_variable().unwrap();
+                debug_assert!(row.len() > player.as_usize());
                 let (min_relation_type, max_relation_type) = min_max_types(&*self.relation_types);
                 let relation_type_range =
                     KeyRange::new_inclusive(min_relation_type.as_relation_type(), max_relation_type.as_relation_type());
 
                 let iterator = thing_manager.get_links_reverse_by_player_and_relation_type_range(
-                    &**snapshot,
-                    row.get(self.links.player()).as_thing().as_object().as_reference(),
+                    snapshot,
+                    row.get(player).as_thing().as_object().as_reference(),
                     relation_type_range,
                 );
                 let as_tuples: LinksReverseBoundedPlayerSortedRelation = iterator
@@ -234,11 +236,13 @@ impl LinksReverseExecutor {
             }
 
             TernaryIterateMode::BoundFromBoundTo => {
-                debug_assert!(row.len() > self.links.player().as_usize());
-                debug_assert!(row.len() > self.links.relation().as_usize());
-                let relation = row.get(self.links.relation()).as_thing().as_relation();
-                let player = row.get(self.links.player()).as_thing().as_object();
-                let iterator = thing_manager.get_links_by_relation_and_player(&**snapshot, relation, player); // NOTE: not reverse, no difference
+                let relation = self.links.relation().as_variable().unwrap();
+                let player = self.links.player().as_variable().unwrap();
+                debug_assert!(row.len() > player.as_usize());
+                debug_assert!(row.len() > relation.as_usize());
+                let relation = row.get(relation).as_thing().as_relation();
+                let player = row.get(player).as_thing().as_object();
+                let iterator = thing_manager.get_links_by_relation_and_player(snapshot, relation, player); // NOTE: not reverse, no difference
                 let as_tuples: LinksReverseBoundedPlayerSortedRelation = iterator
                     .try_filter::<_, LinksFilterFn, (Relation<'_>, RolePlayer<'_>, _), _>(filter_for_row)
                     .map(links_to_tuple_player_relation_role);
@@ -254,7 +258,7 @@ impl LinksReverseExecutor {
 
 fn create_links_filter_relations_players_roles(
     player_to_relation: Arc<BTreeMap<Type, Vec<Type>>>,
-    relation_to_role: Arc<BTreeMap<Type, HashSet<Type>>>,
+    relation_to_role: Arc<BTreeMap<Type, BTreeSet<Type>>>,
 ) -> Arc<LinksFilterFn> {
     Arc::new(move |result| {
         let (rel, rp) = match result {

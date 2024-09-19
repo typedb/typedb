@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashSet},
     iter,
     marker::PhantomData,
     sync::Arc,
@@ -16,7 +16,6 @@ use answer::{variable_value::VariableValue, Type};
 use compiler::match_::instructions::type_::PlaysInstruction;
 use concept::{
     error::ConceptReadError,
-    thing::thing_manager::ThingManager,
     type_::{plays::Plays, PlayerAPI},
 };
 use itertools::Itertools;
@@ -32,6 +31,7 @@ use crate::{
         tuple::{plays_to_tuple_player_role, PlaysToTupleFn, TuplePositions, TupleResult},
         BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
+    pipeline::stage::StageContext,
     row::MaybeOwnedRow,
     VariablePosition,
 };
@@ -42,7 +42,7 @@ pub(crate) struct PlaysExecutor {
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
     player_role_types: Arc<BTreeMap<Type, Vec<Type>>>,
-    role_types: Arc<HashSet<Type>>,
+    role_types: Arc<BTreeSet<Type>>,
     filter_fn: Arc<PlaysFilterFn>,
     checker: Checker<AsHkt![Plays<'_>]>,
 }
@@ -93,15 +93,22 @@ impl PlaysExecutor {
                 create_plays_filter_role_type(role_types.clone())
             }
         };
+
+        let player = plays.player().as_variable();
+        let role_type = plays.role_type().as_variable();
+
         let output_tuple_positions = if iterate_mode.is_inverted() {
-            TuplePositions::Pair([plays.role_type(), plays.player()])
+            TuplePositions::Pair([role_type, player])
         } else {
-            TuplePositions::Pair([plays.player(), plays.role_type()])
+            TuplePositions::Pair([player, role_type])
         };
 
         let checker = Checker::<AsHkt![Plays<'_>]> {
             checks,
-            extractors: HashMap::from([(plays.player(), EXTRACT_PLAYER), (plays.role_type(), EXTRACT_ROLE)]),
+            extractors: [(player, EXTRACT_PLAYER), (role_type, EXTRACT_ROLE)]
+                .into_iter()
+                .filter_map(|(var, ex)| Some((var?, ex)))
+                .collect(),
             _phantom_data: PhantomData,
         };
 
@@ -119,26 +126,27 @@ impl PlaysExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &StageContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_for_row(snapshot, thing_manager, &row);
+        let check = self.checker.filter_for_row(context, &row);
         let filter_for_row: Box<PlaysFilterFn> = Box::new(move |item| match filter(item) {
             Ok(true) => check(item),
             fail => fail,
         });
 
+        let snapshot = &**context.snapshot();
+
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let type_manager = thing_manager.type_manager();
+                let type_manager = context.thing_manager().type_manager();
                 let plays: Vec<_> = self
                     .player_role_types
                     .keys()
                     .map(|player| match player {
-                        Type::Entity(player) => player.get_plays(&**snapshot, type_manager),
-                        Type::Relation(player) => player.get_plays(&**snapshot, type_manager),
+                        Type::Entity(player) => player.get_plays(snapshot, type_manager),
+                        Type::Relation(player) => player.get_plays(snapshot, type_manager),
                         _ => unreachable!("player types must be entity or relation types"),
                     })
                     .map_ok(|set| set.to_owned())
@@ -160,15 +168,16 @@ impl PlaysExecutor {
             }
 
             BinaryIterateMode::BoundFrom => {
-                debug_assert!(row.len() > self.plays.player().as_usize());
-                let VariableValue::Type(player) = row.get(self.plays.player()).to_owned() else {
+                let player = self.plays.player().as_variable().unwrap();
+                debug_assert!(row.len() > player.as_usize());
+                let VariableValue::Type(player) = row.get(player).to_owned() else {
                     unreachable!("Player in `plays` must be a type")
                 };
 
-                let type_manager = thing_manager.type_manager();
+                let type_manager = context.thing_manager().type_manager();
                 let plays = match player {
-                    Type::Entity(player) => player.get_plays(&**snapshot, type_manager)?,
-                    Type::Relation(player) => player.get_plays(&**snapshot, type_manager)?,
+                    Type::Entity(player) => player.get_plays(snapshot, type_manager)?,
+                    Type::Relation(player) => player.get_plays(snapshot, type_manager)?,
                     _ => unreachable!("player types must be entity or relation types"),
                 };
 
@@ -196,7 +205,7 @@ fn create_plays_filter_player_role_type(player_role_types: Arc<BTreeMap<Type, Ve
     })
 }
 
-fn create_plays_filter_role_type(role_types: Arc<HashSet<Type>>) -> Arc<PlaysFilterFn> {
+fn create_plays_filter_role_type(role_types: Arc<BTreeSet<Type>>) -> Arc<PlaysFilterFn> {
     Arc::new(move |result| match result {
         Ok(plays) => Ok(role_types.contains(&Type::RoleType(plays.role().into_owned()))),
         Err(err) => Err(err.clone()),

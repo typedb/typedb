@@ -7,7 +7,9 @@
 use std::{cmp::Ordering, iter::Iterator, ops::RangeInclusive};
 
 use answer::variable_value::VariableValue;
+use compiler::VariablePosition;
 use concept::error::ConceptReadError;
+use itertools::zip_eq;
 use lending_iterator::{LendingIterator, Peekable};
 
 use crate::{
@@ -298,28 +300,33 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> TupleIterato
         debug_assert!(self.peek().is_some() && self.peek().unwrap().is_ok());
         // note: can't use self.peek() since it will cause mut and immutable reference to self
         let tuple = self.iterator.peek().unwrap().as_ref().unwrap();
+
+        fn relevant_values<'a, 'b>(
+            (&pos, value): (&Option<VariablePosition>, &'a VariableValue<'b>),
+        ) -> Option<(VariablePosition, &'a VariableValue<'b>)> {
+            Some((pos?, value))
+        }
+
         match tuple {
-            Tuple::Single([value]) => {
-                row.set(self.positions.as_single()[0], value.clone().into_owned());
+            Tuple::Single(values) => {
+                for (pos, value) in zip_eq(self.positions.as_single(), values).filter_map(relevant_values) {
+                    row.set(pos, value.clone().into_owned());
+                }
             }
-            Tuple::Pair([value_1, value_2]) => {
-                let positions = self.positions.as_pair();
-                row.set(positions[0], value_1.clone().into_owned());
-                row.set(positions[1], value_2.clone().into_owned());
+            Tuple::Pair(values) => {
+                for (pos, value) in zip_eq(self.positions.as_pair(), values).filter_map(relevant_values) {
+                    row.set(pos, value.clone().into_owned());
+                }
             }
-            Tuple::Triple([value_1, value_2, value_3]) => {
-                let positions = self.positions.as_triple();
-                row.set(positions[0], value_1.clone().into_owned());
-                row.set(positions[1], value_2.clone().into_owned());
-                row.set(positions[2], value_3.clone().into_owned());
+            Tuple::Triple(values) => {
+                for (pos, value) in zip_eq(self.positions.as_triple(), values).filter_map(relevant_values) {
+                    row.set(pos, value.clone().into_owned());
+                }
             }
-            Tuple::Quintuple([value_1, value_2, value_3, value_4, value_5]) => {
-                let positions = self.positions.as_quintuple();
-                row.set(positions[0], value_1.clone().into_owned());
-                row.set(positions[1], value_2.clone().into_owned());
-                row.set(positions[2], value_3.clone().into_owned());
-                row.set(positions[3], value_4.clone().into_owned());
-                row.set(positions[4], value_5.clone().into_owned());
+            Tuple::Quintuple(values) => {
+                for (pos, value) in zip_eq(self.positions.as_quintuple(), values).filter_map(relevant_values) {
+                    row.set(pos, value.clone().into_owned());
+                }
             }
             Tuple::Arbitrary() => {
                 todo!()
@@ -383,8 +390,10 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> TupleIterato
 
 fn first_unbound(variable_modes: &VariableModes, positions: &TuplePositions) -> TupleIndex {
     for (i, position) in positions.iter().enumerate() {
-        if variable_modes.get(*position).unwrap() != &VariableMode::Input {
-            return i as TupleIndex;
+        if let Some(position) = position {
+            if variable_modes.get(position).unwrap() != &VariableMode::Input {
+                return i as TupleIndex;
+            }
         }
     }
     panic!("No unbound variable found")
@@ -392,8 +401,8 @@ fn first_unbound(variable_modes: &VariableModes, positions: &TuplePositions) -> 
 
 fn last_enumerated(variable_modes: &VariableModes, positions: &TuplePositions) -> Option<TupleIndex> {
     (positions.iter().enumerate())
-        .filter(|&(_, &position)| {
-            matches!(variable_modes.get(position), Some(VariableMode::Input | VariableMode::Output))
+        .filter(|&(_, position)| {
+            matches!(position.and_then(|p| variable_modes.get(p)), Some(VariableMode::Input | VariableMode::Output))
         })
         .map(|(i, _)| i as TupleIndex)
         .last()
@@ -401,9 +410,9 @@ fn last_enumerated(variable_modes: &VariableModes, positions: &TuplePositions) -
 
 fn last_enumerated_or_counted(variable_modes: &VariableModes, positions: &TuplePositions) -> Option<TupleIndex> {
     (positions.iter().enumerate())
-        .filter(|&(_, &position)| {
+        .filter(|&(_, position)| {
             matches!(
-                variable_modes.get(position),
+                position.and_then(|p| variable_modes.get(p)),
                 Some(VariableMode::Input | VariableMode::Output | VariableMode::Count)
             )
         })

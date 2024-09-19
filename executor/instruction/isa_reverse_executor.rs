@@ -4,15 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{HashMap, HashSet},
-    marker::PhantomData,
-    sync::Arc,
-};
+use std::{collections::BTreeSet, marker::PhantomData, sync::Arc};
 
 use answer::{Thing, Type};
 use compiler::match_::instructions::thing::IsaReverseInstruction;
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use concept::error::ConceptReadError;
 use ir::pattern::constraint::{Isa, IsaKind, SubKind};
 use lending_iterator::{AsHkt, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
@@ -28,6 +24,7 @@ use crate::{
         tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, TuplePositions},
         BinaryIterateMode, Checker, VariableModes,
     },
+    pipeline::stage::StageContext,
     row::MaybeOwnedRow,
     VariablePosition,
 };
@@ -36,7 +33,8 @@ pub(crate) struct IsaReverseExecutor {
     isa: Isa<VariablePosition>,
     iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
-    thing_types: Arc<HashSet<Type>>,
+    tuple_positions: TuplePositions,
+    thing_types: Arc<BTreeSet<Type>>,
     checker: Checker<(AsHkt![Thing<'_>], Type)>,
 }
 
@@ -58,40 +56,53 @@ impl IsaReverseExecutor {
         debug_assert!(!thing_types.iter().any(|type_| matches!(type_, Type::RoleType(_))));
         let IsaReverseInstruction { isa, checks, .. } = isa_reverse;
         let iterate_mode = BinaryIterateMode::new(isa.type_(), isa.thing(), &variable_modes, sort_by);
+
+        let thing = isa.thing().as_variable();
+        let type_ = isa.type_().as_variable();
+
+        let output_tuple_positions = if iterate_mode.is_inverted() {
+            TuplePositions::Pair([thing, type_])
+        } else {
+            TuplePositions::Pair([type_, thing])
+        };
+
         let checker = Checker::<(Thing<'_>, Type)> {
             checks,
-            extractors: HashMap::from([(isa.thing(), EXTRACT_THING), (isa.type_(), EXTRACT_TYPE)]),
+            extractors: [(thing, EXTRACT_THING), (type_, EXTRACT_TYPE)]
+                .into_iter()
+                .filter_map(|(var, ex)| Some((var?, ex)))
+                .collect(),
             _phantom_data: PhantomData,
         };
 
-        Self { isa, iterate_mode, variable_modes, thing_types, checker }
+        Self { isa, iterate_mode, variable_modes, tuple_positions: output_tuple_positions, thing_types, checker }
     }
 
     pub(crate) fn get_iterator(
         &self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &StageContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
-        let filter_for_row = self.checker.filter_for_row(snapshot, thing_manager, &row);
+        let filter_for_row = self.checker.filter_for_row(context, &row);
+        let snapshot = &**context.snapshot();
+        let thing_manager = context.thing_manager();
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let positions = TuplePositions::Pair([self.isa.type_(), self.isa.thing()]);
                 if self.thing_types.len() == 1 {
                     // no heap allocs needed if there is only 1 iterator
                     let type_ = self.thing_types.iter().next().unwrap();
-                    let iterator = instances_of_single_type(&**snapshot, thing_manager, type_)?;
+                    let iterator = instances_of_single_type(snapshot, thing_manager, type_)?;
                     let as_tuples: IsaReverseUnboundedSortedTypeSingle = iterator
                         .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
                         .map(isa_to_tuple_type_thing);
                     Ok(TupleIterator::IsaReverseUnboundedSingle(SortedTupleIterator::new(
                         as_tuples,
-                        positions,
+                        self.tuple_positions.clone(),
                         &self.variable_modes,
                     )))
                 } else {
                     let thing_iter = instances_of_all_types_chained(
-                        &**snapshot,
+                        snapshot,
                         thing_manager,
                         &*self.thing_types,
                         self.isa.isa_kind(),
@@ -101,29 +112,28 @@ impl IsaReverseExecutor {
                         .map(isa_to_tuple_type_thing);
                     Ok(TupleIterator::IsaReverseUnboundedMerged(SortedTupleIterator::new(
                         as_tuples,
-                        positions,
+                        self.tuple_positions.clone(),
                         &self.variable_modes,
                     )))
                 }
             }
 
             BinaryIterateMode::UnboundInverted => {
-                let positions = TuplePositions::Pair([self.isa.thing(), self.isa.type_()]);
                 if self.thing_types.len() == 1 {
                     // no heap allocs needed if there is only 1 iterator
                     let type_ = self.thing_types.iter().next().unwrap();
-                    let iterator = instances_of_single_type(&**snapshot, thing_manager, type_)?;
+                    let iterator = instances_of_single_type(snapshot, thing_manager, type_)?;
                     let as_tuples: IsaReverseUnboundedSortedThingSingle = iterator
                         .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
                         .map(isa_to_tuple_thing_type);
                     Ok(TupleIterator::IsaReverseUnboundedInvertedSingle(SortedTupleIterator::new(
                         as_tuples,
-                        positions,
+                        self.tuple_positions.clone(),
                         &self.variable_modes,
                     )))
                 } else {
                     let thing_iter = instances_of_all_types_chained(
-                        &**snapshot,
+                        snapshot,
                         thing_manager,
                         &*self.thing_types,
                         self.isa.isa_kind(),
@@ -133,21 +143,21 @@ impl IsaReverseExecutor {
                         .map(isa_to_tuple_thing_type);
                     Ok(TupleIterator::IsaReverseUnboundedInvertedMerged(SortedTupleIterator::new(
                         as_tuples,
-                        positions,
+                        self.tuple_positions.clone(),
                         &self.variable_modes,
                     )))
                 }
             }
 
             BinaryIterateMode::BoundFrom => {
-                let positions = TuplePositions::Pair([self.isa.thing(), self.isa.type_()]);
-                let type_ = row.get(self.isa.type_()).as_type().clone();
+                let type_ = self.isa.type_().as_variable().unwrap();
+                let type_ = row.get(type_).as_type().clone();
                 let type_manager = thing_manager.type_manager();
                 let types = match self.isa.isa_kind() {
                     IsaKind::Exact => vec![type_.clone()],
-                    IsaKind::Subtype => get_subtypes(&**snapshot, type_manager, &type_, SubKind::Subtype)?,
+                    IsaKind::Subtype => get_subtypes(snapshot, type_manager, &type_, SubKind::Subtype)?,
                 };
-                let iterator = instances_of_all_types_chained(&**snapshot, thing_manager, &types, self.isa.isa_kind())?;
+                let iterator = instances_of_all_types_chained(snapshot, thing_manager, &types, self.isa.isa_kind())?;
                 let as_tuples: IsaReverseBoundedSortedThing = iterator
                     .try_filter::<Box<IsaFilterFn>, IsaFilterFn, (Thing<'_>, Type), _>(Box::new(
                         move |res: &_| match res {
@@ -159,7 +169,7 @@ impl IsaReverseExecutor {
                     .map(isa_to_tuple_thing_type);
                 Ok(TupleIterator::IsaReverseBounded(SortedTupleIterator::new(
                     as_tuples,
-                    positions,
+                    self.tuple_positions.clone(),
                     &self.variable_modes,
                 )))
             }

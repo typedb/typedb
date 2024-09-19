@@ -4,14 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
-use compiler::{
-    delete::{instructions::ConnectionInstruction, program::DeleteProgram},
-    VariablePosition,
-};
+use compiler::delete::{instructions::ConnectionInstruction, program::DeleteProgram};
 use concept::thing::thing_manager::ThingManager;
-use ir::program::ParameterRegistry;
+use ir::program::block::ParameterRegistry;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{

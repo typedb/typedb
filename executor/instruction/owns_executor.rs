@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashSet},
     iter,
     marker::PhantomData,
     sync::Arc,
@@ -19,6 +19,7 @@ use concept::{
     thing::thing_manager::ThingManager,
     type_::{owns::Owns, OwnerAPI},
 };
+use ir::program::block::ParameterRegistry;
 use itertools::Itertools;
 use lending_iterator::{
     adaptors::{Map, TryFilter},
@@ -32,6 +33,7 @@ use crate::{
         tuple::{owns_to_tuple_owner_attribute, OwnsToTupleFn, TuplePositions, TupleResult},
         BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
+    pipeline::stage::StageContext,
     row::MaybeOwnedRow,
     VariablePosition,
 };
@@ -42,7 +44,7 @@ pub(crate) struct OwnsExecutor {
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
     owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>,
-    attribute_types: Arc<HashSet<Type>>,
+    attribute_types: Arc<BTreeSet<Type>>,
     filter_fn: Arc<OwnsFilterFn>,
     checker: Checker<AsHkt![Owns<'_>]>,
 }
@@ -93,15 +95,22 @@ impl OwnsExecutor {
                 create_owns_filter_attribute(attribute_types.clone())
             }
         };
+
+        let owner = owns.owner().as_variable();
+        let attribute = owns.attribute().as_variable();
+
         let output_tuple_positions = if iterate_mode.is_inverted() {
-            TuplePositions::Pair([owns.attribute(), owns.owner()])
+            TuplePositions::Pair([attribute, owner])
         } else {
-            TuplePositions::Pair([owns.owner(), owns.attribute()])
+            TuplePositions::Pair([owner, attribute])
         };
 
         let checker = Checker::<AsHkt![Owns<'_>]> {
             checks,
-            extractors: HashMap::from([(owns.owner(), EXTRACT_OWNER), (owns.attribute(), EXTRACT_ATTRIBUTE)]),
+            extractors: [(owner, EXTRACT_OWNER), (attribute, EXTRACT_ATTRIBUTE)]
+                .into_iter()
+                .filter_map(|(var, ex)| Some((var?, ex)))
+                .collect(),
             _phantom_data: PhantomData,
         };
 
@@ -119,26 +128,27 @@ impl OwnsExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &StageContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_for_row(snapshot, thing_manager, &row);
+        let check = self.checker.filter_for_row(context, &row);
         let filter_for_row: Box<OwnsFilterFn> = Box::new(move |item| match filter(item) {
             Ok(true) => check(item),
             fail => fail,
         });
 
+        let snapshot = &**context.snapshot();
+
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let type_manager = thing_manager.type_manager();
+                let type_manager = context.thing_manager().type_manager();
                 let owns: Vec<_> = self
                     .owner_attribute_types
                     .keys()
                     .map(|owner| match owner {
-                        Type::Entity(entity) => entity.get_owns(&**snapshot, type_manager),
-                        Type::Relation(relation) => relation.get_owns(&**snapshot, type_manager),
+                        Type::Entity(entity) => entity.get_owns(snapshot, type_manager),
+                        Type::Relation(relation) => relation.get_owns(snapshot, type_manager),
                         _ => unreachable!("owner types must be relation or entity types"),
                     })
                     .map_ok(|set| set.to_owned())
@@ -159,15 +169,16 @@ impl OwnsExecutor {
             }
 
             BinaryIterateMode::BoundFrom => {
-                debug_assert!(row.len() > self.owns.owner().as_usize());
-                let VariableValue::Type(owner) = row.get(self.owns.owner()).to_owned() else {
+                let owner = self.owns.owner().as_variable().unwrap();
+                debug_assert!(row.len() > owner.as_usize());
+                let VariableValue::Type(owner) = row.get(owner).to_owned() else {
                     unreachable!("Owner in `owns` must be a type")
                 };
 
-                let type_manager = thing_manager.type_manager();
+                let type_manager = context.thing_manager().type_manager();
                 let owns = match owner {
-                    Type::Entity(entity) => entity.get_owns(&**snapshot, type_manager)?,
-                    Type::Relation(relation) => relation.get_owns(&**snapshot, type_manager)?,
+                    Type::Entity(entity) => entity.get_owns(snapshot, type_manager)?,
+                    Type::Relation(relation) => relation.get_owns(snapshot, type_manager)?,
                     _ => unreachable!("owner types must be relation or entity types"),
                 };
 
@@ -196,7 +207,7 @@ fn create_owns_filter_owner_attribute(owner_attribute_types: Arc<BTreeMap<Type, 
     })
 }
 
-fn create_owns_filter_attribute(attribute_types: Arc<HashSet<Type>>) -> Arc<OwnsFilterFn> {
+fn create_owns_filter_attribute(attribute_types: Arc<BTreeSet<Type>>) -> Arc<OwnsFilterFn> {
     Arc::new(move |result| match result {
         Ok(owns) => Ok(attribute_types.contains(&Type::Attribute(owns.attribute()))),
         Err(err) => Err(err.clone()),

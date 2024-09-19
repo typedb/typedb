@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet},
     marker::PhantomData,
     sync::Arc,
     vec,
@@ -15,7 +15,6 @@ use answer::{variable_value::VariableValue, Type};
 use compiler::match_::instructions::type_::SubReverseInstruction;
 use concept::{
     error::ConceptReadError,
-    thing::thing_manager::ThingManager,
     type_::{type_manager::TypeManager, TypeAPI},
 };
 use ir::pattern::constraint::SubKind;
@@ -29,9 +28,7 @@ use crate::{
         sub_executor::{NarrowingTupleIterator, SubTupleIterator, EXTRACT_SUB, EXTRACT_SUPER},
         tuple::{sub_to_tuple_super_sub, TuplePositions},
         BinaryIterateMode, Checker, FilterFn, VariableModes,
-    },
-    row::MaybeOwnedRow,
-    VariablePosition,
+    }, pipeline::stage::StageContext, row::MaybeOwnedRow, VariablePosition
 };
 
 pub(crate) struct SubReverseExecutor {
@@ -40,7 +37,7 @@ pub(crate) struct SubReverseExecutor {
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
     super_to_subtypes: Arc<BTreeMap<Type, Vec<Type>>>,
-    subtypes: Arc<HashSet<Type>>,
+    subtypes: Arc<BTreeSet<Type>>,
     filter_fn: Arc<SubFilterFn>,
     checker: Checker<AdHocHkt<(Type, Type)>>,
 }
@@ -71,15 +68,22 @@ impl SubReverseExecutor {
                 create_sub_filter_sub(subtypes.clone())
             }
         };
+
+        let subtype = sub.subtype().as_variable();
+        let supertype = sub.supertype().as_variable();
+
         let output_tuple_positions = if iterate_mode.is_inverted() {
-            TuplePositions::Pair([sub.subtype(), sub.supertype()])
+            TuplePositions::Pair([subtype, supertype])
         } else {
-            TuplePositions::Pair([sub.supertype(), sub.subtype()])
+            TuplePositions::Pair([supertype, subtype])
         };
 
         let checker = Checker::<AdHocHkt<(Type, Type)>> {
             checks,
-            extractors: HashMap::from([(sub.subtype(), EXTRACT_SUB), (sub.supertype(), EXTRACT_SUPER)]),
+            extractors: [(subtype, EXTRACT_SUB), (supertype, EXTRACT_SUPER)]
+                .into_iter()
+                .filter_map(|(var, ex)| Some((var?, ex)))
+                .collect(),
             _phantom_data: PhantomData,
         };
 
@@ -97,12 +101,11 @@ impl SubReverseExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &StageContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_for_row(snapshot, thing_manager, &row);
+        let check = self.checker.filter_for_row(context, &row);
         let filter_for_row: Box<SubFilterFn> = Box::new(move |item| match filter(item) {
             Ok(true) => check(item),
             fail => fail,
@@ -132,13 +135,14 @@ impl SubReverseExecutor {
             }
 
             BinaryIterateMode::BoundFrom => {
-                debug_assert!(row.len() > self.sub.supertype().as_usize());
-                let VariableValue::Type(sup) = row.get(self.sub.supertype()).to_owned() else {
+                let supertype = self.sub.supertype().as_variable().unwrap();
+                debug_assert!(row.len() > supertype.as_usize());
+                let VariableValue::Type(sup) = row.get(supertype).to_owned() else {
                     unreachable!("Subtype must be a type")
                 };
 
-                let type_manager = thing_manager.type_manager();
-                let subtypes = get_subtypes(&**snapshot, type_manager, &sup, self.sub.sub_kind())?;
+                let type_manager = context.thing_manager().type_manager();
+                let subtypes = get_subtypes(&**context.snapshot(), type_manager, &sup, self.sub.sub_kind())?;
                 let sub_with_super = subtypes.into_iter().map(|sub| Ok((sub, sup.clone()))).collect_vec(); // TODO cache this
                 let as_tuples: SubReverseBoundedSortedSuper = NarrowingTupleIterator(
                     AsLendingIterator::new(sub_with_super)
@@ -217,7 +221,7 @@ fn create_sub_filter_super_sub(super_to_subtypes: Arc<BTreeMap<Type, Vec<Type>>>
     })
 }
 
-fn create_sub_filter_sub(subtypes: Arc<HashSet<Type>>) -> Arc<SubFilterFn> {
+fn create_sub_filter_sub(subtypes: Arc<BTreeSet<Type>>) -> Arc<SubFilterFn> {
     Arc::new(move |result| match result {
         Ok((sub, _)) => Ok(subtypes.contains(sub)),
         Err(err) => Err(err.clone()),

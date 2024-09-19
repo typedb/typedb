@@ -4,17 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
-use compiler::{
-    insert::{
-        instructions::{ConceptInstruction, ConnectionInstruction},
-        program::InsertProgram,
-    },
-    VariablePosition,
+use compiler::insert::{
+    instructions::{ConceptInstruction, ConnectionInstruction},
+    program::InsertProgram,
 };
 use concept::thing::thing_manager::ThingManager;
-use ir::program::ParameterRegistry;
+use ir::program::block::ParameterRegistry;
 use lending_iterator::LendingIterator;
 use storage::snapshot::WritableSnapshot;
 
@@ -22,10 +19,10 @@ use crate::{
     batch::Batch,
     pipeline::{
         stage::{StageAPI, StageContext},
-        PipelineExecutionError, StageAPI, StageIterator, WrittenRowsIterator,
+        PipelineExecutionError, StageIterator, WrittenRowsIterator,
     },
     row::{MaybeOwnedRow, Row},
-    write::{insert::InsertExecutor, write_instruction::AsWriteInstruction, WriteError},
+    write::{write_instruction::AsWriteInstruction, WriteError},
     ExecutionInterrupt,
 };
 

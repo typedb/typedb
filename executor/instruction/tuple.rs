@@ -54,36 +54,36 @@ impl Hkt for Tuple<'static> {
 
 #[derive(Debug, Clone)]
 pub(crate) enum TuplePositions {
-    Single([VariablePosition; 1]),
-    Pair([VariablePosition; 2]),
-    Triple([VariablePosition; 3]),
-    Quintuple([VariablePosition; 5]),
+    Single([Option<VariablePosition>; 1]),
+    Pair([Option<VariablePosition>; 2]),
+    Triple([Option<VariablePosition>; 3]),
+    Quintuple([Option<VariablePosition>; 5]),
     Arbitrary(), // TODO: unknown sized tuples, for functions
 }
 
 impl TuplePositions {
-    pub(crate) fn as_single(&self) -> &[VariablePosition; 1] {
+    pub(crate) fn as_single(&self) -> &[Option<VariablePosition>; 1] {
         match self {
             Self::Single(positions) => positions,
             _ => unreachable!("Cannot read tuple as Single."),
         }
     }
 
-    pub(crate) fn as_pair(&self) -> &[VariablePosition; 2] {
+    pub(crate) fn as_pair(&self) -> &[Option<VariablePosition>; 2] {
         match self {
             Self::Pair(positions) => positions,
             _ => unreachable!("Cannot read tuple as Pair."),
         }
     }
 
-    pub(crate) fn as_triple(&self) -> &[VariablePosition; 3] {
+    pub(crate) fn as_triple(&self) -> &[Option<VariablePosition>; 3] {
         match self {
             Self::Triple(positions) => positions,
             _ => unreachable!("Cannot read tuple as Triple."),
         }
     }
 
-    pub(crate) fn as_quintuple(&self) -> &[VariablePosition; 5] {
+    pub(crate) fn as_quintuple(&self) -> &[Option<VariablePosition>; 5] {
         match self {
             Self::Quintuple(positions) => positions,
             _ => unreachable!("Cannot read tuple as Quintuple."),
@@ -94,15 +94,15 @@ impl TuplePositions {
         todo!()
     }
 
-    pub(crate) fn iter(&self) -> impl Iterator<Item = &VariablePosition> {
-        self.positions().iter()
+    pub(crate) fn iter(&self) -> impl Iterator<Item = Option<VariablePosition>> + '_ {
+        self.positions().iter().copied()
     }
 
     pub(crate) fn len(&self) -> usize {
         self.positions().len()
     }
 
-    pub(crate) fn positions(&self) -> &[VariablePosition] {
+    pub(crate) fn positions(&self) -> &[Option<VariablePosition>] {
         match self {
             TuplePositions::Single(positions) => positions,
             TuplePositions::Pair(positions) => positions,

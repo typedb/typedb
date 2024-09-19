@@ -4,11 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
-use compiler::VariablePosition;
 use concept::thing::thing_manager::ThingManager;
-use ir::program::ParameterRegistry;
+use ir::program::block::ParameterRegistry;
 use lending_iterator::LendingIterator;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -34,6 +33,20 @@ pub struct StageContext<Snapshot> {
     pub snapshot: Arc<Snapshot>,
     pub thing_manager: Arc<ThingManager>,
     pub parameters: Arc<ParameterRegistry>,
+}
+
+impl<Snapshot> StageContext<Snapshot> {
+    pub(crate) fn snapshot(&self) -> &Arc<Snapshot> {
+        &self.snapshot
+    }
+
+    pub(crate) fn thing_manager(&self) -> &Arc<ThingManager> {
+        &self.thing_manager
+    }
+
+    pub(crate) fn parameters(&self) -> &ParameterRegistry {
+        &self.parameters
+    }
 }
 
 impl<Snapshot> Clone for StageContext<Snapshot> {
@@ -87,10 +100,10 @@ pub enum ReadPipelineStage<Snapshot: ReadableSnapshot + 'static> {
 pub enum ReadStageIterator<Snapshot: ReadableSnapshot + 'static> {
     Initial(InitialIterator),
     Match(Box<MatchStageIterator<Snapshot, ReadStageIterator<Snapshot>>>),
-    Sort(SortStageIterator<Snapshot>),
-    Limit(Box<LimitStageIterator<Snapshot, ReadStageIterator<Snapshot>>>),
-    Offset(Box<OffsetStageIterator<Snapshot, ReadStageIterator<Snapshot>>>),
-    Select(Box<SelectStageIterator<Snapshot, ReadStageIterator<Snapshot>>>),
+    Sort(SortStageIterator),
+    Limit(Box<LimitStageIterator<ReadStageIterator<Snapshot>>>),
+    Offset(Box<OffsetStageIterator<ReadStageIterator<Snapshot>>>),
+    Select(Box<SelectStageIterator<ReadStageIterator<Snapshot>>>),
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineStage<Snapshot> {
@@ -216,10 +229,10 @@ pub enum WriteStageIterator<Snapshot: WritableSnapshot + 'static> {
     Initial(InitialIterator),
     Match(Box<MatchStageIterator<Snapshot, WriteStageIterator<Snapshot>>>),
     Write(WrittenRowsIterator),
-    Sort(SortStageIterator<Snapshot>),
-    Limit(Box<LimitStageIterator<Snapshot, WriteStageIterator<Snapshot>>>),
-    Offset(Box<OffsetStageIterator<Snapshot, WriteStageIterator<Snapshot>>>),
-    Select(Box<SelectStageIterator<Snapshot, WriteStageIterator<Snapshot>>>),
+    Sort(SortStageIterator),
+    Limit(Box<LimitStageIterator<WriteStageIterator<Snapshot>>>),
+    Offset(Box<OffsetStageIterator<WriteStageIterator<Snapshot>>>),
+    Select(Box<SelectStageIterator<WriteStageIterator<Snapshot>>>),
 }
 
 impl<Snapshot: WritableSnapshot + 'static> LendingIterator for WriteStageIterator<Snapshot> {
