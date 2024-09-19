@@ -340,10 +340,10 @@ This document specifies the behaviour of TypeDB and its query language TypeQL.
 
 TypeDB's type system is a [logical system](https://en.wikipedia.org/wiki/Formal_system#Deductive_system), which we describe in this section with a reasonable level of formality (not all details are included, and some basic mathematical rules are taken for granted: for example, the rule of equality, i.e. if $a = b$ then $a$ and $b$ are exchangeable for all purposes in our type system.)
 
-The type system comprises two **components**:
+It is convenient to present the type system in _two stages_ (though some people prefer to do it all in one go!):
 
-* A **grammar** for (mathematical) statements.
-* A **rule system** for inferring which statement are _true_.
+* We first introduce and explain the **grammar** of statements in the system.
+* We then discuss the **rule system** for inferring which statement are _true_.
 
 _IMPORTANT_: Not all parts of the type system introduced in this section are exposed to the user through TypeQL (but most parts are). This shouldn't be surprising. As an analogy: the inner workings (or formal specification) of the borrow checker in Rust is not exposed in actual Rust. In other words,  defining the meaning of language often "needs more" language than the original language itself.
 
