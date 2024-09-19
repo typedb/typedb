@@ -16,7 +16,10 @@ use concept::{
     },
 };
 use encoding::{
-    graph::type_::{vertex::TypeVertex, Kind},
+    graph::type_::{
+        vertex::{TypeVertex, TypeVertexEncoding},
+        Kind,
+    },
     value::{label::Label, value::Value},
     AsBytes,
 };

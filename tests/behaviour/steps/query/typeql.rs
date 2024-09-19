@@ -227,6 +227,27 @@ async fn typeql_define(context: &mut Context, may_error: params::TypeQLMayError,
 }
 
 #[apply(generic_step)]
+#[step(expr = r"typeql redefine{typeql_may_error}")]
+async fn typeql_redefine(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
+    let query = step.docstring.as_ref().unwrap().as_str();
+    let parse_result = typeql::parse_query(query);
+    if may_error.check_parsing(parse_result.as_ref()).is_some() {
+        context.close_transaction();
+        return;
+    }
+    let typeql_redefine = parse_result.unwrap().into_schema();
+    with_schema_tx!(context, |tx| {
+        let result = QueryManager::new().execute_schema(
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            &tx.type_manager,
+            &tx.thing_manager,
+            typeql_redefine,
+        );
+        may_error.check_logic(result);
+    });
+}
+
+#[apply(generic_step)]
 #[step(expr = r"typeql write query{typeql_may_error}")]
 async fn typeql_write(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
     let parse_result = typeql::parse_query(step.docstring.as_ref().unwrap().as_str());
@@ -322,7 +343,7 @@ fn does_key_match(var: &str, id: &str, var_value: &VariableValue<'_>, context: &
             .unwrap_or_else(|| panic!("attribute type {key_label} not found"));
         let expected = params::Value::from_str(key_value).unwrap().into_typedb(
             key_type
-                .get_value_type(&*tx.snapshot, &tx.type_manager)
+                .get_value_type_without_source(&*tx.snapshot, &tx.type_manager)
                 .unwrap()
                 .unwrap_or_else(|| panic!("expected the key type {key_label} to have a value type")),
         );
@@ -360,7 +381,7 @@ fn does_attribute_match(id: &str, var_value: &VariableValue<'_>, context: &Conte
             .unwrap_or_else(|| panic!("attribute type {label} not found"));
         let expected = params::Value::from_str(value).unwrap().into_typedb(
             attr_type
-                .get_value_type(&*tx.snapshot, &tx.type_manager)
+                .get_value_type_without_source(&*tx.snapshot, &tx.type_manager)
                 .unwrap()
                 .unwrap_or_else(|| panic!("expected the key type {label} to have a value type")),
         );

@@ -49,8 +49,8 @@ pub(crate) struct OwnsReverseExecutor {
 pub(super) type OwnsReverseUnboundedSortedAttribute = OwnsTupleIterator<
     AsLendingIterator<
         iter::Map<
-            iter::Flatten<vec::IntoIter<HashMap<ObjectType<'static>, Owns<'static>>>>,
-            fn((ObjectType<'static>, Owns<'static>)) -> Result<Owns<'static>, ConceptReadError>,
+            iter::Flatten<vec::IntoIter<HashSet<Owns<'static>>>>,
+            fn(Owns<'static>) -> Result<Owns<'static>, ConceptReadError>,
         >,
     >,
 >;
@@ -125,7 +125,7 @@ impl OwnsReverseExecutor {
                     .map(|attribute| attribute.as_attribute_type().get_owns(&**snapshot, type_manager))
                     .map_ok(|set| set.to_owned())
                     .try_collect()?;
-                let iterator = owns.into_iter().flatten().map((|(_, owns)| Ok(owns)) as _);
+                let iterator = owns.into_iter().flatten().map(Ok as _);
                 let as_tuples: OwnsReverseUnboundedSortedAttribute = NarrowingTupleIterator(
                     AsLendingIterator::new(iterator)
                         .try_filter::<_, OwnsFilterFn, AdHocHkt<Owns<'_>>, _>(filter_for_row)
@@ -149,7 +149,7 @@ impl OwnsReverseExecutor {
                 };
 
                 let type_manager = thing_manager.type_manager();
-                let owns = attribute.get_owns(&**snapshot, type_manager)?.values().cloned().collect_vec();
+                let owns = attribute.get_owns(&**snapshot, type_manager)?.to_owned();
 
                 let iterator = owns.into_iter().sorted_by_key(|owns| owns.owner()).map(Ok as _);
                 let as_tuples: OwnsReverseBoundedSortedOwner = NarrowingTupleIterator(

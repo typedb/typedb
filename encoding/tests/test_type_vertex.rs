@@ -38,6 +38,10 @@ impl<'a> TypeVertexEncoding<'a> for MockEntityType<'a> {
         Ok(MockEntityType { vertex })
     }
 
+    fn vertex(&self) -> TypeVertex<'_> {
+        self.vertex.as_reference()
+    }
+
     fn into_vertex(self) -> TypeVertex<'a> {
         self.vertex
     }

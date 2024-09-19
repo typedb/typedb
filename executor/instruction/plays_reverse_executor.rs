@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{hash_set, BTreeMap, HashMap, HashSet},
     iter,
     marker::PhantomData,
     sync::Arc,
@@ -49,8 +49,8 @@ pub(crate) struct PlaysReverseExecutor {
 pub(super) type PlaysReverseUnboundedSortedRole = PlaysTupleIterator<
     AsLendingIterator<
         iter::Map<
-            iter::Flatten<vec::IntoIter<HashMap<ObjectType<'static>, Plays<'static>>>>,
-            fn((ObjectType<'static>, Plays<'static>)) -> Result<Plays<'static>, ConceptReadError>,
+            iter::Flatten<vec::IntoIter<HashSet<Plays<'static>>>>,
+            fn(Plays<'static>) -> Result<Plays<'static>, ConceptReadError>,
         >,
     >,
 >;
@@ -125,7 +125,7 @@ impl PlaysReverseExecutor {
                     .map(|role| role.as_role_type().get_plays(&**snapshot, type_manager))
                     .map_ok(|set| set.to_owned())
                     .try_collect()?;
-                let iterator = plays.into_iter().flatten().map((|(_, plays)| Ok(plays)) as _);
+                let iterator = plays.into_iter().flatten().map(Ok as _);
                 let as_tuples: PlaysReverseUnboundedSortedRole = NarrowingTupleIterator(
                     AsLendingIterator::new(iterator)
                         .try_filter::<_, PlaysFilterFn, AdHocHkt<Plays<'_>>, _>(filter_for_row)
@@ -149,7 +149,7 @@ impl PlaysReverseExecutor {
                 };
 
                 let type_manager = thing_manager.type_manager();
-                let plays = role.get_plays(&**snapshot, type_manager)?.values().cloned().collect_vec();
+                let plays = role.get_plays(&**snapshot, type_manager)?.to_owned();
 
                 let iterator = plays.into_iter().sorted_by_key(|plays| plays.player()).map(Ok as _);
                 let as_tuples: PlaysReverseBoundedSortedPlayer = NarrowingTupleIterator(

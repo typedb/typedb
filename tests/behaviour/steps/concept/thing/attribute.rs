@@ -16,7 +16,7 @@ use macro_rules_attribute::apply;
 
 use crate::{
     generic_step,
-    params::{self, check_boolean, IsEmptyOrNot},
+    params::{self, check_boolean},
     transaction_context::{with_read_tx, with_write_tx},
     Context,
 };
@@ -29,8 +29,9 @@ pub fn attribute_put_instance_with_value_impl(
     with_write_tx!(context, |tx| {
         let attribute_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
-        let value =
-            value.into_typedb(attribute_type.get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap());
+        let value = value.into_typedb(
+            attribute_type.get_value_type_without_source(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap(),
+        );
         tx.thing_manager.create_attribute(Arc::get_mut(&mut tx.snapshot).unwrap(), attribute_type, value)
     })
 }
@@ -79,7 +80,7 @@ async fn attribute_has_value_type(context: &mut Context, var: params::Var, value
     let attribute_type = context.attributes[&var.name].as_ref().unwrap().type_();
     with_read_tx!(context, |tx| {
         assert_eq!(
-            attribute_type.get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap(),
+            attribute_type.get_value_type_without_source(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap(),
             value_type.into_typedb(&tx.type_manager, tx.snapshot.as_ref())
         );
     });
@@ -91,8 +92,9 @@ async fn attribute_has_value(context: &mut Context, var: params::Var, value: par
     let attribute = context.attributes.get_mut(&var.name).unwrap().as_mut().unwrap();
     let attribute_type = attribute.type_();
     with_read_tx!(context, |tx| {
-        let value =
-            value.into_typedb(attribute_type.get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap());
+        let value = value.into_typedb(
+            attribute_type.get_value_type_without_source(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap(),
+        );
         assert_eq!(attribute.get_value(tx.snapshot.as_ref(), &tx.thing_manager).unwrap(), value);
     });
 }
@@ -118,8 +120,9 @@ pub fn get_attribute_by_value(
     with_read_tx!(context, |tx| {
         let attribute_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
-        let value =
-            value.into_typedb(attribute_type.get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap());
+        let value = value.into_typedb(
+            attribute_type.get_value_type_without_source(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap(),
+        );
         tx.thing_manager.get_attribute_with_value(tx.snapshot.as_ref(), attribute_type, value)
     })
 }
@@ -203,7 +206,11 @@ async fn attribute_instances_contain(
 
 #[apply(generic_step)]
 #[step(expr = r"attribute\({type_label}\) get instances {is_empty_or_not}")]
-async fn object_instances_is_empty(context: &mut Context, type_label: params::Label, is_empty_or_not: IsEmptyOrNot) {
+async fn object_instances_is_empty(
+    context: &mut Context,
+    type_label: params::Label,
+    is_empty_or_not: params::IsEmptyOrNot,
+) {
     with_read_tx!(context, |tx| {
         let attribute_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();

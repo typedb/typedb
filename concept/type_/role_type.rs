@@ -30,16 +30,18 @@ use storage::{
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 
-use super::Ordering;
+use super::{Capability, Ordering};
 use crate::{
     concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::thing_manager::ThingManager,
     type_::{
-        annotation::{Annotation, AnnotationAbstract, AnnotationCategory, AnnotationError, DefaultFrom},
+        annotation::{Annotation, AnnotationError},
+        constraint::{CapabilityConstraint, TypeConstraint},
         object_type::ObjectType,
         plays::Plays,
         relates::Relates,
+        relation_type::RelationType,
         type_manager::TypeManager,
         KindAPI, TypeAPI,
     },
@@ -49,50 +51,6 @@ use crate::{
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RoleType<'a> {
     vertex: TypeVertex<'a>,
-}
-
-impl<'a> RoleType<'a> {
-    pub fn get_players_declared<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
-        type_manager.get_plays_for_role_type_declared(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_players<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<ObjectType<'static>, Plays<'static>>>, ConceptReadError> {
-        type_manager.get_plays_for_role_type(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_relations<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Relates<'static>>>, ConceptReadError> {
-        type_manager.get_relations_for_role_type(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_ordering(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<Ordering, ConceptReadError> {
-        type_manager.get_role_ordering(snapshot, self.clone().into_owned())
-    }
-
-    pub fn set_ordering(
-        &self,
-        snapshot: &mut impl WritableSnapshot,
-        type_manager: &TypeManager,
-        thing_manager: &ThingManager,
-        ordering: Ordering,
-    ) -> Result<(), ConceptWriteError> {
-        type_manager.set_role_ordering(snapshot, thing_manager, self.clone().into_owned(), ordering)
-    }
 }
 
 impl Hkt for RoleType<'static> {
@@ -115,6 +73,10 @@ impl<'a> TypeVertexEncoding<'a> for RoleType<'a> {
         }
     }
 
+    fn vertex(&self) -> TypeVertex<'_> {
+        self.vertex.as_reference()
+    }
+
     fn into_vertex(self) -> TypeVertex<'a> {
         self.vertex
     }
@@ -127,16 +89,12 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         Self::from_vertex(vertex).unwrap()
     }
 
-    fn vertex(&self) -> TypeVertex<'_> {
-        self.vertex.as_reference()
-    }
-
     fn is_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<bool, ConceptReadError> {
-        type_manager.get_type_is_abstract(snapshot, self.clone())
+        self.get_relates_root(snapshot, type_manager)?.is_abstract(snapshot, type_manager)
     }
 
     fn delete(
@@ -176,7 +134,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<RoleType<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<RoleType<'static>>>, ConceptReadError> {
         type_manager.get_role_type_subtypes(snapshot, self.clone().into_owned())
     }
 
@@ -191,7 +149,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
 
 impl<'a> KindAPI<'a> for RoleType<'a> {
     type AnnotationType = RoleTypeAnnotation;
-    const ROOT_KIND: Kind = Kind::Role;
+    const KIND: Kind = Kind::Role;
 
     fn get_annotations_declared<'m>(
         &self,
@@ -201,12 +159,15 @@ impl<'a> KindAPI<'a> for RoleType<'a> {
         type_manager.get_role_type_annotations_declared(snapshot, self.clone().into_owned())
     }
 
-    fn get_annotations<'m>(
+    fn get_constraints<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<RoleTypeAnnotation, RoleType<'static>>>, ConceptReadError> {
-        type_manager.get_role_type_annotations(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<RoleType<'static>>>>, ConceptReadError>
+    where
+        'a: 'static,
+    {
+        type_manager.get_role_type_constraints(snapshot, self.clone().into_owned())
     }
 }
 
@@ -220,47 +181,101 @@ impl<'a> RoleType<'a> {
         type_manager.set_role_type_name(snapshot, self.clone().into_owned(), name)
     }
 
-    pub fn set_annotation(
+    pub fn get_ordering(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Ordering, ConceptReadError> {
+        type_manager.get_role_type_ordering(snapshot, self.clone().into_owned())
+    }
+
+    pub fn set_ordering(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        annotation: RoleTypeAnnotation,
+        ordering: Ordering,
     ) -> Result<(), ConceptWriteError> {
-        match annotation {
-            RoleTypeAnnotation::Abstract(_) => {
-                type_manager.set_role_type_annotation_abstract(snapshot, thing_manager, self.clone().into_owned())?
-            }
-        };
-        Ok(())
+        type_manager.set_role_ordering(snapshot, thing_manager, self.clone().into_owned(), ordering)
     }
 
-    pub fn unset_annotation(
+    pub fn into_owned(self) -> RoleType<'static> {
+        RoleType { vertex: self.vertex.into_owned() }
+    }
+}
+
+// --- Related API ---
+impl<'a> RoleType<'a> {
+    pub fn get_relates_root(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        annotation_category: AnnotationCategory,
-    ) -> Result<(), ConceptWriteError> {
-        let role_type_annotation = RoleTypeAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Annotation { source })?;
-        match role_type_annotation {
-            RoleTypeAnnotation::Abstract(_) => {
-                type_manager.unset_annotation_abstract(snapshot, self.clone().into_owned())?
-            }
-        }
-        Ok(())
+    ) -> Result<Relates<'static>, ConceptReadError> {
+        type_manager.get_role_type_relates_root(snapshot, self.clone().into_owned())
     }
 
     pub fn get_relates<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Relates<'static>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<Relates<'static>>>, ConceptReadError> {
         type_manager.get_role_type_relates(snapshot, self.clone().into_owned())
     }
 
-    pub fn into_owned(self) -> RoleType<'static> {
-        RoleType { vertex: self.vertex.into_owned() }
+    pub fn get_relation_types<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashMap<RelationType<'static>, Relates<'static>>>, ConceptReadError> {
+        type_manager.get_role_type_relation_types(snapshot, self.clone().into_owned())
+    }
+
+    pub fn get_constraints_for_relation<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        relation_type: RelationType<'static>,
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Relates<'static>>>>, ConceptReadError> {
+        type_manager.get_relation_type_related_role_type_constraints(snapshot, relation_type, self.clone().into_owned())
+    }
+}
+
+// --- Played API ---
+impl<'a> RoleType<'a> {
+    pub fn get_plays<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
+        type_manager.get_role_type_plays(snapshot, self.clone().into_owned())
+    }
+
+    pub fn get_player_types<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashMap<ObjectType<'static>, Plays<'static>>>, ConceptReadError> {
+        type_manager.get_role_type_player_types(snapshot, self.clone().into_owned())
+    }
+
+    pub fn get_constraints_for_player<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        player_type: ObjectType<'static>,
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays<'static>>>>, ConceptReadError> {
+        match player_type {
+            ObjectType::Entity(entity_type) => type_manager.get_entity_type_played_role_type_constraints(
+                snapshot,
+                entity_type,
+                self.clone().into_owned(),
+            ),
+            ObjectType::Relation(relation_type) => type_manager.get_relation_type_played_role_type_constraints(
+                snapshot,
+                relation_type,
+                self.clone().into_owned(),
+            ),
+        }
     }
 }
 
@@ -270,36 +285,14 @@ impl<'a> Display for RoleType<'a> {
     }
 }
 
-// --- Played API ---
-impl<'a> RoleType<'a> {
-    pub fn get_plays_declared<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
-        type_manager.get_plays_for_role_type_declared(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_plays<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<ObjectType<'static>, Plays<'static>>>, ConceptReadError> {
-        type_manager.get_plays_for_role_type(snapshot, self.clone().into_owned())
-    }
-}
-
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub enum RoleTypeAnnotation {
-    Abstract(AnnotationAbstract),
-}
+pub enum RoleTypeAnnotation {}
 
 impl TryFrom<Annotation> for RoleTypeAnnotation {
     type Error = AnnotationError;
     fn try_from(annotation: Annotation) -> Result<RoleTypeAnnotation, AnnotationError> {
         match annotation {
-            Annotation::Abstract(annotation) => Ok(RoleTypeAnnotation::Abstract(annotation)),
-
+            | Annotation::Abstract(_)
             | Annotation::Independent(_)
             | Annotation::Distinct(_)
             | Annotation::Cardinality(_)
@@ -314,18 +307,10 @@ impl TryFrom<Annotation> for RoleTypeAnnotation {
 }
 
 impl From<RoleTypeAnnotation> for Annotation {
-    fn from(anno: RoleTypeAnnotation) -> Self {
-        match anno {
-            RoleTypeAnnotation::Abstract(annotation) => Annotation::Abstract(annotation),
-        }
+    fn from(_anno: RoleTypeAnnotation) -> Self {
+        unreachable!("RoleTypes do not have annotations!")
     }
 }
-
-// impl<'a> IIDAPI<'a> for RoleType<'a> {
-//     fn iid(&'a self) -> ByteReference<'a> {
-//         self.vertex.bytes()
-//     }
-// }
 
 // TODO: can we inline this into the macro invocation?
 fn storage_key_to_role_type(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> RoleType<'_> {

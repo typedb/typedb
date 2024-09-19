@@ -7,6 +7,7 @@
 use std::{
     collections::{HashMap, HashSet},
     fmt::{Display, Formatter},
+    vec,
 };
 
 use encoding::{
@@ -22,6 +23,7 @@ use encoding::{
     value::label::Label,
     Prefixed,
 };
+use itertools::Itertools;
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
@@ -40,7 +42,9 @@ use crate::{
             AnnotationError, DefaultFrom,
         },
         attribute_type::AttributeType,
-        get_with_overridden,
+        constraint::{CapabilityConstraint, TypeConstraint},
+        entity_type::EntityType,
+        get_with_specialised,
         object_type::ObjectType,
         owns::Owns,
         plays::Plays,
@@ -75,6 +79,10 @@ impl<'a> TypeVertexEncoding<'a> for RelationType<'a> {
         }
     }
 
+    fn vertex(&self) -> TypeVertex<'_> {
+        self.vertex.as_reference()
+    }
+
     fn into_vertex(self) -> TypeVertex<'a> {
         self.vertex
     }
@@ -91,16 +99,12 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
         Self::from_vertex(vertex).unwrap()
     }
 
-    fn vertex(&self) -> TypeVertex<'_> {
-        self.vertex.as_reference()
-    }
-
     fn is_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<bool, ConceptReadError> {
-        type_manager.get_type_is_abstract(snapshot, self.clone())
+        Ok(self.get_constraint_abstract(snapshot, type_manager)?.is_some())
     }
 
     fn delete(
@@ -140,7 +144,7 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<RelationType<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<RelationType<'static>>>, ConceptReadError> {
         type_manager.get_relation_type_subtypes(snapshot, self.clone().into_owned())
     }
 
@@ -155,7 +159,7 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
 
 impl<'a> KindAPI<'a> for RelationType<'a> {
     type AnnotationType = RelationTypeAnnotation;
-    const ROOT_KIND: Kind = Kind::Relation;
+    const KIND: Kind = Kind::Relation;
 
     fn get_annotations_declared<'m>(
         &self,
@@ -165,12 +169,15 @@ impl<'a> KindAPI<'a> for RelationType<'a> {
         type_manager.get_relation_type_annotations_declared(snapshot, self.clone().into_owned())
     }
 
-    fn get_annotations<'m>(
+    fn get_constraints<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<RelationTypeAnnotation, RelationType<'static>>>, ConceptReadError> {
-        type_manager.get_relation_type_annotations(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<RelationType<'static>>>>, ConceptReadError>
+    where
+        'a: 'static,
+    {
+        type_manager.get_relation_type_constraints(snapshot, self.clone().into_owned())
     }
 }
 
@@ -213,14 +220,6 @@ impl<'a> RelationType<'a> {
         type_manager.unset_relation_type_supertype(snapshot, thing_manager, self.clone().into_owned())
     }
 
-    pub(crate) fn is_cascade(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<bool, ConceptReadError> {
-        type_manager.get_relation_type_is_cascade(snapshot, self.clone())
-    }
-
     pub fn set_annotation(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -229,9 +228,11 @@ impl<'a> RelationType<'a> {
         annotation: RelationTypeAnnotation,
     ) -> Result<(), ConceptWriteError> {
         match annotation {
-            RelationTypeAnnotation::Abstract(_) => {
-                type_manager.set_annotation_abstract(snapshot, thing_manager, self.clone().into_owned())?
-            }
+            RelationTypeAnnotation::Abstract(_) => type_manager.set_relation_type_annotation_abstract(
+                snapshot,
+                thing_manager,
+                self.clone().into_owned(),
+            )?,
             RelationTypeAnnotation::Cascade(_) => {
                 type_manager.set_annotation_cascade(snapshot, thing_manager, self.clone().into_owned())?
             }
@@ -258,6 +259,14 @@ impl<'a> RelationType<'a> {
         Ok(())
     }
 
+    pub fn get_constraint_abstract(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Option<TypeConstraint<RelationType<'static>>>, ConceptReadError> {
+        type_manager.get_type_abstract_constraint(snapshot, self.clone().into_owned())
+    }
+
     pub fn create_relates(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -265,18 +274,19 @@ impl<'a> RelationType<'a> {
         thing_manager: &ThingManager,
         name: &str,
         ordering: Ordering,
-        cardinality: Option<AnnotationCardinality>,
     ) -> Result<Relates<'static>, ConceptWriteError> {
         let label = Label::build_scoped(name, self.get_label(snapshot, type_manager).unwrap().name().as_str());
-        let role_type = type_manager.create_role_type(
-            snapshot,
-            thing_manager,
-            &label,
-            self.clone().into_owned(),
-            ordering,
-            cardinality,
-        )?;
+        let role_type =
+            type_manager.create_role_type(snapshot, thing_manager, &label, self.clone().into_owned(), ordering)?;
         Ok(Relates::new(self.clone().into_owned(), role_type))
+    }
+
+    pub(crate) fn get_relates_root<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<Relates<'static>>>, ConceptReadError> {
+        type_manager.get_relation_type_relates_root(snapshot, self.clone().into_owned())
     }
 
     pub fn get_relates_declared<'m>(
@@ -293,6 +303,81 @@ impl<'a> RelationType<'a> {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Relates<'static>>>, ConceptReadError> {
         type_manager.get_relation_type_relates(snapshot, self.clone().into_owned())
+    }
+
+    pub fn get_relates_with_specialised<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<Relates<'static>>>, ConceptReadError> {
+        type_manager.get_relation_type_relates_with_specialised(snapshot, self.clone().into_owned())
+    }
+
+    pub fn get_related_role_type_constraints<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Relates<'static>>>>, ConceptReadError> {
+        type_manager.get_relation_type_related_role_type_constraints(snapshot, self.clone().into_owned(), role_type)
+    }
+
+    pub(crate) fn get_related_role_type_constraint_abstract<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<Option<CapabilityConstraint<Relates<'static>>>, ConceptReadError> {
+        type_manager.get_type_relates_abstract_constraint(snapshot, self.clone().into_owned(), role_type)
+    }
+
+    pub(crate) fn get_related_role_type_constraints_cardinality<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<HashSet<CapabilityConstraint<Relates<'static>>>, ConceptReadError> {
+        type_manager.get_type_relates_cardinality_constraints(snapshot, self.clone().into_owned(), role_type)
+    }
+
+    pub(crate) fn get_related_role_type_constraints_distinct<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<HashSet<CapabilityConstraint<Relates<'static>>>, ConceptReadError> {
+        type_manager.get_type_relates_distinct_constraints(snapshot, self.clone().into_owned(), role_type)
+    }
+
+    pub(crate) fn is_related_role_type_abstract<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(self.get_related_role_type_constraint_abstract(snapshot, type_manager, role_type)?.is_some())
+    }
+
+    pub(crate) fn is_related_role_type_distinct<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(!self.get_related_role_type_constraints_distinct(snapshot, type_manager, role_type)?.is_empty())
+    }
+
+    pub fn get_relates_role_declared(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<Option<Relates<'static>>, ConceptReadError> {
+        Ok(self
+            .get_relates_declared(snapshot, type_manager)?
+            .iter()
+            .find(|relates| relates.role() == role_type)
+            .cloned())
     }
 
     pub fn get_relates_role(
@@ -326,8 +411,7 @@ impl<'a> RelationType<'a> {
         type_manager: &TypeManager,
         role_name: &str,
     ) -> Result<Option<Relates<'static>>, ConceptReadError> {
-        for relates in type_manager.get_relation_type_relates_declared(snapshot, self.clone().into_owned())?.into_iter()
-        {
+        for relates in self.get_relates_declared(snapshot, type_manager)?.into_iter() {
             let role_label = relates.role().get_label(snapshot, type_manager)?;
             if role_label.name.as_str() == role_name {
                 return Ok(Some(relates.to_owned()));
@@ -342,7 +426,7 @@ impl<'a> RelationType<'a> {
         type_manager: &TypeManager,
         role_name: &str,
     ) -> Result<Option<Relates<'static>>, ConceptReadError> {
-        for relates in type_manager.get_relation_type_relates(snapshot, self.clone().into_owned())?.into_iter() {
+        for relates in self.get_relates(snapshot, type_manager)?.into_iter() {
             let role_label = relates.role().get_label(snapshot, type_manager)?;
             if role_label.name.as_str() == role_name {
                 return Ok(Some(relates.to_owned()));
@@ -351,9 +435,9 @@ impl<'a> RelationType<'a> {
         Ok(None)
     }
 
-    get_with_overridden! {
-        pub fn get_relates_role_with_overridden() -> Relates = RoleType<'static> | get_relates_role;
-        pub fn get_relates_role_name_with_overridden() -> Relates = &str | get_relates_role_name;
+    get_with_specialised! {
+        pub fn get_relates_role_with_specialised() -> Relates = RoleType<'static> | get_relates_role;
+        pub fn get_relates_role_name_with_specialised() -> Relates = &str | get_relates_role_name;
     }
 
     pub fn into_owned(self) -> RelationType<'static> {
@@ -384,12 +468,14 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
+        ordering: Ordering,
     ) -> Result<Owns<'static>, ConceptWriteError> {
         type_manager.set_owns(
             snapshot,
             thing_manager,
             self.clone().into_owned_object_type(),
             attribute_type.clone(),
+            ordering,
         )?;
         Ok(Owns::new(ObjectType::Relation(self.clone().into_owned()), attribute_type))
     }
@@ -421,12 +507,101 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
         type_manager.get_relation_type_owns(snapshot, self.clone().into_owned())
     }
 
-    fn get_owns_overrides<'m>(
+    fn get_owns_with_specialised<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<Owns<'static>, Owns<'static>>>, ConceptReadError> {
-        type_manager.get_relation_type_owns_overrides(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_relation_type_owns_with_specialised(snapshot, self.clone().into_owned())
+    }
+
+    fn get_owned_attribute_type_constraints<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns<'static>>>>, ConceptReadError> {
+        type_manager.get_relation_type_owned_attribute_type_constraints(
+            snapshot,
+            self.clone().into_owned(),
+            attribute_type,
+        )
+    }
+
+    fn get_owned_attribute_type_constraint_abstract<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_type_owns_abstract_constraint(snapshot, self.clone().into_owned_object_type(), attribute_type)
+    }
+
+    fn get_owned_attribute_type_constraints_cardinality<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_type_owns_cardinality_constraints(
+            snapshot,
+            self.clone().into_owned_object_type(),
+            attribute_type,
+        )
+    }
+
+    fn get_owned_attribute_type_constraints_distinct<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_type_owns_distinct_constraints(snapshot, self.clone().into_owned_object_type(), attribute_type)
+    }
+
+    fn is_owned_attribute_type_distinct<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(!self.get_owned_attribute_type_constraints_distinct(snapshot, type_manager, attribute_type)?.is_empty())
+    }
+
+    fn get_owned_attribute_type_constraints_regex<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_type_owns_regex_constraints(snapshot, self.clone().into_owned_object_type(), attribute_type)
+    }
+
+    fn get_owned_attribute_type_constraints_range<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_type_owns_range_constraints(snapshot, self.clone().into_owned_object_type(), attribute_type)
+    }
+
+    fn get_owned_attribute_type_constraints_values<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_type_owns_values_constraints(snapshot, self.clone().into_owned_object_type(), attribute_type)
+    }
+
+    fn get_owned_attribute_type_constraint_unique<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_type_owns_unique_constraint(snapshot, self.clone().into_owned_object_type(), attribute_type)
     }
 }
 
@@ -465,6 +640,41 @@ impl<'a> PlayerAPI<'a> for RelationType<'a> {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
         type_manager.get_relation_type_plays(snapshot, self.clone().into_owned())
+    }
+
+    fn get_plays_with_specialised<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
+        type_manager.get_relation_type_plays_with_specialised(snapshot, self.clone().into_owned())
+    }
+
+    fn get_played_role_type_constraints<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays<'static>>>>, ConceptReadError> {
+        type_manager.get_relation_type_played_role_type_constraints(snapshot, self.clone().into_owned(), role_type)
+    }
+
+    fn get_played_role_type_constraint_abstract<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<Option<CapabilityConstraint<Plays<'static>>>, ConceptReadError> {
+        type_manager.get_type_plays_abstract_constraint(snapshot, self.clone().into_owned_object_type(), role_type)
+    }
+
+    fn get_played_role_type_constraints_cardinality<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<HashSet<CapabilityConstraint<Plays<'static>>>, ConceptReadError> {
+        type_manager.get_type_plays_cardinality_constraints(snapshot, self.clone().into_owned_object_type(), role_type)
     }
 }
 

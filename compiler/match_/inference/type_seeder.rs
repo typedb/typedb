@@ -730,7 +730,7 @@ impl BinaryConstraint for Has<Variable> {
             } // It can't be another type => Do nothing and let type-inference clean it up
         };
         attribute
-            .get_owns(seeder.snapshot, seeder.type_manager)?
+            .get_owner_types(seeder.snapshot, seeder.type_manager)?
             .iter()
             .map(|(owner, _)| match owner {
                 ObjectType::Entity(entity) => TypeAnnotation::Entity(entity.clone()),
@@ -788,7 +788,7 @@ impl BinaryConstraint for Owns<Variable> {
             } // It can't be another type => Do nothing and let type-inference clean it up
         };
         attribute
-            .get_owns(seeder.snapshot, seeder.type_manager)?
+            .get_owner_types(seeder.snapshot, seeder.type_manager)?
             .iter()
             .map(|(owner, _)| match owner {
                 ObjectType::Entity(entity) => TypeAnnotation::Entity(entity.clone()),
@@ -1085,7 +1085,9 @@ impl BinaryConstraint for Comparison<Variable> {
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
         let left_value_type = match left_type {
-            TypeAnnotation::Attribute(attribute) => attribute.get_value_type(seeder.snapshot, seeder.type_manager)?,
+            TypeAnnotation::Attribute(attribute) => {
+                attribute.get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
+            }
             _ => {
                 return Ok(());
             } // It can't be another type => Do nothing and let type-inference clean it up
@@ -1093,7 +1095,9 @@ impl BinaryConstraint for Comparison<Variable> {
         if let Some(value_type) = left_value_type {
             let comparable_types = ValueTypeCategory::comparable_categories(value_type.category());
             for subattr in seeder.type_manager.get_attribute_types(seeder.snapshot)?.iter() {
-                if let Some(subvaluetype) = subattr.get_value_type(seeder.snapshot, seeder.type_manager)? {
+                if let Some(subvaluetype) =
+                    subattr.get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
+                {
                     if comparable_types.contains(&subvaluetype.category()) {
                         collector.insert(TypeAnnotation::Attribute(subattr.clone()));
                     }
@@ -1110,13 +1114,17 @@ impl BinaryConstraint for Comparison<Variable> {
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
         let right_value_type = match right_type {
-            TypeAnnotation::Attribute(attribute) => attribute.get_value_type(seeder.snapshot, seeder.type_manager)?,
+            TypeAnnotation::Attribute(attribute) => {
+                attribute.get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
+            }
             _ => todo!("Error for expected attribute type"),
         };
         if let Some(value_type) = right_value_type {
             let comparable_types = ValueTypeCategory::comparable_categories(value_type.category());
             for subattr in seeder.type_manager.get_attribute_types(seeder.snapshot)?.iter() {
-                if let Some(subvaluetype) = subattr.get_value_type(seeder.snapshot, seeder.type_manager)? {
+                if let Some(subvaluetype) =
+                    subattr.get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
+                {
                     if comparable_types.contains(&subvaluetype.category()) {
                         collector.insert(TypeAnnotation::Attribute(subattr.clone()));
                     }
@@ -1180,9 +1188,9 @@ impl<'graph> BinaryConstraint for PlayerRoleEdge<'graph> {
             } // It can't be another type => Do nothing and let type-inference clean it up
         };
         role_type
-            .get_players(seeder.snapshot, seeder.type_manager)?
-            .iter()
-            .map(|(player, _)| match player {
+            .get_player_types(seeder.snapshot, seeder.type_manager)?
+            .keys()
+            .map(|player| match player {
                 ObjectType::Entity(entity) => TypeAnnotation::Entity(entity.clone()),
                 ObjectType::Relation(relation) => TypeAnnotation::Relation(relation.clone()),
             })
@@ -1238,9 +1246,9 @@ impl BinaryConstraint for Plays<Variable> {
             } // It can't be another type => Do nothing and let type-inference clean it up
         };
         role_type
-            .get_players(seeder.snapshot, seeder.type_manager)?
-            .iter()
-            .map(|(player, _)| match player {
+            .get_player_types(seeder.snapshot, seeder.type_manager)?
+            .keys()
+            .map(|player| match player {
                 ObjectType::Entity(entity) => TypeAnnotation::Entity(entity.clone()),
                 ObjectType::Relation(relation) => TypeAnnotation::Relation(relation.clone()),
             })
@@ -1295,9 +1303,9 @@ impl<'graph> BinaryConstraint for RelationRoleEdge<'graph> {
             } // It can't be another type => Do nothing and let type-inference clean it up
         };
         role_type
-            .get_relations(seeder.snapshot, seeder.type_manager)?
-            .iter()
-            .map(|relates| TypeAnnotation::Relation(relates.relation()))
+            .get_relation_types(seeder.snapshot, seeder.type_manager)?
+            .keys()
+            .map(|relation_type| TypeAnnotation::Relation(relation_type.clone()))
             .for_each(|type_| {
                 collector.insert(type_);
             });
@@ -1349,9 +1357,9 @@ impl BinaryConstraint for Relates<Variable> {
             } // It can't be another type => Do nothing and let type-inference clean it up
         };
         role_type
-            .get_relations(seeder.snapshot, seeder.type_manager)?
-            .iter()
-            .map(|relates| TypeAnnotation::Relation(relates.relation()))
+            .get_relation_types(seeder.snapshot, seeder.type_manager)?
+            .keys()
+            .map(|relation_type| TypeAnnotation::Relation(relation_type.clone()))
             .for_each(|type_| {
                 collector.insert(type_);
             });

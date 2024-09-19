@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use encoding::{
     graph::type_::{edge::TypeEdgeEncoding, CapabilityKind},
@@ -18,8 +18,10 @@ use crate::{
     thing::thing_manager::ThingManager,
     type_::{
         annotation::{
-            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationError, DefaultFrom,
+            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationDistinct,
+            AnnotationError, DefaultFrom,
         },
+        constraint::CapabilityConstraint,
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::TypeManager,
@@ -34,7 +36,7 @@ pub struct Relates<'a> {
 }
 
 impl<'a> Relates<'a> {
-    pub const DEFAULT_UNORDERED_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(1, Some(1));
+    pub const DEFAULT_UNORDERED_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, Some(1));
     pub const DEFAULT_ORDERED_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, None);
 
     pub fn relation(&self) -> RelationType<'a> {
@@ -45,31 +47,55 @@ impl<'a> Relates<'a> {
         self.role.clone()
     }
 
+    pub fn get_constraint_abstract(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Option<CapabilityConstraint<Relates<'static>>>, ConceptReadError> {
+        type_manager.get_capability_abstract_constraint(snapshot, self.clone().into_owned())
+    }
+
+    pub fn get_constraints_distinct(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<HashSet<CapabilityConstraint<Relates<'static>>>, ConceptReadError> {
+        type_manager.get_relates_distinct_constraints(snapshot, self.clone().into_owned())
+    }
+
     pub fn is_distinct(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<bool, ConceptReadError> {
-        type_manager.get_relates_is_distinct(snapshot, self.clone())
+        Ok(!self.get_constraints_distinct(snapshot, type_manager)?.is_empty())
     }
 
-    pub fn set_override(
+    pub fn set_specialise(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        overridden: Relates<'static>,
+        specialised: Relates<'static>,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.set_relates_override(snapshot, thing_manager, self.clone().into_owned(), overridden)
+        type_manager.set_relates_specialise(snapshot, thing_manager, self.clone().into_owned(), specialised)
     }
 
-    pub fn unset_override(
+    pub fn unset_specialise(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.unset_relates_override(snapshot, thing_manager, self.clone().into_owned())
+        type_manager.unset_relates_specialise(snapshot, thing_manager, self.clone().into_owned())
+    }
+
+    pub fn is_specialising(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<bool, ConceptReadError> {
+        type_manager.get_relates_is_specialising(snapshot, self.clone().into_owned())
     }
 
     pub fn set_annotation(
@@ -80,6 +106,12 @@ impl<'a> Relates<'a> {
         annotation: RelatesAnnotation,
     ) -> Result<(), ConceptWriteError> {
         match annotation {
+            RelatesAnnotation::Abstract(_) => type_manager.set_relates_annotation_abstract(
+                snapshot,
+                thing_manager,
+                self.clone().into_owned(),
+                true,
+            )?,
             RelatesAnnotation::Distinct(_) => {
                 type_manager.set_relates_annotation_distinct(snapshot, thing_manager, self.clone().into_owned())?
             }
@@ -103,14 +135,31 @@ impl<'a> Relates<'a> {
         let relates_annotation = RelatesAnnotation::try_getting_default(annotation_category)
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match relates_annotation {
+            RelatesAnnotation::Abstract(_) => {
+                type_manager.unset_relates_annotation_abstract(snapshot, self.clone().into_owned())?
+            }
             RelatesAnnotation::Distinct(_) => {
-                type_manager.unset_capability_annotation_distinct(snapshot, self.clone().into_owned())?
+                type_manager.unset_relates_annotation_distinct(snapshot, self.clone().into_owned())?
             }
             RelatesAnnotation::Cardinality(_) => {
                 type_manager.unset_relates_annotation_cardinality(snapshot, thing_manager, self.clone().into_owned())?
             }
         }
         Ok(())
+    }
+
+    pub fn get_default_cardinality_for_non_specialising(role_ordering: Ordering) -> AnnotationCardinality {
+        match role_ordering {
+            Ordering::Unordered => Self::DEFAULT_UNORDERED_CARDINALITY,
+            Ordering::Ordered => Self::DEFAULT_ORDERED_CARDINALITY,
+        }
+    }
+
+    pub fn get_default_distinct(role_ordering: Ordering) -> Option<AnnotationDistinct> {
+        match role_ordering {
+            Ordering::Ordered => None,
+            Ordering::Unordered => Some(AnnotationDistinct),
+        }
     }
 
     pub(crate) fn into_owned(self) -> Relates<'static> {
@@ -155,28 +204,12 @@ impl<'a> Capability<'a> for Relates<'a> {
         self.role.clone()
     }
 
-    fn get_override<'this>(
-        &'this self,
+    fn is_abstract(
+        &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, Option<Relates<'static>>>, ConceptReadError> {
-        type_manager.get_relates_override(snapshot, self.clone().into_owned())
-    }
-
-    fn get_overriding<'this>(
-        &'this self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<Relates<'static>>>, ConceptReadError> {
-        type_manager.get_relates_overriding(snapshot, self.clone().into_owned())
-    }
-
-    fn get_overriding_transitive<'this>(
-        &'this self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<Relates<'static>>>, ConceptReadError> {
-        type_manager.get_relates_overriding_transitive(snapshot, self.clone().into_owned())
+        type_manager: &TypeManager,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(self.get_constraint_abstract(snapshot, type_manager)?.is_some())
     }
 
     fn get_annotations_declared<'m>(
@@ -187,26 +220,37 @@ impl<'a> Capability<'a> for Relates<'a> {
         type_manager.get_relates_annotations_declared(snapshot, self.clone().into_owned())
     }
 
-    fn get_annotations<'m>(
+    fn get_constraints<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<RelatesAnnotation, Relates<'static>>>, ConceptReadError> {
-        type_manager.get_relates_annotations(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Relates<'static>>>>, ConceptReadError>
+    where
+        'a: 'static,
+    {
+        type_manager.get_relates_constraints(snapshot, self.clone().into_owned())
     }
 
-    fn get_default_cardinality(
+    fn get_cardinality_constraints(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<HashSet<CapabilityConstraint<Relates<'static>>>, ConceptReadError> {
+        type_manager.get_relates_cardinality_constraints(snapshot, self.clone().into_owned())
+    }
+
+    fn get_cardinality(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
-        let ordering = self.role.get_ordering(snapshot, type_manager)?;
-        Ok(type_manager.get_relates_default_cardinality(ordering))
+        type_manager.get_relates_cardinality(snapshot, self.clone().into_owned())
     }
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum RelatesAnnotation {
+    Abstract(AnnotationAbstract),
     Distinct(AnnotationDistinct),
     Cardinality(AnnotationCardinality),
 }
@@ -216,10 +260,10 @@ impl TryFrom<Annotation> for RelatesAnnotation {
 
     fn try_from(annotation: Annotation) -> Result<RelatesAnnotation, AnnotationError> {
         match annotation {
+            Annotation::Abstract(annotation) => Ok(RelatesAnnotation::Abstract(annotation)),
             Annotation::Distinct(annotation) => Ok(RelatesAnnotation::Distinct(annotation)),
             Annotation::Cardinality(annotation) => Ok(RelatesAnnotation::Cardinality(annotation)),
 
-            | Annotation::Abstract(_)
             | Annotation::Independent(_)
             | Annotation::Unique(_)
             | Annotation::Key(_)
@@ -234,6 +278,7 @@ impl TryFrom<Annotation> for RelatesAnnotation {
 impl From<RelatesAnnotation> for Annotation {
     fn from(anno: RelatesAnnotation) -> Self {
         match anno {
+            RelatesAnnotation::Abstract(annotation) => Annotation::Abstract(annotation),
             RelatesAnnotation::Distinct(annotation) => Annotation::Distinct(annotation),
             RelatesAnnotation::Cardinality(annotation) => Annotation::Cardinality(annotation),
         }

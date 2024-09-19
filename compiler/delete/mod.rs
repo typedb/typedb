@@ -4,5 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::{error::Error, fmt::Display};
+
+use itertools::Itertools;
+
 pub mod instructions;
 pub mod program;

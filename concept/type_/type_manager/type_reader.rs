@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 
 use bytes::Bytes;
 use encoding::{
@@ -16,13 +16,14 @@ use encoding::{
             index::{IdentifierIndex, LabelToTypeVertexIndex, NameToStructDefinitionIndex},
             property::{TypeEdgeProperty, TypeEdgePropertyEncoding, TypeVertexProperty, TypeVertexPropertyEncoding},
             vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+            CapabilityKind,
         },
     },
     layout::infix::Infix,
     value::{label::Label, value_type::ValueType},
     Keyable,
 };
-use iterator::Collector;
+use itertools::Itertools;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
@@ -34,6 +35,10 @@ use crate::{
             AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
         },
         attribute_type::AttributeType,
+        constraint::{
+            get_owns_default_constraints, get_plays_default_constraints, get_relates_default_constraints,
+            CapabilityConstraint, Constraint, ConstraintScope, TypeConstraint,
+        },
         entity_type::EntityType,
         object_type::ObjectType,
         owns::Owns,
@@ -41,8 +46,7 @@ use crate::{
         relation_type::RelationType,
         role_type::RoleType,
         sub::Sub,
-        type_manager::validation::annotation_compatibility::is_annotation_inheritable,
-        Capability, EdgeOverride, KindAPI, Ordering, TypeAPI,
+        Capability, KindAPI, Ordering, TypeAPI,
     },
 };
 
@@ -226,14 +230,11 @@ impl TypeReader {
             .map(|(key, _)| Sub::<T>::decode_canonical_edge(Bytes::Array(key.into_byte_array())).supertype()))
     }
 
-    pub(crate) fn get_supertypes_transitive<T>(
+    pub(crate) fn get_supertypes_transitive<T: TypeAPI<'static>>(
         snapshot: &impl ReadableSnapshot,
         subtype: T,
-    ) -> Result<Vec<T>, ConceptReadError>
-    where
-        T: TypeAPI<'static>,
-    {
-        // supertypes do NOT include themselves by design
+    ) -> Result<Vec<T>, ConceptReadError> {
+        // Attention: it is important to be ordered!
         let mut supertypes: Vec<T> = Vec::new();
         let mut supertype_opt = TypeReader::get_supertype(snapshot, subtype.clone())?;
         while let Some(supertype) = supertype_opt {
@@ -243,7 +244,10 @@ impl TypeReader {
         Ok(supertypes)
     }
 
-    pub(crate) fn get_subtypes<T>(snapshot: &impl ReadableSnapshot, supertype: T) -> Result<Vec<T>, ConceptReadError>
+    pub(crate) fn get_subtypes<T>(
+        snapshot: &impl ReadableSnapshot,
+        supertype: T,
+    ) -> Result<HashSet<T>, ConceptReadError>
     where
         T: TypeAPI<'static>,
     {
@@ -252,25 +256,26 @@ impl TypeReader {
                 Sub::prefix_for_reverse_edges_from(supertype),
                 TypeEdge::FIXED_WIDTH_ENCODING,
             ))
-            .collect_cloned_vec(|key, _| {
+            .collect_cloned_hashset(|key, _| {
                 Sub::<T>::decode_reverse_edge(Bytes::Reference(key.byte_ref()).into_owned()).subtype()
             })
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
-    pub fn get_subtypes_transitive<T>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Vec<T>, ConceptReadError>
+    pub fn get_subtypes_transitive<T>(snapshot: &impl ReadableSnapshot, type_: T) -> Result<Vec<T>, ConceptReadError>
     where
         T: TypeAPI<'static>,
     {
-        //subtypes DO NOT include themselves by design
-        let mut subtypes: Vec<T> = Vec::new();
-        let mut stack = TypeReader::get_subtypes(snapshot, subtype.clone())?;
-        while let Some(subtype) = stack.pop() {
-            subtypes.push(subtype.clone());
-            stack.append(&mut TypeReader::get_subtypes(snapshot, subtype)?);
-            // TODO: Should we pass an accumulator instead?
+        let mut subtypes_transitive: Vec<T> = Vec::new();
+        let mut types_to_check: Vec<T> = Vec::from([type_]);
+
+        while let Some(type_) = types_to_check.pop() {
+            let subtypes = Self::get_subtypes(snapshot, type_)?;
+            types_to_check.extend(subtypes.iter().cloned());
+            subtypes_transitive.extend(subtypes.into_iter());
         }
-        Ok(subtypes)
+
+        Ok(subtypes_transitive)
     }
 
     pub(crate) fn get_label<'a>(
@@ -294,23 +299,18 @@ impl TypeReader {
     pub(crate) fn get_capabilities<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         object_type: CAP::ObjectType,
+        allow_specialised: bool,
     ) -> Result<HashSet<CAP>, ConceptReadError> {
         let mut transitive_capabilities: HashSet<CAP> = HashSet::new();
-        let mut overridden_interfaces: HashSet<CAP::InterfaceType> = HashSet::new();
-        let mut saved_interfaces: HashSet<CAP::InterfaceType> = HashSet::new();
+        let mut transitive_interfaces: HashSet<CAP::InterfaceType> = HashSet::new();
         let mut current_type = Some(object_type);
         while current_type.is_some() {
-            let declared_capabilities =
-                Self::get_capabilities_declared::<CAP>(snapshot, current_type.as_ref().unwrap().clone())?;
+            let declared_capabilities: HashSet<CAP> =
+                Self::get_capabilities_declared(snapshot, current_type.as_ref().unwrap().clone())?;
             for capability in declared_capabilities.into_iter() {
-                let interface = capability.interface();
-                // If interface capability is redeclared by a subtype, we don't inherit the original one.
-                if !overridden_interfaces.contains(&interface) && !saved_interfaces.contains(&interface) {
+                if allow_specialised || !transitive_interfaces.contains(&capability.interface()) {
                     transitive_capabilities.insert(capability.clone());
-                    saved_interfaces.insert(interface);
-                }
-                if let Some(overridden) = Self::get_capability_override(snapshot, capability.clone())? {
-                    overridden_interfaces.add(overridden.interface());
+                    transitive_interfaces.insert(capability.interface());
                 }
             }
             current_type = Self::get_supertype(snapshot, current_type.unwrap())?;
@@ -318,112 +318,7 @@ impl TypeReader {
         Ok(transitive_capabilities)
     }
 
-    pub(crate) fn get_object_capabilities_overrides_declared<CAP: Capability<'static>>(
-        snapshot: &impl ReadableSnapshot,
-        object_type: CAP::ObjectType,
-    ) -> Result<HashMap<CAP, CAP>, ConceptReadError> {
-        let mut capability_to_overridden: HashMap<CAP, CAP> = HashMap::new();
-        let declared_capabilities = Self::get_capabilities_declared::<CAP>(snapshot, object_type)?;
-        for capability in declared_capabilities.into_iter() {
-            debug_assert!(!capability_to_overridden.contains_key(&capability));
-            if let Some(overridden) = Self::get_capability_override(snapshot, capability.clone())? {
-                capability_to_overridden.insert(capability, overridden);
-            }
-        }
-        Ok(capability_to_overridden)
-    }
-
-    pub(crate) fn get_object_capabilities_overrides<CAP: Capability<'static>>(
-        snapshot: &impl ReadableSnapshot,
-        object_type: CAP::ObjectType,
-    ) -> Result<HashMap<CAP, CAP>, ConceptReadError> {
-        let mut capability_to_overridden: HashMap<CAP, CAP> = HashMap::new();
-        let mut current_type = Some(object_type);
-        while let Some(current_type_val) = &current_type {
-            let current_type_capability_to_overridden =
-                Self::get_object_capabilities_overrides_declared(snapshot, current_type_val.clone())?;
-            capability_to_overridden.extend(current_type_capability_to_overridden.into_iter());
-            current_type = Self::get_supertype(snapshot, current_type_val.clone())?;
-        }
-        Ok(capability_to_overridden)
-    }
-
-    pub(crate) fn get_capability_override<CAP: Capability<'static>>(
-        snapshot: &impl ReadableSnapshot,
-        capability: CAP,
-    ) -> Result<Option<CAP>, ConceptReadError> {
-        let override_property_key = EdgeOverride::<CAP>::build_key(capability);
-        snapshot
-            .get_mapped(override_property_key.into_storage_key().as_reference(), |overridden_edge_bytes| {
-                EdgeOverride::<CAP>::from_value_bytes(overridden_edge_bytes).overrides
-            })
-            .map_err(|error| ConceptReadError::SnapshotGet { source: error })
-    }
-
-    pub(crate) fn get_overriding_capabilities<CAP: Capability<'static>>(
-        snapshot: &impl ReadableSnapshot,
-        capability: CAP,
-    ) -> Result<HashSet<CAP>, ConceptReadError> {
-        let mut overriding_capabilities: HashSet<CAP> = HashSet::new();
-        let mut object_types: VecDeque<CAP::ObjectType> = VecDeque::from([capability.object()]);
-
-        while let Some(current_object_type) = object_types.pop_back() {
-            let capability_to_overridden =
-                Self::get_object_capabilities_overrides_declared::<CAP>(snapshot, current_object_type.clone())?;
-
-            let old_len = overriding_capabilities.len();
-            capability_to_overridden.into_iter().filter(|(_, overridden)| overridden == &capability).for_each(
-                |(overriding, _)| {
-                    overriding_capabilities.insert(overriding);
-                },
-            );
-
-            let capability_overridden_for_type = old_len < overriding_capabilities.len();
-            if !capability_overridden_for_type {
-                let subtypes = Self::get_subtypes(snapshot, current_object_type)?;
-                subtypes.into_iter().for_each(|subtype| object_types.push_front(subtype));
-            }
-        }
-
-        Ok(overriding_capabilities)
-    }
-
-    pub(crate) fn get_overriding_capabilities_transitive<CAP: Capability<'static>>(
-        snapshot: &impl ReadableSnapshot,
-        capability: CAP,
-    ) -> Result<HashSet<CAP>, ConceptReadError> {
-        let mut overriding_capabilities: HashSet<CAP> = HashSet::new();
-        let mut object_types_and_capabilities: VecDeque<(CAP::ObjectType, CAP)> =
-            VecDeque::from([(capability.object(), capability)]);
-
-        while let Some((current_object_type, capability_to_check)) = object_types_and_capabilities.pop_back() {
-            let capability_to_overridden =
-                Self::get_object_capabilities_overrides_declared::<CAP>(snapshot, current_object_type.clone())?;
-
-            let mut current_overriding_capabilities: HashSet<CAP> = capability_to_overridden
-                .into_iter()
-                .filter(|(_, overridden)| overridden == &capability_to_check)
-                .map(|(overriding, _)| overriding)
-                .collect();
-
-            if current_overriding_capabilities.is_empty() {
-                current_overriding_capabilities.insert(capability_to_check.clone());
-            } else {
-                overriding_capabilities.extend(current_overriding_capabilities.clone());
-            }
-
-            let subtypes = Self::get_subtypes(snapshot, current_object_type)?;
-            for subtype in subtypes {
-                current_overriding_capabilities.iter().cloned().for_each(|overriding_capability| {
-                    object_types_and_capabilities.push_front((subtype.clone(), overriding_capability))
-                });
-            }
-        }
-
-        Ok(overriding_capabilities)
-    }
-
-    pub(crate) fn get_capabilities_for_interface_declared<CAP>(
+    pub(crate) fn get_capabilities_for_interface<CAP>(
         snapshot: &impl ReadableSnapshot,
         interface_type: CAP::InterfaceType,
     ) -> Result<HashSet<CAP>, ConceptReadError>
@@ -437,68 +332,85 @@ impl TypeReader {
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
-    pub(crate) fn get_capabilities_for_interface<CAP: Capability<'static>>(
+    pub(crate) fn get_object_types_with_capabilities_for_interface<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
         interface_type: CAP::InterfaceType,
     ) -> Result<HashMap<CAP::ObjectType, CAP>, ConceptReadError> {
         let mut capabilities: HashMap<CAP::ObjectType, CAP> = HashMap::new();
-        let capabilities_declared: HashSet<CAP> =
-            Self::get_capabilities_for_interface_declared(snapshot, interface_type.clone())?;
+        let interface_capabilities: HashSet<CAP> =
+            Self::get_capabilities_for_interface(snapshot, interface_type.clone())?;
 
-        for declared_capability in capabilities_declared {
-            let mut stack = Vec::new();
-            stack.push(declared_capability.object());
-            while let Some(sub_object) = stack.pop() {
-                let mut declared_capability_was_overridden = false;
-                for sub_object_cap in Self::get_capabilities_declared::<CAP>(snapshot, sub_object.clone())? {
-                    if let Some(overridden_cap) = Self::get_capability_override(snapshot, sub_object_cap.clone())? {
-                        declared_capability_was_overridden =
-                            declared_capability_was_overridden || overridden_cap.interface() == interface_type;
-                    }
-                }
-                if !declared_capability_was_overridden {
-                    debug_assert!(!capabilities.contains_key(&sub_object));
-                    capabilities.insert(sub_object.clone(), declared_capability.clone());
-                    Self::get_subtypes(snapshot, sub_object)?
-                        .into_iter()
-                        .for_each(|object_type| stack.push(object_type));
-                }
+        for interface_capability in interface_capabilities {
+            for object_type in Self::get_object_types_with_capability(snapshot, interface_capability.clone())? {
+                debug_assert!(!capabilities.contains_key(&object_type));
+                capabilities.insert(object_type, interface_capability.clone());
             }
         }
+
         Ok(capabilities)
     }
 
-    pub(crate) fn get_role_type_relates_declared(
+    // Do not expose this method as there is a risk of misuse (it doesn't search for specialised capabilities).
+    // If needed, make two explicit methods: with_capability and with_capability_including_specialised or smth
+    fn get_object_types_with_capability<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
-        role: RoleType<'static>,
-    ) -> Result<Relates<'static>, ConceptReadError> {
-        let relates = Self::get_capabilities_for_interface_declared::<Relates<'static>>(snapshot, role)?;
-        debug_assert!(relates.len() == 1);
-        (relates.iter().next().map(|relates| relates.to_owned()))
-            .ok_or(ConceptReadError::CorruptMissingMandatoryRelatesForRole)
-    }
+        capability: CAP,
+    ) -> Result<HashSet<CAP::ObjectType>, ConceptReadError> {
+        let mut object_types = HashSet::new();
 
-    pub(crate) fn get_role_type_relates(
-        snapshot: &impl ReadableSnapshot,
-        role: RoleType<'static>,
-    ) -> Result<HashSet<Relates<'static>>, ConceptReadError> {
-        let relates_immediate = Self::get_role_type_relates_declared(snapshot, role.clone())?;
-
-        let mut role_overriders: HashSet<RelationType<'static>> = HashSet::new();
-        for subrole in Self::get_subtypes_transitive(snapshot, role.clone())? {
-            role_overriders.insert(Self::get_role_type_relates_declared(snapshot, subrole)?.relation());
-        }
-
-        let mut relates_transitive: HashSet<Relates<'static>> = HashSet::new();
-        relates_transitive.insert(relates_immediate.clone());
-        let mut stack = TypeReader::get_subtypes(snapshot, relates_immediate.relation())?;
-        while let Some(subtype) = stack.pop() {
-            if !role_overriders.contains(&subtype) {
-                relates_transitive.insert(Relates::new(subtype.clone(), role.clone()));
-                stack.append(&mut TypeReader::get_subtypes(snapshot, subtype)?);
+        let all_subtypes = TypeAPI::chain_types(
+            capability.object(),
+            Self::get_subtypes_transitive(snapshot, capability.object())?.into_iter(),
+        );
+        for object_type in all_subtypes {
+            let object_type_capabilities = TypeReader::get_capabilities::<CAP>(snapshot, object_type.clone(), false)?;
+            if object_type_capabilities.contains(&capability) {
+                object_types.insert(object_type.clone());
             }
         }
-        Ok(relates_transitive)
+
+        Ok(object_types)
+    }
+
+    pub(crate) fn get_role_type_relates_root(
+        snapshot: &impl ReadableSnapshot,
+        role_type: RoleType<'static>,
+    ) -> Result<Relates<'static>, ConceptReadError> {
+        let mut root_relates = None;
+        let all_relates = Self::get_capabilities_for_interface::<Relates<'static>>(snapshot, role_type)?;
+        for relates in all_relates.into_iter() {
+            if !Self::is_relates_specialising(snapshot, relates.clone())? {
+                debug_assert!(root_relates.is_none());
+                root_relates = Some(relates);
+            }
+        }
+        root_relates.ok_or(ConceptReadError::CorruptMissingMandatoryRootRelatesForRole)
+    }
+
+    pub(crate) fn get_relation_type_relates_root(
+        snapshot: &impl ReadableSnapshot,
+        relation_type: RelationType<'static>,
+    ) -> Result<HashSet<Relates<'static>>, ConceptReadError> {
+        let mut root_relates = HashSet::new();
+        let all_declared_relates = Self::get_capabilities_declared::<Relates<'static>>(snapshot, relation_type)?;
+        for relates in all_declared_relates.into_iter() {
+            if !Self::is_relates_specialising(snapshot, relates.clone())? {
+                root_relates.insert(relates);
+            }
+        }
+        Ok(root_relates)
+    }
+
+    pub(crate) fn is_relates_specialising(
+        snapshot: &impl ReadableSnapshot,
+        relates: Relates<'static>,
+    ) -> Result<bool, ConceptReadError> {
+        let relation_type_label =
+            Self::get_label(snapshot, relates.relation())?.ok_or(ConceptReadError::CorruptMissingLabelOfType)?;
+        let role_type_label =
+            Self::get_label(snapshot, relates.role())?.ok_or(ConceptReadError::CorruptMissingLabelOfType)?;
+        Ok(relation_type_label.name()
+            != role_type_label.scope().ok_or(ConceptReadError::CorruptMissingMandatoryScopeForRoleTypeLabel)?)
     }
 
     pub(crate) fn get_value_type_declared(
@@ -555,13 +467,38 @@ impl TypeReader {
         Ok(None)
     }
 
+    pub(crate) fn get_type_edge_property<'a, PROPERTY>(
+        snapshot: &impl ReadableSnapshot,
+        edge: impl TypeEdgeEncoding<'a>,
+    ) -> Result<Option<PROPERTY>, ConceptReadError>
+    where
+        PROPERTY: TypeEdgePropertyEncoding<'static>,
+    {
+        let property = snapshot
+            .get_mapped(PROPERTY::build_key(edge).into_storage_key().as_reference(), |value| {
+                PROPERTY::from_value_bytes(value)
+            })
+            .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
+        Ok(property)
+    }
+
     pub(crate) fn get_type_ordering(
         snapshot: &impl ReadableSnapshot,
         role_type: RoleType<'_>,
     ) -> Result<Ordering, ConceptReadError> {
         match Self::get_type_property_declared(snapshot, role_type)? {
             Some(ordering) => Ok(ordering),
-            None => Err(ConceptReadError::CorruptMissingMandatoryOrdering),
+            None => Err(ConceptReadError::OrderingValueMissing),
+        }
+    }
+
+    pub(crate) fn get_capability_ordering(
+        snapshot: &impl ReadableSnapshot,
+        owns: Owns<'_>,
+    ) -> Result<Ordering, ConceptReadError> {
+        match Self::get_type_edge_property::<Ordering>(snapshot, owns)? {
+            Some(ordering) => Ok(ordering),
+            None => Err(ConceptReadError::OrderingValueMissing),
         }
     }
 
@@ -599,7 +536,6 @@ impl TypeReader {
                     | Infix::PropertyLabel
                     | Infix::PropertyValueType
                     | Infix::PropertyOrdering
-                    | Infix::PropertyOverride
                     | Infix::PropertyHasOrder
                     | Infix::PropertyLinksOrder => {
                         unreachable!("Retrieved unexpected infixes while reading annotations.")
@@ -610,31 +546,50 @@ impl TypeReader {
             .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
     }
 
-    pub(crate) fn get_type_annotations<T: KindAPI<'static>>(
+    pub(crate) fn get_type_constraints<T: KindAPI<'static>>(
         snapshot: &impl ReadableSnapshot,
         type_: T,
-    ) -> Result<HashMap<T::AnnotationType, T>, ConceptReadError> {
-        let mut annotations: HashMap<T::AnnotationType, T> = HashMap::new();
-        let mut type_opt = Some(type_);
-        let mut declared = true;
+    ) -> Result<HashSet<TypeConstraint<T>>, ConceptReadError> {
+        let mut all_constraints: HashSet<TypeConstraint<T>> = HashSet::new();
+        let mut type_opt = Some(type_.clone());
         while let Some(curr_type) = type_opt {
             let declared_annotations = Self::get_type_annotations_declared(snapshot, curr_type.clone())?;
             for annotation in declared_annotations {
-                if declared || is_annotation_inheritable(&annotation, &annotations) {
-                    annotations.insert(annotation, curr_type.clone());
+                for constraint in annotation.clone().into().into_type_constraints(curr_type.clone()) {
+                    match constraint.scope() {
+                        ConstraintScope::SingleInstanceOfType => {
+                            if &constraint.source() != &type_ {
+                                continue;
+                            }
+                        }
+
+                        ConstraintScope::AllInstancesOfTypeOrSubtypes => {
+                            if let Some(duplicate) = all_constraints
+                                .iter()
+                                .find(|saved_constraint| saved_constraint.category() == constraint.category())
+                            {
+                                let duplicate = duplicate.clone();
+                                all_constraints.remove(&duplicate);
+                            }
+                        }
+
+                        ConstraintScope::SingleInstanceOfTypeOrSubtype
+                        | ConstraintScope::AllInstancesOfSiblingTypeOrSubtypes => {}
+                    }
+                    all_constraints.insert(constraint);
                 }
             }
             type_opt = Self::get_supertype(snapshot, curr_type.clone())?;
-            declared = false;
         }
-        Ok(annotations)
+
+        Ok(all_constraints)
     }
 
-    pub(crate) fn get_type_edge_annotations_declared<CAP: Capability<'static>>(
+    pub(crate) fn get_capability_annotations_declared<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
-        edge: CAP,
+        capability: CAP,
     ) -> Result<HashSet<CAP::AnnotationType>, ConceptReadError> {
-        let type_edge = edge.to_canonical_type_edge();
+        let type_edge = capability.to_canonical_type_edge();
         snapshot
             .iterate_range(KeyRange::new_inclusive(
                 TypeEdgeProperty::build(type_edge.clone(), Infix::ANNOTATION_MIN).into_storage_key(),
@@ -659,13 +614,14 @@ impl TypeReader {
                     Infix::PropertyAnnotationValues => {
                         Annotation::Values(<AnnotationValues as TypeEdgePropertyEncoding>::from_value_bytes(value))
                     }
+                    Infix::PropertyAnnotationAbstract => {
+                        Annotation::Abstract(<AnnotationAbstract as TypeEdgePropertyEncoding>::from_value_bytes(value))
+                    }
                     | Infix::_PropertyAnnotationLast
-                    | Infix::PropertyAnnotationAbstract
                     | Infix::PropertyAnnotationCascade
                     | Infix::PropertyLabel
                     | Infix::PropertyValueType
                     | Infix::PropertyOrdering
-                    | Infix::PropertyOverride
                     | Infix::PropertyHasOrder
                     | Infix::PropertyLinksOrder => {
                         unreachable!("Retrieved unexpected infixes while reading annotations.")
@@ -676,48 +632,156 @@ impl TypeReader {
             .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
     }
 
-    pub(crate) fn get_type_edge_annotations<CAP: Capability<'static>>(
+    pub(crate) fn get_capability_constraints<CAP: Capability<'static>>(
         snapshot: &impl ReadableSnapshot,
-        edge: CAP,
-    ) -> Result<HashMap<CAP::AnnotationType, CAP>, ConceptReadError> {
-        let mut annotations: HashMap<CAP::AnnotationType, CAP> = HashMap::new();
-        let mut edge_opt = Some(edge);
-        let mut declared = true;
-        while let Some(edge) = edge_opt {
-            let declared_edge_annotations = Self::get_type_edge_annotations_declared(snapshot, edge.clone())?;
-            for annotation in declared_edge_annotations {
-                if declared || is_annotation_inheritable(&annotation, &annotations) {
-                    annotations.insert(annotation, edge.clone());
+        capability: CAP,
+    ) -> Result<HashSet<CapabilityConstraint<CAP>>, ConceptReadError> {
+        let mut constraints: HashSet<CapabilityConstraint<CAP>> = HashSet::new();
+        let declared_annotations = Self::get_capability_annotations_declared(snapshot, capability.clone())?;
+
+        for annotation in declared_annotations {
+            for constraint in annotation.clone().into().into_capability_constraints(capability.clone()) {
+                debug_assert!(!constraints.contains(&constraint));
+                debug_assert!(constraints
+                    .iter()
+                    .find(|existing_constraint| existing_constraint.category() == constraint.category())
+                    .is_none());
+                constraints.insert(constraint);
+            }
+        }
+
+        Self::add_capability_default_constraints_if_not_declared(snapshot, capability, &mut constraints)?;
+        Ok(constraints)
+    }
+
+    pub(crate) fn get_type_capability_constraints<CAP: Capability<'static>>(
+        snapshot: &impl ReadableSnapshot,
+        object_type: CAP::ObjectType,
+        interface_type: CAP::InterfaceType,
+    ) -> Result<HashSet<CapabilityConstraint<CAP>>, ConceptReadError> {
+        let mut all_constraints: HashSet<CapabilityConstraint<CAP>> = HashSet::new();
+        let object_capability_opt = TypeReader::get_capabilities::<CAP>(snapshot, object_type.clone(), false)?
+            .into_iter()
+            .find(|capability| &capability.interface() == &interface_type);
+        let object_capability: CAP = if let Some(object_capability) = object_capability_opt {
+            object_capability
+        } else {
+            return Ok(all_constraints);
+        };
+
+        let affecting_interface_types: HashSet<CAP::InterfaceType> = CAP::InterfaceType::chain_types(
+            interface_type.clone(),
+            TypeReader::get_supertypes_transitive(snapshot, interface_type)?.into_iter(),
+        )
+        .collect();
+        let capabilities: HashSet<CAP> = TypeReader::get_capabilities(snapshot, object_type.clone(), true)?;
+        let capabilities_for_interface_type: HashSet<CAP> = capabilities
+            .into_iter()
+            .filter(|capability| affecting_interface_types.contains(&capability.interface()))
+            .collect();
+
+        for current_capability in capabilities_for_interface_type {
+            for constraint in TypeReader::get_capability_constraints(snapshot, current_capability)? {
+                match constraint.scope() {
+                    ConstraintScope::SingleInstanceOfType => {
+                        // is checked only for source, no need to carry it
+                        if &constraint.source() != &object_capability {
+                            continue;
+                        }
+                    }
+
+                    ConstraintScope::AllInstancesOfTypeOrSubtypes => {
+                        if let Some(duplicate) = all_constraints
+                            .iter()
+                            .find(|saved_constraint| saved_constraint.category() == constraint.category())
+                        {
+                            let duplicate_source_supertypes =
+                                TypeReader::get_supertypes_transitive(snapshot, duplicate.source().interface())?;
+                            if duplicate_source_supertypes.contains(&constraint.source().interface()) {
+                                let duplicate = duplicate.clone();
+                                all_constraints.remove(&duplicate);
+                            } else {
+                                continue;
+                            }
+                        }
+                    }
+
+                    ConstraintScope::SingleInstanceOfTypeOrSubtype
+                    | ConstraintScope::AllInstancesOfSiblingTypeOrSubtypes => {}
+                }
+                all_constraints.insert(constraint);
+            }
+        }
+
+        Ok(all_constraints)
+    }
+
+    pub(crate) fn get_type_capabilities_constraints<CAP: Capability<'static>>(
+        snapshot: &impl ReadableSnapshot,
+        object_type: CAP::ObjectType,
+    ) -> Result<HashMap<CAP::InterfaceType, HashSet<CapabilityConstraint<CAP>>>, ConceptReadError> {
+        let mut all_constraints: HashMap<CAP::InterfaceType, HashSet<CapabilityConstraint<CAP>>> = HashMap::new();
+        for object_capability in TypeReader::get_capabilities::<CAP>(snapshot, object_type.clone(), false)? {
+            let interface_type = object_capability.interface();
+            debug_assert!(!all_constraints.contains_key(&interface_type), "Specialised are not allowed here!");
+            all_constraints.insert(
+                interface_type.clone(),
+                Self::get_type_capability_constraints(snapshot, object_type.clone(), object_capability.interface())?,
+            );
+        }
+        Ok(all_constraints)
+    }
+
+    fn add_capability_default_constraints_if_not_declared<CAP: Capability<'static>>(
+        snapshot: &impl ReadableSnapshot,
+        capability: CAP,
+        out_constraints: &mut HashSet<CapabilityConstraint<CAP>>,
+    ) -> Result<(), ConceptReadError> {
+        match CAP::KIND {
+            CapabilityKind::Relates => {
+                let relates = Relates::new(
+                    RelationType::new(capability.canonical_from().into_vertex()),
+                    RoleType::new(capability.canonical_to().into_vertex()),
+                );
+                let role_ordering = Self::get_type_ordering(snapshot, relates.role())?;
+                let is_specialising = Self::is_relates_specialising(snapshot, relates.clone())?;
+
+                for default_constraint in get_relates_default_constraints(capability, role_ordering, is_specialising) {
+                    if !out_constraints
+                        .iter()
+                        .any(|set_constraint| set_constraint.category() == default_constraint.category())
+                    {
+                        out_constraints.insert(default_constraint);
+                    }
                 }
             }
-            edge_opt = Self::get_capability_override(snapshot, edge.clone())?;
-            declared = false;
-        }
-        Ok(annotations)
-    }
+            CapabilityKind::Plays => {
+                for default_constraint in get_plays_default_constraints(capability) {
+                    if !out_constraints
+                        .iter()
+                        .any(|set_constraint| set_constraint.category() == default_constraint.category())
+                    {
+                        out_constraints.insert(default_constraint);
+                    }
+                }
+            }
+            CapabilityKind::Owns => {
+                let owns = Owns::new(
+                    ObjectType::new(capability.canonical_from().into_vertex()),
+                    AttributeType::new(capability.canonical_to().into_vertex()),
+                );
+                let ordering = Self::get_capability_ordering(snapshot, owns.clone())?;
 
-    pub(crate) fn get_type_edge_ordering(
-        snapshot: &impl ReadableSnapshot,
-        owns: Owns<'_>,
-    ) -> Result<Ordering, ConceptReadError> {
-        match Self::get_type_edge_property::<Ordering>(snapshot, owns)? {
-            Some(ordering) => Ok(ordering),
-            None => Err(ConceptReadError::CorruptMissingMandatoryOrdering),
+                for default_constraint in get_owns_default_constraints(capability, ordering) {
+                    if !out_constraints
+                        .iter()
+                        .any(|set_constraint| set_constraint.category() == default_constraint.category())
+                    {
+                        out_constraints.insert(default_constraint);
+                    }
+                }
+            }
         }
-    }
-
-    pub(crate) fn get_type_edge_property<'a, PROPERTY>(
-        snapshot: &impl ReadableSnapshot,
-        edge: impl TypeEdgeEncoding<'a>,
-    ) -> Result<Option<PROPERTY>, ConceptReadError>
-    where
-        PROPERTY: TypeEdgePropertyEncoding<'static>,
-    {
-        let property = snapshot
-            .get_mapped(PROPERTY::build_key(edge).into_storage_key().as_reference(), |value| {
-                PROPERTY::from_value_bytes(value)
-            })
-            .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
-        Ok(property)
+        Ok(())
     }
 }

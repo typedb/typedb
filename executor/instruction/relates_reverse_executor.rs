@@ -112,8 +112,7 @@ impl RelatesReverseExecutor {
                 let relates: Vec<_> = self
                     .role_relation_types
                     .keys()
-                    .map(|role| role.as_role_type().get_relates(&**snapshot, type_manager))
-                    .map_ok(|set| set.to_owned())
+                    .map(|role| role.as_role_type().get_relates_root(&**snapshot, type_manager))
                     .try_collect()?;
                 let iterator = relates.into_iter().map(Ok as _);
                 let as_tuples: RelatesReverseUnboundedSortedRole = NarrowingTupleIterator(
@@ -139,7 +138,7 @@ impl RelatesReverseExecutor {
                 };
 
                 let type_manager = thing_manager.type_manager();
-                let relates = role.get_relates(&**snapshot, type_manager)?.to_owned();
+                let relates = role.get_relates_root(&**snapshot, type_manager)?;
 
                 let as_tuples: RelatesReverseBoundedSortedRelation = NarrowingTupleIterator(
                     lending_iterator::once(Ok(relates))

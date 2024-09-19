@@ -16,7 +16,7 @@ use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
     graph::{
         thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex, ThingVertex},
-        type_::vertex::PrefixedTypeVertexEncoding,
+        type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
         Typed,
     },
     layout::prefix::Prefix,
@@ -136,7 +136,7 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<(), ConceptReadError> {
-        match self.type_().get_value_type(snapshot, thing_manager.type_manager())? {
+        match self.type_().get_value_type_without_source(snapshot, thing_manager.type_manager())? {
             Some(value_type) => match value_type {
                 | ValueType::Boolean
                 | ValueType::Long
@@ -182,7 +182,7 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Prefix, ConceptReadError> {
-        let value_type = type_.get_value_type(snapshot, type_manager)?;
+        let value_type = type_.get_value_type_without_source(snapshot, type_manager)?;
         match value_type {
             Some(value_type) => Ok(Self::Vertex::value_type_category_to_prefix_type(value_type.category())),
             None => Err(ConceptReadError::CorruptMissingMandatoryValueType),

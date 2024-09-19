@@ -18,7 +18,7 @@ use concept::{
     thing::{object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager},
     type_::{
         type_manager::{type_cache::TypeCache, TypeManager},
-        OwnerAPI,
+        Ordering, OwnerAPI,
     },
 };
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
@@ -90,8 +90,8 @@ fn create_schema(storage: Arc<MVCCStorage<WALClient>>) {
     let name_type = type_manager.create_attribute_type(&mut snapshot, NAME_LABEL.get().unwrap()).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
     let person_type = type_manager.create_entity_type(&mut snapshot, PERSON_LABEL.get().unwrap()).unwrap();
-    person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type).unwrap();
-    person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type).unwrap();
+    person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
+    person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Unordered).unwrap();
     snapshot.commit().unwrap();
 }
 

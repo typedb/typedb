@@ -386,7 +386,7 @@ pub mod tests {
             thing::thing_manager::ThingManager,
             type_::{
                 annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation,
-                entity_type::EntityTypeAnnotation, type_manager::TypeManager, OwnerAPI,
+                entity_type::EntityTypeAnnotation, type_manager::TypeManager, Ordering, OwnerAPI,
             },
         };
         use encoding::value::{label::Label, value_type::ValueType};
@@ -447,11 +447,12 @@ pub mod tests {
                 .unwrap();
 
             // Ownerships
-            let animal_owns = animal.set_owns(&mut snapshot, type_manager, thing_manager, name.clone()).unwrap();
-            let cat_owns = cat.set_owns(&mut snapshot, type_manager, thing_manager, catname.clone()).unwrap();
-            let dog_owns = dog.set_owns(&mut snapshot, type_manager, thing_manager, dogname.clone()).unwrap();
-            cat_owns.set_override(&mut snapshot, type_manager, thing_manager, animal_owns.clone()).unwrap();
-            dog_owns.set_override(&mut snapshot, type_manager, thing_manager, animal_owns.clone()).unwrap();
+            let animal_owns =
+                animal.set_owns(&mut snapshot, type_manager, thing_manager, name.clone(), Ordering::Unordered).unwrap();
+            let cat_owns =
+                cat.set_owns(&mut snapshot, type_manager, thing_manager, catname.clone(), Ordering::Unordered).unwrap();
+            let dog_owns =
+                dog.set_owns(&mut snapshot, type_manager, thing_manager, dogname.clone(), Ordering::Unordered).unwrap();
 
             snapshot.commit().unwrap();
 

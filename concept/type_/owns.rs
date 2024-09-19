@@ -4,10 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use encoding::{
-    graph::type_::{edge::TypeEdgeEncoding, CapabilityKind},
+    graph::type_::{edge::TypeEdgeEncoding, vertex::TypeVertexEncoding, CapabilityKind},
     layout::prefix::Prefix,
 };
 use primitive::maybe_owns::MaybeOwns;
@@ -22,6 +22,7 @@ use crate::{
             AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues, DefaultFrom,
         },
         attribute_type::AttributeType,
+        constraint::CapabilityConstraint,
         object_type::ObjectType,
         type_manager::TypeManager,
         Capability, Ordering, TypeAPI,
@@ -51,15 +52,23 @@ impl<'a> Owns<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<bool, ConceptReadError> {
-        type_manager.get_owns_is_key(snapshot, self.clone())
+        type_manager.get_is_key(snapshot, self.clone().into_owned())
     }
 
-    pub fn is_unique(
+    pub fn get_constraint_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<bool, ConceptReadError> {
-        type_manager.get_owns_is_unique(snapshot, self.clone())
+    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_capability_abstract_constraint(snapshot, self.clone().into_owned())
+    }
+
+    pub fn get_constraints_distinct(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_owns_distinct_constraints(snapshot, self.clone().into_owned())
     }
 
     pub fn is_distinct(
@@ -67,50 +76,39 @@ impl<'a> Owns<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<bool, ConceptReadError> {
-        type_manager.get_owns_is_distinct(snapshot, self.clone())
+        Ok(!self.get_constraints_distinct(snapshot, type_manager)?.is_empty())
     }
 
-    pub fn get_constraint_regex(
+    pub fn get_constraint_unique(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<AnnotationRegex>, ConceptReadError> {
-        type_manager.get_owns_regex(snapshot, self.clone())
+    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_unique_constraint(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_constraint_range(
+    pub fn get_constraints_regex(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<AnnotationRange>, ConceptReadError> {
-        type_manager.get_owns_range(snapshot, self.clone())
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_owns_regex_constraints(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_constraint_values(
+    pub fn get_constraints_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<AnnotationValues>, ConceptReadError> {
-        type_manager.get_owns_values(snapshot, self.clone())
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_owns_range_constraints(snapshot, self.clone().into_owned())
     }
 
-    pub fn set_override(
+    pub fn get_constraints_values(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        thing_manager: &ThingManager,
-        overridden: Owns<'static>,
-    ) -> Result<(), ConceptWriteError> {
-        type_manager.set_owns_override(snapshot, thing_manager, self.clone().into_owned(), overridden)
-    }
-
-    pub fn unset_override(
-        &self,
-        snapshot: &mut impl WritableSnapshot,
-        type_manager: &TypeManager,
-        thing_manager: &ThingManager,
-    ) -> Result<(), ConceptWriteError> {
-        type_manager.unset_owns_override(snapshot, thing_manager, self.clone().into_owned())
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_owns_values_constraints(snapshot, self.clone().into_owned())
     }
 
     pub fn set_annotation(
@@ -160,7 +158,7 @@ impl<'a> Owns<'a> {
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match owns_annotation {
             OwnsAnnotation::Distinct(_) => {
-                type_manager.unset_capability_annotation_distinct(snapshot, self.clone().into_owned())?
+                type_manager.unset_owns_annotation_distinct(snapshot, self.clone().into_owned())?
             }
             OwnsAnnotation::Key(_) => {
                 type_manager.unset_owns_annotation_key(snapshot, thing_manager, self.clone().into_owned())?
@@ -206,32 +204,18 @@ impl<'a> Owns<'a> {
         Owns { owner: ObjectType::new(self.owner.vertex().into_owned()), attribute: self.attribute.into_owned() }
     }
 
-    pub(crate) fn get_uniqueness_source(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<Option<Owns<'static>>, ConceptReadError> {
-        debug_assert!(
-            !AnnotationCategory::Unique.declarable_below(AnnotationCategory::Key)
-                && AnnotationCategory::Key.declarable_below(AnnotationCategory::Unique),
-            "This function uses the fact that @key is always below @unique. Revalidate the logic!"
-        );
+    pub fn get_default_cardinality(ordering: Ordering) -> AnnotationCardinality {
+        match ordering {
+            Ordering::Unordered => Self::DEFAULT_UNORDERED_CARDINALITY,
+            Ordering::Ordered => Self::DEFAULT_ORDERED_CARDINALITY,
+        }
+    }
 
-        let owns_owned = self.clone().into_owned();
-
-        let unique_source = type_manager.get_capability_annotation_source(
-            snapshot,
-            owns_owned.clone(),
-            OwnsAnnotation::Unique(AnnotationUnique),
-        )?;
-        Ok(match unique_source {
-            Some(_) => unique_source,
-            None => type_manager.get_capability_annotation_source(
-                snapshot,
-                owns_owned,
-                OwnsAnnotation::Key(AnnotationKey),
-            )?,
-        })
+    pub fn get_default_distinct(ordering: Ordering) -> Option<AnnotationDistinct> {
+        match ordering {
+            Ordering::Ordered => None,
+            Ordering::Unordered => Some(AnnotationDistinct),
+        }
     }
 }
 
@@ -272,28 +256,14 @@ impl<'a> Capability<'a> for Owns<'a> {
         self.attribute.clone()
     }
 
-    fn get_override<'this>(
-        &'this self,
+    fn is_abstract(
+        &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, Option<Owns<'static>>>, ConceptReadError> {
-        type_manager.get_owns_override(snapshot, self.clone().into_owned())
-    }
-
-    fn get_overriding<'this>(
-        &'this self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<Owns<'static>>>, ConceptReadError> {
-        type_manager.get_owns_overriding(snapshot, self.clone().into_owned())
-    }
-
-    fn get_overriding_transitive<'this>(
-        &'this self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<Owns<'static>>>, ConceptReadError> {
-        type_manager.get_owns_overriding_transitive(snapshot, self.clone().into_owned())
+        type_manager: &TypeManager,
+    ) -> Result<bool, ConceptReadError> {
+        let is_abstract = self.get_constraint_abstract(snapshot, type_manager)?.is_some();
+        debug_assert!(!is_abstract, "Abstractness of owns is not implemented! Take care of validation");
+        Ok(is_abstract)
     }
 
     fn get_annotations_declared<'this>(
@@ -304,21 +274,31 @@ impl<'a> Capability<'a> for Owns<'a> {
         type_manager.get_owns_annotations_declared(snapshot, self.clone().into_owned())
     }
 
-    fn get_annotations<'this>(
+    fn get_constraints<'this>(
         &'this self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashMap<OwnsAnnotation, Owns<'static>>>, ConceptReadError> {
-        type_manager.get_owns_annotations(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'this, HashSet<CapabilityConstraint<Owns<'static>>>>, ConceptReadError>
+    where
+        'a: 'static,
+    {
+        type_manager.get_owns_constraints(snapshot, self.clone().into_owned())
     }
 
-    fn get_default_cardinality(
+    fn get_cardinality_constraints(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_owns_cardinality_constraints(snapshot, self.clone().into_owned())
+    }
+
+    fn get_cardinality(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
-        let ordering = self.get_ordering(snapshot, type_manager)?;
-        Ok(type_manager.get_owns_default_cardinality(ordering))
+        type_manager.get_capability_cardinality(snapshot, self.clone().into_owned().into_owned())
     }
 }
 

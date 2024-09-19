@@ -17,7 +17,7 @@ use encoding::{
             vertex_object::ObjectVertex,
             ThingVertex,
         },
-        type_::vertex::PrefixedTypeVertexEncoding,
+        type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
         Typed,
     },
     layout::prefix::Prefix,
@@ -41,7 +41,7 @@ use crate::{
     },
     type_::{
         relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, Capability, ObjectTypeAPI,
-        Ordering, OwnerAPI, TypeAPI,
+        Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
     ByteReference, ConceptAPI, ConceptStatus,
 };
@@ -171,12 +171,18 @@ impl<'a> Relation<'a> {
         )
         .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
-        let relates = role_type.get_relates(snapshot, thing_manager.type_manager())?;
-        let distinct = relates.is_distinct(snapshot, thing_manager.type_manager())?;
+        OperationTimeValidation::validate_relates_is_not_abstract(snapshot, thing_manager, self, role_type.clone())
+            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+
+        OperationTimeValidation::validate_plays_is_not_abstract(snapshot, thing_manager, &player, role_type.clone())
+            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+
+        let distinct =
+            self.type_().is_related_role_type_distinct(snapshot, thing_manager.type_manager(), role_type.clone())?;
         if distinct {
-            thing_manager.put_links_unordered(snapshot, self.as_reference(), player.as_reference(), role_type.clone())
+            thing_manager.put_links_unordered(snapshot, self.as_reference(), player.as_reference(), role_type)
         } else {
-            thing_manager.increment_links_count(snapshot, self.as_reference(), player.as_reference(), role_type.clone())
+            thing_manager.increment_links_count(snapshot, self.as_reference(), player.as_reference(), role_type)
         }
     }
 
@@ -203,6 +209,9 @@ impl<'a> Relation<'a> {
         )
         .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
+        OperationTimeValidation::validate_relates_is_not_abstract(snapshot, thing_manager, self, role_type.clone())
+            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+
         let mut new_counts = HashMap::<_, u64>::new();
         for player in &new_players {
             OperationTimeValidation::validate_object_type_plays_role_type(
@@ -213,12 +222,21 @@ impl<'a> Relation<'a> {
             )
             .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
+            OperationTimeValidation::validate_plays_is_not_abstract(
+                snapshot,
+                thing_manager,
+                &player,
+                role_type.clone(),
+            )
+            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+
             *new_counts.entry(player).or_default() += 1;
         }
 
         OperationTimeValidation::validate_relates_distinct_constraint(
             snapshot,
             thing_manager,
+            self.as_reference(),
             role_type.clone(),
             &new_counts,
         )
@@ -292,17 +310,20 @@ impl<'a> Relation<'a> {
         )
         .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
 
-        let relates = role_type.get_relates(snapshot, thing_manager.type_manager())?;
-        let distinct = relates.is_distinct(snapshot, thing_manager.type_manager())?;
+        OperationTimeValidation::validate_relates_is_not_abstract(snapshot, thing_manager, self, role_type.clone())
+            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+
+        let distinct =
+            self.type_().is_related_role_type_distinct(snapshot, thing_manager.type_manager(), role_type.clone())?;
         if distinct {
             debug_assert_eq!(delete_count, 1);
-            thing_manager.unset_links(snapshot, self.as_reference(), player.as_reference(), role_type.clone())
+            thing_manager.unset_links(snapshot, self.as_reference(), player.as_reference(), role_type)
         } else {
             thing_manager.decrement_links_count(
                 snapshot,
                 self.as_reference(),
                 player.as_reference(),
-                role_type.clone(),
+                role_type,
                 delete_count,
             )
         }

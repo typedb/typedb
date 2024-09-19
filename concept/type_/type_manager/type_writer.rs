@@ -25,8 +25,7 @@ use storage::snapshot::WritableSnapshot;
 use crate::{
     error::ConceptWriteError,
     type_::{
-        attribute_type::AttributeType, owns::Owns, sub::Sub, type_manager::type_reader::TypeReader, EdgeOverride,
-        Ordering, TypeAPI,
+        attribute_type::AttributeType, owns::Owns, sub::Sub, type_manager::type_reader::TypeReader, Ordering, TypeAPI,
     },
 };
 
@@ -82,7 +81,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     where
         EDGE: TypeEdgeEncoding<'static> + Clone,
     {
-        let canonical_key = capability.clone().to_canonical_type_edge().into_storage_key();
+        let canonical_key = capability.to_canonical_type_edge().into_storage_key();
         let reverse_key = capability.to_reverse_type_edge().into_storage_key();
         debug_assert!(snapshot.contains(canonical_key.as_reference()).unwrap_or(false));
         debug_assert!(snapshot.contains(reverse_key.as_reference()).unwrap_or(false));
@@ -111,8 +110,8 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         T: TypeAPI<'static>,
     {
         let sub_edge = Sub::from_vertices(subtype.clone(), supertype.clone());
-        snapshot.put(sub_edge.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
-        snapshot.put(sub_edge.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
+        snapshot.put(sub_edge.to_canonical_type_edge().into_storage_key().into_owned_array());
+        snapshot.put(sub_edge.to_reverse_type_edge().into_storage_key().into_owned_array());
     }
 
     pub(crate) fn storage_may_delete_supertype<T>(snapshot: &mut Snapshot, subtype: T) -> Result<(), ConceptWriteError>
@@ -122,8 +121,8 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         let supertype = TypeReader::get_supertype(snapshot, subtype.clone())?;
         if let Some(supertype) = supertype {
             let sub_edge = Sub::from_vertices(subtype.clone(), supertype.clone());
-            snapshot.delete(sub_edge.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
-            snapshot.delete(sub_edge.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
+            snapshot.delete(sub_edge.to_canonical_type_edge().into_storage_key().into_owned_array());
+            snapshot.delete(sub_edge.to_reverse_type_edge().into_storage_key().into_owned_array());
         }
         Ok(())
     }
@@ -145,16 +144,16 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     where
         EDGE: TypeEdgeEncoding<'static> + Clone,
     {
-        snapshot.put(capability.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
-        snapshot.put(capability.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
+        snapshot.put(capability.to_canonical_type_edge().into_storage_key().into_owned_array());
+        snapshot.put(capability.to_reverse_type_edge().into_storage_key().into_owned_array());
     }
 
     pub(crate) fn storage_delete_edge<EDGE>(snapshot: &mut Snapshot, capability: EDGE)
     where
         EDGE: TypeEdgeEncoding<'static> + Clone,
     {
-        snapshot.delete(capability.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
-        snapshot.delete(capability.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
+        snapshot.delete(capability.to_canonical_type_edge().into_storage_key().into_owned_array());
+        snapshot.delete(capability.to_reverse_type_edge().into_storage_key().into_owned_array());
     }
 
     pub(crate) fn storage_insert_type_vertex_property<'a, P>(
@@ -212,21 +211,6 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         } else {
             snapshot.unput(key.into_owned_array())
         }
-    }
-
-    pub(crate) fn storage_set_type_edge_overridden<E>(snapshot: &mut Snapshot, edge: E, overridden: E)
-    where
-        E: TypeEdgeEncoding<'static>,
-    {
-        let overridden_to = EdgeOverride::<E> { overrides: overridden };
-        Self::storage_put_type_edge_property(snapshot, edge, Some(overridden_to))
-    }
-
-    pub(crate) fn storage_delete_type_edge_overridden<E>(snapshot: &mut Snapshot, edge: E)
-    where
-        E: TypeEdgeEncoding<'static>,
-    {
-        Self::storage_delete_type_edge_property::<EdgeOverride<E>>(snapshot, edge)
     }
 
     pub(crate) fn storage_set_owns_ordering(snapshot: &mut Snapshot, owns: Owns<'_>, ordering: Ordering) {

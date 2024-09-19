@@ -138,7 +138,7 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
             .iter()
             .map(|type_| match type_ {
                 Type::Attribute(attribute_type) => attribute_type
-                    .get_value_type(context.snapshot, context.type_manager)
+                    .get_value_type_without_source(context.snapshot, context.type_manager)
                     .map_err(|source| ExpressionCompileError::ConceptRead { source }),
                 _ => Ok(None),
             })

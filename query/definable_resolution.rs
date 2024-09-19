@@ -322,7 +322,7 @@ pub(crate) fn try_resolve_relates(
     relation_type: RelationType<'static>,
     role_name: &str,
 ) -> Result<Option<Relates<'static>>, ConceptReadError> {
-    relation_type.get_relates_role_name_with_overridden(snapshot, type_manager, role_name)
+    relation_type.get_relates_role_name_with_specialised(snapshot, type_manager, role_name)
 }
 
 pub(crate) fn resolve_owns_declared(
@@ -372,7 +372,7 @@ pub(crate) fn try_resolve_owns(
     object_type: ObjectType<'static>,
     attribute_type: AttributeType<'static>,
 ) -> Result<Option<Owns<'static>>, ConceptReadError> {
-    object_type.get_owns_attribute_with_overridden(snapshot, type_manager, attribute_type.clone())
+    object_type.get_owns_attribute_with_specialised(snapshot, type_manager, attribute_type.clone())
 }
 
 pub(crate) fn resolve_plays_declared(
@@ -422,7 +422,7 @@ pub(crate) fn try_resolve_plays(
     object_type: ObjectType<'static>,
     role_type: RoleType<'static>,
 ) -> Result<Option<Plays<'static>>, ConceptReadError> {
-    object_type.get_plays_role_with_overridden(snapshot, type_manager, role_type.clone())
+    object_type.get_plays_role_with_specialised(snapshot, type_manager, role_type.clone())
 }
 
 pub(crate) fn resolve_plays_role_label(
@@ -455,7 +455,7 @@ pub(crate) fn try_resolve_plays_role_label(
                 None => Ok(None),
             }
         }
-        None => object_type.get_plays_role_name_with_overridden(snapshot, type_manager, label.name.as_str()),
+        None => object_type.get_plays_role_name_with_specialised(snapshot, type_manager, label.name.as_str()),
     }
 }
 

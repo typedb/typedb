@@ -16,6 +16,7 @@ use concept::{
             AnnotationCategory as TypeDBAnnotationCategory, AnnotationDistinct, AnnotationIndependent, AnnotationKey,
             AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
         },
+        constraint::{ConstraintCategory as TypeDBConstraintCategory, ConstraintDescription as TypeDBConstraint},
         object_type::ObjectType,
         type_manager::{validation::SchemaValidationError, TypeManager},
     },
@@ -155,6 +156,8 @@ macro_rules! check_boolean {
     };
 }
 pub(crate) use check_boolean;
+use concept::type_::{attribute_type::AttributeTypeAnnotation, constraint::ConstraintDescription};
+use primitive::either::Either;
 
 impl FromStr for Boolean {
     type Err = String;
@@ -250,7 +253,7 @@ impl ContainsOrDoesnt {
                 actual.contains(expected_item),
                 "{:?} {} {:?} ",
                 actual,
-                if expected_contains { "contains" } else { "does not contain" },
+                if expected_contains { "should contain" } else { "should not contain" },
                 expected
             );
         }
@@ -304,18 +307,18 @@ impl FromStr for Label {
 }
 
 #[derive(Debug, Parameter)]
-#[param(name = "root_label", regex = r"(attribute|entity|relation)")]
-pub(crate) struct RootLabel {
+#[param(name = "kind", regex = r"(attribute|entity|relation)")]
+pub(crate) struct Kind {
     kind: TypeDBTypeKind,
 }
 
-impl RootLabel {
+impl Kind {
     pub fn into_typedb(&self) -> TypeDBTypeKind {
         self.kind
     }
 }
 
-impl FromStr for RootLabel {
+impl FromStr for Kind {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let kind = match s {
@@ -324,17 +327,17 @@ impl FromStr for RootLabel {
             "relation" => TypeDBTypeKind::Relation,
             _ => unreachable!(),
         };
-        Ok(RootLabel { kind })
+        Ok(Kind { kind })
     }
 }
 
 #[derive(Debug, Parameter)]
-#[param(name = "object_root_label", regex = r"(entity|relation|entities|relations)")]
-pub(crate) struct ObjectRootLabel {
+#[param(name = "object_kind", regex = r"(entity|relation|entities|relations)")]
+pub(crate) struct ObjectKind {
     kind: TypeDBTypeKind,
 }
 
-impl ObjectRootLabel {
+impl ObjectKind {
     pub fn into_typedb(&self) -> TypeDBTypeKind {
         self.kind
     }
@@ -343,12 +346,12 @@ impl ObjectRootLabel {
         match self.kind {
             TypeDBTypeKind::Entity => assert_matches!(object, ObjectType::Entity(_)),
             TypeDBTypeKind::Relation => assert_matches!(object, ObjectType::Relation(_)),
-            _ => unreachable!("an ObjectRootLabel contains a non-object kind: {:?}", self.kind),
+            _ => unreachable!("an ObjectKind contains a non-object kind: {:?}", self.kind),
         }
     }
 }
 
-impl FromStr for ObjectRootLabel {
+impl FromStr for ObjectKind {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let kind = match s {
@@ -361,8 +364,8 @@ impl FromStr for ObjectRootLabel {
 }
 
 #[derive(Debug, Parameter)]
-#[param(name = "root_label_extended", regex = r"(attribute|entity|relation|role|object)")]
-pub(crate) enum RootLabelExtended {
+#[param(name = "kind_extended", regex = r"(attribute|entity|relation|role|object)")]
+pub(crate) enum KindExtended {
     Attribute,
     Entity,
     Relation,
@@ -370,7 +373,7 @@ pub(crate) enum RootLabelExtended {
     Object,
 }
 
-impl FromStr for RootLabelExtended {
+impl FromStr for KindExtended {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
@@ -379,7 +382,7 @@ impl FromStr for RootLabelExtended {
             "relation" => Self::Relation,
             "role" => Self::Role,
             "object" => Self::Object,
-            invalid => return Err(format!("Invalid `RootLabelExtended`: {invalid}")),
+            invalid => return Err(format!("Invalid `KindExtended`: {invalid}")),
         })
     }
 }
@@ -584,6 +587,68 @@ impl FromStr for Value {
     }
 }
 
+fn parse_regex_annotation(regex: &str) -> TypeDBAnnotation {
+    assert!(
+        regex.starts_with(r#"@regex(""#) && regex.ends_with(r#"")"#),
+        r#"Invalid @regex format: {regex:?}. Expected "@regex("regex-here")""#
+    );
+    let regex = &regex[r#"@regex(""#.len()..regex.len() - r#"")"#.len()];
+    TypeDBAnnotation::Regex(AnnotationRegex::new(regex.to_owned()))
+}
+
+fn parse_card_annotation(card: &str) -> TypeDBAnnotation {
+    assert!(
+        card.starts_with("@card(") && card.ends_with(')'),
+        r#"Invalid @card format: {card:?}. Expected "@card(min..max)""#
+    );
+    let card = card["@card(".len()..card.len() - ")".len()].trim();
+    let (min, max) = card.split_once("..").map(|(min, max)| (min.trim(), max.trim())).unwrap();
+
+    TypeDBAnnotation::Cardinality(AnnotationCardinality::new(
+        min.parse().unwrap(),
+        if max.is_empty() { None } else { Some(max.parse().unwrap()) },
+    ))
+}
+
+fn parse_values_annotation(values: &str, value_type: Option<TypeDBValueType>) -> TypeDBAnnotation {
+    assert!(
+        values.starts_with("@values(") && values.ends_with(')'),
+        r#"Invalid @values format: {values:?}. Expected "@values(val1, val2, ..., valN)""#
+    );
+    assert!(value_type.is_some(), "ValueType is expected to parse annotation @values");
+    let value_type = value_type.unwrap();
+    let values = values["@values(".len()..values.len() - ")".len()].trim();
+    let values = values.split(',');
+    TypeDBAnnotation::Values(AnnotationValues::new(
+        values.map(|value| Value::from_str(value.trim()).unwrap().into_typedb(value_type.clone())).collect_vec(),
+    ))
+}
+
+fn parse_range_annotation(range: &str, value_type: Option<TypeDBValueType>) -> TypeDBAnnotation {
+    assert!(
+        range.starts_with("@range(") && range.ends_with(')') && range.contains(".."),
+        r#"Invalid @range format: {range:?}. Expected "@range(min..max)""#
+    );
+    assert!(value_type.is_some(), "ValueType is expected to parse annotation @range");
+    let value_type = value_type.unwrap();
+    let range = range["@range(".len()..range.len() - ")".len()].trim();
+    let (min, max) = range.split_once("..").map(|(min, max)| (min.trim(), max.trim())).unwrap();
+    TypeDBAnnotation::Range(AnnotationRange::new(
+        if min.is_empty() { None } else { Some(Value::from_str(min).unwrap().into_typedb(value_type.clone())) },
+        if max.is_empty() { None } else { Some(Value::from_str(max).unwrap().into_typedb(value_type)) },
+    ))
+}
+
+fn parse_subkey_annotation(subkey: &str) -> TypeDBAnnotation {
+    unreachable!("Subkey is not implemented for tests!");
+    // assert!(
+    //     subkey.starts_with(r#"@subkey("#) && subkey.ends_with(r#")"#),
+    //     r#"Invalid @subkey format: {subkey:?}. Expected "@subkey(LABEL)""#
+    // );
+    // let label = &subkey[r#"@subkey("#.len()..subkey.len() - r#")"#.len()];
+    // TypeDBAnnotation::Subkey(AnnotationSubkey::new(label.to_owned()))
+}
+
 #[derive(Debug, Parameter)]
 #[param(name = "annotation", regex = r"@[a-z]+(?:\(.+\))?")]
 pub(crate) struct Annotation {
@@ -599,69 +664,11 @@ impl Annotation {
             "@unique" => TypeDBAnnotation::Unique(AnnotationUnique),
             "@distinct" => TypeDBAnnotation::Distinct(AnnotationDistinct),
             "@cascade" => TypeDBAnnotation::Cascade(AnnotationCascade),
-            regex if regex.starts_with("@regex") => {
-                assert!(
-                    regex.starts_with(r#"@regex(""#) && regex.ends_with(r#"")"#),
-                    r#"Invalid @regex format: {regex:?}. Expected "@regex("regex-here")""#
-                );
-                let regex = &regex[r#"@regex(""#.len()..regex.len() - r#"")"#.len()];
-                TypeDBAnnotation::Regex(AnnotationRegex::new(regex.to_owned()))
-            }
-            card if card.starts_with("@card") => {
-                assert!(
-                    card.starts_with("@card(") && card.ends_with(')'),
-                    r#"Invalid @card format: {card:?}. Expected "@card(min, max)""#
-                );
-                let card = card["@card(".len()..card.len() - ")".len()].trim();
-                let (min, max) = card.split_once("..").map(|(min, max)| (min.trim(), max.trim())).unwrap();
-
-                TypeDBAnnotation::Cardinality(AnnotationCardinality::new(
-                    min.parse().unwrap(),
-                    if max.is_empty() { None } else { Some(max.parse().unwrap()) },
-                ))
-            }
-            values if values.starts_with("@values") => {
-                assert!(
-                    values.starts_with("@values(") && values.ends_with(')'),
-                    r#"Invalid @values format: {values:?}. Expected "@values(val1, val2, ..., valN)""#
-                );
-                assert!(value_type.is_some(), "ValueType is expected to parse annotation @values");
-                let value_type = value_type.unwrap();
-                let values = values["@values(".len()..values.len() - ")".len()].trim();
-                let values = values.split(',');
-                TypeDBAnnotation::Values(AnnotationValues::new(
-                    values
-                        .map(|value| Value::from_str(value.trim()).unwrap().into_typedb(value_type.clone()))
-                        .collect_vec(),
-                ))
-            }
-            range if range.starts_with("@range") => {
-                assert!(
-                    range.starts_with("@range(") && range.ends_with(')') && range.contains(".."),
-                    r#"Invalid @range format: {range:?}. Expected "@range(min..max)""#
-                );
-                assert!(value_type.is_some(), "ValueType is expected to parse annotation @range");
-                let value_type = value_type.unwrap();
-                let range = range["@range(".len()..range.len() - ")".len()].trim();
-                let (min, max) = range.split_once("..").map(|(min, max)| (min.trim(), max.trim())).unwrap();
-                TypeDBAnnotation::Range(AnnotationRange::new(
-                    if min.is_empty() {
-                        None
-                    } else {
-                        Some(Value::from_str(min).unwrap().into_typedb(value_type.clone()))
-                    },
-                    if max.is_empty() { None } else { Some(Value::from_str(max).unwrap().into_typedb(value_type)) },
-                ))
-            }
-            subkey if subkey.starts_with("@subkey") => {
-                unreachable!("Subkey is not implemented for tests!");
-                // assert!(
-                //     subkey.starts_with(r#"@subkey("#) && subkey.ends_with(r#")"#),
-                //     r#"Invalid @subkey format: {subkey:?}. Expected "@subkey(LABEL)""#
-                // );
-                // let label = &subkey[r#"@subkey("#.len()..subkey.len() - r#")"#.len()];
-                // TypeDBAnnotation::Subkey(AnnotationSubkey::new(label.to_owned()))
-            }
+            regex if regex.starts_with("@regex") => parse_regex_annotation(regex),
+            card if card.starts_with("@card") => parse_card_annotation(card),
+            values if values.starts_with("@values") => parse_values_annotation(values, value_type),
+            range if range.starts_with("@range") => parse_range_annotation(range, value_type),
+            subkey if subkey.starts_with("@subkey") => parse_subkey_annotation(subkey),
             _ => unreachable!("Cannot parse annotation {:?}", self.raw_annotation),
         }
     }
@@ -739,6 +746,77 @@ impl FromStr for Annotations {
         .try_collect()?;
 
         Ok(Self { typedb_annotations })
+    }
+}
+
+#[derive(Debug, Parameter)]
+#[param(name = "constraint", regex = r"@[a-z]+(?:\(.+\))?")]
+pub(crate) struct Constraint {
+    raw_constraint: String,
+}
+
+impl Constraint {
+    pub fn into_typedb(self, value_type: Option<TypeDBValueType>) -> TypeDBConstraint {
+        let constraints = TypeDBConstraint::from_annotation(match self.raw_constraint.as_str() {
+            "@abstract" => TypeDBAnnotation::Abstract(AnnotationAbstract),
+            "@independent" => TypeDBAnnotation::Independent(AnnotationIndependent),
+            "@key" => TypeDBAnnotation::Key(AnnotationKey),
+            "@unique" => TypeDBAnnotation::Unique(AnnotationUnique),
+            "@distinct" => TypeDBAnnotation::Distinct(AnnotationDistinct),
+            "@cascade" => TypeDBAnnotation::Cascade(AnnotationCascade),
+            regex if regex.starts_with("@regex") => parse_regex_annotation(regex),
+            regex if regex.starts_with("@regex") => parse_regex_annotation(regex),
+            card if card.starts_with("@card") => parse_card_annotation(card),
+            values if values.starts_with("@values") => parse_values_annotation(values, value_type),
+            range if range.starts_with("@range") => parse_range_annotation(range, value_type),
+            subkey if subkey.starts_with("@subkey") => parse_subkey_annotation(subkey),
+            _ => unreachable!("Cannot parse constraint {:?}", self.raw_constraint),
+        });
+        if constraints.len() != 1 {
+            panic!(
+                "Cannot parse constraint {}. Make sure you expect a constraint, not an annotation.",
+                self.raw_constraint
+            );
+        }
+        constraints.iter().next().unwrap().clone()
+    }
+}
+
+impl FromStr for Constraint {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self { raw_constraint: s.to_owned() })
+    }
+}
+
+#[derive(Debug, Parameter)]
+#[param(name = "constraint_category", regex = r"@[a-z]+")]
+pub(crate) struct ConstraintCategory {
+    typedb_constraint_category: TypeDBConstraintCategory,
+}
+
+impl ConstraintCategory {
+    pub fn into_typedb(self) -> TypeDBConstraintCategory {
+        self.typedb_constraint_category
+    }
+}
+
+impl FromStr for ConstraintCategory {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let typedb_constraint_category = match s {
+            "@abstract" => TypeDBConstraintCategory::Abstract,
+            "@independent" => TypeDBConstraintCategory::Independent,
+            "@unique" => TypeDBConstraintCategory::Unique,
+            "@distinct" => TypeDBConstraintCategory::Distinct,
+            "@regex" => TypeDBConstraintCategory::Regex,
+            "@card" => TypeDBConstraintCategory::Cardinality,
+            "@range" => TypeDBConstraintCategory::Range,
+            "@values" => TypeDBConstraintCategory::Values,
+            "@subkey" => return Err("Not implemented!".to_owned()), //TypeDBConstraintCategory::Subkey,
+            _ => panic!("Unrecognised (or unimplemented) annotation: {s}"),
+        };
+        Ok(Self { typedb_constraint_category })
     }
 }
 

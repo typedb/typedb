@@ -20,7 +20,7 @@ use encoding::graph::{
         vertex_object::ObjectVertex,
         ThingVertex,
     },
-    type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeIDUInt},
+    type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeIDUInt, TypeVertexEncoding},
     Typed,
 };
 use serde::{Deserialize, Serialize};

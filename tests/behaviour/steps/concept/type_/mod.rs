@@ -15,9 +15,7 @@ mod thing_type;
 
 #[derive(Debug, Clone)]
 pub enum BehaviourConceptTestExecutionError {
-    CannotFindRelationTypeRoleTypeToOverride,
-    CannotFindObjectTypeRoleTypeToOverride,
-    CannotFindObjectTypeAttributeTypeToOverride,
+    CannotFindRelationTypeRoleTypeToSpecialise,
     CannotFindRoleToAddPlayerTo,
     CannotFindStructDefinition,
 }
@@ -31,9 +29,7 @@ impl fmt::Display for BehaviourConceptTestExecutionError {
 impl Error for BehaviourConceptTestExecutionError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::CannotFindRelationTypeRoleTypeToOverride => None,
-            Self::CannotFindObjectTypeRoleTypeToOverride => None,
-            Self::CannotFindObjectTypeAttributeTypeToOverride => None,
+            Self::CannotFindRelationTypeRoleTypeToSpecialise => None,
             Self::CannotFindRoleToAddPlayerTo => None,
             Self::CannotFindStructDefinition => None,
         }
