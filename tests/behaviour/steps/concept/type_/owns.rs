@@ -7,8 +7,7 @@
 use std::sync::Arc;
 
 use concept::type_::{
-    annotation, annotation::Annotation, constraint::Constraint, Capability, Ordering, OwnerAPI,
-    TypeAPI,
+    annotation, annotation::Annotation, constraint::Constraint, Capability, Ordering, OwnerAPI, TypeAPI,
 };
 use cucumber::gherkin::Step;
 use itertools::Itertools;

@@ -7,11 +7,8 @@
 use std::sync::Arc;
 
 use concept::type_::{
-        annotation::Annotation,
-        constraint::Constraint,
-        object_type::ObjectType,
-        Capability, KindAPI, Ordering, TypeAPI,
-    };
+    annotation::Annotation, constraint::Constraint, object_type::ObjectType, Capability, KindAPI, Ordering, TypeAPI,
+};
 use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;

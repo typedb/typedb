@@ -8,10 +8,7 @@ use std::{collections::HashMap, str::FromStr, sync::Arc};
 
 use answer::{variable_value::VariableValue, Thing};
 use compiler::VariablePosition;
-use concept::{
-    thing::object::ObjectAPI,
-    type_::TypeAPI,
-};
+use concept::{thing::object::ObjectAPI, type_::TypeAPI};
 use cucumber::gherkin::Step;
 use encoding::value::label::Label;
 use executor::{
@@ -28,9 +25,7 @@ use query::{error::QueryError, query_manager::QueryManager};
 use crate::{
     assert::assert_matches,
     generic_step, params,
-    transaction_context::{
-        with_read_tx, with_schema_tx, with_write_tx_deconstructed,
-    },
+    transaction_context::{with_read_tx, with_schema_tx, with_write_tx_deconstructed},
     util::iter_table_map,
     Context,
 };
