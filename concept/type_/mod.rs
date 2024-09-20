@@ -24,6 +24,7 @@ use encoding::{
 };
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
+use serde::{Deserialize, Serialize};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{

@@ -354,7 +354,7 @@ impl<'this> NestedTypeInferenceGraphDisjunction<'this> {
 
 #[cfg(test)]
 pub mod tests {
-    use std::collections::{BTreeMap, BTreeSet, HashMap};
+    use std::collections::{BTreeMap, BTreeSet};
 
     use answer::{variable::Variable, Type as TypeAnnotation};
     use ir::{
@@ -428,9 +428,9 @@ pub mod tests {
                 .unwrap();
 
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT.scoped_name().as_str()).unwrap();
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_name_type, LABEL_NAME).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_NAME.scoped_name().as_str()).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
             let block = builder.finish();
@@ -495,9 +495,9 @@ pub mod tests {
                 .unwrap();
 
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_animal_type, LABEL_ANIMAL).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_ANIMAL.scoped_name().as_str()).unwrap();
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_name_type, LABEL_CATNAME).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_CATNAME.scoped_name().as_str()).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
             let block = builder.finish();
@@ -562,9 +562,9 @@ pub mod tests {
                 .unwrap();
 
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT.scoped_name().as_str()).unwrap();
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_name_type, LABEL_DOGNAME).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_DOGNAME.scoped_name().as_str()).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
             let block = builder.finish();
@@ -615,9 +615,9 @@ pub mod tests {
                 .unwrap();
 
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_animal_type, LABEL_ANIMAL).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_ANIMAL.scoped_name().as_str()).unwrap();
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_name_type, LABEL_NAME).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_NAME.scoped_name().as_str()).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
             let block = builder.finish();
@@ -711,12 +711,12 @@ pub mod tests {
         let mut branch1 = disj.add_conjunction();
         let b1_var_animal_type = branch1.get_or_declare_variable("b1_animal_type").unwrap();
         branch1.constraints_mut().add_isa(IsaKind::Subtype, var_animal, b1_var_animal_type.into()).unwrap();
-        branch1.constraints_mut().add_label(b1_var_animal_type, LABEL_CAT).unwrap();
+        branch1.constraints_mut().add_label(b1_var_animal_type, LABEL_CAT.scoped_name().as_str()).unwrap();
 
         let mut branch2 = disj.add_conjunction();
         let b2_var_animal_type = branch2.get_or_declare_variable("b2_animal_type").unwrap();
         branch2.constraints_mut().add_isa(IsaKind::Subtype, var_animal, b2_var_animal_type.into()).unwrap();
-        branch2.constraints_mut().add_label(b2_var_animal_type, LABEL_DOG).unwrap();
+        branch2.constraints_mut().add_label(b2_var_animal_type, LABEL_DOG.scoped_name().as_str()).unwrap();
 
         let (b1_var_animal_type, b2_var_animal_type) = (b1_var_animal_type, b2_var_animal_type);
 
@@ -915,7 +915,7 @@ pub mod tests {
         .unwrap();
 
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_fears, var_fears_type.into()).unwrap();
-        conjunction.constraints_mut().add_label(var_fears_type, LABEL_FEARS).unwrap();
+        conjunction.constraints_mut().add_label(var_fears_type, LABEL_FEARS.scoped_name().as_str()).unwrap();
         conjunction.constraints_mut().add_links(var_fears, var_has_fear, var_role_has_fear).unwrap();
         conjunction.constraints_mut().add_links(var_fears, var_is_feared, var_role_is_feared).unwrap();
 
@@ -1038,7 +1038,7 @@ pub mod tests {
                     .unwrap();
 
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT.scoped_name().as_str()).unwrap();
             conjunction.constraints_mut().add_isa(IsaKind::Exact, var_name, var_owned_type.into()).unwrap();
             conjunction.constraints_mut().add_owns(var_animal_type.into(), var_owned_type.into()).unwrap();
 
@@ -1106,7 +1106,7 @@ pub mod tests {
 
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_owner_type.into()).unwrap();
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_name_type, LABEL_CATNAME).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_CATNAME.scoped_name().as_str()).unwrap();
             conjunction.constraints_mut().add_owns(var_owner_type.into(), var_name_type.into()).unwrap();
 
             let block = builder.finish();
@@ -1171,9 +1171,890 @@ pub mod tests {
                 .unwrap();
 
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT.scoped_name().as_str()).unwrap();
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_name_type, LABEL_DOGNAME).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_DOGNAME.scoped_name().as_str()).unwrap();
+            conjunction.constraints_mut().add_owns(var_animal_type.into(), var_name_type.into()).unwrap();
+
+            let block = builder.finish();
+            let constraints = block.conjunction().constraints();
+            let tig = infer_types_for_block(
+                &snapshot,
+                &block,
+                &translation_context.variable_registry,
+                &type_manager,
+                &BTreeMap::new(),
+                &IndexedAnnotatedFunctions::empty(),
+                None,
+            )
+            .unwrap();
+
+            let expected_tig = TypeInferenceGraph {
+                conjunction: block.conjunction(),
+                vertices: VertexAnnotations::from([
+                    (var_animal.into(), BTreeSet::new()),
+                    (var_name.into(), BTreeSet::new()),
+                    (var_animal_type.into(), BTreeSet::new()),
+                    (var_name_type.into(), BTreeSet::new()),
+                ]),
+                edges: vec![
+                    expected_edge(&constraints[0], var_animal.into(), var_animal_type.into(), Vec::new()),
+                    expected_edge(&constraints[2], var_name.into(), var_name_type.into(), Vec::new()),
+                    expected_edge(&constraints[4], var_animal_type.into(), var_name_type.into(), Vec::new()),
+                ],
+                nested_disjunctions: Vec::new(),
+                nested_negations: Vec::new(),
+                nested_optionals: Vec::new(),
+            };
+            assert_eq!(expected_tig, tig);
+        }
+
+        {
+            // Case 4: $a isa! $at; $n isa! $nt; $at owns $nt;
+            let types_a = all_animals.clone();
+            let types_n = all_names.clone();
+            let snapshot = storage.clone().open_snapshot_write();
+            let mut translation_context = TranslationContext::new();
+            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+            let mut conjunction = builder.conjunction_mut();
+            let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
+                .into_iter()
+                .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+                .collect_tuple()
+                .unwrap();
+
+            conjunction.constraints_mut().add_isa(IsaKind::Exact, var_animal, var_animal_type.into()).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Exact, var_name, var_name_type.into()).unwrap();
+            conjunction.constraints_mut().add_owns(var_animal_type.into(), var_name_type.into()).unwrap();
+
+            let block = builder.finish();
+            let constraints = block.conjunction().constraints();
+            let tig = infer_types_for_block(
+                &snapshot,
+                &block,
+                &translation_context.variable_registry,
+                &type_manager,
+                &BTreeMap::new(),
+                &IndexedAnnotatedFunctions::empty(),
+                None,
+            )
+            .unwrap();
+
+            let expected_tig = TypeInferenceGraph {
+                conjunction: block.conjunction(),
+                vertices: VertexAnnotations::from([
+                    (var_animal.into(), types_a.clone()),
+                    (var_name.into(), types_n.clone()),
+                    (var_animal_type.into(), types_a.clone()),
+                    (var_name_type.into(), types_n.clone()),
+                ]),
+                edges: vec![
+                    expected_edge(
+                        &constraints[0],
+                        var_animal.into(),
+                        var_animal_type.into(),
+                        vec![
+                            (type_cat.clone(), type_cat.clone()),
+                            (type_dog.clone(), type_dog.clone()),
+                            (type_animal.clone(), type_animal.clone()),
+                        ],
+                    ),
+                    expected_edge(
+                        &constraints[1],
+                        var_name.into(),
+                        var_name_type.into(),
+                        vec![
+                            (type_catname.clone(), type_catname.clone()),
+                            (type_dogname.clone(), type_dogname.clone()),
+                            (type_name.clone(), type_name.clone()),
+                        ],
+                    ),
+                    expected_edge(
+                        &constraints[2],
+                        var_animal_type.into(),
+                        var_name_type.into(),
+                        vec![
+                            (type_cat.clone(), type_name.clone()),
+                            (type_cat.clone(), type_catname.clone()),
+                            (type_dog.clone(), type_name.clone()),
+                            (type_dog.clone(), type_dogname.clone()),
+                            (type_animal.clone(), type_name.clone()),
+                        ],
+                    ),
+                ],
+                nested_disjunctions: Vec::new(),
+                nested_negations: Vec::new(),
+                nested_optionals: Vec::new(),
+            };
+
+            assert_eq!(expected_tig, tig);
+        }
+    }
+
+    #[test]
+    fn basic_binary_edges_fixed_labels() {
+        // Some version of `$a isa animal, has name $n;`
+        let (_tmp_dir, storage) = setup_storage();
+        let (type_manager, thing_manager) = managers();
+
+        let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
+            setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
+
+        let all_animals = BTreeSet::from([type_animal.clone(), type_cat.clone(), type_dog.clone()]);
+        let all_names = BTreeSet::from([type_name.clone(), type_catname.clone(), type_dogname.clone()]);
+
+        {
+            // Case 1: $a isa cat, has name $n;
+            let snapshot = storage.clone().open_snapshot_write();
+            let mut translation_context = TranslationContext::new();
+            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+            let mut conjunction = builder.conjunction_mut();
+            let [var_animal, var_name] =
+                ["animal", "name"].map(|name| conjunction.get_or_declare_variable(name).unwrap());
+
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, Vertex::Label(LABEL_CAT)).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_NAME)).unwrap();
+            conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
+
+            let block = builder.finish();
+            let constraints = block.conjunction().constraints();
+            let tig = infer_types_for_block(
+                &snapshot,
+                &block,
+                &translation_context.variable_registry,
+                &type_manager,
+                &BTreeMap::new(),
+                &IndexedAnnotatedFunctions::empty(),
+                None,
+            )
+            .unwrap();
+
+            let expected_tig = TypeInferenceGraph {
+                conjunction: block.conjunction(),
+                vertices: VertexAnnotations::from([
+                    (var_animal.into(), BTreeSet::from([type_cat.clone()])),
+                    (var_name.into(), BTreeSet::from([type_catname.clone(), type_name.clone()])),
+                ]),
+                edges: vec![
+                    expected_edge(
+                        &constraints[0],
+                        var_animal.into(),
+                        Vertex::Label(LABEL_CAT),
+                        vec![(type_cat.clone(), type_cat.clone())],
+                    ),
+                    expected_edge(
+                        &constraints[1],
+                        var_name.into(),
+                        Vertex::Label(LABEL_NAME),
+                        vec![(type_catname.clone(), type_name.clone()), (type_name.clone(), type_name.clone())],
+                    ),
+                    expected_edge(
+                        &constraints[2],
+                        var_animal.into(),
+                        var_name.into(),
+                        vec![(type_cat.clone(), type_name.clone()), (type_cat.clone(), type_catname.clone())],
+                    ),
+                ],
+                nested_disjunctions: Vec::new(),
+                nested_negations: Vec::new(),
+                nested_optionals: Vec::new(),
+            };
+
+            assert_eq!(expected_tig, tig);
+        }
+
+        {
+            // Case 2: $a isa animal, has cat-name $n;
+            let snapshot = storage.clone().open_snapshot_write();
+            let mut translation_context = TranslationContext::new();
+            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+            let mut conjunction = builder.conjunction_mut();
+            let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
+                .into_iter()
+                .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+                .collect_tuple()
+                .unwrap();
+
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into()).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_ANIMAL.scoped_name().as_str()).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_CATNAME.scoped_name().as_str()).unwrap();
+            conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
+
+            let block = builder.finish();
+
+            let constraints = block.conjunction().constraints();
+            let tig = infer_types_for_block(
+                &snapshot,
+                &block,
+                &translation_context.variable_registry,
+                &type_manager,
+                &BTreeMap::new(),
+                &IndexedAnnotatedFunctions::empty(),
+                None,
+            )
+            .unwrap();
+
+            let expected_tig = TypeInferenceGraph {
+                conjunction: block.conjunction(),
+                vertices: VertexAnnotations::from([
+                    (var_animal.into(), BTreeSet::from([type_cat.clone()])),
+                    (var_name.into(), BTreeSet::from([type_catname.clone()])),
+                    (var_animal_type.into(), BTreeSet::from([type_animal.clone()])),
+                    (var_name_type.into(), BTreeSet::from([type_catname.clone()])),
+                ]),
+                edges: vec![
+                    expected_edge(
+                        &constraints[0],
+                        var_animal.into(),
+                        var_animal_type.into(),
+                        vec![(type_cat.clone(), type_animal.clone())],
+                    ),
+                    expected_edge(
+                        &constraints[2],
+                        var_name.into(),
+                        var_name_type.into(),
+                        vec![(type_catname.clone(), type_catname.clone())],
+                    ),
+                    expected_edge(
+                        &constraints[4],
+                        var_animal.into(),
+                        var_name.into(),
+                        vec![(type_cat.clone(), type_catname.clone())],
+                    ),
+                ],
+                nested_disjunctions: Vec::new(),
+                nested_negations: Vec::new(),
+                nested_optionals: Vec::new(),
+            };
+            assert_eq!(expected_tig, tig);
+        }
+
+        {
+            // Case 3: $a isa cat, has dog-name $n;
+            let snapshot = storage.clone().open_snapshot_write();
+            let mut translation_context = TranslationContext::new();
+            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+            let mut conjunction = builder.conjunction_mut();
+            let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
+                .into_iter()
+                .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+                .collect_tuple()
+                .unwrap();
+
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into()).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT.scoped_name().as_str()).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_DOGNAME.scoped_name().as_str()).unwrap();
+            conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
+
+            let block = builder.finish();
+            let constraints = block.conjunction().constraints();
+            let tig = infer_types_for_block(
+                &snapshot,
+                &block,
+                &translation_context.variable_registry,
+                &type_manager,
+                &BTreeMap::new(),
+                &IndexedAnnotatedFunctions::empty(),
+                None,
+            )
+            .unwrap();
+
+            let expected_tig = TypeInferenceGraph {
+                conjunction: block.conjunction(),
+                vertices: VertexAnnotations::from([
+                    (var_animal.into(), BTreeSet::new()),
+                    (var_name.into(), BTreeSet::new()),
+                    (var_animal_type.into(), BTreeSet::new()),
+                    (var_name_type.into(), BTreeSet::new()),
+                ]),
+                edges: vec![
+                    expected_edge(&constraints[0], var_animal.into(), var_animal_type.into(), Vec::new()),
+                    expected_edge(&constraints[2], var_name.into(), var_name_type.into(), Vec::new()),
+                    expected_edge(&constraints[4], var_animal.into(), var_name.into(), Vec::new()),
+                ],
+                nested_disjunctions: Vec::new(),
+                nested_negations: Vec::new(),
+                nested_optionals: Vec::new(),
+            };
+            assert_eq!(expected_tig, tig);
+        }
+
+        {
+            // Case 4: $a isa animal, has name $n; // Just to be sure
+            let types_a = all_animals.clone();
+            let types_n = all_names.clone();
+            let snapshot = storage.clone().open_snapshot_write();
+            let mut translation_context = TranslationContext::new();
+            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+            let mut conjunction = builder.conjunction_mut();
+            let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
+                .into_iter()
+                .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+                .collect_tuple()
+                .unwrap();
+
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into()).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_ANIMAL.scoped_name().as_str()).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_NAME.scoped_name().as_str()).unwrap();
+            conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
+
+            let block = builder.finish();
+            let constraints = block.conjunction().constraints();
+            let tig = infer_types_for_block(
+                &snapshot,
+                &block,
+                &translation_context.variable_registry,
+                &type_manager,
+                &BTreeMap::new(),
+                &IndexedAnnotatedFunctions::empty(),
+                None,
+            )
+            .unwrap();
+
+            let expected_tig = TypeInferenceGraph {
+                conjunction: block.conjunction(),
+                vertices: VertexAnnotations::from([
+                    (var_animal.into(), types_a),
+                    (var_name.into(), types_n),
+                    (var_animal_type.into(), BTreeSet::from([type_animal.clone()])),
+                    (var_name_type.into(), BTreeSet::from([type_name.clone()])),
+                ]),
+                edges: vec![
+                    expected_edge(
+                        &constraints[0],
+                        var_animal.into(),
+                        var_animal_type.into(),
+                        vec![
+                            (type_cat.clone(), type_animal.clone()),
+                            (type_dog.clone(), type_animal.clone()),
+                            (type_animal.clone(), type_animal.clone()),
+                        ],
+                    ),
+                    expected_edge(
+                        &constraints[2],
+                        var_name.into(),
+                        var_name_type.into(),
+                        vec![
+                            (type_catname.clone(), type_name.clone()),
+                            (type_dogname.clone(), type_name.clone()),
+                            (type_name.clone(), type_name.clone()),
+                        ],
+                    ),
+                    expected_edge(
+                        &constraints[4],
+                        var_animal.into(),
+                        var_name.into(),
+                        vec![
+                            (type_cat.clone(), type_catname.clone()),
+                            (type_cat.clone(), type_name.clone()),
+                            (type_dog.clone(), type_dogname.clone()),
+                            (type_dog.clone(), type_name.clone()),
+                            (type_animal.clone(), type_name.clone()),
+                        ],
+                    ),
+                ],
+                nested_disjunctions: Vec::new(),
+                nested_negations: Vec::new(),
+                nested_optionals: Vec::new(),
+            };
+            assert_eq!(expected_tig, tig);
+        }
+    }
+
+    #[test]
+    fn basic_nested_graphs_fixed_labels() {
+        // Some version of `$a isa animal, has name $n;`
+        let (_tmp_dir, storage) = setup_storage();
+        let (type_manager, thing_manager) = managers();
+
+        let ((_, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
+            setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
+
+        let mut translation_context = TranslationContext::new();
+        let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+        let mut conjunction = builder.conjunction_mut();
+        let (var_animal, var_name, var_name_type) = ["animal", "name", "name_type"]
+            .into_iter()
+            .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+            .collect_tuple()
+            .unwrap();
+
+        // Case 1: {$a isa cat;} or {$a isa dog;} $a has animal-name $n;
+        conjunction.constraints_mut().add_label(var_name_type, "name").unwrap();
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
+        conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
+
+        let mut disj = conjunction.add_disjunction();
+
+        let mut branch1 = disj.add_conjunction();
+        let b1_var_animal_type = branch1.get_or_declare_variable("b1_animal_type").unwrap();
+        branch1.constraints_mut().add_isa(IsaKind::Subtype, var_animal, b1_var_animal_type.into()).unwrap();
+        branch1.constraints_mut().add_label(b1_var_animal_type, LABEL_CAT.scoped_name().as_str()).unwrap();
+
+        let mut branch2 = disj.add_conjunction();
+        let b2_var_animal_type = branch2.get_or_declare_variable("b2_animal_type").unwrap();
+        branch2.constraints_mut().add_isa(IsaKind::Subtype, var_animal, b2_var_animal_type.into()).unwrap();
+        branch2.constraints_mut().add_label(b2_var_animal_type, LABEL_DOG.scoped_name().as_str()).unwrap();
+
+        let (b1_var_animal_type, b2_var_animal_type) = (b1_var_animal_type, b2_var_animal_type);
+
+        let block = builder.finish();
+
+        let snapshot = storage.clone().open_snapshot_write();
+        let tig = infer_types_for_block(
+            &snapshot,
+            &block,
+            &translation_context.variable_registry,
+            &type_manager,
+            &BTreeMap::new(),
+            &IndexedAnnotatedFunctions::empty(),
+            None,
+        )
+        .unwrap();
+
+        let conjunction = block.conjunction();
+        let disj = conjunction.nested_patterns()[0].as_disjunction().unwrap();
+        let [b1, b2] = disj.conjunctions() else { unreachable!() };
+        let b1_isa = &b1.constraints()[0];
+        let b2_isa = &b2.constraints()[0];
+        let expected_nested_graphs = vec![
+            TypeInferenceGraph {
+                conjunction: b1,
+                vertices: VertexAnnotations::from([
+                    (var_animal.into(), BTreeSet::from([type_cat.clone()])),
+                    (b1_var_animal_type.into(), BTreeSet::from([type_cat.clone()])),
+                ]),
+                edges: vec![expected_edge(
+                    b1_isa,
+                    var_animal.into(),
+                    b1_var_animal_type.into(),
+                    vec![(type_cat.clone(), type_cat.clone())],
+                )],
+                nested_disjunctions: Vec::new(),
+                nested_negations: Vec::new(),
+                nested_optionals: Vec::new(),
+            },
+            TypeInferenceGraph {
+                conjunction: b2,
+                vertices: VertexAnnotations::from([
+                    (var_animal.into(), BTreeSet::from([type_dog.clone()])),
+                    (b2_var_animal_type.into(), BTreeSet::from([type_dog.clone()])),
+                ]),
+                edges: vec![expected_edge(
+                    b2_isa,
+                    var_animal.into(),
+                    b2_var_animal_type.into(),
+                    vec![(type_dog.clone(), type_dog.clone())],
+                )],
+                nested_disjunctions: Vec::new(),
+                nested_negations: Vec::new(),
+                nested_optionals: Vec::new(),
+            },
+        ];
+
+        let expected_graph = TypeInferenceGraph {
+            conjunction,
+            vertices: VertexAnnotations::from([
+                (var_animal.into(), BTreeSet::from([type_cat.clone(), type_dog.clone()])),
+                (var_name.into(), BTreeSet::from([type_name.clone(), type_catname.clone(), type_dogname.clone()])),
+                (var_name_type.into(), BTreeSet::from([type_name.clone()])),
+            ]),
+            edges: vec![
+                expected_edge(
+                    &conjunction.constraints()[1],
+                    var_name.into(),
+                    var_name_type.into(),
+                    vec![
+                        (type_name.clone(), type_name.clone()),
+                        (type_catname.clone(), type_name.clone()),
+                        (type_dogname.clone(), type_name.clone()),
+                    ],
+                ),
+                expected_edge(
+                    &conjunction.constraints()[2],
+                    var_animal.into(),
+                    var_name.into(),
+                    vec![
+                        (type_cat.clone(), type_catname.clone()),
+                        (type_cat.clone(), type_name.clone()),
+                        (type_dog.clone(), type_dogname.clone()),
+                        (type_dog.clone(), type_name.clone()),
+                    ],
+                ),
+            ],
+            nested_disjunctions: vec![NestedTypeInferenceGraphDisjunction {
+                disjunction: expected_nested_graphs,
+                shared_variables: BTreeSet::new(),
+                shared_vertex_annotations: VertexAnnotations::default(),
+            }],
+            nested_negations: Vec::new(),
+            nested_optionals: Vec::new(),
+        };
+
+        assert_eq!(expected_graph, tig);
+    }
+
+    #[test]
+    fn no_type_constraints_fixed_labels() {
+        let (_tmp_dir, storage) = setup_storage();
+        let (type_manager, thing_manager) = managers();
+
+        let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
+            setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
+
+        // Case 1: $a has $n;
+        let snapshot = storage.clone().open_snapshot_write();
+        let mut translation_context = TranslationContext::new();
+        let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+        let mut conjunction = builder.conjunction_mut();
+        let (var_animal, var_name) = ["animal", "name"]
+            .into_iter()
+            .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+            .collect_tuple()
+            .unwrap();
+
+        conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
+
+        let block = builder.finish();
+        let conjunction = block.conjunction();
+        let constraints = conjunction.constraints();
+        let tig = infer_types_for_block(
+            &snapshot,
+            &block,
+            &translation_context.variable_registry,
+            &type_manager,
+            &BTreeMap::new(),
+            &IndexedAnnotatedFunctions::empty(),
+            None,
+        )
+        .unwrap();
+
+        let expected_tig = TypeInferenceGraph {
+            conjunction,
+            vertices: VertexAnnotations::from([
+                (var_animal.into(), BTreeSet::from([type_animal.clone(), type_cat.clone(), type_dog.clone()])),
+                (var_name.into(), BTreeSet::from([type_name.clone(), type_catname.clone(), type_dogname.clone()])),
+            ]),
+            edges: vec![expected_edge(
+                &constraints[0],
+                var_animal.into(),
+                var_name.into(),
+                vec![
+                    (type_animal.clone(), type_name.clone()),
+                    (type_cat.clone(), type_catname.clone()),
+                    (type_cat.clone(), type_name.clone()),
+                    (type_dog.clone(), type_dogname.clone()),
+                    (type_dog.clone(), type_name.clone()),
+                ],
+            )],
+            nested_disjunctions: Vec::new(),
+            nested_negations: Vec::new(),
+            nested_optionals: Vec::new(),
+        };
+
+        assert_eq!(expected_tig, tig);
+    }
+
+    #[test]
+    fn role_players_fixed_labels() {
+        let (_tmp_dir, storage) = setup_storage();
+        let (type_manager, thing_manager) = managers();
+
+        let ((_, type_cat, type_dog), _, (type_fears, type_has_fear, type_is_feared)) =
+            setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
+
+        // With roles specified
+        let snapshot = storage.clone().open_snapshot_write();
+        let mut translation_context = TranslationContext::new();
+        let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+        let mut conjunction = builder.conjunction_mut();
+        let (
+            var_has_fear,
+            var_is_feared,
+            var_fears_type,
+            var_fears,
+            var_role_has_fear,
+            var_role_is_feared,
+            var_role_has_fear_type,
+            var_role_is_feared_type,
+        ) = [
+            "has_fear",
+            "is_feared",
+            "fears_type",
+            "fears",
+            "role_has_fear",
+            "role_is_fear",
+            "role_has_fear_type",
+            "role_is_feared_type",
+        ]
+        .into_iter()
+        .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+        .collect_tuple()
+        .unwrap();
+
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_fears, var_fears_type.into()).unwrap();
+        conjunction.constraints_mut().add_label(var_fears_type, LABEL_FEARS.scoped_name().as_str()).unwrap();
+        conjunction.constraints_mut().add_links(var_fears, var_has_fear, var_role_has_fear).unwrap();
+        conjunction.constraints_mut().add_links(var_fears, var_is_feared, var_role_is_feared).unwrap();
+
+        conjunction
+            .constraints_mut()
+            .add_sub(SubKind::Subtype, var_role_has_fear.into(), var_role_has_fear_type.into())
+            .unwrap();
+        conjunction.constraints_mut().add_label(var_role_has_fear_type, "fears:has-fear").unwrap();
+        conjunction
+            .constraints_mut()
+            .add_sub(SubKind::Subtype, var_role_is_feared.into(), var_role_is_feared_type.into())
+            .unwrap();
+        conjunction.constraints_mut().add_label(var_role_is_feared_type, "fears:is-feared").unwrap();
+
+        let block = builder.finish();
+
+        let conjunction = block.conjunction();
+
+        let tig = infer_types_for_block(
+            &snapshot,
+            &block,
+            &translation_context.variable_registry,
+            &type_manager,
+            &BTreeMap::new(),
+            &IndexedAnnotatedFunctions::empty(),
+            None,
+        )
+        .unwrap();
+
+        let expected_graph = TypeInferenceGraph {
+            conjunction,
+            vertices: VertexAnnotations::from([
+                (var_has_fear.into(), BTreeSet::from([type_cat.clone()])),
+                (var_is_feared.into(), BTreeSet::from([type_dog.clone()])),
+                (var_fears_type.into(), BTreeSet::from([type_fears.clone()])),
+                (var_fears.into(), BTreeSet::from([type_fears.clone()])),
+                (var_role_has_fear.into(), BTreeSet::from([type_has_fear.clone()])),
+                (var_role_is_feared.into(), BTreeSet::from([type_is_feared.clone()])),
+                (var_role_has_fear_type.into(), BTreeSet::from([type_has_fear.clone()])),
+                (var_role_is_feared_type.into(), BTreeSet::from([type_is_feared.clone()])),
+            ]),
+            edges: vec![
+                // isa
+                expected_edge(
+                    &conjunction.constraints()[0],
+                    var_fears.into(),
+                    var_fears_type.into(),
+                    vec![(type_fears.clone(), type_fears.clone())],
+                ),
+                // has-fear edge
+                expected_edge(
+                    &conjunction.constraints()[2],
+                    var_fears.into(),
+                    var_role_has_fear.into(),
+                    vec![(type_fears.clone(), type_has_fear.clone())],
+                ),
+                expected_edge(
+                    &conjunction.constraints()[2],
+                    var_has_fear.into(),
+                    var_role_has_fear.into(),
+                    vec![(type_cat.clone(), type_has_fear.clone())],
+                ),
+                // is-feared edge
+                expected_edge(
+                    &conjunction.constraints()[3],
+                    var_fears.into(),
+                    var_role_is_feared.into(),
+                    vec![(type_fears.clone(), type_is_feared.clone())],
+                ),
+                expected_edge(
+                    &conjunction.constraints()[3],
+                    var_is_feared.into(),
+                    var_role_is_feared.into(),
+                    vec![(type_dog.clone(), type_is_feared.clone())],
+                ),
+                expected_edge(
+                    &conjunction.constraints()[4],
+                    var_role_has_fear.into(),
+                    var_role_has_fear_type.into(),
+                    vec![(type_has_fear.clone(), type_has_fear.clone())],
+                ),
+                expected_edge(
+                    &conjunction.constraints()[6],
+                    var_role_is_feared.into(),
+                    var_role_is_feared_type.into(),
+                    vec![(type_is_feared.clone(), type_is_feared.clone())],
+                ),
+            ],
+            nested_disjunctions: Vec::new(),
+            nested_negations: Vec::new(),
+            nested_optionals: Vec::new(),
+        };
+
+        assert_eq!(expected_graph, tig);
+    }
+
+    #[test]
+    fn type_constraints_fixed_labels() {
+        // Some version of `$a isa animal, has name $n;`
+        let (_tmp_dir, storage) = setup_storage();
+        let (type_manager, thing_manager) = managers();
+
+        let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
+            setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
+
+        let all_animals = BTreeSet::from([type_animal.clone(), type_cat.clone(), type_dog.clone()]);
+        let all_names = BTreeSet::from([type_name.clone(), type_catname.clone(), type_dogname.clone()]);
+
+        {
+            // Case 1: $a isa $at; $at label cat; $n isa! $nt; $at owns $nt;
+            let snapshot = storage.clone().open_snapshot_write();
+            let mut translation_context = TranslationContext::new();
+            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+            let mut conjunction = builder.conjunction_mut();
+            let (var_animal, var_name, var_animal_type, var_owned_type) =
+                ["animal", "name", "animal_type", "name_type"]
+                    .into_iter()
+                    .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+                    .collect_tuple()
+                    .unwrap();
+
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into()).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT.scoped_name().as_str()).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Exact, var_name, var_owned_type.into()).unwrap();
+            conjunction.constraints_mut().add_owns(var_animal_type.into(), var_owned_type.into()).unwrap();
+
+            let block = builder.finish();
+            let constraints = block.conjunction().constraints();
+            let tig = infer_types_for_block(
+                &snapshot,
+                &block,
+                &translation_context.variable_registry,
+                &type_manager,
+                &BTreeMap::new(),
+                &IndexedAnnotatedFunctions::empty(),
+                None,
+            )
+            .unwrap();
+
+            let expected_tig = TypeInferenceGraph {
+                conjunction: block.conjunction(),
+                vertices: VertexAnnotations::from([
+                    (var_animal.into(), BTreeSet::from([type_cat.clone()])),
+                    (var_name.into(), BTreeSet::from([type_name.clone(), type_catname.clone()])),
+                    (var_animal_type.into(), BTreeSet::from([type_cat.clone()])),
+                    (var_owned_type.into(), BTreeSet::from([type_name.clone(), type_catname.clone()])),
+                ]),
+                edges: vec![
+                    expected_edge(
+                        &constraints[0],
+                        var_animal.into(),
+                        var_animal_type.into(),
+                        vec![(type_cat.clone(), type_cat.clone())],
+                    ),
+                    expected_edge(
+                        &constraints[2],
+                        var_name.into(),
+                        var_owned_type.into(),
+                        vec![(type_catname.clone(), type_catname.clone()), (type_name.clone(), type_name.clone())],
+                    ),
+                    expected_edge(
+                        &constraints[3],
+                        var_animal_type.into(),
+                        var_owned_type.into(),
+                        vec![(type_cat.clone(), type_catname.clone()), (type_cat.clone(), type_name.clone())],
+                    ),
+                ],
+                nested_disjunctions: Vec::new(),
+                nested_negations: Vec::new(),
+                nested_optionals: Vec::new(),
+            };
+
+            assert_eq!(expected_tig, tig);
+        }
+
+        {
+            // Case 2: $a isa $at; $n isa $nt; $nt type catname; $at owns $nt;
+            let snapshot = storage.clone().open_snapshot_write();
+
+            let mut translation_context = TranslationContext::new();
+            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+            let mut conjunction = builder.conjunction_mut();
+            let (var_animal, var_name, var_owner_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
+                .into_iter()
+                .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+                .collect_tuple()
+                .unwrap();
+
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_owner_type.into()).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_CATNAME.scoped_name().as_str()).unwrap();
+            conjunction.constraints_mut().add_owns(var_owner_type.into(), var_name_type.into()).unwrap();
+
+            let block = builder.finish();
+
+            let constraints = block.conjunction().constraints();
+            let tig = infer_types_for_block(
+                &snapshot,
+                &block,
+                &translation_context.variable_registry,
+                &type_manager,
+                &BTreeMap::new(),
+                &IndexedAnnotatedFunctions::empty(),
+                None,
+            )
+            .unwrap();
+
+            let expected_tig = TypeInferenceGraph {
+                conjunction: block.conjunction(),
+                vertices: VertexAnnotations::from([
+                    (var_animal.into(), BTreeSet::from([type_cat.clone()])),
+                    (var_name.into(), BTreeSet::from([type_catname.clone()])),
+                    (var_owner_type.into(), BTreeSet::from([type_cat.clone()])),
+                    (var_name_type.into(), BTreeSet::from([type_catname.clone()])),
+                ]),
+                edges: vec![
+                    expected_edge(
+                        &constraints[0],
+                        var_animal.into(),
+                        var_owner_type.into(),
+                        vec![(type_cat.clone(), type_cat.clone())],
+                    ),
+                    expected_edge(
+                        &constraints[1],
+                        var_name.into(),
+                        var_name_type.into(),
+                        vec![(type_catname.clone(), type_catname.clone())],
+                    ),
+                    expected_edge(
+                        &constraints[3],
+                        var_owner_type.into(),
+                        var_name_type.into(),
+                        vec![(type_cat.clone(), type_catname.clone())],
+                    ),
+                ],
+                nested_disjunctions: Vec::new(),
+                nested_negations: Vec::new(),
+                nested_optionals: Vec::new(),
+            };
+            assert_eq!(expected_tig, tig);
+        }
+
+        {
+            // Case 3: $a isa $at; $at type cat; $n isa $nt; $nt type dogname; $at owns $nt;
+            let snapshot = storage.clone().open_snapshot_write();
+            let mut translation_context = TranslationContext::new();
+            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+            let mut conjunction = builder.conjunction_mut();
+            let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
+                .into_iter()
+                .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+                .collect_tuple()
+                .unwrap();
+
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into()).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT.scoped_name().as_str()).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_DOGNAME.scoped_name().as_str()).unwrap();
             conjunction.constraints_mut().add_owns(var_animal_type.into(), var_name_type.into()).unwrap();
 
             let block = builder.finish();

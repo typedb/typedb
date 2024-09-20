@@ -300,7 +300,7 @@ pub mod tests {
             let f_var_animal = f_conjunction.get_or_declare_variable("called_animal").unwrap();
             let f_var_animal_type = f_conjunction.get_or_declare_variable("called_animal_type").unwrap();
             let f_var_name = f_conjunction.get_or_declare_variable("called_name").unwrap();
-            f_conjunction.constraints_mut().add_label(f_var_animal_type, LABEL_CAT).unwrap();
+            f_conjunction.constraints_mut().add_label(f_var_animal_type, LABEL_CAT.scoped_name().as_str()).unwrap();
             f_conjunction.constraints_mut().add_isa(IsaKind::Subtype, f_var_animal, f_var_animal_type.into()).unwrap();
             f_conjunction.constraints_mut().add_has(f_var_animal, f_var_name).unwrap();
             let f_ir = Function::new(

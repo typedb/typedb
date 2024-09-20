@@ -1387,9 +1387,9 @@ pub mod tests {
 
         // Try seeding
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into()).unwrap();
-        conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT).unwrap();
+        conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT.scoped_name().as_str()).unwrap();
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
-        conjunction.constraints_mut().add_label(var_name_type, LABEL_NAME).unwrap();
+        conjunction.constraints_mut().add_label(var_name_type, LABEL_NAME.scoped_name().as_str()).unwrap();
         conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
         let block = builder.finish();
