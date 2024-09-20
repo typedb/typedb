@@ -23,7 +23,6 @@ use ir::{
 use itertools::Itertools;
 use ir::pattern::IrID;
 
-use super::vertex::Input;
 use crate::{
     expression::compiled_expression::CompiledExpression,
     match_::{
@@ -40,8 +39,9 @@ use crate::{
             CheckInstruction, ConstraintInstruction, Inputs,
         },
         planner::vertex::{
-            Costed, Direction, HasPlanner, IsaPlanner, LabelPlanner, LinksPlanner, OwnsPlanner, PlannerVertex,
-            PlaysPlanner, RelatesPlanner, SubPlanner, ThingPlanner, TypePlanner, ValuePlanner, VertexCost,
+            ComparisonPlanner, Costed, Direction, HasPlanner, Input, IsaPlanner, LabelPlanner, LinksPlanner,
+            OwnsPlanner, PlannerVertex, PlaysPlanner, RelatesPlanner, SubPlanner, ThingPlanner, TypePlanner,
+            ValuePlanner, VertexCost,
         },
     },
     VariablePosition,
@@ -277,7 +277,6 @@ impl<'a> PlanBuilder<'a> {
                     let lhs = Input::from_vertex(comparison.lhs(), &self.variable_index);
                     let rhs = Input::from_vertex(comparison.rhs(), &self.variable_index);
                     if let Input::Variable(lhs) = lhs {
-                        self.adjacency.entry(lhs).or_default().extend(rhs.as_variable());
                         match comparison.comparator() {
                             Comparator::Equal => {
                                 self.elements[lhs].add_equal(rhs);
@@ -293,7 +292,6 @@ impl<'a> PlanBuilder<'a> {
                         }
                     }
                     if let Input::Variable(rhs) = rhs {
-                        self.adjacency.entry(rhs).or_default().extend(lhs.as_variable());
                         match comparison.comparator() {
                             Comparator::Equal => {
                                 self.elements[rhs].add_equal(lhs);
@@ -308,7 +306,13 @@ impl<'a> PlanBuilder<'a> {
                             Comparator::Contains => todo!("contains operator"),
                         }
                     }
-                    None
+                    self.elements.push(PlannerVertex::Comparison(ComparisonPlanner::from_constraint(
+                        comparison,
+                        &self.variable_index,
+                        type_annotations,
+                        statistics,
+                    )));
+                    self.elements.last()
                 }
             };
 
@@ -632,7 +636,31 @@ fn lower_plan(
 
             Constraint::ExpressionBinding(_) => todo!("expression binding"),
             Constraint::FunctionCallBinding(_) => todo!("function call binding"),
-            Constraint::Comparison(_) => todo!("comparison"),
+            Constraint::Comparison(compare) => {
+                let lhs = compare.lhs();
+                let rhs = compare.rhs();
+                let comparator = compare.comparator();
+
+                let lhs_var = lhs.as_variable();
+                let rhs_var = rhs.as_variable();
+                let num_input_variables = [lhs_var, rhs_var].into_iter().filter(|x| x.is_some()).count();
+                assert!(num_input_variables > 0);
+                if inputs.len() == num_input_variables {
+                    let lhs_producer =
+                        lhs_var.map(|lhs| producers.get(&lhs).expect("bound lhs must have been produced"));
+                    let rhs_producer =
+                        rhs_var.map(|rhs| producers.get(&rhs).expect("bound rhs must have been produced"));
+                    let Some(&(program, instruction)) = Ord::max(lhs_producer, rhs_producer) else {
+                        unreachable!("num_input_variables > 0")
+                    };
+                    let lhs_pos = lhs.clone().map(match_builder.position_mapping());
+                    let rhs_pos = rhs.clone().map(match_builder.position_mapping());
+                    match_builder.get_program_mut(program).instructions[instruction]
+                        .add_check(CheckInstruction::Comparison { lhs: lhs_pos, rhs: rhs_pos, comparator });
+                    continue;
+                }
+                todo!()
+            }
         }
     }
     (match_builder.index.clone(), match_builder.outputs.clone(), match_builder.finish())

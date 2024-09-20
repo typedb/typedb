@@ -11,13 +11,14 @@ use std::{
     ops::{Bound, RangeBounds},
 };
 
-use answer::{variable_value::VariableValue, Type};
+use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::match_::instructions::{CheckInstruction, ConstraintInstruction};
 use concept::{
     error::ConceptReadError,
     thing::{object::ObjectAPI, thing_manager::ThingManager},
     type_::{OwnerAPI, PlayerAPI},
 };
+use encoding::value::value::Value;
 use ir::pattern::{
     constraint::{Comparator, IsaKind, SubKind},
     Vertex,
@@ -652,7 +653,7 @@ impl<T: Hkt> Checker<T> {
                         &Vertex::Parameter(param) => VariableValue::Value(context.parameters()[param].to_owned()),
                         Vertex::Label(_) => unreachable!(),
                     };
-                    let cmp: fn(&VariableValue<'_>, &VariableValue<'_>) -> bool = match comparator {
+                    let cmp: fn(&Value<'_>, &Value<'_>) -> bool = match comparator {
                         Comparator::Equal => |a, b| a == b,
                         Comparator::Less => |a, b| a < b,
                         Comparator::Greater => |a, b| a > b,
@@ -661,7 +662,28 @@ impl<T: Hkt> Checker<T> {
                         Comparator::Like => todo!("like"),
                         Comparator::Contains => todo!("contains"),
                     };
-                    filters.push(Box::new(move |value| Ok(cmp(&lhs_extractor(value), &rhs))));
+                    let snapshot = context.snapshot.clone();
+                    let thing_manager = context.thing_manager.clone();
+                    filters.push(Box::new(move |value| {
+                        let lhs = lhs_extractor(value);
+                        let lhs = match lhs {
+                            VariableValue::Thing(Thing::Attribute(attr)) => {
+                                attr.get_value(&*snapshot, &thing_manager)?.into_owned()
+                            }
+                            VariableValue::Value(value) => value,
+                            VariableValue::ThingList(_) | VariableValue::ValueList(_) => todo!(),
+                            VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
+                        };
+                        let rhs = match &rhs {
+                            VariableValue::Thing(Thing::Attribute(attr)) => {
+                                &attr.get_value(&*snapshot, &thing_manager)?
+                            }
+                            VariableValue::Value(value) => value,
+                            VariableValue::ThingList(_) | VariableValue::ValueList(_) => todo!(),
+                            VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
+                        };
+                        Ok(cmp(&lhs, rhs))
+                    }));
                 }
             }
         }

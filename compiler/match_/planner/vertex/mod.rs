@@ -13,7 +13,7 @@ use std::{
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::pattern::{
-    constraint::{Has, Links, SubKind},
+    constraint::{Comparison, Has, Links, SubKind},
     Vertex,
 };
 use itertools::Itertools;
@@ -46,6 +46,7 @@ pub(super) enum PlannerVertex {
     Has(HasPlanner),
     Links(LinksPlanner),
     Expression(()),
+    Comparison(ComparisonPlanner),
 
     Sub(SubPlanner),
     Owns(OwnsPlanner),
@@ -63,6 +64,19 @@ impl PlannerVertex {
             } // may be invalid: must be produced
 
             Self::Expression(_) => todo!("validate expression"), // may be invalid: inputs must be bound
+            Self::Comparison(ComparisonPlanner { lhs, rhs }) => {
+                if let Input::Variable(lhs) = lhs {
+                    if !ordered.contains(lhs) {
+                        return false;
+                    }
+                }
+                if let Input::Variable(rhs) = rhs {
+                    if !ordered.contains(rhs) {
+                        return false;
+                    }
+                }
+                true
+            }
 
             Self::Constant | Self::Label(_) => true, // always valid: comes from query
 
@@ -130,6 +144,7 @@ impl PlannerVertex {
             PlannerVertex::Has(inner) => inner.unbound_direction,
             PlannerVertex::Links(inner) => inner.unbound_direction,
             PlannerVertex::Expression(_) => todo!(),
+            PlannerVertex::Comparison(_) => Direction::Canonical,
             PlannerVertex::Sub(inner) => inner.unbound_direction,
             PlannerVertex::Owns(inner) => inner.unbound_direction,
             PlannerVertex::Relates(inner) => inner.unbound_direction,
@@ -151,6 +166,7 @@ impl PlannerVertex {
             Self::Has(inner) => inner.variables(),
             Self::Links(inner) => inner.variables(),
             Self::Expression(_inner) => todo!(),
+            Self::Comparison(inner) => inner.variables(),
 
             Self::Sub(inner) => inner.variables(),
             Self::Owns(inner) => inner.variables(),
@@ -173,6 +189,7 @@ impl PlannerVertex {
             Self::Has(_inner) => todo!(),
             Self::Links(_inner) => todo!(),
             Self::Expression(_inner) => todo!(),
+            Self::Comparison(_inner) => todo!(),
 
             Self::Sub(_inner) => todo!(),
             Self::Owns(_inner) => todo!(),
@@ -241,6 +258,7 @@ impl Costed for PlannerVertex {
             Self::Has(inner) => inner.cost(inputs, elements),
             Self::Links(inner) => inner.cost(inputs, elements),
             Self::Expression(_) => todo!("expression cost"),
+            Self::Comparison(inner) => inner.cost(inputs, elements),
 
             Self::Sub(inner) => inner.cost(inputs, elements),
             Self::Owns(inner) => inner.cost(inputs, elements),
@@ -693,6 +711,36 @@ impl Costed for LinksPlanner {
         };
 
         VertexCost { per_input, per_output, branching_factor }
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct ComparisonPlanner {
+    pub lhs: Input,
+    pub rhs: Input,
+}
+
+impl ComparisonPlanner {
+    pub(super) fn from_constraint(
+        constraint: &Comparison<Variable>,
+        variable_index: &HashMap<Variable, usize>,
+        _type_annotations: &TypeAnnotations,
+        _statistics: &Statistics,
+    ) -> Self {
+        Self {
+            lhs: Input::from_vertex(constraint.lhs(), variable_index),
+            rhs: Input::from_vertex(constraint.rhs(), variable_index),
+        }
+    }
+
+    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
+        [self.lhs.as_variable(), self.rhs.as_variable(), None].into_iter().flatten()
+    }
+}
+
+impl Costed for ComparisonPlanner {
+    fn cost(&self, _: &[usize], _: &[PlannerVertex]) -> VertexCost {
+        VertexCost::default()
     }
 }
 
