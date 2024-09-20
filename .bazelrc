@@ -4,6 +4,6 @@
 
 try-import ./.bazel-remote-cache.rc
 
-build --incompatible_strict_action_env # --@io_bazel_rules_docker//transitions:enable=false
+build --incompatible_strict_action_env --@io_bazel_rules_docker//transitions:enable=false
 run --incompatible_strict_action_env
 test --incompatible_strict_action_env --test_env=PATH

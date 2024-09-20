@@ -18,9 +18,12 @@ pub struct Config {
 
 impl Config {
     pub fn new() -> Self {
+        let typedb_dir_or_current = std::env::current_exe()
+            .map(|path| path.parent().unwrap().to_path_buf())
+            .unwrap_or(std::env::current_dir().unwrap());
         Self {
             server: ServerConfig { address: SocketAddr::from_str("127.0.0.1:1729").unwrap() },
-            storage: StorageConfig { data: "runtimedata/server/data".into() },
+            storage: StorageConfig { data: typedb_dir_or_current.join(PathBuf::from_str("server/data").unwrap()) },
         }
     }
 

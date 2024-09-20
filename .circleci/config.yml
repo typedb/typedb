@@ -5,19 +5,27 @@
 version: 2.1
 
 orbs:
-  win: circleci/windows@2.0.0
-
+  win: circleci/windows@5.0
+  macos: circleci/macos@2.4.0
 
 executors:
-  linux-arm64:
-    machine:
-      image: ubuntu-2004:current
-      resource_class: arm.medium
+  linux-arm64-amazonlinux-2:
+    docker:
+      - image: amazonlinux:2
+    resource_class: arm.large
     working_directory: ~/typedb
 
-  linux-x86_64:
-    machine:
-      image: ubuntu-2004:current
+  # All builds go on amazon-linux.
+  linux-x86_64-amazonlinux-2:
+    docker:
+      - image: amazonlinux:2
+    resource_class: large
+    working_directory: ~/typedb
+
+  linux-x86_64-ubuntu-2204:
+    docker:
+      - image: ubuntu:22.04
+    resource_class: large
     working_directory: ~/typedb
 
   mac-arm64:
@@ -26,107 +34,289 @@ executors:
     resource_class: macos.m1.medium.gen1
     working_directory: ~/typedb
 
-  mac-x86_64:
-    macos:
-      xcode: "13.4.1"
-    working_directory: ~/typedb
+  win-x86_64:
+    resource_class: windows.xlarge
+    machine:
+      image: windows-server-2022-gui:2024.01.1
+    shell: cmd.exe
 
 
 commands:
 
-  install-bazel-linux-x86_64:
+  ######################
+  # common setup steps #
+  ######################
+
+  install-deps-yum:
+    parameters:
+      bazel-arch:
+        type: string
     steps:
       - run: |
-          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-amd64"
-          sudo mv "bazelisk-linux-amd64" /usr/local/bin/bazel
+          amazon-linux-extras install python3.8 java-openjdk11 docker -y
+          yum install -y git tar gcc gcc-c++ file lsof which procps llvm-devel clang-devel
+          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-<<parameters.bazel-arch>>"
+          mv "bazelisk-linux-<<parameters.bazel-arch>>" /usr/local/bin/bazel
           chmod a+x /usr/local/bin/bazel
 
-  install-bazel-linux-arm64:
+  install-deps-apt:
+    parameters:
+      bazel-arch:
+        type: string
     steps:
       - run: |
-          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-arm64"
-          sudo mv "bazelisk-linux-arm64" /usr/local/bin/bazel
+          apt update -y
+          DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends tzdata
+          apt install -y curl build-essential git python3 python3-pip default-jre lsof cmake file wget libclang-dev
+          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-<<parameters.bazel-arch>>"
+          mv "bazelisk-linux-<<parameters.bazel-arch>>" /usr/local/bin/bazel
           chmod a+x /usr/local/bin/bazel
 
-  install-bazel-mac:
+  install-deps-brew:
+    parameters:
+      bazel-arch:
+        type: string
     steps:
-      - run: brew install bazelisk
+      - run: |
+          brew install python@3.8
+          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-darwin-<<parameters.bazel-arch>>"
+          sudo mv "bazelisk-darwin-<<parameters.bazel-arch>>" /usr/local/bin/bazel
+          chmod a+x /usr/local/bin/bazel
+
+  install-brew-rosetta:
+    steps:
+      - run: arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+
+  # deploy & test steps
+  test-assembly-unix:
+    steps:
+      - run: |
+          bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
+          bazel build --jobs=8 //:assemble-typedb-server --compilation_mode=opt
+          bazel test //tests/assembly:test_assembly --test_output=errors
+
+  deploy-snapshot-unix:
+    steps:
+      - run: |
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
+          bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
+          bazel run --jobs=8 --define version=$(git rev-parse HEAD) //:deploy-typedb-server --compilation_mode=opt -- snapshot
+
+  deploy-release-unix:
+    steps:
+      - run: |
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
+          bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
+          bazel run --jobs=8 --define version=$(cat VERSION) //:deploy-typedb-server --compilation_mode=opt -- release
+
+  deploy-docker-for-arch:
+    parameters:
+      image-arch:
+        type: string
+    steps:
+      - run: |
+          docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
+          bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
+          bazel run --jobs=8 --@io_bazel_rules_docker//transitions:enable=false --platforms=//docker:linux-<<parameters.image-arch>> \
+            //:deploy-docker-release-<<parameters.image-arch>> --compilation_mode=opt
+          # TODO after beta: bazel run //:deploy-docker-release-overwrite-latest-tag
+
+  # TODO: Migrate to bazel sh_binary
+  deploy-docker-release-multiarch:
+    steps:
+      - run: |
+          docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
+          export VERSION=$(cat VERSION)
+          export DOCKER_REPO="typedb"
+          docker manifest create vaticle/$DOCKER_REPO:$VERSION --amend vaticle/$DOCKER_REPO:$VERSION-x86_64 --amend vaticle/$DOCKER_REPO:$VERSION-arm64
+          docker manifest push vaticle/$DOCKER_REPO:$VERSION
+          # TODO: After beta: docker manifest push vaticle/$DOCKER_REPO:latest
 
 jobs:
-  test-assembly-mac-x86_64-zip:
-    executor: mac-x86_64
-    working_directory: ~/typedb
+  # per platform snapshot deployment
+  test-deploy-snapshot-linux-x86_64:
+    executor: linux-x86_64-amazonlinux-2
     steps:
       - checkout
-      - install-bazel-mac
-      - run: bazel test //test/assembly:assembly --test_output=errors
+      - install-deps-yum:
+          bazel-arch: amd64
+      - test-assembly-unix
+      - deploy-snapshot-unix
 
-  test-assembly-mac-arm64-zip:
+  test-deploy-snapshot-linux-arm64:
+    executor: linux-arm64-amazonlinux-2
+    steps:
+      - checkout
+      - install-deps-yum:
+          bazel-arch: arm64
+      - test-assembly-unix
+      - deploy-snapshot-unix
+
+  test-deploy-snapshot-mac-x86_64:
     executor: mac-arm64
-    resource_class: macos.m1.medium.gen1
-    working_directory: ~/typedb
     steps:
+      - macos/install-rosetta
       - checkout
-      - install-bazel-mac
-      - run: bazel test //test/assembly:assembly --test_output=errors
+      - install-brew-rosetta
+      - install-deps-brew:
+          bazel-arch: amd64
+      - test-assembly-unix
+      - deploy-snapshot-unix
 
-  test-assembly-linux-arm64-zip:
-    executor: linux-arm64
-    working_directory: ~/typedb
+  test-deploy-snapshot-mac-arm64:
+    executor: mac-arm64
     steps:
       - checkout
-      - install-bazel-linux-arm64
-      - run: bazel test //test/assembly:assembly --test_output=errors
+      - install-deps-brew:
+          bazel-arch: arm64
+      - test-assembly-unix
+      - deploy-snapshot-unix
 
-  test-assembly-linux-x86_64-zip:
-    executor: linux-x86_64
-    working_directory: ~/typedb
+  # per platform release deployment
+  deploy-release-linux-x86_64:
+    executor: linux-x86_64-amazonlinux-2
     steps:
       - checkout
-      - install-bazel-linux-x86_64
-      - run: bazel test //test/assembly:assembly --test_output=errors
+      - install-deps-yum:
+          bazel-arch: amd64
+      - deploy-release-unix
 
-  test-assembly-windows-zip:
-    executor:
-      name: win/default
-      shell: cmd.exe
-    working_directory: ~/typedb
+  deploy-release-linux-arm64:
+    executor: linux-arm64-amazonlinux-2
     steps:
       - checkout
-      - run: .circleci\windows\prepare.bat
-      - run: .circleci\windows\test-assembly.bat
+      - install-deps-yum:
+          bazel-arch: arm64
+      - deploy-release-unix
+
+  deploy-release-mac-x86_64:
+    executor: mac-arm64
+    steps:
+      - macos/install-rosetta
+      - checkout
+      - install-brew-rosetta
+      - install-deps-brew:
+          bazel-arch: amd64
+      - deploy-release-unix
+
+  deploy-release-mac-arm64:
+    executor: mac-arm64
+    steps:
+      - checkout
+      - install-deps-brew:
+          bazel-arch: arm64
+      - deploy-release-unix
+
+  deploy-docker-release-x86_64:
+    executor: linux-x86_64-amazonlinux-2
+    steps:
+      - checkout
+      - install-deps-yum:
+          bazel-arch: amd64
+      - deploy-docker-for-arch:
+          image-arch: x86_64
+
+  deploy-docker-release-arm64:
+    executor: linux-arm64-amazonlinux-2
+    steps:
+      - checkout
+      - install-deps-yum:
+          bazel-arch: arm64
+      - deploy-docker-for-arch:
+          image-arch: arm64
+
+  deploy-docker-release-multiarch:
+    executor: linux-x86_64-amazonlinux-2
+    steps:
+      - checkout
+      - install-deps-yum:
+          bazel-arch: x86_64
+      - deploy-docker-release-multiarch
+
+  # generic
+  release-cleanup:
+    executor: linux-x86_64-ubuntu-2204
+    steps:
+      - checkout
+      - run: |
+          apt update -y
+          apt install -y git
+          git push --delete https://$REPO_GITHUB_TOKEN@github.com/typedb/typedb-driver.git $CIRCLE_BRANCH
 
 
 workflows:
-#  typedb:
-#    jobs:
-#      - test-assembly-mac-x86_64-zip:
-#          filters:
-#            branches:
-#              only:
-#                - master
-#                - development
-#      - test-assembly-mac-arm64-zip:
-#          filters:
-#            branches:
-#              only:
-#                - master
-#                - development
-#      - test-assembly-linux-x86_64-zip:
-#          filters:
-#            branches:
-#              only:
-#                - master
-#                - development
-#      - test-assembly-linux-arm64-zip:
-#          filters:
-#            branches:
-#              only:
-#                - master
-#                - development
-#      - test-assembly-windows-zip:
-#          filters:
-#            branches:
-#              only:
-#                - master
-#                - development
+  typedb-snapshot:
+    jobs:
+      - test-deploy-snapshot-linux-x86_64:
+          filters:
+            branches:
+              only: [ "3.0" ]
+
+      - test-deploy-snapshot-linux-arm64:
+          filters:
+            branches:
+              only: [ "3.0" ]
+
+      - test-deploy-snapshot-mac-x86_64:
+          filters:
+            branches:
+              only: [ "3.0" ]
+
+      - test-deploy-snapshot-mac-arm64:
+          filters:
+            branches:
+              only: [ "3.0" ]
+
+  release:
+    jobs:
+      - deploy-release-linux-x86_64:
+          filters:
+            branches:
+              only: [ release ]
+
+      - deploy-release-linux-arm64:
+          filters:
+            branches:
+              only: [ release ]
+
+      - deploy-release-mac-x86_64:
+          filters:
+            branches:
+              only: [ release ]
+
+      - deploy-release-mac-arm64:
+          filters:
+            branches:
+              only: [ release ]
+
+      - deploy-docker-release-x86_64:
+          filters:
+            branches:
+              only: [ release ]
+
+      - deploy-docker-release-arm64:
+          filters:
+            branches:
+              only: [ release ]
+
+      - deploy-docker-release-multiarch:
+          filters:
+            branches:
+              only: [ release ]
+          requires:
+            - deploy-docker-release-x86_64
+            - deploy-docker-release-arm64
+
+      - release-cleanup:
+          filters:
+            branches:
+              only: [ release ]
+          requires:
+            - deploy-release-linux-x86_64
+            - deploy-release-linux-arm64
+            - deploy-release-mac-x86_64
+            - deploy-release-mac-arm64
+            - deploy-docker-release-multiarch

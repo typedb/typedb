@@ -91,6 +91,12 @@ crate_repositories()
 load("//dependencies/vaticle:repositories.bzl", "vaticle_bazel_distribution")
 vaticle_bazel_distribution()
 
+# Load @vaticle_bazel_distribution_uploader
+load("@vaticle_bazel_distribution//common/uploader:deps.bzl", uploader_deps = "deps")
+uploader_deps()
+load("@vaticle_bazel_distribution_uploader//:requirements.bzl", install_uploader_deps = "install_deps")
+install_uploader_deps()
+
 # Load //common
 load("@vaticle_bazel_distribution//common:deps.bzl", "rules_pkg")
 rules_pkg()
@@ -104,37 +110,32 @@ github_deps()
 # Load //pip
 load("@vaticle_bazel_distribution//pip:deps.bzl", pip_deps = "deps")
 pip_deps()
-#
-####################################################
-## Load @vaticle_dependencies//distribution/docker #
-####################################################
-#
-## must be loaded after `vaticle_bazel_distribution` to ensure
-## `rules_pkg` is correctly patched (bazel-distribution #251)
-#
-## Load //distribution/docker
-#load("@vaticle_dependencies//distribution/docker:deps.bzl", docker_deps = "deps")
-#docker_deps()
-#
-#load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
-#load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
-#go_rules_dependencies()
-#go_register_toolchains(version = "1.18.3")
-#gazelle_dependencies()
-#
-#load("@io_bazel_rules_docker//repositories:repositories.bzl", bazel_rules_docker_repositories = "repositories")
-#bazel_rules_docker_repositories()
-#
-#load("@io_bazel_rules_docker//repositories:deps.bzl", bazel_rules_docker_container_deps = "deps")
-#bazel_rules_docker_container_deps()
-#
-#load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
-#container_pull(
-#  name = "vaticle_ubuntu_image",
-#  registry = "index.docker.io",
-#  repository = "vaticle/ubuntu",
-#  tag = "4ee548cea883c716055566847c4736a7ef791c38"
-#)
+
+###################################################
+# Load @vaticle_dependencies//distribution/docker #
+###################################################
+
+# must be loaded after `vaticle_bazel_distribution` to ensure
+# `rules_pkg` is correctly patched (bazel-distribution #251)
+
+# Load //distribution/docker
+load("@vaticle_dependencies//distribution/docker:deps.bzl", docker_deps = "deps")
+docker_deps()
+
+load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
+go_rules_dependencies()
+go_register_toolchains(version = "1.18.3")
+gazelle_dependencies()
+
+load("@io_bazel_rules_docker//repositories:repositories.bzl", bazel_rules_docker_repositories = "repositories")
+bazel_rules_docker_repositories()
+
+load("@io_bazel_rules_docker//repositories:deps.bzl", bazel_rules_docker_container_deps = "deps")
+bazel_rules_docker_container_deps()
+
+load("//docker:images.bzl", docker_base_images = "base_images")
+docker_base_images()
 
 #####################################
 # Load @vaticle/typedb dependencies #

@@ -19,6 +19,11 @@ rust_library(
     ],
 )
 
+filegroup(
+    name = "logo",
+    srcs = ["typedb-ascii.txt"],
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
