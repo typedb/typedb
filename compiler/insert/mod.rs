@@ -22,8 +22,7 @@ pub mod type_check;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum VariableSource {
-    InputVariable(VariablePosition),
-    InsertedThing(usize),
+    InputVariable(VariablePosition), // TODO: This needs to be renamed
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
