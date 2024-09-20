@@ -22,14 +22,14 @@ impl Config {
             .map(|path| path.parent().unwrap().to_path_buf())
             .unwrap_or(std::env::current_dir().unwrap());
         Self {
-            server: ServerConfig { address: SocketAddr::from_str("127.0.0.1:1729").unwrap() },
+            server: ServerConfig { address: SocketAddr::from_str("0.0.0.0:1729").unwrap() },
             storage: StorageConfig { data: typedb_dir_or_current.join(PathBuf::from_str("server/data").unwrap()) },
         }
     }
 
     pub fn new_with_data_directory(data_directory: &Path) -> Self {
         Self {
-            server: ServerConfig { address: SocketAddr::from_str("127.0.0.1:1729").unwrap() },
+            server: ServerConfig { address: SocketAddr::from_str("0.0.0.0:1729").unwrap() },
             storage: StorageConfig { data: data_directory.to_owned() },
         }
     }
