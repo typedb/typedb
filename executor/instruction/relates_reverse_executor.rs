@@ -12,20 +12,19 @@ use std::{
     vec,
 };
 
-use answer::{variable_value::VariableValue, Type};
+use answer::Type;
 use compiler::match_::instructions::type_::RelatesReverseInstruction;
 use concept::{error::ConceptReadError, type_::relates::Relates};
 use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
-use super::type_from_row_or_annotations;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         relates_executor::{RelatesFilterFn, RelatesTupleIterator, EXTRACT_RELATION, EXTRACT_ROLE},
         tuple::{relates_to_tuple_role_relation, TuplePositions},
-        BinaryIterateMode, Checker, VariableModes,
+        type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -76,9 +75,9 @@ impl RelatesReverseExecutor {
         let role_type = relates.role_type().as_variable();
 
         let output_tuple_positions = if iterate_mode.is_inverted() {
-            TuplePositions::Pair([role_type, relation])
-        } else {
             TuplePositions::Pair([relation, role_type])
+        } else {
+            TuplePositions::Pair([role_type, relation])
         };
 
         let checker = Checker::<AsHkt![Relates<'_>]> {
