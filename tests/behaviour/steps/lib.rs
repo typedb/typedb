@@ -28,7 +28,6 @@ use storage::durability_client::WALClient;
 use thing_util::ObjectWithKey;
 use transaction_context::ActiveTransaction;
 
-mod assert;
 mod concept;
 mod connection;
 mod params;

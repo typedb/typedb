@@ -13,9 +13,9 @@ use concept::{
 };
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
+use test_utils::assert_matches;
 
 use crate::{
-    assert::assert_matches,
     concept::thing::{
         attribute::{attribute_put_instance_with_value_impl, get_attribute_by_value},
         has::object_set_has_impl,

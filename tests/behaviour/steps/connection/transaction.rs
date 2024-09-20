@@ -7,9 +7,9 @@
 use database::transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite};
 use macro_rules_attribute::apply;
 use options::TransactionOptions;
+use test_utils::assert_matches;
 
 use crate::{
-    assert::assert_matches,
     generic_step,
     params::{check_boolean, Boolean, MayError},
     ActiveTransaction, Context,

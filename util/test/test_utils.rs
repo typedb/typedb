@@ -51,3 +51,26 @@ pub fn create_tmp_dir() -> TempDir {
     fs::create_dir_all(&dir).unwrap();
     TempDir(dir)
 }
+
+#[macro_export]
+macro_rules! assert_matches {
+    ($expression:expr, $pattern:pat $(if $guard:expr)? $(, $message:literal $(, $arg:expr)*)? $(,)?) => {
+        {
+            match $expression {
+                $pattern $(if $guard)? => (),
+                expr => panic!(
+                    concat!(
+                        "assertion `matches!(expression, ",
+                        stringify!($pattern $(if $guard)?),
+                        ")` failed",
+                        $(": ", $message,)?
+                        "\n",
+                        "expression evaluated to: {:?}"
+                    ),
+                    $($($arg,)*)?
+                    expr
+                )
+            }
+        }
+    };
+}

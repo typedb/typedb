@@ -21,9 +21,9 @@ use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
 use query::{error::QueryError, query_manager::QueryManager};
+use test_utils::assert_matches;
 
 use crate::{
-    assert::assert_matches,
     generic_step, params,
     transaction_context::{with_read_tx, with_schema_tx, with_write_tx_deconstructed},
     util::iter_table_map,

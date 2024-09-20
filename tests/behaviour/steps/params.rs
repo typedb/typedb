@@ -31,8 +31,7 @@ use encoding::{
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
-
-use crate::assert::assert_matches;
+use test_utils::assert_matches;
 
 #[derive(Debug, Copy, Clone, Parameter)]
 #[param(name = "may_error", regex = "(; fails|)")]
