@@ -464,7 +464,7 @@ fn lower_plan(
         let planner = &plan_builder.elements[index];
 
         macro_rules! binary {
-            ($lhs:ident $con:ident $rhs:ident, $fw:ident($fwi:ident), $bw:ident($bwi:ident)) => {{
+            ($((with $with:ident))? $lhs:ident $con:ident $rhs:ident, $fw:ident($fwi:ident), $bw:ident($bwi:ident)) => {{
                 let lhs = $con.$lhs();
                 let rhs = $con.$rhs();
 
@@ -486,7 +486,7 @@ fn lower_plan(
                     let lhs_pos = lhs.clone().map(match_builder.position_mapping());
                     let rhs_pos = rhs.clone().map(match_builder.position_mapping());
                     match_builder.get_program_mut(program).instructions[instruction]
-                        .add_check(CheckInstruction::$fw { $lhs: lhs_pos, $rhs: rhs_pos });
+                        .add_check(CheckInstruction::$fw { $lhs: lhs_pos, $rhs: rhs_pos, $($with: $con.$with())? });
                     continue;
                 }
 
@@ -552,10 +552,10 @@ fn lower_plan(
             }
 
             Constraint::Isa(isa) => {
-                binary!(thing isa type_, Isa(IsaInstruction), IsaReverse(IsaReverseInstruction))
+                binary!((with isa_kind) thing isa type_, Isa(IsaInstruction), IsaReverse(IsaReverseInstruction))
             }
             Constraint::Sub(sub) => {
-                binary!(subtype sub supertype, Sub(SubInstruction), SubReverse(SubReverseInstruction))
+                binary!((with sub_kind) subtype sub supertype, Sub(SubInstruction), SubReverse(SubReverseInstruction))
             }
             Constraint::Owns(owns) => {
                 binary!(owner owns attribute, Owns(OwnsInstruction), OwnsReverse(OwnsReverseInstruction))

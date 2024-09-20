@@ -4,10 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+#![allow(clippy::large_enum_variant)]
+
 use std::{collections::HashMap, ops::Deref};
 
 use ir::pattern::{
-    constraint::{Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding},
+    constraint::{Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, IsaKind, SubKind},
     IrID, Vertex,
 };
 
@@ -268,12 +270,12 @@ impl<ID: IrID + Copy> InstructionAPI<ID> for ConstraintInstruction<ID> {
 
 #[derive(Debug, Clone)]
 pub enum CheckInstruction<ID> {
-    Sub { subtype: Vertex<ID>, supertype: Vertex<ID> },
+    Sub { sub_kind: SubKind, subtype: Vertex<ID>, supertype: Vertex<ID> },
     Owns { owner: Vertex<ID>, attribute: Vertex<ID> },
     Relates { relation: Vertex<ID>, role_type: Vertex<ID> },
     Plays { player: Vertex<ID>, role_type: Vertex<ID> },
 
-    Isa { type_: Vertex<ID>, thing: Vertex<ID> },
+    Isa { isa_kind: IsaKind, type_: Vertex<ID>, thing: Vertex<ID> },
     Has { owner: Vertex<ID>, attribute: Vertex<ID> },
     Links { relation: Vertex<ID>, player: Vertex<ID>, role: Vertex<ID> },
 
@@ -283,8 +285,22 @@ pub enum CheckInstruction<ID> {
 impl<ID: IrID> CheckInstruction<ID> {
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> CheckInstruction<T> {
         match self {
-            Self::Comparison { lhs, rhs, comparator } => {
-                CheckInstruction::Comparison { lhs: lhs.map(mapping), rhs: rhs.map(mapping), comparator }
+            Self::Sub { sub_kind: kind, subtype, supertype } => CheckInstruction::Sub {
+                sub_kind: kind,
+                subtype: subtype.map(mapping),
+                supertype: supertype.map(mapping),
+            },
+            Self::Owns { owner, attribute } => {
+                CheckInstruction::Owns { owner: owner.map(mapping), attribute: attribute.map(mapping) }
+            }
+            Self::Relates { relation, role_type } => {
+                CheckInstruction::Relates { relation: relation.map(mapping), role_type: role_type.map(mapping) }
+            }
+            Self::Plays { player, role_type } => {
+                CheckInstruction::Plays { player: player.map(mapping), role_type: role_type.map(mapping) }
+            }
+            Self::Isa { isa_kind: kind, type_, thing } => {
+                CheckInstruction::Isa { isa_kind: kind, type_: type_.map(mapping), thing: thing.map(mapping) }
             }
             Self::Has { owner, attribute } => {
                 CheckInstruction::Has { owner: owner.map(mapping), attribute: attribute.map(mapping) }
@@ -294,7 +310,9 @@ impl<ID: IrID> CheckInstruction<ID> {
                 player: player.map(mapping),
                 role: role.map(mapping),
             },
-            _ => todo!(),
+            Self::Comparison { lhs, rhs, comparator } => {
+                CheckInstruction::Comparison { lhs: lhs.map(mapping), rhs: rhs.map(mapping), comparator }
+            }
         }
     }
 }

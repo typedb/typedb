@@ -12,8 +12,15 @@ use std::{
 
 use answer::variable_value::VariableValue;
 use compiler::match_::instructions::{CheckInstruction, ConstraintInstruction};
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use ir::pattern::{constraint::Comparator, Vertex};
+use concept::{
+    error::ConceptReadError,
+    thing::{object::ObjectAPI, thing_manager::ThingManager},
+    type_::{OwnerAPI, PlayerAPI},
+};
+use ir::pattern::{
+    constraint::{Comparator, IsaKind, SubKind},
+    Vertex,
+};
 use lending_iterator::higher_order::{FnHktHelper, Hkt};
 use storage::snapshot::ReadableSnapshot;
 
@@ -422,8 +429,204 @@ impl<T: Hkt> Checker<T> {
         type BoxExtractor<T> = Box<dyn for<'a> Fn(&'a <T as Hkt>::HktSelf<'_>) -> VariableValue<'a>>;
         let mut filters: Vec<Box<dyn Fn(&T::HktSelf<'_>) -> Result<bool, ConceptReadError>>> =
             Vec::with_capacity(self.checks.len());
+
         for check in &self.checks {
             match check {
+                &CheckInstruction::Sub { sub_kind, ref subtype, ref supertype } => {
+                    let maybe_subtype_extractor = subtype.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_supertype_extractor = supertype.as_variable().and_then(|var| self.extractors.get(&var));
+                    let snapshot = context.snapshot.clone();
+                    let thing_manager = context.thing_manager.clone();
+                    let subtype: BoxExtractor<T> = match maybe_subtype_extractor {
+                        Some(&subtype) => Box::new(subtype),
+                        None => make_const_extractor(subtype, row),
+                    };
+                    let supertype: BoxExtractor<T> = match maybe_supertype_extractor {
+                        Some(&supertype) => Box::new(supertype),
+                        None => make_const_extractor(supertype, row),
+                    };
+                    filters.push(Box::new({
+                        move |value| {
+                            let subtype = subtype(value);
+                            let supertype = supertype(value);
+                            match sub_kind {
+                                SubKind::Subtype => subtype.as_type().is_transitive_subtype_of(
+                                    supertype.as_type(),
+                                    &*snapshot,
+                                    thing_manager.type_manager(),
+                                ),
+                                SubKind::Exact => subtype.as_type().is_direct_subtype_of(
+                                    subtype.as_type(),
+                                    &*snapshot,
+                                    thing_manager.type_manager(),
+                                ),
+                            }
+                        }
+                    }));
+                }
+
+                CheckInstruction::Owns { owner, attribute } => {
+                    let maybe_owner_extractor = owner.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_attribute_extractor = attribute.as_variable().and_then(|var| self.extractors.get(&var));
+                    let snapshot = context.snapshot.clone();
+                    let thing_manager = context.thing_manager.clone();
+                    let owner: BoxExtractor<T> = match maybe_owner_extractor {
+                        Some(&owner) => Box::new(owner),
+                        None => make_const_extractor(owner, row),
+                    };
+                    let attribute: BoxExtractor<T> = match maybe_attribute_extractor {
+                        Some(&attribute) => Box::new(attribute),
+                        None => make_const_extractor(attribute, row),
+                    };
+                    filters.push(Box::new({
+                        move |value| {
+                            (owner(value).as_type().as_object_type())
+                                .get_owns_attribute(
+                                    &*snapshot,
+                                    thing_manager.type_manager(),
+                                    attribute(value).as_type().as_attribute_type(),
+                                )
+                                .map(|owns| owns.is_some())
+                        }
+                    }));
+                }
+
+                CheckInstruction::Relates { relation, role_type } => {
+                    let maybe_relation_extractor = relation.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_role_type_extractor = role_type.as_variable().and_then(|var| self.extractors.get(&var));
+                    let snapshot = context.snapshot.clone();
+                    let thing_manager = context.thing_manager.clone();
+                    let relation: BoxExtractor<T> = match maybe_relation_extractor {
+                        Some(&relation) => Box::new(relation),
+                        None => make_const_extractor(relation, row),
+                    };
+                    let role_type: BoxExtractor<T> = match maybe_role_type_extractor {
+                        Some(&role_type) => Box::new(role_type),
+                        None => make_const_extractor(role_type, row),
+                    };
+                    filters.push(Box::new({
+                        move |value| {
+                            (relation(value).as_type().as_relation_type())
+                                .get_relates_role(
+                                    &*snapshot,
+                                    thing_manager.type_manager(),
+                                    role_type(value).as_type().as_role_type(),
+                                )
+                                .map(|relates| relates.is_some())
+                        }
+                    }));
+                }
+
+                CheckInstruction::Plays { player, role_type } => {
+                    let maybe_player_extractor = player.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_role_type_extractor = role_type.as_variable().and_then(|var| self.extractors.get(&var));
+                    let snapshot = context.snapshot.clone();
+                    let thing_manager = context.thing_manager.clone();
+                    let player: BoxExtractor<T> = match maybe_player_extractor {
+                        Some(&player) => Box::new(player),
+                        None => make_const_extractor(player, row),
+                    };
+                    let role_type: BoxExtractor<T> = match maybe_role_type_extractor {
+                        Some(&role_type) => Box::new(role_type),
+                        None => make_const_extractor(role_type, row),
+                    };
+                    filters.push(Box::new({
+                        move |value| {
+                            (player(value).as_type().as_object_type())
+                                .get_plays_role(
+                                    &*snapshot,
+                                    thing_manager.type_manager(),
+                                    role_type(value).as_type().as_role_type(),
+                                )
+                                .map(|plays| plays.is_some())
+                        }
+                    }));
+                }
+
+                &CheckInstruction::Isa { isa_kind, ref type_, ref thing } => {
+                    let maybe_thing_extractor = thing.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_type_extractor = type_.as_variable().and_then(|var| self.extractors.get(&var));
+                    let snapshot = context.snapshot.clone();
+                    let thing_manager = context.thing_manager.clone();
+                    let thing: BoxExtractor<T> = match maybe_thing_extractor {
+                        Some(&thing) => Box::new(thing),
+                        None => make_const_extractor(thing, row),
+                    };
+                    let type_: BoxExtractor<T> = match maybe_type_extractor {
+                        Some(&type_) => Box::new(type_),
+                        None => make_const_extractor(type_, row),
+                    };
+                    filters.push(Box::new({
+                        move |value| {
+                            let actual = thing(value).as_thing().type_();
+                            let expected = type_(value);
+                            if isa_kind == IsaKind::Exact && &actual != expected.as_type() {
+                                Ok(false)
+                            } else {
+                                actual.is_transitive_subtype_of(
+                                    expected.as_type(),
+                                    &*snapshot,
+                                    thing_manager.type_manager(),
+                                )
+                            }
+                        }
+                    }));
+                }
+
+                CheckInstruction::Has { owner, attribute } => {
+                    let maybe_owner_extractor = owner.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_attribute_extractor = attribute.as_variable().and_then(|var| self.extractors.get(&var));
+                    let snapshot = context.snapshot.clone();
+                    let thing_manager = context.thing_manager.clone();
+                    let owner: BoxExtractor<T> = match maybe_owner_extractor {
+                        Some(&owner) => Box::new(owner),
+                        None => make_const_extractor(owner, row),
+                    };
+                    let attribute: BoxExtractor<T> = match maybe_attribute_extractor {
+                        Some(&attribute) => Box::new(attribute),
+                        None => make_const_extractor(attribute, row),
+                    };
+                    filters.push(Box::new({
+                        move |value| {
+                            owner(value).as_thing().as_object().has_attribute(
+                                &*snapshot,
+                                &thing_manager,
+                                attribute(value).as_thing().as_attribute().as_reference(),
+                            )
+                        }
+                    }));
+                }
+
+                CheckInstruction::Links { relation, player, role } => {
+                    let maybe_relation_extractor = relation.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_player_extractor = player.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_role_extractor = role.as_variable().and_then(|var| self.extractors.get(&var));
+                    let snapshot = context.snapshot.clone();
+                    let thing_manager = context.thing_manager.clone();
+                    let relation: BoxExtractor<T> = match maybe_relation_extractor {
+                        Some(&relation) => Box::new(relation),
+                        None => make_const_extractor(relation, row),
+                    };
+                    let player: BoxExtractor<T> = match maybe_player_extractor {
+                        Some(&player) => Box::new(player),
+                        None => make_const_extractor(player, row),
+                    };
+                    let role: BoxExtractor<T> = match maybe_role_extractor {
+                        Some(&role) => Box::new(role),
+                        None => make_const_extractor(role, row),
+                    };
+                    filters.push(Box::new({
+                        move |value| {
+                            relation(value).as_thing().as_relation().has_role_player(
+                                &*snapshot,
+                                &thing_manager,
+                                &player(value).as_thing().as_object(),
+                                role(value).as_type().as_role_type().clone(),
+                            )
+                        }
+                    }));
+                }
+
                 CheckInstruction::Comparison { lhs, rhs, comparator } => {
                     let lhs_extractor = self.extractors[&lhs.as_variable().unwrap()];
                     let rhs = match rhs {
@@ -442,80 +645,6 @@ impl<T: Hkt> Checker<T> {
                     };
                     filters.push(Box::new(move |value| Ok(cmp(&lhs_extractor(value), &rhs))));
                 }
-                CheckInstruction::Has { owner, attribute } => {
-                    todo!()
-                    /*
-                    let maybe_owner_extractor = self.extractors.get(&owner);
-                    let maybe_attribute_extractor = self.extractors.get(&attribute);
-                    let snapshot = snapshot.clone();
-                    let thing_manager = thing_manager.clone();
-                    let owner: BoxExtractor<T> = match maybe_owner_extractor {
-                        Some(&owner) => Box::new(owner),
-                        None => {
-                            let owner = row.get(owner).to_owned();
-                            Box::new(move |_| owner.clone())
-                        }
-                    };
-                    let attribute: BoxExtractor<T> = match maybe_attribute_extractor {
-                        Some(&attribute) => Box::new(attribute),
-                        None => {
-                            let attribute = row.get(attribute).to_owned();
-                            Box::new(move |_| attribute.clone())
-                        }
-                    };
-                    filters.push(Box::new({
-                        move |value| {
-                            owner(value).as_thing().as_object().has_attribute(
-                                &*snapshot,
-                                &thing_manager,
-                                attribute(value).as_thing().as_attribute().as_reference(),
-                            )
-                        }
-                    }));
-                    */
-                }
-                CheckInstruction::Links { relation, player, role } => {
-                    todo!()
-                    /*
-                    let maybe_relation_extractor = self.extractors.get(&relation);
-                    let maybe_player_extractor = self.extractors.get(&player);
-                    let maybe_role_extractor = self.extractors.get(&role);
-                    let snapshot = snapshot.clone();
-                    let thing_manager = thing_manager.clone();
-                    let relation: BoxExtractor<T> = match maybe_relation_extractor {
-                        Some(&relation) => Box::new(relation),
-                        None => {
-                            let relation = row.get(relation).to_owned();
-                            Box::new(move |_| relation.clone())
-                        }
-                    };
-                    let player: BoxExtractor<T> = match maybe_player_extractor {
-                        Some(&player) => Box::new(player),
-                        None => {
-                            let player = row.get(player).to_owned();
-                            Box::new(move |_| player.clone())
-                        }
-                    };
-                    let role: BoxExtractor<T> = match maybe_role_extractor {
-                        Some(&role) => Box::new(role),
-                        None => {
-                            let role = row.get(role).to_owned();
-                            Box::new(move |_| role.clone())
-                        }
-                    };
-                    filters.push(Box::new({
-                        move |value| {
-                            relation(value).as_thing().as_relation().has_role_player(
-                                &*snapshot,
-                                &thing_manager,
-                                &player(value).as_thing().as_object(),
-                                role(value).as_type().as_role_type().clone(),
-                            )
-                        }
-                    }));
-                    */
-                }
-                _ => todo!(),
             }
         }
 
@@ -528,5 +657,19 @@ impl<T: Hkt> Checker<T> {
             }
             Ok(true)
         })
+    }
+}
+
+fn make_const_extractor<T: Hkt>(
+    relation: &Vertex<VariablePosition>,
+    row: &MaybeOwnedRow<'_>,
+) -> Box<dyn for<'a> Fn(&'a <T as Hkt>::HktSelf<'_>) -> VariableValue<'a>> {
+    match relation {
+        &Vertex::Variable(var) => {
+            let relation = row.get(var).to_owned();
+            Box::new(move |_| relation.clone())
+        }
+        Vertex::Parameter(_) => todo!(),
+        Vertex::Label(_) => unreachable!(),
     }
 }
