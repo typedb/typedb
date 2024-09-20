@@ -54,8 +54,9 @@ impl CompiledStage {
             CompiledStage::Insert(program) => program
                 .output_row_schema
                 .iter()
+                .filter_map(|opt| opt.as_ref().map(|(v,_)| v.clone()))
                 .enumerate()
-                .map(|(i, (v, _))| (*v, VariablePosition::new(i as u32)))
+                .map(|(i, v)| (v, VariablePosition::new(i as u32)))
                 .collect(),
             CompiledStage::Delete(program) => program
                 .output_row_schema

@@ -30,6 +30,10 @@ impl<'a> Row<'a> {
         &self.row[position.as_usize()]
     }
 
+    pub(crate) fn unset(&mut self, position: VariablePosition) {
+        self.row[position.as_usize()] = VariableValue::Empty;
+    }
+
     pub(crate) fn set(&mut self, position: VariablePosition, value: VariableValue<'static>) {
         debug_assert!(
             *self.get(position) == VariableValue::Empty || *self.get(position) == value,

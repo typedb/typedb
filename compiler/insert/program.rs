@@ -34,7 +34,7 @@ use crate::{
 pub struct InsertProgram {
     pub concept_instructions: Vec<ConceptInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
-    pub output_row_schema: Vec<(Variable, VariableSource)>,
+    pub output_row_schema: Vec<Option<(Variable, VariableSource)>>,
     pub variable_registry: Arc<VariableRegistry>,
 }
 
@@ -63,10 +63,10 @@ pub fn compile(
     add_has(constraints, &variables, &mut connection_inserts)?;
     add_role_players(constraints, type_annotations, &variables, &mut connection_inserts)?;
 
-    let mut output_row_schema = Vec::with_capacity(variables.len()); // TODO
+    let output_width = variables.iter().map(|(_, i)| i.position + 1).max().unwrap_or(0);
+    let mut output_row_schema = vec![None; output_width as usize];
     variables.iter().map(|(v, i)| (i, v)).sorted().for_each(|(&i, &v)| {
-        debug_assert!(i.position as usize == output_row_schema.len());
-        output_row_schema.push((v, VariableSource::InputVariable(i)));
+        output_row_schema[i.position as usize] = Some((v, VariableSource::InputVariable(i)));
     });
 
     Ok(InsertProgram {
@@ -83,6 +83,8 @@ fn add_inserted_concepts(
     type_annotations: &TypeAnnotations,
     vertex_instructions: &mut Vec<ConceptInstruction>,
 ) -> Result<HashMap<Variable, VariablePosition>, WriteCompilationError> {
+    let first_inserted_variable_position: usize = input_variables.iter()
+        .map(|(_,pos)| pos.position + 1).max().unwrap_or(0) as usize;
     let mut output_variables = input_variables.clone();
     let type_bindings = collect_type_bindings(constraints, type_annotations)?;
     let value_bindings = collect_value_bindings(constraints)?;
@@ -117,7 +119,7 @@ fn add_inserted_concepts(
             if kinds.contains(&Kind::Attribute) {
                 return Err(WriteCompilationError::IsaTypeMayBeAttributeOrObject { isa: isa.clone() });
             }
-            let write_to = VariablePosition::new((input_variables.len() + vertex_instructions.len()) as u32);
+            let write_to = VariablePosition::new((first_inserted_variable_position + vertex_instructions.len()) as u32);
             output_variables.insert(thing, write_to);
             let instruction = ConceptInstruction::PutObject(PutObject { type_, write_to: ThingSource(write_to) });
             vertex_instructions.push(instruction);
@@ -138,7 +140,7 @@ fn add_inserted_concepts(
             } else {
                 return Err(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute { variable: thing })?;
             };
-            let write_to = VariablePosition::new((input_variables.len() + vertex_instructions.len()) as u32);
+            let write_to = VariablePosition::new((first_inserted_variable_position + vertex_instructions.len()) as u32);
             output_variables.insert(thing, write_to);
             let instruction =
                 ConceptInstruction::PutAttribute(PutAttribute { type_, value, write_to: ThingSource(write_to) });

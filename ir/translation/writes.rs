@@ -53,6 +53,8 @@ pub fn translate_delete(
             }
         }
     }
-
+    for var in &deleted_concepts {
+        builder.context_mut().record_variable_reference(var.clone());
+    }
     Ok((builder.finish(), deleted_concepts))
 }
