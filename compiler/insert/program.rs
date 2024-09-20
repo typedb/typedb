@@ -231,10 +231,11 @@ fn collect_value_bindings(
             let &Expression::Constant(constant) = expr.expression().get_root() else {
                 unreachable!("The grammar does not allow compound expressions")
             };
-
-            debug_assert!(!seen.contains(&expr.left()));
             #[cfg(debug_assertions)]
-            seen.insert(expr.left());
+            {
+                debug_assert!(!seen.contains(&expr.left()));
+                seen.insert(expr.left());
+            }
 
             Ok((expr.left(), constant))
         })
@@ -257,12 +258,15 @@ fn collect_type_bindings(
     filter_variants!(Constraint::Label : constraints)
         .map(|label| {
             let annotations = type_annotations.vertex_annotations_of(label.left()).unwrap();
+            #[cfg(debug_assertions)]
             debug_assert!(annotations.len() == 1);
             let type_ = annotations.first().unwrap();
 
-            debug_assert!(!seen.contains(label.left()));
             #[cfg(debug_assertions)]
-            seen.insert(label.left());
+            {
+                debug_assert!(!seen.contains(label.left()));
+                seen.insert(label.left());
+            }
 
             Ok((label.left().clone(), type_.clone()))
         })
@@ -290,9 +294,11 @@ pub(crate) fn collect_role_type_bindings(
                 return Err(WriteCompilationError::CouldNotUniquelyResolveRoleTypeFromName { variable });
             };
 
-            debug_assert!(!seen.contains(&variable));
             #[cfg(debug_assertions)]
-            seen.insert(variable);
+            {
+                debug_assert!(!seen.contains(&variable));
+                seen.insert(variable);
+            }
 
             Ok((variable, type_.clone()))
         })

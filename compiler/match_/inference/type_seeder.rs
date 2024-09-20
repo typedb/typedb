@@ -257,10 +257,12 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
                         }
                     } else {
                         #[cfg(debug_assertions)]
-                        let annotation_opt = get_type_annotation_from_label(self.snapshot, self.type_manager, label)
-                            .map_err(|source| TypeInferenceError::ConceptRead { source })?;
-                        debug_assert_ne!(annotation_opt, None);
-                        debug_assert_eq!(tig.vertices[vertex], BTreeSet::from([annotation_opt.unwrap()]));
+                        {
+                            let annotation_opt = get_type_annotation_from_label(self.snapshot, self.type_manager, label)
+                                .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+                            debug_assert_ne!(annotation_opt, None);
+                            debug_assert_eq!(tig.vertices[vertex], BTreeSet::from([annotation_opt.unwrap()]));
+                        }
                     }
                 }
                 &Vertex::Parameter(_) => {
