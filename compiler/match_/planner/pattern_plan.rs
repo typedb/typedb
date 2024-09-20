@@ -572,7 +572,6 @@ fn lower_plan(
             }
 
             Constraint::Links(links) => {
-                /*
                 let relation = links.relation().as_variable().unwrap();
                 let player = links.player().as_variable().unwrap();
                 let role = links.role_type().as_variable().unwrap();
@@ -582,9 +581,9 @@ fn lower_plan(
                     let player_producer = producers.get(&player).expect("bound player must have been produced");
                     let (program, instruction) = std::cmp::Ord::max(*relation_producer, *player_producer);
 
-                    let relation_pos = match_builder.position(relation);
-                    let player_pos = match_builder.position(player);
-                    let role_pos = match_builder.position(role);
+                    let relation_pos = match_builder.position(relation).into();
+                    let player_pos = match_builder.position(player).into();
+                    let role_pos = match_builder.position(role).into();
                     match_builder.get_program_mut(program).instructions[instruction].add_check(
                         CheckInstruction::Links { relation: relation_pos, player: player_pos, role: role_pos },
                     );
@@ -622,15 +621,13 @@ fn lower_plan(
                     ))
                 };
                 let producer_index =
-                    match_builder.push_instruction(sort_variable, instruction, &[relation, player, role]);
+                    match_builder.push_instruction(sort_variable, instruction, [relation, player, role]);
 
                 for &var in &[relation, player, role] {
                     if !inputs.contains(&var) {
                         producers.insert(var, producer_index);
                     }
                 }
-                */
-                todo!()
             }
 
             Constraint::ExpressionBinding(_) => todo!("expression binding"),
