@@ -86,9 +86,9 @@ impl LinksReverseExecutor {
         let role_type = links.role_type().as_variable().unwrap();
 
         let output_tuple_positions = if iterate_mode == TernaryIterateMode::UnboundInverted {
-            TuplePositions::Triple([Some(player), Some(relation), Some(role_type)])
-        } else {
             TuplePositions::Triple([Some(relation), Some(player), Some(role_type)])
+        } else {
+            TuplePositions::Triple([Some(player), Some(relation), Some(role_type)])
         };
 
         let checker = Checker::<(Relation<'_>, RolePlayer<'_>, _)> {
