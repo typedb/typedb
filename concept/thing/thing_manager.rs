@@ -1433,7 +1433,10 @@ impl ThingManager {
             value.as_reference(),
         )?;
 
-        let vertex = match value {
+        let vertex = match value
+            .cast(&attribute_type.get_value_type_without_source(snapshot, self.type_manager())?.unwrap())
+            .expect("value type compatibility should have been verified by this point")
+        {
             Value::Boolean(bool) => {
                 let encoded_boolean = BooleanBytes::build(bool);
                 self.vertex_generator.create_attribute_boolean(

@@ -39,6 +39,10 @@ impl Decimal {
     pub fn fractional_part(&self) -> u64 {
         self.fractional
     }
+
+    pub fn to_f64(self) -> f64 {
+        self.integer as f64 + self.fractional as f64 / FRACTIONAL_PART_DENOMINATOR as f64
+    }
 }
 
 impl Add for Decimal {

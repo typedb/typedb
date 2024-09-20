@@ -191,6 +191,32 @@ impl<'a> Value<'a> {
             Self::Struct(struct_) => Value::Struct(Cow::Owned(struct_.into_owned())),
         }
     }
+
+    pub fn cast(self, value_type: &ValueType) -> Option<Value<'static>> {
+        if &self.value_type() == value_type {
+            return Some(self.into_owned());
+        }
+        if !self.value_type().is_trivially_castable_to(value_type) {
+            return None;
+        }
+
+        match self {
+            Value::Long(long) => {
+                debug_assert!(matches!(value_type, &ValueType::Double | &ValueType::Decimal));
+                match value_type {
+                    ValueType::Double => Some(Value::Double(long as f64)),
+                    ValueType::Decimal => Some(Value::Decimal(Decimal::new(long, 0))),
+                    _ => unreachable!(),
+                }
+            }
+            Value::Decimal(decimal) => {
+                debug_assert_eq!(value_type, &ValueType::Double);
+                Some(Value::Double(decimal.to_f64()))
+            }
+            Value::Date(_) => todo!(),
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl<'a> ValueEncodable for Value<'a> {

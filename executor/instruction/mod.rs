@@ -18,7 +18,7 @@ use concept::{
     thing::{object::ObjectAPI, thing_manager::ThingManager},
     type_::{OwnerAPI, PlayerAPI},
 };
-use encoding::value::value::Value;
+use encoding::value::{value::Value, ValueEncodable};
 use ir::pattern::{
     constraint::{Comparator, IsaKind, SubKind},
     Vertex,
@@ -653,6 +653,16 @@ impl<T: Hkt> Checker<T> {
                         &Vertex::Parameter(param) => VariableValue::Value(context.parameters()[param].to_owned()),
                         Vertex::Label(_) => unreachable!(),
                     };
+                    let snapshot = context.snapshot.clone();
+                    let thing_manager = context.thing_manager.clone();
+                    let rhs = match rhs {
+                        VariableValue::Thing(Thing::Attribute(attr)) => {
+                            attr.get_value(&*snapshot, &thing_manager).map(Value::into_owned)
+                        }
+                        VariableValue::Value(value) => Ok(value),
+                        VariableValue::ThingList(_) | VariableValue::ValueList(_) => todo!(),
+                        VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
+                    };
                     let cmp: fn(&Value<'_>, &Value<'_>) -> bool = match comparator {
                         Comparator::Equal => |a, b| a == b,
                         Comparator::Less => |a, b| a < b,
@@ -662,8 +672,6 @@ impl<T: Hkt> Checker<T> {
                         Comparator::Like => todo!("like"),
                         Comparator::Contains => todo!("contains"),
                     };
-                    let snapshot = context.snapshot.clone();
-                    let thing_manager = context.thing_manager.clone();
                     filters.push(Box::new(move |value| {
                         let lhs = lhs_extractor(value);
                         let lhs = match lhs {
@@ -674,15 +682,11 @@ impl<T: Hkt> Checker<T> {
                             VariableValue::ThingList(_) | VariableValue::ValueList(_) => todo!(),
                             VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
                         };
-                        let rhs = match &rhs {
-                            VariableValue::Thing(Thing::Attribute(attr)) => {
-                                &attr.get_value(&*snapshot, &thing_manager)?
-                            }
-                            VariableValue::Value(value) => value,
-                            VariableValue::ThingList(_) | VariableValue::ValueList(_) => todo!(),
-                            VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
-                        };
-                        Ok(cmp(&lhs, rhs))
+                        let rhs = rhs.clone()?;
+                        if !rhs.value_type().is_trivially_castable_to(&lhs.value_type()) {
+                            return Ok(false);
+                        }
+                        Ok(cmp(&lhs, &rhs.cast(&lhs.value_type()).unwrap()))
                     }));
                 }
             }
