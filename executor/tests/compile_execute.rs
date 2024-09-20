@@ -4,10 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, collections::HashMap, sync::Arc};
+use std::{
+    borrow::Cow,
+    collections::{BTreeMap, HashMap},
+    sync::Arc,
+};
 
 use compiler::match_::{
-    inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
+    inference::{
+        annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+        type_inference::infer_types_for_match_block,
+    },
     planner::{pattern_plan::MatchProgram, program_plan::ProgramPlan},
 };
 use concept::{
@@ -107,13 +114,14 @@ fn test_has_planning_traversal() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let (entry_annotations, _) = infer_types(
+    let entry_annotations = infer_types_for_match_block(
         &block,
-        vec![],
+        &translation_context.variable_registry,
         &*snapshot,
         &type_manager,
+        &BTreeMap::new(),
         &IndexedAnnotatedFunctions::empty(),
-        &translation_context.variable_registry,
+        &AnnotatedUnindexedFunctions::empty(),
     )
     .unwrap();
 
@@ -246,13 +254,139 @@ fn test_links_planning_traversal() {
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let (entry_annotations, _) = infer_types(
+    let entry_annotations = infer_types_for_match_block(
         &block,
-        vec![],
+        &translation_context.variable_registry,
         &*snapshot,
         &type_manager,
+        &BTreeMap::new(),
         &IndexedAnnotatedFunctions::empty(),
+        &AnnotatedUnindexedFunctions::empty(),
+    )
+    .unwrap();
+
+    let pattern_plan = MatchProgram::compile(
+        &block,
+        &entry_annotations,
+        Arc::new(translation_context.variable_registry),
+        &HashMap::new(),
+        &statistics,
+    );
+    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
+    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+
+    let rows = iterator
+        .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
+        .into_iter()
+        .try_collect::<_, Vec<_>, _>()
+        .unwrap();
+
+    assert_eq!(rows.len(), 2);
+
+    for row in rows {
+        for value in row {
+            print!("{}, ", value);
+        }
+        println!()
+    }
+}
+
+#[test]
+fn test_links_intersection() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let mut snapshot = storage.clone().open_snapshot_write();
+
+    const CARDINALITY_ANY: AnnotationCardinality = AnnotationCardinality::new(0, None);
+    const RELATES_CARDINALITY_ANY: RelatesAnnotation = RelatesAnnotation::Cardinality(CARDINALITY_ANY);
+
+    let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
+    let membership_type = type_manager.create_relation_type(&mut snapshot, &MEMBERSHIP_LABEL).unwrap();
+
+    let relates_member = membership_type
+        .create_relates(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            MEMBERSHIP_MEMBER_LABEL.name().as_str(),
+            Ordering::Unordered,
+        )
+        .unwrap();
+    relates_member.set_annotation(&mut snapshot, &type_manager, &thing_manager, RELATES_CARDINALITY_ANY).unwrap();
+    let membership_member_type = relates_member.role();
+
+    person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, membership_member_type.clone()).unwrap();
+
+    let person = [
+        thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
+        thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
+        thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
+    ];
+
+    let membership = [
+        thing_manager.create_relation(&mut snapshot, membership_type.clone()).unwrap(),
+        thing_manager.create_relation(&mut snapshot, membership_type.clone()).unwrap(),
+    ];
+
+    membership[0]
+        .add_player(
+            &mut snapshot,
+            &thing_manager,
+            membership_member_type.clone(),
+            person[0].clone().into_owned_object(),
+        )
+        .unwrap();
+    membership[0]
+        .add_player(
+            &mut snapshot,
+            &thing_manager,
+            membership_member_type.clone(),
+            person[1].clone().into_owned_object(),
+        )
+        .unwrap();
+    membership[1]
+        .add_player(
+            &mut snapshot,
+            &thing_manager,
+            membership_member_type.clone(),
+            person[2].clone().into_owned_object(),
+        )
+        .unwrap();
+
+    let finalise_result = thing_manager.finalise(&mut snapshot);
+    assert!(finalise_result.is_ok());
+    snapshot.commit().unwrap();
+
+    let mut statistics = Statistics::new(SequenceNumber::new(0));
+    statistics.may_synchronise(&storage).unwrap();
+
+    let query = "match $membership isa membership, links ($person1, $person2);";
+    let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+
+    // IR
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
+    let mut translation_context = TranslationContext::new();
+    let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
+    // builder.add_limit(3);
+    // builder.add_filter(vec!["person", "age"]).unwrap();
+    let block = builder.finish();
+
+    // Executor
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let entry_annotations = infer_types_for_match_block(
+        &block,
         &translation_context.variable_registry,
+        &*snapshot,
+        &type_manager,
+        &BTreeMap::new(),
+        &IndexedAnnotatedFunctions::empty(),
+        &AnnotatedUnindexedFunctions::empty(),
     )
     .unwrap();
 

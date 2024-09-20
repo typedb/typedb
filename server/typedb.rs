@@ -5,6 +5,7 @@
  */
 
 use std::{error::Error, fmt, fs, io, path::PathBuf};
+
 use database::{database_manager::DatabaseManager, DatabaseOpenError};
 use resource::constants::server::GRPC_CONNECTION_KEEPALIVE;
 
