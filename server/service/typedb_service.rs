@@ -5,16 +5,19 @@
  */
 
 use std::{net::SocketAddr, pin::Pin, sync::Arc};
+use std::time::Instant;
 
 use database::database_manager::DatabaseManager;
 use error::typedb_error;
 use tokio::sync::mpsc::channel;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
+use tracing::{event, Level};
 use typedb_protocol::{
     self,
     transaction::{Client, Server},
 };
+use typedb_protocol::server_manager::all::{Req, Res};
 use uuid::Uuid;
 
 use crate::service::{
@@ -27,6 +30,7 @@ use crate::service::{
     transaction_service::TransactionService,
     ConnectionID,
 };
+use crate::service::response_builders::server_manager::servers_all_res;
 
 #[derive(Debug)]
 pub(crate) struct TypeDBService {
@@ -55,19 +59,30 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::connection::open::Req>,
     ) -> Result<Response<typedb_protocol::connection::open::Res>, Status> {
+        let receive_time = Instant::now();
         let message = request.into_inner();
         if message.version != typedb_protocol::Version::Version as i32 {
-            return Err(ProtocolError::IncompatibleProtocolVersion {
+            let err = ProtocolError::IncompatibleProtocolVersion {
                 server_protocol_version: typedb_protocol::Version::Version as i32,
                 driver_protocol_version: message.version,
                 driver_lang: message.driver_lang.clone(),
                 driver_version: message.driver_version.clone(),
-            }
-            .into_status());
+            };
+            event!(Level::TRACE, "Rejected connection_open: {:?}", &err);
+            return Err(err.into_status());
         } else {
+            event!(Level::TRACE, "Successful connection_open");
             // generate a connection ID per 'connection_open' to be able to trace different connections by the same user
-            Ok(Response::new(connection_open_res(self.generate_connection_id())))
+            Ok(Response::new(connection_open_res(
+                self.generate_connection_id(),
+                receive_time,
+                database_all_res(&self.address, self.database_manager.database_names())
+            )))
         }
+    }
+
+    async fn servers_all(&self, _request: Request<Req>) -> Result<Response<Res>, Status> {
+        Ok(Response::new(servers_all_res(&self.address)))
     }
 
     async fn databases_get(
@@ -102,19 +117,8 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         request: Request<typedb_protocol::database_manager::create::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::create::Res>, Status> {
         let message = request.into_inner();
-        self.database_manager.create_database(message.name);
-        Ok(Response::new(database_create_res()))
-    }
-
-    async fn database_delete(
-        &self,
-        request: Request<typedb_protocol::database::delete::Req>,
-    ) -> Result<Response<typedb_protocol::database::delete::Res>, Status> {
-        let message = request.into_inner();
-        self.database_manager
-            .delete_database(message.name)
-            .map(|_| Response::new(database_delete_res()))
-            .map_err(|err| err.into_error_message().into_status())
+        self.database_manager.create_database(message.name.clone());
+        Ok(Response::new(database_create_res(message.name, &self.address)))
     }
 
     async fn database_schema(
@@ -135,6 +139,17 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             .into_status())
     }
 
+    async fn database_delete(
+        &self,
+        request: Request<typedb_protocol::database::delete::Req>,
+    ) -> Result<Response<typedb_protocol::database::delete::Res>, Status> {
+        let message = request.into_inner();
+        self.database_manager
+            .delete_database(message.name)
+            .map(|_| Response::new(database_delete_res()))
+            .map_err(|err| err.into_error_message().into_status())
+    }
+
     type transactionStream = Pin<Box<ReceiverStream<Result<typedb_protocol::transaction::Server, tonic::Status>>>>;
 
     async fn transaction(
@@ -151,7 +166,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
 }
 
 typedb_error!(
-    ServiceError(domain="Service", prefix = "SRV") {
+    ServiceError(component = "Server", prefix = "SRV") {
         Unimplemented(1, "Not implemented: {description}", description: String),
         DatabaseDoesNotExist(2, "Database '{name}' does not exist.", name: String),
     }

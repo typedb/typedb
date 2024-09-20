@@ -5,31 +5,18 @@
  */
 
 use std::{
-    error::Error,
-    fmt::{Display, Formatter},
+    fmt::Display,
 };
 
 use concept::error::ConceptWriteError;
+use error::typedb_error;
 
 pub mod delete;
 pub mod insert;
 pub(crate) mod write_instruction;
 
-#[derive(Debug, Clone)]
-pub enum WriteError {
-    ConceptWrite { source: ConceptWriteError },
-}
-
-impl Display for WriteError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
+typedb_error!(
+    pub WriteError(component = "Write execution", prefix = "WEX") {
+        ConceptWrite(1, "Write execution failed due to a concept write error.", (typedb_source : ConceptWriteError)),
     }
-}
-
-impl Error for WriteError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::ConceptWrite { source, .. } => Some(source),
-        }
-    }
-}
+);

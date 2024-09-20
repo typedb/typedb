@@ -8,6 +8,7 @@ use std::{
     collections::{BTreeMap, HashMap},
     fmt::{Debug, Display, Formatter},
 };
+use bytes::byte_reference::ByteReference;
 
 use bytes::Bytes;
 use encoding::{
@@ -122,6 +123,13 @@ impl<'a> ThingAPI<'a> for Object<'a> {
         }
     }
 
+    fn iid(&self) -> ByteReference<'_> {
+        match self {
+            Object::Entity(entity) => entity.iid(),
+            Object::Relation(relation) => relation.iid(),
+        }
+    }
+
     fn set_required(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -229,7 +237,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         attribute: Attribute<'_>,
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_owner_exists_to_set_has(snapshot, thing_manager, self)
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         OperationTimeValidation::validate_object_type_owns_attribute_type(
             snapshot,
@@ -237,7 +245,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             self.type_(),
             attribute.type_(),
         )
-        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         let owns = self.type_().try_get_owns_attribute(snapshot, thing_manager.type_manager(), attribute.type_())?;
         match owns.get_ordering(snapshot, thing_manager.type_manager())? {
@@ -246,7 +254,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         }
 
         OperationTimeValidation::validate_owns_is_not_abstract(snapshot, thing_manager, self, attribute.type_())
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         thing_manager.set_has_unordered(snapshot, self, attribute.as_reference())
     }
@@ -258,7 +266,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         attribute: Attribute<'_>,
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_owner_exists_to_unset_has(snapshot, thing_manager, self)
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         OperationTimeValidation::validate_object_type_owns_attribute_type(
             snapshot,
@@ -266,7 +274,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             self.type_(),
             attribute.type_(),
         )
-        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         let owns = self.type_().try_get_owns_attribute(snapshot, thing_manager.type_manager(), attribute.type_())?;
         match owns.get_ordering(snapshot, thing_manager.type_manager())? {
@@ -286,7 +294,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         new_attributes: Vec<Attribute<'_>>,
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_owner_exists_to_set_has(snapshot, thing_manager, self)
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         OperationTimeValidation::validate_object_type_owns_attribute_type(
             snapshot,
@@ -294,7 +302,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             self.type_(),
             attribute_type.clone(),
         )
-        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         let owns =
             self.type_().try_get_owns_attribute(snapshot, thing_manager.type_manager(), attribute_type.clone())?;
@@ -304,7 +312,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         }
 
         OperationTimeValidation::validate_owns_is_not_abstract(snapshot, thing_manager, self, attribute_type.clone())
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         let mut new_counts = BTreeMap::<_, u64>::new();
         for attr in &new_attributes {
@@ -318,7 +326,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             attribute_type.clone(),
             &new_counts,
         )
-        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         // 1. get owned list
         let old_attributes =
@@ -351,7 +359,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_owner_exists_to_unset_has(snapshot, thing_manager, self)
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         OperationTimeValidation::validate_object_type_owns_attribute_type(
             snapshot,
@@ -359,7 +367,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             self.type_(),
             attribute_type.clone(),
         )
-        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         let owns =
             self.type_().try_get_owns_attribute(snapshot, thing_manager.type_manager(), attribute_type.clone())?;

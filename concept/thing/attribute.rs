@@ -131,6 +131,10 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         Attribute::new(self.vertex.into_owned())
     }
 
+    fn iid(&self) -> ByteReference<'_> {
+        self.vertex.bytes()
+    }
+
     fn set_required(
         &self,
         snapshot: &mut impl WritableSnapshot,

@@ -105,7 +105,7 @@ fn g0_update_conflicts_fail() {
 
     let result_2 = snapshot_2.commit();
     assert!(
-        matches!(result_2, Err(SnapshotError::Commit { source: StorageCommitError::Isolation { .. }, .. }, ..)),
+        matches!(result_2, Err(SnapshotError::Commit { typedb_source: StorageCommitError::Isolation { .. }, .. }, ..)),
         "{:?}",
         result_2
     );
@@ -655,11 +655,11 @@ fn isolation_manager_reads_evicted_from_disk() {
             matches!(
                 snapshot_conflicts_result,
                 Err(SnapshotError::Commit {
-                    source: StorageCommitError::Isolation { conflict: IsolationConflict::RequireDeletedKey, .. },
+                    typedb_source: StorageCommitError::Isolation { conflict: IsolationConflict::RequireDeletedKey, .. },
                     ..
                 })
             ),
-            "{}",
+            "{:?}",
             snapshot_conflicts_result.unwrap_err()
         );
     }

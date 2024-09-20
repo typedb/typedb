@@ -13,6 +13,7 @@ use uuid::Uuid;
 
 // Errors caused by incorrect implementation or usage of the network protocol.
 // Note: NOT a typedb_error!(), since we want go directly to Status
+#[derive(Debug)]
 pub(crate) enum ProtocolError {
     MissingField {
         name: &'static str,
@@ -88,16 +89,17 @@ impl<T: TypeDBError + Send> IntoProtocolErrorMessage for T {
     fn into_error_message(self) -> typedb_protocol::Error {
         let root_source = self.root_source_typedb_error();
         let code = root_source.code();
-        let domain = root_source.domain();
+        let component = root_source.component();
 
         let mut stack_trace = Vec::with_capacity(4); // definitely non-zero!
         let mut error: &dyn TypeDBError = &self;
-        stack_trace.push(error.format_description());
+        stack_trace.push(error.format_code_and_description());
         while let Some(source) = error.source_typedb_error() {
             error = source;
-            stack_trace.push(error.format_description());
+            stack_trace.push(error.format_code_and_description());
         }
-        typedb_protocol::Error { error_code: code.to_string(), domain: domain.to_string(), stack_trace }
+        stack_trace.reverse();
+        typedb_protocol::Error { error_code: code.to_string(), domain: component.to_string(), stack_trace }
     }
 }
 

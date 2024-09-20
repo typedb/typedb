@@ -60,12 +60,12 @@ pub trait StageIterator:
 }
 
 typedb_error!(
-    pub PipelineExecutionError(domain = "Executor", prefix = "EXE") {
+    pub PipelineExecutionError(component = "Pipeline execution", prefix = "PEX") {
         // TODO: migrate to `typedb_error` once they are typedb errors
         Interrupted(1, "Query was interrupted."),
         ConceptRead(2, "Error reading concept.", ( source: ConceptReadError )),
         InitialisingMatchIterator(3, "Error initialising Match clause iterator.", ( source: ConceptReadError )),
-        WriteError(4, "Error executing write operation.", ( source: WriteError )),
+        WriteError(4, "Error executing write operation.", ( typedb_source: WriteError )),
         ReadPatternExecution(5, "Error executing a read pattern.", ( typedb_source : ReadExecutionError )),
     }
 );

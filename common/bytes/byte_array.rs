@@ -287,7 +287,7 @@ impl<const BYTES: usize> fmt::Debug for ByteArrayInline<BYTES> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct(&format!("ByteArrayInline<{BYTES}>"))
             .field("length", &self.length)
-            .field("data", &HexBytesFormatter(self.bytes()))
+            .field("data", &HexBytesFormatter::borrowed(self.bytes()))
             .finish()
     }
 }
@@ -373,7 +373,7 @@ impl fmt::Debug for ByteArrayBoxed {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ByteArrayBoxed")
             .field("length", &self.length)
-            .field("data", &HexBytesFormatter(self.bytes()))
+            .field("data", &HexBytesFormatter::borrowed(self.bytes()))
             .finish()
     }
 }

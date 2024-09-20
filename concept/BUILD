@@ -27,6 +27,7 @@ rust_library(
     ]),
     deps = [
         "//common/bytes",
+        "//common/error",
         "//common/iterator",
         "//common/lending_iterator",
         "//common/primitive",

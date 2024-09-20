@@ -30,7 +30,7 @@ pub mod translation;
 
 // TODO: include declaration source for each error message
 typedb_error!(
-    pub PatternDefinitionError(domain = "Representation", prefix = "PRP") {
+    pub PatternDefinitionError(component = "Pattern representation", prefix = "PRP") {
         DisjointVariableReuse(
             0,
             "Variable '{name}' is re-used across different branches of the query. Variables that do not represent the same concept must be named uniquely, to prevent clashes within answers.",

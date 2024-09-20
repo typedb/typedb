@@ -565,7 +565,7 @@ impl Annotation {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub enum AnnotationCategory {
     Abstract,
     Distinct,
@@ -626,6 +626,34 @@ impl AnnotationCategory {
             | AnnotationCategory::Range
             | AnnotationCategory::Values => true,
         }
+    }
+
+    pub fn name(&self) -> &'static str {
+        // TODO: use TypeQL structures
+        match self {
+            AnnotationCategory::Abstract => "@abstract",
+            AnnotationCategory::Distinct => "@distinct",
+            AnnotationCategory::Independent => "@independent",
+            AnnotationCategory::Unique => "@unique",
+            AnnotationCategory::Key => "@key",
+            AnnotationCategory::Cardinality => "@card",
+            AnnotationCategory::Regex => "@regex",
+            AnnotationCategory::Cascade => "@cascade",
+            AnnotationCategory::Range => "@range",
+            AnnotationCategory::Values => "@values",
+        }
+    }
+}
+
+impl fmt::Display for AnnotationCategory {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
+    }
+}
+
+impl fmt::Debug for AnnotationCategory {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.name())
     }
 }
 

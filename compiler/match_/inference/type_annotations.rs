@@ -135,14 +135,20 @@ impl LeftRightFilteredAnnotations {
         let mut filters_on_left = BTreeMap::new();
         for (relation, role_set) in relation_to_role {
             for role in &role_set {
-                left_to_right.insert(relation.clone(), role_to_player.remove(role).unwrap().into_iter().collect());
+                left_to_right.insert(
+                    relation.clone(),
+                    role_to_player.get(role).unwrap().iter().map(|type_| type_.clone()).collect(),
+                );
             }
             filters_on_left.insert(relation, role_set.into_iter().collect());
         }
 
         for (player, role_set) in player_to_role {
             for role in &role_set {
-                right_to_left.insert(player.clone(), role_to_relation.remove(role).unwrap().into_iter().collect());
+                right_to_left.insert(
+                    player.clone(),
+                    role_to_relation.get(role).unwrap().iter().map(|type_| type_.clone()).collect(),
+                );
             }
             filters_on_right.insert(player, role_set.into_iter().collect());
         }

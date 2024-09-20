@@ -7,6 +7,7 @@
 use std::{error::Error, fmt, iter::empty, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
+use error::{typedb_error, TypeDBError};
 use lending_iterator::LendingIterator;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
@@ -368,7 +369,7 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
         } else {
             match self.storage.clone().snapshot_commit(self) {
                 Ok(sequence_number) => Ok(Some(sequence_number)),
-                Err(error) => Err(SnapshotError::Commit { source: error }),
+                Err(error) => Err(SnapshotError::Commit { typedb_source: error }),
             }
         }
     }
@@ -500,7 +501,7 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
         } else {
             match self.storage.clone().snapshot_commit(self) {
                 Ok(sequence_number) => Ok(Some(sequence_number)),
-                Err(error) => Err(SnapshotError::Commit { source: error }),
+                Err(error) => Err(SnapshotError::Commit { typedb_source: error }),
             }
         }
     }
@@ -510,28 +511,11 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum SnapshotError {
-    Commit { source: StorageCommitError },
-}
-
-impl fmt::Display for SnapshotError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &self {
-            Self::Commit { source, .. } => {
-                write!(f, "SnapshotError::Commit caused by: {}", source)
-            }
-        }
+typedb_error!(
+    pub SnapshotError(component = "Snapshot error", prefix = "SST") {
+        Commit(1, "Snapshot commit failed due to storage commit error.", (typedb_source : StorageCommitError )),
     }
-}
-
-impl Error for SnapshotError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::Commit { source, .. } => Some(source),
-        }
-    }
-}
+);
 
 #[derive(Debug, Clone)]
 pub enum SnapshotGetError {

@@ -16,6 +16,7 @@ use concept::{
         role_type::RoleType, type_manager::TypeManager, KindAPI, TypeAPI,
     },
 };
+use concept::thing::ThingAPI;
 use encoding::value::{value::Value, value_type::ValueType};
 use executor::row::MaybeOwnedRow;
 use storage::snapshot::ReadableSnapshot;
@@ -26,53 +27,58 @@ pub(crate) fn encode_row(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
-) -> Result<typedb_protocol::AnswerRow, ConceptReadError> {
+) -> Result<typedb_protocol::ConceptRow, ConceptReadError> {
     let mut encoded_row = Vec::with_capacity(columns.len());
     for (_, position) in columns {
         let variable_value = row.get(*position);
-        let encoded_value = encode_variable_value(variable_value, snapshot, type_manager, thing_manager, false)?;
-        encoded_row.push(encoded_value);
+        let row_entry = encode_row_entry(variable_value, snapshot, type_manager, thing_manager)?;
+        encoded_row.push(typedb_protocol::RowEntry { entry: Some(row_entry)});
     }
-    Ok(typedb_protocol::AnswerRow { row: encoded_row })
+    Ok(typedb_protocol::ConceptRow { row: encoded_row })
 }
 
-pub(crate) fn encode_variable_value(
+pub(crate) fn encode_row_entry(
     variable_value: &VariableValue<'_>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
-    include_thing_types: bool,
-) -> Result<typedb_protocol::Answer, ConceptReadError> {
-    // let answer = let
+) -> Result<typedb_protocol::row_entry::Entry, ConceptReadError> {
     match variable_value {
-        VariableValue::Empty => typedb_protocol::answer::Answer::Empty(typedb_protocol::answer::Empty {}),
+        VariableValue::Empty => {
+            Ok(typedb_protocol::row_entry::Entry::Empty(typedb_protocol::row_entry::Empty {}))
+        },
         VariableValue::Type(type_) => {
-            typedb_protocol::answer::Answer::Concept(encode_type_concept(type_, snapshot, type_manager)?)
+            Ok(typedb_protocol::row_entry::Entry::Concept(encode_type_concept(type_, snapshot, type_manager)?))
         }
-        VariableValue::Thing(thing) => typedb_protocol::answer::Answer::Concept(encode_thing_concept(
-            thing,
-            snapshot,
-            type_manager,
-            thing_manager,
-            include_thing_types,
-        )?),
-        VariableValue::Value(value) => typedb_protocol::answer::Answer::Value(encode_value(value.as_reference())),
+        VariableValue::Thing(thing) => {
+            Ok(typedb_protocol::row_entry::Entry::Concept(
+                encode_thing_concept(
+                    thing,
+                    snapshot,
+                    type_manager,
+                    thing_manager,
+                    true,
+                )?
+            ))
+        },
+        VariableValue::Value(value) => {
+            Ok(typedb_protocol::row_entry::Entry::Value(encode_value(value.as_reference())))
+        }
         VariableValue::ThingList(thing_list) => {
             let mut encoded = Vec::with_capacity(thing_list.len());
             for thing in thing_list.iter() {
-                encoded.push(encode_thing_concept(thing, snapshot, type_manager, thing_manager, include_thing_types)?);
+                encoded.push(encode_thing_concept(thing, snapshot, type_manager, thing_manager, true)?);
             }
-            typedb_protocol::answer::Answer::ConceptList(typedb_protocol::answer::ConceptList { concepts: encoded })
+            Ok(typedb_protocol::row_entry::Entry::ConceptList(typedb_protocol::row_entry::ConceptList { concepts: encoded }))
         }
         VariableValue::ValueList(value_list) => {
             let mut encoded = Vec::with_capacity(value_list.len());
             for value in value_list.iter() {
                 encoded.push(encode_value(value.as_reference()))
             }
-            typedb_protocol::answer::Answer::ValueList(typedb_protocol::answer::ValueList { values: encoded })
+            Ok(typedb_protocol::row_entry::Entry::ValueList(typedb_protocol::row_entry::ValueList { values: encoded }))
         }
-    };
-    todo!()
+    }
 }
 
 fn encode_thing_concept(
@@ -140,13 +146,7 @@ fn encode_entity_type(
     type_manager: &TypeManager,
 ) -> Result<typedb_protocol::EntityType, ConceptReadError> {
     Ok(typedb_protocol::EntityType {
-        label: entity.get_label(snapshot, type_manager)?.scoped_name().to_string(),
-        annotations: encode_annotations(
-            entity
-                .get_annotations_declared(snapshot, type_manager)?
-                .iter()
-                .map(|annotation| Annotation::from(annotation.clone())),
-        ),
+        label: entity.get_label(snapshot, type_manager)?.scoped_name().as_str().to_string(),
     })
 }
 
@@ -156,13 +156,7 @@ fn encode_relation_type(
     type_manager: &TypeManager,
 ) -> Result<typedb_protocol::RelationType, ConceptReadError> {
     Ok(typedb_protocol::RelationType {
-        label: relation.get_label(snapshot, type_manager)?.scoped_name().to_string(),
-        annotations: encode_annotations(
-            relation
-                .get_annotations_declared(snapshot, type_manager)?
-                .iter()
-                .map(|annotation| Annotation::from(annotation.clone())),
-        ),
+        label: relation.get_label(snapshot, type_manager)?.scoped_name().as_str().to_string(),
     })
 }
 
@@ -172,19 +166,13 @@ fn encode_attribute_type(
     type_manager: &TypeManager,
 ) -> Result<typedb_protocol::AttributeType, ConceptReadError> {
     Ok(typedb_protocol::AttributeType {
-        label: attribute.get_label(snapshot, type_manager)?.scoped_name().to_string(),
+        label: attribute.get_label(snapshot, type_manager)?.scoped_name().as_str().to_string(),
         value_type: {
             attribute
                 .get_value_type_without_source(snapshot, type_manager)?
                 .map(|value_type| encode_value_type(value_type, snapshot, type_manager))
                 .transpose()?
         },
-        annotations: encode_annotations(
-            attribute
-                .get_annotations_declared(snapshot, type_manager)?
-                .iter()
-                .map(|annotation| Annotation::from(annotation.clone())),
-        ),
     })
 }
 
@@ -194,18 +182,8 @@ fn encode_role_type(
     type_manager: &TypeManager,
 ) -> Result<typedb_protocol::RoleType, ConceptReadError> {
     Ok(typedb_protocol::RoleType {
-        name: role.get_label(snapshot, type_manager)?.name().to_string(),
-        scope: role.get_label(snapshot, type_manager)?.scope().expect("Role type must have a Scope.").to_string(),
-        annotations: encode_annotations(
-            role.get_annotations_declared(snapshot, type_manager)?
-                .iter()
-                .map(|annotation| Annotation::from(annotation.clone())),
-        ),
+        label: role.get_label(snapshot, type_manager)?.scoped_name().as_str().to_owned()
     })
-}
-
-fn encode_annotations(annotations: impl Iterator<Item = Annotation>) -> Vec<typedb_protocol::Annotation> {
-    todo!()
 }
 
 fn encode_value_type(

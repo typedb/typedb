@@ -17,7 +17,7 @@ use ir::{program::FunctionRepresentationError, PatternDefinitionError};
 use crate::{define::DefineError, redefine::RedefineError, undefine::UndefineError};
 
 typedb_error!(
-    pub QueryError(domain = "Query", prefix = "QRY") {
+    pub QueryError(component = "Query execution", prefix = "QEX") {
         // TODO: decide if we want to include whole query
         ParseError(1, "Failed to parse TypeQL query.", query: String, ( typedb_source: typeql::Error )),
         Define(2, "Failed to execute define query.", ( typedb_source: DefineError )),
@@ -32,6 +32,6 @@ typedb_error!(
         ExpressionCompilation(11, "Error while compiling expression.", ( source: ExpressionCompileError )),
         WritePipelineExecutionError(12, "Error while execution write pipeline.", ( typedb_source: PipelineExecutionError )),
         ReadPipelineExecutionError(13, "Error while executing read pipeline.", ( typedb_source: PipelineExecutionError )),
-        QueryExecutionClosedEarly(14, "Query execution was closed before it finished, possibly due to transaction close, rollback, or commit."),
+        QueryExecutionClosedEarly(14, "Query execution was closed before it finished, possibly due to transaction close, rollback, commit, or a server-side error (these should be visible in the server logs)."),
     }
 );

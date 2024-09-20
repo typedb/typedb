@@ -24,13 +24,13 @@ pub mod type_inference;
 mod type_seeder;
 
 typedb_error!(
-    pub FunctionTypeInferenceError(domain = "Inference", prefix = "FIN") {
+    pub FunctionTypeInferenceError(component = "Function type inference", prefix = "FIN") {
         TypeInference(0, "Type inference error while type checking function '{name}'.", name: String, ( typedb_source : TypeInferenceError )),
     }
 );
 
 typedb_error!(
-    pub TypeInferenceError(domain="Inference", prefix = "TIN") {
+    pub TypeInferenceError(component = "Type inference", prefix = "INF") {
         ConceptRead(1, "Concept read error.", ( source: ConceptReadError )),
         LabelNotResolved(2, "Type label '{name}' not found.", name: String),
         RoleNameNotResolved(3, "Role label not found '{name}'.", name: String),
@@ -41,6 +41,7 @@ typedb_error!(
             left_type: String,
             right_type: String
         ),
+        DetectedUnsatisfiablePattern(5, "Type-inference derived an empty-set for some variable"),
     }
 );
 

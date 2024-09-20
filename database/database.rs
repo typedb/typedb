@@ -15,6 +15,7 @@ use std::{
     },
     time::Duration,
 };
+use tracing::{event, Level};
 
 use concept::{
     thing::statistics::{Statistics, StatisticsError},
@@ -187,7 +188,7 @@ impl Database<WALClient> {
 
         let storage = Arc::new(
             MVCCStorage::create::<EncodingKeyspace>(name, path, wal_client)
-                .map_err(|error| StorageOpen { source: error })?,
+                .map_err(|error| StorageOpen { typedb_source: error })?,
         );
         let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
@@ -197,7 +198,7 @@ impl Database<WALClient> {
 
         let type_cache = Arc::new(
             TypeCache::new(storage.clone(), SequenceNumber::MIN)
-                .map_err(|error| TypeCacheInitialise { source: error })?,
+                .map_err(|error| TypeCacheInitialise { typedb_source: error })?,
         );
 
         let function_cache = Arc::new(
@@ -233,6 +234,7 @@ impl Database<WALClient> {
             TypeCacheInitialise, WALOpen,
         };
         let name = name.as_ref();
+        event!(Level::TRACE, "Loading database '{}', at path '{:?}' (absolute path: '{:?}').", &name, path, std::path::absolute(path));
 
         let wal = WAL::load(path).map_err(|err| WALOpen { source: err })?;
         let wal_last_sequence_number = wal.previous();
@@ -241,10 +243,10 @@ impl Database<WALClient> {
         wal_client.register_record_type::<Statistics>();
 
         let checkpoint =
-            Checkpoint::open_latest(path).map_err(|err| CheckpointLoad { name: name.to_string(), source: err })?;
+            Checkpoint::open_latest(path).map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?;
         let storage = Arc::new(
             MVCCStorage::load::<EncodingKeyspace>(&name, path, wal_client, &checkpoint)
-                .map_err(|error| StorageOpen { source: error })?,
+                .map_err(|error| StorageOpen { typedb_source: error })?,
         );
         let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
@@ -254,14 +256,14 @@ impl Database<WALClient> {
         let mut thing_statistics = storage
             .durability()
             .find_last_unsequenced_type::<Statistics>()
-            .map_err(|err| DurabilityClientRead { source: err })?
+            .map_err(|err| DurabilityClientRead { typedb_source: err })?
             .unwrap_or_else(|| Statistics::new(SequenceNumber::MIN));
-        thing_statistics.may_synchronise(&storage).map_err(|err| StatisticsInitialise { source: err })?;
+        thing_statistics.may_synchronise(&storage).map_err(|err| StatisticsInitialise { typedb_source: err })?;
         let thing_statistics = Arc::new(thing_statistics);
 
         let type_cache = Arc::new(
             TypeCache::new(storage.clone(), wal_last_sequence_number)
-                .map_err(|error| TypeCacheInitialise { source: error })?,
+                .map_err(|error| TypeCacheInitialise { typedb_source: error })?,
         );
 
         let function_cache = Arc::new(
@@ -290,11 +292,13 @@ impl Database<WALClient> {
             _statistics_updater: IntervalRunner::new(update_statistics, Self::STATISTICS_UPDATE_INTERVAL),
         };
 
-        let checkpoint_sequence_number = checkpoint
-            .as_ref()
-            .unwrap()
-            .read_sequence_number()
-            .map_err(|err| CheckpointLoad { name: name.to_string(), source: err })?;
+        let checkpoint_sequence_number = match checkpoint {
+            None => SequenceNumber::MIN,
+            Some(checkpoint) => {
+                checkpoint.read_sequence_number()
+                    .map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?
+            }
+        };
         if checkpoint_sequence_number < wal_last_sequence_number {
             database.checkpoint().map_err(|err| CheckpointCreate { name: name.to_string(), source: err })?;
         }
@@ -327,7 +331,7 @@ impl Database<WALClient> {
         Arc::into_inner(self.storage)
             .expect("Cannot get exclusive ownership of inner of Arc<MVCCStorage>.")
             .delete_storage()
-            .map_err(|err| DatabaseDeleteError::StorageDelete { source: err })?;
+            .map_err(|err| DatabaseDeleteError::StorageDelete { typedb_source: err })?;
         let path = self.path;
         fs::remove_dir_all(path).map_err(|err| DatabaseDeleteError::DirectoryDelete { source: Arc::new(err) })?;
         Ok(())
@@ -341,7 +345,7 @@ impl Database<WALClient> {
 
         match Arc::get_mut(&mut self.storage) {
             None => return Err(DatabaseResetError::StorageInUse {}),
-            Some(storage) => storage.reset().map_err(|err| CorruptionPartialResetStorageInUse { source: err })?,
+            Some(storage) => storage.reset().map_err(|err| CorruptionPartialResetStorageInUse { typedb_source: err })?,
         }
         match Arc::get_mut(&mut self.definition_key_generator) {
             None => return Err(CorruptionPartialResetKeyGeneratorInUse {}),
@@ -378,39 +382,39 @@ fn make_update_statistics_fn(
 }
 
 typedb_error!(
-    pub DatabaseOpenError(domain="Database", prefix = "DBO") {
+    pub DatabaseOpenError(component = "Database open", prefix = "DBO") {
         InvalidUnicodeName(1, "Could not open database, invalid unicode name '{name:?}'.", name: OsString ),
         CouldNotReadDataDirectory(2, "error while reading data directory at '{path:?}'.", path: PathBuf, ( source: Arc<io::Error> )),
         DirectoryCreate(3, "Error creating directory at '{path:?}'", path: PathBuf, ( source: Arc<io::Error> )),
-        StorageOpen(4, "Error opening storage layer.", ( source: StorageOpenError )),
+        StorageOpen(4, "Error opening storage layer.", ( typedb_source: StorageOpenError )),
         WALOpen(5, "Error opening WAL.", ( source: WALError )),
-        DurabilityClientOpen(6, "Error opening durability client.", ( source: DurabilityClientError )),
-        DurabilityClientRead(7, "Error reading from durability client.", ( source: DurabilityClientError )),
-        CheckpointLoad(8, "Error loading checkpoint for database '{name}'.", name: String, ( source: CheckpointLoadError )),
+        DurabilityClientOpen(6, "Error opening durability client.", ( typedb_source:DurabilityClientError )),
+        DurabilityClientRead(7, "Error reading from durability client.", ( typedb_source: DurabilityClientError )),
+        CheckpointLoad(8, "Error loading checkpoint for database '{name}'.", name: String, ( typedb_source: CheckpointLoadError )),
         CheckpointCreate(9, "Error creating checkpoint for database '{name}'.", name: String, ( source: CheckpointCreateError )),
         Encoding(10, "Data encoding error.", ( source: EncodingError )),
-        StatisticsInitialise(11, "Error initialising statistics manager.", ( source: StatisticsError )),
-        TypeCacheInitialise(12, "Error initialising type cache.", ( source: TypeCacheCreateError )),
+        StatisticsInitialise(11, "Error initialising statistics manager.", ( typedb_source: StatisticsError )),
+        TypeCacheInitialise(12, "Error initialising type cache.", ( typedb_source : TypeCacheCreateError )),
         FunctionCacheInitialise(13, "Error initialising function cache", ( typedb_source : FunctionError )),
     }
 );
 
 typedb_error!(
-    pub DatabaseDeleteError(domain = "Database", prefix = "DBD") {
+    pub DatabaseDeleteError(component = "Database delete", prefix = "DBD") {
         InUse(1, "Cannot delete database since it is in use."),
-        StorageDelete(2, "Error while deleting storage resources.", ( source: StorageDeleteError )),
+        StorageDelete(2, "Error while deleting storage resources.", ( typedb_source: StorageDeleteError )),
         DirectoryDelete(3, "Error deleting directory.", ( source: Arc<io::Error> )),
     }
 );
 
 typedb_error!(
-    pub DatabaseResetError(domain = "Database", prefix = "DBR") {
+    pub DatabaseResetError(component = "Database reset", prefix = "DBR") {
         InUse(1, "Database cannot be reset since it is in use."),
         StorageInUse(2, "Database cannot be reset since the storage is in use."),
         CorruptionPartialResetStorageInUse(
             3,
             "Corruption warning: database reset failed partway because the storage is still in use.",
-            ( source: StorageResetError )
+            ( typedb_source: StorageResetError )
         ),
         CorruptionPartialResetKeyGeneratorInUse(
             4,

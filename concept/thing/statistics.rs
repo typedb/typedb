@@ -24,12 +24,13 @@ use encoding::graph::{
     Typed,
 };
 use serde::{Deserialize, Serialize};
+use error::typedb_error;
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord, UnsequencedDurabilityRecord},
     isolation_manager::CommitType,
     iterator::MVCCReadError,
     key_value::StorageKeyReference,
-    recovery::commit_replay::{load_commit_data_from, CommitRecoveryError, RecoveryCommitStatus},
+    recovery::commit_recovery::{load_commit_data_from, StorageRecoveryError, RecoveryCommitStatus},
     sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, write::Write},
     MVCCStorage,
@@ -50,7 +51,6 @@ type StatisticsEncodingVersion = u64;
 /// Invariant: all undefined types are
 #[derive(Debug, Clone)]
 pub struct Statistics {
-    #[allow(unused)]
     encoding_version: StatisticsEncodingVersion,
     pub sequence_number: SequenceNumber,
 
@@ -76,7 +76,7 @@ pub struct Statistics {
         HashMap<ObjectType<'static>, HashMap<RoleType<'static>, HashMap<RelationType<'static>, u64>>>,
 
     // TODO: adding role types is possible, but won't help with filtering before reading storage since roles are not in the prefix
-    pub player_index_counts: HashMap<ObjectType<'static>, HashMap<ObjectType<'static>, u64>>,
+    pub links_index_counts: HashMap<ObjectType<'static>, HashMap<ObjectType<'static>, u64>>,
     // future: attribute value distributions, attribute value ownership distributions, etc.
 }
 
@@ -103,7 +103,7 @@ impl Statistics {
             relation_role_counts: HashMap::new(),
             relation_role_player_counts: HashMap::new(),
             player_role_relation_counts: HashMap::new(),
-            player_index_counts: HashMap::new(),
+            links_index_counts: HashMap::new(),
         }
     }
 
@@ -118,7 +118,7 @@ impl Statistics {
 
         let mut data_commits = BTreeMap::new();
         for (seq, status) in load_commit_data_from(self.sequence_number.next(), storage.durability())
-            .map_err(|err| ReloadCommitData { source: err })?
+            .map_err(|err| ReloadCommitData { typedb_source: err })?
             .into_iter()
         {
             if let RecoveryCommitStatus::Validated(record) = status {
@@ -156,7 +156,7 @@ impl Statistics {
 
     pub fn durably_write(&mut self, storage: &MVCCStorage<impl DurabilityClient>) -> Result<(), StatisticsError> {
         use StatisticsError::DurablyWrite;
-        storage.durability().unsequenced_write(self).map_err(|err| DurablyWrite { source: err })?;
+        storage.durability().unsequenced_write(self).map_err(|err| DurablyWrite { typedb_source: err })?;
         Ok(())
     }
 
@@ -266,11 +266,11 @@ impl Statistics {
 
         self.role_player_counts.remove(&object_type);
 
-        self.player_index_counts.remove(&object_type);
-        for map in self.player_index_counts.values_mut() {
+        self.links_index_counts.remove(&object_type);
+        for map in self.links_index_counts.values_mut() {
             map.remove(&object_type);
         }
-        self.player_index_counts.retain(|_, map| !map.is_empty());
+        self.links_index_counts.retain(|_, map| !map.is_empty());
     }
 
     fn update_entities(&mut self, entity_type: EntityType<'static>, delta: i64) {
@@ -346,7 +346,7 @@ impl Statistics {
         delta: i64,
     ) {
         let player_1_to_2_index_count = self
-            .player_index_counts
+            .links_index_counts
             .entry(player_1_type.clone())
             .or_default()
             .entry(player_2_type.clone())
@@ -354,7 +354,7 @@ impl Statistics {
         *player_1_to_2_index_count = player_1_to_2_index_count.checked_add_signed(delta).unwrap();
         if player_1_type != player_2_type {
             let player_2_to_1_index_count =
-                self.player_index_counts.entry(player_2_type).or_default().entry(player_1_type).or_default();
+                self.links_index_counts.entry(player_2_type).or_default().entry(player_1_type).or_default();
             *player_2_to_1_index_count = player_2_to_1_index_count.checked_add_signed(delta).unwrap();
         }
     }
@@ -375,7 +375,7 @@ impl Statistics {
         self.attribute_owner_counts.clear();
         self.role_player_counts.clear();
         self.relation_role_counts.clear();
-        self.player_index_counts.clear();
+        self.links_index_counts.clear();
     }
 }
 
@@ -443,28 +443,13 @@ struct CommittedWrites {
     operations: OperationsBuffer,
 }
 
-#[derive(Debug, Clone)]
-pub enum StatisticsError {
-    DurablyWrite { source: DurabilityClientError },
-    ReloadCommitData { source: CommitRecoveryError },
-    DataRead { source: MVCCReadError },
-}
-
-impl fmt::Display for StatisticsError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+typedb_error!(
+    pub StatisticsError(component = "Statistics", prefix = "STA") {
+        DurablyWrite(1, "Error writing statistics summary WAL record.", ( typedb_source : DurabilityClientError )),
+        ReloadCommitData(2, "Failed to update statistics due to error reading commit records.", ( typedb_source: StorageRecoveryError )),
+        DataRead(3, "Error updating statistics due error reading MVCC storage layer.", ( source: MVCCReadError )),
     }
-}
-
-impl Error for StatisticsError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::DurablyWrite { source } => Some(source),
-            Self::ReloadCommitData { source } => Some(source),
-            Self::DataRead { source } => Some(source),
-        }
-    }
-}
+);
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
 enum SerialisableType {
@@ -605,8 +590,8 @@ mod serialise {
         RolePlayerCounts,
         RelationRoleCounts,
         RelationRolePlayerCounts,
-        RolePlayerRelationCounts,
-        PlayerIndexCounts,
+        PlayerRoleRelationCounts,
+        LinksIndexCounts,
     }
 
     impl Field {
@@ -628,8 +613,8 @@ mod serialise {
             Self::RolePlayerCounts.name(),
             Self::RelationRoleCounts.name(),
             Self::RelationRolePlayerCounts.name(),
-            Self::RolePlayerRelationCounts.name(),
-            Self::PlayerIndexCounts.name(),
+            Self::PlayerRoleRelationCounts.name(),
+            Self::LinksIndexCounts.name(),
         ];
 
         const fn name(&self) -> &str {
@@ -651,8 +636,8 @@ mod serialise {
                 Field::RolePlayerCounts => "RolePlayerCounts",
                 Field::RelationRoleCounts => "RelationRoleCounts",
                 Field::RelationRolePlayerCounts => "RelationRolePlayerCounts",
-                Field::RolePlayerRelationCounts => "RolePlayerRelationCounts",
-                Field::PlayerIndexCounts => "PlayerIndexCounts",
+                Field::PlayerRoleRelationCounts => "RolePlayerRelationCounts",
+                Field::LinksIndexCounts => "PlayerIndexCounts",
             }
         }
 
@@ -675,8 +660,8 @@ mod serialise {
                 "RolePlayerCounts" => Some(Field::RolePlayerCounts),
                 "RelationRoleCounts" => Some(Field::RelationRoleCounts),
                 "RelationRolePlayerCounts" => Some(Field::RelationRolePlayerCounts),
-                "RolePlayerRelationCounts" => Some(Field::RolePlayerRelationCounts),
-                "PlayerIndexCounts" => Some(Field::PlayerIndexCounts),
+                "RolePlayerRelationCounts" => Some(Field::PlayerRoleRelationCounts),
+                "PlayerIndexCounts" => Some(Field::LinksIndexCounts),
                 _ => None,
             }
         }
@@ -688,6 +673,7 @@ mod serialise {
             S: Serializer,
         {
             let mut state = serializer.serialize_struct("Statistics", Field::NAMES.len())?;
+            state.serialize_field(Field::StatisticsVersion.name(), &self.encoding_version)?;
 
             state.serialize_field(Field::OpenSequenceNumber.name(), &self.sequence_number)?;
 
@@ -713,8 +699,10 @@ mod serialise {
                 &to_serialisable_map_map(&self.attribute_owner_counts),
             )?;
 
-            state
-                .serialize_field(Field::RolePlayerCounts.name(), &to_serialisable_map_map(&self.role_player_counts))?;
+            state.serialize_field(
+                Field::RolePlayerCounts.name(),
+                &to_serialisable_map_map(&self.role_player_counts)
+            )?;
 
             state.serialize_field(
                 Field::RelationRoleCounts.name(),
@@ -727,13 +715,13 @@ mod serialise {
             )?;
 
             state.serialize_field(
-                Field::RolePlayerRelationCounts.name(),
+                Field::PlayerRoleRelationCounts.name(),
                 &to_serialisable_map_map_map(&self.player_role_relation_counts),
             )?;
 
             state.serialize_field(
-                Field::PlayerIndexCounts.name(),
-                &to_serialisable_map_map(&self.player_index_counts),
+                Field::LinksIndexCounts.name(),
+                &to_serialisable_map_map(&self.links_index_counts),
             )?;
 
             state.end()
@@ -903,9 +891,9 @@ mod serialise {
                             )
                         })
                         .collect();
-                    let encoded_player_index_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
+                    let encoded_links_index_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
                         seq.next_element()?.ok_or_else(|| de::Error::invalid_length(18, &self))?;
-                    let player_index_counts = encoded_player_index_counts
+                    let links_index_counts = encoded_links_index_counts
                         .into_iter()
                         .map(|(type_1, map)| (type_1.into_object_type(), into_object_map(map)))
                         .collect();
@@ -928,7 +916,7 @@ mod serialise {
                         relation_role_counts,
                         relation_role_player_counts,
                         player_role_relation_counts,
-                        player_index_counts,
+                        links_index_counts,
                     })
                 }
 
@@ -954,7 +942,7 @@ mod serialise {
                     let mut relation_role_counts = None;
                     let mut relation_role_player_counts = None;
                     let mut player_role_relation_counts = None;
-                    let mut player_index_counts = None;
+                    let mut links_indexs_counts = None;
                     while let Some(key) = map.next_key()? {
                         match key {
                             Field::StatisticsVersion => {
@@ -1105,9 +1093,9 @@ mod serialise {
                                         .collect(),
                                 );
                             }
-                            Field::RolePlayerRelationCounts => {
+                            Field::PlayerRoleRelationCounts => {
                                 if relation_role_counts.is_some() {
-                                    return Err(de::Error::duplicate_field(Field::RolePlayerRelationCounts.name()));
+                                    return Err(de::Error::duplicate_field(Field::PlayerRoleRelationCounts.name()));
                                 }
                                 let encoded: HashMap<
                                     SerialisableType,
@@ -1129,13 +1117,13 @@ mod serialise {
                                         .collect(),
                                 );
                             }
-                            Field::PlayerIndexCounts => {
-                                if player_index_counts.is_some() {
-                                    return Err(de::Error::duplicate_field(Field::PlayerIndexCounts.name()));
+                            Field::LinksIndexCounts => {
+                                if links_indexs_counts.is_some() {
+                                    return Err(de::Error::duplicate_field(Field::LinksIndexCounts.name()));
                                 }
                                 let encoded: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
                                     map.next_value()?;
-                                player_index_counts = Some(
+                                links_indexs_counts = Some(
                                     encoded
                                         .into_iter()
                                         .map(|(type_1, map)| (type_1.into_object_type(), into_object_map(map)))
@@ -1180,9 +1168,9 @@ mod serialise {
                         relation_role_player_counts: relation_role_player_counts
                             .ok_or_else(|| de::Error::missing_field(Field::RelationRolePlayerCounts.name()))?,
                         player_role_relation_counts: player_role_relation_counts
-                            .ok_or_else(|| de::Error::missing_field(Field::RolePlayerRelationCounts.name()))?,
-                        player_index_counts: player_index_counts
-                            .ok_or_else(|| de::Error::missing_field(Field::PlayerIndexCounts.name()))?,
+                            .ok_or_else(|| de::Error::missing_field(Field::PlayerRoleRelationCounts.name()))?,
+                        links_index_counts: links_indexs_counts
+                            .ok_or_else(|| de::Error::missing_field(Field::LinksIndexCounts.name()))?,
                     })
                 }
             }

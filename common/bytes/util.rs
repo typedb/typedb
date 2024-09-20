@@ -8,6 +8,8 @@ use std::{
     fmt::{self, Write},
     usize,
 };
+use std::borrow::Cow;
+use std::fmt::Formatter;
 
 // TODO: this needs to be optimised using bigger strides than a single byte!
 ///
@@ -56,13 +58,30 @@ impl fmt::Display for BytesError {
     }
 }
 
-pub struct HexBytesFormatter<'a>(pub &'a [u8]);
+#[derive(Clone)]
+pub struct HexBytesFormatter<'a>(Cow<'a, [u8]>);
+
+impl<'a> HexBytesFormatter<'a> {
+    pub fn owned(bytes: Vec<u8>) -> Self {
+        Self(Cow::Owned(bytes))
+    }
+
+    pub fn borrowed(bytes: &'a [u8]) -> Self {
+        Self(Cow::Borrowed(bytes))
+    }
+}
+
+impl fmt::Display for HexBytesFormatter<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
+    }
+}
 
 impl fmt::Debug for HexBytesFormatter<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         const GROUP: usize = 2;
         const BREAK: usize = 16;
-        f.write_char('[')?;
+        f.write_str("0x")?;
         if f.alternate() {
             f.write_str("\n    ")?;
         }

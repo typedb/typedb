@@ -74,12 +74,12 @@ impl Hkt for ByteReference<'static> {
 
 impl fmt::Debug for ByteReference<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("ByteReference").field(&HexBytesFormatter(self.bytes())).finish()
+        f.debug_tuple("ByteReference").field(&HexBytesFormatter::borrowed(self.bytes())).finish()
     }
 }
 
 impl<'a> Display for ByteReference<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", &HexBytesFormatter(self.bytes()))
+        write!(f, "{:?}", &HexBytesFormatter::borrowed(self.bytes()))
     }
 }

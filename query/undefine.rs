@@ -19,7 +19,7 @@ pub(crate) fn execute(
 }
 
 typedb_error!(
-    pub UndefineError(domain = "Undefine", prefix = "UDF") {
+    pub UndefineError(component = "Undefine execution", prefix = "UEX") {
         Unimplemented(1, "Unimplemented undefine functionality: {description}", description: String),
     }
 );

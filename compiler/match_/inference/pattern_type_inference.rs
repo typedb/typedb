@@ -39,7 +39,12 @@ pub(crate) fn infer_types_for_block<'graph>(
     let mut tig = TypeSeeder::new(snapshot, type_manager, schema_functions, local_function_cache, variable_registry)
         .seed_types(block.scope_context(), previous_stage_variable_annotations, block.conjunction())?;
     run_type_inference(&mut tig);
-    Ok(tig)
+    // TODO: Throw error when any set becomes empty happens, rather than waiting for the it to propagate
+    if tig.vertices.iter().any(|(var,types)| types.is_empty()) {
+        Err(TypeInferenceError::DetectedUnsatisfiablePattern {  } )
+    } else {
+        Ok(tig)
+    }
 }
 
 fn run_type_inference(tig: &mut TypeInferenceGraph<'_>) {

@@ -598,7 +598,13 @@ impl UnaryConstraint for RoleName<Variable> {
             .get_roles_by_name(seeder.snapshot, self.name())
             .map_err(|source| TypeInferenceError::ConceptRead { source })?;
         if let Some(role_types) = role_types_opt {
-            let annotations = role_types.iter().map(|t| TypeAnnotation::RoleType(t.clone())).collect::<BTreeSet<_>>();
+            let mut annotations = BTreeSet::new();
+            for role_type in &role_types {
+                annotations.insert(TypeAnnotation::RoleType(role_type.clone()));
+                let subtypes = role_type.get_subtypes_transitive(seeder.snapshot, seeder.type_manager)
+                    .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+                annotations.extend(subtypes.into_iter().map(|subtype| TypeAnnotation::RoleType(subtype.clone())));
+            }
             TypeSeeder::<Snapshot>::add_or_intersect(tig_vertices, self.left(), Cow::Owned(annotations));
             Ok(())
         } else {

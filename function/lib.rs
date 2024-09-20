@@ -16,7 +16,7 @@ pub mod function_cache;
 pub mod function_manager;
 
 typedb_error!(
-    pub FunctionError(domain = "Function", prefix = "FUN") {
+    pub FunctionError(component = "Function", prefix = "FUN") {
         FunctionNotFound(1, "Function was not found"),
         AllFunctionsTypeCheckFailure(2, "Type checking all functions currently defined failed.", ( typedb_source: FunctionTypeInferenceError )),
         CommittedFunctionsTypeCheck(3, "Type checking stored functions failed.", ( typedb_source: FunctionTypeInferenceError )),

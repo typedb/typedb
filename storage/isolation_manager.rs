@@ -18,6 +18,7 @@ use std::{
         Arc, OnceLock, RwLock,
     },
 };
+use std::fmt::{Display, Formatter};
 
 use durability::DurabilityRecordType;
 use logger::result::ResultExt;
@@ -320,6 +321,16 @@ pub enum IsolationConflict {
     DeletingRequiredKey,
     RequireDeletedKey,
     ExclusiveLock,
+}
+
+impl Display for IsolationConflict {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            IsolationConflict::DeletingRequiredKey => write!(f, "Transaction data a concurrent commit requires."),
+            IsolationConflict::RequireDeletedKey => write!(f, "Transaction uses data a concurrent commit deletes."),
+            IsolationConflict::ExclusiveLock => write!(f, "Transaction uses a lock held by a concurrent commit."),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

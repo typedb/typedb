@@ -45,7 +45,7 @@ macro_rules! assert_statistics_eq {
             relation_role_counts: lhs_relation_role_counts,
             relation_role_player_counts: lhs_relation_role_player_counts,
             player_role_relation_counts: lhs_player_role_relation_counts,
-            player_index_counts: lhs_player_index_counts,
+            links_index_counts: lhs_player_index_counts,
             ..
         } = $lhs;
         lhs_entity_counts.retain(|_, v| *v > 0);
@@ -70,7 +70,7 @@ macro_rules! assert_statistics_eq {
             relation_role_counts: rhs_relation_role_counts,
             relation_role_player_counts: rhs_relation_role_player_counts,
             player_role_relation_counts: rhs_player_role_relation_counts,
-            player_index_counts: rhs_player_index_counts,
+            links_index_counts: rhs_player_index_counts,
             ..
         } = $rhs;
         rhs_entity_counts.retain(|_, v| *v > 0);
@@ -186,7 +186,7 @@ fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: &ThingMa
                     continue;
                 }
                 *statistics
-                    .player_index_counts
+                    .links_index_counts
                     .entry(player_1.clone())
                     .or_default()
                     .entry(player_2.clone())

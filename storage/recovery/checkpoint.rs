@@ -17,12 +17,14 @@ use chrono::Utc;
 use itertools::Itertools;
 use same_file::is_same_file;
 
+use error::typedb_error;
+
 use crate::{
     durability_client::DurabilityClient,
-    keyspace::{KeyspaceCheckpointError, KeyspaceOpenError, KeyspaceSet, Keyspaces},
-    recovery::commit_replay::{apply_commits, load_commit_data_from, CommitRecoveryError},
-    sequence_number::SequenceNumber,
-    StorageCommitError,
+    keyspace::{KeyspaceCheckpointError, KeyspaceOpenError, Keyspaces, KeyspaceSet},
+    recovery::commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
+    sequence_number::SequenceNumber
+    ,
 };
 
 /// A checkpoint is a directory, which contains at least the storage checkpointing data: keyspaces + the watermark.
@@ -68,7 +70,7 @@ impl Checkpoint {
         Ok(())
     }
 
-    pub fn add_extension<T: CheckpointExtension>(&self, data: &T) -> Result<(), CheckpointCreateError> {
+    pub fn add_extension<T: CheckpointAdditionalData>(&self, data: &T) -> Result<(), CheckpointCreateError> {
         use CheckpointCreateError::{ExtensionDuplicate, ExtensionIO, ExtensionSerialise};
         let file_name = T::NAME;
         let path = self.directory.join(file_name);
@@ -114,20 +116,20 @@ impl Checkpoint {
         find_latest_checkpoint(&checkpoint_dir).map(|path| path.map(|p| Checkpoint { directory: p }))
     }
 
-    pub fn get_extension<T: CheckpointExtension>(&self) -> Result<T, CheckpointLoadError> {
-        use CheckpointLoadError::{ExtensionDeserialise, ExtensionIO, ExtensionNotFound};
+    pub fn get_additional_data<T: CheckpointAdditionalData>(&self) -> Result<T, CheckpointLoadError> {
+        use CheckpointLoadError::{AdditionalDataDeserialise, AdditionalDataIO, AdditionalDataNotFound};
 
         let file_name = T::NAME;
         let path = self.directory.join(file_name);
         if !path.exists() {
-            return Err(ExtensionNotFound { name: T::NAME.to_string() });
+            return Err(AdditionalDataNotFound { name: T::NAME.to_string() });
         }
 
         let mut file =
-            File::open(path).map_err(|err| ExtensionIO { name: T::NAME.to_string(), source: Arc::new(err) })?;
+            File::open(path).map_err(|err| AdditionalDataIO { name: T::NAME.to_string(), source: Arc::new(err) })?;
 
         let deserialised = T::deserialise_from(&mut file)
-            .map_err(|err| ExtensionDeserialise { name: T::NAME.to_string(), source: Arc::new(err) })?;
+            .map_err(|err| AdditionalDataDeserialise { name: T::NAME.to_string(), source: Arc::new(err) })?;
         Ok(deserialised)
     }
 
@@ -149,10 +151,10 @@ impl Checkpoint {
 
         let recovery_start = self.read_sequence_number()? + 1;
         let recovered_commits = load_commit_data_from(recovery_start, durability_client)
-            .map_err(|err| CommitRecoveryFailed { source: err })?;
+            .map_err(|err| CommitRecoveryFailed { typedb_source: err })?;
         let next_sequence_number = recovered_commits.keys().max().copied().unwrap_or(recovery_start - 1) + 1;
-        apply_commits(recovered_commits, durability_client, &keyspaces)
-            .map_err(|err| CommitRecoveryFailed { source: err })?;
+        apply_recovered(recovered_commits, durability_client, &keyspaces)
+            .map_err(|err| CommitRecoveryFailed { typedb_source: err })?;
         Ok((keyspaces, next_sequence_number))
     }
 
@@ -203,7 +205,7 @@ fn find_latest_checkpoint(checkpoint_dir: &Path) -> Result<Option<PathBuf>, Chec
         })
 }
 
-pub trait CheckpointExtension: Sized {
+pub trait CheckpointAdditionalData: Sized {
     const NAME: &'static str;
     fn serialise_into(&self, writer: &mut impl Write) -> bincode::Result<()>;
     fn deserialise_from(reader: &mut impl Read) -> bincode::Result<Self>;
@@ -251,41 +253,17 @@ impl Error for CheckpointCreateError {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum CheckpointLoadError {
-    CheckpointRead { dir: PathBuf, source: Arc<io::Error> },
-    MetadataRead { dir: PathBuf, source: Arc<io::Error> },
-    CheckpointNotFound { dir: PathBuf },
-    CommitRecoveryFailed { source: CommitRecoveryError },
-    CheckpointRestore { dir: PathBuf, source: Arc<io::Error> },
-    CommitPending { source: StorageCommitError },
-    KeyspaceOpen { source: KeyspaceOpenError },
+typedb_error!(
+    pub CheckpointLoadError(component = "Checkpoint load.", prefix = "CLO") {
+        CheckpointRead(1, "Error to reading checkpoint directory '{dir:?}'.", dir: PathBuf, ( source: Arc<io::Error> )),
+        MetadataRead(2, "Error reading checkpoint metadata file in directory '{dir:?}.", dir: PathBuf, ( source: Arc<io::Error> )),
+        CheckpointNotFound(3, "No checkpoints found in directory '{dir:?}.", dir: PathBuf),
+        CommitRecoveryFailed(4, "Failed to recover commits that are in the WAL but not in the storage layer.", ( typedb_source : StorageRecoveryError )),
+        CheckpointRestore(5, "Error restoring checkpoint in directory '{dir:?}'.)", dir: PathBuf, ( source: Arc<io::Error> )),
+        KeyspaceOpen(7, "Error while opening storage keyspaces.", ( source: KeyspaceOpenError )),
 
-    ExtensionNotFound { name: String },
-    ExtensionIO { name: String, source: Arc<io::Error> },
-    ExtensionDeserialise { name: String, source: Arc<bincode::Error> },
-}
-
-impl fmt::Display for CheckpointLoadError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        AdditionalDataNotFound(8, "Checkpoint additional data with identifier '{name}' not found.", name: String ),
+        AdditionalDataIO(9, "Error accessing checkpoint additional data with identifier '{name}'.", name: String, ( source: Arc<io::Error> )),
+        AdditionalDataDeserialise(10, "Error deserialising checkpoint additional data with identifier '{name}'.", name: String, ( source: Arc<bincode::Error> )),
     }
-}
-
-impl Error for CheckpointLoadError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::CheckpointRead { source, .. } => Some(source),
-            Self::CheckpointNotFound { .. } => None,
-            Self::CommitRecoveryFailed { source, .. } => Some(source),
-            Self::CheckpointRestore { source, .. } => Some(source),
-            Self::MetadataRead { source, .. } => Some(source),
-            Self::CommitPending { source, .. } => Some(source),
-            Self::KeyspaceOpen { source, .. } => Some(source),
-
-            Self::ExtensionNotFound { .. } => None,
-            Self::ExtensionIO { source, .. } => Some(source),
-            Self::ExtensionDeserialise { source, .. } => Some(source),
-        }
-    }
-}
+);

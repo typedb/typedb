@@ -116,6 +116,6 @@ impl<'a> TypeVertexPropertyEncoding<'a> for Label<'a> {
 
 impl<'a> fmt::Display for Label<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.scoped_name())
+        write!(f, "{}", self.scoped_name().as_str())
     }
 }

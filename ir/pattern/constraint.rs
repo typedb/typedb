@@ -339,7 +339,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub enum Constraint<ID> {
+pub enum Constraint<ID: IrID> {
     Kind(Kind<ID>),
     Label(Label<ID>),
     RoleName(RoleName<ID>),
@@ -374,7 +374,7 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub fn ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
+    pub fn ids(&self) -> Box<dyn Iterator<Item=ID> + '_> {
         match self {
             Constraint::Kind(kind) => Box::new(kind.ids()),
             Constraint::Label(label) => Box::new(label.ids()),
@@ -393,8 +393,8 @@ impl<ID: IrID> Constraint<ID> {
     }
 
     pub fn ids_foreach<F>(&self, function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
+        where
+            F: FnMut(ID, ConstraintIDSide),
     {
         match self {
             Self::Kind(kind) => kind.ids_foreach(function),
@@ -595,13 +595,13 @@ impl<ID: IrID> Label<ID> {
         &self.type_label
     }
 
-    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
+    pub fn ids(&self) -> impl Iterator<Item=ID> + Sized {
         [self.left].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
+        where
+            F: FnMut(ID, ConstraintIDSide),
     {
         function(self.left, ConstraintIDSide::Left)
     }
@@ -611,7 +611,7 @@ impl<ID: IrID> Label<ID> {
     }
 }
 
-impl<ID> From<Label<ID>> for Constraint<ID> {
+impl<ID: IrID> From<Label<ID>> for Constraint<ID> {
     fn from(val: Label<ID>) -> Self {
         Constraint::Label(val)
     }
@@ -644,13 +644,13 @@ impl<ID: IrID> RoleName<ID> {
         self.name.as_str()
     }
 
-    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
+    pub fn ids(&self) -> impl Iterator<Item=ID> + Sized {
         [self.left].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
+        where
+            F: FnMut(ID, ConstraintIDSide),
     {
         function(self.left, ConstraintIDSide::Left)
     }
@@ -660,7 +660,7 @@ impl<ID: IrID> RoleName<ID> {
     }
 }
 
-impl<ID> From<RoleName<ID>> for Constraint<ID> {
+impl<ID: IrID> From<RoleName<ID>> for Constraint<ID> {
     fn from(value: RoleName<ID>) -> Self {
         Constraint::RoleName(value)
     }
@@ -672,7 +672,7 @@ impl<ID: IrID> fmt::Display for RoleName<ID> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Clone, Eq, PartialEq, Hash)]
 pub struct Kind<ID> {
     kind: typeql::token::Kind,
     type_: ID,
@@ -691,13 +691,13 @@ impl<ID: IrID> Kind<ID> {
         self.kind
     }
 
-    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
+    pub fn ids(&self) -> impl Iterator<Item=ID> + Sized {
         [self.type_].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
+        where
+            F: FnMut(ID, ConstraintIDSide),
     {
         function(self.type_, ConstraintIDSide::Left);
     }
@@ -707,13 +707,19 @@ impl<ID: IrID> Kind<ID> {
     }
 }
 
-impl<ID> From<Kind<ID>> for Constraint<ID> {
+impl<ID: IrID> From<Kind<ID>> for Constraint<ID> {
     fn from(kind: Kind<ID>) -> Self {
         Constraint::Kind(kind)
     }
 }
 
 impl<ID: IrID> fmt::Display for Kind<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
+    }
+}
+
+impl<ID: IrID> fmt::Debug for Kind<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} {}", self.kind, self.type_)
     }
@@ -749,13 +755,13 @@ impl<ID: IrID> Sub<ID> {
         self.kind
     }
 
-    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
+    pub fn ids(&self) -> impl Iterator<Item=ID> + Sized {
         [self.subtype, self.supertype].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
+        where
+            F: FnMut(ID, ConstraintIDSide),
     {
         function(self.subtype, ConstraintIDSide::Left);
         function(self.supertype, ConstraintIDSide::Right)
@@ -766,7 +772,7 @@ impl<ID: IrID> Sub<ID> {
     }
 }
 
-impl<ID> From<Sub<ID>> for Constraint<ID> {
+impl<ID: IrID> From<Sub<ID>> for Constraint<ID> {
     fn from(val: Sub<ID>) -> Self {
         Constraint::Sub(val)
     }
@@ -802,13 +808,13 @@ impl<ID: IrID> Isa<ID> {
         self.kind
     }
 
-    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
+    pub fn ids(&self) -> impl Iterator<Item=ID> + Sized {
         [self.thing, self.type_].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
+        where
+            F: FnMut(ID, ConstraintIDSide),
     {
         function(self.thing, ConstraintIDSide::Left);
         function(self.type_, ConstraintIDSide::Right);
@@ -819,7 +825,7 @@ impl<ID: IrID> Isa<ID> {
     }
 }
 
-impl<ID> From<Isa<ID>> for Constraint<ID> {
+impl<ID: IrID> From<Isa<ID>> for Constraint<ID> {
     fn from(val: Isa<ID>) -> Self {
         Constraint::Isa(val)
     }
@@ -861,13 +867,13 @@ impl<ID: IrID> Links<ID> {
         self.role_type
     }
 
-    pub fn ids(&self) -> impl Iterator<Item = ID> {
+    pub fn ids(&self) -> impl Iterator<Item=ID> {
         [self.relation, self.player, self.role_type].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
+        where
+            F: FnMut(ID, ConstraintIDSide),
     {
         function(self.relation, ConstraintIDSide::Left);
         function(self.player, ConstraintIDSide::Right);
@@ -879,7 +885,7 @@ impl<ID: IrID> Links<ID> {
     }
 }
 
-impl<ID> From<Links<ID>> for Constraint<ID> {
+impl<ID: IrID> From<Links<ID>> for Constraint<ID> {
     fn from(links: Links<ID>) -> Self {
         Constraint::Links(links)
     }
@@ -910,13 +916,13 @@ impl<ID: IrID> Has<ID> {
         self.attribute
     }
 
-    pub fn ids(&self) -> impl Iterator<Item = ID> {
+    pub fn ids(&self) -> impl Iterator<Item=ID> {
         [self.owner, self.attribute].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
+        where
+            F: FnMut(ID, ConstraintIDSide),
     {
         function(self.owner, ConstraintIDSide::Left);
         function(self.attribute, ConstraintIDSide::Right);
@@ -927,7 +933,7 @@ impl<ID: IrID> Has<ID> {
     }
 }
 
-impl<ID> From<Has<ID>> for Constraint<ID> {
+impl<ID: IrID> From<Has<ID>> for Constraint<ID> {
     fn from(has: Has<ID>) -> Self {
         Constraint::Has(has)
     }
@@ -946,13 +952,13 @@ pub struct ExpressionBinding<ID> {
 }
 
 impl<ID: IrID> ExpressionBinding<ID> {
-    pub fn ids_assigned(&self) -> impl Iterator<Item = ID> {
+    pub fn ids_assigned(&self) -> impl Iterator<Item=ID> {
         [self.left].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
+        where
+            F: FnMut(ID, ConstraintIDSide),
     {
         self.ids_assigned().for_each(|id| function(id, ConstraintIDSide::Left));
         // TODO
@@ -981,7 +987,7 @@ impl<ID: IrID> ExpressionBinding<ID> {
     }
 }
 
-impl<ID> From<ExpressionBinding<ID>> for Constraint<ID> {
+impl<ID: IrID> From<ExpressionBinding<ID>> for Constraint<ID> {
     fn from(val: ExpressionBinding<ID>) -> Self {
         Constraint::ExpressionBinding(val)
     }
@@ -1013,17 +1019,17 @@ impl<ID: IrID> FunctionCallBinding<ID> {
         &self.function_call
     }
 
-    pub fn ids(&self) -> impl Iterator<Item = ID> + '_ {
+    pub fn ids(&self) -> impl Iterator<Item=ID> + '_ {
         self.ids_assigned().chain(self.function_call.argument_ids())
     }
 
-    pub fn ids_assigned(&self) -> impl Iterator<Item = ID> + '_ {
+    pub fn ids_assigned(&self) -> impl Iterator<Item=ID> + '_ {
         self.assigned.iter().cloned()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
+        where
+            F: FnMut(ID, ConstraintIDSide),
     {
         for id in &self.assigned {
             function(*id, ConstraintIDSide::Left)
@@ -1035,7 +1041,7 @@ impl<ID: IrID> FunctionCallBinding<ID> {
     }
 }
 
-impl<ID> From<FunctionCallBinding<ID>> for Constraint<ID> {
+impl<ID: IrID> From<FunctionCallBinding<ID>> for Constraint<ID> {
     fn from(val: FunctionCallBinding<ID>) -> Self {
         Constraint::FunctionCallBinding(val)
     }
@@ -1116,20 +1122,20 @@ impl<ID: IrID> Comparison<ID> {
         self.comparator
     }
 
-    pub fn ids(&self) -> impl Iterator<Item = ID> {
+    pub fn ids(&self) -> impl Iterator<Item=ID> {
         [self.lhs, self.rhs].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
+        where
+            F: FnMut(ID, ConstraintIDSide),
     {
         function(self.lhs, ConstraintIDSide::Left);
         function(self.rhs, ConstraintIDSide::Right);
     }
 }
 
-impl<ID> From<Comparison<ID>> for Constraint<ID> {
+impl<ID: IrID> From<Comparison<ID>> for Constraint<ID> {
     fn from(val: Comparison<ID>) -> Self {
         Constraint::Comparison(val)
     }
@@ -1160,13 +1166,13 @@ impl<ID: IrID> Owns<ID> {
         self.attribute
     }
 
-    pub fn ids(&self) -> impl Iterator<Item = ID> {
+    pub fn ids(&self) -> impl Iterator<Item=ID> {
         [self.owner, self.attribute].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
+        where
+            F: FnMut(ID, ConstraintIDSide),
     {
         function(self.owner, ConstraintIDSide::Left);
         function(self.attribute, ConstraintIDSide::Right);
@@ -1177,7 +1183,7 @@ impl<ID: IrID> Owns<ID> {
     }
 }
 
-impl<ID> From<Owns<ID>> for Constraint<ID> {
+impl<ID: IrID> From<Owns<ID>> for Constraint<ID> {
     fn from(val: Owns<ID>) -> Self {
         Constraint::Owns(val)
     }
@@ -1208,13 +1214,13 @@ impl<ID: IrID> Relates<ID> {
         self.role_type
     }
 
-    pub fn ids(&self) -> impl Iterator<Item = ID> {
+    pub fn ids(&self) -> impl Iterator<Item=ID> {
         [self.relation, self.role_type].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
+        where
+            F: FnMut(ID, ConstraintIDSide),
     {
         function(self.relation, ConstraintIDSide::Left);
         function(self.role_type, ConstraintIDSide::Right);
@@ -1225,7 +1231,7 @@ impl<ID: IrID> Relates<ID> {
     }
 }
 
-impl<ID> From<Relates<ID>> for Constraint<ID> {
+impl<ID: IrID> From<Relates<ID>> for Constraint<ID> {
     fn from(val: Relates<ID>) -> Self {
         Constraint::Relates(val)
     }
@@ -1256,13 +1262,13 @@ impl<ID: IrID> Plays<ID> {
         self.role_type
     }
 
-    pub fn ids(&self) -> impl Iterator<Item = ID> {
+    pub fn ids(&self) -> impl Iterator<Item=ID> {
         [self.player, self.role_type].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
+        where
+            F: FnMut(ID, ConstraintIDSide),
     {
         function(self.player, ConstraintIDSide::Left);
         function(self.role_type, ConstraintIDSide::Right);
@@ -1273,7 +1279,7 @@ impl<ID: IrID> Plays<ID> {
     }
 }
 
-impl<ID> From<Plays<ID>> for Constraint<ID> {
+impl<ID: IrID> From<Plays<ID>> for Constraint<ID> {
     fn from(val: Plays<ID>) -> Self {
         Constraint::Plays(val)
     }

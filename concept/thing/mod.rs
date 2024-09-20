@@ -5,6 +5,7 @@
  */
 
 use bytes::{byte_array::ByteArray, Bytes};
+use bytes::byte_reference::ByteReference;
 use encoding::{
     graph::thing::{vertex_attribute::AttributeID, vertex_object::ObjectVertex, ThingVertex},
     layout::prefix::Prefix,
@@ -44,6 +45,8 @@ pub trait ThingAPI<'a>: Sized + Clone {
     fn into_vertex(self) -> Self::Vertex<'a>;
 
     fn into_owned(self) -> Self::Owned;
+
+    fn iid(&self) -> ByteReference<'_>;
 
     fn set_required(
         &self,

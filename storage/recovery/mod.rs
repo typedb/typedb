@@ -5,4 +5,4 @@
  */
 
 pub mod checkpoint;
-pub mod commit_replay;
+pub mod commit_recovery;

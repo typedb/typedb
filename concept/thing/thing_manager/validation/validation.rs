@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use bytes::util::HexBytesFormatter;
 use encoding::value::{label::Label, value::Value};
 use storage::snapshot::ReadableSnapshot;
 
@@ -27,6 +28,7 @@ use crate::{
         Capability, TypeAPI,
     },
 };
+use crate::thing::ThingAPI;
 
 pub(crate) fn get_label_or_data_err<'a>(
     snapshot: &impl ReadableSnapshot,
@@ -36,7 +38,7 @@ pub(crate) fn get_label_or_data_err<'a>(
     type_
         .get_label(snapshot, type_manager)
         .map(|label| label.clone().into_owned())
-        .map_err(DataValidationError::ConceptRead)
+        .map_err(|source| DataValidationError::ConceptRead { source })
 }
 
 macro_rules! create_data_validation_type_abstractness_error_methods {
@@ -46,11 +48,16 @@ macro_rules! create_data_validation_type_abstractness_error_methods {
         $(
             pub(crate) fn $method_name<'a>(
                 constraint: &TypeConstraint<$type_decl<'static>>,
+                snapshot: &impl ReadableSnapshot,
+                type_manager: &TypeManager,
             ) -> DataValidationError {
                 debug_assert!(constraint.description().unwrap_abstract().is_ok());
                 let constraint_source = constraint.source();
                 let error_source = ConstraintError::ViolatedAbstract;
-                DataValidationError::$error { $type_: constraint_source.clone(), constraint_source, error_source }
+                DataValidationError::$error {
+                    $type_: constraint_source.get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+                    source: error_source
+                }
             }
         )*
     }
@@ -58,18 +65,26 @@ macro_rules! create_data_validation_type_abstractness_error_methods {
 
 macro_rules! create_data_validation_capability_abstractness_error_methods {
     ($(
-        fn $method_name:ident($capability_type:ident, $object_decl:ident) -> $error:ident = $object:ident + $interface_type:ident + $interface:ident;
+        fn $method_name:ident($capability_type:ident, $object_decl:ident) -> $error:ident = $object:ident + $object_type:ident + $interface_type:ident;
     )*) => {
         $(
             pub(crate) fn $method_name<'a>(
                 constraint: &CapabilityConstraint<$capability_type<'static>>,
                 $object: $object_decl<'a>,
+                snapshot: &impl ReadableSnapshot,
+                type_manager: &TypeManager,
             ) -> DataValidationError {
                 debug_assert!(constraint.description().unwrap_abstract().is_ok());
                 let constraint_source = constraint.source();
                 let error_source = ConstraintError::ViolatedAbstract;
                 let $interface_type = constraint_source.interface();
-                DataValidationError::$error { $object: $object.into_owned(), $interface_type, $interface: None, constraint_source, error_source }
+                DataValidationError::$error {
+                    $object: HexBytesFormatter::owned(Vec::from($object.iid().bytes())),
+                    $object_type: $object.type_().get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+                    $interface_type: $interface_type.get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+                    // constraint_source,
+                    source: error_source
+                }
             }
         )*
     }
@@ -90,31 +105,32 @@ impl DataValidation {
             let constraint_source = constraint.source();
             let is_key = match constraint_source.is_key(snapshot, type_manager) {
                 Ok(is_key) => is_key,
-                Err(err) => return DataValidationError::ConceptRead(err),
+                Err(err) => return DataValidationError::ConceptRead { source: err },
             };
             if is_key {
-                DataValidationError::KeyConstraintViolated {
-                    owner: owner.into_owned(),
-                    attribute_type,
-                    attribute: None,
+                DataValidationError::KeyConstraintViolatedCard {
+                    owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
+                    owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+                    attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+                    attribute_count: count,
                     constraint_source,
-                    error_source,
+                    source: error_source,
                 }
             } else {
                 DataValidationError::OwnsConstraintViolated {
-                    owner: owner.into_owned(),
-                    attribute_type,
-                    attribute: None,
-                    constraint_source,
-                    error_source,
+                    owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
+                    owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+                    attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+                    // constraint_source,
+                    source: error_source,
                 }
             }
         })
     }
 
     pub(crate) fn validate_plays_instances_cardinality_constraint(
-        _snapshot: &impl ReadableSnapshot,
-        _type_manager: &TypeManager,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Plays<'static>>,
         player: Object<'_>,
         role_type: RoleType<'static>,
@@ -124,18 +140,18 @@ impl DataValidation {
             let constraint_source = constraint.source();
             let player = player.clone().into_owned();
             DataValidationError::PlaysConstraintViolated {
-                player: player.into_owned(),
-                role_type,
-                relation: None,
-                constraint_source,
-                error_source,
+                player_iid: HexBytesFormatter::owned(Vec::from(player.iid().bytes())),
+                player_type: player.type_().get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+                role_type: role_type.get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+                // constraint_source,
+                source: error_source,
             }
         })
     }
 
     pub(crate) fn validate_relates_instances_cardinality_constraint<'a>(
-        _snapshot: &impl ReadableSnapshot,
-        _type_manager: &TypeManager,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Relates<'static>>,
         relation: Relation<'a>,
         role_type: RoleType<'static>,
@@ -145,97 +161,111 @@ impl DataValidation {
             let constraint_source = constraint.source();
             let relation = relation.clone().into_owned();
             DataValidationError::RelatesConstraintViolated {
-                relation: relation.into_owned(),
-                role_type,
-                player: None,
-                constraint_source,
-                error_source,
+                relation_iid: HexBytesFormatter::owned(Vec::from(relation.iid().bytes())),
+                relation_type: relation.type_().get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+                role_type: role_type.get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+                // constraint_source,
+                source: error_source,
             }
         })
     }
 
     pub(crate) fn validate_attribute_regex_constraint(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
         constraint: &TypeConstraint<AttributeType<'static>>,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<(), DataValidationError> {
         constraint.validate_regex(value).map_err(|error_source| DataValidationError::AttributeTypeConstraintViolated {
-            attribute_type: attribute_type.clone(),
-            constraint_source: constraint.source(),
-            error_source,
+            attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+            // constraint_source: constraint.source().get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+            source: error_source,
         })
     }
 
     pub(crate) fn validate_attribute_range_constraint(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
         constraint: &TypeConstraint<AttributeType<'static>>,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<(), DataValidationError> {
         constraint.validate_range(value).map_err(|error_source| DataValidationError::AttributeTypeConstraintViolated {
-            attribute_type: attribute_type.clone(),
-            constraint_source: constraint.source(),
-            error_source,
+            attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+            // constraint_source: constraint.source().get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+            source: error_source,
         })
     }
 
     pub(crate) fn validate_attribute_values_constraint(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
         constraint: &TypeConstraint<AttributeType<'static>>,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<(), DataValidationError> {
         constraint.validate_values(value).map_err(|error_source| DataValidationError::AttributeTypeConstraintViolated {
-            attribute_type: attribute_type.clone(),
-            constraint_source: constraint.source(),
-            error_source,
+            attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+            // constraint_source: constraint.source().get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+            source: error_source,
         })
     }
 
     pub(crate) fn validate_owns_regex_constraint(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Owns<'static>>,
         owner: Object<'_>,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<(), DataValidationError> {
         constraint.validate_regex(value).map_err(|error_source| DataValidationError::OwnsConstraintViolated {
-            owner: owner.into_owned(),
-            attribute_type,
-            attribute: None,
-            constraint_source: constraint.source(),
-            error_source,
+            owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
+            owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+            attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+            // constraint_source: constraint.source(),
+            source: error_source,
         })
     }
 
     pub(crate) fn validate_owns_range_constraint(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Owns<'static>>,
         owner: Object<'_>,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<(), DataValidationError> {
         constraint.validate_range(value).map_err(|error_source| DataValidationError::OwnsConstraintViolated {
-            owner: owner.into_owned(),
-            attribute_type,
-            attribute: None,
-            constraint_source: constraint.source(),
-            error_source,
+            owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
+            owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+            attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+            // constraint_source: constraint.source(),
+            source: error_source,
         })
     }
 
     pub(crate) fn validate_owns_values_constraint(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Owns<'static>>,
         owner: Object<'_>,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<(), DataValidationError> {
         constraint.validate_values(value).map_err(|error_source| DataValidationError::OwnsConstraintViolated {
-            owner: owner.into_owned(),
-            attribute_type,
-            attribute: None,
-            constraint_source: constraint.source(),
-            error_source,
+            owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
+            owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+            attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+            // constraint_source: constraint.source(),
+            source: error_source,
         })
     }
 
     pub(crate) fn validate_owns_distinct_constraint(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Owns<'static>>,
         owner: Object<'_>,
         attribute: Attribute<'_>,
@@ -244,16 +274,18 @@ impl DataValidation {
         debug_assert!(constraint.description().unwrap_distinct().is_ok());
         CapabilityConstraint::<Owns<'static>>::validate_distinct(count).map_err(|error_source| {
             DataValidationError::OwnsConstraintViolated {
-                owner: owner.into_owned(),
-                attribute_type: attribute.type_(),
-                attribute: Some(attribute.into_owned()),
-                constraint_source: constraint.source(),
-                error_source,
+                owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
+                owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+                attribute_type: attribute.type_().get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+                // constraint_source: constraint.source(),
+                source: error_source,
             }
         })
     }
 
     pub(crate) fn validate_relates_distinct_constraint(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Relates<'static>>,
         relation: Relation<'_>,
         role_type: RoleType<'static>,
@@ -263,11 +295,11 @@ impl DataValidation {
         debug_assert!(constraint.description().unwrap_distinct().is_ok());
         CapabilityConstraint::<Relates<'static>>::validate_distinct(count).map_err(|error_source| {
             DataValidationError::RelatesConstraintViolated {
-                relation: relation.into_owned(),
-                role_type,
-                player: Some(player.into_owned()),
-                constraint_source: constraint.source(),
-                error_source,
+                relation_iid: HexBytesFormatter::owned(Vec::from(relation.iid().bytes())),
+                relation_type: relation.type_().get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+                role_type: role_type.get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+                // constraint_source: constraint.source(),
+                source: error_source,
             }
         })
     }
@@ -279,9 +311,9 @@ impl DataValidation {
     }
 
     create_data_validation_capability_abstractness_error_methods! {
-        fn create_data_validation_owns_abstractness_error(Owns, Object) -> OwnsConstraintViolated = owner + attribute_type + attribute;
-        fn create_data_validation_plays_abstractness_error(Plays, Object) -> PlaysConstraintViolated = player + role_type + relation;
-        fn create_data_validation_relates_abstractness_error(Relates, Relation) -> RelatesConstraintViolated = relation + role_type + player;
+        fn create_data_validation_owns_abstractness_error(Owns, Object) -> OwnsConstraintViolated = owner_iid + owner_type + attribute_type;
+        fn create_data_validation_plays_abstractness_error(Plays, Object) -> PlaysConstraintViolated = player_iid + player_type + role_type;
+        fn create_data_validation_relates_abstractness_error(Relates, Relation) -> RelatesConstraintViolated = relation_iid + relation_type + role_type;
     }
 
     pub(crate) fn create_data_validation_uniqueness_error(
@@ -294,26 +326,27 @@ impl DataValidation {
     ) -> DataValidationError {
         debug_assert!(constraint.description().unwrap_unique().is_ok());
         let constraint_source = constraint.source();
-        let error_source = ConstraintError::ViolatedUnique { value: value.into_owned() };
+        let error_source = ConstraintError::ViolatedUnique { value: value.clone().into_owned() };
         let is_key = match constraint_source.is_key(snapshot, type_manager) {
             Ok(is_key) => is_key,
-            Err(err) => return DataValidationError::ConceptRead(err),
+            Err(err) => return DataValidationError::ConceptRead{source: err},
         };
         if is_key {
-            DataValidationError::KeyConstraintViolated {
-                owner: owner.into_owned(),
-                attribute_type,
-                attribute: None,
-                constraint_source,
-                error_source,
+            DataValidationError::KeyConstraintViolatedUniqueness {
+                owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
+                owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+                attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+                value: value.into_owned(),
+                constraint_source: constraint.source(),
+                source: error_source,
             }
         } else {
             DataValidationError::OwnsConstraintViolated {
-                owner: owner.into_owned(),
-                attribute_type,
-                attribute: None,
-                constraint_source,
-                error_source,
+                owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
+                owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+                attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+                // constraint_source: constraint.source(),
+                source: error_source,
             }
         }
     }

@@ -15,6 +15,7 @@ use encoding::{
     graph::definition::{definition_key::DefinitionKey, r#struct::StructDefinition},
     value::{label::Label, value_type::ValueType},
 };
+use error::typedb_error;
 use storage::{sequence_number::SequenceNumber, MVCCStorage};
 
 use crate::type_::{
@@ -494,17 +495,8 @@ impl TypeCache {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum TypeCacheCreateError {}
-
-impl fmt::Display for TypeCacheCreateError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+typedb_error!(
+    pub TypeCacheCreateError(component = "TypeCache create", prefix = "TCC") {
+        Empty(1, ""),
     }
-}
-
-impl Error for TypeCacheCreateError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        todo!()
-    }
-}
+);
