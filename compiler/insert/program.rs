@@ -65,7 +65,6 @@ pub fn compile(
 
     let mut output_row_schema = Vec::with_capacity(variables.len()); // TODO
     variables.iter().map(|(v, i)| (i, v)).sorted().for_each(|(&i, &v)| {
-        debug_assert!(i.position as usize == output_row_schema.len());
         output_row_schema.push((v, VariableSource::InputVariable(i)));
     });
 
