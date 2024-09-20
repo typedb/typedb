@@ -105,8 +105,8 @@ build:
 
 release:
   filter:
-    owner: vaticle
-    branch: [master, "3.0"]
+    owner: typedb
+    branch: [master, 3.0]
   validation:
     validate-dependencies:
       image: vaticle-ubuntu-22.04
