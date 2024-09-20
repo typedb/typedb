@@ -42,11 +42,11 @@ build:
 ##      command: |
 ##        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
 ##        # TODO
-    test-integration:
-      image: vaticle-ubuntu-22.04
-      dependencies: [build]
-      command: |
-        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
+#    test-integration:
+#      image: vaticle-ubuntu-22.04
+#      dependencies: [build]
+#      command: |
+#        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
 #        # TODO: Uncomment!
 #        bazel test //compiler/tests/... --test_output=streamed
 #        bazel test //concept/tests/... --test_output=streamed
