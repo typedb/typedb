@@ -14,8 +14,7 @@ use std::{
 
 use answer::{variable_value::VariableValue, Type};
 use compiler::match_::instructions::type_::RelatesInstruction;
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::relates::Relates};
-use ir::program::block::ParameterRegistry;
+use concept::{error::ConceptReadError, type_::relates::Relates};
 use itertools::Itertools;
 use lending_iterator::{
     adaptors::{Map, TryFilter},
@@ -25,9 +24,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{relates_to_tuple_relation_role, RelatesToTupleFn, TuplePositions, TupleResult},
-        BinaryIterateMode, Checker, FilterFn, VariableModes,
+        iterator::{SortedTupleIterator, TupleIterator}, tuple::{relates_to_tuple_relation_role, RelatesToTupleFn, TuplePositions, TupleResult}, type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, VariableModes
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -168,9 +165,9 @@ impl RelatesExecutor {
             }
 
             BinaryIterateMode::BoundFrom => {
-                let relation = self.relates.relation().as_variable().unwrap();
-                debug_assert!(row.len() > relation.as_usize());
-                let VariableValue::Type(Type::Relation(relation)) = row.get(relation).to_owned() else {
+                let relation =
+                    type_from_row_or_annotations(self.relates.relation(), row, self.relation_role_types.keys());
+                let Type::Relation(relation) = relation else {
                     unreachable!("Relation in `relates` must be a relation type")
                 };
 

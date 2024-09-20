@@ -19,6 +19,7 @@ use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
+use super::type_from_row_or_annotations;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
@@ -149,11 +150,9 @@ impl PlaysReverseExecutor {
             }
 
             BinaryIterateMode::BoundFrom => {
-                let role_type = self.plays.role_type().as_variable().unwrap();
-                debug_assert!(row.len() > role_type.as_usize());
-                let VariableValue::Type(Type::RoleType(role)) = row.get(role_type).to_owned() else {
-                    unreachable!("Role in `plays` must be an role type")
-                };
+                let role_type =
+                    type_from_row_or_annotations(self.plays.role_type(), row, self.role_player_types.keys());
+                let Type::RoleType(role) = role_type else { unreachable!("Role in `plays` must be an role type") };
 
                 let type_manager = context.type_manager();
                 let plays = role.get_plays(snapshot, type_manager)?.to_owned();

@@ -30,7 +30,7 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{sub_to_tuple_sub_super, SubToTupleFn, TuplePositions, TupleResult},
-        BinaryIterateMode, Checker, FilterFn, VariableModes,
+        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -164,15 +164,10 @@ impl SubExecutor {
             }
 
             BinaryIterateMode::BoundFrom => {
-                let subtype = self.sub.subtype().as_variable().unwrap();
-                debug_assert!(row.len() > subtype.as_usize());
-                let VariableValue::Type(sub) = row.get(subtype).to_owned() else {
-                    unreachable!("Subtype must be a type")
-                };
-
+                let subtype = type_from_row_or_annotations(self.sub.subtype(), row, self.sub_to_supertypes.keys());
                 let type_manager = context.type_manager();
-                let supertypes = get_supertypes(snapshot, type_manager, &sub, self.sub.sub_kind())?;
-                let sub_with_super = supertypes.into_iter().map(|sup| Ok((sub.clone(), sup))).collect_vec(); // TODO cache this
+                let supertypes = get_supertypes(snapshot, type_manager, &subtype, self.sub.sub_kind())?;
+                let sub_with_super = supertypes.into_iter().map(|sup| Ok((subtype.clone(), sup))).collect_vec(); // TODO cache this
 
                 let as_tuples: SubBoundedSortedSuper = NarrowingTupleIterator(
                     AsLendingIterator::new(sub_with_super)

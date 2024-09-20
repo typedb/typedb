@@ -11,7 +11,7 @@ use std::{
     vec,
 };
 
-use answer::{variable_value::VariableValue, Type};
+use answer::Type;
 use compiler::match_::instructions::type_::SubReverseInstruction;
 use concept::{
     error::ConceptReadError,
@@ -27,7 +27,7 @@ use crate::{
         iterator::{SortedTupleIterator, TupleIterator},
         sub_executor::{NarrowingTupleIterator, SubTupleIterator, EXTRACT_SUB, EXTRACT_SUPER},
         tuple::{sub_to_tuple_super_sub, TuplePositions},
-        BinaryIterateMode, Checker, FilterFn, VariableModes,
+        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -138,15 +138,10 @@ impl SubReverseExecutor {
             }
 
             BinaryIterateMode::BoundFrom => {
-                let supertype = self.sub.supertype().as_variable().unwrap();
-                debug_assert!(row.len() > supertype.as_usize());
-                let VariableValue::Type(sup) = row.get(supertype).to_owned() else {
-                    unreachable!("Subtype must be a type")
-                };
-
+                let supertype = type_from_row_or_annotations(self.sub.supertype(), row, self.super_to_subtypes.keys());
                 let type_manager = context.type_manager();
-                let subtypes = get_subtypes(&**context.snapshot(), type_manager, &sup, self.sub.sub_kind())?;
-                let sub_with_super = subtypes.into_iter().map(|sub| Ok((sub, sup.clone()))).collect_vec(); // TODO cache this
+                let subtypes = get_subtypes(&**context.snapshot(), type_manager, &supertype, self.sub.sub_kind())?;
+                let sub_with_super = subtypes.into_iter().map(|sub| Ok((sub, supertype.clone()))).collect_vec(); // TODO cache this
                 let as_tuples: SubReverseBoundedSortedSuper = NarrowingTupleIterator(
                     AsLendingIterator::new(sub_with_super)
                         .try_filter::<_, SubFilterFn, (Type, Type), _>(filter_for_row)

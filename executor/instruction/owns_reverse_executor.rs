@@ -19,6 +19,7 @@ use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
+use super::type_from_row_or_annotations;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
@@ -148,9 +149,9 @@ impl OwnsReverseExecutor {
             }
 
             BinaryIterateMode::BoundFrom => {
-                let attribute = self.owns.attribute().as_variable().unwrap();
-                debug_assert!(row.len() > attribute.as_usize());
-                let VariableValue::Type(Type::Attribute(attribute)) = row.get(attribute).to_owned() else {
+                let attribute =
+                    type_from_row_or_annotations(self.owns.attribute(), row, self.attribute_owner_types.keys());
+                let Type::Attribute(attribute) = attribute else {
                     unreachable!("Attribute in `owns` must be an attribute type")
                 };
 

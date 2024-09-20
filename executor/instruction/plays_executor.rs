@@ -25,6 +25,7 @@ use lending_iterator::{
 };
 use storage::snapshot::ReadableSnapshot;
 
+use super::type_from_row_or_annotations;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
@@ -168,12 +169,7 @@ impl PlaysExecutor {
             }
 
             BinaryIterateMode::BoundFrom => {
-                let player = self.plays.player().as_variable().unwrap();
-                debug_assert!(row.len() > player.as_usize());
-                let VariableValue::Type(player) = row.get(player).to_owned() else {
-                    unreachable!("Player in `plays` must be a type")
-                };
-
+                let player = type_from_row_or_annotations(self.plays.player(), row, self.player_role_types.keys());
                 let type_manager = context.type_manager();
                 let plays = match player {
                     Type::Entity(player) => player.get_plays(snapshot, type_manager)?,

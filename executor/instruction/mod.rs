@@ -6,11 +6,12 @@
 
 use std::{
     collections::HashMap,
+    fmt,
     marker::PhantomData,
     ops::{Bound, RangeBounds},
 };
 
-use answer::variable_value::VariableValue;
+use answer::{variable_value::VariableValue, Type};
 use compiler::match_::instructions::{CheckInstruction, ConstraintInstruction};
 use concept::{
     error::ConceptReadError,
@@ -21,6 +22,7 @@ use ir::pattern::{
     constraint::{Comparator, IsaKind, SubKind},
     Vertex,
 };
+use itertools::Itertools;
 use lending_iterator::higher_order::{FnHktHelper, Hkt};
 use storage::snapshot::ReadableSnapshot;
 
@@ -355,6 +357,22 @@ impl TernaryIterateMode {
         } else {
             Self::Unbound
         }
+    }
+}
+
+fn type_from_row_or_annotations<'a>(
+    vertex: &Vertex<VariablePosition>,
+    row: MaybeOwnedRow<'_>,
+    annos: impl Iterator<Item = &'a Type> + fmt::Debug,
+) -> Type {
+    match vertex {
+        &Vertex::Variable(var) => {
+            debug_assert!(row.len() > var.as_usize());
+            let VariableValue::Type(type_) = row.get(var).to_owned() else { unreachable!("Supertype must be a type") };
+            type_
+        }
+        Vertex::Label(_) => annos.cloned().exactly_one().expect("multiple types for fixed label?"),
+        Vertex::Parameter(_) => unreachable!(),
     }
 }
 

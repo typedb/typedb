@@ -16,10 +16,8 @@ use answer::{variable_value::VariableValue, Type};
 use compiler::match_::instructions::type_::OwnsInstruction;
 use concept::{
     error::ConceptReadError,
-    thing::thing_manager::ThingManager,
     type_::{owns::Owns, OwnerAPI},
 };
-use ir::program::block::ParameterRegistry;
 use itertools::Itertools;
 use lending_iterator::{
     adaptors::{Map, TryFilter},
@@ -37,6 +35,8 @@ use crate::{
     row::MaybeOwnedRow,
     VariablePosition,
 };
+
+use super::type_from_row_or_annotations;
 
 pub(crate) struct OwnsExecutor {
     owns: ir::pattern::constraint::Owns<VariablePosition>,
@@ -169,12 +169,7 @@ impl OwnsExecutor {
             }
 
             BinaryIterateMode::BoundFrom => {
-                let owner = self.owns.owner().as_variable().unwrap();
-                debug_assert!(row.len() > owner.as_usize());
-                let VariableValue::Type(owner) = row.get(owner).to_owned() else {
-                    unreachable!("Owner in `owns` must be a type")
-                };
-
+                let owner = type_from_row_or_annotations(self.owns.owner(), row, self.owner_attribute_types.keys());
                 let type_manager = context.type_manager();
                 let owns = match owner {
                     Type::Entity(entity) => entity.get_owns(snapshot, type_manager)?,
