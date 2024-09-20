@@ -7,7 +7,6 @@
 use std::{
     borrow::Cow,
     collections::{HashMap, HashSet},
-    io::Read,
     iter::once,
     sync::Arc,
 };
@@ -24,8 +23,7 @@ use encoding::{
             ThingVertex,
         },
         type_::{
-            edge::TypeEdgeEncoding,
-            property::{TypeEdgePropertyEncoding, TypeVertexProperty, TypeVertexPropertyEncoding},
+            property::{TypeVertexProperty, TypeVertexPropertyEncoding},
             vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertexEncoding},
         },
         Typed,
