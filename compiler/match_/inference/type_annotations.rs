@@ -55,7 +55,8 @@ impl TypeAnnotations {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConstraintTypeAnnotations {
     LeftRight(LeftRightAnnotations),
-    LeftRightFiltered(LeftRightFilteredAnnotations), // note: function calls, comparators, and value assignments are not stored here, since they do not actually co-constrain Schema types possible.
+    LeftRightFiltered(LeftRightFilteredAnnotations), // note: function calls, comparators, and value assignments are not stored here,
+                                                     //       since they do not actually co-constrain Schema types possible.
                                                      //       in other words, they are always right to left or deal only in value types.
 }
 
