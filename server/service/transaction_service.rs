@@ -253,12 +253,18 @@ impl TransactionService {
 
             match result {
                 Ok(Continue(())) => (),
-                Ok(Break(())) => return,
+                Ok(Break(())) => {
+                    event!(Level::TRACE, "Stream ended, closing transaction service.");
+                    self.do_close().await;
+                    return
+                },
                 Err(status) => {
+                    event!(Level::TRACE, "Stream ended with error, closing transaction service.");
                     let result = self.response_sender.send(Err(status)).await;
                     if let Err(send_error) = result {
                         event!(Level::DEBUG, ?send_error, "Failed to send error to client");
                     }
+                    self.do_close().await;
                     return;
                 }
             }
@@ -495,6 +501,10 @@ impl TransactionService {
     }
 
     async fn handle_close(&mut self, _close_req: typedb_protocol::transaction::close::Req) {
+        self.do_close().await
+    }
+
+    async fn do_close(&mut self) {
         self.query_interrupt_sender.send(()).unwrap();
         self.close_transmitting_write_queries().await;
         self.close_running_read_queries().await;
@@ -503,10 +513,11 @@ impl TransactionService {
         let _ = self.finish_running_write_query().await;
         let _ = self.cancel_queued_write_queries().await;
 
-        match self.transaction.take().unwrap() {
-            Transaction::Read(transaction) => transaction.close(),
-            Transaction::Write(transaction) => transaction.close(),
-            Transaction::Schema(transaction) => transaction.close(),
+        match self.transaction.take() {
+            None => {},
+            Some(Transaction::Read(transaction)) => transaction.close(),
+            Some(Transaction::Write(transaction)) => transaction.close(),
+            Some(Transaction::Schema(transaction)) => transaction.close(),
         };
     }
 

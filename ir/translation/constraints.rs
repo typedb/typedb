@@ -266,7 +266,7 @@ fn add_typeql_sub(
     subtype: Vertex<Variable>,
     sub: &typeql::statement::type_::Sub,
 ) -> Result<(), PatternDefinitionError> {
-    let kind = sub.kind.into();
+    let kind = sub.kind.clone().into();
     let type_ = register_typeql_type_any(constraints, &sub.supertype)?;
     constraints.add_sub(kind, subtype, type_)?;
     Ok(())
@@ -307,7 +307,7 @@ fn add_typeql_isa(
     thing: Variable,
     isa: &typeql::statement::thing::isa::Isa,
 ) -> Result<(), PatternDefinitionError> {
-    let kind = isa.kind.into();
+    let kind = isa.kind.clone().into();
     let type_ = register_typeql_type(constraints, &isa.type_)?;
     constraints.add_isa(kind, thing, type_)?;
     Ok(())
