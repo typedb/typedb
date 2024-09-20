@@ -9,7 +9,11 @@ use std::{collections::BTreeSet, marker::PhantomData, sync::Arc};
 use answer::{Thing, Type};
 use compiler::match_::instructions::thing::IsaReverseInstruction;
 use concept::error::ConceptReadError;
-use ir::pattern::constraint::{Isa, IsaKind, SubKind};
+use ir::pattern::{
+    constraint::{Isa, IsaKind, SubKind},
+    Vertex,
+};
+use itertools::Itertools;
 use lending_iterator::{AsHkt, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
@@ -34,6 +38,7 @@ pub(crate) struct IsaReverseExecutor {
     iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
+    types: Arc<BTreeSet<Type>>,
     thing_types: Arc<BTreeSet<Type>>,
     checker: Checker<(AsHkt![Thing<'_>], Type)>,
 }
@@ -51,7 +56,8 @@ impl IsaReverseExecutor {
         variable_modes: VariableModes,
         sort_by: Option<VariablePosition>,
     ) -> Self {
-        let thing_types = isa_reverse.types().clone();
+        let thing_types = isa_reverse.thing_types().clone();
+        let types = isa_reverse.types().clone();
         debug_assert!(thing_types.len() > 0);
         debug_assert!(!thing_types.iter().any(|type_| matches!(type_, Type::RoleType(_))));
         let IsaReverseInstruction { isa, checks, .. } = isa_reverse;
@@ -75,7 +81,7 @@ impl IsaReverseExecutor {
             _phantom_data: PhantomData,
         };
 
-        Self { isa, iterate_mode, variable_modes, tuple_positions: output_tuple_positions, thing_types, checker }
+        Self { isa, iterate_mode, variable_modes, tuple_positions: output_tuple_positions, types, thing_types, checker }
     }
 
     pub(crate) fn get_iterator(
@@ -150,12 +156,23 @@ impl IsaReverseExecutor {
             }
 
             BinaryIterateMode::BoundFrom => {
-                let type_ = self.isa.type_().as_variable().unwrap();
-                let type_ = row.get(type_).as_type().clone();
-                let type_manager = thing_manager.type_manager();
-                let types = match self.isa.isa_kind() {
-                    IsaKind::Exact => vec![type_.clone()],
-                    IsaKind::Subtype => get_subtypes(snapshot, type_manager, &type_, SubKind::Subtype)?,
+                let (type_, types) = match self.isa.type_() {
+                    &Vertex::Variable(var) => {
+                        let input = row.get(var).as_type().clone();
+                        let type_manager = thing_manager.type_manager();
+                        let types = match self.isa.isa_kind() {
+                            IsaKind::Exact => vec![input.clone()],
+                            IsaKind::Subtype => get_subtypes(snapshot, type_manager, &input, SubKind::Subtype)?,
+                        };
+                        (input.clone(), types)
+                    }
+                    Vertex::Label(_) => {
+                        let Ok(type_) = self.types.iter().cloned().exactly_one() else {
+                            unreachable!("multiple types for fixed label?")
+                        };
+                        (type_.clone(), vec![type_])
+                    }
+                    Vertex::Parameter(_) => unreachable!(),
                 };
                 let iterator = instances_of_all_types_chained(snapshot, thing_manager, &types, self.isa.isa_kind())?;
                 let as_tuples: IsaReverseBoundedSortedThing = iterator

@@ -31,7 +31,11 @@ use executor::{
     error::ReadExecutionError, pipeline::stage::ExecutionContext, program_executor::ProgramExecutor,
     row::MaybeOwnedRow, ExecutionInterrupt,
 };
-use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
+use ir::{
+    pattern::{constraint::IsaKind, Vertex},
+    program::block::FunctionalBlock,
+    translation::TranslationContext,
+};
 use lending_iterator::LendingIterator;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -517,6 +521,7 @@ fn traverse_isa_reverse_bounded_type_exact() {
         print!("{}", row);
     }
 }
+
 #[test]
 fn traverse_isa_reverse_bounded_type_subtype() {
     let (_tmp_dir, mut storage) = create_core_storage();
@@ -603,4 +608,145 @@ fn traverse_isa_reverse_bounded_type_subtype() {
     // 1x cat => 1x (cat x cat)
     // 36 + 9 + 1 = 46
     assert_eq!(rows.len(), 46);
+}
+
+#[test]
+fn traverse_isa_reverse_fixed_type_exact() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+
+    // query:
+    //   match $x isa! animal;
+
+    // IR
+    let mut translation_context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut conjunction = builder.conjunction_mut();
+    let var_thing = conjunction.get_or_declare_variable("x").unwrap();
+
+    // add all constraints to make type inference return correct types, though we only plan Has's
+    let isa =
+        conjunction.constraints_mut().add_isa(IsaKind::Exact, var_thing, Vertex::Label(ANIMAL_LABEL)).unwrap().clone();
+    let entry = builder.finish();
+
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let entry_annotations = infer_types_for_match_block(
+        &entry,
+        &translation_context.variable_registry,
+        &snapshot,
+        &type_manager,
+        &BTreeMap::new(),
+        &IndexedAnnotatedFunctions::empty(),
+        &AnnotatedUnindexedFunctions::empty(),
+    )
+    .unwrap();
+
+    let vars = vec![var_thing];
+    let variable_positions =
+        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+
+    // Plan
+    let steps = vec![Program::Intersection(IntersectionProgram::new(
+        variable_positions[&var_thing],
+        vec![ConstraintInstruction::IsaReverse(
+            IsaReverseInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&variable_positions),
+        )],
+        &[variable_positions[&var_thing]],
+        1,
+    ))];
+
+    let pattern_plan =
+        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
+    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
+
+    // Executor
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+
+    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
+        iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
+
+    for row in &rows {
+        let row = row.as_ref().unwrap();
+        assert_eq!(row.get_multiplicity(), 1);
+        print!("{}", row);
+    }
+
+    assert_eq!(rows.len(), 2);
+}
+
+#[test]
+fn traverse_isa_reverse_fixed_type_subtype() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+
+    // query:
+    //   match $x isa animal;
+
+    // IR
+    let mut translation_context = TranslationContext::new();
+    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut conjunction = builder.conjunction_mut();
+    let var_thing = conjunction.get_or_declare_variable("x").unwrap();
+
+    // add all constraints to make type inference return correct types, though we only plan Has's
+    let isa = conjunction
+        .constraints_mut()
+        .add_isa(IsaKind::Subtype, var_thing, Vertex::Label(ANIMAL_LABEL))
+        .unwrap()
+        .clone();
+    let entry = builder.finish();
+
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let entry_annotations = infer_types_for_match_block(
+        &entry,
+        &translation_context.variable_registry,
+        &snapshot,
+        &type_manager,
+        &BTreeMap::new(),
+        &IndexedAnnotatedFunctions::empty(),
+        &AnnotatedUnindexedFunctions::empty(),
+    )
+    .unwrap();
+
+    let vars = vec![var_thing];
+    let variable_positions =
+        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+
+    // Plan
+    let steps = vec![Program::Intersection(IntersectionProgram::new(
+        variable_positions[&var_thing],
+        vec![ConstraintInstruction::IsaReverse(
+            IsaReverseInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&variable_positions),
+        )],
+        &[variable_positions[&var_thing]],
+        1,
+    ))];
+
+    let pattern_plan =
+        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
+    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
+
+    // Executor
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+
+    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
+        iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
+
+    for row in &rows {
+        let row = row.as_ref().unwrap();
+        assert_eq!(row.get_multiplicity(), 1);
+        print!("{}", row);
+    }
+
+    assert_eq!(rows.len(), 6);
 }
