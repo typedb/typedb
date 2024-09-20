@@ -51,15 +51,13 @@ fn execute_read_query(
     query: typeql::Query,
 ) -> Result<Vec<HashMap<String, VariableValue<'static>>>, QueryError> {
     with_read_tx!(context, |tx| {
-        let (final_stage, named_outputs) = QueryManager {}
-            .prepare_read_pipeline(
-                tx.snapshot.clone(),
-                &tx.type_manager,
-                tx.thing_manager.clone(),
-                &tx.function_manager,
-                &query.into_pipeline(),
-            )
-            .unwrap();
+        let (final_stage, named_outputs) = QueryManager {}.prepare_read_pipeline(
+            tx.snapshot.clone(),
+            &tx.type_manager,
+            tx.thing_manager.clone(),
+            &tx.function_manager,
+            &query.into_pipeline(),
+        )?;
         let result_as_batch = match final_stage.into_iterator(ExecutionInterrupt::new_uninterruptible()) {
             Ok((iterator, _)) => iterator.collect_owned(),
             Err((err, _)) => {

@@ -344,7 +344,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
         if let Some(role_type) = role_type_var {
             debug_assert!(self.context.is_variable_available(self.constraints.scope, role_type));
-            self.context.set_variable_category(role_type, VariableCategory::ThingType, relates.clone())?;
+            self.context.set_variable_category(role_type, VariableCategory::RoleType, relates.clone())?;
         };
 
         let constraint = self.constraints.add_constraint(relates);
@@ -367,7 +367,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
         if let Some(role_type) = role_type_var {
             debug_assert!(self.context.is_variable_available(self.constraints.scope, role_type));
-            self.context.set_variable_category(role_type, VariableCategory::ThingType, plays.clone())?;
+            self.context.set_variable_category(role_type, VariableCategory::RoleType, plays.clone())?;
         };
 
         let constraint = self.constraints.add_constraint(plays);

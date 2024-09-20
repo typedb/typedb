@@ -181,7 +181,11 @@ impl VariableRegistry {
                 let narrowest = existing_category.narrowest(category);
                 match narrowest {
                     None => Err(PatternDefinitionError::VariableCategoryMismatch {
-                        variable_name: self.variable_names.get(&variable).unwrap().clone(),
+                        variable_name: self
+                            .variable_names
+                            .get(&variable)
+                            .cloned()
+                            .unwrap_or_else(|| "$<INTERNAL>".to_owned()),
                         category_1: category,
                         // category_1_source: source,
                         category_2: *existing_category,
