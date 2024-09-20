@@ -124,7 +124,7 @@ pub(super) fn add_user_defined_function_call(
     let Some(callee) = callee else {
         return Err(PatternDefinitionError::UnresolvedFunction { function_name: function_name.to_owned() });
     };
-    constraints.add_function_binding(assigned, &callee, arguments, &function_name)?;
+    constraints.add_function_binding(assigned, &callee, arguments, function_name)?;
     Ok(())
 }
 
@@ -200,7 +200,10 @@ pub mod tests {
     use itertools::Itertools;
 
     use crate::{
-        pattern::expression::{Expression, Operation, Operator},
+        pattern::{
+            expression::{Expression, Operation, Operator},
+            Vertex,
+        },
         program::{block::FunctionalBlock, function_signature::HashMapFunctionSignatureIndex},
         translation::{match_::translate_match, TranslationContext},
         PatternDefinitionError,
@@ -229,7 +232,7 @@ pub mod tests {
             .expression_tree_preorder()
             .cloned()
             .collect_vec();
-        assert_eq!(lhs, var_y);
+        assert_eq!(lhs, &Vertex::Variable(var_y));
 
         assert_eq!(rhs.len(), 5);
         let Expression::Constant(id) = rhs[0] else { panic!("Expected Constant, found: {:?}", rhs[0]) };

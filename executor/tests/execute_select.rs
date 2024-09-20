@@ -22,7 +22,10 @@ use concept::{
     type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
-use executor::{error::ReadExecutionError, program_executor::ProgramExecutor, row::MaybeOwnedRow, ExecutionInterrupt};
+use executor::{
+    error::ReadExecutionError, pipeline::stage::ExecutionContext, program_executor::ProgramExecutor,
+    row::MaybeOwnedRow, ExecutionInterrupt,
+};
 use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{
@@ -150,8 +153,8 @@ fn anonymous_vars_not_enumerated_or_counted() {
     let var_person = conjunction.get_or_declare_variable("person").unwrap();
     let var_attribute = conjunction.declare_variable_anonymous().unwrap();
     let has_attribute = conjunction.constraints_mut().add_has(var_person, var_attribute).unwrap().clone();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type.into()).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     let entry = builder.finish();
 
@@ -191,7 +194,9 @@ fn anonymous_vars_not_enumerated_or_counted() {
     let (_, thing_manager) = load_managers(storage.clone(), None);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+
     let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
 
@@ -229,8 +234,8 @@ fn unselected_named_vars_counted() {
     let var_person = conjunction.get_or_declare_variable("person").unwrap();
     let var_attribute = conjunction.get_or_declare_variable("attr").unwrap();
     let has_attribute = conjunction.constraints_mut().add_has(var_person, var_attribute).unwrap().clone();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type.into()).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     let entry = builder.finish();
 
@@ -271,7 +276,9 @@ fn unselected_named_vars_counted() {
     let (_, thing_manager) = load_managers(storage.clone(), None);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+
     let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
 
@@ -315,10 +322,10 @@ fn cartesian_named_counted_checked() {
     let has_name = conjunction.constraints_mut().add_has(var_person, var_name).unwrap().clone();
     let has_age = conjunction.constraints_mut().add_has(var_person, var_age).unwrap().clone();
     let has_email = conjunction.constraints_mut().add_has(var_person, var_email).unwrap().clone();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age, var_age_type).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_email, var_email_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age, var_age_type.into()).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_email, var_email_type.into()).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.scoped_name().as_str()).unwrap();
@@ -371,7 +378,9 @@ fn cartesian_named_counted_checked() {
     let (_, thing_manager) = load_managers(storage.clone(), None);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+
     let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
 

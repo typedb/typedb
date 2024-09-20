@@ -297,7 +297,8 @@ fn test_match_sort() {
             &insert_query,
         )
         .unwrap();
-    let (mut iterator, snapshot) = insert_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let (mut iterator, ExecutionContext { snapshot, .. }) =
+        insert_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
     assert!(matches!(iterator.next(), Some(Ok(_))));
     assert!(matches!(iterator.next(), None));
@@ -317,7 +318,8 @@ fn test_match_sort() {
             &match_,
         )
         .unwrap();
-    let (iterator, snapshot) = pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let (iterator, ExecutionContext { snapshot, .. }) =
+        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
     let batch = iterator.collect_owned().unwrap();
     assert_eq!(batch.len(), 4);
@@ -356,7 +358,8 @@ fn test_select() {
             &insert_query,
         )
         .unwrap();
-    let (mut iterator, snapshot) = insert_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let (mut iterator, ExecutionContext { snapshot, .. }) =
+        insert_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
     assert!(matches!(iterator.next(), Some(Ok(_))));
     assert!(matches!(iterator.next(), None));

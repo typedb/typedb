@@ -19,7 +19,10 @@ use compiler::{
 };
 use concept::type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
-use executor::{error::ReadExecutionError, program_executor::ProgramExecutor, row::MaybeOwnedRow, ExecutionInterrupt};
+use executor::{
+    error::ReadExecutionError, pipeline::stage::ExecutionContext, program_executor::ProgramExecutor,
+    row::MaybeOwnedRow, ExecutionInterrupt,
+};
 use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
@@ -72,8 +75,10 @@ fn attribute_equality() {
     let var_age_type_a = conjunction.get_or_declare_variable("age-a").unwrap();
     let var_age_type_b = conjunction.get_or_declare_variable("age-b").unwrap();
 
-    let isa_a = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age_a, var_age_type_a).unwrap().clone();
-    let isa_b = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age_b, var_age_type_b).unwrap().clone();
+    let isa_a =
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age_a, var_age_type_a.into()).unwrap().clone();
+    let isa_b =
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age_b, var_age_type_b.into()).unwrap().clone();
     conjunction.constraints_mut().add_label(var_age_type_a, AGE_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type_b, AGE_LABEL.scoped_name().as_str()).unwrap();
     let entry = builder.finish();
@@ -126,7 +131,8 @@ fn attribute_equality() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();

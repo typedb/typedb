@@ -138,7 +138,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let insert_executor = InsertStageExecutor::new(insert_plan, initial);
     let (output_iter, context) =
         insert_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match err {
-            PipelineExecutionError::WriteError { source } => source,
+            PipelineExecutionError::WriteError { typedb_source } => typedb_source,
             _ => unreachable!(),
         })?;
     let output_rows = output_iter
@@ -146,7 +146,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
         .into_iter()
         .collect::<Result<Vec<_>, _>>()
         .map_err(|err| match err {
-            PipelineExecutionError::WriteError { source } => source,
+            PipelineExecutionError::WriteError { typedb_source } => typedb_source,
             _ => unreachable!(),
         })?;
     Ok((output_rows, Arc::into_inner(context.snapshot).unwrap()))

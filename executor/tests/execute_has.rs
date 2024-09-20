@@ -25,7 +25,10 @@ use concept::{
     type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
-use executor::{error::ReadExecutionError, program_executor::ProgramExecutor, row::MaybeOwnedRow, ExecutionInterrupt};
+use executor::{
+    error::ReadExecutionError, pipeline::stage::ExecutionContext, program_executor::ProgramExecutor,
+    row::MaybeOwnedRow, ExecutionInterrupt,
+};
 use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{
@@ -123,8 +126,8 @@ fn traverse_has_unbounded_sorted_from() {
     let has_age = conjunction.constraints_mut().add_has(var_person, var_age).unwrap().clone();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age, var_age_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age, var_age_type.into()).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.scoped_name().as_str()).unwrap();
     builder.add_limit(3);
@@ -165,7 +168,8 @@ fn traverse_has_unbounded_sorted_from() {
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
@@ -200,14 +204,14 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     let var_name = conjunction.get_or_declare_variable("name").unwrap();
 
     let isa_person_1 =
-        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person_1, var_person_type).unwrap().clone();
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person_1, var_person_type.into()).unwrap().clone();
     let has_name_1 = conjunction.constraints_mut().add_has(var_person_1, var_name).unwrap().clone();
     let has_name_2 = conjunction.constraints_mut().add_has(var_person_2, var_name).unwrap().clone();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person_1, var_person_type).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person_2, var_person_type).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person_1, var_person_type.into()).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person_2, var_person_type.into()).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.scoped_name().as_str()).unwrap();
     builder.add_limit(3);
@@ -262,7 +266,8 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     // Executor
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
@@ -300,9 +305,9 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     let has_name = conjunction.constraints_mut().add_has(var_person, var_name).unwrap().clone();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age, var_age_type).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age, var_age_type.into()).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.scoped_name().as_str()).unwrap();
@@ -350,7 +355,8 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     let snapshot = Arc::new(snapshot);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
-    let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
@@ -381,7 +387,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
     let var_person = conjunction.get_or_declare_variable("person").unwrap();
     let var_attribute = conjunction.get_or_declare_variable("attr").unwrap();
     let has_attribute = conjunction.constraints_mut().add_has(var_person, var_attribute).unwrap().clone();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     let entry = builder.finish();
 
@@ -420,7 +426,8 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
     let variable_positions = executor.entry_variable_positions().clone();
 
-    let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
@@ -469,8 +476,8 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     let has_age = conjunction.constraints_mut().add_has(var_person, var_age).unwrap().clone();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age, var_age_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age, var_age_type.into()).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.scoped_name().as_str()).unwrap();
 
@@ -508,7 +515,8 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     // Executor
     let snapshot = Arc::new(snapshot);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
-    let iterator = executor.into_iterator(snapshot, thing_manager, ExecutionInterrupt::new_uninterruptible());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();

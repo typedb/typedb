@@ -27,6 +27,17 @@ use crate::match_::inference::{
     FunctionTypeInferenceError, TypeInferenceError,
 };
 
+pub fn infer_types(
+    _: impl Sized,
+    _: Vec<()>,
+    _: impl Sized,
+    _: impl Sized,
+    _: impl Sized,
+    _: impl Sized,
+) -> Result<(TypeAnnotations, ()), TypeInferenceError> {
+    todo!()
+}
+
 pub fn infer_types_for_functions(
     functions: Vec<Function>,
     snapshot: &impl ReadableSnapshot,

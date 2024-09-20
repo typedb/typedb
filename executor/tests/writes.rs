@@ -119,10 +119,6 @@ impl LendingIterator for ShimIterator {
 impl<Snapshot> StageAPI<Snapshot> for ShimStage<Snapshot> {
     type OutputIterator = ShimIterator;
 
-    fn named_selected_outputs(&self) -> HashMap<VariablePosition, String> {
-        todo!("named_selected_outputs() is only relevant in TransactionService?")
-    }
-
     fn into_iterator(
         self,
         _: ExecutionInterrupt,
@@ -182,7 +178,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let insert_executor = InsertStageExecutor::new(insert_plan, initial);
     let (output_iter, context) =
         insert_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match err {
-            PipelineExecutionError::WriteError { source } => source,
+            PipelineExecutionError::WriteError { typedb_source } => typedb_source,
             _ => unreachable!(),
         })?;
     let output_rows = output_iter
@@ -190,7 +186,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
         .into_iter()
         .collect::<Result<Vec<_>, _>>()
         .map_err(|err| match err {
-            PipelineExecutionError::WriteError { source } => source,
+            PipelineExecutionError::WriteError { typedb_source } => typedb_source,
             _ => unreachable!(),
         })?;
     Ok((output_rows, Arc::into_inner(context.snapshot).unwrap()))
@@ -257,7 +253,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     let delete_executor = DeleteStageExecutor::new(delete_plan, initial);
     let (output_iter, context) =
         delete_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match err {
-            PipelineExecutionError::WriteError { source } => source,
+            PipelineExecutionError::WriteError { typedb_source } => typedb_source,
             _ => unreachable!(),
         })?;
     let output_rows = output_iter
@@ -265,7 +261,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
         .into_iter()
         .collect::<Result<Vec<_>, _>>()
         .map_err(|err| match err {
-            PipelineExecutionError::WriteError { source } => source,
+            PipelineExecutionError::WriteError { typedb_source } => typedb_source,
             _ => unreachable!(),
         })?;
     Ok((output_rows, Arc::into_inner(context.snapshot).unwrap()))
