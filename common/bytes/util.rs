@@ -81,7 +81,7 @@ impl fmt::Debug for HexBytesFormatter<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         const GROUP: usize = 2;
         const BREAK: usize = 16;
-        f.write_char('[')?;
+        f.write_str("0x")?;
         if f.alternate() {
             f.write_str("\n    ")?;
         }

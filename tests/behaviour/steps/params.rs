@@ -61,7 +61,7 @@ impl MayError {
                 ConceptWriteError::ConceptRead { source } => {
                     panic!("Expected logic error, got ConceptRead {:?}", source)
                 }
-                ConceptWriteError::SchemaValidation { source: SchemaValidationError::ConceptRead(source) } => {
+                ConceptWriteError::SchemaValidation { typedb_source: SchemaValidationError::ConceptRead { source } } => {
                     panic!("Expected logic error, got SchemaValidation::ConceptRead {:?}", source)
                 }
                 _ => {}
@@ -743,7 +743,7 @@ impl FromStr for Annotations {
                 // TODO: Refactor parsing to support passing ValueTypes into anno.into_typedb
             }
         })
-        .try_collect()?;
+            .try_collect()?;
 
         Ok(Self { typedb_annotations })
     }

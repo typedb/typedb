@@ -73,7 +73,7 @@ fn create_keyspaces_duplicate_name_error() {
                 ..
             })
         ),
-        "{}",
+        "{:?}",
         storage_result.unwrap_err()
     );
 }
@@ -96,7 +96,7 @@ fn create_keyspaces_duplicate_id_error() {
                 ..
             })
         ),
-        "{}",
+        "{:?}",
         storage_result.unwrap_err()
     );
 }

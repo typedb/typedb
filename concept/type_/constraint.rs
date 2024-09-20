@@ -52,6 +52,27 @@ pub enum ConstraintCategory {
     Values,
 }
 
+impl fmt::Display for ConstraintCategory {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
+    }
+}
+
+impl fmt::Debug for ConstraintCategory {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Abstract => write!(f, "{}", AnnotationCategory::Abstract),
+            Self::Distinct => write!(f, "{}", AnnotationCategory::Distinct),
+            Self::Independent => write!(f, "{}", AnnotationCategory::Independent),
+            Self::Unique => write!(f, "{}", AnnotationCategory::Unique),
+            Self::Cardinality => write!(f, "{}", AnnotationCategory::Cardinality),
+            Self::Regex => write!(f, "{}", AnnotationCategory::Regex),
+            Self::Range => write!(f, "{}", AnnotationCategory::Range),
+            Self::Values => write!(f, "{}", AnnotationCategory::Values),
+        }
+    }
+}
+
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub enum ConstraintDescription {
     Abstract(AnnotationAbstract),
@@ -184,16 +205,7 @@ impl fmt::Display for ConstraintDescription {
 
 impl fmt::Debug for ConstraintDescription {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            ConstraintDescription::Abstract(annotation) => write!(f, "{}", annotation),
-            ConstraintDescription::Distinct(annotation) => write!(f, "{}", annotation),
-            ConstraintDescription::Independent(annotation) => write!(f, "{}", annotation),
-            ConstraintDescription::Unique(annotation) => write!(f, "{}", annotation),
-            ConstraintDescription::Cardinality(annotation) => write!(f, "{}", annotation),
-            ConstraintDescription::Regex(annotation) => write!(f, "{}", annotation),
-            ConstraintDescription::Range(annotation) => write!(f, "{}", annotation),
-            ConstraintDescription::Values(annotation) => write!(f, "{}", annotation),
-        }
+        write!(f, "{}", self.category())
     }
 }
 
@@ -376,6 +388,7 @@ macro_rules! filter_out_unchecked_constraints {
 pub(crate) use filter_out_unchecked_constraints;
 
 use crate::type_::{owns::Owns, plays::Plays, relates::Relates, type_manager::TypeManager, Ordering};
+use crate::type_::annotation::AnnotationCategory;
 
 pub(crate) fn get_cardinality_constraints<C: Constraint<T>, T: Hash + Eq>(
     constraints: impl IntoIterator<Item=C>,
