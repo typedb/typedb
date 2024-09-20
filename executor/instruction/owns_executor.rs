@@ -29,14 +29,12 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{owns_to_tuple_owner_attribute, OwnsToTupleFn, TuplePositions, TupleResult},
-        BinaryIterateMode, Checker, FilterFn, VariableModes,
+        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
     VariablePosition,
 };
-
-use super::type_from_row_or_annotations;
 
 pub(crate) struct OwnsExecutor {
     owns: ir::pattern::constraint::Owns<VariablePosition>,
