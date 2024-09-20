@@ -41,10 +41,6 @@ impl<'a> Entity<'a> {
         EntityType::build_from_type_id(self.vertex.type_id_())
     }
 
-    pub fn iid(&self) -> ByteReference<'_> {
-        self.vertex.bytes()
-    }
-
     pub fn get_indexed_players<'m>(
         &'m self,
         snapshot: &'m impl ReadableSnapshot,
@@ -91,6 +87,10 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
 
     fn into_owned(self) -> Self::Owned {
         Entity::new(self.vertex.into_owned())
+    }
+
+    fn iid(&self) -> ByteReference<'_> {
+        self.vertex.bytes()
     }
 
     fn set_required(

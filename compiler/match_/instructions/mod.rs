@@ -255,7 +255,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
     }
 }
 
-impl<ID: Copy> InstructionAPI<ID> for ConstraintInstruction<ID> {
+impl<ID: IrID + Copy> InstructionAPI<ID> for ConstraintInstruction<ID> {
     fn constraint(&self) -> Constraint<ID> {
         match self {
             Self::TypeList(_) => todo!(), // TODO underlying constraint?

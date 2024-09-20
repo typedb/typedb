@@ -55,13 +55,13 @@ macro_rules! validate_capability_cardinality_constraint {
         ) -> Result<(), DataValidationError> {
             let mut cardinality_constraints: HashSet<CapabilityConstraint<$capability_type<'static>>> = HashSet::new();
             let counts =
-                object.$get_interface_counts_func(snapshot, thing_manager).map_err(DataValidationError::ConceptRead)?;
+                object.$get_interface_counts_func(snapshot, thing_manager).map_err(|source| DataValidationError::ConceptRead { source })?;
 
             for interface_type in interface_types_to_check {
                 for constraint in object
                     .type_()
                     .$get_cardinality_constraints_func(snapshot, thing_manager.type_manager(), interface_type.clone())
-                    .map_err(DataValidationError::ConceptRead)?
+                    .map_err(|source| DataValidationError::ConceptRead { source })?
                     .into_iter()
                 {
                     cardinality_constraints.insert(constraint);
@@ -73,7 +73,7 @@ macro_rules! validate_capability_cardinality_constraint {
                     .description()
                     .unwrap_cardinality()
                     .map_err(|source| ConceptReadError::Constraint { source })
-                    .map_err(DataValidationError::ConceptRead)?
+                    .map_err(|source| DataValidationError::ConceptRead { source })?
                     .is_unchecked()
                 {
                     continue;
@@ -82,7 +82,7 @@ macro_rules! validate_capability_cardinality_constraint {
                 let source_interface_type = constraint.source().interface();
                 let sub_interface_types = source_interface_type
                     .get_subtypes_transitive(snapshot, thing_manager.type_manager())
-                    .map_err(DataValidationError::ConceptRead)?;
+                    .map_err(|source| DataValidationError::ConceptRead { source })?;
                 let count =
                     TypeAPI::chain_types(source_interface_type.clone(), sub_interface_types.into_iter().cloned())
                         .filter_map(|interface_type| counts.get(&interface_type))

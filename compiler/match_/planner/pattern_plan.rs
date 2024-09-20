@@ -21,6 +21,7 @@ use ir::{
     program::block::{FunctionalBlock, VariableRegistry},
 };
 use itertools::Itertools;
+use ir::pattern::IrID;
 
 use crate::{
     expression::compiled_expression::CompiledExpression,
@@ -774,6 +775,6 @@ pub struct OptionalProgram {
     pub optional: MatchProgram,
 }
 
-pub trait InstructionAPI<ID> {
+pub trait InstructionAPI<ID: IrID> {
     fn constraint(&self) -> Constraint<ID>;
 }

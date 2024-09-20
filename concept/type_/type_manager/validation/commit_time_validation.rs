@@ -300,7 +300,7 @@ impl CommitTimeValidation {
                 relates_declared.contains(&relates)
                     && !relates.is_specialising(snapshot, type_manager).unwrap()
                     && relates.role().get_label(snapshot, type_manager).unwrap().scope().unwrap()
-                        == relates.relation().get_label(snapshot, type_manager).unwrap().name()
+                    == relates.relation().get_label(snapshot, type_manager).unwrap().name()
             })
         });
 
@@ -325,10 +325,10 @@ impl CommitTimeValidation {
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
         if relates.is_specialising(snapshot, type_manager)? && !relates.is_abstract(snapshot, type_manager)? {
-            validation_errors.push(SchemaValidationError::SpecialisingRelatesIsNotAbstract(
-                get_label_or_concept_read_err(snapshot, type_manager, relates.relation())?,
-                get_label_or_concept_read_err(snapshot, type_manager, relates.role())?,
-            ))
+            validation_errors.push(SchemaValidationError::SpecialisingRelatesIsNotAbstract {
+                relation: get_label_or_concept_read_err(snapshot, type_manager, relates.relation())?,
+                role: get_label_or_concept_read_err(snapshot, type_manager, relates.role())?,
+            })
         }
 
         Ok(())
@@ -354,12 +354,12 @@ impl CommitTimeValidation {
                     || capability_annotations_declared == supertype_capability_annotations_declared
                 {
                     validation_errors.push(
-                        SchemaValidationError::CannotRedeclareInheritedCapabilityWithoutSpecialisation(
-                            CAP::KIND,
-                            get_label_or_concept_read_err(snapshot, type_manager, interface_type.clone())?,
-                            get_label_or_concept_read_err(snapshot, type_manager, capability.object())?,
-                            get_label_or_concept_read_err(snapshot, type_manager, supertype_capability.object())?,
-                        ),
+                        SchemaValidationError::CannotRedeclareInheritedCapabilityWithoutSpecialisation {
+                            cap: CAP::KIND,
+                            // interface: get_label_or_concept_read_err(snapshot, type_manager, interface_type.clone())?,
+                            subtype: get_label_or_concept_read_err(snapshot, type_manager, capability.object())?,
+                            supertype: get_label_or_concept_read_err(snapshot, type_manager, supertype_capability.object())?,
+                        },
                     );
                 }
             }
@@ -427,12 +427,12 @@ impl CommitTimeValidation {
                 continue;
             }
             if declared_constraint_descriptions.clone().contains(&constraint.description()) {
-                validation_errors.push(SchemaValidationError::CannotRedeclareConstraintOnSubtypeWithoutSpecialisation(
-                    T::KIND,
-                    get_label_or_concept_read_err(snapshot, type_manager, type_.clone())?,
-                    get_label_or_concept_read_err(snapshot, type_manager, constraint.source())?,
-                    constraint.description(),
-                ));
+                validation_errors.push(SchemaValidationError::CannotRedeclareConstraintOnSubtypeWithoutSpecialisation {
+                    // constraint: T::KIND,
+                    subtype: get_label_or_concept_read_err(snapshot, type_manager, type_.clone())?,
+                    // get_label_or_concept_read_err(snapshot, type_manager, constraint.source())?,
+                    constraint: constraint.description(),
+                });
             }
         }
 
@@ -455,12 +455,12 @@ impl CommitTimeValidation {
             let description = constraint.description();
             if interface_type_constraint_descriptions.contains(&description) {
                 validation_errors.push(
-                    SchemaValidationError::CapabilityConstraintAlreadyExistsForTheWholeInterfaceType(
-                        CAP::KIND,
-                        get_label_or_concept_read_err(snapshot, type_manager, capability.object())?,
-                        get_label_or_concept_read_err(snapshot, type_manager, capability.interface())?,
-                        description,
-                    ),
+                    SchemaValidationError::CapabilityConstraintAlreadyExistsForTheWholeInterfaceType {
+                        cap: CAP::KIND,
+                        label: get_label_or_concept_read_err(snapshot, type_manager, capability.object())?,
+                        // get_label_or_concept_read_err(snapshot, type_manager, capability.interface())?,
+                        constraint: description,
+                    },
                 );
             }
         }
@@ -477,9 +477,9 @@ impl CommitTimeValidation {
         let relates = relation_type.get_relates(snapshot, type_manager)?;
 
         if relates.is_empty() {
-            validation_errors.push(SchemaValidationError::RelationTypeMustRelateAtLeastOneRole(
-                get_label_or_concept_read_err(snapshot, type_manager, relation_type)?,
-            ));
+            validation_errors.push(SchemaValidationError::RelationTypeMustRelateAtLeastOneRole {
+                relation: get_label_or_concept_read_err(snapshot, type_manager, relation_type)?,
+            });
         }
 
         Ok(())
@@ -557,12 +557,12 @@ impl CommitTimeValidation {
                         attribute_type.get_value_type_annotations_declared(snapshot, type_manager)?;
                     if declared_value_type_annotations.is_empty() {
                         validation_errors.push(
-                            SchemaValidationError::CannotRedeclareInheritedValueTypeWithoutSpecialisation(
-                                get_label_or_concept_read_err(snapshot, type_manager, attribute_type.clone())?,
-                                get_label_or_concept_read_err(snapshot, type_manager, supertype)?,
-                                declared_value_type,
-                                supertype_value_type,
-                            ),
+                            SchemaValidationError::CannotRedeclareInheritedValueTypeWithoutSpecialisation {
+                                label: get_label_or_concept_read_err(snapshot, type_manager, attribute_type.clone())?,
+                                super_label: get_label_or_concept_read_err(snapshot, type_manager, supertype)?,
+                                value_type: declared_value_type,
+                                // supertype_value_type,
+                            },
                         );
                     }
                 }
@@ -571,9 +571,9 @@ impl CommitTimeValidation {
 
         let value_type = attribute_type.get_value_type(snapshot, type_manager)?;
         if value_type.is_none() && !attribute_type.is_abstract(snapshot, type_manager)? {
-            validation_errors.push(SchemaValidationError::AttributeTypeWithoutValueTypeShouldBeAbstract(
-                get_label_or_concept_read_err(snapshot, type_manager, attribute_type)?,
-            ));
+            validation_errors.push(SchemaValidationError::AttributeTypeWithoutValueTypeShouldBeAbstract {
+                attribute: get_label_or_concept_read_err(snapshot, type_manager, attribute_type)?,
+            });
         }
 
         Ok(())
@@ -588,7 +588,7 @@ impl CommitTimeValidation {
         debug_assert_eq!(struct_definition.fields.len(), struct_definition.field_names.len());
 
         if struct_definition.fields.is_empty() {
-            validation_errors.push(SchemaValidationError::StructShouldHaveAtLeastOneField(struct_definition.name));
+            validation_errors.push(SchemaValidationError::StructShouldHaveAtLeastOneField{ name: struct_definition.name.to_owned() });
         }
 
         Ok(())

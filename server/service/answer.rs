@@ -16,6 +16,7 @@ use concept::{
         role_type::RoleType, type_manager::TypeManager, KindAPI, TypeAPI,
     },
 };
+use concept::thing::ThingAPI;
 use encoding::value::{value::Value, value_type::ValueType};
 use executor::row::MaybeOwnedRow;
 use storage::snapshot::ReadableSnapshot;
@@ -181,7 +182,7 @@ fn encode_role_type(
     type_manager: &TypeManager,
 ) -> Result<typedb_protocol::RoleType, ConceptReadError> {
     Ok(typedb_protocol::RoleType {
-        label: role.get_label(snapshot, type_manager)?.scoped_name().to_string()
+        label: role.get_label(snapshot, type_manager)?.scoped_name().as_str().to_owned()
     })
 }
 

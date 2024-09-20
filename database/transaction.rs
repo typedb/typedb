@@ -5,6 +5,7 @@
  */
 
 use std::{error::Error, fmt, sync::Arc};
+use itertools::Itertools;
 
 use concept::{
     error::ConceptWriteError,
@@ -14,6 +15,7 @@ use concept::{
         TypeManager,
     },
 };
+use error::typedb_error;
 use function::{function_manager::FunctionManager, FunctionError};
 use options::TransactionOptions;
 use storage::{
@@ -145,9 +147,13 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         let mut snapshot = Arc::into_inner(self.snapshot).unwrap();
         self.thing_manager
             .finalise(&mut snapshot)
-            .map_err(|errs| DataCommitError::ConceptWriteErrors { source: errs })?;
+            .map_err(|errs| {
+                // TODO: send all the errors, not just the first
+                let error = errs.into_iter().next().unwrap();
+                DataCommitError::ConceptWriteErrorsFirst{ typedb_source:error }
+            })?;
         drop(self.type_manager);
-        snapshot.commit().map_err(|err| DataCommitError::SnapshotError { source: err })?;
+        snapshot.commit().map_err(|err| DataCommitError::SnapshotError { typedb_source: err })?;
         Ok(())
     }
 
@@ -163,20 +169,25 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     }
 }
 
-// TODO this should be a TypeDB error, although it can contain many errors!?
-#[derive(Debug, Clone)]
-pub enum DataCommitError {
-    ConceptWriteErrors { source: Vec<ConceptWriteError> },
-    SnapshotError { source: SnapshotError },
-}
-
-impl fmt::Display for DataCommitError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Debug::fmt(self, f)
+typedb_error!(
+    pub DataCommitError(component = "Data commit", prefix = "DCT") {
+        ConceptWriteErrors(1, "Data commit error.", source: Vec<ConceptWriteError> ),
+        ConceptWriteErrorsFirst(2, "Data commit error.", ( typedb_source : ConceptWriteError )),
+        SnapshotError(3, "Snapshot error.", ( typedb_source: SnapshotError )),
     }
-}
+);
 
-impl Error for DataCommitError {}
+// #[derive(Debug, Clone)]
+// pub enum DataCommitError {
+// }
+//
+// impl fmt::Display for DataCommitError {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         fmt::Debug::fmt(self, f)
+//     }
+// }
+//
+// impl Error for DataCommitError {}
 
 // TODO: when we use typedb_error!, how do we pring stack trace? If we use the stack trace of each of these, we'll end up with a tree!
 //       If there's 1, we can use the stack trace, otherwise, we should list out all the errors?

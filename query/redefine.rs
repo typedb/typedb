@@ -181,7 +181,7 @@ fn redefine_struct_fields(
             |err| RedefineError::StructFieldDeleteError {
                 struct_name: name.to_owned(),
                 declaration: field.clone(),
-                source: err,
+                typedb_source: err,
             },
         )?;
 
@@ -190,7 +190,7 @@ fn redefine_struct_fields(
             .map_err(|err| RedefineError::StructFieldCreateError {
                 struct_name: name.to_owned(),
                 declaration: field.clone(),
-                source: err,
+                typedb_source: err,
             })?;
     }
     Ok(())
@@ -225,7 +225,7 @@ fn redefine_type_annotations(
                             label: label.to_owned(),
                             annotation,
                             declaration: type_declaration.clone(),
-                            source,
+                            typedb_source: source,
                         }
                     })?;
                 }
@@ -245,7 +245,7 @@ fn redefine_type_annotations(
                             label: label.to_owned(),
                             annotation,
                             declaration: type_declaration.clone(),
-                            source,
+                            typedb_source: source,
                         }
                     })?;
                 }
@@ -273,7 +273,7 @@ fn redefine_type_annotations(
                             label: label.to_owned(),
                             annotation,
                             declaration: type_declaration.clone(),
-                            source,
+                            typedb_source: source,
                         }
                     })?;
                 }
@@ -336,21 +336,21 @@ fn redefine_sub(
                 error_if_anything_redefined_else_set_true(anything_redefined)?;
                 type_
                     .set_supertype(snapshot, type_manager, thing_manager, supertype)
-                    .map_err(|source| RedefineError::SetSupertype { declaration: sub.clone(), source })?;
+                    .map_err(|source| RedefineError::SetSupertype { declaration: sub.clone(), typedb_source: source })?;
             }
             (TypeEnum::Relation(type_), TypeEnum::Relation(supertype)) => {
                 check_can_redefine_sub(snapshot, type_manager, &label, type_.clone(), supertype.clone())?;
                 error_if_anything_redefined_else_set_true(anything_redefined)?;
                 type_
                     .set_supertype(snapshot, type_manager, thing_manager, supertype)
-                    .map_err(|source| RedefineError::SetSupertype { declaration: sub.clone(), source })?;
+                    .map_err(|source| RedefineError::SetSupertype { declaration: sub.clone(), typedb_source: source })?;
             }
             (TypeEnum::Attribute(type_), TypeEnum::Attribute(supertype)) => {
                 check_can_redefine_sub(snapshot, type_manager, &label, type_.clone(), supertype.clone())?;
                 error_if_anything_redefined_else_set_true(anything_redefined)?;
                 type_
                     .set_supertype(snapshot, type_manager, thing_manager, supertype)
-                    .map_err(|source| RedefineError::SetSupertype { declaration: sub.clone(), source })?;
+                    .map_err(|source| RedefineError::SetSupertype { declaration: sub.clone(), typedb_source: source })?;
             }
             (TypeEnum::RoleType(_), TypeEnum::RoleType(_)) => {
                 return Err(err_unsupported_capability(&label, Kind::Role, capability));
@@ -403,7 +403,7 @@ fn redefine_value_type(
             error_if_anything_redefined_else_set_true(anything_redefined)?;
             attribute_type
                 .set_value_type(snapshot, type_manager, thing_manager, value_type.clone())
-                .map_err(|source| RedefineError::SetValueType { label: label.to_owned(), value_type, source })?;
+                .map_err(|source| RedefineError::SetValueType { label: label.to_owned(), value_type, typedb_source: source })?;
         }
 
         redefine_value_type_annotations(
@@ -451,7 +451,7 @@ fn redefine_value_type_annotations<'a>(
 
             error_if_anything_redefined_else_set_true(anything_redefined)?;
             attribute_type.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
-                RedefineError::SetCapabilityAnnotation { declaration: typeql_capability.clone(), annotation, source }
+                RedefineError::SetCapabilityAnnotation { declaration: typeql_capability.clone(), annotation, typedb_source: source }
             })?;
         }
     }
@@ -499,7 +499,7 @@ fn redefine_relates(
                     |source| RedefineError::SetRelatesOrdering {
                         label: label.clone().into_owned(),
                         declaration: typeql_relates.to_owned(),
-                        source,
+                        typedb_source: source,
                     },
                 )?;
                 existing_relates
@@ -550,7 +550,7 @@ fn redefine_relates_annotations(
         )? {
             error_if_anything_redefined_else_set_true(anything_redefined)?;
             relates.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
-                RedefineError::SetCapabilityAnnotation { annotation, declaration: typeql_capability.clone(), source }
+                RedefineError::SetCapabilityAnnotation { annotation, declaration: typeql_capability.clone(), typedb_source: source }
             })?;
         }
     }
@@ -606,7 +606,7 @@ fn redefine_relates_specialise<'a>(
             RedefineError::SetRelatesSpecialise {
                 label: relation_label.clone().into_owned(),
                 declaration: typeql_relates.clone(),
-                source,
+                typedb_source: source,
             }
         })?;
     }
@@ -660,7 +660,7 @@ fn redefine_owns(
                     RedefineError::SetOwnsOrdering {
                         label: label.clone().into_owned(),
                         declaration: typeql_owns.clone(),
-                        source,
+                        typedb_source: source,
                     }
                 })?;
                 existing_owns
@@ -694,7 +694,7 @@ fn redefine_owns_annotations(
         )? {
             error_if_anything_redefined_else_set_true(anything_redefined)?;
             owns.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
-                RedefineError::SetCapabilityAnnotation { declaration: typeql_capability.clone(), annotation, source }
+                RedefineError::SetCapabilityAnnotation { declaration: typeql_capability.clone(), annotation, typedb_source: source }
             })?;
         }
     }
@@ -778,7 +778,7 @@ fn redefine_plays_annotations(
         )? {
             error_if_anything_redefined_else_set_true(anything_redefined)?;
             plays.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
-                RedefineError::SetCapabilityAnnotation { declaration: todo!(), annotation, source }
+                RedefineError::SetCapabilityAnnotation { declaration: todo!(), annotation, typedb_source: source }
             })?;
         }
     }
@@ -939,20 +939,20 @@ typedb_error!(
             "Error removing field from struct type '{struct_name}'.\nSource:\n{declaration}",
             struct_name: String,
             declaration: Field,
-            ( source: ConceptWriteError )
+            ( typedb_source: ConceptWriteError )
         ),
         StructFieldCreateError(
             10,
             "Error creating new field in struct type '{struct_name}'.\nSource:\n{declaration}",
             struct_name: String,
             declaration: Field,
-            ( source: ConceptWriteError )
+            ( typedb_source: ConceptWriteError )
         ),
         SetSupertype(
             11,
             "Error setting supertype during redefine.\nSource:\n{declaration}",
             declaration: typeql::schema::definable::type_::capability::Sub,
-            ( source: ConceptWriteError )
+            ( typedb_source: ConceptWriteError )
         ),
         TypeCannotHaveCapability(
             12,
@@ -1062,21 +1062,21 @@ typedb_error!(
             "Redefining '{label}' to have value type '{value_type}' failed.",
             label: Label<'static>,
             value_type: ValueType,
-            ( source: ConceptWriteError )
+            ( typedb_source: ConceptWriteError )
         ),
         SetRelatesOrdering(
             29,
             "Redefining '{label}' to have an updated 'relates' ordering failed.\nSource:\n{declaration}",
             label: Label<'static>,
             declaration: TypeQLRelates,
-            ( source: ConceptWriteError )
+            ( typedb_source: ConceptWriteError )
         ),
         SetOwnsOrdering(
             30,
             "Redefining '{label}' to have an updated 'owns' ordering failed.\nSource:\n{declaration}",
             label: Label<'static>,
             declaration: TypeQLOwns,
-            ( source: ConceptWriteError )
+            ( typedb_source: ConceptWriteError )
         ),
         IllegalTypeAnnotation(
             31,
@@ -1099,21 +1099,21 @@ typedb_error!(
             label: Label<'static>,
             annotation: Annotation,
             declaration: Type,
-            ( source: ConceptWriteError )
+            ( typedb_source: ConceptWriteError )
         ),
         SetCapabilityAnnotation(
             34,
             "Redefining '{annotation}' failed.\nSource:\n{declaration}",
             annotation: Annotation,
             declaration: Capability,
-            ( source: ConceptWriteError )
+            ( typedb_source: ConceptWriteError )
         ),
         SetRelatesSpecialise(
             35,
             "For relation type '{label}', redefining 'relates' failed.\nSource:\n{declaration}",
             label: Label<'static>,
             declaration: TypeQLRelates,
-            ( source: ConceptWriteError )
+            ( typedb_source: ConceptWriteError )
         ),
         CapabilityKindMismatch(
             36,

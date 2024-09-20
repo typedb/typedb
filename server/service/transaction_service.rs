@@ -449,7 +449,7 @@ impl TransactionService {
             }
             Transaction::Write(transaction) => spawn_blocking(move || {
                 transaction.commit().map_err(|err| {
-                    TransactionServiceError::DataCommitFailed { source: err }.into_error_message().into_status()
+                    TransactionServiceError::DataCommitFailed { typedb_source: err }.into_error_message().into_status()
                 })
             })
                 .await
@@ -1241,7 +1241,7 @@ typedb_error!(
         CannotCommitReadTransaction(2, "Read transactions cannot be committed."),
         CannotRollbackReadTransaction(3, "Read transactions cannot be rolled back, since they never contain writes."),
         // TODO: these should be typedb_source
-        DataCommitFailed(4, "Data transaction commit failed.", ( source : DataCommitError )),
+        DataCommitFailed(4, "Data transaction commit failed.", ( typedb_source: DataCommitError )),
         SchemaCommitFailed(5, "Schema transaction commit failed.", ( source : SchemaCommitError )),
         QueryParseFailed(6, "Query parsing failed.", ( typedb_source: typeql::Error )),
         SchemaQueryRequiresSchemaTransaction(7, "Schema modification queries require schema transactions."),

@@ -56,10 +56,6 @@ impl<'a> Relation<'a> {
         RelationType::build_from_type_id(self.vertex.type_id_())
     }
 
-    pub fn iid(&self) -> ByteReference<'_> {
-        self.vertex.bytes()
-    }
-
     pub fn get_indexed_players<'m>(
         &self,
         snapshot: &'m impl ReadableSnapshot,
@@ -153,7 +149,7 @@ impl<'a> Relation<'a> {
         player: Object<'_>,
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_relation_exists_to_add_player(snapshot, thing_manager, self)
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         OperationTimeValidation::validate_relation_type_relates_role_type(
             snapshot,
@@ -161,7 +157,7 @@ impl<'a> Relation<'a> {
             self.type_(),
             role_type.clone(),
         )
-        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         OperationTimeValidation::validate_object_type_plays_role_type(
             snapshot,
@@ -169,13 +165,13 @@ impl<'a> Relation<'a> {
             player.type_(),
             role_type.clone(),
         )
-        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         OperationTimeValidation::validate_relates_is_not_abstract(snapshot, thing_manager, self, role_type.clone())
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         OperationTimeValidation::validate_plays_is_not_abstract(snapshot, thing_manager, &player, role_type.clone())
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         let distinct =
             self.type_().is_related_role_type_distinct(snapshot, thing_manager.type_manager(), role_type.clone())?;
@@ -199,7 +195,7 @@ impl<'a> Relation<'a> {
         }
 
         OperationTimeValidation::validate_relation_exists_to_add_player(snapshot, thing_manager, self)
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         OperationTimeValidation::validate_relation_type_relates_role_type(
             snapshot,
@@ -207,10 +203,10 @@ impl<'a> Relation<'a> {
             self.type_(),
             role_type.clone(),
         )
-        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         OperationTimeValidation::validate_relates_is_not_abstract(snapshot, thing_manager, self, role_type.clone())
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         let mut new_counts = HashMap::<_, u64>::new();
         for player in &new_players {
@@ -220,7 +216,7 @@ impl<'a> Relation<'a> {
                 player.type_(),
                 role_type.clone(),
             )
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
             OperationTimeValidation::validate_plays_is_not_abstract(
                 snapshot,
@@ -228,7 +224,7 @@ impl<'a> Relation<'a> {
                 &player,
                 role_type.clone(),
             )
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
             *new_counts.entry(player).or_default() += 1;
         }
@@ -240,7 +236,7 @@ impl<'a> Relation<'a> {
             role_type.clone(),
             &new_counts,
         )
-        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         // 1. get owned list
         let old_players = thing_manager.get_role_players_ordered(snapshot, self.as_reference(), role_type.clone())?;
@@ -292,7 +288,7 @@ impl<'a> Relation<'a> {
         delete_count: u64,
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_relation_exists_to_remove_player(snapshot, thing_manager, self)
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         OperationTimeValidation::validate_relation_type_relates_role_type(
             snapshot,
@@ -300,7 +296,7 @@ impl<'a> Relation<'a> {
             self.type_(),
             role_type.clone(),
         )
-        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         OperationTimeValidation::validate_object_type_plays_role_type(
             snapshot,
@@ -308,10 +304,10 @@ impl<'a> Relation<'a> {
             player.type_(),
             role_type.clone(),
         )
-        .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+        .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         OperationTimeValidation::validate_relates_is_not_abstract(snapshot, thing_manager, self, role_type.clone())
-            .map_err(|error| ConceptWriteError::DataValidation { source: error })?;
+            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         let distinct =
             self.type_().is_related_role_type_distinct(snapshot, thing_manager.type_manager(), role_type.clone())?;
@@ -371,6 +367,10 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
 
     fn into_owned(self) -> Self::Owned {
         Relation::new(self.vertex.into_owned())
+    }
+
+    fn iid(&self) -> ByteReference<'_> {
+        self.vertex.bytes()
     }
 
     fn set_required(

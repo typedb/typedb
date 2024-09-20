@@ -5,8 +5,10 @@
  */
 
 use std::{error::Error, fmt};
+use bytes::util::HexBytesFormatter;
 
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
+use error::typedb_error;
 
 use crate::{
     error::ConceptReadError,
@@ -21,107 +23,214 @@ pub(crate) mod commit_time_validation;
 pub(crate) mod operation_time_validation;
 pub(crate) mod validation;
 
-#[derive(Debug, Clone)]
-pub enum DataValidationError {
-    ConceptRead(ConceptReadError),
-    CannotAddOwnerInstanceForNotOwnedAttributeType(Label<'static>, Label<'static>),
-    CannotAddPlayerInstanceForNotPlayedRoleType(Label<'static>, Label<'static>),
-    CannotAddPlayerInstanceForNotRelatedRoleType(Label<'static>, Label<'static>),
-    EntityTypeConstraintViolated {
-        entity_type: EntityType<'static>,
-        constraint_source: EntityType<'static>,
-        error_source: ConstraintError,
-    },
-    RelationTypeConstraintViolated {
-        relation_type: RelationType<'static>,
-        constraint_source: RelationType<'static>,
-        error_source: ConstraintError,
-    },
-    AttributeTypeConstraintViolated {
-        attribute_type: AttributeType<'static>,
-        constraint_source: AttributeType<'static>,
-        error_source: ConstraintError,
-    },
-    KeyConstraintViolated {
-        owner: Object<'static>,
-        attribute_type: AttributeType<'static>,
-        attribute: Option<Attribute<'static>>,
-        constraint_source: Owns<'static>,
-        error_source: ConstraintError,
-    },
-    OwnsConstraintViolated {
-        owner: Object<'static>,
-        attribute_type: AttributeType<'static>,
-        attribute: Option<Attribute<'static>>,
-        constraint_source: Owns<'static>,
-        error_source: ConstraintError,
-    },
-    RelatesConstraintViolated {
-        relation: Relation<'static>,
-        role_type: RoleType<'static>,
-        player: Option<Object<'static>>,
-        constraint_source: Relates<'static>,
-        error_source: ConstraintError,
-    },
-    PlaysConstraintViolated {
-        player: Object<'static>,
-        role_type: RoleType<'static>,
-        relation: Option<Relation<'static>>,
-        constraint_source: Plays<'static>,
-        error_source: ConstraintError,
-    },
-    UniqueValueTaken {
-        owner_type: ObjectType<'static>,
-        attribute_type: AttributeType<'static>,
-        taken_owner_type: ObjectType<'static>,
-        taken_attribute_type: AttributeType<'static>,
-        value: Value<'static>,
-    },
-    ValueTypeMismatchWithAttributeType {
-        attribute_type: AttributeType<'static>,
-        expected: Option<ValueType>,
-        provided: ValueType,
-    },
-    SetHasOnDeletedOwner {
-        owner: Object<'static>,
-    },
-    UnsetHasOnDeletedOwner {
-        owner: Object<'static>,
-    },
-    AddPlayerOnDeletedRelation {
-        relation: Relation<'static>,
-    },
-    RemovePlayerOnDeletedRelation {
-        relation: Relation<'static>,
-    },
-}
-
-impl fmt::Display for DataValidationError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+typedb_error!(
+    pub DataValidationError(component = "Data validation", prefix = "DVL") {
+        ConceptRead(1, "Data validation failed due to concept read error.", ( source: ConceptReadError)),
+        CannotAddOwnerInstanceForNotOwnedAttributeType(
+            2,
+            "Type '{owner}' cannot own attribute type '{attribute}'.",
+            owner: Label<'static>,
+            attribute: Label<'static>
+        ),
+        CannotAddPlayerInstanceForNotPlayedRoleType(
+            3,
+            "Type '{player}' cannot play role '{role}'.",
+            player: Label<'static>,
+            role: Label<'static>
+        ),
+        CannotAddPlayerInstanceForNotRelatedRoleType(
+            4,
+            "Relation type '{relation}' cannot relate '{role}'.",
+            relation: Label<'static>,
+            role: Label<'static>
+        ),
+        EntityTypeConstraintViolated(
+            5,
+            "Constraint on entity type '{entity_type}' was violated.",
+            entity_type: Label<'static>,
+            (source: ConstraintError)
+        ),
+        RelationTypeConstraintViolated(
+            6,
+            "Constraint on relation type '{relation_type}' was violated.",
+            relation_type: Label<'static>,
+            (source: ConstraintError)
+        ),
+        AttributeTypeConstraintViolated(
+            7,
+            "Constraint on attribute type '{attribute_type}' was violated.",
+            attribute_type: Label<'static>,
+            (source: ConstraintError)
+        ),
+        KeyConstraintViolatedCard(
+            8,
+            "Instance {owner_iid} of type '{owner_type}' has a key constraint violation for attribute ownership of '{attribute_type}', since it owns {attribute_count} instead of exactly 1.",
+            owner_iid: HexBytesFormatter<'static>,
+            owner_type: Label<'static>,
+            attribute_type: Label<'static>,
+            attribute_count: u64,
+            constraint_source: Owns<'static>,
+            (source: ConstraintError)
+        ),
+        KeyConstraintViolatedUniqueness(
+            9,
+            "Instance {owner_iid} of type '{owner_type}' has a key constraint violation for attribute ownership of '{attribute_type}', since it is not the unique owner of attribute '{value}'.",
+            owner_iid: HexBytesFormatter<'static>,
+            owner_type: Label<'static>,
+            attribute_type: Label<'static>,
+            value: Value<'static>,
+            constraint_source: Owns<'static>,
+            (source: ConstraintError)
+        ),
+        OwnsConstraintViolated(
+            10,
+            "Instance {owner_iid} of type '{owner_type}' has an attribute ownership constraint violation for attribute ownership of type '{attribute_type}'.",
+            owner_iid: HexBytesFormatter<'static>,
+            owner_type: Label<'static>,
+            attribute_type: Label<'static>,
+            // constraint_source: Owns<'static>,
+            (source: ConstraintError)
+        ),
+        RelatesConstraintViolated(
+            11,
+            "Instance {relation_iid} of relation type '{relation_type}' has an relates constraint violation for role type '{role_type}'.",
+            relation_iid: HexBytesFormatter<'static>,
+            relation_type: Label<'static>,
+            role_type: Label<'static>,
+            // player_iid: HexBytesFormatter<'static>,
+            // constraint_source: Relates<'static>,
+            (source: ConstraintError)
+        ),
+        PlaysConstraintViolated(
+            12,
+            "Instance {player_iid} of type '{player_type}' violated constraint for playing role type '{role_type}'.",
+            player_iid: HexBytesFormatter<'static>,
+            player_type: Label<'static>,
+            role_type: Label<'static>,
+            // relation: Option<Relation<'static>>,
+            // constraint_source: Plays<'static>,
+            (source: ConstraintError)
+        ),
+        UniqueValueTaken(
+            13,
+            "Instance {owner_iid} of type '{owner_type}' violated unique-ownership constraint for attribute '{value}' with type '{attribute_type}'.",
+            owner_iid: HexBytesFormatter<'static>,
+            owner_type: Label<'static>,
+            attribute_type: Label<'static>,
+            // taken_owner_type: Label<'static>,
+            // taken_attribute_type: Label<'static>,
+            value: Value<'static>
+        ),
+        AttributeTypeHasNoValueType(
+            14,
+            "Attribute type '{attribute_type}' has no defined value type, but received value '{provided_value}' of type '{provided_value_type}'.",
+            attribute_type: Label<'static>,
+            provided_value: Value<'static>,
+            provided_value_type: ValueType
+        ),
+        ValueTypeMismatchWithAttributeType(
+            15,
+            "Attribute type '{attribute_type}' expects values of type '{expected_value_type}' but received value '{provided_value}' of type '{provided_value_type}'.",
+            attribute_type: Label<'static>,
+            expected_value_type: ValueType,
+            provided_value: Value<'static>,
+            provided_value_type: ValueType
+        ),
+        SetHasOnDeletedOwner(
+            16,
+            "Cannot set attribute ownership on an owner {owner_iid} that has already been deleted.",
+            owner_iid: HexBytesFormatter<'static>
+        ),
+        UnsetHasOnDeletedOwner(
+            17,
+            "Cannot unset attribute ownership on an owner {owner_iid} that has already been deleted.",
+            owner_iid: HexBytesFormatter<'static>
+        ),
+        AddPlayerOnDeletedRelation(
+            18,
+            "Cannot add role player on to a relation {relation_iid} that has already been deleted.",
+            relation_iid: HexBytesFormatter<'static>
+        ),
+        RemovePlayerOnDeletedRelation(
+            19,
+            "Cannot remove role player from a relation {relation_iid} that has already been deleted.",
+            relation_iid: HexBytesFormatter<'static>
+        ),
     }
-}
+);
+//
+// #[derive(Debug, Clone)]
+// pub enum DataValidationError {
+//     ConceptRead(ConceptReadError),
+//     CannotAddOwnerInstanceForNotOwnedAttributeType(Label<'static>, Label<'static>),
+//     CannotAddPlayerInstanceForNotPlayedRoleType(Label<'static>, Label<'static>),
+//     CannotAddPlayerInstanceForNotRelatedRoleType(Label<'static>, Label<'static>),
+//     EntityTypeConstraintViolated {
+//         entity_type: EntityType<'static>,
+//         constraint_source: EntityType<'static>,
+//         error_source: ConstraintError,
+//     },
+//     RelationTypeConstraintViolated {
+//         relation_type: RelationType<'static>,
+//         constraint_source: RelationType<'static>,
+//         error_source: ConstraintError,
+//     },
+//     AttributeTypeConstraintViolated {
+//         attribute_type: AttributeType<'static>,
+//         constraint_source: AttributeType<'static>,
+//         error_source: ConstraintError,
+//     },
+//     KeyConstraintViolated {
+//         owner: Object<'static>,
+//         attribute_type: AttributeType<'static>,
+//         attribute: Option<Attribute<'static>>,
+//         constraint_source: Owns<'static>,
+//         error_source: ConstraintError,
+//     },
+//     OwnsConstraintViolated {
+//         owner: Object<'static>,
+//         attribute_type: AttributeType<'static>,
+//         attribute: Option<Attribute<'static>>,
+//         constraint_source: Owns<'static>,
+//         error_source: ConstraintError,
+//     },
+//     RelatesConstraintViolated {
+//         relation: Relation<'static>,
+//         role_type: RoleType<'static>,
+//         player: Option<Object<'static>>,
+//         constraint_source: Relates<'static>,
+//         error_source: ConstraintError,
+//     },
+//     PlaysConstraintViolated {
+//         player: Object<'static>,
+//         role_type: RoleType<'static>,
+//         relation: Option<Relation<'static>>,
+//         constraint_source: Plays<'static>,
+//         error_source: ConstraintError,
+//     },
+//     UniqueValueTaken {
+//         owner_type: ObjectType<'static>,
+//         attribute_type: AttributeType<'static>,
+//         taken_owner_type: ObjectType<'static>,
+//         taken_attribute_type: AttributeType<'static>,
+//         value: Value<'static>,
+//     },
+//     ValueTypeMismatchWithAttributeType {
+//         attribute_type: AttributeType<'static>,
+//         expected: Option<ValueType>,
+//         provided: ValueType,
+//     },
+//     SetHasOnDeletedOwner {
+//         owner: Object<'static>,
+//     },
+//     UnsetHasOnDeletedOwner {
+//         owner: Object<'static>,
+//     },
+//     AddPlayerOnDeletedRelation {
+//         relation: Relation<'static>,
+//     },
+//     RemovePlayerOnDeletedRelation {
+//         relation: Relation<'static>,
+//     },
+// }
 
-impl Error for DataValidationError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::ConceptRead(source) => Some(source),
-            Self::CannotAddOwnerInstanceForNotOwnedAttributeType(_, _) => None,
-            Self::CannotAddPlayerInstanceForNotPlayedRoleType(_, _) => None,
-            Self::CannotAddPlayerInstanceForNotRelatedRoleType(_, _) => None,
-            Self::EntityTypeConstraintViolated { error_source, .. } => Some(error_source),
-            Self::RelationTypeConstraintViolated { error_source, .. } => Some(error_source),
-            Self::AttributeTypeConstraintViolated { error_source, .. } => Some(error_source),
-            Self::KeyConstraintViolated { error_source, .. } => Some(error_source),
-            Self::OwnsConstraintViolated { error_source, .. } => Some(error_source),
-            Self::RelatesConstraintViolated { error_source, .. } => Some(error_source),
-            Self::PlaysConstraintViolated { error_source, .. } => Some(error_source),
-            Self::UniqueValueTaken { .. } => None,
-            Self::ValueTypeMismatchWithAttributeType { .. } => None,
-            Self::SetHasOnDeletedOwner { .. } => None,
-            Self::UnsetHasOnDeletedOwner { .. } => None,
-            Self::AddPlayerOnDeletedRelation { .. } => None,
-            Self::RemovePlayerOnDeletedRelation { .. } => None,
-        }
-    }
-}

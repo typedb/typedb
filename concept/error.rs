@@ -10,6 +10,7 @@ use encoding::{
     error::EncodingError,
     value::{label::Label, value_type::ValueType},
 };
+use error::typedb_error;
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
 
 use crate::{
@@ -44,47 +45,24 @@ impl Error for ConceptError {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum ConceptWriteError {
-    SnapshotGet { source: SnapshotGetError },
-    SnapshotIterate { source: Arc<SnapshotIteratorError> },
-    ConceptRead { source: ConceptReadError },
-    SchemaValidation { source: SchemaValidationError },
-    DataValidation { source: DataValidationError },
-    Encoding { source: EncodingError },
-    Annotation { source: AnnotationError },
-    // TODO: Might refactor these to "InvalidOperationError", or just use unreachable! instead of it.
-    SetHasOrderedOwnsUnordered {},
-    SetHasUnorderedOwnsOrdered {},
-    UnsetHasOrderedOwnsUnordered {},
-    UnsetHasUnorderedOwnsOrdered {},
-    SetPlayersOrderedRoleUnordered {},
-}
+typedb_error!(
+    pub ConceptWriteError(component = "Concept write", prefix = "COW") {
+        SnapshotGet(1, "Concept write failed due to a snapshot read error.", (source: SnapshotGetError)),
+        SnapshotIterate(2, "Concept write failed due to a snapshot iteration error.", (source: Arc<SnapshotIteratorError>)),
+        ConceptRead(3, "Concept write failed due to a concept read error.", (source: ConceptReadError)),
+        SchemaValidation(4, "Concept write failed due to a schema validation error.", (typedb_source: SchemaValidationError)),
+        DataValidation(5, "Concept write failed due to a data validation error.", (typedb_source: DataValidationError)),
+        Encoding(6, "Concept write failed due to an encoding error.", (source: EncodingError)),
+        Annotation(7, "Concept write failed due to an annotation error.", (source: AnnotationError)),
 
-impl fmt::Display for ConceptWriteError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        // TODO: Might refactor these to "InvalidOperationError", or just use unreachable! instead of it.
+        SetHasOrderedOwnsUnordered(8, "Concept write failed, due to setting ordered owns as unordered."),
+        SetHasUnorderedOwnsOrdered(9, "Concept write failed, due to setting unordered owns as ordered."),
+        UnsetHasOrderedOwnsUnordered(10, "Concept write failed, cannot unset an ordered owns when the ownership is unordered."),
+        UnsetHasUnorderedOwnsOrdered(11, "Concept write failed, cannot unset an unordered owns when the ownership is ordered"),
+        SetPlayersOrderedRoleUnordered(12, "Concept write failed, cannot set relation's ordered role players as unordered."),
     }
-}
-
-impl Error for ConceptWriteError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::SnapshotGet { source, .. } => Some(source),
-            Self::SnapshotIterate { source, .. } => Some(source),
-            Self::ConceptRead { source } => Some(source),
-            Self::Encoding { source, .. } => Some(source),
-            Self::SchemaValidation { source, .. } => Some(source),
-            Self::DataValidation { source, .. } => Some(source),
-            Self::Annotation { .. } => None,
-            Self::SetHasOrderedOwnsUnordered { .. } => None,
-            Self::SetPlayersOrderedRoleUnordered { .. } => None,
-            Self::SetHasUnorderedOwnsOrdered { .. } => None,
-            Self::UnsetHasOrderedOwnsUnordered { .. } => None,
-            Self::UnsetHasUnorderedOwnsOrdered { .. } => None,
-        }
-    }
-}
+);
 
 impl From<ConceptReadError> for ConceptWriteError {
     fn from(error: ConceptReadError) -> Self {

@@ -120,7 +120,7 @@ impl TypeID {
 
 impl Display for TypeID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", &HexBytesFormatter(&self.bytes()))
+        write!(f, "{:?}", &HexBytesFormatter::borrowed(&self.bytes()))
     }
 }
 

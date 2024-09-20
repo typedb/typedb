@@ -60,7 +60,7 @@ where
             let mut row = batch.get_row_mut(index);
             match self.deleter.execute_delete(snapshot_ref, self.thing_manager.as_ref(), &mut row) {
                 Ok(_) => {}
-                Err(err) => return Err((snapshot, PipelineExecutionError::WriteError { source: err })),
+                Err(err) => return Err((snapshot, PipelineExecutionError::WriteError { typedb_source: err })),
             }
 
             if index % 100 == 0 {

@@ -389,7 +389,7 @@ impl AttributeID {
 
 impl Display for AttributeID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", &HexBytesFormatter(self.bytes()))
+        write!(f, "{:?}", &HexBytesFormatter::borrowed(self.bytes()))
     }
 }
 
