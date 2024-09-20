@@ -479,7 +479,7 @@ impl TransactionService {
 
         self.finish_running_write_query().await?;
         if let Break(()) = self.cancel_queued_write_queries().await {
-            return Ok(Break(()))
+            return Ok(Break(()));
         }
 
         match self.transaction.take().unwrap() {
