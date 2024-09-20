@@ -4,11 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, collections::HashMap, sync::Arc};
+use std::{
+    borrow::Cow,
+    collections::{BTreeMap, HashMap},
+    sync::Arc,
+};
 
 use compiler::{
     match_::{
-        inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
+        inference::{
+            annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+            type_inference::infer_types_for_match_block,
+        },
         instructions::{
             thing::{IsaReverseInstruction, LinksInstruction, LinksReverseInstruction},
             ConstraintInstruction, Inputs,
@@ -212,13 +219,14 @@ fn traverse_links_unbounded_sorted_from() {
     let entry = builder.finish();
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let (entry_annotations, _) = infer_types(
+    let entry_annotations = infer_types_for_match_block(
         &entry,
-        vec![],
+        &translation_context.variable_registry,
         &snapshot,
         &type_manager,
+        &BTreeMap::new(),
         &IndexedAnnotatedFunctions::empty(),
-        &translation_context.variable_registry,
+        &AnnotatedUnindexedFunctions::empty(),
     )
     .unwrap();
 
@@ -313,13 +321,14 @@ fn traverse_links_unbounded_sorted_to() {
     let entry = builder.finish();
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let (entry_annotations, _) = infer_types(
+    let entry_annotations = infer_types_for_match_block(
         &entry,
-        vec![],
+        &translation_context.variable_registry,
         &snapshot,
         &type_manager,
+        &BTreeMap::new(),
         &IndexedAnnotatedFunctions::empty(),
-        &translation_context.variable_registry,
+        &AnnotatedUnindexedFunctions::empty(),
     )
     .unwrap();
 
@@ -404,13 +413,14 @@ fn traverse_links_bounded_relation() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let (entry_annotations, _) = infer_types(
+    let entry_annotations = infer_types_for_match_block(
         &entry,
-        vec![],
+        &translation_context.variable_registry,
         &snapshot,
         &type_manager,
+        &BTreeMap::new(),
         &IndexedAnnotatedFunctions::empty(),
-        &translation_context.variable_registry,
+        &AnnotatedUnindexedFunctions::empty(),
     )
     .unwrap();
 
@@ -507,13 +517,14 @@ fn traverse_links_bounded_relation_player() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let (entry_annotations, _) = infer_types(
+    let entry_annotations = infer_types_for_match_block(
         &entry,
-        vec![],
+        &translation_context.variable_registry,
         &snapshot,
         &type_manager,
+        &BTreeMap::new(),
         &IndexedAnnotatedFunctions::empty(),
-        &translation_context.variable_registry,
+        &AnnotatedUnindexedFunctions::empty(),
     )
     .unwrap();
 
@@ -616,13 +627,14 @@ fn traverse_links_reverse_unbounded_sorted_from() {
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let (entry_annotations, _) = infer_types(
+    let entry_annotations = infer_types_for_match_block(
         &entry,
-        vec![],
+        &translation_context.variable_registry,
         &*snapshot,
         &type_manager,
+        &BTreeMap::new(),
         &IndexedAnnotatedFunctions::empty(),
-        &translation_context.variable_registry,
+        &AnnotatedUnindexedFunctions::empty(),
     )
     .unwrap();
 
@@ -702,13 +714,14 @@ fn traverse_links_reverse_unbounded_sorted_to() {
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let (entry_annotations, _) = infer_types(
+    let entry_annotations = infer_types_for_match_block(
         &entry,
-        vec![],
+        &translation_context.variable_registry,
         &*snapshot,
         &type_manager,
+        &BTreeMap::new(),
         &IndexedAnnotatedFunctions::empty(),
-        &translation_context.variable_registry,
+        &AnnotatedUnindexedFunctions::empty(),
     )
     .unwrap();
 
@@ -789,13 +802,14 @@ fn traverse_links_reverse_bounded_player() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let (entry_annotations, _) = infer_types(
+    let entry_annotations = infer_types_for_match_block(
         &entry,
-        vec![],
+        &translation_context.variable_registry,
         &snapshot,
         &type_manager,
+        &BTreeMap::new(),
         &IndexedAnnotatedFunctions::empty(),
-        &translation_context.variable_registry,
+        &AnnotatedUnindexedFunctions::empty(),
     )
     .unwrap();
 
@@ -891,13 +905,14 @@ fn traverse_links_reverse_bounded_player_relation() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let (entry_annotations, _) = infer_types(
+    let entry_annotations = infer_types_for_match_block(
         &entry,
-        vec![],
+        &translation_context.variable_registry,
         &snapshot,
         &type_manager,
+        &BTreeMap::new(),
         &IndexedAnnotatedFunctions::empty(),
-        &translation_context.variable_registry,
+        &AnnotatedUnindexedFunctions::empty(),
     )
     .unwrap();
 

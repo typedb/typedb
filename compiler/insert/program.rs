@@ -83,8 +83,8 @@ fn add_inserted_concepts(
     type_annotations: &TypeAnnotations,
     vertex_instructions: &mut Vec<ConceptInstruction>,
 ) -> Result<HashMap<Variable, VariablePosition>, WriteCompilationError> {
-    let first_inserted_variable_position: usize = input_variables.iter()
-        .map(|(_,pos)| pos.position + 1).max().unwrap_or(0) as usize;
+    let first_inserted_variable_position: usize =
+        input_variables.iter().map(|(_, pos)| pos.position + 1).max().unwrap_or(0) as usize;
     let mut output_variables = input_variables.clone();
     let type_bindings = collect_type_bindings(constraints, type_annotations)?;
     let value_bindings = collect_value_bindings(constraints)?;

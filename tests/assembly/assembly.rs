@@ -18,7 +18,8 @@ fn kill_process(process: Child) -> std::io::Result<Output> {
         Ok(Some(_)) => {}
         _ => {
             let output = build_cmd(format!("kill -s TERM {}", process.id()).as_str())
-                .output().expect("Failed to run kill command");
+                .output()
+                .expect("Failed to run kill command");
             if !output.status.success() {
                 println!("kill-ing process failed: {:?}", output);
             }
@@ -40,12 +41,12 @@ fn test_assembly() {
         unreachable!("Expected .zip or .tar.gz");
     };
 
-    let extract_output = build_cmd(extract_cmd.as_str())
-        .output().expect("Failed to run tar");
+    let extract_output = build_cmd(extract_cmd.as_str()).output().expect("Failed to run tar");
     if !extract_output.status.success() {
         panic!("{:?}", extract_output);
     }
-    let server_process = build_cmd("typedb-extracted/typedb_server_bin").spawn().expect("Failed to spawn server process");
+    let server_process =
+        build_cmd("typedb-extracted/typedb_server_bin").spawn().expect("Failed to spawn server process");
     let test_result = run_test_against_server();
     let server_process_output = kill_process(server_process);
 
@@ -55,7 +56,7 @@ fn test_assembly() {
     }
 }
 
-fn run_test_against_server() -> Result<(),()> {
+fn run_test_against_server() -> Result<(), ()> {
     // TODO
     Ok(())
 }
