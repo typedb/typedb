@@ -130,7 +130,7 @@ commands:
       - run: |
           docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
           export VERSION=$(cat VERSION)
-          export DOCKER_REPO="typedb"
+          export DOCKER_REPO="typedb-snapshot"
           docker manifest create vaticle/$DOCKER_REPO:$VERSION --amend vaticle/$DOCKER_REPO:$VERSION-x86_64 --amend vaticle/$DOCKER_REPO:$VERSION-arm64
           docker manifest push vaticle/$DOCKER_REPO:$VERSION
           # TODO: After beta: docker manifest push vaticle/$DOCKER_REPO:latest
@@ -275,37 +275,37 @@ workflows:
       - deploy-release-linux-x86_64:
           filters:
             branches:
-              only: [ release ]
+              only: [ release-test ]
 
       - deploy-release-linux-arm64:
           filters:
             branches:
-              only: [ release ]
+              only: [ release-test ]
 
       - deploy-release-mac-x86_64:
           filters:
             branches:
-              only: [ release ]
+              only: [ release-test ]
 
       - deploy-release-mac-arm64:
           filters:
             branches:
-              only: [ release ]
+              only: [ release-test ]
 
       - deploy-docker-release-x86_64:
           filters:
             branches:
-              only: [ release ]
+              only: [ release-test ]
 
       - deploy-docker-release-arm64:
           filters:
             branches:
-              only: [ release ]
+              only: [ release-test ]
 
       - deploy-docker-release-multiarch:
           filters:
             branches:
-              only: [ release ]
+              only: [ release-test ]
           requires:
             - deploy-docker-release-x86_64
             - deploy-docker-release-arm64
@@ -313,7 +313,7 @@ workflows:
       - release-cleanup:
           filters:
             branches:
-              only: [ release ]
+              only: [ release-test ]
           requires:
             - deploy-release-linux-x86_64
             - deploy-release-linux-arm64

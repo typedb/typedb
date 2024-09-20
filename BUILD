@@ -2,7 +2,17 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
+#load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
+deployment = {
+    "artifact" : {
+        "release" : {
+            "upload" : "cloudsmith://typedb/private-snapshot"
+        },
+        "snapshot": {
+            "upload" : "cloudsmith://typedb/private-snapshot"
+        },
+    },
+}
 load("//:deployment.bzl", deployment_docker = "deployment", deployment_github = "deployment")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
@@ -214,6 +224,11 @@ docker_container_push(
     target_compatible_with = constraint_linux_x86_64,
 )
 
+# bazel run  --@io_bazel_rules_docker//transitions:enable=false --platforms=//docker:linux-arm64 //:deploy-docker-release-arm64
+# bazel run  --@io_bazel_rules_docker//transitions:enable=false --platforms=//docker:linux-x86_64 //:deploy-docker-release-x86_64
+# docker manifest create vaticle/typedb-snapshot:<version> --amend vaticle/typedb-snapshot:<version>-x86_64 --amend vaticle/typedb-snapshot:<version>-arm64
+# docker manifest push vaticle/typedb-snapshot:<version>
+# docker manifest push vaticle/typedb-snapshot:latest
 docker_container_push(
     name = "deploy-docker-release-arm64",
     format = "Docker",
