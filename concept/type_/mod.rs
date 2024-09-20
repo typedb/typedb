@@ -9,7 +9,6 @@ use std::{
     fmt::{Display, Formatter},
     hash::Hash,
     iter,
-    ops::{Deref, DerefMut},
 };
 
 use bytes::{byte_reference::ByteReference, Bytes};
@@ -22,11 +21,9 @@ use encoding::{
     },
     layout::infix::Infix,
     value::label::Label,
-    AsBytes,
 };
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
-use serde::{Deserialize, Serialize};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
