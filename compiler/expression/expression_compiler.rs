@@ -7,10 +7,16 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use encoding::value::{value::Value, value_type::ValueTypeCategory, ValueEncodable};
-use ir::pattern::expression::{
-    BuiltInCall, BuiltInFunctionID, Expression, ExpressionTree, ListConstructor, ListIndex, ListIndexRange, Operation,
-    Operator,
+use encoding::value::{value_type::ValueTypeCategory, ValueEncodable};
+use ir::{
+    pattern::{
+        expression::{
+            BuiltInCall, BuiltInFunctionID, Expression, ExpressionTree, ListConstructor, ListIndex, ListIndexRange,
+            Operation, Operator,
+        },
+        ParameterID,
+    },
+    program::block::ParameterRegistry,
 };
 
 use crate::expression::{
@@ -29,21 +35,24 @@ use crate::expression::{
 pub struct ExpressionCompilationContext<'this> {
     expression_tree: &'this ExpressionTree<Variable>,
     variable_value_categories: &'this HashMap<Variable, ExpressionValueType>,
+    parameters: &'this ParameterRegistry,
     type_stack: Vec<ExpressionValueType>,
 
     instructions: Vec<ExpressionOpCode>,
     variable_stack: Vec<Variable>,
-    constant_stack: Vec<Value<'static>>,
+    constant_stack: Vec<ParameterID>,
 }
 
 impl<'this> ExpressionCompilationContext<'this> {
     fn empty(
         expression_tree: &'this ExpressionTree<Variable>,
         variable_value_categories: &'this HashMap<Variable, ExpressionValueType>,
+        parameters: &'this ParameterRegistry,
     ) -> Self {
         ExpressionCompilationContext {
             expression_tree,
             variable_value_categories,
+            parameters,
             instructions: Vec::new(),
             variable_stack: Vec::new(),
             constant_stack: Vec::new(),
@@ -54,9 +63,10 @@ impl<'this> ExpressionCompilationContext<'this> {
     pub fn compile(
         expression_tree: &ExpressionTree<Variable>,
         variable_value_categories: &HashMap<Variable, ExpressionValueType>,
+        parameters: &ParameterRegistry,
     ) -> Result<CompiledExpression, ExpressionCompileError> {
         debug_assert!(expression_tree.variables().all(|var| variable_value_categories.contains_key(&var)));
-        let mut builder = ExpressionCompilationContext::empty(expression_tree, variable_value_categories);
+        let mut builder = ExpressionCompilationContext::empty(expression_tree, variable_value_categories, parameters);
         builder.compile_recursive(expression_tree.get_root())?;
         let return_type = builder.pop_type()?;
         let ExpressionCompilationContext { instructions, variable_stack, constant_stack, .. } = builder;
@@ -65,7 +75,7 @@ impl<'this> ExpressionCompilationContext<'this> {
 
     fn compile_recursive(&mut self, expression: &Expression<Variable>) -> Result<(), ExpressionCompileError> {
         match expression {
-            Expression::Constant(constant) => self.compile_constant(constant),
+            Expression::Constant(constant) => self.compile_constant(*constant),
             Expression::Variable(variable) => self.compile_variable(variable),
             Expression::Operation(op) => self.compile_op(op),
             Expression::BuiltInCall(builtin) => self.compile_builtin(builtin),
@@ -75,10 +85,10 @@ impl<'this> ExpressionCompilationContext<'this> {
         }
     }
 
-    fn compile_constant(&mut self, constant: &Value<'static>) -> Result<(), ExpressionCompileError> {
-        self.constant_stack.push(constant.clone());
+    fn compile_constant(&mut self, constant: ParameterID) -> Result<(), ExpressionCompileError> {
+        self.constant_stack.push(constant);
 
-        self.push_type_single(constant.value_type().category());
+        self.push_type_single(self.parameters[constant].value_type().category());
         self.append_instruction(LoadConstant::OP_CODE);
 
         Ok(())
@@ -101,7 +111,8 @@ impl<'this> ExpressionCompilationContext<'this> {
         for expression_id in list_constructor.item_expression_ids().iter().rev() {
             self.compile_recursive(self.expression_tree.get(*expression_id))?;
         }
-        self.compile_constant(&Value::Long(list_constructor.item_expression_ids().len() as i64))?;
+        // FIXME ?
+        // self.compile_constant(&Value::Long(list_constructor.item_expression_ids().len() as i64))?;
         self.append_instruction(list_operations::ListConstructor::OP_CODE);
 
         if self.pop_type_single()? != ValueTypeCategory::Long {

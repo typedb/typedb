@@ -23,6 +23,7 @@ use compiler::expression::{
     },
 };
 use encoding::value::value::{NativeValueConvertible, Value};
+use ir::{pattern::ParameterID, program::block::ParameterRegistry};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ExpressionValue {
@@ -30,17 +31,29 @@ pub enum ExpressionValue {
     List(Vec<Value<'static>>),
 }
 
-struct ExpressionExecutorState<'this> {
+pub struct ExpressionExecutorState<'this> {
     stack: Vec<ExpressionValue>,
     variables: Box<[ExpressionValue]>,
     next_variable_index: usize,
-    constants: &'this [Value<'static>],
+    constants: &'this [ParameterID],
     next_constant_index: usize,
+    parameter_registry: &'this ParameterRegistry,
 }
 
 impl<'this> ExpressionExecutorState<'this> {
-    fn new(variables: Box<[ExpressionValue]>, constants: &'this [Value<'static>]) -> Self {
-        Self { stack: Vec::new(), variables, next_variable_index: 0, constants, next_constant_index: 0 }
+    fn new(
+        variables: Box<[ExpressionValue]>,
+        constants: &'this [ParameterID],
+        parameter_registry: &'this ParameterRegistry,
+    ) -> Self {
+        Self {
+            stack: Vec::new(),
+            variables,
+            next_variable_index: 0,
+            constants,
+            next_constant_index: 0,
+            parameter_registry,
+        }
     }
 
     fn push_value(&mut self, value: Value<'static>) {
@@ -72,7 +85,7 @@ impl<'this> ExpressionExecutorState<'this> {
     }
 
     fn next_constant(&mut self) -> Value<'static> {
-        let constant = self.constants[self.next_constant_index].clone();
+        let constant = self.parameter_registry[self.constants[self.next_constant_index]].clone();
         self.next_constant_index += 1;
         constant
     }
@@ -84,13 +97,14 @@ impl ExpressionExecutor {
     pub fn evaluate(
         compiled: CompiledExpression,
         input: HashMap<Variable, ExpressionValue>,
+        parameters: &ParameterRegistry,
     ) -> Result<ExpressionValue, ExpressionEvaluationError> {
         let mut variables = Vec::new();
         for v in compiled.variables() {
             variables.push(input.get(v).unwrap().clone());
         }
 
-        let mut state = ExpressionExecutorState::new(variables.into_boxed_slice(), compiled.constants());
+        let mut state = ExpressionExecutorState::new(variables.into_boxed_slice(), compiled.constants(), parameters);
         for instr in compiled.instructions() {
             evaluate_instruction(instr, &mut state)?;
         }

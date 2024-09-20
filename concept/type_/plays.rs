@@ -10,6 +10,7 @@ use encoding::{
     graph::type_::{edge::TypeEdgeEncoding, vertex::TypeVertexEncoding, CapabilityKind},
     layout::prefix::Prefix,
 };
+use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -32,6 +33,10 @@ use crate::{
 pub struct Plays<'a> {
     player: ObjectType<'a>,
     role: RoleType<'a>,
+}
+
+impl Hkt for Plays<'static> {
+    type HktSelf<'a> = Plays<'a>;
 }
 
 impl<'a> Plays<'a> {

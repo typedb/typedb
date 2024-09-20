@@ -16,7 +16,7 @@ use encoding::{
     value::{label::Label, value::Value},
 };
 use executor::{
-    pipeline::{StageAPI, StageIterator},
+    pipeline::stage::{ExecutionContext, StageAPI, StageIterator},
     ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
@@ -85,20 +85,19 @@ fn test_insert() {
             &query,
         )
         .unwrap();
-    let (mut iterator, snapshot) = pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let (mut iterator, ExecutionContext { snapshot, .. }) =
+        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     assert!(matches!(iterator.next(), Some(Ok(_))));
     assert!(matches!(iterator.next(), None));
     let snapshot = Arc::into_inner(snapshot).unwrap();
     snapshot.commit().unwrap();
 
-    {
-        let snapshot = context.storage.clone().open_snapshot_read();
-        let age_type = context.type_manager.get_attribute_type(&snapshot, &AGE_LABEL).unwrap().unwrap();
-        let attr_age_10 =
-            context.thing_manager.get_attribute_with_value(&snapshot, age_type, Value::Long(10)).unwrap().unwrap();
-        assert_eq!(1, attr_age_10.get_owners(&snapshot, &context.thing_manager).count());
-        snapshot.close_resources()
-    }
+    let snapshot = context.storage.clone().open_snapshot_read();
+    let age_type = context.type_manager.get_attribute_type(&snapshot, &AGE_LABEL).unwrap().unwrap();
+    let attr_age_10 =
+        context.thing_manager.get_attribute_with_value(&snapshot, age_type, Value::Long(10)).unwrap().unwrap();
+    assert_eq!(1, attr_age_10.get_owners(&snapshot, &context.thing_manager).count());
+    snapshot.close_resources()
 }
 
 #[test]
@@ -161,7 +160,8 @@ fn test_match() {
             &query,
         )
         .unwrap();
-    let (mut iterator, snapshot) = pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let (iterator, ExecutionContext { snapshot, .. }) =
+        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let _ = iterator.count();
     // must consume iterator to ensure operation completed
     let snapshot = Arc::into_inner(snapshot).unwrap();
@@ -180,7 +180,8 @@ fn test_match() {
             &match_,
         )
         .unwrap();
-    let (iterator, snapshot) = pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let (iterator, ExecutionContext { snapshot, .. }) =
+        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let batch = iterator.collect_owned().unwrap();
     assert_eq!(batch.len(), 3);
 
@@ -196,10 +197,10 @@ fn test_match() {
             &match_,
         )
         .unwrap();
-    let (iterator, snapshot) = pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let (iterator, ExecutionContext { .. }) =
+        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let batch = iterator.collect_owned().unwrap();
     assert_eq!(batch.len(), 1);
-    let snapshot = Arc::into_inner(snapshot);
 }
 
 #[test]
@@ -223,7 +224,8 @@ fn test_match_delete_has() {
             &insert_query,
         )
         .unwrap();
-    let (mut iterator, snapshot) = insert_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let (mut iterator, ExecutionContext { snapshot, .. }) =
+        insert_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
     assert!(matches!(iterator.next(), Some(Ok(_))));
     assert!(matches!(iterator.next(), None));
@@ -256,8 +258,9 @@ fn test_match_delete_has() {
             &delete_query,
         )
         .unwrap();
-    let (mut iterator, snapshot) = delete_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
+    let (mut iterator, ExecutionContext { snapshot, .. }) =
+        delete_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     assert!(matches!(iterator.next(), Some(Ok(_))));
     assert!(matches!(iterator.next(), None));
     let snapshot = Arc::into_inner(snapshot).unwrap();
@@ -294,7 +297,8 @@ fn test_match_sort() {
             &insert_query,
         )
         .unwrap();
-    let (mut iterator, snapshot) = insert_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let (mut iterator, ExecutionContext { snapshot, .. }) =
+        insert_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
     assert!(matches!(iterator.next(), Some(Ok(_))));
     assert!(matches!(iterator.next(), None));
@@ -314,7 +318,8 @@ fn test_match_sort() {
             &match_,
         )
         .unwrap();
-    let (iterator, snapshot) = pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let (iterator, ExecutionContext { snapshot, .. }) =
+        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
     let batch = iterator.collect_owned().unwrap();
     assert_eq!(batch.len(), 4);
@@ -353,7 +358,8 @@ fn test_select() {
             &insert_query,
         )
         .unwrap();
-    let (mut iterator, snapshot) = insert_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let (mut iterator, ExecutionContext { snapshot, .. }) =
+        insert_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
     assert!(matches!(iterator.next(), Some(Ok(_))));
     assert!(matches!(iterator.next(), None));

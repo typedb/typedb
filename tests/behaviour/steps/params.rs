@@ -31,8 +31,7 @@ use encoding::{
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
-
-use crate::assert::assert_matches;
+use test_utils::assert_matches;
 
 #[derive(Debug, Copy, Clone, Parameter)]
 #[param(name = "may_error", regex = "(; fails|)")]
@@ -61,7 +60,9 @@ impl MayError {
                 ConceptWriteError::ConceptRead { source } => {
                     panic!("Expected logic error, got ConceptRead {:?}", source)
                 }
-                ConceptWriteError::SchemaValidation { typedb_source: SchemaValidationError::ConceptRead { source } } => {
+                ConceptWriteError::SchemaValidation {
+                    typedb_source: SchemaValidationError::ConceptRead { source },
+                } => {
                     panic!("Expected logic error, got SchemaValidation::ConceptRead {:?}", source)
                 }
                 _ => {}
@@ -156,8 +157,6 @@ macro_rules! check_boolean {
     };
 }
 pub(crate) use check_boolean;
-use concept::type_::{attribute_type::AttributeTypeAnnotation, constraint::ConstraintDescription};
-use primitive::either::Either;
 
 impl FromStr for Boolean {
     type Err = String;
@@ -743,7 +742,7 @@ impl FromStr for Annotations {
                 // TODO: Refactor parsing to support passing ValueTypes into anno.into_typedb
             }
         })
-            .try_collect()?;
+        .try_collect()?;
 
         Ok(Self { typedb_annotations })
     }

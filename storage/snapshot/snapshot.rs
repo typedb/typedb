@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fmt, iter::empty, sync::Arc};
+use std::{any::type_name, error::Error, fmt, iter::empty, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use error::{typedb_error, TypeDBError};
@@ -181,10 +181,15 @@ where
     fn into_commit_record(self) -> CommitRecord;
 }
 
-#[derive(Debug)]
 pub struct ReadSnapshot<D> {
     storage: Arc<MVCCStorage<D>>,
     open_sequence_number: SequenceNumber,
+}
+
+impl<D: fmt::Debug> fmt::Debug for ReadSnapshot<D> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct(type_name::<Self>()).field("open_sequence_number", &self.open_sequence_number).finish()
+    }
 }
 
 impl<D> ReadSnapshot<D> {
@@ -248,11 +253,16 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
     }
 }
 
-#[derive(Debug)]
 pub struct WriteSnapshot<D> {
     storage: Arc<MVCCStorage<D>>,
     operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
+}
+
+impl<D: fmt::Debug> fmt::Debug for WriteSnapshot<D> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct(type_name::<Self>()).field("open_sequence_number", &self.open_sequence_number).finish()
+    }
 }
 
 impl<D> WriteSnapshot<D> {
@@ -379,11 +389,16 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
     }
 }
 
-#[derive(Debug)]
 pub struct SchemaSnapshot<D> {
     storage: Arc<MVCCStorage<D>>,
     operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
+}
+
+impl<D: fmt::Debug> fmt::Debug for SchemaSnapshot<D> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct(type_name::<Self>()).field("open_sequence_number", &self.open_sequence_number).finish()
+    }
 }
 
 impl<D> SchemaSnapshot<D> {

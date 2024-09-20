@@ -56,7 +56,7 @@ where
         if self.repeated_last < self.repeats {
             self.repeated_last += 1;
         } else {
-            self.repeated_last = 0;
+            self.repeated_last = 1;
             self.inner.next();
         }
         self.inner.peek()

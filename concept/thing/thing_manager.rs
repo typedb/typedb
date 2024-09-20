@@ -7,7 +7,6 @@
 use std::{
     borrow::Cow,
     collections::{HashMap, HashSet},
-    io::Read,
     iter::once,
     sync::Arc,
 };
@@ -24,8 +23,7 @@ use encoding::{
             ThingVertex,
         },
         type_::{
-            edge::TypeEdgeEncoding,
-            property::{TypeEdgePropertyEncoding, TypeVertexProperty, TypeVertexPropertyEncoding},
+            property::{TypeVertexProperty, TypeVertexPropertyEncoding},
             vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertexEncoding},
         },
         Typed,
@@ -196,7 +194,7 @@ impl ThingManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         player: &'o impl ObjectAPI<'o>,
-    ) -> impl for<'a> LendingIterator<Item<'a>=Result<Relation<'a>, ConceptReadError>> {
+    ) -> impl for<'a> LendingIterator<Item<'a> = Result<Relation<'a>, ConceptReadError>> {
         self.get_relations_roles(snapshot, player).map::<Result<Relation<'_>, _>, _>(|res| {
             let (rel, _, _) = res?;
             Ok(rel)
@@ -208,7 +206,7 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         player: &'o impl ObjectAPI<'o>,
         role_type: RoleType<'static>,
-    ) -> impl for<'a> LendingIterator<Item<'a>=Result<(Relation<'a>, u64), ConceptReadError>> {
+    ) -> impl for<'a> LendingIterator<Item<'a> = Result<(Relation<'a>, u64), ConceptReadError>> {
         self.get_relations_roles(snapshot, player).filter_map::<Result<(Relation<'_>, u64), _>, _>(move |item| {
             match item {
                 Ok((rel, role, count)) => (role == role_type).then_some(Ok((rel, count))),
@@ -485,7 +483,7 @@ impl ThingManager {
     pub fn get_has_from_attribute_type_range(
         &self,
         snapshot: &impl ReadableSnapshot,
-        attribute_type_range: impl Iterator<Item=AttributeType<'static>>,
+        attribute_type_range: impl Iterator<Item = AttributeType<'static>>,
     ) -> Result<HasReverseIterator, ConceptReadError> {
         let ((min_prefix, min_type_id), (max_prefix, max_type_id)) =
             self.attribute_instance_range_from_attribute_type_range(snapshot, attribute_type_range)?;
@@ -505,7 +503,7 @@ impl ThingManager {
         attribute_type: AttributeType<'_>,
         path_to_field: Vec<StructFieldIDUInt>,
         value: Value<'_>,
-    ) -> Result<impl for<'a> LendingIterator<Item<'a>=Result<Attribute<'a>, ConceptReadError>>, ConceptReadError>
+    ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<Attribute<'a>, ConceptReadError>>, ConceptReadError>
     {
         debug_assert!({
             let value_type =
@@ -520,7 +518,7 @@ impl ThingManager {
             &value,
             &attribute_type.vertex(),
         )
-            .map_err(|source| ConceptReadError::SnapshotIterate { source })?;
+        .map_err(|source| ConceptReadError::SnapshotIterate { source })?;
         let index_attribute_iterator = snapshot
             .iterate_range(KeyRange::new_within(prefix, Prefix::IndexValueToStruct.fixed_width_keys()))
             .map::<Result<Attribute<'_>, _>, _>(|result| {
@@ -618,7 +616,7 @@ impl ThingManager {
         &'this self,
         snapshot: &'this impl ReadableSnapshot,
         owner: &impl ObjectAPI<'a>,
-        attribute_types_defining_range: impl Iterator<Item=AttributeType<'static>>,
+        attribute_types_defining_range: impl Iterator<Item = AttributeType<'static>>,
     ) -> Result<HasIterator, ConceptReadError> {
         let ((min_prefix, min_type_id), (max_prefix, max_type_id)) =
             self.attribute_instance_range_from_attribute_type_range(snapshot, attribute_types_defining_range)?;
@@ -635,7 +633,7 @@ impl ThingManager {
     fn attribute_instance_range_from_attribute_type_range(
         &self,
         snapshot: &impl ReadableSnapshot,
-        attribute_types: impl Iterator<Item=AttributeType<'static>>,
+        attribute_types: impl Iterator<Item = AttributeType<'static>>,
     ) -> Result<((Prefix, TypeID), (Prefix, TypeID)), ConceptReadError> {
         let mut min: Option<(Prefix, TypeID)> = None;
         let mut max: Option<(Prefix, TypeID)> = None;
@@ -645,17 +643,17 @@ impl ThingManager {
                 let type_id = attribute_type.vertex().type_id_();
                 if min.is_none()
                     || min.is_some_and(|(min_prefix, min_type_id)| {
-                    (min_prefix.prefix_id().bytes(), min_type_id.bytes())
-                        > (prefix.prefix_id().bytes(), type_id.bytes())
-                })
+                        (min_prefix.prefix_id().bytes(), min_type_id.bytes())
+                            > (prefix.prefix_id().bytes(), type_id.bytes())
+                    })
                 {
                     min = Some((prefix, type_id));
                 }
                 if max.is_none()
                     || max.is_some_and(|(max_prefix, max_type_id)| {
-                    (max_prefix.prefix_id().bytes(), max_type_id.bytes())
-                        < (prefix.prefix_id().bytes(), type_id.bytes())
-                })
+                        (max_prefix.prefix_id().bytes(), max_type_id.bytes())
+                            < (prefix.prefix_id().bytes(), type_id.bytes())
+                    })
                 {
                     max = Some((prefix, type_id));
                 }
@@ -829,7 +827,7 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         relation: Relation<'_>,
         role_type: RoleType<'static>,
-    ) -> impl for<'x> LendingIterator<Item<'x>=Result<(RolePlayer<'x>, u64), ConceptReadError>> {
+    ) -> impl for<'x> LendingIterator<Item<'x> = Result<(RolePlayer<'x>, u64), ConceptReadError>> {
         self.get_role_players(snapshot, relation).filter_map::<Result<(RolePlayer<'_>, u64), _>, _>(move |item| {
             match item {
                 Ok((role_player, count)) => (role_player.role_type() == role_type).then_some(Ok((role_player, count))),
@@ -956,7 +954,7 @@ impl ThingManager {
                     owner.vertex().bytes().bytes(),
                     unique_constraint.source().owner().vertex().bytes().bytes(),
                 ]
-                    .into_iter(),
+                .into_iter(),
             );
             snapshot.exclusive_lock_add(lock_key);
         }
@@ -987,7 +985,7 @@ impl ThingManager {
                     &Prefix::EdgeOwns.prefix_id().bytes(),
                     constraint.source().interface().vertex().bytes().bytes(),
                 ]
-                    .into_iter(),
+                .into_iter(),
             );
             snapshot.exclusive_lock_add(lock_key);
         }
@@ -1018,7 +1016,7 @@ impl ThingManager {
                     &Prefix::EdgePlays.prefix_id().bytes(),
                     constraint.source().interface().vertex().bytes().bytes(),
                 ]
-                    .into_iter(),
+                .into_iter(),
             );
             snapshot.exclusive_lock_add(lock_key);
         }
@@ -1049,7 +1047,7 @@ impl ThingManager {
                     &Prefix::EdgeRelates.prefix_id().bytes(),
                     constraint.source().interface().vertex().bytes().bytes(),
                 ]
-                    .into_iter(),
+                .into_iter(),
             );
             snapshot.exclusive_lock_add(lock_key);
         }
@@ -1228,27 +1226,27 @@ impl ThingManager {
             &mut modified_objects_role_types,
             &mut modified_relations_role_types,
         );
-        collect_errors!(errors, res, |source| DataValidationError::ConceptRead {source});
+        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
         res = self.collect_modified_has(snapshot, &mut modified_objects_attribute_types);
-        collect_errors!(errors, res, |source| DataValidationError::ConceptRead {source});
+        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
         res =
             self.collect_modified_links(snapshot, &mut modified_relations_role_types, &mut modified_objects_role_types);
-        collect_errors!(errors, res, |source| DataValidationError::ConceptRead {source});
+        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
 
         for (object, modified_owns) in modified_objects_attribute_types {
             res = CommitTimeValidation::validate_object_has(snapshot, self, object, modified_owns, &mut errors);
-            collect_errors!(errors, res, |source| DataValidationError::ConceptRead {source});
+            collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
         }
 
         for (object, modified_plays) in modified_objects_role_types {
             res = CommitTimeValidation::validate_object_links(snapshot, self, object, modified_plays, &mut errors);
-            collect_errors!(errors, res, |source| DataValidationError::ConceptRead {source});
+            collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
         }
 
         for (relation, modified_relates) in modified_relations_role_types {
             res =
                 CommitTimeValidation::validate_relation_links(snapshot, self, relation, modified_relates, &mut errors);
-            collect_errors!(errors, res, |source| DataValidationError::ConceptRead {source});
+            collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
         }
 
         if errors.is_empty() {
@@ -1400,7 +1398,7 @@ impl ThingManager {
             attribute_type.clone(),
             value.as_reference(),
         )
-            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
+        .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         OperationTimeValidation::validate_attribute_range_constraints(
             snapshot,
@@ -1408,7 +1406,7 @@ impl ThingManager {
             attribute_type.clone(),
             value.as_reference(),
         )
-            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
+        .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         OperationTimeValidation::validate_attribute_values_constraints(
             snapshot,
@@ -1416,7 +1414,7 @@ impl ThingManager {
             attribute_type.clone(),
             value.as_reference(),
         )
-            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
+        .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         self.put_attribute(snapshot, attribute_type, value)
     }
@@ -1435,7 +1433,10 @@ impl ThingManager {
             value.as_reference(),
         )?;
 
-        let vertex = match value {
+        let vertex = match value
+            .cast(&attribute_type.get_value_type_without_source(snapshot, self.type_manager())?.unwrap())
+            .expect("value type compatibility should have been verified by this point")
+        {
             Value::Boolean(bool) => {
                 let encoded_boolean = BooleanBytes::build(bool);
                 self.vertex_generator.create_attribute_boolean(
@@ -1615,7 +1616,7 @@ impl ThingManager {
             attribute.type_(),
             value.as_reference(),
         )
-            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
+        .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         OperationTimeValidation::validate_has_regex_constraints(
             snapshot,
@@ -1624,7 +1625,7 @@ impl ThingManager {
             attribute_type.clone(),
             value.as_reference(),
         )
-            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
+        .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         OperationTimeValidation::validate_has_range_constraints(
             snapshot,
@@ -1633,7 +1634,7 @@ impl ThingManager {
             attribute_type.clone(),
             value.as_reference(),
         )
-            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
+        .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         OperationTimeValidation::validate_has_values_constraints(
             snapshot,
@@ -1642,7 +1643,7 @@ impl ThingManager {
             attribute_type.clone(),
             value.as_reference(),
         )
-            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
+        .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
         let has_reverse = ThingEdgeHasReverse::build(attribute.vertex(), owner.vertex());

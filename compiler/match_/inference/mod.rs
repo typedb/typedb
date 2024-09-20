@@ -4,17 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    error::Error,
-    fmt::{Debug, Display, Formatter},
-};
-
-use answer::variable::Variable;
 use concept::error::ConceptReadError;
 use error::typedb_error;
-use ir::pattern::{constraint::Constraint, variable_category::VariableCategory};
-
-use crate::expression::ExpressionCompileError;
 
 pub mod annotated_functions;
 pub mod annotated_program;
@@ -164,17 +155,17 @@ pub mod tests {
             snapshot::{CommittableSnapshot, WritableSnapshot},
         };
 
-        pub(crate) const LABEL_ANIMAL: &str = "animal";
-        pub(crate) const LABEL_CAT: &str = "cat";
-        pub(crate) const LABEL_DOG: &str = "dog";
+        pub(crate) const LABEL_ANIMAL: Label<'_> = Label::new_static("animal");
+        pub(crate) const LABEL_CAT: Label<'_> = Label::new_static("cat");
+        pub(crate) const LABEL_DOG: Label<'_> = Label::new_static("dog");
 
-        pub(crate) const LABEL_NAME: &str = "name";
-        pub(crate) const LABEL_CATNAME: &str = "cat-name";
-        pub(crate) const LABEL_DOGNAME: &str = "dog-name";
+        pub(crate) const LABEL_NAME: Label<'_> = Label::new_static("name");
+        pub(crate) const LABEL_CATNAME: Label<'_> = Label::new_static("cat-name");
+        pub(crate) const LABEL_DOGNAME: Label<'_> = Label::new_static("dog-name");
 
-        pub(crate) const LABEL_FEARS: &str = "fears";
-        pub(crate) const LABEL_HAS_FEAR: &str = "has-fear";
-        pub(crate) const LABEL_IS_FEARED: &str = "is-feared";
+        pub(crate) const LABEL_FEARS: Label<'_> = Label::new_static("fears");
+        pub(crate) const LABEL_HAS_FEAR: Label<'_> = Label::new_static("has-fear");
+        pub(crate) const LABEL_IS_FEARED: Label<'_> = Label::new_static("is-feared");
 
         pub(crate) fn setup_types<Snapshot: WritableSnapshot + CommittableSnapshot<WALClient>>(
             snapshot_: Snapshot,
@@ -190,9 +181,9 @@ pub mod tests {
             let mut snapshot = snapshot_;
 
             // Attributes
-            let name = type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_NAME)).unwrap();
-            let catname = type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_CATNAME)).unwrap();
-            let dogname = type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_DOGNAME)).unwrap();
+            let name = type_manager.create_attribute_type(&mut snapshot, &LABEL_NAME).unwrap();
+            let catname = type_manager.create_attribute_type(&mut snapshot, &LABEL_CATNAME).unwrap();
+            let dogname = type_manager.create_attribute_type(&mut snapshot, &LABEL_DOGNAME).unwrap();
             name.set_annotation(
                 &mut snapshot,
                 type_manager,
@@ -208,9 +199,9 @@ pub mod tests {
             dogname.set_value_type(&mut snapshot, type_manager, thing_manager, ValueType::String).unwrap();
 
             // Entities
-            let animal = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_ANIMAL)).unwrap();
-            let cat = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_CAT)).unwrap();
-            let dog = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_DOG)).unwrap();
+            let animal = type_manager.create_entity_type(&mut snapshot, &LABEL_ANIMAL).unwrap();
+            let cat = type_manager.create_entity_type(&mut snapshot, &LABEL_CAT).unwrap();
+            let dog = type_manager.create_entity_type(&mut snapshot, &LABEL_DOG).unwrap();
             cat.set_supertype(&mut snapshot, type_manager, thing_manager, animal.clone()).unwrap();
             dog.set_supertype(&mut snapshot, type_manager, thing_manager, animal.clone()).unwrap();
             animal
@@ -223,21 +214,30 @@ pub mod tests {
                 .unwrap();
 
             // Ownerships
-            let animal_owns =
-                animal.set_owns(&mut snapshot, type_manager, thing_manager, name.clone(), Ordering::Unordered).unwrap();
-            let cat_owns =
-                cat.set_owns(&mut snapshot, type_manager, thing_manager, catname.clone(), Ordering::Unordered).unwrap();
-            let dog_owns =
-                dog.set_owns(&mut snapshot, type_manager, thing_manager, dogname.clone(), Ordering::Unordered).unwrap();
+            animal.set_owns(&mut snapshot, type_manager, thing_manager, name.clone(), Ordering::Unordered).unwrap();
+            cat.set_owns(&mut snapshot, type_manager, thing_manager, catname.clone(), Ordering::Unordered).unwrap();
+            dog.set_owns(&mut snapshot, type_manager, thing_manager, dogname.clone(), Ordering::Unordered).unwrap();
 
             // Relations
-            let fears = type_manager.create_relation_type(&mut snapshot, &Label::build(LABEL_FEARS)).unwrap();
+            let fears = type_manager.create_relation_type(&mut snapshot, &LABEL_FEARS).unwrap();
             let has_fear = fears
-                .create_relates(&mut snapshot, type_manager, thing_manager, LABEL_HAS_FEAR, Ordering::Unordered)
+                .create_relates(
+                    &mut snapshot,
+                    type_manager,
+                    thing_manager,
+                    LABEL_HAS_FEAR.scoped_name().as_str(),
+                    Ordering::Unordered,
+                )
                 .unwrap()
                 .role();
             let is_feared = fears
-                .create_relates(&mut snapshot, type_manager, thing_manager, LABEL_IS_FEARED, Ordering::Unordered)
+                .create_relates(
+                    &mut snapshot,
+                    type_manager,
+                    thing_manager,
+                    LABEL_IS_FEARED.scoped_name().as_str(),
+                    Ordering::Unordered,
+                )
                 .unwrap()
                 .role();
             cat.set_plays(&mut snapshot, type_manager, thing_manager, has_fear.clone()).unwrap();

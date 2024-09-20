@@ -12,13 +12,13 @@ use std::{
     collections::{HashMap, VecDeque},
     error::Error,
     fmt,
+    fmt::{Display, Formatter},
     io::Read,
     sync::{
         atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering},
         Arc, OnceLock, RwLock,
     },
 };
-use std::fmt::{Display, Formatter};
 
 use durability::DurabilityRecordType;
 use logger::result::ResultExt;

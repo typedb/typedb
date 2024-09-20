@@ -8,7 +8,7 @@ use answer::variable::Variable;
 use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex};
 use ir::{
     program::{
-        block::{FunctionalBlock, VariableRegistry},
+        block::{FunctionalBlock, ParameterRegistry, VariableRegistry},
         function::Function,
         function_signature::{FunctionID, FunctionSignatureIndex, HashMapFunctionSignatureIndex},
         modifier::{Limit, Offset, Select, Sort},
@@ -30,6 +30,7 @@ pub(super) struct TranslatedPipeline {
     pub(super) translated_preamble: Vec<Function>,
     pub(super) translated_stages: Vec<TranslatedStage>,
     pub(super) variable_registry: VariableRegistry,
+    pub(super) parameters: ParameterRegistry,
 }
 
 pub(super) enum TranslatedStage {
@@ -71,6 +72,7 @@ pub(super) fn translate_pipeline(
         translated_preamble,
         translated_stages,
         variable_registry: translation_context.variable_registry,
+        parameters: translation_context.parameters,
     })
 }
 

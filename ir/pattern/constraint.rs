@@ -14,11 +14,13 @@ use crate::{
         expression::{ExpressionDefinitionError, ExpressionTree},
         function_call::FunctionCall,
         variable_category::VariableCategory,
-        IrID, ScopeId,
+        IrID, ScopeId, Vertex,
     },
-    program::{block::BlockContext, function_signature::FunctionSignature},
+    program::{
+        block::{BlockContext, ParameterRegistry},
+        function_signature::FunctionSignature,
+    },
     PatternDefinitionError,
-    PatternDefinitionError::FunctionCallArgumentCountMismatch,
 };
 
 #[derive(Debug, Clone)]
@@ -125,14 +127,23 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
     pub fn add_sub(
         &mut self,
         kind: SubKind,
-        subtype: Variable,
-        supertype: Variable,
+        subtype: Vertex<Variable>,
+        supertype: Vertex<Variable>,
     ) -> Result<&Sub<Variable>, PatternDefinitionError> {
-        debug_assert!(self.context.is_variable_available(self.constraints.scope, subtype));
-        debug_assert!(self.context.is_variable_available(self.constraints.scope, supertype));
+        let subtype_var = subtype.as_variable();
+        let supertype_var = supertype.as_variable();
         let sub = Sub::new(kind, subtype, supertype);
-        self.context.set_variable_category(subtype, VariableCategory::Type, sub.clone().into())?;
-        self.context.set_variable_category(supertype, VariableCategory::Type, sub.clone().into())?;
+
+        if let Some(subtype) = subtype_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, subtype));
+            self.context.set_variable_category(subtype, VariableCategory::Type, sub.clone().into())?;
+        };
+
+        if let Some(supertype) = supertype_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, supertype));
+            self.context.set_variable_category(supertype, VariableCategory::Type, sub.clone().into())?;
+        };
+
         let as_ref = self.constraints.add_constraint(sub);
         Ok(as_ref.as_sub().unwrap())
     }
@@ -141,27 +152,32 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         kind: IsaKind,
         thing: Variable,
-        type_: Variable,
+        type_: Vertex<Variable>,
     ) -> Result<&Isa<Variable>, PatternDefinitionError> {
-        debug_assert!(
-            self.context.is_variable_available(self.constraints.scope, thing)
-                && self.context.is_variable_available(self.constraints.scope, type_)
-        );
+        let type_var = type_.as_variable();
         let isa = Isa::new(kind, thing, type_);
+
+        debug_assert!(self.context.is_variable_available(self.constraints.scope, thing));
         self.context.set_variable_category(thing, VariableCategory::Thing, isa.clone().into())?;
-        self.context.set_variable_category(type_, VariableCategory::ThingType, isa.clone().into())?;
+
+        if let Some(type_) = type_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, type_));
+            self.context.set_variable_category(type_, VariableCategory::ThingType, isa.clone().into())?;
+        };
+
         let constraint = self.constraints.add_constraint(isa);
         Ok(constraint.as_isa().unwrap())
     }
 
     pub fn add_has(&mut self, owner: Variable, attribute: Variable) -> Result<&Has<Variable>, PatternDefinitionError> {
-        debug_assert!(
-            self.context.is_variable_available(self.constraints.scope, owner)
-                && self.context.is_variable_available(self.constraints.scope, attribute)
-        );
-        let has = Constraint::from(Has::new(owner, attribute));
-        self.context.set_variable_category(owner, VariableCategory::Object, has.clone())?;
-        self.context.set_variable_category(attribute, VariableCategory::Attribute, has.clone())?;
+        let has = Has::new(owner, attribute);
+
+        debug_assert!(self.context.is_variable_available(self.constraints.scope, owner));
+        self.context.set_variable_category(owner, VariableCategory::Object, has.clone().into())?;
+
+        debug_assert!(self.context.is_variable_available(self.constraints.scope, attribute));
+        self.context.set_variable_category(attribute, VariableCategory::Attribute, has.clone().into())?;
+
         let constraint = self.constraints.add_constraint(has);
         Ok(constraint.as_has().unwrap())
     }
@@ -172,33 +188,44 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         player: Variable,
         role_type: Variable,
     ) -> Result<&Links<Variable>, PatternDefinitionError> {
+        let links = Constraint::from(Links::new(relation, player, role_type));
+
         debug_assert!(
             self.context.is_variable_available(self.constraints.scope, relation)
                 && self.context.is_variable_available(self.constraints.scope, player)
                 && self.context.is_variable_available(self.constraints.scope, role_type)
         );
-        let links = Constraint::from(Links::new(relation, player, role_type));
+
         self.context.set_variable_category(relation, VariableCategory::Object, links.clone())?;
         self.context.set_variable_category(player, VariableCategory::Object, links.clone())?;
+
         self.context.set_variable_category(role_type, VariableCategory::RoleType, links.clone())?;
+
         let constraint = self.constraints.add_constraint(links);
         Ok(constraint.as_links().unwrap())
     }
 
     pub fn add_comparison(
         &mut self,
-        lhs: Variable,
-        rhs: Variable,
+        lhs: Vertex<Variable>,
+        rhs: Vertex<Variable>,
         comparator: Comparator,
     ) -> Result<&Comparison<Variable>, PatternDefinitionError> {
-        debug_assert!(
-            self.context.is_variable_available(self.constraints.scope, lhs)
-                && self.context.is_variable_available(self.constraints.scope, rhs)
-        );
-        let comparison = Comparison::new(lhs, rhs, Comparator::Equal); // TODO
-        self.context.set_variable_category(lhs, VariableCategory::Value, comparison.clone().into())?;
-        self.context.set_variable_category(rhs, VariableCategory::Value, comparison.clone().into())?;
-        // todo!("The above lines were the two lines below");
+        let lhs_var = lhs.as_variable();
+        let rhs_var = rhs.as_variable();
+        let comparison = Comparison::new(lhs, rhs, comparator);
+
+        if let Some(lhs) = lhs_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, lhs));
+            self.context.set_variable_category(lhs, VariableCategory::Value, comparison.clone().into())?;
+        }
+
+        if let Some(rhs) = rhs_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, rhs));
+            self.context.set_variable_category(rhs, VariableCategory::Value, comparison.clone().into())?;
+        }
+
+        // TODO The above lines were the two lines below
         // self.context.set_variable_category(lhs, VariableCategory::AttributeOrValue, comparison.clone().into())?;
         // self.context.set_variable_category(rhs, VariableCategory::AttributeOrValue, comparison.clone().into())?;
 
@@ -219,6 +246,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
             self.context.set_variable_category(var, callee_signature.returns[index].0, binding.clone().into())?;
         }
         for (caller_var, callee_arg_index) in binding.function_call.call_id_mapping() {
+            let Vertex::Variable(caller_var) = caller_var else { unreachable!() };
             self.context.set_variable_category(
                 *caller_var,
                 callee_signature.arguments[*callee_arg_index],
@@ -236,7 +264,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         arguments: Vec<Variable>,
         function_name: &str, // for errors
     ) -> Result<FunctionCall<Variable>, PatternDefinitionError> {
-        use PatternDefinitionError::FunctionCallReturnCountMismatch;
+        use PatternDefinitionError::{FunctionCallArgumentCountMismatch, FunctionCallReturnCountMismatch};
         debug_assert!(assigned.iter().all(|var| self.context.is_variable_available(self.constraints.scope, *var)));
         debug_assert!(arguments.iter().all(|var| self.context.is_variable_available(self.constraints.scope, *var)));
 
@@ -261,7 +289,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         Ok(FunctionCall::new(callee_signature.function_id.clone(), call_variable_mapping))
     }
 
-    pub fn add_expression(
+    pub fn add_assignment(
         &mut self,
         variable: Variable,
         expression: ExpressionTree<Variable>,
@@ -279,49 +307,70 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub fn add_owns(
         &mut self,
-        owner_type: Variable,
-        attribute_type: Variable,
+        owner_type: Vertex<Variable>,
+        attribute_type: Vertex<Variable>,
     ) -> Result<&Owns<Variable>, PatternDefinitionError> {
-        debug_assert!(
-            self.context.is_variable_available(self.constraints.scope, owner_type)
-                && self.context.is_variable_available(self.constraints.scope, attribute_type)
-        );
-        let has = Constraint::from(Owns::new(owner_type, attribute_type));
-        self.context.set_variable_category(owner_type, VariableCategory::ThingType, has.clone())?;
-        self.context.set_variable_category(attribute_type, VariableCategory::ThingType, has.clone())?;
-        let constraint = self.constraints.add_constraint(has);
+        let owner_type_var = owner_type.as_variable();
+        let attribute_type_var = attribute_type.as_variable();
+        let owns = Constraint::from(Owns::new(owner_type, attribute_type));
+
+        if let Some(owner_type) = owner_type_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, owner_type));
+            self.context.set_variable_category(owner_type, VariableCategory::ThingType, owns.clone())?;
+        };
+
+        if let Some(attribute_type) = attribute_type_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, attribute_type));
+            self.context.set_variable_category(attribute_type, VariableCategory::ThingType, owns.clone())?;
+        };
+
+        let constraint = self.constraints.add_constraint(owns);
         Ok(constraint.as_owns().unwrap())
     }
 
     pub fn add_relates(
         &mut self,
-        relation_type: Variable,
-        role_type: Variable,
+        relation_type: Vertex<Variable>,
+        role_type: Vertex<Variable>,
     ) -> Result<&Relates<Variable>, PatternDefinitionError> {
-        debug_assert!(
-            self.context.is_variable_available(self.constraints.scope, relation_type)
-                && self.context.is_variable_available(self.constraints.scope, role_type)
-        );
+        let relation_type_var = relation_type.as_variable();
+        let role_type_var = role_type.as_variable();
         let relates = Constraint::from(Relates::new(relation_type, role_type));
-        self.context.set_variable_category(relation_type, VariableCategory::ThingType, relates.clone())?;
-        self.context.set_variable_category(role_type, VariableCategory::RoleType, relates.clone())?;
+
+        if let Some(relation_type) = relation_type_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, relation_type));
+            self.context.set_variable_category(relation_type, VariableCategory::ThingType, relates.clone())?;
+        };
+
+        if let Some(role_type) = role_type_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, role_type));
+            self.context.set_variable_category(role_type, VariableCategory::RoleType, relates.clone())?;
+        };
+
         let constraint = self.constraints.add_constraint(relates);
         Ok(constraint.as_relates().unwrap())
     }
 
     pub fn add_plays(
         &mut self,
-        player_type: Variable,
-        role_type: Variable,
+        player_type: Vertex<Variable>,
+        role_type: Vertex<Variable>,
     ) -> Result<&Plays<Variable>, PatternDefinitionError> {
-        debug_assert!(
-            self.context.is_variable_available(self.constraints.scope, player_type)
-                && self.context.is_variable_available(self.constraints.scope, role_type)
-        );
-        let relates = Constraint::from(Plays::new(player_type, role_type));
-        self.context.set_variable_category(player_type, VariableCategory::ThingType, relates.clone())?;
-        self.context.set_variable_category(role_type, VariableCategory::RoleType, relates.clone())?;
-        let constraint = self.constraints.add_constraint(relates);
+        let player_type_var = player_type.as_variable();
+        let role_type_var = role_type.as_variable();
+        let plays = Constraint::from(Plays::new(player_type, role_type));
+
+        if let Some(player_type) = player_type_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, player_type));
+            self.context.set_variable_category(player_type, VariableCategory::ThingType, plays.clone())?;
+        };
+
+        if let Some(role_type) = role_type_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, role_type));
+            self.context.set_variable_category(role_type, VariableCategory::RoleType, plays.clone())?;
+        };
+
+        let constraint = self.constraints.add_constraint(plays);
         Ok(constraint.as_plays().unwrap())
     }
 
@@ -335,6 +384,10 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub(crate) fn set_variable_optionality(&mut self, variable: Variable, optional: bool) {
         self.context.set_variable_is_optional(variable, optional)
+    }
+
+    pub(crate) fn parameters(&mut self) -> &mut ParameterRegistry {
+        self.context.parameters()
     }
 }
 
@@ -374,7 +427,7 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub fn ids(&self) -> Box<dyn Iterator<Item=ID> + '_> {
+    pub fn ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
         match self {
             Constraint::Kind(kind) => Box::new(kind.ids()),
             Constraint::Label(label) => Box::new(label.ids()),
@@ -392,9 +445,27 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
+    pub fn vertices(&self) -> Box<dyn Iterator<Item = &Vertex<ID>> + '_> {
+        match self {
+            Constraint::Kind(kind) => Box::new(kind.vertices()),
+            Constraint::Label(label) => Box::new(label.vertices()),
+            Constraint::RoleName(role_name) => Box::new(role_name.vertices()),
+            Constraint::Sub(sub) => Box::new(sub.vertices()),
+            Constraint::Isa(isa) => Box::new(isa.vertices()),
+            Constraint::Links(rp) => Box::new(rp.vertices()),
+            Constraint::Has(has) => Box::new(has.vertices()),
+            Constraint::ExpressionBinding(binding) => Box::new(binding.vertices_assigned()),
+            Constraint::FunctionCallBinding(binding) => Box::new(binding.vertices_assigned()),
+            Constraint::Comparison(comparison) => Box::new(comparison.vertices()),
+            Constraint::Owns(owns) => Box::new(owns.vertices()),
+            Constraint::Relates(relates) => Box::new(relates.vertices()),
+            Constraint::Plays(plays) => Box::new(plays.vertices()),
+        }
+    }
+
     pub fn ids_foreach<F>(&self, function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
         match self {
             Self::Kind(kind) => kind.ids_foreach(function),
@@ -431,30 +502,24 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub fn ids_count(&self) -> usize {
-        let mut count = 0;
-        self.ids_foreach(|_, _| count += 1);
-        count
-    }
-
-    pub fn left_id(&self) -> ID {
+    pub fn left_id(&self) -> Option<ID> {
         let mut id = None;
         self.ids_foreach(|constraint_id, side| {
             if side == ConstraintIDSide::Left {
                 id = Some(constraint_id);
             }
         });
-        id.unwrap()
+        id
     }
 
-    pub fn right_id(&self) -> ID {
+    pub fn right_id(&self) -> Option<ID> {
         let mut id = None;
         self.ids_foreach(|constraint_id, side| {
             if side == ConstraintIDSide::Right {
                 id = Some(constraint_id);
             }
         });
-        id.unwrap()
+        id
     }
 
     pub(crate) fn as_kind(&self) -> Option<&Kind<ID>> {
@@ -578,36 +643,40 @@ pub enum ConstraintIDSide {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Label<ID> {
-    left: ID,
+    left: Vertex<ID>,
     type_label: String,
 }
 
 impl<ID: IrID> Label<ID> {
     fn new(left: ID, type_label: String) -> Self {
-        Self { left, type_label }
+        Self { left: Vertex::Variable(left), type_label }
     }
 
-    pub fn left(&self) -> ID {
-        self.left
+    pub fn left(&self) -> &Vertex<ID> {
+        &self.left
     }
 
     pub fn type_label(&self) -> &str {
         &self.type_label
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> + Sized {
-        [self.left].into_iter()
+    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
+        self.left.as_variable().into_iter()
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + Sized {
+        [&self.left].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
-        function(self.left, ConstraintIDSide::Left)
+        self.left.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
     }
 
     fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Label<T> {
-        Label::new(mapping[&self.left], self.type_label)
+        Label { left: self.left.map(mapping), type_label: self.type_label }
     }
 }
 
@@ -627,36 +696,40 @@ impl<ID: IrID> fmt::Display for Label<ID> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct RoleName<ID> {
-    left: ID,
+    left: Vertex<ID>,
     name: String,
 }
 
 impl<ID: IrID> RoleName<ID> {
     pub fn new(left: ID, name: String) -> Self {
-        Self { left, name }
+        Self { left: Vertex::Variable(left), name }
     }
 
-    pub fn left(&self) -> ID {
-        self.left
+    pub fn left(&self) -> &Vertex<ID> {
+        &self.left
     }
 
     pub fn name(&self) -> &str {
         self.name.as_str()
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> + Sized {
-        [self.left].into_iter()
+    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
+        self.left.as_variable().into_iter()
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + Sized {
+        [&self.left].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
-        function(self.left, ConstraintIDSide::Left)
+        self.left.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
     }
 
     fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> RoleName<T> {
-        RoleName::new(mapping[&self.left], self.name)
+        RoleName { left: self.left.map(mapping), name: self.name }
     }
 }
 
@@ -675,35 +748,39 @@ impl<ID: IrID> fmt::Display for RoleName<ID> {
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct Kind<ID> {
     kind: typeql::token::Kind,
-    type_: ID,
+    type_: Vertex<ID>,
 }
 
 impl<ID: IrID> Kind<ID> {
     pub fn new(kind: typeql::token::Kind, type_: ID) -> Self {
-        Self { kind, type_ }
+        Self { kind, type_: Vertex::Variable(type_) }
     }
 
-    pub fn type_(&self) -> ID {
-        self.type_
+    pub fn type_(&self) -> &Vertex<ID> {
+        &self.type_
     }
 
     pub fn kind(&self) -> typeql::token::Kind {
         self.kind
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> + Sized {
-        [self.type_].into_iter()
+    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
+        self.type_.as_variable().into_iter()
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + Sized {
+        [&self.type_].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
-        function(self.type_, ConstraintIDSide::Left);
+        self.type_.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Kind<T> {
-        Kind::new(self.kind, mapping[&self.type_])
+        Kind { kind: self.kind, type_: self.type_.map(mapping) }
     }
 }
 
@@ -731,44 +808,57 @@ pub enum SubKind {
     Subtype,
 }
 
+impl From<typeql::statement::type_::SubKind> for SubKind {
+    fn from(kind: typeql::statement::type_::SubKind) -> Self {
+        match kind {
+            typeql::statement::type_::SubKind::Direct => Self::Exact,
+            typeql::statement::type_::SubKind::Transitive => Self::Subtype,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Sub<ID> {
     kind: SubKind,
-    subtype: ID,
-    supertype: ID,
+    subtype: Vertex<ID>,
+    supertype: Vertex<ID>,
 }
 
 impl<ID: IrID> Sub<ID> {
-    fn new(kind: SubKind, subtype: ID, supertype: ID) -> Self {
+    fn new(kind: SubKind, subtype: Vertex<ID>, supertype: Vertex<ID>) -> Self {
         Sub { subtype, supertype, kind }
     }
 
-    pub fn subtype(&self) -> ID {
-        self.subtype
+    pub fn subtype(&self) -> &Vertex<ID> {
+        &self.subtype
     }
 
-    pub fn supertype(&self) -> ID {
-        self.supertype
+    pub fn supertype(&self) -> &Vertex<ID> {
+        &self.supertype
     }
 
     pub fn sub_kind(&self) -> SubKind {
         self.kind
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> + Sized {
-        [self.subtype, self.supertype].into_iter()
+    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
+        [self.subtype.as_variable(), self.supertype.as_variable()].into_iter().flatten()
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + Sized {
+        [&self.subtype, &self.supertype].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
-        function(self.subtype, ConstraintIDSide::Left);
-        function(self.supertype, ConstraintIDSide::Right)
+        self.subtype.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
+        self.supertype.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Sub<T> {
-        Sub::new(self.kind, mapping[&self.subtype], mapping[&self.supertype])
+        Sub::new(self.kind, self.subtype.map(mapping), self.supertype.map(mapping))
     }
 }
 
@@ -780,48 +870,52 @@ impl<ID: IrID> From<Sub<ID>> for Constraint<ID> {
 
 impl<ID: IrID> fmt::Display for Sub<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} isa {}", self.subtype, self.supertype)
+        write!(f, "{} sub {}", self.subtype, self.supertype)
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Isa<ID> {
     kind: IsaKind,
-    thing: ID,
-    type_: ID,
+    thing: Vertex<ID>,
+    type_: Vertex<ID>,
 }
 
 impl<ID: IrID> Isa<ID> {
-    fn new(kind: IsaKind, thing: ID, type_: ID) -> Self {
-        Self { kind, thing, type_ }
+    fn new(kind: IsaKind, thing: ID, type_: Vertex<ID>) -> Self {
+        Self { kind, thing: Vertex::Variable(thing), type_ }
     }
 
-    pub fn thing(&self) -> ID {
-        self.thing
+    pub fn thing(&self) -> &Vertex<ID> {
+        &self.thing
     }
 
-    pub fn type_(&self) -> ID {
-        self.type_
+    pub fn type_(&self) -> &Vertex<ID> {
+        &self.type_
     }
 
     pub fn isa_kind(&self) -> IsaKind {
         self.kind
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> + Sized {
-        [self.thing, self.type_].into_iter()
+    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
+        [self.thing.as_variable(), self.type_.as_variable()].into_iter().flatten()
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + Sized {
+        [&self.thing, &self.type_].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
-        function(self.thing, ConstraintIDSide::Left);
-        function(self.type_, ConstraintIDSide::Right);
+        self.thing.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
+        self.type_.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Isa<T> {
-        Isa::new(self.kind, mapping[&self.thing], mapping[&self.type_])
+        Isa { kind: self.kind, thing: self.thing.map(mapping), type_: self.type_.map(mapping) }
     }
 }
 
@@ -843,45 +937,66 @@ pub enum IsaKind {
     Subtype,
 }
 
+impl From<typeql::statement::thing::isa::IsaKind> for IsaKind {
+    fn from(kind: typeql::statement::thing::isa::IsaKind) -> Self {
+        match kind {
+            typeql::statement::thing::isa::IsaKind::Exact => Self::Exact,
+            typeql::statement::thing::isa::IsaKind::Subtype => Self::Subtype,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Links<ID> {
-    pub(crate) relation: ID,
-    pub(crate) player: ID,
-    pub(crate) role_type: ID,
+    pub(crate) relation: Vertex<ID>,
+    pub(crate) player: Vertex<ID>,
+    pub(crate) role_type: Vertex<ID>,
 }
 
 impl<ID: IrID> Links<ID> {
     pub fn new(relation: ID, player: ID, role_type: ID) -> Self {
-        Self { relation, player, role_type }
+        Self {
+            relation: Vertex::Variable(relation),
+            player: Vertex::Variable(player),
+            role_type: Vertex::Variable(role_type),
+        }
     }
 
-    pub fn relation(&self) -> ID {
-        self.relation
+    pub fn relation(&self) -> &Vertex<ID> {
+        &self.relation
     }
 
-    pub fn player(&self) -> ID {
-        self.player
+    pub fn player(&self) -> &Vertex<ID> {
+        &self.player
     }
 
-    pub fn role_type(&self) -> ID {
-        self.role_type
+    pub fn role_type(&self) -> &Vertex<ID> {
+        &self.role_type
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> {
-        [self.relation, self.player, self.role_type].into_iter()
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
+        [&self.relation, &self.player, &self.role_type].map(Vertex::as_variable).into_iter().flatten()
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> {
+        [&self.relation, &self.player, &self.role_type].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
-        function(self.relation, ConstraintIDSide::Left);
-        function(self.player, ConstraintIDSide::Right);
-        function(self.role_type, ConstraintIDSide::Filter);
+        self.relation.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
+        self.player.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
+        self.role_type.as_variable().inspect(|&id| function(id, ConstraintIDSide::Filter));
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Links<T> {
-        Links::new(mapping[&self.relation], mapping[&self.player], mapping[&self.role_type])
+        Links {
+            relation: self.relation.map(mapping),
+            player: self.player.map(mapping),
+            role_type: self.role_type.map(mapping),
+        }
     }
 }
 
@@ -899,37 +1014,41 @@ impl<ID: IrID> fmt::Display for Links<ID> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Has<ID> {
-    owner: ID,
-    attribute: ID,
+    owner: Vertex<ID>,
+    attribute: Vertex<ID>,
 }
 
 impl<ID: IrID> Has<ID> {
     pub fn new(owner: ID, attribute: ID) -> Self {
-        Has { owner, attribute }
+        Has { owner: Vertex::Variable(owner), attribute: Vertex::Variable(attribute) }
     }
 
-    pub fn owner(&self) -> ID {
-        self.owner
+    pub fn owner(&self) -> &Vertex<ID> {
+        &self.owner
     }
 
-    pub fn attribute(&self) -> ID {
-        self.attribute
+    pub fn attribute(&self) -> &Vertex<ID> {
+        &self.attribute
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> {
-        [self.owner, self.attribute].into_iter()
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
+        [&self.owner, &self.attribute].map(Vertex::as_variable).into_iter().flatten()
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> {
+        [&self.owner, &self.attribute].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
-        function(self.owner, ConstraintIDSide::Left);
-        function(self.attribute, ConstraintIDSide::Right);
+        self.owner.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
+        self.attribute.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Has<T> {
-        Has::new(mapping[&self.owner], mapping[&self.attribute])
+        Has { owner: self.owner.map(mapping), attribute: self.attribute.map(mapping) }
     }
 }
 
@@ -947,35 +1066,39 @@ impl<ID: IrID> fmt::Display for Has<ID> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ExpressionBinding<ID> {
-    left: ID,
+    left: Vertex<ID>,
     expression: ExpressionTree<ID>,
 }
 
 impl<ID: IrID> ExpressionBinding<ID> {
-    pub fn ids_assigned(&self) -> impl Iterator<Item=ID> {
-        [self.left].into_iter()
+    fn new(left: ID, expression: ExpressionTree<ID>) -> Self {
+        Self { left: Vertex::Variable(left), expression }
+    }
+
+    pub fn left(&self) -> &Vertex<ID> {
+        &self.left
+    }
+
+    pub fn expression(&self) -> &ExpressionTree<ID> {
+        &self.expression
+    }
+
+    pub fn vertices_assigned(&self) -> impl Iterator<Item = &Vertex<ID>> {
+        [&self.left].into_iter()
+    }
+
+    pub fn ids_assigned(&self) -> impl Iterator<Item = ID> {
+        self.left.as_variable().into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
         self.ids_assigned().for_each(|id| function(id, ConstraintIDSide::Left));
         // TODO
         // todo!("Do we really need positions here?")
         // self.expression().ids().for_each(|id| function(id, ConstraintIDSide::Right));
-    }
-
-    fn new(left: ID, expression: ExpressionTree<ID>) -> Self {
-        Self { left, expression }
-    }
-
-    pub fn left(&self) -> ID {
-        self.left
-    }
-
-    pub fn expression(&self) -> &ExpressionTree<ID> {
-        &self.expression
     }
 
     pub(crate) fn validate(&self, context: &mut BlockContext<'_>) -> Result<(), ExpressionDefinitionError> {
@@ -1001,17 +1124,17 @@ impl<ID: IrID> fmt::Display for ExpressionBinding<ID> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct FunctionCallBinding<ID> {
-    assigned: Vec<ID>,
+    assigned: Vec<Vertex<ID>>,
     function_call: FunctionCall<ID>,
     is_stream: bool,
 }
 
 impl<ID: IrID> FunctionCallBinding<ID> {
     fn new(left: Vec<ID>, function_call: FunctionCall<ID>, is_stream: bool) -> Self {
-        Self { assigned: left, function_call, is_stream }
+        Self { assigned: left.into_iter().map(Vertex::Variable).collect(), function_call, is_stream }
     }
 
-    pub fn assigned(&self) -> &[ID] {
+    pub fn assigned(&self) -> &[Vertex<ID>] {
         &self.assigned
     }
 
@@ -1019,22 +1142,29 @@ impl<ID: IrID> FunctionCallBinding<ID> {
         &self.function_call
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> + '_ {
+    pub fn ids(&self) -> impl Iterator<Item = ID> + '_ {
         self.ids_assigned().chain(self.function_call.argument_ids())
     }
 
-    pub fn ids_assigned(&self) -> impl Iterator<Item=ID> + '_ {
-        self.assigned.iter().cloned()
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + '_ {
+        self.assigned.iter().chain(self.function_call.argument_vertices())
+    }
+
+    pub fn ids_assigned(&self) -> impl Iterator<Item = ID> + '_ {
+        self.assigned.iter().filter_map(Vertex::as_variable)
+    }
+
+    pub fn vertices_assigned(&self) -> impl Iterator<Item = &Vertex<ID>> + '_ {
+        self.assigned.iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
-        for id in &self.assigned {
-            function(*id, ConstraintIDSide::Left)
+        for id in self.ids_assigned() {
+            function(id, ConstraintIDSide::Left)
         }
-
         for id in self.function_call.argument_ids() {
             function(id, ConstraintIDSide::Right)
         }
@@ -1100,44 +1230,48 @@ impl From<typeql::token::Comparator> for Comparator {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Comparison<ID> {
-    lhs: ID,
-    rhs: ID,
+    lhs: Vertex<ID>,
+    rhs: Vertex<ID>,
     comparator: Comparator,
 }
 
 impl<ID: IrID> Comparison<ID> {
-    fn new(lhs: ID, rhs: ID, comparator: Comparator) -> Self {
+    fn new(lhs: Vertex<ID>, rhs: Vertex<ID>, comparator: Comparator) -> Self {
         Self { lhs, rhs, comparator }
     }
 
-    pub fn lhs(&self) -> ID {
-        self.lhs
+    pub fn lhs(&self) -> &Vertex<ID> {
+        &self.lhs
     }
 
-    pub fn rhs(&self) -> ID {
-        self.rhs
+    pub fn rhs(&self) -> &Vertex<ID> {
+        &self.rhs
     }
 
     pub fn comparator(&self) -> Comparator {
         self.comparator
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> {
-        [self.lhs, self.rhs].into_iter()
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
+        [self.lhs.as_variable(), self.rhs.as_variable()].into_iter().flatten()
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> {
+        [&self.lhs, &self.rhs].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
-        function(self.lhs, ConstraintIDSide::Left);
-        function(self.rhs, ConstraintIDSide::Right);
+        self.lhs.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
+        self.rhs.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
     }
 }
 
 impl<ID: IrID> From<Comparison<ID>> for Constraint<ID> {
-    fn from(val: Comparison<ID>) -> Self {
-        Constraint::Comparison(val)
+    fn from(comp: Comparison<ID>) -> Self {
+        Constraint::Comparison(comp)
     }
 }
 
@@ -1149,37 +1283,41 @@ impl<ID: IrID> fmt::Display for Comparison<ID> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Owns<ID> {
-    owner: ID,
-    attribute: ID,
+    owner: Vertex<ID>,
+    attribute: Vertex<ID>,
 }
 
 impl<ID: IrID> Owns<ID> {
-    fn new(owner: ID, attribute: ID) -> Self {
+    fn new(owner: Vertex<ID>, attribute: Vertex<ID>) -> Self {
         Self { owner, attribute }
     }
 
-    pub fn owner(&self) -> ID {
-        self.owner
+    pub fn owner(&self) -> &Vertex<ID> {
+        &self.owner
     }
 
-    pub fn attribute(&self) -> ID {
-        self.attribute
+    pub fn attribute(&self) -> &Vertex<ID> {
+        &self.attribute
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> {
-        [self.owner, self.attribute].into_iter()
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
+        [self.owner.as_variable(), self.attribute.as_variable()].into_iter().flatten()
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> {
+        [&self.owner, &self.attribute].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
-        function(self.owner, ConstraintIDSide::Left);
-        function(self.attribute, ConstraintIDSide::Right);
+        self.owner.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
+        self.attribute.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Owns<T> {
-        Owns::new(mapping[&self.owner], mapping[&self.attribute])
+        Owns::new(self.owner.map(mapping), self.attribute.map(mapping))
     }
 }
 
@@ -1197,37 +1335,41 @@ impl<ID: IrID> fmt::Display for Owns<ID> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Relates<ID> {
-    relation: ID,
-    role_type: ID,
+    relation: Vertex<ID>,
+    role_type: Vertex<ID>,
 }
 
 impl<ID: IrID> Relates<ID> {
-    fn new(relation: ID, role: ID) -> Self {
+    fn new(relation: Vertex<ID>, role: Vertex<ID>) -> Self {
         Self { relation, role_type: role }
     }
 
-    pub fn relation(&self) -> ID {
-        self.relation
+    pub fn relation(&self) -> &Vertex<ID> {
+        &self.relation
     }
 
-    pub fn role_type(&self) -> ID {
-        self.role_type
+    pub fn role_type(&self) -> &Vertex<ID> {
+        &self.role_type
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> {
-        [self.relation, self.role_type].into_iter()
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
+        [self.relation.as_variable(), self.role_type.as_variable()].into_iter().flatten()
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> {
+        [&self.relation, &self.role_type].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
-        function(self.relation, ConstraintIDSide::Left);
-        function(self.role_type, ConstraintIDSide::Right);
+        self.relation.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
+        self.role_type.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Relates<T> {
-        Relates::new(mapping[&self.relation], mapping[&self.role_type])
+        Relates::new(self.relation.map(mapping), self.role_type.map(mapping))
     }
 }
 
@@ -1245,37 +1387,41 @@ impl<ID: IrID> fmt::Display for Relates<ID> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Plays<ID> {
-    player: ID,
-    role_type: ID,
+    player: Vertex<ID>,
+    role_type: Vertex<ID>,
 }
 
 impl<ID: IrID> Plays<ID> {
-    fn new(player: ID, role: ID) -> Self {
+    fn new(player: Vertex<ID>, role: Vertex<ID>) -> Self {
         Self { player, role_type: role }
     }
 
-    pub fn player(&self) -> ID {
-        self.player
+    pub fn player(&self) -> &Vertex<ID> {
+        &self.player
     }
 
-    pub fn role_type(&self) -> ID {
-        self.role_type
+    pub fn role_type(&self) -> &Vertex<ID> {
+        &self.role_type
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> {
-        [self.player, self.role_type].into_iter()
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
+        [self.player.as_variable(), self.role_type.as_variable()].into_iter().flatten()
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> {
+        [&self.player, &self.role_type].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
-        function(self.player, ConstraintIDSide::Left);
-        function(self.role_type, ConstraintIDSide::Right);
+        self.player.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
+        self.role_type.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Plays<T> {
-        Plays::new(mapping[&self.player], mapping[&self.role_type])
+        Plays::new(self.player.map(mapping), self.role_type.map(mapping))
     }
 }
 

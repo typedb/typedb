@@ -8,30 +8,40 @@ use std::{collections::BTreeMap, fmt, hash::Hash};
 
 use itertools::Itertools;
 
-use crate::{pattern::IrID, program::function_signature::FunctionID};
+use crate::{
+    pattern::{IrID, Vertex},
+    program::function_signature::FunctionID,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FunctionCall<ID> {
     function_id: FunctionID,
     // map call variable to index of argument
-    call_variable_mapping: BTreeMap<ID, usize>,
+    call_variable_mapping: BTreeMap<Vertex<ID>, usize>,
 }
 
 impl<ID: IrID> FunctionCall<ID> {
     pub fn new(function_id: FunctionID, call_variable_mapping: BTreeMap<ID, usize>) -> Self {
-        Self { function_id, call_variable_mapping }
+        Self {
+            function_id,
+            call_variable_mapping: call_variable_mapping.into_iter().map(|(k, v)| (Vertex::Variable(k), v)).collect(),
+        }
     }
 
     pub fn function_id(&self) -> FunctionID {
         self.function_id.clone()
     }
 
-    pub fn call_id_mapping(&self) -> &BTreeMap<ID, usize> {
+    pub fn call_id_mapping(&self) -> &BTreeMap<Vertex<ID>, usize> {
         &self.call_variable_mapping
     }
 
     pub fn argument_ids(&self) -> impl Iterator<Item = ID> + '_ {
-        self.call_variable_mapping.keys().cloned()
+        self.call_variable_mapping.keys().filter_map(Vertex::as_variable)
+    }
+
+    pub fn argument_vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + '_ {
+        self.call_variable_mapping.keys()
     }
 }
 

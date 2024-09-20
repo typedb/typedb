@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt::{Display, Formatter, Result};
+use std::fmt;
 
 pub mod edge;
 pub mod index;
@@ -12,7 +12,7 @@ pub mod property;
 pub mod vertex;
 pub mod vertex_generator;
 
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Hash, PartialEq, Eq)]
 pub enum Kind {
     Entity,
     Attribute,
@@ -31,14 +31,14 @@ impl Kind {
     }
 }
 
-impl std::fmt::Debug for Kind {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Debug for Kind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Kind[{}]", self.name())
     }
 }
 
-impl std::fmt::Display for Kind {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+impl fmt::Display for Kind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.name())
     }
 }
@@ -60,14 +60,14 @@ impl CapabilityKind {
     }
 }
 
-impl Display for CapabilityKind {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+impl fmt::Display for CapabilityKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.name())
     }
 }
 
-impl std::fmt::Debug for CapabilityKind {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+impl fmt::Debug for CapabilityKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "CapabilityKind[{}]", self)
     }
 }

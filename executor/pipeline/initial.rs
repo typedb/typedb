@@ -4,47 +4,49 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{array, collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 use compiler::VariablePosition;
-use concept::thing::thing_manager::ThingManager;
-use lending_iterator::{AsLendingIterator, LendingIterator};
-use storage::snapshot::ReadableSnapshot;
+use lending_iterator::{LendingIterator, Once};
 
 use crate::{
-    pipeline::{PipelineExecutionError, StageAPI, StageIterator},
+    pipeline::{
+        stage::{ExecutionContext, StageAPI},
+        PipelineExecutionError, StageIterator,
+    },
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
 
-pub struct InitialStage<Snapshot: ReadableSnapshot + 'static> {
-    snapshot: Arc<Snapshot>,
+pub struct InitialStage<Snapshot> {
+    context: ExecutionContext<Snapshot>,
 }
 
-impl<Snapshot: ReadableSnapshot + 'static> InitialStage<Snapshot> {
-    pub fn new(snapshot: Arc<Snapshot>) -> Self {
-        Self { snapshot }
+impl<Snapshot> InitialStage<Snapshot> {
+    pub fn new(context: ExecutionContext<Snapshot>) -> Self {
+        Self { context }
     }
 }
 
-impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for InitialStage<Snapshot> {
+impl<Snapshot> StageAPI<Snapshot> for InitialStage<Snapshot> {
     type OutputIterator = InitialIterator;
 
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
-        Ok((InitialIterator::new(), self.snapshot))
+    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
+    {
+        Ok((InitialIterator::new(), self.context))
     }
 }
 
 pub struct InitialIterator {
-    single_iterator: AsLendingIterator<array::IntoIter<Result<MaybeOwnedRow<'static>, PipelineExecutionError>, 1>>,
+    single_iterator: Once<Result<MaybeOwnedRow<'static>, PipelineExecutionError>>,
 }
 
 impl InitialIterator {
     fn new() -> Self {
-        Self { single_iterator: AsLendingIterator::new([Ok(MaybeOwnedRow::new_owned(Vec::new(), 1))]) }
+        Self { single_iterator: lending_iterator::once(Ok(MaybeOwnedRow::new_owned(Vec::new(), 1))) }
     }
 }
 

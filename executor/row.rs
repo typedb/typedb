@@ -4,11 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    borrow::Cow,
-    fmt::{Display, Formatter},
-    vec,
-};
+use std::{borrow::Cow, fmt, ops::Deref, vec};
 
 use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
@@ -65,8 +61,8 @@ impl<'a> Row<'a> {
     }
 }
 
-impl<'a> Display for Row<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<'a> fmt::Display for Row<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} x [  ", self.multiplicity)?;
         for value in &*self.row {
             write!(f, "{value}  ")?
@@ -95,7 +91,8 @@ impl<'a> MaybeOwnedRow<'a> {
         Self::new_borrowed(row.row, row.multiplicity)
     }
 
-    pub(crate) fn new_owned(row: Vec<VariableValue<'static>>, multiplicity: u64) -> Self {
+    // TODO: pub(crate)
+    pub fn new_owned(row: Vec<VariableValue<'static>>, multiplicity: u64) -> Self {
         Self { row: Cow::Owned(row), multiplicity: Cow::Owned(multiplicity) }
     }
 
@@ -139,6 +136,14 @@ impl<'a> MaybeOwnedRow<'a> {
     }
 }
 
+impl<'a> Deref for MaybeOwnedRow<'a> {
+    type Target = [VariableValue<'static>];
+
+    fn deref(&self) -> &Self::Target {
+        &self.row
+    }
+}
+
 impl IntoIterator for MaybeOwnedRow<'static> {
     type Item = VariableValue<'static>;
     type IntoIter = vec::IntoIter<VariableValue<'static>>;
@@ -148,8 +153,8 @@ impl IntoIterator for MaybeOwnedRow<'static> {
     }
 }
 
-impl<'a> Display for MaybeOwnedRow<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<'a> fmt::Display for MaybeOwnedRow<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} x [  ", self.multiplicity)?;
         for value in &*self.row {
             write!(f, "{value}  ")?

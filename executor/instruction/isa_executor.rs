@@ -4,13 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{HashMap, HashSet},
-    iter,
-    marker::PhantomData,
-    sync::Arc,
-    vec,
-};
+use std::{collections::BTreeSet, iter, marker::PhantomData, sync::Arc, vec};
 
 use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::match_::instructions::thing::IsaInstruction;
@@ -40,6 +34,7 @@ use crate::{
         tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, IsaToTupleFn, TuplePositions, TupleResult},
         BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
+    pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
     VariablePosition,
 };
@@ -48,17 +43,16 @@ pub(crate) struct IsaExecutor {
     isa: Isa<VariablePosition>,
     iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
-    types: Arc<HashSet<Type>>,
+    tuple_positions: TuplePositions,
+    types: Arc<BTreeSet<Type>>,
     checker: Checker<(AsHkt![Thing<'_>], Type)>,
 }
 
-type MapToThing<I, F> = Map<I, F, Result<AsHkt![Thing<'_>], ConceptReadError>>;
-
 #[allow(clippy::large_enum_variant)]
 pub(crate) enum SingleTypeIsaIterator {
-    Entity(ThingWithTypes<MapToThing<InstanceIterator<AsHkt![Entity<'_>]>, EntityEraseFn>>),
-    Relation(ThingWithTypes<MapToThing<InstanceIterator<AsHkt![Relation<'_>]>, RelationEraseFn>>),
-    Attribute(ThingWithTypes<MapToThing<AttributeIterator<InstanceIterator<AsHkt![Attribute<'_>]>>, AttributeEraseFn>>),
+    Entity(MapToThingType<InstanceIterator<AsHkt![Entity<'_>]>, EntityToThingTypeFn>),
+    Relation(MapToThingType<InstanceIterator<AsHkt![Relation<'_>]>, RelationToThingTypeFn>),
+    Attribute(MapToThingType<AttributeIterator<InstanceIterator<AsHkt![Attribute<'_>]>>, AttributeToThingTypeFn>),
 }
 
 impl LendingIterator for SingleTypeIsaIterator {
@@ -72,6 +66,14 @@ impl LendingIterator for SingleTypeIsaIterator {
         }
     }
 }
+
+type MapToThingType<I, F> = Map<I, F, Result<(AsHkt![Thing<'_>], Type), ConceptReadError>>;
+type EntityToThingTypeFn =
+    for<'a> fn(Result<Entity<'a>, ConceptReadError>) -> Result<(Thing<'a>, Type), ConceptReadError>;
+type RelationToThingTypeFn =
+    for<'a> fn(Result<Relation<'a>, ConceptReadError>) -> Result<(Thing<'a>, Type), ConceptReadError>;
+type AttributeToThingTypeFn =
+    for<'a> fn(Result<Attribute<'a>, ConceptReadError>) -> Result<(Thing<'a>, Type), ConceptReadError>;
 
 type MultipleTypeIsaObjectIterator = Flatten<
     AsLendingIterator<vec::IntoIter<ThingWithTypes<MapToThing<InstanceIterator<AsHkt![Object<'_>]>, ObjectEraseFn>>>>,
@@ -110,9 +112,8 @@ pub(super) type IsaUnboundedSortedThingMerged = IsaTupleIterator<MultipleTypeIsa
 pub(super) type IsaBoundedSortedType =
     IsaTupleIterator<ThingWithTypes<Once<Result<AsHkt![Thing<'_>], ConceptReadError>>>>;
 
+type MapToThing<I, F> = Map<I, F, Result<AsHkt![Thing<'_>], ConceptReadError>>;
 type ObjectEraseFn = for<'a> fn(Result<Object<'a>, ConceptReadError>) -> Result<Thing<'a>, ConceptReadError>;
-type EntityEraseFn = for<'a> fn(Result<Entity<'a>, ConceptReadError>) -> Result<Thing<'a>, ConceptReadError>;
-type RelationEraseFn = for<'a> fn(Result<Relation<'a>, ConceptReadError>) -> Result<Thing<'a>, ConceptReadError>;
 type AttributeEraseFn = for<'a> fn(Result<Attribute<'a>, ConceptReadError>) -> Result<Thing<'a>, ConceptReadError>;
 
 pub(super) type IsaFilterFn = FilterFn<(AsHkt![Thing<'_>], Type)>;
@@ -134,95 +135,111 @@ impl IsaExecutor {
         let IsaInstruction { isa, checks, .. } = isa;
 
         let iterate_mode = BinaryIterateMode::new(isa.thing(), isa.type_(), &variable_modes, sort_by);
+
+        let thing = isa.thing().as_variable();
+        let type_ = isa.type_().as_variable();
+
+        let output_tuple_positions = if iterate_mode.is_inverted() {
+            TuplePositions::Pair([type_, thing])
+        } else {
+            TuplePositions::Pair([thing, type_])
+        };
+
         let checker = Checker::<(Thing<'_>, Type)> {
             checks,
-            extractors: HashMap::from([(isa.thing(), EXTRACT_THING), (isa.type_(), EXTRACT_TYPE)]),
+            extractors: [(thing, EXTRACT_THING), (type_, EXTRACT_TYPE)]
+                .into_iter()
+                .filter_map(|(var, ex)| Some((var?, ex)))
+                .collect(),
             _phantom_data: PhantomData,
         };
 
-        Self { isa, iterate_mode, variable_modes, types, checker }
+        Self { isa, iterate_mode, variable_modes, tuple_positions: output_tuple_positions, types, checker }
     }
 
     pub(crate) fn get_iterator(
         &self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
-        let filter_for_row: Box<IsaFilterFn> = self.checker.filter_for_row(snapshot, thing_manager, &row);
+        let filter_for_row: Box<IsaFilterFn> = self.checker.filter_for_row(context, &row);
+        let snapshot = &**context.snapshot();
+        let thing_manager = context.thing_manager();
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let positions = TuplePositions::Pair([self.isa.thing(), self.isa.type_()]);
                 if self.types.len() == 1 {
                     // no heap allocs needed if there is only 1 iterator
                     let type_ = self.types.iter().next().unwrap();
-                    let iterator = instances_of_single_type(&**snapshot, thing_manager, type_, self.isa.isa_kind())?;
+                    let iterator = instances_of_single_type(snapshot, thing_manager, type_)?;
                     let as_tuples: IsaUnboundedSortedThingSingle = iterator
                         .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
                         .map(isa_to_tuple_thing_type);
                     Ok(TupleIterator::IsaUnboundedSingle(SortedTupleIterator::new(
                         as_tuples,
-                        positions,
+                        self.tuple_positions.clone(),
                         &self.variable_modes,
                     )))
                 } else {
                     let thing_iter =
-                        instances_of_all_types_chained(&**snapshot, thing_manager, &*self.types, self.isa.isa_kind())?;
+                        instances_of_all_types_chained(snapshot, thing_manager, &*self.types, self.isa.isa_kind())?;
                     let as_tuples: IsaUnboundedSortedThingMerged = thing_iter
                         .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
                         .map(isa_to_tuple_thing_type);
                     Ok(TupleIterator::IsaUnboundedMerged(SortedTupleIterator::new(
                         as_tuples,
-                        positions,
+                        self.tuple_positions.clone(),
                         &self.variable_modes,
                     )))
                 }
             }
 
             BinaryIterateMode::UnboundInverted => {
-                let positions = TuplePositions::Pair([self.isa.type_(), self.isa.thing()]);
                 if self.types.len() == 1 {
                     // no heap allocs needed if there is only 1 iterator
                     let type_ = self.types.iter().next().unwrap();
-                    let iterator = instances_of_single_type(&**snapshot, thing_manager, type_, self.isa.isa_kind())?;
+                    let iterator = instances_of_single_type(snapshot, thing_manager, type_)?;
                     let as_tuples: IsaUnboundedSortedTypeSingle = iterator
                         .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
                         .map(isa_to_tuple_type_thing);
                     Ok(TupleIterator::IsaUnboundedInvertedSingle(SortedTupleIterator::new(
                         as_tuples,
-                        positions,
+                        self.tuple_positions.clone(),
                         &self.variable_modes,
                     )))
                 } else {
                     let thing_iter =
-                        instances_of_all_types_chained(&**snapshot, thing_manager, &*self.types, self.isa.isa_kind())?;
+                        instances_of_all_types_chained(snapshot, thing_manager, &*self.types, self.isa.isa_kind())?;
                     let as_tuples: IsaUnboundedSortedTypeMerged = thing_iter
                         .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
                         .map(isa_to_tuple_type_thing);
                     Ok(TupleIterator::IsaUnboundedInvertedMerged(SortedTupleIterator::new(
                         as_tuples,
-                        positions,
+                        self.tuple_positions.clone(),
                         &self.variable_modes,
                     )))
                 }
             }
 
             BinaryIterateMode::BoundFrom => {
-                debug_assert!(row.len() > self.isa.thing().as_usize());
-                let positions = TuplePositions::Pair([self.isa.type_(), self.isa.thing()]);
-                let VariableValue::Thing(thing) = row.get(self.isa.thing()).to_owned() else {
+                let thing = self.isa.thing().as_variable().unwrap();
+                debug_assert!(row.len() > thing.as_usize());
+                let VariableValue::Thing(thing) = row.get(thing).to_owned() else {
                     unreachable!("Has thing must be an entity or relation.")
                 };
                 let type_ = thing.type_();
                 let type_manager = thing_manager.type_manager();
                 let types = match self.isa.isa_kind() {
                     IsaKind::Exact => vec![type_.clone()],
-                    IsaKind::Subtype => get_supertypes(&**snapshot, type_manager, &type_, SubKind::Subtype)?,
+                    IsaKind::Subtype => get_supertypes(snapshot, type_manager, &type_, SubKind::Subtype)?,
                 };
                 let as_tuples: IsaBoundedSortedType = with_types(lending_iterator::once(Ok(thing)), types)
                     .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
                     .map(isa_to_tuple_thing_type);
-                Ok(TupleIterator::IsaBounded(SortedTupleIterator::new(as_tuples, positions, &self.variable_modes)))
+                Ok(TupleIterator::IsaBounded(SortedTupleIterator::new(
+                    as_tuples,
+                    self.tuple_positions.clone(),
+                    &self.variable_modes,
+                )))
             }
         }
     }
@@ -296,27 +313,29 @@ pub(super) fn instances_of_single_type(
     snapshot: &impl ReadableSnapshot,
     thing_manager: &ThingManager,
     type_: &Type,
-    isa_kind: IsaKind,
 ) -> Result<SingleTypeIsaIterator, ConceptReadError> {
-    let type_manager = thing_manager.type_manager();
-    let types = match isa_kind {
-        IsaKind::Exact => vec![type_.clone()],
-        IsaKind::Subtype => get_supertypes(snapshot, type_manager, type_, SubKind::Subtype)?,
-    };
-
     match type_ {
-        Type::Entity(entity_type) => Ok(SingleTypeIsaIterator::Entity(with_types(
-            thing_manager.get_entities_in(snapshot, entity_type.clone()).map(|res| res.map(Thing::Entity)),
-            types,
-        ))),
-        Type::Relation(relation_type) => Ok(SingleTypeIsaIterator::Relation(with_types(
-            thing_manager.get_relations_in(snapshot, relation_type.clone()).map(|res| res.map(Thing::Relation)),
-            types,
-        ))),
-        Type::Attribute(attribute_type) => Ok(SingleTypeIsaIterator::Attribute(with_types(
-            thing_manager.get_attributes_in(snapshot, attribute_type.clone())?.map(|res| res.map(Thing::Attribute)),
-            types,
-        ))),
+        Type::Entity(entity_type) => Ok(SingleTypeIsaIterator::Entity(
+            thing_manager.get_entities_in(snapshot, entity_type.clone()).map(|entity| {
+                let entity = entity?;
+                let type_ = entity.type_();
+                Ok((Thing::Entity(entity), Type::Entity(type_)))
+            }),
+        )),
+        Type::Relation(relation_type) => Ok(SingleTypeIsaIterator::Relation(
+            thing_manager.get_relations_in(snapshot, relation_type.clone()).map(|relation| {
+                let relation = relation?;
+                let type_ = relation.type_();
+                Ok((Thing::Relation(relation), Type::Relation(type_)))
+            }),
+        )),
+        Type::Attribute(attribute_type) => Ok(SingleTypeIsaIterator::Attribute(
+            thing_manager.get_attributes_in(snapshot, attribute_type.clone())?.map(|attribute| {
+                let attribute = attribute?;
+                let type_ = attribute.type_();
+                Ok((Thing::Attribute(attribute), Type::Attribute(type_)))
+            }),
+        )),
         Type::RoleType(_) => unreachable!("Cannot get instances of role types."),
     }
 }

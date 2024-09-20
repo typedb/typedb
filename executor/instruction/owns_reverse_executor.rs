@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashSet},
     iter,
     marker::PhantomData,
     sync::Arc,
@@ -14,23 +14,20 @@ use std::{
 
 use answer::{variable_value::VariableValue, Type};
 use compiler::match_::instructions::type_::OwnsReverseInstruction;
-use concept::{
-    error::ConceptReadError,
-    thing::thing_manager::ThingManager,
-    type_::{object_type::ObjectType, owns::Owns},
-};
+use concept::{error::ConceptReadError, type_::owns::Owns};
 use itertools::Itertools;
-use lending_iterator::{higher_order::AdHocHkt, AsLendingIterator, LendingIterator};
+use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
+use super::type_from_row_or_annotations;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         owns_executor::{OwnsFilterFn, OwnsTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
-        sub_executor::NarrowingTupleIterator,
         tuple::{owns_to_tuple_attribute_owner, TuplePositions},
         BinaryIterateMode, Checker, VariableModes,
     },
+    pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
     VariablePosition,
 };
@@ -41,22 +38,24 @@ pub(crate) struct OwnsReverseExecutor {
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
     attribute_owner_types: Arc<BTreeMap<Type, Vec<Type>>>,
-    owner_types: Arc<HashSet<Type>>,
+    owner_types: Arc<BTreeSet<Type>>,
     filter_fn: Arc<OwnsFilterFn>,
-    checker: Checker<AdHocHkt<Owns<'static>>>,
+    checker: Checker<AsHkt![Owns<'_>]>,
 }
 
 pub(super) type OwnsReverseUnboundedSortedAttribute = OwnsTupleIterator<
-    AsLendingIterator<
+    AsNarrowingIterator<
         iter::Map<
             iter::Flatten<vec::IntoIter<HashSet<Owns<'static>>>>,
             fn(Owns<'static>) -> Result<Owns<'static>, ConceptReadError>,
         >,
+        Result<AsHkt![Owns<'_>], ConceptReadError>,
     >,
 >;
 pub(super) type OwnsReverseBoundedSortedOwner = OwnsTupleIterator<
-    AsLendingIterator<
+    AsNarrowingIterator<
         iter::Map<vec::IntoIter<Owns<'static>>, fn(Owns<'static>) -> Result<Owns<'static>, ConceptReadError>>,
+        Result<AsHkt![Owns<'_>], ConceptReadError>,
     >,
 >;
 
@@ -79,15 +78,22 @@ impl OwnsReverseExecutor {
                 create_owns_filter_attribute(owner_types.clone())
             }
         };
+
+        let owner = owns.owner().as_variable();
+        let attribute = owns.attribute().as_variable();
+
         let output_tuple_positions = if iterate_mode.is_inverted() {
-            TuplePositions::Pair([owns.owner(), owns.attribute()])
+            TuplePositions::Pair([owner, attribute])
         } else {
-            TuplePositions::Pair([owns.attribute(), owns.owner()])
+            TuplePositions::Pair([attribute, owner])
         };
 
-        let checker = Checker::<AdHocHkt<Owns<'static>>> {
+        let checker = Checker::<AsHkt![Owns<'_>]> {
             checks,
-            extractors: HashMap::from([(owns.owner(), EXTRACT_OWNER), (owns.attribute(), EXTRACT_ATTRIBUTE)]),
+            extractors: [(owner, EXTRACT_OWNER), (attribute, EXTRACT_ATTRIBUTE)]
+                .into_iter()
+                .filter_map(|(var, ex)| Some((var?, ex)))
+                .collect(),
             _phantom_data: PhantomData,
         };
 
@@ -105,32 +111,32 @@ impl OwnsReverseExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_for_row(snapshot, thing_manager, &row);
+        let check = self.checker.filter_for_row(context, &row);
         let filter_for_row: Box<OwnsFilterFn> = Box::new(move |item| match filter(item) {
             Ok(true) => check(item),
             fail => fail,
         });
 
+        let snapshot = &**context.snapshot();
+
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let type_manager = thing_manager.type_manager();
+                let type_manager = context.type_manager();
                 let owns: Vec<_> = self
                     .attribute_owner_types
                     .keys()
-                    .map(|attribute| attribute.as_attribute_type().get_owns(&**snapshot, type_manager))
+                    .map(|attribute| attribute.as_attribute_type().get_owns(snapshot, type_manager))
                     .map_ok(|set| set.to_owned())
                     .try_collect()?;
                 let iterator = owns.into_iter().flatten().map(Ok as _);
-                let as_tuples: OwnsReverseUnboundedSortedAttribute = NarrowingTupleIterator(
-                    AsLendingIterator::new(iterator)
-                        .try_filter::<_, OwnsFilterFn, AdHocHkt<Owns<'_>>, _>(filter_for_row)
-                        .map(owns_to_tuple_attribute_owner),
-                );
+                let as_tuples: OwnsReverseUnboundedSortedAttribute =
+                    AsNarrowingIterator::<_, Result<Owns<'_>, _>>::new(iterator)
+                        .try_filter::<_, OwnsFilterFn, Owns<'_>, _>(filter_for_row)
+                        .map(owns_to_tuple_attribute_owner);
                 Ok(TupleIterator::OwnsReverseUnbounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -143,20 +149,21 @@ impl OwnsReverseExecutor {
             }
 
             BinaryIterateMode::BoundFrom => {
-                debug_assert!(row.len() > self.owns.attribute().as_usize());
-                let VariableValue::Type(Type::Attribute(attribute)) = row.get(self.owns.attribute()).to_owned() else {
+                let attribute =
+                    type_from_row_or_annotations(self.owns.attribute(), row, self.attribute_owner_types.keys());
+                let Type::Attribute(attribute) = attribute else {
                     unreachable!("Attribute in `owns` must be an attribute type")
                 };
 
-                let type_manager = thing_manager.type_manager();
-                let owns = attribute.get_owns(&**snapshot, type_manager)?.to_owned();
+                let type_manager = context.type_manager();
+                let owns = attribute.get_owns(snapshot, type_manager)?.to_owned();
 
                 let iterator = owns.into_iter().sorted_by_key(|owns| owns.owner()).map(Ok as _);
-                let as_tuples: OwnsReverseBoundedSortedOwner = NarrowingTupleIterator(
-                    AsLendingIterator::new(iterator)
-                        .try_filter::<_, OwnsFilterFn, AdHocHkt<Owns<'_>>, _>(filter_for_row)
-                        .map(owns_to_tuple_attribute_owner),
-                );
+                let as_tuples: OwnsReverseBoundedSortedOwner =
+                    AsNarrowingIterator::<_, Result<Owns<'_>, _>>::new(iterator)
+                        .try_filter::<_, OwnsFilterFn, AsHkt![Owns<'_>], _>(filter_for_row)
+                        .map(owns_to_tuple_attribute_owner);
+
                 Ok(TupleIterator::OwnsReverseBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -170,16 +177,16 @@ impl OwnsReverseExecutor {
 fn create_owns_filter_owner_attribute(attribute_owner_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<OwnsFilterFn> {
     Arc::new(move |result| match result {
         Ok(owns) => match attribute_owner_types.get(&Type::Attribute(owns.attribute())) {
-            Some(owner_types) => Ok(owner_types.contains(&Type::from(owns.owner()))),
+            Some(owner_types) => Ok(owner_types.contains(&Type::from(owns.owner().into_owned()))),
             None => Ok(false),
         },
         Err(err) => Err(err.clone()),
     })
 }
 
-fn create_owns_filter_attribute(owner_types: Arc<HashSet<Type>>) -> Arc<OwnsFilterFn> {
+fn create_owns_filter_attribute(owner_types: Arc<BTreeSet<Type>>) -> Arc<OwnsFilterFn> {
     Arc::new(move |result| match result {
-        Ok(owns) => Ok(owner_types.contains(&Type::from(owns.owner()))),
+        Ok(owns) => Ok(owner_types.contains(&Type::from(owns.owner().into_owned()))),
         Err(err) => Err(err.clone()),
     })
 }

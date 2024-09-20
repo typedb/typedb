@@ -4,8 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashSet, error::Error, fmt, fmt::Debug, hash::Hash};
-use std::fmt::Formatter;
+use std::{
+    collections::HashSet,
+    error::Error,
+    fmt,
+    fmt::{Debug, Formatter},
+    hash::Hash,
+};
 
 use encoding::value::value::Value;
 use itertools::Itertools;
@@ -387,18 +392,19 @@ macro_rules! filter_out_unchecked_constraints {
 }
 pub(crate) use filter_out_unchecked_constraints;
 
-use crate::type_::{owns::Owns, plays::Plays, relates::Relates, type_manager::TypeManager, Ordering};
-use crate::type_::annotation::AnnotationCategory;
+use crate::type_::{
+    annotation::AnnotationCategory, owns::Owns, plays::Plays, relates::Relates, type_manager::TypeManager, Ordering,
+};
 
 pub(crate) fn get_cardinality_constraints<C: Constraint<T>, T: Hash + Eq>(
-    constraints: impl IntoIterator<Item=C>,
+    constraints: impl IntoIterator<Item = C>,
 ) -> HashSet<C> {
     filter_by_constraint_category!(constraints.into_iter(), Cardinality).collect()
 }
 
 pub(crate) fn get_cardinality_constraint<'a, CAP: Capability<'static>>(
     capability: CAP,
-    constraints: impl IntoIterator<Item=&'a CapabilityConstraint<CAP>>,
+    constraints: impl IntoIterator<Item = &'a CapabilityConstraint<CAP>>,
 ) -> Option<CapabilityConstraint<CAP>> {
     filter_by_constraint_category!(constraints.into_iter(), Cardinality)
         .filter_map(|constraint| match &constraint.source() == &capability {
@@ -409,14 +415,14 @@ pub(crate) fn get_cardinality_constraint<'a, CAP: Capability<'static>>(
 }
 
 pub(crate) fn get_abstract_constraints<C: Constraint<T>, T: Hash + Eq>(
-    constraints: impl IntoIterator<Item=C>,
+    constraints: impl IntoIterator<Item = C>,
 ) -> HashSet<C> {
     filter_by_constraint_category!(constraints.into_iter(), Abstract).collect()
 }
 
 pub(crate) fn get_abstract_constraint<'a, C: Constraint<T> + 'a, T: Hash + Eq>(
     source: T,
-    constraints: impl IntoIterator<Item=&'a C>,
+    constraints: impl IntoIterator<Item = &'a C>,
 ) -> Option<C> {
     let mut abstracts = filter_by_constraint_category!(constraints.into_iter(), Abstract).into_iter();
     if let Some(constraint) = abstracts.next() {
@@ -435,13 +441,13 @@ pub(crate) fn get_abstract_constraint<'a, C: Constraint<T> + 'a, T: Hash + Eq>(
 }
 
 pub(crate) fn get_unique_constraints<C: Constraint<T>, T: Hash + Eq>(
-    constraints: impl IntoIterator<Item=C>,
+    constraints: impl IntoIterator<Item = C>,
 ) -> HashSet<C> {
     filter_by_constraint_category!(constraints.into_iter(), Unique).collect()
 }
 
 pub(crate) fn get_unique_constraint<'a, C: Constraint<T> + 'a, T: Hash + Eq>(
-    constraints: impl IntoIterator<Item=&'a C>,
+    constraints: impl IntoIterator<Item = &'a C>,
 ) -> Option<C> {
     let mut uniques = filter_by_constraint_category!(constraints.into_iter(), Unique).into_iter();
     if let Some(constraint) = uniques.next() {
@@ -453,37 +459,37 @@ pub(crate) fn get_unique_constraint<'a, C: Constraint<T> + 'a, T: Hash + Eq>(
 }
 
 pub(crate) fn get_distinct_constraints<C: Constraint<T>, T: Hash + Eq>(
-    constraints: impl IntoIterator<Item=C>,
+    constraints: impl IntoIterator<Item = C>,
 ) -> HashSet<C> {
     filter_by_constraint_category!(constraints.into_iter(), Distinct).collect()
 }
 
 pub(crate) fn get_independent_constraints<C: Constraint<T>, T: Hash + Eq>(
-    constraints: impl IntoIterator<Item=C>,
+    constraints: impl IntoIterator<Item = C>,
 ) -> HashSet<C> {
     filter_by_constraint_category!(constraints.into_iter(), Independent).collect()
 }
 
 pub(crate) fn get_regex_constraints<C: Constraint<T>, T: Hash + Eq>(
-    constraints: impl IntoIterator<Item=C>,
+    constraints: impl IntoIterator<Item = C>,
 ) -> HashSet<C> {
     filter_by_constraint_category!(constraints.into_iter(), Regex).collect()
 }
 
 pub(crate) fn get_range_constraints<C: Constraint<T>, T: Hash + Eq>(
-    constraints: impl IntoIterator<Item=C>,
+    constraints: impl IntoIterator<Item = C>,
 ) -> HashSet<C> {
     filter_by_constraint_category!(constraints.into_iter(), Range).collect()
 }
 
 pub(crate) fn get_values_constraints<C: Constraint<T>, T: Hash + Eq>(
-    constraints: impl IntoIterator<Item=C>,
+    constraints: impl IntoIterator<Item = C>,
 ) -> HashSet<C> {
     filter_by_constraint_category!(constraints.into_iter(), Values).collect()
 }
 
 pub(crate) fn get_checked_constraints<C: Constraint<T>, T: Hash + Eq>(
-    constraints: impl IntoIterator<Item=C>,
+    constraints: impl IntoIterator<Item = C>,
 ) -> HashSet<C> {
     filter_out_unchecked_constraints!(constraints.into_iter()).collect()
 }
@@ -537,7 +543,7 @@ pub(crate) fn get_relates_default_constraints<CAP: Capability<'static>>(
 pub(crate) fn type_get_constraints_closest_source<'a, T: KindAPI<'static>>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    constraints: impl IntoIterator<Item=&'a TypeConstraint<T>>,
+    constraints: impl IntoIterator<Item = &'a TypeConstraint<T>>,
 ) -> Option<T> {
     constraints
         .into_iter()

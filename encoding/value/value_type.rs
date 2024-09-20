@@ -89,6 +89,18 @@ impl ValueType {
             }
         }
     }
+
+    pub fn is_trivially_castable_to(&self, other: &Self) -> bool {
+        if self == other {
+            return true;
+        }
+        match self {
+            ValueType::Long => other == &ValueType::Double || other == &ValueType::Decimal,
+            ValueType::Decimal => other == &ValueType::Double,
+            ValueType::Date => other == &ValueType::DateTime,
+            _ => false,
+        }
+    }
 }
 
 impl Display for ValueType {

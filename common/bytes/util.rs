@@ -5,11 +5,10 @@
  */
 
 use std::{
-    fmt::{self, Write},
+    borrow::Cow,
+    fmt::{self, Formatter, Write},
     usize,
 };
-use std::borrow::Cow;
-use std::fmt::Formatter;
 
 // TODO: this needs to be optimised using bigger strides than a single byte!
 ///

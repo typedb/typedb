@@ -24,6 +24,7 @@ use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
     instruction::{iterator::TupleIterator, InstructionExecutor},
+    pipeline::stage::ExecutionContext,
     row::{MaybeOwnedRow, Row},
     ExecutionInterrupt, SelectedPositions, VariablePosition,
 };
@@ -73,22 +74,17 @@ impl PatternExecutor {
 
     pub fn into_iterator<Snapshot: ReadableSnapshot + 'static>(
         self,
-        snapshot: Arc<Snapshot>,
-        thing_manager: Arc<ThingManager>,
+        context: ExecutionContext<Snapshot>,
         interrupt: ExecutionInterrupt,
     ) -> PatternIterator<Snapshot> {
         PatternIterator::new(
-            AsLendingIterator::new(BatchIterator::new(self, snapshot.clone(), thing_manager.clone(), interrupt))
-                .flat_map(FixedBatchRowIterator::new),
-            snapshot,
-            thing_manager,
+            AsLendingIterator::new(BatchIterator::new(self, context, interrupt)).flat_map(FixedBatchRowIterator::new),
         )
     }
 
     fn compute_next_batch(
         &mut self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         let programs_len = self.program_executors.len();
@@ -111,11 +107,8 @@ impl PatternExecutor {
                     if current_program >= programs_len {
                         return Ok(last_program_batch);
                     } else {
-                        let batch = self.program_executors[current_program].batch_from(
-                            last_program_batch.take().unwrap(),
-                            snapshot,
-                            thing_manager,
-                        )?;
+                        let batch = self.program_executors[current_program]
+                            .batch_from(last_program_batch.take().unwrap(), context)?;
                         match batch {
                             None => {
                                 direction = Direction::Backward;
@@ -133,7 +126,7 @@ impl PatternExecutor {
                     }
                 }
                 Direction::Backward => {
-                    let batch = self.program_executors[current_program].batch_continue(snapshot, thing_manager)?;
+                    let batch = self.program_executors[current_program].batch_continue(context)?;
                     match batch {
                         None => {
                             if current_program == 0 {
@@ -168,13 +161,11 @@ type PatternRowIterator<Snapshot> = FlatMap<
 
 pub(crate) struct PatternIterator<Snapshot: ReadableSnapshot + 'static> {
     iterator: PatternRowIterator<Snapshot>,
-    snapshot: Arc<Snapshot>,
-    thing_manager: Arc<ThingManager>,
 }
 
 impl<Snapshot: ReadableSnapshot> PatternIterator<Snapshot> {
-    fn new(iterator: PatternRowIterator<Snapshot>, snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>) -> Self {
-        Self { iterator, snapshot, thing_manager }
+    fn new(iterator: PatternRowIterator<Snapshot>) -> Self {
+        Self { iterator }
     }
 }
 
@@ -186,21 +177,19 @@ impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for PatternIterator<S
     }
 }
 
-pub(crate) struct BatchIterator<Snapshot: ReadableSnapshot> {
+pub(crate) struct BatchIterator<Snapshot> {
     executor: PatternExecutor,
-    snapshot: Arc<Snapshot>,
-    thing_manager: Arc<ThingManager>,
+    context: ExecutionContext<Snapshot>,
     interrupt: ExecutionInterrupt,
 }
 
-impl<Snapshot: ReadableSnapshot> BatchIterator<Snapshot> {
+impl<Snapshot> BatchIterator<Snapshot> {
     pub(crate) fn new(
         executor: PatternExecutor,
-        snapshot: Arc<Snapshot>,
-        thing_manager: Arc<ThingManager>,
+        context: ExecutionContext<Snapshot>,
         interrupt: ExecutionInterrupt,
     ) -> Self {
-        Self { executor, snapshot, thing_manager, interrupt }
+        Self { executor, context, interrupt }
     }
 }
 
@@ -208,7 +197,7 @@ impl<Snapshot: ReadableSnapshot + 'static> Iterator for BatchIterator<Snapshot> 
     type Item = Result<FixedBatch, ReadExecutionError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let batch = self.executor.compute_next_batch(&self.snapshot, &self.thing_manager, &mut self.interrupt);
+        let batch = self.executor.compute_next_batch(&self.context, &mut self.interrupt);
         batch.transpose()
     }
 }
@@ -278,11 +267,10 @@ impl ProgramExecutor {
     fn batch_from(
         &mut self,
         input_batch: FixedBatch,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         match self {
-            ProgramExecutor::SortedJoin(sorted) => sorted.batch_from(input_batch, snapshot, thing_manager),
+            ProgramExecutor::SortedJoin(sorted) => sorted.batch_from(input_batch, context),
             ProgramExecutor::UnsortedJoin(unsorted) => unsorted.batch_from(input_batch),
             ProgramExecutor::Assignment(single) => single.batch_from(input_batch),
             ProgramExecutor::Disjunction(disjunction) => disjunction.batch_from(input_batch),
@@ -293,11 +281,10 @@ impl ProgramExecutor {
 
     fn batch_continue(
         &mut self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         match self {
-            ProgramExecutor::SortedJoin(sorted) => sorted.batch_continue(snapshot, thing_manager),
+            ProgramExecutor::SortedJoin(sorted) => sorted.batch_continue(context),
             ProgramExecutor::UnsortedJoin(unsorted) => todo!(), // unsorted.batch_continue(snapshot, thing_manager),
             ProgramExecutor::Disjunction(disjunction) => todo!(),
             ProgramExecutor::Optional(optional) => todo!(),
@@ -365,39 +352,34 @@ impl IntersectionExecutor {
     fn batch_from(
         &mut self,
         input_batch: FixedBatch,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         debug_assert!(self.output.is_none() && (self.input.is_none() || self.input.as_mut().unwrap().peek().is_none()));
         self.input = Some(Peekable::new(FixedBatchRowIterator::new(Ok(input_batch))));
         debug_assert!(self.input.as_mut().unwrap().peek().is_some());
-        self.may_create_intersection_iterators(snapshot, thing_manager)?;
-        self.may_compute_next_batch(snapshot, thing_manager)?;
+        self.may_create_intersection_iterators(context)?;
+        self.may_compute_next_batch(context)?;
         Ok(self.output.take())
     }
 
     fn batch_continue(
         &mut self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         debug_assert!(self.output.is_none());
-        // TODO: this may not have to reopen iterators
-        self.may_create_intersection_iterators(snapshot, thing_manager)?;
-        self.may_compute_next_batch(snapshot, thing_manager)?;
+        self.may_compute_next_batch(context)?;
         Ok(self.output.take())
     }
 
     fn may_compute_next_batch(
         &mut self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<(), ReadExecutionError> {
-        if self.compute_next_row(snapshot, thing_manager)? {
+        if self.compute_next_row(context)? {
             // don't allocate batch until 1 answer is confirmed
             let mut batch = FixedBatch::new(self.output_width);
             batch.append(|mut row| self.write_next_row_into(&mut row));
-            while !batch.is_full() && self.compute_next_row(snapshot, thing_manager)? {
+            while !batch.is_full() && self.compute_next_row(context)? {
                 batch.append(|mut row| self.write_next_row_into(&mut row));
             }
             self.output = Some(batch);
@@ -415,11 +397,10 @@ impl IntersectionExecutor {
 
     fn compute_next_row(
         &mut self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<bool, ReadExecutionError> {
         if self.cartesian_iterator.is_active() {
-            let found = self.cartesian_iterator.find_next(snapshot, thing_manager, &self.instruction_executors)?;
+            let found = self.cartesian_iterator.find_next(context, &self.instruction_executors)?;
             if found {
                 Ok(true)
             } else {
@@ -434,7 +415,7 @@ impl IntersectionExecutor {
                 {
                     iter.advance_single().map_err(|err| ReadExecutionError::ConceptRead { source: err })?;
                 }
-                self.compute_next_row(snapshot, thing_manager)
+                self.compute_next_row(context)
             }
         } else {
             while !self.iterators.is_empty() {
@@ -442,13 +423,13 @@ impl IntersectionExecutor {
                 if found {
                     self.record_intersection()?;
                     self.advance_intersection_iterators_with_multiplicity()?;
-                    self.may_activate_cartesian(snapshot, thing_manager)?;
+                    self.may_activate_cartesian(context)?;
                     return Ok(true);
                 } else {
                     self.iterators.clear();
                     let _ = self.input.as_mut().unwrap().next().unwrap().map_err(|err| err.clone());
                     if self.input.as_mut().unwrap().peek().is_some() {
-                        self.may_create_intersection_iterators(snapshot, thing_manager)?;
+                        self.may_create_intersection_iterators(context)?;
                     }
                 }
             }
@@ -533,20 +514,16 @@ impl IntersectionExecutor {
 
     fn may_create_intersection_iterators(
         &mut self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<(), ReadExecutionError> {
         debug_assert!(self.iterators.is_empty());
         let peek = self.input.as_mut().unwrap().peek();
         if let Some(input) = peek {
             let next_row: &MaybeOwnedRow<'_> = input.as_ref().map_err(|err| (*err).clone())?;
             for executor in &self.instruction_executors {
-                self.iterators.push(executor.get_iterator(snapshot, thing_manager, next_row.as_reference()).map_err(
-                    |err| ReadExecutionError::CreatingIterator {
-                        instruction_name: executor.name().to_string(),
-                        source: err,
-                    },
-                )?);
+                self.iterators.push(executor.get_iterator(context, next_row.as_reference()).map_err(|err| {
+                    ReadExecutionError::CreatingIterator { instruction_name: executor.name().to_string(), source: err }
+                })?);
             }
         }
         Ok(())
@@ -590,8 +567,7 @@ impl IntersectionExecutor {
 
     fn may_activate_cartesian(
         &mut self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<(), ReadExecutionError> {
         if self.iterators.len() == 1 {
             // don't delegate to cartesian iterator and incur new iterator costs if there cannot be a cartesian product
@@ -611,8 +587,7 @@ impl IntersectionExecutor {
         }
         if cartesian {
             self.cartesian_iterator.activate(
-                snapshot,
-                thing_manager,
+                context,
                 &self.instruction_executors,
                 &self.intersection_row,
                 self.intersection_multiplicity,
@@ -650,8 +625,7 @@ impl CartesianIterator {
 
     fn activate(
         &mut self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         iterator_executors: &[InstructionExecutor],
         source_intersection: &[VariableValue<'static>],
         source_multiplicity: u64,
@@ -678,7 +652,7 @@ impl CartesianIterator {
                 // reopen/move existing cartesian iterators forward to the intersection point
                 let preexisting_iterator = self.iterators[index].take();
                 let iterator = match preexisting_iterator {
-                    None => self.reopen_iterator(snapshot, thing_manager, &iterator_executors[index])?,
+                    None => self.reopen_iterator(context, &iterator_executors[index])?,
                     Some(mut iter) => {
                         // TODO: use seek()
                         let next_value_cmp = iter
@@ -696,8 +670,7 @@ impl CartesianIterator {
 
     fn find_next(
         &mut self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         executors: &[InstructionExecutor],
     ) -> Result<bool, ReadExecutionError> {
         debug_assert!(self.is_active);
@@ -719,7 +692,7 @@ impl CartesianIterator {
                     self.is_active = false;
                     return Ok(false);
                 } else {
-                    let reopened = self.reopen_iterator(snapshot, thing_manager, &executors[executor_index])?;
+                    let reopened = self.reopen_iterator(context, &executors[executor_index])?;
                     self.iterators[iterator_index] = Some(reopened);
                     executor_index -= 1;
                 }
@@ -731,14 +704,12 @@ impl CartesianIterator {
 
     fn reopen_iterator(
         &self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         executor: &InstructionExecutor,
     ) -> Result<TupleIterator, ReadExecutionError> {
         let mut reopened = executor
             .get_iterator(
-                snapshot,
-                thing_manager,
+                context,
                 MaybeOwnedRow::new_borrowed(&self.intersection_source, &self.intersection_multiplicity),
             )
             .map_err(|err| ReadExecutionError::ConceptRead { source: err })?;

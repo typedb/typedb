@@ -6,10 +6,12 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    fmt::{Display, Formatter},
+    fmt,
+    ops::Index,
 };
 
 use answer::variable::Variable;
+use encoding::value::value::Value;
 use itertools::Itertools;
 
 use crate::{
@@ -17,7 +19,7 @@ use crate::{
         conjunction::{Conjunction, ConjunctionBuilder},
         constraint::Constraint,
         variable_category::{VariableCategory, VariableOptionality},
-        Scope, ScopeId,
+        ParameterID, Scope, ScopeId,
     },
     program::modifier::{Limit, Modifier, ModifierDefinitionError, Offset, Select, Sort},
     PatternDefinitionError,
@@ -179,7 +181,11 @@ impl VariableRegistry {
                 let narrowest = existing_category.narrowest(category);
                 match narrowest {
                     None => Err(PatternDefinitionError::VariableCategoryMismatch {
-                        variable_name: self.variable_names.get(&variable).unwrap().clone(),
+                        variable_name: self
+                            .variable_names
+                            .get(&variable)
+                            .cloned()
+                            .unwrap_or_else(|| "$<INTERNAL>".to_owned()),
                         category_1: category,
                         // category_1_source: source,
                         category_2: *existing_category,
@@ -230,6 +236,36 @@ impl VariableRegistry {
     }
 }
 
+#[derive(Clone, Debug, Default)]
+pub struct ParameterRegistry {
+    registry: HashMap<ParameterID, Value<'static>>,
+}
+
+impl ParameterRegistry {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub(crate) fn register(&mut self, value: Value<'static>) -> ParameterID {
+        let id = ParameterID { id: self.registry.len() };
+        let _prev = self.registry.insert(id, value);
+        debug_assert_eq!(_prev, None);
+        id
+    }
+
+    pub fn get(&self, id: ParameterID) -> Option<&Value<'static>> {
+        self.registry.get(&id)
+    }
+}
+
+impl Index<ParameterID> for ParameterRegistry {
+    type Output = Value<'static>;
+
+    fn index(&self, id: ParameterID) -> &Self::Output {
+        self.get(id).unwrap()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ScopeContext {
     variable_declaration: HashMap<Variable, ScopeId>,
@@ -239,7 +275,7 @@ pub struct ScopeContext {
 
 impl ScopeContext {
     pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.referenced_variables.iter().map(|v| v.clone())
+        self.referenced_variables.iter().copied()
     }
 
     pub fn is_variable_available(&self, scope: ScopeId, variable: Variable) -> bool {
@@ -260,6 +296,8 @@ pub struct BlockContext<'a> {
     variable_declaration: HashMap<Variable, ScopeId>,
     variable_names_index: &'a mut HashMap<String, Variable>,
 
+    parameters: &'a mut ParameterRegistry,
+
     scope_id_allocator: u16,
     scope_parents: HashMap<ScopeId, ScopeId>,
     referenced_variables: HashSet<Variable>, // Involved in a constraint in this block
@@ -269,6 +307,7 @@ impl<'a> BlockContext<'a> {
     pub(crate) fn new(
         variable_registry: &'a mut VariableRegistry,
         input_variable_names: &'a mut HashMap<String, Variable>,
+        parameters: &'a mut ParameterRegistry,
     ) -> BlockContext<'a> {
         let mut variable_declaration = HashMap::new();
         input_variable_names.values().for_each(|v| {
@@ -280,6 +319,7 @@ impl<'a> BlockContext<'a> {
             variable_registry,
             variable_declaration,
             variable_names_index: input_variable_names,
+            parameters,
             scope_id_allocator: 2, // `0`, `1` are reserved for INPUT, ROOT respectively.
             scope_parents,
             referenced_variables: HashSet::new(),
@@ -362,12 +402,16 @@ impl<'a> BlockContext<'a> {
         category: VariableCategory,
         source: Constraint<Variable>,
     ) -> Result<(), PatternDefinitionError> {
-        self.referenced_variables.insert(variable.clone());
+        self.referenced_variables.insert(variable);
         self.variable_registry.set_variable_category(variable, category, source)
     }
 
     pub(crate) fn set_variable_is_optional(&mut self, variable: Variable, optional: bool) {
         self.variable_registry.set_variable_is_optional(variable, optional)
+    }
+
+    pub fn parameters(&mut self) -> &mut ParameterRegistry {
+        self.parameters
     }
 }
 
@@ -379,8 +423,8 @@ fn is_child_scope(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId, maybe_chi
     parents.get(&maybe_child).is_some_and(|&c| c == scope || is_child_scope(parents, scope, c))
 }
 
-impl Display for VariableRegistry {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for VariableRegistry {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "Named variables:")?;
         for var in self.variable_names.keys().sorted_unstable() {
             writeln!(f, "  {}: ${}", var, self.variable_names[var])?;

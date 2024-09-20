@@ -14,6 +14,7 @@ use concept::thing::{
     ThingAPI,
 };
 use encoding::value::value::Value;
+use ir::program::block::ParameterRegistry;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{row::Row, write::WriteError};
@@ -28,7 +29,7 @@ macro_rules! try_unwrap_as {
     };
 }
 
-fn get_type<'a>(input: &'a Row<'a>, source: &'a TypeSource) -> &'a answer::Type {
+fn get_type<'a>(input: &'a Row<'_>, source: &'a TypeSource) -> &'a answer::Type {
     match source {
         TypeSource::InputVariable(position) => input.get(*position).as_type(),
         TypeSource::Constant(type_) => type_,
@@ -40,10 +41,10 @@ fn get_thing<'a>(input: &'a Row<'a>, source: &ThingSource) -> &'a answer::Thing<
     input.get(*position).as_thing()
 }
 
-fn get_value<'a>(input: &'a Row<'a>, source: &'a ValueSource) -> &'a Value<'a> {
+fn get_value<'a>(input: &'a Row<'_>, parameters: &'a ParameterRegistry, source: ValueSource) -> &'a Value<'a> {
     match source {
-        ValueSource::InputVariable(position) => input.get(*position).as_value(),
-        ValueSource::ValueConstant(value) => value,
+        ValueSource::Variable(position) => input.get(position).as_value(),
+        ValueSource::Parameter(id) => &parameters[id],
     }
 }
 
@@ -53,6 +54,7 @@ pub trait AsWriteInstruction {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
+        parameters: &ParameterRegistry,
         row: &mut Row<'_>,
     ) -> Result<(), WriteError>;
 }
@@ -63,12 +65,13 @@ impl AsWriteInstruction for PutAttribute {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
+        parameters: &ParameterRegistry,
         row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
         let attribute_type = try_unwrap_as!(answer::Type::Attribute: get_type(row, &self.type_)).unwrap();
         let inserted = thing_manager
-            .create_attribute(snapshot, attribute_type.clone(), get_value(row, &self.value).clone())
-            .map_err(|source| WriteError::ConceptWrite { typedb_source: source})?;
+            .create_attribute(snapshot, attribute_type.clone(), get_value(row, parameters, self.value).clone())
+            .map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
         let ThingSource(write_to) = &self.write_to;
         row.set(*write_to, VariableValue::Thing(Thing::Attribute(inserted)));
         Ok(())
@@ -80,13 +83,14 @@ impl AsWriteInstruction for PutObject {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
+        parameters: &ParameterRegistry,
         row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
         let inserted = match get_type(row, &self.type_) {
             Type::Entity(entity_type) => {
                 let inserted = thing_manager
                     .create_entity(snapshot, entity_type.clone())
-                    .map_err(|source| WriteError::ConceptWrite { typedb_source: source})?;
+                    .map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
                 Thing::Entity(inserted)
             }
             Type::Relation(relation_type) => {
@@ -108,6 +112,7 @@ impl AsWriteInstruction for compiler::insert::instructions::Has {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
+        parameters: &ParameterRegistry,
         row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
         let owner_thing = get_thing(row, &self.owner);
@@ -115,7 +120,7 @@ impl AsWriteInstruction for compiler::insert::instructions::Has {
         owner_thing
             .as_object()
             .set_has_unordered(snapshot, thing_manager, attribute.as_attribute())
-            .map_err(|source| WriteError::ConceptWrite { typedb_source: source})?;
+            .map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
         Ok(())
     }
 }
@@ -125,6 +130,7 @@ impl AsWriteInstruction for compiler::insert::instructions::RolePlayer {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
+        parameters: &ParameterRegistry,
         row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
         let relation_thing = try_unwrap_as!(answer::Thing::Relation : get_thing(row, &self.relation)).unwrap();
@@ -142,18 +148,25 @@ impl AsWriteInstruction for compiler::delete::instructions::ThingInstruction {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
+        parameters: &ParameterRegistry,
         row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
         let thing = get_thing(row, &self.thing).clone();
         match thing {
             Thing::Entity(entity) => {
-                entity.delete(snapshot, thing_manager).map_err(|source| WriteError::ConceptWrite { typedb_source:source })?;
+                entity
+                    .delete(snapshot, thing_manager)
+                    .map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
             }
             Thing::Relation(relation) => {
-                relation.delete(snapshot, thing_manager).map_err(|source| WriteError::ConceptWrite { typedb_source:source })?;
+                relation
+                    .delete(snapshot, thing_manager)
+                    .map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
             }
             Thing::Attribute(attribute) => {
-                attribute.delete(snapshot, thing_manager).map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
+                attribute
+                    .delete(snapshot, thing_manager)
+                    .map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
             }
         }
         let ThingSource(position) = &self.thing;
@@ -167,6 +180,7 @@ impl AsWriteInstruction for compiler::delete::instructions::Has {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
+        parameters: &ParameterRegistry,
         row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
         // TODO: Lists
@@ -183,6 +197,7 @@ impl AsWriteInstruction for compiler::delete::instructions::RolePlayer {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
+        parameters: &ParameterRegistry,
         row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
         // TODO: Lists

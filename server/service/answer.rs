@@ -10,13 +10,12 @@ use chrono_tz::Tz;
 use compiler::VariablePosition;
 use concept::{
     error::ConceptReadError,
-    thing::thing_manager::ThingManager,
+    thing::{thing_manager::ThingManager, ThingAPI},
     type_::{
         annotation::Annotation, attribute_type::AttributeType, entity_type::EntityType, relation_type::RelationType,
         role_type::RoleType, type_manager::TypeManager, KindAPI, TypeAPI,
     },
 };
-use concept::thing::ThingAPI;
 use encoding::value::{value::Value, value_type::ValueType};
 use executor::row::MaybeOwnedRow;
 use storage::snapshot::ReadableSnapshot;
@@ -32,7 +31,7 @@ pub(crate) fn encode_row(
     for (_, position) in columns {
         let variable_value = row.get(*position);
         let row_entry = encode_row_entry(variable_value, snapshot, type_manager, thing_manager)?;
-        encoded_row.push(typedb_protocol::RowEntry { entry: Some(row_entry)});
+        encoded_row.push(typedb_protocol::RowEntry { entry: Some(row_entry) });
     }
     Ok(typedb_protocol::ConceptRow { row: encoded_row })
 }
@@ -44,32 +43,26 @@ pub(crate) fn encode_row_entry(
     thing_manager: &ThingManager,
 ) -> Result<typedb_protocol::row_entry::Entry, ConceptReadError> {
     match variable_value {
-        VariableValue::Empty => {
-            Ok(typedb_protocol::row_entry::Entry::Empty(typedb_protocol::row_entry::Empty {}))
-        },
+        VariableValue::Empty => Ok(typedb_protocol::row_entry::Entry::Empty(typedb_protocol::row_entry::Empty {})),
         VariableValue::Type(type_) => {
             Ok(typedb_protocol::row_entry::Entry::Concept(encode_type_concept(type_, snapshot, type_manager)?))
         }
-        VariableValue::Thing(thing) => {
-            Ok(typedb_protocol::row_entry::Entry::Concept(
-                encode_thing_concept(
-                    thing,
-                    snapshot,
-                    type_manager,
-                    thing_manager,
-                    true,
-                )?
-            ))
-        },
-        VariableValue::Value(value) => {
-            Ok(typedb_protocol::row_entry::Entry::Value(encode_value(value.as_reference())))
-        }
+        VariableValue::Thing(thing) => Ok(typedb_protocol::row_entry::Entry::Concept(encode_thing_concept(
+            thing,
+            snapshot,
+            type_manager,
+            thing_manager,
+            true,
+        )?)),
+        VariableValue::Value(value) => Ok(typedb_protocol::row_entry::Entry::Value(encode_value(value.as_reference()))),
         VariableValue::ThingList(thing_list) => {
             let mut encoded = Vec::with_capacity(thing_list.len());
             for thing in thing_list.iter() {
                 encoded.push(encode_thing_concept(thing, snapshot, type_manager, thing_manager, true)?);
             }
-            Ok(typedb_protocol::row_entry::Entry::ConceptList(typedb_protocol::row_entry::ConceptList { concepts: encoded }))
+            Ok(typedb_protocol::row_entry::Entry::ConceptList(typedb_protocol::row_entry::ConceptList {
+                concepts: encoded,
+            }))
         }
         VariableValue::ValueList(value_list) => {
             let mut encoded = Vec::with_capacity(value_list.len());
@@ -181,9 +174,7 @@ fn encode_role_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
 ) -> Result<typedb_protocol::RoleType, ConceptReadError> {
-    Ok(typedb_protocol::RoleType {
-        label: role.get_label(snapshot, type_manager)?.scoped_name().as_str().to_owned()
-    })
+    Ok(typedb_protocol::RoleType { label: role.get_label(snapshot, type_manager)?.scoped_name().as_str().to_owned() })
 }
 
 fn encode_value_type(

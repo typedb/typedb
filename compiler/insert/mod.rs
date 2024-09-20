@@ -5,15 +5,14 @@
  */
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeSet, HashMap, HashSet},
     error::Error,
     fmt::{Display, Formatter},
 };
 
 use answer::{variable::Variable, Type};
-use encoding::{graph::type_::Kind, value::value::Value};
-use ir::pattern::constraint::Isa;
-use itertools::Itertools;
+use encoding::graph::type_::Kind;
+use ir::pattern::{constraint::Isa, ParameterID};
 
 use crate::VariablePosition;
 
@@ -21,22 +20,22 @@ pub mod instructions;
 pub mod program;
 pub mod type_check;
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum VariableSource {
     InputVariable(VariablePosition),
     InsertedThing(usize),
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum TypeSource {
     InputVariable(VariablePosition),
     Constant(answer::Type),
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub enum ValueSource {
-    InputVariable(VariablePosition),
-    ValueConstant(Value<'static>),
+    Variable(VariablePosition),
+    Parameter(ParameterID),
 }
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
@@ -52,8 +51,8 @@ pub(crate) fn get_thing_source(
     }
 }
 
-pub(crate) fn get_kinds_from_annotations(annotations: &HashSet<Type>) -> Vec<Kind> {
-    annotations.iter().map(|annotation| annotation.kind()).dedup().collect::<Vec<_>>()
+pub(crate) fn get_kinds_from_annotations(annotations: &BTreeSet<Type>) -> HashSet<Kind> {
+    annotations.iter().map(Type::kind).collect()
 }
 
 #[derive(Debug, Clone)]

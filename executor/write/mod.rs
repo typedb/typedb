@@ -4,15 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    fmt::Display,
-};
+use std::{error::Error, fmt};
 
 use concept::error::ConceptWriteError;
 use error::typedb_error;
 
-pub mod delete;
-pub mod insert;
 pub(crate) mod write_instruction;
 
 typedb_error!(

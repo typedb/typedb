@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     sync::Arc,
 };
 
@@ -26,7 +26,7 @@ use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::constraint::Constraint,
     program::{
-        block::{FunctionalBlock, VariableRegistry},
+        block::{FunctionalBlock, ParameterRegistry, VariableRegistry},
         function::Function,
         modifier::{Limit, Offset, Select, Sort},
     },
@@ -68,6 +68,7 @@ pub(super) fn infer_types_for_pipeline(
     type_manager: &TypeManager,
     schema_function_annotations: &IndexedAnnotatedFunctions,
     variable_registry: &VariableRegistry,
+    parameters: &ParameterRegistry,
     translated_preamble: Vec<Function>,
     translated_stages: Vec<TranslatedStage>,
 ) -> Result<AnnotatedPipeline, QueryError> {
@@ -75,7 +76,7 @@ pub(super) fn infer_types_for_pipeline(
         infer_types_for_functions(translated_preamble, snapshot, type_manager, schema_function_annotations)
             .map_err(|source| QueryError::FunctionTypeInference { typedb_source: source })?;
 
-    let mut running_variable_annotations: HashMap<Variable, Arc<HashSet<answer::Type>>> = HashMap::new();
+    let mut running_variable_annotations: BTreeMap<Variable, Arc<BTreeSet<answer::Type>>> = BTreeMap::new();
     let mut annotated_stages = Vec::with_capacity(translated_stages.len());
 
     let empty_constraint_annotations = HashMap::new();
@@ -92,6 +93,7 @@ pub(super) fn infer_types_for_pipeline(
         let annotated_stage = annotate_stage(
             &mut running_variable_annotations,
             variable_registry,
+            parameters,
             snapshot,
             type_manager,
             schema_function_annotations,
@@ -108,8 +110,9 @@ pub(super) fn infer_types_for_pipeline(
 }
 
 fn annotate_stage(
-    running_variable_annotations: &mut HashMap<Variable, Arc<HashSet<Type>>>,
+    running_variable_annotations: &mut BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     variable_registry: &VariableRegistry,
+    parameters: &ParameterRegistry,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     schema_function_annotations: &IndexedAnnotatedFunctions,
@@ -129,11 +132,13 @@ fn annotate_stage(
                 preamble_function_annotations,
             )
             .map_err(|source| QueryError::QueryTypeInference { typedb_source: source })?;
-            block_annotations.variable_annotations().iter().for_each(|(k, v)| {
-                running_variable_annotations.insert(*k, v.clone());
+            block_annotations.vertex_annotations().iter().for_each(|(k, v)| {
+                if let Some(k) = k.as_variable() {
+                    running_variable_annotations.insert(k, v.clone());
+                }
             });
             let (compiled_expressions, variable_value_types) =
-                compile_expressions(snapshot, type_manager, &block, variable_registry, &block_annotations)
+                compile_expressions(snapshot, type_manager, &block, variable_registry, parameters, &block_annotations)
                     .map_err(|source| QueryError::ExpressionCompilation { source })?;
             Ok(AnnotatedStage::Match { block, block_annotations, compiled_expressions, variable_value_types })
         }
@@ -150,13 +155,15 @@ fn annotate_stage(
             .map_err(|source| QueryError::QueryTypeInference { typedb_source: source })?;
             block.conjunction().constraints().iter().for_each(|constraint| match constraint {
                 Constraint::Isa(isa) => {
-                    running_variable_annotations
-                        .insert(isa.thing(), insert_annotations.variable_annotations_of(isa.thing()).unwrap().clone());
+                    running_variable_annotations.insert(
+                        isa.thing().as_variable().unwrap(),
+                        insert_annotations.vertex_annotations_of(isa.thing()).unwrap().clone(),
+                    );
                 }
                 Constraint::RoleName(role_name) => {
                     running_variable_annotations.insert(
-                        role_name.left(),
-                        insert_annotations.variable_annotations_of(role_name.left()).unwrap().clone(),
+                        role_name.left().as_variable().unwrap(),
+                        insert_annotations.vertex_annotations_of(role_name.left()).unwrap().clone(),
                     );
                 }
                 _ => {}

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fmt, fmt::Display, sync::Arc};
+use std::{error::Error, fmt, sync::Arc};
 
 use error::typedb_error;
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
@@ -24,7 +24,7 @@ pub enum FunctionReadError {
     FunctionsScan { source: Arc<SnapshotIteratorError> },
 }
 
-impl Display for FunctionReadError {
+impl fmt::Display for FunctionReadError {
     fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }

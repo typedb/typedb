@@ -6,35 +6,44 @@
 
 use std::{
     collections::HashMap,
+    fmt,
     marker::PhantomData,
     ops::{Bound, RangeBounds},
-    sync::Arc,
 };
 
-use answer::variable_value::VariableValue;
+use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::match_::instructions::{CheckInstruction, ConstraintInstruction};
 use concept::{
     error::ConceptReadError,
     thing::{object::ObjectAPI, thing_manager::ThingManager},
+    type_::{OwnerAPI, PlayerAPI},
 };
-use ir::pattern::constraint::Comparator;
+use encoding::value::{value::Value, ValueEncodable};
+use ir::pattern::{
+    constraint::{Comparator, IsaKind, SubKind},
+    Vertex,
+};
+use itertools::Itertools;
 use lending_iterator::higher_order::{FnHktHelper, Hkt};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
-        has_reverse_executor::HasReverseExecutor, isa_executor::IsaExecutor, isa_reverse_executor::IsaReverseExecutor,
-        iterator::TupleIterator, links_executor::LinksExecutor, links_reverse_executor::LinksReverseExecutor,
-        owns_executor::OwnsExecutor, owns_reverse_executor::OwnsReverseExecutor, plays_executor::PlaysExecutor,
+        constant_executor::ConstantExecutor, function_call_binding_executor::FunctionCallBindingIteratorExecutor,
+        has_executor::HasExecutor, has_reverse_executor::HasReverseExecutor, isa_executor::IsaExecutor,
+        isa_reverse_executor::IsaReverseExecutor, iterator::TupleIterator, links_executor::LinksExecutor,
+        links_reverse_executor::LinksReverseExecutor, owns_executor::OwnsExecutor,
+        owns_reverse_executor::OwnsReverseExecutor, plays_executor::PlaysExecutor,
         plays_reverse_executor::PlaysReverseExecutor, relates_executor::RelatesExecutor,
         relates_reverse_executor::RelatesReverseExecutor, sub_executor::SubExecutor,
         sub_reverse_executor::SubReverseExecutor, type_list_executor::TypeListExecutor,
     },
+    pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
     VariablePosition,
 };
 
+mod constant_executor;
 mod function_call_binding_executor;
 mod has_executor;
 mod has_reverse_executor;
@@ -68,6 +77,8 @@ pub(crate) enum InstructionExecutor {
 
     Plays(PlaysExecutor),
     PlaysReverse(PlaysReverseExecutor),
+
+    Constant(ConstantExecutor),
 
     Isa(IsaExecutor),
     IsaReverse(IsaReverseExecutor),
@@ -139,8 +150,6 @@ impl InstructionExecutor {
                 thing_manager,
             )?)),
             ConstraintInstruction::FunctionCallBinding(_function_call) => todo!(),
-            ConstraintInstruction::ComparisonGenerator(_comparison) => todo!(),
-            ConstraintInstruction::ComparisonGeneratorReverse(_comparison) => todo!(),
             ConstraintInstruction::ComparisonCheck(_comparison) => todo!(),
             ConstraintInstruction::ExpressionBinding(_expression_binding) => todo!(),
         }
@@ -148,32 +157,33 @@ impl InstructionExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         match self {
-            Self::TypeList(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::Sub(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::SubReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::Owns(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::OwnsReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::Relates(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::RelatesReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::Plays(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::PlaysReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::Isa(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::IsaReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::Has(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::HasReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::Links(executor) => executor.get_iterator(snapshot, thing_manager, row),
-            Self::LinksReverse(executor) => executor.get_iterator(snapshot, thing_manager, row),
+            Self::Constant(executor) => executor.get_iterator(context, row),
+            Self::TypeList(executor) => executor.get_iterator(context, row),
+            Self::Sub(executor) => executor.get_iterator(context, row),
+            Self::SubReverse(executor) => executor.get_iterator(context, row),
+            Self::Owns(executor) => executor.get_iterator(context, row),
+            Self::OwnsReverse(executor) => executor.get_iterator(context, row),
+            Self::Relates(executor) => executor.get_iterator(context, row),
+            Self::RelatesReverse(executor) => executor.get_iterator(context, row),
+            Self::Plays(executor) => executor.get_iterator(context, row),
+            Self::PlaysReverse(executor) => executor.get_iterator(context, row),
+            Self::Isa(executor) => executor.get_iterator(context, row),
+            Self::IsaReverse(executor) => executor.get_iterator(context, row),
+            Self::Has(executor) => executor.get_iterator(context, row),
+            Self::HasReverse(executor) => executor.get_iterator(context, row),
+            Self::Links(executor) => executor.get_iterator(context, row),
+            Self::LinksReverse(executor) => executor.get_iterator(context, row),
             Self::FunctionCallBinding(_executor) => todo!(),
         }
     }
 
     pub(crate) const fn name(&self) -> &'static str {
         match self {
+            InstructionExecutor::Constant(_) => "constant",
             InstructionExecutor::Isa(_) => "isa",
             InstructionExecutor::IsaReverse(_) => "isa_reverse",
             InstructionExecutor::Has(_) => "has",
@@ -273,20 +283,26 @@ pub(crate) enum BinaryIterateMode {
 
 impl BinaryIterateMode {
     pub(crate) fn new(
-        from_var: VariablePosition,
-        to_var: VariablePosition,
+        from_vertex: &Vertex<VariablePosition>,
+        to_vertex: &Vertex<VariablePosition>,
         var_modes: &VariableModes,
         sort_by: Option<VariablePosition>,
     ) -> BinaryIterateMode {
-        debug_assert!(var_modes.len() == 2);
+        // TODO
+        // debug_assert!(var_modes.len() == 2);
         debug_assert!(!var_modes.all_inputs());
 
-        let is_from_bound = var_modes.get(from_var) == Some(&VariableMode::Input);
-        debug_assert!(var_modes.get(to_var) != Some(&VariableMode::Input));
+        let is_from_bound = match from_vertex {
+            &Vertex::Variable(from_var) => var_modes.get(from_var) == Some(&VariableMode::Input),
+            Vertex::Label(_) | Vertex::Parameter(_) => true,
+        };
+
+        // TODO
+        // debug_assert!(var_modes.get(to_var) != Some(&VariableMode::Input));
 
         if is_from_bound {
             Self::BoundFrom
-        } else if sort_by == Some(to_var) {
+        } else if sort_by.is_some_and(|sort_var| Some(sort_var) == to_vertex.as_variable()) {
             Self::UnboundInverted
         } else {
             Self::Unbound
@@ -312,26 +328,52 @@ pub(crate) enum TernaryIterateMode {
 
 impl TernaryIterateMode {
     pub(crate) fn new(
-        from_var: VariablePosition,
-        to_var: VariablePosition,
+        from_vertex: &Vertex<VariablePosition>,
+        to_vertex: &Vertex<VariablePosition>,
         var_modes: &VariableModes,
         sort_by: Option<VariablePosition>,
     ) -> TernaryIterateMode {
-        debug_assert!(var_modes.len() == 3);
+        // TODO
+        // debug_assert!(var_modes.len() == 3);
+
         debug_assert!(!var_modes.all_inputs());
-        let is_from_bound = var_modes.get(from_var) == Some(&VariableMode::Input);
-        let is_to_bound = var_modes.get(to_var) == Some(&VariableMode::Input);
+
+        let is_from_bound = match from_vertex {
+            &Vertex::Variable(from_var) => var_modes.get(from_var) == Some(&VariableMode::Input),
+            Vertex::Label(_) | Vertex::Parameter(_) => true,
+        };
+
+        let is_to_bound = match to_vertex {
+            &Vertex::Variable(to_var) => var_modes.get(to_var) == Some(&VariableMode::Input),
+            Vertex::Label(_) | Vertex::Parameter(_) => true,
+        };
 
         if is_to_bound {
             assert!(is_from_bound);
             Self::BoundFromBoundTo
         } else if is_from_bound {
             Self::BoundFrom
-        } else if sort_by == Some(to_var) {
+        } else if sort_by.is_some_and(|sort_var| Some(sort_var) == to_vertex.as_variable()) {
             Self::UnboundInverted
         } else {
             Self::Unbound
         }
+    }
+}
+
+fn type_from_row_or_annotations<'a>(
+    vertex: &Vertex<VariablePosition>,
+    row: MaybeOwnedRow<'_>,
+    annos: impl Iterator<Item = &'a Type> + fmt::Debug,
+) -> Type {
+    match vertex {
+        &Vertex::Variable(var) => {
+            debug_assert!(row.len() > var.as_usize());
+            let VariableValue::Type(type_) = row.get(var).to_owned() else { unreachable!("Supertype must be a type") };
+            type_
+        }
+        Vertex::Label(_) => annos.cloned().exactly_one().expect("multiple types for fixed label?"),
+        Vertex::Parameter(_) => unreachable!(),
     }
 }
 
@@ -373,10 +415,11 @@ impl<T: Hkt> Checker<T> {
             (if select_a_min { a_min } else { b_min }, if select_a_max { a_max } else { b_max })
         }
 
+        /*
         let mut range = (Bound::Unbounded, Bound::Unbounded);
         for check in &self.checks {
             match *check {
-                CheckInstruction::Comparison { lhs, rhs, comparator } if lhs == target => {
+                CheckInstruction::Comparison { lhs, rhs, comparator } if lhs == Vertex::Variable(target) => {
                     let rhs = row.get(rhs).to_owned();
                     let comp_range = match comparator {
                         Comparator::Equal => (Bound::Included(rhs.clone()), Bound::Included(rhs)),
@@ -393,51 +436,174 @@ impl<T: Hkt> Checker<T> {
             }
         }
         range
+        */
+        todo!() as (Bound<VariableValue<'_>>, Bound<VariableValue<'_>>)
     }
 
     fn filter_for_row(
         &self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: &MaybeOwnedRow<'_>,
     ) -> Box<FilterFn<T>> {
         type BoxExtractor<T> = Box<dyn for<'a> Fn(&'a <T as Hkt>::HktSelf<'_>) -> VariableValue<'a>>;
         let mut filters: Vec<Box<dyn Fn(&T::HktSelf<'_>) -> Result<bool, ConceptReadError>>> =
             Vec::with_capacity(self.checks.len());
+
         for check in &self.checks {
-            match *check {
-                CheckInstruction::Comparison { lhs, rhs, comparator } => {
-                    let lhs_extractor = self.extractors[&lhs];
-                    let rhs = row.get(rhs).to_owned();
-                    let cmp: fn(&VariableValue<'_>, &VariableValue<'_>) -> bool = match comparator {
-                        Comparator::Equal => |a, b| a == b,
-                        Comparator::Less => |a, b| a < b,
-                        Comparator::Greater => |a, b| a > b,
-                        Comparator::LessOrEqual => |a, b| a <= b,
-                        Comparator::GreaterOrEqual => |a, b| a >= b,
-                        Comparator::Like => todo!("like"),
-                        Comparator::Contains => todo!("contains"),
+            match check {
+                &CheckInstruction::Sub { sub_kind, ref subtype, ref supertype } => {
+                    let maybe_subtype_extractor = subtype.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_supertype_extractor = supertype.as_variable().and_then(|var| self.extractors.get(&var));
+                    let snapshot = context.snapshot.clone();
+                    let thing_manager = context.thing_manager.clone();
+                    let subtype: BoxExtractor<T> = match maybe_subtype_extractor {
+                        Some(&subtype) => Box::new(subtype),
+                        None => make_const_extractor(subtype, row),
                     };
-                    filters.push(Box::new(move |value| Ok(cmp(&lhs_extractor(value), &rhs))));
+                    let supertype: BoxExtractor<T> = match maybe_supertype_extractor {
+                        Some(&supertype) => Box::new(supertype),
+                        None => make_const_extractor(supertype, row),
+                    };
+                    filters.push(Box::new({
+                        move |value| {
+                            let subtype = subtype(value);
+                            let supertype = supertype(value);
+                            match sub_kind {
+                                SubKind::Subtype => subtype.as_type().is_transitive_subtype_of(
+                                    supertype.as_type(),
+                                    &*snapshot,
+                                    thing_manager.type_manager(),
+                                ),
+                                SubKind::Exact => subtype.as_type().is_direct_subtype_of(
+                                    subtype.as_type(),
+                                    &*snapshot,
+                                    thing_manager.type_manager(),
+                                ),
+                            }
+                        }
+                    }));
                 }
-                CheckInstruction::Has { owner, attribute } => {
-                    let maybe_owner_extractor = self.extractors.get(&owner);
-                    let maybe_attribute_extractor = self.extractors.get(&attribute);
-                    let snapshot = snapshot.clone();
-                    let thing_manager = thing_manager.clone();
+
+                CheckInstruction::Owns { owner, attribute } => {
+                    let maybe_owner_extractor = owner.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_attribute_extractor = attribute.as_variable().and_then(|var| self.extractors.get(&var));
+                    let snapshot = context.snapshot.clone();
+                    let thing_manager = context.thing_manager.clone();
                     let owner: BoxExtractor<T> = match maybe_owner_extractor {
                         Some(&owner) => Box::new(owner),
-                        None => {
-                            let owner = row.get(owner).to_owned();
-                            Box::new(move |_| owner.clone())
-                        }
+                        None => make_const_extractor(owner, row),
                     };
                     let attribute: BoxExtractor<T> = match maybe_attribute_extractor {
                         Some(&attribute) => Box::new(attribute),
-                        None => {
-                            let attribute = row.get(attribute).to_owned();
-                            Box::new(move |_| attribute.clone())
+                        None => make_const_extractor(attribute, row),
+                    };
+                    filters.push(Box::new({
+                        move |value| {
+                            (owner(value).as_type().as_object_type())
+                                .get_owns_attribute(
+                                    &*snapshot,
+                                    thing_manager.type_manager(),
+                                    attribute(value).as_type().as_attribute_type(),
+                                )
+                                .map(|owns| owns.is_some())
                         }
+                    }));
+                }
+
+                CheckInstruction::Relates { relation, role_type } => {
+                    let maybe_relation_extractor = relation.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_role_type_extractor = role_type.as_variable().and_then(|var| self.extractors.get(&var));
+                    let snapshot = context.snapshot.clone();
+                    let thing_manager = context.thing_manager.clone();
+                    let relation: BoxExtractor<T> = match maybe_relation_extractor {
+                        Some(&relation) => Box::new(relation),
+                        None => make_const_extractor(relation, row),
+                    };
+                    let role_type: BoxExtractor<T> = match maybe_role_type_extractor {
+                        Some(&role_type) => Box::new(role_type),
+                        None => make_const_extractor(role_type, row),
+                    };
+                    filters.push(Box::new({
+                        move |value| {
+                            (relation(value).as_type().as_relation_type())
+                                .get_relates_role(
+                                    &*snapshot,
+                                    thing_manager.type_manager(),
+                                    role_type(value).as_type().as_role_type(),
+                                )
+                                .map(|relates| relates.is_some())
+                        }
+                    }));
+                }
+
+                CheckInstruction::Plays { player, role_type } => {
+                    let maybe_player_extractor = player.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_role_type_extractor = role_type.as_variable().and_then(|var| self.extractors.get(&var));
+                    let snapshot = context.snapshot.clone();
+                    let thing_manager = context.thing_manager.clone();
+                    let player: BoxExtractor<T> = match maybe_player_extractor {
+                        Some(&player) => Box::new(player),
+                        None => make_const_extractor(player, row),
+                    };
+                    let role_type: BoxExtractor<T> = match maybe_role_type_extractor {
+                        Some(&role_type) => Box::new(role_type),
+                        None => make_const_extractor(role_type, row),
+                    };
+                    filters.push(Box::new({
+                        move |value| {
+                            (player(value).as_type().as_object_type())
+                                .get_plays_role(
+                                    &*snapshot,
+                                    thing_manager.type_manager(),
+                                    role_type(value).as_type().as_role_type(),
+                                )
+                                .map(|plays| plays.is_some())
+                        }
+                    }));
+                }
+
+                &CheckInstruction::Isa { isa_kind, ref type_, ref thing } => {
+                    let maybe_thing_extractor = thing.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_type_extractor = type_.as_variable().and_then(|var| self.extractors.get(&var));
+                    let snapshot = context.snapshot.clone();
+                    let thing_manager = context.thing_manager.clone();
+                    let thing: BoxExtractor<T> = match maybe_thing_extractor {
+                        Some(&thing) => Box::new(thing),
+                        None => make_const_extractor(thing, row),
+                    };
+                    let type_: BoxExtractor<T> = match maybe_type_extractor {
+                        Some(&type_) => Box::new(type_),
+                        None => make_const_extractor(type_, row),
+                    };
+                    filters.push(Box::new({
+                        move |value| {
+                            let actual = thing(value).as_thing().type_();
+                            let expected = type_(value);
+                            if isa_kind == IsaKind::Exact && &actual != expected.as_type() {
+                                Ok(false)
+                            } else {
+                                actual.is_transitive_subtype_of(
+                                    expected.as_type(),
+                                    &*snapshot,
+                                    thing_manager.type_manager(),
+                                )
+                            }
+                        }
+                    }));
+                }
+
+                CheckInstruction::Has { owner, attribute } => {
+                    let maybe_owner_extractor = owner.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_attribute_extractor = attribute.as_variable().and_then(|var| self.extractors.get(&var));
+                    let snapshot = context.snapshot.clone();
+                    let thing_manager = context.thing_manager.clone();
+                    let owner: BoxExtractor<T> = match maybe_owner_extractor {
+                        Some(&owner) => Box::new(owner),
+                        None => make_const_extractor(owner, row),
+                    };
+                    let attribute: BoxExtractor<T> = match maybe_attribute_extractor {
+                        Some(&attribute) => Box::new(attribute),
+                        None => make_const_extractor(attribute, row),
                     };
                     filters.push(Box::new({
                         move |value| {
@@ -449,32 +615,24 @@ impl<T: Hkt> Checker<T> {
                         }
                     }));
                 }
+
                 CheckInstruction::Links { relation, player, role } => {
-                    let maybe_relation_extractor = self.extractors.get(&relation);
-                    let maybe_player_extractor = self.extractors.get(&player);
-                    let maybe_role_extractor = self.extractors.get(&role);
-                    let snapshot = snapshot.clone();
-                    let thing_manager = thing_manager.clone();
+                    let maybe_relation_extractor = relation.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_player_extractor = player.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_role_extractor = role.as_variable().and_then(|var| self.extractors.get(&var));
+                    let snapshot = context.snapshot.clone();
+                    let thing_manager = context.thing_manager.clone();
                     let relation: BoxExtractor<T> = match maybe_relation_extractor {
                         Some(&relation) => Box::new(relation),
-                        None => {
-                            let relation = row.get(relation).to_owned();
-                            Box::new(move |_| relation.clone())
-                        }
+                        None => make_const_extractor(relation, row),
                     };
                     let player: BoxExtractor<T> = match maybe_player_extractor {
                         Some(&player) => Box::new(player),
-                        None => {
-                            let player = row.get(player).to_owned();
-                            Box::new(move |_| player.clone())
-                        }
+                        None => make_const_extractor(player, row),
                     };
                     let role: BoxExtractor<T> = match maybe_role_extractor {
                         Some(&role) => Box::new(role),
-                        None => {
-                            let role = row.get(role).to_owned();
-                            Box::new(move |_| role.clone())
-                        }
+                        None => make_const_extractor(role, row),
                     };
                     filters.push(Box::new({
                         move |value| {
@@ -487,7 +645,50 @@ impl<T: Hkt> Checker<T> {
                         }
                     }));
                 }
-                _ => todo!(),
+
+                CheckInstruction::Comparison { lhs, rhs, comparator } => {
+                    let lhs_extractor = self.extractors[&lhs.as_variable().unwrap()];
+                    let rhs = match rhs {
+                        &Vertex::Variable(pos) => row.get(pos).to_owned(),
+                        &Vertex::Parameter(param) => VariableValue::Value(context.parameters()[param].to_owned()),
+                        Vertex::Label(_) => unreachable!(),
+                    };
+                    let snapshot = context.snapshot.clone();
+                    let thing_manager = context.thing_manager.clone();
+                    let rhs = match rhs {
+                        VariableValue::Thing(Thing::Attribute(attr)) => {
+                            attr.get_value(&*snapshot, &thing_manager).map(Value::into_owned)
+                        }
+                        VariableValue::Value(value) => Ok(value),
+                        VariableValue::ThingList(_) | VariableValue::ValueList(_) => todo!(),
+                        VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
+                    };
+                    let cmp: fn(&Value<'_>, &Value<'_>) -> bool = match comparator {
+                        Comparator::Equal => |a, b| a == b,
+                        Comparator::Less => |a, b| a < b,
+                        Comparator::Greater => |a, b| a > b,
+                        Comparator::LessOrEqual => |a, b| a <= b,
+                        Comparator::GreaterOrEqual => |a, b| a >= b,
+                        Comparator::Like => todo!("like"),
+                        Comparator::Contains => todo!("contains"),
+                    };
+                    filters.push(Box::new(move |value| {
+                        let lhs = lhs_extractor(value);
+                        let lhs = match lhs {
+                            VariableValue::Thing(Thing::Attribute(attr)) => {
+                                attr.get_value(&*snapshot, &thing_manager)?.into_owned()
+                            }
+                            VariableValue::Value(value) => value,
+                            VariableValue::ThingList(_) | VariableValue::ValueList(_) => todo!(),
+                            VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
+                        };
+                        let rhs = rhs.clone()?;
+                        if !rhs.value_type().is_trivially_castable_to(&lhs.value_type()) {
+                            return Ok(false);
+                        }
+                        Ok(cmp(&lhs, &rhs.cast(&lhs.value_type()).unwrap()))
+                    }));
+                }
             }
         }
 
@@ -500,5 +701,19 @@ impl<T: Hkt> Checker<T> {
             }
             Ok(true)
         })
+    }
+}
+
+fn make_const_extractor<T: Hkt>(
+    relation: &Vertex<VariablePosition>,
+    row: &MaybeOwnedRow<'_>,
+) -> Box<dyn for<'a> Fn(&'a <T as Hkt>::HktSelf<'_>) -> VariableValue<'a>> {
+    match relation {
+        &Vertex::Variable(var) => {
+            let relation = row.get(var).to_owned();
+            Box::new(move |_| relation.clone())
+        }
+        Vertex::Parameter(_) => todo!(),
+        Vertex::Label(_) => unreachable!(),
     }
 }

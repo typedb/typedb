@@ -166,7 +166,7 @@ macro_rules! get_subtypes_transitive_methods {
         fn $method_name:ident() -> $type_:ident = $cache_method:ident;
     )*) => {
         $(
-            // WARN: supertypes currently do NOT include themselves
+            // WARN: subtypes currently do NOT include themselves
             pub(crate) fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_<'static>
             ) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, ConceptReadError> {
@@ -1133,7 +1133,10 @@ impl TypeManager {
                 if errors.is_empty() {
                     Ok(())
                 } else {
-                    Err(errors.into_iter().map(|error| ConceptWriteError::SchemaValidation { typedb_source: error }).collect())
+                    Err(errors
+                        .into_iter()
+                        .map(|error| ConceptWriteError::SchemaValidation { typedb_source: error })
+                        .collect())
                 }
             }
             Err(error) => Err(vec![ConceptWriteError::ConceptRead { source: error }]),

@@ -18,7 +18,7 @@ async fn main() {
 
     let config = get_configuration();
 
-    let open_result =server::typedb::Server::open(config);
+    let open_result = server::typedb::Server::open(config);
 
     let result = open_result.unwrap().serve().await;
     match result {

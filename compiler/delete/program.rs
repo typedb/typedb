@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 use answer::variable::Variable;
 use encoding::graph::type_::Kind;
-use ir::pattern::constraint::Constraint;
+use ir::pattern::{constraint::Constraint, Vertex};
 
 use crate::{
     delete::instructions::{ConnectionInstruction, Has, RolePlayer, ThingInstruction},
@@ -36,28 +36,33 @@ pub fn compile(
         match constraint {
             Constraint::Has(has) => {
                 connection_deletes.push(ConnectionInstruction::Has(Has {
-                    owner: get_thing_source(input_variables, has.owner())?,
-                    attribute: get_thing_source(input_variables, has.attribute())?,
+                    owner: get_thing_source(input_variables, has.owner().as_variable().unwrap())?,
+                    attribute: get_thing_source(input_variables, has.attribute().as_variable().unwrap())?,
                 }));
             }
             Constraint::Links(role_player) => {
-                let relation = get_thing_source(input_variables, role_player.relation())?;
-                let player = get_thing_source(input_variables, role_player.player())?;
-                let role_variable = role_player.role_type();
-                let role = match (input_variables.get(&role_variable), named_role_types.get(&role_variable)) {
-                    (Some(input), None) => TypeSource::InputVariable(*input),
-                    (None, Some(type_)) => TypeSource::Constant(type_.clone()),
-                    (None, None) => {
-                        let annotations = type_annotations.variable_annotations_of(role_variable).unwrap();
-                        if annotations.len() == 1 {
-                            TypeSource::Constant(annotations.iter().find(|_| true).unwrap().clone())
+                let relation = get_thing_source(input_variables, role_player.relation().as_variable().unwrap())?;
+                let player = get_thing_source(input_variables, role_player.player().as_variable().unwrap())?;
+                let role_type = role_player.role_type();
+                let role = match role_type {
+                    &Vertex::Variable(input) => {
+                        if let Some(input) = input_variables.get(&input) {
+                            TypeSource::InputVariable(*input)
+                        } else if let Some(type_) = named_role_types.get(&input) {
+                            TypeSource::Constant(type_.clone())
                         } else {
-                            return Err(WriteCompilationError::CouldNotUniquelyDetermineRoleType {
-                                variable: role_variable,
-                            })?;
+                            let annotations = type_annotations.vertex_annotations_of(role_type).unwrap();
+                            if annotations.len() == 1 {
+                                TypeSource::Constant(annotations.iter().next().unwrap().clone())
+                            } else {
+                                return Err(WriteCompilationError::CouldNotUniquelyDetermineRoleType {
+                                    variable: input,
+                                })?;
+                            }
                         }
                     }
-                    (Some(_), Some(_)) => unreachable!(),
+                    Vertex::Label(_) => unreachable!("expected role name, found label in a `links` constraint"),
+                    Vertex::Parameter(_) => unreachable!(),
                 };
                 connection_deletes.push(ConnectionInstruction::RolePlayer(RolePlayer { relation, player, role }));
             }
@@ -78,12 +83,17 @@ pub fn compile(
     }
 
     let mut concept_deletes = Vec::new();
-    for variable in deleted_concepts {
-        let Some(input_position) = input_variables.get(variable) else {
-            return Err(WriteCompilationError::DeletedThingWasNotInInput { variable: *variable });
+    for &variable in deleted_concepts {
+        let Some(input_position) = input_variables.get(&variable) else {
+            return Err(WriteCompilationError::DeletedThingWasNotInInput { variable });
         };
-        if type_annotations.variable_annotations_of(*variable).unwrap().iter().any(|type_| type_.kind() == Kind::Role) {
-            Err(WriteCompilationError::IllegalRoleDelete { variable: *variable })?;
+        if type_annotations
+            .vertex_annotations_of(&Vertex::Variable(variable))
+            .unwrap()
+            .iter()
+            .any(|type_| type_.kind() == Kind::Role)
+        {
+            return Err(WriteCompilationError::IllegalRoleDelete { variable });
         } else {
             concept_deletes.push(ThingInstruction { thing: ThingSource(*input_position) });
         };

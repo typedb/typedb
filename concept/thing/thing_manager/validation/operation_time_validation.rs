@@ -18,20 +18,19 @@ use crate::{
         object::{Object, ObjectAPI},
         relation::Relation,
         thing_manager::{
-            ThingManager,
             validation::{
+                validation::{get_label_or_data_err, DataValidation},
                 DataValidationError,
-                validation::{DataValidation, get_label_or_data_err},
             },
+            ThingManager,
         },
+        ThingAPI,
     },
     type_::{
-        attribute_type::AttributeType, Capability, constraint::Constraint, entity_type::EntityType
-        , object_type::ObjectType, ObjectTypeAPI, OwnerAPI,
-        PlayerAPI, relation_type::RelationType, role_type::RoleType, TypeAPI,
+        attribute_type::AttributeType, constraint::Constraint, entity_type::EntityType, object_type::ObjectType,
+        relation_type::RelationType, role_type::RoleType, Capability, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
-use crate::thing::ThingAPI;
 
 pub struct OperationTimeValidation {}
 
@@ -67,7 +66,7 @@ impl OperationTimeValidation {
             Err(DataValidation::create_data_validation_relation_type_abstractness_error(
                 &abstract_constraint,
                 snapshot,
-                thing_manager.type_manager()
+                thing_manager.type_manager(),
             ))
         } else {
             Ok(())
@@ -438,7 +437,9 @@ impl OperationTimeValidation {
 
             for checked_owner_type in owner_and_subtypes {
                 let mut objects = thing_manager.get_objects_in(snapshot, checked_owner_type.clone());
-                while let Some(object) = objects.next().transpose().map_err(|source| DataValidationError::ConceptRead { source })? {
+                while let Some(object) =
+                    objects.next().transpose().map_err(|source| DataValidationError::ConceptRead { source })?
+                {
                     if object == owner {
                         continue;
                     }
@@ -478,27 +479,31 @@ impl OperationTimeValidation {
         value: Value<'_>,
     ) -> Result<(), ConceptWriteError> {
         let type_value_type = attribute_type.get_value_type_without_source(snapshot, thing_manager.type_manager())?;
-        if Some(value_type.clone()) == type_value_type {
-            Ok(())
-        } else {
-            if type_value_type.is_some() {
-                Err(ConceptWriteError::DataValidation {
-                    typedb_source: DataValidationError::ValueTypeMismatchWithAttributeType {
-                        attribute_type: attribute_type.get_label(snapshot, thing_manager.type_manager()).unwrap().as_reference().into_owned(),
-                        expected_value_type: type_value_type.unwrap(),
-                        provided_value_type: value_type,
-                        provided_value: value.into_owned(),
-                    },
-                })
-            } else {
-                Err(ConceptWriteError::DataValidation {
-                    typedb_source: DataValidationError::AttributeTypeHasNoValueType {
-                        attribute_type: attribute_type.get_label(snapshot, thing_manager.type_manager()).unwrap().as_reference().into_owned(),
-                        provided_value_type: value_type,
-                        provided_value: value.into_owned(),
-                    },
-                })
-            }
+        match type_value_type {
+            Some(type_value_type) if value_type.is_trivially_castable_to(&type_value_type) => Ok(()),
+            Some(_) => Err(ConceptWriteError::DataValidation {
+                typedb_source: DataValidationError::ValueTypeMismatchWithAttributeType {
+                    attribute_type: attribute_type
+                        .get_label(snapshot, thing_manager.type_manager())
+                        .unwrap()
+                        .as_reference()
+                        .into_owned(),
+                    expected_value_type: type_value_type.unwrap(),
+                    provided_value_type: value_type,
+                    provided_value: value.into_owned(),
+                },
+            }),
+            None => Err(ConceptWriteError::DataValidation {
+                typedb_source: DataValidationError::AttributeTypeHasNoValueType {
+                    attribute_type: attribute_type
+                        .get_label(snapshot, thing_manager.type_manager())
+                        .unwrap()
+                        .as_reference()
+                        .into_owned(),
+                    provided_value_type: value_type,
+                    provided_value: value.into_owned(),
+                },
+            }),
         }
     }
 
@@ -509,14 +514,13 @@ impl OperationTimeValidation {
         value_type: ValueType,
     ) -> Result<(), ConceptReadError> {
         let type_value_type = attribute_type.get_value_type_without_source(snapshot, thing_manager.type_manager())?;
-        if Some(value_type.clone()) == type_value_type {
-            Ok(())
-        } else {
-            Err(ConceptReadError::ValueTypeMismatchWithAttributeType {
+        match type_value_type {
+            Some(type_value_type) if value_type.is_trivially_castable_to(&type_value_type) => Ok(()),
+            _ => Err(ConceptReadError::ValueTypeMismatchWithAttributeType {
                 attribute_type,
                 expected: type_value_type,
                 provided: value_type,
-            })
+            }),
         }
     }
 
@@ -528,7 +532,9 @@ impl OperationTimeValidation {
         if thing_manager.object_exists(snapshot, owner).map_err(|source| DataValidationError::ConceptRead { source })? {
             Ok(())
         } else {
-            Err(DataValidationError::SetHasOnDeletedOwner { owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())) })
+            Err(DataValidationError::SetHasOnDeletedOwner {
+                owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
+            })
         }
     }
 
@@ -537,10 +543,15 @@ impl OperationTimeValidation {
         thing_manager: &ThingManager,
         relation: &Relation<'_>,
     ) -> Result<(), DataValidationError> {
-        if thing_manager.object_exists(snapshot, relation).map_err(|source| DataValidationError::ConceptRead { source })? {
+        if thing_manager
+            .object_exists(snapshot, relation)
+            .map_err(|source| DataValidationError::ConceptRead { source })?
+        {
             Ok(())
         } else {
-            Err(DataValidationError::AddPlayerOnDeletedRelation { relation_iid: HexBytesFormatter::owned(Vec::from(relation.iid().bytes())) })
+            Err(DataValidationError::AddPlayerOnDeletedRelation {
+                relation_iid: HexBytesFormatter::owned(Vec::from(relation.iid().bytes())),
+            })
         }
     }
 
@@ -552,7 +563,9 @@ impl OperationTimeValidation {
         if thing_manager.object_exists(snapshot, owner).map_err(|source| DataValidationError::ConceptRead { source })? {
             Ok(())
         } else {
-            Err(DataValidationError::UnsetHasOnDeletedOwner { owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())) })
+            Err(DataValidationError::UnsetHasOnDeletedOwner {
+                owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
+            })
         }
     }
 
@@ -561,10 +574,15 @@ impl OperationTimeValidation {
         thing_manager: &ThingManager,
         relation: &Relation<'_>,
     ) -> Result<(), DataValidationError> {
-        if thing_manager.object_exists(snapshot, relation).map_err(|source| DataValidationError::ConceptRead { source })? {
+        if thing_manager
+            .object_exists(snapshot, relation)
+            .map_err(|source| DataValidationError::ConceptRead { source })?
+        {
             Ok(())
         } else {
-            Err(DataValidationError::RemovePlayerOnDeletedRelation { relation_iid: HexBytesFormatter::owned(Vec::from(relation.iid().bytes())) })
+            Err(DataValidationError::RemovePlayerOnDeletedRelation {
+                relation_iid: HexBytesFormatter::owned(Vec::from(relation.iid().bytes())),
+            })
         }
     }
 }

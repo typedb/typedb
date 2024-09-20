@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet},
     marker::PhantomData,
     sync::Arc,
     vec,
@@ -15,7 +15,6 @@ use answer::{variable_value::VariableValue, Type};
 use compiler::match_::instructions::type_::SubInstruction;
 use concept::{
     error::ConceptReadError,
-    thing::thing_manager::ThingManager,
     type_::{type_manager::TypeManager, TypeAPI},
 };
 use ir::pattern::constraint::SubKind;
@@ -31,8 +30,9 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{sub_to_tuple_sub_super, SubToTupleFn, TuplePositions, TupleResult},
-        BinaryIterateMode, Checker, FilterFn, VariableModes,
+        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
+    pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
     VariablePosition,
 };
@@ -43,7 +43,7 @@ pub(crate) struct SubExecutor {
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
     sub_to_supertypes: Arc<BTreeMap<Type, Vec<Type>>>,
-    supertypes: Arc<HashSet<Type>>,
+    supertypes: Arc<BTreeSet<Type>>,
     filter_fn: Arc<SubFilterFn>,
     checker: Checker<AdHocHkt<(Type, Type)>>,
 }
@@ -59,7 +59,7 @@ pub(super) type SubBoundedSortedSuper =
 
 pub(super) type SubFilterFn = FilterFn<(Type, Type)>;
 
-type SubVariableValueExtractor = fn(&(Type, Type)) -> VariableValue<'static>;
+type SubVariableValueExtractor = fn(&(Type, Type)) -> VariableValue<'_>;
 pub(super) const EXTRACT_SUB: SubVariableValueExtractor = |(sub, _)| VariableValue::Type(sub.clone());
 pub(super) const EXTRACT_SUPER: SubVariableValueExtractor = |(_, sup)| VariableValue::Type(sup.clone());
 
@@ -95,15 +95,22 @@ impl SubExecutor {
                 create_sub_filter_super(supertypes.clone())
             }
         };
+
+        let subtype = sub.subtype().as_variable();
+        let supertype = sub.supertype().as_variable();
+
         let output_tuple_positions = if iterate_mode.is_inverted() {
-            TuplePositions::Pair([sub.supertype(), sub.subtype()])
+            TuplePositions::Pair([supertype, subtype])
         } else {
-            TuplePositions::Pair([sub.subtype(), sub.supertype()])
+            TuplePositions::Pair([subtype, supertype])
         };
 
         let checker = Checker::<AdHocHkt<(Type, Type)>> {
             checks,
-            extractors: HashMap::from([(sub.subtype(), EXTRACT_SUB), (sub.supertype(), EXTRACT_SUPER)]),
+            extractors: [(subtype, EXTRACT_SUB), (supertype, EXTRACT_SUPER)]
+                .into_iter()
+                .filter_map(|(var, ex)| Some((var?, ex)))
+                .collect(),
             _phantom_data: PhantomData,
         };
 
@@ -121,16 +128,17 @@ impl SubExecutor {
 
     pub(crate) fn get_iterator(
         &self,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_for_row(snapshot, thing_manager, &row);
+        let check = self.checker.filter_for_row(context, &row);
         let filter_for_row: Box<SubFilterFn> = Box::new(move |item| match filter(item) {
             Ok(true) => check(item),
             fail => fail,
         });
+
+        let snapshot = &**context.snapshot();
 
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
@@ -156,14 +164,10 @@ impl SubExecutor {
             }
 
             BinaryIterateMode::BoundFrom => {
-                debug_assert!(row.len() > self.sub.subtype().as_usize());
-                let VariableValue::Type(sub) = row.get(self.sub.subtype()).to_owned() else {
-                    unreachable!("Subtype must be a type")
-                };
-
-                let type_manager = thing_manager.type_manager();
-                let supertypes = get_supertypes(&**snapshot, type_manager, &sub, self.sub.sub_kind())?;
-                let sub_with_super = supertypes.into_iter().map(|sup| Ok((sub.clone(), sup))).collect_vec(); // TODO cache this
+                let subtype = type_from_row_or_annotations(self.sub.subtype(), row, self.sub_to_supertypes.keys());
+                let type_manager = context.type_manager();
+                let supertypes = get_supertypes(snapshot, type_manager, &subtype, self.sub.sub_kind())?;
+                let sub_with_super = supertypes.into_iter().map(|sup| Ok((subtype.clone(), sup))).collect_vec(); // TODO cache this
 
                 let as_tuples: SubBoundedSortedSuper = NarrowingTupleIterator(
                     AsLendingIterator::new(sub_with_super)
@@ -236,7 +240,7 @@ fn create_sub_filter_sub_super(sub_to_supertypes: Arc<BTreeMap<Type, Vec<Type>>>
     })
 }
 
-fn create_sub_filter_super(supertypes: Arc<HashSet<Type>>) -> Arc<SubFilterFn> {
+fn create_sub_filter_super(supertypes: Arc<BTreeSet<Type>>) -> Arc<SubFilterFn> {
     Arc::new(move |result| match result {
         Ok((_, sup)) => Ok(supertypes.contains(sup)),
         Err(err) => Err(err.clone()),

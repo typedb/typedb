@@ -56,3 +56,62 @@ macro_rules! with_schema_tx {
     };
 }
 pub(crate) use with_schema_tx;
+
+macro_rules! with_write_tx_deconstructed {
+    ($context:ident, |
+        $snapshot:ident,
+        $type_manager:ident,
+        $thing_manager:ident,
+        $function_manager:ident,
+        $database:ident,
+        $transaction_options:ident $(,)?
+     | $expr:expr) => {
+        match $context.take_transaction().unwrap() {
+            $crate::transaction_context::ActiveTransaction::Read(_) => panic!("Using Read transaction as Write"),
+            $crate::transaction_context::ActiveTransaction::Write(::database::transaction::TransactionWrite {
+                snapshot: $snapshot,
+                type_manager: $type_manager,
+                thing_manager: $thing_manager,
+                function_manager: $function_manager,
+                database: $database,
+                transaction_options: $transaction_options,
+            }) => {
+                let (res, $snapshot) = $expr;
+                $context.set_transaction($crate::transaction_context::ActiveTransaction::Write(
+                    ::database::transaction::TransactionWrite {
+                        snapshot: $snapshot,
+                        type_manager: $type_manager,
+                        thing_manager: $thing_manager,
+                        function_manager: $function_manager,
+                        database: $database,
+                        transaction_options: $transaction_options,
+                    },
+                ));
+                res
+            }
+            $crate::transaction_context::ActiveTransaction::Schema(::database::transaction::TransactionSchema {
+                snapshot: $snapshot,
+                type_manager: $type_manager,
+                thing_manager: $thing_manager,
+                function_manager: $function_manager,
+                database: $database,
+                transaction_options: $transaction_options,
+            }) => {
+                let (res, $snapshot) = $expr;
+                $context.set_transaction($crate::transaction_context::ActiveTransaction::Schema(
+                    ::database::transaction::TransactionSchema {
+                        snapshot: $snapshot,
+                        type_manager: $type_manager,
+                        thing_manager: $thing_manager,
+                        function_manager: $function_manager,
+                        database: $database,
+                        transaction_options: $transaction_options,
+                    },
+                ));
+                res
+            }
+        }
+    };
+}
+
+pub(crate) use with_write_tx_deconstructed;

@@ -75,9 +75,11 @@ impl ExecutionInterrupt {
             },
         }
     }
+}
 
+impl Clone for ExecutionInterrupt {
     // Note: going against tokio's broadcast signal convention, which explicitly isn't `clone()`
-    pub fn clone(&self) -> Self {
-        Self { signal: self.signal.as_ref().clone().map(|signal| signal.resubscribe()) }
+    fn clone(&self) -> Self {
+        Self { signal: self.signal.as_ref().map(|signal| signal.resubscribe()) }
     }
 }

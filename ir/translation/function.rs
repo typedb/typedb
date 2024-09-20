@@ -18,7 +18,7 @@ use crate::{
     },
     program::{
         block::{BlockContext, FunctionalBlock},
-        function::{Function, Reducer, ReturnOperation},
+        function::{Function, ReturnOperation},
         function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex},
         FunctionRepresentationError,
     },
@@ -51,7 +51,7 @@ pub fn translate_function(
                 }
             })
         })
-        .collect::<Result<Vec<_>, FunctionRepresentationError>>()?;
+        .collect::<Result<Vec<_>, _>>()?;
 
     Ok(Function::new(
         function.signature.ident.as_str(),

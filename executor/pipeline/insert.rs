@@ -4,61 +4,44 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, marker::PhantomData, sync::Arc};
+use std::sync::Arc;
 
-use compiler::VariablePosition;
+use compiler::insert::{
+    instructions::{ConceptInstruction, ConnectionInstruction},
+    program::InsertProgram,
+};
 use concept::thing::thing_manager::ThingManager;
+use ir::program::block::ParameterRegistry;
 use lending_iterator::LendingIterator;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
     batch::Batch,
-    pipeline::{PipelineExecutionError, StageAPI, StageIterator, WrittenRowsIterator},
-    row::MaybeOwnedRow,
-    write::insert::InsertExecutor,
+    pipeline::{
+        stage::{ExecutionContext, StageAPI},
+        PipelineExecutionError, StageIterator, WrittenRowsIterator,
+    },
+    row::{MaybeOwnedRow, Row},
+    write::{write_instruction::AsWriteInstruction, WriteError},
     ExecutionInterrupt,
 };
 
-pub struct InsertStageExecutor<Snapshot: WritableSnapshot + 'static, PreviouStage: StageAPI<Snapshot>> {
-    inserter: InsertExecutor,
+pub struct InsertStageExecutor<PreviouStage> {
+    program: InsertProgram,
     previous: PreviouStage,
-    thing_manager: Arc<ThingManager>,
-    snapshot: PhantomData<Snapshot>,
 }
 
-impl<Snapshot, PreviousStage> InsertStageExecutor<Snapshot, PreviousStage>
-where
-    Snapshot: WritableSnapshot + 'static,
-    PreviousStage: StageAPI<Snapshot>,
-{
-    pub fn new(inserter: InsertExecutor, previous: PreviousStage, thing_manager: Arc<ThingManager>) -> Self {
-        Self { inserter, previous, thing_manager, snapshot: PhantomData::default() }
+impl<PreviousStage> InsertStageExecutor<PreviousStage> {
+    pub fn new(program: InsertProgram, previous: PreviousStage) -> Self {
+        Self { program, previous }
     }
 
-    fn prepare_output_rows(
-        output_width: u32,
-        input_iterator: PreviousStage::OutputIterator,
-    ) -> Result<Batch, PipelineExecutionError> {
-        // TODO: if the previous stage is not already in Collected format, this will end up temporarily allocating 2x
-        //       the current memory. However, in the other case we don't know how many rows in the output batch to allocate ahead of time
-        //       and require resizing. For now we take the simpler strategy that doesn't require resizing.
-        let input_batch = input_iterator.collect_owned()?;
-        let total_output_rows: u64 = input_batch.get_multiplicities().iter().sum();
-        let mut output_batch = Batch::new(output_width, total_output_rows as usize);
-        let mut input_batch_iterator = input_batch.into_iterator_mut();
-        while let Some(mut row) = input_batch_iterator.next() {
-            // copy out row multiplicity M, set it to 1, then append the row M times
-            let multiplicity = row.get_multiplicity();
-            row.set_multiplicity(1);
-            for _ in 0..multiplicity {
-                output_batch.append(MaybeOwnedRow::new_from_row(&row));
-            }
-        }
-        Ok(output_batch)
+    pub(crate) fn output_width(&self) -> usize {
+        self.program.output_width()
     }
 }
 
-impl<Snapshot, PreviousStage> StageAPI<Snapshot> for InsertStageExecutor<Snapshot, PreviousStage>
+impl<Snapshot, PreviousStage> StageAPI<Snapshot> for InsertStageExecutor<PreviousStage>
 where
     Snapshot: WritableSnapshot + 'static,
     PreviousStage: StageAPI<Snapshot>,
@@ -68,29 +51,81 @@ where
     fn into_iterator(
         self,
         mut interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, Arc<Snapshot>), (Arc<Snapshot>, PipelineExecutionError)> {
-        let (previous_iterator, mut snapshot) = self.previous.into_iterator(interrupt.clone())?;
-        let mut batch = match Self::prepare_output_rows(self.inserter.output_width() as u32, previous_iterator) {
+    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
+    {
+        let Self { program, previous } = self;
+        let (previous_iterator, mut context) = previous.into_iterator(interrupt.clone())?;
+        let mut batch = match prepare_output_rows(program.output_width() as u32, previous_iterator) {
             Ok(output_rows) => output_rows,
-            Err(err) => return Err((snapshot, err)),
+            Err(err) => return Err((err, context)),
         };
 
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so we can get mut:
-        let snapshot_ref = Arc::get_mut(&mut snapshot).unwrap();
+        let snapshot_mut = Arc::get_mut(&mut context.snapshot).unwrap();
         for index in 0..batch.len() {
             // TODO: parallelise -- though this requires our snapshots support parallel writes!
             let mut row = batch.get_row_mut(index);
-            match self.inserter.execute_insert(snapshot_ref, self.thing_manager.as_ref(), &mut row) {
-                Ok(_) => {}
-                Err(err) => return Err((snapshot, PipelineExecutionError::WriteError { typedb_source: err })),
+            if let Err(err) =
+                execute_insert(&program, snapshot_mut, &context.thing_manager, &context.parameters, &mut row)
+            {
+                return Err((PipelineExecutionError::WriteError { typedb_source: err }, context));
             }
 
-            if index % 100 == 0 {
-                if interrupt.check() {
-                    return Err((snapshot, PipelineExecutionError::Interrupted {}));
-                }
+            if index % 100 == 0 && interrupt.check() {
+                return Err((PipelineExecutionError::Interrupted {}, context));
             }
         }
-        Ok((WrittenRowsIterator::new(batch), snapshot))
+        Ok((WrittenRowsIterator::new(batch), context))
     }
+}
+
+fn prepare_output_rows(output_width: u32, input_iterator: impl StageIterator) -> Result<Batch, PipelineExecutionError> {
+    // TODO: if the previous stage is not already in Collected format, this will end up temporarily allocating 2x
+    //       the current memory. However, in the other case we don't know how many rows in the output batch to allocate ahead of time
+    //       and require resizing. For now we take the simpler strategy that doesn't require resizing.
+    let input_batch = input_iterator.collect_owned()?;
+    let total_output_rows: u64 = input_batch.get_multiplicities().iter().sum();
+    let mut output_batch = Batch::new(output_width, total_output_rows as usize);
+    let mut input_batch_iterator = input_batch.into_iterator_mut();
+    while let Some(mut row) = input_batch_iterator.next() {
+        // copy out row multiplicity M, set it to 1, then append the row M times
+        let multiplicity = row.get_multiplicity();
+        row.set_multiplicity(1);
+        for _ in 0..multiplicity {
+            output_batch.append(MaybeOwnedRow::new_from_row(&row));
+        }
+    }
+    Ok(output_batch)
+}
+
+fn execute_insert(
+    program: &InsertProgram,
+    snapshot: &mut impl WritableSnapshot,
+    thing_manager: &ThingManager,
+    parameters: &ParameterRegistry,
+    row: &mut Row<'_>,
+) -> Result<(), WriteError> {
+    debug_assert!(row.get_multiplicity() == 1);
+    debug_assert!(row.len() == program.output_row_schema.len());
+    for instruction in &program.concept_instructions {
+        match instruction {
+            ConceptInstruction::PutAttribute(isa_attr) => {
+                isa_attr.execute(snapshot, thing_manager, parameters, row)?;
+            }
+            ConceptInstruction::PutObject(isa_object) => {
+                isa_object.execute(snapshot, thing_manager, parameters, row)?;
+            }
+        }
+    }
+    for instruction in &program.connection_instructions {
+        match instruction {
+            ConnectionInstruction::Has(has) => {
+                has.execute(snapshot, thing_manager, parameters, row)?;
+            }
+            ConnectionInstruction::RolePlayer(role_player) => {
+                role_player.execute(snapshot, thing_manager, parameters, row)?;
+            }
+        };
+    }
+    Ok(())
 }

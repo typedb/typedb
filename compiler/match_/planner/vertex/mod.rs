@@ -8,12 +8,14 @@ use std::{
     array,
     collections::{HashMap, HashSet},
     iter,
-    ops::Deref,
 };
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use ir::pattern::constraint::{Has, Links, SubKind};
+use ir::pattern::{
+    constraint::{Comparison, Has, Links, SubKind},
+    Vertex,
+};
 use itertools::Itertools;
 
 use crate::match_::inference::type_annotations::TypeAnnotations;
@@ -44,6 +46,7 @@ pub(super) enum PlannerVertex {
     Has(HasPlanner),
     Links(LinksPlanner),
     Expression(()),
+    Comparison(ComparisonPlanner),
 
     Sub(SubPlanner),
     Owns(OwnsPlanner),
@@ -61,6 +64,19 @@ impl PlannerVertex {
             } // may be invalid: must be produced
 
             Self::Expression(_) => todo!("validate expression"), // may be invalid: inputs must be bound
+            Self::Comparison(ComparisonPlanner { lhs, rhs }) => {
+                if let Input::Variable(lhs) = lhs {
+                    if !ordered.contains(lhs) {
+                        return false;
+                    }
+                }
+                if let Input::Variable(rhs) = rhs {
+                    if !ordered.contains(rhs) {
+                        return false;
+                    }
+                }
+                true
+            }
 
             Self::Constant | Self::Label(_) => true, // always valid: comes from query
 
@@ -128,6 +144,7 @@ impl PlannerVertex {
             PlannerVertex::Has(inner) => inner.unbound_direction,
             PlannerVertex::Links(inner) => inner.unbound_direction,
             PlannerVertex::Expression(_) => todo!(),
+            PlannerVertex::Comparison(_) => Direction::Canonical,
             PlannerVertex::Sub(inner) => inner.unbound_direction,
             PlannerVertex::Owns(inner) => inner.unbound_direction,
             PlannerVertex::Relates(inner) => inner.unbound_direction,
@@ -149,6 +166,7 @@ impl PlannerVertex {
             Self::Has(inner) => inner.variables(),
             Self::Links(inner) => inner.variables(),
             Self::Expression(_inner) => todo!(),
+            Self::Comparison(inner) => inner.variables(),
 
             Self::Sub(inner) => inner.variables(),
             Self::Owns(inner) => inner.variables(),
@@ -171,6 +189,7 @@ impl PlannerVertex {
             Self::Has(_inner) => todo!(),
             Self::Links(_inner) => todo!(),
             Self::Expression(_inner) => todo!(),
+            Self::Comparison(_inner) => todo!(),
 
             Self::Sub(_inner) => todo!(),
             Self::Owns(_inner) => todo!(),
@@ -180,7 +199,7 @@ impl PlannerVertex {
         }
     }
 
-    pub(super) fn add_equal(&mut self, other: usize) {
+    pub(super) fn add_equal(&mut self, other: Input) {
         match self {
             Self::Constant => (),
             Self::Value(_inner) => todo!(),
@@ -189,7 +208,7 @@ impl PlannerVertex {
         }
     }
 
-    pub(super) fn add_lower_bound(&mut self, other: usize) {
+    pub(super) fn add_lower_bound(&mut self, other: Input) {
         match self {
             Self::Constant => (),
             Self::Value(_inner) => todo!(),
@@ -198,7 +217,7 @@ impl PlannerVertex {
         }
     }
 
-    pub(super) fn add_upper_bound(&mut self, other: usize) {
+    pub(super) fn add_upper_bound(&mut self, other: Input) {
         match self {
             Self::Constant => (),
             Self::Value(_inner) => todo!(),
@@ -239,6 +258,7 @@ impl Costed for PlannerVertex {
             Self::Has(inner) => inner.cost(inputs, elements),
             Self::Links(inner) => inner.cost(inputs, elements),
             Self::Expression(_) => todo!("expression cost"),
+            Self::Comparison(inner) => inner.cost(inputs, elements),
 
             Self::Sub(inner) => inner.cost(inputs, elements),
             Self::Owns(inner) => inner.cost(inputs, elements),
@@ -264,7 +284,7 @@ impl LabelPlanner {
         variable_index: &HashMap<Variable, usize>,
         _type_annotations: &TypeAnnotations,
     ) -> LabelPlanner {
-        Self { var: variable_index[&label.left()] }
+        Self { var: variable_index[&label.left().as_variable().unwrap()] }
     }
 
     pub(crate) fn from_role_name_constraint(
@@ -272,7 +292,7 @@ impl LabelPlanner {
         variable_index: &HashMap<Variable, usize>,
         _type_annotations: &TypeAnnotations,
     ) -> LabelPlanner {
-        Self { var: variable_index[&role_name.left()] }
+        Self { var: variable_index[&role_name.left().as_variable().unwrap()] }
     }
 
     pub(crate) fn from_kind_constraint(
@@ -280,7 +300,7 @@ impl LabelPlanner {
         variable_index: &HashMap<Variable, usize>,
         _type_annotations: &TypeAnnotations,
     ) -> LabelPlanner {
-        Self { var: variable_index[&kind.type_()] }
+        Self { var: variable_index[&kind.type_().as_variable().unwrap()] }
     }
 }
 
@@ -291,7 +311,7 @@ pub(super) struct TypePlanner {
 
 impl TypePlanner {
     pub(crate) fn from_variable(variable: Variable, type_annotations: &TypeAnnotations) -> Self {
-        let num_types = type_annotations.variable_annotations_of(variable).unwrap().len();
+        let num_types = type_annotations.vertex_annotations_of(&Vertex::Variable(variable)).unwrap().len();
         Self { branching_factor: num_types as f64 }
     }
 }
@@ -308,9 +328,9 @@ pub(super) struct ThingPlanner {
 
     bound_exact: HashSet<usize>, // IID or exact Type + Value
 
-    bound_value_equal: HashSet<usize>,
-    bound_value_below: HashSet<usize>,
-    bound_value_above: HashSet<usize>,
+    bound_value_equal: HashSet<Input>,
+    bound_value_below: HashSet<Input>,
+    bound_value_above: HashSet<Input>,
 }
 
 impl ThingPlanner {
@@ -320,7 +340,7 @@ impl ThingPlanner {
         statistics: &Statistics,
     ) -> Self {
         let expected_size = type_annotations
-            .variable_annotations_of(variable)
+            .vertex_annotations_of(&Vertex::Variable(variable))
             .expect("expected thing variable to have been annotated with types")
             .iter()
             .filter_map(|type_| match type_ {
@@ -339,25 +359,40 @@ impl ThingPlanner {
         self.bound_exact.insert(other);
     }
 
-    pub(super) fn add_equal(&mut self, other: usize) {
+    pub(super) fn add_equal(&mut self, other: Input) {
         self.bound_value_equal.insert(other);
     }
 
-    pub(super) fn add_lower_bound(&mut self, other: usize) {
+    pub(super) fn add_lower_bound(&mut self, other: Input) {
         self.bound_value_below.insert(other);
     }
 
-    pub(super) fn add_upper_bound(&mut self, other: usize) {
+    pub(super) fn add_upper_bound(&mut self, other: Input) {
         self.bound_value_above.insert(other);
     }
 }
 
 impl Costed for ThingPlanner {
     fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
-        let mut per_input = OPEN_ITERATOR_RELATIVE_COST;
-        let mut per_output = ADVANCE_ITERATOR_RELATIVE_COST;
+        let per_input = OPEN_ITERATOR_RELATIVE_COST;
+        let per_output = ADVANCE_ITERATOR_RELATIVE_COST;
         let mut branching_factor = self.expected_size;
 
+        for bound in &self.bound_value_equal {
+            if bound == &Input::Fixed {
+                branching_factor /= self.expected_size;
+            } else if matches!(bound, Input::Variable(var) if inputs.contains(var)) {
+                let b = match &elements[bound.as_variable().unwrap()] {
+                    PlannerVertex::Constant => 1.0,
+                    PlannerVertex::Value(value) => 1.0 / value.expected_size(inputs),
+                    PlannerVertex::Thing(thing) => 1.0 / thing.expected_size,
+                    _ => unreachable!("equality with an edge"),
+                };
+                branching_factor = f64::min(branching_factor, b);
+            }
+        }
+
+        /* TODO
         let mut is_bounded_below = false;
         let mut is_bounded_above = false;
 
@@ -397,6 +432,7 @@ impl Costed for ThingPlanner {
         } else if is_bounded_below && is_bounded_above {
             branching_factor /= 3.0
         }
+        */
 
         VertexCost { per_input, per_output, branching_factor }
     }
@@ -425,11 +461,34 @@ impl Costed for ValuePlanner {
     }
 }
 
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+pub(super) enum Input {
+    Fixed,
+    Variable(usize),
+}
+
+impl Input {
+    pub(super) fn from_vertex(vertex: &Vertex<Variable>, variable_index: &HashMap<Variable, usize>) -> Self {
+        match vertex {
+            Vertex::Variable(var) => Input::Variable(variable_index[var]),
+            Vertex::Label(_) | Vertex::Parameter(_) => Input::Fixed,
+        }
+    }
+
+    pub(super) fn as_variable(self) -> Option<usize> {
+        if let Self::Variable(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+}
+
 #[derive(Debug)]
 pub(super) struct IsaPlanner {
     thing: usize,
-    type_: usize,
-    unbound_direction: Direction, //FIXME
+    type_: Input,
+    unbound_direction: Direction,
 }
 
 impl IsaPlanner {
@@ -439,15 +498,13 @@ impl IsaPlanner {
         _type_annotations: &TypeAnnotations,
         _statistics: &Statistics,
     ) -> Self {
-        Self {
-            thing: variable_index[&isa.thing()],
-            type_: variable_index[&isa.type_()],
-            unbound_direction: Direction::Reverse,
-        }
+        let thing = variable_index[&isa.thing().as_variable().unwrap()];
+        let type_ = Input::from_vertex(isa.type_(), variable_index);
+        Self { thing, type_, unbound_direction: Direction::Reverse }
     }
 
     fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
-        [Some(self.thing), Some(self.type_), None].into_iter().flatten()
+        [Some(self.thing), self.type_.as_variable(), None].into_iter().flatten()
     }
 }
 
@@ -463,7 +520,7 @@ pub(super) struct HasPlanner {
     pub attribute: usize,
     expected_size: f64,
     expected_unbound_size: f64,
-    unbound_direction: Direction, //FIXME
+    unbound_direction: Direction,
 }
 
 impl HasPlanner {
@@ -476,8 +533,8 @@ impl HasPlanner {
         let owner = constraint.owner();
         let attribute = constraint.attribute();
 
-        let owner_types = type_annotations.variable_annotations_of(owner).unwrap().deref();
-        let attribute_types = type_annotations.variable_annotations_of(attribute).unwrap().deref();
+        let owner_types = &**type_annotations.vertex_annotations_of(owner).unwrap();
+        let attribute_types = &**type_annotations.vertex_annotations_of(attribute).unwrap();
 
         let expected_size = itertools::iproduct!(owner_types, attribute_types)
             .filter_map(|(owner, attribute)| {
@@ -502,8 +559,8 @@ impl HasPlanner {
             if unbound_forward_size <= unbound_backward_size { Direction::Canonical } else { Direction::Reverse };
 
         Self {
-            owner: variable_index[&owner],
-            attribute: variable_index[&attribute],
+            owner: variable_index[&owner.as_variable().unwrap()],
+            attribute: variable_index[&attribute.as_variable().unwrap()],
             expected_size,
             expected_unbound_size,
             unbound_direction,
@@ -549,7 +606,7 @@ pub(super) struct LinksPlanner {
     pub role: usize,
     expected_size: f64,
     expected_unbound_size: f64,
-    unbound_direction: Direction, //FIXME
+    unbound_direction: Direction,
 }
 
 impl LinksPlanner {
@@ -563,8 +620,8 @@ impl LinksPlanner {
         let player = links.player();
         let role = links.role_type();
 
-        let relation_types = type_annotations.variable_annotations_of(relation).unwrap().deref();
-        let player_types = type_annotations.variable_annotations_of(player).unwrap().deref();
+        let relation_types = &**type_annotations.vertex_annotations_of(relation).unwrap();
+        let player_types = &**type_annotations.vertex_annotations_of(player).unwrap();
 
         let constraint_types =
             type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_left_right_filtered();
@@ -611,6 +668,10 @@ impl LinksPlanner {
         let unbound_direction =
             if unbound_forward_size <= unbound_backward_size { Direction::Canonical } else { Direction::Reverse };
 
+        let relation = relation.as_variable().unwrap();
+        let player = player.as_variable().unwrap();
+        let role = role.as_variable().unwrap();
+
         Self {
             relation: variable_index[&relation],
             player: variable_index[&player],
@@ -654,11 +715,41 @@ impl Costed for LinksPlanner {
 }
 
 #[derive(Debug)]
+pub(super) struct ComparisonPlanner {
+    pub lhs: Input,
+    pub rhs: Input,
+}
+
+impl ComparisonPlanner {
+    pub(super) fn from_constraint(
+        constraint: &Comparison<Variable>,
+        variable_index: &HashMap<Variable, usize>,
+        _type_annotations: &TypeAnnotations,
+        _statistics: &Statistics,
+    ) -> Self {
+        Self {
+            lhs: Input::from_vertex(constraint.lhs(), variable_index),
+            rhs: Input::from_vertex(constraint.rhs(), variable_index),
+        }
+    }
+
+    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
+        [self.lhs.as_variable(), self.rhs.as_variable(), None].into_iter().flatten()
+    }
+}
+
+impl Costed for ComparisonPlanner {
+    fn cost(&self, _: &[usize], _: &[PlannerVertex]) -> VertexCost {
+        VertexCost::default()
+    }
+}
+
+#[derive(Debug)]
 pub(super) struct SubPlanner {
-    type_: usize,
-    supertype: usize,
+    type_: Input,
+    supertype: Input,
     kind: SubKind,
-    unbound_direction: Direction, //FIXME
+    unbound_direction: Direction,
 }
 
 impl SubPlanner {
@@ -668,15 +759,15 @@ impl SubPlanner {
         _type_annotations: &TypeAnnotations,
     ) -> Self {
         Self {
-            type_: variable_index[&sub.subtype()],
-            supertype: variable_index[&sub.supertype()],
+            type_: Input::from_vertex(sub.subtype(), variable_index),
+            supertype: Input::from_vertex(sub.supertype(), variable_index),
             kind: sub.sub_kind(),
             unbound_direction: Direction::Reverse,
         }
     }
 
     pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
-        [Some(self.type_), Some(self.supertype), None].into_iter().flatten()
+        [self.type_.as_variable(), self.supertype.as_variable(), None].into_iter().flatten()
     }
 }
 
@@ -688,9 +779,9 @@ impl Costed for SubPlanner {
 
 #[derive(Debug)]
 pub(super) struct OwnsPlanner {
-    owner: usize,
-    attribute: usize,
-    unbound_direction: Direction, //FIXME
+    owner: Input,
+    attribute: Input,
+    unbound_direction: Direction,
 }
 
 impl OwnsPlanner {
@@ -700,13 +791,13 @@ impl OwnsPlanner {
         _type_annotations: &TypeAnnotations,
         _statistics: &Statistics,
     ) -> OwnsPlanner {
-        let owner = variable_index[&owns.owner()];
-        let attribute = variable_index[&owns.attribute()];
+        let owner = Input::from_vertex(owns.owner(), variable_index);
+        let attribute = Input::from_vertex(owns.attribute(), variable_index);
         Self { owner, attribute, unbound_direction: Direction::Canonical }
     }
 
     pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
-        [Some(self.owner), Some(self.attribute), None].into_iter().flatten()
+        [self.owner.as_variable(), self.attribute.as_variable(), None].into_iter().flatten()
     }
 }
 
@@ -718,9 +809,9 @@ impl Costed for OwnsPlanner {
 
 #[derive(Debug)]
 pub(super) struct RelatesPlanner {
-    relation: usize,
-    role_type: usize,
-    unbound_direction: Direction, //FIXME
+    relation: Input,
+    role_type: Input,
+    unbound_direction: Direction,
 }
 
 impl RelatesPlanner {
@@ -730,13 +821,13 @@ impl RelatesPlanner {
         _type_annotations: &TypeAnnotations,
         _statistics: &Statistics,
     ) -> RelatesPlanner {
-        let relation = variable_index[&relates.relation()];
-        let role_type = variable_index[&relates.role_type()];
+        let relation = Input::from_vertex(relates.relation(), variable_index);
+        let role_type = Input::from_vertex(relates.role_type(), variable_index);
         Self { relation, role_type, unbound_direction: Direction::Canonical }
     }
 
     pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
-        [Some(self.relation), Some(self.role_type), None].into_iter().flatten()
+        [self.relation.as_variable(), self.role_type.as_variable(), None].into_iter().flatten()
     }
 }
 
@@ -748,9 +839,9 @@ impl Costed for RelatesPlanner {
 
 #[derive(Debug)]
 pub(super) struct PlaysPlanner {
-    player: usize,
-    role_type: usize,
-    unbound_direction: Direction, //FIXME
+    player: Input,
+    role_type: Input,
+    unbound_direction: Direction,
 }
 
 impl PlaysPlanner {
@@ -760,13 +851,13 @@ impl PlaysPlanner {
         _type_annotations: &TypeAnnotations,
         _statistics: &Statistics,
     ) -> PlaysPlanner {
-        let player = variable_index[&plays.player()];
-        let role_type = variable_index[&plays.role_type()];
+        let player = Input::from_vertex(plays.player(), variable_index);
+        let role_type = Input::from_vertex(plays.role_type(), variable_index);
         Self { player, role_type, unbound_direction: Direction::Canonical }
     }
 
     pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
-        [Some(self.player), Some(self.role_type), None].into_iter().flatten()
+        [self.player.as_variable(), self.role_type.as_variable(), None].into_iter().flatten()
     }
 }
 

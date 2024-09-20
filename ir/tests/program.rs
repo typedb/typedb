@@ -32,9 +32,9 @@ fn build_modifiers() {
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_name_type = conjunction.get_or_declare_variable("name_type").unwrap();
 
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
     conjunction.constraints_mut().add_has(var_person, var_name).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, "person").unwrap();
     conjunction.constraints_mut().add_label(var_name_type, "name").unwrap();
 
@@ -56,9 +56,9 @@ fn build_invalid_modifiers() {
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_name_type = conjunction.get_or_declare_variable("name_type").unwrap();
 
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
     conjunction.constraints_mut().add_has(var_person, var_name).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, "person").unwrap();
     conjunction.constraints_mut().add_label(var_name_type, "name").unwrap();
 
@@ -81,7 +81,7 @@ fn build_program_with_functions() {
     let var_count = conjunction.get_or_declare_variable("count").unwrap();
     let var_mean = conjunction.get_or_declare_variable("sum").unwrap();
 
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
 
     let function_argument_categories = vec![VariableCategory::Object];
     let function_return_categories = vec![

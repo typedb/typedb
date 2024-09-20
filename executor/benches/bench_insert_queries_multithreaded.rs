@@ -25,10 +25,7 @@ use concept::{
     type_::{type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
 };
 use encoding::value::{label::Label, value_type::ValueType};
-use executor::{
-    row::Row,
-    write::{insert::InsertExecutor, WriteError},
-};
+use executor::{row::Row, write::WriteError};
 use ir::translation::TranslationContext;
 use lending_iterator::LendingIterator;
 use storage::{
@@ -126,20 +123,21 @@ fn execute_insert(
 
     let mut output_rows = Vec::with_capacity(input_rows.len());
     let output_width = insert_plan.output_row_schema.len();
-    let insert_executor = InsertExecutor::new(insert_plan);
-    for input_row in input_rows {
-        let mut output_multiplicity = 1;
-        output_rows.push(
-            (0..output_width)
-                .map(|i| input_row.get(i).map_or_else(|| VariableValue::Empty, |existing| existing.clone()))
-                .collect::<Vec<_>>(),
-        );
-        insert_executor.execute_insert(
-            snapshot,
-            thing_manager,
-            &mut Row::new(output_rows.last_mut().unwrap(), &mut output_multiplicity),
-        )?;
-    }
+    todo!();
+    // let insert_executor = InsertExecutor::new(insert_plan);
+    // for input_row in input_rows {
+    //     let mut output_multiplicity = 1;
+    //     output_rows.push(
+    //         (0..output_width)
+    //             .map(|i| input_row.get(i).map_or_else(|| VariableValue::Empty, |existing| existing.clone()))
+    //             .collect::<Vec<_>>(),
+    //     );
+    //     insert_executor.execute_insert(
+    //         snapshot,
+    //         thing_manager,
+    //         &mut Row::new(output_rows.last_mut().unwrap(), &mut output_multiplicity),
+    //     )?;
+    // }
     Ok(output_rows)
 }
 

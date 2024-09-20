@@ -11,9 +11,9 @@ use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::{
         conjunction::Conjunction, expression::ExpressionTree, nested_pattern::NestedPattern,
-        variable_category::VariableCategory,
+        variable_category::VariableCategory, Vertex,
     },
-    program::block::{FunctionalBlock, VariableRegistry},
+    program::block::{FunctionalBlock, ParameterRegistry, VariableRegistry},
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
@@ -30,6 +30,8 @@ use crate::{
 struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
     block: &'block FunctionalBlock,
     variable_registry: &'block VariableRegistry,
+    parameters: &'block ParameterRegistry,
+
     snapshot: &'block Snapshot,
     type_manager: &'block TypeManager,
     type_annotations: &'block TypeAnnotations,
@@ -44,6 +46,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     type_manager: &'block TypeManager,
     block: &'block FunctionalBlock,
     variable_registry: &'block VariableRegistry,
+    parameters: &'block ParameterRegistry,
     type_annotations: &'block TypeAnnotations,
 ) -> Result<(HashMap<Variable, CompiledExpression>, HashMap<Variable, ExpressionValueType>), ExpressionCompileError> {
     let mut expression_index = HashMap::new();
@@ -52,6 +55,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     let mut context = BlockExpressionsCompilationContext {
         block,
         variable_registry,
+        parameters,
         snapshot,
         type_manager,
         type_annotations,
@@ -72,12 +76,11 @@ fn index_expressions<'block>(
 ) -> Result<(), ExpressionCompileError> {
     for constraint in conjunction.constraints() {
         if let Some(expression_binding) = constraint.as_expression_binding() {
-            if index.contains_key(&expression_binding.left()) {
-                Err(ExpressionCompileError::MultipleAssignmentsForSingleVariable {
-                    assign_variable: expression_binding.left(),
-                })?;
+            let &Vertex::Variable(left) = expression_binding.left() else { unreachable!() };
+            if index.contains_key(&left) {
+                Err(ExpressionCompileError::MultipleAssignmentsForSingleVariable { assign_variable: left })?;
             }
-            index.insert(expression_binding.left(), expression_binding.expression());
+            index.insert(left, expression_binding.expression());
         }
     }
     for nested in conjunction.nested_patterns() {
@@ -108,7 +111,8 @@ fn compile_expressions_recursive<'a, Snapshot: ReadableSnapshot>(
     for variable in expression.variables() {
         resolve_type_for_variable(context, variable, expression_assignments)?;
     }
-    let compiled = ExpressionCompilationContext::compile(expression, &context.variable_value_types)?;
+    let compiled =
+        ExpressionCompilationContext::compile(expression, &context.variable_value_types, &context.parameters)?;
     context.variable_value_types.insert(assigned_variable, compiled.return_type);
     context.compiled_expressions.insert(assigned_variable, compiled);
     Ok(())
@@ -133,7 +137,7 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
         } else {
             Ok(())
         }
-    } else if let Some(types) = context.type_annotations.variable_annotations_of(variable) {
+    } else if let Some(types) = context.type_annotations.vertex_annotations_of(&Vertex::Variable(variable)) {
         let vec = types
             .iter()
             .map(|type_| match type_ {

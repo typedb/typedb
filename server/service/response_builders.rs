@@ -28,11 +28,7 @@ pub(crate) mod server_manager {
 
     pub(crate) fn servers_all_res(address: &SocketAddr) -> typedb_protocol::server_manager::all::Res {
         typedb_protocol::server_manager::all::Res {
-            servers: vec![
-                typedb_protocol::Server {
-                    address: address.to_string()
-                }
-            ]
+            servers: vec![typedb_protocol::Server { address: address.to_string() }],
         }
     }
 }
@@ -62,10 +58,7 @@ pub(crate) mod database_manager {
         database_names: Vec<String>,
     ) -> typedb_protocol::database_manager::all::Res {
         typedb_protocol::database_manager::all::Res {
-            databases: database_names
-                .into_iter()
-                .map(|name| database_replicas(name, server_address))
-                .collect(),
+            databases: database_names.into_iter().map(|name| database_replicas(name, server_address)).collect(),
         }
     }
 
@@ -85,10 +78,11 @@ pub(crate) mod database_manager {
         }
     }
 
-    pub(crate) fn database_create_res(name: String, server_address: &SocketAddr) -> typedb_protocol::database_manager::create::Res {
-        typedb_protocol::database_manager::create::Res {
-            database: Some(database_replicas(name, server_address))
-        }
+    pub(crate) fn database_create_res(
+        name: String,
+        server_address: &SocketAddr,
+    ) -> typedb_protocol::database_manager::create::Res {
+        typedb_protocol::database_manager::create::Res { database: Some(database_replicas(name, server_address)) }
     }
 }
 
@@ -101,12 +95,13 @@ pub(crate) mod database {
 pub(crate) mod transaction {
     use uuid::Uuid;
 
-    pub(crate) fn transaction_open_res(req_id: Uuid, server_processing_millis: u64) -> typedb_protocol::transaction::Server {
-        let message = typedb_protocol::transaction::res::Res::OpenRes(
-            typedb_protocol::transaction::open::Res {
-                server_duration_millis: server_processing_millis
-            }
-        );
+    pub(crate) fn transaction_open_res(
+        req_id: Uuid,
+        server_processing_millis: u64,
+    ) -> typedb_protocol::transaction::Server {
+        let message = typedb_protocol::transaction::res::Res::OpenRes(typedb_protocol::transaction::open::Res {
+            server_duration_millis: server_processing_millis,
+        });
         transaction_server_res(req_id, message)
     }
 
@@ -118,9 +113,7 @@ pub(crate) mod transaction {
         column_variable_names: Vec<String>,
     ) -> typedb_protocol::query::initial_res::ok::Ok {
         typedb_protocol::query::initial_res::ok::Ok::ConceptRowStream(
-            typedb_protocol::query::initial_res::ok::ConceptRowStream {
-                column_variable_names,
-            }
+            typedb_protocol::query::initial_res::ok::ConceptRowStream { column_variable_names },
         )
     }
 
@@ -136,7 +129,9 @@ pub(crate) mod transaction {
         typedb_protocol::query::initial_res::Ok { ok: Some(message) }
     }
 
-    pub(crate) fn query_initial_res_from_query_res_ok(message: typedb_protocol::query::initial_res::Ok) -> typedb_protocol::query::InitialRes {
+    pub(crate) fn query_initial_res_from_query_res_ok(
+        message: typedb_protocol::query::initial_res::Ok,
+    ) -> typedb_protocol::query::InitialRes {
         typedb_protocol::query::InitialRes { res: Some(typedb_protocol::query::initial_res::Res::Ok(message)) }
     }
 
@@ -148,13 +143,9 @@ pub(crate) mod transaction {
         messages: Vec<typedb_protocol::ConceptRow>,
     ) -> typedb_protocol::query::ResPart {
         typedb_protocol::query::ResPart {
-            res: Some(
-                typedb_protocol::query::res_part::Res::RowsRes(
-                    typedb_protocol::query::res_part::ConceptRowsRes {
-                        rows: messages,
-                    }
-                )
-            )
+            res: Some(typedb_protocol::query::res_part::Res::RowsRes(
+                typedb_protocol::query::res_part::ConceptRowsRes { rows: messages },
+            )),
         }
     }
 
@@ -222,7 +213,7 @@ pub(crate) mod transaction {
         }
     }
 
-// helpers
+    // helpers
 
     pub(crate) fn transaction_server_res_query_res(
         req_id: Uuid,
@@ -236,10 +227,7 @@ pub(crate) mod transaction {
         req_id: Uuid,
         res_part: typedb_protocol::query::ResPart,
     ) -> typedb_protocol::transaction::Server {
-        transaction_server_res_part(
-            req_id,
-            typedb_protocol::transaction::res_part::ResPart::QueryRes(res_part),
-        )
+        transaction_server_res_part(req_id, typedb_protocol::transaction::res_part::ResPart::QueryRes(res_part))
     }
 
     #[inline]

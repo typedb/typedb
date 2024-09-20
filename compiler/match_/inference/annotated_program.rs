@@ -69,7 +69,7 @@ impl AnnotatedProgram {
 
 #[cfg(test)]
 pub mod tests {
-    use std::{collections::HashSet, sync::Arc};
+    use std::collections::{BTreeMap, BTreeSet};
 
     use ir::{
         program::function_signature::{FunctionID, HashMapFunctionSignatureIndex},
@@ -80,7 +80,7 @@ pub mod tests {
     use crate::match_::inference::{
         annotated_functions::{AnnotatedFunctions, IndexedAnnotatedFunctions},
         tests::{managers, schema_consts::setup_types, setup_storage},
-        type_inference::infer_types,
+        type_inference::{infer_types_for_functions, infer_types_for_match_block},
     };
 
     #[test]
@@ -105,38 +105,46 @@ pub mod tests {
         let function_index =
             HashMapFunctionSignatureIndex::build([(FunctionID::Preamble(0), &typeql_function)].into_iter());
         let function = translate_function(&function_index, &typeql_function).unwrap();
+
         let mut translation_context = TranslationContext::new();
         let entry = translate_match(&mut translation_context, &function_index, &typeql_match).unwrap().finish();
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
         let ((type_animal, type_cat, type_dog), _, _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
+
         let empty_cache = IndexedAnnotatedFunctions::empty();
 
         let snapshot = storage.clone().open_snapshot_read();
-        let var_f_c = *translation_context.visible_variables.get("c").unwrap();
+        let &var_f_c = function.variable_registry().variable_names().iter().find(|(_, v)| v.as_str() == "c").unwrap().0;
         let var_x = *translation_context.visible_variables.get("x").unwrap();
-        let (entry_annotations, function_annotations) = infer_types(
+
+        let function_annotations =
+            infer_types_for_functions(vec![function], &snapshot, &type_manager, &empty_cache).unwrap();
+
+        let entry_annotations = infer_types_for_match_block(
             &entry,
-            vec![function],
+            &translation_context.variable_registry,
             &snapshot,
             &type_manager,
+            &BTreeMap::new(),
             &empty_cache,
-            &translation_context.variable_registry,
+            &function_annotations,
         )
         .unwrap();
+
         assert_eq!(
-            &Arc::new(HashSet::from([type_cat.clone()])),
-            function_annotations
+            BTreeSet::from([type_animal.clone(), type_cat.clone(), type_dog.clone()]),
+            **function_annotations
                 .get_annotations(function_id.as_usize())
                 .unwrap()
                 .block_annotations
-                .variable_annotations_of(var_f_c)
+                .vertex_annotations_of(&var_f_c.into())
                 .unwrap()
         );
         assert_eq!(
-            &Arc::new(HashSet::from([type_cat.clone()])),
-            entry_annotations.variable_annotations_of(var_x).unwrap(),
+            BTreeSet::from([type_animal.clone(), type_cat.clone(), type_dog.clone()]),
+            **entry_annotations.vertex_annotations_of(&var_x.into()).unwrap(),
         );
     }
 }

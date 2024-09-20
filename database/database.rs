@@ -15,7 +15,6 @@ use std::{
     },
     time::Duration,
 };
-use tracing::{event, Level};
 
 use concept::{
     thing::statistics::{Statistics, StatisticsError},
@@ -42,6 +41,7 @@ use storage::{
     sequence_number::SequenceNumber,
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
 };
+use tracing::{event, Level};
 
 use crate::{
     DatabaseOpenError::FunctionCacheInitialise,
@@ -234,7 +234,13 @@ impl Database<WALClient> {
             TypeCacheInitialise, WALOpen,
         };
         let name = name.as_ref();
-        event!(Level::TRACE, "Loading database '{}', at path '{:?}' (absolute path: '{:?}').", &name, path, std::path::absolute(path));
+        event!(
+            Level::TRACE,
+            "Loading database '{}', at path '{:?}' (absolute path: '{:?}').",
+            &name,
+            path,
+            std::path::absolute(path)
+        );
 
         let wal = WAL::load(path).map_err(|err| WALOpen { source: err })?;
         let wal_last_sequence_number = wal.previous();
@@ -242,8 +248,8 @@ impl Database<WALClient> {
         let mut wal_client = WALClient::new(wal);
         wal_client.register_record_type::<Statistics>();
 
-        let checkpoint =
-            Checkpoint::open_latest(path).map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?;
+        let checkpoint = Checkpoint::open_latest(path)
+            .map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?;
         let storage = Arc::new(
             MVCCStorage::load::<EncodingKeyspace>(&name, path, wal_client, &checkpoint)
                 .map_err(|error| StorageOpen { typedb_source: error })?,
@@ -294,10 +300,9 @@ impl Database<WALClient> {
 
         let checkpoint_sequence_number = match checkpoint {
             None => SequenceNumber::MIN,
-            Some(checkpoint) => {
-                checkpoint.read_sequence_number()
-                    .map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?
-            }
+            Some(checkpoint) => checkpoint
+                .read_sequence_number()
+                .map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?,
         };
         if checkpoint_sequence_number < wal_last_sequence_number {
             database.checkpoint().map_err(|err| CheckpointCreate { name: name.to_string(), source: err })?;
@@ -313,6 +318,7 @@ impl Database<WALClient> {
         Ok(())
     }
 
+    #[allow(clippy::drop_non_drop)]
     pub fn delete(self) -> Result<(), DatabaseDeleteError> {
         drop(self._statistics_updater);
         drop(Arc::into_inner(self.schema).expect("Cannot get exclusive ownership of inner of Arc<Schema>."));
@@ -345,7 +351,9 @@ impl Database<WALClient> {
 
         match Arc::get_mut(&mut self.storage) {
             None => return Err(DatabaseResetError::StorageInUse {}),
-            Some(storage) => storage.reset().map_err(|err| CorruptionPartialResetStorageInUse { typedb_source: err })?,
+            Some(storage) => {
+                storage.reset().map_err(|err| CorruptionPartialResetStorageInUse { typedb_source: err })?
+            }
         }
         match Arc::get_mut(&mut self.definition_key_generator) {
             None => return Err(CorruptionPartialResetKeyGeneratorInUse {}),

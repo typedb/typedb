@@ -8,9 +8,8 @@ use std::{
     collections::{BTreeMap, HashMap},
     fmt::{Debug, Display, Formatter},
 };
-use bytes::byte_reference::ByteReference;
 
-use bytes::Bytes;
+use bytes::{byte_reference::ByteReference, Bytes};
 use encoding::{
     graph::thing::{
         edge::{ThingEdgeHas, ThingEdgeHasReverse},

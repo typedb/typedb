@@ -300,7 +300,7 @@ impl CommitTimeValidation {
                 relates_declared.contains(&relates)
                     && !relates.is_specialising(snapshot, type_manager).unwrap()
                     && relates.role().get_label(snapshot, type_manager).unwrap().scope().unwrap()
-                    == relates.relation().get_label(snapshot, type_manager).unwrap().name()
+                        == relates.relation().get_label(snapshot, type_manager).unwrap().name()
             })
         });
 
@@ -358,7 +358,11 @@ impl CommitTimeValidation {
                             cap: CAP::KIND,
                             // interface: get_label_or_concept_read_err(snapshot, type_manager, interface_type.clone())?,
                             subtype: get_label_or_concept_read_err(snapshot, type_manager, capability.object())?,
-                            supertype: get_label_or_concept_read_err(snapshot, type_manager, supertype_capability.object())?,
+                            supertype: get_label_or_concept_read_err(
+                                snapshot,
+                                type_manager,
+                                supertype_capability.object(),
+                            )?,
                         },
                     );
                 }
@@ -427,12 +431,14 @@ impl CommitTimeValidation {
                 continue;
             }
             if declared_constraint_descriptions.clone().contains(&constraint.description()) {
-                validation_errors.push(SchemaValidationError::CannotRedeclareConstraintOnSubtypeWithoutSpecialisation {
-                    // constraint: T::KIND,
-                    subtype: get_label_or_concept_read_err(snapshot, type_manager, type_.clone())?,
-                    // get_label_or_concept_read_err(snapshot, type_manager, constraint.source())?,
-                    constraint: constraint.description(),
-                });
+                validation_errors.push(
+                    SchemaValidationError::CannotRedeclareConstraintOnSubtypeWithoutSpecialisation {
+                        // constraint: T::KIND,
+                        subtype: get_label_or_concept_read_err(snapshot, type_manager, type_.clone())?,
+                        // get_label_or_concept_read_err(snapshot, type_manager, constraint.source())?,
+                        constraint: constraint.description(),
+                    },
+                );
             }
         }
 
@@ -588,7 +594,9 @@ impl CommitTimeValidation {
         debug_assert_eq!(struct_definition.fields.len(), struct_definition.field_names.len());
 
         if struct_definition.fields.is_empty() {
-            validation_errors.push(SchemaValidationError::StructShouldHaveAtLeastOneField{ name: struct_definition.name.to_owned() });
+            validation_errors.push(SchemaValidationError::StructShouldHaveAtLeastOneField {
+                name: struct_definition.name.to_owned(),
+            });
         }
 
         Ok(())

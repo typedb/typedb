@@ -5,17 +5,16 @@
  */
 
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
+use answer::variable::Variable;
 use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::constraint::{Constraint, Has, Links},
     program::block::FunctionalBlock,
 };
-use itertools::{chain, Itertools};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::match_::inference::{
@@ -29,7 +28,7 @@ pub fn check_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     block: &FunctionalBlock,
-    input_annotations_variables: &HashMap<Variable, Arc<HashSet<answer::Type>>>,
+    input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
     insert_annotations: &TypeAnnotations,
 ) -> Result<(), TypeInferenceError> {
@@ -75,14 +74,14 @@ fn validate_has_insertable(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     has: &Has<Variable>,
-    input_annotations_variables: &HashMap<Variable, Arc<HashSet<answer::Type>>>,
+    input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
     left_right: &LeftRightAnnotations,
 ) -> Result<(), TypeInferenceError> {
     // TODO: Improve. This is extremely coarse and likely to rule out many valid combinations
     // Esp when doing queries using type variables.
-    let input_owner_types = input_annotations_variables.get(&has.owner()).unwrap();
-    let input_attr_types = input_annotations_variables.get(&has.attribute()).unwrap();
+    let input_owner_types = input_annotations_variables.get(&has.owner().as_variable().unwrap()).unwrap();
+    let input_attr_types = input_annotations_variables.get(&has.attribute().as_variable().unwrap()).unwrap();
 
     let mut invalid_iter = input_owner_types.iter().flat_map(|left_type| {
         input_attr_types
@@ -120,17 +119,17 @@ fn validate_links_insertable(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     links: &Links<Variable>,
-    input_annotations_variables: &HashMap<Variable, Arc<HashSet<answer::Type>>>,
+    input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
     left_right_filtered: &LeftRightFilteredAnnotations,
 ) -> Result<(), TypeInferenceError> {
     // TODO: Improve. This is extremely coarse and likely to rule out many valid combinations
     // Esp when doing queries using type variables.
-    let input_relation_types = input_annotations_variables.get(&links.relation()).unwrap();
-    let input_player_types = input_annotations_variables.get(&links.player()).unwrap();
-    let input_role_types = input_annotations_variables.get(&links.role_type()).unwrap();
+    let input_relation_types = input_annotations_variables.get(&links.relation().as_variable().unwrap()).unwrap();
+    let input_player_types = input_annotations_variables.get(&links.player().as_variable().unwrap()).unwrap();
+    let input_role_types = input_annotations_variables.get(&links.role_type().as_variable().unwrap()).unwrap();
 
-    let mut invalid_relation_role_iter = input_relation_types.iter().flat_map(|relation_type| {
+    let invalid_relation_role_iter = input_relation_types.iter().flat_map(|relation_type| {
         input_role_types
             .iter()
             .filter(|role_type| {
@@ -142,7 +141,7 @@ fn validate_links_insertable(
             })
             .map(|role_type| (relation_type.clone(), role_type.clone()))
     });
-    let mut invalid_player_role_iter = input_player_types.iter().flat_map(|player_type| {
+    let invalid_player_role_iter = input_player_types.iter().flat_map(|player_type| {
         input_role_types
             .iter()
             .filter(|role_type| {
@@ -154,7 +153,7 @@ fn validate_links_insertable(
             })
             .map(|role_type| (player_type.clone(), role_type.clone()))
     });
-    if let Some((left_type, right_type)) = chain(invalid_relation_role_iter, invalid_player_role_iter).find(|_| true) {
+    if let Some((left_type, right_type)) = invalid_relation_role_iter.chain(invalid_player_role_iter).find(|_| true) {
         Err(TypeInferenceError::IllegalInsertTypes {
             constraint_name: Constraint::Links(links.clone()).name().to_string(),
             left_type: left_type

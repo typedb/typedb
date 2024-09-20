@@ -5,42 +5,42 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
     sync::Arc,
 };
 
 use answer::{variable::Variable, Type};
-use ir::pattern::constraint::Constraint;
+use ir::pattern::{constraint::Constraint, Vertex};
 
 use crate::match_::inference::pattern_type_inference::TypeInferenceGraph;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypeAnnotations {
-    variables: HashMap<Variable, Arc<HashSet<Type>>>,
+    vertex: BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
     constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
 }
 
 impl TypeAnnotations {
     pub(crate) fn build(inference_graph: TypeInferenceGraph<'_>) -> Self {
-        let mut vertex_annotations = HashMap::new();
+        let mut vertex_annotations = BTreeMap::new();
         let mut constraint_annotations = HashMap::new();
         inference_graph.collect_type_annotations(&mut vertex_annotations, &mut constraint_annotations);
         Self::new(vertex_annotations, constraint_annotations)
     }
 
     pub fn new(
-        variables: HashMap<Variable, Arc<HashSet<Type>>>,
+        variables: BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
         constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
     ) -> Self {
-        TypeAnnotations { variables, constraints }
+        TypeAnnotations { vertex: variables, constraints }
     }
 
-    pub fn variable_annotations(&self) -> &HashMap<Variable, Arc<HashSet<Type>>> {
-        &self.variables
+    pub fn vertex_annotations(&self) -> &BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>> {
+        &self.vertex
     }
 
-    pub fn variable_annotations_of(&self, variable: Variable) -> Option<&Arc<HashSet<Type>>> {
-        self.variables.get(&variable)
+    pub fn vertex_annotations_of(&self, vertex: &Vertex<Variable>) -> Option<&Arc<BTreeSet<Type>>> {
+        self.vertex.get(vertex)
     }
 
     pub fn constraint_annotations(&self) -> &HashMap<Constraint<Variable>, ConstraintTypeAnnotations> {
@@ -55,7 +55,8 @@ impl TypeAnnotations {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConstraintTypeAnnotations {
     LeftRight(LeftRightAnnotations),
-    LeftRightFiltered(LeftRightFilteredAnnotations), // note: function calls, comparators, and value assignments are not stored here, since they do not actually co-constrain Schema types possible.
+    LeftRightFiltered(LeftRightFilteredAnnotations), // note: function calls, comparators, and value assignments are not stored here,
+                                                     //       since they do not actually co-constrain Schema types possible.
                                                      //       in other words, they are always right to left or deal only in value types.
 }
 
@@ -114,10 +115,10 @@ impl LeftRightAnnotations {
 pub struct LeftRightFilteredAnnotations {
     // Filtered edges are encoded as  (left,right,filter) and (right,left,filter).
     pub(crate) left_to_right: Arc<BTreeMap<Type, Vec<Type>>>,
-    pub(crate) filters_on_right: Arc<BTreeMap<Type, HashSet<Type>>>, // The key is the type of the right variable
+    pub(crate) filters_on_right: Arc<BTreeMap<Type, BTreeSet<Type>>>, // The key is the type of the right variable
 
     pub(crate) right_to_left: Arc<BTreeMap<Type, Vec<Type>>>,
-    pub(crate) filters_on_left: Arc<BTreeMap<Type, HashSet<Type>>>, // The key is the type of the left variable
+    pub(crate) filters_on_left: Arc<BTreeMap<Type, BTreeSet<Type>>>, // The key is the type of the left variable
 }
 
 impl LeftRightFilteredAnnotations {
@@ -127,31 +128,24 @@ impl LeftRightFilteredAnnotations {
         player_to_role: BTreeMap<Type, BTreeSet<Type>>,
         role_to_player: BTreeMap<Type, BTreeSet<Type>>,
     ) -> Self {
-        let mut role_to_player = role_to_player;
-        let mut role_to_relation = role_to_relation;
-        let mut left_to_right = BTreeMap::new();
-        let mut right_to_left = BTreeMap::new();
-        let mut filters_on_right = BTreeMap::new();
-        let mut filters_on_left = BTreeMap::new();
-        for (relation, role_set) in relation_to_role {
-            for role in &role_set {
-                left_to_right.insert(
-                    relation.clone(),
-                    role_to_player.get(role).unwrap().iter().map(|type_| type_.clone()).collect(),
-                );
-            }
-            filters_on_left.insert(relation, role_set.into_iter().collect());
-        }
+        let left_to_right = relation_to_role
+            .iter()
+            .map(|(relation, role_set)| {
+                (relation.clone(), role_set.iter().flat_map(|role| role_to_player[role].clone()).collect())
+            })
+            .collect();
+        let filters_on_left =
+            relation_to_role.into_iter().map(|(rel, role_set)| (rel, role_set.into_iter().collect())).collect();
 
-        for (player, role_set) in player_to_role {
-            for role in &role_set {
-                right_to_left.insert(
-                    player.clone(),
-                    role_to_relation.get(role).unwrap().iter().map(|type_| type_.clone()).collect(),
-                );
-            }
-            filters_on_right.insert(player, role_set.into_iter().collect());
-        }
+        let right_to_left = player_to_role
+            .iter()
+            .map(|(player, role_set)| {
+                (player.clone(), role_set.iter().flat_map(|role| role_to_relation[role].clone()).collect())
+            })
+            .collect();
+        let filters_on_right =
+            player_to_role.into_iter().map(|(player, role_set)| (player, role_set.into_iter().collect())).collect();
+
         Self {
             left_to_right: Arc::new(left_to_right),
             filters_on_right: Arc::new(filters_on_right),
@@ -164,7 +158,7 @@ impl LeftRightFilteredAnnotations {
         self.left_to_right.clone()
     }
 
-    pub fn filters_on_right(&self) -> Arc<BTreeMap<Type, HashSet<Type>>> {
+    pub fn filters_on_right(&self) -> Arc<BTreeMap<Type, BTreeSet<Type>>> {
         self.filters_on_right.clone()
     }
 
@@ -172,7 +166,7 @@ impl LeftRightFilteredAnnotations {
         self.right_to_left.clone()
     }
 
-    pub fn filters_on_left(&self) -> Arc<BTreeMap<Type, HashSet<Type>>> {
+    pub fn filters_on_left(&self) -> Arc<BTreeMap<Type, BTreeSet<Type>>> {
         self.filters_on_left.clone()
     }
 }

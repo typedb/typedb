@@ -5,14 +5,15 @@
  */
 
 use answer::variable::Variable;
-use encoding::value::{value::Value, value_type::ValueTypeCategory};
+use encoding::value::value_type::ValueTypeCategory;
+use ir::pattern::ParameterID;
 
 use crate::expression::instructions::op_codes::ExpressionOpCode;
 
 pub struct CompiledExpression {
     pub(super) instructions: Vec<ExpressionOpCode>,
     pub(super) variables: Vec<Variable>,
-    pub(super) constants: Vec<Value<'static>>,
+    pub(super) constants: Vec<ParameterID>,
     pub(super) return_type: ExpressionValueType,
 }
 
@@ -25,7 +26,7 @@ impl CompiledExpression {
         self.variables.as_slice()
     }
 
-    pub fn constants(&self) -> &[Value<'static>] {
+    pub fn constants(&self) -> &[ParameterID] {
         self.constants.as_slice()
     }
 

@@ -16,11 +16,23 @@ use crate::{
     graph::type_::property::TypeVertexPropertyEncoding, layout::infix::Infix, value::string_bytes::StringBytes, AsBytes,
 };
 
-#[derive(Debug, Eq, PartialEq, Clone, Hash)]
+#[derive(Clone, Hash, PartialEq, Eq)]
 pub struct Label<'a> {
     pub name: StringBytes<'a, LABEL_NAME_STRING_INLINE>,
     pub scope: Option<StringBytes<'a, LABEL_SCOPE_STRING_INLINE>>,
     pub scoped_name: StringBytes<'a, LABEL_SCOPED_NAME_STRING_INLINE>,
+}
+
+impl<'a> Ord for Label<'a> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.scoped_name().as_str().cmp(other.scoped_name().as_str())
+    }
+}
+
+impl<'a> PartialOrd for Label<'a> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl<'a> Label<'a> {
@@ -111,6 +123,12 @@ impl<'a> TypeVertexPropertyEncoding<'a> for Label<'a> {
 
     fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
         Some(Bytes::Array(ByteArray::from(self.scoped_name().bytes())))
+    }
+}
+
+impl<'a> fmt::Debug for Label<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Label[{}]", self.scoped_name())
     }
 }
 

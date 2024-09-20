@@ -9,7 +9,6 @@ use std::collections::HashMap;
 use error::TypeDBError;
 use tonic::{Code, Status};
 use tonic_types::{ErrorDetails, StatusExt};
-use uuid::Uuid;
 
 // Errors caused by incorrect implementation or usage of the network protocol.
 // Note: NOT a typedb_error!(), since we want go directly to Status
@@ -85,7 +84,7 @@ pub(crate) trait IntoProtocolErrorMessage {
     fn into_error_message(self) -> typedb_protocol::Error;
 }
 
-impl<T: TypeDBError + Send> IntoProtocolErrorMessage for T {
+impl<T: TypeDBError + Sync> IntoProtocolErrorMessage for T {
     fn into_error_message(self) -> typedb_protocol::Error {
         let root_source = self.root_source_typedb_error();
         let code = root_source.code();

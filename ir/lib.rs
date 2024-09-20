@@ -11,10 +11,9 @@
 
 use std::{error::Error, fmt};
 
-use answer::variable::Variable;
 use error::typedb_error;
 use typeql::{
-    statement::{thing::RolePlayer, InIterable, StructDeconstruct},
+    statement::{InIterable, StructDeconstruct},
     token,
     value::StringLiteral,
 };
@@ -129,6 +128,16 @@ typedb_error!(
             17,
             "Error adding modifier",
             ( source: ModifierDefinitionError )
+        ),
+        LabelWithKind(
+            18,
+            "Specifying a kind on a label is not allowed.\nSource:\n{declaration}",
+            declaration: typeql::statement::Type
+        ),
+        LabelWithLabel(
+            19,
+            "Specifying a label constraint on a label is not allowed.\nSource:\n{declaration}",
+            declaration: typeql::Label
         ),
     }
 );

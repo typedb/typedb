@@ -34,11 +34,11 @@ impl TypeDBError for typeql::Error {
         format!("{}\nCaused: Error in usage of TypeQL.", self)
     }
 
-    fn source(&self) -> Option<&(dyn Error + Send)> {
+    fn source(&self) -> Option<&(dyn Error + Sync)> {
         None
     }
 
-    fn source_typedb_error(&self) -> Option<&(dyn TypeDBError + Send)> {
+    fn source_typedb_error(&self) -> Option<&(dyn TypeDBError + Sync)> {
         None
     }
 }

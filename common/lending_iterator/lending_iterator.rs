@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Borrow, cmp::Ordering, iter, mem::transmute};
+use std::{borrow::Borrow, cmp::Ordering, iter, marker::PhantomData, mem::transmute};
 
 use crate::{
     adaptors::{Chain, Filter, FilterMap, FlatMap, Flatten, Map, RepeatEach, TakeWhile, TryFilter, TryFlatMap, Zip},
@@ -244,6 +244,32 @@ where
 
     fn compare_key(&self, item: &Self::Item<'_>, key: &K) -> Ordering {
         self.iter.compare_key(item, key)
+    }
+}
+
+pub struct AsNarrowingIterator<I, Item: Hkt> {
+    iter: I,
+    _phantom_item: PhantomData<Item::HktSelf<'static>>,
+}
+
+impl<I: Iterator<Item = Item::HktSelf<'static>>, Item: Hkt> AsNarrowingIterator<I, Item> {
+    pub fn new(iter: impl IntoIterator<IntoIter = I>) -> Self {
+        Self { iter: iter.into_iter(), _phantom_item: PhantomData }
+    }
+}
+
+impl<I, Item> LendingIterator for AsNarrowingIterator<I, Item>
+where
+    I: Iterator<Item = Item::HktSelf<'static>> + 'static,
+    Item: Hkt,
+{
+    type Item<'a> = Item::HktSelf<'a>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        unsafe {
+            // SAFETY: this strictly narrows the lifetime
+            self.iter.next().map(|item| transmute::<Self::Item<'static>, Self::Item<'_>>(item))
+        }
     }
 }
 

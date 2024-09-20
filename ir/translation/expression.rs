@@ -17,6 +17,7 @@ use crate::{
             BuiltInCall, BuiltInFunctionID, Expression, ExpressionTree, ExpressionTreeNodeId, ListConstructor,
             ListIndex, ListIndexRange, Operation, Operator,
         },
+        ParameterID, Vertex,
     },
     program::function_signature::FunctionSignatureIndex,
     translation::{
@@ -29,12 +30,17 @@ use crate::{
 pub(super) fn add_typeql_expression(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_, '_>,
-    variable: Variable,
     rhs: &typeql::Expression,
-) -> Result<(), PatternDefinitionError> {
-    let expression = build_expression(function_index, constraints, rhs)?;
-    constraints.add_expression(variable, expression)?;
-    Ok(())
+) -> Result<Vertex<Variable>, PatternDefinitionError> {
+    if let typeql::Expression::Value(literal) = rhs {
+        let id = register_typeql_literal(constraints, literal)?;
+        Ok(Vertex::Parameter(id))
+    } else {
+        let expression = build_expression(function_index, constraints, rhs)?;
+        let variable = constraints.create_anonymous_variable()?;
+        constraints.add_assignment(variable, expression)?;
+        Ok(Vertex::Variable(variable))
+    }
 }
 
 pub(crate) fn build_expression(
@@ -64,9 +70,8 @@ fn build_recursive(
             Expression::ListIndex(ListIndex::new(variable, id))
         }
         typeql::Expression::Value(literal) => {
-            let value = translate_literal(literal)
-                .map_err(|source| PatternDefinitionError::LiteralParseError { literal: literal.to_string(), source })?;
-            Expression::Constant(value)
+            let id = register_typeql_literal(constraints, literal)?;
+            Expression::Constant(id)
         }
         typeql::Expression::Operation(operation) => {
             let left_id = build_recursive(function_index, constraints, &operation.left, tree)?;
@@ -94,6 +99,16 @@ fn build_recursive(
     Ok(tree.add(expression))
 }
 
+fn register_typeql_literal(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    literal: &typeql::Literal,
+) -> Result<ParameterID, PatternDefinitionError> {
+    let value = translate_literal(literal)
+        .map_err(|source| PatternDefinitionError::LiteralParseError { literal: literal.to_string(), source })?;
+    let id = constraints.parameters().register(value);
+    Ok(id)
+}
+
 pub(super) fn add_user_defined_function_call(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_, '_>,
@@ -109,7 +124,7 @@ pub(super) fn add_user_defined_function_call(
     let Some(callee) = callee else {
         return Err(PatternDefinitionError::UnresolvedFunction { function_name: function_name.to_owned() });
     };
-    constraints.add_function_binding(assigned, &callee, arguments, &function_name)?;
+    constraints.add_function_binding(assigned, &callee, arguments, function_name)?;
     Ok(())
 }
 
@@ -185,7 +200,10 @@ pub mod tests {
     use itertools::Itertools;
 
     use crate::{
-        pattern::expression::{Expression, Operation, Operator},
+        pattern::{
+            expression::{Expression, Operation, Operator},
+            Vertex,
+        },
         program::{block::FunctionalBlock, function_signature::HashMapFunctionSignatureIndex},
         translation::{match_::translate_match, TranslationContext},
         PatternDefinitionError,
@@ -214,17 +232,17 @@ pub mod tests {
             .expression_tree_preorder()
             .cloned()
             .collect_vec();
-        assert_eq!(lhs, var_y);
-        assert_eq!(
-            rhs,
-            vec![
-                Expression::Constant(Value::Long(5)),
-                Expression::Constant(Value::Long(9)),
-                Expression::Constant(Value::Long(6)),
-                Expression::Operation(Operation::new(Operator::Multiply, 1, 2)),
-                Expression::Operation(Operation::new(Operator::Add, 0, 3)),
-            ]
-        );
+        assert_eq!(lhs, &Vertex::Variable(var_y));
+
+        assert_eq!(rhs.len(), 5);
+        let Expression::Constant(id) = rhs[0] else { panic!("Expected Constant, found: {:?}", rhs[0]) };
+        assert_eq!(context.parameters.get(id), Some(&Value::Long(5)));
+        let Expression::Constant(id) = rhs[1] else { panic!("Expected Constant, found: {:?}", rhs[1]) };
+        assert_eq!(context.parameters.get(id), Some(&Value::Long(9)));
+        let Expression::Constant(id) = rhs[2] else { panic!("Expected Constant, found: {:?}", rhs[2]) };
+        assert_eq!(context.parameters.get(id), Some(&Value::Long(6)));
+        assert_eq!(rhs[3], Expression::Operation(Operation::new(Operator::Multiply, 1, 2)));
+        assert_eq!(rhs[4], Expression::Operation(Operation::new(Operator::Add, 0, 3)));
     }
 
     fn get_named_variable(translation_context: &TranslationContext, name: &str) -> Variable {

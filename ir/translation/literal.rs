@@ -211,9 +211,9 @@ pub mod tests {
         {
             let mut context = TranslationContext::new();
             let block = translate_match(&mut context, &HashMapFunctionSignatureIndex::empty(), match_)?.finish();
-            let x = &block.conjunction().constraints()[0].as_expression_binding().unwrap().expression().get_root();
-            match x {
-                Expression::Constant(constant) => Ok(constant.clone()),
+            let x = block.conjunction().constraints()[0].as_expression_binding().unwrap().expression().get_root();
+            match *x {
+                Expression::Constant(id) => Ok(context.parameters[id].to_owned()),
                 _ => unreachable!(),
             }
         } else {

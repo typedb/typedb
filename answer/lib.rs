@@ -78,6 +78,13 @@ impl Type {
         }
     }
 
+    pub fn as_entity_type(&self) -> EntityType<'static> {
+        match self {
+            Type::Entity(entity) => entity.clone().into_owned(),
+            _ => panic!("Type is not an Relation type."),
+        }
+    }
+
     pub fn as_relation_type(&self) -> RelationType<'static> {
         match self {
             Type::Relation(relation) => relation.clone().into_owned(),
@@ -120,6 +127,55 @@ impl Type {
                 let mut bytes = ByteArray::from(role.vertex().bytes());
                 bytes.increment().unwrap();
                 Self::RoleType(RoleType::new(TypeVertex::new(Bytes::Array(bytes))))
+            }
+        }
+    }
+
+    pub fn is_direct_subtype_of(
+        &self,
+        supertype: &Self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<bool, ConceptReadError> {
+        if self.kind() != supertype.kind() || self == supertype {
+            return Ok(false);
+        }
+        match supertype {
+            Type::Entity(entity) => Ok(entity.get_subtypes(snapshot, type_manager)?.contains(&self.as_entity_type())),
+            Type::Relation(relation) => {
+                Ok(relation.get_subtypes(snapshot, type_manager)?.contains(&self.as_relation_type()))
+            }
+            Type::Attribute(attribute) => {
+                Ok(attribute.get_subtypes(snapshot, type_manager)?.contains(&self.as_attribute_type()))
+            }
+            Type::RoleType(role) => Ok(role.get_subtypes(snapshot, type_manager)?.contains(&self.as_role_type())),
+        }
+    }
+
+    pub fn is_transitive_subtype_of(
+        &self,
+        supertype: &Self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<bool, ConceptReadError> {
+        if self.kind() != supertype.kind() {
+            return Ok(false);
+        }
+        if self == supertype {
+            return Ok(true);
+        }
+        match supertype {
+            Type::Entity(entity) => {
+                Ok(entity.get_subtypes_transitive(snapshot, type_manager)?.contains(&self.as_entity_type()))
+            }
+            Type::Relation(relation) => {
+                Ok(relation.get_subtypes_transitive(snapshot, type_manager)?.contains(&self.as_relation_type()))
+            }
+            Type::Attribute(attribute) => {
+                Ok(attribute.get_subtypes_transitive(snapshot, type_manager)?.contains(&self.as_attribute_type()))
+            }
+            Type::RoleType(role) => {
+                Ok(role.get_subtypes_transitive(snapshot, type_manager)?.contains(&self.as_role_type()))
             }
         }
     }

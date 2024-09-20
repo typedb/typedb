@@ -50,7 +50,7 @@ impl Server {
             .http2_keepalive_interval(Some(GRPC_CONNECTION_KEEPALIVE))
             .add_service(service)
             .serve(self.config.server.address)
-        .await
+            .await
     }
 }
 

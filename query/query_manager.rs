@@ -8,16 +8,13 @@ use std::{collections::HashMap, sync::Arc};
 
 use compiler::VariablePosition;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use executor::{
-    pipeline::{
-        delete::DeleteStageExecutor,
-        initial::InitialStage,
-        insert::InsertStageExecutor,
-        match_::MatchStageExecutor,
-        modifiers::{LimitStageExecutor, OffsetStageExecutor, SelectStageExecutor, SortStageExecutor},
-        stage::{ReadPipelineStage, WritePipelineStage},
-    },
-    write::{delete::DeleteExecutor, insert::InsertExecutor},
+use executor::pipeline::{
+    delete::DeleteStageExecutor,
+    initial::InitialStage,
+    insert::InsertStageExecutor,
+    match_::MatchStageExecutor,
+    modifiers::{LimitStageExecutor, OffsetStageExecutor, SelectStageExecutor, SortStageExecutor},
+    stage::{ExecutionContext, ReadPipelineStage, WritePipelineStage},
 };
 use function::function_manager::FunctionManager;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
@@ -67,9 +64,8 @@ impl QueryManager {
         query: &typeql::query::Pipeline,
     ) -> Result<(ReadPipelineStage<Snapshot>, HashMap<String, VariablePosition>), QueryError> {
         // ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>>, QueryError> {
-        let mut snapshot = snapshot;
         // 1: Translate
-        let TranslatedPipeline { translated_preamble, translated_stages, variable_registry } =
+        let TranslatedPipeline { translated_preamble, translated_stages, variable_registry, parameters } =
             translate_pipeline(snapshot.as_ref(), function_manager, query)?;
 
         let annotated_functions = function_manager
@@ -82,6 +78,7 @@ impl QueryManager {
             type_manager,
             &annotated_functions,
             &variable_registry,
+            &parameters,
             translated_preamble,
             translated_stages,
         )?;
@@ -112,13 +109,14 @@ impl QueryManager {
             annotated_stages,
         )?;
 
-        let mut last_stage = ReadPipelineStage::Initial(InitialStage::new(snapshot));
+        let context = ExecutionContext::new(snapshot, thing_manager, Arc::new(parameters));
+        let mut last_stage = ReadPipelineStage::Initial(InitialStage::new(context));
         for compiled_stage in compiled_stages {
             match compiled_stage {
                 CompiledStage::Match(match_program) => {
                     // TODO: Pass expressions & functions
                     // let program_plan = ProgramPlan::new(match_program, HashMap::new(), HashMap::new());
-                    let match_stage = MatchStageExecutor::new(match_program, last_stage, thing_manager.clone());
+                    let match_stage = MatchStageExecutor::new(match_program, last_stage);
                     last_stage = ReadPipelineStage::Match(Box::new(match_stage));
                 }
                 CompiledStage::Insert(_) => {
@@ -148,8 +146,8 @@ impl QueryManager {
 
         let named_outputs = output_variable_positions
             .iter()
-            .filter_map(|(variable, position)| {
-                variable_registry.variable_names().get(variable).map(|name| (name.clone(), position.clone()))
+            .filter_map(|(variable, &position)| {
+                variable_registry.variable_names().get(variable).map(|name| (name.clone(), position))
             })
             .collect::<HashMap<_, _>>();
         Ok((last_stage, named_outputs))
@@ -163,14 +161,13 @@ impl QueryManager {
         function_manager: &FunctionManager,
         query: &typeql::query::Pipeline,
     ) -> Result<(WritePipelineStage<Snapshot>, HashMap<String, VariablePosition>), (Snapshot, QueryError)> {
-        // ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>>, QueryError> {
         // 1: Translate
         let translated_pipeline = translate_pipeline(&snapshot, function_manager, query);
-        let TranslatedPipeline { translated_preamble, translated_stages, variable_registry } = match translated_pipeline
-        {
-            Ok(translated_pipeline) => translated_pipeline,
-            Err(err) => return Err((snapshot, err)),
-        };
+        let TranslatedPipeline { translated_preamble, translated_stages, variable_registry, parameters } =
+            match translated_pipeline {
+                Ok(translated_pipeline) => translated_pipeline,
+                Err(err) => return Err((snapshot, err)),
+            };
 
         let annotated_functions = match function_manager.get_annotated_functions(&snapshot, &type_manager) {
             Ok(annotated_functions) => annotated_functions,
@@ -182,6 +179,7 @@ impl QueryManager {
             type_manager,
             &annotated_functions,
             &variable_registry,
+            &parameters,
             translated_preamble,
             translated_stages,
         );
@@ -221,57 +219,50 @@ impl QueryManager {
                 Err(err) => return Err((snapshot, err)),
             };
 
-        let mut last_stage = WritePipelineStage::Initial(InitialStage::new(Arc::new(snapshot)));
+        let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::new(parameters));
+        let mut previous_stage = WritePipelineStage::Initial(InitialStage::new(context));
         for compiled_stage in compiled_stages {
             match compiled_stage {
                 CompiledStage::Match(match_program) => {
                     // TODO: Pass expressions & functions
                     // let program_plan = ProgramPlan::new(match_program, HashMap::new(), HashMap::new());
-                    let match_stage = MatchStageExecutor::new(match_program, last_stage, thing_manager.clone());
-                    last_stage = WritePipelineStage::Match(Box::new(match_stage));
+                    let match_stage = MatchStageExecutor::new(match_program, previous_stage);
+                    previous_stage = WritePipelineStage::Match(Box::new(match_stage));
                 }
                 CompiledStage::Insert(insert_program) => {
-                    let insert_stage = InsertStageExecutor::new(
-                        InsertExecutor::new(insert_program),
-                        last_stage,
-                        thing_manager.clone(),
-                    );
-                    last_stage = WritePipelineStage::Insert(Box::new(insert_stage));
+                    let insert_stage = InsertStageExecutor::new(insert_program, previous_stage);
+                    previous_stage = WritePipelineStage::Insert(Box::new(insert_stage));
                 }
                 CompiledStage::Delete(delete_program) => {
-                    let delete_stage = DeleteStageExecutor::new(
-                        DeleteExecutor::new(delete_program),
-                        last_stage,
-                        thing_manager.clone(),
-                    );
-                    last_stage = WritePipelineStage::Delete(Box::new(delete_stage));
+                    let delete_stage = DeleteStageExecutor::new(delete_program, previous_stage);
+                    previous_stage = WritePipelineStage::Delete(Box::new(delete_stage));
                 }
                 CompiledStage::Filter(filter_program) => {
-                    let filter_stage = SelectStageExecutor::new(filter_program, last_stage);
-                    last_stage = WritePipelineStage::Select(Box::new(filter_stage));
+                    let filter_stage = SelectStageExecutor::new(filter_program, previous_stage);
+                    previous_stage = WritePipelineStage::Select(Box::new(filter_stage));
                 }
                 CompiledStage::Sort(sort_program) => {
-                    let sort_stage = SortStageExecutor::new(sort_program, last_stage);
-                    last_stage = WritePipelineStage::Sort(Box::new(sort_stage));
+                    let sort_stage = SortStageExecutor::new(sort_program, previous_stage);
+                    previous_stage = WritePipelineStage::Sort(Box::new(sort_stage));
                 }
                 CompiledStage::Offset(offset_program) => {
-                    let offset_stage = OffsetStageExecutor::new(offset_program, last_stage);
-                    last_stage = WritePipelineStage::Offset(Box::new(offset_stage));
+                    let offset_stage = OffsetStageExecutor::new(offset_program, previous_stage);
+                    previous_stage = WritePipelineStage::Offset(Box::new(offset_stage));
                 }
                 CompiledStage::Limit(limit_program) => {
-                    let limit_stage = LimitStageExecutor::new(limit_program, last_stage);
-                    last_stage = WritePipelineStage::Limit(Box::new(limit_stage));
+                    let limit_stage = LimitStageExecutor::new(limit_program, previous_stage);
+                    previous_stage = WritePipelineStage::Limit(Box::new(limit_stage));
                 }
             }
         }
 
         let named_outputs = output_variable_positions
             .iter()
-            .filter_map(|(variable, position)| {
-                variable_registry.variable_names().get(variable).map(|name| (name.clone(), position.clone()))
+            .filter_map(|(variable, &position)| {
+                variable_registry.variable_names().get(variable).map(|name| (name.clone(), position))
             })
             .collect::<HashMap<_, _>>();
-        Ok((last_stage, named_outputs))
+        Ok((previous_stage, named_outputs))
     }
 }
 
