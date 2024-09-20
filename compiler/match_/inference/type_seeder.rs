@@ -628,7 +628,7 @@ impl UnaryConstraint for RoleName<Variable> {
                     .map_err(|source| TypeInferenceError::ConceptRead { source })?;
                 annotations.extend(subtypes.into_iter().map(|subtype| TypeAnnotation::RoleType(subtype.clone())));
             }
-            TypeSeeder::<Snapshot>::add_or_intersect(tig_vertices, self.left(), Cow::Owned(annotations));
+            tig_vertices.add_or_intersect(self.left(), Cow::Owned(annotations));
             Ok(())
         } else {
             Err(TypeInferenceError::RoleNameNotResolved { name: self.name().to_string() })

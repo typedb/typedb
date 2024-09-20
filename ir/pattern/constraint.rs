@@ -1269,7 +1269,7 @@ impl<ID: IrID> Comparison<ID> {
     }
 }
 
-impl<ID> From<Comparison<ID>> for Constraint<ID> {
+impl<ID: IrID> From<Comparison<ID>> for Constraint<ID> {
     fn from(comp: Comparison<ID>) -> Self {
         Constraint::Comparison(comp)
     }

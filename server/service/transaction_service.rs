@@ -240,7 +240,7 @@ impl TransactionService {
                         self.running_write_query = None;
                         let (transaction, result) = write_query_result.unwrap();
                         self.write_query_finished(req_id, transaction, result)
-                            .map(|_| ControlFlow::Continue(())).transpose()
+                            .map(|_| ControlFlow::Continue(()))
                     }
                     next = self.request_stream.next() => {
                         self.handle_next(next).await
@@ -252,9 +252,9 @@ impl TransactionService {
             };
 
             match result {
-                Continue(()) => (),
-                Break(Ok(())) => return,
-                Break(Err(status)) => {
+                Ok(Continue(())) => (),
+                Ok(Break(())) => return,
+                Err(status) => {
                     let result = self.response_sender.send(Err(status)).await;
                     if let Err(send_error) = result {
                         event!(Level::DEBUG, ?send_error, "Failed to send error to client");
@@ -468,30 +468,30 @@ impl TransactionService {
     async fn handle_rollback(
         &mut self,
         _rollback_req: typedb_protocol::transaction::rollback::Req,
-    ) -> ControlFlow<Result<(), Status>> {
+    ) -> Result<ControlFlow<(), ()>, Status> {
         // interrupt all queries, cancel writes, then rollback
         self.query_interrupt_sender.send(()).unwrap();
         self.close_transmitting_write_queries().await;
         self.close_running_read_queries().await;
         if let Break(_) = self.cancel_queued_read_queries().await {
-            return Break(Ok(()));
+            return Ok(Break(()));
         }
 
-        if let Err(status) = self.finish_running_write_query().await {
-            return Break(Err(status));
+        self.finish_running_write_query().await?;
+        if let Break(()) = self.cancel_queued_write_queries().await {
+            return Ok(Break(()))
         }
-        self.cancel_queued_write_queries().await.map(|_| Ok(()))?;
 
         match self.transaction.take().unwrap() {
             Transaction::Read(_) => {
-                return Break(Err(TransactionServiceError::CannotRollbackReadTransaction {}
+                return Err(TransactionServiceError::CannotRollbackReadTransaction {}
                     .into_error_message()
-                    .into_status()));
+                    .into_status());
             }
             Transaction::Write(mut transaction) => transaction.rollback(),
             Transaction::Schema(mut transaction) => transaction.rollback(),
         };
-        Continue(())
+        Ok(Continue(()))
     }
 
     async fn handle_close(&mut self, _close_req: typedb_protocol::transaction::close::Req) {

@@ -716,8 +716,6 @@ impl StringAttributeID {
         self.bytes[Self::ENCODING_STRING_TAIL_INDEX]
     }
 
-    ///
-    ///
     fn build_or_find_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
         type_id: TypeID,
         string: StringBytes<'_, INLINE_LENGTH>,
