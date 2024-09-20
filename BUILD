@@ -234,7 +234,7 @@ release_validate_deps(
     tagged_deps = [
         # TODO: Reenable
         # "@vaticle_typeql",
-        # "@vaticle_typedb_protocol",
+         "@vaticle_typedb_protocol",
     ],
     tags = ["manual"],  # in order for bazel test //... to not fail
     version_file = "VERSION",
