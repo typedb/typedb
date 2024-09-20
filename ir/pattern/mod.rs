@@ -73,12 +73,36 @@ impl<ID: IrID> Vertex<ID> {
         }
     }
 
+    pub fn as_parameter(&self) -> Option<ParameterID> {
+        if let &Self::Parameter(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
     /// Returns `true` if the vertex is [`Variable`].
     ///
     /// [`Variable`]: Vertex::Variable
     #[must_use]
     pub fn is_variable(&self) -> bool {
         matches!(self, Self::Variable(..))
+    }
+
+    /// Returns `true` if the vertex is [`Label`].
+    ///
+    /// [`Label`]: Vertex::Label
+    #[must_use]
+    pub fn is_label(&self) -> bool {
+        matches!(self, Self::Label(..))
+    }
+
+    /// Returns `true` if the vertex is [`Parameter`].
+    ///
+    /// [`Parameter`]: Vertex::Parameter
+    #[must_use]
+    pub fn is_parameter(&self) -> bool {
+        matches!(self, Self::Parameter(..))
     }
 }
 

@@ -236,6 +236,12 @@ fn collect_value_bindings(
 
             Ok((expr.left(), constant))
         })
+        .chain(
+            constraints
+                .iter()
+                .flat_map(|con| con.vertices().filter(|v| v.is_parameter()))
+                .map(|param| Ok((param, param.as_parameter().unwrap()))),
+        )
         .collect()
 }
 
@@ -258,6 +264,10 @@ fn collect_type_bindings(
 
             Ok((label.left().clone(), type_.clone()))
         })
+        .chain(constraints.iter().flat_map(|con| con.vertices().filter(|v| v.is_label())).map(|label| {
+            let type_ = type_annotations.vertex_annotations_of(label).unwrap().iter().exactly_one().unwrap();
+            Ok((label.clone(), type_.clone()))
+        }))
         .collect()
 }
 

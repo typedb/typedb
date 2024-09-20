@@ -16,7 +16,7 @@ use concept::{
     error::ConceptReadError,
     type_::{object_type::ObjectType, type_manager::TypeManager, OwnerAPI, PlayerAPI, TypeAPI},
 };
-use encoding::value::value_type::ValueTypeCategory;
+use encoding::value::{value_type::ValueTypeCategory, ValueEncodable};
 use ir::{
     pattern::{
         conjunction::Conjunction,
@@ -30,7 +30,7 @@ use ir::{
         Scope, ScopeId, Vertex,
     },
     program::{
-        block::{ScopeContext, VariableRegistry},
+        block::{ParameterRegistry, ScopeContext, VariableRegistry},
         function::Function,
         function_signature::FunctionID,
     },
@@ -263,7 +263,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
                         debug_assert_eq!(tig.vertices[vertex], BTreeSet::from([annotation_opt.unwrap()]));
                     }
                 }
-                Vertex::Parameter(_) => todo!(),
+                &Vertex::Parameter(_) => {
+                    assert!(!tig.vertices.contains_key(vertex));
+                }
             }
         }
         Ok(())
@@ -1377,7 +1379,7 @@ impl BinaryConstraint for Relates<Variable> {
 
 #[cfg(test)]
 pub mod tests {
-    use std::collections::{BTreeMap, BTreeSet, HashMap};
+    use std::collections::{BTreeMap, BTreeSet};
 
     use answer::Type as TypeAnnotation;
     use encoding::value::{label::Label, value_type::ValueType};
