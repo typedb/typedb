@@ -13,12 +13,11 @@ use std::{
     error::Error,
     fmt, fs, io,
     path::{Path, PathBuf},
-    sync::{Arc, atomic::Ordering},
+    sync::{atomic::Ordering, Arc},
     time::Duration,
 };
-use ::error::typedb_error;
-use ::error::TypeDBError;
 
+use ::error::{typedb_error, TypeDBError};
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use isolation_manager::IsolationConflict;
 use iterator::MVCCReadError;
@@ -35,16 +34,15 @@ use crate::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{
-        iterator::KeyspaceRangeIterator, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, Keyspaces, KeyspaceSet,
+        iterator::KeyspaceRangeIterator, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, Keyspaces,
     },
     recovery::{
-        checkpoint::{Checkpoint, CheckpointCreateError, },
+        checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
         commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
     },
     sequence_number::SequenceNumber,
-    snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, write::Write, WriteSnapshot},
+    snapshot::{write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot},
 };
-use crate::recovery::checkpoint::CheckpointLoadError;
 
 pub mod durability_client;
 pub mod error;
@@ -585,10 +583,10 @@ mod tests {
         durability_client::{DurabilityClient, WALClient},
         isolation_manager::{CommitRecord, CommitType},
         key_value::StorageKeyArray,
-        keyspace::{KeyspaceId, Keyspaces, KeyspaceSet},
-        MVCCStorage,
+        keyspace::{KeyspaceId, KeyspaceSet, Keyspaces},
         snapshot::buffer::OperationsBuffer,
         write_batches::WriteBatches,
+        MVCCStorage,
     };
 
     macro_rules! test_keyspace_set {

@@ -5,10 +5,10 @@
  */
 
 use std::{collections::BTreeMap, error::Error, fmt, sync::Arc};
-use tracing::{event, Level};
 
 use durability::RawRecord;
 use error::typedb_error;
+use tracing::{event, Level};
 
 use crate::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord},
@@ -144,4 +144,3 @@ typedb_error!(
         KeyspaceWrite(5, "Error writing recovered commits to keyspace.", ( source: KeyspaceError )),
     }
 );
-

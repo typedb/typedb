@@ -427,7 +427,7 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub fn ids(&self) -> Box<dyn Iterator<Item=ID> + '_> {
+    pub fn ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
         match self {
             Constraint::Kind(kind) => Box::new(kind.ids()),
             Constraint::Label(label) => Box::new(label.ids()),
@@ -464,8 +464,8 @@ impl<ID: IrID> Constraint<ID> {
     }
 
     pub fn ids_foreach<F>(&self, function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
         match self {
             Self::Kind(kind) => kind.ids_foreach(function),
@@ -669,8 +669,8 @@ impl<ID: IrID> Label<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
         self.left.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
     }
@@ -722,8 +722,8 @@ impl<ID: IrID> RoleName<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
         self.left.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
     }
@@ -773,8 +773,8 @@ impl<ID: IrID> Kind<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
         self.type_.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
     }
@@ -850,8 +850,8 @@ impl<ID: IrID> Sub<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
         self.subtype.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
         self.supertype.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
@@ -907,8 +907,8 @@ impl<ID: IrID> Isa<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
         self.thing.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
         self.type_.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
@@ -983,8 +983,8 @@ impl<ID: IrID> Links<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
         self.relation.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
         self.player.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
@@ -1040,8 +1040,8 @@ impl<ID: IrID> Has<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
         self.owner.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
         self.attribute.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
@@ -1092,8 +1092,8 @@ impl<ID: IrID> ExpressionBinding<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
         self.ids_assigned().for_each(|id| function(id, ConstraintIDSide::Left));
         // TODO
@@ -1142,7 +1142,7 @@ impl<ID: IrID> FunctionCallBinding<ID> {
         &self.function_call
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> + '_ {
+    pub fn ids(&self) -> impl Iterator<Item = ID> + '_ {
         self.ids_assigned().chain(self.function_call.argument_ids())
     }
 
@@ -1159,8 +1159,8 @@ impl<ID: IrID> FunctionCallBinding<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
         for id in self.ids_assigned() {
             function(id, ConstraintIDSide::Left)
@@ -1261,8 +1261,8 @@ impl<ID: IrID> Comparison<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
         self.lhs.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
         self.rhs.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
@@ -1309,8 +1309,8 @@ impl<ID: IrID> Owns<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
         self.owner.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
         self.attribute.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
@@ -1361,8 +1361,8 @@ impl<ID: IrID> Relates<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
         self.relation.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
         self.role_type.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
@@ -1413,8 +1413,8 @@ impl<ID: IrID> Plays<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
         self.player.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
         self.role_type.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));

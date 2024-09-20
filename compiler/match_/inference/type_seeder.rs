@@ -623,7 +623,8 @@ impl UnaryConstraint for RoleName<Variable> {
             let mut annotations = BTreeSet::new();
             for role_type in &role_types {
                 annotations.insert(TypeAnnotation::RoleType(role_type.clone()));
-                let subtypes = role_type.get_subtypes_transitive(seeder.snapshot, seeder.type_manager)
+                let subtypes = role_type
+                    .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)
                     .map_err(|source| TypeInferenceError::ConceptRead { source })?;
                 annotations.extend(subtypes.into_iter().map(|subtype| TypeAnnotation::RoleType(subtype.clone())));
             }

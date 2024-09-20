@@ -1133,7 +1133,10 @@ impl TypeManager {
                 if errors.is_empty() {
                     Ok(())
                 } else {
-                    Err(errors.into_iter().map(|error| ConceptWriteError::SchemaValidation { typedb_source: error }).collect())
+                    Err(errors
+                        .into_iter()
+                        .map(|error| ConceptWriteError::SchemaValidation { typedb_source: error })
+                        .collect())
                 }
             }
             Err(error) => Err(vec![ConceptWriteError::ConceptRead { source: error }]),

@@ -8,14 +8,13 @@ use std::{
     borrow::Cow,
     error::Error,
     fmt, io,
-    io::{Read, Write},
+    io::{Cursor, Read, Write},
     sync::{mpsc, Arc},
 };
-use std::io::Cursor;
 
 use durability::{wal::WAL, DurabilityRecordType, DurabilityService, DurabilityServiceError, RawRecord};
-use itertools::Itertools;
 use error::typedb_error;
+use itertools::Itertools;
 
 use crate::sequence_number::SequenceNumber;
 

@@ -4,8 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use bytes::{byte_array::ByteArray, Bytes};
-use bytes::byte_reference::ByteReference;
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use encoding::{
     graph::thing::{vertex_attribute::AttributeID, vertex_object::ObjectVertex, ThingVertex},
     layout::prefix::Prefix,

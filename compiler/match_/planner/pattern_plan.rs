@@ -17,11 +17,11 @@ use ir::{
     pattern::{
         constraint::{Comparator, Constraint, ExpressionBinding},
         variable_category::VariableCategory,
+        IrID,
     },
     program::block::{FunctionalBlock, VariableRegistry},
 };
 use itertools::Itertools;
-use ir::pattern::IrID;
 
 use crate::{
     expression::compiled_expression::CompiledExpression,

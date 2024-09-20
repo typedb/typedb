@@ -54,8 +54,9 @@ macro_rules! validate_capability_cardinality_constraint {
             interface_types_to_check: HashSet<<$capability_type<'static> as Capability<'static>>::InterfaceType>,
         ) -> Result<(), DataValidationError> {
             let mut cardinality_constraints: HashSet<CapabilityConstraint<$capability_type<'static>>> = HashSet::new();
-            let counts =
-                object.$get_interface_counts_func(snapshot, thing_manager).map_err(|source| DataValidationError::ConceptRead { source })?;
+            let counts = object
+                .$get_interface_counts_func(snapshot, thing_manager)
+                .map_err(|source| DataValidationError::ConceptRead { source })?;
 
             for interface_type in interface_types_to_check {
                 for constraint in object

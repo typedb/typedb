@@ -334,23 +334,23 @@ fn redefine_sub(
             (TypeEnum::Entity(type_), TypeEnum::Entity(supertype)) => {
                 check_can_redefine_sub(snapshot, type_manager, &label, type_.clone(), supertype.clone())?;
                 error_if_anything_redefined_else_set_true(anything_redefined)?;
-                type_
-                    .set_supertype(snapshot, type_manager, thing_manager, supertype)
-                    .map_err(|source| RedefineError::SetSupertype { declaration: sub.clone(), typedb_source: source })?;
+                type_.set_supertype(snapshot, type_manager, thing_manager, supertype).map_err(|source| {
+                    RedefineError::SetSupertype { declaration: sub.clone(), typedb_source: source }
+                })?;
             }
             (TypeEnum::Relation(type_), TypeEnum::Relation(supertype)) => {
                 check_can_redefine_sub(snapshot, type_manager, &label, type_.clone(), supertype.clone())?;
                 error_if_anything_redefined_else_set_true(anything_redefined)?;
-                type_
-                    .set_supertype(snapshot, type_manager, thing_manager, supertype)
-                    .map_err(|source| RedefineError::SetSupertype { declaration: sub.clone(), typedb_source: source })?;
+                type_.set_supertype(snapshot, type_manager, thing_manager, supertype).map_err(|source| {
+                    RedefineError::SetSupertype { declaration: sub.clone(), typedb_source: source }
+                })?;
             }
             (TypeEnum::Attribute(type_), TypeEnum::Attribute(supertype)) => {
                 check_can_redefine_sub(snapshot, type_manager, &label, type_.clone(), supertype.clone())?;
                 error_if_anything_redefined_else_set_true(anything_redefined)?;
-                type_
-                    .set_supertype(snapshot, type_manager, thing_manager, supertype)
-                    .map_err(|source| RedefineError::SetSupertype { declaration: sub.clone(), typedb_source: source })?;
+                type_.set_supertype(snapshot, type_manager, thing_manager, supertype).map_err(|source| {
+                    RedefineError::SetSupertype { declaration: sub.clone(), typedb_source: source }
+                })?;
             }
             (TypeEnum::RoleType(_), TypeEnum::RoleType(_)) => {
                 return Err(err_unsupported_capability(&label, Kind::Role, capability));
@@ -401,9 +401,9 @@ fn redefine_value_type(
 
         if redefine_needed {
             error_if_anything_redefined_else_set_true(anything_redefined)?;
-            attribute_type
-                .set_value_type(snapshot, type_manager, thing_manager, value_type.clone())
-                .map_err(|source| RedefineError::SetValueType { label: label.to_owned(), value_type, typedb_source: source })?;
+            attribute_type.set_value_type(snapshot, type_manager, thing_manager, value_type.clone()).map_err(
+                |source| RedefineError::SetValueType { label: label.to_owned(), value_type, typedb_source: source },
+            )?;
         }
 
         redefine_value_type_annotations(
@@ -451,7 +451,11 @@ fn redefine_value_type_annotations<'a>(
 
             error_if_anything_redefined_else_set_true(anything_redefined)?;
             attribute_type.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
-                RedefineError::SetCapabilityAnnotation { declaration: typeql_capability.clone(), annotation, typedb_source: source }
+                RedefineError::SetCapabilityAnnotation {
+                    declaration: typeql_capability.clone(),
+                    annotation,
+                    typedb_source: source,
+                }
             })?;
         }
     }
@@ -550,7 +554,11 @@ fn redefine_relates_annotations(
         )? {
             error_if_anything_redefined_else_set_true(anything_redefined)?;
             relates.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
-                RedefineError::SetCapabilityAnnotation { annotation, declaration: typeql_capability.clone(), typedb_source: source }
+                RedefineError::SetCapabilityAnnotation {
+                    annotation,
+                    declaration: typeql_capability.clone(),
+                    typedb_source: source,
+                }
             })?;
         }
     }
@@ -694,7 +702,11 @@ fn redefine_owns_annotations(
         )? {
             error_if_anything_redefined_else_set_true(anything_redefined)?;
             owns.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
-                RedefineError::SetCapabilityAnnotation { declaration: typeql_capability.clone(), annotation, typedb_source: source }
+                RedefineError::SetCapabilityAnnotation {
+                    declaration: typeql_capability.clone(),
+                    annotation,
+                    typedb_source: source,
+                }
             })?;
         }
     }

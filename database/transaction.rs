@@ -5,7 +5,6 @@
  */
 
 use std::{error::Error, fmt, sync::Arc};
-use itertools::Itertools;
 
 use concept::{
     error::ConceptWriteError,
@@ -17,6 +16,7 @@ use concept::{
 };
 use error::typedb_error;
 use function::{function_manager::FunctionManager, FunctionError};
+use itertools::Itertools;
 use options::TransactionOptions;
 use storage::{
     durability_client::DurabilityClient,
@@ -145,13 +145,11 @@ impl<D: DurabilityClient> TransactionWrite<D> {
 
     pub fn try_commit(self) -> Result<(), DataCommitError> {
         let mut snapshot = Arc::into_inner(self.snapshot).unwrap();
-        self.thing_manager
-            .finalise(&mut snapshot)
-            .map_err(|errs| {
-                // TODO: send all the errors, not just the first
-                let error = errs.into_iter().next().unwrap();
-                DataCommitError::ConceptWriteErrorsFirst{ typedb_source:error }
-            })?;
+        self.thing_manager.finalise(&mut snapshot).map_err(|errs| {
+            // TODO: send all the errors, not just the first
+            let error = errs.into_iter().next().unwrap();
+            DataCommitError::ConceptWriteErrorsFirst { typedb_source: error }
+        })?;
         drop(self.type_manager);
         snapshot.commit().map_err(|err| DataCommitError::SnapshotError { typedb_source: err })?;
         Ok(())

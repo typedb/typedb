@@ -5,8 +5,8 @@
  */
 
 use std::{error::Error, fmt};
-use bytes::util::HexBytesFormatter;
 
+use bytes::util::HexBytesFormatter;
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use error::typedb_error;
 

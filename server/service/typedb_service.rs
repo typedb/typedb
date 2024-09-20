@@ -4,8 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{net::SocketAddr, pin::Pin, sync::Arc};
-use std::time::Instant;
+use std::{net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
 
 use database::database_manager::DatabaseManager;
 use error::typedb_error;
@@ -15,9 +14,9 @@ use tonic::{Request, Response, Status, Streaming};
 use tracing::{event, Level};
 use typedb_protocol::{
     self,
+    server_manager::all::{Req, Res},
     transaction::{Client, Server},
 };
-use typedb_protocol::server_manager::all::{Req, Res};
 use uuid::Uuid;
 
 use crate::service::{
@@ -26,11 +25,11 @@ use crate::service::{
         connection::connection_open_res,
         database::database_delete_res,
         database_manager::{database_all_res, database_contains_res, database_create_res, database_get_res},
+        server_manager::servers_all_res,
     },
     transaction_service::TransactionService,
     ConnectionID,
 };
-use crate::service::response_builders::server_manager::servers_all_res;
 
 #[derive(Debug)]
 pub(crate) struct TypeDBService {
@@ -76,7 +75,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             Ok(Response::new(connection_open_res(
                 self.generate_connection_id(),
                 receive_time,
-                database_all_res(&self.address, self.database_manager.database_names())
+                database_all_res(&self.address, self.database_manager.database_names()),
             )))
         }
     }

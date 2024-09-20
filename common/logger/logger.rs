@@ -6,12 +6,9 @@
 
 #![allow(unexpected_cfgs)]
 
-use tracing::{self, dispatcher::DefaultGuard, Level};
+use tracing::{self, dispatcher::DefaultGuard, metadata::LevelFilter, Level};
 pub use tracing::{error, info, trace};
-use tracing::metadata::LevelFilter;
-use tracing_subscriber::EnvFilter;
-use tracing_subscriber::fmt::SubscriberBuilder;
-use tracing_subscriber::prelude::*;
+use tracing_subscriber::{fmt::SubscriberBuilder, prelude::*, EnvFilter};
 
 pub mod result;
 
@@ -24,16 +21,11 @@ pub fn initialise_logging_global() {
         // useful for debugging what tonic is doing:
         .add_directive("tonic=trace".parse().unwrap());
 
-    let subscriber = SubscriberBuilder::default()
-        .with_max_level(Level::TRACE)
-        .with_env_filter(filter)
-        .finish();
+    let subscriber = SubscriberBuilder::default().with_max_level(Level::TRACE).with_env_filter(filter).finish();
     tracing::subscriber::set_global_default(subscriber).unwrap()
 }
 
 pub fn initialise_logging() -> DefaultGuard {
-    let subscriber = SubscriberBuilder::default()
-        .with_max_level(Level::TRACE)
-        .finish();
+    let subscriber = SubscriberBuilder::default().with_max_level(Level::TRACE).finish();
     tracing::subscriber::set_default(subscriber)
 }

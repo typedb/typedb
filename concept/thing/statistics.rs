@@ -23,14 +23,14 @@ use encoding::graph::{
     type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeIDUInt, TypeVertexEncoding},
     Typed,
 };
-use serde::{Deserialize, Serialize};
 use error::typedb_error;
+use serde::{Deserialize, Serialize};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord, UnsequencedDurabilityRecord},
     isolation_manager::CommitType,
     iterator::MVCCReadError,
     key_value::StorageKeyReference,
-    recovery::commit_recovery::{load_commit_data_from, StorageRecoveryError, RecoveryCommitStatus},
+    recovery::commit_recovery::{load_commit_data_from, RecoveryCommitStatus, StorageRecoveryError},
     sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, write::Write},
     MVCCStorage,
@@ -345,12 +345,8 @@ impl Statistics {
         player_2_type: ObjectType<'static>,
         delta: i64,
     ) {
-        let player_1_to_2_index_count = self
-            .links_index_counts
-            .entry(player_1_type.clone())
-            .or_default()
-            .entry(player_2_type.clone())
-            .or_default();
+        let player_1_to_2_index_count =
+            self.links_index_counts.entry(player_1_type.clone()).or_default().entry(player_2_type.clone()).or_default();
         *player_1_to_2_index_count = player_1_to_2_index_count.checked_add_signed(delta).unwrap();
         if player_1_type != player_2_type {
             let player_2_to_1_index_count =
@@ -699,10 +695,8 @@ mod serialise {
                 &to_serialisable_map_map(&self.attribute_owner_counts),
             )?;
 
-            state.serialize_field(
-                Field::RolePlayerCounts.name(),
-                &to_serialisable_map_map(&self.role_player_counts)
-            )?;
+            state
+                .serialize_field(Field::RolePlayerCounts.name(), &to_serialisable_map_map(&self.role_player_counts))?;
 
             state.serialize_field(
                 Field::RelationRoleCounts.name(),
@@ -719,10 +713,8 @@ mod serialise {
                 &to_serialisable_map_map_map(&self.player_role_relation_counts),
             )?;
 
-            state.serialize_field(
-                Field::LinksIndexCounts.name(),
-                &to_serialisable_map_map(&self.links_index_counts),
-            )?;
+            state
+                .serialize_field(Field::LinksIndexCounts.name(), &to_serialisable_map_map(&self.links_index_counts))?;
 
             state.end()
         }

@@ -14,6 +14,7 @@ use crate::{
         object::{Object, ObjectAPI},
         relation::Relation,
         thing_manager::validation::DataValidationError,
+        ThingAPI,
     },
     type_::{
         attribute_type::AttributeType,
@@ -28,7 +29,6 @@ use crate::{
         Capability, TypeAPI,
     },
 };
-use crate::thing::ThingAPI;
 
 pub(crate) fn get_label_or_data_err<'a>(
     snapshot: &impl ReadableSnapshot,
@@ -111,7 +111,11 @@ impl DataValidation {
                 DataValidationError::KeyConstraintViolatedCard {
                     owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
                     owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
-                    attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+                    attribute_type: attribute_type
+                        .get_label(snapshot, type_manager)
+                        .unwrap()
+                        .as_reference()
+                        .into_owned(),
                     attribute_count: count,
                     constraint_source,
                     source: error_source,
@@ -120,7 +124,11 @@ impl DataValidation {
                 DataValidationError::OwnsConstraintViolated {
                     owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
                     owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
-                    attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+                    attribute_type: attribute_type
+                        .get_label(snapshot, type_manager)
+                        .unwrap()
+                        .as_reference()
+                        .into_owned(),
                     // constraint_source,
                     source: error_source,
                 }
@@ -276,7 +284,12 @@ impl DataValidation {
             DataValidationError::OwnsConstraintViolated {
                 owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
                 owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
-                attribute_type: attribute.type_().get_label(snapshot, type_manager).unwrap().as_reference().into_owned(),
+                attribute_type: attribute
+                    .type_()
+                    .get_label(snapshot, type_manager)
+                    .unwrap()
+                    .as_reference()
+                    .into_owned(),
                 // constraint_source: constraint.source(),
                 source: error_source,
             }
@@ -329,7 +342,7 @@ impl DataValidation {
         let error_source = ConstraintError::ViolatedUnique { value: value.clone().into_owned() };
         let is_key = match constraint_source.is_key(snapshot, type_manager) {
             Ok(is_key) => is_key,
-            Err(err) => return DataValidationError::ConceptRead{source: err},
+            Err(err) => return DataValidationError::ConceptRead { source: err },
         };
         if is_key {
             DataValidationError::KeyConstraintViolatedUniqueness {

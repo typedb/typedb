@@ -145,9 +145,10 @@ fn define_struct(
         DefinableStatus::ExistsDifferent(_) => unreachable!("Structs cannot differ"),
     }
 
-    type_manager
-        .create_struct(snapshot, name.to_owned())
-        .map_err(|err| DefineError::StructCreateError { typedb_source: err, struct_declaration: struct_definable.clone() })?;
+    type_manager.create_struct(snapshot, name.to_owned()).map_err(|err| DefineError::StructCreateError {
+        typedb_source: err,
+        struct_declaration: struct_definable.clone(),
+    })?;
     Ok(())
 }
 
@@ -172,7 +173,7 @@ fn define_struct_fields(
             value_type.clone(),
             optional,
         )
-            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
         match definition_status {
             DefinableStatus::DoesNotExist => {}
             DefinableStatus::ExistsSame(_) => return Ok(()),
@@ -201,10 +202,9 @@ fn define_types(
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let existing =
-        try_resolve_typeql_type(snapshot, type_manager, &label).map_err(|err| DefineError::SymbolResolution {
-            typedb_source: SymbolResolutionError::UnexpectedConceptRead { source: err },
-        })?;
+    let existing = try_resolve_typeql_type(snapshot, type_manager, &label).map_err(|err| {
+        DefineError::SymbolResolution { typedb_source: SymbolResolutionError::UnexpectedConceptRead { source: err } }
+    })?;
     match type_declaration.kind {
         None => {
             if existing.is_none() {
@@ -448,9 +448,9 @@ fn define_value_type(
         };
 
         if define_needed {
-            attribute_type
-                .set_value_type(snapshot, type_manager, thing_manager, value_type.clone())
-                .map_err(|source| DefineError::SetValueType { label: label.to_owned(), value_type, typedb_source: source })?;
+            attribute_type.set_value_type(snapshot, type_manager, thing_manager, value_type.clone()).map_err(
+                |source| DefineError::SetValueType { label: label.to_owned(), value_type, typedb_source: source },
+            )?;
         }
 
         define_value_type_annotations(
@@ -527,7 +527,10 @@ fn define_relates_with_annotations(
             DefinableStatus::DoesNotExist => {
                 let relates = relation_type
                     .create_relates(snapshot, type_manager, thing_manager, role_label.name.as_str(), ordering)
-                    .map_err(|source| DefineError::CreateRelates { typedb_source: source, relates: relates.to_owned() })?;
+                    .map_err(|source| DefineError::CreateRelates {
+                        typedb_source: source,
+                        relates: relates.to_owned(),
+                    })?;
                 relates
             }
             DefinableStatus::ExistsSame(Some((existing_relates, _))) => existing_relates,
@@ -647,9 +650,9 @@ fn define_relates_specialise<'a>(
         }?;
 
         if need_define {
-            relates
-                .set_specialise(snapshot, type_manager, thing_manager, specialised_relates)
-                .map_err(|source| DefineError::SetSpecialise { label: relation_label.clone().into_owned(), typedb_source: source })?;
+            relates.set_specialise(snapshot, type_manager, thing_manager, specialised_relates).map_err(|source| {
+                DefineError::SetSpecialise { label: relation_label.clone().into_owned(), typedb_source: source }
+            })?;
         }
     }
     Ok(())
