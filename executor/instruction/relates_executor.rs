@@ -24,7 +24,9 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        iterator::{SortedTupleIterator, TupleIterator}, tuple::{relates_to_tuple_relation_role, RelatesToTupleFn, TuplePositions, TupleResult}, type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, VariableModes
+        iterator::{SortedTupleIterator, TupleIterator},
+        tuple::{relates_to_tuple_relation_role, RelatesToTupleFn, TuplePositions, TupleResult},
+        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
