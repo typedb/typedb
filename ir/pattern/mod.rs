@@ -72,6 +72,14 @@ impl<ID: IrID> Vertex<ID> {
             None
         }
     }
+
+    /// Returns `true` if the vertex is [`Variable`].
+    ///
+    /// [`Variable`]: Vertex::Variable
+    #[must_use]
+    pub fn is_variable(&self) -> bool {
+        matches!(self, Self::Variable(..))
+    }
 }
 
 impl<ID> From<ID> for Vertex<ID> {

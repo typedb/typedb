@@ -109,8 +109,8 @@ pub(crate) fn infer_types_for_block<'graph>(
         .seed_types(block.scope_context(), previous_stage_variable_annotations, block.conjunction())?;
     run_type_inference(&mut tig);
     // TODO: Throw error when any set becomes empty happens, rather than waiting for the it to propagate
-    if tig.vertices.iter().any(|(var,types)| types.is_empty()) {
-        Err(TypeInferenceError::DetectedUnsatisfiablePattern {  } )
+    if tig.vertices.iter().any(|(var, types)| types.is_empty()) {
+        Err(TypeInferenceError::DetectedUnsatisfiablePattern {})
     } else {
         Ok(tig)
     }
@@ -1334,6 +1334,8 @@ pub mod tests {
                 vertices: VertexAnnotations::from([
                     (var_animal.into(), BTreeSet::from([type_cat.clone()])),
                     (var_name.into(), BTreeSet::from([type_catname.clone(), type_name.clone()])),
+                    (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat.clone()])),
+                    (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name.clone()])),
                 ]),
                 edges: vec![
                     expected_edge(
@@ -1360,6 +1362,8 @@ pub mod tests {
                 nested_optionals: Vec::new(),
             };
 
+            assert_eq!(expected_tig.vertices, tig.vertices);
+            assert_eq!(expected_tig.edges, tig.edges);
             assert_eq!(expected_tig, tig);
         }
 

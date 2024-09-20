@@ -118,7 +118,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         context: &ScopeContext,
         parent_vertices: &VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
-        self.get_local_variables(context, tig.conjunction.scope_id()).for_each(|var| {
+        self.local_variables(context, tig.conjunction.scope_id()).for_each(|var| {
             let vertex = Vertex::Variable(var);
             if let Some(parent_annotations) = parent_vertices.get(&vertex) {
                 tig.vertices.insert(vertex, parent_annotations.clone());
@@ -127,6 +127,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
 
         // Seed vertices in root & disjunctions
         self.seed_vertex_annotations_from_type_and_function_return(tig)?;
+        self.annotate_fixed_vertices(tig)?;
         let mut some_vertex_was_directly_annotated = true;
         while some_vertex_was_directly_annotated {
             let mut changed = true;
@@ -198,7 +199,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
             .iter()
             .flat_map(|nested_tig| {
                 Iterator::chain(
-                    self.get_local_variables(context, nested_tig.conjunction.scope_id()),
+                    self.local_variables(context, nested_tig.conjunction.scope_id()),
                     nested_tig.nested_disjunctions.iter().flat_map(|disj| disj.shared_variables.iter().copied()),
                 )
                 .filter(|variable| context.is_variable_available(parent_conjunction.scope_id(), *variable))
@@ -241,7 +242,41 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         Ok(())
     }
 
-    fn get_local_variables<'a>(
+    fn annotate_fixed_vertices(&self, tig: &mut TypeInferenceGraph<'_>) -> Result<(), TypeInferenceError> {
+        for vertex in self.fixed_vertices(tig.conjunction.constraints()) {
+            match vertex {
+                Vertex::Variable(_) => unreachable!("variable in fixed vertices"),
+                Vertex::Label(label) => {
+                    if !tig.vertices.contains_key(vertex) {
+                        let annotation_opt = get_type_annotation_from_label(self.snapshot, self.type_manager, label)
+                            .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+                        if let Some(annotation) = annotation_opt {
+                            tig.vertices.insert(vertex.clone(), BTreeSet::from([annotation]));
+                        } else {
+                            return Err(TypeInferenceError::LabelNotResolved { name: label.to_string() });
+                        }
+                    } else {
+                        #[cfg(debug_assertions)]
+                        let annotation_opt = get_type_annotation_from_label(self.snapshot, self.type_manager, label)
+                            .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+                        debug_assert_ne!(annotation_opt, None);
+                        debug_assert_eq!(tig.vertices[vertex], BTreeSet::from([annotation_opt.unwrap()]));
+                    }
+                }
+                Vertex::Parameter(_) => todo!(),
+            }
+        }
+        Ok(())
+    }
+
+    fn fixed_vertices<'conj>(
+        &self,
+        constraints: &'conj [Constraint<Variable>],
+    ) -> impl Iterator<Item = &'conj Vertex<Variable>> {
+        constraints.iter().flat_map(|con| con.vertices().filter(|v| !v.is_variable()))
+    }
+
+    fn local_variables<'a>(
         &'a self,
         context: &'a ScopeContext,
         conjunction_scope_id: ScopeId,
@@ -254,7 +289,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         tig: &mut TypeInferenceGraph<'_>,
         context: &ScopeContext,
     ) -> Result<bool, ConceptReadError> {
-        let unannotated_var = self.get_local_variables(context, tig.conjunction.scope_id()).find(|&var| {
+        let unannotated_var = self.local_variables(context, tig.conjunction.scope_id()).find(|&var| {
             let vertex = Vertex::Variable(var);
             !tig.vertices.contains_key(&vertex)
         });
