@@ -18,9 +18,9 @@ pub mod result;
 pub fn initialise_logging_global() {
     let filter = EnvFilter::from_default_env()
         .add_directive(LevelFilter::INFO.into())
-        .add_directive("database=trace".parse().unwrap())
-        .add_directive("server=trace".parse().unwrap())
-        .add_directive("storage=trace".parse().unwrap())
+        // .add_directive("database=trace".parse().unwrap())
+        // .add_directive("server=trace".parse().unwrap())
+        // .add_directive("storage=trace".parse().unwrap())
         // useful for debugging what tonic is doing:
         .add_directive("tonic=trace".parse().unwrap());
 
