@@ -8,12 +8,15 @@
 
 use std::{collections::HashMap, ops::Deref};
 
+use answer::{variable::Variable, Type};
 use ir::pattern::{
     constraint::{Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, IsaKind, SubKind},
-    IrID, Vertex,
+    IrID, ParameterID, Vertex,
 };
+use itertools::Itertools;
 
-use crate::match_::planner::pattern_plan::InstructionAPI;
+use super::inference::type_annotations::TypeAnnotations;
+use crate::{match_::planner::pattern_plan::InstructionAPI, VariablePosition};
 
 pub mod thing;
 pub mod type_;
@@ -269,17 +272,100 @@ impl<ID: IrID + Copy> InstructionAPI<ID> for ConstraintInstruction<ID> {
 }
 
 #[derive(Debug, Clone)]
+pub enum CheckVertex<ID> {
+    Variable(ID),
+    Type(Type),
+    Parameter(ParameterID),
+}
+
+impl CheckVertex<VariablePosition> {
+    pub(crate) fn resolve(vertex: Vertex<VariablePosition>, type_annotations: &TypeAnnotations) -> Self {
+        match vertex {
+            Vertex::Variable(var) => Self::Variable(var),
+            Vertex::Parameter(param) => Self::Parameter(param),
+            Vertex::Label(label) => Self::Type(
+                type_annotations
+                    .vertex_annotations_of(&Vertex::Label(label))
+                    .unwrap()
+                    .iter()
+                    .exactly_one()
+                    .unwrap()
+                    .clone(),
+            ),
+        }
+    }
+}
+
+impl<ID: IrID> CheckVertex<ID> {
+    /// Returns `true` if the check vertex is [`Variable`].
+    ///
+    /// [`Variable`]: CheckVertex::Variable
+    #[must_use]
+    pub fn is_variable(&self) -> bool {
+        matches!(self, Self::Variable(..))
+    }
+
+    pub fn as_variable(&self) -> Option<ID> {
+        if let &Self::Variable(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    /// Returns `true` if the check vertex is [`Type`].
+    ///
+    /// [`Type`]: CheckVertex::Type
+    #[must_use]
+    pub fn is_type(&self) -> bool {
+        matches!(self, Self::Type(..))
+    }
+
+    pub fn as_type(&self) -> Option<&Type> {
+        if let Self::Type(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    /// Returns `true` if the check vertex is [`Parameter`].
+    ///
+    /// [`Parameter`]: CheckVertex::Parameter
+    #[must_use]
+    pub fn is_parameter(&self) -> bool {
+        matches!(self, Self::Parameter(..))
+    }
+
+    pub fn as_parameter(&self) -> Option<ParameterID> {
+        if let &Self::Parameter(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> CheckVertex<T> {
+        match self {
+            Self::Variable(var) => CheckVertex::Variable(mapping[&var]),
+            Self::Type(type_) => CheckVertex::Type(type_),
+            Self::Parameter(param) => CheckVertex::Parameter(param),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum CheckInstruction<ID> {
-    Sub { sub_kind: SubKind, subtype: Vertex<ID>, supertype: Vertex<ID> },
-    Owns { owner: Vertex<ID>, attribute: Vertex<ID> },
-    Relates { relation: Vertex<ID>, role_type: Vertex<ID> },
-    Plays { player: Vertex<ID>, role_type: Vertex<ID> },
+    Sub { sub_kind: SubKind, subtype: CheckVertex<ID>, supertype: CheckVertex<ID> },
+    Owns { owner: CheckVertex<ID>, attribute: CheckVertex<ID> },
+    Relates { relation: CheckVertex<ID>, role_type: CheckVertex<ID> },
+    Plays { player: CheckVertex<ID>, role_type: CheckVertex<ID> },
 
-    Isa { isa_kind: IsaKind, type_: Vertex<ID>, thing: Vertex<ID> },
-    Has { owner: Vertex<ID>, attribute: Vertex<ID> },
-    Links { relation: Vertex<ID>, player: Vertex<ID>, role: Vertex<ID> },
+    Isa { isa_kind: IsaKind, type_: CheckVertex<ID>, thing: CheckVertex<ID> },
+    Has { owner: CheckVertex<ID>, attribute: CheckVertex<ID> },
+    Links { relation: CheckVertex<ID>, player: CheckVertex<ID>, role: CheckVertex<ID> },
 
-    Comparison { lhs: Vertex<ID>, rhs: Vertex<ID>, comparator: Comparator },
+    Comparison { lhs: CheckVertex<ID>, rhs: CheckVertex<ID>, comparator: Comparator },
 }
 
 impl<ID: IrID> CheckInstruction<ID> {

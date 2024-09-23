@@ -12,7 +12,7 @@ use std::{
 };
 
 use answer::{variable_value::VariableValue, Thing, Type};
-use compiler::match_::instructions::{CheckInstruction, ConstraintInstruction};
+use compiler::match_::instructions::{CheckInstruction, CheckVertex, ConstraintInstruction};
 use concept::{
     error::ConceptReadError,
     thing::{object::ObjectAPI, thing_manager::ThingManager},
@@ -649,9 +649,9 @@ impl<T: Hkt> Checker<T> {
                 CheckInstruction::Comparison { lhs, rhs, comparator } => {
                     let lhs_extractor = self.extractors[&lhs.as_variable().unwrap()];
                     let rhs = match rhs {
-                        &Vertex::Variable(pos) => row.get(pos).to_owned(),
-                        &Vertex::Parameter(param) => VariableValue::Value(context.parameters()[param].to_owned()),
-                        Vertex::Label(_) => unreachable!(),
+                        &CheckVertex::Variable(pos) => row.get(pos).to_owned(),
+                        &CheckVertex::Parameter(param) => VariableValue::Value(context.parameters()[param].to_owned()),
+                        CheckVertex::Type(_) => unreachable!(),
                     };
                     let snapshot = context.snapshot.clone();
                     let thing_manager = context.thing_manager.clone();
@@ -705,14 +705,14 @@ impl<T: Hkt> Checker<T> {
 }
 
 fn make_const_extractor<T: Hkt>(
-    vertex: &Vertex<VariablePosition>,
+    vertex: &CheckVertex<VariablePosition>,
     context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     row: &MaybeOwnedRow<'_>,
 ) -> Box<dyn for<'a> Fn(&'a <T as Hkt>::HktSelf<'_>) -> VariableValue<'a>> {
     let value = match vertex {
-        &Vertex::Variable(var) => row.get(var).to_owned(),
-        &Vertex::Parameter(param) => VariableValue::Value(context.parameters()[param].to_owned()),
-        Vertex::Label(_) => unreachable!(),
+        &CheckVertex::Variable(var) => row.get(var).to_owned(),
+        &CheckVertex::Parameter(param) => VariableValue::Value(context.parameters()[param].to_owned()),
+        CheckVertex::Type(type_) => VariableValue::Type(type_.clone()),
     };
     Box::new(move |_| value.clone())
 }
