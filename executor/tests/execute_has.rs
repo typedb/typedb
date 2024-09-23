@@ -5,10 +5,11 @@
  */
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
+use std::collections::BTreeMap;
 
 use compiler::{
     match_::{
-        inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
+        inference::{annotated_functions::IndexedAnnotatedFunctions},
         instructions::{
             thing::{HasInstruction, HasReverseInstruction, IsaReverseInstruction},
             ConstraintInstruction, Inputs,
@@ -20,6 +21,8 @@ use compiler::{
     },
     VariablePosition,
 };
+use compiler::match_::inference::annotated_functions::AnnotatedUnindexedFunctions;
+use compiler::match_::inference::type_inference::infer_types_for_match_block;
 use concept::{
     thing::object::ObjectAPI,
     type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
@@ -134,19 +137,18 @@ fn traverse_has_unbounded_sorted_from() {
     let _select = builder.add_select(vec!["person", "age"]).unwrap().clone();
     let entry = builder.finish();
 
-    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let (entry_annotations, _) = infer_types(
+    let entry_annotations = infer_types_for_match_block(
         &entry,
-        vec![],
-        &*snapshot,
-        &type_manager,
-        &IndexedAnnotatedFunctions::empty(),
         &translation_context.variable_registry,
-    )
-    .unwrap();
-
+        &snapshot,
+        &type_manager,
+        &BTreeMap::new(),
+        &IndexedAnnotatedFunctions::empty(),
+        &AnnotatedUnindexedFunctions::empty(),
+    ).unwrap();
     let vars = vec![var_person, var_age, var_age_type, var_person_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
@@ -166,6 +168,7 @@ fn traverse_has_unbounded_sorted_from() {
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
+    let snapshot = Arc::new(snapshot);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
@@ -216,17 +219,17 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.scoped_name().as_str()).unwrap();
     builder.add_limit(3);
 
-    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let snapshot = storage.clone().open_snapshot_read();
     let entry = builder.finish();
-    let (entry_annotations, _) = infer_types(
+    let entry_annotations = infer_types_for_match_block(
         &entry,
-        vec![],
-        &*snapshot,
-        &type_manager,
-        &IndexedAnnotatedFunctions::empty(),
         &translation_context.variable_registry,
-    )
-    .unwrap();
+        &snapshot,
+        &type_manager,
+        &BTreeMap::new(),
+        &IndexedAnnotatedFunctions::empty(),
+        &AnnotatedUnindexedFunctions::empty(),
+    ).unwrap();
 
     let vars = vec![var_person_1, var_person_type, var_person_2, var_name, var_name_type];
     let variable_positions =
@@ -264,6 +267,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
+    let snapshot = Arc::new(snapshot);
     let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
@@ -318,15 +322,15 @@ fn traverse_has_unbounded_sorted_from_intersect() {
 
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let (entry_annotations, _) = infer_types(
+    let entry_annotations = infer_types_for_match_block(
         &entry,
-        vec![],
+        &translation_context.variable_registry,
         &snapshot,
         &type_manager,
+        &BTreeMap::new(),
         &IndexedAnnotatedFunctions::empty(),
-        &translation_context.variable_registry,
-    )
-    .unwrap();
+        &AnnotatedUnindexedFunctions::empty(),
+    ).unwrap();
 
     let vars = vec![var_person, var_name, var_age, var_person_type, var_name_type, var_age_type];
     let variable_positions =
@@ -393,15 +397,15 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let (entry_annotations, _) = infer_types(
+    let entry_annotations = infer_types_for_match_block(
         &entry,
-        vec![],
+        &translation_context.variable_registry,
         &snapshot,
         &type_manager,
+        &BTreeMap::new(),
         &IndexedAnnotatedFunctions::empty(),
-        &translation_context.variable_registry,
-    )
-    .unwrap();
+        &AnnotatedUnindexedFunctions::empty(),
+    ).unwrap();
 
     let vars = vec![var_person, var_attribute, var_person_type];
     let variable_positions =
@@ -485,15 +489,15 @@ fn traverse_has_reverse_unbounded_sorted_from() {
 
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let (entry_annotations, _) = infer_types(
+    let entry_annotations = infer_types_for_match_block(
         &entry,
-        vec![],
+        &translation_context.variable_registry,
         &snapshot,
         &type_manager,
+        &BTreeMap::new(),
         &IndexedAnnotatedFunctions::empty(),
-        &translation_context.variable_registry,
-    )
-    .unwrap();
+        &AnnotatedUnindexedFunctions::empty(),
+    ).unwrap();
 
     let vars = vec![var_person, var_age, var_person_type, var_age_type];
     let variable_positions =

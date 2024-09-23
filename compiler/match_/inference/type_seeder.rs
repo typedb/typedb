@@ -16,7 +16,7 @@ use concept::{
     error::ConceptReadError,
     type_::{object_type::ObjectType, type_manager::TypeManager, OwnerAPI, PlayerAPI, TypeAPI},
 };
-use encoding::value::{value_type::ValueTypeCategory, ValueEncodable};
+use encoding::value::value_type::ValueTypeCategory;
 use ir::{
     pattern::{
         conjunction::Conjunction,
@@ -30,7 +30,7 @@ use ir::{
         Scope, ScopeId, Vertex,
     },
     program::{
-        block::{ParameterRegistry, ScopeContext, VariableRegistry},
+        block::{ScopeContext, VariableRegistry},
         function::Function,
         function_signature::FunctionID,
     },
@@ -1130,7 +1130,7 @@ impl BinaryConstraint for Comparison<Variable> {
             TypeAnnotation::Attribute(attribute) => {
                 attribute.get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
             }
-            _ => todo!("Error for expected attribute type"),
+            _ => unreachable!("Expected attribute type"),
         };
         if let Some(value_type) = right_value_type {
             let comparable_types = ValueTypeCategory::comparable_categories(value_type.category());

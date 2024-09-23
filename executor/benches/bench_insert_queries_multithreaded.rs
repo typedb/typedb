@@ -16,18 +16,18 @@ use std::{
 };
 
 use answer::variable_value::VariableValue;
-use compiler::{
-    match_::inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
-    VariablePosition,
-};
 use concept::{
-    thing::{object::ObjectAPI, thing_manager::ThingManager},
+    thing::{thing_manager::ThingManager},
     type_::{type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
 };
+use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use encoding::value::{label::Label, value_type::ValueType};
-use executor::{row::Row, write::WriteError};
-use ir::translation::TranslationContext;
+use executor::ExecutionInterrupt;
+use executor::pipeline::stage::{StageAPI, StageIterator};
+use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
+use query::error::QueryError;
+use query::query_manager::QueryManager;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot},
@@ -87,58 +87,41 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     snapshot.commit().unwrap();
 }
 
-fn execute_insert(
-    snapshot: &mut impl WritableSnapshot,
+fn execute_insert<Snapshot: WritableSnapshot + 'static>(
+    snapshot: Snapshot,
     type_manager: &TypeManager,
-    thing_manager: &ThingManager,
+    thing_manager: Arc<ThingManager>,
     query_str: &str,
-    input_row_var_names: &Vec<&str>,
-    input_rows: Vec<Vec<VariableValue<'static>>>,
-) -> Result<Vec<Vec<VariableValue<'static>>>, WriteError> {
-    let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_insert();
-    let mut translation_context = TranslationContext::new();
-    let block = ir::translation::writes::translate_insert(&mut translation_context, &typeql_insert).unwrap();
-    let input_row_format = input_row_var_names
-        .iter()
-        .enumerate()
-        .map(|(i, v)| (*translation_context.visible_variables.get(*v).unwrap(), VariablePosition::new(i as u32)))
-        .collect::<HashMap<_, _>>();
-    let (entry_annotations, _) = infer_types(
-        &block,
-        vec![],
+) -> Result<(Vec<HashMap<String, VariableValue<'static>>>, Snapshot), (QueryError, Snapshot)> {
+    let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline();
+    let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
+
+    let qm = QueryManager::new();
+    let (pipeline,outputs) = qm.prepare_write_pipeline(
         snapshot,
         type_manager,
-        &IndexedAnnotatedFunctions::empty(),
-        &translation_context.variable_registry,
-    )
-    .unwrap();
-
-    let insert_plan = compiler::insert::program::compile(
-        Arc::new(translation_context.variable_registry),
-        block.conjunction().constraints(),
-        &input_row_format,
-        &entry_annotations,
-    )
-    .unwrap();
-
-    let mut output_rows = Vec::with_capacity(input_rows.len());
-    let output_width = insert_plan.output_row_schema.len();
-    todo!();
-    // let insert_executor = InsertExecutor::new(insert_plan);
-    // for input_row in input_rows {
-    //     let mut output_multiplicity = 1;
-    //     output_rows.push(
-    //         (0..output_width)
-    //             .map(|i| input_row.get(i).map_or_else(|| VariableValue::Empty, |existing| existing.clone()))
-    //             .collect::<Vec<_>>(),
-    //     );
-    //     insert_executor.execute_insert(
-    //         snapshot,
-    //         thing_manager,
-    //         &mut Row::new(output_rows.last_mut().unwrap(), &mut output_multiplicity),
-    //     )?;
-    // }
-    Ok(output_rows)
+        thing_manager,
+        &function_manager,
+        &typeql_insert
+    ).map_err(|(snapshot,err)| (err, snapshot))?;
+    let (iter,ctx) = pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible())
+        .map_err(|(typedb_source, ctx)| (QueryError::WritePipelineExecutionError { typedb_source }, Arc::into_inner(ctx.snapshot).unwrap()))?;
+    let batch = match iter.collect_owned() {
+        Ok(batch) => batch,
+        Err(typedb_source) => {
+            return Err((QueryError::WritePipelineExecutionError { typedb_source }, Arc::into_inner(ctx.snapshot).unwrap()));
+        }
+    };
+    let mut collected = Vec::with_capacity(batch.len());
+    let mut row_iterator = batch.into_iterator();
+    while let Some(row) = row_iterator.next() {
+        let mut translated_row = HashMap::with_capacity(outputs.len());
+        for (name,pos) in &outputs {
+            translated_row.insert(name.clone(), row.get(pos.clone()).clone().into_owned());
+        }
+        collected.push(translated_row);
+    }
+    Ok((collected, Arc::into_inner(ctx.snapshot).unwrap()))
 }
 
 fn multi_threaded_inserts() {
@@ -166,15 +149,13 @@ fn multi_threaded_inserts() {
         thread::spawn(move || {
             drop(rw_lock_cloned.read().unwrap());
             for _ in 0..INTERNAL_ITERS {
-                let mut snapshot = storage_cloned.clone().open_snapshot_write();
+                let snapshot = storage_cloned.clone().open_snapshot_write();
                 let age: u32 = rand::random();
-                let _row = execute_insert(
-                    &mut snapshot,
+                let (_row, snapshot) = execute_insert(
+                    snapshot,
                     &type_manager_cloned,
-                    &thing_manager_cloned,
-                    &format!("insert $p isa person, has age {age};"),
-                    &vec![],
-                    vec![vec![]],
+                    thing_manager_cloned.clone(),
+                    &format!("insert $p isa person, has age {age};")
                 )
                 .unwrap();
                 snapshot.commit().unwrap();

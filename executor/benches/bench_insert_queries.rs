@@ -12,30 +12,25 @@ use std::{
     fs::File,
     path::Path,
     sync::{Arc, OnceLock},
-    vec,
 };
 
-use compiler::match_::inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types};
 use concept::{
     thing::thing_manager::ThingManager,
     type_::{type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
 };
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
 use encoding::value::{label::Label, value_type::ValueType};
-use executor::{
-    pipeline::{
-        initial::InitialStage,
-        insert::InsertStageExecutor,
-        stage::{ExecutionContext, StageAPI},
-        PipelineExecutionError,
-    },
-    row::MaybeOwnedRow,
-    write::WriteError,
-    ExecutionInterrupt,
-};
-use ir::translation::TranslationContext;
+use executor::ExecutionInterrupt;
 use lending_iterator::LendingIterator;
 use pprof::ProfilerGuard;
+use answer::variable_value::VariableValue;
+use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
+use executor::batch::Batch;
+use executor::pipeline::PipelineExecutionError;
+use executor::pipeline::stage::{StageAPI, StageIterator};
+use function::function_manager::FunctionManager;
+use query::error::QueryError;
+use query::query_manager::QueryManager;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot},
@@ -57,7 +52,6 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     setup_concept_storage(storage);
 
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let mut snapshot = storage.clone().open_snapshot_write();
     let mut snapshot = storage.clone().open_snapshot_write();
     let person_type = type_manager.create_entity_type(&mut snapshot, PERSON_LABEL.get().unwrap()).unwrap();
     let group_type = type_manager.create_entity_type(&mut snapshot, GROUP_LABEL.get().unwrap()).unwrap();
@@ -99,57 +93,39 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
 
 fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     snapshot: Snapshot,
-    type_manager: Arc<TypeManager>,
+    type_manager: &TypeManager,
     thing_manager: Arc<ThingManager>,
     query_str: &str,
-) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), WriteError> {
-    let mut translation_context = TranslationContext::new();
-    let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_insert();
-    let block = ir::translation::writes::translate_insert(&mut translation_context, &typeql_insert).unwrap();
-    let input_row_format = HashMap::new();
+) -> Result<(Vec<HashMap<String, VariableValue<'static>>>, Snapshot), (QueryError, Snapshot)> {
+    let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline();
+    let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
 
-    let (entry_annotations, _) = infer_types(
-        &block,
-        vec![],
-        &snapshot,
-        &type_manager,
-        &IndexedAnnotatedFunctions::empty(),
-        &translation_context.variable_registry,
-    )
-    .unwrap();
-
-    let variable_registry = Arc::new(translation_context.variable_registry);
-
-    let insert_plan = compiler::insert::program::compile(
-        variable_registry,
-        block.conjunction().constraints(),
-        &input_row_format,
-        &entry_annotations,
-    )
-    .unwrap();
-
-    println!("Insert Vertex:\n{:?}", &insert_plan.concept_instructions);
-    println!("Insert Edges:\n{:?}", &insert_plan.connection_instructions);
-
-    println!("Insert output row schema: {:?}", &insert_plan.output_row_schema);
-
-    let snapshot = Arc::new(snapshot);
-    let initial = InitialStage::new(ExecutionContext { snapshot, thing_manager, parameters: Arc::default() });
-    let insert_executor = InsertStageExecutor::new(insert_plan, initial);
-    let (output_iter, context) =
-        insert_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match err {
-            PipelineExecutionError::WriteError { typedb_source } => typedb_source,
-            _ => unreachable!(),
-        })?;
-    let output_rows = output_iter
-        .map_static(|res| res.map(|row| row.into_owned()))
-        .into_iter()
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|err| match err {
-            PipelineExecutionError::WriteError { typedb_source } => typedb_source,
-            _ => unreachable!(),
-        })?;
-    Ok((output_rows, Arc::into_inner(context.snapshot).unwrap()))
+    let qm = QueryManager::new();
+    let (pipeline,outputs) = qm.prepare_write_pipeline(
+        snapshot,
+        type_manager,
+        thing_manager,
+        &function_manager,
+        &typeql_insert
+    ).map_err(|(snapshot,err)| (err, snapshot))?;
+    let (iter,ctx) = pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible())
+        .map_err(|(typedb_source, ctx)| (QueryError::WritePipelineExecutionError { typedb_source }, Arc::into_inner(ctx.snapshot).unwrap()))?;
+    let mut batch = match iter.collect_owned() {
+        Ok(batch) => batch,
+        Err(typedb_source) => {
+            return Err((QueryError::WritePipelineExecutionError { typedb_source }, Arc::into_inner(ctx.snapshot).unwrap()));
+        }
+    };
+    let mut collected = Vec::with_capacity(batch.len());
+    let mut row_iterator = batch.into_iterator();
+    while let Some(row) = row_iterator.next() {
+        let mut translated_row = HashMap::with_capacity(outputs.len());
+        for (name,pos) in &outputs {
+            translated_row.insert(name.clone(), row.get(pos.clone()).clone().into_owned());
+        }
+        collected.push(translated_row);
+    }
+    Ok((collected, Arc::into_inner(ctx.snapshot).unwrap()))
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
@@ -177,7 +153,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             let age: u32 = rand::random();
             let (_, snapshot) = execute_insert(
                 snapshot,
-                type_manager.clone(),
+                &type_manager,
                 thing_manager.clone(),
                 &format!("insert $p isa person, has age {age};"),
             )

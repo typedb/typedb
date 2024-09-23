@@ -177,28 +177,3 @@ pub async fn get_declaring_owners_contain(
         contains.check(&expected_labels, &actual_labels);
     });
 }
-
-// #[apply(generic_step)]
-// #[step(expr = "attribute\\({type_label}\\)) get owners, with annotations: {annotations}; contain:")]
-// pub async fn TODO(context: &mut Context, type_label: params::Label, ...) { todo!(); }
-// #[apply(generic_step)]
-// #[step(expr = "attribute\\({type_label}\\)) get owners, with annotations: {annotations}; do not contain:")]
-// pub async fn TODO(context: &mut Context, type_label: params::Label, ...) { todo!(); }
-// #[apply(generic_step)]
-// #[step(expr = "attribute\\({type_label}\\)) get owners explicit, with annotations: {annotations}; contain:")]
-// pub async fn TODO(context: &mut Context, type_label: params::Label, ...) { todo!(); }
-//
-// #[apply(generic_step)]
-// #[step(expr = "attribute\\({type_label}\\)) get owners explicit, with annotations: {annotations}; do not contain:")]
-// pub async fn TODO(context: &mut Context, type_label: params::Label, ...) { todo!(); }
-// #[apply(generic_step)]
-// #[step(expr = "attribute\\({type_label}\\)) get owners contain:")]
-// pub async fn TODO(context: &mut Context, type_label: params::Label, ...) { todo!(); }
-// #[apply(generic_step)]
-// #[step(expr = "attribute\\({type_label}\\)) get owners do not contain:")]
-// pub async fn TODO(context: &mut Context, type_label: params::Label, ...) { todo!(); }
-// #[apply(generic_step)]
-// #[step(expr = "attribute\\({type_label}\\)) get owners explicit contain:")]
-// pub async fn TODO(context: &mut Context, type_label: params::Label, ...) { todo!(); }
-// #[step(expr = "attribute\\({type_label}\\)) get owners explicit do not contain:")]
-// pub async fn TODO(context: &mut Context, type_label: params::Label, ...) { todo!(); }
