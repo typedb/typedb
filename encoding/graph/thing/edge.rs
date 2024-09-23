@@ -297,7 +297,7 @@ impl<'a> ThingEdgeHasReverse<'a> {
         Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + self.from_length()
     }
 
-    #[allow(clippy::wrong_self_convention)] // `from` refers to the edge's source vertex
+    #[allow(clippy::wrong_self_convention, reason = "`from` refers to the edge's source vertex")]
     fn from_length(&self) -> usize {
         let byte = self.bytes.bytes()[Self::INDEX_FROM_PREFIX];
         let prefix = PrefixID::new([byte]);
