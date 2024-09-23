@@ -28,6 +28,7 @@
 
 <details>
   <summary> <b>Table of contents</b> <i>(Overview)</i> </summary>
+
 * [Introduction](#introduction)
 * [The type system](#the-type-system)
     * [Grammar and notations](#grammar-and-notations)
@@ -57,11 +58,13 @@
     * [TypeQL syntax](#typeql-syntax)
     * [Syntactic Sugar](#syntactic-sugar)
     * [Typing of operators](#typing-of-operators)
+
 </details>
 
 
 <details>
   <summary> <b>Table of contents</b> <i>(Detailed)</i> </summary>
+
 * [Introduction](#introduction)
 * [The type system](#the-type-system)
     * [Grammar and notations](#grammar-and-notations)
@@ -330,6 +333,7 @@
         * [Suffix](#suffix)
     * [Syntactic Sugar](#syntactic-sugar)
     * [Typing of operators](#typing-of-operators)
+
 </details>
 
 # Introduction
