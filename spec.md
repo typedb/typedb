@@ -366,7 +366,7 @@ We discuss the grammar for statements relating to types, and explain them in nat
   $`A : \mathbf{Kind}`$ to mean the statement:
   > $`A`$ is a type of kind $`\mathbf{Kind}`$. 
 
-  The type system the following cases of **type kinds**:
+  The type system allows six cases of **type kinds**:
     * $`\mathbf{Ent}`$ (collection of **entity types**)
     * $`\mathbf{Rel}`$ (collection of **relation types**)
     * $`\mathbf{Att}`$ (collection of **attribute types**)
@@ -376,7 +376,7 @@ We discuss the grammar for statements relating to types, and explain them in nat
 
   _Example_: $`\mathsf{Person} : \mathbf{Ent}`$ means $`\mathsf{Person}`$ an entity type.
 
-* **Combined kinds notation**
+* **Combined kinds notation**. The following are useful abbreviations:
   * $`\mathbf{Obj} = \mathbf{Ent} + \mathbf{Rel}`$ (collection of **object types**)
   * $`\mathbf{ERA} = \mathbf{Obj} + \mathbf{Att}`$ (collection of **ERA types**)
   * $`\mathbf{Schema} = \mathbf{ERA} + \mathbf{Itf}`$ (collection of **schema types**)
@@ -402,7 +402,7 @@ We discuss the grammar for statements relating to dependent types, and explain t
 * **Dependent type kinds**. We write $`A : \mathbf{Kind}(I,J,...)`$ to mean:
   > $`A`$ is a type of kind $`\mathbf{Kind}`$ with **interface types** $`I, J, ...`$.
 
-  The type system the following cases of **dependent type kinds**:
+  The type system allows two cases of **dependent type kinds**:
     * $`\mathbf{Att}`$ (collection of **attribute types**)
         * Attribute interfaces are called **ownership types**
     * $`\mathbf{Rel}`$ (collection of **relation types**)
@@ -582,17 +582,24 @@ This section describes valid declarations of _types_ and axioms relating types (
 
 ## Basics of schemas
 
-* ✅ Kinds of definition clauses:
+### (Theory) Clauses and execution
+
+* Kinds of definition clauses:
   * `define`: adds **schema type axioms** or **schema constraints**
   * `undefine`: removes axioms or constraints
   * `redefine`: both removes and adds axioms or constraints
-* ✅ Loose categories for the main schema components:
+* Loose categories for the main schema components:
   * **Type axioms**: comprises user-defined axioms for the type system (types, subtypes, dependencies).
   * **Constraints**: postulated constraints that the database needs to satisfy.
   * **Triggers**: actions to be executed based on database changes (_Note_: to be renamed)
   * **Value types**: types for primitive and structured values.
   * **Functions**: parametrized query templates ("pre-defined logic")
-* ✅ For execution and validation of definitions see "Transactionality" section
+* Execution:
+  * Each statement in a single clause is executed as described in this section (this, e.g., adds or removes statements from the type system)
+  * By the end of the clause (up to automatic clean-up operation) the type system must be in a valid state, otherwise the clause is rejected
+
+### (Feature) Pipelines and match-define's
+
 * 🔮 Definition clauses can be pipelined:
   * _Example_: 
     ```
