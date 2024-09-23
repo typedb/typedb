@@ -28,7 +28,6 @@
 
 <details>
   <summary> <b>Table of contents</b> <i>(Overview)</i> </summary>
-
 * [Introduction](#introduction)
 * [The type system](#the-type-system)
     * [Grammar and notations](#grammar-and-notations)
@@ -49,23 +48,20 @@
     * [Update semantics](#update-semantics)
     * [Put semantics](#put-semantics)
 * [Query execution principles](#query-execution-principles)
-    * [Pipelines](#pipelines)
+    * [Basics: Pipelines, clauses, operators, streams](#basics-pipelines-clauses-operators-streams)
+    * [Clauses (match, insert, delete, update, put, fetch)](#clauses-match-insert-delete-update-put-fetch)
+    * [Operators (select, distinct, sort, limit, offset, reduce)](#operators-select-distinct-sort-limit-offset-reduce)
     * [Transactions](#transactions)
 * [Glossary](#glossary)
     * [Type system](#type-system)
     * [TypeQL syntax](#typeql-syntax)
     * [Syntactic Sugar](#syntactic-sugar)
     * [Typing of operators](#typing-of-operators)
-
 </details>
 
 
 <details>
   <summary> <b>Table of contents</b> <i>(Detailed)</i> </summary>
-
-
-<!-- vim-markdown-toc GFM -->
-
 * [Introduction](#introduction)
 * [The type system](#the-type-system)
     * [Grammar and notations](#grammar-and-notations)
@@ -334,8 +330,6 @@
         * [Suffix](#suffix)
     * [Syntactic Sugar](#syntactic-sugar)
     * [Typing of operators](#typing-of-operators)
-
-<!-- vim-markdown-toc -->
 </details>
 
 # Introduction
