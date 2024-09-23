@@ -45,7 +45,6 @@ pub(super) enum AnnotatedStage {
         block: FunctionalBlock,
         block_annotations: TypeAnnotations,
         compiled_expressions: HashMap<Variable, CompiledExpression>,
-        variable_value_types: HashMap<Variable, ExpressionValueType>,
     },
     Insert {
         block: FunctionalBlock,
@@ -67,7 +66,7 @@ pub(super) fn infer_types_for_pipeline(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     schema_function_annotations: &IndexedAnnotatedFunctions,
-    variable_registry: &VariableRegistry,
+    variable_registry: &mut VariableRegistry,
     parameters: &ParameterRegistry,
     translated_preamble: Vec<Function>,
     translated_stages: Vec<TranslatedStage>,
@@ -111,7 +110,7 @@ pub(super) fn infer_types_for_pipeline(
 
 fn annotate_stage(
     running_variable_annotations: &mut BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    variable_registry: &VariableRegistry,
+    variable_registry: &mut VariableRegistry,
     parameters: &ParameterRegistry,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
@@ -137,10 +136,10 @@ fn annotate_stage(
                     running_variable_annotations.insert(k, v.clone());
                 }
             });
-            let (compiled_expressions, variable_value_types) =
+            let compiled_expressions =
                 compile_expressions(snapshot, type_manager, &block, variable_registry, parameters, &block_annotations)
                     .map_err(|source| QueryError::ExpressionCompilation { source })?;
-            Ok(AnnotatedStage::Match { block, block_annotations, compiled_expressions, variable_value_types })
+            Ok(AnnotatedStage::Match { block, block_annotations, compiled_expressions })
         }
         TranslatedStage::Insert { block } => {
             let insert_annotations = infer_types_for_match_block(

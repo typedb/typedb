@@ -56,6 +56,9 @@ pub enum ExpressionCompileError {
     ExpectedSingleWasList,
     ExpectedListWasSingle,
     EmptyListConstructorCannotInferValueType,
+    DerivedConflictingVariableCategory {
+        variable_name: String, derived_category: VariableCategory, existing_category: VariableCategory
+    },
 }
 
 impl Display for ExpressionCompileError {
@@ -77,6 +80,7 @@ impl Error for ExpressionCompileError {
             | Self::VariableDidNotHaveSingleValueType { .. }
             | Self::VariableHasNoValueType { .. }
             | Self::VariableMustBeValueOrAttribute { .. }
+            | Self::DerivedConflictingVariableCategory { .. }
             | Self::UnsupportedArgumentsForBuiltin
             | Self::ListIndexMustBeLong
             | Self::HeterogenousValuesInList
