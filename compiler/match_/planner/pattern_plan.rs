@@ -36,7 +36,7 @@ use crate::{
                 OwnsInstruction, OwnsReverseInstruction, PlaysInstruction, PlaysReverseInstruction, RelatesInstruction,
                 RelatesReverseInstruction, SubInstruction, SubReverseInstruction, TypeListInstruction,
             },
-            CheckInstruction, ConstraintInstruction, Inputs,
+            CheckInstruction, CheckVertex, ConstraintInstruction, Inputs,
         },
         planner::vertex::{
             ComparisonPlanner, Costed, Direction, HasPlanner, Input, IsaPlanner, LabelPlanner, LinksPlanner,
@@ -357,7 +357,7 @@ impl<'a> PlanBuilder<'a> {
 struct ProgramBuilder {
     sort_variable: Option<Variable>,
     instructions: Vec<ConstraintInstruction<VariablePosition>>,
-    last_output: Option<u32>,
+    output_width: Option<u32>,
 }
 
 impl ProgramBuilder {
@@ -366,8 +366,8 @@ impl ProgramBuilder {
         Program::Intersection(IntersectionProgram::new(
             sort_variable,
             self.instructions,
-            &(0..self.last_output.unwrap()).map(VariablePosition::new).collect_vec(),
-            self.last_output.unwrap(),
+            &(0..self.output_width.unwrap()).map(VariablePosition::new).collect_vec(),
+            self.output_width.unwrap(),
         ))
     }
 }
@@ -419,7 +419,7 @@ impl MatchProgramBuilder {
 
     fn finish_one(&mut self) {
         if !self.current.instructions.is_empty() {
-            self.current.last_output = Some(self.outputs.len() as u32);
+            self.current.output_width = Some(self.outputs.len() as u32);
             self.programs.push(mem::take(&mut self.current));
         }
     }
@@ -490,7 +490,11 @@ fn lower_plan(
                     let lhs_pos = lhs.clone().map(match_builder.position_mapping());
                     let rhs_pos = rhs.clone().map(match_builder.position_mapping());
                     match_builder.get_program_mut(program).instructions[instruction]
-                        .add_check(CheckInstruction::$fw { $lhs: lhs_pos, $rhs: rhs_pos, $($with: $con.$with())? });
+                        .add_check(CheckInstruction::$fw {
+                            $lhs: CheckVertex::resolve(lhs_pos, type_annotations),
+                            $rhs: CheckVertex::resolve(rhs_pos, type_annotations),
+                            $($with: $con.$with(),)?
+                        });
                     continue;
                 }
 
@@ -500,6 +504,10 @@ fn lower_plan(
                             lhs
                         } else if inputs.contains(&lhs) {
                             rhs
+                        } else if match_builder.current.sort_variable == lhs_var {
+                            lhs
+                        } else if match_builder.current.sort_variable == rhs_var {
+                             rhs
                         } else if planner.unbound_direction() == Direction::Canonical {
                             lhs
                         } else {
@@ -589,14 +597,24 @@ fn lower_plan(
                     let player_pos = match_builder.position(player).into();
                     let role_pos = match_builder.position(role).into();
                     match_builder.get_program_mut(program).instructions[instruction].add_check(
-                        CheckInstruction::Links { relation: relation_pos, player: player_pos, role: role_pos },
+                        CheckInstruction::Links {
+                            relation: CheckVertex::resolve(relation_pos, type_annotations),
+                            player: CheckVertex::resolve(player_pos, type_annotations),
+                            role: CheckVertex::resolve(role_pos, type_annotations),
+                        },
                     );
                     continue;
                 }
 
-                let sort_variable = if inputs.is_empty() && planner.unbound_direction() == Direction::Canonical
-                    || inputs.contains(&player)
-                {
+                let sort_variable = if inputs.contains(&player) {
+                    relation
+                } else if inputs.contains(&relation) {
+                    player
+                } else if match_builder.current.sort_variable == Some(relation) {
+                    relation
+                } else if match_builder.current.sort_variable == Some(player) {
+                    player
+                } else if planner.unbound_direction() == Direction::Canonical {
                     relation
                 } else {
                     player
@@ -655,8 +673,13 @@ fn lower_plan(
                     };
                     let lhs_pos = lhs.clone().map(match_builder.position_mapping());
                     let rhs_pos = rhs.clone().map(match_builder.position_mapping());
-                    match_builder.get_program_mut(program).instructions[instruction]
-                        .add_check(CheckInstruction::Comparison { lhs: lhs_pos, rhs: rhs_pos, comparator });
+                    match_builder.get_program_mut(program).instructions[instruction].add_check(
+                        CheckInstruction::Comparison {
+                            lhs: CheckVertex::resolve(lhs_pos, type_annotations),
+                            rhs: CheckVertex::resolve(rhs_pos, type_annotations),
+                            comparator,
+                        },
+                    );
                     continue;
                 }
                 todo!()

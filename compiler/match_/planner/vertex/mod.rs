@@ -16,7 +16,7 @@ use ir::pattern::{
     constraint::{Comparison, Has, Links, SubKind},
     Vertex,
 };
-use itertools::Itertools;
+use itertools::{chain, Itertools};
 
 use crate::match_::inference::type_annotations::TypeAnnotations;
 
@@ -374,6 +374,13 @@ impl ThingPlanner {
 
 impl Costed for ThingPlanner {
     fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
+        let bounds = chain!(&self.bound_value_equal, &self.bound_value_above, &self.bound_value_below).collect_vec();
+        for &i in inputs {
+            if !bounds.contains(&&Input::Variable(i)) {
+                return VertexCost::default();
+            }
+        }
+
         let per_input = OPEN_ITERATOR_RELATIVE_COST;
         let per_output = ADVANCE_ITERATOR_RELATIVE_COST;
         let mut branching_factor = self.expected_size;

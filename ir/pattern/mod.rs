@@ -73,6 +73,14 @@ impl<ID: IrID> Vertex<ID> {
         }
     }
 
+    pub fn as_label(&self) -> Option<&Label<'static>> {
+        if let Self::Label(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
     pub fn as_parameter(&self) -> Option<ParameterID> {
         if let &Self::Parameter(v) = self {
             Some(v)
