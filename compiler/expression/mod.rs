@@ -57,7 +57,9 @@ pub enum ExpressionCompileError {
     ExpectedListWasSingle,
     EmptyListConstructorCannotInferValueType,
     DerivedConflictingVariableCategory {
-        variable_name: String, derived_category: VariableCategory, existing_category: VariableCategory
+        variable_name: String,
+        derived_category: VariableCategory,
+        existing_category: VariableCategory,
     },
 }
 

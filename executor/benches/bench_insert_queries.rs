@@ -14,23 +14,28 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
+use answer::variable_value::VariableValue;
 use concept::{
     thing::thing_manager::ThingManager,
     type_::{type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
 };
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
-use encoding::value::{label::Label, value_type::ValueType};
-use executor::ExecutionInterrupt;
+use encoding::{
+    graph::definition::definition_key_generator::DefinitionKeyGenerator,
+    value::{label::Label, value_type::ValueType},
+};
+use executor::{
+    batch::Batch,
+    pipeline::{
+        stage::{StageAPI, StageIterator},
+        PipelineExecutionError,
+    },
+    ExecutionInterrupt,
+};
+use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use pprof::ProfilerGuard;
-use answer::variable_value::VariableValue;
-use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
-use executor::batch::Batch;
-use executor::pipeline::PipelineExecutionError;
-use executor::pipeline::stage::{StageAPI, StageIterator};
-use function::function_manager::FunctionManager;
-use query::error::QueryError;
-use query::query_manager::QueryManager;
+use query::{error::QueryError, query_manager::QueryManager};
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot},
@@ -101,26 +106,27 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
 
     let qm = QueryManager::new();
-    let (pipeline,outputs) = qm.prepare_write_pipeline(
-        snapshot,
-        type_manager,
-        thing_manager,
-        &function_manager,
-        &typeql_insert
-    ).map_err(|(snapshot,err)| (err, snapshot))?;
-    let (iter,ctx) = pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible())
-        .map_err(|(typedb_source, ctx)| (QueryError::WritePipelineExecutionError { typedb_source }, Arc::into_inner(ctx.snapshot).unwrap()))?;
+    let (pipeline, outputs) = qm
+        .prepare_write_pipeline(snapshot, type_manager, thing_manager, &function_manager, &typeql_insert)
+        .map_err(|(snapshot, err)| (err, snapshot))?;
+    let (iter, ctx) =
+        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(typedb_source, ctx)| {
+            (QueryError::WritePipelineExecutionError { typedb_source }, Arc::into_inner(ctx.snapshot).unwrap())
+        })?;
     let mut batch = match iter.collect_owned() {
         Ok(batch) => batch,
         Err(typedb_source) => {
-            return Err((QueryError::WritePipelineExecutionError { typedb_source }, Arc::into_inner(ctx.snapshot).unwrap()));
+            return Err((
+                QueryError::WritePipelineExecutionError { typedb_source },
+                Arc::into_inner(ctx.snapshot).unwrap(),
+            ));
         }
     };
     let mut collected = Vec::with_capacity(batch.len());
     let mut row_iterator = batch.into_iterator();
     while let Some(row) = row_iterator.next() {
         let mut translated_row = HashMap::with_capacity(outputs.len());
-        for (name,pos) in &outputs {
+        for (name, pos) in &outputs {
             translated_row.insert(name.clone(), row.get(pos.clone()).clone().into_owned());
         }
         collected.push(translated_row);

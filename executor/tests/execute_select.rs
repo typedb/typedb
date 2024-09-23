@@ -4,12 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, collections::HashMap, sync::Arc};
-use std::collections::BTreeMap;
+use std::{
+    borrow::Cow,
+    collections::{BTreeMap, HashMap},
+    sync::Arc,
+};
 
 use compiler::{
     match_::{
-        inference::{annotated_functions::IndexedAnnotatedFunctions},
+        inference::{
+            annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+            type_inference::infer_types_for_match_block,
+        },
         instructions::{thing::HasInstruction, ConstraintInstruction, Inputs},
         planner::{
             pattern_plan::{IntersectionProgram, MatchProgram, Program},
@@ -18,8 +24,6 @@ use compiler::{
     },
     VariablePosition,
 };
-use compiler::match_::inference::annotated_functions::AnnotatedUnindexedFunctions;
-use compiler::match_::inference::type_inference::infer_types_for_match_block;
 use concept::{
     thing::object::ObjectAPI,
     type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
@@ -172,7 +176,8 @@ fn anonymous_vars_not_enumerated_or_counted() {
             &BTreeMap::new(),
             &IndexedAnnotatedFunctions::empty(),
             &AnnotatedUnindexedFunctions::empty(),
-        ).unwrap()
+        )
+        .unwrap()
     };
 
     let vars = vec![var_attribute, var_person, var_attribute_type, var_person_type];
@@ -253,7 +258,8 @@ fn unselected_named_vars_counted() {
             &BTreeMap::new(),
             &IndexedAnnotatedFunctions::empty(),
             &AnnotatedUnindexedFunctions::empty(),
-        ).unwrap()
+        )
+        .unwrap()
     };
 
     let vars = vec![var_person, var_attribute, var_attribute_type, var_person_type];
@@ -346,7 +352,8 @@ fn cartesian_named_counted_checked() {
             &BTreeMap::new(),
             &IndexedAnnotatedFunctions::empty(),
             &AnnotatedUnindexedFunctions::empty(),
-        ).unwrap()
+        )
+        .unwrap()
     };
 
     let vars =

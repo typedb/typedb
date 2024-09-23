@@ -8,12 +8,17 @@ use std::collections::{HashMap, HashSet};
 
 use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
-use ir::{pattern::{
-    conjunction::Conjunction, nested_pattern::NestedPattern,
-    variable_category::VariableCategory, Vertex,
-}, program::block::{FunctionalBlock, ParameterRegistry, VariableRegistry}};
+use ir::{
+    pattern::{
+        conjunction::Conjunction,
+        constraint::{Constraint, ExpressionBinding},
+        nested_pattern::NestedPattern,
+        variable_category::VariableCategory,
+        Vertex,
+    },
+    program::block::{FunctionalBlock, ParameterRegistry, VariableRegistry},
+};
 use itertools::Itertools;
-use ir::pattern::constraint::{Constraint, ExpressionBinding};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{

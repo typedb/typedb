@@ -4,14 +4,17 @@
 * file, You can obtain one at https://mozilla.org/MPL/2.0/.
 */
 
-use std::{collections::HashMap, sync::Arc, vec};
-use std::collections::BTreeMap;
+use std::{
+    collections::{BTreeMap, HashMap},
+    sync::Arc,
+    vec,
+};
 
 use answer::variable_value::VariableValue;
 use compiler::{
     match_::inference::{
-        type_inference::infer_types_for_match_block,
         annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+        type_inference::infer_types_for_match_block,
     },
     VariablePosition,
 };
