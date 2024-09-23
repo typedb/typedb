@@ -9,6 +9,7 @@ use std::{
     collections::{BTreeMap, HashMap},
     sync::Arc,
 };
+use std::collections::HashSet;
 
 use compiler::{
     match_::{
@@ -138,7 +139,7 @@ fn traverse_has_unbounded_sorted_from() {
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.scoped_name().as_str()).unwrap();
     builder.add_limit(3);
-    let _select = builder.add_select(vec!["person", "age"]).unwrap().clone();
+    let _select = builder.add_select(HashSet::from([var_person.clone(), var_age.clone()]));
     let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
@@ -322,7 +323,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.scoped_name().as_str()).unwrap();
     builder.add_limit(3);
-    let _select = builder.add_select(vec!["person", "age"]).unwrap().clone();
+    let _select = builder.add_select(HashSet::from([var_person.clone(), var_age.clone()]));
 
     let entry = builder.finish();
 

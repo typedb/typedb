@@ -24,6 +24,8 @@ use crate::{
     program::modifier::{Limit, Modifier, ModifierDefinitionError, Offset, Select, Sort},
     PatternDefinitionError,
 };
+use crate::program::function::Reducer;
+use crate::program::reduce::Reduce;
 
 // A functional block is exactly 1 Conjunction + any number of modifiers
 
@@ -108,16 +110,16 @@ impl<'reg> FunctionalBlockBuilder<'reg> {
         self.modifiers.push(Modifier::Offset(Offset::new(offset)))
     }
 
-    pub fn add_sort(&mut self, sort_variables: Vec<(&str, bool)>) -> Result<&Modifier, ModifierDefinitionError> {
-        let sort = Sort::new(sort_variables, self.context.variable_names_index)?;
+    pub fn add_sort(&mut self, sort_variables: Vec<(Variable, bool)>) -> &Modifier {
+        let sort = Sort::new(sort_variables);
         self.modifiers.push(Modifier::Sort(sort));
-        Ok(self.modifiers.last().unwrap())
+        self.modifiers.last().unwrap()
     }
 
-    pub fn add_select(&mut self, variables: Vec<&str>) -> Result<&Modifier, ModifierDefinitionError> {
-        let select = Select::new(variables, self.context.variable_names_index)?;
+    pub fn add_select(&mut self, variables: HashSet<Variable>) -> &Modifier {
+        let select = Select::new(variables);
         self.modifiers.push(Modifier::Select(select));
-        Ok(self.modifiers.last().unwrap())
+        self.modifiers.last().unwrap()
     }
 }
 
@@ -125,7 +127,7 @@ impl<'reg> FunctionalBlockBuilder<'reg> {
 pub struct VariableRegistry {
     variable_names: HashMap<Variable, String>,
     variable_id_allocator: u16,
-    variable_categories: HashMap<Variable, (VariableCategory, Constraint<Variable>)>,
+    variable_categories: HashMap<Variable, (VariableCategory, VariableCategorySource)>,
     variable_optionality: HashMap<Variable, VariableOptionality>,
 }
 
@@ -162,14 +164,14 @@ impl VariableRegistry {
         category: VariableCategory,
         source: Constraint<Variable>,
     ) -> Result<(), PatternDefinitionError> {
-        self.set_variable_category(variable, category, source)
+        self.set_variable_category(variable, category, VariableCategorySource::Constraint(source))
     }
 
     fn set_variable_category(
         &mut self,
         variable: Variable,
         category: VariableCategory,
-        source: Constraint<Variable>,
+        source: VariableCategorySource,
     ) -> Result<(), PatternDefinitionError> {
         let existing_category = self.variable_categories.get_mut(&variable);
         match existing_category {
@@ -234,6 +236,21 @@ impl VariableRegistry {
             VariableOptionality::Optional => true,
         }
     }
+
+    // TODO: This is out of place
+    pub(crate) fn register_reduce_output_variable(&mut self, name: &str, category: VariableCategory, is_optional: bool, reducer: Reducer<Variable>) -> Variable {
+        let variable = self.register_variable_named(name.to_owned());
+        self.set_variable_category(variable.clone(), category, VariableCategorySource::Reduce(reducer))
+            .unwrap(); // We just created the variable. It cannot error
+        self.set_variable_is_optional(variable.clone(), is_optional);
+        variable
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum VariableCategorySource {
+    Constraint(Constraint<Variable>),
+    Reduce(Reducer<Variable>),
 }
 
 #[derive(Clone, Debug, Default)]
@@ -403,7 +420,7 @@ impl<'a> BlockContext<'a> {
         source: Constraint<Variable>,
     ) -> Result<(), PatternDefinitionError> {
         self.record_variable_reference(variable.clone());
-        self.variable_registry.set_variable_category(variable, category, source)
+        self.variable_registry.set_variable_category(variable, category, VariableCategorySource::Constraint(source))
     }
 
     pub(crate) fn record_variable_reference(&mut self, variable: Variable) {

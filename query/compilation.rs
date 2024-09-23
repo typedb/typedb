@@ -16,12 +16,14 @@ use compiler::{
     modifiers::{LimitProgram, OffsetProgram, SelectProgram, SortProgram},
     VariablePosition,
 };
+use compiler::modifiers::ReduceProgram;
 use concept::thing::statistics::Statistics;
 use ir::program::{
     block::VariableRegistry,
     function::Function,
     modifier::{Limit, Offset, Select, Sort},
 };
+use ir::program::function::Reducer;
 
 use crate::{annotation::AnnotatedStage, error::QueryError};
 
@@ -45,6 +47,7 @@ pub enum CompiledStage {
     Sort(SortProgram),
     Offset(OffsetProgram),
     Limit(LimitProgram),
+    Reduce(ReduceProgram),
 }
 
 impl CompiledStage {
@@ -68,6 +71,7 @@ impl CompiledStage {
             CompiledStage::Sort(program) => program.output_row_mapping.clone(),
             CompiledStage::Offset(program) => program.output_row_mapping.clone(),
             CompiledStage::Limit(program) => program.output_row_mapping.clone(),
+            CompiledStage::Reduce(program) => program.output_row_mapping.clone(),
         }
     }
 }
@@ -157,6 +161,30 @@ fn compile_stage(
         })),
         AnnotatedStage::Limit(limit) => {
             Ok(CompiledStage::Limit(LimitProgram { limit: limit.limit(), output_row_mapping: input_variables.clone() }))
+        }
+        AnnotatedStage::Reduce(reduce) => {
+            let mut output_row_mapping = HashMap::new();
+            let mut input_group_positions = Vec::with_capacity(reduce.within_group.len());
+            for variable in reduce.within_group.iter() {
+                output_row_mapping.insert(
+                    variable.clone(),
+                    VariablePosition::new(input_group_positions.len() as u32)
+                );
+                input_group_positions.push(input_variables.get(variable).unwrap().clone());
+            }
+            let mut reduction_inputs = Vec::with_capacity(reduce.assigned_reductions.len());
+            for (assigned_variable, reducer) in reduce.assigned_reductions.iter() {
+                output_row_mapping.insert(
+                    assigned_variable.clone(),
+                    VariablePosition::new((input_group_positions.len() + reduction_inputs.len()) as u32)
+                );
+                let reducer = match reducer {
+                    Reducer::Count(variable) => Reducer::Count(input_variables.get(variable).unwrap().clone()),
+                    Reducer::Sum(variable) => Reducer::Sum(input_variables.get(variable).unwrap().clone()),
+                };
+                reduction_inputs.push(reducer);
+            }
+            Ok(CompiledStage::Reduce(ReduceProgram { reduction_inputs, input_group_positions, output_row_mapping }))
         }
     }
 }

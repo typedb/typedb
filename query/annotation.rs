@@ -31,6 +31,7 @@ use ir::{
         modifier::{Limit, Offset, Select, Sort},
     },
 };
+use ir::program::reduce::Reduce;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{error::QueryError, translation::TranslatedStage};
@@ -60,6 +61,7 @@ pub(super) enum AnnotatedStage {
     Sort(Sort),
     Offset(Offset),
     Limit(Limit),
+    Reduce(Reduce),
 }
 
 pub(super) fn infer_types_for_pipeline(
@@ -201,5 +203,6 @@ fn annotate_stage(
         TranslatedStage::Filter(select) => Ok(AnnotatedStage::Filter(select)),
         TranslatedStage::Offset(offset) => Ok(AnnotatedStage::Offset(offset)),
         TranslatedStage::Limit(limit) => Ok(AnnotatedStage::Limit(limit)),
+        TranslatedStage::Reduce(reduce) => Ok(AnnotatedStage::Reduce(reduce)),
     }
 }

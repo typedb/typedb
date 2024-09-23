@@ -15,6 +15,7 @@ use crate::{
     pattern::Vertex,
     program::block::{FunctionalBlock, VariableRegistry},
 };
+use crate::pattern::IrID;
 
 pub type PlaceholderTypeQLReturnOperation = String;
 
@@ -63,7 +64,7 @@ impl Function {
 #[derive(Debug, Clone)]
 pub enum ReturnOperation {
     Stream(Vec<Variable>),
-    Reduce(Vec<Reducer>),
+    Reduce(Vec<Reducer<Variable>>),
 }
 
 impl ReturnOperation {
@@ -95,14 +96,17 @@ impl ReturnOperation {
 }
 
 #[derive(Debug, Clone)]
-pub enum Reducer {
-    Count(ReducerInput),
-    Sum(ReducerInput),
+pub enum Reducer<ID: IrID> {
+    Count(ID),
+    Sum(ID),
     // First, Any etc.
 }
 
-#[derive(Debug, Clone)]
-pub enum ReducerInput {
-    Variable,
-    Reducer,
+impl<ID: IrID> Reducer<ID> {
+    pub fn id(&self) -> ID {
+        match self {
+            Reducer::Count(id) => id.clone(),
+            Reducer::Sum(id) => id.clone(),
+        }
+    }
 }

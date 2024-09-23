@@ -17,7 +17,9 @@ pub mod initial;
 pub mod insert;
 pub mod match_;
 pub mod modifiers;
+pub mod reduce;
 pub mod stage;
+
 
 typedb_error!(
     pub PipelineExecutionError(component = "Pipeline execution", prefix = "PEX") {

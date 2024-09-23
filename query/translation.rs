@@ -22,7 +22,9 @@ use ir::{
     },
 };
 use storage::snapshot::ReadableSnapshot;
-use typeql::query::stage::{Modifier, Stage as TypeQLStage};
+use typeql::query::stage::{Modifier, Stage as TypeQLStage, Stage};
+use ir::program::reduce::Reduce;
+use ir::translation::reduce::translate_reduce;
 
 use crate::error::QueryError;
 
@@ -43,6 +45,7 @@ pub(super) enum TranslatedStage {
     Sort(Sort),
     Offset(Offset),
     Limit(Limit),
+    Reduce(Reduce),
 }
 
 pub(super) fn translate_pipeline(
@@ -101,6 +104,7 @@ fn translate_stage(
                 translate_limit(translation_context, limit).map(|limit| TranslatedStage::Limit(limit))
             }
         },
+        Stage::Reduce(reduce) => translate_reduce(translation_context, reduce).map(|reduce| TranslatedStage::Reduce(reduce)),
         _ => todo!(),
     }
     .map_err(|source| QueryError::PatternDefinition { typedb_source: source })

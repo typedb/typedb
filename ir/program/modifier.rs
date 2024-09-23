@@ -26,19 +26,9 @@ pub struct Select {
 }
 
 impl Select {
-    pub(crate) fn new(
-        variables: Vec<&str>,
-        variable_index: &HashMap<String, Variable>,
-    ) -> Result<Self, ModifierDefinitionError> {
-        use ModifierDefinitionError::SelectedVariableNotAvailable;
-        let mut select_variables = HashSet::with_capacity(variables.len());
-        for name in variables {
-            match variable_index.get(name) {
-                None => Err(SelectedVariableNotAvailable { name: name.to_string() })?,
-                Some(var) => select_variables.insert(var.clone()),
-            };
-        }
-        Ok(Self { variables: select_variables })
+    // TODO: Bit trange that this takes str
+    pub(crate) fn new(variables: HashSet<Variable>) -> Self {
+        Self { variables }
     }
 }
 
@@ -48,25 +38,16 @@ pub struct Sort {
 }
 
 impl Sort {
-    pub(crate) fn new(
-        variables: Vec<(&str, bool)>,
-        variable_lookup: &HashMap<String, Variable>,
-    ) -> Result<Self, ModifierDefinitionError> {
-        use ModifierDefinitionError::SortVariableNotAvailable;
+    pub(crate) fn new(variables: Vec<(Variable, bool)>) -> Self {
         let mut sort_variables = Vec::with_capacity(variables.len());
-        for (name, is_ascending) in variables {
-            match variable_lookup.get(name) {
-                None => Err(SortVariableNotAvailable { name: name.to_string() })?,
-                Some(var) => {
-                    if is_ascending {
-                        sort_variables.push(SortVariable::Ascending(var.clone()));
-                    } else {
-                        sort_variables.push(SortVariable::Descending(var.clone()));
-                    }
-                }
-            };
+        for (var, is_ascending) in variables {
+            if is_ascending {
+                sort_variables.push(SortVariable::Ascending(var.clone()));
+            } else {
+                sort_variables.push(SortVariable::Descending(var.clone()));
+            }
         }
-        Ok(Self { variables: sort_variables })
+        Self { variables: sort_variables }
     }
 }
 

@@ -7,7 +7,9 @@
 use std::collections::{HashMap, HashSet};
 
 use answer::variable::Variable;
+use ir::program::function::Reducer;
 use ir::program::modifier::SortVariable;
+use ir::program::reduce::Reduce;
 
 use crate::VariablePosition;
 
@@ -29,4 +31,11 @@ pub struct OffsetProgram {
 pub struct LimitProgram {
     pub limit: u64,
     pub output_row_mapping: HashMap<Variable, VariablePosition>,
+}
+
+// TODO: Maybe move to its own file
+pub struct ReduceProgram {
+    pub reduction_inputs: Vec<Reducer<VariablePosition>>,
+    pub input_group_positions: Vec<VariablePosition>,
+    pub output_row_mapping: HashMap<Variable, VariablePosition>, // output_row = (group_vars, reduce_outputs)
 }
