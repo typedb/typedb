@@ -112,7 +112,7 @@ fn compile_stage(
     annotated_stage: AnnotatedStage,
 ) -> Result<CompiledStage, QueryError> {
     match &annotated_stage {
-        AnnotatedStage::Match { block, block_annotations, compiled_expressions, variable_value_types } => {
+        AnnotatedStage::Match { block, block_annotations, compiled_expressions } => {
             let plan =
                 MatchProgram::compile(block, block_annotations, variable_registry, compiled_expressions, statistics);
             Ok(CompiledStage::Match(plan))

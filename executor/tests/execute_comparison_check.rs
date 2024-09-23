@@ -5,10 +5,11 @@
  */
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
+use std::collections::BTreeMap;
 
 use compiler::{
     match_::{
-        inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
+        inference::{annotated_functions::IndexedAnnotatedFunctions},
         instructions::{thing::IsaInstruction, ConstraintInstruction, Inputs},
         planner::{
             pattern_plan::{IntersectionProgram, MatchProgram, Program},
@@ -17,6 +18,8 @@ use compiler::{
     },
     VariablePosition,
 };
+use compiler::match_::inference::annotated_functions::AnnotatedUnindexedFunctions;
+use compiler::match_::inference::type_inference::infer_types_for_match_block;
 use concept::type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
@@ -85,13 +88,14 @@ fn attribute_equality() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let (entry_annotations, _) = infer_types(
+    let entry_annotations = infer_types_for_match_block(
         &entry,
-        Vec::new(),
+        &translation_context.variable_registry,
         &snapshot,
         &type_manager,
+        &BTreeMap::new(),
         &IndexedAnnotatedFunctions::empty(),
-        &translation_context.variable_registry,
+        &AnnotatedUnindexedFunctions::empty(),
     )
     .unwrap();
 

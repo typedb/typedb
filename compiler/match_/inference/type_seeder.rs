@@ -16,7 +16,7 @@ use concept::{
     error::ConceptReadError,
     type_::{object_type::ObjectType, type_manager::TypeManager, OwnerAPI, PlayerAPI, TypeAPI},
 };
-use encoding::value::{value_type::ValueTypeCategory, ValueEncodable};
+use encoding::value::value_type::ValueTypeCategory;
 use ir::{
     pattern::{
         conjunction::Conjunction,
@@ -30,7 +30,7 @@ use ir::{
         Scope, ScopeId, Vertex,
     },
     program::{
-        block::{ParameterRegistry, ScopeContext, VariableRegistry},
+        block::{ScopeContext, VariableRegistry},
         function::Function,
         function_signature::FunctionID,
     },
@@ -258,8 +258,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
                     } else {
                         #[cfg(debug_assertions)]
                         {
-                            let annotation_opt = get_type_annotation_from_label(self.snapshot, self.type_manager, label)
-                                .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+                            let annotation_opt =
+                                get_type_annotation_from_label(self.snapshot, self.type_manager, label)
+                                    .map_err(|source| TypeInferenceError::ConceptRead { source })?;
                             debug_assert_ne!(annotation_opt, None);
                             debug_assert_eq!(tig.vertices[vertex], BTreeSet::from([annotation_opt.unwrap()]));
                         }
@@ -1130,7 +1131,7 @@ impl BinaryConstraint for Comparison<Variable> {
             TypeAnnotation::Attribute(attribute) => {
                 attribute.get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
             }
-            _ => todo!("Error for expected attribute type"),
+            _ => unreachable!("Expected attribute type"),
         };
         if let Some(value_type) = right_value_type {
             let comparable_types = ValueTypeCategory::comparable_categories(value_type.category());

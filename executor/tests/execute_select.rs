@@ -4,11 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, collections::HashMap, sync::Arc};
+use std::{
+    borrow::Cow,
+    collections::{BTreeMap, HashMap},
+    sync::Arc,
+};
 
 use compiler::{
     match_::{
-        inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
+        inference::{
+            annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+            type_inference::infer_types_for_match_block,
+        },
         instructions::{thing::HasInstruction, ConstraintInstruction, Inputs},
         planner::{
             pattern_plan::{IntersectionProgram, MatchProgram, Program},
@@ -158,16 +165,17 @@ fn anonymous_vars_not_enumerated_or_counted() {
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     let entry = builder.finish();
 
-    let (entry_annotations, _) = {
+    let entry_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone(), None);
-        infer_types(
+        infer_types_for_match_block(
             &entry,
-            vec![],
+            &translation_context.variable_registry,
             &snapshot,
             &type_manager,
+            &BTreeMap::new(),
             &IndexedAnnotatedFunctions::empty(),
-            &translation_context.variable_registry,
+            &AnnotatedUnindexedFunctions::empty(),
         )
         .unwrap()
     };
@@ -239,16 +247,17 @@ fn unselected_named_vars_counted() {
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     let entry = builder.finish();
 
-    let (entry_annotations, _) = {
+    let entry_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone(), None);
-        infer_types(
+        infer_types_for_match_block(
             &entry,
-            vec![],
+            &translation_context.variable_registry,
             &snapshot,
             &type_manager,
+            &BTreeMap::new(),
             &IndexedAnnotatedFunctions::empty(),
-            &translation_context.variable_registry,
+            &AnnotatedUnindexedFunctions::empty(),
         )
         .unwrap()
     };
@@ -332,16 +341,17 @@ fn cartesian_named_counted_checked() {
     conjunction.constraints_mut().add_label(var_email_type, EMAIL_LABEL.scoped_name().as_str()).unwrap();
     let entry = builder.finish();
 
-    let (entry_annotations, _) = {
+    let entry_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone(), None);
-        infer_types(
+        infer_types_for_match_block(
             &entry,
-            vec![],
+            &translation_context.variable_registry,
             &snapshot,
             &type_manager,
+            &BTreeMap::new(),
             &IndexedAnnotatedFunctions::empty(),
-            &translation_context.variable_registry,
+            &AnnotatedUnindexedFunctions::empty(),
         )
         .unwrap()
     };

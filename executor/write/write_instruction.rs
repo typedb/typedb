@@ -83,7 +83,7 @@ impl AsWriteInstruction for PutObject {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        parameters: &ParameterRegistry,
+        _parameters: &ParameterRegistry,
         row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
         let inserted = match get_type(row, &self.type_) {
@@ -112,7 +112,7 @@ impl AsWriteInstruction for compiler::insert::instructions::Has {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        parameters: &ParameterRegistry,
+        _parameters: &ParameterRegistry,
         row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
         let owner_thing = get_thing(row, &self.owner);
@@ -130,7 +130,7 @@ impl AsWriteInstruction for compiler::insert::instructions::RolePlayer {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        parameters: &ParameterRegistry,
+        _parameters: &ParameterRegistry,
         row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
         let relation_thing = try_unwrap_as!(answer::Thing::Relation : get_thing(row, &self.relation)).unwrap();
@@ -148,7 +148,7 @@ impl AsWriteInstruction for compiler::delete::instructions::ThingInstruction {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        parameters: &ParameterRegistry,
+        _parameters: &ParameterRegistry,
         row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
         let thing = get_thing(row, &self.thing).clone();
@@ -180,7 +180,7 @@ impl AsWriteInstruction for compiler::delete::instructions::Has {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        parameters: &ParameterRegistry,
+        _parameters: &ParameterRegistry,
         row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
         // TODO: Lists
@@ -197,7 +197,7 @@ impl AsWriteInstruction for compiler::delete::instructions::RolePlayer {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        parameters: &ParameterRegistry,
+        _parameters: &ParameterRegistry,
         row: &mut Row<'_>,
     ) -> Result<(), WriteError> {
         // TODO: Lists

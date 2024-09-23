@@ -4,9 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
-
-use compiler::VariablePosition;
 use lending_iterator::{LendingIterator, Once};
 
 use crate::{

@@ -4,11 +4,18 @@
 * file, You can obtain one at https://mozilla.org/MPL/2.0/.
 */
 
-use std::{collections::HashMap, sync::Arc, vec};
+use std::{
+    collections::{BTreeMap, HashMap},
+    sync::Arc,
+    vec,
+};
 
 use answer::variable_value::VariableValue;
 use compiler::{
-    match_::inference::{annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types},
+    match_::inference::{
+        annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+        type_inference::infer_types_for_match_block,
+    },
     VariablePosition,
 };
 use concept::{
@@ -145,13 +152,14 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
         .map(|(i, v)| (*translation_context.visible_variables.get(*v).unwrap(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
-    let (entry_annotations, _) = infer_types(
+    let entry_annotations = infer_types_for_match_block(
         &block,
-        vec![],
+        &translation_context.variable_registry,
         &snapshot,
         &type_manager,
+        &BTreeMap::new(),
         &IndexedAnnotatedFunctions::empty(),
-        &translation_context.variable_registry,
+        &AnnotatedUnindexedFunctions::empty(),
     )
     .unwrap();
 
@@ -202,7 +210,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     input_rows: Vec<Vec<VariableValue<'static>>>,
 ) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), WriteError> {
     let mut translation_context = TranslationContext::new();
-    let (entry_annotations, _) = {
+    let entry_annotations = {
         let typeql_match = typeql::parse_query(mock_match_string_for_annotations)
             .unwrap()
             .into_pipeline()
@@ -217,13 +225,14 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
         )
         .unwrap()
         .finish();
-        infer_types(
+        infer_types_for_match_block(
             &block,
-            vec![],
+            &translation_context.variable_registry,
             &snapshot,
             &type_manager,
+            &BTreeMap::new(),
             &IndexedAnnotatedFunctions::empty(),
-            &translation_context.variable_registry,
+            &AnnotatedUnindexedFunctions::empty(),
         )
         .unwrap()
     };

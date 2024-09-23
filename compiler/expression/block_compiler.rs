@@ -10,8 +10,11 @@ use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::{
-        conjunction::Conjunction, expression::ExpressionTree, nested_pattern::NestedPattern,
-        variable_category::VariableCategory, Vertex,
+        conjunction::Conjunction,
+        constraint::{Constraint, ExpressionBinding},
+        nested_pattern::NestedPattern,
+        variable_category::VariableCategory,
+        Vertex,
     },
     program::block::{FunctionalBlock, ParameterRegistry, VariableRegistry},
 };
@@ -45,10 +48,10 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     snapshot: &'block Snapshot,
     type_manager: &'block TypeManager,
     block: &'block FunctionalBlock,
-    variable_registry: &'block VariableRegistry,
+    variable_registry: &'block mut VariableRegistry,
     parameters: &'block ParameterRegistry,
     type_annotations: &'block TypeAnnotations,
-) -> Result<(HashMap<Variable, CompiledExpression>, HashMap<Variable, ExpressionValueType>), ExpressionCompileError> {
+) -> Result<HashMap<Variable, CompiledExpression>, ExpressionCompileError> {
     let mut expression_index = HashMap::new();
     index_expressions(block.conjunction(), &mut expression_index)?;
     let assigned_variables = expression_index.keys().cloned().collect_vec();
@@ -67,12 +70,31 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     for variable in assigned_variables {
         compile_expressions_recursive(&mut context, variable, &expression_index)?
     }
-    Ok((context.compiled_expressions, context.variable_value_types))
+
+    let BlockExpressionsCompilationContext { compiled_expressions, variable_value_types, .. } = context;
+    for (var, compiled) in &compiled_expressions {
+        let category = match &compiled.return_type {
+            ExpressionValueType::Single(_) => VariableCategory::Value,
+            ExpressionValueType::List(_) => VariableCategory::ValueList,
+        };
+        let existing_category = variable_registry.get_variable_category(var.clone());
+        if Some(category) != existing_category {
+            Err(ExpressionCompileError::DerivedConflictingVariableCategory {
+                variable_name: variable_registry.variable_names().get(var).unwrap().clone(),
+                derived_category: category,
+                existing_category: existing_category.unwrap(),
+            })?;
+        } else {
+            let source = Constraint::ExpressionBinding((*expression_index.get(var).unwrap()).clone());
+            variable_registry.set_assigned_value_variable_category(var.clone(), category, source).unwrap();
+        }
+    }
+    Ok(compiled_expressions)
 }
 
 fn index_expressions<'block>(
     conjunction: &'block Conjunction,
-    index: &mut HashMap<Variable, &'block ExpressionTree<Variable>>,
+    index: &mut HashMap<Variable, &'block ExpressionBinding<Variable>>,
 ) -> Result<(), ExpressionCompileError> {
     for constraint in conjunction.constraints() {
         if let Some(expression_binding) = constraint.as_expression_binding() {
@@ -80,7 +102,7 @@ fn index_expressions<'block>(
             if index.contains_key(&left) {
                 Err(ExpressionCompileError::MultipleAssignmentsForSingleVariable { assign_variable: left })?;
             }
-            index.insert(left, expression_binding.expression());
+            index.insert(left, expression_binding);
         }
     }
     for nested in conjunction.nested_patterns() {
@@ -104,10 +126,10 @@ fn index_expressions<'block>(
 fn compile_expressions_recursive<'a, Snapshot: ReadableSnapshot>(
     context: &mut BlockExpressionsCompilationContext<'a, Snapshot>,
     assigned_variable: Variable,
-    expression_assignments: &HashMap<Variable, &'a ExpressionTree<Variable>>,
+    expression_assignments: &HashMap<Variable, &'a ExpressionBinding<Variable>>,
 ) -> Result<(), ExpressionCompileError> {
     context.visited_expressions.insert(assigned_variable);
-    let expression = expression_assignments.get(&assigned_variable).unwrap();
+    let expression = expression_assignments.get(&assigned_variable).unwrap().expression();
     for variable in expression.variables() {
         resolve_type_for_variable(context, variable, expression_assignments)?;
     }
@@ -121,7 +143,7 @@ fn compile_expressions_recursive<'a, Snapshot: ReadableSnapshot>(
 fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
     context: &mut BlockExpressionsCompilationContext<'a, Snapshot>,
     variable: Variable,
-    expression_assignments: &HashMap<Variable, &'a ExpressionTree<Variable>>,
+    expression_assignments: &HashMap<Variable, &'a ExpressionBinding<Variable>>,
 ) -> Result<(), ExpressionCompileError> {
     if expression_assignments.contains_key(&variable) {
         if !context.compiled_expressions.contains_key(&variable) {

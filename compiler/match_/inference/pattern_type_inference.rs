@@ -109,7 +109,7 @@ pub(crate) fn infer_types_for_block<'graph>(
         .seed_types(block.scope_context(), previous_stage_variable_annotations, block.conjunction())?;
     run_type_inference(&mut tig);
     // TODO: Throw error when any set becomes empty happens, rather than waiting for the it to propagate
-    if tig.vertices.iter().any(|(var, types)| types.is_empty()) {
+    if tig.vertices.iter().any(|(_, types)| types.is_empty()) {
         Err(TypeInferenceError::DetectedUnsatisfiablePattern {})
     } else {
         Ok(tig)

@@ -65,7 +65,7 @@ impl QueryManager {
     ) -> Result<(ReadPipelineStage<Snapshot>, HashMap<String, VariablePosition>), QueryError> {
         // ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>>, QueryError> {
         // 1: Translate
-        let TranslatedPipeline { translated_preamble, translated_stages, variable_registry, parameters } =
+        let TranslatedPipeline { translated_preamble, translated_stages, mut variable_registry, parameters } =
             translate_pipeline(snapshot.as_ref(), function_manager, query)?;
 
         let annotated_functions = function_manager
@@ -77,29 +77,11 @@ impl QueryManager {
             snapshot.as_ref(),
             type_manager,
             &annotated_functions,
-            &variable_registry,
+            &mut variable_registry,
             &parameters,
             translated_preamble,
             translated_stages,
         )?;
-        // // TODO: Improve how we do this. This is a temporary workaround
-        // annotated_stages.iter().filter_map(|stage| {
-        //     if let AnnotatedStage::Match { block, variable_value_types, .. }  = stage {
-        //         Some((block, variable_value_types))
-        //     } else { None }
-        // }).try_for_each(|(block, expr) | {
-        //     expr.iter().try_for_each(|(var, type_)| {
-        //         // TODO: May be in a nested pattern
-        //         let source = block.conjunction().constraints().iter().find(|constraint| Some(var.clone()) == constraint.as_expression_binding().map(|expr| expr.left())).unwrap().clone();
-        //         let category = match type_ {
-        //             ExpressionValueType::Single(_) => VariableCategory::Value,
-        //             ExpressionValueType::List(_) => VariableCategory::ValueList,
-        //         };
-        //         variable_registry.set_assigned_value_variable_category(var.clone(), category, source)?;
-        //         Ok::<(), PatternDefinitionError>(())
-        //     })
-        // }).unwrap();
-
         // 3: Compile
         let variable_registry = Arc::new(variable_registry);
         let CompiledPipeline { compiled_functions, compiled_stages, output_variable_positions } = compile_pipeline(
@@ -163,7 +145,7 @@ impl QueryManager {
     ) -> Result<(WritePipelineStage<Snapshot>, HashMap<String, VariablePosition>), (Snapshot, QueryError)> {
         // 1: Translate
         let translated_pipeline = translate_pipeline(&snapshot, function_manager, query);
-        let TranslatedPipeline { translated_preamble, translated_stages, variable_registry, parameters } =
+        let TranslatedPipeline { translated_preamble, translated_stages, mut variable_registry, parameters } =
             match translated_pipeline {
                 Ok(translated_pipeline) => translated_pipeline,
                 Err(err) => return Err((snapshot, err)),
@@ -178,7 +160,7 @@ impl QueryManager {
             &snapshot,
             type_manager,
             &annotated_functions,
-            &variable_registry,
+            &mut variable_registry,
             &parameters,
             translated_preamble,
             translated_stages,
@@ -187,23 +169,6 @@ impl QueryManager {
             Ok(annotated_pipeline) => annotated_pipeline,
             Err(err) => return Err((snapshot, err)),
         };
-        // // TODO: Improve how we do this. This is a temporary workaround
-        // annotated_stages.iter().filter_map(|stage| {
-        //     if let AnnotatedStage::Match { block, variable_value_types, .. }  = stage {
-        //         Some((block, variable_value_types))
-        //     } else { None }
-        // }).try_for_each(|(block, expr) | {
-        //     expr.iter().try_for_each(|(var, type_)| {
-        //         // TODO: May be in a nested pattern
-        //         let source = block.conjunction().constraints().iter().find(|constraint| Some(var.clone()) == constraint.as_expression_binding().map(|expr| expr.left())).unwrap().clone();
-        //         let category = match type_ {
-        //             ExpressionValueType::Single(_) => VariableCategory::Value,
-        //             ExpressionValueType::List(_) => VariableCategory::ValueList,
-        //         };
-        //         variable_registry.set_assigned_value_variable_category(var.clone(), category, source)?;
-        //         Ok::<(), PatternDefinitionError>(())
-        //     })
-        // }).unwrap();
 
         // // 3: Compile
         let variable_registry = Arc::new(variable_registry);
