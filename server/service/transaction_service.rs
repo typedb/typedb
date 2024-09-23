@@ -514,7 +514,7 @@ impl TransactionService {
         let _ = self.cancel_queued_write_queries().await;
 
         match self.transaction.take() {
-            None => {}
+            None => (),
             Some(Transaction::Read(transaction)) => transaction.close(),
             Some(Transaction::Write(transaction)) => transaction.close(),
             Some(Transaction::Schema(transaction)) => transaction.close(),
