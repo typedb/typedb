@@ -665,6 +665,7 @@ impl<T: Hkt> Checker<T> {
                     };
                     let cmp: fn(&Value<'_>, &Value<'_>) -> bool = match comparator {
                         Comparator::Equal => |a, b| a == b,
+                        Comparator::NotEqual => |a, b| a != b,
                         Comparator::Less => |a, b| a < b,
                         Comparator::Greater => |a, b| a > b,
                         Comparator::LessOrEqual => |a, b| a <= b,

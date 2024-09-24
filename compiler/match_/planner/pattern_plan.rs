@@ -281,6 +281,7 @@ impl<'a> PlanBuilder<'a> {
                             Comparator::Equal => {
                                 self.elements[lhs].add_equal(rhs);
                             }
+                            Comparator::NotEqual => (), // no tangible impact on traversal costs
                             Comparator::Less | Comparator::LessOrEqual => {
                                 self.elements[lhs].add_upper_bound(rhs);
                             }
@@ -296,6 +297,7 @@ impl<'a> PlanBuilder<'a> {
                             Comparator::Equal => {
                                 self.elements[rhs].add_equal(lhs);
                             }
+                            Comparator::NotEqual => (), // no tangible impact on traversal costs
                             Comparator::Less | Comparator::LessOrEqual => {
                                 self.elements[rhs].add_upper_bound(lhs);
                             }
@@ -529,6 +531,7 @@ fn lower_plan(
                 } else {
                     ConstraintInstruction::$bw($bwi::new(con, Inputs::None([]), type_annotations))
                 };
+
                 let producer_index = match_builder.push_instruction(
                     sort_variable,
                     instruction,

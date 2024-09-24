@@ -1190,6 +1190,7 @@ impl<ID: IrID> fmt::Display for FunctionCallBinding<ID> {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum Comparator {
     Equal,
+    NotEqual,
     Less,
     Greater,
     LessOrEqual,
@@ -1202,6 +1203,7 @@ impl Comparator {
     pub fn name(&self) -> &str {
         match self {
             Comparator::Equal => typeql::token::Comparator::Eq.as_str(),
+            Comparator::NotEqual => typeql::token::Comparator::Neq.as_str(),
             Comparator::Less => typeql::token::Comparator::Lt.as_str(),
             Comparator::Greater => typeql::token::Comparator::Gt.as_str(),
             Comparator::LessOrEqual => typeql::token::Comparator::Lte.as_str(),
@@ -1215,15 +1217,15 @@ impl Comparator {
 impl From<typeql::token::Comparator> for Comparator {
     fn from(token: typeql::token::Comparator) -> Self {
         match token {
-            typeql::token::Comparator::Eq => todo!(),
-            typeql::token::Comparator::EqLegacy => todo!(),
-            typeql::token::Comparator::Neq => todo!(),
-            typeql::token::Comparator::Gt => todo!(),
-            typeql::token::Comparator::Gte => todo!(),
-            typeql::token::Comparator::Lt => todo!(),
-            typeql::token::Comparator::Lte => todo!(),
-            typeql::token::Comparator::Contains => todo!(),
-            typeql::token::Comparator::Like => todo!(),
+            typeql::token::Comparator::Eq => Self::Equal,
+            typeql::token::Comparator::EqLegacy => Self::Equal,
+            typeql::token::Comparator::Neq => Self::NotEqual,
+            typeql::token::Comparator::Gt => Self::Greater,
+            typeql::token::Comparator::Gte => Self::GreaterOrEqual,
+            typeql::token::Comparator::Lt => Self::Less,
+            typeql::token::Comparator::Lte => Self::LessOrEqual,
+            typeql::token::Comparator::Contains => Self::Contains,
+            typeql::token::Comparator::Like => Self::Like,
         }
     }
 }
