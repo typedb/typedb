@@ -87,7 +87,8 @@ impl WAL {
             .last()
             .map(|rr| rr.unwrap().sequence_number.next())
             .unwrap_or(DurabilitySequenceNumber::MIN.next());
-        let fsync_thread = FsyncThread::new(files.clone());
+        let mut fsync_thread = FsyncThread::new(files.clone());
+        FsyncThread::start(&mut fsync_thread.handle, fsync_thread.context.clone());
         Ok(Self {
             registered_types: HashMap::new(),
             next_sequence_number: AtomicU64::new(next.number()),

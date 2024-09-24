@@ -144,7 +144,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     }
 
     pub fn try_commit(self) -> Result<(), DataCommitError> {
-        let mut snapshot = Arc::into_inner(self.snapshot).unwrap();
+        let mut snapshot = Arc::into_inner(self.snapshot).ok_or_else(|| DataCommitError::SnapshotInUse {})?;
         self.thing_manager.finalise(&mut snapshot).map_err(|errs| {
             // TODO: send all the errors, not just the first
             let error = errs.into_iter().next().unwrap();
@@ -169,9 +169,10 @@ impl<D: DurabilityClient> TransactionWrite<D> {
 
 typedb_error!(
     pub DataCommitError(component = "Data commit", prefix = "DCT") {
-        ConceptWriteErrors(1, "Data commit error.", source: Vec<ConceptWriteError> ),
-        ConceptWriteErrorsFirst(2, "Data commit error.", ( typedb_source : ConceptWriteError )),
-        SnapshotError(3, "Snapshot error.", ( typedb_source: SnapshotError )),
+        SnapshotInUse(1, "Failed to commit since the transaction snapshot is still in use."),
+        ConceptWriteErrors(2, "Data commit error.", source: Vec<ConceptWriteError> ),
+        ConceptWriteErrorsFirst(3, "Data commit error.", ( typedb_source : ConceptWriteError )),
+        SnapshotError(4, "Snapshot error.", ( typedb_source: SnapshotError )),
     }
 );
 
