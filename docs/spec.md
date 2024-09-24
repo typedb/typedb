@@ -29,6 +29,8 @@
 <details>
   <summary> <b>Table of contents</b> <i>(Overview)</i> </summary>
 
+<!-- vim-markdown-toc GFM -->
+
 * [Introduction](#introduction)
 * [The type system](#the-type-system)
     * [Grammar and notations](#grammar-and-notations)
@@ -49,9 +51,10 @@
     * [Update semantics](#update-semantics)
     * [Put semantics](#put-semantics)
 * [Query execution principles](#query-execution-principles)
-    * [Basics: Pipelines, clauses, operators, streams](#basics-pipelines-clauses-operators-streams)
+    * [Basics: Pipelines, clauses, operators, branches](#basics-pipelines-clauses-operators-branches)
     * [Clauses (match, insert, delete, update, put, fetch)](#clauses-match-insert-delete-update-put-fetch)
     * [Operators (select, distinct, sort, limit, offset, reduce)](#operators-select-distinct-sort-limit-offset-reduce)
+    * [Branches](#branches)
     * [Transactions](#transactions)
 * [Glossary](#glossary)
     * [Type system](#type-system)
@@ -59,11 +62,15 @@
     * [Syntactic Sugar](#syntactic-sugar)
     * [Typing of operators](#typing-of-operators)
 
+<!-- vim-markdown-toc -->
+
 </details>
 
 
 <details>
   <summary> <b>Table of contents</b> <i>(Detailed)</i> </summary>
+
+<!-- vim-markdown-toc GFM -->
 
 * [Introduction](#introduction)
 * [The type system](#the-type-system)
@@ -83,6 +90,8 @@
         * [Modalities](#modalities-1)
 * [Schema definition language](#schema-definition-language)
     * [Basics of schemas](#basics-of-schemas)
+        * [(Theory) Clauses and execution](#theory-clauses-and-execution)
+        * [(Feature) Pipelines and match-define's](#feature-pipelines-and-match-defines)
     * [Define semantics](#define-semantics)
         * [Type axioms](#type-axioms)
             * [**Case ENT_DEF**](#case-ent_def)
@@ -272,7 +281,7 @@
         * [Clean-up](#clean-up-1)
     * [Put semantics](#put-semantics)
 * [Query execution principles](#query-execution-principles)
-    * [Basics: Pipelines, clauses, operators, streams](#basics-pipelines-clauses-operators-streams)
+    * [Basics: Pipelines, clauses, operators, branches](#basics-pipelines-clauses-operators-branches)
     * [Clauses (match, insert, delete, update, put, fetch)](#clauses-match-insert-delete-update-put-fetch)
         * [Match](#match)
         * [Insert](#insert)
@@ -299,8 +308,9 @@
         * [Limit](#limit)
         * [Offset](#offset)
         * [Reduce](#reduce)
-            * [**Case RED_DEFAULT**](#case-red_default)
-            * [**Case RED_GROUP**](#case-red_group)
+            * [**Case SIMPLE_RED**](#case-simple_red)
+            * [**Case GROUP_RED**](#case-group_red)
+    * [Branches](#branches)
     * [Transactions](#transactions)
         * [Basics](#basics)
         * [Snapshots](#snapshots)
@@ -333,6 +343,8 @@
         * [Suffix](#suffix)
     * [Syntactic Sugar](#syntactic-sugar)
     * [Typing of operators](#typing-of-operators)
+
+<!-- vim-markdown-toc -->
 
 </details>
 
@@ -1746,43 +1758,10 @@ Since functions can only be called from `match` stages in pipelines, evaluation 
 
 ### Single-return semantics
 
-* 🔶 `return <AGG> , ... , <AGG>;` where `<AGG>` is one of the following **aggregate functions**:
-  * 🔶 `check`:
-    * output type `bool`
-    * returns `true` if concept row set non-empty
-  * 🔶 `sum($x)`:
-    * output type `double` or `int`
-    * returns sum of all non-empty `m($x)` in concept row `m`
-    * `$x` can be optional
-    * empty sums yield `0.0` or `0`
-  * 🔶 `mean($x)`:
-    * output type `double?`
-    * returns mean of all non-empty `m($x)` in concept row `m`
-    * `$x` can be optional
-    * empty mean return $\emptyset$
-  * 🔶 `median($x)`, 
-    * output type `double?` or `int?` (depending on type of `$x`)
-    * returns median of all non-empty `m($x)` in concept row `m`
-    * `$x` can be optional
-    * empty medians return $\emptyset$
-  * 🔶 `first($x)`
-    * `A?` for any `A`
-    * returns sum of all non-empty `m($x)` in concept row `m`
-    * `$x` can be optional
-    * if no `m($x)`is set, return $\emptyset$
-  * 🔶 `count`
-    * output type `long`
-    * returns count of all answers
-  * 🔶 `count($x)`
-    * output type `long`
-    * returns count of all non-empty `m($x)` in concept row `m`
-    * `$x` can be optional
-  * 🔶 `list($x)`
-    * output type `[A]`
-    * returns list of all non-empty `m($x)` in concept row `m`
-    * `$x` can be optional
-* Each `<AGG>` reduces the concept row `{ m }` passed to it from the function's body to a single concept in the specified way.
+* 🔶 `return <AGG> , ... , <AGG>;` where `<AGG>` is an aggregate function.
+    * For syntax and semantics, see Case **SIMPLE_RED**
 
+* Each `<AGG>` reduces the concept row `{ m }` passed to it from the function's body to a single concept in the specified way.
 
 
 ## Insert semantics
@@ -2086,7 +2065,7 @@ _System property_:
 
 ### Clean-up
 
-Orphaned relation and attribute instance (i.e. those with insufficient dependencies) are cleaned up at the end of a delete  clause.
+Orphaned relation and attribute instance (i.e. those with insufficient dependencies) are cleaned up at the end of a delete clause.
 
 ## Put semantics
 
@@ -2098,14 +2077,21 @@ Orphaned relation and attribute instance (i.e. those with insufficient dependenc
 
 # Query execution principles
 
-## Basics: Pipelines, clauses, operators, streams 
+## Basics: Pipelines, clauses, operators, branches
 
-Pipelines comprises chains of clauses and operators.
+Pipelines comprises chains of clauses and operators, and may branch.
 
 _Key principle_:
 
+* Each clause/operator:
+    * gets an input stream (initially this is the empty crow stream `{}`) 
+    * outputs a crow stream
+* **Clauses** use the DB for their operation
+* **Operators** only operate on the stream at hand
 * Clauses and operators are executed eagerly
-* In this way, executing later stages of the pipeline can never affect earlier stages.
+    * In this way, executing later stages of the pipeline can never affect earlier stages.
+* Pipelines can be **branched**, in which case each branch is executed separately
+    * _(of course, shared results will be cached for performance!)_
 
 ## Clauses (match, insert, delete, update, put, fetch)
 
@@ -2280,7 +2266,7 @@ _Remark_: Offset is only useful when streams (and the order of answers) are full
 * The `reduce` operator takes as input a stream of rows `{ m }`
 * It outputs a stream of new concept rows
 
-#### **Case RED_DEFAULT**
+#### **Case SIMPLE_RED**
 🔶 
 ```
 reduce $x_1=<AGG>, ... , $x_k=<AGG>;
@@ -2310,18 +2296,35 @@ In this case, we output a ***single concept*** row `($x_1 -> <EL>, $x_2 -> <EL>,
     * output type `double?` or `int?` (depending on type of `$x`)
     * outputs median of all non-empty `m($x)` in concept row `m`
     * `$x` can be optional
-    * empty medians output $\emptyset$
+    * empty medians output $\emptyset
   * 🔶 `first($x)`
-    * output type `A?` or `A[]?` for any (simple) type `A : Type`
+    * output type `A?` or `A[]?` for any (labelled) type `A : Type`
     * outputs first concept of all non-empty `m($x)` in concept row `m`
+    * `$x` can be optional
+    * if no `m($x)`is set this outputs empty result ($`\emptyset`$)$
+  * 🔮 `first($x, $y, ...)`
+    * output type `X, X, ...` for `X`'s being either`A?` or `A[]?` for any (labelled) type `A : Type`
+    * outputs first non-empty concept tuple `m($x), m($y), ...` in a concept row `m`
     * `$x` can be optional
     * if no `m($x)`is set this outputs empty result ($`\emptyset`$)
   * 🔶 `count`
     * output type `long`
-    * outputs count of all answers
+    * outputs count of all answer
   * 🔶 `count($x)`
     * output type `long`
-    * outputs count of all non-empty `m($x)` in concept row `m`
+    * outputs count of all non-empty `m($x)` in input crow stream `{ m }`
+    * `$x` can be optionals
+  * 🔮 `count($x, $y, ...)`
+    * output type `long`
+    * outputs count of all non-empty concept tuples `(m($x), m($y), ...)` in input crow stream
+    * `$x` can be optional
+  * 🔮 `distinct($x)`
+    * output type `long`
+    * outputs count of all non-empty **distinct** `m($x)` in input crow stream `{ m }`
+    * `$x` can be optionals
+  * 🔮 `distinct($x, $y, ...)`
+    * output type `long`
+    * outputs count of all non-empty **distinct** concept tuples `(m($x), m($y), ...)` in input crow stream `{ m }`
     * `$x` can be optional
   * 🔶 `list($x)`
     * output type `[A]`
@@ -2329,7 +2332,7 @@ In this case, we output a ***single concept*** row `($x_1 -> <EL>, $x_2 -> <EL>,
     * `$x` can be optional
 * Each `<AGG>` reduces the concept row `{ m }` passsed to it from the function's body to a single value in the specified way.
 
-#### **Case RED_GROUP**
+#### **Case GROUP_RED**
 🔶 
 ```
 reduce $x_1=<AGG>, ... , $x_k=<AGG> within $y_1, $y_2, ...;
@@ -2337,6 +2340,11 @@ reduce $x_1=<AGG>, ... , $x_k=<AGG> within $y_1, $y_2, ...;
 
 In this case, we output the following:
 * 🔶 for each distinct tuple of elements `el_1, el_2, ...` assigned to `$y_1, $y_2, ...` by rows in the stream, we perform the aggregates as described above over _all rows `m`_ for which `m($y_1) = el_1, m($y__2) = el_2, ...` and then output the resulting concept row `($y_1 -> el_1, $y_2 = el_2, ..., $x_1 -> <CPT>, $x_2 -> <CPT>, ...)`
+
+
+## Branches
+
+(to be written)
 
 ## Transactions
 
