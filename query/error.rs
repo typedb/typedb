@@ -9,6 +9,7 @@ use compiler::{
     insert::WriteCompilationError,
     match_::inference::{FunctionTypeInferenceError, TypeInferenceError},
 };
+use encoding::value::value_type::ValueTypeCategory;
 use error::typedb_error;
 use executor::pipeline::PipelineExecutionError;
 use function::FunctionError;
@@ -33,5 +34,8 @@ typedb_error!(
         WritePipelineExecutionError(12, "Error while execution write pipeline.", ( typedb_source: PipelineExecutionError )),
         ReadPipelineExecutionError(13, "Error while executing read pipeline.", ( typedb_source: PipelineExecutionError )),
         QueryExecutionClosedEarly(14, "Query execution was closed before it finished, possibly due to transaction close, rollback, commit, or a server-side error (these should be visible in the server logs)."),
+        CouldNotDetermineValueTypeForReducerInput(15, "The value-type for the reducer input variable {variable} could not be determined.", variable: String),
+        ReducerInputVariableDidNotHaveSingleValueType(16, "The reducer input variable {variable} had multiple value-types.", variable: String),
+        UnsupportedValueTypeForReducer(17, "The input variable to the reducer'{reducer}({variable})' reducer had an unsupported value-type: '{value_type}'", reducer: String, variable: String, value_type: ValueTypeCategory),
     }
 );

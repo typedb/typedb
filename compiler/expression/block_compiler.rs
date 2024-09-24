@@ -27,7 +27,7 @@ use crate::{
         expression_compiler::ExpressionCompilationContext,
         ExpressionCompileError,
     },
-    match_::inference::type_annotations::TypeAnnotations,
+    match_::inference::{type_annotations::TypeAnnotations, type_inference::resolve_value_types, TypeInferenceError},
 };
 
 struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
@@ -160,18 +160,13 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
             Ok(())
         }
     } else if let Some(types) = context.type_annotations.vertex_annotations_of(&Vertex::Variable(variable)) {
-        let vec = types
-            .iter()
-            .map(|type_| match type_ {
-                Type::Attribute(attribute_type) => attribute_type
-                    .get_value_type_without_source(context.snapshot, context.type_manager)
-                    .map_err(|source| ExpressionCompileError::ConceptRead { source }),
-                _ => Ok(None),
-            })
-            .collect::<Result<HashSet<_>, ExpressionCompileError>>()?;
-        if vec.len() != 1 {
+        let value_types = resolve_value_types(types, context.snapshot, context.type_manager).map_err(|source| {
+            ExpressionCompileError::CouldNotDetermineValueTypeForVariable { variable: variable.clone() }
+        })?;
+        if value_types.len() != 1 {
             Err(ExpressionCompileError::VariableDidNotHaveSingleValueType { variable })
-        } else if let Some(value_type) = &vec.iter().find(|_| true).unwrap() {
+        } else {
+            let value_type = value_types.iter().find(|_| true).unwrap();
             let variable_category = context.variable_registry.get_variable_category(variable).unwrap();
             match variable_category {
                 VariableCategory::Attribute | VariableCategory::Value => {
@@ -187,8 +182,6 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
                     actual_category: variable_category,
                 })?,
             }
-        } else {
-            Err(ExpressionCompileError::VariableHasNoValueType { variable })
         }
     } else {
         Err(ExpressionCompileError::CouldNotDetermineValueTypeForVariable { variable })

@@ -10,6 +10,7 @@ use std::{
 };
 
 use answer::{variable::Variable, Type};
+use encoding::value::value_type::ValueTypeCategory;
 
 use crate::{
     pattern::{IrID, Vertex},
@@ -63,7 +64,7 @@ impl Function {
 #[derive(Debug, Clone)]
 pub enum ReturnOperation {
     Stream(Vec<Variable>),
-    Reduce(Vec<Reducer<Variable>>),
+    Reduce(Vec<Reducer>),
 }
 
 impl ReturnOperation {
@@ -95,17 +96,8 @@ impl ReturnOperation {
 }
 
 #[derive(Debug, Clone)]
-pub enum Reducer<ID: IrID> {
-    Count(ID),
-    SumLong(ID),
+pub enum Reducer {
+    Count(Variable),
+    Sum(Variable),
     // First, Any etc.
-}
-
-impl<ID: IrID> Reducer<ID> {
-    pub fn id(&self) -> ID {
-        match self {
-            Reducer::Count(id) => id.clone(),
-            Reducer::SumLong(id) => id.clone(),
-        }
-    }
 }

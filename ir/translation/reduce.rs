@@ -59,12 +59,12 @@ pub fn translate_reduce(
 }
 
 fn resolve_assigned_variable_category_optionality(
-    reduce: &Reducer<Variable>,
+    reduce: &Reducer,
     variable_registry: &VariableRegistry,
 ) -> (VariableCategory, bool) {
     match reduce {
         Reducer::Count(_) => (VariableCategory::Value, false),
-        Reducer::SumLong(_) => (VariableCategory::Value, true),
+        Reducer::Sum(_) => (VariableCategory::Value, true),
     }
 }
 
@@ -72,7 +72,7 @@ fn build_reduce_value(
     visible_variables: &HashMap<String, Variable>,
     reduce_value: &ReduceValue,
     reduce: &typeql::query::pipeline::stage::Reduce,
-) -> Result<Reducer<Variable>, PatternDefinitionError> {
+) -> Result<Reducer, PatternDefinitionError> {
     match reduce_value {
         ReduceValue::Count(count) => {
             debug_assert!(count.variables.len() == 1); // TODO: The spec only allows 1?
@@ -89,7 +89,7 @@ fn build_reduce_value(
                 });
             };
             match &stat.reduce_operator {
-                ReduceOperator::Sum => Ok(Reducer::SumLong(var.clone())),
+                ReduceOperator::Sum => Ok(Reducer::Sum(var.clone())),
                 _ => todo!(),
             }
         }

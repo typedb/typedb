@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use answer::variable::Variable;
 
 use crate::{
-    pattern::variable_category::{VariableCategory, VariableOptionality},
+    pattern::variable_category::VariableCategory,
     program::{
         block::{BlockContext, ParameterRegistry, VariableRegistry},
         function::Reducer,
@@ -52,7 +52,7 @@ impl TranslationContext {
         name: &str,
         variable_category: VariableCategory,
         is_optional: bool,
-        reducer: Reducer<Variable>,
+        reducer: Reducer,
     ) -> Variable {
         self.variable_registry.register_reduce_output_variable(name, variable_category, is_optional, reducer)
     }

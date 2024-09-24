@@ -244,7 +244,7 @@ impl VariableRegistry {
         name: &str,
         category: VariableCategory,
         is_optional: bool,
-        reducer: Reducer<Variable>,
+        reducer: Reducer,
     ) -> Variable {
         let variable = self.register_variable_named(name.to_owned());
         self.set_variable_category(variable.clone(), category, VariableCategorySource::Reduce(reducer)).unwrap(); // We just created the variable. It cannot error
@@ -256,7 +256,7 @@ impl VariableRegistry {
 #[derive(Clone, Debug)]
 pub enum VariableCategorySource {
     Constraint(Constraint<Variable>),
-    Reduce(Reducer<Variable>),
+    Reduce(Reducer),
 }
 
 #[derive(Clone, Debug, Default)]

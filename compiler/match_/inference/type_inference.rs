@@ -5,12 +5,14 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    any::Any,
+    collections::{BTreeMap, BTreeSet, HashSet},
     sync::Arc,
 };
 
-use answer::variable::Variable;
+use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
+use encoding::value::value_type::ValueType;
 use ir::{
     pattern::Vertex,
     program::{
@@ -113,6 +115,38 @@ pub fn infer_types_for_match_block(
         .referenced_variables() // FIXME vertices?
         .all(|var| type_annotations.vertex_annotations_of(&Vertex::Variable(var)).is_some()));
     Ok(type_annotations)
+}
+
+pub fn resolve_value_types(
+    types: &BTreeSet<answer::Type>,
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+) -> Result<HashSet<ValueType>, TypeInferenceError> {
+    types
+        .iter()
+        .map(|type_| match type_ {
+            Type::Attribute(attribute_type) => {
+                match attribute_type.get_value_type_without_source(snapshot, type_manager) {
+                    Ok(None) => {
+                        let label = match type_.get_label(snapshot, type_manager) {
+                            Ok(label) => label.scoped_name().as_str().to_owned(),
+                            Err(_) => format!("could_not_resolve__{type_}"),
+                        };
+                        Err(TypeInferenceError::AttemptedToResolveValueTypeOfAttributeWithoutOne { label })
+                    }
+                    Ok(Some(value_type)) => Ok(value_type),
+                    Err(source) => Err(TypeInferenceError::ConceptRead { source }),
+                }
+            }
+            _ => {
+                let label = match type_.get_label(snapshot, type_manager) {
+                    Ok(label) => label.scoped_name().as_str().to_owned(),
+                    Err(_) => format!("could_not_resolve__{type_}"),
+                };
+                Err(TypeInferenceError::AttemptedToResolveValueTypeOfNonAttributeType { label })
+            }
+        })
+        .collect::<Result<HashSet<_>, TypeInferenceError>>()
 }
 
 #[cfg(test)]

@@ -7,10 +7,11 @@
 use std::collections::HashMap;
 
 use answer::{variable_value::VariableValue, Thing};
-use compiler::{modifiers::ReduceProgram, VariablePosition};
-use concept::thing::thing_manager::ThingManager;
+use compiler::{
+    modifiers::{ReduceOperation, ReduceProgram},
+    VariablePosition,
+};
 use encoding::value::value::Value;
-use ir::program::function::Reducer;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -174,9 +175,9 @@ impl ReducerImpl {
 }
 
 impl ReducerImpl {
-    fn build(reduce_ir: &Reducer<VariablePosition>) -> Self {
+    fn build(reduce_ir: &ReduceOperation<VariablePosition>) -> Self {
         match reduce_ir {
-            Reducer::SumLong(pos) => ReducerImpl::SumLong(SumLongImpl::new(pos.clone())),
+            ReduceOperation::SumLong(pos) => ReducerImpl::SumLong(SumLongImpl::new(pos.clone())),
             _ => todo!(),
         }
     }

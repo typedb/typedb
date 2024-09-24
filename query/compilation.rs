@@ -5,6 +5,7 @@
  */
 use std::{
     collections::{HashMap, HashSet},
+    iter::zip,
     sync::Arc,
 };
 
@@ -13,15 +14,11 @@ use compiler::{
     delete::program::DeleteProgram,
     insert::program::InsertProgram,
     match_::{inference::annotated_functions::AnnotatedUnindexedFunctions, planner::pattern_plan::MatchProgram},
-    modifiers::{LimitProgram, OffsetProgram, ReduceProgram, SelectProgram, SortProgram},
+    modifiers::{LimitProgram, OffsetProgram, ReduceOperation, ReduceProgram, SelectProgram, SortProgram},
     VariablePosition,
 };
 use concept::thing::statistics::Statistics;
-use ir::program::{
-    block::VariableRegistry,
-    function::{Function, Reducer},
-    modifier::{Limit, Offset, Select, Sort},
-};
+use ir::program::{block::VariableRegistry, function::Function};
 
 use crate::{annotation::AnnotatedStage, error::QueryError};
 
@@ -160,7 +157,8 @@ fn compile_stage(
         AnnotatedStage::Limit(limit) => {
             Ok(CompiledStage::Limit(LimitProgram { limit: limit.limit(), output_row_mapping: input_variables.clone() }))
         }
-        AnnotatedStage::Reduce(reduce) => {
+        AnnotatedStage::Reduce(reduce, typed_reducers) => {
+            debug_assert_eq!(reduce.assigned_reductions.len(), typed_reducers.len());
             let mut output_row_mapping = HashMap::new();
             let mut input_group_positions = Vec::with_capacity(reduce.within_group.len());
             for variable in reduce.within_group.iter() {
@@ -168,16 +166,20 @@ fn compile_stage(
                 input_group_positions.push(input_variables.get(variable).unwrap().clone());
             }
             let mut reduction_inputs = Vec::with_capacity(reduce.assigned_reductions.len());
-            for (assigned_variable, reducer) in reduce.assigned_reductions.iter() {
+            for ((assigned_variable, _), reducer_on_variable) in
+                zip(reduce.assigned_reductions.iter(), typed_reducers.iter())
+            {
                 output_row_mapping.insert(
                     assigned_variable.clone(),
                     VariablePosition::new((input_group_positions.len() + reduction_inputs.len()) as u32),
                 );
-                let reducer = match reducer {
-                    Reducer::Count(variable) => Reducer::Count(input_variables.get(variable).unwrap().clone()),
-                    Reducer::SumLong(variable) => Reducer::SumLong(input_variables.get(variable).unwrap().clone()),
+                let reducer_on_position = match reducer_on_variable {
+                    ReduceOperation::SumLong(variable) => {
+                        ReduceOperation::SumLong(input_variables.get(variable).unwrap().clone())
+                    }
+                    _ => todo!(),
                 };
-                reduction_inputs.push(reducer);
+                reduction_inputs.push(reducer_on_position);
             }
             Ok(CompiledStage::Reduce(ReduceProgram { reduction_inputs, input_group_positions, output_row_mapping }))
         }
