@@ -1028,7 +1028,7 @@ impl TransactionService {
         );
         let read_responder = self.read_responders.get_mut(&request_id);
         if let Some((worker_handle, stream_transmitter)) = read_responder {
-            if stream_transmitter.check_finished_else_continue().await {
+            if stream_transmitter.check_finished_else_queue_continue().await {
                 debug_assert!(worker_handle.is_finished());
                 self.read_responders.remove(&request_id);
             }
@@ -1037,7 +1037,7 @@ impl TransactionService {
         } else {
             let write_responder = self.write_responders.get_mut(&request_id);
             if let Some((worker_handle, stream_transmitter)) = write_responder {
-                if stream_transmitter.check_finished_else_continue().await {
+                if stream_transmitter.check_finished_else_queue_continue().await {
                     debug_assert!(worker_handle.is_finished());
                     self.write_responders.remove(&request_id);
                 }
@@ -1098,7 +1098,7 @@ impl QueryStreamTransmitter {
         }
     }
 
-    async fn check_finished_else_continue(&mut self) -> bool {
+    async fn check_finished_else_queue_continue(&mut self) -> bool {
         let task = self.transmitter_task.take().unwrap();
         if task.is_finished() {
             // Should be immediate and safe to unwrap: cancelled or panicked are the only cases
@@ -1117,6 +1117,24 @@ impl QueryStreamTransmitter {
                 Break(_) => true,
             }
         } else {
+            let sender = self.response_sender.clone();
+            let prefetch = self.prefetch_size;
+            let latency = self.network_latency_millis;
+            let req_id = self.req_id;
+            // append another parts responding operation to run once the existing one has finished
+            self.transmitter_task = Some(tokio::spawn(async move {
+                let control = task.await.unwrap();
+                match control {
+                    Continue(query_response_receiver) => Self::respond_stream_parts(
+                        sender,
+                        prefetch,
+                        latency,
+                        req_id,
+                        query_response_receiver
+                    ).await,
+                    Break(()) => Break(())
+                }
+            }));
             false
         }
     }
