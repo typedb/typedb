@@ -44,32 +44,6 @@ fn build_modifiers() {
     let block = builder.finish();
 }
 
-// TODO: I moved this to the translation stage.
-// #[test]
-// fn build_invalid_modifiers() {
-//     let mut context = TranslationContext::new();
-//     let mut builder = FunctionalBlock::builder(context.next_block_context());
-//     let mut conjunction = builder.conjunction_mut();
-//
-//     let person_name = String::from("bob");
-//     let var_person = conjunction.get_or_declare_variable(&person_name).unwrap();
-//     let var_name = conjunction.get_or_declare_variable("name").unwrap();
-//     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
-//     let var_name_type = conjunction.get_or_declare_variable("name_type").unwrap();
-//
-//     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
-//     conjunction.constraints_mut().add_has(var_person, var_name).unwrap();
-//     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
-//     conjunction.constraints_mut().add_label(var_person_type, "person").unwrap();
-//     conjunction.constraints_mut().add_label(var_name_type, "name").unwrap();
-//
-//     let result = builder.add_sort(vec![("bob", true), ("jane", false)]);
-//     assert!(
-//         matches!(&result, Err(ModifierDefinitionError::SortVariableNotAvailable { name }) if name == "jane"),
-//         "{result:?}"
-//     );
-// }
-
 #[test]
 fn build_program_with_functions() {
     let mut context = TranslationContext::new();

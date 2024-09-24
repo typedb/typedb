@@ -23,7 +23,6 @@ use crate::{
     ExecutionInterrupt,
 };
 
-// Sort
 pub struct ReduceStageExecutor<PreviousStage> {
     program: ReduceProgram,
     previous: PreviousStage,
@@ -65,8 +64,7 @@ fn reduce_iterator<Snapshot: ReadableSnapshot>(
     let mut iterator = iterator;
     let mut grouped_reducer = GroupedReducer::new(program);
     while let Some(result) = iterator.next() {
-        let snapshot: &Snapshot = &context.snapshot;
-        grouped_reducer.accept(&result?, snapshot, &context.thing_manager)?;
+        grouped_reducer.accept(&result?, &context)?;
     }
     Ok(grouped_reducer.finalise())
 }
@@ -90,11 +88,11 @@ impl GroupedReducer {
             sample_reducers,
         }
     }
+
     fn accept<Snapshot: ReadableSnapshot>(
         &mut self,
         row: &MaybeOwnedRow<'_>,
-        snapshot: &Snapshot,
-        thing_manager: &ThingManager,
+        context: &ExecutionContext<Snapshot>,
     ) -> Result<(), PipelineExecutionError> {
         self.reused_group.clear();
         for pos in &self.input_group_positions {
@@ -105,7 +103,7 @@ impl GroupedReducer {
         }
         let reducers = self.grouped_aggregates.get_mut(&self.reused_group).unwrap();
         for reducer in reducers {
-            reducer.accept(row, snapshot, thing_manager)
+            reducer.accept(row, context);
         }
         Ok(())
     }
@@ -132,13 +130,28 @@ impl GroupedReducer {
 
 trait ReducerAPI {
     fn new(target: VariablePosition) -> Self;
-    fn accept<Snapshot: ReadableSnapshot>(
-        &mut self,
-        row: &MaybeOwnedRow<'_>,
-        snapshot: &Snapshot,
-        thing_manager: &ThingManager,
-    );
+
+    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>);
+
     fn finalise(self) -> VariableValue<'static>;
+}
+
+fn extract_value<Snapshot: ReadableSnapshot>(
+    row: &MaybeOwnedRow<'_>,
+    position: &VariablePosition,
+    context: &ExecutionContext<Snapshot>,
+) -> Option<Value<'static>> {
+    match row.get(position.clone()) {
+        VariableValue::Empty => None,
+        VariableValue::Value(value) => Some(value.clone().into_owned()),
+        VariableValue::Thing(Thing::Attribute(attribute)) => {
+            // As long as these are trivial, it's safe to unwrap
+            let snapshot: &Snapshot = &context.snapshot;
+            let value = attribute.get_value(snapshot, &context.thing_manager).unwrap();
+            Some(value.clone().into_owned())
+        }
+        _ => unreachable!(),
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -147,16 +160,12 @@ enum ReducerImpl {
 }
 
 impl ReducerImpl {
-    fn accept<Snapshot: ReadableSnapshot>(
-        &mut self,
-        row: &MaybeOwnedRow<'_>,
-        snapshot: &Snapshot,
-        thing_manager: &ThingManager,
-    ) {
+    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         match self {
-            ReducerImpl::SumLong(reducer) => reducer.accept(row, snapshot, thing_manager),
+            ReducerImpl::SumLong(reducer) => reducer.accept(row, context),
         }
     }
+
     fn finalise(self) -> VariableValue<'static> {
         match self {
             ReducerImpl::SumLong(mut reducer) => reducer.finalise(),
@@ -184,22 +193,10 @@ impl ReducerAPI for SumLongImpl {
         Self { sum: 0, target }
     }
 
-    fn accept<Snapshot: ReadableSnapshot>(
-        &mut self,
-        row: &MaybeOwnedRow<'_>,
-        snapshot: &Snapshot,
-        thing_manager: &ThingManager,
-    ) {
-        match row.get(self.target.clone()) {
-            VariableValue::Empty => {}
-            VariableValue::Value(value) => {
-                self.sum += value.clone().unwrap_long();
-            }
-            VariableValue::Thing(Thing::Attribute(attribute)) => {
-                self.sum += attribute.get_value(snapshot, thing_manager).unwrap().clone().unwrap_long();
-            }
-            _ => unreachable!(),
-        };
+    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
+        if let Some(value) = extract_value(row, &self.target, context) {
+            self.sum += value.unwrap_long();
+        }
     }
 
     fn finalise(self) -> VariableValue<'static> {

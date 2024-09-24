@@ -86,24 +86,3 @@ impl Limit {
         self.limit
     }
 }
-
-#[derive(Debug, Clone)]
-pub enum ModifierDefinitionError {
-    SelectedVariableNotAvailable { name: String },
-    SortVariableNotAvailable { name: String },
-}
-
-impl fmt::Display for ModifierDefinitionError {
-    fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for ModifierDefinitionError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::SelectedVariableNotAvailable { .. } => None,
-            Self::SortVariableNotAvailable { .. } => None,
-        }
-    }
-}

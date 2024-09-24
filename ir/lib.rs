@@ -19,8 +19,8 @@ use typeql::{
 };
 
 use crate::{
-    pattern::{constraint::Constraint, expression::ExpressionDefinitionError, variable_category::VariableCategory},
-    program::{modifier::ModifierDefinitionError, FunctionReadError},
+    pattern::{expression::ExpressionDefinitionError, variable_category::VariableCategory},
+    program::FunctionReadError,
 };
 
 pub mod pattern;

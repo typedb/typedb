@@ -23,8 +23,7 @@ use crate::{
     },
     program::{
         function::Reducer,
-        modifier::{Limit, Modifier, ModifierDefinitionError, Offset, Select, Sort},
-        reduce::Reduce,
+        modifier::{Limit, Modifier, Offset, Select, Sort},
     },
     PatternDefinitionError,
 };
