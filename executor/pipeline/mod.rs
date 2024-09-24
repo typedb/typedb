@@ -20,7 +20,6 @@ pub mod modifiers;
 pub mod reduce;
 pub mod stage;
 
-
 typedb_error!(
     pub PipelineExecutionError(component = "Pipeline execution", prefix = "PEX") {
         // TODO: migrate to `typedb_error` once they are typedb errors

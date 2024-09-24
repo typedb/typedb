@@ -7,10 +7,14 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use crate::pattern::variable_category::{VariableCategory, VariableOptionality};
 
-use crate::program::block::{BlockContext, ParameterRegistry, VariableRegistry};
-use crate::program::function::Reducer;
+use crate::{
+    pattern::variable_category::{VariableCategory, VariableOptionality},
+    program::{
+        block::{BlockContext, ParameterRegistry, VariableRegistry},
+        function::Reducer,
+    },
+};
 
 mod constraints;
 mod expression;
@@ -43,7 +47,13 @@ impl TranslationContext {
         BlockContext::new(variable_registry, visible_variables, parameters)
     }
 
-    pub(crate) fn register_reduced_variable(&mut self, name: &str, variable_category: VariableCategory, is_optional: bool, reducer: Reducer<Variable>) -> Variable {
+    pub(crate) fn register_reduced_variable(
+        &mut self,
+        name: &str,
+        variable_category: VariableCategory,
+        is_optional: bool,
+        reducer: Reducer<Variable>,
+    ) -> Variable {
         self.variable_registry.register_reduce_output_variable(name, variable_category, is_optional, reducer)
     }
 }

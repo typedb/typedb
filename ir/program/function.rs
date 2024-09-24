@@ -12,10 +12,9 @@ use std::{
 use answer::{variable::Variable, Type};
 
 use crate::{
-    pattern::Vertex,
+    pattern::{IrID, Vertex},
     program::block::{FunctionalBlock, VariableRegistry},
 };
-use crate::pattern::IrID;
 
 pub type PlaceholderTypeQLReturnOperation = String;
 

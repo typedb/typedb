@@ -22,12 +22,12 @@ use crate::{
             LimitStageExecutor, LimitStageIterator, OffsetStageExecutor, OffsetStageIterator, SelectStageExecutor,
             SelectStageIterator, SortStageExecutor, SortStageIterator,
         },
+        reduce::ReduceStageExecutor,
         PipelineExecutionError, WrittenRowsIterator,
     },
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-use crate::pipeline::reduce::ReduceStageExecutor;
 
 #[derive(Debug)]
 pub struct ExecutionContext<Snapshot> {
@@ -257,7 +257,7 @@ pub enum WriteStageIterator<Snapshot: WritableSnapshot + 'static> {
     Limit(Box<LimitStageIterator<WriteStageIterator<Snapshot>>>),
     Offset(Box<OffsetStageIterator<WriteStageIterator<Snapshot>>>),
     Select(Box<SelectStageIterator<WriteStageIterator<Snapshot>>>),
-    Reduce(WrittenRowsIterator)
+    Reduce(WrittenRowsIterator),
 }
 
 impl<Snapshot: WritableSnapshot + 'static> LendingIterator for WriteStageIterator<Snapshot> {

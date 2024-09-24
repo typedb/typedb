@@ -29,9 +29,9 @@ use ir::{
         block::{FunctionalBlock, ParameterRegistry, VariableRegistry},
         function::Function,
         modifier::{Limit, Offset, Select, Sort},
+        reduce::Reduce,
     },
 };
-use ir::program::reduce::Reduce;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{error::QueryError, translation::TranslatedStage};

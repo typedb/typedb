@@ -5,9 +5,9 @@
  */
 
 use std::collections::HashSet;
-use typeql::query::stage::Modifier;
-use typeql::token::Order;
+
 use answer::variable::Variable;
+use typeql::{query::stage::Modifier, token::Order};
 
 use crate::{
     program::modifier::{Limit, Offset, Select, Sort},
@@ -22,15 +22,17 @@ pub fn translate_select(
     context: &mut TranslationContext,
     typeql_select: &typeql::query::stage::modifier::Select,
 ) -> Result<Select, PatternDefinitionError> {
-    let selected_variables = typeql_select.variables.iter().map(|typeql_var| {
-        match context.visible_variables.get(typeql_var.name().unwrap()) {
+    let selected_variables = typeql_select
+        .variables
+        .iter()
+        .map(|typeql_var| match context.visible_variables.get(typeql_var.name().unwrap()) {
             None => Err(PatternDefinitionError::OperatorStageVariableUnavailable {
                 variable_name: typeql_var.name().unwrap().to_owned(),
-                declaration: typeql::query::pipeline::stage::Stage::Modifier(Modifier::Select(typeql_select.clone()))
+                declaration: typeql::query::pipeline::stage::Stage::Modifier(Modifier::Select(typeql_select.clone())),
             }),
             Some(v) => Ok(v.clone()),
-        }
-    }).collect::<Result<HashSet<_>, _>>()?;
+        })
+        .collect::<Result<HashSet<_>, _>>()?;
     let select = Select::new(selected_variables);
     context.visible_variables.retain(|name, var| select.variables.contains(var));
     Ok(select)
@@ -48,9 +50,11 @@ pub fn translate_sort(
             match context.visible_variables.get(ordered_var.variable.name().unwrap()) {
                 None => Err(PatternDefinitionError::OperatorStageVariableUnavailable {
                     variable_name: ordered_var.variable.name().unwrap().to_owned(),
-                    declaration: typeql::query::pipeline::stage::Stage::Modifier(typeql::query::pipeline::stage::Modifier::Sort(sort.clone()))
+                    declaration: typeql::query::pipeline::stage::Stage::Modifier(
+                        typeql::query::pipeline::stage::Modifier::Sort(sort.clone()),
+                    ),
                 }),
-                Some(variable) => Ok((variable.clone(), is_ascending))
+                Some(variable) => Ok((variable.clone(), is_ascending)),
             }
         })
         .collect::<Result<Vec<_>, _>>()?;

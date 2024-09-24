@@ -12,19 +12,19 @@ use ir::{
         function::Function,
         function_signature::{FunctionID, FunctionSignatureIndex, HashMapFunctionSignatureIndex},
         modifier::{Limit, Offset, Select, Sort},
+        reduce::Reduce,
     },
     translation::{
         function::translate_function,
         match_::translate_match,
         modifiers::{translate_limit, translate_offset, translate_select, translate_sort},
+        reduce::translate_reduce,
         writes::{translate_delete, translate_insert},
         TranslationContext,
     },
 };
 use storage::snapshot::ReadableSnapshot;
 use typeql::query::stage::{Modifier, Stage as TypeQLStage, Stage};
-use ir::program::reduce::Reduce;
-use ir::translation::reduce::translate_reduce;
 
 use crate::error::QueryError;
 
@@ -104,7 +104,9 @@ fn translate_stage(
                 translate_limit(translation_context, limit).map(|limit| TranslatedStage::Limit(limit))
             }
         },
-        Stage::Reduce(reduce) => translate_reduce(translation_context, reduce).map(|reduce| TranslatedStage::Reduce(reduce)),
+        Stage::Reduce(reduce) => {
+            translate_reduce(translation_context, reduce).map(|reduce| TranslatedStage::Reduce(reduce))
+        }
         _ => todo!(),
     }
     .map_err(|source| QueryError::PatternDefinition { typedb_source: source })

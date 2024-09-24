@@ -6,10 +6,9 @@
 
 use std::{
     borrow::Cow,
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, HashMap, HashSet},
     sync::Arc,
 };
-use std::collections::HashSet;
 
 use compiler::{
     match_::{

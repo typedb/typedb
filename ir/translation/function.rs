@@ -18,13 +18,12 @@ use crate::{
     },
     program::{
         block::{BlockContext, FunctionalBlock},
-        function::{Function, ReturnOperation},
+        function::{Function, Reducer, ReturnOperation},
         function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex},
         FunctionRepresentationError,
     },
     translation::{match_::add_patterns, TranslationContext},
 };
-use crate::program::function::Reducer;
 
 pub fn translate_function(
     function_index: &impl FunctionSignatureIndex,

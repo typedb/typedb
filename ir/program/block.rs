@@ -21,11 +21,13 @@ use crate::{
         variable_category::{VariableCategory, VariableOptionality},
         ParameterID, Scope, ScopeId,
     },
-    program::modifier::{Limit, Modifier, ModifierDefinitionError, Offset, Select, Sort},
+    program::{
+        function::Reducer,
+        modifier::{Limit, Modifier, ModifierDefinitionError, Offset, Select, Sort},
+        reduce::Reduce,
+    },
     PatternDefinitionError,
 };
-use crate::program::function::Reducer;
-use crate::program::reduce::Reduce;
 
 // A functional block is exactly 1 Conjunction + any number of modifiers
 
@@ -238,10 +240,15 @@ impl VariableRegistry {
     }
 
     // TODO: This is out of place
-    pub(crate) fn register_reduce_output_variable(&mut self, name: &str, category: VariableCategory, is_optional: bool, reducer: Reducer<Variable>) -> Variable {
+    pub(crate) fn register_reduce_output_variable(
+        &mut self,
+        name: &str,
+        category: VariableCategory,
+        is_optional: bool,
+        reducer: Reducer<Variable>,
+    ) -> Variable {
         let variable = self.register_variable_named(name.to_owned());
-        self.set_variable_category(variable.clone(), category, VariableCategorySource::Reduce(reducer))
-            .unwrap(); // We just created the variable. It cannot error
+        self.set_variable_category(variable.clone(), category, VariableCategorySource::Reduce(reducer)).unwrap(); // We just created the variable. It cannot error
         self.set_variable_is_optional(variable.clone(), is_optional);
         variable
     }

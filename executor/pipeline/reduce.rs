@@ -4,21 +4,24 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
 use std::collections::HashMap;
-use answer::Thing;
-use answer::variable_value::VariableValue;
-use compiler::modifiers::ReduceProgram;
-use compiler::VariablePosition;
+
+use answer::{variable_value::VariableValue, Thing};
+use compiler::{modifiers::ReduceProgram, VariablePosition};
 use concept::thing::thing_manager::ThingManager;
 use encoding::value::value::Value;
 use ir::program::function::Reducer;
 use storage::snapshot::ReadableSnapshot;
-use crate::batch::Batch;
-use crate::ExecutionInterrupt;
-use crate::pipeline::{PipelineExecutionError, WrittenRowsIterator};
-use crate::pipeline::stage::{ExecutionContext, StageAPI, StageIterator};
-use crate::row::MaybeOwnedRow;
+
+use crate::{
+    batch::Batch,
+    pipeline::{
+        stage::{ExecutionContext, StageAPI, StageIterator},
+        PipelineExecutionError, WrittenRowsIterator,
+    },
+    row::MaybeOwnedRow,
+    ExecutionInterrupt,
+};
 
 // Sort
 pub struct ReduceStageExecutor<PreviousStage> {
@@ -26,17 +29,16 @@ pub struct ReduceStageExecutor<PreviousStage> {
     previous: PreviousStage,
 }
 
-impl<PreviousStage> ReduceStageExecutor<PreviousStage>
-{
+impl<PreviousStage> ReduceStageExecutor<PreviousStage> {
     pub fn new(program: ReduceProgram, previous: PreviousStage) -> Self {
         Self { program, previous }
     }
 }
 
 impl<Snapshot, PreviousStage> StageAPI<Snapshot> for ReduceStageExecutor<PreviousStage>
-    where
-        Snapshot: ReadableSnapshot + 'static,
-        PreviousStage: StageAPI<Snapshot>,
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
 {
     type OutputIterator = WrittenRowsIterator;
 
@@ -55,8 +57,12 @@ impl<Snapshot, PreviousStage> StageAPI<Snapshot> for ReduceStageExecutor<Previou
     }
 }
 
-fn reduce_iterator<Snapshot: ReadableSnapshot>(context: &ExecutionContext<Snapshot>, program: ReduceProgram, iterator: impl StageIterator) -> Result<Batch, PipelineExecutionError> {
-    let mut  iterator = iterator;
+fn reduce_iterator<Snapshot: ReadableSnapshot>(
+    context: &ExecutionContext<Snapshot>,
+    program: ReduceProgram,
+    iterator: impl StageIterator,
+) -> Result<Batch, PipelineExecutionError> {
+    let mut iterator = iterator;
     let mut grouped_reducer = GroupedReducer::new(program);
     while let Some(result) = iterator.next() {
         let snapshot: &Snapshot = &context.snapshot;
@@ -67,25 +73,29 @@ fn reduce_iterator<Snapshot: ReadableSnapshot>(context: &ExecutionContext<Snapsh
 
 struct GroupedReducer {
     input_group_positions: Vec<VariablePosition>,
-    grouped_aggregates : HashMap<Vec<VariableValue<'static>>, Vec<ReducerImpl>>,
+    grouped_aggregates: HashMap<Vec<VariableValue<'static>>, Vec<ReducerImpl>>,
     reused_group: Vec<VariableValue<'static>>,
     sample_reducers: Vec<ReducerImpl>,
 }
 
 impl GroupedReducer {
     fn new(program: ReduceProgram) -> Self {
-        let sample_reducers : Vec<ReducerImpl> = program.reduction_inputs.iter().map(|reducer| {
-            ReducerImpl::build(reducer)
-        }).collect();
+        let sample_reducers: Vec<ReducerImpl> =
+            program.reduction_inputs.iter().map(|reducer| ReducerImpl::build(reducer)).collect();
         let reused_group = Vec::with_capacity(program.input_group_positions.len());
         Self {
-            input_group_positions:  program.input_group_positions,
+            input_group_positions: program.input_group_positions,
             grouped_aggregates: HashMap::new(),
             reused_group,
             sample_reducers,
         }
     }
-    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, snapshot: &Snapshot, thing_manager: &ThingManager) -> Result<(), PipelineExecutionError> {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        snapshot: &Snapshot,
+        thing_manager: &ThingManager,
+    ) -> Result<(), PipelineExecutionError> {
         self.reused_group.clear();
         for pos in &self.input_group_positions {
             self.reused_group.push(row.get(pos.clone()).to_owned());
@@ -94,7 +104,7 @@ impl GroupedReducer {
             self.grouped_aggregates.insert(self.reused_group.clone(), self.sample_reducers.clone());
         }
         let reducers = self.grouped_aggregates.get_mut(&self.reused_group).unwrap();
-        for reducer in reducers  {
+        for reducer in reducers {
             reducer.accept(row, snapshot, thing_manager)
         }
         Ok(())
@@ -102,13 +112,11 @@ impl GroupedReducer {
 
     fn finalise(self) -> Batch {
         let Self { input_group_positions, sample_reducers, grouped_aggregates, .. } = self;
-        let mut batch = Batch::new(
-            (input_group_positions.len() + sample_reducers.len()) as u32,
-            grouped_aggregates.len()
-        );
+        let mut batch =
+            Batch::new((input_group_positions.len() + sample_reducers.len()) as u32, grouped_aggregates.len());
         let mut reused_row = Vec::with_capacity(input_group_positions.len() + sample_reducers.len());
         let reused_multiplicity = 1;
-        for (group, reducers)  in grouped_aggregates.into_iter() {
+        for (group, reducers) in grouped_aggregates.into_iter() {
             reused_row.clear();
             for value in group.into_iter() {
                 reused_row.push(value);
@@ -124,7 +132,12 @@ impl GroupedReducer {
 
 trait ReducerAPI {
     fn new(target: VariablePosition) -> Self;
-    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, snapshot: &Snapshot, thing_manager: &ThingManager);
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        snapshot: &Snapshot,
+        thing_manager: &ThingManager,
+    );
     fn finalise(self) -> VariableValue<'static>;
 }
 
@@ -134,7 +147,12 @@ enum ReducerImpl {
 }
 
 impl ReducerImpl {
-    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, snapshot: &Snapshot, thing_manager: &ThingManager)  {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        snapshot: &Snapshot,
+        thing_manager: &ThingManager,
+    ) {
         match self {
             ReducerImpl::SumLong(reducer) => reducer.accept(row, snapshot, thing_manager),
         }
@@ -153,7 +171,6 @@ impl ReducerImpl {
             _ => todo!(),
         }
     }
-
 }
 
 #[derive(Debug, Clone)]
@@ -164,12 +181,17 @@ struct SumLongImpl {
 
 impl ReducerAPI for SumLongImpl {
     fn new(target: VariablePosition) -> Self {
-        Self { sum: 0 , target }
+        Self { sum: 0, target }
     }
 
-    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, snapshot: &Snapshot, thing_manager: &ThingManager) {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        snapshot: &Snapshot,
+        thing_manager: &ThingManager,
+    ) {
         match row.get(self.target.clone()) {
-            VariableValue::Empty => { },
+            VariableValue::Empty => {}
             VariableValue::Value(value) => {
                 self.sum += value.clone().unwrap_long();
             }

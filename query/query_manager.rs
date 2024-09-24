@@ -14,12 +14,12 @@ use executor::pipeline::{
     insert::InsertStageExecutor,
     match_::MatchStageExecutor,
     modifiers::{LimitStageExecutor, OffsetStageExecutor, SelectStageExecutor, SortStageExecutor},
+    reduce::ReduceStageExecutor,
     stage::{ExecutionContext, ReadPipelineStage, WritePipelineStage},
 };
 use function::function_manager::FunctionManager;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
-use executor::pipeline::reduce::ReduceStageExecutor;
 
 use crate::{
     annotation::{infer_types_for_pipeline, AnnotatedPipeline},

@@ -5,8 +5,8 @@
  */
 
 use answer::variable::Variable;
-use crate::PatternDefinitionError;
-use crate::program::function::Reducer;
+
+use crate::{program::function::Reducer, PatternDefinitionError};
 
 #[derive(Debug, Clone)]
 pub struct Reduce {
@@ -15,10 +15,7 @@ pub struct Reduce {
 }
 
 impl Reduce {
-    pub(crate) fn new(
-        assigned_reductions: Vec<(Variable, Reducer<Variable>)>,
-        within_group: Vec<Variable>,
-    ) -> Self {
+    pub(crate) fn new(assigned_reductions: Vec<(Variable, Reducer<Variable>)>, within_group: Vec<Variable>) -> Self {
         Self { assigned_reductions, within_group }
     }
 }

@@ -10,7 +10,7 @@ use answer::{variable_value::VariableValue, Thing};
 use compiler::VariablePosition;
 use concept::{thing::object::ObjectAPI, type_::TypeAPI};
 use cucumber::gherkin::Step;
-use encoding::value::label::Label;
+use encoding::value::{label::Label, value_type::ValueType};
 use executor::{
     batch::Batch,
     pipeline::stage::{ExecutionContext, StageAPI, StageIterator},
@@ -20,7 +20,6 @@ use futures::TryFutureExt;
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
-use encoding::value::value_type::ValueType;
 use query::{error::QueryError, query_manager::QueryManager};
 use test_utils::assert_matches;
 
@@ -321,7 +320,7 @@ fn does_value_match(id: &str, var_value: &VariableValue<'_>, context: &Context) 
     let (id_type, id_value) = id.split_once(":").unwrap();
     let expected_value_type = match id_type {
         "long" => ValueType::Long,
-        _ => todo!()
+        _ => todo!(),
     };
     let expected = params::Value::from_str(id_value).unwrap().into_typedb(expected_value_type);
     &expected == var_value.as_value()

@@ -7,9 +7,7 @@
 use std::collections::{HashMap, HashSet};
 
 use answer::variable::Variable;
-use ir::program::function::Reducer;
-use ir::program::modifier::SortVariable;
-use ir::program::reduce::Reduce;
+use ir::program::{function::Reducer, modifier::SortVariable, reduce::Reduce};
 
 use crate::VariablePosition;
 
