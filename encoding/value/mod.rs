@@ -22,6 +22,7 @@ pub mod decimal_value;
 pub mod double_bytes;
 pub mod duration_bytes;
 pub mod duration_value;
+pub mod timezone;
 pub mod label;
 pub mod long_bytes;
 pub mod primitive_encoding;

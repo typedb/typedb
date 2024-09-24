@@ -6,17 +6,16 @@
 
 use answer::{variable_value::VariableValue, Thing, Type};
 use chrono::{Datelike, NaiveDateTime, Timelike};
-use chrono_tz::Tz;
 use compiler::VariablePosition;
 use concept::{
     error::ConceptReadError,
     thing::{thing_manager::ThingManager, ThingAPI},
     type_::{
-        annotation::Annotation, attribute_type::AttributeType, entity_type::EntityType, relation_type::RelationType,
-        role_type::RoleType, type_manager::TypeManager, KindAPI, TypeAPI,
+        attribute_type::AttributeType, entity_type::EntityType, relation_type::RelationType, role_type::RoleType,
+        type_manager::TypeManager, KindAPI, TypeAPI,
     },
 };
-use encoding::value::{value::Value, value_type::ValueType};
+use encoding::value::{timezone::TimeZone, value::Value, value_type::ValueType};
 use executor::row::MaybeOwnedRow;
 use storage::snapshot::ReadableSnapshot;
 
@@ -242,6 +241,9 @@ fn encode_date_time(date_time: NaiveDateTime) -> typedb_protocol::value::Datetim
     typedb_protocol::value::Datetime { seconds: date_time.and_utc().timestamp_millis(), nanos: date_time.nanosecond() }
 }
 
-fn encode_time_zone(timezone: Tz) -> typedb_protocol::value::datetime_tz::Timezone {
-    typedb_protocol::value::datetime_tz::Timezone::Named(timezone.name().to_string())
+fn encode_time_zone(timezone: TimeZone) -> typedb_protocol::value::datetime_tz::Timezone {
+    match timezone {
+        TimeZone::IANA(tz) => typedb_protocol::value::datetime_tz::Timezone::Named(tz.name().to_string()),
+        TimeZone::Fixed(fixed) => typedb_protocol::value::datetime_tz::Timezone::Offset(fixed.local_minus_utc()),
+    }
 }

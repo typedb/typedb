@@ -25,7 +25,7 @@ use cucumber::Parameter;
 use encoding::{
     graph::type_::Kind as TypeDBTypeKind,
     value::{
-        decimal_value::Decimal, label::Label as TypeDBLabel, value::Value as TypeDBValue,
+        decimal_value::Decimal, label::Label as TypeDBLabel, timezone::TimeZone, value::Value as TypeDBValue,
         value_type::ValueType as TypeDBValueType,
     },
 };
@@ -500,9 +500,8 @@ impl Value {
                 let (datetime, timezone) = Self::parse_date_time_and_remainder(self.raw_value.as_str());
 
                 if timezone.is_empty() {
-                    TypeDBValue::DateTimeTZ(datetime.and_local_timezone(Tz::default()).unwrap())
+                    TypeDBValue::DateTimeTZ(datetime.and_local_timezone(TimeZone::default()).unwrap())
                 } else if timezone.starts_with('+') || timezone.starts_with('-') {
-                    // TODO: Temporarily create a TZ for this format as well. It should be a separate DateTimeTZ format later!
                     let hours: i32 = timezone[1..3].parse().unwrap();
                     let minutes: i32 = timezone[3..].parse().unwrap();
                     let total_minutes = hours * 60 + minutes;
@@ -512,10 +511,12 @@ impl Value {
                         FixedOffset::west_opt(total_minutes * 60)
                     };
                     TypeDBValue::DateTimeTZ(
-                        datetime.and_local_timezone(Self::fixed_offset_to_tz(fixed_offset.unwrap()).unwrap()).unwrap(),
+                        datetime.and_local_timezone(TimeZone::Fixed(fixed_offset.unwrap())).unwrap(),
                     )
                 } else {
-                    TypeDBValue::DateTimeTZ(datetime.and_local_timezone(timezone.parse().unwrap()).unwrap())
+                    TypeDBValue::DateTimeTZ(
+                        datetime.and_local_timezone(TimeZone::IANA(timezone.parse().unwrap())).unwrap(),
+                    )
                 }
             }
             TypeDBValueType::Duration => TypeDBValue::Duration(self.raw_value.parse().unwrap()),
@@ -551,31 +552,6 @@ impl Value {
             Self::DATE_FORMAT,
             value
         )
-    }
-
-    // TODO: A temporary hack
-    fn fixed_offset_to_tz(offset: FixedOffset) -> Option<Tz> {
-        // A predefined mapping of FixedOffset to Tz
-        // This is a simplified example and may not cover all cases
-        let offset_seconds = offset.local_minus_utc();
-        match offset_seconds {
-            0 => Some(chrono_tz::UTC),                      // UTC
-            3600 => Some(chrono_tz::Europe::London),        // GMT+1
-            7200 => Some(chrono_tz::Europe::Berlin),        // GMT+2
-            36000 => Some(chrono_tz::Australia::Brisbane),  // GMT+10
-            -36000 => Some(chrono_tz::Pacific::Honolulu),   // GMT-10
-            600 => Some(chrono_tz::Australia::Adelaide),    // GMT+10:00 (Common in Oceania)
-            -600 => Some(chrono_tz::Pacific::Pago_Pago),    // GMT-10:00 (Common in Pacific)
-            -3600 => Some(chrono_tz::Atlantic::Cape_Verde), // GMT-1:00 (Common in Atlantic)
-            180 => Some(chrono_tz::Etc::GMTPlus3),          // GMT+00:03
-            -180 => Some(chrono_tz::Etc::GMTMinus3),        // GMT-00:03
-            120 => Some(chrono_tz::Etc::GMTPlus2),          // GMT+00:02
-            -120 => Some(chrono_tz::Etc::GMTMinus2),        // GMT-00:02
-            60 => Some(chrono_tz::Etc::GMTPlus0),           // GMT+00:01 (Example for custom mapping)
-            -60 => Some(chrono_tz::Etc::GMTMinus0),         // GMT-00:01 (Example for custom mapping)
-            // Add more mappings as needed
-            _ => None,
-        }
     }
 }
 

@@ -6,14 +6,13 @@
 
 use std::{borrow::Cow, str::FromStr};
 
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime};
 use encoding::value::{
-    decimal_value::{Decimal, FRACTIONAL_PART_DENOMINATOR_LOG10},
-    value::Value,
+    decimal_value::{Decimal, FRACTIONAL_PART_DENOMINATOR_LOG10}, timezone::TimeZone, value::Value
 };
 use typeql::value::{
     BooleanLiteral, DateFragment, DateTimeLiteral, DateTimeTZLiteral, IntegerLiteral, Literal, Sign,
-    SignedDecimalLiteral, SignedIntegerLiteral, StringLiteral, TimeFragment, TimeZone, ValueLiteral,
+    SignedDecimalLiteral, SignedIntegerLiteral, StringLiteral, TimeFragment, ValueLiteral,
 };
 
 use crate::LiteralParseError;
@@ -46,7 +45,7 @@ impl FromTypeQLLiteral for Value<'static> {
             ValueLiteral::Date(date) => Ok(Value::Date(NaiveDate::from_typeql_literal(&date.date)?)),
             ValueLiteral::DateTime(datetime) => Ok(Value::DateTime(NaiveDateTime::from_typeql_literal(datetime)?)),
             ValueLiteral::DateTimeTz(datetime_tz) => {
-                Ok(Value::DateTimeTZ(chrono::DateTime::<chrono_tz::Tz>::from_typeql_literal(datetime_tz)?))
+                Ok(Value::DateTimeTZ(chrono::DateTime::<TimeZone>::from_typeql_literal(datetime_tz)?))
             }
             ValueLiteral::Duration(_) => todo!(),
             ValueLiteral::String(string) => Ok(Value::String(Cow::Owned(String::from_typeql_literal(string)?))),
@@ -133,10 +132,10 @@ impl FromTypeQLLiteral for NaiveTime {
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         let hour = Self::parse_primitive(literal.hour.as_str())?;
         let minute = Self::parse_primitive(literal.minute.as_str())?;
-        let second = if let Some(s) = &literal.second { Self::parse_primitive(s.as_str())? } else { 0 };
-        let nano = if let Some(s) = &literal.second {
-            let number_len = s.len();
-            Self::parse_primitive::<u32>(s.as_str())? * 10u32.pow(9 - number_len as u32)
+        let second = if let Some(second) = &literal.second { Self::parse_primitive(second.as_str())? } else { 0 };
+        let nano = if let Some(fraction) = &literal.second_fraction {
+            let number_len = fraction.len();
+            Self::parse_primitive::<u32>(fraction.as_str())? * 10u32.pow(9 - number_len as u32)
         } else {
             0
         };
@@ -149,12 +148,12 @@ impl FromTypeQLLiteral for NaiveTime {
 }
 
 impl FromTypeQLLiteral for TimeZone {
-    type TypeQLLiteral = TimeZone;
+    type TypeQLLiteral = typeql::value::TimeZone;
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         match literal {
-            TimeZone::IANA(value) => todo!(),
-            TimeZone::ISO(value) => todo!(),
+            typeql::value::TimeZone::IANA(value) => todo!(),
+            typeql::value::TimeZone::ISO(value) => todo!(),
         }
     }
 }
@@ -169,13 +168,14 @@ impl FromTypeQLLiteral for NaiveDateTime {
     }
 }
 
-impl FromTypeQLLiteral for chrono::DateTime<chrono_tz::Tz> {
+impl FromTypeQLLiteral for chrono::DateTime<TimeZone> {
     type TypeQLLiteral = DateTimeTZLiteral;
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         let date = NaiveDate::from_typeql_literal(&literal.date)?;
         let time = NaiveTime::from_typeql_literal(&literal.time)?;
-        let tz: chrono_tz::Tz = todo!();
+        let tz = TimeZone::from_typeql_literal(&literal.timezone)?;
+        Ok(NaiveDateTime::new(date, time).and_local_timezone(tz).unwrap())
     }
 }
 
