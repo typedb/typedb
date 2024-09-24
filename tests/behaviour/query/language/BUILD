@@ -62,6 +62,17 @@ rust_test(
 )
 
 rust_test(
+    name = "test_reduce",
+    srcs = ["reduce.rs"],
+    deps = [
+        "//tests/behaviour/steps:steps",
+        "@crates//:tokio",
+    ],
+    data = ["@vaticle_typedb_behaviour//query/language:reduce.feature"],
+    crate_features = ["bazel"],
+)
+
+rust_test(
     name = "test_pipelines",
     srcs = ["pipelines.rs"],
     deps = [

@@ -158,18 +158,21 @@ fn extract_value<Snapshot: ReadableSnapshot>(
 #[derive(Debug, Clone)]
 enum ReducerImpl {
     SumLong(SumLongImpl),
+    Count(CountImpl),
 }
 
 impl ReducerImpl {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         match self {
             ReducerImpl::SumLong(reducer) => reducer.accept(row, context),
+            ReducerImpl::Count(reducer) => reducer.accept(row, context),
         }
     }
 
     fn finalise(self) -> VariableValue<'static> {
         match self {
             ReducerImpl::SumLong(mut reducer) => reducer.finalise(),
+            ReducerImpl::Count(mut reducer) => reducer.finalise(),
         }
     }
 }
@@ -178,8 +181,30 @@ impl ReducerImpl {
     fn build(reduce_ir: &ReduceOperation<VariablePosition>) -> Self {
         match reduce_ir {
             ReduceOperation::SumLong(pos) => ReducerImpl::SumLong(SumLongImpl::new(pos.clone())),
-            _ => todo!(),
+            ReduceOperation::Count(pos) => ReducerImpl::Count(CountImpl::new(pos.clone())),
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct CountImpl {
+    count: u64,
+    target: VariablePosition,
+}
+
+impl ReducerAPI for CountImpl {
+    fn new(target: VariablePosition) -> Self {
+        Self { count: 0, target }
+    }
+
+    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
+        if &VariableValue::Empty != row.get(self.target.clone()) {
+            self.count += row.get_multiplicity();
+        }
+    }
+
+    fn finalise(self) -> VariableValue<'static> {
+        VariableValue::Value(Value::Long(self.count as i64))
     }
 }
 
@@ -196,7 +221,7 @@ impl ReducerAPI for SumLongImpl {
 
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context) {
-            self.sum += value.unwrap_long();
+            self.sum += value.unwrap_long() * row.get_multiplicity() as i64;
         }
     }
 

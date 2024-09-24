@@ -177,7 +177,9 @@ fn compile_stage(
                     ReduceOperation::SumLong(variable) => {
                         ReduceOperation::SumLong(input_variables.get(variable).unwrap().clone())
                     }
-                    _ => todo!(),
+                    ReduceOperation::Count(variable) => {
+                        ReduceOperation::Count(input_variables.get(variable).unwrap().clone())
+                    }
                 };
                 reduction_inputs.push(reducer_on_position);
             }
