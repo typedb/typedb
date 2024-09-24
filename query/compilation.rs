@@ -180,7 +180,7 @@ fn compile_stage(
                 );
                 let reducer = match reducer {
                     Reducer::Count(variable) => Reducer::Count(input_variables.get(variable).unwrap().clone()),
-                    Reducer::Sum(variable) => Reducer::Sum(input_variables.get(variable).unwrap().clone()),
+                    Reducer::SumLong(variable) => Reducer::SumLong(input_variables.get(variable).unwrap().clone()),
                 };
                 reduction_inputs.push(reducer);
             }

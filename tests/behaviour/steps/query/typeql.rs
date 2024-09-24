@@ -20,6 +20,7 @@ use futures::TryFutureExt;
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
+use encoding::value::value_type::ValueType;
 use query::{error::QueryError, query_manager::QueryManager};
 use test_utils::assert_matches;
 
@@ -236,7 +237,7 @@ async fn uniquely_identify_answer_concepts(context: &mut Context, step: &Step) {
                     "label" => does_type_match(context, var_value, id),
                     "key" => does_key_match(var, id, var_value, context),
                     "attr" => does_attribute_match(id, var_value, context),
-                    "value" => todo!("value: {spec}"),
+                    "value" => does_value_match(id, var_value, context),
                     _ => panic!("unrecognised concept kind: {kind}"),
                 }
             });
@@ -311,6 +312,19 @@ fn does_attribute_match(id: &str, var_value: &VariableValue<'_>, context: &Conte
         let actual = attr.get_value(&*tx.snapshot, &tx.thing_manager).unwrap();
         actual == expected
     })
+}
+
+fn does_value_match(id: &str, var_value: &VariableValue<'_>, context: &Context) -> bool {
+    let VariableValue::Value(value) = var_value else {
+        return false;
+    };
+    let (id_type, id_value) = id.split_once(":").unwrap();
+    let expected_value_type = match id_type {
+        "long" => ValueType::Long,
+        _ => todo!()
+    };
+    let expected = params::Value::from_str(id_value).unwrap().into_typedb(expected_value_type);
+    &expected == var_value.as_value()
 }
 
 fn does_type_match(context: &Context, var_value: &VariableValue<'_>, expected: &str) -> bool {

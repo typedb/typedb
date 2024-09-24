@@ -49,7 +49,7 @@ pub fn translate_reduce(
 fn resolve_assigned_variable_category_optionality(reduce: &Reducer<Variable>, variable_registry: &VariableRegistry) -> (VariableCategory, bool) {
     match reduce {
         Reducer::Count(_) => (VariableCategory::Value, false),
-        Reducer::Sum(_) => (VariableCategory::Value, true),
+        Reducer::SumLong(_) => (VariableCategory::Value, true),
     }
 }
 
@@ -71,7 +71,7 @@ fn build_reduce_value(visible_variables: &HashMap<String, Variable>, reduce_valu
                 })
             };
             match &stat.reduce_operator {
-                ReduceOperator::Sum => Ok(Reducer::Sum(var.clone())),
+                ReduceOperator::Sum => Ok(Reducer::SumLong(var.clone())),
                 _ => todo!(),
             }
         }

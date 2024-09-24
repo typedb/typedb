@@ -98,7 +98,7 @@ impl ReturnOperation {
 #[derive(Debug, Clone)]
 pub enum Reducer<ID: IrID> {
     Count(ID),
-    Sum(ID),
+    SumLong(ID),
     // First, Any etc.
 }
 
@@ -106,7 +106,7 @@ impl<ID: IrID> Reducer<ID> {
     pub fn id(&self) -> ID {
         match self {
             Reducer::Count(id) => id.clone(),
-            Reducer::Sum(id) => id.clone(),
+            Reducer::SumLong(id) => id.clone(),
         }
     }
 }

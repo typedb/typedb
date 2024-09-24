@@ -5,12 +5,20 @@
  */
 
 
+use std::collections::HashMap;
+use answer::Thing;
+use answer::variable_value::VariableValue;
 use compiler::modifiers::ReduceProgram;
+use compiler::VariablePosition;
+use concept::thing::thing_manager::ThingManager;
+use encoding::value::value::Value;
+use ir::program::function::Reducer;
 use storage::snapshot::ReadableSnapshot;
 use crate::batch::Batch;
 use crate::ExecutionInterrupt;
 use crate::pipeline::{PipelineExecutionError, WrittenRowsIterator};
 use crate::pipeline::stage::{ExecutionContext, StageAPI, StageIterator};
+use crate::row::MaybeOwnedRow;
 
 // Sort
 pub struct ReduceStageExecutor<PreviousStage> {
@@ -39,7 +47,7 @@ impl<Snapshot, PreviousStage> StageAPI<Snapshot> for ReduceStageExecutor<Previou
     {
         let Self { previous, program, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
-        let rows = match reduce_iterator(program, previous_iterator) {
+        let rows = match reduce_iterator(&context, program, previous_iterator) {
             Ok(rows) => rows,
             Err(err) => return Err((err, context)),
         };
@@ -47,6 +55,132 @@ impl<Snapshot, PreviousStage> StageAPI<Snapshot> for ReduceStageExecutor<Previou
     }
 }
 
-fn reduce_iterator(program: ReduceProgram, iterator: impl StageIterator) -> Result<Batch, PipelineExecutionError> {
-    todo!()
+fn reduce_iterator<Snapshot: ReadableSnapshot>(context: &ExecutionContext<Snapshot>, program: ReduceProgram, iterator: impl StageIterator) -> Result<Batch, PipelineExecutionError> {
+    let mut  iterator = iterator;
+    let mut grouped_reducer = GroupedReducer::new(program);
+    while let Some(result) = iterator.next() {
+        let snapshot: &Snapshot = &context.snapshot;
+        grouped_reducer.accept(&result?, snapshot, &context.thing_manager)?;
+    }
+    Ok(grouped_reducer.finalise())
+}
+
+struct GroupedReducer {
+    input_group_positions: Vec<VariablePosition>,
+    grouped_aggregates : HashMap<Vec<VariableValue<'static>>, Vec<ReducerImpl>>,
+    reused_group: Vec<VariableValue<'static>>,
+    sample_reducers: Vec<ReducerImpl>,
+}
+
+impl GroupedReducer {
+    fn new(program: ReduceProgram) -> Self {
+        let sample_reducers : Vec<ReducerImpl> = program.reduction_inputs.iter().map(|reducer| {
+            ReducerImpl::build(reducer)
+        }).collect();
+        let reused_group = Vec::with_capacity(program.input_group_positions.len());
+        Self {
+            input_group_positions:  program.input_group_positions,
+            grouped_aggregates: HashMap::new(),
+            reused_group,
+            sample_reducers,
+        }
+    }
+    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, snapshot: &Snapshot, thing_manager: &ThingManager) -> Result<(), PipelineExecutionError> {
+        self.reused_group.clear();
+        for pos in &self.input_group_positions {
+            self.reused_group.push(row.get(pos.clone()).to_owned());
+        }
+        if !self.grouped_aggregates.contains_key(&self.reused_group) {
+            self.grouped_aggregates.insert(self.reused_group.clone(), self.sample_reducers.clone());
+        }
+        let reducers = self.grouped_aggregates.get_mut(&self.reused_group).unwrap();
+        for reducer in reducers  {
+            reducer.accept(row, snapshot, thing_manager)
+        }
+        Ok(())
+    }
+
+    fn finalise(self) -> Batch {
+        let Self { input_group_positions, sample_reducers, grouped_aggregates, .. } = self;
+        let mut batch = Batch::new(
+            (input_group_positions.len() + sample_reducers.len()) as u32,
+            grouped_aggregates.len()
+        );
+        let mut reused_row = Vec::with_capacity(input_group_positions.len() + sample_reducers.len());
+        let reused_multiplicity = 1;
+        for (group, reducers)  in grouped_aggregates.into_iter() {
+            reused_row.clear();
+            for value in group.into_iter() {
+                reused_row.push(value);
+            }
+            for reducer in reducers.into_iter() {
+                reused_row.push(reducer.finalise());
+            }
+            batch.append(MaybeOwnedRow::new_borrowed(reused_row.as_slice(), &reused_multiplicity))
+        }
+        batch
+    }
+}
+
+trait ReducerAPI {
+    fn new(target: VariablePosition) -> Self;
+    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, snapshot: &Snapshot, thing_manager: &ThingManager);
+    fn finalise(self) -> VariableValue<'static>;
+}
+
+#[derive(Debug, Clone)]
+enum ReducerImpl {
+    SumLong(SumLongImpl),
+}
+
+impl ReducerImpl {
+    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, snapshot: &Snapshot, thing_manager: &ThingManager)  {
+        match self {
+            ReducerImpl::SumLong(reducer) => reducer.accept(row, snapshot, thing_manager),
+        }
+    }
+    fn finalise(self) -> VariableValue<'static> {
+        match self {
+            ReducerImpl::SumLong(mut reducer) => reducer.finalise(),
+        }
+    }
+}
+
+impl ReducerImpl {
+    fn build(reduce_ir: &Reducer<VariablePosition>) -> Self {
+        match reduce_ir {
+            Reducer::SumLong(pos) => ReducerImpl::SumLong(SumLongImpl::new(pos.clone())),
+            _ => todo!(),
+        }
+    }
+
+}
+
+#[derive(Debug, Clone)]
+struct SumLongImpl {
+    sum: i64,
+    target: VariablePosition,
+}
+
+impl ReducerAPI for SumLongImpl {
+    fn new(target: VariablePosition) -> Self {
+        Self { sum: 0 , target }
+    }
+
+    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, snapshot: &Snapshot, thing_manager: &ThingManager) {
+        match row.get(self.target.clone()) {
+            VariableValue::Empty => { },
+            VariableValue::Value(value) => {
+                self.sum += value.clone().unwrap_long();
+            }
+            VariableValue::Thing(Thing::Attribute(attribute)) => {
+                self.sum += attribute.get_value(snapshot, thing_manager).unwrap().clone().unwrap_long();
+            }
+            _ => unreachable!(),
+        };
+    }
+
+    fn finalise(self) -> VariableValue<'static> {
+        VariableValue::Value(Value::Long(self.sum))
+    }
 }
