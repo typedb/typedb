@@ -580,6 +580,10 @@ Beside the rules below, subtyping ($`\leq`$) is transitive and reflexive.
 
     _Example_: If $`m : \mathsf{HeteroMarriage}(x:\mathsf{Husband}, y:\mathsf{Wife})`$ then $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$
 
+The next rule is special to attributes, describing their interactions with value types.
+
+* **Attribute identity rule**. If $`V : \mathbf{Val}`$, $`A : \mathbf{Att}`$, $`\mathsf{val} : A \to V`$, and $`a, b :_! A`$ such that $`\mathsf{val}(a) =\mathsf{val}(b)`$  then we identify $`a = b`$ for all purposes.
+
 ### Algebraic type operators
 
 * **Sums**: Sum types follow the usual rules of type system.
@@ -1927,7 +1931,7 @@ _System property_:
 
 _System property_:
 
-1. 🔶 _Single list_. Transaction will fail if $`m(x) :_! A(...)`$ already has a roleplayer list. (In this case, user should `update` instead!)
+1. 🔶 _System cardinality bound: **1 list per relation per role**_. Transaction will fail if $`m(x) :_! A(...)`$ already has a roleplayer list. (In this case, user should `update` instead!)
 1. 🔶 _Capability check_. 
     * Must have $`T(x) \leq B : \mathbf{Rel}(m(I))`$ **non-abstractly**, i.e. $`\diamond (B : \mathbf{Rel}(m(I)))`$ is not true for the minimal choice of $`B`$ satisfying the former
     * Must have $`l_i : T_i \leq B <_! m(I)`$ **non-abstractly**, i.e. $`\diamond (B <_! m(I))`$ is not true for the minimal $`B`$ satisfying the former.
@@ -1940,7 +1944,7 @@ _System property_:
 
 _System property_:
 
-1. ✅ _Idempotency_. If $`a :_! m(A)`$ with $`\mathsf{val}(a) = \mathsf{val}(b)`$ then we equate $`a = b`$.
+1. ✅ _Idempotency_. If $`a :_! m(A)`$ with $`\mathsf{val}(a) = \mathsf{val}(b)`$ then we equate $`a = b`$ (this actually follows from the "Attribute identity rule", see "Type system").
 1. 🔶 _Capability check_. Must have $`T(x) \leq B <_! O_{m(A)}`$ **non-abstractly**, i.e. $`\diamond (B <_! O_{m(A)})`$ is not true for the minimal choice of $`B`$ satisfying the former
 1. 🔶 _Type check_. Must have $`T(y) \leq m(A)`$ **or** $`T(y) = V`$ where $`\mathsf{val} : m(A) \to V`$ (similarly for `<EXPR>`)
 
@@ -2066,13 +2070,16 @@ _Remark_. The resulting $`m(x) :_! m(A)(z : J, ...)`$ must be within schema cons
 * 🔶 `($I[]: <T_LIST>) of $x` replaces $`m(x) :_! m(A)(l : m(I))`$ by $`m(x) :_! m(A)()`$ for $`l`$ being the evaluation of `T_LIST`.
 
 #### **Case ATT_OF_DEL**
-* 🔷 `$B $y of $x` replaces $`m(y) :_! B'(m(x) : O_{m(B)})`$ by $`m(y) :_! B'()`$ for all possible $`B' \leq m(B)`$
+* 🔷 `$B $y of $x` replaces any $`m(y) :_! m(B)(m(x) : O_{m(B)})`$ by $`m(y) :_! B'()`$
+* 🔷 `$B of $x` replaces any $`a :_! m(B)(m(x) : O_{m(B)})`$ by $`a :_! B'()`$
 
-_Remark_. Note the subtyping here! It only makes sense in this case though since the same value `$y` may have been inserted in multiple attribute subtypes (this is not the case for **LINKS_DEL**)—at least if we lift the "Leaf attribute system constraint".
+_System property_
+* 🔶 _Capability check_. Cannot have that `T($y) owns m($B)[]` (in this case, must delete entire lists instead!)
+* 🔷 _Type check_ Must have $`T(y) = m(B)`$.
 
 #### **Case ATT_LIST_OF_DEL**
-* 🔶 `$B[] <T_LIST> of $x` deletes $`l :_! B'(m(x) : O_{m(B)})`$ for all possible $`B' \leq m(B)`$ and $`l`$ being the evaluation of `T_LIST`. (STICKY: discuss! Suggestion: we do not retain list elements as independent attributes.)
-
+* 🔶 `$B[] $y of $x` deletes any $`m(y) = [l_1, l_2, ... ] :_! m(B)(m(x) : O_{m(B)})`$ and replaces any $`l_i :_! m(B)(m(x) : O_{m(B)})`$ by $`l_i :_! B'()`$
+* 🔷 `$B[] of $x` deletes any $`l = [l_1, l_2, ... ] :_! m(B)(m(x) : O_{m(B)})`$ and replaces any $`l_i :_! m(B)(m(x) : O_{m(B)})`$ by $`l_i :_! B'()`$
 
 ### Clean-up
 
