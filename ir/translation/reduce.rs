@@ -100,7 +100,9 @@ fn build_reduce_value(
                 ReduceOperator::Median => Ok(Reducer::Median(var.clone())),
                 ReduceOperator::Min => Ok(Reducer::Min(var.clone())),
                 ReduceOperator::Std => Ok(Reducer::Std(var.clone())),
-                _ => unreachable!(),
+                ReduceOperator::Check | ReduceOperator::First | ReduceOperator::Count | ReduceOperator::List => {
+                    unreachable!() // Not stats
+                }
             }
         }
     }

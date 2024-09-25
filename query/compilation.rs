@@ -14,7 +14,8 @@ use compiler::{
     delete::program::DeleteProgram,
     insert::program::InsertProgram,
     match_::{inference::annotated_functions::AnnotatedUnindexedFunctions, planner::pattern_plan::MatchProgram},
-    modifiers::{LimitProgram, OffsetProgram, ReduceOperation, ReduceProgram, SelectProgram, SortProgram},
+    modifiers::{LimitProgram, OffsetProgram, SelectProgram, SortProgram},
+    reduce::{ReduceOperation, ReduceProgram},
     VariablePosition,
 };
 use concept::thing::statistics::Statistics;
@@ -173,7 +174,7 @@ fn compile_stage(
                     assigned_variable.clone(),
                     VariablePosition::new((input_group_positions.len() + reduction_inputs.len()) as u32),
                 );
-                let reducer_on_position = match reducer_on_variable {
+                let reducer_on_position = match &reducer_on_variable {
                     ReduceOperation::SumLong(variable) => {
                         ReduceOperation::SumLong(input_variables.get(variable).unwrap().clone())
                     }
@@ -213,7 +214,6 @@ fn compile_stage(
                     ReduceOperation::StdDouble(variable) => {
                         ReduceOperation::StdDouble(input_variables.get(variable).unwrap().clone())
                     }
-                    _ => todo!(),
                 };
                 reduction_inputs.push(reducer_on_position);
             }

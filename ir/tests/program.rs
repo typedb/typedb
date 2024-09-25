@@ -16,7 +16,6 @@ use ir::{
     program::{
         block::FunctionalBlock,
         function_signature::{FunctionID, FunctionSignature},
-        modifier::ModifierDefinitionError,
     },
     translation::TranslationContext,
 };

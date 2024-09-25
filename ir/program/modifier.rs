@@ -26,7 +26,6 @@ pub struct Select {
 }
 
 impl Select {
-    // TODO: Bit trange that this takes str
     pub(crate) fn new(variables: HashSet<Variable>) -> Self {
         Self { variables }
     }

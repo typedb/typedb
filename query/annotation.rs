@@ -18,7 +18,7 @@ use compiler::{
         type_annotations::{ConstraintTypeAnnotations, TypeAnnotations},
         type_inference::{infer_types_for_functions, infer_types_for_match_block, resolve_value_types},
     },
-    modifiers::ReduceOperation,
+    reduce::ReduceOperation,
 };
 use concept::type_::type_manager::TypeManager;
 use encoding::value::value_type::{
@@ -79,7 +79,7 @@ pub(super) fn infer_types_for_pipeline(
         infer_types_for_functions(translated_preamble, snapshot, type_manager, schema_function_annotations)
             .map_err(|source| QueryError::FunctionTypeInference { typedb_source: source })?;
 
-    let mut running_variable_annotations: BTreeMap<Variable, Arc<BTreeSet<answer::Type>>> = BTreeMap::new();
+    let mut running_variable_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>> = BTreeMap::new();
     let mut running_value_variable_types: BTreeMap<Variable, ValueTypeCategory> = BTreeMap::new();
     let mut annotated_stages = Vec::with_capacity(translated_stages.len());
 

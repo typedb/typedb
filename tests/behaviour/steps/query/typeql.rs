@@ -138,7 +138,7 @@ async fn typeql_define(context: &mut Context, may_error: params::TypeQLMayError,
             &tx.thing_manager,
             typeql_define,
         );
-        may_error.check_logic(result)
+        may_error.check_logic(result);
     });
 }
 
