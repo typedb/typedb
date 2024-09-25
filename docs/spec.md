@@ -35,7 +35,7 @@
 * [The type system](#the-type-system)
     * [Grammar and notations](#grammar-and-notations)
     * [Rule system](#rule-system)
-* [Schema definition language](#schema-definition-language)
+* [Data definition language](#data-definition-language)
     * [Basics of schemas](#basics-of-schemas)
     * [Define semantics](#define-semantics)
     * [Undefine semantics](#undefine-semantics)
@@ -44,9 +44,13 @@
 * [Pattern matching language](#pattern-matching-language)
     * [Basics: Patterns, variables, concept rows, satisfaction](#basics-patterns-variables-concept-rows-satisfaction)
     * [Pattern semantics](#pattern-semantics)
+    * [Type patterns](#type-patterns)
+    * [Type constraint patterns](#type-constraint-patterns)
+    * [Element patterns](#element-patterns)
     * [Expression and list patterns](#expression-and-list-patterns)
     * [Function patterns](#function-patterns)
     * [Patterns of patterns](#patterns-of-patterns)
+* [Data manipulation language](#data-manipulation-language)
     * [Match semantics](#match-semantics)
     * [Functions semantics](#functions-semantics)
     * [Insert semantics](#insert-semantics)
@@ -606,7 +610,7 @@ They are just a tool for keeping track of additional properties.
 _Remark_: Recall from an earlier remark, **key**, **subkey**, **unique** could also be modalities, but for simplicity (and to reduce the amount of symbols in our grammar), we'll leave them be and only keep track of them in pure TypeQL.
 
 
-# Schema definition language
+# Data definition language
 
 This section describes valid declarations of _types_ and axioms relating types (_dependencies_ and _type castings_) for the user's data model, as well as _schema constraints_ that can be further imposed. These declarations are subject to a set of _type system properties_ as listed in this section. The section also describes how such declarations can be manipulated after being first declared (undefine, redefine).
 
@@ -1242,7 +1246,7 @@ Variables appear in statements. They fall in different categories, which can be 
   * _Type variables_ (**tvar**, uppercase convention in this spec)
     * Any variable used in a type position in a statement
   * _Value variables_ (**vvar**, lowercase convention in this spec)
-    * Any variable which are typed with non-comparable attribute types is a value variables (XXX: BDD)
+    * Any variable which are typed with non-comparable attribute types is a value variables (**#BDD**)
     * Any variable assigned to the output of an non-list expression 
     * Any variable derived from the output of a function (with value output type) is a value variable
   * _List variables_ (**lvar**, lowercase convention in this spec)
@@ -1325,7 +1329,7 @@ _Example_: Consider the pattern `$x isa Person;` (this pattern comprises a singl
 
 ### (Feature) Optionality and boundedness
 
-**Optional variables** (XXX: BDD)
+**Optional variables** (**#BDD**)
 
 _Key principle_:
 
@@ -1333,7 +1337,7 @@ _Key principle_:
   * if a var is used in _any_ non-optional position, then the var become non-optional!
 * ✅  A optional variable `$x` is allowed to have the empty concept assigned to it in an answer: $`m(x) = \emptyset`$.
 
-**Variable boundedness condition** (XXX: BDD)
+**Variable boundedness condition** (**#BDD**)
 
 _Key principle_:
 
@@ -1349,9 +1353,9 @@ Given a crow `m` and pattern `P` we say `m` ***satisfies*** `P` if (in addition 
 _Remark (Replacing **var**s with concepts)_. When discussing pattern semantics, we always consider **fully variablized** statements (e.g. `$x isa $X`, `$X sub $Y`). This also determines satisfaction of **partially assigned** versions of these statements (e.g. `$x isa A`, `$X sub A`, `A sub $Y`, or `x isa $A`).
 
 
-### Types
+## Type patterns
 
-#### **Case TYPE_DEF_PATT**
+### **Case TYPE_DEF_PATT**
 * ✅ `Kind $A` (for `Kind` in `{entity, relation, attribute}`) is satisfied if $`m(A) : \mathbf{Kind}`$
 
 * ✅ `(Kind) $A sub $B` is satisfied if $`m(A) : \mathbf{Kind}`$, $`m(B) : \mathbf{Kind}`$, $`m(A) \lneq m(B)`$
@@ -1359,7 +1363,7 @@ _Remark (Replacing **var**s with concepts)_. When discussing pattern semantics, 
 
 _Remark_: `sub!` is convenient, but could actually be expressed with `sub`, `not`, and `is`. Similar remarks apply to **all** other `!`-variations of TypeQL key words below.
 
-#### **Case REL_PATT**
+### **Case REL_PATT**
 * ✅ `$A relates $I` is satisfied 
     * either if $`m(A) : \mathbf{Rel}(m(I))`$
     * or if $`\diamond(m(A) : \mathbf{Rel}(m(I)))`$
@@ -1385,7 +1389,7 @@ _Remark_: `sub!` is convenient, but could actually be expressed with `sub`, `not
     * either the first or the second statement (or both) can be abstract $`\diamond(...)`$.
 
 
-#### **Case PLAY_PATT**
+### **Case PLAY_PATT**
 * ✅ `$A plays $I` is satisfied if
     * either $`m(A) \leq A'`$ and $`A' <_! m(I)`$
     * or if $`m(A) \leq A'`$ and $`\diamond(A' <_! m(I))`$
@@ -1394,7 +1398,7 @@ _Remark_: `sub!` is convenient, but could actually be expressed with `sub`, `not
     * $`A <_! m(I)`$
     * _(to match `@abstract` for `plays!` must use annotation, see **PLAYS_ABSTRACT_PATT**)_
 
-#### **Case OWNS_PATT**
+### **Case OWNS_PATT**
 * ✅ `$A owns $B` is satisfied if 
     * either $`m(A) \leq A'`$ and $`A' <_! m(O_B)`$ 
     * or $`m(A) \leq A'`$ and $`\diamond(A' <_! m(O_B))`$
@@ -1413,17 +1417,17 @@ _Remark_: `sub!` is convenient, but could actually be expressed with `sub`, `not
 
 _Remark_. In particular, if `A owns B[]` has been declared, then `$X owns B` will match the answer `m($X) = A`.
 
-#### **Cases TYP_IS_PATT and LABEL_PATT**
+### **Cases TYP_IS_PATT and LABEL_PATT**
 * 🔷 `$A is $B` is satisfied if $`m(A) = m(B)`$ (this is actually covered by the later case `IS_PATT`)
 * 🔷 `$A label <LABEL>` is satisfied if $`m(A)`$ has **primary label or alias** `<LABEL>`
 
-### Constraints
+## Type constraint patterns
 
-#### Cardinality
+### Cardinality
 
 _To discuss: the usefulness of constraint patterns seems overall low, could think of a different way to retrieve full schema or at least annotations (this would be more useful than, say,having to find cardinalities by "trialing and erroring" through matching)._
 
-##### **Case CARD_PATT**
+#### **Case CARD_PATT**
 * ✅ cannot match `@card(n..m)` (STICKY: there's just not much point to do so ... rather have normalized schema dump. discuss `@card($n..$m)`??)
 <!-- 
 * `A relates I @card(n..m)` is satisfied if $`m(A) : \mathbf{Rel}(m(I))`$ and schema allows $`|a|_I`$ to be any number in range `n..m`.
@@ -1433,25 +1437,25 @@ _To discuss: the usefulness of constraint patterns seems overall low, could thin
 * `$A owns $B[] @card(n...m)` is satisfied if ...
 -->
 
-#### Bevavior flags
+### Bevavior flags
 
-##### **Case UNIQUE_PATT**
+#### **Case UNIQUE_PATT**
 * 🔶 `$A owns $B @unique` is satisfied if $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @key`.
 
 * 🔶 `$A owns! $B @unique` is satisfied if $`m(A) <_! m(O_B)`$, and schema directly contains constraint `m($A) owns m($B) @unique`.
 
-##### **Case KEY_PATT**
+#### **Case KEY_PATT**
 * 🔶 `$A owns $B @key` is satisfied if $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @key`.
 
 * 🔶 `$A owns! $B @key` is satisfied if $`m(A) <_! m(O_B)`$, and schema directly contains constraint `m($A) owns m($B) @key`.
 
-##### **Case SUBKEY_PATT**
+#### **Case SUBKEY_PATT**
 * 🔶 `$A owns $B @subkey(<LABEL>)` is satisfied if $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @subkey(<LABEL>)`.
 
-##### **Case TYP_ABSTRACT_PATT**
+#### **Case TYP_ABSTRACT_PATT**
 * 🔶 `(kind) $B @abstract` is satisfied if schema directly contains `(kind) m($B) @abstract`.
 
-##### **Case RELATES_ABSTRACT_PATT**
+#### **Case RELATES_ABSTRACT_PATT**
 * 🔶 `$B relates $I @abstract` is satisfied if:
     * $`m(B) \leq B'`$ and $`\diamond(B' : \mathbf{Rel}(I)`$
     * **not** $`m(B) \leq B'' \leq B'`$ such that $`\diamond(B' : \mathbf{Rel}(I)`$
@@ -1464,7 +1468,7 @@ _To discuss: the usefulness of constraint patterns seems overall low, could thin
 
 * 🔮 `$B relates! $I[] @abstract` is satisfied if $`\diamond(m(B) : \mathbf{Rel}([I])`$
 
-##### **Case PLAYS_ABSTRACT_PATT**
+#### **Case PLAYS_ABSTRACT_PATT**
 * 🔶 `$A plays $B:$I @abstract` is satisfied if: 
     * $`m(A) \leq A'`$ and $`\diamond(A' <_! m(I))` 
     * **not** $`m(A) \leq A'' \leq A'`$ such that $`A'' <_! m(I)`$ 
@@ -1473,7 +1477,7 @@ _To discuss: the usefulness of constraint patterns seems overall low, could thin
 
 * 🔮 `$A plays! $B:$I @abstract` is satisfied if $`\diamond(m(A) <_! m(I))`, where $`m(B) \mathbf{Rel}(m(I))`$
 
-##### **Case OWNS_ABSTRACT_PATT**
+#### **Case OWNS_ABSTRACT_PATT**
 * 🔶 `$A owns $B @abstract` is satisfied if
     * $`m(A) \leq A'`$ and $`\diamond(A' <_! O_{m(B)})`$
     * **not** $`m(A) \leq A'' \leq A'`$ such that $`A'' <_!  O_{m(B)})`$
@@ -1486,15 +1490,15 @@ _To discuss: the usefulness of constraint patterns seems overall low, could thin
 
 * 🔮 `$A owns! $B[] @abstract` is satisfied if $`\diamond(m(A) <_! O_{m(B)[]})`
 
-##### **Case DISTINCT_PATT**
+#### **Case DISTINCT_PATT**
 * 🔮 `$A owns $B[] @distinct` is satisfied if $`m(A) \leq A`$ schema directly contains constraint `A' owns m($B)[] @distinct`.
 * 🔮 `$A owns! $B[] @distinct` is satisfied if schema directly contains constraint `m($A) owns m($B)[] @distinct`.
 * 🔮 `$B relates $I[] @distinct` is satisfied if $`m(B) : \mathbf{Rel}(m([I]))`$, $`B \leq B'`$ and schema directly contains `B' relates m($I)[] @distinct`.
 * 🔮 `$B relates! $I[] @distinct` is satisfied if schema directly contains `m($B) relates m($I)[] @distinct`.
 
-#### Values
+### Values
 
-##### **Cases VALUE_VALUES_PATT and OWNS_VALUES_PATT**
+#### **Cases VALUE_VALUES_PATT and OWNS_VALUES_PATT**
 * cannot match `@values/@regex/@range` (STICKY: there's just not much point to do so ... rather have normalized schema dump)
 <!--
 * `A owns B @values(v1, v2)` is satisfied if 
@@ -1505,7 +1509,7 @@ _To discuss: the usefulness of constraint patterns seems overall low, could thin
 * `A value B @range(v1..v2)` is satisfied if 
 -->
 
-### Data
+## Element patterns
 
 #### **Case ISA_PATT**
 * ✅ `$x isa $T` is satisfied if $`m(x) : m(T)`$ for $`m(T) : \mathbf{ERA}`$
@@ -1528,7 +1532,7 @@ _To discuss: the usefulness of constraint patterns seems overall low, could thin
 _Remark_. Note that `$x has $B $y` will match the individual list elements of list attributes (e.g. when $`m(x) : A`$ and $`A <_! O_B`$).
 
 #### **Case IS_PATT**
-* 🔷 `$x is $y` is satisfied if $`m(x) :_! A`$, $`m(y) :_! A`$, $`m(x) = m(y)`$, for $`A : \mathbf{ERA}`$ (XXX: add ERA lists here) (XXX: BDD)
+* 🔷 `$x is $y` is satisfied if $`m(x) :_! A`$, $`m(y) :_! A`$, $`m(x) = m(y)`$, for $`A : \mathbf{ERA}`$ (XXX: add ERA lists here) (**#BDD**)
 * 🔷 `$A is $B` is satisfied if $`A = B`$ for $`A : \mathbf{ERA}`$, $`B : \mathbf{ERA}`$
 
 _System property_
@@ -1541,39 +1545,40 @@ _Remark_: In the `is` pattern we cannot syntactically distinguish whether we are
 
 ### Grammar
 
-(XXX: add implicit attribute casts in here)
-
 ```javascript
-BOOL       ::= VAR | bool                                    // VAR = variable
+BOOL       ::= VAR | bool                                     // VAR = variable
 INT        ::= VAR | long | ( INT ) | INT (+|-|*|/|%) INT 
-               | (ceil|floor|round)( DBL ) | abs( INT ) | le n( T_LIST )
+               | (ceil|floor|round)( DBL ) | abs( INT ) | len( T_LIST )
                | (max|min) ( INT ,..., INT )
 DBL        ::= VAR | double | ( DBL ) | DBL (+|-|*|/) DBL 
-               | (max|min) ( DBL ,..., DBL ) |               // TODO: conversions?
-DEC        ::= ...                                           // similar to DBL
+               | (max|min) ( DBL ,..., DBL ) |                
+DEC        ::= ...                                            // similar to DBL
 STRING     ::= VAR | string | string + string
 DUR        ::= VAR | time | DUR (+|-) DUR 
 DATE       ::= VAR | datetime | DATETIME (+|-) DUR 
 DATETIME   ::= VAR | datetime | DATETIME (+|-) DUR 
-PRIM       ::= <any-from-above>
-STRUCT     ::= VAR | { <T_COMP>: (value|VAR|STRUCT), ... }   // <T_COMP> = struct component
-DESTRUCT   ::= { T_COMP: (VAR|VAR?|DESTRUCT), ... }          
-VAL        ::= PRIM | STRUCT | STRUCT.T_COMP                 
-<T>        ::= <T> | <T>_LIST [ INT ] | <T>_FUN              // T : Schema
-<T>_LIST   ::= VAR | [ <T> ,..., <T> ] | <T>_LIST + <T>_LIST // includes empty  []
+PRIM       ::= <any-expr-above>
+STRUCT     ::= VAR | { <COMP>: (value|VAR|STRUCT), ... }      // <COMP> = struct component
+               | <HINT> { <COMP>: (value|VAR|STRUCT), ... }   // <HINT> = struct label
+DESTRUCT   ::= { T_COMP: (VAR|VAR?|DESTRUCT), ... }           
+VAL        ::= PRIM | STRUCT | STRUCT.<COMP>                  
+<T>        ::= <T> | <T>_LIST [ INT ] | <T>_FUN               // T : Schema (incl. Val)
+<T>_LIST   ::= VAR | [ <T> ,..., <T> ] | <T>_LIST + <T>_LIST  // includes empty list []
                T_LIST [ INT .. INT ]
 INT_LIST   ::= INT_LIST | [ INT .. INT ]
-SIMPL_EXPR ::= <T>
-LIST_EXPR  ::= <T>_LIST | INT_LIST
-EXPR       ::=  SIMPL_EXPR | LIST_EXPR
+VAL_EXPR   ::= <T> | ( VAL_EXPR )                             // "value expression"
+LIST_EXPR  ::= <T>_LIST | INT_LIST | ( LIST_EXPR )            // "list expression"
+EXPR       ::=  VAL_EXPR | LIST_EXPR
 ```
 
-_Selected details_
+***Selected details***
 
 * Careful: the generic case `<T>` modify earlier parts of the 
 * `T`-functions (`T_FUN`) are function calls to *single-return* functions with non-tupled output type `T` or `T?`
 * Datetime and time formats
   ```
+  long       ::=   (0..9)*
+  double     ::=   (0..9)*\.(0..9)+
   date       ::=   ___Y__M__D
   datetime   ::=   ___Y__M__DT__h__m__s
                  | ___Y__M__DT__h__m__s:___
@@ -1583,34 +1588,48 @@ _Selected details_
                  | P___Y__M__DT__h__m__s:___
   ```
 
+_Remark_. 🔮 Introduce explicit castings between types to our grammar. For example:
+* `(int) 1.0 == 1` 
+* `(double) 10 / (double) 3 == 3.3333`)
 
-### (Theory) Typed evaluation expressions
+### (Theory) Typed evaluation of expressions
 
 Given a concept map `m` that assign all vars in an `<EXPR>` we define
-* value evaluation `vev@m(<EXPR>)`
-* type evaluation `Tev@m(<EXPR>)`
+* value evaluation `vev@m(<EXPR>)` (math. notation $`v_m(expr)`$)
+* type evaluation `Tev@m(<EXPR>)` (math. notation $`v_m(expr)`$)
 
-#### Simple expressions
+#### Value expressions
 
-* 🔶 `SIMPL_EXPR` evaluated by:
-    * substitute all vars `$x` by `m($x)`
-    * if `m($x)` isa attribute instance, replace by `val(m($x))`
-    * `vev@m(<EXPR>)` is the result of evaluating all operations with their usual semantics (1 + 1 = 2)
-    * `Tev@m(<EXPR>)` is the type of the expression (unique)
+* 🔶 The _value expresssions_ `VAL_EXPR` is evaluated as follows:
+    * **Substitute** all vars `$x` by `m($x)`
+    * If `m($x)` isa attribute instance, **replace** by `val(m($x))`
+    * $`v_m(expr)`$ is the result of evaluating all operations with their **usual semantics** 
+        * `1 + 1 == 2` 
+        * `10 / 3 == 3` (integer division satisfies `p/q + p%q = p`)
+    * $`T_m(expr)`$ is the type of the **substituted expression**, noting:
+        * This is always unique except possibly for the `STRUCT` case (see property below)!
+
+_System property_.
+
+* 🔶 If $`T_m(expr)`$ is non-unique for a `STRUCT` expression (which may be the case because, `STRUCT` may share fields) we require the expression to have a `HINT`, or otherwise throw an error.
+
+_Remark_. Struct values are semantically considered up to reordering their components.
 
 #### List expressions
 
-* 🔶 `LIST_EXPR` evaluated by:
-    * substitute all vars `$x` by `m($x)`
-    * (do not replace attributes!)
-    * `vev@m(<EXPR>)` is the result of concatenation and sublist operations with their usual semantics
-    * `Tev@m(<EXPR>)` is the minimal type of all the list elements
+* 🔶 The _list expresssions_ `LIST_EXPR` is evaluated as follows:
+    * Substitute all vars `$x` by `m($x)`
+    * (**Do not replace** attributes!)
+    * $`v_m(expr)`$ is the result of concatenation and sublist operations with their **usual semantics**
+        * e.g. `[a] + [a,b,c][1..2] = [a,b,c]` (`[1..2]` includes indices `[1,2]`)
+        * or `([a] + [a,b,c])[1..2] = [a,b]`
+    * $`T_m(expr)`$ is the **minimal type** of all the list elements
 
 
 ### (Feature) Boundedness constraints
 
 1. 🔶 Generally, variables in expressions `<EXPR>` are **never bound**, except ...
-    * 🔶 the exception are **single-variable list indices**, i.e. `$list[$index]`; in this case `$index` is bound. (This makes sense, since `$list` must be bound elsewhere, and then `$index` is bound to range over the length of the list) (XXX: BDD)
+    * 🔶 the exception are **single-variable list indices**, i.e. `$list[$index]`; in this case `$index` is bound. (This makes sense, since `$list` must be bound elsewhere, and then `$index` is bound to range over the length of the list) (**#BDD**)
 3. 🔶 Struct components are considered to be unordered: i.e., `{ x: $x, y: $y}` is equal to `{ y: $y, x: $x }`.
 
 _Remark_: The exception for list indices is mainly for convenience. Indeed, you could always explicitly bind `$index` with the pattern `$index in [0..len($list)-1];`. See "Case **IN_LIST_PATT**" below.
@@ -1620,9 +1639,9 @@ _Remark_ In this specification, we assume all struct components to be **uniquely
 ### Simple expression patterns
 
 #### **Case ASSIGN_PATT**
-* 🔷 `$x = <EXPR>` is satisfied if 
-    * `m($x)` equals `vev@m(<EXPR>)`
-    * `T($x)` equals `Tev@m(<EXPR>)`
+* 🔷 `$x = <EXPR>` is satisfied if **both** 
+    * `m($x)` equals $`v_m(expr)`$
+    * `T($x)` equals $`T_m(expr)`$
 
 _System property_
 
@@ -1633,15 +1652,16 @@ _System property_
 _Remark_. TODO: consider `let $x = <EXPR>` as alternative syntax.
 
 #### **Case DESTRUCT_PATT**
-* 🔶 `DESTRUCT = STRUCT` is satisfied if, after substituting concepts from `m`, the left hand side (up to potentially omitting components whose variables are marked as optional) matched the structure of the right and side, and each variable on the left matches the evaluated expression of the correponding position on the right.
+* 🔶 `<DESTRUCT> = <STRUCT>` is satisfied if, after substituting concepts from `m`, the left hand side (up to potentially omitting components whose variables are marked as optional) matched the structure of the right and side, and each variable on the left matches the evaluated expression of the correponding position on the right.
 
 _System property_
 
-1. _Assignments bind_. The left-hand variable is bound by the pattern.
-2. _Acyclicity_. Applies as before.
+1. 🔶 _Assignments bind_. The left-hand variable is bound by the pattern.
+2. 🔶 _Acyclicity_. Applies as before (now applie to _all_ variables assigned on the LHS)
+3. 🔶 _Type check_. We require that $
 
 #### **Case EQ_PATT**
-* ✅ `<EXPR1> == <EXPR2>` is satisfied if `vev@m(<EXPR1>) = vev@m(<EXPR2>)`
+* ✅ `<EXPR1> == <EXPR2>` is satisfied if $`v_m(expr_1) = v_m(expr_2)`$
 * ✅ `<EXPR1> != <EXPR2>` is equivalent to `not { <EXPR1> != <EXPR2> }` (see "Patterns")
 
 _System property_
@@ -1714,9 +1734,14 @@ _Remark_: this generalize to a chain of $`k`$ `or` clauses.
 * 🔷 The pattern `try { <PATT> };` is equivalent to the pattern `{ <PATT> } or { not { <PATT>}; };`.
 
 
+# Data manipulation language
+
 ## Match semantics
 
-A `match` clause comprises a pattern `P`.
+* _Syntax_ The `match` clause has syntax
+    ```
+    match <PATTERN>
+    ```
 
 * _Input crows_: The clause can take as input a stream `{ m }` of concept rows `m`.
 
@@ -1879,7 +1904,7 @@ _System property_:
 1. ✅ `$x` cannot be bound elsewhere (i.e. `$x` cannot be bound in the input row `m` nor in other `isa` or `=` statements).
 
 #### **Case ATT_ISA_INS**
-* 🔮  `<EXPR> isa $T` adds new $`v :_! m(T)`$, $`m(T) : \mathbf{Att}`$, where `v` is the result of evaluating the expression `<EXPR>`
+* 🔮  `<VAL_EXPR> isa $T` adds new $`v :_! m(T)`$, $`m(T) : \mathbf{Att}`$, where `v` is the result of evaluating the expression `<EXPR>`
 
 _System property_:
 
@@ -1908,30 +1933,29 @@ _System property_:
     * Must have $`l_i : T_i \leq B <_! m(I)`$ **non-abstractly**, i.e. $`\diamond (B <_! m(I))`$ is not true for the minimal $`B`$ satisfying the former.
 
 #### **Case HAS_INS**
-* ✅ `$x has $A $y` adds new $`m(y) :_! m(A)(m(x) : O_{m(A)})`$ and sets
-    * for vvar `$y`: TODO: define evaluation of attributes XXX
-    * for ivar `$y`: TODO: define evaluation of attributes XXX
-* 🔷 `$x has $A <SIMPL_EXPR>` adds new $`m(y) :_! m(A)(m(x) : O_{m(A)})`$ and sets
-    * TODO: define evaluation of attributes XXX
+* ✅ `$x has $A $y` adds new $`a :_! m(A)(m(x) : O_{m(A)})`$ and
+    * If `$y` is instance add the new cast $`\mathsf{val}(a) = \mathsf{val}(y)`$
+    * If `$y` is value var set $`\mathsf{val}(a) = m(a)`$
+* 🔷 `$x has $A <VAL_EXPR>` adds new element $`a :_! m(A)(m(x) : O_{m(A)})`$ and add cast $`\mathsf{val}(a) = v_m(val\_expr)`$
 
 _System property_:
 
+1. ✅ _Idempotency_. If $`a :_! m(A)`$ with $`\mathsf{val}(a) = \mathsf{val}(b)`$ then we equate $`a = b`$.
 1. 🔶 _Capability check_. Must have $`T(x) \leq B <_! O_{m(A)}`$ **non-abstractly**, i.e. $`\diamond (B <_! O_{m(A)})`$ is not true for the minimal choice of $`B`$ satisfying the former
 1. 🔶 _Type check_. Must have $`T(y) \leq m(A)`$ **or** $`T(y) = V`$ where $`\mathsf{val} : m(A) \to V`$ (similarly for `<EXPR>`)
 
 _Remark_: ⛔ Previously we had the constraint that we cannot add $`m(y) :_! A(m(x) : O_A)`$ if there exists any subtype $`B \lneq A`$.
 
 #### **Case HAS_LIST_INS**
-* 🔶 `$x has $A[] <LIST_EXPR>` adds $`l :_! [m(A)](m(x) : O_{m(A)})`$ for `<LIST_EXPR>` evaluating to $`l = [l_0, l_1, ...]`$
-    * for vvar `$y`: TODO: define evaluation of attributes XXX
-    * for ivar `$y`: TODO: define evaluation of attributes XXX
-      * casting of lists into value needed? don't think so!
-
-_Remark_: usage of direct typing implies direct typings $`l_i :_! m(A)(m(x) : O_{m(A)})`$. In other words, all elements in the list are simultaneously inserted in the underlying attribute type. (NOTE: this simplifies things like capability questions, deletions, etc.)
+* 🔶 `$x has $A[] <LIST_EXPR>` adds new $`l = [l_1, l_2, ...] :_! [m(A)](m(x) : O_{m(A)[]})`$ and $`l_i :_! m(A)(m(x) : O_{m(A)})`$ where
+    * $`l`$ has the same length as $`[v_1,v_2, ...] = v_m(list\_expr)`$
+    * if $`v_i`$ is an attribute instance, add new cast $`\mathsf{val}(l_i) = \mathsf{val}(v_i)`$ 
+    * if $`v_i`$ is a value, add new cast $`\mathsf{val}(l_i) = v_i`$ 
 
 _System property_:
 
-1. 🔶 _Single list_. Transaction should fail if $`[m(A)](m(x) : O_{m(A)})`$ already has an attribute list. (Need "Update" instead!)
+1. ✅ _Idempotency_. Idempotency is automatic (since lists are identified by their list elements).
+1. 🔶 _System cardinality bound: **1 list per owner**_. We cannot have $`k :_! m(A)(m(x) : O_{m(A)})`$ with $`k \neq l`$. (Users should use "Update" instead!)
 1. 🔶 _Capability check_. Must have $`T(x) \leq B <_! O_{m(A)}`$ **non-abstractly**, i.e. $`\diamond (B <_! O_{m(A)})`$ is not true for the minimal choice of $`B`$ satisfying the former
 1. 🔶 _Type check_.For each list element, must have $`T(l_i) \leq m(A)`$ or $`T(l_i) = V`$ where $`\mathsf{val} : A \to V`$
 
@@ -1940,7 +1964,7 @@ _System property_:
 #### **Case TRY_INS**
 * 🔶 `try { <INS>; ...; <INS>; }` where `<INS>` are insert statements as described above.
   * `<TRY_INS>` blocks can appear alongside other insert statements in an `insert` clause
-  * Execution is as described in "Basics of inserting" (XXX: BDD)
+  * Execution is as described in "Basics of inserting" (**#BDD**)
 
 
 
