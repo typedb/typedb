@@ -249,7 +249,9 @@ async fn single_row_result_with_variable_value(
     assert_eq!(context.answers.len(), 1, "Expected single row, received {}", context.answers.len());
     assert!(
         does_var_in_row_match_spec(context, &context.answers[0], variable_name.as_str(), spec.as_str()),
-        "Result did not match expected: {:?} != {}", &context.answers[0], spec.as_str()
+        "Result did not match expected: {:?} != {}",
+        &context.answers[0],
+        spec.as_str()
     );
 }
 
@@ -349,8 +351,8 @@ fn does_value_match(id: &str, var_value: &VariableValue<'_>, context: &Context) 
     };
     let expected = params::Value::from_str(id_value).unwrap().into_typedb(expected_value_type);
     if expected.value_type() == ValueType::Double {
-        let precision = id_value.split_once(".").map(|(_,decimal)| decimal.len()).unwrap_or(5) as i32;
-        let epsilon = 0.5 * 10.0f64.powi(- 1 * precision);
+        let precision = id_value.split_once(".").map(|(_, decimal)| decimal.len()).unwrap_or(5) as i32;
+        let epsilon = 0.5 * 10.0f64.powi(-1 * precision);
         f64::abs(expected.clone().unwrap_double() - var_value.as_value().clone().unwrap_double()) < epsilon
     } else {
         &expected == var_value.as_value()

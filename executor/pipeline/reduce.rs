@@ -483,17 +483,18 @@ impl ReducerAPI for MedianLongImpl {
     }
 
     fn finalise(self) -> Option<VariableValue<'static>> {
-        let Self { mut values , ..} = self;
+        let Self { mut values, .. } = self;
         values.sort();
         if values.len() == 0 {
             None
         } else if values.len() % 2 == 0 {
-            let pos = values.len()/2;
-            Some( (values[pos-1] + values[pos]) as f64 / 2.0 )
+            let pos = values.len() / 2;
+            Some((values[pos - 1] + values[pos]) as f64 / 2.0)
         } else {
-            let pos = values.len()/2;
+            let pos = values.len() / 2;
             Some(values[pos] as f64)
-        }.map(|v| VariableValue::Value(Value::Double(v)) )
+        }
+        .map(|v| VariableValue::Value(Value::Double(v)))
     }
 }
 
@@ -520,12 +521,13 @@ impl ReducerAPI for MedianDoubleImpl {
         if values.len() == 0 {
             None
         } else if values.len() % 2 == 0 {
-            let pos = values.len()/2;
-            Some( (values[pos-1] + values[pos]) / 2.0 )
+            let pos = values.len() / 2;
+            Some((values[pos - 1] + values[pos]) / 2.0)
         } else {
-            let pos = values.len()/2;
+            let pos = values.len() / 2;
             Some(values[pos])
-        }.map(|v| VariableValue::Value(Value::Double(v)) )
+        }
+        .map(|v| VariableValue::Value(Value::Double(v)))
     }
 }
 
@@ -556,7 +558,7 @@ impl ReducerAPI for StdLongImpl {
             let sum_squares = self.sum_squares as f64;
             let n = self.count as f64;
             let mean = sum / n;
-            let sample_variance : f64 = (sum_squares + n * mean * mean  - 2.0 * sum * mean ) / (n-1.0);
+            let sample_variance: f64 = (sum_squares + n * mean * mean - 2.0 * sum * mean) / (n - 1.0);
             Some(VariableValue::Value(Value::Double(sample_variance.sqrt())))
         } else {
             None
@@ -591,7 +593,7 @@ impl ReducerAPI for StdDoubleImpl {
             let sum_squares = self.sum_squares;
             let n = self.count as f64;
             let mean = sum / n;
-            let sample_variance : f64 = (sum_squares + n * mean * mean  - 2.0 * sum * mean ) / (n-1.0);
+            let sample_variance: f64 = (sum_squares + n * mean * mean - 2.0 * sum * mean) / (n - 1.0);
             Some(VariableValue::Value(Value::Double(sample_variance.sqrt())))
         } else {
             None
