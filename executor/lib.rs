@@ -46,13 +46,21 @@ impl<'a> IntoIterator for &'a SelectedPositions {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
+pub enum InterruptType {
+    TransactionClosed,
+    TransactionCommitted,
+    TransactionRolledback,
+    WriteQueryExecution,
+}
+
 #[derive(Debug)]
 pub struct ExecutionInterrupt {
-    signal: Option<tokio::sync::broadcast::Receiver<()>>,
+    signal: Option<tokio::sync::broadcast::Receiver<InterruptType>>,
 }
 
 impl ExecutionInterrupt {
-    pub fn new(signal: tokio::sync::broadcast::Receiver<()>) -> Self {
+    pub fn new(signal: tokio::sync::broadcast::Receiver<T>) -> Self {
         Self { signal: Some(signal) }
     }
 
@@ -61,6 +69,9 @@ impl ExecutionInterrupt {
     }
 
     pub fn check(&mut self) -> bool {
+        // TODO: return Optional<InterruptType>
+
+
         // TODO: if this becomes expensive to check frequently (try_recv may acquire locks), we could
         //       optimise it by caching the last time it was checked, and only actually check
         //       the signal once T micros/millis are elapsed... if this is really really cheap we can
