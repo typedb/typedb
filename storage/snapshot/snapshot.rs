@@ -7,7 +7,7 @@
 use std::{any::type_name, error::Error, fmt, iter::empty, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
-use error::{typedb_error, TypeDBError};
+use error::typedb_error;
 use lending_iterator::LendingIterator;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
@@ -45,7 +45,7 @@ pub trait ReadableSnapshot {
     }
 
     fn contains(&self, key: StorageKeyReference<'_>) -> Result<bool, SnapshotGetError> {
-        Ok(self.get_mapped(key, |value| true)?.unwrap_or(false))
+        Ok(self.get_mapped(key, |_| ())?.is_some())
     }
 
     fn iterate_range<const PS: usize>(&self, range: KeyRange<StorageKey<'_, PS>>) -> SnapshotRangeIterator;

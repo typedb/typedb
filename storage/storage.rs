@@ -11,13 +11,12 @@
 
 use std::{
     error::Error,
-    fmt, fs, io,
+    fs, io,
     path::{Path, PathBuf},
     sync::{atomic::Ordering, Arc},
-    time::Duration,
 };
 
-use ::error::{typedb_error, TypeDBError};
+use ::error::typedb_error;
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use isolation_manager::IsolationConflict;
 use iterator::MVCCReadError;
@@ -222,7 +221,8 @@ impl<Durability> MVCCStorage<Durability> {
             .isolation_manager
             .validate_commit(commit_sequence_number, commit_record, &self.durability_client)
             .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
-        let result = match validated_commit {
+
+        match validated_commit {
             ValidatedCommit::Write(write_batches) => {
                 sync_notifier.recv().unwrap(); // Ensure WAL is persisted before inserting to the KV store
                                                // Write to the k-v store
@@ -245,8 +245,7 @@ impl<Durability> MVCCStorage<Durability> {
                     .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
                 Err(StorageCommitError::Isolation { name: self.name.clone(), conflict })
             }
-        };
-        result
+        }
     }
 
     fn set_initial_put_status(&self, snapshot: &impl CommittableSnapshot<Durability>) -> Result<(), MVCCReadError>

@@ -239,7 +239,7 @@ where
             }
         }
         self.item = None;
-        self.iter.seek(key)
+        self.iter.seek(key);
     }
 
     fn compare_key(&self, item: &Self::Item<'_>, key: &K) -> Ordering {
