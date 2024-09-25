@@ -7,7 +7,6 @@
 use std::{borrow::Cow, convert::Infallible, fmt, str::FromStr, sync::Arc};
 
 use chrono::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime};
-use chrono_tz::Tz;
 use concept::{
     error::ConceptWriteError,
     type_::{
