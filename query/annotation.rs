@@ -21,8 +21,10 @@ use compiler::{
     modifiers::ReduceOperation,
 };
 use concept::type_::type_manager::TypeManager;
-use encoding::value::value_type::ValueTypeCategory;
-use encoding::value::value_type::ValueTypeCategory::{Double, Long};
+use encoding::value::value_type::{
+    ValueTypeCategory,
+    ValueTypeCategory::{Double, Long},
+};
 use ir::{
     pattern::constraint::Constraint,
     program::{
@@ -282,33 +284,33 @@ fn determine_value_type(
     }
 }
 
-pub fn reduce_operation_from_reducer(reducer: &Reducer, value_type: ValueTypeCategory, variable_registry: &VariableRegistry) -> Result<ReduceOperation<Variable>, QueryError> {
-    use encoding::value::value_type::ValueTypeCategory::{Long, Double};
+pub fn reduce_operation_from_reducer(
+    reducer: &Reducer,
+    value_type: ValueTypeCategory,
+    variable_registry: &VariableRegistry,
+) -> Result<ReduceOperation<Variable>, QueryError> {
+    use encoding::value::value_type::ValueTypeCategory::{Double, Long};
     // Will have been handled earlier since it doesn't need a value type.
-    debug_assert!(! matches!(reducer, Reducer::Count(_)));
+    debug_assert!(!matches!(reducer, Reducer::Count(_)));
     match value_type {
-        Long => {
-            match reducer {
-                Reducer::Count(var) => Ok(ReduceOperation::Count(var.clone())),
-                Reducer::Sum(var) => Ok(ReduceOperation::SumLong(var.clone())),
-                Reducer::Max(var) => Ok(ReduceOperation::MaxLong(var.clone())),
-                Reducer::Min(var) => Ok(ReduceOperation::MinLong(var.clone())),
-                Reducer::Mean(var) => Ok(ReduceOperation::MeanLong(var.clone())),
-                Reducer::Median(var) => Ok(ReduceOperation::MedianLong(var.clone())),
-                Reducer::Std(var) => Ok(ReduceOperation::StdLong(var.clone())),
-            }
-        }
-        Double => {
-            match reducer {
-                Reducer::Count(var) => Ok(ReduceOperation::Count(var.clone())),
-                Reducer::Sum(var) => Ok(ReduceOperation::SumDouble(var.clone())),
-                Reducer::Max(var) => Ok(ReduceOperation::MaxDouble(var.clone())),
-                Reducer::Min(var) => Ok(ReduceOperation::MinDouble(var.clone())),
-                Reducer::Mean(var) => Ok(ReduceOperation::MeanDouble(var.clone())),
-                Reducer::Median(var) => Ok(ReduceOperation::MedianDouble(var.clone())),
-                Reducer::Std(var) => Ok(ReduceOperation::StdDouble(var.clone())),
-            }
-        }
+        Long => match reducer {
+            Reducer::Count(var) => Ok(ReduceOperation::Count(var.clone())),
+            Reducer::Sum(var) => Ok(ReduceOperation::SumLong(var.clone())),
+            Reducer::Max(var) => Ok(ReduceOperation::MaxLong(var.clone())),
+            Reducer::Min(var) => Ok(ReduceOperation::MinLong(var.clone())),
+            Reducer::Mean(var) => Ok(ReduceOperation::MeanLong(var.clone())),
+            Reducer::Median(var) => Ok(ReduceOperation::MedianLong(var.clone())),
+            Reducer::Std(var) => Ok(ReduceOperation::StdLong(var.clone())),
+        },
+        Double => match reducer {
+            Reducer::Count(var) => Ok(ReduceOperation::Count(var.clone())),
+            Reducer::Sum(var) => Ok(ReduceOperation::SumDouble(var.clone())),
+            Reducer::Max(var) => Ok(ReduceOperation::MaxDouble(var.clone())),
+            Reducer::Min(var) => Ok(ReduceOperation::MinDouble(var.clone())),
+            Reducer::Mean(var) => Ok(ReduceOperation::MeanDouble(var.clone())),
+            Reducer::Median(var) => Ok(ReduceOperation::MedianDouble(var.clone())),
+            Reducer::Std(var) => Ok(ReduceOperation::StdDouble(var.clone())),
+        },
         _ => {
             let var = reducer.target_variable();
             let reducer_name = reducer.name();
@@ -318,6 +320,6 @@ pub fn reduce_operation_from_reducer(reducer: &Reducer, value_type: ValueTypeCat
                 variable: variable_name,
                 value_type,
             })
-        },
+        }
     }
 }

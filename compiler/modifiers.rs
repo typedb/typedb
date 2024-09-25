@@ -79,5 +79,4 @@ impl<ID: IrID> ReduceOperation<ID> {
             ReduceOperation::StdDouble(_) => ValueTypeCategory::Double,
         }
     }
-
 }

@@ -138,7 +138,7 @@ async fn typeql_define(context: &mut Context, may_error: params::TypeQLMayError,
             &tx.thing_manager,
             typeql_define,
         );
-        may_error.check_logic(result);
+        may_error.check_logic(result)
     });
 }
 
@@ -257,15 +257,19 @@ fn does_var_in_row_match_spec(
     var: &str,
     spec: &str,
 ) -> bool {
-    let (kind, id) = spec.split_once(':').expect("answer concept specifier must be of the form `<kind>:<id>`");
     let var_value =
         answer_row.get(var).unwrap_or_else(|| panic!("no answer found for {var} in one of the answer rows"));
-    match kind {
-        "label" => does_type_match(context, var_value, id),
-        "key" => does_key_match(var, id, var_value, context),
-        "attr" => does_attribute_match(id, var_value, context),
-        "value" => does_value_match(id, var_value, context),
-        _ => panic!("unrecognised concept kind: {kind}"),
+    if spec == "empty" {
+        var_value == &VariableValue::Empty
+    } else {
+        let (kind, id) = spec.split_once(':').expect("answer concept specifier must be of the form `<kind>:<id>`");
+        match kind {
+            "label" => does_type_match(context, var_value, id),
+            "key" => does_key_match(var, id, var_value, context),
+            "attr" => does_attribute_match(id, var_value, context),
+            "value" => does_value_match(id, var_value, context),
+            _ => panic!("unrecognised concept kind: {kind}"),
+        }
     }
 }
 

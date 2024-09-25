@@ -195,7 +195,25 @@ fn compile_stage(
                     ReduceOperation::MinDouble(variable) => {
                         ReduceOperation::MinDouble(input_variables.get(variable).unwrap().clone())
                     }
-                    _ => todo!()
+                    ReduceOperation::MeanLong(variable) => {
+                        ReduceOperation::MeanLong(input_variables.get(variable).unwrap().clone())
+                    }
+                    ReduceOperation::MeanDouble(variable) => {
+                        ReduceOperation::MeanDouble(input_variables.get(variable).unwrap().clone())
+                    }
+                    ReduceOperation::MedianLong(variable) => {
+                        ReduceOperation::MedianLong(input_variables.get(variable).unwrap().clone())
+                    }
+                    ReduceOperation::MedianDouble(variable) => {
+                        ReduceOperation::MedianDouble(input_variables.get(variable).unwrap().clone())
+                    }
+                    ReduceOperation::StdLong(variable) => {
+                        ReduceOperation::StdLong(input_variables.get(variable).unwrap().clone())
+                    }
+                    ReduceOperation::StdDouble(variable) => {
+                        ReduceOperation::StdDouble(input_variables.get(variable).unwrap().clone())
+                    }
+                    _ => todo!(),
                 };
                 reduction_inputs.push(reducer_on_position);
             }
