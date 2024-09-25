@@ -112,15 +112,12 @@ impl FromTypeQLLiteral for Decimal {
         if literal.decimal.contains("e") {
             Err(LiteralParseError::ScientificNotationNotAllowedForDecimal { literal: literal.to_string() })?;
         }
-        let (integral_str, fractional_str) = literal.decimal.split_once(".").unwrap();
-        let integral = parse_primitive::<i64>(integral_str)?;
-        let number_len = fractional_str.len();
-        let fractional =
-            parse_primitive::<u64>(fractional_str)? * 10u64.pow(FRACTIONAL_PART_DENOMINATOR_LOG10 - number_len as u32);
+
+        let decimal = parse_primitive::<Decimal>(&literal.decimal)?;
 
         Ok(match literal.sign {
-            None | Some(Sign::Plus) => Decimal::new(integral, fractional),
-            Some(Sign::Minus) => Decimal::new(0, 0) - Decimal::new(integral, fractional),
+            None | Some(Sign::Plus) => decimal,
+            Some(Sign::Minus) => -decimal,
         })
     }
 }
@@ -216,20 +213,15 @@ impl FromTypeQLLiteral for Duration {
                         * time_part.hours.as_ref().map(u64::from_typeql_literal).transpose()?.unwrap_or(0);
                     nanos += NANOS_PER_MINUTE
                         * time_part.minutes.as_ref().map(u64::from_typeql_literal).transpose()?.unwrap_or(0);
-                    let seconds_decimal = time_part
-                        .seconds
-                        .as_ref()
-                        .map(|s| {
-                            let (integer_str, fractional_str) = s.value.split_once(".").unwrap_or((&s.value, "0"));
-                            let integer = parse_primitive::<i64>(integer_str)?;
-                            let number_len = fractional_str.len();
-                            let fractional = parse_primitive::<u64>(fractional_str)?
-                                * 10u64.pow(FRACTIONAL_PART_DENOMINATOR_LOG10 - number_len as u32);
-                            Ok(Decimal::new(integer, fractional))
-                        })
+
+                    let seconds_decimal = (time_part.seconds.as_ref())
+                        .map(|seconds| parse_primitive::<Decimal>(&seconds.value))
                         .transpose()?
-                        .unwrap_or(Decimal::default());
-                    let nanos_decimal = seconds_decimal * NANOS_PER_SEC;
+                        .unwrap_or_default();
+
+                    nanos += seconds_decimal.integer_part() as u64 * NANOS_PER_SEC;
+
+                    let nanos_decimal = (seconds_decimal - seconds_decimal.integer_part()) * NANOS_PER_SEC;
                     debug_assert_eq!(nanos_decimal.fractional_part(), 0);
                     nanos += nanos_decimal.integer_part() as u64;
                 }

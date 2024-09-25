@@ -479,7 +479,7 @@ impl Value {
 
                 TypeDBValue::Decimal(match integer.starts_with('-') {
                     false => Decimal::new(integer_parsed_abs, fractional_parsed),
-                    true => Decimal::new(0, 0) - Decimal::new(integer_parsed_abs, fractional_parsed),
+                    true => -Decimal::new(integer_parsed_abs, fractional_parsed),
                 })
             }
             TypeDBValueType::Date => {
