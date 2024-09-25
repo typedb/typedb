@@ -4,7 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::{Arc, Mutex, OnceLock};
+use std::{
+    error::Error,
+    fmt,
+    sync::{Arc, Mutex, OnceLock},
+};
 
 use macro_rules_attribute::apply;
 use server::{parameters::config::Config, typedb};
@@ -39,4 +43,25 @@ pub async fn connection_ignore(_: &mut Context) {}
 #[step("connection does not have any database")]
 pub async fn connection_does_not_have_any_database(context: &mut Context) {
     assert!(context.server().unwrap().lock().unwrap().database_manager().database_names().is_empty())
+}
+
+#[derive(Debug, Clone)]
+pub enum BehaviourConnectionTestExecutionError {
+    CannotCommitReadTransaction,
+    CannotRollbackReadTransaction,
+}
+
+impl fmt::Display for BehaviourConnectionTestExecutionError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for BehaviourConnectionTestExecutionError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::CannotCommitReadTransaction => None,
+            Self::CannotRollbackReadTransaction => None,
+        }
+    }
 }

@@ -24,10 +24,14 @@ use query::{error::QueryError, query_manager::QueryManager};
 use test_utils::assert_matches;
 
 use crate::{
+    connection::BehaviourConnectionTestExecutionError,
     generic_step, params,
-    transaction_context::{with_read_tx, with_schema_tx, with_write_tx_deconstructed},
+    transaction_context::{
+        with_read_tx, with_schema_tx, with_write_tx_deconstructed,
+        ActiveTransaction::{Read, Schema},
+    },
     util::iter_table_map,
-    Context,
+    BehaviourTestExecutionError, Context,
 };
 
 fn batch_result_to_answer(
@@ -74,7 +78,14 @@ fn execute_read_query(
 fn execute_write_query(
     context: &mut Context,
     query: typeql::Query,
+    may_error: params::MayError,
 ) -> Result<Vec<HashMap<String, VariableValue<'static>>>, QueryError> {
+    if matches!(context.active_transaction.as_ref().unwrap(), Read(_)) {
+        may_error
+            .check::<(), BehaviourTestExecutionError>(Err(BehaviourTestExecutionError::UseInvalidTransactionAsWrite));
+        return Ok(vec![]);
+    }
+
     with_write_tx_deconstructed!(context, |snapshot, type_manager, thing_manager, function_manager, _db, _opts| {
         let (final_stage, named_outputs) = QueryManager {}
             .prepare_write_pipeline(
@@ -110,6 +121,14 @@ async fn typeql_define(context: &mut Context, may_error: params::TypeQLMayError,
         return;
     }
     let typeql_define = parse_result.unwrap().into_schema();
+
+    if !matches!(context.active_transaction.as_ref().unwrap(), Schema(_)) {
+        may_error.check_logic::<(), BehaviourTestExecutionError>(Err(
+            BehaviourTestExecutionError::UseInvalidTransactionAsSchema,
+        ));
+        return;
+    }
+
     with_schema_tx!(context, |tx| {
         let result = QueryManager::new().execute_schema(
             Arc::get_mut(&mut tx.snapshot).unwrap(),
@@ -131,6 +150,14 @@ async fn typeql_redefine(context: &mut Context, may_error: params::TypeQLMayErro
         return;
     }
     let typeql_redefine = parse_result.unwrap().into_schema();
+
+    if !matches!(context.active_transaction.as_ref().unwrap(), Schema(_)) {
+        may_error.check_logic::<(), BehaviourTestExecutionError>(Err(
+            BehaviourTestExecutionError::UseInvalidTransactionAsSchema,
+        ));
+        return;
+    }
+
     with_schema_tx!(context, |tx| {
         let result = QueryManager::new().execute_schema(
             Arc::get_mut(&mut tx.snapshot).unwrap(),
@@ -151,7 +178,8 @@ async fn typeql_write(context: &mut Context, may_error: params::TypeQLMayError, 
         return;
     }
     let query = parse_result.unwrap();
-    let result = execute_write_query(context, query);
+
+    let result = execute_write_query(context, query, may_error.as_may_error_logic());
     may_error.check_logic(result);
 }
 
@@ -159,7 +187,7 @@ async fn typeql_write(context: &mut Context, may_error: params::TypeQLMayError, 
 #[step(expr = r"get answers of typeql write query")]
 async fn get_answers_of_typeql_write(context: &mut Context, step: &Step) {
     let query = typeql::parse_query(step.docstring.as_ref().unwrap().as_str()).unwrap();
-    let result = execute_write_query(context, query);
+    let result = execute_write_query(context, query, params::MayError::False);
     context.answers = result.unwrap();
 }
 

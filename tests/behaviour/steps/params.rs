@@ -113,14 +113,14 @@ impl TypeQLMayError {
         self.as_may_error_logic().expects_error()
     }
 
-    fn as_may_error_parsing(&self) -> MayError {
+    pub fn as_may_error_parsing(&self) -> MayError {
         match self {
             TypeQLMayError::Parsing => MayError::True,
             | TypeQLMayError::False | TypeQLMayError::Logic => MayError::False,
         }
     }
 
-    fn as_may_error_logic(&self) -> MayError {
+    pub fn as_may_error_logic(&self) -> MayError {
         match self {
             TypeQLMayError::Logic => MayError::True,
             | TypeQLMayError::False | TypeQLMayError::Parsing => MayError::False,

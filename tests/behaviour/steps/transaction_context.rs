@@ -38,7 +38,9 @@ pub(crate) use with_read_tx;
 macro_rules! with_write_tx {
     ($context:ident, |$tx:ident| $expr:expr) => {
         match $context.active_transaction.as_mut().unwrap() {
-            $crate::transaction_context::ActiveTransaction::Read(_) => panic!("Using Read transaction as Write"),
+            $crate::transaction_context::ActiveTransaction::Read(_) => {
+                panic!("Using Read transaction as Write. You probably wanted to expect an error before")
+            }
             $crate::transaction_context::ActiveTransaction::Write($tx) => $expr,
             $crate::transaction_context::ActiveTransaction::Schema($tx) => $expr,
         }
@@ -49,8 +51,12 @@ pub(crate) use with_write_tx;
 macro_rules! with_schema_tx {
     ($context:ident, |$tx:ident| $expr:expr) => {
         match $context.active_transaction.as_mut().unwrap() {
-            $crate::transaction_context::ActiveTransaction::Read(_) => panic!("Using Read transaction as Schema"),
-            $crate::transaction_context::ActiveTransaction::Write(_) => panic!("Using Write transaction as Schema"),
+            $crate::transaction_context::ActiveTransaction::Read(_) => {
+                panic!("Using Read transaction as Schema. You probably wanted to expect an error before")
+            }
+            $crate::transaction_context::ActiveTransaction::Write(_) => {
+                panic!("Using Write transaction as Schema. You probably wanted to expect an error before")
+            }
             $crate::transaction_context::ActiveTransaction::Schema($tx) => $expr,
         }
     };
@@ -67,7 +73,9 @@ macro_rules! with_write_tx_deconstructed {
         $transaction_options:ident $(,)?
      | $expr:expr) => {
         match $context.take_transaction().unwrap() {
-            $crate::transaction_context::ActiveTransaction::Read(_) => panic!("Using Read transaction as Write"),
+            $crate::transaction_context::ActiveTransaction::Read(_) => {
+                panic!("Using Read transaction as Write. You probably wanted to expect an error before")
+            }
             $crate::transaction_context::ActiveTransaction::Write(::database::transaction::TransactionWrite {
                 snapshot: $snapshot,
                 type_manager: $type_manager,

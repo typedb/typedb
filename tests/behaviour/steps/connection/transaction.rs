@@ -4,16 +4,34 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use database::transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite};
+use std::sync::{Arc, Mutex};
+
+use cucumber::codegen::anyhow::Error;
+use database::{
+    transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
+    Database,
+};
 use macro_rules_attribute::apply;
 use options::TransactionOptions;
+use server::{typedb, typedb::Server};
+use storage::durability_client::WALClient;
 use test_utils::assert_matches;
 
 use crate::{
+    connection::BehaviourConnectionTestExecutionError,
     generic_step,
-    params::{check_boolean, Boolean, MayError},
+    params::{self, check_boolean},
     ActiveTransaction, Context,
 };
+
+async fn database_open_transaction(database: Arc<Database<WALClient>>, tx_type: String) -> ActiveTransaction {
+    match tx_type.as_str() {
+        "read" => ActiveTransaction::Read(TransactionRead::open(database, TransactionOptions::default())),
+        "write" => ActiveTransaction::Write(TransactionWrite::open(database, TransactionOptions::default())),
+        "schema" => ActiveTransaction::Schema(TransactionSchema::open(database, TransactionOptions::default())),
+        _ => unreachable!("Unrecognised transaction type"),
+    }
+}
 
 #[apply(generic_step)]
 #[step(expr = "connection open {word} transaction for database: {word}")]
@@ -21,19 +39,14 @@ pub async fn connection_open_transaction(context: &mut Context, tx_type: String,
     assert!(context.transaction().is_none(), "Existing transaction must be closed first");
     let server = context.server().unwrap().lock().unwrap();
     let database = server.database_manager().database(&db_name).unwrap();
-    let tx = match tx_type.as_str() {
-        "read" => ActiveTransaction::Read(TransactionRead::open(database.clone(), TransactionOptions::default())),
-        "write" => ActiveTransaction::Write(TransactionWrite::open(database.clone(), TransactionOptions::default())),
-        "schema" => ActiveTransaction::Schema(TransactionSchema::open(database.clone(), TransactionOptions::default())),
-        _ => unreachable!("Unrecognised transaction type"),
-    };
+    let tx = database_open_transaction(database.clone(), tx_type).await;
     drop(server);
     context.set_transaction(tx);
 }
 
 #[apply(generic_step)]
 #[step(expr = "transaction is open: {boolean}")]
-pub async fn transaction_is_open(context: &mut Context, is_open: Boolean) {
+pub async fn transaction_is_open(context: &mut Context, is_open: params::Boolean) {
     check_boolean!(is_open, context.transaction().is_some());
 }
 
@@ -50,9 +63,13 @@ pub async fn transaction_has_type(context: &mut Context, tx_type: String) {
 
 #[apply(generic_step)]
 #[step(expr = "transaction commits{may_error}")]
-pub async fn transaction_commits(context: &mut Context, may_error: MayError) {
+pub async fn transaction_commits(context: &mut Context, may_error: params::MayError) {
     match context.take_transaction().unwrap() {
-        ActiveTransaction::Read(_) => panic!("Cannot commit read transaction"),
+        ActiveTransaction::Read(_) => {
+            may_error.check::<(), BehaviourConnectionTestExecutionError>(Err(
+                BehaviourConnectionTestExecutionError::CannotCommitReadTransaction,
+            ));
+        }
         ActiveTransaction::Write(tx) => {
             if let Some(error) = may_error.check(tx.commit()) {
                 if let DataCommitError::ConceptWriteErrors { source: errors, .. } = error {
@@ -79,10 +96,14 @@ pub async fn transaction_commits(context: &mut Context, may_error: MayError) {
 }
 
 #[apply(generic_step)]
-#[step(expr = "transaction rollbacks")]
-pub async fn transaction_rollbacks(context: &mut Context) {
+#[step(expr = "transaction rollbacks{may_error}")]
+pub async fn transaction_rollbacks(context: &mut Context, may_error: params::MayError) {
     match context.take_transaction().unwrap() {
-        ActiveTransaction::Read(_) => panic!("Cannot rollback read transaction"),
+        ActiveTransaction::Read(_) => {
+            may_error.check::<(), BehaviourConnectionTestExecutionError>(Err(
+                BehaviourConnectionTestExecutionError::CannotRollbackReadTransaction,
+            ));
+        }
         ActiveTransaction::Write(mut tx) => tx.rollback(),
         ActiveTransaction::Schema(mut tx) => tx.rollback(),
     }
@@ -102,13 +123,13 @@ pub async fn open_transactions_in_parallel(context: &mut Context) {
 
 #[apply(generic_step)]
 #[step(expr = "transactions in parallel are null: {boolean}")]
-pub async fn transactions_in_parallel_are_null(context: &mut Context, are_null: Boolean) {
+pub async fn transactions_in_parallel_are_null(context: &mut Context, are_null: params::Boolean) {
     todo!()
 }
 
 #[apply(generic_step)]
 #[step(expr = "transactions in parallel are open: {boolean}")]
-pub async fn transactions_in_parallel_are_open(context: &mut Context, are_open: Boolean) {
+pub async fn transactions_in_parallel_are_open(context: &mut Context, are_open: params::Boolean) {
     todo!()
 }
 
