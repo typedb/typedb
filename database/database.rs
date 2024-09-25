@@ -409,9 +409,10 @@ typedb_error!(
 
 typedb_error!(
     pub DatabaseDeleteError(component = "Database delete", prefix = "DBD") {
-        InUse(1, "Cannot delete database since it is in use."),
-        StorageDelete(2, "Error while deleting storage resources.", ( typedb_source: StorageDeleteError )),
-        DirectoryDelete(3, "Error deleting directory.", ( source: Arc<io::Error> )),
+        DoesNotExist(1, "Cannot delete database since it does not exist."),
+        InUse(2, "Cannot delete database since it is in use."),
+        StorageDelete(3, "Error while deleting storage resources.", ( typedb_source: StorageDeleteError )),
+        DirectoryDelete(4, "Error deleting directory.", ( source: Arc<io::Error> )),
     }
 );
 

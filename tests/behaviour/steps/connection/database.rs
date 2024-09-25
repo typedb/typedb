@@ -4,23 +4,41 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use cucumber::gherkin::Step;
-use macro_rules_attribute::apply;
+use std::sync::Mutex;
 
-use crate::{generic_step, util, Context};
+use cucumber::gherkin::Step;
+use futures::future::join_all;
+use macro_rules_attribute::apply;
+use server::typedb;
+
+use crate::{generic_step, params, util, Context};
+
+pub async fn server_create_database(server: &'_ Mutex<typedb::Server>, name: String) {
+    server.lock().unwrap().database_manager().create_database(&name);
+}
+
+pub async fn server_delete_database(server: &'_ Mutex<typedb::Server>, name: String, may_error: params::MayError) {
+    may_error.check(server.lock().unwrap().database_manager().delete_database(&name));
+}
 
 #[apply(generic_step)]
 #[step(expr = "connection create database: {word}")]
 pub async fn connection_create_database(context: &mut Context, name: String) {
-    context.server().unwrap().lock().unwrap().database_manager().create_database(&name);
+    server_create_database(context.server().unwrap(), name).await
 }
 
 #[apply(generic_step)]
 #[step(expr = "connection create database(s):")]
-async fn connection_create_databases(context: &mut Context, step: &Step) {
+pub async fn connection_create_databases(context: &mut Context, step: &Step) {
     for name in util::iter_table(step) {
-        connection_create_database(context, name.into()).await;
+        server_create_database(context.server().unwrap(), name.into()).await;
     }
+}
+
+#[apply(generic_step)]
+#[step(expr = "connection create database(s) in parallel:")]
+pub async fn connection_create_databases_in_parallel(context: &mut Context, step: &Step) {
+    join_all(util::iter_table(step).map(|name| server_create_database(context.server().unwrap(), name.into()))).await;
 }
 
 #[apply(generic_step)]
@@ -33,34 +51,27 @@ pub async fn connection_reset_database(context: &mut Context, name: String) {
 }
 
 #[apply(generic_step)]
-#[step(expr = "connection delete database: {word}")]
-pub async fn connection_delete_database(context: &mut Context, name: String) {
-    context.server().unwrap().lock().unwrap().database_manager().delete_database(&name).unwrap()
+#[step(expr = "connection delete database: {word}{may_error}")]
+pub async fn connection_delete_database(context: &mut Context, name: String, may_error: params::MayError) {
+    server_delete_database(context.server().unwrap(), name, may_error).await
 }
 
 #[apply(generic_step)]
 #[step(expr = "connection delete database(s):")]
 async fn connection_delete_databases(context: &mut Context, step: &Step) {
-    todo!()
-    // for name in util::iter_table(step) {
-    // context.databases.get(name).and_then(Database::delete).await.unwrap();
-    // }
+    for name in util::iter_table(step) {
+        server_delete_database(context.server().unwrap(), name.into(), params::MayError::False).await;
+    }
 }
 
 #[apply(generic_step)]
-#[step(expr = "connection delete database; throws exception: {word}")]
-async fn connection_delete_database_throws_exception(context: &mut Context, name: String) {
-    todo!()
-    // assert!(context.databases.get(name).and_then(Database::delete).await.is_err());
-}
-
-#[apply(generic_step)]
-#[step(expr = "connection delete database(s); throws exception")]
-async fn connection_delete_databases_throws_exception(context: &mut Context, step: &Step) {
-    todo!()
-    // for name in util::iter_table(step) {
-    // assert!(context.databases.get(name).and_then(Database::delete).await.is_err());
-    // }
+#[step(expr = "connection delete database(s) in parallel:")]
+async fn connection_delete_databases_in_parallel(context: &mut Context, step: &Step) {
+    join_all(
+        util::iter_table(step)
+            .map(|name| server_delete_database(context.server().unwrap(), name.into(), params::MayError::False)),
+    )
+    .await;
 }
 
 #[apply(generic_step)]
@@ -85,7 +96,7 @@ async fn connection_has_databases(context: &mut Context, step: &Step) {
 async fn connection_does_not_have_database(context: &mut Context, name: String) {
     assert!(
         context.server().unwrap().lock().unwrap().database_manager().database(&name).is_none(),
-        "Connection doesn't contain database {name}.",
+        "Connection should not contain database {name}.",
     );
 }
 

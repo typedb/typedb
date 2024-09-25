@@ -52,7 +52,7 @@ pub async fn transaction_has_type(context: &mut Context, tx_type: String) {
 #[step(expr = "transaction commits{may_error}")]
 pub async fn transaction_commits(context: &mut Context, may_error: MayError) {
     match context.take_transaction().unwrap() {
-        ActiveTransaction::Read(_) => (),
+        ActiveTransaction::Read(_) => panic!("Cannot commit read transaction"),
         ActiveTransaction::Write(tx) => {
             if let Some(error) = may_error.check(tx.commit()) {
                 if let DataCommitError::ConceptWriteErrors { source: errors, .. } = error {
@@ -79,6 +79,16 @@ pub async fn transaction_commits(context: &mut Context, may_error: MayError) {
 }
 
 #[apply(generic_step)]
+#[step(expr = "transaction rollbacks")]
+pub async fn transaction_rollbacks(context: &mut Context) {
+    match context.take_transaction().unwrap() {
+        ActiveTransaction::Read(_) => panic!("Cannot rollback read transaction"),
+        ActiveTransaction::Write(mut tx) => tx.rollback(),
+        ActiveTransaction::Schema(mut tx) => tx.rollback(),
+    }
+}
+
+#[apply(generic_step)]
 #[step(expr = "transaction closes")]
 pub async fn transaction_closes(context: &mut Context) {
     context.close_transaction()
@@ -92,7 +102,7 @@ pub async fn open_transactions_in_parallel(context: &mut Context) {
 
 #[apply(generic_step)]
 #[step(expr = "transactions in parallel are null: {boolean}")]
-pub async fn transations_in_parallel_are_null(context: &mut Context, are_null: Boolean) {
+pub async fn transactions_in_parallel_are_null(context: &mut Context, are_null: Boolean) {
     todo!()
 }
 

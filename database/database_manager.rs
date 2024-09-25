@@ -56,13 +56,16 @@ impl DatabaseManager {
         // remove from map to make DB unavailable
         let mut databases = self.databases.write().unwrap();
         let db = databases.remove(name.as_ref());
-        if let Some(db) = db {
-            match Arc::try_unwrap(db) {
-                Ok(unwrapped) => unwrapped.delete()?,
-                Err(arc) => {
-                    // failed to delete since it's in use - let's re-insert for now instead of losing the reference
-                    databases.insert(name.as_ref().to_owned(), arc);
-                    return Err(DatabaseDeleteError::InUse {});
+        match db {
+            None => return Err(DatabaseDeleteError::DoesNotExist {}),
+            Some(db) => {
+                match Arc::try_unwrap(db) {
+                    Ok(unwrapped) => unwrapped.delete()?,
+                    Err(arc) => {
+                        // failed to delete since it's in use - let's re-insert for now instead of losing the reference
+                        databases.insert(name.as_ref().to_owned(), arc);
+                        return Err(DatabaseDeleteError::InUse {});
+                    }
                 }
             }
         }
