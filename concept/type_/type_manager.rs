@@ -226,8 +226,8 @@ macro_rules! get_annotation_declared_by_category_methods {
             pub(crate) fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_<'static>, annotation_category: AnnotationCategory,
             ) -> Result<Option<$annotation_type>, ConceptReadError> {
-                Ok(type_.get_annotations_declared(snapshot, self)?.into_iter().find(|type_annotation| {
-                    Annotation::from(type_annotation.clone().clone()).category() == annotation_category
+                Ok(type_.get_annotations_declared(snapshot, self)?.into_iter().find(|&type_annotation| {
+                    Annotation::from(type_annotation.clone()).category() == annotation_category
                 }).cloned())
             }
         )*

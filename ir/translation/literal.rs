@@ -6,14 +6,17 @@
 
 use std::{borrow::Cow, str::FromStr};
 
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime};
+use chrono_tz::Tz;
 use encoding::value::{
     decimal_value::{Decimal, FRACTIONAL_PART_DENOMINATOR_LOG10},
+    duration_value::{Duration, MONTHS_PER_YEAR, NANOS_PER_HOUR, NANOS_PER_MINUTE, NANOS_PER_SEC},
+    timezone::TimeZone,
     value::Value,
 };
 use typeql::value::{
-    BooleanLiteral, DateFragment, DateTimeLiteral, DateTimeTZLiteral, IntegerLiteral, Literal, Sign,
-    SignedDecimalLiteral, SignedIntegerLiteral, StringLiteral, TimeFragment, TimeZone, ValueLiteral,
+    BooleanLiteral, DateFragment, DateTimeLiteral, DateTimeTZLiteral, DurationLiteral, IntegerLiteral, Literal, Sign,
+    SignedDecimalLiteral, SignedIntegerLiteral, StringLiteral, TimeFragment, ValueLiteral,
 };
 
 use crate::LiteralParseError;
@@ -25,10 +28,10 @@ pub(crate) fn translate_literal(literal: &Literal) -> Result<Value<'static>, Lit
 pub trait FromTypeQLLiteral: Sized {
     type TypeQLLiteral;
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError>;
+}
 
-    fn parse_primitive<T: FromStr>(fragment: &str) -> Result<T, LiteralParseError> {
-        fragment.parse::<T>().map_err(|_| LiteralParseError::FragmentParseError { fragment: fragment.to_owned() })
-    }
+fn parse_primitive<T: FromStr>(fragment: &str) -> Result<T, LiteralParseError> {
+    fragment.parse::<T>().map_err(|_| LiteralParseError::FragmentParseError { fragment: fragment.to_owned() })
 }
 
 impl FromTypeQLLiteral for Value<'static> {
@@ -46,9 +49,9 @@ impl FromTypeQLLiteral for Value<'static> {
             ValueLiteral::Date(date) => Ok(Value::Date(NaiveDate::from_typeql_literal(&date.date)?)),
             ValueLiteral::DateTime(datetime) => Ok(Value::DateTime(NaiveDateTime::from_typeql_literal(datetime)?)),
             ValueLiteral::DateTimeTz(datetime_tz) => {
-                Ok(Value::DateTimeTZ(chrono::DateTime::<chrono_tz::Tz>::from_typeql_literal(datetime_tz)?))
+                Ok(Value::DateTimeTZ(chrono::DateTime::from_typeql_literal(datetime_tz)?))
             }
-            ValueLiteral::Duration(_) => todo!(),
+            ValueLiteral::Duration(duration) => Ok(Value::Duration(Duration::from_typeql_literal(duration)?)),
             ValueLiteral::String(string) => Ok(Value::String(Cow::Owned(String::from_typeql_literal(string)?))),
             ValueLiteral::Struct(_) => todo!(),
         }
@@ -59,7 +62,7 @@ impl FromTypeQLLiteral for bool {
     type TypeQLLiteral = BooleanLiteral;
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
-        Self::parse_primitive(literal.value.as_str())
+        parse_primitive(literal.value.as_str())
     }
 }
 
@@ -67,7 +70,7 @@ impl FromTypeQLLiteral for i64 {
     type TypeQLLiteral = SignedIntegerLiteral;
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
-        let unsigned: i64 = Self::parse_primitive(literal.integral.as_str())?;
+        let unsigned: i64 = parse_primitive(literal.integral.as_str())?;
         Ok(match literal.sign.unwrap_or(Sign::Plus) {
             Sign::Plus => unsigned,
             Sign::Minus => -unsigned,
@@ -75,18 +78,26 @@ impl FromTypeQLLiteral for i64 {
     }
 }
 
+impl FromTypeQLLiteral for u32 {
+    type TypeQLLiteral = IntegerLiteral;
+
+    fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
+        parse_primitive(literal.value.as_str())
+    }
+}
+
 impl FromTypeQLLiteral for u64 {
     type TypeQLLiteral = IntegerLiteral;
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
-        Self::parse_primitive(literal.value.as_str())
+        parse_primitive(literal.value.as_str())
     }
 }
 
 impl FromTypeQLLiteral for f64 {
     type TypeQLLiteral = SignedDecimalLiteral;
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
-        let unsigned = Self::parse_primitive::<f64>(literal.decimal.as_str())?;
+        let unsigned = parse_primitive::<f64>(literal.decimal.as_str())?;
         match &literal.sign.unwrap_or(Sign::Plus) {
             Sign::Plus => Ok(unsigned),
             Sign::Minus => Ok(-unsigned),
@@ -101,15 +112,12 @@ impl FromTypeQLLiteral for Decimal {
         if literal.decimal.contains("e") {
             Err(LiteralParseError::ScientificNotationNotAllowedForDecimal { literal: literal.to_string() })?;
         }
-        let (integral_str, fractional_str) = literal.decimal.split_once(".").unwrap();
-        let integral = Self::parse_primitive::<i64>(integral_str)?;
-        let number_len = fractional_str.len();
-        let fractional = Self::parse_primitive::<u64>(fractional_str)?
-            * 10u64.pow(FRACTIONAL_PART_DENOMINATOR_LOG10 - number_len as u32);
+
+        let decimal = parse_primitive::<Decimal>(&literal.decimal)?;
 
         Ok(match literal.sign {
-            None | Some(Sign::Plus) => Decimal::new(integral, fractional),
-            Some(Sign::Minus) => Decimal::new(0, 0) - Decimal::new(integral, fractional),
+            None | Some(Sign::Plus) => decimal,
+            Some(Sign::Minus) => -decimal,
         })
     }
 }
@@ -119,9 +127,9 @@ impl FromTypeQLLiteral for NaiveDate {
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         let (year, month, day) = (
-            Self::parse_primitive(literal.year.as_str())?,
-            Self::parse_primitive(literal.month.as_str())?,
-            Self::parse_primitive(literal.day.as_str())?,
+            parse_primitive(literal.year.as_str())?,
+            parse_primitive(literal.month.as_str())?,
+            parse_primitive(literal.day.as_str())?,
         );
         NaiveDate::from_ymd_opt(year, month, day).ok_or(LiteralParseError::InvalidDate { year, month, day })
     }
@@ -131,12 +139,12 @@ impl FromTypeQLLiteral for NaiveTime {
     type TypeQLLiteral = TimeFragment;
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
-        let hour = Self::parse_primitive(literal.hour.as_str())?;
-        let minute = Self::parse_primitive(literal.minute.as_str())?;
-        let second = if let Some(s) = &literal.second { Self::parse_primitive(s.as_str())? } else { 0 };
-        let nano = if let Some(s) = &literal.second {
-            let number_len = s.len();
-            Self::parse_primitive::<u32>(s.as_str())? * 10u32.pow(9 - number_len as u32)
+        let hour = parse_primitive(literal.hour.as_str())?;
+        let minute = parse_primitive(literal.minute.as_str())?;
+        let second = if let Some(second) = &literal.second { parse_primitive(second.as_str())? } else { 0 };
+        let nano = if let Some(fraction) = &literal.second_fraction {
+            let number_len = fraction.len();
+            parse_primitive::<u32>(fraction.as_str())? * 10u32.pow(9 - number_len as u32)
         } else {
             0
         };
@@ -149,12 +157,16 @@ impl FromTypeQLLiteral for NaiveTime {
 }
 
 impl FromTypeQLLiteral for TimeZone {
-    type TypeQLLiteral = TimeZone;
+    type TypeQLLiteral = typeql::value::TimeZone;
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         match literal {
-            TimeZone::IANA(value) => todo!(),
-            TimeZone::ISO(value) => todo!(),
+            typeql::value::TimeZone::IANA(name) => Ok(TimeZone::IANA(
+                Tz::from_str_insensitive(name).map_err(|_| LiteralParseError::TimeZoneLookup { name: name.clone() })?,
+            )),
+            typeql::value::TimeZone::ISO(value) => Ok(TimeZone::Fixed(
+                FixedOffset::from_str(value).map_err(|_| LiteralParseError::FixedOffset { value: value.clone() })?,
+            )),
         }
     }
 }
@@ -169,13 +181,54 @@ impl FromTypeQLLiteral for NaiveDateTime {
     }
 }
 
-impl FromTypeQLLiteral for chrono::DateTime<chrono_tz::Tz> {
+impl FromTypeQLLiteral for chrono::DateTime<TimeZone> {
     type TypeQLLiteral = DateTimeTZLiteral;
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         let date = NaiveDate::from_typeql_literal(&literal.date)?;
         let time = NaiveTime::from_typeql_literal(&literal.time)?;
-        let tz: chrono_tz::Tz = todo!();
+        let tz = TimeZone::from_typeql_literal(&literal.timezone)?;
+        Ok(NaiveDateTime::new(date, time).and_local_timezone(tz).unwrap())
+    }
+}
+
+impl FromTypeQLLiteral for Duration {
+    type TypeQLLiteral = DurationLiteral;
+
+    fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
+        let mut months = 0;
+        let mut days = 0;
+        let mut nanos = 0;
+
+        match literal {
+            DurationLiteral::Weeks(weeks) => days += 7 * u32::from_typeql_literal(weeks)?,
+            DurationLiteral::DateAndTime(date_part, time_part) => {
+                months +=
+                    MONTHS_PER_YEAR * date_part.years.as_ref().map(u32::from_typeql_literal).transpose()?.unwrap_or(0);
+                months += date_part.months.as_ref().map(u32::from_typeql_literal).transpose()?.unwrap_or(0);
+                days += date_part.days.as_ref().map(u32::from_typeql_literal).transpose()?.unwrap_or(0);
+
+                if let Some(time_part) = time_part {
+                    nanos += NANOS_PER_HOUR
+                        * time_part.hours.as_ref().map(u64::from_typeql_literal).transpose()?.unwrap_or(0);
+                    nanos += NANOS_PER_MINUTE
+                        * time_part.minutes.as_ref().map(u64::from_typeql_literal).transpose()?.unwrap_or(0);
+
+                    let seconds_decimal = (time_part.seconds.as_ref())
+                        .map(|seconds| parse_primitive::<Decimal>(&seconds.value))
+                        .transpose()?
+                        .unwrap_or_default();
+
+                    nanos += seconds_decimal.integer_part() as u64 * NANOS_PER_SEC;
+
+                    let nanos_decimal = (seconds_decimal - seconds_decimal.integer_part()) * NANOS_PER_SEC;
+                    debug_assert_eq!(nanos_decimal.fractional_part(), 0);
+                    nanos += nanos_decimal.integer_part() as u64;
+                }
+            }
+        }
+
+        Ok(Duration::new(months, days, nanos))
     }
 }
 

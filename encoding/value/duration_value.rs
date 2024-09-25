@@ -12,17 +12,17 @@ use std::{
 
 use chrono::{DateTime, Days, Months, NaiveDateTime, TimeDelta, TimeZone};
 
-const NANOS_PER_SEC: u64 = 1_000_000_000;
-const NANOS_PER_MINUTE: u64 = 60 * NANOS_PER_SEC;
-const NANOS_PER_HOUR: u64 = 60 * 60 * NANOS_PER_SEC;
+pub const NANOS_PER_SEC: u64 = 1_000_000_000;
+pub const NANOS_PER_MINUTE: u64 = 60 * NANOS_PER_SEC;
+pub const NANOS_PER_HOUR: u64 = 60 * 60 * NANOS_PER_SEC;
 
 const MAX_YEAR: i32 = (i32::MAX >> 13) - 1; // NaiveDate.year() is from a trait and not `const`
 const MIN_YEAR: i32 = (i32::MIN >> 13) + 1; // NaiveDate.year() is from a trait and not `const`
 
-const MONTHS_PER_YEAR: u32 = 12;
+pub const MONTHS_PER_YEAR: u32 = 12;
 const MAX_MONTHS: u32 = (MAX_YEAR - MIN_YEAR + 1) as u32 * MONTHS_PER_YEAR;
 
-const DAYS_PER_WEEK: u32 = 7;
+pub const DAYS_PER_WEEK: u32 = 7;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct Duration {
@@ -32,7 +32,7 @@ pub struct Duration {
 }
 
 impl Duration {
-    fn new(months: u32, days: u32, nanos: u64) -> Self {
+    pub fn new(months: u32, days: u32, nanos: u64) -> Self {
         assert!(months <= MAX_MONTHS);
         Self { months, days, nanos }
     }

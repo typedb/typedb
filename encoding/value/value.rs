@@ -14,7 +14,6 @@ use std::{
 
 use bytes::byte_array::ByteArray;
 use chrono::{DateTime, NaiveDate, NaiveDateTime};
-use chrono_tz::Tz;
 
 use crate::{
     value::{
@@ -30,6 +29,7 @@ use crate::{
         long_bytes::LongBytes,
         string_bytes::StringBytes,
         struct_bytes::StructBytes,
+        timezone::TimeZone,
         value_struct::StructValue,
         value_type::{ValueType, ValueTypeCategory},
         ValueEncodable,
@@ -45,7 +45,7 @@ pub enum Value<'a> {
     Decimal(Decimal),
     Date(NaiveDate),
     DateTime(NaiveDateTime),
-    DateTimeTZ(DateTime<Tz>),
+    DateTimeTZ(DateTime<TimeZone>),
     Duration(Duration),
     String(Cow<'a, str>),
     Struct(Cow<'a, StructValue<'static>>),
@@ -149,7 +149,7 @@ impl<'a> Value<'a> {
         }
     }
 
-    pub fn unwrap_date_time_tz(self) -> DateTime<Tz> {
+    pub fn unwrap_date_time_tz(self) -> DateTime<TimeZone> {
         match self {
             Self::DateTimeTZ(date_time_tz) => date_time_tz,
             _ => panic!("Cannot unwrap DateTimeTZ if not a datetime-tz value."),
@@ -458,7 +458,7 @@ impl NativeValueConvertible for NaiveDateTime {
     }
 }
 
-impl NativeValueConvertible for DateTime<Tz> {
+impl NativeValueConvertible for DateTime<TimeZone> {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::DateTimeTZ;
 
     fn from_db_value(value: Value<'static>) -> Result<Self, ()> {

@@ -172,7 +172,7 @@ impl WriteBuffer {
     }
 
     pub(crate) fn contains(&self, key: &ByteArray<BUFFER_KEY_INLINE>) -> bool {
-        self.writes.get(key.bytes()).is_some()
+        self.writes.contains_key(key.bytes())
     }
 
     pub(crate) fn get(&self, key: &[u8]) -> Option<&Write> {

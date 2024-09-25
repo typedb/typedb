@@ -6,7 +6,9 @@
 
 use std::{
     fmt,
-    ops::{Add, Mul, Sub},
+    num::ParseIntError,
+    ops::{Add, Mul, Neg, Sub},
+    str::FromStr,
 };
 
 pub const FRACTIONAL_PART_DENOMINATOR_LOG10: u32 = 19;
@@ -17,7 +19,7 @@ const _ASSERT: () = {
     assert!(FRACTIONAL_PART_DENOMINATOR > u64::MAX / 10);
 };
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Decimal {
     integer: i64,
     fractional: u64,
@@ -42,6 +44,14 @@ impl Decimal {
 
     pub fn to_f64(self) -> f64 {
         self.integer as f64 + self.fractional as f64 / FRACTIONAL_PART_DENOMINATOR as f64
+    }
+}
+
+impl Neg for Decimal {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Self::default() - self
     }
 }
 
@@ -186,10 +196,50 @@ macro_rules! impl_ref_ops {
 
 impl_ref_ops! { Add::add, Sub::sub, Mul::mul }
 
+impl FromStr for Decimal {
+    type Err = ParseIntError;
+
+    fn from_str(mut str: &str) -> Result<Self, Self::Err> {
+        let is_negative = if str.starts_with("-") {
+            str = str.trim_start_matches('-');
+            true
+        } else {
+            false
+        };
+
+        let (integer_part, fractional_part) = str.split_once(".").unwrap_or((str, "0"));
+        let integer = integer_part.parse()?;
+        let num_fractional_digits = fractional_part.len() as u32;
+        let fractional =
+            fractional_part.parse::<u64>()? * 10u64.pow(FRACTIONAL_PART_DENOMINATOR_LOG10 - num_fractional_digits);
+
+        if is_negative {
+            Ok(-Self::new(integer, fractional))
+        } else {
+            Ok(Self::new(integer, fractional))
+        }
+    }
+}
+
 impl fmt::Display for Decimal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // TODO
-        fmt::Display::fmt(&(self.integer as f64 + self.fractional as f64 / FRACTIONAL_PART_DENOMINATOR as f64), f)
+        if self.fractional == 0 {
+            write!(f, "{}.0", self.integer_part())?;
+        } else {
+            // count number of tailing 0's that don't have to be represented
+            let mut tail_0s = 0;
+            let mut fractional = self.fractional;
+            while fractional % 10 == 0 {
+                tail_0s += 1;
+                fractional /= 10;
+            }
+
+            // count number of leading 0's that have to be represented
+            let digits = fractional.ilog10() as u64; // `fractional` cannot be a power of 10 here, so ilog10 correctly gives the number of digits
+            let leading_0s = FRACTIONAL_PART_DENOMINATOR - digits - tail_0s;
+            write!(f, "{}.{:0width$}{}", self.integer, "", digits, width = leading_0s as usize)?;
+        }
+        Ok(())
     }
 }
 

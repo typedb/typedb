@@ -120,7 +120,7 @@ impl Seekable<[u8]> for MVCCRangeIterator {
         if let Some(Ok((peek, _))) = self.peek() {
             if peek.bytes() < key {
                 self.iterator.seek(key);
-                self.find_next_state()
+                self.find_next_state();
             }
         }
     }

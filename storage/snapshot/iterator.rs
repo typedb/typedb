@@ -55,14 +55,14 @@ impl SnapshotRangeIterator {
                     iter.seek(key.bytes())
                 }
                 self.storage_iterator.seek(key.bytes());
-                self.find_next_state()
+                self.find_next_state();
             }
         }
     }
 
     fn find_next_state(&mut self) {
         while self.ready_item_source.is_none() {
-            let Some(Ok((storage_key, storage_value))) = self.storage_iterator.peek() else {
+            let Some(Ok((storage_key, _storage_value))) = self.storage_iterator.peek() else {
                 if let Some(buffered_iterator) = self.buffered_iterator.as_mut() {
                     while let Some((_, Write::Delete)) = buffered_iterator.peek() {
                         // SKIP buffered

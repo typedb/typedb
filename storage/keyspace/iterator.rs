@@ -97,7 +97,8 @@ fn error_mapper(
 }
 
 impl LendingIterator for KeyspaceRangeIterator {
-    type Item<'a> = Result<(&'a[u8], &'a[u8]), KeyspaceError>
+    type Item<'a>
+        = Result<(&'a [u8], &'a [u8]), KeyspaceError>
     where
         Self: 'a;
 

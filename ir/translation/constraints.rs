@@ -72,10 +72,7 @@ pub(super) fn add_statement(
         typeql::Statement::AttributeComparison(AttributeComparisonStatement { var, comparison, isa, .. }) => {
             let attribute = register_typeql_var(constraints, var)?;
             add_typeql_isa(constraints, attribute, isa)?;
-
-            let rhs = &comparison.rhs;
-            let rhs_var = add_typeql_expression(function_index, constraints, rhs)?;
-
+            let rhs_var = add_typeql_expression(function_index, constraints, &comparison.rhs)?;
             constraints.add_comparison(Vertex::Variable(attribute), rhs_var, comparison.comparator.into())?;
         }
         typeql::Statement::Type(type_) => add_type_statement(constraints, type_)?,
@@ -307,7 +304,7 @@ fn add_typeql_isa(
     thing: Variable,
     isa: &typeql::statement::thing::isa::Isa,
 ) -> Result<(), PatternDefinitionError> {
-    let kind = isa.kind.clone().into();
+    let kind = isa.kind.into();
     let type_ = register_typeql_type(constraints, &isa.type_)?;
     constraints.add_isa(kind, thing, type_)?;
     Ok(())
@@ -327,7 +324,12 @@ fn add_typeql_has(
             constraints.add_comparison(Vertex::Variable(attribute), expression, Comparator::Equal)?;
             attribute
         }
-        typeql::statement::thing::HasValue::Comparison(_) => todo!("Same as above?"),
+        typeql::statement::thing::HasValue::Comparison(comparison) => {
+            let attribute = constraints.create_anonymous_variable()?;
+            let rhs_var = add_typeql_expression(function_index, constraints, &comparison.rhs)?;
+            constraints.add_comparison(Vertex::Variable(attribute), rhs_var, comparison.comparator.into())?;
+            attribute
+        }
     };
 
     constraints.add_has(owner, attribute)?;

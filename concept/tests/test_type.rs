@@ -34,7 +34,7 @@ use encoding::{
         thing::vertex_generator::ThingVertexGenerator,
         type_::vertex_generator::TypeVertexGenerator,
     },
-    value::{decimal_value::Decimal, label::Label, value::Value, value_type::ValueType},
+    value::{decimal_value::Decimal, label::Label, timezone::TimeZone, value::Value, value_type::ValueType},
 };
 use storage::{
     durability_client::WALClient,
@@ -296,7 +296,7 @@ fn annotations_with_range_arguments() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    let tz = Tz::Africa__Abidjan;
+    let tz = TimeZone::IANA(Tz::Africa__Abidjan);
     let now = chrono::offset::Local::now().with_timezone(&tz);
 
     let mut snapshot: WriteSnapshot<_> = storage.clone().open_snapshot_write();
@@ -737,7 +737,7 @@ fn annotations_with_value_arguments() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    let tz = Tz::Africa__Abidjan;
+    let tz = TimeZone::IANA(Tz::Africa__Abidjan);
     let now = chrono::offset::Local::now().with_timezone(&tz);
 
     let mut snapshot: WriteSnapshot<_> = storage.clone().open_snapshot_write();

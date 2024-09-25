@@ -15,14 +15,16 @@ type KeyValue<'a> = Result<(&'a [u8], &'a [u8]), rocksdb::Error>;
 /// The item's lifetime is in fact invalidated when `iterator` is advanced.
 pub(super) struct DBIterator {
     iterator: DBRawIterator<'static>,
+    // NOTE: when item is empty, that means that the kv pair the Rocks iterator _is currently pointing to_
+    //       has been yielded to the user, and the underlying iterator needs to be advanced before peeking
     item: Option<KeyValue<'static>>,
 }
 
 impl DBIterator {
     pub(super) fn new_from(mut iterator: DBRawIterator<'static>, start: &[u8]) -> Self {
         iterator.seek(start);
-        let item = iterator.valid().then(|| unsafe { transmute(iterator.item()) });
-        Self { item: Ok(item).transpose(), iterator }
+        let item = peek_item(&iterator);
+        Self { iterator, item }
     }
 
     fn peek(&mut self) -> Option<&<Self as LendingIterator>::Item<'_>> {
@@ -40,8 +42,19 @@ impl DBIterator {
     }
 }
 
+fn peek_item(iterator: &DBRawIterator<'static>) -> Option<KeyValue<'static>> {
+    if iterator.valid() {
+        iterator.item().map(|item| unsafe { transmute::<KeyValue<'_>, KeyValue<'static>>(Ok(item)) })
+    } else if let Err(err) = iterator.status() {
+        Some(Err(err))
+    } else {
+        None
+    }
+}
+
 impl LendingIterator for DBIterator {
-    type Item<'a> = Result<(&'a [u8], &'a [u8]), rocksdb::Error>
+    type Item<'a>
+        = Result<(&'a [u8], &'a [u8]), rocksdb::Error>
     where
         Self: 'a;
 
@@ -66,6 +79,7 @@ impl Seekable<[u8]> for DBIterator {
                 Ordering::Less => {
                     self.item.take();
                     self.iterator.seek(key);
+                    self.item = peek_item(&self.iterator); // repopulate `item` to prevent advancing the underlying iterator
                 }
                 Ordering::Equal => (),
                 Ordering::Greater => {

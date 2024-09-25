@@ -171,9 +171,9 @@ impl ValueTypeCategory {
             }
             ValueTypeCategory::DateTime => &[ValueTypeCategory::DateTime],
             ValueTypeCategory::DateTimeTZ => &[ValueTypeCategory::DateTimeTZ],
-            ValueTypeCategory::Duration => &[],
+            ValueTypeCategory::Duration => &[ValueTypeCategory::Duration],
             ValueTypeCategory::String => &[ValueTypeCategory::String],
-            ValueTypeCategory::Struct => &[],
+            ValueTypeCategory::Struct => &[ValueTypeCategory::Struct],
             ValueTypeCategory::Date => &[ValueTypeCategory::Date],
         }
     }
