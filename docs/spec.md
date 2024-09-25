@@ -29,7 +29,7 @@
 <details>
   <summary> <b>Table of contents</b> <i>(Overview)</i> </summary>
 
-<!-- vim-markdown-toc GFM -->
+r!-- vim-markdown-toc GFM -->
 
 * [Introduction](#introduction)
 * [The type system](#the-type-system)
@@ -206,7 +206,7 @@
         * [Constraints](#constraints-3)
             * [Cardinality](#cardinality-3)
                 * [**Case CARD_PATT**](#case-card_patt)
-            * [Bevavior flags](#bevavior-flags)
+            * [Modalities](#bevavior-flags)
                 * [**Case UNIQUE_PATT**](#case-unique_patt)
                 * [**Case KEY_PATT**](#case-key_patt)
                 * [**Case SUBKEY_PATT**](#case-subkey_patt)
@@ -224,7 +224,7 @@
             * [**Case IS_PATT**](#case-is_patt)
         * [Expression grammar (sketch)](#expression-grammar-sketch)
         * [Expression patterns](#expression-patterns)
-            * [(Feature) Boundedness constraints](#feature-boundedness-constraints)
+            * [(Feature) Boundedness of variables in expressions](#feature-boundedness-constraints)
             * [**Case ASSIGN_PATT**](#case-assign_patt)
             * [**Case DESTRUCT_PATT**](#case-destruct_patt)
             * [**Case IN_LIST_PATT**](#case-in_list_patt)
@@ -578,7 +578,7 @@ Beside the rules below, subtyping ($`\leq`$) is transitive and reflexive.
 
     _Remark_: This applies recursively for types with $`k`$ interfaces.
 
-    _Example_: If $`m : \mathsf{HeteroMarriage}(x:\mathsf{Husband}, y:\mathsf{Wife})`$ then $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$
+    _Example_: If $`r : \mathsf{HeteroMarriage}(x:\mathsf{Husband}, y:\mathsf{Wife})`$ then $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$
 
 The next rule is special to attributes, describing their interactions with value types.
 
@@ -636,7 +636,7 @@ This section describes valid declarations of _types_ and axioms relating types (
   * Each statement in a single clause is executed as described in this section (this, e.g., adds or removes statements from the type system)
   * By the end of the clause (up to automatic clean-up operation) the type system must be in a valid state, otherwise the clause is rejected
 
-### (Feature) Pipelines and match-define's
+### (Feature) Pipelined definitions
 
 * 🔮 Definition clauses can be pipelined:
   * _Example_: 
@@ -646,13 +646,16 @@ This section describes valid declarations of _types_ and axioms relating types (
     undefine C; 
     redefine E;
     ```
+
+### (Feature) Variabilized definitions
+
 * 🔶 Definition clauses can be preceded by a match clause
   * _Example_:
     ```
-    match P; 
+    match <PATT>; 
     define A;
     ```
-  * _Interpretation_: `A` may contain non-optional **tvar**s bound in `P`; execute define for each results of match.
+  * _Interpretation_: `A` may contain non-optional **tvar**s bound in `PATT`; execute define for each results of match.
 
 ## Define semantics
 
@@ -1229,72 +1232,230 @@ This section first describes the pattern matching language of TypeDB, which reli
 
 ## Basics: Patterns, variables, concept rows, satisfaction
 
-### (Theory) Statements, patterns
+### (Theory) Statements and pattern
 
 * **statements:** syntactic units of TypeQL (see Glossary)
-* **patterns:** collection of statements, combined with logical connectives:
-  * `PATT1; PATT2` match "`PATT1` **and** `PATT2`" (could also terminate a pattern `PATT;`, in which case read as "and true") 
-  * `PATT1 or PATT2` "**either** match `PATT1` or `PATT2`", (extends to $k$ patterns)
-  * `not { PATT }` "ensure `PATT` has **no match**", 
-  * `try { PATT }` "**optionally** match `PATT` if possible"
-  * what's inside `{ ... }` is called a **block**
+* **patterns:** collection of statements, combined with logical connectives.
 
-### (Theory) Variables
+### (Feature) Pattern operations
+
+#### **Case AND_PATT**
+
+* 🔷 _Conjunction_ `PATT1; PATT2` 
+  > We match "`PATT1` **and** `PATT2`" 
+
+  * _Note: terminating `;`_  Any `PATT` is terminated with a `;` (we could read this as "and true") 
+
+#### **Case OR_PATT**
+
+* 🔷 _Disjunction_ `PATT1 or PATT2` 
+  > We **either** match `PATT1` or `PATT2`
+
+  _Note_ This extends to $k$ patterns chained with `or`.
+
+#### **Case NOT_PATT**
+
+* 🔷 _Negation_. `not { PATT }` 
+  > We ensure `PATT` has **no match**. 
+
+  _Note_ `PATT` may have **quantified variables**
+
+#### **Case TRY_PATT**
+
+* 🔷 _Optional pattern_ `try { PATT }` 
+  > We **optionally** match `PATT` if possible
+
+  * For most purposes, this pattern is equivalent to `{ PATT } or { not { PATT }; }` **except** for the designation of **optional variables**
+
+_Terminology_ What's inside `{ ... }` is called a **block**
+
+
+### (Theory) Pattern branches
+
+A **disjunctive normal (DNF) of a pattern `PATT`** is a pattern obtained by
+
+* First unfolding all `try` blocks,
+* Then recursively applying transformations of the form 
+    ```
+    <PATT>; { <PATT_A> } or {<PATT_B> };
+    --transforms to-->
+    { <PATT>; <PATT_A>; } or { <PATT>; <PATT_B>; };
+    ```
+
+The resulting DNF of `PATT` will itself be a pattern of the form:
+```
+{ <BRANCH_1> } or { <BRANCH_2> } or ...
+```
+
+**Important**. The patterns `<BRANCH_i>` are _unique_ up to re-ordering them. We call them the **branches** of `PATT`.
+
+
+### (Theory) Variables and bindings
 
 Variables appear in statements. They fall in different categories, which can be recognized as follows.
 
-* _Syntax_: vars start with `$`
+* **Syntax**: variables in patterns `PATT` are `$`-prefixed labels
   * _Examples_: `$x`, `$y`, `$person`
 
-* _Var categories_: In a valid pattern, can always determine wether variables are
-  * _Type variables_ (**tvar**, uppercase convention in this spec)
+#### **Variable categories**
+
+* **Categories** indicate what type of concept a variable can hold. In a pattern `PATT`, any variable will belong to one of four _categories_ based on the following rules.
+
+  * **Type variables** (**tvar**, uppercase convention in this spec)
     * Any variable used in a type position in a statement
-  * _Value variables_ (**vvar**, lowercase convention in this spec)
+
+  * **Value variables** (**vvar**, lowercase convention in this spec)
     * Any variable which are typed with non-comparable attribute types is a value variables (**#BDD**)
     * Any variable assigned to the output of an non-list expression 
     * Any variable derived from the output of a function (with value output type) is a value variable
-  * _List variables_ (**lvar**, lowercase convention in this spec)
+
+  * **List variables** (**lvar**, lowercase convention in this spec)
     * Any variable typed with a list type
     * Any variable assigned to a list expression.
-  * _Instance variables_ (**ivar**, lowercase convention in this spec)
+
+  * **Instance variables** (**ivar**, lowercase convention in this spec)
     * Any remaining variable must be an instance var.
 
 ... the last three together comprise _element vars_ (**evars**). Evars are those variables that can be in the signature and return statement of a function.
 
-* _Anon vars_: anon vars start with `$_`. They behave like normal variables, but leave the variables name implicit and are automatically discarded (see "Deselect") at the end of the pattern.
+_Remark 1_. The code variable `$x` will be written as $`x`$ in math notation (without $`\$`$).
+
+#### **Bound variables and valid patterns**
+
+* **Bounds** ensure variables are tied to database concepts. (**#BDD**)
+  * A variable is **bound** if it appears in a _bound position_ of at least one statement.
+    * _Note_. Most statements bind their variables: this is why we will mainly highlight _non-bound positions_
+  * We say a variable is **bound directly in a block** if its bound in a "direct" statement of block (i.e. a statement which is not enclosed in a subblock).
+  * A pattern `PATT` is **valid** if ***all variables are bound***. 
+    * _(Fun fact: otherwise, we may have to solve provably unsolvable problems)_
+
+_Going forward, we always work with valid patterns_
+
+#### **Variable modes and unambiguous patterns**
+
+* **Modes of variables** indicate how to compute answers for variables. In a valid pattern `PATT`, a variable appear in various _modes_ based on the following rules.
+
+  * **Retrievable variables** are variables that are bound in _some_ place that is _not_ `not`-gated (i.e. have some parent `not` block). 
+
+  * **Negation-bound variables** are variables that are bound _only_ in places that are `not`-gated (i.e. have some parent `not` block).
+
+  * **Optional variables** are variables that are bound directly in some `try` block, and potentially its subblocks.
+
+* **Principles of unambiguity**. A valid pattern is **unambiguous** if it satifies the following.
+
+  * _No [alpha-conversion](https://en.wikipedia.org/wiki/Lambda_calculus#%CE%B1-conversion) needed!_ No negation-bound or optional variable appears bound in sibling block in the same branch of the pattern without also being bound in a joint parent block. 
+
+  * _No negated try's_ We dissallow `try`'s which are `not`-gated (i.e. cannot `try` inside a `not`)..
+
+_Note_. Based on these principles, optional variables are always retrievable variables.
+
+<details>
+    <summary><b>Related discord discussion</b></summary>
+
+##### The first problem
+The following is fine
+```
+// ensure x has no name 
+not { $x has name $n; }; 
+```
+This is fine too:
+```
+// ensure DB has no bad name 
+not { $n isa bad_name; }; 
+```
+Together this becomes ambiguous
+```
+not { $x has name $n; }; 
+not { $n isa bad_name; }; 
+```
+as $n is "synced" across not's. 
+
+The spec explains this (the underlying cause here is "alpha equivalence" of quantified formulas) now:
+* Principle: **We cannot have use quantified variables in the same branch of a pattern** 
+
+So this is fine (it's alpha-equivalent to the above pattern, but now it's "unambiguous" what's meant)
+```
+not { $x has name $n; }; 
+not { $m isa bad_name; }; 
+```
+
+But this is fine too:
+```
+{ $x ...; not { $x has $q }; }
+ or
+{ $y ...; not { $y has $q }; };
+```
+because the quantified variable `$q` appear in disjunct branches.
+
+##### The second problem
+
+We want
+```
+try { $x ... };
+```
+do be equivalent to
+```
+{ $x ... } or { not { $x ... }; };
+```
+This means we cannot write, say:
+```
+try { $x has name $n; }; 
+not { $n isa bad_name; }; 
+```
+(it contradicts the above principle).
+
+**However**, even in the second branch (unlike the pure `not { $x has name $n; } we want to _return_ $x!!
+(Namely, in the second branch we want the row entry `r($x) = empty`). 
+
+In the spec, this is now realized by marking `try`-bound vars (they are termed "optionally quantified"), 
+seperately from `not`-bound variables (they are termed "properly quantified"). 
+The former is returned as empty if we are in the `not` branch of `try`. 
+
+The problem now arises if we gate `try`'s with `not`.
+```
+$y ...
+not { ($x, $y) isa friendship; try { $x has name $n; }; };
+```
+Indeed, `$n` is first `try`-gated and then `try`-gated. Nothing in a `not` gets returned, so we don't return `$n`. 
+So it's non-sensical to use `try` in this way. This leads to the second new principle:
+
+* Principle: **we cannot have `not`-gated `try` block.**
+
+However, the following is fine:
+```
+$y ...
+not { ($x, $y) isa friendship; try { $x has name $n; }; };
+```
+The `not`-gated `$n` never gets returned, but the `try`-gated `$x` gets returned optionally.
+
+(All of this is in the spec now)
+
+</details>
+
+
+
+#### **Anonymous variables**
+
+* _Anon vars_: anon vars start with `$_`. They behave like normal variables, but leave the variables name implicit and are automatically discarded (see "Deselect") at the end of the pipeline stage.
   * _Remark_: Anon vars can be both **tvar**s and **evar**s
 
-_Remark 1_. The code variable `$x` will be written as $`x`$ in math notation (without $`\$`$).
 
 ### (Theory) Typed concept rows
 
 * _Concepts_. A **concept** is a type or an element in a type.
-* _Typed concept rows_. An **typed concept row** (abbreviated 'crow') is a mapping of named variables (the **column names**) to _unapplied_ typed concepts (the **row entries**). A crow `m` may be written as:
+* _Typed concept rows_. An **typed concept row** (abbreviated 'crow') is a mapping of named variables (the **column names**) to _unapplied_ typed concepts (the **row entries**). A crow `r` may be written as:
   ```
-  m = ($x->a:T, $y->b:S, ...)
+  r = ($x->a:T, $y->b:S, ...)
   ```
   In math. notation $m$ can be written as: $`(x \mapsto a:T, y \mapsto b:S, ...)`$).
 
   To emphasize: By definition, types in crows are **unapplied** (see "Applying dependencies") 
     > In other words, the definition dissallows using types with applied dependencies like `$x -> a : T($y : I)`. Instead, we only allow `$x -> a:T` for bare symbols "T". (This is because we don't expose dependencies as such to the user)
 
-  * _Assigned concepts_. Write `m($x)` (math. notation $`m(x)`$) for the concept that `m` assigns to `$x`.
-  * _Assigned types_. Write `T($x)` (math. notation $`T_m(x)`$) for the type that `m` assigns to `$x`.
-    * _Special case: assigned kinds_. Note that `T($x)` may be `Ent`, `Rel`, `Att`, `Itf` (`Rol`), or `Val` (for value types) when `$x` is assigned a type as a concept — we speak of `T($x)` as the **type kind** of `m($x)` in this case.
+  * _Assigned concepts_. Write `r($x)` (math. notation $`r(x)`$) for the concept that `r` assigns to `$x`.
+  * _Assigned types_. Write `T($x)` (math. notation $`T_r(x)`$) for the type that `r` assigns to `$x`.
+    * _Special case: assigned kinds_. Note that `T($x)` may be `Ent`, `Rel`, `Att`, `Itf` (`Rol`), or `Val` (for value types) when `$x` is assigned a type as a concept — we speak of `T($x)` as the **type kind** of `r($x)` in this case.
 
-### (Feature) Pattern satisfication, typing conditions, answer
-
-* ✅ _Satisfaction_. A crow `m` **satisfies** a pattern `P` if
-  1. Its typing assignemt satisfies the typing condition below
-  1. Its concept assignment satisfis the "pattern semantics" described in the next section.
- 
-  > Intuitively, this means substituting the variables in `P` with the concepts assigned in `m` yields statements that are true in our type system. 
-  
-  Here are the **typing conditions**:
-    * ✅ For tvars `$X` in `P`, `T($X)` is a type kind (`entity`, `attribute`, `relation`, `interface`, `value`)
-    * ✅ For vvars `$x` in `P`, `T($x)` is a value type (primitive or struct)
-    * 🔶 For lvars `$x` in `P`, `T($x)` is a list type `A[]` for ***minimal*** `A` a type such that `A` is the minimal upper bounds of the types of the list elements `<EL>` in the list `m($x) = [<EL>, <EL>, ...]` (note: our type system does have minimal upper bounds thanks to sums)
-    * ✅ For ivars `$x` in `P`, `T($x)` is a schema type `A` such that $`m(x) :_! A`$ isa **direct typing**
 
 <!-- Examples for the typing algorithm:
 fun a($x: person) -> name[]:
@@ -1325,107 +1486,125 @@ $x has color $y;
 // STICKY: are we happy with this?
 -->
 
-* ✅ _Answers_. A crow `m` that satisfies a pattern `P` is an **answer** to the pattern if:
-  * **The row is minimal** in that no concept row with less variables satisfies `P`
-  * All variables in `m` are **bound outside a negation** in `P`
 
-_Example_: Consider the pattern `$x isa Person;` (this pattern comprises a single statement). Than `($x -> p)` satisfies the pattern if `p` is an element of the type `Person` (i.e. $p : \mathsf{Person}$). The answer `($x -> p, $y -> p)` also satisfies the pattern, but it is not proper minimal.
+### (Feature) Query answer computation
 
-### (Feature) Optionality and boundedness
+* ✅ _Satisfaction_. A crow `r` **satisfies** a pattern `PATT` (written $`r \in ev<PATT>`$) if
+  1. **Type semantics**. Its typing assignemt satisfies the typing condition below.
+  1. **Pattern semantics**. Its concept assignment satisfis the "pattern semantics" described in the next section.
+ 
+  > Intuitively, this means substituting the variables in `PATT` with the concepts assigned in `r` yields statements that are true in our type system. 
+  
+#### **Typing satisfaction conditions**
 
-**Optional variables** (**#BDD**)
+* ✅ For tvars `$X` in `PATT`, `T($X)` is a type kind (`entity`, `attribute`, `relation`, `interface`, `value`)
+* ✅ For vvars `$x` in `PATT`, `T($x)` is a value type (primitive or struct)
+* 🔶 For lvars `$x` in `PATT`, `T($x)` is a list type `A[]` for ***minimal*** `A` a type such that `A` is the minimal upper bounds of the types of the list elements `<EL>` in the list `r($x) = [<EL>, <EL>, ...]` (note: our type system does have minimal upper bounds thanks to sums)
+* ✅ For ivars `$x` in `PATT`, `T($x)` is a schema type `A` such that $`r(x) :_! A`$ isa **direct typing**
 
-_Key principle_:
+#### **Answers**
 
-* 🔷 If variables are used only in specific positions (called **optional positions**) of patterns, then they are optional variables.
-  * if a var is used in _any_ non-optional position, then the var become non-optional!
-* ✅  A optional variable `$x` is allowed to have the empty concept assigned to it in an answer: $`m(x) = \emptyset`$.
+* 🔶 A crow `r` is an **answer** to a pattern `PATT` if the following are satisfied:
+    * **Retrievable domain**. Each variable in `r` is a retrievable variable of `PATT`
+    * **Satisfaction**.`r` satisfies the pattern (as outlined in next section)
+    * **Minimality**. no subset of `r` satisfies the `PATT` (in other words, `r` is _minimal_)
 
-**Variable boundedness condition** (**#BDD**)
+_Example_: Consider the pattern `$x isa Person;` (this pattern comprises a single statement). Then `($x -> p)` satisfies the pattern if `p` is an element of the type `Person` (i.e. $p : \mathsf{Person}$). The answer `($x -> p, $y -> p)` also satisfies the pattern, but it is not proper minimal.
 
-_Key principle_:
+## Pattern semantics of ...
 
-* 🔷 A pattern `P` will only be accepted by TypeDB if all variables are **bound**. 
-  * (Fun fact: otherwise, we may encounter unbounded/literally impossible computations of answers.)
-* 🔷 A variable is bound if it appears in a _binding position_ of at least one statement. 
-  * Most statements bind their variables: in the next section we highlight _non-bound positions_
+Given a crow `r` and pattern `PATT` we say `r` ***satisfies*** `PATT` if (in addition to the typing conditions in outlined in "Pattern satisfication" above) the following conditions are met.
 
-## Pattern semantics
+_Math. notation (Replacing **var**s with concepts)_. When discussing pattern semantics, we always consider **fully variablized** statements (e.g. `$x isa $X`, `$X sub $Y`). This also determines satisfaction of **partially assigned** versions of these statements (e.g. `$x isa A`, `$X sub A`, `A sub $Y`, or `x isa $A`).
 
-Given a crow `m` and pattern `P` we say `m` ***satisfies*** `P` if (in addition to the typing conditions in outlined in "Pattern satisfication" above) the following conditions are met.
+## ... Patterns of patterns
 
-_Remark (Replacing **var**s with concepts)_. When discussing pattern semantics, we always consider **fully variablized** statements (e.g. `$x isa $X`, `$X sub $Y`). This also determines satisfaction of **partially assigned** versions of these statements (e.g. `$x isa A`, `$X sub A`, `A sub $Y`, or `x isa $A`).
+Now that we have seen how to determine when answers satisfy individual statements, we can extend our discussion of match semantics to composite patterns (patterns of patterns).
 
+#### **Case AND_SAT_PATT**
+* ✅ The crow `r` satisfies the pattern `<PATT1>; <PATT2>;` that simultaneously satisfies both `<PATT1>` and `<PATT2>`.
 
-## Type patterns
+#### **Case OR_SAT_PATT_SAT**
+* 🔷 The crow `r` satisfies the pattern `{ <PATT1> } or { <PATT2> };` is an answer that satisfies either `<PATT1>` or `<PATT2>`.
+
+#### **Case NOT_SAT_PATT**
+* 🔷 The crow `r` satisfies the pattern `not { <PATT> };` if it _cannot_ be completed to an answer satisfying `<PATT>`.
+
+#### **Case TRY_SAT_PATT**
+* 🔷 The crow `r` satisfies the pattern `try { <PATT> };` if:
+    * `{ <PATT> } or { not { <PATT>}; };` is satisfied
+    * any variable directly bound in the block (thus an optional variable) must appears in `r` 
+        * _Note_. of course, the variable could have an empty entry in `r`!
+
+## ... Type patterns
 
 ### **Case TYPE_DEF_PATT**
-* ✅ `Kind $A` (for `Kind` in `{entity, relation, attribute}`) is satisfied if $`m(A) : \mathbf{Kind}`$
+* ✅ `Kind $A` (for `Kind` in `{entity, relation, attribute}`) is satisfied if $`r(A) : \mathbf{Kind}`$
 
-* ✅ `(Kind) $A sub $B` is satisfied if $`m(A) : \mathbf{Kind}`$, $`m(B) : \mathbf{Kind}`$, $`m(A) \lneq m(B)`$
-* ✅  `(Kind) $A sub! $B` is satisfied if $`m(A) : \mathbf{Kind}`$, $`m(B) : \mathbf{Kind}`$, $`m(A) <_! m(B)`$
+* ✅ `(Kind) $A sub $B` is satisfied if $`r(A) : \mathbf{Kind}`$, $`r(B) : \mathbf{Kind}`$, $`r(A) \lneq r(B)`$
+* ✅  `(Kind) $A sub! $B` is satisfied if $`r(A) : \mathbf{Kind}`$, $`r(B) : \mathbf{Kind}`$, $`r(A) <_! r(B)`$
 
 _Remark_: `sub!` is convenient, but could actually be expressed with `sub`, `not`, and `is`. Similar remarks apply to **all** other `!`-variations of TypeQL key words below.
 
 ### **Case REL_PATT**
 * ✅ `$A relates $I` is satisfied 
-    * either if $`m(A) : \mathbf{Rel}(m(I))`$
-    * or if $`\diamond(m(A) : \mathbf{Rel}(m(I)))`$
+    * either if $`r(A) : \mathbf{Rel}(r(I))`$
+    * or if $`\diamond(r(A) : \mathbf{Rel}(r(I)))`$
 
 * 🔮 `$A relates! $I` is satisfied if 
-    * $`m(A) : \mathbf{Rel}(m(I))`$ and **not** $`m(A) \lneq B : \mathbf{Rel}(m(I))`$
+    * $`r(A) : \mathbf{Rel}(r(I))`$ and **not** $`r(A) \lneq B : \mathbf{Rel}(r(I))`$
     * _(to match `@abstract` for relates! must use annotation, see **REL_ABSTRACT_PATT**.)_
 
 * ✅ `$A relates $I as $J` is satisfied if 
-    * $`m(A) : \mathbf{Rel}(m(I))`$, $`B : \mathbf{Rel}(m(J))`$, $`A \leq B`$, $`m(I) \leq m(J)`$.
+    * $`r(A) : \mathbf{Rel}(r(I))`$, $`B : \mathbf{Rel}(r(J))`$, $`A \leq B`$, $`r(I) \leq r(J)`$.
     * either the first or the second statement (or both) can be abstract $`\diamond(...)`$.
 
-* 🔶 `$A relates $I[]` is satisfied if $`m(A) : \mathbf{Rel}(m([I]))`$ and
-    * either if $`m(A) : \mathbf{Rel}([m(I)])`$
-    * or if $`\diamond(m(A) : \mathbf{Rel}([m(I)]))`$
+* 🔶 `$A relates $I[]` is satisfied if $`r(A) : \mathbf{Rel}(r([I]))`$ and
+    * either if $`r(A) : \mathbf{Rel}([r(I)])`$
+    * or if $`\diamond(r(A) : \mathbf{Rel}([r(I)]))`$
 
 * 🔮 `$A relates! $I[]` is satisfied if 
-    * $`m(A) : \mathbf{Rel}(m([I]))`$ and **not** $`m(A) \lneq m(B) : \mathbf{Rel}(m([I]))`$
+    * $`r(A) : \mathbf{Rel}(r([I]))`$ and **not** $`r(A) \lneq r(B) : \mathbf{Rel}(r([I]))`$
     * _(to match `@abstract` for relates! must use annotation, see **REL_ABSTRACT_PATT**.)_
 
 * 🔶 `$A relates $I[] as $J[]` is satisfied if 
-    * $`m(A) : \mathbf{Rel}(m([I]))`$, $`B : \mathbf{Rel}(m([J]))`$, $`A \leq B`$, $`m(I) \leq m(J)`$.
+    * $`r(A) : \mathbf{Rel}(r([I]))`$, $`B : \mathbf{Rel}(r([J]))`$, $`A \leq B`$, $`r(I) \leq r(J)`$.
     * either the first or the second statement (or both) can be abstract $`\diamond(...)`$.
 
 
 ### **Case PLAY_PATT**
 * ✅ `$A plays $I` is satisfied if
-    * either $`m(A) \leq A'`$ and $`A' <_! m(I)`$
-    * or if $`m(A) \leq A'`$ and $`\diamond(A' <_! m(I))`$
+    * either $`r(A) \leq A'`$ and $`A' <_! r(I)`$
+    * or if $`r(A) \leq A'`$ and $`\diamond(A' <_! r(I))`$
 
-* 🔮 `$A plays! $I` is satisfied if $`m(A) <_! m(I)`$
-    * $`A <_! m(I)`$
+* 🔮 `$A plays! $I` is satisfied if $`r(A) <_! r(I)`$
+    * $`A <_! r(I)`$
     * _(to match `@abstract` for `plays!` must use annotation, see **PLAYS_ABSTRACT_PATT**)_
 
 ### **Case OWNS_PATT**
 * ✅ `$A owns $B` is satisfied if 
-    * either $`m(A) \leq A'`$ and $`A' <_! m(O_B)`$ 
-    * or $`m(A) \leq A'`$ and $`\diamond(A' <_! m(O_B))`$
+    * either $`r(A) \leq A'`$ and $`A' <_! r(O_B)`$ 
+    * or $`r(A) \leq A'`$ and $`\diamond(A' <_! r(O_B))`$
 
 * 🔮 `$A owns! $B` is satisfied if 
-    * $`m(A) <_! m(O_B)`$ 
+    * $`r(A) <_! r(O_B)`$ 
     *  _(to match `@abstract` for `owns!` must use annotation, see **OWNS_ABSTRACT_PATT**)_
 
-* 🔶 `$A owns $B[]` is satisfied if $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type)
-    * either $`m(A) \leq A'`$ and $`A' <_! m(O_{B[]})`$ 
-    * or $`m(A) \leq A'`$ and $`\diamond(A' <_! m(O_{B[]}))`$
+* 🔶 `$A owns $B[]` is satisfied if $`r(A) \leq A' <_! r(O_B)`$ (for $`A'`$ **not** an interface type)
+    * either $`r(A) \leq A'`$ and $`A' <_! r(O_{B[]})`$ 
+    * or $`r(A) \leq A'`$ and $`\diamond(A' <_! r(O_{B[]}))`$
 
-* 🔮 `$A owns! $B[]` is satisfied if $`m(A) <_! m(O_B)`$
-    * $`m(A) <_! m(O_B)`$ 
+* 🔮 `$A owns! $B[]` is satisfied if $`r(A) <_! r(O_B)`$
+    * $`r(A) <_! r(O_B)`$ 
     *  _(to match `@abstract` for `owns!` must use annotation, see **OWNS_ABSTRACT_PATT**)_ 
 
-_Remark_. In particular, if `A owns B[]` has been declared, then `$X owns B` will match the answer `m($X) = A`.
+_Remark_. In particular, if `A owns B[]` has been declared, then `$X owns B` will match the answer `r($X) = A`.
 
 ### **Cases TYP_IS_PATT and LABEL_PATT**
-* 🔷 `$A is $B` is satisfied if $`m(A) = m(B)`$ (this is actually covered by the later case `IS_PATT`)
-* 🔷 `$A label <LABEL>` is satisfied if $`m(A)`$ has **primary label or alias** `<LABEL>`
+* 🔷 `$A is $B` is satisfied if $`r(A) = r(B)`$ (this is actually covered by the later case `IS_PATT`)
+* 🔷 `$A label <LABEL>` is satisfied if $`r(A)`$ has **primary label or alias** `<LABEL>`
 
-## Type constraint patterns
+## ... Type constraint patterns
 
 ### Cardinality
 
@@ -1434,71 +1613,71 @@ _To discuss: the usefulness of constraint patterns seems overall low, could thin
 #### **Case CARD_PATT**
 * ✅ cannot match `@card(n..m)` (STICKY: there's just not much point to do so ... rather have normalized schema dump. discuss `@card($n..$m)`??)
 <!-- 
-* `A relates I @card(n..m)` is satisfied if $`m(A) : \mathbf{Rel}(m(I))`$ and schema allows $`|a|_I`$ to be any number in range `n..m`.
+* `A relates I @card(n..m)` is satisfied if $`r(A) : \mathbf{Rel}(r(I))`$ and schema allows $`|a|_I`$ to be any number in range `n..m`.
 * `A plays B:I @card(n..m)` is satisfied if ...
 * `A owns B @card(n...m)` is satisfied if ...
 * `$A relates $I[] @card(n..m)` is satisfied if ...
 * `$A owns $B[] @card(n...m)` is satisfied if ...
 -->
 
-### Bevavior flags
+### Modalities
 
 #### **Case UNIQUE_PATT**
-* 🔶 `$A owns $B @unique` is satisfied if $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @key`.
+* 🔶 `$A owns $B @unique` is satisfied if $`r(A) \leq A' <_! r(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns r($B) @key`.
 
-* 🔶 `$A owns! $B @unique` is satisfied if $`m(A) <_! m(O_B)`$, and schema directly contains constraint `m($A) owns m($B) @unique`.
+* 🔶 `$A owns! $B @unique` is satisfied if $`r(A) <_! r(O_B)`$, and schema directly contains constraint `r($A) owns r($B) @unique`.
 
 #### **Case KEY_PATT**
-* 🔶 `$A owns $B @key` is satisfied if $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @key`.
+* 🔶 `$A owns $B @key` is satisfied if $`r(A) \leq A' <_! r(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns r($B) @key`.
 
-* 🔶 `$A owns! $B @key` is satisfied if $`m(A) <_! m(O_B)`$, and schema directly contains constraint `m($A) owns m($B) @key`.
+* 🔶 `$A owns! $B @key` is satisfied if $`r(A) <_! r(O_B)`$, and schema directly contains constraint `r($A) owns r($B) @key`.
 
 #### **Case SUBKEY_PATT**
-* 🔶 `$A owns $B @subkey(<LABEL>)` is satisfied if $`m(A) \leq A' <_! m(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns m($B) @subkey(<LABEL>)`.
+* 🔶 `$A owns $B @subkey(<LABEL>)` is satisfied if $`r(A) \leq A' <_! r(O_B)`$ (for $`A'`$ **not** an interface type), and schema directly contains constraint `A' owns r($B) @subkey(<LABEL>)`.
 
 #### **Case TYP_ABSTRACT_PATT**
-* 🔶 `(kind) $B @abstract` is satisfied if schema directly contains `(kind) m($B) @abstract`.
+* 🔶 `(kind) $B @abstract` is satisfied if schema directly contains `(kind) r($B) @abstract`.
 
 #### **Case RELATES_ABSTRACT_PATT**
 * 🔶 `$B relates $I @abstract` is satisfied if:
-    * $`m(B) \leq B'`$ and $`\diamond(B' : \mathbf{Rel}(I)`$
-    * **not** $`m(B) \leq B'' \leq B'`$ such that $`\diamond(B' : \mathbf{Rel}(I)`$
+    * $`r(B) \leq B'`$ and $`\diamond(B' : \mathbf{Rel}(I)`$
+    * **not** $`r(B) \leq B'' \leq B'`$ such that $`\diamond(B' : \mathbf{Rel}(I)`$
 
-* 🔮 `$B relates! $I @abstract` is satisfied if $`\diamond(m(B) : \mathbf{Rel}(I)`$
+* 🔮 `$B relates! $I @abstract` is satisfied if $`\diamond(r(B) : \mathbf{Rel}(I)`$
 
 * 🔶 `$B relates $I[] @abstract` is satisfied if:
-    * $`m(B) \leq B'`$ and $`\diamond(m(B) : \mathbf{Rel}([I])`$
-    * **not** $`m(B) \leq B'' \leq B'`$ such that $`B' : \mathbf{Rel}([I])`$
+    * $`r(B) \leq B'`$ and $`\diamond(r(B) : \mathbf{Rel}([I])`$
+    * **not** $`r(B) \leq B'' \leq B'`$ such that $`B' : \mathbf{Rel}([I])`$
 
-* 🔮 `$B relates! $I[] @abstract` is satisfied if $`\diamond(m(B) : \mathbf{Rel}([I])`$
+* 🔮 `$B relates! $I[] @abstract` is satisfied if $`\diamond(r(B) : \mathbf{Rel}([I])`$
 
 #### **Case PLAYS_ABSTRACT_PATT**
 * 🔶 `$A plays $B:$I @abstract` is satisfied if: 
-    * $`m(A) \leq A'`$ and $`\diamond(A' <_! m(I))` 
-    * **not** $`m(A) \leq A'' \leq A'`$ such that $`A'' <_! m(I)`$ 
+    * $`r(A) \leq A'`$ and $`\diamond(A' <_! r(I))` 
+    * **not** $`r(A) \leq A'' \leq A'`$ such that $`A'' <_! r(I)`$ 
 
-  where $`m(B) \mathbf{Rel}(m(I))`$
+  where $`r(B) \mathbf{Rel}(r(I))`$
 
-* 🔮 `$A plays! $B:$I @abstract` is satisfied if $`\diamond(m(A) <_! m(I))`, where $`m(B) \mathbf{Rel}(m(I))`$
+* 🔮 `$A plays! $B:$I @abstract` is satisfied if $`\diamond(r(A) <_! r(I))`, where $`r(B) \mathbf{Rel}(r(I))`$
 
 #### **Case OWNS_ABSTRACT_PATT**
 * 🔶 `$A owns $B @abstract` is satisfied if
-    * $`m(A) \leq A'`$ and $`\diamond(A' <_! O_{m(B)})`$
-    * **not** $`m(A) \leq A'' \leq A'`$ such that $`A'' <_!  O_{m(B)})`$
+    * $`r(A) \leq A'`$ and $`\diamond(A' <_! O_{r(B)})`$
+    * **not** $`r(A) \leq A'' \leq A'`$ such that $`A'' <_!  O_{r(B)})`$
 
-* 🔮 `$A owns! $B @abstract` is satisfied if $`\diamond(m(A) <_! O_{m(B)})`
+* 🔮 `$A owns! $B @abstract` is satisfied if $`\diamond(r(A) <_! O_{r(B)})`
 
 * 🔶 `$A owns $B[] @abstract` is satisfied if
-    * $`m(A) \leq A'`$ and $`\diamond(A' <_! O_{m(B)[]})`$
-    * **not** $`m(A) \leq A'' \leq A'`$ such that $`A'' <_!  O_{m(B)[]})`$
+    * $`r(A) \leq A'`$ and $`\diamond(A' <_! O_{r(B)[]})`$
+    * **not** $`r(A) \leq A'' \leq A'`$ such that $`A'' <_!  O_{r(B)[]})`$
 
-* 🔮 `$A owns! $B[] @abstract` is satisfied if $`\diamond(m(A) <_! O_{m(B)[]})`
+* 🔮 `$A owns! $B[] @abstract` is satisfied if $`\diamond(r(A) <_! O_{r(B)[]})`
 
 #### **Case DISTINCT_PATT**
-* 🔮 `$A owns $B[] @distinct` is satisfied if $`m(A) \leq A`$ schema directly contains constraint `A' owns m($B)[] @distinct`.
-* 🔮 `$A owns! $B[] @distinct` is satisfied if schema directly contains constraint `m($A) owns m($B)[] @distinct`.
-* 🔮 `$B relates $I[] @distinct` is satisfied if $`m(B) : \mathbf{Rel}(m([I]))`$, $`B \leq B'`$ and schema directly contains `B' relates m($I)[] @distinct`.
-* 🔮 `$B relates! $I[] @distinct` is satisfied if schema directly contains `m($B) relates m($I)[] @distinct`.
+* 🔮 `$A owns $B[] @distinct` is satisfied if $`r(A) \leq A`$ schema directly contains constraint `A' owns r($B)[] @distinct`.
+* 🔮 `$A owns! $B[] @distinct` is satisfied if schema directly contains constraint `r($A) owns r($B)[] @distinct`.
+* 🔮 `$B relates $I[] @distinct` is satisfied if $`r(B) : \mathbf{Rel}(r([I]))`$, $`B \leq B'`$ and schema directly contains `B' relates r($I)[] @distinct`.
+* 🔮 `$B relates! $I[] @distinct` is satisfied if schema directly contains `r($B) relates r($I)[] @distinct`.
 
 ### Values
 
@@ -1513,30 +1692,30 @@ _To discuss: the usefulness of constraint patterns seems overall low, could thin
 * `A value B @range(v1..v2)` is satisfied if 
 -->
 
-## Element patterns
+## ... Element patterns
 
 #### **Case ISA_PATT**
-* ✅ `$x isa $T` is satisfied if $`m(x) : m(T)`$ for $`m(T) : \mathbf{ERA}`$
-* ✅ `$x isa! $T` is satisfied if $`m(x) :_! m(T)`$ for $`m(T) : \mathbf{ERA}`$
+* ✅ `$x isa $T` is satisfied if $`r(x) : r(T)`$ for $`r(T) : \mathbf{ERA}`$
+* ✅ `$x isa! $T` is satisfied if $`r(x) :_! r(T)`$ for $`r(T) : \mathbf{ERA}`$
 
 #### **Case LINKS_PATT**
-* ✅ `$x links ($I: $y)` is satisfied if $`m(x) : A(m(y):m(I))`$ for some $`A : \mathbf{Rel}(m(I))`$.
-* 🔮 `$x links! ($I: $y)` is satisfied if $`m(x) :_! A(m(y):m(I))`$ for some $`A : \mathbf{Rel}(m(I))`$.
-* 🔶 `$x links ($I[]: $y)` is satisfied if $`m(x) : A(m(y):[m(I)])`$ for some $`A : \mathbf{Rel}([m(I)])`$.
-* 🔮 `$x links! ($I[]: $y)` is satisfied if $`m(x) :_! A(m(y):[m(I)])`$ for some $`A : \mathbf{Rel}([m(I)])`$.
+* ✅ `$x links ($I: $y)` is satisfied if $`r(x) : A(r(y):r(I))`$ for some $`A : \mathbf{Rel}(r(I))`$.
+* 🔮 `$x links! ($I: $y)` is satisfied if $`r(x) :_! A(r(y):r(I))`$ for some $`A : \mathbf{Rel}(r(I))`$.
+* 🔶 `$x links ($I[]: $y)` is satisfied if $`r(x) : A(r(y):[r(I)])`$ for some $`A : \mathbf{Rel}([r(I)])`$.
+* 🔮 `$x links! ($I[]: $y)` is satisfied if $`r(x) :_! A(r(y):[r(I)])`$ for some $`A : \mathbf{Rel}([r(I)])`$.
 * ✅ `$x links ($y)` is equivalent to `$x links ($_: $y)` for anonymous `$_` (See "Syntactic Sugar")
 
 #### **Case HAS_PATT**
-* ✅ `$x has $B $y` is satisfied if $`m(y) : m(B)(m(x):O_{m(B)})`$ for some $`m(B) : \mathbf{Att}`$.
-* 🔮 `$x has! $B $y` is satisfied if $`m(y) :_! m(B)(m(x):O_{m(B)})`$ for some $`m(B) : \mathbf{Att}`$.
-* 🔶 `$x has $B[] $y` is satisfied if $`m(y) : [m(B)](m(x):O_{m(B[])})`$ for some $`m(B) : \mathbf{Att}`$.
-* 🔮 `$x has! $B[] $y` is satisfied if $`m(y) :_! [m(B)](m(x):O_{m(B[])})`$ for some $`m(B) : \mathbf{Att}`$.
+* ✅ `$x has $B $y` is satisfied if $`r(y) : r(B)(r(x):O_{r(B)})`$ for some $`r(B) : \mathbf{Att}`$.
+* 🔮 `$x has! $B $y` is satisfied if $`r(y) :_! r(B)(r(x):O_{r(B)})`$ for some $`r(B) : \mathbf{Att}`$.
+* 🔶 `$x has $B[] $y` is satisfied if $`r(y) : [r(B)](r(x):O_{r(B[])})`$ for some $`r(B) : \mathbf{Att}`$.
+* 🔮 `$x has! $B[] $y` is satisfied if $`r(y) :_! [r(B)](r(x):O_{r(B[])})`$ for some $`r(B) : \mathbf{Att}`$.
 * ✅ `$x has $y` is equivalent to `$x has $_ $y` for anonymous `$_`
 
-_Remark_. Note that `$x has $B $y` will match the individual list elements of list attributes (e.g. when $`m(x) : A`$ and $`A <_! O_B`$).
+_Remark_. Note that `$x has $B $y` will match the individual list elements of list attributes (e.g. when $`r(x) : A`$ and $`A <_! O_B`$).
 
 #### **Case IS_PATT**
-* 🔷 `$x is $y` is satisfied if $`m(x) :_! A`$, $`m(y) :_! A`$, $`m(x) = m(y)`$, for $`A : \mathbf{ERA}`$ (XXX: add ERA lists here) (**#BDD**)
+* 🔷 `$x is $y` is satisfied if $`r(x) :_! A`$, $`r(y) :_! A`$, $`r(x) = r(y)`$, for $`A : \mathbf{ERA}`$ (XXX: add ERA lists here) (**#BDD**)
 * 🔷 `$A is $B` is satisfied if $`A = B`$ for $`A : \mathbf{ERA}`$, $`B : \mathbf{ERA}`$
 
 _System property_
@@ -1545,7 +1724,7 @@ _System property_
 
 _Remark_: In the `is` pattern we cannot syntactically distinguish whether we are in the "type" or "element" case (it's the only such pattern where tvars and evars can be in the same position!) but this is alleviated by the pattern being non-binding, i.e. we require further statements which bind these variables, which then determines them to be tvars are evars.
 
-## Expression and list patterns
+## ... Expression and list patterns
 
 ### Grammar
 
@@ -1598,39 +1777,41 @@ _Remark_. 🔮 Introduce explicit castings between types to our grammar. For exa
 
 ### (Theory) Typed evaluation of expressions
 
-Given a concept map `m` that assign all vars in an `<EXPR>` we define
-* value evaluation `vev@m(<EXPR>)` (math. notation $`v_m(expr)`$)
-* type evaluation `Tev@m(<EXPR>)` (math. notation $`v_m(expr)`$)
+Given a crow `r` that assign all vars in an `<EXPR>` we define
+* value evaluation `vev@r(<EXPR>)` (math. notation $`v_r(expr)`$)
+* type evaluation `Tev@r(<EXPR>)` (math. notation $`T_r(expr)`$)]
+
+as follows:
 
 #### Value expressions
 
 * 🔶 The _value expresssions_ `VAL_EXPR` is evaluated as follows:
-    * **Substitute** all vars `$x` by `m($x)`
-    * If `m($x)` isa attribute instance, **replace** by `val(m($x))`
-    * $`v_m(expr)`$ is the result of evaluating all operations with their **usual semantics** 
+    * **Substitute** all vars `$x` by `r($x)`
+    * If `r($x)` isa attribute instance, **replace** by `val(r($x))`
+    * $`v_r(expr)`$ is the result of evaluating all operations with their **usual semantics** 
         * `1 + 1 == 2` 
         * `10 / 3 == 3` (integer division satisfies `p/q + p%q = p`)
-    * $`T_m(expr)`$ is the type of the **substituted expression**, noting:
+    * $`T_r(expr)`$ is the type of the **substituted expression**, noting:
         * This is always unique except possibly for the `STRUCT` case (see property below)!
 
 _System property_.
 
-* 🔶 If $`T_m(expr)`$ is non-unique for a `STRUCT` expression (which may be the case because, `STRUCT` may share fields) we require the expression to have a `HINT`, or otherwise throw an error.
+* 🔶 If $`T_r(expr)`$ is non-unique for a `STRUCT` expression (which may be the case because, `STRUCT` may share fields) we require the expression to have a `HINT`, or otherwise throw an error.
 
 _Remark_. Struct values are semantically considered up to reordering their components.
 
 #### List expressions
 
 * 🔶 The _list expresssions_ `LIST_EXPR` is evaluated as follows:
-    * Substitute all vars `$x` by `m($x)`
+    * Substitute all vars `$x` by `r($x)`
     * (**Do not replace** attributes!)
-    * $`v_m(expr)`$ is the result of concatenation and sublist operations with their **usual semantics**
+    * $`v_r(expr)`$ is the result of concatenation and sublist operations with their **usual semantics**
         * e.g. `[a] + [a,b,c][1..2] = [a,b,c]` (`[1..2]` includes indices `[1,2]`)
         * or `([a] + [a,b,c])[1..2] = [a,b]`
-    * $`T_m(expr)`$ is the **minimal type** of all the list elements
+    * $`T_r(expr)`$ is the **minimal type** of all the list elements
 
 
-### (Feature) Boundedness constraints
+### (Feature) Boundedness of variables in expressions
 
 1. 🔶 Generally, variables in expressions `<EXPR>` are **never bound**, except ...
     * 🔶 the exception are **single-variable list indices**, i.e. `$list[$index]`; in this case `$index` is bound. (This makes sense, since `$list` must be bound elsewhere, and then `$index` is bound to range over the length of the list) (**#BDD**)
@@ -1644,8 +1825,8 @@ _Remark_ In this specification, we assume all struct components to be **uniquely
 
 #### **Case ASSIGN_PATT**
 * 🔷 `$x = <EXPR>` is satisfied if **both** 
-    * `m($x)` equals $`v_m(expr)`$
-    * `T($x)` equals $`T_m(expr)`$
+    * `r($x)` equals $`v_r(expr)`$
+    * `T($x)` equals $`T_r(expr)`$
 
 _System property_
 
@@ -1656,7 +1837,7 @@ _System property_
 _Remark_. TODO: consider `let $x = <EXPR>` as alternative syntax.
 
 #### **Case DESTRUCT_PATT**
-* 🔶 `<DESTRUCT> = <STRUCT>` is satisfied if, after substituting concepts from `m`, the left hand side (up to potentially omitting components whose variables are marked as optional) matched the structure of the right and side, and each variable on the left matches the evaluated expression of the correponding position on the right.
+* 🔶 `<DESTRUCT> = <STRUCT>` is satisfied if, after substituting concepts from `r`, the left hand side (up to potentially omitting components whose variables are marked as optional) matched the structure of the right and side, and each variable on the left matches the evaluated expression of the correponding position on the right.
 
 _System property_
 
@@ -1665,7 +1846,7 @@ _System property_
 3. 🔶 _Type check_. We require that $
 
 #### **Case EQ_PATT**
-* ✅ `<EXPR1> == <EXPR2>` is satisfied if $`v_m(expr_1) = v_m(expr_2)`$
+* ✅ `<EXPR1> == <EXPR2>` is satisfied if $`v_r(expr_1) = v_r(expr_2)`$
 * ✅ `<EXPR1> != <EXPR2>` is equivalent to `not { <EXPR1> != <EXPR2> }` (see "Patterns")
 
 _System property_
@@ -1692,21 +1873,21 @@ _System property_
 ### List expression patterns
 
 ### **Case IN_LIST_PATT**
-* 🔷 `$x in $l` is satisfied if $`m(x) \in m(l)`$
+* 🔷 `$x in $l` is satisfied if $`r(x) \in r(l)`$
 * 🔶 `$x in <LIST_EXPR>` is equivalent to `$l = <LIST_EXPR>; $x in $l` (see "Syntactic Sugar") 
 
 _System property_
 
 1. The right-hand side variable(s) of the pattern are **not bound**. (The left-hand side variable is bound.)
 
-## Function patterns
+## ... Function patterns
 
 ### **Case IN_FUN_PATT**
 * 🔶 `$x, $y?, ... in <F_CALL>` is satisfied, after substituting concepts, the left hand side is an element of the *function evalution* set `ev(F_CALL)` (see "Function evaluation") meaning that: for some tuple $t \in ev(F)$ we have
-  * for the $`i`$th variable `$z`, which is non-optional, we have $`m(z) = t_i`$
+  * for the $`i`$th variable `$z`, which is non-optional, we have $`r(z) = t_i`$
   * for the $`i`$th variable `$z`, which is marked as optional using `?`, we have either
-    * $`m(z) = t_i`$ and $`t_i \neq \emptyset`$
-    * $`m(z) = t_i`$ and $`t_i = \emptyset`$
+    * $`r(z) = t_i`$ and $`t_i \neq \emptyset`$
+    * $`r(z) = t_i`$ and $`t_i = \emptyset`$
 
 _System property_
 
@@ -1721,27 +1902,6 @@ _System property_
 
 * 🔶 Function call must be to a item-return function.
 
-
-## Patterns of patterns
-
-Now that we have seen how to determine when answers satisfy individual statements, we can extend our discussion of match semantics to composite patterns (patterns of patterns).
-
-#### **Case AND_PATT**
-* ✅ An answer satisfies the pattern `<PATT1>; <PATT2>;` that simultaneously satisfies both `<PATT1>` and `<PATT2>`.
-
-
-#### **Case OR_PATT**
-* 🔷 An answer for the pattern `{ <PATT1> } or { <PATT2> };` is an answer that satisfies either `<PATT1>` or `<PATT2>`.
-
-_Remark_: this generalize to a chain of $`k`$ `or` clauses.
-
-#### **Case NOT_PATT**
-* 🔷 An answer satisfying the pattern `not { <PATT> };` is any answer which _cannot_ be completed to a answer satisfying `<PATT>`.
-
-#### **Case TRY_PATT**
-* 🔷 The pattern `try { <PATT> };` is equivalent to the pattern `{ <PATT> } or { not { <PATT>}; };`.
-
-
 # Data manipulation language
 
 ## Match semantics
@@ -1751,10 +1911,10 @@ _Remark_: this generalize to a chain of $`k`$ `or` clauses.
     match <PATTERN>
     ```
 
-* _Input crows_: The clause can take as input a stream `{ m }` of concept rows `m`.
+* _Input crows_: The clause can take as input a stream `{ r }` of concept rows `r`.
 
-* _Output crows_: For each `m`: 
-  * replace all patterns in `P` with concepts from `m`. 
+* _Output crows_: For each `r`: 
+  * replace all patterns in `PATT` with concepts from `r`. 
   * Compute the stream of answer `{ m' }`. 
   * The final output stream will be `{ (m,m') }`.
 
@@ -1840,12 +2000,12 @@ Since functions can only be called from `match` stages in pipelines, evaluation 
 
 An `insert` clause comprises collection of _insert statements_
 
-* _Input crow_: The clause can take as input a stream `{ m }` of concept rows `m`, in which case 
-  * the clause is **executed** for each row `m` in the stream individually
+* _Input crow_: The clause can take as input a stream `{ r }` of concept rows `r`, in which case 
+  * the clause is **executed** for each row `r` in the stream individually
 
-* _Extending input row_: Insert clauses can extend bindings of the input concept row `m` in two ways
-  * `$x` is the subject of an `isa` statement in the `insert` clause, in which case $`m(x) =`$ _newly-inserted-concept_ (see "Case **ISA_INS**")
-  * `$x` is the subject of an `=` assignment statement in the `insert` clause, in which case $`m(x) =`$ _assigned-value_ (see "Case **ASSIGN_INS**")
+* _Extending input row_: Insert clauses can extend bindings of the input concept row `r` in two ways
+  * `$x` is the subject of an `isa` statement in the `insert` clause, in which case $`r(x) =`$ _newly-inserted-concept_ (see "Case **ISA_INS**")
+  * `$x` is the subject of an `=` assignment statement in the `insert` clause, in which case $`r(x) =`$ _assigned-value_ (see "Case **ASSIGN_INS**")
 
 #### (Theory) Execution
 
@@ -1860,7 +2020,7 @@ _Execution_: An `insert` clause is executed by executing its statements individu
 * Executions of statements will modify the database state by 
   * adding elements
   * refining dependencies
-* (Execution can also affect the state of concept row `m` as mentioned above)
+* (Execution can also affect the state of concept row `r` as mentioned above)
 * Modification are buffered in transaction (see "Transactions")
 * Violation of system properties or schema constraints will lead to failing transactions (see "Transactions")
 
@@ -1877,9 +2037,8 @@ _Execution_: An `insert` clause is executed by executing its statements individu
 
 ### Insert statements
 
-
 #### **Case ASSIGN_INS**
-* 🔷 `$x = <EXPR>` adds nothing, and sets $`m(x) = v`$ where $`v`$ is the value that `<EXPR>` evaluates to.
+* 🔷 `$x = <EXPR>` adds nothing, and sets $`r(x) = v`$ where $`v`$ is the value that `<EXPR>` evaluates to.
 
 _System property_:
 
@@ -1890,67 +2049,67 @@ _System property_:
 _Note_. All **EXPR_INS** statements are executed first as described in the previous section.
 
 #### **Case OBJ_ISA_INS**
-* ✅ `$x isa $T` adds new $`a :_! m(T)`$, $`m(T) : \mathbf{Obj}`$, and sets $`m(x) = a`$
+* ✅ `$x isa $T` adds new $`a :_! r(T)`$, $`r(T) : \mathbf{Obj}`$, and sets $`r(x) = a`$
 
 _System property_:
 
-1. ✅ `$x` cannot be bound elsewhere (i.e. `$x` cannot be bound in the input row `m` nor in other `isa` or `=` statements).
+1. ✅ `$x` cannot be bound elsewhere (i.e. `$x` cannot be bound in the input row `r` nor in other `isa` or `=` statements).
 
 #### **Case ATT_ISA_INS**
-* 🔮  `<VAL_EXPR> isa $T` adds new $`v :_! m(T)`$, $`m(T) : \mathbf{Att}`$, where `v` is the result of evaluating the expression `<EXPR>`
+* 🔮  `<VAL_EXPR> isa $T` adds new $`v :_! r(T)`$, $`r(T) : \mathbf{Att}`$, where `v` is the result of evaluating the expression `<EXPR>`
 
 _System property_:
 
 * 🔮 `<EXPR>` must be of the right value type, and be evaluatable (i.e. all vars are bound).
-* 🔮 `m(T)` must be an independent attribute, i.e. the schema must contain `attribute m(T) (sub B) @indepedent`
+* 🔮 `r(T)` must be an independent attribute, i.e. the schema must contain `attribute r(T) (sub B) @indepedent`
 
 #### **Case LINKS_INS** 
-* ✅ `$x links ($I: $y)` replaces $`m(x) :_! A(a : J, b : K, ...)`$ by $`m(x) :_! A(m(y)a : m(I), b : K, ...)`$
+* ✅ `$x links ($I: $y)` replaces $`r(x) :_! A(a : J, b : K, ...)`$ by $`r(x) :_! A(r(y)a : r(I), b : K, ...)`$
 
 _Remark_. Set semantics for interfaces means that inserts become idempotent when inserting the same role players twice.
 
 _System property_:
 
 1. ✅ _Capability check_. 
-    * Must have $`T(x) \leq B : \mathbf{Rel}(m(I))`$ **non-abstractly**, i.e. $`\diamond (B : \mathbf{Rel}(m(I)))`$ is not true for the minimal choice of $`B`$ satisfying the former
-    * Must have $`T(y) \leq B <_! m(I)`$ **non-abstractly**, i.e. $`\diamond (B <_! m(I))`$ is not true for the minimal $`B`$ satisfying the former.
+    * Must have $`T(x) \leq B : \mathbf{Rel}(r(I))`$ **non-abstractly**, i.e. $`\diamond (B : \mathbf{Rel}(r(I)))`$ is not true for the minimal choice of $`B`$ satisfying the former
+    * Must have $`T(y) \leq B <_! r(I)`$ **non-abstractly**, i.e. $`\diamond (B <_! r(I))`$ is not true for the minimal $`B`$ satisfying the former.
 
 #### **Case LINKS_LIST_INS** 
-* 🔶 `$x links ($I[]: <T_LIST>)` replaces $`m(x) :_! A()`$ by $`m(x) :_! A(l : [m(I)])`$ for `<T_LIST>` evaluating to $`l = [l_0, l_1, ...]`$
+* 🔶 `$x links ($I[]: <T_LIST>)` replaces $`r(x) :_! A()`$ by $`r(x) :_! A(l : [r(I)])`$ for `<T_LIST>` evaluating to $`l = [l_0, l_1, ...]`$
 
 _System property_:
 
-1. 🔶 _System cardinality bound: **1 list per relation per role**_. Transaction will fail if $`m(x) :_! A(...)`$ already has a roleplayer list. (In this case, user should `update` instead!)
+1. 🔶 _System cardinality bound: **1 list per relation per role**_. Transaction will fail if $`r(x) :_! A(...)`$ already has a roleplayer list. (In this case, user should `update` instead!)
 1. 🔶 _Capability check_. 
-    * Must have $`T(x) \leq B : \mathbf{Rel}(m(I))`$ **non-abstractly**, i.e. $`\diamond (B : \mathbf{Rel}(m(I)))`$ is not true for the minimal choice of $`B`$ satisfying the former
-    * Must have $`l_i : T_i \leq B <_! m(I)`$ **non-abstractly**, i.e. $`\diamond (B <_! m(I))`$ is not true for the minimal $`B`$ satisfying the former.
+    * Must have $`T(x) \leq B : \mathbf{Rel}(r(I))`$ **non-abstractly**, i.e. $`\diamond (B : \mathbf{Rel}(r(I)))`$ is not true for the minimal choice of $`B`$ satisfying the former
+    * Must have $`l_i : T_i \leq B <_! r(I)`$ **non-abstractly**, i.e. $`\diamond (B <_! r(I))`$ is not true for the minimal $`B`$ satisfying the former.
 
 #### **Case HAS_INS**
-* ✅ `$x has $A $y` adds new $`a :_! m(A)(m(x) : O_{m(A)})`$ and
+* ✅ `$x has $A $y` adds new $`a :_! r(A)(r(x) : O_{r(A)})`$ and
     * If `$y` is instance add the new cast $`\mathsf{val}(a) = \mathsf{val}(y)`$
-    * If `$y` is value var set $`\mathsf{val}(a) = m(a)`$
-* 🔷 `$x has $A <VAL_EXPR>` adds new element $`a :_! m(A)(m(x) : O_{m(A)})`$ and add cast $`\mathsf{val}(a) = v_m(val\_expr)`$
+    * If `$y` is value var set $`\mathsf{val}(a) = r(a)`$
+* 🔷 `$x has $A <VAL_EXPR>` adds new element $`a :_! r(A)(r(x) : O_{r(A)})`$ and add cast $`\mathsf{val}(a) = v_r(val\_expr)`$
 
 _System property_:
 
-1. ✅ _Idempotency_. If $`a :_! m(A)`$ with $`\mathsf{val}(a) = \mathsf{val}(b)`$ then we equate $`a = b`$ (this actually follows from the "Attribute identity rule", see "Type system").
-1. 🔶 _Capability check_. Must have $`T(x) \leq B <_! O_{m(A)}`$ **non-abstractly**, i.e. $`\diamond (B <_! O_{m(A)})`$ is not true for the minimal choice of $`B`$ satisfying the former
-1. 🔶 _Type check_. Must have $`T(y) \leq m(A)`$ **or** $`T(y) = V`$ where $`\mathsf{val} : m(A) \to V`$ (similarly for `<EXPR>`)
+1. ✅ _Idempotency_. If $`a :_! r(A)`$ with $`\mathsf{val}(a) = \mathsf{val}(b)`$ then we equate $`a = b`$ (this actually follows from the "Attribute identity rule", see "Type system").
+1. 🔶 _Capability check_. Must have $`T(x) \leq B <_! O_{r(A)}`$ **non-abstractly**, i.e. $`\diamond (B <_! O_{r(A)})`$ is not true for the minimal choice of $`B`$ satisfying the former
+1. 🔶 _Type check_. Must have $`T(y) \leq r(A)`$ **or** $`T(y) = V`$ where $`\mathsf{val} : r(A) \to V`$ (similarly for `<EXPR>`)
 
-_Remark_: ⛔ Previously we had the constraint that we cannot add $`m(y) :_! A(m(x) : O_A)`$ if there exists any subtype $`B \lneq A`$.
+_Remark_: ⛔ Previously we had the constraint that we cannot add $`r(y) :_! A(r(x) : O_A)`$ if there exists any subtype $`B \lneq A`$.
 
 #### **Case HAS_LIST_INS**
-* 🔶 `$x has $A[] <LIST_EXPR>` adds new $`l = [l_1, l_2, ...] :_! [m(A)](m(x) : O_{m(A)[]})`$ and $`l_i :_! m(A)(m(x) : O_{m(A)})`$ where
-    * $`l`$ has the same length as $`[v_1,v_2, ...] = v_m(list\_expr)`$
+* 🔶 `$x has $A[] <LIST_EXPR>` adds new $`l = [l_1, l_2, ...] :_! [r(A)](r(x) : O_{r(A)[]})`$ and $`l_i :_! r(A)(r(x) : O_{r(A)})`$ where
+    * $`l`$ has the same length as $`[v_1,v_2, ...] = v_r(list\_expr)`$
     * if $`v_i`$ is an attribute instance, add new cast $`\mathsf{val}(l_i) = \mathsf{val}(v_i)`$ 
     * if $`v_i`$ is a value, add new cast $`\mathsf{val}(l_i) = v_i`$ 
 
 _System property_:
 
 1. ✅ _Idempotency_. Idempotency is automatic (since lists are identified by their list elements).
-1. 🔶 _System cardinality bound: **1 list per owner**_. We cannot have $`k :_! m(A)(m(x) : O_{m(A)})`$ with $`k \neq l`$. (Users should use "Update" instead!)
-1. 🔶 _Capability check_. Must have $`T(x) \leq B <_! O_{m(A)}`$ **non-abstractly**, i.e. $`\diamond (B <_! O_{m(A)})`$ is not true for the minimal choice of $`B`$ satisfying the former
-1. 🔶 _Type check_.For each list element, must have $`T(l_i) \leq m(A)`$ or $`T(l_i) = V`$ where $`\mathsf{val} : A \to V`$
+1. 🔶 _System cardinality bound: **1 list per owner**_. We cannot have $`k :_! r(A)(r(x) : O_{r(A)})`$ with $`k \neq l`$. (Users should use "Update" instead!)
+1. 🔶 _Capability check_. Must have $`T(x) \leq B <_! O_{r(A)}`$ **non-abstractly**, i.e. $`\diamond (B <_! O_{r(A)})`$ is not true for the minimal choice of $`B`$ satisfying the former
+1. 🔶 _Type check_.For each list element, must have $`T(l_i) \leq r(A)`$ or $`T(l_i) = V`$ where $`\mathsf{val} : A \to V`$
 
 ### Optional inserts
 
@@ -1968,16 +2127,16 @@ _System property_:
 
 A `delete` clause comprises collection of _delete statements_.
 
-* _Input crows_: The clause can take as input a stream `{ m }` of concept rows `m`: 
-  * the clause is **executed** for each row `m` in the stream individually
+* _Input crows_: The clause can take as input a stream `{ r }` of concept rows `r`: 
+  * the clause is **executed** for each row `r` in the stream individually
 
-* _Updating input rows_: Delete clauses can update bindings of their input concept row `m`
-  * Executing `delete $x;` will remove `$x` from `m` (but `$x` may still appear in other crows `m'` of the input stream)
+* _Updating input rows_: Delete clauses can update bindings of their input concept row `r`
+  * Executing `delete $x;` will remove `$x` from `r` (but `$x` may still appear in other crows `r'` of the input stream)
 
-_Remark_: Previously, it was suggested: if `$x` is in `m` and $`m(x)`$ is deleted from $`T_m(x)`$ by the end of the execution of the clause (for _all_ input rows of the input stream) then we set $`m(x) = \emptyset`$ and $`T_m(x) = \emptyset`$.
+_Remark_: Previously, it was suggested: if `$x` is in `r` and $`r(x)`$ is deleted from $`T_r(x)`$ by the end of the execution of the clause (for _all_ input rows of the input stream) then we set $`r(x) = \emptyset`$ and $`T_r(x) = \emptyset`$.
 Fundamental question: **is it better to silently remove vars? Or throw an error if vars pointing to deleted concepts are used?** (STICKY)
 * Only for `delete $x;` can we statically say that `$x` must not be re-used
-* Other question: would this interact with try? idea: take $`m(x) = \emptyset`$ if it points to a previously deleted concept
+* Other question: would this interact with try? idea: take $`r(x) = \emptyset`$ if it points to a previously deleted concept
 
 <!--
 match 
@@ -2015,30 +2174,30 @@ delete
 
 * 🔶 _Optionality_: Optional variables are those exclusively appearing in a `try` block
   * `try` blocks in `delete` clauses cannot be nested
-  * `try` blocks variables are **block-level bound** if they are bound in `m`
+  * `try` blocks variables are **block-level bound** if they are bound in `r`
   * If any variable is not block-level bound, the `try` block statements are **skipped**.
   * If all variables are block-level bound, the `try` block statements are **runnable**.
 
 ### Delete statements
 
 #### **Case CONCEPT_DEL**
-* ✅ `$x;` removes $`m(x) :_! A(...)`$. If $`m(x)`$ is an object, we also:
-  * replaces any $`b :_! B(m(x) : I, z : J, ...)`$ by $`b :_! B(z : J, ...)`$ for all such dependencies on $`m(x)`$
+* ✅ `$x;` removes $`r(x) :_! A(...)`$. If $`r(x)`$ is an object, we also:
+  * replaces any $`b :_! B(r(x) : I, z : J, ...)`$ by $`b :_! B(z : J, ...)`$ for all such dependencies on $`r(x)`$
 
 _Remark 1_. This applies both to $`B : \mathbf{Rel}`$ and $`B : \mathbf{Att}`$.
 
-_Remark 2_. The resulting $`m(x) :_! m(A)(z : J, ...)`$ must be within schema constraints, or the transaction will fail. This will follow from the general mechanism for checking schema constraints; see "Transactions".
+_Remark 2_. The resulting $`r(x) :_! r(A)(z : J, ...)`$ must be within schema constraints, or the transaction will fail. This will follow from the general mechanism for checking schema constraints; see "Transactions".
 
 _System property_:
 
-1. 🔷 If $`m(x) : A : \mathbf{Att}`$ and $`A`$ is _not_ marked `@independent` then the transaction will fail.
+1. 🔷 If $`r(x) : A : \mathbf{Att}`$ and $`A`$ is _not_ marked `@independent` then the transaction will fail.
 
 
 #### **Modifier: CASCADE_DEL**
 * 🔮 `delete` clause keyword can be modified with a `@cascade(<LABEL>,...)` annotation, which acts as follows:
 
-  If `@cascade(C, D, ...)` is specified, and `$x` is delete then we not only remove $`m(x) :_! A(...)`$ but (assuming $`m(x)`$ is an object) we also:
-  * whenever we replace $`b :_! B(m(x) : I, z : J, ...)`$ by $`b :_! B(z : J, ...)`$ and the following are _both_ satisfied:
+  If `@cascade(C, D, ...)` is specified, and `$x` is delete then we not only remove $`r(x) :_! A(...)`$ but (assuming $`r(x)`$ is an object) we also:
+  * whenever we replace $`b :_! B(r(x) : I, z : J, ...)`$ by $`b :_! B(z : J, ...)`$ and the following are _both_ satisfied:
 
     1. the new axiom $`b :_! B(...)`$ violates interface cardinality of $`B`$,
     2. $`B`$ is among the listed types `C, D, ...`
@@ -2051,24 +2210,24 @@ _Remark_. In an earlier version of the spec, condition (1.) for the recursive de
 2. The extra condition ensure that deletes cannot interfere with one another, i.e. the order of deletion does not matter.
 
 #### **Case ROL_OF_DEL**
-* ✅ `($I: $y) of $x` replaces $`m(x) :_! m(A)(m(y) : m(I), z : J, ...)`$ by $`m(x) :_! m(A)(z : J, ...)`$
+* ✅ `($I: $y) of $x` replaces $`r(x) :_! r(A)(r(y) : r(I), z : J, ...)`$ by $`r(x) :_! r(A)(z : J, ...)`$
 
-_Remark_. The resulting $`m(x) :_! m(A)(z : J, ...)`$ must be within schema constraints, or the transaction will fail. This will follow from the general mechanism for checking schema constraints; see "Transactions".
+_Remark_. The resulting $`r(x) :_! r(A)(z : J, ...)`$ must be within schema constraints, or the transaction will fail. This will follow from the general mechanism for checking schema constraints; see "Transactions".
 
 #### **Case ROL_LIST_OF_DEL**
-* 🔶 `($I[]: <T_LIST>) of $x` replaces $`m(x) :_! m(A)(l : m(I))`$ by $`m(x) :_! m(A)()`$ for $`l`$ being the evaluation of `T_LIST`.
+* 🔶 `($I[]: <T_LIST>) of $x` replaces $`r(x) :_! r(A)(l : r(I))`$ by $`r(x) :_! r(A)()`$ for $`l`$ being the evaluation of `T_LIST`.
 
 #### **Case ATT_OF_DEL**
-* 🔷 `$B $y of $x` replaces any $`m(y) :_! m(B)(m(x) : O_{m(B)})`$ by $`m(y) :_! B'()`$
-* 🔷 `$B of $x` replaces any $`a :_! m(B)(m(x) : O_{m(B)})`$ by $`a :_! B'()`$
+* 🔷 `$B $y of $x` replaces any $`r(y) :_! r(B)(r(x) : O_{r(B)})`$ by $`r(y) :_! B'()`$
+* 🔷 `$B of $x` replaces any $`a :_! r(B)(r(x) : O_{r(B)})`$ by $`a :_! B'()`$
 
 _System property_
-* 🔶 _Capability check_. Cannot have that `T($y) owns m($B)[]` (in this case, must delete entire lists instead!)
-* 🔷 _Type check_ Must have $`T(y) = m(B)`$.
+* 🔶 _Capability check_. Cannot have that `T($y) owns r($B)[]` (in this case, must delete entire lists instead!)
+* 🔷 _Type check_ Must have $`T(y) = r(B)`$.
 
 #### **Case ATT_LIST_OF_DEL**
-* 🔶 `$B[] $y of $x` deletes any $`m(y) = [l_1, l_2, ... ] :_! m(B)(m(x) : O_{m(B)})`$ and replaces any $`l_i :_! m(B)(m(x) : O_{m(B)})`$ by $`l_i :_! B'()`$
-* 🔷 `$B[] of $x` deletes any $`l = [l_1, l_2, ... ] :_! m(B)(m(x) : O_{m(B)})`$ and replaces any $`l_i :_! m(B)(m(x) : O_{m(B)})`$ by $`l_i :_! B'()`$
+* 🔶 `$B[] $y of $x` deletes any $`r(y) = [l_1, l_2, ... ] :_! r(B)(r(x) : O_{r(B)})`$ and replaces any $`l_i :_! r(B)(r(x) : O_{r(B)})`$ by $`l_i :_! B'()`$
+* 🔷 `$B[] of $x` deletes any $`l = [l_1, l_2, ... ] :_! r(B)(r(x) : O_{r(B)})`$ and replaces any $`l_i :_! r(B)(r(x) : O_{r(B)})`$ by $`l_i :_! B'()`$
 
 ### Clean-up
 
@@ -2080,10 +2239,10 @@ Orphaned relation and attribute instance (i.e. those with insufficient dependenc
 
 A `update` clause comprises collection of _update statements_.
 
-* _Input crow_: The clause can take as input a stream `{ m }` of concept rows `m`, in which case 
-  * the clause is **executed** for each row `m` in the stream individually
+* _Input crow_: The clause can take as input a stream `{ r }` of concept rows `r`, in which case 
+  * the clause is **executed** for each row `r` in the stream individually
 
-* _Updating input rows_: Update clauses do not update bindings of their input crow `m`
+* _Updating input rows_: Update clauses do not update bindings of their input crow `r`
 
 #### (Theory) Execution
 
@@ -2094,14 +2253,14 @@ A `update` clause comprises collection of _update statements_.
 
 * _Optionality_: Optional variables are those exclusively appearing in a `try` block
   * `try` blocks in `delete` clauses cannot be nested
-  * `try` blocks variables are **block-level bound** if they are supplied by `m`
+  * `try` blocks variables are **block-level bound** if they are supplied by `r`
   * If any variable is not block-level bound, the `try` block statements are **skipped**.
   * If all variables are block-level bound, the `try` block statements are **runnable**.
 
 ### Update statements
 
 #### **Case LINKS_UP**
-* 🔶 `$x links ($I: $y);` updates $`m(x) :_! A(b:J)`$ to $`m(x) :_! A(m(x) : m(I))`$
+* 🔶 `$x links ($I: $y);` updates $`r(x) :_! A(b:J)`$ to $`r(x) :_! A(r(x) : r(I))`$
 
 _System property_:
 
@@ -2109,7 +2268,7 @@ _System property_:
 1. 🔶 Require that each update happens at most once, or fail the transaction. (STICKY: discuss!)
 
 #### **Case LINKS_LIST_UP** 
-* 🔶 `$x links ($I[]: <T_LIST>)` updates $`m(x) :_! A(j : [m(I)])`$ to $`m(x) :_! A(l : [m(I)])`$ for `<T_LIST>` evaluating to $`l = [l_0, l_1, ...]`$
+* 🔶 `$x links ($I[]: <T_LIST>)` updates $`r(x) :_! A(j : [r(I)])`$ to $`r(x) :_! A(l : [r(I)])`$ for `<T_LIST>` evaluating to $`l = [l_0, l_1, ...]`$
 
 _System property_:
 
@@ -2117,7 +2276,7 @@ _System property_:
 1. 🔶 Require that each update happens at most once, or fail the transaction.
 
 #### **Case HAS_UP**
-* 🔶 `$x has $B: $y;` updates $`b :_! m(B)(x:O_{m(B)})`$ to $`m(y) :_! m(B)(x:O_{m(B)})`$
+* 🔶 `$x has $B: $y;` updates $`b :_! r(B)(x:O_{r(B)})`$ to $`r(y) :_! r(B)(x:O_{r(B)})`$
 
 _System property_:
 
@@ -2125,7 +2284,7 @@ _System property_:
 1. 🔶 Require that each update happens at most once, or fail the transaction.
 
 #### **Case HAS_LIST_UP**
-* 🔶 `$x has $A[] <T_LIST>` updates $`j :_! [m(A)](m(x) : O_{m(A)})`$ to $`l :_! [m(A)](m(x) : O_{m(A)})`$ for `<T_LIST>` evaluating to $`l = [l_0, l_1, ...]`$
+* 🔶 `$x has $A[] <T_LIST>` updates $`j :_! [r(A)](r(x) : O_{r(A)})`$ to $`l :_! [r(A)](r(x) : O_{r(A)})`$ for `<T_LIST>` evaluating to $`l = [l_0, l_1, ...]`$
 
 _System property_:
 
@@ -2199,8 +2358,8 @@ As described in "Put semantics".
   }
   ```
 
-  * The `fetch` clause takes as input a crow stream `{ m }`
-  * It output a stream `{ doc<m> }` of JSON documents (one for each `m` in the input stream)
+  * The `fetch` clause takes as input a crow stream `{ r }`
+  * It output a stream `{ doc<m> }` of JSON documents (one for each `r` in the input stream)
   * The `fetch` clause is **terminal**
 
 #### **Case FETCH_VAL**
@@ -2216,21 +2375,21 @@ _Note_. `<EXPR>` can, in particuar, be `T_LIST` expression (see "Expressions").
 
 _System property_
 
-1. 🔶 fails transaction if $`T_m(x)`$ does not own $`A`$ with `card(0,1)`.
+1. 🔶 fails transaction if $`T_r(x)`$ does not own $`A`$ with `card(0,1)`.
 
 #### **Case FETCH_MULTI_ATTR**
 * 🔶 `"key": [ $x.A ]` where $`A : \mathbf{Att}`$
 
 _System property_
 
-1. 🔶 fails transaction if $`T_m(x)`$ does not own $`A`$.
+1. 🔶 fails transaction if $`T_r(x)`$ does not own $`A`$.
 
 #### **Case FETCH_LIST_ATTR**
 * 🔶 `"key": $x.A[]` where  $`A : \mathbf{Att}`$
 
 _System property_
 
-1. 🔶 fails transaction if $`T_m(x)`$ does not own $`[A]`$.
+1. 🔶 fails transaction if $`T_r(x)`$ does not own $`[A]`$.
 
 #### **Case FETCH_SNGL_FUN**
 * 🔶 `"key": fun(...)` where `fun` is item-return.
@@ -2285,38 +2444,38 @@ Operators (unlike clauses) are **pure**: they do not depend on the DB (i.e. they
 * 🔶 select syntax:
     `select $x1, $x2, ...`
      
-    * input stream of rows `{ m }`
-    * output stream of rows `{ p(m) }` for each `m` in the input, where `p(m)` only keeps the given variables that are among `$x1, $x2, ...`
+    * input stream of rows `{ r }`
+    * output stream of rows `{ p(m) }` for each `r` in the input, where `p(m)` only keeps the given variables that are among `$x1, $x2, ...`
 
 ### Deselect 
 * 🔶 deselect syntax:
     `deselect $x1, $x2, ...`
      
-    * input stream of rows `{ m }`
-    * output stream of rows `{ p(m) }` for each `m` in the input, where `p(m)` only keeps the given variables that are **not** among `$x1, $x2, ...`
+    * input stream of rows `{ r }`
+    * output stream of rows `{ p(m) }` for each `r` in the input, where `p(m)` only keeps the given variables that are **not** among `$x1, $x2, ...`
 
 ### Distinct
 * 🔶 distinct syntax:
     `deselect $x1, $x2, ...`
      
-    * input stream of rows `{ m }`
-    * output stream of rows `{ n }` for each distinct row in the input (in other words: duplicates are removed)
+    * input stream of rows `{ r }`
+    * output stream of rows `{ o }` for each distinct row in the input (in other words: duplicates are removed)
         * empty value is its own distinct value
 
 ### Require
 * 🔮 distinct syntax:
     `require $x1, $x2, ...`
      
-    * filters `{ m }` keeping only maps where `m($x1)`, `m($x2)`, ... are non-empty
+    * filters `{ r }` keeping only maps where `r($x1)`, `r($x2)`, ... are non-empty
 
 ### Sort
 * 🔶 sort syntax:
     `sort $x1, $x2, ...`
      
-    * input stream of rows `{ m }`
-    * output stream of rows `{ n }` obtained by ordering the input stream:
-      * first on values `m($x1)`
-      * then on values `m($x2)`,
+    * input stream of rows `{ r }`
+    * output stream of rows `{ o }` obtained by ordering the input stream:
+      * first on values `r($x1)`
+      * then on values `r($x2)`,
       * ...
 
 **Remark** absent values are sorted last.
@@ -2337,7 +2496,7 @@ _Remark_: Offset is only useful when streams (and the order of answers) are full
 
 ### Reduce
 * 🔶 Key principles:
-    * The `reduce` operator takes as input a stream of rows `{ m }`
+    * The `reduce` operator takes as input a stream of rows `{ r }`
     * It outputs a stream of new concept rows
 
 #### **Case SIMPLE_RED**
@@ -2355,20 +2514,20 @@ _Remark_: Offset is only useful when streams (and the order of answers) are full
     * outputs `true` if concept row stream is non-empty
   * 🔶 `check($x)`:
     * output type `bool`
-    * outputs `true` if concept row stream contains a row `m` with non-empty entry `m($x)` for `$x`
-  * 🔶 `sum($x)`:
+    * outputs `true` if concept row stream contains a row `r` with non-empty entry `r($x)` for `$x`
+  * 🔶 `sur($x)`:
     * output type `double` or `int`
-    * outputs sum of all non-empty `m($x)` in concept row `m`
+    * outputs sum of all non-empty `r($x)` in concept row `r`
     * `$x` can be optional
     * empty sums yield `0.0` or `0`
-  * 🔶 `mean($x)`:
+  * 🔶 `rean($x)`:
     * output type `double?`
-    * outputs mean of all non-empty `m($x)` in concept row `m`
+    * outputs mean of all non-empty `r($x)` in concept row `r`
     * `$x` can be optional
     * empty mean yield empty output ($\emptyset$)
-  * 🔶 `median($x)`, 
+  * 🔶 `redian($x)`, 
     * output type `double?` or `int?` (depending on type of `$x`)
-    * outputs median of all non-empty `m($x)` in concept row `m`
+    * outputs median of all non-empty `r($x)` in concept row `r`
     * `$x` can be optional
     * empty medians output $\emptyset
   * 🔶 `count`
@@ -2376,25 +2535,25 @@ _Remark_: Offset is only useful when streams (and the order of answers) are full
     * outputs count of all answer
   * 🔶 `count($x)`
     * output type `long`
-    * outputs count of all non-empty `m($x)` in input crow stream `{ m }`
+    * outputs count of all non-empty `r($x)` in input crow stream `{ r }`
     * `$x` can be optionals
   * 🔮 `count($x, $y, ...)`
     * output type `long`
-    * outputs count of all non-empty concept tuples `(m($x), m($y), ...)` in input crow stream
+    * outputs count of all non-empty concept tuples `(r($x), r($y), ...)` in input crow stream
     * `$x` can be optional
   * 🔮 `distinct($x)`
     * output type `long`
-    * outputs count of all non-empty **distinct** `m($x)` in input crow stream `{ m }`
+    * outputs count of all non-empty **distinct** `r($x)` in input crow stream `{ r }`
     * `$x` can be optionals
   * 🔮 `distinct($x, $y, ...)`
     * output type `long`
-    * outputs count of all non-empty **distinct** concept tuples `(m($x), m($y), ...)` in input crow stream `{ m }`
+    * outputs count of all non-empty **distinct** concept tuples `(r($x), r($y), ...)` in input crow stream `{ r }`
     * `$x` can be optional
   * 🔶 `list($x)`
     * output type `[A]`
-    * returns list of all non-empty `m($x)` in concept row `m`
+    * returns list of all non-empty `r($x)` in concept row `r`
     * `$x` can be optional
-* Each `<AGG>` reduces the concept row `{ m }` passsed to it from the function's body to a single value in the specified way.
+* Each `<AGG>` reduces the concept row `{ r }` passsed to it from the function's body to a single value in the specified way.
 
 #### **Case GROUP_RED**
 * 🔶 Groupe reduce syntax:
@@ -2403,7 +2562,7 @@ _Remark_: Offset is only useful when streams (and the order of answers) are full
     ``` 
 
     In this case, we output the following:
-    * 🔶 for each distinct tuple of elements `el_1, el_2, ...` assigned to `$y_1, $y_2, ...` by rows in the stream, we perform the aggregates as described above over _all rows `m`_ for which `m($y_1) = el_1, m($y__2) = el_2, ...` and then output the resulting concept row `($y_1 -> el_1, $y_2 = el_2, ..., $x_1 -> <CPT>, $x_2 -> <CPT>, ...)`
+    * 🔶 for each distinct tuple of elements `el_1, el_2, ...` assigned to `$y_1, $y_2, ...` by rows in the stream, we perform the aggregates as described above over _all rows `r`_ for which `r($y_1) = el_1, r($y__2) = el_2, ...` and then output the resulting concept row `($y_1 -> el_1, $y_2 = el_2, ..., $x_1 -> <CPT>, $x_2 -> <CPT>, ...)`
 
 
 ## Branches
