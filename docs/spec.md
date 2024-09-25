@@ -249,7 +249,7 @@
             * [Function evaluation](#function-evaluation)
             * [Order of execution](#order-of-execution)
         * [Stream-return semantics](#stream-return-semantics)
-        * [Single-return semantics](#single-return-semantics)
+        * [Single-return semantics](#item-return-semantics)
     * [Insert semantics](#insert-semantics)
         * [Basics of inserting](#basics-of-inserting)
             * [(Theory) Execution](#theory-execution)
@@ -924,7 +924,7 @@ _System property_
     * **Generalizes** to $`n`$ inputs and $`m`$ outputs
 
 #### **Case SINGLE_RET_FUN_DEF**
-* 🔷 _single-return function_ definition takes the form: 
+* 🔷 _item-return function_ definition takes the form: 
     ```
     fun f (x: T, y: S) -> A, B:
       match <PATTERN>
@@ -1578,7 +1578,7 @@ EXPR       ::=  VAL_EXPR | LIST_EXPR
 ***Selected details***
 
 * Careful: the generic case `<T>` modify earlier parts of the 
-* `T`-functions (`T_FUN`) are function calls to *single-return* functions with non-tupled output type `T` or `T?`
+* `T`-functions (`T_FUN`) are function calls to *item-return* functions with non-tupled output type `T` or `T?`
 * Datetime and time formats
   ```
   long       ::=   (0..9)*
@@ -1702,20 +1702,24 @@ _System property_
 ## Function patterns
 
 ### **Case IN_FUN_PATT**
-* 🔶 `$x, $y?, ... in <FUN_CALL>` is satisfied, after substituting concepts, the left hand side is an element of the **function answer set** $`F`$ of evaluated `<FUN_CALL>` on the right (see "Function semantics") meaning that: for some tuple $t \in F$ we have
+* 🔶 `$x, $y?, ... in <F_CALL>` is satisfied, after substituting concepts, the left hand side is an element of the *function evalution* set `ev(F_CALL)` (see "Function evaluation") meaning that: for some tuple $t \in ev(F)$ we have
   * for the $`i`$th variable `$z`, which is non-optional, we have $`m(z) = t_i`$
   * for the $`i`$th variable `$z`, which is marked as optional using `?`, we have either
     * $`m(z) = t_i`$ and $`t_i \neq \emptyset`$
     * $`m(z) = t_i`$ and $`t_i = \emptyset`$
+
+_System property_
+
+* 🔶 Function call must be to a stream-return function.
 
 ### **Case ASSIGN_FUN_PATT**
-* 🔶 `$x, $y?, ... = <FUN_CALL>` is satisfied, after substituting concepts, the left hand side complies with the **function answer tuple** $`t`$ of `<FUN_CALL>` on the right (see "Function semantics") meaning that:
-  * for the $`i`$th variable `$z`, which is non-optional, we have $`m(z) = t_i`$
-  * for the $`i`$th variable `$z`, which is marked as optional using `?`, we have either
-    * $`m(z) = t_i`$ and $`t_i \neq \emptyset`$
-    * $`m(z) = t_i`$ and $`t_i = \emptyset`$
+* 🔶 `$x, $y?, ... = <FUN_CALL>` same as above, but see system property.
 
 _Remark_: variables marked with `?` in function assignments are the first example of **optional variables**. We will meet other pattern yielding optional variables in the following section.
+
+_System property_
+
+* 🔶 Function call must be to a item-return function.
 
 
 ## Patterns of patterns
@@ -1759,7 +1763,7 @@ _Remark_: this generalize to a chain of $`k`$ `or` clauses.
 
 ### Function signature, body, operators
 
-#### **Case FUN_SIGN_STREAM**
+#### **Case FUN_SIGNAT_STREAM**
 
 * 🔶 Stream-return function signature syntax:
     _Syntax_:
@@ -1771,7 +1775,9 @@ _Remark_: this generalize to a chain of $`k`$ `or` clauses.
 
 _Remark: see GH issue on trais (Could have `A | B | plays C` input types)._
 
-#### **Case FUN_SIGN_SINGLE**
+_Terminology_ If the function returns a single types (`{ C }`) then we call it a **singleton** function.
+
+#### **Case FUN_SIGNAT_ITEM**
 
 * 🔶 Single-return function signature syntax:
     ```
@@ -1782,47 +1788,43 @@ _Remark: see GH issue on trais (Could have `A | B | plays C` input types)._
 
 _STICKY: allow types to be optional in args (this extends types to sum types, interface types, etc.)_
 
+_Terminology_ If the function returns a single types (`C`) then we call it a **singleton** function.
+
 #### **Case FUN_BODY**
 
 * 🔶 Function body syntax:
     _Syntax_:
     ```
-    match <PATT>
+    <PIPELINE>
     ```
-    * `<PATT>;` can be any pattern as defined in the previous sections. 
 
-#### **Case FUN_OPS**
+_System property_
 
-* 🔶 Function operator syntax:
+* 🔶 _Require crow stream output_ Pipeline must be non-terminal (e.g. cannot end in `fetch`).
+
+#### **Case FUN_RETURN**
+
+* 🔶 Function body syntax:
     _Syntax_:
     ```
-    <OP>;
-    ...
-    <OP>;
+    return $x, $y, ...;
     ```
-    where:
+_System property_
 
-    * `<OP>` can be one of:
-      * `limit <int>`
-      * `offset <int>`
-      * `sort $x, $y` (sorts first in `$x`, then in `$y`)
-      * `select $x, $y`
-    * Each `<OP>` stage takes the concept row set from the previous stage and return a concept row set for the 
-      * These concept row set operatioins are described in **"Operators"** below
-    * The final output concept row set of the last operator is called the **body concept row set**
+* 🔶 _Require bindings_ all vars (`$x`, `$y`, ...) must be bound in the pipeline (taken into account any variable selections through `select` and `reduce` operators).
 
-### Function body semantics
+### (Theory) Function evaluation
 
-#### Function evaluation
-
-* 🔶 In each function call, we ***evaluate the function***: 
-    1. substitute input arguments into body pattern
+* A function `F` counts as ***evaluated*** on a call `F_CALL` when we completely computed its output stream as follows:
+    1. provide input arguments from the call `F_CALL` as a crow to the body pipeline
     2. Then act like an ordinary pipeline, outputting a stream (see "Pipelines")
-    3. perform `return` transformation outlined below for final output.
+    3. perform `return` transformation outlined below for final output which is effectively a `select`.
+    4. Denote the output stream by `ev(F)`
+* When negations are use, function in lower strata must be evaluated (on all relevant calls) before function in higher strata (see below)
 
-#### Order of execution
+### (Theory) Order of execution (and recursion)
 
-Since functions can only be called from `match` stages in pipelines, evaluation is deterministic and does not depend on any choices of execution order (i.e. which statements in the pattern we retrieve first), with the only exception begin **negation**. (see "recursion semantics": negation patterns can only be evaluated once all previous strata function calls have been fully evaluated).
+Since functions can only be called from `match` stages in pipelines, evaluation is deterministic and does not depend on any choices of execution order (i.e. which statements in the pattern we retrieve first), except for **negation**: here, execution order _does_ matter.
 
 * 🔮 **Recursion** Functions can be called recursively, as long as negation can be **stratified**:
 
@@ -1830,19 +1832,6 @@ Since functions can only be called from `match` stages in pipelines, evaluation 
     * If a function `F` calls a function `G` if must be a in an equal or higher stratum. Moreover, if `G` appears behind an odd number of `not { ... }` in the body of `F`, then `F` must be in a strictly higher stratum.
 
     _Note_: The semantics in this case is computed "stratum by stratum" from lower strata to higher strata. New facts in our type systems ($`t : T`$) are derived in a bottom-up fashion for each stratum separately.
-
-### Stream-return semantics
-
-* 🔶 `return { $x, $y, ... }`
-  * performs a `select` for the listed variables (See "Select") on the ***output stream of the body pipeline***)
-  * returns resulting concept row set
-
-### Single-return semantics
-
-* 🔶 `return <AGG> , ... , <AGG>;` where `<AGG>` is an aggregate function.
-    * For syntax and semantics, see Case **SIMPLE_RED**
-
-* Each `<AGG>` reduces the concept row `{ m }` passed to it from the function's body to a single concept in the specified way.
 
 
 ## Insert semantics
@@ -2244,7 +2233,7 @@ _System property_
 1. 🔶 fails transaction if $`T_m(x)`$ does not own $`[A]`$.
 
 #### **Case FETCH_SNGL_FUN**
-* 🔶 `"key": fun(...)` where `fun` is single-return.
+* 🔶 `"key": fun(...)` where `fun` is item-return.
 
 #### **Case FETCH_STREAM_FUN**
 * 🔶 `"key": [ fun(...) ]` where `fun` is stream-return.
@@ -2525,7 +2514,10 @@ An element in the answer set of a pattern.
 
 ### Functions
 
-callable `match-return` query. can be single-return or stream-return.
+Callable `match-return` query. 
+
+* can be item-return function (e.g. `-> A, B`) or stream-return function (e.g. `-> { A, B }`)
+* can be singleton function (e.g. `-> A` or `-> { B }`) or tuple function (e.g. `-> { A, B }` or `-> A, B`)
 
 ### Statement
 
