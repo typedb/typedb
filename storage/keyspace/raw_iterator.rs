@@ -41,7 +41,8 @@ impl DBIterator {
 }
 
 impl LendingIterator for DBIterator {
-    type Item<'a> = Result<(&'a [u8], &'a [u8]), rocksdb::Error>
+    type Item<'a>
+        = Result<(&'a [u8], &'a [u8]), rocksdb::Error>
     where
         Self: 'a;
 
