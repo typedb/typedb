@@ -61,7 +61,7 @@ impl FunctionCache {
         let function_index = HashMapFunctionSignatureIndex::build(
             schema_functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)),
         );
-        let functions_ir = FunctionManager::translate_functions(&schema_functions, &function_index)?;
+        let functions_ir = FunctionManager::translate_functions(snapshot, &schema_functions, &function_index)?;
 
         // Run type-inference
         let unindexed_cache =

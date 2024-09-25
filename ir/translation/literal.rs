@@ -254,10 +254,10 @@ pub mod tests {
         pattern::expression::Expression,
         program::function_signature::HashMapFunctionSignatureIndex,
         translation::{match_::translate_match, TranslationContext},
-        PatternDefinitionError,
+        RepresentationError,
     };
 
-    fn parse_value_via_typeql_expression(s: &str) -> Result<Value<'static>, PatternDefinitionError> {
+    fn parse_value_via_typeql_expression(s: &str) -> Result<Value<'static>, RepresentationError> {
         let query = format!("match $x = {}; select $x;", s);
         if let Stage::Match(match_) =
             typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.first().unwrap()

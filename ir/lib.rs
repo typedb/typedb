@@ -22,6 +22,7 @@ use crate::{
     pattern::{expression::ExpressionDefinitionError, variable_category::VariableCategory},
     program::FunctionReadError,
 };
+use crate::program::FunctionRepresentationError;
 
 pub mod pattern;
 pub mod program;
@@ -29,7 +30,7 @@ pub mod translation;
 
 // TODO: include declaration source for each error message
 typedb_error!(
-    pub PatternDefinitionError(component = "Pattern representation", prefix = "PRP") {
+    pub RepresentationError(component = "Representation", prefix = "REP") {
         DisjointVariableReuse(
             0,
             "Variable '{name}' is re-used across different branches of the query. Variables that do not represent the same concept must be named uniquely, to prevent clashes within answers.",
@@ -59,86 +60,97 @@ typedb_error!(
             actual: usize
         ),
         UnresolvedFunction(4, "Could not resolve function with name '{function_name}'.", function_name: String),
+        FunctionRepresentation(5, "Error translating function into intermediate representation.", ( typedb_source : FunctionRepresentationError )),
         ExpectedStreamFunctionReturnsSingle(
-            5,
+            6,
             "Invalid invocation of function '{function_name}' in an iterable assignment ('in'), since it returns a non-iterable single answer. Use the single-answer assignment '=' instead.",
             function_name: String
         ),
         ExpectedSingleFunctionReturnsStream(
-            6,
+            7,
             "Invalid invocation of function '{function_name}' in a single-answer assignment (=), since it returns an iterable stream of answers. Use the iterable assignment 'in' instead.",
             function_name: String
         ),
         OptionalVariableForRequiredArgument(
-            7,
+            8,
             "Optionally present variable '{input_var}' cannot be used as the non-optional argument '{arg_name}' in function '{name}'.",
             name: String,
             arg_name: String,
             input_var: String
         ),
         InAssignmentMustBeListOrStream(
-            8,
+            9,
             "Iterable assignments ('in') must have an iterable stream or list on the right hand side.\nSource:\n{declaration}",
             declaration: InIterable
         ),
         FunctionReadError(
-            9,
+            10,
             "Error reading function.",
             ( source: FunctionReadError )
         ),
         ParseError(
-            10,
+            11,
             "Error parsing query.",
             ( typedb_source: typeql::Error )
         ),
         LiteralParseError(
-            11,
+            12,
             "Error parsing literal '{literal}'.",
             literal: String,
             ( source: LiteralParseError )
         ),
         ExpressionDefinitionError(
-            12,
+            13,
             "Expression error.",
             ( source: ExpressionDefinitionError )
         ),
         ExpressionAssignmentMustOneVariable(
-            13,
+            14,
             "Expressions must be assigned to a single variable, received {assigned_count} instead.",
             assigned_count: usize
         ),
         ExpressionBuiltinArgumentCountMismatch(
-            14,
+            15,
             "Built-in expression function '{builtin}' expects '{expected}' arguments but received '{actual}' arguments.",
             builtin: token::Function,
             expected: usize,
             actual: usize
         ),
         UnimplementedStructAssignment(
-            15,
+            16,
             "Destructuring structs via assignment is not yet implemented.\nSource:\n{declaration}",
             declaration: StructDeconstruct
         ),
         ScopedRoleNameInRelation(
-            16,
+            17,
             "Relation's declared role types should not contain scopes (':').\nSource:\n{declaration}",
             declaration: typeql::statement::thing::RolePlayer
         ),
         OperatorStageVariableUnavailable(
-            17,
+            18,
             "The variable '{variable_name}' was not available in the stage.\nSource:\n{declaration}",
             variable_name: String,
             declaration: typeql::query::pipeline::stage::Stage
         ),
         LabelWithKind(
-            18,
+            19,
             "Specifying a kind on a label is not allowed.\nSource:\n{declaration}",
             declaration: typeql::statement::Type
         ),
         LabelWithLabel(
-            19,
+            20,
             "Specifying a label constraint on a label is not allowed.\nSource:\n{declaration}",
             declaration: typeql::Label
+        ),
+        UnrecognisedClause(
+            21,
+            "Clause type not recognised.\nSource:\n{declaration}",
+            declaration: typeql::query::stage::Stage
+        ),
+        NonTerminalFetch(
+            22,
+            "Fetch clauses must be the final clause in a query pipeline.\nSource:\n{declaration}",
+            declaration: typeql::query::stage::Stage
         ),
     }
 );

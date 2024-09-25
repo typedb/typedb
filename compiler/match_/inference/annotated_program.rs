@@ -7,7 +7,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use answer::variable::Variable;
-use ir::program::{block::FunctionalBlock, function::Function, function_signature::FunctionID};
+use ir::program::{block::Block, function::Function, function_signature::FunctionID};
 
 use crate::{
     expression::compiled_expression::CompiledExpression,
@@ -18,7 +18,7 @@ use crate::{
 };
 
 pub struct AnnotatedProgram {
-    pub(crate) entry: FunctionalBlock,
+    pub(crate) entry: Block,
     pub(crate) entry_annotations: TypeAnnotations,
     pub(crate) entry_expressions: HashMap<Variable, CompiledExpression>,
     pub(crate) schema_functions: Arc<IndexedAnnotatedFunctions>,
@@ -27,7 +27,7 @@ pub struct AnnotatedProgram {
 
 impl AnnotatedProgram {
     pub(crate) fn new(
-        entry: FunctionalBlock,
+        entry: Block,
         entry_annotations: TypeAnnotations,
         entry_expressions: HashMap<Variable, CompiledExpression>,
         local_functions: AnnotatedUnindexedFunctions,
@@ -36,7 +36,7 @@ impl AnnotatedProgram {
         Self { entry, entry_annotations, entry_expressions, preamble_functions: local_functions, schema_functions }
     }
 
-    pub fn get_entry(&self) -> &FunctionalBlock {
+    pub fn get_entry(&self) -> &Block {
         &self.entry
     }
 

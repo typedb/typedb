@@ -649,8 +649,8 @@ impl<T: Hkt> Checker<T> {
                 CheckInstruction::Comparison { lhs, rhs, comparator } => {
                     let lhs_extractor = self.extractors[&lhs.as_variable().unwrap()];
                     let rhs = match rhs {
-                        &CheckVertex::Variable(pos) => row.get(pos).to_owned(),
-                        &CheckVertex::Parameter(param) => VariableValue::Value(context.parameters()[param].to_owned()),
+                        &CheckVertex::Variable(pos) => row.get(pos).as_reference(),
+                        &CheckVertex::Parameter(param) => VariableValue::Value(context.parameters().value_unchecked(param).as_reference()),
                         CheckVertex::Type(_) => unreachable!(),
                     };
                     let snapshot = context.snapshot.clone();
@@ -659,7 +659,7 @@ impl<T: Hkt> Checker<T> {
                         VariableValue::Thing(Thing::Attribute(attr)) => {
                             attr.get_value(&*snapshot, &thing_manager).map(Value::into_owned)
                         }
-                        VariableValue::Value(value) => Ok(value),
+                        VariableValue::Value(value) => Ok(value.into_owned()),
                         VariableValue::ThingList(_) | VariableValue::ValueList(_) => todo!(),
                         VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
                     };
@@ -711,9 +711,10 @@ fn make_const_extractor<T: Hkt>(
     row: &MaybeOwnedRow<'_>,
 ) -> Box<dyn for<'a> Fn(&'a <T as Hkt>::HktSelf<'_>) -> VariableValue<'a>> {
     let value = match vertex {
-        &CheckVertex::Variable(var) => row.get(var).to_owned(),
-        &CheckVertex::Parameter(param) => VariableValue::Value(context.parameters()[param].to_owned()),
+        &CheckVertex::Variable(var) => row.get(var).as_reference(),
+        &CheckVertex::Parameter(param) => VariableValue::Value(context.parameters().value_unchecked(param).as_reference()),
         CheckVertex::Type(type_) => VariableValue::Type(type_.clone()),
     };
-    Box::new(move |_| value.clone())
+    let owned_value = value.into_owned();
+    Box::new(move |_| owned_value.clone())
 }

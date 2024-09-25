@@ -13,7 +13,7 @@ use crate::{
         conjunction::{Conjunction, ConjunctionBuilder},
         Scope, ScopeId,
     },
-    program::block::BlockContext,
+    program::block::BlockBuilderContext,
 };
 
 #[derive(Debug, Clone)]
@@ -27,7 +27,7 @@ impl Optional {
     }
 
     pub(super) fn new_builder<'cx, 'reg>(
-        context: &'cx mut BlockContext<'reg>,
+        context: &'cx mut BlockBuilderContext<'reg>,
         optional: &'cx mut Optional,
     ) -> ConjunctionBuilder<'cx, 'reg> {
         ConjunctionBuilder::new(context, &mut optional.conjunction)

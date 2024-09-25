@@ -194,7 +194,6 @@ impl<Durability> MVCCStorage<Durability> {
     }
 
     pub fn open_snapshot_schema(self: Arc<Self>) -> SchemaSnapshot<Durability> {
-        // todo!("schema snapshot locking");
         let watermark = self.isolation_manager.watermark();
         SchemaSnapshot::new(self, watermark)
     }

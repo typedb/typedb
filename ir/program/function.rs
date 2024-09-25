@@ -8,13 +8,16 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     sync::Arc,
 };
+use typeql::query::stage::Stage;
 
 use answer::{variable::Variable, Type};
 
 use crate::{
     pattern::Vertex,
-    program::{block::FunctionalBlock, VariableRegistry},
+    program::{block::Block, VariableRegistry},
 };
+use crate::program::reduce::Reducer;
+use crate::translation::pipeline::{TranslatedPipeline, TranslatedStage};
 
 pub type PlaceholderTypeQLReturnOperation = String;
 
@@ -23,7 +26,7 @@ pub struct Function {
     name: String,
     // Variable categories for args & return can be read from the block's context.
     arguments: Vec<Variable>,
-    block: FunctionalBlock,
+    stages: Vec<TranslatedStage>,
     variable_registry: VariableRegistry,
     return_operation: ReturnOperation,
 }
@@ -31,12 +34,12 @@ pub struct Function {
 impl Function {
     pub fn new(
         name: &str,
-        block: FunctionalBlock,
+        pipeline: Vec<TranslatedStage>,
         variable_registry: VariableRegistry,
         arguments: Vec<Variable>,
         return_operation: ReturnOperation,
     ) -> Self {
-        Self { name: name.to_string(), block, variable_registry, arguments, return_operation }
+        Self { name: name.to_string(), stages: pipeline, variable_registry, arguments, return_operation }
     }
 
     pub fn name(&self) -> &str {
@@ -47,8 +50,8 @@ impl Function {
         &self.arguments
     }
 
-    pub fn block(&self) -> &FunctionalBlock {
-        &self.block
+    pub fn stages(&self) -> &[TranslatedStage] {
+        &self.stages
     }
 
     pub fn variable_registry(&self) -> &VariableRegistry {
@@ -90,34 +93,6 @@ impl ReturnOperation {
         match self {
             Self::Stream(_) => true,
             Self::Reduce(_) => false,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum Reducer {
-    Count,
-    CountVar(Variable),
-    Sum(Variable),
-    Max(Variable),
-    Mean(Variable),
-    Median(Variable),
-    Min(Variable),
-    Std(Variable),
-    // First, Any etc.
-}
-
-impl Reducer {
-    pub fn name(&self) -> String {
-        match self {
-            Reducer::Count => typeql::token::ReduceOperator::Count.to_string(),
-            Reducer::CountVar(_) => typeql::token::ReduceOperator::Count.to_string(),
-            Reducer::Sum(_) => typeql::token::ReduceOperator::Sum.to_string(),
-            Reducer::Max(_) => typeql::token::ReduceOperator::Max.to_string(),
-            Reducer::Mean(_) => typeql::token::ReduceOperator::Mean.to_string(),
-            Reducer::Median(_) => typeql::token::ReduceOperator::Median.to_string(),
-            Reducer::Min(_) => typeql::token::ReduceOperator::Min.to_string(),
-            Reducer::Std(_) => typeql::token::ReduceOperator::Std.to_string(),
         }
     }
 }

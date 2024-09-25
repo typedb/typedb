@@ -6,6 +6,9 @@
 
 use std::{collections::HashMap, sync::Arc};
 
+use typeql::query::SchemaQuery;
+use compiler::match_::inference::annotated_functions::IndexedAnnotatedFunctions;
+
 use compiler::{match_::planner::program_plan::ProgramPlan, VariablePosition};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::pipeline::{
@@ -17,17 +20,19 @@ use executor::pipeline::{
     reduce::ReduceStageExecutor,
     stage::{ExecutionContext, ReadPipelineStage, WritePipelineStage},
 };
-use function::function_manager::FunctionManager;
+use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex};
+use function::FunctionError;
+use ir::program::function_signature::{FunctionID, HashMapFunctionSignatureIndex};
+use ir::translation::pipeline::{translate_pipeline, TranslatedPipeline};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use typeql::query::SchemaQuery;
+
 use executor::pipeline::modifiers::RequireStageExecutor;
 use crate::{
-    annotation::{infer_types_for_pipeline, AnnotatedPipeline},
+    annotation::{AnnotatedPipeline, infer_types_for_pipeline},
     compilation::{compile_pipeline, CompiledPipeline, CompiledStage},
     define,
     error::QueryError,
     redefine,
-    translation::{translate_pipeline, TranslatedPipeline},
     undefine,
 };
 
@@ -64,25 +69,25 @@ impl QueryManager {
         function_manager: &FunctionManager,
         query: &typeql::query::Pipeline,
     ) -> Result<(ReadPipelineStage<Snapshot>, HashMap<String, VariablePosition>), QueryError> {
-        // ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>>, QueryError> {
         // 1: Translate
-        let TranslatedPipeline { translated_preamble, translated_stages, mut variable_registry, parameters } =
-            translate_pipeline(snapshot.as_ref(), function_manager, query)?;
+        let TranslatedPipeline { translated_preamble, translated_stages, mut variable_registry, value_parameters } =
+            self.translate_pipeline(snapshot.as_ref(), function_manager, query)?;
 
+        // 2: Annotate
         let annotated_functions = function_manager
             .get_annotated_functions(snapshot.as_ref(), &type_manager)
             .map_err(|err| QueryError::FunctionRetrieval { typedb_source: err })?;
 
-        // 2: Annotate
         let AnnotatedPipeline { annotated_preamble, annotated_stages } = infer_types_for_pipeline(
             snapshot.as_ref(),
             type_manager,
             &annotated_functions,
             &mut variable_registry,
-            &parameters,
+            &value_parameters,
             translated_preamble,
             translated_stages,
         )?;
+
         // 3: Compile
         let variable_registry = Arc::new(variable_registry);
         let CompiledPipeline { compiled_functions, compiled_stages, output_variable_positions } = compile_pipeline(
@@ -92,7 +97,7 @@ impl QueryManager {
             annotated_stages,
         )?;
 
-        let context = ExecutionContext::new(snapshot, thing_manager, Arc::new(parameters));
+        let context = ExecutionContext::new(snapshot, thing_manager, Arc::new(value_parameters));
         let mut last_stage = ReadPipelineStage::Initial(InitialStage::new(context));
         for compiled_stage in compiled_stages {
             match compiled_stage {
@@ -141,6 +146,7 @@ impl QueryManager {
                 variable_registry.variable_names().get(variable).map(|name| (name.clone(), position))
             })
             .collect::<HashMap<_, _>>();
+
         Ok((last_stage, named_outputs))
     }
 
@@ -153,17 +159,18 @@ impl QueryManager {
         query: &typeql::query::Pipeline,
     ) -> Result<(WritePipelineStage<Snapshot>, HashMap<String, VariablePosition>), (Snapshot, QueryError)> {
         // 1: Translate
-        let translated_pipeline = translate_pipeline(&snapshot, function_manager, query);
-        let TranslatedPipeline { translated_preamble, translated_stages, mut variable_registry, parameters } =
-            match translated_pipeline {
-                Ok(translated_pipeline) => translated_pipeline,
+        let TranslatedPipeline { translated_preamble, translated_stages, mut variable_registry, value_parameters } =
+            match self.translate_pipeline(&snapshot, function_manager, query) {
+                Ok(translated) => translated,
                 Err(err) => return Err((snapshot, err)),
             };
 
         // 2: Annotate
         let annotated_functions = match function_manager.get_annotated_functions(&snapshot, type_manager) {
-            Ok(annotated_functions) => annotated_functions,
-            Err(err) => return Err((snapshot, QueryError::FunctionRetrieval { typedb_source: err })),
+            Ok(functions) => functions,
+            Err(err) => {
+                return Err((snapshot, QueryError::FunctionRetrieval { typedb_source: err }));
+            }
         };
 
         let annotated_pipeline = infer_types_for_pipeline(
@@ -171,7 +178,7 @@ impl QueryManager {
             type_manager,
             &annotated_functions,
             &mut variable_registry,
-            &parameters,
+            &value_parameters,
             translated_preamble,
             translated_stages,
         );
@@ -195,7 +202,7 @@ impl QueryManager {
                 Err(err) => return Err((snapshot, err)),
             };
 
-        let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::new(parameters));
+        let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::new(value_parameters));
         let mut previous_stage = WritePipelineStage::Initial(InitialStage::new(context));
         for compiled_stage in compiled_stages {
             match compiled_stage {
@@ -248,10 +255,18 @@ impl QueryManager {
             .collect::<HashMap<_, _>>();
         Ok((previous_stage, named_outputs))
     }
-}
 
-enum QueryReturn {
-    MapStream,
-    JSONStream,
-    Aggregate,
+    fn translate_pipeline<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        function_manager: &FunctionManager,
+        query: &typeql::query::Pipeline,
+    ) -> Result<TranslatedPipeline, QueryError> {
+        let preamble_signatures = HashMapFunctionSignatureIndex::build(
+            query.preambles.iter().enumerate().map(|(i, preamble)| (FunctionID::Preamble(i), &preamble.function)),
+        );
+        let all_function_signatures = ReadThroughFunctionSignatureIndex::new(snapshot, function_manager, preamble_signatures);
+        translate_pipeline(snapshot, &all_function_signatures, query)
+            .map_err(|err| QueryError::Representation { typedb_source: err })
+    }
 }

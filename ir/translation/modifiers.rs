@@ -7,7 +7,8 @@
 use std::collections::HashSet;
 
 use answer::variable::Variable;
-use typeql::{query::stage::Modifier, token::Order};
+use typeql::{token::Order};
+use typeql::query::stage::Operator;
 
 use crate::{
     program::modifier::{Limit, Offset, Select, Sort},
@@ -15,21 +16,21 @@ use crate::{
         literal::{translate_literal, FromTypeQLLiteral},
         TranslationContext,
     },
-    PatternDefinitionError,
+    RepresentationError,
 };
 use crate::program::modifier::Require;
 
 pub fn translate_select(
     context: &mut TranslationContext,
     typeql_select: &typeql::query::stage::modifier::Select,
-) -> Result<Select, PatternDefinitionError> {
+) -> Result<Select, RepresentationError> {
     let selected_variables = typeql_select
         .variables
         .iter()
         .map(|typeql_var| match context.visible_variables.get(typeql_var.name().unwrap()) {
-            None => Err(PatternDefinitionError::OperatorStageVariableUnavailable {
+            None => Err(RepresentationError::OperatorStageVariableUnavailable {
                 variable_name: typeql_var.name().unwrap().to_owned(),
-                declaration: typeql::query::pipeline::stage::Stage::Modifier(Modifier::Select(typeql_select.clone())),
+                declaration: typeql::query::pipeline::stage::Stage::Operator(Operator::Select(typeql_select.clone())),
             }),
             Some(v) => Ok(v.clone()),
         })
@@ -42,17 +43,17 @@ pub fn translate_select(
 pub fn translate_sort(
     context: &mut TranslationContext,
     sort: &typeql::query::stage::modifier::Sort,
-) -> Result<Sort, PatternDefinitionError> {
+) -> Result<Sort, RepresentationError> {
     let sort_on = sort
         .ordered_variables
         .iter()
         .map(|ordered_var| {
             let is_ascending = ordered_var.ordering.map(|order| order == Order::Asc).unwrap_or(true);
             match context.visible_variables.get(ordered_var.variable.name().unwrap()) {
-                None => Err(PatternDefinitionError::OperatorStageVariableUnavailable {
+                None => Err(RepresentationError::OperatorStageVariableUnavailable {
                     variable_name: ordered_var.variable.name().unwrap().to_owned(),
-                    declaration: typeql::query::pipeline::stage::Stage::Modifier(
-                        typeql::query::pipeline::stage::Modifier::Sort(sort.clone()),
+                    declaration: typeql::query::pipeline::stage::Stage::Operator(
+                        typeql::query::pipeline::stage::Operator::Sort(sort.clone()),
                     ),
                 }),
                 Some(variable) => Ok((variable.clone(), is_ascending)),
@@ -65,19 +66,19 @@ pub fn translate_sort(
 pub fn translate_offset(
     context: &mut TranslationContext,
     offset: &typeql::query::stage::modifier::Offset,
-) -> Result<Offset, PatternDefinitionError> {
+) -> Result<Offset, RepresentationError> {
     u64::from_typeql_literal(&offset.offset)
         .map(|offset| Offset::new(offset))
-        .map_err(|source| PatternDefinitionError::LiteralParseError { literal: offset.offset.value.clone(), source })
+        .map_err(|source| RepresentationError::LiteralParseError { literal: offset.offset.value.clone(), source })
 }
 
 pub fn translate_limit(
     context: &mut TranslationContext,
     limit: &typeql::query::stage::modifier::Limit,
-) -> Result<Limit, PatternDefinitionError> {
+) -> Result<Limit, RepresentationError> {
     u64::from_typeql_literal(&limit.limit)
         .map(|limit| Limit::new(limit))
-        .map_err(|source| PatternDefinitionError::LiteralParseError { literal: limit.limit.value.clone(), source })
+        .map_err(|source| RepresentationError::LiteralParseError { literal: limit.limit.value.clone(), source })
 }
 
 pub fn translate_require(

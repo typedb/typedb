@@ -13,7 +13,7 @@ use std::{
 use answer::variable::Variable;
 
 #[derive(Debug, Clone)]
-pub enum Modifier {
+pub enum Operator {
     Select(Select),
     Sort(Sort),
     Offset(Offset),

@@ -7,26 +7,27 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use typeql::{query::stage::reduce::ReduceValue, token::ReduceOperator};
+use typeql::{query::stage::reduce::Reducer as TypeQLReducer, token::ReduceOperator as TypeQLReduceOperator, query::pipeline::stage::Operator as TypeQLOperator};
+use typeql::token::ReduceOperator;
 
 use crate::{
     pattern::variable_category::VariableCategory,
-    program::{function::Reducer, reduce::Reduce, VariableRegistry},
+    program::{reduce::Reduce, VariableRegistry},
     translation::TranslationContext,
-    PatternDefinitionError,
+    RepresentationError,
 };
+use crate::program::reduce::Reducer;
 
 pub fn translate_reduce(
     context: &mut TranslationContext,
     typeql_reduce: &typeql::query::stage::Reduce,
-) -> Result<Reduce, PatternDefinitionError> {
+) -> Result<Reduce, RepresentationError> {
     let mut reductions = Vec::with_capacity(typeql_reduce.reductions.len());
     for reduce_assign in &typeql_reduce.reductions {
-        let reducer = build_reduce_value(&context.visible_variables, &reduce_assign.reduce_value, typeql_reduce)?;
-        let (category, is_optional) =
-            resolve_assigned_variable_category_optionality(&reducer, &context.variable_registry);
+        let reducer = build_reducer(&context.visible_variables, &reduce_assign.reducer, typeql_reduce)?;
+        let (category, is_optional) = resolve_category_optionality(&reducer, &context.variable_registry);
         let assigned_var = context.register_reduced_variable(
-            reduce_assign.assign_to.name().unwrap(),
+            reduce_assign.variable.name().unwrap(),
             category,
             is_optional,
             reducer.clone(),
@@ -42,9 +43,9 @@ pub fn translate_reduce(
                 let var_name = typeql_var.name().unwrap();
                 context.visible_variables.get(var_name).map_or_else(
                     || {
-                        Err(PatternDefinitionError::OperatorStageVariableUnavailable {
+                        Err(RepresentationError::OperatorStageVariableUnavailable {
                             variable_name: var_name.to_owned(),
-                            declaration: typeql::query::pipeline::stage::Stage::Reduce(typeql_reduce.clone()),
+                            declaration: typeql::query::pipeline::stage::Stage::Operator(TypeQLOperator::Reduce(typeql_reduce.clone())),
                         })
                     },
                     |variable| Ok(variable.clone()),
@@ -55,14 +56,14 @@ pub fn translate_reduce(
     Ok(Reduce::new(reductions, group))
 }
 
-fn resolve_assigned_variable_category_optionality(
+fn resolve_category_optionality(
     reduce: &Reducer,
     variable_registry: &VariableRegistry,
 ) -> (VariableCategory, bool) {
     match reduce {
         Reducer::Count => (VariableCategory::Value, false),
         Reducer::CountVar(_) => (VariableCategory::Value, false),
-        Reducer::Sum(_) => (VariableCategory::Value, true),
+        Reducer::Sum(_) => (VariableCategory::Value, false),
         Reducer::Max(_) => (VariableCategory::Value, true),
         Reducer::Mean(_) => (VariableCategory::Value, true),
         Reducer::Median(_) => (VariableCategory::Value, true),
@@ -71,37 +72,37 @@ fn resolve_assigned_variable_category_optionality(
     }
 }
 
-fn build_reduce_value(
+fn build_reducer(
     visible_variables: &HashMap<String, Variable>,
-    reduce_value: &ReduceValue,
+    reduce_value: &TypeQLReducer,
     reduce: &typeql::query::pipeline::stage::Reduce,
-) -> Result<Reducer, PatternDefinitionError> {
+) -> Result<Reducer, RepresentationError> {
     match reduce_value {
-        ReduceValue::Count(count) => match &count.variable {
+        TypeQLReducer::Count(count) => match &count.variable {
             None => Ok(Reducer::Count),
             Some(typeql_var) => match visible_variables.get(typeql_var.name().unwrap()) {
-                None => Err(PatternDefinitionError::OperatorStageVariableUnavailable {
+                None => Err(RepresentationError::OperatorStageVariableUnavailable {
                     variable_name: typeql_var.name().unwrap().to_owned(),
-                    declaration: typeql::query::pipeline::stage::Stage::Reduce(reduce.clone()),
+                    declaration: typeql::query::pipeline::stage::Stage::Operator(TypeQLOperator::Reduce(reduce.clone())),
                 }),
                 Some(var) => Ok(Reducer::CountVar(var.clone())),
             },
         },
-        ReduceValue::Stat(stat) => {
+        TypeQLReducer::Stat(stat) => {
             let Some(var) = visible_variables.get(stat.variable.name().unwrap()) else {
-                return Err(PatternDefinitionError::OperatorStageVariableUnavailable {
+                return Err(RepresentationError::OperatorStageVariableUnavailable {
                     variable_name: stat.variable.name().unwrap().to_owned(),
-                    declaration: typeql::query::pipeline::stage::Stage::Reduce(reduce.clone()),
+                    declaration: typeql::query::pipeline::stage::Stage::Operator(TypeQLOperator::Reduce(reduce.clone())),
                 });
             };
             match &stat.reduce_operator {
-                ReduceOperator::Sum => Ok(Reducer::Sum(var.clone())),
-                ReduceOperator::Max => Ok(Reducer::Max(var.clone())),
-                ReduceOperator::Mean => Ok(Reducer::Mean(var.clone())),
-                ReduceOperator::Median => Ok(Reducer::Median(var.clone())),
-                ReduceOperator::Min => Ok(Reducer::Min(var.clone())),
-                ReduceOperator::Std => Ok(Reducer::Std(var.clone())),
-                ReduceOperator::Check | ReduceOperator::First | ReduceOperator::Count | ReduceOperator::List => {
+                TypeQLReduceOperator::Sum => Ok(Reducer::Sum(var.clone())),
+                TypeQLReduceOperator::Max => Ok(Reducer::Max(var.clone())),
+                TypeQLReduceOperator::Mean => Ok(Reducer::Mean(var.clone())),
+                TypeQLReduceOperator::Median => Ok(Reducer::Median(var.clone())),
+                TypeQLReduceOperator::Min => Ok(Reducer::Min(var.clone())),
+                TypeQLReduceOperator::Std => Ok(Reducer::Std(var.clone())),
+                TypeQLReduceOperator::Count | TypeQLReduceOperator::List => {
                     unreachable!() // Not stats
                 }
             }

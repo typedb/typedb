@@ -11,15 +11,18 @@ use error::typedb_error;
 use itertools::Itertools;
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
 use typeql::schema::definable::function::{Function, ReturnStream};
+use encoding::value::value::Value;
 
 use crate::{
     pattern::{
         constraint::Constraint,
         variable_category::{VariableCategory, VariableOptionality},
     },
-    program::{function::Reducer, function_signature::FunctionID},
-    PatternDefinitionError,
+    program::{function_signature::FunctionID},
+    RepresentationError,
 };
+use crate::pattern::ParameterID;
+use crate::program::reduce::Reducer;
 
 pub mod block;
 pub mod function;
@@ -68,7 +71,7 @@ typedb_error!(
             3,
             "Function pattern contains an error.\nSource:\n{declaration}",
             declaration: Function,
-            ( typedb_source : PatternDefinitionError )
+            ( typedb_source : Box<RepresentationError>)
         ),
     }
 );
@@ -112,7 +115,7 @@ impl VariableRegistry {
         variable: Variable,
         category: VariableCategory,
         source: Constraint<Variable>,
-    ) -> Result<(), PatternDefinitionError> {
+    ) -> Result<(), RepresentationError> {
         self.set_variable_category(variable, category, VariableCategorySource::Constraint(source))
     }
 
@@ -121,7 +124,7 @@ impl VariableRegistry {
         variable: Variable,
         category: VariableCategory,
         source: VariableCategorySource,
-    ) -> Result<(), PatternDefinitionError> {
+    ) -> Result<(), RepresentationError> {
         let existing_category = self.variable_categories.get_mut(&variable);
         match existing_category {
             None => {
@@ -131,7 +134,7 @@ impl VariableRegistry {
             Some((existing_category, existing_source)) => {
                 let narrowest = existing_category.narrowest(category);
                 match narrowest {
-                    None => Err(PatternDefinitionError::VariableCategoryMismatch {
+                    None => Err(RepresentationError::VariableCategoryMismatch {
                         variable_name: self
                             .variable_names
                             .get(&variable)
@@ -222,4 +225,39 @@ impl fmt::Display for VariableRegistry {
 pub enum VariableCategorySource {
     Constraint(Constraint<Variable>),
     Reduce(Reducer),
+}
+
+
+#[derive(Clone, Debug, Default)]
+pub struct ParameterRegistry {
+    fetch_key_registry: HashMap<ParameterID, String>,
+    value_registry: HashMap<ParameterID, Value<'static>>,
+}
+
+impl ParameterRegistry {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub(crate) fn register_value(&mut self, value: Value<'static>) -> ParameterID {
+        let id = ParameterID { id: self.value_registry.len() };
+        let _prev = self.value_registry.insert(id, value);
+        debug_assert_eq!(_prev, None);
+        id
+    }
+
+    pub(crate) fn register_fetch_key(&mut self, key: &str) -> ParameterID {
+        let id = ParameterID { id: self.fetch_key_registry.len() };
+        let _prev = self.fetch_key_registry.insert(id, key.to_owned());
+        debug_assert_eq!(_prev, None);
+        id
+    }
+
+    pub fn value(&self, id: ParameterID) -> Option<&Value<'static>> {
+        self.value_registry.get(&id)
+    }
+
+    pub fn value_unchecked(&self, id: ParameterID) -> &Value<'static> {
+        self.value_registry.get(&id).unwrap()
+    }
 }

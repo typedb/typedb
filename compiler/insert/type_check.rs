@@ -13,7 +13,7 @@ use answer::variable::Variable;
 use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::constraint::{Constraint, Has, Links},
-    program::block::FunctionalBlock,
+    program::block::Block,
 };
 use storage::snapshot::ReadableSnapshot;
 
@@ -27,7 +27,7 @@ use crate::match_::inference::{
 pub fn check_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    block: &FunctionalBlock,
+    block: &Block,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
     insert_annotations: &TypeAnnotations,

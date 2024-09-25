@@ -18,11 +18,12 @@ use crate::{
         IrID, ScopeId, Vertex,
     },
     program::{
-        block::{BlockContext, ParameterRegistry},
+        block::{BlockBuilderContext},
         function_signature::FunctionSignature,
     },
-    PatternDefinitionError,
+    RepresentationError,
 };
+use crate::program::ParameterRegistry;
 
 #[derive(Debug, Clone)]
 pub struct Constraints {
@@ -78,16 +79,16 @@ impl fmt::Display for Constraints {
 }
 
 pub struct ConstraintsBuilder<'cx, 'reg> {
-    context: &'cx mut BlockContext<'reg>,
+    context: &'cx mut BlockBuilderContext<'reg>,
     constraints: &'cx mut Constraints,
 }
 
 impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
-    pub fn new(context: &'cx mut BlockContext<'reg>, constraints: &'cx mut Constraints) -> Self {
+    pub fn new(context: &'cx mut BlockBuilderContext<'reg>, constraints: &'cx mut Constraints) -> Self {
         Self { context, constraints }
     }
 
-    pub fn add_label(&mut self, variable: Variable, type_: &str) -> Result<&Label<Variable>, PatternDefinitionError> {
+    pub fn add_label(&mut self, variable: Variable, type_: &str) -> Result<&Label<Variable>, RepresentationError> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let type_ = Label::new(variable, type_.to_string());
         self.context.set_variable_category(variable, VariableCategory::Type, type_.clone().into())?;
@@ -99,7 +100,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         variable: Variable,
         name: &str,
-    ) -> Result<&RoleName<Variable>, PatternDefinitionError> {
+    ) -> Result<&RoleName<Variable>, RepresentationError> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let role_name = RoleName::new(variable, name.to_owned());
         self.context.set_variable_category(variable, VariableCategory::RoleType, role_name.clone().into())?;
@@ -111,7 +112,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         kind: typeql::token::Kind,
         variable: Variable,
-    ) -> Result<&Kind<Variable>, PatternDefinitionError> {
+    ) -> Result<&Kind<Variable>, RepresentationError> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let category = match kind {
             typeql::token::Kind::Entity => VariableCategory::ThingType,
@@ -130,7 +131,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         kind: SubKind,
         subtype: Vertex<Variable>,
         supertype: Vertex<Variable>,
-    ) -> Result<&Sub<Variable>, PatternDefinitionError> {
+    ) -> Result<&Sub<Variable>, RepresentationError> {
         let subtype_var = subtype.as_variable();
         let supertype_var = supertype.as_variable();
         let sub = Sub::new(kind, subtype, supertype);
@@ -154,7 +155,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         kind: IsaKind,
         thing: Variable,
         type_: Vertex<Variable>,
-    ) -> Result<&Isa<Variable>, PatternDefinitionError> {
+    ) -> Result<&Isa<Variable>, RepresentationError> {
         let type_var = type_.as_variable();
         let isa = Isa::new(kind, thing, type_);
 
@@ -170,7 +171,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         Ok(constraint.as_isa().unwrap())
     }
 
-    pub fn add_has(&mut self, owner: Variable, attribute: Variable) -> Result<&Has<Variable>, PatternDefinitionError> {
+    pub fn add_has(&mut self, owner: Variable, attribute: Variable) -> Result<&Has<Variable>, RepresentationError> {
         let has = Has::new(owner, attribute);
 
         debug_assert!(self.context.is_variable_available(self.constraints.scope, owner));
@@ -188,7 +189,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         relation: Variable,
         player: Variable,
         role_type: Variable,
-    ) -> Result<&Links<Variable>, PatternDefinitionError> {
+    ) -> Result<&Links<Variable>, RepresentationError> {
         let links = Constraint::from(Links::new(relation, player, role_type));
 
         debug_assert!(
@@ -211,7 +212,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         lhs: Vertex<Variable>,
         rhs: Vertex<Variable>,
         comparator: Comparator,
-    ) -> Result<&Comparison<Variable>, PatternDefinitionError> {
+    ) -> Result<&Comparison<Variable>, RepresentationError> {
         let lhs_var = lhs.as_variable();
         let rhs_var = rhs.as_variable();
         let comparison = Comparison::new(lhs, rhs, comparator);
@@ -240,7 +241,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         callee_signature: &FunctionSignature,
         arguments: Vec<Variable>,
         function_name: &str, // for errors
-    ) -> Result<&FunctionCallBinding<Variable>, PatternDefinitionError> {
+    ) -> Result<&FunctionCallBinding<Variable>, RepresentationError> {
         let function_call = self.create_function_call(&assigned, callee_signature, arguments, function_name)?;
         let binding = FunctionCallBinding::new(assigned, function_call, callee_signature.return_is_stream);
         for (index, var) in binding.ids_assigned().enumerate() {
@@ -264,8 +265,8 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         callee_signature: &FunctionSignature,
         arguments: Vec<Variable>,
         function_name: &str, // for errors
-    ) -> Result<FunctionCall<Variable>, PatternDefinitionError> {
-        use PatternDefinitionError::{FunctionCallArgumentCountMismatch, FunctionCallReturnCountMismatch};
+    ) -> Result<FunctionCall<Variable>, RepresentationError> {
+        use RepresentationError::{FunctionCallArgumentCountMismatch, FunctionCallReturnCountMismatch};
         debug_assert!(assigned.iter().all(|var| self.context.is_variable_available(self.constraints.scope, *var)));
         debug_assert!(arguments.iter().all(|var| self.context.is_variable_available(self.constraints.scope, *var)));
 
@@ -294,12 +295,12 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         variable: Variable,
         expression: ExpressionTree<Variable>,
-    ) -> Result<&ExpressionBinding<Variable>, PatternDefinitionError> {
+    ) -> Result<&ExpressionBinding<Variable>, RepresentationError> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let binding = ExpressionBinding::new(variable, expression);
         binding
             .validate(self.context)
-            .map_err(|source| PatternDefinitionError::ExpressionDefinitionError { source })?;
+            .map_err(|source| RepresentationError::ExpressionDefinitionError { source })?;
         // WARNING: we can't set a variable category here, since we don't know if the expression will produce a
         //          Value, a ValueList, or a ThingList! We will know this at compilation time
         let as_ref = self.constraints.add_constraint(binding);
@@ -310,7 +311,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         owner_type: Vertex<Variable>,
         attribute_type: Vertex<Variable>,
-    ) -> Result<&Owns<Variable>, PatternDefinitionError> {
+    ) -> Result<&Owns<Variable>, RepresentationError> {
         let owner_type_var = owner_type.as_variable();
         let attribute_type_var = attribute_type.as_variable();
         let owns = Constraint::from(Owns::new(owner_type, attribute_type));
@@ -333,7 +334,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         relation_type: Vertex<Variable>,
         role_type: Vertex<Variable>,
-    ) -> Result<&Relates<Variable>, PatternDefinitionError> {
+    ) -> Result<&Relates<Variable>, RepresentationError> {
         let relation_type_var = relation_type.as_variable();
         let role_type_var = role_type.as_variable();
         let relates = Constraint::from(Relates::new(relation_type, role_type));
@@ -356,7 +357,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         player_type: Vertex<Variable>,
         role_type: Vertex<Variable>,
-    ) -> Result<&Plays<Variable>, PatternDefinitionError> {
+    ) -> Result<&Plays<Variable>, RepresentationError> {
         let player_type_var = player_type.as_variable();
         let role_type_var = role_type.as_variable();
         let plays = Constraint::from(Plays::new(player_type, role_type));
@@ -375,11 +376,11 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         Ok(constraint.as_plays().unwrap())
     }
 
-    pub(crate) fn create_anonymous_variable(&mut self) -> Result<Variable, PatternDefinitionError> {
+    pub(crate) fn create_anonymous_variable(&mut self) -> Result<Variable, RepresentationError> {
         self.context.create_anonymous_variable(self.constraints.scope)
     }
 
-    pub(crate) fn get_or_declare_variable(&mut self, name: &str) -> Result<Variable, PatternDefinitionError> {
+    pub(crate) fn get_or_declare_variable(&mut self, name: &str) -> Result<Variable, RepresentationError> {
         self.context.get_or_declare_variable(name, self.constraints.scope)
     }
 
@@ -1102,7 +1103,7 @@ impl<ID: IrID> ExpressionBinding<ID> {
         // self.expression().ids().for_each(|id| function(id, ConstraintIDSide::Right));
     }
 
-    pub(crate) fn validate(&self, context: &mut BlockContext<'_>) -> Result<(), ExpressionDefinitionError> {
+    pub(crate) fn validate(&self, context: &mut BlockBuilderContext<'_>) -> Result<(), ExpressionDefinitionError> {
         if self.expression().is_empty() {
             Err(ExpressionDefinitionError::EmptyExpressionTree {})
         } else {

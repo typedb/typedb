@@ -15,7 +15,7 @@ use concept::type_::type_manager::TypeManager;
 use encoding::value::value_type::ValueType;
 use ir::{
     pattern::Vertex,
-    program::{block::FunctionalBlock, function::Function, VariableRegistry},
+    program::{block::Block, function::Function, VariableRegistry},
 };
 use storage::snapshot::ReadableSnapshot;
 
@@ -70,26 +70,27 @@ pub fn infer_types_for_function(
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
     local_functions: Option<&AnnotatedUnindexedFunctions>,
 ) -> Result<FunctionAnnotations, FunctionTypeInferenceError> {
-    let root_tig = infer_types_for_block(
-        snapshot,
-        function.block(),
-        function.variable_registry(),
-        type_manager,
-        &BTreeMap::new(),
-        indexed_annotated_functions,
-        local_functions,
-    )
-    .map_err(|err| FunctionTypeInferenceError::TypeInference {
-        name: function.name().to_string(),
-        typedb_source: err,
-    })?;
-    let body_annotations = TypeAnnotations::build(root_tig);
-    let return_annotations = function.return_operation().output_annotations(body_annotations.vertex_annotations());
-    Ok(FunctionAnnotations { return_annotations, block_annotations: body_annotations })
+    // let root_tig = infer_types_for_block(
+    //     snapshot,
+    //     function.block(),
+    //     function.variable_registry(),
+    //     type_manager,
+    //     &BTreeMap::new(),
+    //     indexed_annotated_functions,
+    //     local_functions,
+    // )
+    // .map_err(|err| FunctionTypeInferenceError::TypeInference {
+    //     name: function.name().to_string(),
+    //     typedb_source: err,
+    // })?;
+    // let body_annotations = TypeAnnotations::build(root_tig);
+    // let return_annotations = function.return_operation().output_annotations(body_annotations.vertex_annotations());
+    // Ok(FunctionAnnotations { return_annotations, block_annotations: body_annotations })
+    todo!("We need to allow a function to contain an entire pipeline, instead of just a match block")
 }
 
 pub fn infer_types_for_match_block(
-    match_block: &FunctionalBlock,
+    match_block: &Block,
     variable_registry: &VariableRegistry,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
@@ -169,7 +170,7 @@ pub mod tests {
             Vertex,
         },
         program::{
-            block::FunctionalBlock,
+            block::Block,
             function::{Function, ReturnOperation},
             function_signature::{FunctionID, FunctionSignature},
             VariableRegistry,
@@ -177,6 +178,7 @@ pub mod tests {
         translation::TranslationContext,
     };
     use itertools::Itertools;
+    use ir::translation::pipeline::TranslatedStage;
 
     use crate::match_::inference::{
         annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
@@ -204,7 +206,7 @@ pub mod tests {
         let type_player_1 = Type::Relation(RelationType::build_from_type_id(TypeID::build(2)));
 
         let mut translation_context = TranslationContext::new();
-        let dummy = FunctionalBlock::builder(translation_context.next_block_context()).finish();
+        let dummy = Block::builder(translation_context.next_block_context()).finish();
         let constraint1 = Constraint::Links(Links::new(var_relation, var_player, var_role_type));
         let constraint2 = Constraint::Links(Links::new(var_relation, var_player, var_role_type));
         let nested1 = TypeInferenceGraph {
@@ -327,7 +329,7 @@ pub mod tests {
         .iter()
         .map(|function_id| {
             let mut function_context = TranslationContext::new();
-            let mut builder = FunctionalBlock::builder(function_context.next_block_context());
+            let mut builder = Block::builder(function_context.next_block_context());
             let mut f_conjunction = builder.conjunction_mut();
             let f_var_animal = f_conjunction.get_or_declare_variable("called_animal").unwrap();
             let f_var_animal_type = f_conjunction.get_or_declare_variable("called_animal_type").unwrap();
@@ -337,14 +339,14 @@ pub mod tests {
             f_conjunction.constraints_mut().add_has(f_var_animal, f_var_name).unwrap();
             let f_ir = Function::new(
                 "fn_test",
-                builder.finish(),
+                vec![TranslatedStage::Match { block: builder.finish()}],
                 function_context.variable_registry,
                 vec![],
                 ReturnOperation::Stream(vec![f_var_animal]),
             );
 
             let mut entry_context = TranslationContext::new();
-            let mut builder = FunctionalBlock::builder(entry_context.next_block_context());
+            let mut builder = Block::builder(entry_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
 

@@ -15,7 +15,7 @@ use answer::{variable::Variable, Type as TypeAnnotation};
 use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint, Vertex},
-    program::{block::FunctionalBlock, VariableRegistry},
+    program::{block::Block, VariableRegistry},
 };
 use itertools::chain;
 use storage::snapshot::ReadableSnapshot;
@@ -98,7 +98,7 @@ where
 
 pub(crate) fn infer_types_for_block<'graph>(
     snapshot: &impl ReadableSnapshot,
-    block: &'graph FunctionalBlock,
+    block: &'graph Block,
     variable_registry: &VariableRegistry,
     type_manager: &TypeManager,
     previous_stage_variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<TypeAnnotation>>>,
@@ -362,7 +362,7 @@ pub mod tests {
             constraint::{Constraint, IsaKind, SubKind},
             Vertex,
         },
-        program::{block::FunctionalBlock, function_signature::HashMapFunctionSignatureIndex},
+        program::{block::Block, function_signature::HashMapFunctionSignatureIndex},
         translation::TranslationContext,
     };
     use itertools::Itertools;
@@ -421,7 +421,7 @@ pub mod tests {
             // Case 1: $a isa cat, has name $n;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+            let mut builder = Block::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -488,7 +488,7 @@ pub mod tests {
             // Case 2: $a isa animal, has cat-name $n;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+            let mut builder = Block::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -555,7 +555,7 @@ pub mod tests {
             // Case 3: $a isa cat, has dog-name $n;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+            let mut builder = Block::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -590,7 +590,7 @@ pub mod tests {
             let types_n = all_names.clone();
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+            let mut builder = Block::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -677,7 +677,7 @@ pub mod tests {
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
         let mut translation_context = TranslationContext::new();
-        let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+        let mut builder = Block::builder(translation_context.next_block_context());
         let mut conjunction = builder.conjunction_mut();
         let (var_animal, var_name, var_name_type) = ["animal", "name", "name_type"]
             .into_iter()
@@ -811,7 +811,7 @@ pub mod tests {
         // Case 1: $a has $n;
         let snapshot = storage.clone().open_snapshot_write();
         let mut translation_context = TranslationContext::new();
-        let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+        let mut builder = Block::builder(translation_context.next_block_context());
         let mut conjunction = builder.conjunction_mut();
         let (var_animal, var_name) = ["animal", "name"]
             .into_iter()
@@ -872,7 +872,7 @@ pub mod tests {
         // With roles specified
         let snapshot = storage.clone().open_snapshot_write();
         let mut translation_context = TranslationContext::new();
-        let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+        let mut builder = Block::builder(translation_context.next_block_context());
         let mut conjunction = builder.conjunction_mut();
         let (
             var_has_fear,
@@ -1012,7 +1012,7 @@ pub mod tests {
             // Case 1: $a isa $at; $at label cat; $n isa! $nt; $at owns $nt;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+            let mut builder = Block::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_owned_type) =
                 ["animal", "name", "animal_type", "name_type"]
@@ -1080,7 +1080,7 @@ pub mod tests {
             let snapshot = storage.clone().open_snapshot_write();
 
             let mut translation_context = TranslationContext::new();
-            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+            let mut builder = Block::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_owner_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -1146,7 +1146,7 @@ pub mod tests {
             // Case 3: $a isa $at; $at type cat; $n isa $nt; $nt type dogname; $at owns $nt;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+            let mut builder = Block::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -1199,7 +1199,7 @@ pub mod tests {
             let types_n = all_names.clone();
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+            let mut builder = Block::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -1291,7 +1291,7 @@ pub mod tests {
             // Case 1: $a isa cat, has name $n;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+            let mut builder = Block::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let [var_animal, var_name] =
                 ["animal", "name"].map(|name| conjunction.get_or_declare_variable(name).unwrap());
@@ -1355,7 +1355,7 @@ pub mod tests {
             // Case 2: $a isa animal, has cat-name $n;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+            let mut builder = Block::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let [var_animal, var_name] =
                 ["animal", "name"].map(|name| conjunction.get_or_declare_variable(name).unwrap());
@@ -1417,7 +1417,7 @@ pub mod tests {
             // Case 3: $a isa cat, has dog-name $n;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+            let mut builder = Block::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let [var_animal, var_name] =
                 ["animal", "name"].map(|name| conjunction.get_or_declare_variable(name).unwrap());
@@ -1446,7 +1446,7 @@ pub mod tests {
             let types_n = all_names.clone();
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+            let mut builder = Block::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let [var_animal, var_name] =
                 ["animal", "name"].map(|name| conjunction.get_or_declare_variable(name).unwrap());

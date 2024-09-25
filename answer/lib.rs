@@ -27,12 +27,11 @@ use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::ReadableSnapshot;
 
-pub mod answer_map;
 pub mod variable;
 pub mod variable_value;
 
 #[derive(Debug, PartialEq)]
-enum Concept<'a> {
+pub enum Concept<'a> {
     Type(Type),
     Thing(Thing<'a>),
     Value(Value<'a>),

@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::HashMap;
 use answer::variable::Variable;
 use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex};
 use ir::{
@@ -25,6 +26,8 @@ use ir::{
     },
 };
 use storage::snapshot::ReadableSnapshot;
+use typeql::query::stage::{Modifier, Stage as TypeQLStage};
+use compiler::fetch::{ConceptMapKey, FetchParameters};
 use typeql::query::stage::{Modifier, Stage as TypeQLStage, Stage};
 use ir::program::modifier::Require;
 use ir::translation::modifiers::translate_require;
@@ -34,13 +37,15 @@ pub(super) struct TranslatedPipeline {
     pub(super) translated_preamble: Vec<Function>,
     pub(super) translated_stages: Vec<TranslatedStage>,
     pub(super) variable_registry: VariableRegistry,
-    pub(super) parameters: ParameterRegistry,
+    pub(super) value_parameters: ParameterRegistry,
 }
 
 pub(super) enum TranslatedStage {
     Match { block: FunctionalBlock },
     Insert { block: FunctionalBlock },
     Delete { block: FunctionalBlock, deleted_variables: Vec<Variable> },
+
+    Fetch { map: TranslatedFetchMap },
 
     // ...
     Select(Select),
@@ -49,6 +54,16 @@ pub(super) enum TranslatedStage {
     Limit(Limit),
     Require(Require),
     Reduce(Reduce),
+}
+
+pub(super) struct TranslatedFetchMap {
+    map: HashMap<ConceptMapKey, TranslatedFetchValue>,
+}
+
+pub(super) enum TranslatedFetchValue {
+    Single(),
+    List(),
+    Map(TranslatedFetchMap),
 }
 
 pub(super) fn translate_pipeline(
@@ -78,7 +93,7 @@ pub(super) fn translate_pipeline(
         translated_preamble,
         translated_stages,
         variable_registry: translation_context.variable_registry,
-        parameters: translation_context.parameters,
+        value_parameters: translation_context.parameters,
     })
 }
 

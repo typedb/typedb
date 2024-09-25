@@ -7,19 +7,19 @@
 use crate::{
     pattern::conjunction::ConjunctionBuilder,
     program::{
-        block::{FunctionalBlock, FunctionalBlockBuilder},
+        block::{Block, BlockBuilder},
         function_signature::FunctionSignatureIndex,
     },
     translation::{constraints::add_statement, TranslationContext},
-    PatternDefinitionError,
+    RepresentationError,
 };
 
 pub fn translate_match<'a>(
     context: &'a mut TranslationContext,
     function_index: &impl FunctionSignatureIndex,
     match_: &typeql::query::stage::Match,
-) -> Result<FunctionalBlockBuilder<'a>, PatternDefinitionError> {
-    let mut builder = FunctionalBlock::builder(context.next_block_context());
+) -> Result<BlockBuilder<'a>, RepresentationError> {
+    let mut builder = Block::builder(context.next_block_context());
     add_patterns(function_index, &mut builder.conjunction_mut(), &match_.patterns)?;
     Ok(builder)
 }
@@ -28,7 +28,7 @@ pub(crate) fn add_patterns(
     function_index: &impl FunctionSignatureIndex,
     conjunction: &mut ConjunctionBuilder<'_, '_>,
     patterns: &[typeql::Pattern],
-) -> Result<(), PatternDefinitionError> {
+) -> Result<(), RepresentationError> {
     patterns.iter().try_for_each(|pattern| match pattern {
         typeql::Pattern::Conjunction(nested) => add_patterns(function_index, conjunction, &nested.patterns),
         typeql::Pattern::Disjunction(disjunction) => add_disjunction(function_index, conjunction, disjunction),
@@ -43,7 +43,7 @@ fn add_disjunction(
     function_index: &impl FunctionSignatureIndex,
     conjunction: &mut ConjunctionBuilder<'_, '_>,
     disjunction: &typeql::pattern::Disjunction,
-) -> Result<(), PatternDefinitionError> {
+) -> Result<(), RepresentationError> {
     let mut disjunction_builder = conjunction.add_disjunction();
     disjunction
         .branches
@@ -56,7 +56,7 @@ fn add_negation(
     function_index: &impl FunctionSignatureIndex,
     conjunction: &mut ConjunctionBuilder<'_, '_>,
     negation: &typeql::pattern::Negation,
-) -> Result<(), PatternDefinitionError> {
+) -> Result<(), RepresentationError> {
     let mut negation_builder = conjunction.add_negation();
     add_patterns(function_index, &mut negation_builder, &negation.patterns)
 }
@@ -65,7 +65,7 @@ fn add_optional(
     function_index: &impl FunctionSignatureIndex,
     conjunction: &mut ConjunctionBuilder<'_, '_>,
     optional: &typeql::pattern::Optional,
-) -> Result<(), PatternDefinitionError> {
+) -> Result<(), RepresentationError> {
     let mut optional_builder = conjunction.add_optional();
     add_patterns(function_index, &mut optional_builder, &optional.patterns)
 }

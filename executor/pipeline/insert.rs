@@ -11,7 +11,7 @@ use compiler::insert::{
     program::InsertProgram,
 };
 use concept::thing::thing_manager::ThingManager;
-use ir::program::block::ParameterRegistry;
+use ir::program::ParameterRegistry;
 use lending_iterator::LendingIterator;
 use storage::snapshot::WritableSnapshot;
 

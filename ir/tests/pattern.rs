@@ -7,7 +7,7 @@
 use ir::{
     program::function_signature::HashMapFunctionSignatureIndex,
     translation::{match_::translate_match, TranslationContext},
-    PatternDefinitionError,
+    RepresentationError,
 };
 use typeql::query::stage::Stage;
 
@@ -86,7 +86,7 @@ fn variable_category_mismatch() {
     let Stage::Match(match_) = stages.first().unwrap() else { unreachable!() };
     assert!(matches!(
         translate_match(&mut TranslationContext::new(), &empty_function_index, match_),
-        Err(PatternDefinitionError::VariableCategoryMismatch { .. })
+        Err(RepresentationError::VariableCategoryMismatch { .. })
     ));
 
     // let mut block = FunctionalBlock::new();

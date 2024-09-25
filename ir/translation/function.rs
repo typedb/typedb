@@ -6,10 +6,11 @@
 
 use answer::variable::Variable;
 use typeql::{
-    query::stage::reduce::Reduction,
     schema::definable::function::{Output, ReturnStatement, ReturnStream},
     TypeRefAny,
 };
+use typeql::schema::definable::function::{ReturnReduction, ReturnSingle};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     pattern::{
@@ -17,26 +18,33 @@ use crate::{
         ScopeId,
     },
     program::{
-        block::{BlockContext, FunctionalBlock},
-        function::{Function, Reducer, ReturnOperation},
+        block::{BlockBuilderContext, Block},
+        function::{Function, ReturnOperation},
         function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex},
         FunctionRepresentationError,
     },
     translation::{match_::add_patterns, TranslationContext},
 };
+use crate::translation::pipeline::{translate_pipeline, translate_pipeline_stages};
 
 pub fn translate_function(
+    snapshot: &impl ReadableSnapshot,
     function_index: &impl FunctionSignatureIndex,
     function: &typeql::Function,
 ) -> Result<Function, FunctionRepresentationError> {
     let mut context = TranslationContext::new();
-    let mut builder = FunctionalBlock::builder(context.next_block_context());
-    add_patterns(function_index, &mut builder.conjunction_mut(), &function.body.patterns).map_err(|source| {
-        FunctionRepresentationError::PatternDefinition { declaration: function.clone(), typedb_source: source }
-    })?;
+    let pipeline = translate_pipeline_stages(
+        snapshot,
+        function_index,
+        &mut context,
+        &function.block.stages
+    ).map_err(|err| FunctionRepresentationError::PatternDefinition { declaration: function.clone(), typedb_source: Box::new(err) })?;
 
-    let return_operation = match &function.return_stmt {
+    // TODO: update...
+    let mut builder = Block::builder(context.next_block_context());
+    let return_operation = match &function.block.return_stmt {
         ReturnStatement::Stream(stream) => build_return_stream(builder.context_mut(), stream),
+        ReturnStatement::Single(single) => build_return_single(builder.context_mut(), single),
         ReturnStatement::Reduce(reduction) => build_return_reduce(builder.context_mut(), reduction),
     }?;
     let arguments: Vec<Variable> = function
@@ -55,7 +63,7 @@ pub fn translate_function(
 
     Ok(Function::new(
         function.signature.ident.as_str(),
-        builder.finish(),
+        pipeline,
         context.variable_registry,
         arguments,
         return_operation,
@@ -90,7 +98,7 @@ fn type_any_to_category_and_optionality(type_any: &TypeRefAny) -> (VariableCateg
 }
 
 fn build_return_stream(
-    context: &BlockContext<'_>,
+    context: &BlockBuilderContext<'_>,
     stream: &ReturnStream,
 ) -> Result<ReturnOperation, FunctionRepresentationError> {
     let variables = stream
@@ -108,16 +116,20 @@ fn build_return_stream(
     Ok(ReturnOperation::Stream(variables))
 }
 
+fn build_return_single(context: &BlockBuilderContext<'_>, single: &ReturnSingle) -> Result<ReturnOperation, FunctionRepresentationError> {
+    todo!()
+}
+
 fn build_return_reduce(
-    context: &BlockContext<'_>,
-    reduction: &Reduction,
+    context: &BlockBuilderContext<'_>,
+    reduction: &ReturnReduction,
 ) -> Result<ReturnOperation, FunctionRepresentationError> {
     // Ok(ReturnOperation::Reduction(reducers))
     todo!()
 }
 
 fn get_variable_in_block_root<F>(
-    context: &BlockContext<'_>,
+    context: &BlockBuilderContext<'_>,
     typeql_var: &typeql::Variable,
     err: F,
 ) -> Result<Variable, FunctionRepresentationError>

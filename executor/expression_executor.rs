@@ -23,7 +23,8 @@ use compiler::expression::{
     },
 };
 use encoding::value::value::{NativeValueConvertible, Value};
-use ir::{pattern::ParameterID, program::block::ParameterRegistry};
+use ir::{pattern::ParameterID};
+use ir::program::ParameterRegistry;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ExpressionValue {
@@ -85,7 +86,7 @@ impl<'this> ExpressionExecutorState<'this> {
     }
 
     fn next_constant(&mut self) -> Value<'static> {
-        let constant = self.parameter_registry[self.constants[self.next_constant_index]].clone();
+        let constant = self.parameter_registry.value_unchecked(self.constants[self.next_constant_index]).clone();
         self.next_constant_index += 1;
         constant
     }

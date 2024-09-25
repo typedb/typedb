@@ -36,7 +36,7 @@ use executor::{
     error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
+use ir::{pattern::constraint::IsaKind, program::block::Block, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
@@ -123,7 +123,7 @@ fn traverse_has_unbounded_sorted_from() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_age_type = conjunction.get_or_declare_variable("age_type").unwrap();
@@ -137,8 +137,6 @@ fn traverse_has_unbounded_sorted_from() {
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age, var_age_type.into()).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.scoped_name().as_str()).unwrap();
-    builder.add_limit(3);
-    let _select = builder.add_select(HashSet::from([var_person.clone(), var_age.clone()]));
     let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
@@ -203,7 +201,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_name_type = conjunction.get_or_declare_variable("name_type").unwrap();
@@ -222,7 +220,6 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.scoped_name().as_str()).unwrap();
-    builder.add_limit(3);
 
     let snapshot = storage.clone().open_snapshot_read();
     let entry = builder.finish();
@@ -302,7 +299,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     // IR
 
     let mut translation_context = TranslationContext::new();
-    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_age_type = conjunction.get_or_declare_variable("age_type").unwrap();
@@ -321,8 +318,6 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.scoped_name().as_str()).unwrap();
     conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.scoped_name().as_str()).unwrap();
-    builder.add_limit(3);
-    let _select = builder.add_select(HashSet::from([var_person.clone(), var_age.clone()]));
 
     let entry = builder.finish();
 
@@ -392,7 +387,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
     // IR
 
     let mut translation_context = TranslationContext::new();
-    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_person = conjunction.get_or_declare_variable("person").unwrap();
@@ -478,7 +473,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     // IR
 
     let mut translation_context = TranslationContext::new();
-    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_age_type = conjunction.get_or_declare_variable("age_type").unwrap();

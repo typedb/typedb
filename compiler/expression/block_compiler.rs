@@ -17,11 +17,12 @@ use ir::{
         Vertex,
     },
     program::{
-        block::{FunctionalBlock, ParameterRegistry},
+        block::{Block},
         VariableRegistry,
     },
 };
 use itertools::Itertools;
+use ir::program::ParameterRegistry;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -34,7 +35,7 @@ use crate::{
 };
 
 struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
-    block: &'block FunctionalBlock,
+    block: &'block Block,
     variable_registry: &'block VariableRegistry,
     parameters: &'block ParameterRegistry,
 
@@ -50,7 +51,7 @@ struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
 pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     snapshot: &'block Snapshot,
     type_manager: &'block TypeManager,
-    block: &'block FunctionalBlock,
+    block: &'block Block,
     variable_registry: &'block mut VariableRegistry,
     parameters: &'block ParameterRegistry,
     type_annotations: &'block TypeAnnotations,

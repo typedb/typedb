@@ -7,7 +7,7 @@
 use std::sync::Arc;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use ir::program::block::ParameterRegistry;
+use ir::program::ParameterRegistry;
 use lending_iterator::LendingIterator;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 

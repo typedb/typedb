@@ -33,6 +33,13 @@ rust_test(
     deps = deps,
 )
 
+rust_test(
+    name = "test_tech",
+    crate_root = "fetch.rs",
+    srcs = ["fetch.rs"],
+    deps = deps,
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),

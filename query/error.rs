@@ -13,7 +13,7 @@ use encoding::value::value_type::ValueTypeCategory;
 use error::typedb_error;
 use executor::pipeline::PipelineExecutionError;
 use function::FunctionError;
-use ir::{program::FunctionRepresentationError, PatternDefinitionError};
+use ir::{program::FunctionRepresentationError, RepresentationError};
 
 use crate::{define::DefineError, redefine::RedefineError, undefine::UndefineError};
 
@@ -26,7 +26,7 @@ typedb_error!(
         Undefine(4, "Failed to execute undefine query.", ( typedb_source: UndefineError )),
         FunctionDefinition(5, "Error in provided function. ", ( typedb_source: FunctionRepresentationError )),
         FunctionRetrieval(6, "Failed to retrieve function. ",  ( typedb_source: FunctionError )),
-        PatternDefinition(7, "Error in provided pattern. ", ( typedb_source: PatternDefinitionError )),
+        Representation(7, "Error in provided query. ", ( typedb_source: RepresentationError )),
         QueryTypeInference(8, "Error during query type inference. ", ( typedb_source: TypeInferenceError )),
         FunctionTypeInference(9, "Error during function type inference. ", ( typedb_source: FunctionTypeInferenceError )),
         WriteCompilation(10, "Error while compiling write query.", ( source: WriteCompilationError )),

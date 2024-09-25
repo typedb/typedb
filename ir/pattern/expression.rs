@@ -14,7 +14,7 @@ use answer::variable::Variable;
 
 use crate::{
     pattern::{IrID, ParameterID},
-    PatternDefinitionError,
+    RepresentationError,
 };
 
 enum ExpectedArgumentType {
@@ -245,7 +245,7 @@ pub enum ExpressionDefinitionError {
     ExpectedListArgumentReceivedValue,
     ArgumentNotBound,
     SubExpressionNotDefined,
-    PatternDefinition { source: Box<PatternDefinitionError> },
+    PatternDefinition { source: Box<RepresentationError> },
     EmptyExpressionTree {},
 }
 

@@ -18,19 +18,19 @@ use ir::{
     pattern::constraint::Constraint,
     program::{block::ParameterRegistry, function_signature::HashMapFunctionSignatureIndex},
     translation::{match_::translate_match, TranslationContext},
-    PatternDefinitionError,
+    RepresentationError,
 };
 use itertools::Itertools;
 use typeql::query::stage::Stage;
 
 #[derive(Debug)]
 pub enum PatternDefitionOrExpressionCompileError {
-    PatternDefinition { source: PatternDefinitionError },
+    PatternDefinition { source: RepresentationError },
     ExpressionCompilation { source: ExpressionCompileError },
 }
 
-impl From<PatternDefinitionError> for PatternDefitionOrExpressionCompileError {
-    fn from(value: PatternDefinitionError) -> Self {
+impl From<RepresentationError> for PatternDefitionOrExpressionCompileError {
+    fn from(value: RepresentationError) -> Self {
         Self::PatternDefinition { source: value }
     }
 }
@@ -246,7 +246,7 @@ fn test_functions() {
     assert!(matches!(
         compile_expression_via_match("round(3.5e0, 4.5e0)", HashMap::new()),
         Err(PatternDefitionOrExpressionCompileError::PatternDefinition {
-            source: PatternDefinitionError::ExpressionBuiltinArgumentCountMismatch { .. }
+            source: RepresentationError::ExpressionBuiltinArgumentCountMismatch { .. }
         })
     ));
 }

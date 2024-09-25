@@ -960,7 +960,7 @@ impl TransactionService {
                     &pipeline,
                 );
 
-                let (executor, named_outputs) = unwrap_or_execute_and_return!(prepare_result, |err| {
+                let (read_pipeline_stage_executor, named_outputs) = unwrap_or_execute_and_return!(prepare_result, |err| {
                     Self::submit_response_sync(&sender, StreamQueryResponse::done_err(err));
                 });
 
@@ -970,7 +970,7 @@ impl TransactionService {
                 Self::submit_response_sync(&sender, initial_response);
 
                 let (mut iterator, _) =
-                    unwrap_or_execute_and_return!(executor.into_iterator(interrupt.clone()), |(err, _)| {
+                    unwrap_or_execute_and_return!(read_pipeline_stage_executor.into_iterator(interrupt.clone()), |(err, _)| {
                         Self::submit_response_sync(
                             &sender,
                             StreamQueryResponse::done_err(QueryError::ReadPipelineExecutionError {
@@ -1055,7 +1055,7 @@ impl TransactionService {
         for stage in &pipeline.stages {
             match stage {
                 Stage::Insert(_) | Stage::Put(_) | Stage::Delete(_) | Stage::Update(_) => return true,
-                Stage::Fetch(_) | Stage::Reduce(_) | Stage::Modifier(_) | Stage::Match(_) => {}
+                Stage::Fetch(_) | Stage::Operator(_) | Stage::Match(_) => {}
             }
         }
         false

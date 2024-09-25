@@ -28,17 +28,20 @@ use encoding::value::value_type::{
 use ir::{
     pattern::constraint::Constraint,
     program::{
-        block::{FunctionalBlock, ParameterRegistry},
-        function::{Function, Reducer},
+        block::{Block},
+        function::{Function},
         modifier::{Limit, Offset, Select, Sort},
         reduce::Reduce,
         VariableRegistry,
     },
 };
+use ir::program::ParameterRegistry;
+use ir::program::reduce::Reducer;
+use ir::translation::pipeline::TranslatedStage;
 use ir::program::modifier::Require;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::{error::QueryError, translation::TranslatedStage};
+use crate::{error::QueryError};
 
 pub(super) struct AnnotatedPipeline {
     pub(super) annotated_preamble: AnnotatedUnindexedFunctions,
@@ -47,16 +50,16 @@ pub(super) struct AnnotatedPipeline {
 
 pub(super) enum AnnotatedStage {
     Match {
-        block: FunctionalBlock,
+        block: Block,
         block_annotations: TypeAnnotations,
         compiled_expressions: HashMap<Variable, CompiledExpression>,
     },
     Insert {
-        block: FunctionalBlock,
+        block: Block,
         annotations: TypeAnnotations,
     },
     Delete {
-        block: FunctionalBlock,
+        block: Block,
         deleted_variables: Vec<Variable>,
         annotations: TypeAnnotations,
     },
@@ -218,7 +221,7 @@ fn annotate_stage(
         TranslatedStage::Require(require) => Ok(AnnotatedStage::Require(require)),
 
         TranslatedStage::Reduce(reduce) => {
-            let mut typed_reducers = Vec::with_capacity(reduce.assigned_reductions.len());
+            let mut reduce_instructions = Vec::with_capacity(reduce.assigned_reductions.len());
             for (assigned, reducer) in &reduce.assigned_reductions {
                 let typed_reduce = resolve_reducer_by_value_type(
                     reducer,
@@ -229,9 +232,12 @@ fn annotate_stage(
                     variable_registry,
                 )?;
                 running_value_variable_assigned_types.insert(assigned.clone(), typed_reduce.output_type());
-                typed_reducers.push(typed_reduce);
+                reduce_instructions.push(typed_reduce);
             }
-            Ok(AnnotatedStage::Reduce(reduce, typed_reducers))
+            Ok(AnnotatedStage::Reduce(reduce, reduce_instructions))
+        }
+        TranslatedStage::Fetch { .. } => {
+            todo!()
         }
     }
 }

@@ -17,9 +17,9 @@ use crate::{
         optional::Optional,
         Scope, ScopeId,
     },
-    program::block::{BlockContext, ScopeContext},
-    PatternDefinitionError,
+    program::block::{ScopeContext},
 };
+use crate::{program::block::BlockBuilderContext, RepresentationError};
 
 #[derive(Debug, Clone)]
 pub struct Conjunction {
@@ -78,12 +78,12 @@ impl fmt::Display for Conjunction {
 }
 
 pub struct ConjunctionBuilder<'cx, 'reg> {
-    context: &'cx mut BlockContext<'reg>,
+    context: &'cx mut BlockBuilderContext<'reg>,
     conjunction: &'cx mut Conjunction,
 }
 
 impl<'cx, 'reg> ConjunctionBuilder<'cx, 'reg> {
-    pub fn new(context: &'cx mut BlockContext<'reg>, conjunction: &'cx mut Conjunction) -> Self {
+    pub fn new(context: &'cx mut BlockBuilderContext<'reg>, conjunction: &'cx mut Conjunction) -> Self {
         Self { context, conjunction }
     }
 
@@ -118,11 +118,11 @@ impl<'cx, 'reg> ConjunctionBuilder<'cx, 'reg> {
         Optional::new_builder(self.context, optional)
     }
 
-    pub fn get_or_declare_variable(&mut self, name: &str) -> Result<Variable, PatternDefinitionError> {
+    pub fn get_or_declare_variable(&mut self, name: &str) -> Result<Variable, RepresentationError> {
         self.context.get_or_declare_variable(name, self.conjunction.scope_id)
     }
 
-    pub fn declare_variable_anonymous(&mut self) -> Result<Variable, PatternDefinitionError> {
+    pub fn declare_variable_anonymous(&mut self) -> Result<Variable, RepresentationError> {
         self.context.create_anonymous_variable(self.conjunction.scope_id)
     }
 }
