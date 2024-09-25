@@ -70,7 +70,12 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             event!(Level::TRACE, "Rejected connection_open: {:?}", &err);
             return Err(err.into_status());
         } else {
-            event!(Level::TRACE, "Successful connection_open from '{}' version '{}'", &message.driver_lang, &message.driver_version);
+            event!(
+                Level::TRACE,
+                "Successful connection_open from '{}' version '{}'",
+                &message.driver_lang,
+                &message.driver_version
+            );
             // generate a connection ID per 'connection_open' to be able to trace different connections by the same user
             Ok(Response::new(connection_open_res(
                 self.generate_connection_id(),
