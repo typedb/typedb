@@ -78,15 +78,15 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
             ExpressionValueType::List(_) => VariableCategory::ValueList,
         };
         let existing_category = variable_registry.get_variable_category(var.clone());
-        if Some(category) != existing_category {
+        if existing_category.is_none() {
+            let source = Constraint::ExpressionBinding((*expression_index.get(var).unwrap()).clone());
+            variable_registry.set_assigned_value_variable_category(var.clone(), category, source).unwrap();
+        } else if Some(category) != existing_category {
             Err(ExpressionCompileError::DerivedConflictingVariableCategory {
                 variable_name: variable_registry.variable_names().get(var).unwrap().clone(),
                 derived_category: category,
                 existing_category: existing_category.unwrap(),
             })?;
-        } else {
-            let source = Constraint::ExpressionBinding((*expression_index.get(var).unwrap()).clone());
-            variable_registry.set_assigned_value_variable_category(var.clone(), category, source).unwrap();
         }
     }
     Ok(compiled_expressions)
