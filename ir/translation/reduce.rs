@@ -65,6 +65,11 @@ fn resolve_assigned_variable_category_optionality(
     match reduce {
         Reducer::Count(_) => (VariableCategory::Value, false),
         Reducer::Sum(_) => (VariableCategory::Value, true),
+        Reducer::Max(_) => (VariableCategory::Value, true),
+        Reducer::Mean(_) => (VariableCategory::Value, true),
+        Reducer::Median(_) => (VariableCategory::Value, true),
+        Reducer::Min(_) => (VariableCategory::Value, true),
+        Reducer::Std(_) => (VariableCategory::Value, true),
     }
 }
 
@@ -90,7 +95,12 @@ fn build_reduce_value(
             };
             match &stat.reduce_operator {
                 ReduceOperator::Sum => Ok(Reducer::Sum(var.clone())),
-                _ => todo!(),
+                ReduceOperator::Max => Ok(Reducer::Max(var.clone())),
+                ReduceOperator::Mean => Ok(Reducer::Mean(var.clone())),
+                ReduceOperator::Median => Ok(Reducer::Median(var.clone())),
+                ReduceOperator::Min => Ok(Reducer::Min(var.clone())),
+                ReduceOperator::Std => Ok(Reducer::Std(var.clone())),
+                _ => unreachable!(),
             }
         }
     }

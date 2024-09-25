@@ -47,7 +47,18 @@ pub struct ReduceProgram {
 
 pub enum ReduceOperation<ID: IrID> {
     SumLong(ID),
+    SumDouble(ID),
     Count(ID),
+    MaxLong(ID),
+    MaxDouble(ID),
+    MinLong(ID),
+    MinDouble(ID),
+    MeanLong(ID),
+    MeanDouble(ID),
+    MedianLong(ID),
+    MedianDouble(ID),
+    StdLong(ID),
+    StdDouble(ID),
 }
 
 impl<ID: IrID> ReduceOperation<ID> {
@@ -55,6 +66,18 @@ impl<ID: IrID> ReduceOperation<ID> {
         match self {
             Self::Count(_) => ValueTypeCategory::Long,
             Self::SumLong(_) => ValueTypeCategory::Long,
+            Self::SumDouble(_) => ValueTypeCategory::Double,
+            ReduceOperation::MaxLong(_) => ValueTypeCategory::Long,
+            ReduceOperation::MaxDouble(_) => ValueTypeCategory::Double,
+            ReduceOperation::MinLong(_) => ValueTypeCategory::Long,
+            ReduceOperation::MinDouble(_) => ValueTypeCategory::Double,
+            ReduceOperation::MeanLong(_) => ValueTypeCategory::Double,
+            ReduceOperation::MeanDouble(_) => ValueTypeCategory::Double,
+            ReduceOperation::MedianLong(_) => ValueTypeCategory::Double,
+            ReduceOperation::MedianDouble(_) => ValueTypeCategory::Double,
+            ReduceOperation::StdLong(_) => ValueTypeCategory::Double,
+            ReduceOperation::StdDouble(_) => ValueTypeCategory::Double,
         }
     }
+
 }

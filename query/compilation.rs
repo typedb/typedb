@@ -177,9 +177,25 @@ fn compile_stage(
                     ReduceOperation::SumLong(variable) => {
                         ReduceOperation::SumLong(input_variables.get(variable).unwrap().clone())
                     }
+                    ReduceOperation::SumDouble(variable) => {
+                        ReduceOperation::SumDouble(input_variables.get(variable).unwrap().clone())
+                    }
                     ReduceOperation::Count(variable) => {
                         ReduceOperation::Count(input_variables.get(variable).unwrap().clone())
                     }
+                    ReduceOperation::MaxLong(variable) => {
+                        ReduceOperation::MaxLong(input_variables.get(variable).unwrap().clone())
+                    }
+                    ReduceOperation::MaxDouble(variable) => {
+                        ReduceOperation::MaxDouble(input_variables.get(variable).unwrap().clone())
+                    }
+                    ReduceOperation::MinLong(variable) => {
+                        ReduceOperation::MinLong(input_variables.get(variable).unwrap().clone())
+                    }
+                    ReduceOperation::MinDouble(variable) => {
+                        ReduceOperation::MinDouble(input_variables.get(variable).unwrap().clone())
+                    }
+                    _ => todo!()
                 };
                 reduction_inputs.push(reducer_on_position);
             }

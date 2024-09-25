@@ -22,6 +22,7 @@ use compiler::{
 };
 use concept::type_::type_manager::TypeManager;
 use encoding::value::value_type::ValueTypeCategory;
+use encoding::value::value_type::ValueTypeCategory::{Double, Long};
 use ir::{
     pattern::constraint::Constraint,
     program::{
@@ -235,32 +236,23 @@ pub fn resolve_value_types_for_reducer(
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
 ) -> Result<ReduceOperation<Variable>, QueryError> {
-    let value_type_opt = match reducer {
-        Reducer::Count(variable) => None,
-        Reducer::Sum(variable) => Some(determine_value_type(
-            variable,
-            variable_annotations,
-            assigned_value_types,
-            snapshot,
-            type_manager,
-            variable_registry,
-        )?),
-    };
     match reducer {
-        Reducer::Count(var) => Ok(ReduceOperation::Count(var.clone())),
-        Reducer::Sum(var) => {
-            let value_type = value_type_opt.unwrap();
-            match &value_type {
-                ValueTypeCategory::Long => Ok(ReduceOperation::SumLong(var.clone())),
-                _ => {
-                    let variable_name = variable_registry.variable_names().get(var).unwrap().clone();
-                    Err(QueryError::UnsupportedValueTypeForReducer {
-                        reducer: "count".to_owned(),
-                        variable: variable_name,
-                        value_type,
-                    })
-                }
-            }
+        Reducer::Count(variable) => Ok(ReduceOperation::Count(variable.clone())),
+        Reducer::Sum(variable)
+        | Reducer::Max(variable)
+        | Reducer::Mean(variable)
+        | Reducer::Median(variable)
+        | Reducer::Min(variable)
+        | Reducer::Std(variable) => {
+            let value_type = determine_value_type(
+                variable,
+                variable_annotations,
+                assigned_value_types,
+                snapshot,
+                type_manager,
+                variable_registry,
+            )?;
+            reduce_operation_from_reducer(reducer, value_type, variable_registry)
         }
     }
 }
@@ -287,5 +279,45 @@ fn determine_value_type(
     } else {
         let variable_name = variable_registry.variable_names().get(variable).unwrap().clone();
         Err(QueryError::CouldNotDetermineValueTypeForReducerInput { variable: variable_name })
+    }
+}
+
+pub fn reduce_operation_from_reducer(reducer: &Reducer, value_type: ValueTypeCategory, variable_registry: &VariableRegistry) -> Result<ReduceOperation<Variable>, QueryError> {
+    use encoding::value::value_type::ValueTypeCategory::{Long, Double};
+    // Will have been handled earlier since it doesn't need a value type.
+    debug_assert!(! matches!(reducer, Reducer::Count(_)));
+    match value_type {
+        Long => {
+            match reducer {
+                Reducer::Count(var) => Ok(ReduceOperation::Count(var.clone())),
+                Reducer::Sum(var) => Ok(ReduceOperation::SumLong(var.clone())),
+                Reducer::Max(var) => Ok(ReduceOperation::MaxLong(var.clone())),
+                Reducer::Min(var) => Ok(ReduceOperation::MinLong(var.clone())),
+                Reducer::Mean(var) => Ok(ReduceOperation::MeanLong(var.clone())),
+                Reducer::Median(var) => Ok(ReduceOperation::MedianLong(var.clone())),
+                Reducer::Std(var) => Ok(ReduceOperation::StdLong(var.clone())),
+            }
+        }
+        Double => {
+            match reducer {
+                Reducer::Count(var) => Ok(ReduceOperation::Count(var.clone())),
+                Reducer::Sum(var) => Ok(ReduceOperation::SumDouble(var.clone())),
+                Reducer::Max(var) => Ok(ReduceOperation::MaxDouble(var.clone())),
+                Reducer::Min(var) => Ok(ReduceOperation::MinDouble(var.clone())),
+                Reducer::Mean(var) => Ok(ReduceOperation::MeanDouble(var.clone())),
+                Reducer::Median(var) => Ok(ReduceOperation::MedianDouble(var.clone())),
+                Reducer::Std(var) => Ok(ReduceOperation::StdDouble(var.clone())),
+            }
+        }
+        _ => {
+            let var = reducer.target_variable();
+            let reducer_name = reducer.name();
+            let variable_name = variable_registry.variable_names().get(&var).unwrap().clone();
+            Err(QueryError::UnsupportedValueTypeForReducer {
+                reducer: reducer_name,
+                variable: variable_name,
+                value_type,
+            })
+        },
     }
 }

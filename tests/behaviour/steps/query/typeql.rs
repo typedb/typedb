@@ -239,7 +239,7 @@ async fn uniquely_identify_answer_concepts(context: &mut Context, step: &Step) {
 }
 
 #[apply(generic_step)]
-#[step(expr = r"result is a single row with variable {word}: {word}")]
+#[step(expr = r"result is a single row with variable '{word}': {word}")]
 async fn single_row_result_with_variable_value(
     context: &mut Context,
     variable_name: String,
@@ -247,6 +247,7 @@ async fn single_row_result_with_variable_value(
     step: &Step,
 ) {
     assert_eq!(context.answers.len(), 1, "Expected single row, received {}", context.answers.len());
+    println!("{:?}", &context.answers[0].get(variable_name.as_str()));
     assert!(does_var_in_row_match_spec(context, &context.answers[0], variable_name.as_str(), spec.as_str()));
 }
 
@@ -337,6 +338,7 @@ fn does_value_match(id: &str, var_value: &VariableValue<'_>, context: &Context) 
     let (id_type, id_value) = id.split_once(":").unwrap();
     let expected_value_type = match id_type {
         "long" => ValueType::Long,
+        "double" => ValueType::Double,
         _ => todo!(),
     };
     let expected = params::Value::from_str(id_value).unwrap().into_typedb(expected_value_type);
