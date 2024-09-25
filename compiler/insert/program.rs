@@ -16,7 +16,7 @@ use answer::variable::Variable;
 use encoding::graph::type_::Kind;
 use ir::{
     pattern::{constraint::Constraint, expression::Expression, ParameterID, Vertex},
-    program::block::VariableRegistry,
+    program::VariableRegistry,
 };
 use itertools::Itertools;
 

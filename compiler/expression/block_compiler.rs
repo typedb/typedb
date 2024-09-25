@@ -6,7 +6,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use answer::{variable::Variable, Type};
+use answer::variable::Variable;
 use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::{
@@ -16,7 +16,10 @@ use ir::{
         variable_category::VariableCategory,
         Vertex,
     },
-    program::block::{FunctionalBlock, ParameterRegistry, VariableRegistry},
+    program::{
+        block::{FunctionalBlock, ParameterRegistry},
+        VariableRegistry,
+    },
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;

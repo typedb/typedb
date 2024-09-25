@@ -8,11 +8,12 @@ use answer::variable::Variable;
 use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex};
 use ir::{
     program::{
-        block::{FunctionalBlock, ParameterRegistry, VariableRegistry},
+        block::{FunctionalBlock, ParameterRegistry},
         function::Function,
         function_signature::{FunctionID, FunctionSignatureIndex, HashMapFunctionSignatureIndex},
         modifier::{Limit, Offset, Select, Sort},
         reduce::Reduce,
+        VariableRegistry,
     },
     translation::{
         function::translate_function,

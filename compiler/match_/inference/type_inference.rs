@@ -15,10 +15,7 @@ use concept::type_::type_manager::TypeManager;
 use encoding::value::value_type::ValueType;
 use ir::{
     pattern::Vertex,
-    program::{
-        block::{FunctionalBlock, VariableRegistry},
-        function::Function,
-    },
+    program::{block::FunctionalBlock, function::Function, VariableRegistry},
 };
 use storage::snapshot::ReadableSnapshot;
 
@@ -172,9 +169,10 @@ pub mod tests {
             Vertex,
         },
         program::{
-            block::{FunctionalBlock, VariableRegistry},
+            block::FunctionalBlock,
             function::{Function, ReturnOperation},
             function_signature::{FunctionID, FunctionSignature},
+            VariableRegistry,
         },
         translation::TranslationContext,
     };

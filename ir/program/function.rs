@@ -10,11 +10,10 @@ use std::{
 };
 
 use answer::{variable::Variable, Type};
-use encoding::value::value_type::ValueTypeCategory;
 
 use crate::{
-    pattern::{IrID, Vertex},
-    program::block::{FunctionalBlock, VariableRegistry},
+    pattern::Vertex,
+    program::{block::FunctionalBlock, VariableRegistry},
 };
 
 pub type PlaceholderTypeQLReturnOperation = String;

@@ -29,11 +29,7 @@ use ir::{
         variable_category::VariableCategory,
         Scope, ScopeId, Vertex,
     },
-    program::{
-        block::{ScopeContext, VariableRegistry},
-        function::Function,
-        function_signature::FunctionID,
-    },
+    program::{block::ScopeContext, function::Function, function_signature::FunctionID, VariableRegistry},
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;

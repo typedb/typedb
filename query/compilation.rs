@@ -19,7 +19,7 @@ use compiler::{
     VariablePosition,
 };
 use concept::thing::statistics::Statistics;
-use ir::program::{block::VariableRegistry, function::Function};
+use ir::program::{function::Function, VariableRegistry};
 
 use crate::{annotation::AnnotatedStage, error::QueryError};
 

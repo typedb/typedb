@@ -28,10 +28,11 @@ use encoding::value::value_type::{
 use ir::{
     pattern::constraint::Constraint,
     program::{
-        block::{FunctionalBlock, ParameterRegistry, VariableRegistry},
+        block::{FunctionalBlock, ParameterRegistry},
         function::{Function, Reducer},
         modifier::{Limit, Offset, Select, Sort},
         reduce::Reduce,
+        VariableRegistry,
     },
 };
 use storage::snapshot::ReadableSnapshot;

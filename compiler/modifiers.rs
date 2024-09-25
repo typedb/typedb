@@ -4,17 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
-    sync::Arc,
-};
+use std::collections::{HashMap, HashSet};
 
-use answer::{variable::Variable, Type};
-use encoding::value::value_type::ValueTypeCategory;
-use ir::{
-    pattern::IrID,
-    program::{function::Reducer, modifier::SortVariable, reduce::Reduce},
-};
+use answer::variable::Variable;
+use ir::program::modifier::SortVariable;
 
 use crate::VariablePosition;
 

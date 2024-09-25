@@ -7,14 +7,11 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use typeql::{
-    query::stage::reduce::{ReduceValue, Stat},
-    token::ReduceOperator,
-};
+use typeql::{query::stage::reduce::ReduceValue, token::ReduceOperator};
 
 use crate::{
-    pattern::variable_category::{VariableCategory, VariableOptionality},
-    program::{block::VariableRegistry, function::Reducer, reduce::Reduce},
+    pattern::variable_category::VariableCategory,
+    program::{function::Reducer, reduce::Reduce, VariableRegistry},
     translation::TranslationContext,
     PatternDefinitionError,
 };

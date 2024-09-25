@@ -19,7 +19,7 @@ use ir::{
         variable_category::VariableCategory,
         IrID,
     },
-    program::block::{FunctionalBlock, VariableRegistry},
+    program::{block::FunctionalBlock, VariableRegistry},
 };
 use itertools::Itertools;
 
