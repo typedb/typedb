@@ -220,7 +220,7 @@ fn encode_value(value: Value<'_>) -> typedb_protocol::Value {
         Value::DateTime(date_time) => typedb_protocol::value::Value::Datetime(encode_date_time(date_time)),
         Value::DateTimeTZ(date_time_tz) => {
             typedb_protocol::value::Value::DatetimeTz(typedb_protocol::value::DatetimeTz {
-                datetime: Some(encode_date_time(date_time_tz.naive_local())),
+                datetime: Some(encode_date_time(date_time_tz.naive_utc())),
                 timezone: Some(encode_time_zone(date_time_tz.timezone())),
             })
         }
