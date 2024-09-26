@@ -1479,41 +1479,7 @@ We discuss the satisfaction semantics of various classes of statements.
 
 _Math. notation (Replacing **var**s with concepts)_. When discussing pattern semantics, we always consider **fully variablized** statements (e.g. `$x isa $X`, `$X sub $Y`). This also determines satisfaction of **partially assigned** versions of these statements (e.g. `$x isa A`, `$X sub A`, `A sub $Y`, or `x isa $A`).
 
-## ... Function statements 
-
-### **Case IN_FUN_PATT**
-
-_Remark_ the following can be said in less space, but we chose the more principled longer route, via "single returns".
-
-* 🔶 `_, ..., _, $x, _, ..., _ in F($a, $b, ...)` (where `$x` is in $i$th position of the comma-separated list, and all other positions are "blanks" `_`). This statement is satisfied if, after *function evalution* (see "Function evaluation") with inputs from the crow `r`, we have that $`r(x)`$ is among the $i$th entries of the rows of the evaluation set $`ev(f\_call)`$.
-
-    _Note_. This is equivalent to `$x in F_i($a, $b, ...)` where `F_i` modifies `F` with an additional selection of the `i`th variable.
-
-* 🔶 `$x, $y?, ..., $w in F($a, $b, ...)` is satisfied if the following pattern is satisfied:
-    ```
-    $x,_,...,_ in F($a, $b, ...);               // first var
-    try { _, $y, ...,_ in F($a, $b, ...); };    // second var
-    ...
-    _, _, ...,$w in F($a, $b, ...);             // last var
-    ```
-    
-    _Note_. `?`-marked variables are retrieved with **separate** `try`-blocks.
-
-    _Note 2_. In particular, `?`-marked variables are **optional variables**.
-
-* 🔶 `_, $x, _ in F(<EXPR1>, <EXPR2>, ...)>` is satisfied if the following pattern is satisfied:
-    ```
-    let $_1 = <EXPR1>;
-    let $_2 = <EXPR2>;
-    ...
-    $x, $y?, ..., $w in F($_1, $_2, ...)
-    ```
-
-_System property_
-
-* 🔶 Function call must be to a **stream-return** function, i.e. have output type `{ T, ... }`.
-* 🔶 All variable arguments (or variables in expression arguments) to `F` must be set in the crow `r`
-
+## ... Function statements
 
 ### **Case LET_FUN_PATT**
 
@@ -1523,7 +1489,7 @@ _Remark_ the following can be said in less space, but we chose the more principl
 
     _Note_. This is equivalent to `$x in F_i($a, $b, ...)` where `F_i` modifies `F` with an additional selection of the `i`th variable.
 
-* 🔶 `$x, $y?, ..., $w in F($a, $b, ...)` is satisfied if the following pattern is satisfied:
+* 🔶 `$x, $y?, ..., $w = F($a, $b, ...)` is satisfied if the following pattern is satisfied:
     ```
     $x,_,...,_ in F($a, $b, ...);               // first var
     try { _, $y, ...,_ in F($a, $b, ...); };    // second var
@@ -1535,7 +1501,7 @@ _Remark_ the following can be said in less space, but we chose the more principl
 
     _Note 2_. In particular, `?`-marked variables are **optional variables**.
 
-* 🔶 `_, $x, _ = F(<EXPR1>, <EXPR2>, ...)>` is satisfied if the following pattern is satisfied:
+* 🔶 `$x, $y?, ..., $w = F(<EXPR1>, <EXPR2>, ...)>` is satisfied if the following pattern is satisfied:
     ```
     let $_1 = <EXPR1>;
     let $_2 = <EXPR2>;
@@ -1547,6 +1513,26 @@ _System property_
 
 * 🔶 Function call must be to a **single-return** function, i.e. have output type `T, ...`.
 * 🔶 All variable arguments (or variables in expression arguments) to `F` must be set in the crow `r`
+
+### **Case IN_FUN_PATT**
+
+_Remark_ the following can be said in less space, but we chose the more principled longer route, via "single returns".
+
+* 🔶 `$x, $y?, ..., $w in F(<EXPR1>, <EXPR2>, ...)>` is satisfied if the following pattern is satisfied:
+    ```
+    let $_1 = <EXPR1>;
+    let $_2 = <EXPR2>;
+    ...
+    $x, $y?, ..., $w = f($_1, $_2, ...)
+    ```
+    where `f($_1, $_2, ...)` is a (hypothetical) function call defined to return any result from the evaluation of the call `F($_1, $_2, ...)`
+
+_System property_
+
+* 🔶 Function call must be to a **stream-return** function, i.e. have output type `{ T, ... }`.
+* 🔶 All variable arguments (or variables in expression arguments) to `F` must be set in the crow `r`
+
+
 
 ## ... Type statements
 
