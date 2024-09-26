@@ -238,7 +238,7 @@ fn encode_value(value: Value<'_>) -> typedb_protocol::Value {
 }
 
 fn encode_date_time(date_time: NaiveDateTime) -> typedb_protocol::value::Datetime {
-    typedb_protocol::value::Datetime { seconds: date_time.and_utc().timestamp_millis(), nanos: date_time.nanosecond() }
+    typedb_protocol::value::Datetime { seconds: date_time.and_utc().timestamp(), nanos: date_time.nanosecond() }
 }
 
 fn encode_time_zone(timezone: TimeZone) -> typedb_protocol::value::datetime_tz::Timezone {
