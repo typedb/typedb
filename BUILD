@@ -3,6 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
+load("@vaticle_dependencies//distribution/artifact:rules.bzl", "artifact_repackage")
 load("//:deployment.bzl", deployment_docker = "deployment", deployment_github = "deployment")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
@@ -15,6 +16,7 @@ load("@vaticle_bazel_distribution//platform:constraints.bzl", "constraint_linux_
 load("@io_bazel_rules_docker//container:image.bzl", docker_container_image = "container_image")
 load("@io_bazel_rules_docker//container:container.bzl", docker_container_push = "container_push")
 
+load("@rules_pkg//:mappings.bzl", "pkg_files")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("@rules_rust//rust:defs.bzl", "rust_binary")
 
@@ -39,20 +41,47 @@ rust_binary(
 
 # Assembly
 assemble_files = {
-    "//resource:logo": "resource/typedb-ascii.txt",
     "//:LICENSE": "LICENSE",
 }
 empty_directories = [
     "server/data",
 ]
+
 permissions = {
     "server/conf/config.yml": "0755",
     "server/data": "0755",
+    "server/typedb_server_bin": "0755",
+    "typedb":  "0755",
 }
+
+alias(
+    name = "typedb_console_artifact",
+    actual = select({
+        "@vaticle_bazel_distribution//platform:is_linux_arm64" : "@vaticle_typedb_console_artifact_linux-arm64//file",
+        "@vaticle_bazel_distribution//platform:is_linux_x86_64" : "@vaticle_typedb_console_artifact_linux-x86_64//file",
+        "@vaticle_bazel_distribution//platform:is_mac_arm64" : "@vaticle_typedb_console_artifact_mac-arm64//file",
+        "@vaticle_bazel_distribution//platform:is_mac_x86_64" : "@vaticle_typedb_console_artifact_mac-x86_64//file",
+        #"@vaticle_bazel_distribution//platform:is_windows_x86_64" : "@vaticle_typedb_console_artifact_windows-x86_64//file",
+    })
+)
+
+
+artifact_repackage(
+    name = "console-repackaged",
+    srcs = [":typedb_console_artifact"],
+    files_to_keep = ["console"],
+)
+
+pkg_files(
+    name = "package-server-and-entry",
+    srcs = ["//:typedb_server_bin", "//binary:typedb"],
+    renames = {"//:typedb_server_bin" : "server/typedb_server_bin"}
+)
 
 pkg_tar(
     name = "package-typedb",
-    srcs = ["//:typedb_server_bin"],
+    srcs = [":package-server-and-entry"],
+    deps = [":console-repackaged"],
 )
 
 assemble_zip(

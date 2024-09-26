@@ -152,8 +152,8 @@ vaticle_typeql()
 
 vaticle_typedb_protocol()
 
-#load("//dependencies/vaticle:artifacts.bzl", "vaticle_typedb_console_artifact")
-#vaticle_typedb_console_artifact()
+load("//dependencies/vaticle:artifacts.bzl", "vaticle_typedb_console_artifact")
+vaticle_typedb_console_artifact()
 
 ############################
 # Load @maven dependencies #
