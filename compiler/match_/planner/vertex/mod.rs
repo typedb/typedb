@@ -225,6 +225,10 @@ impl PlannerVertex {
             _ => todo!(),
         }
     }
+
+    pub(super) fn is_variable(&self) -> bool {
+        matches!(self, Self::Thing(_) | Self::Type(_) | Self::Value(_))
+    }
 }
 
 #[derive(Debug)]

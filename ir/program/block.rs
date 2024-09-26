@@ -148,7 +148,7 @@ impl Index<ParameterID> for ParameterRegistry {
     type Output = Value<'static>;
 
     fn index(&self, id: ParameterID) -> &Self::Output {
-        self.get(id).unwrap()
+        self.registry.index(&id)
     }
 }
 

@@ -332,6 +332,10 @@ impl<'a> PlanBuilder<'a> {
     fn initialise_greedy(&self) -> Vec<usize> {
         let mut open_set: HashSet<usize> = (0..self.elements.len()).collect();
         let mut ordering = Vec::with_capacity(self.elements.len());
+
+        let mut produced_at_this_stage = HashSet::new();
+        let mut intersection_variable = None;
+
         while !open_set.is_empty() {
             let (next, _cost) = open_set
                 .iter()
@@ -339,6 +343,32 @@ impl<'a> PlanBuilder<'a> {
                 .map(|&elem| (elem, self.calculate_marginal_cost(&ordering, elem)))
                 .min_by(|(_, lhs_cost), (_, rhs_cost)| lhs_cost.total_cmp(rhs_cost))
                 .unwrap();
+
+            if intersection_variable == Some(next) {
+                intersection_variable = None;
+            }
+
+            let element = &self.elements[next];
+
+            if !element.is_variable() {
+                match element.variables().filter(|var| produced_at_this_stage.contains(var)).exactly_one() {
+                    Ok(var) if intersection_variable.is_none() || intersection_variable == Some(var) => {
+                        intersection_variable = Some(var);
+                    }
+                    _ => {
+                        let produced =
+                            produced_at_this_stage.drain().filter(|var| !ordering.contains(var)).collect_vec();
+                        ordering.extend_from_slice(&produced);
+                        for var in produced {
+                            open_set.remove(&var);
+                        }
+                        intersection_variable = None;
+                    }
+                }
+
+                produced_at_this_stage.extend(element.variables());
+            }
+
             ordering.push(next);
             open_set.remove(&next);
         }
@@ -444,21 +474,36 @@ fn lower_plan(
 
     let mut producers: HashMap<Variable, _> = HashMap::with_capacity(plan_builder.variable_index.len());
 
-    for (i, &index) in ordering.iter().enumerate() {
+    let element_to_order: HashMap<_, _> =
+        ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
+
+    let inputs_of = |x| {
+        let order = element_to_order[&x];
+        let adjacent = match plan_builder.adjacency.get(&x) {
+            Some(adj) => adj,
+            None => &HashSet::new(),
+        };
+        adjacent.iter().copied().filter(|adj| ordering[..order].contains(adj)).collect::<HashSet<_>>()
+    };
+
+    let outputs_of = |x| {
+        let order = element_to_order[&x];
+        let adjacent = match plan_builder.adjacency.get(&x) {
+            Some(adj) => adj,
+            None => &HashSet::new(),
+        };
+        adjacent.iter().copied().filter(|adj| ordering[order..].contains(adj)).collect::<HashSet<_>>()
+    };
+
+    for &index in &ordering {
         if index_to_variable.contains_key(&index) {
             continue;
         }
 
-        let adjacent = match plan_builder.adjacency.get(&index) {
-            Some(adj) => adj,
-            None => &HashSet::new(),
-        };
+        let inputs = inputs_of(index).into_iter().map(|var| index_to_variable[&var]).collect_vec();
 
-        let inputs = adjacent
-            .iter()
-            .filter(|&adj| ordering[..i].contains(adj) && producers.contains_key(&index_to_variable[adj]))
-            .map(|adj| index_to_variable[adj])
-            .collect::<HashSet<_>>();
+        let sort_variable =
+            outputs_of(index).into_iter().find(|&var| inputs_of(var).len() > 1).map(|var| index_to_variable[&var]);
 
         let constraint = &plan_builder.index_to_constraint[&index];
         if let Some(var) = &match_builder.current.sort_variable {
@@ -500,25 +545,28 @@ fn lower_plan(
                     continue;
                 }
 
-                let sort_variable = match (lhs_var, rhs_var) {
-                    (Some(lhs), Some(rhs)) => {
-                        if inputs.contains(&rhs) {
-                            lhs
-                        } else if inputs.contains(&lhs) {
-                            rhs
-                        } else if match_builder.current.sort_variable == lhs_var {
-                            lhs
-                        } else if match_builder.current.sort_variable == rhs_var {
-                             rhs
-                        } else if planner.unbound_direction() == Direction::Canonical {
-                            lhs
-                        } else {
-                            rhs
+                let sort_variable = if let Some(sort_variable) = sort_variable {
+                    sort_variable
+                } else {
+                    match (lhs_var, rhs_var) {
+                        (Some(lhs), Some(rhs)) if !inputs.is_empty() => {
+                            if inputs.contains(&rhs) {
+                                lhs
+                            } else {
+                                rhs
+                            }
                         }
+                        (Some(lhs), Some(rhs)) => {
+                            if planner.unbound_direction() == Direction::Canonical {
+                                lhs
+                            } else {
+                                rhs
+                            }
+                        }
+                        (Some(lhs), None) => lhs,
+                        (None, Some(rhs)) => rhs,
+                        (None, None) => unreachable!("no variables in constraint?"),
                     }
-                    (Some(lhs), None) => lhs,
-                    (None, Some(rhs)) => rhs,
-                    (None, None) => unreachable!("no variables in constraint?"),
                 };
 
                 let con = $con.clone();
@@ -609,13 +657,11 @@ fn lower_plan(
                     continue;
                 }
 
-                let sort_variable = if inputs.contains(&player) {
+                let sort_variable = if let Some(sort_variable) = sort_variable {
+                    sort_variable
+                } else if inputs.contains(&player) {
                     relation
                 } else if inputs.contains(&relation) {
-                    player
-                } else if match_builder.current.sort_variable == Some(relation) {
-                    relation
-                } else if match_builder.current.sort_variable == Some(player) {
                     player
                 } else if planner.unbound_direction() == Direction::Canonical {
                     relation
