@@ -76,9 +76,6 @@
 <details>
   <summary> <b>Table of contents</b> <i>(Detailed)</i> </summary>
 
-
-<!-- vim-markdown-toc GFM -->
-
 * [Introduction](#introduction)
 * [The type system](#the-type-system)
     * [Grammar and notations](#grammar-and-notations)
@@ -91,16 +88,13 @@
     * [Labels and aliases](#labels-and-aliases)
 * [Pattern matching language](#pattern-matching-language)
     * [Basics: Patterns, variables, concept rows, satisfaction](#basics-patterns-variables-concept-rows-satisfaction)
-* [Topic 1: Negation](#topic-1-negation)
-    * [The first problem](#the-first-problem)
-    * [The second problem](#the-second-problem)
-    * [Pattern semantics of ...](#pattern-semantics-of-)
-    * [... Patterns of patterns](#-patterns-of-patterns)
-    * [... Type patterns](#-type-patterns)
-    * [... Type constraint patterns](#-type-constraint-patterns)
-    * [... Element patterns](#-element-patterns)
-    * [... Expression and list patterns](#-expression-and-list-patterns)
-    * [... Function patterns](#-function-patterns)
+    * [Pattern semantics](#pattern-semantics)
+    * [Satisfaction semantics of...](#satisfaction-semantics-of)
+    * [... Function statements](#-function-statements)
+    * [... Type statements](#-type-statements)
+    * [... Type constraint statements](#-type-constraint-statements)
+    * [... Element statements](#-element-statements)
+    * [... Expression and list statements](#-expression-and-list-statements)
 * [Data manipulation language](#data-manipulation-language)
     * [Match semantics](#match-semantics)
     * [Functions semantics](#functions-semantics)
@@ -119,8 +113,6 @@
     * [TypeQL syntax](#typeql-syntax)
     * [Syntactic Sugar](#syntactic-sugar)
     * [Typing of operators](#typing-of-operators)
-
-<!-- vim-markdown-toc -->
 
 </details>
 
@@ -1032,31 +1024,27 @@ This section first describes the pattern matching language of TypeDB, which reli
 #### **Case TRY_PATT**
 
 * 🔷 _Optional pattern_ `try { PATT }` 
-  > We **optionally** match `PATT` if possible
+  > We **optionally** match `PATT` whenever possible
 
-  * For most purposes, this pattern is equivalent to `{ PATT } or { not { PATT }; }` **except** for the designation of **optional variables**
-
-_Terminology_ What's inside `{ ... }` is called a **block**
+_Terminology_ What's inside `{ ... }` is called a **block**.
 
 
 ### (Theory) Pattern branches
 
-A **disjunctive normal (DNF) of a pattern `PATT`** is a pattern obtained by
-
-* First unfolding all `try` blocks,
-* Then recursively applying transformations of the form 
+A **disjunctive normal (DNF) of a pattern `PATT`** is a pattern obtained by recursively applying transformations of the form 
     ```
     <PATT>; { <PATT_A> } or {<PATT_B> };
     --transforms to-->
     { <PATT>; <PATT_A>; } or { <PATT>; <PATT_B>; };
     ```
-
 The resulting DNF of `PATT` will itself be a pattern of the form:
 ```
 { <BRANCH_1> } or { <BRANCH_2> } or ...
 ```
 
 **Important**. The patterns `<BRANCH_i>` are _unique_ up to re-ordering them. We call them the **branches** of `PATT`.
+
+_Note_. The transformation also applies _inside_ `not` and `try` blocks.
 
 
 ### (Theory) Variables and bindings
@@ -1092,9 +1080,10 @@ _Remark 1_. The code variable `$x` will be written as $`x`$ in math notation (wi
 #### **Bound variables and valid patterns**
 
 * **Bounds** ensure variables are tied to database concepts. (**#BDD**)
+
   * A variable is **bound** if it appears in a _bound position_ of at least one statement.
     * _Note_. Most statements bind their variables: this is why we will mainly highlight _non-bound positions_
-  * We say a variable is **bound directly in a block** if its bound in a "direct" statement of block (i.e. a statement which is not enclosed in a subblock).
+
   * A pattern `PATT` is **valid** if ***all variables are bound***. 
     * _(Fun fact: otherwise, we may have to solve provably unsolvable problems)_
 
@@ -1104,109 +1093,20 @@ _Going forward, we always work with valid patterns_
 
 * **Modes of variables** indicate how to compute answers for variables. In a valid pattern `PATT`, a variable appear in various _modes_ based on the following rules.
 
-  * **Retrievable variables** are variables that are bound in _some_ place that is _not_ `not`-gated (i.e. have some parent `not` block). 
+  * **Retrievable variables** are variables that are bound in _some_ statement that is _not_ `not`-gated (i.e. it is not enclosed in a not `not` block). 
 
-  * **Negation-bound variables** are variables that are bound _only_ in places that are `not`-gated (i.e. have some parent `not` block).
+  * **Negation-bound variables** are variables that are bound _only_ in statements that are `not`-gated (i.e. they are enclosed in a parent `not` block).
 
-  * **Optional variables** are variables that are bound directly in some `try` block, and potentially its subblocks.
+  * **Optional variables** are variables that are 
+    * retrievable
+    * are bound only in `try`-gated statements
 
 * **Principles of unambiguity**. A valid pattern is **unambiguous** if it satifies the following.
 
-  * _No [alpha-conversion](https://en.wikipedia.org/wiki/Lambda_calculus#%CE%B1-conversion) needed!_ No negation-bound or optional variable appears bound in sibling block in the same branch of the pattern without also being bound in a joint parent block. 
+  * _No [alpha-conversion](https://en.wikipedia.org/wiki/Lambda_calculus#%CE%B1-conversion) needed!_ No negation-bound or optional variable appears bound in **sibling blocks** in the **same branch** (see "DNF") of the pattern without also being bound in a joint parent block.
+    * _Note_ This applies to `?`-marked variables, as these unpack into `try` as outlined in **IN_FUN_PATT** and **LET_FUN_PATT**
 
-  * _No negated try's_ We dissallow `try`'s which are `not`-gated (i.e. cannot `try` inside a `not`)..
-
-_Note_. Based on these principles, optional variables are always retrievable variables.
-
-<details>
-    <summary><b>Related discord discussion</b></summary>
-
-##### The first problem
-@core brief note on two topics we touched upon, and new behavior related to those topics.
-
-# Topic 1: Negation
-
-## The first problem
-The following is fine
-```
-// ensure x has no name 
-not { $x has name $n; }; 
-```
-This is fine too (arguably maybe a weird example):
-```
-// ensure DB has no bad name 
-not { $n isa bad_name; }; 
-```
-Together this becomes ambiguous
-```
-not { $x has name $n; }; 
-not { $n isa bad_name; }; 
-```
-as `$n` is "synced" across not's. 
-
-The spec explains this (the underlying cause here is "alpha equivalence" of quantified formulas) now:
-* Principle: **We cannot use negation-bound (or try-bound) variables in separate sibling blocks in the same branch of a pattern** 
-
-So this is fine (it's alpha-equivalent to the above pattern, but now it's "unambiguous" what's meant)
-```
-not { $x has name $n; }; 
-not { $m isa bad_name; }; 
-```
-
-But this is fine too:
-```
-{ $x ...; not { $x has $q }; }
- or
-{ $y ...; not { $y has $q }; };
-```
-because the negation-bound variable `$q` appears in disjunct branches of the pattern.
-
-## The second problem
-
-We want
-```
-try { $x ... };
-```
-do be equivalent to
-```
-{ $x ... } or { not { $x ... }; };
-```
-This means we cannot write, say:
-```
-try { $x has name $n; }; 
-not { $n isa bad_name; }; 
-```
-(it contradicts the above principle).
-
-**However**, even in the second branch (unlike the pure `not { $x has name $n; } we want to _return_ $x!!
-(Namely, in the second branch we want the row entry `r($x) = empty`). 
-
-In the spec, this is now realized by marking `try`-bound vars (they are termed "optionally quantified"), 
-separately from `not`-bound variables (they are termed "properly quantified"). 
-The former is returned as empty if we are in the `not` branch of `try`.
-
-The problem now arises if we gate `try`'s with `not`.
-```
-$y ...
-not { ($x, $y) isa friendship; try { $x has name $n; }; };
-```
-Indeed, `$n` is first `try`-gated and then `try`-gated. Nothing in a `not` gets returned, so we don't return `$n`. 
-So it's non-sensical to use `try` in this way. This leads to the second new principle:
-
-* Principle: **we cannot have `not`-gated `try` block.**
-
-However, the following is fine:
-```
-$y ...
-try { ($x, $y) isa friendship; not { $x has name $n; }; };
-```
-The `not`-gated `$n` never gets returned, but the `try`-gated `$x` gets returned optionally.
-
-(All of this is in the spec now)
-
-</details>
-
-
+  * _No negated try's_ We dissallow `try`'s which are `not`-gated (i.e. cannot `try` inside a `not`).
 
 #### **Anonymous variables**
 
@@ -1263,7 +1163,7 @@ $x has color $y;
 
 ### (Feature) Query answer computation
 
-* ✅ _Satisfaction_. A crow `r` **satisfies** a pattern `PATT` (written $`r \in ev<PATT>`$) if
+* ✅ _Satisfaction_. A crow `r` **satisfies** a (valid and unambiguous) pattern `PATT` (written $`r \in ev<PATT>`$) if
   1. **Type semantics**. Its typing assignemt satisfies the typing condition below.
   1. **Pattern semantics**. Its concept assignment satisfis the "pattern semantics" described in the next section.
  
@@ -1285,32 +1185,118 @@ $x has color $y;
 
 _Example_: Consider the pattern `$x isa Person;` (this pattern comprises a single statement). Then `($x -> p)` satisfies the pattern if `p` is an element of the type `Person` (i.e. $p : \mathsf{Person}$). The answer `($x -> p, $y -> p)` also satisfies the pattern, but it is not proper minimal.
 
-## Pattern semantics of ...
+## Pattern semantics
 
-Given a crow `r` and pattern `PATT` we say `r` ***satisfies*** `PATT` if (in addition to the typing conditions in outlined in "Pattern satisfication" above) the following conditions are met.
+Given a crow `r` and pattern `PATT` we say `r` ***satisfies*** `PATT`, defined as follows.
+
+### Block-level
+
+Given a (valid and unambiguous) pattern `PATT` in DNF, we define for subpatterns
+
+* `not { SUBPATT };`
+* `try { SUBPATT };`
+
+a variable `$x` in `SUBPATT` is **block-level** if its bound in statements that appears unnested in a branch of `SUBPATT` but not a parent block.
+
+### Recursive definition of satisfaction
+
+We recursively destructuring subpatterns `PATT` in DNF. Set `P = PATT`
+
+* If `P = STMT; SUBPATT` then `r` satisfies `P` if:
+    * The statement **<STMT>** is satisfied by `r` as outlined in the _next sections_.
+    * `r` satisfies `SUBPATT`;
+
+* If `P = { SUBPATT_1 } or { SUBPATT_2 } or ... ;` then `r` satisfies `P` if:
+    * `r` satisfies `SUBPATT_i` for any `i`
+
+* If `P = not { SUBPATT };` then `r` satisfies `P` if:
+    * `r` does not contain _any_ block-level bound variables of the block
+    * `r` cannot be completed with entries for block-level bound variable to satisfy `SUBPATT`
+
+* If `P = try { SUBPATT };` then `r` satisfies `P` if:
+    * `r` does contain _all_ block-level bound optional variables of the block
+    * on
+        * either: `r` satisfies `SUBPATT`
+        * or:
+            * all block-level bound variables are assigned $`\emptyset`$ (i.e. empty answer) 
+            * after removing block-level bound variables from `r`, `r` cannot be completed with entries for block-level bound variable to satisfy `SUBPATT`
+
+## Satisfaction semantics of...
+
+We discuss the satisfaction semantics of various classes of statements.
 
 _Math. notation (Replacing **var**s with concepts)_. When discussing pattern semantics, we always consider **fully variablized** statements (e.g. `$x isa $X`, `$X sub $Y`). This also determines satisfaction of **partially assigned** versions of these statements (e.g. `$x isa A`, `$X sub A`, `A sub $Y`, or `x isa $A`).
 
-## ... Patterns of patterns
+## ... Function statements 
 
-Now that we have seen how to determine when answers satisfy individual statements, we can extend our discussion of match semantics to composite patterns (patterns of patterns).
+### **Case IN_FUN_PATT**
 
-#### **Case AND_SAT_PATT**
-* ✅ The crow `r` satisfies the pattern `<PATT1>; <PATT2>;` that simultaneously satisfies both `<PATT1>` and `<PATT2>`.
+_Remark_ the following can be said in less space, but we chose more principled longer route, via "single returns".
 
-#### **Case OR_SAT_PATT_SAT**
-* 🔷 The crow `r` satisfies the pattern `{ <PATT1> } or { <PATT2> };` is an answer that satisfies either `<PATT1>` or `<PATT2>`.
+* 🔶 `_, ..., _, $x, _, ..., _ in F($a, $b, ...)` (where `$x` is in $i$th position of the comma-separated list, and all other positions are "blanks" `_`). This statement is satisfied if, after *function evalution* (see "Function evaluation") with inputs from the crow `r`, we have that $`r(x)`$ is among the $i$th entries of the rows of the evaluation set $`ev(f\_call)`$.
 
-#### **Case NOT_SAT_PATT**
-* 🔷 The crow `r` satisfies the pattern `not { <PATT> };` if it _cannot_ be completed to an answer satisfying `<PATT>`.
+    _Note_. This is equivalent to `$x in F_i($a, $b, ...)` where `F_i` modifies `F` with an additional selection of the `i`th variable.
 
-#### **Case TRY_SAT_PATT**
-* 🔷 The crow `r` satisfies the pattern `try { <PATT> };` if:
-    * `{ <PATT> } or { not { <PATT>}; };` is satisfied
-    * any variable directly bound in the block (thus an optional variable) must appears in `r` 
-        * _Note_. of course, the variable could have an empty entry in `r`!
+* 🔶 `$x, $y?, ..., $w in F($a, $b, ...)` is satisfied if the following pattern is satisfied:
+    ```
+    $x,_,...,_ in F($a, $b, ...);               // first var
+    try { _, $y, ...,_ in F($a, $b, ...); };    // second var
+    ...
+    _, _, ...,$w in F($a, $b, ...);             // last var
+    ```
+    
+    _Note_. `?`-marked variables are retrieved with **separate** `try`-blocks.
 
-## ... Type patterns
+    _Note 2_. In particular, `?`-marked variables are **optional variables**.
+
+* 🔶 `_, $x, _ in F(<EXPR1>, <EXPR2>, ...)>` is satisfied if the following pattern is satisfied:
+    ```
+    let $_1 = <EXPR1>;
+    let $_2 = <EXPR2>;
+    ...
+    $x, $y?, ..., $w in F($_1, $_2, ...)
+    ```
+
+_System property_
+
+* 🔶 Function call must be to a **stream-return** function, i.e. have output type `{ T, ... }`.
+* 🔶 All variable arguments (or variables in expression arguments) to `F` must be set in the crow `r`
+
+
+### **Case LET_FUN_PATT**
+
+_Remark_ the following can be said in less space, but we chose more principled longer route, via "single returns".
+
+* 🔶 `_, ..., _, $x, _, ..., _ = F($a, $b, ...)` (where `$x` is in $i$th position of the comma-separated list, and all other positions are "blanks" `_`). This statement is satisfied if, after *function evalution* (see "Function evaluation") with inputs from the crow `r`, we have that $`r(x)`$ is among the $i$th entries of the rows of the evaluation set $`ev(f\_call)`$.
+
+    _Note_. This is equivalent to `$x in F_i($a, $b, ...)` where `F_i` modifies `F` with an additional selection of the `i`th variable.
+
+* 🔶 `$x, $y?, ..., $w in F($a, $b, ...)` is satisfied if the following pattern is satisfied:
+    ```
+    $x,_,...,_ in F($a, $b, ...);               // first var
+    try { _, $y, ...,_ in F($a, $b, ...); };    // second var
+    ...
+    _, _, ...,$w in F($a, $b, ...);             // last var
+    ```
+    
+    _Note_. `?`-marked variables are retrieved with **separate** `try`-blocks.
+
+    _Note 2_. In particular, `?`-marked variables are **optional variables**.
+
+* 🔶 `_, $x, _ = F(<EXPR1>, <EXPR2>, ...)>` is satisfied if the following pattern is satisfied:
+    ```
+    let $_1 = <EXPR1>;
+    let $_2 = <EXPR2>;
+    ...
+    $x, $y?, ..., $w in F($_1, $_2, ...)
+    ```
+
+_System property_
+
+* 🔶 Function call must be to a **item-return** function, i.e. have output type `T, ...`.
+* 🔶 All variable arguments (or variables in expression arguments) to `F` must be set in the crow `r`
+
+## ... Type statements
 
 ### **Case TYPE_DEF_PATT**
 * ✅ `Kind $A` (for `Kind` in `{entity, relation, attribute}`) is satisfied if $`r(A) : \mathbf{Kind}`$
@@ -1325,10 +1311,6 @@ _Remark_: `sub!` is convenient, but could actually be expressed with `sub`, `not
     * either if $`r(A) : \mathbf{Rel}(r(I))`$
     * or if $`\diamond(r(A) : \mathbf{Rel}(r(I)))`$
 
-* 🔮 `$A relates! $I` is satisfied if 
-    * $`r(A) : \mathbf{Rel}(r(I))`$ and **not** $`r(A) \lneq B : \mathbf{Rel}(r(I))`$
-    * _(to match `@abstract` for relates! must use annotation, see **REL_ABSTRACT_PATT**.)_
-
 * ✅ `$A relates $I as $J` is satisfied if 
     * $`r(A) : \mathbf{Rel}(r(I))`$, $`B : \mathbf{Rel}(r(J))`$, $`A \leq B`$, $`r(I) \leq r(J)`$.
     * either the first or the second statement (or both) can be abstract $`\diamond(...)`$.
@@ -1337,48 +1319,59 @@ _Remark_: `sub!` is convenient, but could actually be expressed with `sub`, `not
     * either if $`r(A) : \mathbf{Rel}([r(I)])`$
     * or if $`\diamond(r(A) : \mathbf{Rel}([r(I)]))`$
 
-* 🔮 `$A relates! $I[]` is satisfied if 
-    * $`r(A) : \mathbf{Rel}(r([I]))`$ and **not** $`r(A) \lneq r(B) : \mathbf{Rel}(r([I]))`$
-    * _(to match `@abstract` for relates! must use annotation, see **REL_ABSTRACT_PATT**.)_
-
 * 🔶 `$A relates $I[] as $J[]` is satisfied if 
     * $`r(A) : \mathbf{Rel}(r([I]))`$, $`B : \mathbf{Rel}(r([J]))`$, $`A \leq B`$, $`r(I) \leq r(J)`$.
     * either the first or the second statement (or both) can be abstract $`\diamond(...)`$.
 
+### **Case DIRECT_REL_PATT**
 
-### **Case PLAY_PATT**
+* 🔮 `$A relates! $I` is satisfied if 
+    * $`r(A) : \mathbf{Rel}(r(I))`$ and **not** $`r(A) \lneq B : \mathbf{Rel}(r(I))`$
+    * or if $`\diamond(r(A) : \mathbf{Rel}(r(I)))`$ and **not** $`\diamond(r(A) \lneq B : \mathbf{Rel}(r(I)))`$
+
+* 🔮 `$A relates! $I[]` is satisfied if 
+    * $`r(A) : \mathbf{Rel}(r([I]))`$ and **not** $`r(A) \lneq r(B) : \mathbf{Rel}(r([I]))`$
+    * or if $`\diamond(r(A) : \mathbf{Rel}(r([I])))`$ and **not** $`\diamond(r(A) \lneq r(B) : \mathbf{Rel}(r([I])))`$
+
+### **Case PLAYS_PATT**
+
 * ✅ `$A plays $I` is satisfied if
     * either $`r(A) \leq A'`$ and $`A' <_! r(I)`$
     * or if $`r(A) \leq A'`$ and $`\diamond(A' <_! r(I))`$
+
+### **Case DIRECT_PLAYS_PATT**
 
 * 🔮 `$A plays! $I` is satisfied if $`r(A) <_! r(I)`$
     * $`A <_! r(I)`$
     * _(to match `@abstract` for `plays!` must use annotation, see **PLAYS_ABSTRACT_PATT**)_
 
 ### **Case OWNS_PATT**
-* ✅ `$A owns $B` is satisfied if 
-    * either $`r(A) \leq A'`$ and $`A' <_! r(O_B)`$ 
-    * or $`r(A) \leq A'`$ and $`\diamond(A' <_! r(O_B))`$
 
-* 🔮 `$A owns! $B` is satisfied if 
-    * $`r(A) <_! r(O_B)`$ 
-    *  _(to match `@abstract` for `owns!` must use annotation, see **OWNS_ABSTRACT_PATT**)_
+* ✅ `$A owns $B` is satisfied if 
+    * either $`r(A) \leq A'`$ and $`A' <_! O_{r(B)})`$ 
+    * or $`r(A) \leq A'`$ and $`\diamond(A' <_! O_{r(B)})`$
 
 * 🔶 `$A owns $B[]` is satisfied if $`r(A) \leq A' <_! r(O_B)`$ (for $`A'`$ **not** an interface type)
     * either $`r(A) \leq A'`$ and $`A' <_! r(O_{B[]})`$ 
     * or $`r(A) \leq A'`$ and $`\diamond(A' <_! r(O_{B[]}))`$
 
+_Remark_. In particular, if `A owns B[]` has been declared, then `$X owns B` will match the answer `r($X) = A`.
+
+### **Case DIRECT_OWNS_PATT**
+
+* 🔮 `$A owns! $B` is satisfied if 
+    * $`r(A) <_! r(O_B)`$ 
+    * or $`\diamond(r(A) <_! r(O_B))`$ 
+
 * 🔮 `$A owns! $B[]` is satisfied if $`r(A) <_! r(O_B)`$
     * $`r(A) <_! r(O_B)`$ 
-    *  _(to match `@abstract` for `owns!` must use annotation, see **OWNS_ABSTRACT_PATT**)_ 
-
-_Remark_. In particular, if `A owns B[]` has been declared, then `$X owns B` will match the answer `r($X) = A`.
+    * or if $`\diamond(r(A) <_! r(O_B))`$
 
 ### **Cases TYP_IS_PATT and LABEL_PATT**
 * 🔷 `$A is $B` is satisfied if $`r(A) = r(B)`$ (this is actually covered by the later case `IS_PATT`)
 * 🔷 `$A label <LABEL>` is satisfied if $`r(A)`$ has **primary label or alias** `<LABEL>`
 
-## ... Type constraint patterns
+## ... Type constraint statements
 
 ### Cardinality
 
@@ -1412,7 +1405,7 @@ _To discuss: the usefulness of constraint patterns seems overall low, could thin
 #### **Case TYP_ABSTRACT_PATT**
 * 🔶 `(kind) $B @abstract` is satisfied if schema directly contains `(kind) r($B) @abstract`.
 
-#### **Case RELATES_ABSTRACT_PATT**
+#### **Case REL_ABSTRACT_PATT**
 * 🔶 `$B relates $I @abstract` is satisfied if:
     * $`r(B) \leq B'`$ and $`\diamond(B' : \mathbf{Rel}(I)`$
     * **not** $`r(B) \leq B'' \leq B'`$ such that $`\diamond(B' : \mathbf{Rel}(I)`$
@@ -1466,39 +1459,58 @@ _To discuss: the usefulness of constraint patterns seems overall low, could thin
 * `A value B @range(v1..v2)` is satisfied if 
 -->
 
-## ... Element patterns
+## ... Element statements
 
 #### **Case ISA_PATT**
 * ✅ `$x isa $T` is satisfied if $`r(x) : r(T)`$ for $`r(T) : \mathbf{ERA}`$
+* 🔶 `$x isa $T ($I: $y)` is equivalent to `$x isa $T; $x links ($I: $y);`
+* 🔶 `$x isa $T <EXPR>` is equivalent to `$x isa $T; $x == <EXPR>;`
+
+#### **Case ANON_ISA_PATT**
+* 🔶 `$T` is equivalent to `$_ isa $T`
+* 🔶 `$T ($R: $y, ...)`  is equivalent to `$_ isa $T ($R: $y, ...)`
+* 🔶 `$T <EXPR>` is equivalent to `$_ isa $T <EXPR>`
+
+#### **Case DIRECT_ISA_PATT**
+
 * ✅ `$x isa! $T` is satisfied if $`r(x) :_! r(T)`$ for $`r(T) : \mathbf{ERA}`$
+* 🔶 `$x isa! $T ($I: $y)` is equivalent to `$x isa! $T; $x links ($I: $y);`
+* 🔶 `$x isa! $T <EXPR>` is equivalent to `$x isa! $T; $x == <EXPR>;`
 
 #### **Case LINKS_PATT**
 * ✅ `$x links ($I: $y)` is satisfied if $`r(x) : A(r(y):r(I))`$ for some $`A : \mathbf{Rel}(r(I))`$.
-* 🔮 `$x links! ($I: $y)` is satisfied if $`r(x) :_! A(r(y):r(I))`$ for some $`A : \mathbf{Rel}(r(I))`$.
 * 🔶 `$x links ($I[]: $y)` is satisfied if $`r(x) : A(r(y):[r(I)])`$ for some $`A : \mathbf{Rel}([r(I)])`$.
-* 🔮 `$x links! ($I[]: $y)` is satisfied if $`r(x) :_! A(r(y):[r(I)])`$ for some $`A : \mathbf{Rel}([r(I)])`$.
 * ✅ `$x links ($y)` is equivalent to `$x links ($_: $y)` for anonymous `$_` (See "Syntactic Sugar")
+
+#### **Case DIRECT_LINKS_PATT**
+* 🔮 `$x links! ($I: $y)` is satisfied if $`r(x) :_! A(r(y):r(I))`$ for some $`A : \mathbf{Rel}(r(I))`$.
+* 🔮 `$x links! ($I[]: $y)` is satisfied if $`r(x) :_! A(r(y):[r(I)])`$ for some $`A : \mathbf{Rel}([r(I)])`$.
 
 #### **Case HAS_PATT**
 * ✅ `$x has $B $y` is satisfied if $`r(y) : r(B)(r(x):O_{r(B)})`$ for some $`r(B) : \mathbf{Att}`$.
-* 🔮 `$x has! $B $y` is satisfied if $`r(y) :_! r(B)(r(x):O_{r(B)})`$ for some $`r(B) : \mathbf{Att}`$.
 * 🔶 `$x has $B[] $y` is satisfied if $`r(y) : [r(B)](r(x):O_{r(B[])})`$ for some $`r(B) : \mathbf{Att}`$.
-* 🔮 `$x has! $B[] $y` is satisfied if $`r(y) :_! [r(B)](r(x):O_{r(B[])})`$ for some $`r(B) : \mathbf{Att}`$.
 * ✅ `$x has $y` is equivalent to `$x has $_ $y` for anonymous `$_`
 
 _Remark_. Note that `$x has $B $y` will match the individual list elements of list attributes (e.g. when $`r(x) : A`$ and $`A <_! O_B`$).
 
+#### **Case DIRECT_HAS_PATT**
+
+* 🔮 `$x has! $B $y` is satisfied if $`r(y) :_! r(B)(r(x):O_{r(B)})`$ for some $`r(B) : \mathbf{Att}`$.
+* 🔮 `$x has! $B[] $y` is satisfied if $`r(y) :_! [r(B)](r(x):O_{r(B[])})`$ for some $`r(B) : \mathbf{Att}`$.
+
 #### **Case IS_PATT**
-* 🔷 `$x is $y` is satisfied if $`r(x) :_! A`$, $`r(y) :_! A`$, $`r(x) = r(y)`$, for $`A : \mathbf{ERA}`$ (XXX: add ERA lists here) (**#BDD**)
-* 🔷 `$A is $B` is satisfied if $`A = B`$ for $`A : \mathbf{ERA}`$, $`B : \mathbf{ERA}`$
+* 🔷 `$x is $y` is satisfied if:
+    * `$x` and `$y` are both **ivars** and: $`r(x), r(y) :_! A`$ and $`r(x) = r(y)`$ for $`A : \mathbf{ERA}`$
+    * `$x` and `$y` are both **lvars** and: $`r(x), r(y) : [A]`$ and $`r(x) = r(y)`$ for (sum type) $`A = \sum_i A_i`$, $`A_i : \mahtbf{ERA}`$ (**#BDD**)
+    * `$x` and `$y` are both **tvars** and: $`r(x), r(y) : \mathbf{ERA}`$ and $`r(x) = r(y)`$ (**#BDD**)
 
 _System property_
 
-1. 🔷 In the `is` pattern, left or right variables are **not bound**.
+1. 🔷 In the `is` pattern, neither left nor right variables are **not bound**.
 
 _Remark_: In the `is` pattern we cannot syntactically distinguish whether we are in the "type" or "element" case (it's the only such pattern where tvars and evars can be in the same position!) but this is alleviated by the pattern being non-binding, i.e. we require further statements which bind these variables, which then determines them to be tvars are evars.
 
-## ... Expression and list patterns
+## ... Expression and list statements
 
 ### Grammar
 
@@ -1518,13 +1530,15 @@ PRIM       ::= <any-expr-above>
 STRUCT     ::= VAR | { <COMP>: (value|VAR|STRUCT), ... }      // <COMP> = struct component
                | <HINT> { <COMP>: (value|VAR|STRUCT), ... }   // <HINT> = struct label
 DESTRUCT   ::= { T_COMP: (VAR|VAR?|DESTRUCT), ... }           
-VAL        ::= PRIM | STRUCT | STRUCT.<COMP>                  
-<T>        ::= <T> | <T>_LIST [ INT ] | <T>_FUN               // T : Schema (incl. Val)
+VAL        ::= PRIM | STRUCT |                   
+<T>        ::= <T> | <T>_LIST [ INT ]                         // T : Val
+               | <T_FCALL>                                    // fun call returning T/T?
+               | STRUCT.<T_COMP>                              // component of type T/T?
 <T>_LIST   ::= VAR | [ <T> ,..., <T> ] | <T>_LIST + <T>_LIST  // includes empty list []
                T_LIST [ INT .. INT ]
 INT_LIST   ::= INT_LIST | [ INT .. INT ]
-VAL_EXPR   ::= <T> | ( VAL_EXPR )                             // "value expression"
-LIST_EXPR  ::= <T>_LIST | INT_LIST | ( LIST_EXPR )            // "list expression"
+VAL_EXPR   ::= <T> | STRUCT                                   // "value expression"
+LIST_EXPR  ::= <T>_LIST | INT_LIST                            // "list expression"
 EXPR       ::=  VAL_EXPR | LIST_EXPR
 ```
 
@@ -1546,8 +1560,8 @@ EXPR       ::=  VAL_EXPR | LIST_EXPR
   ```
 
 _Remark_. 🔮 Introduce explicit castings between types to our grammar. For example:
-* `(int) 1.0 == 1` 
-* `(double) 10 / (double) 3 == 3.3333`)
+* `long(1.0) == 1` 
+* `double(10) / double(3) == 3.3333`)
 
 ### (Theory) Typed evaluation of expressions
 
@@ -1584,6 +1598,7 @@ _Remark_. Struct values are semantically considered up to reordering their compo
         * or `([a] + [a,b,c])[1..2] = [a,b]`
     * $`T_r(expr)`$ is the **minimal type** of all the list elements
 
+**Note**: While the type checker cannot statically determine $`T_r(expr)`$, it can statically construct an upper bound of that type.
 
 ### (Feature) Boundedness of variables in expressions
 
@@ -1592,8 +1607,6 @@ _Remark_. Struct values are semantically considered up to reordering their compo
 3. 🔶 Struct components are considered to be unordered: i.e., `{ x: $x, y: $y}` is equal to `{ y: $y, x: $x }`.
 
 _Remark_: The exception for list indices is mainly for convenience. Indeed, you could always explicitly bind `$index` with the pattern `$index in [0..len($list)-1];`. See "Case **IN_LIST_PATT**" below.
-
-_Remark_ In this specification, we assume all struct components to be **uniquely named** in the schema: as such, each component has a unique associated type. Without this constraint, weird value polymorphism may arise (but might be intended?).
 
 ### Simple expression patterns
 
@@ -1617,7 +1630,6 @@ _System property_
 
 1. 🔶 _Assignments bind_. The left-hand variable is bound by the pattern.
 2. 🔶 _Acyclicity_. Applies as before (now applie to _all_ variables assigned on the LHS)
-3. 🔶 _Type check_. We require that $
 
 #### **Case EQ_PATT**
 * ✅ `<EXPR1> == <EXPR2>` is satisfied if $`v_r(expr_1) = v_r(expr_2)`$
@@ -1643,7 +1655,6 @@ _System property_
 
 1. In all the above patterns all variables are **not bound**.
 
-
 ### List expression patterns
 
 ### **Case IN_LIST_PATT**
@@ -1654,27 +1665,6 @@ _System property_
 
 1. The right-hand side variable(s) of the pattern are **not bound**. (The left-hand side variable is bound.)
 
-## ... Function patterns
-
-### **Case IN_FUN_PATT**
-* 🔶 `$x, $y?, ... in <F_CALL>` is satisfied, after substituting concepts, the left hand side is an element of the *function evalution* set `ev(F_CALL)` (see "Function evaluation") meaning that: for some tuple $t \in ev(F)$ we have
-  * for the $`i`$th variable `$z`, which is non-optional, we have $`r(z) = t_i`$
-  * for the $`i`$th variable `$z`, which is marked as optional using `?`, we have either
-    * $`r(z) = t_i`$ and $`t_i \neq \emptyset`$
-    * $`r(z) = t_i`$ and $`t_i = \emptyset`$
-
-_System property_
-
-* 🔶 Function call must be to a stream-return function.
-
-### **Case ASSIGN_FUN_PATT**
-* 🔶 `$x, $y?, ... = <FUN_CALL>` same as above, but see system property.
-
-_Remark_: variables marked with `?` in function assignments are the first example of **optional variables**. We will meet other pattern yielding optional variables in the following section.
-
-_System property_
-
-* 🔶 Function call must be to a item-return function.
 
 # Data manipulation language
 
@@ -1689,8 +1679,8 @@ _System property_
 
 * _Output crows_: For each `r`: 
   * replace all patterns in `PATT` with concepts from `r`. 
-  * Compute the stream of answer `{ m' }`. 
-  * The final output stream will be `{ (m,m') }`.
+  * Compute the stream of answer `{ r' }`. 
+  * The final output stream will be `{ (r,r') }`.
 
 
 ## Functions semantics
@@ -1802,11 +1792,13 @@ _Execution_: An `insert` clause is executed by executing its statements individu
 
 * 🔶 **Optionality**: Optional variables are those exclusively appearing in a `try` block
   * `try` blocks in `insert` clauses cannot be nested
-  * `try` blocks variables are **block-level bound** if
-    * they are bound outside the block
-    * they are bound by an `isa` or `=` statement in the block
-  * If any variable is not block-level bound, the `try` block statements are skipped.
-  * If all variables are block-level bound, the `try` block statements are runnable.
+  * variables in `try` are variables are said to be **determined** if
+    * they are determined outside the block, i.e.:
+        * they are assigned in the crow `r`
+        * they are subjects of `isa` or `=` statements outside the block
+    * they are subjects of `isa` or `=` statements inside the block
+  * If any variable in the `try` block is _not_ determined, then `try` block statement is **skipped** (i.e. **not executed**)
+  * If all variables are , the `try` block `isa` statements are marked **runnable**.
   * All variables outside of a `try` block must be bound outside of that try block (in other words, variable in a block bound with `isa` cannot be used outside of the block)
 
 ### Insert statements
@@ -1822,22 +1814,25 @@ _System property_:
 
 _Note_. All **EXPR_INS** statements are executed first as described in the previous section.
 
-#### **Case OBJ_ISA_INS**
-* ✅ `$x isa $T` adds new $`a :_! r(T)`$, $`r(T) : \mathbf{Obj}`$, and sets $`r(x) = a`$
+#### **Case ISA_INS**
+* ✅ `$x isa $T` adds new $`a :_! r(T)`$, $`r(T) : \mathbf{ERA}`$, and sets $`r(x) = a`$
+* 🔶 `$x isa $T ($R: $y, ...)` adds new $`a :_! r(T)(r(y):r(R))`$, $`r(T) : \mathbf{Rel}`$, and sets $`r(x) = a`$
+* 🔶 `$x isa $T <EXPR>` adds new $`a :_! r(T)`$, $`r(T) : \mathbf{Att}`$, and sets $`r(x) = a`$ and $`\mathsf{val}(a) = v_r(expr)`$
 
 _System property_:
 
 1. ✅ `$x` cannot be bound elsewhere (i.e. `$x` cannot be bound in the input row `r` nor in other `isa` or `=` statements).
+1. 🔮 `<EXPR>` must be of the right value type, and be evaluatable (i.e. all vars are bound).
+1. 🔶 In the last case, `r(T)` must be an independent attribute, i.e. the schema must contain `attribute r(T) (sub B) @indepedent`
 
-#### **Case ATT_ISA_INS**
-* 🔮  `<VAL_EXPR> isa $T` adds new $`v :_! r(T)`$, $`r(T) : \mathbf{Att}`$, where `v` is the result of evaluating the expression `<EXPR>`
+#### **Case ANON_ISA_INS**
 
-_System property_:
-
-* 🔮 `<EXPR>` must be of the right value type, and be evaluatable (i.e. all vars are bound).
-* 🔮 `r(T)` must be an independent attribute, i.e. the schema must contain `attribute r(T) (sub B) @indepedent`
+* 🔶 `$T` is equivalent to `$_ isa $T`
+* 🔶 `$T ($R: $y, ...)`  is equivalent to `$_ isa $T ($R: $y, ...)`
+* 🔶 `$T <EXPR>` is equivalent to `$_ isa $T <EXPR>`
 
 #### **Case LINKS_INS** 
+
 * ✅ `$x links ($I: $y)` replaces $`r(x) :_! A(a : J, b : K, ...)`$ by $`r(x) :_! A(r(y)a : r(I), b : K, ...)`$
 
 _Remark_. Set semantics for interfaces means that inserts become idempotent when inserting the same role players twice.
@@ -1992,15 +1987,16 @@ _Remark_. The resulting $`r(x) :_! r(A)(z : J, ...)`$ must be within schema cons
 * 🔶 `($I[]: <T_LIST>) of $x` replaces $`r(x) :_! r(A)(l : r(I))`$ by $`r(x) :_! r(A)()`$ for $`l`$ being the evaluation of `T_LIST`.
 
 #### **Case ATT_OF_DEL**
-* 🔷 `$B $y of $x` replaces any $`r(y) :_! r(B)(r(x) : O_{r(B)})`$ by $`r(y) :_! B'()`$
-* 🔷 `$B of $x` replaces any $`a :_! r(B)(r(x) : O_{r(B)})`$ by $`a :_! B'()`$
+* 🔶 `$y of $x` replaces any $`r(y) :_! T(y)(r(x) : O_{r(B)})`$ by $`r(y) :_! T(y)()`$
+* 🔷 `$B of $x` replaces any $`a :_! r(B)(r(x) : O_{r(B)})`$ by $`a :_! r(B)()`$
 
 _System property_
 * 🔶 _Capability check_. Cannot have that `T($y) owns r($B)[]` (in this case, must delete entire lists instead!)
 * 🔷 _Type check_ Must have $`T(y) = r(B)`$.
 
 #### **Case ATT_LIST_OF_DEL**
-* 🔶 `$B[] $y of $x` deletes any $`r(y) = [l_1, l_2, ... ] :_! r(B)(r(x) : O_{r(B)})`$ and replaces any $`l_i :_! r(B)(r(x) : O_{r(B)})`$ by $`l_i :_! B'()`$
+* 🔶 `$y of $x` deletes any $`r(y) = [l_1, l_2, ... ] :_! [A](r(x) : O_{A[]})`$ where we must have $`A(y) = [A]`$ for some $`A : \mathbf{Att}`$, and 
+    replaces any $`l_i :_! r(B)(r(x) : O_{r(B)})`$ by $`l_i :_! B'()`$
 * 🔷 `$B[] of $x` deletes any $`l = [l_1, l_2, ... ] :_! r(B)(r(x) : O_{r(B)})`$ and replaces any $`l_i :_! r(B)(r(x) : O_{r(B)})`$ by $`l_i :_! B'()`$
 
 ### Clean-up
