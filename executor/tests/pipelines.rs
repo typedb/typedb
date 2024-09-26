@@ -4,11 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    cmp::Ordering,
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
+use std::sync::Arc;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::{
@@ -27,6 +23,7 @@ use storage::{
     snapshot::{CommittableSnapshot, ReadSnapshot},
     MVCCStorage,
 };
+use test_utils::assert_matches;
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
@@ -87,8 +84,8 @@ fn test_insert() {
         .unwrap();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
-    assert!(matches!(iterator.next(), Some(Ok(_))));
-    assert!(matches!(iterator.next(), None));
+    assert_matches!(iterator.next(), Some(Ok(_)));
+    assert_matches!(iterator.next(), None);
     let snapshot = Arc::into_inner(snapshot).unwrap();
     snapshot.commit().unwrap();
 
@@ -122,12 +119,12 @@ fn test_insert_insert() {
     if let Err((_, err)) = pipeline {
         dbg!(err);
     }
-    //
+
     // let (mut iterator, snapshot) = pipeline.into_iterator().unwrap();
     // let row = iterator.next();
-    // assert!(matches!(&row, &Some(Ok(_))));
+    // assert_matches!(&row, &Some(Ok(_)));
     // assert_eq!(row.unwrap().unwrap().len(), 3);
-    // assert!(matches!(iterator.next(), None));
+    // assert_matches!(iterator.next(), None);
     // let snapshot = Arc::into_inner(snapshot).unwrap();
     // snapshot.commit().unwrap();
 
@@ -227,8 +224,8 @@ fn test_match_delete_has() {
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         insert_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
-    assert!(matches!(iterator.next(), Some(Ok(_))));
-    assert!(matches!(iterator.next(), None));
+    assert_matches!(iterator.next(), Some(Ok(_)));
+    assert_matches!(iterator.next(), None);
     let snapshot = Arc::into_inner(snapshot).unwrap();
     snapshot.commit().unwrap();
 
@@ -261,8 +258,8 @@ fn test_match_delete_has() {
 
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         delete_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
-    assert!(matches!(iterator.next(), Some(Ok(_))));
-    assert!(matches!(iterator.next(), None));
+    assert_matches!(iterator.next(), Some(Ok(_)));
+    assert_matches!(iterator.next(), None);
     let snapshot = Arc::into_inner(snapshot).unwrap();
     snapshot.commit().unwrap();
 
@@ -300,8 +297,8 @@ fn test_match_sort() {
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         insert_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
-    assert!(matches!(iterator.next(), Some(Ok(_))));
-    assert!(matches!(iterator.next(), None));
+    assert_matches!(iterator.next(), Some(Ok(_)));
+    assert_matches!(iterator.next(), None);
     let snapshot = Arc::into_inner(snapshot).unwrap();
     snapshot.commit().unwrap();
 
@@ -361,8 +358,8 @@ fn test_select() {
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         insert_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
-    assert!(matches!(iterator.next(), Some(Ok(_))));
-    assert!(matches!(iterator.next(), None));
+    assert_matches!(iterator.next(), Some(Ok(_)));
+    assert_matches!(iterator.next(), None);
     let snapshot = Arc::into_inner(snapshot).unwrap();
     snapshot.commit().unwrap();
 
