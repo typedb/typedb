@@ -118,14 +118,14 @@
 
 # Introduction
 
-This document specifies the behaviour of TypeDB and its query language TypeQL.
+This document specifies the behavior of TypeDB and its query language TypeQL.
 
 * Best viewed _not in Chrome_ (doesn't display math correctly)
 * Badge system: 
     * ✅ -> implemented / part of alpha
     * 🔷 -> up next / part of beta
     * 🔶 -> part of first stable release
-    * 🔮 -> roadmap 
+    * 🔮 -> on the roadmap 
     * ❓ -> speculative / to-be-discussed
     * ⛔ -> rejected
 
@@ -280,7 +280,7 @@ The following is purely for keeping track of certain information in the type sys
 
 * **Abstract modality**. Certain statements $`\mathcal{J}`$ about types (namely: type kinds $`A : \mathbf{Kind}(...)`$ and subtyping $`A < B`$) have abstract versions written $`\diamond(\mathcal{J})`$.
 
-    > If $`\diamond(\mathcal{J})`$ is true then this means $`\mathcal{J}`$ is _abstractly true_ in the type system, where "abstractly true" is a special truth-value which entails certain special behaviours in the database.
+    > If $`\diamond(\mathcal{J})`$ is true then this means $`\mathcal{J}`$ is _abstractly true_ in the type system, where "abstractly true" is a special truth-value which entails certain special behaviors in the database.
 
 _Remark_: **Key**, **subkey**, **unique** could also be modalities, but for simplicity (and to reduce the amount of symbols in our grammar), we'll leave them be and only keep track of them in pure TypeQL.
 
@@ -543,7 +543,7 @@ _Note_. This is "keyness by value" (not keyqueness by direct-typed attribute).
 
 _Key principle_: If $`\diamond(A : K)`$ can be inferred in the type system, then we say "$`A : K`$ holds abstractly". 
 
-* In all cases, the purposse of abstractness is to ***contrain `insert` semantics.***
+* In all cases, the purposse of abstractness is to ***contrain `insert` behavior.***
 * In a commited schema, it is never possible that both $`\diamond(A : K)`$ and $`A : K`$ are both true the same time (and _neither implies the other_).
 
 _System property_
@@ -551,17 +551,17 @@ _System property_
 * 🔶 _Abstractness prevails_. When both $`\diamond(A : K)`$ and $`A : K`$ are present after a define clause is completed, then we remove the latter statements from the type system. (_Note_. Abstractness can only be removed through ***undefining it***, not by "overwriting" it in another `define` statement ... define is always additive!).
 
 ##### **Case TYP_ABSTRACT_DEF**
-* 🔷 `(kind) A @abstract` adds $`\diamond(A : \mathbf{Kind})`$ which affects `insert` semantics.
+* 🔷 `(kind) A @abstract` adds $`\diamond(A : \mathbf{Kind})`$ which affects `insert` behavior.
 
 _System property_
 
 1. 🔷 _Upwards closure_ If `(kind) A @abstract` and $`A \leq B`$ then `(kind) B (sub ...)`cannot be declared non-abstractly.
 
 ##### **Case REL_ABSTRACT_DEF**
-* 🔶 `A relates I @abstract` adds $`\diamond(A : \mathbf{Rel}(I))`$ which affects `insert` semantics.
-* 🔶 `A relates I as J @abstract` adds $`\diamond(A : \mathbf{Rel}(I))`$ which affects `insert` semantics.
-* 🔶 `A relates I[] @abstract` adds $`\diamond(A : \mathbf{Rel}([I]))`$ which affects `insert` semantics.
-* 🔶 `A relates I[] as J[] @abstract` adds $`\diamond(A : \mathbf{Rel}([I]))`$ which affects `insert` semantics.
+* 🔶 `A relates I @abstract` adds $`\diamond(A : \mathbf{Rel}(I))`$ which affects `insert` behavior.
+* 🔶 `A relates I as J @abstract` adds $`\diamond(A : \mathbf{Rel}(I))`$ which affects `insert` behavior.
+* 🔶 `A relates I[] @abstract` adds $`\diamond(A : \mathbf{Rel}([I]))`$ which affects `insert` behavior.
+* 🔶 `A relates I[] as J[] @abstract` adds $`\diamond(A : \mathbf{Rel}([I]))`$ which affects `insert` behavior.
 
 _System property_
 
@@ -575,15 +575,15 @@ _Remark_: In addition to user declarations, let's also recall the **three cases*
 
 
 ##### **Case PLAYS_ABSTRACT_DEF**
-* 🔶 `A plays B:I @abstract` adds $`\diamond(A <_! I)`$ which affects `insert` semantics.
+* 🔶 `A plays B:I @abstract` adds $`\diamond(A <_! I)`$ which affects `insert` behavior.
 
 _System property_
 
 1. 🔶 _Upwards closure_. If `A plays B:I @abstract` and $`B'(I) \leq B'(I')`$ then `A plays B':I'` cannot be declared non-abstractly.
 
 ##### **Case OWNS_ABSTRACT_DEF**
-* 🔶 `A owns B @abstract` adds $`\diamond(A <_! O_B)`$ which affects `insert` semantics.
-* 🔶 `A owns B[] @abstract` adds $`\diamond(A <_! O_{B[]})`$ which affects `insert` semantics.
+* 🔶 `A owns B @abstract` adds $`\diamond(A <_! O_B)`$ which affects `insert` behavior.
+* 🔶 `A owns B[] @abstract` adds $`\diamond(A <_! O_{B[]})`$ which affects `insert` behavior.
 
 _Remark_: Recall also that this constraint may be inferred (cf. "Un-ordering"): if a object type owns a list attribute then it abstractly owns the "un-ordered" (un-listed?) attribute.
 
@@ -675,32 +675,22 @@ _System property_
 
 * 🔷 _stream-return function_ definition takes the form: 
     ```
-    fun F (x: T, y: S) -> { A, B }:
-      match <PATTERN>
-      (<OPERATORS>)
-      return { z, w };
+    fun F <SINGLE_FUN_SIGNATURE>:
+    <FUN_PIPELINE>
+    <SINGLE_FUN_RETURN> 
     ```
-    adds the following to our type system:
-    * _Function symbol_: $`F : \mathbf{Type}(T,S)`$.
-    * _Function type_: when $`x : T`$ and $`y: S`$ then $`F(x:T, y:S) : \mathbf{Type}`$
-    * _Output cast_: $`F(x:T, y:S) \leq A \times B`$
-    * _Function terms_: $`(z,w) : F(x:T, y:S)`$ are discussed in section "Function semantics"
-    * **Generalizes** to $`n`$ inputs and $`m`$ outputs
+
+_Note_ See "Function behavior" for details on this syntax.
 
 #### **Case SINGLE_RET_FUN_DEF**
-* 🔷 _item-return function_ definition takes the form: 
+* 🔷 _single-return function_ definition takes the form: 
     ```
-    fun f (x: T, y: S) -> A, B:
-      match <PATTERN>
-      (<OPERATORS>)
-      return <AGG>, <AGG>;
+    fun f <SINGLE_FUN_SIGNATURE>:
+    <FUN_PIPELINE>
+    <SINGLE_FUN_RETURN> 
     ```
-    adds the following to our type system:
-    * _Function symbol_: when $`x : T`$ and $`y: S`$ then $`f(x:T, y:S) : A \times B`$
-    * _Function terms_: $`(z,w) : f(x:T, y:S)`$ are discussed in section "Function semantics"
-    * **Generalizes** to $`n`$ inputs and $`m`$ outputs
 
-_Comment: notice difference in capitalization between the two cases!_
+_Note_ See "Function behavior" for details.
 
 ## Undefine semantics
 
@@ -1131,6 +1121,18 @@ _Going forward, we always work with valid patterns_
     * _Special case: assigned kinds_. Note that `T($x)` may be `Ent`, `Rel`, `Att`, `Itf` (`Rol`), or `Val` (for value types) when `$x` is assigned a type as a concept — we speak of `T($x)` as the **type kind** of `r($x)` in this case.
 
 
+### Input crows for patterns
+
+An **input** crow `r` for a pattern `PATT` is
+
+* a crow,
+* with subset of its variables as **marked** as "input",
+* any variable marked as input **cannot be**
+    * negation bound in `PATT`
+    * optional in `PATT`
+
+
+
 <!-- Examples for the typing algorithm:
 fun a($x: person) -> name[]:
 match
@@ -1160,36 +1162,35 @@ $x has color $y;
 // STICKY: are we happy with this?
 -->
 
-
-### (Feature) Query answer computation
-
-* ✅ _Satisfaction_. A crow `r` **satisfies** a (valid and unambiguous) pattern `PATT` (written $`r \in ev<PATT>`$) if
-  1. **Type semantics**. Its typing assignemt satisfies the typing condition below.
-  1. **Pattern semantics**. Its concept assignment satisfis the "pattern semantics" described in the next section.
- 
-  > Intuitively, this means substituting the variables in `PATT` with the concepts assigned in `r` yields statements that are true in our type system. 
-  
-#### **Typing satisfaction conditions**
-
-* ✅ For tvars `$X` in `PATT`, `T($X)` is a type kind (`entity`, `attribute`, `relation`, `interface`, `value`)
-* ✅ For vvars `$x` in `PATT`, `T($x)` is a value type (primitive or struct)
-* 🔶 For lvars `$x` in `PATT`, `T($x)` is a list type `A[]` for ***minimal*** `A` a type such that `A` is the minimal upper bounds of the types of the list elements `<EL>` in the list `r($x) = [<EL>, <EL>, ...]` (note: our type system does have minimal upper bounds thanks to sums)
-* ✅ For ivars `$x` in `PATT`, `T($x)` is a schema type `A` such that $`r(x) :_! A`$ isa **direct typing**
-
-#### **Answers**
-
-* 🔶 A crow `r` is an **answer** to a pattern `PATT` if the following are satisfied:
-    * **Retrievable domain**. Each variable in `r` is a retrievable variable of `PATT`
-    * **Satisfaction**.`r` satisfies the pattern (as outlined in next section)
-    * **Minimality**. no subset of `r` satisfies the `PATT` (in other words, `r` is _minimal_)
-
-_Example_: Consider the pattern `$x isa Person;` (this pattern comprises a single statement). Then `($x -> p)` satisfies the pattern if `p` is an element of the type `Person` (i.e. $p : \mathsf{Person}$). The answer `($x -> p, $y -> p)` also satisfies the pattern, but it is not proper minimal.
-
 ## Pattern semantics
 
-Given a crow `r` and pattern `PATT` we say `r` ***satisfies*** `PATT`, defined as follows.
+### Satisfaction and answers
 
-### Block-level
+* Given an input crow `r` for `PATT` ***satisfies*** `PATT` if
+  * **Type satisfaction**. the typing assignemt of `r` satisfies the typing condition below.
+  * **Pattern semantics**. the element assignment of `r` satisfis the pattern conditions below. 
+ 
+  > Intuitively, this means substituting the variables in `PATT` with the concepts assigned in `r` yields statements that are true in our type system. 
+
+* A crow `r` is an **answer** to a pattern `PATT` if the following are satisfied:
+    * **Retrievable domain**. Each variable in `r` is a retrievable variable of `PATT`
+    * **Satisfaction**.`r` satisfies the pattern (as outlined in next section)
+    * **Minimality**. no subset of `r` with the same input-marked variables satisfies the `PATT` 
+
+      > In other words, `r` is a _minimal extension_ of the given input.
+
+_Example_: Consider the pattern `$x isa Person;` (i.e. a pattern comprising a single statement). The crow `($x -> p)` satisfies the pattern if `p` is an element of the type `Person`. The crow `($x -> p, $y -> p)` also satisfies the pattern, but it is not minimal... unless `$y` was marked as an input, in which case it _does_ satisfy the pattern.
+ 
+### Typing satisfaction
+
+* For tvars `$X` in `PATT`, `T($X)` is a type kind (`entity`, `attribute`, `relation`, `interface`, `value`)
+* For vvars `$x` in `PATT`, `T($x)` is a value type (primitive or struct)
+* For lvars `$x` in `PATT`, `T($x)` is a list type `A[]` for ***minimal*** `A` a type such that `A` is the minimal upper bounds of the types of the list elements `<EL>` in the list `r($x) = [<EL>, <EL>, ...]` (note: our type system does have minimal upper bounds thanks to sums)
+* For ivars `$x` in `PATT`, `T($x)` is a schema type `A` such that $`r(x) :_! A`$ isa **direct typing**
+
+### Pattern satisfaction
+
+#### Block-level bindings
 
 Given a (valid and unambiguous) pattern `PATT` in DNF, we define for subpatterns
 
@@ -1198,7 +1199,7 @@ Given a (valid and unambiguous) pattern `PATT` in DNF, we define for subpatterns
 
 a variable `$x` in `SUBPATT` is **block-level** if its bound in statements that appears unnested in a branch of `SUBPATT` but not a parent block.
 
-### Recursive definition of satisfaction
+#### Recursive definition
 
 We recursively destructuring subpatterns `PATT` in DNF. Set `P = PATT`
 
@@ -1293,7 +1294,7 @@ _Remark_ the following can be said in less space, but we chose more principled l
 
 _System property_
 
-* 🔶 Function call must be to a **item-return** function, i.e. have output type `T, ...`.
+* 🔶 Function call must be to a **single-return** function, i.e. have output type `T, ...`.
 * 🔶 All variable arguments (or variables in expression arguments) to `F` must be set in the crow `r`
 
 ## ... Type statements
@@ -1545,7 +1546,7 @@ EXPR       ::=  VAL_EXPR | LIST_EXPR
 ***Selected details***
 
 * Careful: the generic case `<T>` modify earlier parts of the 
-* `T`-functions (`T_FUN`) are function calls to *item-return* functions with non-tupled output type `T` or `T?`
+* `T`-functions (`T_FUN`) are function calls to *single-return* functions with non-tupled output type `T` or `T?`
 * Datetime and time formats
   ```
   long       ::=   (0..9)*
@@ -1683,11 +1684,11 @@ _System property_
   * The final output stream will be `{ (r,r') }`.
 
 
-## Functions semantics
+## Function semantics
 
 ### Function signature, body, operators
 
-#### **Case FUN_SIGNAT_STREAM**
+#### **Case SIGNATURE_STREAM_FUN**
 
 * 🔶 Stream-return function signature syntax:
     _Syntax_:
@@ -1701,7 +1702,7 @@ _Remark: see GH issue on trais (Could have `A | B | plays C` input types)._
 
 _Terminology_ If the function returns a single types (`{ C }`) then we call it a **singleton** function.
 
-#### **Case FUN_SIGNAT_ITEM**
+#### **Case SIGNATURE_SINGLE_FUN**
 
 * 🔶 Single-return function signature syntax:
     ```
@@ -1714,7 +1715,7 @@ _STICKY: allow types to be optional in args (this extends types to sum types, in
 
 _Terminology_ If the function returns a single types (`C`) then we call it a **singleton** function.
 
-#### **Case FUN_BODY**
+#### **Case PIPELINE_FUN**
 
 * 🔶 Function body syntax:
     _Syntax_:
@@ -1724,15 +1725,32 @@ _Terminology_ If the function returns a single types (`C`) then we call it a **s
 
 _System property_
 
+* 🔶 _Read only_. Pipeline must be read-only.
 * 🔶 _Require crow stream output_ Pipeline must be non-terminal (e.g. cannot end in `fetch`).
 
-#### **Case FUN_RETURN**
+#### **Case STREAM_RETURN_FUN**
+
+* 🔶 Function return syntax:
+    _Syntax_:
+    ```
+    return { $x, $y, ... };
+    ```
+_System property_
+
+* 🔶 _Require bindings_ all vars (`$x`, `$y`, ...) must be bound in the pipeline (taken into account any variable selections through `select` and `reduce` operators).
+
+#### **Case SINGLE_RETURN_FUN**
 
 * 🔶 Function body syntax:
     _Syntax_:
     ```
-    return $x, $y, ...;
+    return <SINGLE> $x, $y, ...;
     ```
+    where `<SINGLE>` can be:
+    * `first`
+    * `last`
+    * `random`
+
 _System property_
 
 * 🔶 _Require bindings_ all vars (`$x`, `$y`, ...) must be bound in the pipeline (taken into account any variable selections through `select` and `reduce` operators).
@@ -1740,10 +1758,11 @@ _System property_
 ### (Theory) Function evaluation
 
 * A function `F` counts as ***evaluated*** on a call `F_CALL` when we completely computed its output stream as follows:
-    1. provide input arguments from the call `F_CALL` as a crow to the body pipeline
+    1. provide input arguments from the call `F_CALL` as a single crow, which is the starting point of the body `PIPELINE`
     2. Then act like an ordinary pipeline, outputting a stream (see "Pipelines")
     3. perform `return` transformation outlined below for final output which is effectively a `select`.
-    4. Denote the output stream by `ev(F)`
+        4. For **single-return** functions we first pick the **first**, **last** or a **random** crow in the stream, making the final output an at-most-single-row output
+    4. Denote the output stream by `ev(F_CALL)`
 * When negations are use, function in lower strata must be evaluated (on all relevant calls) before function in higher strata (see below)
 
 ### (Theory) Order of execution (and recursion)
@@ -1758,7 +1777,7 @@ Since functions can only be called from `match` stages in pipelines, evaluation 
     _Note_: The semantics in this case is computed "stratum by stratum" from lower strata to higher strata. New facts in our type systems ($`t : T`$) are derived in a bottom-up fashion for each stratum separately.
 
 
-## Insert semantics
+## Insert behavior
 
 ### Basics of inserting
 
@@ -1888,7 +1907,6 @@ _System property_:
   * Execution is as described in "Basics of inserting" (**#BDD**)
 
 
-
 ## Delete semantics
 
 ### Basics of deleting
@@ -1936,16 +1954,16 @@ delete
   * Executions of statements will modify the database state by 
     * removing elements 
     * remove dependencies
-  * Modification are buffered in transaction (see "Transactions")
+  * Modifications are buffered in transaction (see "Transactions")
   * Violation of system properties or schema constraints will lead to failing transactions (see "Transactions")
 
 #### (Feature) optionality
 
 * 🔶 _Optionality_: Optional variables are those exclusively appearing in a `try` block
   * `try` blocks in `delete` clauses cannot be nested
-  * `try` blocks variables are **block-level bound** if they are bound in `r`
-  * If any variable is not block-level bound, the `try` block statements are **skipped**.
-  * If all variables are block-level bound, the `try` block statements are **runnable**.
+  * `try` blocks variables are **determined* if they are bound in `r`
+  * If any variable is not determined, the `try` block statements are **skipped**.
+  * If all variables are determined, the `try` block statements are **runnable**.
 
 ### Delete statements
 
@@ -2003,7 +2021,7 @@ _System property_
 
 Orphaned relation and attribute instance (i.e. those with insufficient dependencies) are cleaned up at the end of a delete  clause.
 
-## Update semantics
+## Update behavior
 
 ### Basics of updating
 
@@ -2023,9 +2041,9 @@ A `update` clause comprises collection of _update statements_.
 
 * _Optionality_: Optional variables are those exclusively appearing in a `try` block
   * `try` blocks in `delete` clauses cannot be nested
-  * `try` blocks variables are **block-level bound** if they are supplied by `r`
-  * If any variable is not block-level bound, the `try` block statements are **skipped**.
-  * If all variables are block-level bound, the `try` block statements are **runnable**.
+  * `try` blocks variables are **determined** if they are supplied by `r`
+  * If any variable is not determined, the `try` block statements are **skipped**.
+  * If all variables are determined, the `try` block statements are **runnable**.
 
 ### Update statements
 
@@ -2066,7 +2084,7 @@ _System property_:
 
 Orphaned relation and attribute instance (i.e. those with insufficient dependencies) are cleaned up at the end of a delete clause.
 
-## Put semantics
+## Put behavior
 
 * 🔶 `put <PUT>` is equivalent to 
   ```
@@ -2098,23 +2116,23 @@ Clauses are stages in which patterns are matched or statements are executed.
 
 ### Match
 
-As described in "Match semantics".
+As described in "Match behavior".
 
 ### Insert
 
-As described in "Insert semantics".
+As described in "Insert behavior".
 
 ### Delete
 
-As described in "Delete semantics".
+As described in "Delete behavior".
 
 ### Update
 
-As described in "Update semantics".
+As described in "Update behavior".
 
 ### Put
 
-As described in "Put semantics".
+As described in "Put behavior".
 
 ### Fetch
 
@@ -2162,7 +2180,7 @@ _System property_
 1. 🔶 fails transaction if $`T_r(x)`$ does not own $`[A]`$.
 
 #### **Case FETCH_SNGL_FUN**
-* 🔶 `"key": fun(...)` where `fun` is item-return.
+* 🔶 `"key": fun(...)` where `fun` is single-return.
 
 #### **Case FETCH_STREAM_FUN**
 * 🔶 `"key": [ fun(...) ]` where `fun` is stream-return.
@@ -2285,17 +2303,17 @@ _Remark_: Offset is only useful when streams (and the order of answers) are full
   * 🔶 `check($x)`:
     * output type `bool`
     * outputs `true` if concept row stream contains a row `r` with non-empty entry `r($x)` for `$x`
-  * 🔶 `sur($x)`:
+  * 🔶 `sum($x)`:
     * output type `double` or `int`
     * outputs sum of all non-empty `r($x)` in concept row `r`
     * `$x` can be optional
     * empty sums yield `0.0` or `0`
-  * 🔶 `rean($x)`:
+  * 🔶 `mean($x)`:
     * output type `double?`
     * outputs mean of all non-empty `r($x)` in concept row `r`
     * `$x` can be optional
     * empty mean yield empty output ($\emptyset$)
-  * 🔶 `redian($x)`, 
+  * 🔶 `median($x)`, 
     * output type `double?` or `int?` (depending on type of `$x`)
     * outputs median of all non-empty `r($x)` in concept row `r`
     * `$x` can be optional
@@ -2307,7 +2325,7 @@ _Remark_: Offset is only useful when streams (and the order of answers) are full
     * output type `long`
     * outputs count of all non-empty `r($x)` in input crow stream `{ r }`
     * `$x` can be optionals
-  * 🔮 `count($x, $y, ...)`
+  * 🔶 `count($x, $y, ...)`
     * output type `long`
     * outputs count of all non-empty concept tuples `(r($x), r($y), ...)` in input crow stream
     * `$x` can be optional
@@ -2445,8 +2463,8 @@ An element in the answer set of a pattern.
 
 Callable `match-return` query. 
 
-* can be item-return function (e.g. `-> A, B`) or stream-return function (e.g. `-> { A, B }`)
-* can be singleton function (e.g. `-> A` or `-> { B }`) or tuple function (e.g. `-> { A, B }` or `-> A, B`)
+* can be **single-return** function (e.g. `-> A, B`) or **stream-return** function (e.g. `-> { A, B }`)
+* can be **scalar** function (e.g. `-> A` or `-> { B }`) or **tuple** function (e.g. `-> { A, B }` or `-> A, B`)
 
 ### Statement
 
