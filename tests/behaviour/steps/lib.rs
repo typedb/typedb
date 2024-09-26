@@ -9,7 +9,8 @@
 
 use std::{
     collections::HashMap,
-    iter, mem,
+    error::Error,
+    fmt, iter, mem,
     path::Path,
     sync::{Arc, Mutex},
 };
@@ -180,6 +181,27 @@ impl Context {
 
 fn is_ignore(tag: &str) -> bool {
     tag == "ignore" || tag == "ignore-typedb"
+}
+
+#[derive(Debug, Clone)]
+pub enum BehaviourTestExecutionError {
+    UseInvalidTransactionAsWrite,
+    UseInvalidTransactionAsSchema,
+}
+
+impl fmt::Display for BehaviourTestExecutionError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for BehaviourTestExecutionError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::UseInvalidTransactionAsWrite => None,
+            Self::UseInvalidTransactionAsSchema => None,
+        }
+    }
 }
 
 #[macro_export]

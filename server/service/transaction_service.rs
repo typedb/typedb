@@ -49,7 +49,10 @@ use tokio::{
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
 use tracing::{event, Level};
-use typedb_protocol::transaction::{stream_signal::Req, Server};
+use typedb_protocol::{
+    query::Type::{Read, Write},
+    transaction::{stream_signal::Req, Server},
+};
 use typeql::{
     parse_query,
     query::{stage::Stage, Pipeline, SchemaQuery},
@@ -158,9 +161,9 @@ enum StreamQueryResponse {
 }
 
 impl StreamQueryResponse {
-    fn init_ok(columns: &StreamQueryOutputDescriptor) -> Self {
+    fn init_ok(columns: &StreamQueryOutputDescriptor, query_type: typedb_protocol::query::Type) -> Self {
         let columns = columns.iter().map(|(name, _)| name.to_string()).collect();
-        let message = query_res_ok_concept_row_stream(columns);
+        let message = query_res_ok_concept_row_stream(columns, query_type);
         Self::InitOk(query_initial_res_ok_from_query_res_ok_ok(message))
     }
 
@@ -897,7 +900,7 @@ impl TransactionService {
             let thing_manager = transaction.thing_manager.clone();
             tokio::spawn(async move {
                 let mut as_lending_iter = batch.into_iterator();
-                Self::submit_response_async(&sender, StreamQueryResponse::init_ok(&output_descriptor)).await;
+                Self::submit_response_async(&sender, StreamQueryResponse::init_ok(&output_descriptor, Write)).await;
 
                 while let Some(row) = as_lending_iter.next() {
                     if interrupt.check() {
@@ -955,7 +958,7 @@ impl TransactionService {
 
                 let descriptor: StreamQueryOutputDescriptor =
                     named_outputs.into_iter().map(|(name, position)| (name, position)).sorted().collect();
-                let response = StreamQueryResponse::init_ok(&descriptor);
+                let response = StreamQueryResponse::init_ok(&descriptor, Read);
                 Self::submit_response_sync(&sender, response);
 
                 let (mut iterator, _) =
@@ -1125,14 +1128,10 @@ impl QueryStreamTransmitter {
             self.transmitter_task = Some(tokio::spawn(async move {
                 let control = task.await.unwrap();
                 match control {
-                    Continue(query_response_receiver) => Self::respond_stream_parts(
-                        sender,
-                        prefetch,
-                        latency,
-                        req_id,
-                        query_response_receiver
-                    ).await,
-                    Break(()) => Break(())
+                    Continue(query_response_receiver) => {
+                        Self::respond_stream_parts(sender, prefetch, latency, req_id, query_response_receiver).await
+                    }
+                    Break(()) => Break(()),
                 }
             }));
             false
