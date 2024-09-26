@@ -1123,15 +1123,10 @@ _Going forward, we always work with valid patterns_
 
 ### Input crows for patterns
 
-An **input** crow `r` for a pattern `PATT` is
+An **input crow** `r` for a pattern `PATT` is
 
 * a crow,
-* with subset of its variables as **marked** as "input",
-* any variable marked as input **cannot be**
-    * negation bound in `PATT`
-    * optional in `PATT`
-
-
+* with subset of its variables as marked as **input**,
 
 <!-- Examples for the typing algorithm:
 fun a($x: person) -> name[]:
@@ -1167,15 +1162,17 @@ $x has color $y;
 ### Satisfaction and answers
 
 * Given an input crow `r` for `PATT` ***satisfies*** `PATT` if
+
   * **Type satisfaction**. the typing assignemt of `r` satisfies the typing condition below.
-  * **Pattern semantics**. the element assignment of `r` satisfis the pattern conditions below. 
+  * **Pattern semantics**. the concept assignment of `r` satisfis the pattern conditions below. 
  
   > Intuitively, this means substituting the variables in `PATT` with the concepts assigned in `r` yields statements that are true in our type system. 
 
 * A crow `r` is an **answer** to a pattern `PATT` if the following are satisfied:
-    * **Retrievable domain**. Each variable in `r` is a retrievable variable of `PATT`
-    * **Satisfaction**.`r` satisfies the pattern (as outlined in next section)
-    * **Minimality**. no subset of `r` with the same input-marked variables satisfies the `PATT` 
+
+    * **Retrievable domain**. Each non-input variable in `r` must be a retrievable variable of `PATT`
+    * **Satisfaction**. `r` must satisfy the pattern (as outlined in next sections)
+    * **Minimality**. No subset of `r` with the same input-marked variables satisfies the `PATT` 
 
       > In other words, `r` is a _minimal extension_ of the given input.
 
@@ -1201,7 +1198,7 @@ a variable `$x` in `SUBPATT` is **block-level** if its bound in statements that 
 
 #### Recursive definition
 
-We recursively destructuring subpatterns `PATT` in DNF. Set `P = PATT`
+We define satisfication of a pattern `PATT` in DNF by an input crow `r`. The definition recursively destructures the pattern into subpatterns `P` (to begin, set `P = PATT`). 
 
 * If `P = STMT; SUBPATT` then `r` satisfies `P` if:
     * The statement **<STMT>** is satisfied by `r` as outlined in the _next sections_.
@@ -1211,16 +1208,16 @@ We recursively destructuring subpatterns `PATT` in DNF. Set `P = PATT`
     * `r` satisfies `SUBPATT_i` for any `i`
 
 * If `P = not { SUBPATT };` then `r` satisfies `P` if:
-    * `r` does not contain _any_ block-level bound variables of the block
+    * `r` does _not contain any_ block-level bound variables of the block _except_ input vars
     * `r` cannot be completed with entries for block-level bound variable to satisfy `SUBPATT`
 
 * If `P = try { SUBPATT };` then `r` satisfies `P` if:
-    * `r` does contain _all_ block-level bound optional variables of the block
-    * on
+    * `r` _contains all_ block-level bound variables of the block
+    * and:
         * either: `r` satisfies `SUBPATT`
         * or:
-            * all block-level bound variables are assigned $`\emptyset`$ (i.e. empty answer) 
-            * after removing block-level bound variables from `r`, `r` cannot be completed with entries for block-level bound variable to satisfy `SUBPATT`
+            * all block-level bound variables are assigned $`\emptyset`$ (i.e. empty concept) by `r` _except_ input vars
+            * after obtain `r'` from `r` by removing block-level bound, non-input variables, `r'` cannot be completed with entries for block-level bound variable to satisfy `SUBPATT`
 
 ## Satisfaction semantics of...
 
