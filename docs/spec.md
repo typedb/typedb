@@ -1010,53 +1010,53 @@ This section first describes the pattern matching language of TypeDB, which reli
 
 #### **Case AND_PATT**
 
-* 🔷 _Conjunction_ `PATT1; PATT2` 
-  > We match "`PATT1` **and** `PATT2`" 
+* 🔷 _Conjunction_ `<PATT1> <PATT2>` 
+  > We match "`<PATT1>` **and** `<PATT2>`" 
 
-  * _Note: terminating `;`_  Any `PATT` is terminated with a `;` (we could read this as "and true") 
+  * _Note:_ Any `<PATT>` is terminated with a `;`
 
 #### **Case OR_PATT**
 
-* 🔷 _Disjunction_ `PATT1 or PATT2` 
-  > We **either** match `PATT1` or `PATT2`
+* 🔷 _Disjunction_ `{ <PATT1> } or { <PATT2> };` 
+  > We **either** match `<PATT1>` or `<PATT2>`
 
-  _Note_ This extends to $k$ patterns chained with `or`.
+  _Note_ This extends to $k$ patterns chained with interleaving `or`.
 
 #### **Case NOT_PATT**
 
-* 🔷 _Negation_. `not { PATT }` 
-  > We ensure `PATT` has **no match**. 
+* 🔷 _Negation_. `not { <PATT> };` 
+  > We ensure `<PATT>` has **no match**. 
 
-  _Note_ `PATT` may have **quantified variables**
+  _Note_ `<PATT>` may have **quantified variables**
 
 #### **Case TRY_PATT**
 
-* 🔷 _Optional pattern_ `try { PATT }` 
-  > We **optionally** match `PATT` if possible
+* 🔷 _Optional pattern_ `try { <PATT> };` 
+  > We **optionally** match `<PATT>` if possible
 
-  * For most purposes, this pattern is equivalent to `{ PATT } or { not { PATT }; }` **except** for the designation of **optional variables**
+  * For most purposes, this pattern is equivalent to `{ <PATT> } or { not { <PATT> }; };` **except** for the designation of **optional variables**
 
 _Terminology_ What's inside `{ ... }` is called a **block**
 
 
 ### (Theory) Pattern branches
 
-A **disjunctive normal (DNF) of a pattern `PATT`** is a pattern obtained by
+A **disjunctive normal (DNF) of a pattern `<PATT>`** is a pattern obtained by
 
-* First unfolding all `try` blocks,
+* First unfolding all `try` blocks as above,
 * Then recursively applying transformations of the form 
     ```
-    <PATT>; { <PATT_A> } or {<PATT_B> };
+    <PATT1> { <PATT2> } or {<PATT3> };
     --transforms to-->
-    { <PATT>; <PATT_A>; } or { <PATT>; <PATT_B>; };
+    { <PATT1> <PATT2> } or { <PATT1> <PATT3> };
     ```
 
-The resulting DNF of `PATT` will itself be a pattern of the form:
+The resulting DNF of `<PATT>` will itself be a pattern of the form:
 ```
-{ <BRANCH_1> } or { <BRANCH_2> } or ...
+{ <BRANCH1> } or { <BRANCH2> } or ... ;
 ```
 
-**Important**. The patterns `<BRANCH_i>` are _unique_ up to re-ordering them. We call them the **branches** of `PATT`.
+**Important**. The patterns `<BRANCHi>` are _unique_ up to re-ordering them. We call them the **branches** of `<PATT>`.
 
 
 ### (Theory) Variables and bindings
@@ -1296,7 +1296,7 @@ _Math. notation (Replacing **var**s with concepts)_. When discussing pattern sem
 Now that we have seen how to determine when answers satisfy individual statements, we can extend our discussion of match semantics to composite patterns (patterns of patterns).
 
 #### **Case AND_SAT_PATT**
-* ✅ The crow `r` satisfies the pattern `<PATT1>; <PATT2>;` that simultaneously satisfies both `<PATT1>` and `<PATT2>`.
+* ✅ The crow `r` satisfies the pattern `<PATT1> <PATT2>` that simultaneously satisfies both `<PATT1>` and `<PATT2>`.
 
 #### **Case OR_SAT_PATT_SAT**
 * 🔷 The crow `r` satisfies the pattern `{ <PATT1> } or { <PATT2> };` is an answer that satisfies either `<PATT1>` or `<PATT2>`.
