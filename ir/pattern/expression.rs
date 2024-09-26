@@ -170,15 +170,20 @@ impl<ID: IrID> ListIndex<ID> {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ListConstructor {
     item_expression_ids: Vec<ExpressionTreeNodeId>,
+    len_id: ParameterID
 }
 
 impl ListConstructor {
-    pub(crate) fn new(item_expression_ids: Vec<ExpressionTreeNodeId>) -> Self {
-        Self { item_expression_ids }
+    pub fn new(item_expression_ids: Vec<ExpressionTreeNodeId>, len_id: ParameterID) -> Self {
+        Self { item_expression_ids, len_id }
     }
 
     pub fn item_expression_ids(&self) -> &[ExpressionTreeNodeId] {
         &self.item_expression_ids
+    }
+
+    pub fn len_id(&self) -> ParameterID {
+        self.len_id
     }
 }
 

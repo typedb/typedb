@@ -288,12 +288,12 @@ impl<'a> BlockContext<'a> {
         category: VariableCategory,
         source: Constraint<Variable>,
     ) -> Result<(), PatternDefinitionError> {
-        self.record_variable_reference(variable.clone());
-        self.variable_registry.set_variable_category(variable, category, VariableCategorySource::Constraint(source))
+        self.record_variable_reference(variable);
+        self.variable_registry.set_variable_category(variable, category, source)
     }
 
     pub(crate) fn record_variable_reference(&mut self, variable: Variable) {
-        self.referenced_variables.insert(variable.clone());
+        self.referenced_variables.insert(variable);
     }
 
     pub(crate) fn set_variable_is_optional(&mut self, variable: Variable, optional: bool) {
