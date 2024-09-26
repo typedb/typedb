@@ -1002,47 +1002,47 @@ This section first describes the pattern matching language of TypeDB, which reli
 
 #### **Case AND_PATT**
 
-* 🔷 _Conjunction_ `PATT1; PATT2` 
-  > We match "`PATT1` **and** `PATT2`" 
+* 🔷 _Conjunction_ `<PATT1> <PATT2>` 
+  > We match "`<PATT1>` **and** `<PATT2>`" 
 
-  * _Note: terminating `;`_  Any `PATT` is terminated with a `;` (we could read this as "and true") 
+  * _Note:_ Any `<PATT>` is terminated with a `;`
 
 #### **Case OR_PATT**
 
-* 🔷 _Disjunction_ `PATT1 or PATT2` 
-  > We **either** match `PATT1` or `PATT2`
+* 🔷 _Disjunction_ `{ <PATT1> } or { <PATT2> };` 
+  > We **either** match `<PATT1>` or `<PATT2>`
 
-  _Note_ This extends to $k$ patterns chained with `or`.
+  _Note_ This extends to $k$ patterns chained with interleaving `or`.
 
 #### **Case NOT_PATT**
 
-* 🔷 _Negation_. `not { PATT }` 
-  > We ensure `PATT` has **no match**. 
+* 🔷 _Negation_. `not { <PATT> };` 
+  > We ensure `<PATT>` has **no match**. 
 
-  _Note_ `PATT` may have **quantified variables**
+  _Note_ `<PATT>` may have **quantified variables**
 
 #### **Case TRY_PATT**
 
-* 🔷 _Optional pattern_ `try { PATT }` 
+* 🔷 _Optional pattern_ `try { PATT };` 
   > We **optionally** match `PATT` whenever possible
 
-_Terminology_ What's inside `{ ... }` is called a **block**.
+_Terminology_ What's inside `<OP> { ... }` is called a **`<OP>`-block**.
 
 
 ### (Theory) Pattern branches
 
-A **disjunctive normal (DNF) of a pattern `PATT`** is a pattern obtained by recursively applying transformations of the form 
+A **disjunctive normal (DNF) of a pattern `<PATT>`** is a pattern obtained by recursively applying transformations of the form 
     ```
-    <PATT>; { <PATT_A> } or {<PATT_B> };
+    <PATT1> { <PATT2> } or {<PATT3> };
     --transforms to-->
-    { <PATT>; <PATT_A>; } or { <PATT>; <PATT_B>; };
+    { <PATT1> <PATT2> } or { <PATT1> <PATT3> };
     ```
-The resulting DNF of `PATT` will itself be a pattern of the form:
+The resulting DNF of `<PATT>` will itself be a pattern of the form:
 ```
-{ <BRANCH_1> } or { <BRANCH_2> } or ...
+{ <BRANCH1> } or { <BRANCH2> } or ... ;
 ```
 
-**Important**. The patterns `<BRANCH_i>` are _unique_ up to re-ordering them. We call them the **branches** of `PATT`.
+**Important**. The patterns `<BRANCHi>` are _unique_ up to re-ordering them. We call them the **branches** of `<PATT>`.
 
 _Note_. The transformation also applies _inside_ `not` and `try` blocks.
 
