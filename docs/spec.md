@@ -29,8 +29,6 @@
 <details>
   <summary> <b>Table of contents</b> <i>(Overview)</i> </summary>
 
-r!-- vim-markdown-toc GFM -->
-
 * [Introduction](#introduction)
 * [The type system](#the-type-system)
     * [Grammar and notations](#grammar-and-notations)
@@ -43,13 +41,16 @@ r!-- vim-markdown-toc GFM -->
     * [Labels and aliases](#labels-and-aliases)
 * [Pattern matching language](#pattern-matching-language)
     * [Basics: Patterns, variables, concept rows, satisfaction](#basics-patterns-variables-concept-rows-satisfaction)
-    * [Pattern semantics](#pattern-semantics)
-    * [Type patterns](#type-patterns)
-    * [Type constraint patterns](#type-constraint-patterns)
-    * [Element patterns](#element-patterns)
-    * [Expression and list patterns](#expression-and-list-patterns)
-    * [Function patterns](#function-patterns)
-    * [Patterns of patterns](#patterns-of-patterns)
+* [Topic 1: Negation](#topic-1-negation)
+    * [The first problem](#the-first-problem)
+    * [The second problem](#the-second-problem)
+    * [Pattern semantics of ...](#pattern-semantics-of-)
+    * [... Patterns of patterns](#-patterns-of-patterns)
+    * [... Type patterns](#-type-patterns)
+    * [... Type constraint patterns](#-type-constraint-patterns)
+    * [... Element patterns](#-element-patterns)
+    * [... Expression and list patterns](#-expression-and-list-patterns)
+    * [... Function patterns](#-function-patterns)
 * [Data manipulation language](#data-manipulation-language)
     * [Match semantics](#match-semantics)
     * [Functions semantics](#functions-semantics)
@@ -69,285 +70,53 @@ r!-- vim-markdown-toc GFM -->
     * [Syntactic Sugar](#syntactic-sugar)
     * [Typing of operators](#typing-of-operators)
 
-<!-- vim-markdown-toc -->
-
 </details>
 
 
 <details>
   <summary> <b>Table of contents</b> <i>(Detailed)</i> </summary>
 
+
 <!-- vim-markdown-toc GFM -->
 
 * [Introduction](#introduction)
 * [The type system](#the-type-system)
     * [Grammar and notations](#grammar-and-notations)
-        * [Ordinary types](#ordinary-types)
-        * [Dependent types](#dependent-types)
-        * [Subtypes and castings](#subtypes-and-castings)
-        * [Algebraic type operators](#algebraic-type-operators)
-        * [List types](#list-types)
-        * [Modalities](#modalities)
     * [Rule system](#rule-system)
-        * [Ordinary types](#ordinary-types-1)
-        * [Dependendent types](#dependendent-types)
-        * [Subtypes and castings](#subtypes-and-castings-1)
-        * [Algebraic type operators](#algebraic-type-operators-1)
-        * [List types](#list-types-1)
-        * [Modalities](#modalities-1)
-* [Schema definition language](#schema-definition-language)
+* [Data definition language](#data-definition-language)
     * [Basics of schemas](#basics-of-schemas)
-        * [(Theory) Clauses and execution](#theory-clauses-and-execution)
-        * [(Feature) Pipelines and match-define's](#feature-pipelines-and-match-defines)
     * [Define semantics](#define-semantics)
-        * [Type axioms](#type-axioms)
-            * [**Case ENT_DEF**](#case-ent_def)
-            * [**Case REL_DEF**](#case-rel_def)
-            * [**Case ATT_DEF**](#case-att_def)
-            * [**Case PLAYS_DEF**](#case-plays_def)
-            * [**Case OWNS_DEF**](#case-owns_def)
-        * [Constraints](#constraints)
-            * [Cardinality](#cardinality)
-                * [**Case CARD_DEF**](#case-card_def)
-                * [**Case CARD_LIST_DEF**](#case-card_list_def)
-            * [Modalities](#modalities-2)
-                * [**Case UNIQUE_DEF**](#case-unique_def)
-                * [**Case KEY_DEF**](#case-key_def)
-                * [**Case SUBKEY_DEF**](#case-subkey_def)
-                * [**General case: ABSTRACT_DEF**](#general-case-abstract_def)
-                * [**Case TYP_ABSTRACT_DEF**](#case-typ_abstract_def)
-                * [**Case REL_ABSTRACT_DEF**](#case-rel_abstract_def)
-                * [**Case PLAYS_ABSTRACT_DEF**](#case-plays_abstract_def)
-                * [**Case OWNS_ABSTRACT_DEF**](#case-owns_abstract_def)
-                * [**Case DISTINCT_DEF**](#case-distinct_def)
-            * [Values](#values)
-                * [**Case OWNS_VALUES_DEF**](#case-owns_values_def)
-                * [**Case VALUE_VALUES_DEF**](#case-value_values_def)
-        * [Triggers](#triggers)
-            * [**Case DEPENDENCY_DEF** (CASCADE/INDEPEDENT)](#case-dependency_def-cascadeindepedent)
-        * [Value types](#value-types)
-            * [**Case PRIMITIVES_DEF**](#case-primitives_def)
-            * [**Case STRUCT_DEF**](#case-struct_def)
-        * [Functions defs](#functions-defs)
-            * [**Case STREAM_RET_FUN_DEF**](#case-stream_ret_fun_def)
-            * [**Case SINGLE_RET_FUN_DEF**](#case-single_ret_fun_def)
     * [Undefine semantics](#undefine-semantics)
-        * [Type axioms](#type-axioms-1)
-            * [**Case ENT_UNDEF**](#case-ent_undef)
-            * [**Case REL_UNDEF**](#case-rel_undef)
-            * [**Case ATT_UNDEF**](#case-att_undef)
-            * [**Case PLAYS_UNDEF**](#case-plays_undef)
-            * [**Case OWNS_UNDEF**](#case-owns_undef)
-        * [Constraints](#constraints-1)
-            * [Cardinality](#cardinality-1)
-                * [**Case CARD_UNDEF**](#case-card_undef)
-                * [**Case CARD_LIST_UNDEF**](#case-card_list_undef)
-            * [Modalities](#modalities-3)
-                * [**Case UNIQUE_UNDEF**](#case-unique_undef)
-                * [**Case KEY_UNDEF**](#case-key_undef)
-                * [**Case SUBKEY_UNDEF**](#case-subkey_undef)
-                * [**Case TYP_ABSTRACT_UNDEF**](#case-typ_abstract_undef)
-                * [**Case PLAYS_ABSTRACT_UNDEF**](#case-plays_abstract_undef)
-                * [**Case OWNS_ABSTRACT_UNDEF**](#case-owns_abstract_undef)
-                * [**Case REL_ABSTRACT_UNDEF**](#case-rel_abstract_undef)
-                * [**Case DISTINCT_UNDEF**](#case-distinct_undef)
-            * [Values](#values-1)
-                * [**Case OWNS_VALUES_UNDEF**](#case-owns_values_undef)
-                * [**Case VALUE_VALUES_UNDEF**](#case-value_values_undef)
-        * [Triggers](#triggers-1)
-            * [**Case DEPENDENCY_UNDEF** (CASCADE/INDEPEDENT)](#case-dependency_undef-cascadeindepedent)
-        * [Value types](#value-types-1)
-            * [**Case PRIMITIVES_UNDEF**](#case-primitives_undef)
-            * [**Case STRUCT_UNDEF**](#case-struct_undef)
-        * [Functions defs](#functions-defs-1)
-            * [**Case STREAM_RET_FUN_UNDEF**](#case-stream_ret_fun_undef)
-            * [**Case SINGLE_RET_FUN_UNDEF**](#case-single_ret_fun_undef)
     * [Redefine semantics](#redefine-semantics)
-        * [Type axioms](#type-axioms-2)
-            * [**Case ENT_REDEF**](#case-ent_redef)
-            * [**Case REL_REDEF**](#case-rel_redef)
-            * [**Case ATT_REDEF**](#case-att_redef)
-            * [**Case PLAYS_REDEF**](#case-plays_redef)
-            * [**Case OWNS_REDEF**](#case-owns_redef)
-        * [Constraints](#constraints-2)
-            * [Cardinality](#cardinality-2)
-                * [**Case CARD_REDEF**](#case-card_redef)
-                * [**Case CARD_LIST_REDEF**](#case-card_list_redef)
-            * [Modalities](#modalities-4)
-            * [Values](#values-2)
-                * [**Case OWNS_VALUES_REDEF**](#case-owns_values_redef)
-                * [**Case VALUE_VALUES_REDEF**](#case-value_values_redef)
-        * [Triggers](#triggers-2)
-            * [**Case DEPENDENCY_REDEF** (CASCADE/INDEPEDENT)](#case-dependency_redef-cascadeindepedent)
-        * [Value types](#value-types-2)
-            * [**Case PRIMITIVES_REDEF**](#case-primitives_redef)
-            * [**Case STRUCT_REDEF**](#case-struct_redef)
-        * [Functions defs](#functions-defs-2)
-            * [**Case STREAM_RET_FUN_REDEF**](#case-stream_ret_fun_redef)
-            * [**Case SINGLE_RET_FUN_REDEF**](#case-single_ret_fun_redef)
     * [Labels and aliases](#labels-and-aliases)
-        * [Define](#define)
-        * [Undefine](#undefine)
-        * [Redefine](#redefine)
 * [Pattern matching language](#pattern-matching-language)
     * [Basics: Patterns, variables, concept rows, satisfaction](#basics-patterns-variables-concept-rows-satisfaction)
-        * [(Theory) Statements, patterns](#theory-statements-patterns)
-        * [(Theory) Variables](#theory-variables)
-        * [(Theory) Typed concept rows](#theory-typed-concept-rows)
-        * [(Feature) Pattern satisfication, typing conditions, answer](#feature-pattern-satisfication-typing-conditions-answer)
-        * [(Feature) Optionality and boundedness](#feature-optionality-and-boundedness)
-    * [Pattern semantics](#pattern-semantics)
-        * [Types](#types)
-            * [**Case TYPE_DEF_PATT**](#case-type_def_patt)
-            * [**Case REL_PATT**](#case-rel_patt)
-            * [**Case PLAY_PATT**](#case-play_patt)
-            * [**Case OWNS_PATT**](#case-owns_patt)
-            * [**Cases TYP_IS_PATT and LABEL_PATT**](#cases-typ_is_patt-and-label_patt)
-        * [Constraints](#constraints-3)
-            * [Cardinality](#cardinality-3)
-                * [**Case CARD_PATT**](#case-card_patt)
-            * [Modalities](#bevavior-flags)
-                * [**Case UNIQUE_PATT**](#case-unique_patt)
-                * [**Case KEY_PATT**](#case-key_patt)
-                * [**Case SUBKEY_PATT**](#case-subkey_patt)
-                * [**Case TYP_ABSTRACT_PATT**](#case-typ_abstract_patt)
-                * [**Case RELATES_ABSTRACT_PATT**](#case-relates_abstract_patt)
-                * [**Case PLAYS_ABSTRACT_PATT**](#case-plays_abstract_patt)
-                * [**Case OWNS_ABSTRACT_PATT**](#case-owns_abstract_patt)
-                * [**Case DISTINCT_PATT**](#case-distinct_patt)
-            * [Values](#values-3)
-                * [**Cases VALUE_VALUES_PATT and OWNS_VALUES_PATT**](#cases-value_values_patt-and-owns_values_patt)
-        * [Data](#data)
-            * [**Case ISA_PATT**](#case-isa_patt)
-            * [**Case LINKS_PATT**](#case-links_patt)
-            * [**Case HAS_PATT**](#case-has_patt)
-            * [**Case IS_PATT**](#case-is_patt)
-        * [Expression grammar (sketch)](#expression-grammar-sketch)
-        * [Expression patterns](#expression-patterns)
-            * [(Feature) Boundedness of variables in expressions](#feature-boundedness-constraints)
-            * [**Case ASSIGN_PATT**](#case-assign_patt)
-            * [**Case DESTRUCT_PATT**](#case-destruct_patt)
-            * [**Case IN_LIST_PATT**](#case-in_list_patt)
-            * [**Case EQ_PATT**](#case-eq_patt)
-            * [**Case COMP_PATT**](#case-comp_patt)
-        * [Functions](#functions)
-            * [**Case IN_FUN_PATT**](#case-in_fun_patt)
-            * [**Case ASSIGN_FUN_PATT**](#case-assign_fun_patt)
-        * [Patterns](#patterns)
-            * [**Case AND_PATT**](#case-and_patt)
-            * [**Case OR_PATT**](#case-or_patt)
-            * [**Case NOT_PATT**](#case-not_patt)
-            * [**Case TRY_PATT**](#case-try_patt)
+* [Topic 1: Negation](#topic-1-negation)
+    * [The first problem](#the-first-problem)
+    * [The second problem](#the-second-problem)
+    * [Pattern semantics of ...](#pattern-semantics-of-)
+    * [... Patterns of patterns](#-patterns-of-patterns)
+    * [... Type patterns](#-type-patterns)
+    * [... Type constraint patterns](#-type-constraint-patterns)
+    * [... Element patterns](#-element-patterns)
+    * [... Expression and list patterns](#-expression-and-list-patterns)
+    * [... Function patterns](#-function-patterns)
+* [Data manipulation language](#data-manipulation-language)
     * [Match semantics](#match-semantics)
     * [Functions semantics](#functions-semantics)
-        * [Function signature, body, operators](#function-signature-body-operators)
-            * [**Case FUN_SIGN_STREAM**](#case-fun_sign_stream)
-            * [**Case FUN_SIGN_SINGLE**](#case-fun_sign_single)
-            * [**Case FUN_BODY**](#case-fun_body)
-            * [**Case FUN_OPS**](#case-fun_ops)
-        * [Function body semantics](#function-body-semantics)
-            * [Function evaluation](#function-evaluation)
-            * [Order of execution](#order-of-execution)
-        * [Stream-return semantics](#stream-return-semantics)
-        * [Single-return semantics](#item-return-semantics)
     * [Insert semantics](#insert-semantics)
-        * [Basics of inserting](#basics-of-inserting)
-            * [(Theory) Execution](#theory-execution)
-            * [(Feature) Optionality](#feature-optionality)
-        * [Insert statements](#insert-statements)
-            * [**Case ASSIGN_INS**](#case-assign_ins)
-            * [**Case OBJ_ISA_INS**](#case-obj_isa_ins)
-            * [**Case ATT_ISA_INS**](#case-att_isa_ins)
-            * [**Case LINKS_INS**](#case-links_ins)
-            * [**Case LINKS_LIST_INS**](#case-links_list_ins)
-            * [**Case HAS_INS**](#case-has_ins)
-            * [**Case HAS_LIST_INS**](#case-has_list_ins)
-        * [Optional inserts](#optional-inserts)
-            * [**Case TRY_INS**](#case-try_ins)
-        * [Leaf attribute system constraint](#leaf-attribute-system-constraint)
     * [Delete semantics](#delete-semantics)
-        * [Basics of deleting](#basics-of-deleting)
-            * [(Theory) execution](#theory-execution-1)
-            * [(Feature) optionality](#feature-optionality-1)
-        * [Delete statements](#delete-statements)
-            * [**Case CONCEPT_DEL**](#case-concept_del)
-            * [**Case ROL_OF_DEL**](#case-rol_of_del)
-            * [**Case ROL_LIST_OF_DEL**](#case-rol_list_of_del)
-            * [**Case ATT_OF_DEL**](#case-att_of_del)
-            * [**Case ATT_LIST_OF_DEL**](#case-att_list_of_del)
-        * [Clean-up](#clean-up)
     * [Update semantics](#update-semantics)
-        * [Basics of updating](#basics-of-updating)
-            * [(Theory) Execution](#theory-execution-2)
-            * [(Feature) Optionality](#feature-optionality-2)
-        * [Update statements](#update-statements)
-            * [**Case LINKS_UP**](#case-links_up)
-            * [**Case LINKS_LIST_UP**](#case-links_list_up)
-            * [**Case HAS_UP**](#case-has_up)
-            * [**Case HAS_LIST_UP**](#case-has_list_up)
-        * [Clean-up](#clean-up-1)
     * [Put semantics](#put-semantics)
 * [Query execution principles](#query-execution-principles)
     * [Basics: Pipelines, clauses, operators, branches](#basics-pipelines-clauses-operators-branches)
     * [Clauses (match, insert, delete, update, put, fetch)](#clauses-match-insert-delete-update-put-fetch)
-        * [Match](#match)
-        * [Insert](#insert)
-        * [Delete](#delete)
-        * [Update](#update)
-        * [Put](#put)
-        * [Fetch](#fetch)
-            * [**Case FETCH_VAL**](#case-fetch_val)
-            * [**Case FETCH_EXPR**](#case-fetch_expr)
-            * [**Case FETCH_ATTR**](#case-fetch_attr)
-            * [**Case FETCH_MULTI_ATTR**](#case-fetch_multi_attr)
-            * [**Case FETCH_LIST_ATTR**](#case-fetch_list_attr)
-            * [**Case FETCH_SNGL_FUN**](#case-fetch_sngl_fun)
-            * [**Case FETCH_STREAM_FUN**](#case-fetch_stream_fun)
-            * [**Case FETCH_FETCH**](#case-fetch_fetch)
-            * [**Case FETCH_REDUCE_VAL**](#case-fetch_reduce_val)
-            * [**Case FETCH_REDUCE_LIST_VAL**](#case-fetch_reduce_list_val)
-            * [**Case FETCH_NESTED**](#case-fetch_nested)
     * [Operators (select, distinct, sort, limit, offset, reduce)](#operators-select-distinct-sort-limit-offset-reduce)
-        * [Select](#select)
-        * [Deselect](#deselect)
-        * [Distinct](#distinct)
-        * [Sort](#sort)
-        * [Limit](#limit)
-        * [Offset](#offset)
-        * [Reduce](#reduce)
-            * [**Case SIMPLE_RED**](#case-simple_red)
-            * [**Case GROUP_RED**](#case-group_red)
     * [Branches](#branches)
     * [Transactions](#transactions)
-        * [Basics](#basics)
-        * [Snapshots](#snapshots)
-        * [Concurrency](#concurrency)
 * [Glossary](#glossary)
     * [Type system](#type-system)
-        * [Type](#type)
-        * [Schema type](#schema-type)
-        * [Value type](#value-type)
-        * [Data instance / instance](#data-instance--instance)
-        * [Data value / value](#data-value--value)
-        * [Attribute instance value / attribute value](#attribute-instance-value--attribute-value)
-        * [Data element / element](#data-element--element)
-        * [Concept](#concept)
-        * [Concept row](#concept-row)
-        * [Stream](#stream)
-        * [Answer set](#answer-set)
-        * [Answer](#answer)
     * [TypeQL syntax](#typeql-syntax)
-        * [Schema query](#schema-query)
-        * [Data query](#data-query)
-        * [Clause / Stream clause](#clause--stream-clause)
-        * [Operators / Stream operator](#operators--stream-operator)
-        * [Functions](#functions-1)
-        * [Statement](#statement)
-        * [Pattern](#pattern)
-        * [Stream reduction / reduction](#stream-reduction--reduction)
-        * [Clause](#clause)
-        * [Block](#block)
-        * [Suffix](#suffix)
     * [Syntactic Sugar](#syntactic-sugar)
     * [Typing of operators](#typing-of-operators)
 
@@ -1353,12 +1122,17 @@ _Note_. Based on these principles, optional variables are always retrievable var
     <summary><b>Related discord discussion</b></summary>
 
 ##### The first problem
+@core brief note on two topics we touched upon, and new behavior related to those topics.
+
+# Topic 1: Negation
+
+## The first problem
 The following is fine
 ```
 // ensure x has no name 
 not { $x has name $n; }; 
 ```
-This is fine too:
+This is fine too (arguably maybe a weird example):
 ```
 // ensure DB has no bad name 
 not { $n isa bad_name; }; 
@@ -1368,10 +1142,10 @@ Together this becomes ambiguous
 not { $x has name $n; }; 
 not { $n isa bad_name; }; 
 ```
-as $n is "synced" across not's. 
+as `$n` is "synced" across not's. 
 
 The spec explains this (the underlying cause here is "alpha equivalence" of quantified formulas) now:
-* Principle: **We cannot have use quantified variables in the same branch of a pattern** 
+* Principle: **We cannot use negation-bound (or try-bound) variables in separate sibling blocks in the same branch of a pattern** 
 
 So this is fine (it's alpha-equivalent to the above pattern, but now it's "unambiguous" what's meant)
 ```
@@ -1385,9 +1159,9 @@ But this is fine too:
  or
 { $y ...; not { $y has $q }; };
 ```
-because the quantified variable `$q` appear in disjunct branches.
+because the negation-bound variable `$q` appears in disjunct branches of the pattern.
 
-##### The second problem
+## The second problem
 
 We want
 ```
@@ -1408,8 +1182,8 @@ not { $n isa bad_name; };
 (Namely, in the second branch we want the row entry `r($x) = empty`). 
 
 In the spec, this is now realized by marking `try`-bound vars (they are termed "optionally quantified"), 
-seperately from `not`-bound variables (they are termed "properly quantified"). 
-The former is returned as empty if we are in the `not` branch of `try`. 
+separately from `not`-bound variables (they are termed "properly quantified"). 
+The former is returned as empty if we are in the `not` branch of `try`.
 
 The problem now arises if we gate `try`'s with `not`.
 ```
@@ -1424,7 +1198,7 @@ So it's non-sensical to use `try` in this way. This leads to the second new prin
 However, the following is fine:
 ```
 $y ...
-not { ($x, $y) isa friendship; try { $x has name $n; }; };
+try { ($x, $y) isa friendship; not { $x has name $n; }; };
 ```
 The `not`-gated `$n` never gets returned, but the `try`-gated `$x` gets returned optionally.
 
@@ -2456,14 +2230,14 @@ Operators (unlike clauses) are **pure**: they do not depend on the DB (i.e. they
 
 ### Distinct
 * 🔶 distinct syntax:
-    `deselect $x1, $x2, ...`
+    `distinct $x1, $x2, ...`
      
     * input stream of rows `{ r }`
     * output stream of rows `{ o }` for each distinct row in the input (in other words: duplicates are removed)
         * empty value is its own distinct value
 
 ### Require
-* 🔮 distinct syntax:
+* 🔮 require syntax:
     `require $x1, $x2, ...`
      
     * filters `{ r }` keeping only maps where `r($x1)`, `r($x2)`, ... are non-empty
