@@ -7,6 +7,7 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
+use std::fmt::{Display, Formatter};
 use std::slice;
 
 use compiler::VariablePosition;
@@ -54,13 +55,24 @@ pub enum InterruptType {
     WriteQueryExecution,
 }
 
+impl Display for InterruptType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InterruptType::TransactionClosed => write!(f, "transaction closed"),
+            InterruptType::TransactionCommitted => write!(f, "transaction committed"),
+            InterruptType::TransactionRolledback => write!(f, "transaction rolled back"),
+            InterruptType::WriteQueryExecution => write!(f, "write query executed."),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct ExecutionInterrupt {
     signal: Option<tokio::sync::broadcast::Receiver<InterruptType>>,
 }
 
 impl ExecutionInterrupt {
-    pub fn new(signal: tokio::sync::broadcast::Receiver<T>) -> Self {
+    pub fn new(signal: tokio::sync::broadcast::Receiver<InterruptType>) -> Self {
         Self { signal: Some(signal) }
     }
 
@@ -68,21 +80,18 @@ impl ExecutionInterrupt {
         Self { signal: None }
     }
 
-    pub fn check(&mut self) -> bool {
-        // TODO: return Optional<InterruptType>
-
-
+    pub fn check(&mut self) -> Option<InterruptType> {
         // TODO: if this becomes expensive to check frequently (try_recv may acquire locks), we could
         //       optimise it by caching the last time it was checked, and only actually check
         //       the signal once T micros/millis are elapsed... if this is really really cheap we can
         //       check the optimised interrupt in really hot loops as well.
         match &mut self.signal {
-            None => false,
+            None => None,
             Some(signal) => match signal.try_recv() {
-                Ok(_) => true,
-                Err(TryRecvError::Empty) => false,
+                Ok(type_) => Some(type_),
+                Err(TryRecvError::Empty) => None,
                 Err(TryRecvError::Closed) | Err(TryRecvError::Lagged(_)) => {
-                    panic!("Unexpected interrupt signal state. They should never be lagged or closed before cleaning up the receivers.")
+                    unreachable!("Unexpected interrupt signal state. They should never be lagged or closed before cleaning up the receivers.")
                 }
             },
         }

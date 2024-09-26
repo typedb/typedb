@@ -8,9 +8,7 @@ use concept::error::ConceptReadError;
 use error::typedb_error;
 use lending_iterator::LendingIterator;
 
-use crate::{
-    batch::Batch, error::ReadExecutionError, pipeline::stage::StageIterator, row::MaybeOwnedRow, write::WriteError,
-};
+use crate::{batch::Batch, error::ReadExecutionError, InterruptType, pipeline::stage::StageIterator, row::MaybeOwnedRow, write::WriteError};
 
 pub mod delete;
 pub mod initial;
@@ -23,7 +21,7 @@ pub mod stage;
 typedb_error!(
     pub PipelineExecutionError(component = "Pipeline execution", prefix = "PEX") {
         // TODO: migrate to `typedb_error` once they are typedb errors
-        Interrupted(1, "Query was interrupted."),
+        Interrupted(1, "Execution interrupted. Cause: '{interrupt}'.", interrupt: InterruptType),
         ConceptRead(2, "Error reading concept.", ( source: ConceptReadError )),
         InitialisingMatchIterator(3, "Error initialising Match clause iterator.", ( source: ConceptReadError )),
         WriteError(4, "Error executing write operation.", ( typedb_source: WriteError )),

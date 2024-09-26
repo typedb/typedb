@@ -64,8 +64,10 @@ where
                 return Err((PipelineExecutionError::WriteError { typedb_source: err }, context));
             }
 
-            if index % 100 == 0 && interrupt.check() {
-                return Err((PipelineExecutionError::Interrupted {}, context));
+            if index % 100 == 0 {
+                if let Some(interrupt) = interrupt.check() {
+                    return Err((PipelineExecutionError::Interrupted { interrupt }, context));
+                }
             }
         }
 
