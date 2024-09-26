@@ -210,8 +210,17 @@ fn annotate_stage(
             // TODO: check_annotations on deletes. Can only delete links or has for types that actually are linked or owned
             Ok(AnnotatedStage::Delete { block, deleted_variables, annotations: delete_annotations })
         }
-
-        TranslatedStage::Sort(sort) => Ok(AnnotatedStage::Sort(sort)),
+        TranslatedStage::Sort(sort) => {
+            validate_sort_variables_comparable(
+                &sort,
+                running_variable_annotations,
+                running_value_variable_assigned_types,
+                snapshot,
+                type_manager,
+                variable_registry,
+            )?;
+            Ok(AnnotatedStage::Sort(sort))
+        }
         TranslatedStage::Select(select) => Ok(AnnotatedStage::Select(select)),
         TranslatedStage::Offset(offset) => Ok(AnnotatedStage::Offset(offset)),
         TranslatedStage::Limit(limit) => Ok(AnnotatedStage::Limit(limit)),
@@ -239,6 +248,44 @@ fn annotate_stage(
     }
 }
 
+pub fn validate_sort_variables_comparable(
+    sort: &Sort,
+    variable_annotations: &mut BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    assigned_value_types: &mut BTreeMap<Variable, ValueTypeCategory>,
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    variable_registry: &VariableRegistry,
+) -> Result<(), QueryError> {
+    for sort_var in &sort.variables {
+        if assigned_value_types.contains_key(&sort_var.variable()) {
+            continue;
+        } else if let Some(types) = variable_annotations.get(&sort_var.variable()) {
+            let value_types = resolve_value_types(types, snapshot, type_manager)
+                .map_err(|typedb_source| QueryError::QueryTypeInference { typedb_source })?;
+            if value_types.len() == 0 {
+                let variable_name = variable_registry.variable_names().get(&sort_var.variable()).unwrap().clone();
+                return Err(QueryError::CouldNotDetermineValueTypeForReducerInput { variable: variable_name });
+            }
+            let first_category = value_types.iter().find(|_| true).unwrap().category();
+            let allowed_categories = ValueTypeCategory::comparable_categories(first_category);
+            for other_type in value_types.iter().map(|v| v.category()) {
+                // Don't need to do pairwise if comparable is transitive
+                if !allowed_categories.contains(&other_type) {
+                    let variable_name = variable_registry.variable_names().get(&sort_var.variable()).unwrap().clone();
+                    return Err(QueryError::UncomparableValueTypesForSortVariable {
+                        variable: variable_name,
+                        category1: first_category,
+                        category2: other_type,
+                    });
+                }
+            }
+        } else {
+            unreachable!()
+        }
+    }
+    Ok(())
+}
+
 pub fn resolve_reducer_by_value_type(
     reducer: &Reducer,
     variable_annotations: &mut BTreeMap<Variable, Arc<BTreeSet<Type>>>,
@@ -256,7 +303,7 @@ pub fn resolve_reducer_by_value_type(
         | Reducer::Median(variable)
         | Reducer::Min(variable)
         | Reducer::Std(variable) => {
-            let value_type = determine_value_type(
+            let value_type = determine_value_type_for_reducer(
                 variable,
                 variable_annotations,
                 assigned_value_types,
@@ -269,7 +316,7 @@ pub fn resolve_reducer_by_value_type(
     }
 }
 
-fn determine_value_type(
+fn determine_value_type_for_reducer(
     variable: &Variable,
     variable_annotations: &mut BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     assigned_value_types: &mut BTreeMap<Variable, ValueTypeCategory>,

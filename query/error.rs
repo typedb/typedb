@@ -37,5 +37,6 @@ typedb_error!(
         CouldNotDetermineValueTypeForReducerInput(15, "The value-type for the reducer input variable '{variable}' could not be determined.", variable: String),
         ReducerInputVariableDidNotHaveSingleValueType(16, "The reducer input variable '{variable}' had multiple value-types.", variable: String),
         UnsupportedValueTypeForReducer(17, "The input variable to the reducer'{reducer}({variable})' reducer had an unsupported value-type: '{value_type}'", reducer: String, variable: String, value_type: ValueTypeCategory),
+        UncomparableValueTypesForSortVariable(18, "The sort variable '{variable}' could return uncomparable value-types '{category1}' & '{category2}'.", variable: String, category1: ValueTypeCategory, category2: ValueTypeCategory),
     }
 );
