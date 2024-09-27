@@ -8,15 +8,18 @@ use std::fmt;
 
 use answer::variable::Variable;
 
-use super::{
-    constraint::{Constraint, Constraints, ConstraintsBuilder},
-    disjunction::{Disjunction, DisjunctionBuilder},
-    negation::Negation,
-    nested_pattern::NestedPattern,
-    optional::Optional,
-    Scope, ScopeId,
+use crate::{
+    pattern::{
+        constraint::{Constraint, Constraints, ConstraintsBuilder},
+        disjunction::{Disjunction, DisjunctionBuilder},
+        negation::Negation,
+        nested_pattern::NestedPattern,
+        optional::Optional,
+        Scope, ScopeId,
+    },
+    program::block::{BlockContext, ScopeContext},
+    PatternDefinitionError,
 };
-use crate::{program::block::BlockContext, PatternDefinitionError};
 
 #[derive(Debug, Clone)]
 pub struct Conjunction {

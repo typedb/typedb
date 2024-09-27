@@ -42,6 +42,10 @@ impl FixedBatch {
         }
     }
 
+    pub fn width(&self) -> u32 {
+        self.width
+    }
+
     pub(crate) fn len(&self) -> u32 {
         self.entries
     }

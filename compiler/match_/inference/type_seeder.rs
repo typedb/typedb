@@ -282,7 +282,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         context: &'a ScopeContext,
         conjunction_scope_id: ScopeId,
     ) -> impl Iterator<Item = Variable> + '_ {
-        context.get_variable_scopes().filter(move |(_, scope)| **scope == conjunction_scope_id).map(|(var, _)| *var)
+        context.get_variable_scopes().filter(move |&(_, scope)| scope == conjunction_scope_id).map(|(var, _)| var)
     }
 
     fn annotate_some_unannotated_vertex(
@@ -319,6 +319,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         let (include_entities, include_relations, include_attributes, include_roles) = match category {
             VariableCategory::Type => (true, true, true, true),
             VariableCategory::ThingType => (true, true, true, false),
+            VariableCategory::AttributeType => (false, false, true, false),
             VariableCategory::RoleType => (false, false, false, true),
             VariableCategory::ThingList | VariableCategory::Thing => (true, true, true, false),
             VariableCategory::ObjectList | VariableCategory::Object => (true, true, false, false),

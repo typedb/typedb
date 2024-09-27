@@ -171,8 +171,15 @@ impl ScopeContext {
             Some(variable_scope) => is_equal_or_parent_scope(&self.scope_parents, scope, *variable_scope),
         }
     }
-    pub fn get_variable_scopes(&self) -> impl Iterator<Item = (&Variable, &ScopeId)> + '_ {
-        self.variable_declaration.iter()
+
+    pub fn is_child_scope(&self, child: ScopeId, candidate: ScopeId) -> bool {
+        self.scope_parents
+            .get(&child)
+            .is_some_and(|&parent| candidate == parent || self.is_child_scope(parent, candidate))
+    }
+
+    pub fn get_variable_scopes(&self) -> impl Iterator<Item = (Variable, ScopeId)> + '_ {
+        self.variable_declaration.iter().map(|(&var, &scope)| (var, scope))
     }
 }
 

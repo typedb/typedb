@@ -63,7 +63,7 @@ pub fn compile(
     add_has(constraints, &variables, &mut connection_inserts)?;
     add_role_players(constraints, type_annotations, &variables, &mut connection_inserts)?;
 
-    let output_width = variables.iter().map(|(_, i)| i.position + 1).max().unwrap_or(0);
+    let output_width = variables.values().map(|i| i.position + 1).max().unwrap_or(0);
     let mut output_row_schema = vec![None; output_width as usize];
     variables.iter().map(|(v, i)| (i, v)).sorted().for_each(|(&i, &v)| {
         output_row_schema[i.position as usize] = Some((v, VariableSource::InputVariable(i)));

@@ -11,7 +11,7 @@ use std::{
         ControlFlow::{Break, Continue},
     },
     sync::Arc,
-    time::{Instant, SystemTime},
+    time::Instant,
 };
 
 use compiler::VariablePosition;

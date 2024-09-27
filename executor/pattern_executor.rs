@@ -230,8 +230,8 @@ impl ProgramExecutor {
                     selected_variables.clone(),
                     &variable_positions
                         .iter()
-                        .filter_map(|(var, pos)| {
-                            variable_registry.variable_names().get(var).map(|name| (pos.clone(), name.to_owned()))
+                        .filter_map(|(var, &pos)| {
+                            variable_registry.variable_names().get(var).map(|name| (pos, name.to_owned()))
                         })
                         .collect(),
                     snapshot,

@@ -145,7 +145,10 @@ impl<'a> PlanBuilder<'a> {
             .map(|variable| {
                 let category = variable_registry.get_variable_category(variable).unwrap();
                 match category {
-                    VariableCategory::Type | VariableCategory::ThingType | VariableCategory::RoleType => {
+                    VariableCategory::Type
+                    | VariableCategory::ThingType
+                    | VariableCategory::AttributeType
+                    | VariableCategory::RoleType => {
                         let planner = TypePlanner::from_variable(variable, type_annotations);
                         let index = elements.len();
                         elements.push(PlannerVertex::Type(planner));
