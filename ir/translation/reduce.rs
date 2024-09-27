@@ -60,7 +60,7 @@ fn resolve_assigned_variable_category_optionality(
     variable_registry: &VariableRegistry,
 ) -> (VariableCategory, bool) {
     match reduce {
-        Reducer::Count => unreachable!(),
+        Reducer::Count => (VariableCategory::Value, false),
         Reducer::CountVar(_) => (VariableCategory::Value, false),
         Reducer::Sum(_) => (VariableCategory::Value, true),
         Reducer::Max(_) => (VariableCategory::Value, true),
