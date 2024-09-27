@@ -13,6 +13,10 @@ TYPEDB_HOME=$(cd "$(dirname "${path}")" && pwd -P)
 
 TYPEDB_SERVER_DIR="${TYPEDB_HOME}/server"
 
+if [ -d "${TYPEDB_HOME}/console" ]; then
+  CONSOLE_EXISTS=1
+fi
+
 # ================================================
 # common helper functions
 # ================================================
@@ -29,7 +33,9 @@ exit_if_java_not_found() {
 print_usage() {
     # TODO: Add [--help] back to server
     echo "  Server:          typedb server"
-    echo "  Console:         typedb console [--help]"
+    if [[ $CONSOLE_EXISTS ]]; then
+      echo "  Console:         typedb console [--help]"
+    fi
 }
 
 # =============================================
@@ -39,6 +45,10 @@ print_usage() {
 
 case "$1" in
     console)
+        if [[ ! $CONSOLE_EXISTS ]]; then
+            echo "TypeDB console was not included in this distribution. Please download it separately."
+            exit 1
+        fi
         exit_if_java_not_found
         SERVICE_LIB_CP="console/lib/*"
         CLASSPATH="${TYPEDB_HOME}/${SERVICE_LIB_CP}:${TYPEDB_HOME}/console/conf/"
