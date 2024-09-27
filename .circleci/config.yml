@@ -93,7 +93,7 @@ commands:
     steps:
       - run: |
           bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel build --jobs=8 //:assemble-typedb-server --compilation_mode=opt
+          bazel build --jobs=8 //:assemble-typedb-all --compilation_mode=opt
           bazel test //tests/assembly:test_assembly --test_output=errors
 
   deploy-snapshot-unix:

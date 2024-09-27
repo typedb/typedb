@@ -62,66 +62,115 @@ alias(
 )
 
 # The directory structure for distribution
-artifact_repackage(
-    name = "console-repackaged",
-    srcs = [":typedb_console_artifact"],
-    files_to_keep = ["console"],
-)
-
 pkg_files(
-    name = "package-server-and-entry",
+    name = "package-layout-server",
     srcs = ["//:typedb_server_bin", "//binary:typedb"],
     renames = {"//:typedb_server_bin" : "server/typedb_server_bin"},
     attributes = binary_permissions,
 )
 
 pkg_tar(
-    name = "package-typedb",
-    srcs = [":package-server-and-entry"],
-    deps = [":console-repackaged"],
+    name = "package-typedb-server-only",
+    srcs = [":package-layout-server"],
 )
 
-
 assemble_zip(
-    name = "assemble-mac-x86_64-zip",
+    name = "assemble-server-mac-x86_64-zip",
     additional_files = assemble_files,
     empty_directories = empty_directories,
-    output_filename = "typedb-all-mac-x86_64",
+    output_filename = "typedb-server-mac-x86_64",
     permissions = other_permissions,
-    targets = ["//:package-typedb"],
+    targets = ["//:package-typedb-server-only"],
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_mac_x86_64,
 )
 
 assemble_zip(
-    name = "assemble-mac-arm64-zip",
+    name = "assemble-server-mac-arm64-zip",
     additional_files = assemble_files,
     empty_directories = empty_directories,
-    output_filename = "typedb-all-mac-arm64",
+    output_filename = "typedb-server-mac-arm64",
     permissions = other_permissions,
-    targets = ["//:package-typedb"],
+    targets = ["//:package-typedb-server-only"],
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_mac_arm64,
 )
 
 assemble_targz(
-    name = "assemble-linux-x86_64-targz",
+    name = "assemble-server-linux-x86_64-targz",
     additional_files = assemble_files,
     empty_directories = empty_directories,
-    output_filename = "typedb-all-linux-x86_64",
+    output_filename = "typedb-server-linux-x86_64",
     permissions = other_permissions,
-    targets = ["//:package-typedb"],
+    targets = ["//:package-typedb-server-only"],
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_linux_x86_64,
 )
 
 assemble_targz(
-    name = "assemble-linux-arm64-targz",
+    name = "assemble-server-linux-arm64-targz",
+    additional_files = assemble_files,
+    empty_directories = empty_directories,
+    output_filename = "typedb-server-linux-arm64",
+    permissions = other_permissions,
+    targets = ["//:package-typedb-server-only"],
+    visibility = ["//tests/assembly:__subpackages__"],
+    target_compatible_with = constraint_linux_arm64,
+)
+
+# Package TypeDB & console together
+artifact_repackage(
+    name = "console-repackaged",
+    srcs = [":typedb_console_artifact"],
+    files_to_keep = ["console"],
+)
+
+pkg_tar(
+    name = "package-typedb-all",
+    srcs = [":package-layout-server"],
+    deps = [":console-repackaged"],
+)
+
+assemble_zip(
+    name = "assemble-all-mac-x86_64-zip",
+    additional_files = assemble_files,
+    empty_directories = empty_directories,
+    output_filename = "typedb-all-mac-x86_64",
+    permissions = other_permissions,
+    targets = ["//:package-typedb-all"],
+    visibility = ["//tests/assembly:__subpackages__"],
+    target_compatible_with = constraint_mac_x86_64,
+)
+
+assemble_zip(
+    name = "assemble-all-mac-arm64-zip",
+    additional_files = assemble_files,
+    empty_directories = empty_directories,
+    output_filename = "typedb-all-mac-arm64",
+    permissions = other_permissions,
+    targets = ["//:package-typedb-all"],
+    visibility = ["//tests/assembly:__subpackages__"],
+    target_compatible_with = constraint_mac_arm64,
+)
+
+assemble_targz(
+    name = "assemble-all-linux-x86_64-targz",
+    additional_files = assemble_files,
+    empty_directories = empty_directories,
+    output_filename = "typedb-all-linux-x86_64",
+    permissions = other_permissions,
+    targets = ["//:package-typedb-all"],
+    visibility = ["//tests/assembly:__subpackages__"],
+    target_compatible_with = constraint_linux_x86_64,
+)
+
+assemble_targz(
+    name = "assemble-all-linux-arm64-targz",
     additional_files = assemble_files,
     empty_directories = empty_directories,
     output_filename = "typedb-all-linux-arm64",
     permissions = other_permissions,
-    targets = ["//:package-typedb"],
+    targets = ["//:package-typedb-all"],
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_linux_arm64,
 )
@@ -132,7 +181,7 @@ deploy_artifact(
     artifact_name = "typedb-all-mac-x86_64-{version}.zip",
     release = deployment["artifact"]["release"]["upload"],
     snapshot = deployment["artifact"]["snapshot"]["upload"],
-    target = ":assemble-mac-x86_64-zip",
+    target = ":assemble-all-mac-x86_64-zip",
 )
 
 deploy_artifact(
@@ -141,7 +190,7 @@ deploy_artifact(
     artifact_name = "typedb-all-mac-arm64-{version}.zip",
     release = deployment["artifact"]["release"]["upload"],
     snapshot = deployment["artifact"]["snapshot"]["upload"],
-    target = ":assemble-mac-arm64-zip",
+    target = ":assemble-all-mac-arm64-zip",
 )
 
 deploy_artifact(
@@ -150,7 +199,7 @@ deploy_artifact(
     artifact_name = "typedb-all-linux-x86_64-{version}.tar.gz",
     release = deployment["artifact"]["release"]["upload"],
     snapshot = deployment["artifact"]["snapshot"]["upload"],
-    target = ":assemble-linux-x86_64-targz",
+    target = ":assemble-all-linux-x86_64-targz",
 )
 
 deploy_artifact(
@@ -159,17 +208,17 @@ deploy_artifact(
     artifact_name = "typedb-all-linux-arm64-{version}.tar.gz",
     release = deployment["artifact"]["release"]["upload"],
     snapshot = deployment["artifact"]["snapshot"]["upload"],
-    target = ":assemble-linux-arm64-targz",
+    target = ":assemble-all-linux-arm64-targz",
 )
 
 # Convenience
 alias(
-    name = "assemble-typedb-server",
+    name = "assemble-typedb-all",
     actual = select({
-        "@vaticle_bazel_distribution//platform:is_linux_arm64" : ":assemble-linux-arm64-targz",
-        "@vaticle_bazel_distribution//platform:is_linux_x86_64" : ":assemble-linux-x86_64-targz",
-        "@vaticle_bazel_distribution//platform:is_mac_arm64" : ":assemble-mac-arm64-zip",
-        "@vaticle_bazel_distribution//platform:is_mac_x86_64" : ":assemble-mac-x86_64-zip",
+        "@vaticle_bazel_distribution//platform:is_linux_arm64" : ":assemble-all-linux-arm64-targz",
+        "@vaticle_bazel_distribution//platform:is_linux_x86_64" : ":assemble-all-linux-x86_64-targz",
+        "@vaticle_bazel_distribution//platform:is_mac_arm64" : ":assemble-all-mac-arm64-zip",
+        "@vaticle_bazel_distribution//platform:is_mac_x86_64" : ":assemble-all-mac-x86_64-zip",
 #        "@vaticle_bazel_distribution//platform:is_windows_x86_64" : ":assemble-windows-x86_64-zip"
     }),
     visibility = ["//tests/assembly:__subpackages__"],
@@ -191,17 +240,17 @@ docker_container_image(
     operating_system = "linux",
     architecture = "amd64",
     base = "@ubuntu-22.04-x86_64//image",
-    cmd = ["/opt/typedb-all-linux-x86_64/typedb", "server"],
+    cmd = ["/opt/typedb-server-linux-x86_64/typedb", "server"],
     directory = "opt",
     env = {
         "LANG": "C.UTF-8",
         "LC_ALL": "C.UTF-8",
     },
     ports = ["1729"],
-    tars = [":assemble-linux-x86_64-targz"],
+    tars = [":assemble-server-linux-x86_64-targz"],
     visibility = ["//test:__subpackages__"],
-    volumes = ["/opt/typedb-all-linux-x86_64/server/data/"],
-    workdir = "/opt/typedb-all-linux-x86_64",
+    volumes = ["/opt/typedb-server-linux-x86_64/server/data/"],
+    workdir = "/opt/typedb-server-linux-x86_64",
     target_compatible_with = constraint_linux_x86_64,
 )
 
@@ -210,17 +259,17 @@ docker_container_image(
     operating_system = "linux",
     architecture = "arm64",
     base = "@ubuntu-22.04-arm64//image",
-    cmd = ["/opt/typedb-all-linux-arm64/typedb", "server"],
+    cmd = ["/opt/typedb-server-linux-arm64/typedb", "server"],
     directory = "opt",
     env = {
         "LANG": "C.UTF-8",
         "LC_ALL": "C.UTF-8",
     },
     ports = ["1729"],
-    tars = [":assemble-linux-arm64-targz"],
+    tars = [":assemble-server-linux-arm64-targz"],
     visibility = ["//test:__subpackages__"],
-    volumes = ["/opt/typedb-all-linux-arm64/server/data/"],
-    workdir = "/opt/typedb-all-linux-arm64",
+    volumes = ["/opt/typedb-server-linux-arm64/server/data/"],
+    workdir = "/opt/typedb-server-linux-arm64",
     target_compatible_with = constraint_linux_arm64,
 )
 
