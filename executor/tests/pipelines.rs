@@ -23,7 +23,7 @@ use storage::{
     snapshot::{CommittableSnapshot, ReadSnapshot},
     MVCCStorage,
 };
-use test_utils::assert_matches;
+use test_utils::{assert_matches, TempDir};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
@@ -39,10 +39,11 @@ struct Context {
     thing_manager: Arc<ThingManager>,
     function_manager: FunctionManager,
     query_manager: QueryManager,
+    tmp_dir: TempDir,
 }
 
 fn setup_common() -> Context {
-    let (_tmp_dir, mut storage) = create_core_storage();
+    let (tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -63,7 +64,7 @@ fn setup_common() -> Context {
 
     // reload to obtain latest vertex generators and statistics entries
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    Context { storage, type_manager, function_manager, query_manager, thing_manager }
+    Context { tmp_dir, storage, type_manager, function_manager, query_manager, thing_manager }
 }
 
 #[test]
