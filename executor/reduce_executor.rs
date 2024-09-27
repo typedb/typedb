@@ -22,22 +22,28 @@ use crate::{
 
 pub(crate) struct GroupedReducer {
     input_group_positions: Vec<VariablePosition>,
-    grouped_aggregates: HashMap<Vec<VariableValue<'static>>, Vec<ReducerExecutor>>,
+    grouped_reductions: HashMap<Vec<VariableValue<'static>>, Vec<ReducerExecutor>>,
     reused_group: Vec<VariableValue<'static>>,
-    sample_reducers: Vec<ReducerExecutor>,
+    // Clone for efficient instantiation of reducers for a new group
+    uninitialised_reducer_executors: Vec<ReducerExecutor>,
 }
 
 impl GroupedReducer {
     pub(crate) fn new(program: ReduceProgram) -> Self {
-        let sample_reducers: Vec<ReducerExecutor> =
+        let reducers: Vec<ReducerExecutor> =
             program.reduction_inputs.iter().map(|reducer| ReducerExecutor::build(reducer)).collect();
         let reused_group = Vec::with_capacity(program.input_group_positions.len());
-        let mut grouped_aggregates = HashMap::new();
+        let mut grouped_reductions = HashMap::new();
         // Empty result sets behave different for an empty grouping
         if program.input_group_positions.len() == 0 {
-            grouped_aggregates.insert(Vec::new(), sample_reducers.clone());
+            grouped_reductions.insert(Vec::new(), reducers.clone());
         }
-        Self { input_group_positions: program.input_group_positions, grouped_aggregates, reused_group, sample_reducers }
+        Self {
+            input_group_positions: program.input_group_positions,
+            grouped_reductions,
+            reused_group,
+            uninitialised_reducer_executors: reducers,
+        }
     }
 
     pub(crate) fn accept<Snapshot: ReadableSnapshot>(
@@ -49,10 +55,10 @@ impl GroupedReducer {
         for pos in &self.input_group_positions {
             self.reused_group.push(row.get(pos.clone()).to_owned());
         }
-        if !self.grouped_aggregates.contains_key(&self.reused_group) {
-            self.grouped_aggregates.insert(self.reused_group.clone(), self.sample_reducers.clone());
+        if !self.grouped_reductions.contains_key(&self.reused_group) {
+            self.grouped_reductions.insert(self.reused_group.clone(), self.uninitialised_reducer_executors.clone());
         }
-        let reducers = self.grouped_aggregates.get_mut(&self.reused_group).unwrap();
+        let reducers = self.grouped_reductions.get_mut(&self.reused_group).unwrap();
         for reducer in reducers {
             reducer.accept(row, context);
         }
@@ -60,12 +66,14 @@ impl GroupedReducer {
     }
 
     pub(crate) fn finalise(self) -> Batch {
-        let Self { input_group_positions, sample_reducers, grouped_aggregates, .. } = self;
+        let Self {
+            input_group_positions, uninitialised_reducer_executors: sample_reducers, grouped_reductions, ..
+        } = self;
         let mut batch =
-            Batch::new((input_group_positions.len() + sample_reducers.len()) as u32, grouped_aggregates.len());
+            Batch::new((input_group_positions.len() + sample_reducers.len()) as u32, grouped_reductions.len());
         let mut reused_row = Vec::with_capacity(input_group_positions.len() + sample_reducers.len());
         let reused_multiplicity = 1;
-        for (group, reducers) in grouped_aggregates.into_iter() {
+        for (group, reducers) in grouped_reductions.into_iter() {
             reused_row.clear();
             for value in group.into_iter() {
                 reused_row.push(value);
