@@ -11,7 +11,7 @@ rust_test(
     deps = [
         "@crates//:tokio",
     ],
-    data = ["//:assemble-typedb-server"],
+    data = ["//:assemble-typedb-all"],
     env = select({
         "@vaticle_bazel_distribution//platform:is_linux_x86_64" : {"TYPEDB_ASSEMBLY_ARCHIVE": "typedb-all-linux-x86_64.tar.gz" },
         "@vaticle_bazel_distribution//platform:is_linux_arm64" : {"TYPEDB_ASSEMBLY_ARCHIVE":"typedb-all-linux-arm64.tar.gz"},
