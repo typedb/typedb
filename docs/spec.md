@@ -392,7 +392,7 @@ TypeDB's type system is a [logical system](https://en.wikipedia.org/wiki/Formal_
 It is convenient to present the type system in _two stages_ (though some people prefer to do it all in one go!):
 
 * We first introduce and explain the **grammar** of statements in the system.
-* We then discuss the **rule system** for inferring which statement are _true_.
+* We then discuss the **rule system** for inferring which statements are _true_.
 
 _IMPORTANT_: Not all parts of the type system introduced in this section are exposed to the user through TypeQL (but most parts are). This shouldn't be surprising. As an analogy: the inner workings (or formal specification) of the borrow checker in Rust is not exposed in actual Rust. In other words,  defining the meaning of language often "needs more" language than the original language itself.
 
@@ -605,7 +605,7 @@ The next rule is special to attributes, describing their interactions with value
 
 * **Sums**: Sum types follow the usual rules of type system.
 
-    _Note_: the inclusion $`A \leq A + B`$ is also **subsumptive** subtyping. This induces certain equalities on elements: for example, if $`A \leq B`$, then $`A + B = B`$ since $`a : A`$ for $`a : B`$ we have $`a = a : A + B`$ ... therefore, technically $`A + B`$ the so-called _fibered_ sum which identifies the $`A \cap B`$). We omit the detailed rules here, and use common sense.
+    _Note_: the inclusion $`A \leq A + B`$ is also **subsumptive** subtyping. This induces certain equalities on elements: for example, if $`A \leq B`$, then $`A + B = B`$. Indeed when $`a : A`$ then $`a : B`$ and both include into $`A + B`$ as the same element: $`a = a : A + B`$ ... (therefore, technically $`A + B`$ is the so-called _fibered_ sum over the intersection $`A \cap B`$). We omit the detailed rules here, and use common sense.
 
 * **Products**: Product types follow the usual rules of type systems.
 
@@ -622,6 +622,12 @@ The next rule is special to attributes, describing their interactions with value
 
 * **Direct dependency list rule**: Given $`l = [l_0,l_1,...] : [I]`$ and $`a :_! A(l : [I])`$ implies $`a :_! A(l_i : I)`$. In other words:
   > If the user intends $a$ to directly depend on the list $`l`$ then they intend $a$ to directly depend on each list's entries $`l_i`$.
+
+* **Empty attribute lists**: For $`A : \mathbf{Att}(I)`$ and $`x : I_{[]}`$ such that no non-empty list $`l : `[A](x : I_{[]})`$ exists then this implies an empty **"default"** list $`[] : [A](x : I_{[]})`$.
+
+_Note_. The last rule is the reason why we don't need the type `[A]?` in our type system — the "None" case is simple the empty list.
+
+_Note 2_. List types also interact with subtyping in the obvious way: when `A \leq B` then `[A] \leq [B]`. 
 
 ### Modalities
 
@@ -1714,44 +1720,44 @@ _To discuss: the usefulness of constraint patterns seems overall low, could thin
 
 ## ... Element statements
 
-#### **Case ISA_PATT**
+### **Case ISA_PATT**
 * ✅ `$x isa $T` is satisfied if $`r(x) : r(T)`$ for $`r(T) : \mathbf{ERA}`$
 * 🔶 `$x isa $T ($I: $y)` is equivalent to `$x isa $T; $x links ($I: $y);`
 * 🔶 `$x isa $T <EXPR>` is equivalent to `$x isa $T; $x == <EXPR>;`
 
-#### **Case ANON_ISA_PATT**
+### **Case ANON_ISA_PATT**
 * 🔶 `$T` is equivalent to `$_ isa $T`
 * 🔶 `$T ($R: $y, ...)`  is equivalent to `$_ isa $T ($R: $y, ...)`
 * 🔶 `$T <EXPR>` is equivalent to `$_ isa $T <EXPR>`
 
-#### **Case DIRECT_ISA_PATT**
+### **Case DIRECT_ISA_PATT**
 
 * ✅ `$x isa! $T` is satisfied if $`r(x) :_! r(T)`$ for $`r(T) : \mathbf{ERA}`$
 * 🔶 `$x isa! $T ($I: $y)` is equivalent to `$x isa! $T; $x links ($I: $y);`
 * 🔶 `$x isa! $T <EXPR>` is equivalent to `$x isa! $T; $x == <EXPR>;`
 
-#### **Case LINKS_PATT**
+### **Case LINKS_PATT**
 * ✅ `$x links ($I: $y)` is satisfied if $`r(x) : A(r(y):r(I))`$ for some $`A : \mathbf{Rel}(r(I))`$.
 * 🔶 `$x links ($I[]: $y)` is satisfied if $`r(x) : A(r(y):[r(I)])`$ for some $`A : \mathbf{Rel}([r(I)])`$.
 * ✅ `$x links ($y)` is equivalent to `$x links ($_: $y)` for anonymous `$_` (See "Syntactic Sugar")
 
-#### **Case DIRECT_LINKS_PATT**
+### **Case DIRECT_LINKS_PATT**
 * 🔮 `$x links! ($I: $y)` is satisfied if $`r(x) :_! A(r(y):r(I))`$ for some $`A : \mathbf{Rel}(r(I))`$.
 * 🔮 `$x links! ($I[]: $y)` is satisfied if $`r(x) :_! A(r(y):[r(I)])`$ for some $`A : \mathbf{Rel}([r(I)])`$.
 
-#### **Case HAS_PATT**
+### **Case HAS_PATT**
 * ✅ `$x has $B $y` is satisfied if $`r(y) : r(B)(r(x):O_{r(B)})`$ for some $`r(B) : \mathbf{Att}`$.
 * 🔶 `$x has $B[] $y` is satisfied if $`r(y) : [r(B)](r(x):O_{r(B[])})`$ for some $`r(B) : \mathbf{Att}`$.
 * ✅ `$x has $y` is equivalent to `$x has $_ $y` for anonymous `$_`
 
 _Remark_. Note that `$x has $B $y` will match the individual list elements of list attributes (e.g. when $`r(x) : A`$ and $`A <_! O_B`$).
 
-#### **Case DIRECT_HAS_PATT**
+### **Case DIRECT_HAS_PATT**
 
 * 🔮 `$x has! $B $y` is satisfied if $`r(y) :_! r(B)(r(x):O_{r(B)})`$ for some $`r(B) : \mathbf{Att}`$.
 * 🔮 `$x has! $B[] $y` is satisfied if $`r(y) :_! [r(B)](r(x):O_{r(B[])})`$ for some $`r(B) : \mathbf{Att}`$.
 
-#### **Case IS_PATT**
+### **Case IS_PATT**
 * 🔷 `$x is $y` is satisfied if:
     * `$x` and `$y` are both **ivars** and: $`r(x), r(y) :_! A`$ and $`r(x) = r(y)`$ for $`A : \mathbf{ERA}`$
     * `$x` and `$y` are both **lvars** and: $`r(x), r(y) : [A]`$ and $`r(x) = r(y)`$ for (sum type) $`A = \sum_i A_i`$, $`A_i : \mahtbf{ERA}`$ (**#BDD**)
