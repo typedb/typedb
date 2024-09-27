@@ -22,15 +22,15 @@ use crate::{
 
 pub(crate) struct GroupedReducer {
     input_group_positions: Vec<VariablePosition>,
-    grouped_aggregates: HashMap<Vec<VariableValue<'static>>, Vec<ReducerImpl>>,
+    grouped_aggregates: HashMap<Vec<VariableValue<'static>>, Vec<ReducerExecutor>>,
     reused_group: Vec<VariableValue<'static>>,
-    sample_reducers: Vec<ReducerImpl>,
+    sample_reducers: Vec<ReducerExecutor>,
 }
 
 impl GroupedReducer {
     pub(crate) fn new(program: ReduceProgram) -> Self {
-        let sample_reducers: Vec<ReducerImpl> =
-            program.reduction_inputs.iter().map(|reducer| ReducerImpl::build(reducer)).collect();
+        let sample_reducers: Vec<ReducerExecutor> =
+            program.reduction_inputs.iter().map(|reducer| ReducerExecutor::build(reducer)).collect();
         let reused_group = Vec::with_capacity(program.input_group_positions.len());
         let mut grouped_aggregates = HashMap::new();
         // Empty result sets behave different for an empty grouping
@@ -104,96 +104,96 @@ fn extract_value<Snapshot: ReadableSnapshot>(
 }
 
 #[derive(Debug, Clone)]
-enum ReducerImpl {
-    Count(CountImpl),
-    CountVar(CountVarImpl),
-    SumLong(SumLongImpl),
-    SumDouble(SumDoubleImpl),
-    MaxLong(MaxLongImpl),
-    MaxDouble(MaxDoubleImpl),
-    MinLong(MinLongImpl),
-    MinDouble(MinDoubleImpl),
-    MeanLong(MeanLongImpl),
-    MeanDouble(MeanDoubleImpl),
-    MedianLong(MedianLongImpl),
-    MedianDouble(MedianDoubleImpl),
-    StdLong(StdLongImpl),
-    StdDouble(StdDoubleImpl),
+enum ReducerExecutor {
+    Count(CountExecutor),
+    CountVar(CountVarExecutor),
+    SumLong(SumLongExecutor),
+    SumDouble(SumDoubleExecutor),
+    MaxLong(MaxLongExecutor),
+    MaxDouble(MaxDoubleExecutor),
+    MinLong(MinLongExecutor),
+    MinDouble(MinDoubleExecutor),
+    MeanLong(MeanLongExecutor),
+    MeanDouble(MeanDoubleExecutor),
+    MedianLong(MedianLongExecutor),
+    MedianDouble(MedianDoubleExecutor),
+    StdLong(StdLongExecutor),
+    StdDouble(StdDoubleExecutor),
 }
 
-impl ReducerImpl {
+impl ReducerExecutor {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         match self {
-            ReducerImpl::Count(reducer) => reducer.accept(row, context),
-            ReducerImpl::CountVar(reducer) => reducer.accept(row, context),
-            ReducerImpl::SumLong(reducer) => reducer.accept(row, context),
-            ReducerImpl::SumDouble(reducer) => reducer.accept(row, context),
-            ReducerImpl::MaxLong(reducer) => reducer.accept(row, context),
-            ReducerImpl::MaxDouble(reducer) => reducer.accept(row, context),
-            ReducerImpl::MinLong(reducer) => reducer.accept(row, context),
-            ReducerImpl::MinDouble(reducer) => reducer.accept(row, context),
-            ReducerImpl::MeanLong(reducer) => reducer.accept(row, context),
-            ReducerImpl::MeanDouble(reducer) => reducer.accept(row, context),
-            ReducerImpl::MedianLong(reducer) => reducer.accept(row, context),
-            ReducerImpl::MedianDouble(reducer) => reducer.accept(row, context),
-            ReducerImpl::StdLong(reducer) => reducer.accept(row, context),
-            ReducerImpl::StdDouble(reducer) => reducer.accept(row, context),
+            ReducerExecutor::Count(reducer) => reducer.accept(row, context),
+            ReducerExecutor::CountVar(reducer) => reducer.accept(row, context),
+            ReducerExecutor::SumLong(reducer) => reducer.accept(row, context),
+            ReducerExecutor::SumDouble(reducer) => reducer.accept(row, context),
+            ReducerExecutor::MaxLong(reducer) => reducer.accept(row, context),
+            ReducerExecutor::MaxDouble(reducer) => reducer.accept(row, context),
+            ReducerExecutor::MinLong(reducer) => reducer.accept(row, context),
+            ReducerExecutor::MinDouble(reducer) => reducer.accept(row, context),
+            ReducerExecutor::MeanLong(reducer) => reducer.accept(row, context),
+            ReducerExecutor::MeanDouble(reducer) => reducer.accept(row, context),
+            ReducerExecutor::MedianLong(reducer) => reducer.accept(row, context),
+            ReducerExecutor::MedianDouble(reducer) => reducer.accept(row, context),
+            ReducerExecutor::StdLong(reducer) => reducer.accept(row, context),
+            ReducerExecutor::StdDouble(reducer) => reducer.accept(row, context),
         }
     }
 
     fn finalise(self) -> Option<VariableValue<'static>> {
         match self {
-            ReducerImpl::Count(mut reducer) => reducer.finalise(),
-            ReducerImpl::CountVar(mut reducer) => reducer.finalise(),
-            ReducerImpl::SumLong(mut reducer) => reducer.finalise(),
-            ReducerImpl::SumDouble(mut reducer) => reducer.finalise(),
-            ReducerImpl::MaxLong(mut reducer) => reducer.finalise(),
-            ReducerImpl::MaxDouble(mut reducer) => reducer.finalise(),
-            ReducerImpl::MinLong(mut reducer) => reducer.finalise(),
-            ReducerImpl::MinDouble(mut reducer) => reducer.finalise(),
-            ReducerImpl::MeanLong(mut reducer) => reducer.finalise(),
-            ReducerImpl::MeanDouble(mut reducer) => reducer.finalise(),
-            ReducerImpl::MedianLong(mut reducer) => reducer.finalise(),
-            ReducerImpl::MedianDouble(mut reducer) => reducer.finalise(),
-            ReducerImpl::StdLong(mut reducer) => reducer.finalise(),
-            ReducerImpl::StdDouble(mut reducer) => reducer.finalise(),
+            ReducerExecutor::Count(mut reducer) => reducer.finalise(),
+            ReducerExecutor::CountVar(mut reducer) => reducer.finalise(),
+            ReducerExecutor::SumLong(mut reducer) => reducer.finalise(),
+            ReducerExecutor::SumDouble(mut reducer) => reducer.finalise(),
+            ReducerExecutor::MaxLong(mut reducer) => reducer.finalise(),
+            ReducerExecutor::MaxDouble(mut reducer) => reducer.finalise(),
+            ReducerExecutor::MinLong(mut reducer) => reducer.finalise(),
+            ReducerExecutor::MinDouble(mut reducer) => reducer.finalise(),
+            ReducerExecutor::MeanLong(mut reducer) => reducer.finalise(),
+            ReducerExecutor::MeanDouble(mut reducer) => reducer.finalise(),
+            ReducerExecutor::MedianLong(mut reducer) => reducer.finalise(),
+            ReducerExecutor::MedianDouble(mut reducer) => reducer.finalise(),
+            ReducerExecutor::StdLong(mut reducer) => reducer.finalise(),
+            ReducerExecutor::StdDouble(mut reducer) => reducer.finalise(),
         }
     }
 }
 
-impl ReducerImpl {
+impl ReducerExecutor {
     fn build(reduce_ir: &ReduceOperation<VariablePosition>) -> Self {
         match reduce_ir {
-            ReduceOperation::Count => ReducerImpl::Count(CountImpl::new()),
-            ReduceOperation::CountVar(pos) => ReducerImpl::CountVar(CountVarImpl::new(pos.clone())),
-            ReduceOperation::SumLong(pos) => ReducerImpl::SumLong(SumLongImpl::new(pos.clone())),
-            ReduceOperation::SumDouble(pos) => ReducerImpl::SumDouble(SumDoubleImpl::new(pos.clone())),
-            ReduceOperation::MaxLong(pos) => ReducerImpl::MaxLong(MaxLongImpl::new(pos.clone())),
-            ReduceOperation::MaxDouble(pos) => ReducerImpl::MaxDouble(MaxDoubleImpl::new(pos.clone())),
-            ReduceOperation::MinLong(pos) => ReducerImpl::MinLong(MinLongImpl::new(pos.clone())),
-            ReduceOperation::MinDouble(pos) => ReducerImpl::MinDouble(MinDoubleImpl::new(pos.clone())),
-            ReduceOperation::MeanLong(pos) => ReducerImpl::MeanLong(MeanLongImpl::new(pos.clone())),
-            ReduceOperation::MeanDouble(pos) => ReducerImpl::MeanDouble(MeanDoubleImpl::new(pos.clone())),
-            ReduceOperation::MedianLong(pos) => ReducerImpl::MedianLong(MedianLongImpl::new(pos.clone())),
-            ReduceOperation::MedianDouble(pos) => ReducerImpl::MedianDouble(MedianDoubleImpl::new(pos.clone())),
-            ReduceOperation::StdLong(pos) => ReducerImpl::StdLong(StdLongImpl::new(pos.clone())),
-            ReduceOperation::StdDouble(pos) => ReducerImpl::StdDouble(StdDoubleImpl::new(pos.clone())),
+            ReduceOperation::Count => ReducerExecutor::Count(CountExecutor::new()),
+            ReduceOperation::CountVar(pos) => ReducerExecutor::CountVar(CountVarExecutor::new(pos.clone())),
+            ReduceOperation::SumLong(pos) => ReducerExecutor::SumLong(SumLongExecutor::new(pos.clone())),
+            ReduceOperation::SumDouble(pos) => ReducerExecutor::SumDouble(SumDoubleExecutor::new(pos.clone())),
+            ReduceOperation::MaxLong(pos) => ReducerExecutor::MaxLong(MaxLongExecutor::new(pos.clone())),
+            ReduceOperation::MaxDouble(pos) => ReducerExecutor::MaxDouble(MaxDoubleExecutor::new(pos.clone())),
+            ReduceOperation::MinLong(pos) => ReducerExecutor::MinLong(MinLongExecutor::new(pos.clone())),
+            ReduceOperation::MinDouble(pos) => ReducerExecutor::MinDouble(MinDoubleExecutor::new(pos.clone())),
+            ReduceOperation::MeanLong(pos) => ReducerExecutor::MeanLong(MeanLongExecutor::new(pos.clone())),
+            ReduceOperation::MeanDouble(pos) => ReducerExecutor::MeanDouble(MeanDoubleExecutor::new(pos.clone())),
+            ReduceOperation::MedianLong(pos) => ReducerExecutor::MedianLong(MedianLongExecutor::new(pos.clone())),
+            ReduceOperation::MedianDouble(pos) => ReducerExecutor::MedianDouble(MedianDoubleExecutor::new(pos.clone())),
+            ReduceOperation::StdLong(pos) => ReducerExecutor::StdLong(StdLongExecutor::new(pos.clone())),
+            ReduceOperation::StdDouble(pos) => ReducerExecutor::StdDouble(StdDoubleExecutor::new(pos.clone())),
         }
     }
 }
 
 #[derive(Debug, Clone)]
-struct CountImpl {
+struct CountExecutor {
     count: u64,
 }
 
-impl CountImpl {
+impl CountExecutor {
     fn new() -> Self {
         Self { count: 0 }
     }
 }
 
-impl ReducerAPI for CountImpl {
+impl ReducerAPI for CountExecutor {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         self.count += row.get_multiplicity();
     }
@@ -204,17 +204,17 @@ impl ReducerAPI for CountImpl {
 }
 
 #[derive(Debug, Clone)]
-struct CountVarImpl {
+struct CountVarExecutor {
     count: u64,
     target: VariablePosition,
 }
-impl CountVarImpl {
+impl CountVarExecutor {
     fn new(target: VariablePosition) -> Self {
         Self { count: 0, target }
     }
 }
 
-impl ReducerAPI for CountVarImpl {
+impl ReducerAPI for CountVarExecutor {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if &VariableValue::Empty != row.get(self.target.clone()) {
             self.count += row.get_multiplicity();
@@ -227,18 +227,18 @@ impl ReducerAPI for CountVarImpl {
 }
 
 #[derive(Debug, Clone)]
-struct SumLongImpl {
+struct SumLongExecutor {
     sum: i64,
     target: VariablePosition,
 }
 
-impl SumLongImpl {
+impl SumLongExecutor {
     fn new(target: VariablePosition) -> Self {
         Self { sum: 0, target }
     }
 }
 
-impl ReducerAPI for SumLongImpl {
+impl ReducerAPI for SumLongExecutor {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context) {
             self.sum += value.unwrap_long() * row.get_multiplicity() as i64;
@@ -251,18 +251,18 @@ impl ReducerAPI for SumLongImpl {
 }
 
 #[derive(Debug, Clone)]
-struct SumDoubleImpl {
+struct SumDoubleExecutor {
     sum: f64,
     target: VariablePosition,
 }
 
-impl SumDoubleImpl {
+impl SumDoubleExecutor {
     fn new(target: VariablePosition) -> Self {
         Self { sum: 0.0, target }
     }
 }
 
-impl ReducerAPI for SumDoubleImpl {
+impl ReducerAPI for SumDoubleExecutor {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context) {
             self.sum += value.unwrap_double() * row.get_multiplicity() as f64;
@@ -275,18 +275,18 @@ impl ReducerAPI for SumDoubleImpl {
 }
 
 #[derive(Debug, Clone)]
-struct MaxLongImpl {
+struct MaxLongExecutor {
     max: Option<i64>,
     target: VariablePosition,
 }
 
-impl MaxLongImpl {
+impl MaxLongExecutor {
     fn new(target: VariablePosition) -> Self {
         Self { max: None, target }
     }
 }
 
-impl ReducerAPI for MaxLongImpl {
+impl ReducerAPI for MaxLongExecutor {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context).map(|v| v.unwrap_long()) {
             if let Some(current) = self.max.as_ref() {
@@ -305,18 +305,18 @@ impl ReducerAPI for MaxLongImpl {
 }
 
 #[derive(Debug, Clone)]
-struct MaxDoubleImpl {
+struct MaxDoubleExecutor {
     max: Option<f64>,
     target: VariablePosition,
 }
 
-impl MaxDoubleImpl {
+impl MaxDoubleExecutor {
     fn new(target: VariablePosition) -> Self {
         Self { max: None, target }
     }
 }
 
-impl ReducerAPI for MaxDoubleImpl {
+impl ReducerAPI for MaxDoubleExecutor {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context).map(|v| v.unwrap_double()) {
             if let Some(current) = self.max.as_ref() {
@@ -335,18 +335,18 @@ impl ReducerAPI for MaxDoubleImpl {
 }
 
 #[derive(Debug, Clone)]
-struct MinLongImpl {
+struct MinLongExecutor {
     min: Option<i64>,
     target: VariablePosition,
 }
 
-impl MinLongImpl {
+impl MinLongExecutor {
     fn new(target: VariablePosition) -> Self {
         Self { min: None, target }
     }
 }
 
-impl ReducerAPI for MinLongImpl {
+impl ReducerAPI for MinLongExecutor {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context).map(|v| v.unwrap_long()) {
             if let Some(current) = self.min.as_ref() {
@@ -365,18 +365,18 @@ impl ReducerAPI for MinLongImpl {
 }
 
 #[derive(Debug, Clone)]
-struct MinDoubleImpl {
+struct MinDoubleExecutor {
     min: Option<f64>,
     target: VariablePosition,
 }
 
-impl MinDoubleImpl {
+impl MinDoubleExecutor {
     fn new(target: VariablePosition) -> Self {
         Self { min: None, target }
     }
 }
 
-impl ReducerAPI for MinDoubleImpl {
+impl ReducerAPI for MinDoubleExecutor {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context).map(|v| v.unwrap_double()) {
             if let Some(current) = self.min.as_ref() {
@@ -395,19 +395,19 @@ impl ReducerAPI for MinDoubleImpl {
 }
 
 #[derive(Debug, Clone)]
-struct MeanLongImpl {
+struct MeanLongExecutor {
     sum: i64,
     count: u64,
     target: VariablePosition,
 }
 
-impl MeanLongImpl {
+impl MeanLongExecutor {
     fn new(target: VariablePosition) -> Self {
         Self { sum: 0, count: 0, target }
     }
 }
 
-impl ReducerAPI for MeanLongImpl {
+impl ReducerAPI for MeanLongExecutor {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context) {
             self.sum += value.unwrap_long() * row.get_multiplicity() as i64;
@@ -425,19 +425,19 @@ impl ReducerAPI for MeanLongImpl {
 }
 
 #[derive(Debug, Clone)]
-struct MeanDoubleImpl {
+struct MeanDoubleExecutor {
     sum: f64,
     count: u64,
     target: VariablePosition,
 }
 
-impl MeanDoubleImpl {
+impl MeanDoubleExecutor {
     fn new(target: VariablePosition) -> Self {
         Self { sum: 0.0, count: 0, target }
     }
 }
 
-impl ReducerAPI for MeanDoubleImpl {
+impl ReducerAPI for MeanDoubleExecutor {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context) {
             self.sum += value.unwrap_double() * row.get_multiplicity() as f64;
@@ -455,18 +455,18 @@ impl ReducerAPI for MeanDoubleImpl {
 }
 
 #[derive(Debug, Clone)]
-struct MedianLongImpl {
+struct MedianLongExecutor {
     values: Vec<i64>,
     target: VariablePosition,
 }
 
-impl MedianLongImpl {
+impl MedianLongExecutor {
     fn new(target: VariablePosition) -> Self {
         Self { values: Vec::new(), target }
     }
 }
 
-impl ReducerAPI for MedianLongImpl {
+impl ReducerAPI for MedianLongExecutor {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context) {
             self.values.push(value.unwrap_long())
@@ -490,18 +490,18 @@ impl ReducerAPI for MedianLongImpl {
 }
 
 #[derive(Debug, Clone)]
-struct MedianDoubleImpl {
+struct MedianDoubleExecutor {
     values: Vec<f64>,
     target: VariablePosition,
 }
 
-impl MedianDoubleImpl {
+impl MedianDoubleExecutor {
     fn new(target: VariablePosition) -> Self {
         Self { values: Vec::new(), target }
     }
 }
 
-impl ReducerAPI for MedianDoubleImpl {
+impl ReducerAPI for MedianDoubleExecutor {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context) {
             self.values.push(value.unwrap_double())
@@ -525,20 +525,20 @@ impl ReducerAPI for MedianDoubleImpl {
 }
 
 #[derive(Debug, Clone)]
-struct StdLongImpl {
+struct StdLongExecutor {
     sum: i64,
     sum_squares: i128,
     count: u64,
     target: VariablePosition,
 }
 
-impl StdLongImpl {
+impl StdLongExecutor {
     fn new(target: VariablePosition) -> Self {
         Self { sum: 0, sum_squares: 0, count: 0, target }
     }
 }
 
-impl ReducerAPI for StdLongImpl {
+impl ReducerAPI for StdLongExecutor {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context) {
             let unwrapped = value.unwrap_long();
@@ -563,20 +563,20 @@ impl ReducerAPI for StdLongImpl {
 }
 
 #[derive(Debug, Clone)]
-struct StdDoubleImpl {
+struct StdDoubleExecutor {
     sum: f64,
     sum_squares: f64,
     count: u64,
     target: VariablePosition,
 }
 
-impl StdDoubleImpl {
+impl StdDoubleExecutor {
     fn new(target: VariablePosition) -> Self {
         Self { sum: 0.0, sum_squares: 0.0, count: 0, target }
     }
 }
 
-impl ReducerAPI for StdDoubleImpl {
+impl ReducerAPI for StdDoubleExecutor {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context) {
             let unwrapped = value.unwrap_double();
