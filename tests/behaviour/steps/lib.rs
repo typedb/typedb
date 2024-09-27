@@ -16,9 +16,11 @@ use std::{
 };
 
 use ::concept::thing::{attribute::Attribute, object::Object};
+use ::query::error::QueryError;
 use answer::variable_value::VariableValue;
 use cucumber::{gherkin::Feature, StatsWriter, World};
 use database::Database;
+use error::TypeDBError;
 use futures::{
     future::Either,
     stream::{self, StreamExt},
@@ -187,6 +189,10 @@ impl Context {
         self.active_concurrent_transactions = txs;
     }
 
+    pub fn get_concurrent_transactions(&self) -> &Vec<ActiveTransaction> {
+        &self.active_concurrent_transactions
+    }
+
     pub fn transaction(&mut self) -> Option<&mut ActiveTransaction> {
         self.active_transaction.as_mut()
     }
@@ -204,6 +210,7 @@ fn is_ignore(tag: &str) -> bool {
 pub enum BehaviourTestExecutionError {
     UseInvalidTransactionAsWrite,
     UseInvalidTransactionAsSchema,
+    Query(QueryError),
 }
 
 impl fmt::Display for BehaviourTestExecutionError {
@@ -217,6 +224,7 @@ impl Error for BehaviourTestExecutionError {
         match self {
             Self::UseInvalidTransactionAsWrite => None,
             Self::UseInvalidTransactionAsSchema => None,
+            Self::Query(_) => None,
         }
     }
 }

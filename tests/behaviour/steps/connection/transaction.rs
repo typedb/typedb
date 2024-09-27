@@ -6,22 +6,30 @@
 
 use std::sync::{Arc, Mutex};
 
-use cucumber::codegen::anyhow::Error;
-use cucumber::gherkin::Step;
-use futures::future::join_all;
+use cucumber::{codegen::anyhow::Error, gherkin::Step};
 use database::{
     transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
     Database,
 };
+use futures::future::join_all;
 use macro_rules_attribute::apply;
 use options::TransactionOptions;
 use server::{typedb, typedb::Server};
 use storage::durability_client::WALClient;
 use test_utils::assert_matches;
 
-use crate::{connection::BehaviourConnectionTestExecutionError, generic_step, params::{self, check_boolean}, ActiveTransaction, Context, util};
+use crate::{
+    connection::BehaviourConnectionTestExecutionError,
+    generic_step,
+    params::{self, check_boolean},
+    util, ActiveTransaction, Context,
+};
 
-async fn server_open_transaction_for_database(server: &'_ Server, tx_name: String, database_name: &'_ str) -> ActiveTransaction {
+async fn server_open_transaction_for_database(
+    server: &'_ Server,
+    tx_name: String,
+    database_name: &'_ str,
+) -> ActiveTransaction {
     let database = server.database_manager().database(database_name).unwrap();
     match tx_name.as_str() {
         "read" => ActiveTransaction::Read(TransactionRead::open(database, TransactionOptions::default())),
@@ -29,6 +37,15 @@ async fn server_open_transaction_for_database(server: &'_ Server, tx_name: Strin
         "schema" => ActiveTransaction::Schema(TransactionSchema::open(database, TransactionOptions::default())),
         _ => unreachable!("Unrecognised transaction type"),
     }
+}
+
+fn transaction_type_matches(tx: &ActiveTransaction, tx_type: &str) {
+    match tx_type {
+        "read" => assert_matches!(tx, ActiveTransaction::Read(_)),
+        "write" => assert_matches!(tx, ActiveTransaction::Write(_)),
+        "schema" => assert_matches!(tx, ActiveTransaction::Schema(_)),
+        _ => unreachable!("Unrecognised transaction type"),
+    };
 }
 
 #[apply(generic_step)]
@@ -56,11 +73,14 @@ pub async fn connection_open_transactions(context: &mut Context, database_name: 
 #[apply(generic_step)]
 #[step(expr = "connection open transaction(s) in parallel for database: {word}, of type:")]
 pub async fn connection_open_transactions_in_parallel(context: &mut Context, database_name: String, step: &Step) {
-    todo!()
-    // let server = context.server().unwrap().lock().unwrap();
-    // let transactions: Vec<ActiveTransaction> = join_all(util::iter_table(step).map(|tx_type| server_open_transaction_for_database(&server, tx_type.into(), &database_name))).await;
-    // drop(server);
-    // context.set_concurrent_transactions(transactions);
+    let server = context.server().unwrap().lock().unwrap();
+    let transactions: Vec<ActiveTransaction> = join_all(
+        util::iter_table(step)
+            .map(|tx_type| server_open_transaction_for_database(&server, tx_type.into(), &database_name)),
+    )
+    .await;
+    drop(server);
+    context.set_concurrent_transactions(transactions);
 }
 
 #[apply(generic_step)]
@@ -70,14 +90,25 @@ pub async fn transaction_is_open(context: &mut Context, is_open: params::Boolean
 }
 
 #[apply(generic_step)]
+#[step(expr = "transactions( in parallel) are open: {boolean}")]
+pub async fn transactions_in_parallel_are_open(context: &mut Context, are_open: params::Boolean) {
+    check_boolean!(are_open, !context.get_concurrent_transactions().is_empty());
+}
+
+#[apply(generic_step)]
 #[step(expr = "transaction has type: {word}")]
 pub async fn transaction_has_type(context: &mut Context, tx_type: String) {
-    match tx_type.as_str() {
-        "read" => assert_matches!(context.transaction().unwrap(), ActiveTransaction::Read(_)),
-        "write" => assert_matches!(context.transaction().unwrap(), ActiveTransaction::Write(_)),
-        "schema" => assert_matches!(context.transaction().unwrap(), ActiveTransaction::Schema(_)),
-        _ => unreachable!("Unrecognised transaction type"),
-    };
+    transaction_type_matches(context.transaction().unwrap(), &tx_type)
+}
+
+#[apply(generic_step)]
+#[step(expr = "transactions( in parallel) have type:")]
+pub async fn transactions_in_parallel_have_type(context: &mut Context, step: &Step) {
+    // let mut active_transaction_iter = context.get_concurrent_transactions().iter();
+    // for tx_type in util::iter_table(step) {
+    //     transaction_type_matches(active_transaction_iter.next().unwrap(), &tx_type)
+    // }
+    // assert!(active_transaction_iter.next().is_none(), "Opened more transactions than tested!")
 }
 
 #[apply(generic_step)]
@@ -132,40 +163,4 @@ pub async fn transaction_rollbacks(context: &mut Context, may_error: params::May
 #[step(expr = "transaction closes")]
 pub async fn transaction_closes(context: &mut Context) {
     context.close_active_transaction()
-}
-
-#[apply(generic_step)]
-#[step(expr = "transactions are null: {boolean}")]
-pub async fn transactions_are_null(context: &mut Context, are_null: params::Boolean) {
-    todo!()
-}
-
-#[apply(generic_step)]
-#[step(expr = "transactions are open: {boolean}")]
-pub async fn transactions_are_open(context: &mut Context, are_open: params::Boolean) {
-    todo!()
-}
-
-#[apply(generic_step)]
-#[step(expr = "transactions have type:")]
-pub async fn transactions_have_type(context: &mut Context) {
-    todo!()
-}
-
-#[apply(generic_step)]
-#[step(expr = "transactions in parallel are null: {boolean}")]
-pub async fn transactions_in_parallel_are_null(context: &mut Context, are_null: params::Boolean) {
-    todo!()
-}
-
-#[apply(generic_step)]
-#[step(expr = "transactions in parallel are open: {boolean}")]
-pub async fn transactions_in_parallel_are_open(context: &mut Context, are_open: params::Boolean) {
-    todo!()
-}
-
-#[apply(generic_step)]
-#[step(expr = "transactions in parallel have type:")]
-pub async fn transactions_in_parallel_have_type(context: &mut Context) {
-    todo!()
 }
