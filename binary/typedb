@@ -53,7 +53,7 @@ case "$1" in
         SERVICE_LIB_CP="console/lib/*"
         CLASSPATH="${TYPEDB_HOME}/${SERVICE_LIB_CP}:${TYPEDB_HOME}/console/conf/"
         # exec replaces current shell process with java so no commands after this one will ever get executed
-        exec ${JAVA_BIN} ${JAVAOPTS} -cp "${CLASSPATH}" -Dtypedb.dir="${TYPEDB_HOME}" com.vaticle.typedb.console.TypeDBConsole "${@:2}"
+        exec ${JAVA_BIN} ${JAVAOPTS} -cp "${CLASSPATH}" -Dtypedb.dir="${TYPEDB_HOME}" com.typedb.console.TypeDBConsole "${@:2}"
         ;;
 
     server)
