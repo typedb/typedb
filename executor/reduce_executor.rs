@@ -80,8 +80,6 @@ impl GroupedReducer {
 }
 
 trait ReducerAPI {
-    fn new(target: VariablePosition) -> Self;
-
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>);
 
     fn finalise(self) -> Option<VariableValue<'static>>;
@@ -107,8 +105,9 @@ fn extract_value<Snapshot: ReadableSnapshot>(
 
 #[derive(Debug, Clone)]
 enum ReducerImpl {
-    SumLong(SumLongImpl),
     Count(CountImpl),
+    CountVar(CountVarImpl),
+    SumLong(SumLongImpl),
     SumDouble(SumDoubleImpl),
     MaxLong(MaxLongImpl),
     MaxDouble(MaxDoubleImpl),
@@ -125,9 +124,10 @@ enum ReducerImpl {
 impl ReducerImpl {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         match self {
+            ReducerImpl::Count(reducer) => reducer.accept(row, context),
+            ReducerImpl::CountVar(reducer) => reducer.accept(row, context),
             ReducerImpl::SumLong(reducer) => reducer.accept(row, context),
             ReducerImpl::SumDouble(reducer) => reducer.accept(row, context),
-            ReducerImpl::Count(reducer) => reducer.accept(row, context),
             ReducerImpl::MaxLong(reducer) => reducer.accept(row, context),
             ReducerImpl::MaxDouble(reducer) => reducer.accept(row, context),
             ReducerImpl::MinLong(reducer) => reducer.accept(row, context),
@@ -143,9 +143,10 @@ impl ReducerImpl {
 
     fn finalise(self) -> Option<VariableValue<'static>> {
         match self {
+            ReducerImpl::Count(mut reducer) => reducer.finalise(),
+            ReducerImpl::CountVar(mut reducer) => reducer.finalise(),
             ReducerImpl::SumLong(mut reducer) => reducer.finalise(),
             ReducerImpl::SumDouble(mut reducer) => reducer.finalise(),
-            ReducerImpl::Count(mut reducer) => reducer.finalise(),
             ReducerImpl::MaxLong(mut reducer) => reducer.finalise(),
             ReducerImpl::MaxDouble(mut reducer) => reducer.finalise(),
             ReducerImpl::MinLong(mut reducer) => reducer.finalise(),
@@ -163,7 +164,8 @@ impl ReducerImpl {
 impl ReducerImpl {
     fn build(reduce_ir: &ReduceOperation<VariablePosition>) -> Self {
         match reduce_ir {
-            ReduceOperation::Count(pos) => ReducerImpl::Count(CountImpl::new(pos.clone())),
+            ReduceOperation::Count => ReducerImpl::Count(CountImpl::new()),
+            ReduceOperation::CountVar(pos) => ReducerImpl::CountVar(CountVarImpl::new(pos.clone())),
             ReduceOperation::SumLong(pos) => ReducerImpl::SumLong(SumLongImpl::new(pos.clone())),
             ReduceOperation::SumDouble(pos) => ReducerImpl::SumDouble(SumDoubleImpl::new(pos.clone())),
             ReduceOperation::MaxLong(pos) => ReducerImpl::MaxLong(MaxLongImpl::new(pos.clone())),
@@ -176,7 +178,6 @@ impl ReducerImpl {
             ReduceOperation::MedianDouble(pos) => ReducerImpl::MedianDouble(MedianDoubleImpl::new(pos.clone())),
             ReduceOperation::StdLong(pos) => ReducerImpl::StdLong(StdLongImpl::new(pos.clone())),
             ReduceOperation::StdDouble(pos) => ReducerImpl::StdDouble(StdDoubleImpl::new(pos.clone())),
-            _ => todo!(),
         }
     }
 }
@@ -184,14 +185,36 @@ impl ReducerImpl {
 #[derive(Debug, Clone)]
 struct CountImpl {
     count: u64,
-    target: VariablePosition,
+}
+
+impl CountImpl {
+    fn new() -> Self {
+        Self { count: 0 }
+    }
 }
 
 impl ReducerAPI for CountImpl {
+    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
+        self.count += row.get_multiplicity();
+    }
+
+    fn finalise(self) -> Option<VariableValue<'static>> {
+        Some(VariableValue::Value(Value::Long(self.count as i64)))
+    }
+}
+
+#[derive(Debug, Clone)]
+struct CountVarImpl {
+    count: u64,
+    target: VariablePosition,
+}
+impl CountVarImpl {
     fn new(target: VariablePosition) -> Self {
         Self { count: 0, target }
     }
+}
 
+impl ReducerAPI for CountVarImpl {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if &VariableValue::Empty != row.get(self.target.clone()) {
             self.count += row.get_multiplicity();
@@ -209,11 +232,13 @@ struct SumLongImpl {
     target: VariablePosition,
 }
 
-impl ReducerAPI for SumLongImpl {
+impl SumLongImpl {
     fn new(target: VariablePosition) -> Self {
         Self { sum: 0, target }
     }
+}
 
+impl ReducerAPI for SumLongImpl {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context) {
             self.sum += value.unwrap_long() * row.get_multiplicity() as i64;
@@ -231,11 +256,13 @@ struct SumDoubleImpl {
     target: VariablePosition,
 }
 
-impl ReducerAPI for SumDoubleImpl {
+impl SumDoubleImpl {
     fn new(target: VariablePosition) -> Self {
         Self { sum: 0.0, target }
     }
+}
 
+impl ReducerAPI for SumDoubleImpl {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context) {
             self.sum += value.unwrap_double() * row.get_multiplicity() as f64;
@@ -253,11 +280,13 @@ struct MaxLongImpl {
     target: VariablePosition,
 }
 
-impl ReducerAPI for MaxLongImpl {
+impl MaxLongImpl {
     fn new(target: VariablePosition) -> Self {
         Self { max: None, target }
     }
+}
 
+impl ReducerAPI for MaxLongImpl {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context).map(|v| v.unwrap_long()) {
             if let Some(current) = self.max.as_ref() {
@@ -281,11 +310,13 @@ struct MaxDoubleImpl {
     target: VariablePosition,
 }
 
-impl ReducerAPI for MaxDoubleImpl {
+impl MaxDoubleImpl {
     fn new(target: VariablePosition) -> Self {
         Self { max: None, target }
     }
+}
 
+impl ReducerAPI for MaxDoubleImpl {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context).map(|v| v.unwrap_double()) {
             if let Some(current) = self.max.as_ref() {
@@ -309,11 +340,13 @@ struct MinLongImpl {
     target: VariablePosition,
 }
 
-impl ReducerAPI for MinLongImpl {
+impl MinLongImpl {
     fn new(target: VariablePosition) -> Self {
         Self { min: None, target }
     }
+}
 
+impl ReducerAPI for MinLongImpl {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context).map(|v| v.unwrap_long()) {
             if let Some(current) = self.min.as_ref() {
@@ -337,11 +370,13 @@ struct MinDoubleImpl {
     target: VariablePosition,
 }
 
-impl ReducerAPI for MinDoubleImpl {
+impl MinDoubleImpl {
     fn new(target: VariablePosition) -> Self {
         Self { min: None, target }
     }
+}
 
+impl ReducerAPI for MinDoubleImpl {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context).map(|v| v.unwrap_double()) {
             if let Some(current) = self.min.as_ref() {
@@ -366,11 +401,13 @@ struct MeanLongImpl {
     target: VariablePosition,
 }
 
-impl ReducerAPI for MeanLongImpl {
+impl MeanLongImpl {
     fn new(target: VariablePosition) -> Self {
         Self { sum: 0, count: 0, target }
     }
+}
 
+impl ReducerAPI for MeanLongImpl {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context) {
             self.sum += value.unwrap_long() * row.get_multiplicity() as i64;
@@ -394,11 +431,13 @@ struct MeanDoubleImpl {
     target: VariablePosition,
 }
 
-impl ReducerAPI for MeanDoubleImpl {
+impl MeanDoubleImpl {
     fn new(target: VariablePosition) -> Self {
         Self { sum: 0.0, count: 0, target }
     }
+}
 
+impl ReducerAPI for MeanDoubleImpl {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context) {
             self.sum += value.unwrap_double() * row.get_multiplicity() as f64;
@@ -421,11 +460,13 @@ struct MedianLongImpl {
     target: VariablePosition,
 }
 
-impl ReducerAPI for MedianLongImpl {
+impl MedianLongImpl {
     fn new(target: VariablePosition) -> Self {
         Self { values: Vec::new(), target }
     }
+}
 
+impl ReducerAPI for MedianLongImpl {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context) {
             self.values.push(value.unwrap_long())
@@ -454,11 +495,13 @@ struct MedianDoubleImpl {
     target: VariablePosition,
 }
 
-impl ReducerAPI for MedianDoubleImpl {
+impl MedianDoubleImpl {
     fn new(target: VariablePosition) -> Self {
         Self { values: Vec::new(), target }
     }
+}
 
+impl ReducerAPI for MedianDoubleImpl {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context) {
             self.values.push(value.unwrap_double())
@@ -489,10 +532,13 @@ struct StdLongImpl {
     target: VariablePosition,
 }
 
-impl ReducerAPI for StdLongImpl {
+impl StdLongImpl {
     fn new(target: VariablePosition) -> Self {
         Self { sum: 0, sum_squares: 0, count: 0, target }
     }
+}
+
+impl ReducerAPI for StdLongImpl {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context) {
             let unwrapped = value.unwrap_long();
@@ -524,10 +570,13 @@ struct StdDoubleImpl {
     target: VariablePosition,
 }
 
-impl ReducerAPI for StdDoubleImpl {
+impl StdDoubleImpl {
     fn new(target: VariablePosition) -> Self {
         Self { sum: 0.0, sum_squares: 0.0, count: 0, target }
     }
+}
+
+impl ReducerAPI for StdDoubleImpl {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
         if let Some(value) = extract_value(row, &self.target, context) {
             let unwrapped = value.unwrap_double();

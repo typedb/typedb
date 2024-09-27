@@ -215,7 +215,7 @@ fn annotate_stage(
         TranslatedStage::Reduce(reduce) => {
             let mut typed_reducers = Vec::with_capacity(reduce.assigned_reductions.len());
             for (assigned, reducer) in &reduce.assigned_reductions {
-                let typed_reduce = resolve_value_types_for_reducer(
+                let typed_reduce = resolve_reducer_by_value_type(
                     reducer,
                     running_variable_annotations,
                     running_value_variable_assigned_types,
@@ -231,7 +231,7 @@ fn annotate_stage(
     }
 }
 
-pub fn resolve_value_types_for_reducer(
+pub fn resolve_reducer_by_value_type(
     reducer: &Reducer,
     variable_annotations: &mut BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     assigned_value_types: &mut BTreeMap<Variable, ValueTypeCategory>,
@@ -240,7 +240,8 @@ pub fn resolve_value_types_for_reducer(
     variable_registry: &VariableRegistry,
 ) -> Result<ReduceOperation<Variable>, QueryError> {
     match reducer {
-        Reducer::Count(variable) => Ok(ReduceOperation::Count(variable.clone())),
+        Reducer::Count => Ok(ReduceOperation::Count),
+        Reducer::CountVar(variable) => Ok(ReduceOperation::CountVar(variable.clone())),
         Reducer::Sum(variable)
         | Reducer::Max(variable)
         | Reducer::Mean(variable)
@@ -292,10 +293,11 @@ pub fn reduce_operation_from_reducer(
 ) -> Result<ReduceOperation<Variable>, QueryError> {
     use encoding::value::value_type::ValueTypeCategory::{Double, Long};
     // Will have been handled earlier since it doesn't need a value type.
-    debug_assert!(!matches!(reducer, Reducer::Count(_)));
+    debug_assert!(!matches!(reducer, Reducer::Count) && !matches!(reducer, Reducer::CountVar(_)));
     match value_type {
         Long => match reducer {
-            Reducer::Count(var) => Ok(ReduceOperation::Count(var.clone())),
+            Reducer::Count => Ok(ReduceOperation::Count),
+            Reducer::CountVar(var) => Ok(ReduceOperation::CountVar(var.clone())),
             Reducer::Sum(var) => Ok(ReduceOperation::SumLong(var.clone())),
             Reducer::Max(var) => Ok(ReduceOperation::MaxLong(var.clone())),
             Reducer::Min(var) => Ok(ReduceOperation::MinLong(var.clone())),
@@ -304,7 +306,8 @@ pub fn reduce_operation_from_reducer(
             Reducer::Std(var) => Ok(ReduceOperation::StdLong(var.clone())),
         },
         Double => match reducer {
-            Reducer::Count(var) => Ok(ReduceOperation::Count(var.clone())),
+            Reducer::Count => Ok(ReduceOperation::Count),
+            Reducer::CountVar(var) => Ok(ReduceOperation::CountVar(var.clone())),
             Reducer::Sum(var) => Ok(ReduceOperation::SumDouble(var.clone())),
             Reducer::Max(var) => Ok(ReduceOperation::MaxDouble(var.clone())),
             Reducer::Min(var) => Ok(ReduceOperation::MinDouble(var.clone())),
@@ -313,7 +316,16 @@ pub fn reduce_operation_from_reducer(
             Reducer::Std(var) => Ok(ReduceOperation::StdDouble(var.clone())),
         },
         _ => {
-            let var = reducer.target_variable();
+            let var = match reducer {
+                Reducer::Count => unreachable!(),
+                Reducer::CountVar(v)
+                | Reducer::Sum(v)
+                | Reducer::Max(v)
+                | Reducer::Mean(v)
+                | Reducer::Median(v)
+                | Reducer::Min(v)
+                | Reducer::Std(v) => v.clone(),
+            };
             let reducer_name = reducer.name();
             let variable_name = variable_registry.variable_names().get(&var).unwrap().clone();
             Err(QueryError::UnsupportedValueTypeForReducer {

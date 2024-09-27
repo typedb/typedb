@@ -96,7 +96,8 @@ impl ReturnOperation {
 
 #[derive(Debug, Clone)]
 pub enum Reducer {
-    Count(Variable),
+    Count,
+    CountVar(Variable),
     Sum(Variable),
     Max(Variable),
     Mean(Variable),
@@ -107,20 +108,10 @@ pub enum Reducer {
 }
 
 impl Reducer {
-    pub fn target_variable(&self) -> Variable {
-        match self {
-            Reducer::Count(v) => v.clone(),
-            Reducer::Sum(v) => v.clone(),
-            Reducer::Max(v) => v.clone(),
-            Reducer::Mean(v) => v.clone(),
-            Reducer::Median(v) => v.clone(),
-            Reducer::Min(v) => v.clone(),
-            Reducer::Std(v) => v.clone(),
-        }
-    }
     pub fn name(&self) -> String {
         match self {
-            Reducer::Count(_) => typeql::token::ReduceOperator::Count.to_string(),
+            Reducer::Count => typeql::token::ReduceOperator::Count.to_string(),
+            Reducer::CountVar(_) => typeql::token::ReduceOperator::Count.to_string(),
             Reducer::Sum(_) => typeql::token::ReduceOperator::Sum.to_string(),
             Reducer::Max(_) => typeql::token::ReduceOperator::Max.to_string(),
             Reducer::Mean(_) => typeql::token::ReduceOperator::Mean.to_string(),

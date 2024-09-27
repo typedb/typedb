@@ -60,7 +60,8 @@ fn resolve_assigned_variable_category_optionality(
     variable_registry: &VariableRegistry,
 ) -> (VariableCategory, bool) {
     match reduce {
-        Reducer::Count(_) => (VariableCategory::Value, false),
+        Reducer::Count => unreachable!(),
+        Reducer::CountVar(_) => (VariableCategory::Value, false),
         Reducer::Sum(_) => (VariableCategory::Value, true),
         Reducer::Max(_) => (VariableCategory::Value, true),
         Reducer::Mean(_) => (VariableCategory::Value, true),
@@ -76,13 +77,16 @@ fn build_reduce_value(
     reduce: &typeql::query::pipeline::stage::Reduce,
 ) -> Result<Reducer, PatternDefinitionError> {
     match reduce_value {
-        ReduceValue::Count(count) => {
-            debug_assert!(count.variables.len() == 1); // TODO: The spec only allows 1?
-            let Some(var) = visible_variables.get(count.variables.get(0).unwrap().name().unwrap()) else {
-                return Err(todo!());
-            };
-            Ok(Reducer::Count(var.clone()))
-        }
+        ReduceValue::Count(count) => match &count.variable {
+            None => Ok(Reducer::Count),
+            Some(typeql_var) => match visible_variables.get(typeql_var.name().unwrap()) {
+                None => Err(PatternDefinitionError::OperatorStageVariableUnavailable {
+                    variable_name: typeql_var.name().unwrap().to_owned(),
+                    declaration: typeql::query::pipeline::stage::Stage::Reduce(reduce.clone()),
+                }),
+                Some(var) => Ok(Reducer::CountVar(var.clone())),
+            },
+        },
         ReduceValue::Stat(stat) => {
             let Some(var) = visible_variables.get(stat.variable.name().unwrap()) else {
                 return Err(PatternDefinitionError::OperatorStageVariableUnavailable {

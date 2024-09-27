@@ -19,9 +19,10 @@ pub struct ReduceProgram {
 }
 
 pub enum ReduceOperation<ID: IrID> {
+    Count,
+    CountVar(ID),
     SumLong(ID),
     SumDouble(ID),
-    Count(ID),
     MaxLong(ID),
     MaxDouble(ID),
     MinLong(ID),
@@ -37,7 +38,8 @@ pub enum ReduceOperation<ID: IrID> {
 impl<ID: IrID> ReduceOperation<ID> {
     pub fn output_type(&self) -> ValueTypeCategory {
         match self {
-            Self::Count(_) => ValueTypeCategory::Long,
+            Self::Count => ValueTypeCategory::Long,
+            Self::CountVar(_) => ValueTypeCategory::Long,
             Self::SumLong(_) => ValueTypeCategory::Long,
             Self::SumDouble(_) => ValueTypeCategory::Double,
             Self::MaxLong(_) => ValueTypeCategory::Long,

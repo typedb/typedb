@@ -175,14 +175,15 @@ fn compile_stage(
                     VariablePosition::new((input_group_positions.len() + reduction_inputs.len()) as u32),
                 );
                 let reducer_on_position = match &reducer_on_variable {
+                    ReduceOperation::Count => ReduceOperation::Count,
+                    ReduceOperation::CountVar(variable) => {
+                        ReduceOperation::CountVar(input_variables.get(variable).unwrap().clone())
+                    }
                     ReduceOperation::SumLong(variable) => {
                         ReduceOperation::SumLong(input_variables.get(variable).unwrap().clone())
                     }
                     ReduceOperation::SumDouble(variable) => {
                         ReduceOperation::SumDouble(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceOperation::Count(variable) => {
-                        ReduceOperation::Count(input_variables.get(variable).unwrap().clone())
                     }
                     ReduceOperation::MaxLong(variable) => {
                         ReduceOperation::MaxLong(input_variables.get(variable).unwrap().clone())
