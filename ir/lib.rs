@@ -19,8 +19,8 @@ use typeql::{
 };
 
 use crate::{
-    pattern::{constraint::Constraint, expression::ExpressionDefinitionError, variable_category::VariableCategory},
-    program::{modifier::ModifierDefinitionError, FunctionReadError},
+    pattern::{expression::ExpressionDefinitionError, variable_category::VariableCategory},
+    program::FunctionReadError,
 };
 
 pub mod pattern;
@@ -124,10 +124,11 @@ typedb_error!(
             "Relation's declared role types should not contain scopes (':').\nSource:\n{declaration}",
             declaration: typeql::statement::thing::RolePlayer
         ),
-        ModifierDefinitionError(
+        OperatorStageVariableUnavailable(
             17,
-            "Error adding modifier",
-            ( source: ModifierDefinitionError )
+            "The variable '{variable_name}' was not available in the stage.\nSource:\n{declaration}",
+            variable_name: String,
+            declaration: typeql::query::pipeline::stage::Stage
         ),
         LabelWithKind(
             18,

@@ -5,6 +5,7 @@
  */
 use std::{
     collections::{HashMap, HashSet},
+    iter::zip,
     sync::Arc,
 };
 
@@ -14,14 +15,11 @@ use compiler::{
     insert::program::InsertProgram,
     match_::{inference::annotated_functions::AnnotatedUnindexedFunctions, planner::pattern_plan::MatchProgram},
     modifiers::{LimitProgram, OffsetProgram, SelectProgram, SortProgram},
+    reduce::{ReduceInstruction, ReduceProgram},
     VariablePosition,
 };
 use concept::thing::statistics::Statistics;
-use ir::program::{
-    block::VariableRegistry,
-    function::Function,
-    modifier::{Limit, Offset, Select, Sort},
-};
+use ir::program::{function::Function, VariableRegistry};
 
 use crate::{annotation::AnnotatedStage, error::QueryError};
 
@@ -45,6 +43,7 @@ pub enum CompiledStage {
     Sort(SortProgram),
     Offset(OffsetProgram),
     Limit(LimitProgram),
+    Reduce(ReduceProgram),
 }
 
 impl CompiledStage {
@@ -68,6 +67,7 @@ impl CompiledStage {
             CompiledStage::Sort(program) => program.output_row_mapping.clone(),
             CompiledStage::Offset(program) => program.output_row_mapping.clone(),
             CompiledStage::Limit(program) => program.output_row_mapping.clone(),
+            CompiledStage::Reduce(program) => program.output_row_mapping.clone(),
         }
     }
 }
@@ -157,6 +157,68 @@ fn compile_stage(
         })),
         AnnotatedStage::Limit(limit) => {
             Ok(CompiledStage::Limit(LimitProgram { limit: limit.limit(), output_row_mapping: input_variables.clone() }))
+        }
+        AnnotatedStage::Reduce(reduce, typed_reducers) => {
+            debug_assert_eq!(reduce.assigned_reductions.len(), typed_reducers.len());
+            let mut output_row_mapping = HashMap::new();
+            let mut input_group_positions = Vec::with_capacity(reduce.within_group.len());
+            for variable in reduce.within_group.iter() {
+                output_row_mapping.insert(variable.clone(), VariablePosition::new(input_group_positions.len() as u32));
+                input_group_positions.push(input_variables.get(variable).unwrap().clone());
+            }
+            let mut reduction_inputs = Vec::with_capacity(reduce.assigned_reductions.len());
+            for ((assigned_variable, _), reducer_on_variable) in
+                zip(reduce.assigned_reductions.iter(), typed_reducers.iter())
+            {
+                output_row_mapping.insert(
+                    assigned_variable.clone(),
+                    VariablePosition::new((input_group_positions.len() + reduction_inputs.len()) as u32),
+                );
+                let reducer_on_position = match &reducer_on_variable {
+                    ReduceInstruction::Count => ReduceInstruction::Count,
+                    ReduceInstruction::CountVar(variable) => {
+                        ReduceInstruction::CountVar(input_variables.get(variable).unwrap().clone())
+                    }
+                    ReduceInstruction::SumLong(variable) => {
+                        ReduceInstruction::SumLong(input_variables.get(variable).unwrap().clone())
+                    }
+                    ReduceInstruction::SumDouble(variable) => {
+                        ReduceInstruction::SumDouble(input_variables.get(variable).unwrap().clone())
+                    }
+                    ReduceInstruction::MaxLong(variable) => {
+                        ReduceInstruction::MaxLong(input_variables.get(variable).unwrap().clone())
+                    }
+                    ReduceInstruction::MaxDouble(variable) => {
+                        ReduceInstruction::MaxDouble(input_variables.get(variable).unwrap().clone())
+                    }
+                    ReduceInstruction::MinLong(variable) => {
+                        ReduceInstruction::MinLong(input_variables.get(variable).unwrap().clone())
+                    }
+                    ReduceInstruction::MinDouble(variable) => {
+                        ReduceInstruction::MinDouble(input_variables.get(variable).unwrap().clone())
+                    }
+                    ReduceInstruction::MeanLong(variable) => {
+                        ReduceInstruction::MeanLong(input_variables.get(variable).unwrap().clone())
+                    }
+                    ReduceInstruction::MeanDouble(variable) => {
+                        ReduceInstruction::MeanDouble(input_variables.get(variable).unwrap().clone())
+                    }
+                    ReduceInstruction::MedianLong(variable) => {
+                        ReduceInstruction::MedianLong(input_variables.get(variable).unwrap().clone())
+                    }
+                    ReduceInstruction::MedianDouble(variable) => {
+                        ReduceInstruction::MedianDouble(input_variables.get(variable).unwrap().clone())
+                    }
+                    ReduceInstruction::StdLong(variable) => {
+                        ReduceInstruction::StdLong(input_variables.get(variable).unwrap().clone())
+                    }
+                    ReduceInstruction::StdDouble(variable) => {
+                        ReduceInstruction::StdDouble(input_variables.get(variable).unwrap().clone())
+                    }
+                };
+                reduction_inputs.push(reducer_on_position);
+            }
+            Ok(CompiledStage::Reduce(ReduceProgram { reduction_inputs, input_group_positions, output_row_mapping }))
         }
     }
 }

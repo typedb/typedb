@@ -10,7 +10,7 @@ use answer::{variable_value::VariableValue, Thing};
 use compiler::VariablePosition;
 use concept::{thing::object::ObjectAPI, type_::TypeAPI};
 use cucumber::gherkin::Step;
-use encoding::value::label::Label;
+use encoding::value::{label::Label, value_type::ValueType, ValueEncodable};
 use executor::{
     batch::Batch,
     pipeline::stage::{ExecutionContext, StageAPI, StageIterator},
@@ -226,20 +226,7 @@ async fn uniquely_identify_answer_concepts(context: &mut Context, step: &Step) {
     for row in iter_table_map(step) {
         let mut num_matches = 0;
         for answer_row in &context.answers {
-            let is_a_match = row.iter().all(|(&var, &spec)| {
-                let (kind, id) =
-                    spec.split_once(':').expect("answer concept specifier must be of the form `<kind>:<id>`");
-                let var_value = answer_row
-                    .get(var)
-                    .unwrap_or_else(|| panic!("no answer found for {var} in one of the answer rows"));
-                match kind {
-                    "label" => does_type_match(context, var_value, id),
-                    "key" => does_key_match(var, id, var_value, context),
-                    "attr" => does_attribute_match(id, var_value, context),
-                    "value" => todo!("value: {spec}"),
-                    _ => panic!("unrecognised concept kind: {kind}"),
-                }
-            });
+            let is_a_match = row.iter().all(|(&var, &spec)| does_var_in_row_match_spec(context, answer_row, var, spec));
             if is_a_match {
                 num_matches += 1;
             }
@@ -248,6 +235,45 @@ async fn uniquely_identify_answer_concepts(context: &mut Context, step: &Step) {
             num_matches, 1,
             "each identifier row must match exactly one answer map; found {num_matches} for row {row:?}"
         )
+    }
+}
+
+#[apply(generic_step)]
+#[step(expr = r"result is a single row with variable '{word}': {word}")]
+async fn single_row_result_with_variable_value(
+    context: &mut Context,
+    variable_name: String,
+    spec: String,
+    step: &Step,
+) {
+    assert_eq!(context.answers.len(), 1, "Expected single row, received {}", context.answers.len());
+    assert!(
+        does_var_in_row_match_spec(context, &context.answers[0], variable_name.as_str(), spec.as_str()),
+        "Result did not match expected: {:?} != {}",
+        &context.answers[0],
+        spec.as_str()
+    );
+}
+
+fn does_var_in_row_match_spec(
+    context: &Context,
+    answer_row: &HashMap<String, VariableValue<'static>>,
+    var: &str,
+    spec: &str,
+) -> bool {
+    let var_value =
+        answer_row.get(var).unwrap_or_else(|| panic!("no answer found for {var} in one of the answer rows"));
+    if spec == "empty" {
+        var_value == &VariableValue::Empty
+    } else {
+        let (kind, id) = spec.split_once(':').expect("answer concept specifier must be of the form `<kind>:<id>`");
+        match kind {
+            "label" => does_type_match(context, var_value, id),
+            "key" => does_key_match(var, id, var_value, context),
+            "attr" => does_attribute_match(id, var_value, context),
+            "value" => does_value_match(id, var_value, context),
+            _ => panic!("unrecognised concept kind: {kind}"),
+        }
     }
 }
 
@@ -311,6 +337,26 @@ fn does_attribute_match(id: &str, var_value: &VariableValue<'_>, context: &Conte
         let actual = attr.get_value(&*tx.snapshot, &tx.thing_manager).unwrap();
         actual == expected
     })
+}
+
+fn does_value_match(id: &str, var_value: &VariableValue<'_>, context: &Context) -> bool {
+    let VariableValue::Value(value) = var_value else {
+        return false;
+    };
+    let (id_type, id_value) = id.split_once(":").unwrap();
+    let expected_value_type = match id_type {
+        "long" => ValueType::Long,
+        "double" => ValueType::Double,
+        _ => todo!(),
+    };
+    let expected = params::Value::from_str(id_value).unwrap().into_typedb(expected_value_type);
+    if expected.value_type() == ValueType::Double {
+        let precision = id_value.split_once(".").map(|(_, decimal)| decimal.len()).unwrap_or(5) as i32;
+        let epsilon = 0.5 * 10.0f64.powi(-1 * precision);
+        f64::abs(expected.clone().unwrap_double() - var_value.as_value().clone().unwrap_double()) < epsilon
+    } else {
+        &expected == var_value.as_value()
+    }
 }
 
 fn does_type_match(context: &Context, var_value: &VariableValue<'_>, expected: &str) -> bool {

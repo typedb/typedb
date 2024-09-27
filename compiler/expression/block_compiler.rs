@@ -6,7 +6,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use answer::{variable::Variable, Type};
+use answer::variable::Variable;
 use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::{
@@ -16,7 +16,10 @@ use ir::{
         variable_category::VariableCategory,
         Vertex,
     },
-    program::block::{FunctionalBlock, ParameterRegistry, VariableRegistry},
+    program::{
+        block::{FunctionalBlock, ParameterRegistry},
+        VariableRegistry,
+    },
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
@@ -27,7 +30,7 @@ use crate::{
         expression_compiler::ExpressionCompilationContext,
         ExpressionCompileError,
     },
-    match_::inference::type_annotations::TypeAnnotations,
+    match_::inference::{type_annotations::TypeAnnotations, type_inference::resolve_value_types, TypeInferenceError},
 };
 
 struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
@@ -78,15 +81,15 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
             ExpressionValueType::List(_) => VariableCategory::ValueList,
         };
         let existing_category = variable_registry.get_variable_category(var.clone());
-        if Some(category) != existing_category {
+        if existing_category.is_none() {
+            let source = Constraint::ExpressionBinding((*expression_index.get(var).unwrap()).clone());
+            variable_registry.set_assigned_value_variable_category(var.clone(), category, source).unwrap();
+        } else if Some(category) != existing_category {
             Err(ExpressionCompileError::DerivedConflictingVariableCategory {
                 variable_name: variable_registry.variable_names().get(var).unwrap().clone(),
                 derived_category: category,
                 existing_category: existing_category.unwrap(),
             })?;
-        } else {
-            let source = Constraint::ExpressionBinding((*expression_index.get(var).unwrap()).clone());
-            variable_registry.set_assigned_value_variable_category(var.clone(), category, source).unwrap();
         }
     }
     Ok(compiled_expressions)
@@ -160,18 +163,13 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
             Ok(())
         }
     } else if let Some(types) = context.type_annotations.vertex_annotations_of(&Vertex::Variable(variable)) {
-        let vec = types
-            .iter()
-            .map(|type_| match type_ {
-                Type::Attribute(attribute_type) => attribute_type
-                    .get_value_type_without_source(context.snapshot, context.type_manager)
-                    .map_err(|source| ExpressionCompileError::ConceptRead { source }),
-                _ => Ok(None),
-            })
-            .collect::<Result<HashSet<_>, ExpressionCompileError>>()?;
-        if vec.len() != 1 {
+        let value_types = resolve_value_types(types, context.snapshot, context.type_manager).map_err(|source| {
+            ExpressionCompileError::CouldNotDetermineValueTypeForVariable { variable: variable.clone() }
+        })?;
+        if value_types.len() != 1 {
             Err(ExpressionCompileError::VariableDidNotHaveSingleValueType { variable })
-        } else if let Some(value_type) = &vec.iter().find(|_| true).unwrap() {
+        } else {
+            let value_type = value_types.iter().find(|_| true).unwrap();
             let variable_category = context.variable_registry.get_variable_category(variable).unwrap();
             match variable_category {
                 VariableCategory::Attribute | VariableCategory::Value => {
@@ -187,8 +185,6 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
                     actual_category: variable_category,
                 })?,
             }
-        } else {
-            Err(ExpressionCompileError::VariableHasNoValueType { variable })
         }
     } else {
         Err(ExpressionCompileError::CouldNotDetermineValueTypeForVariable { variable })

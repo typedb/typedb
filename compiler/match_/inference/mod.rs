@@ -33,6 +33,16 @@ typedb_error!(
             right_type: String
         ),
         DetectedUnsatisfiablePattern(5, "Type-inference derived an empty-set for some variable"),
+        AttemptedToResolveValueTypeOfNonAttributeType(
+            6,
+            "Attempted to resolve value type for a non-attribute type: {label}",
+            label: String
+        ),
+        AttemptedToResolveValueTypeOfAttributeWithoutOne(
+            7,
+            "Attempted to resolve value type for an attribute-type without one: {label}",
+            label: String
+        ),
     }
 );
 

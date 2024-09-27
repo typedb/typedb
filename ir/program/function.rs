@@ -13,7 +13,7 @@ use answer::{variable::Variable, Type};
 
 use crate::{
     pattern::Vertex,
-    program::block::{FunctionalBlock, VariableRegistry},
+    program::{block::FunctionalBlock, VariableRegistry},
 };
 
 pub type PlaceholderTypeQLReturnOperation = String;
@@ -96,13 +96,28 @@ impl ReturnOperation {
 
 #[derive(Debug, Clone)]
 pub enum Reducer {
-    Count(ReducerInput),
-    Sum(ReducerInput),
+    Count,
+    CountVar(Variable),
+    Sum(Variable),
+    Max(Variable),
+    Mean(Variable),
+    Median(Variable),
+    Min(Variable),
+    Std(Variable),
     // First, Any etc.
 }
 
-#[derive(Debug, Clone)]
-pub enum ReducerInput {
-    Variable,
-    Reducer,
+impl Reducer {
+    pub fn name(&self) -> String {
+        match self {
+            Reducer::Count => typeql::token::ReduceOperator::Count.to_string(),
+            Reducer::CountVar(_) => typeql::token::ReduceOperator::Count.to_string(),
+            Reducer::Sum(_) => typeql::token::ReduceOperator::Sum.to_string(),
+            Reducer::Max(_) => typeql::token::ReduceOperator::Max.to_string(),
+            Reducer::Mean(_) => typeql::token::ReduceOperator::Mean.to_string(),
+            Reducer::Median(_) => typeql::token::ReduceOperator::Median.to_string(),
+            Reducer::Min(_) => typeql::token::ReduceOperator::Min.to_string(),
+            Reducer::Std(_) => typeql::token::ReduceOperator::Std.to_string(),
+        }
+    }
 }

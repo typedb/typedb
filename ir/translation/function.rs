@@ -18,7 +18,7 @@ use crate::{
     },
     program::{
         block::{BlockContext, FunctionalBlock},
-        function::{Function, ReturnOperation},
+        function::{Function, Reducer, ReturnOperation},
         function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex},
         FunctionRepresentationError,
     },

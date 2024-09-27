@@ -15,7 +15,7 @@ use compiler::match_::{
     },
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use ir::program::block::VariableRegistry;
+use ir::program::VariableRegistry;
 use itertools::Itertools;
 use lending_iterator::{adaptors::FlatMap, AsLendingIterator, LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;

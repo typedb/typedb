@@ -14,6 +14,7 @@ use executor::pipeline::{
     insert::InsertStageExecutor,
     match_::MatchStageExecutor,
     modifiers::{LimitStageExecutor, OffsetStageExecutor, SelectStageExecutor, SortStageExecutor},
+    reduce::ReduceStageExecutor,
     stage::{ExecutionContext, ReadPipelineStage, WritePipelineStage},
 };
 use function::function_manager::FunctionManager;
@@ -123,6 +124,10 @@ impl QueryManager {
                     let limit_stage = LimitStageExecutor::new(limit_program, last_stage);
                     last_stage = ReadPipelineStage::Limit(Box::new(limit_stage));
                 }
+                CompiledStage::Reduce(reduce_program) => {
+                    let reduce_stage = ReduceStageExecutor::new(reduce_program, last_stage);
+                    last_stage = ReadPipelineStage::Reduce(Box::new(reduce_stage));
+                }
             }
         }
 
@@ -217,6 +222,10 @@ impl QueryManager {
                 CompiledStage::Limit(limit_program) => {
                     let limit_stage = LimitStageExecutor::new(limit_program, previous_stage);
                     previous_stage = WritePipelineStage::Limit(Box::new(limit_stage));
+                }
+                CompiledStage::Reduce(reduce_program) => {
+                    let reduce_stage = ReduceStageExecutor::new(reduce_program, previous_stage);
+                    previous_stage = WritePipelineStage::Reduce(Box::new(reduce_stage));
                 }
             }
         }

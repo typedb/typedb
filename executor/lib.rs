@@ -20,6 +20,7 @@ pub(crate) mod instruction;
 pub mod pattern_executor;
 pub mod pipeline;
 pub mod program_executor;
+pub(crate) mod reduce_executor;
 pub mod row;
 pub mod write;
 

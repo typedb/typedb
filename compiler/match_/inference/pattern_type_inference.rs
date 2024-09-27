@@ -15,7 +15,7 @@ use answer::{variable::Variable, Type as TypeAnnotation};
 use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint, Vertex},
-    program::block::{FunctionalBlock, VariableRegistry},
+    program::{block::FunctionalBlock, VariableRegistry},
 };
 use itertools::chain;
 use storage::snapshot::ReadableSnapshot;
