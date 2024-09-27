@@ -53,6 +53,7 @@ pub enum InterruptType {
     TransactionCommitted,
     TransactionRolledback,
     WriteQueryExecution,
+    SchemaQueryExecution,
 }
 
 impl Display for InterruptType {
@@ -62,6 +63,7 @@ impl Display for InterruptType {
             InterruptType::TransactionCommitted => write!(f, "transaction committed"),
             InterruptType::TransactionRolledback => write!(f, "transaction rolled back"),
             InterruptType::WriteQueryExecution => write!(f, "write query executed."),
+            InterruptType::SchemaQueryExecution => write!(f, "schema query executed."),
         }
     }
 }

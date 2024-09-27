@@ -29,6 +29,7 @@ pub(crate) enum ProtocolError {
         driver_lang: String,
         driver_version: String,
     },
+    FailedQueryResponse {}
 }
 
 impl IntoGRPCStatus for ProtocolError {
@@ -66,7 +67,7 @@ impl IntoGRPCStatus for ProtocolError {
                     "#
                 ))
             }
-            ProtocolError::UnrecognisedTransactionType { enum_variant, .. } => Status::with_error_details(
+            Self::UnrecognisedTransactionType { enum_variant, .. } => Status::with_error_details(
                 Code::InvalidArgument,
                 "Bad request",
                 ErrorDetails::with_bad_request_violation(
@@ -76,6 +77,7 @@ impl IntoGRPCStatus for ProtocolError {
                     ),
                 ),
             ),
+            Self::FailedQueryResponse {} => Status::internal("Failed to send response"),
         }
     }
 }

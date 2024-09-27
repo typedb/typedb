@@ -14,6 +14,25 @@ use std::{
     time::{Instant, SystemTime},
 };
 
+use itertools::Itertools;
+use tokio::{
+    sync::{
+        broadcast,
+        mpsc::{channel, Receiver, Sender},
+    },
+    task::{JoinHandle, spawn_blocking},
+};
+use tokio_stream::StreamExt;
+use tonic::{Status, Streaming};
+use tracing::{event, Level};
+use typedb_protocol::transaction::{Server, stream_signal::Req};
+use typeql::{
+    parse_query,
+    query::{Pipeline, SchemaQuery, stage::Stage},
+    Query,
+};
+use uuid::Uuid;
+
 use compiler::VariablePosition;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
@@ -21,12 +40,11 @@ use database::{
     transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
 };
 use error::typedb_error;
-use executor::{batch::Batch, pipeline::{
-    stage::{ExecutionContext, ReadPipelineStage, StageAPI, StageIterator},
+use executor::{batch::Batch, ExecutionInterrupt, InterruptType, pipeline::{
     PipelineExecutionError,
-}, ExecutionInterrupt, InterruptType};
+    stage::{ExecutionContext, ReadPipelineStage, StageAPI, StageIterator},
+}};
 use function::function_manager::FunctionManager;
-use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use options::TransactionOptions;
 use query::{error::QueryError, query_manager::QueryManager};
@@ -35,26 +53,6 @@ use storage::{
     durability_client::WALClient,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
-use tokio::{
-    sync::{
-        broadcast,
-        mpsc::{channel, Receiver, Sender},
-    },
-    task::{spawn_blocking, JoinHandle},
-};
-use tokio_stream::StreamExt;
-use tonic::{Status, Streaming};
-use tracing::{event, Level};
-use typedb_protocol::{
-    query::Type::{Read, Write},
-    transaction::{stream_signal::Req, Server},
-};
-use typeql::{
-    parse_query,
-    query::{stage::Stage, Pipeline, SchemaQuery},
-    Query,
-};
-use uuid::Uuid;
 
 use crate::service::{
     answer::encode_row,
@@ -238,6 +236,7 @@ impl TransactionService {
                         self.transaction = Some(transaction);
                         self.transmit_write_results(req_id, result)
                             .map(|_| ControlFlow::Continue(()))
+                        // TODO: unblock from request queue
                     }
                     next = self.request_stream.next() => {
                         self.handle_next(next).await
@@ -436,20 +435,18 @@ impl TransactionService {
         // finish any running write query, interrupt running queries, clear all running/queued reads, finish all writes
         //   note: if any write query errors, the whole transaction errors
         // finish any active write query
-        self.finish_running_write_query(false).await?;
+        self.finish_running_write_query_no_transmit(InterruptType::TransactionCommitted).await?;
 
         // interrupt active queries and close write transmitters
-        self.query_interrupt_sender.send(()).unwrap();
-        self.close_running_read_queries().await;
-        if let Break(()) = self.cancel_queued_read_queries().await {
+        self.interrupt_and_close_responders(InterruptType::TransactionCommitted).await;
+        if let Break(()) = self.cancel_queued_read_queries(InterruptType::TransactionCommitted).await {
             return Err(TransactionServiceError::ServiceClosingFailedQueueCleanup {}
                 .into_error_message()
                 .into_status());
         }
-        self.close_transmitting_write_queries().await;
 
         // finish executing any remaining writes so they make it into the commit
-        self.finish_queued_write_queries().await?;
+        self.finish_queued_write_queries(InterruptType::TransactionCommitted).await?;
 
         match self.transaction.take().unwrap() {
             Transaction::Read(_) => {
@@ -473,15 +470,13 @@ impl TransactionService {
         _rollback_req: typedb_protocol::transaction::rollback::Req,
     ) -> Result<ControlFlow<(), ()>, Status> {
         // interrupt all queries, cancel writes, then rollback
-        self.query_interrupt_sender.send(()).unwrap();
-        self.close_transmitting_write_queries().await;
-        self.close_running_read_queries().await;
-        if let Break(_) = self.cancel_queued_read_queries().await {
+        self.interrupt_and_close_responders(InterruptType::TransactionRolledback).await;
+        if let Break(_) = self.cancel_queued_read_queries(InterruptType::TransactionRolledback).await {
             return Ok(Break(()));
         }
 
-        self.finish_running_write_query(false).await?;
-        if let Break(()) = self.cancel_queued_write_queries().await {
+        self.finish_running_write_query_no_transmit(InterruptType::TransactionRolledback).await?;
+        if let Break(()) = self.cancel_queued_write_queries(InterruptType::TransactionRolledback).await {
             return Ok(Break(()));
         }
 
@@ -502,13 +497,11 @@ impl TransactionService {
     }
 
     async fn do_close(&mut self) {
-        self.query_interrupt_sender.send(()).unwrap();
-        self.close_transmitting_write_queries().await;
-        self.close_running_read_queries().await;
-        let _ = self.cancel_queued_read_queries().await;
+        self.interrupt_and_close_responders(InterruptType::TransactionClosed).await;
+        let _ = self.cancel_queued_read_queries(InterruptType::TransactionClosed).await;
 
-        let _ = self.finish_running_write_query(false).await;
-        let _ = self.cancel_queued_write_queries().await;
+        let _ = self.finish_running_write_query_no_transmit(InterruptType::TransactionClosed).await;
+        let _ = self.cancel_queued_write_queries(InterruptType::TransactionClosed).await;
 
         match self.transaction.take() {
             None => (),
@@ -518,25 +511,17 @@ impl TransactionService {
         };
     }
 
-    async fn close_running_read_queries(&mut self) {
-        for (_, (worker, transmitter)) in self.read_responders.drain() {
+    async fn interrupt_and_close_responders(&mut self, interrupt: InterruptType) {
+        self.query_interrupt_sender.send(interrupt).unwrap();
+        for (_, (worker, transmitter)) in self.responders.drain() {
             if let Err(err) = worker.await {
-                event!(Level::DEBUG, "Awaiting read query worker returned error: {:?}", err);
+                event!(Level::DEBUG, "Awaiting query worker returned error: {:?}", err);
             }
             transmitter.finish_current().await
         }
     }
 
-    async fn close_transmitting_write_queries(&mut self) {
-        for (_, (worker, transmitter)) in self.write_responders.drain() {
-            if let Err(err) = worker.await {
-                event!(Level::DEBUG, "Awaiting dummy write worker returned error: {:?}", err);
-            }
-            transmitter.finish_current().await
-        }
-    }
-
-    async fn cancel_queued_read_queries(&mut self) -> ControlFlow<(), ()> {
+    async fn cancel_queued_read_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
         let mut write_queries = Vec::with_capacity(self.request_queue.len());
         for (req_id, pipeline) in self.request_queue.drain(0..self.request_queue.len()) {
             if Self::is_write_pipeline(&pipeline) {
@@ -545,7 +530,7 @@ impl TransactionService {
             Self::respond_query_response(
                 &self.response_sender,
                 req_id,
-                ImmediateQueryResponse::NonFatalErr(TransactionServiceError::QueryInterrupted {}.into_error_message()),
+                ImmediateQueryResponse::NonFatalErr(TransactionServiceError::QueryInterrupted { interrupt }.into_error_message()),
             )
                 .await?;
         }
@@ -554,14 +539,18 @@ impl TransactionService {
         Continue(())
     }
 
-    async fn finish_running_write_query(&mut self, transmit_results: bool) -> Result<(), Status> {
+    async fn finish_running_write_query_no_transmit(&mut self, interrupt: InterruptType) -> Result<(), Status> {
         if let Some((req_id, worker)) = self.running_write_query.take() {
-            let (transaction, result) = worker.await.unwrap();
+            let (transaction, _) = worker.await.unwrap();
             self.transaction = Some(transaction);
-            if transmit_results {
-                self.transmit_write_results(req_id, result)
-            } else {
-                Ok(())
+            // transmission of interrupt signal is ok if it fails
+            match Self::respond_query_response(
+                &self.response_sender,
+                req_id,
+                ImmediateQueryResponse::NonFatalErr(TransactionServiceError::QueryInterrupted { interrupt }.into_error_message()),
+            ).await {
+                Continue(_) => Ok(()),
+                Break(_) => Err(ProtocolError::FailedQueryResponse {}.into_status()),
             }
         } else {
             Ok(())
@@ -585,7 +574,7 @@ impl TransactionService {
         }
     }
 
-    async fn cancel_queued_write_queries(&mut self) -> ControlFlow<(), ()> {
+    async fn cancel_queued_write_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
         let mut read_queries = Vec::with_capacity(self.request_queue.len());
         for (req_id, pipeline) in self.request_queue.drain(0..self.request_queue.len()) {
             if Self::is_write_pipeline(&pipeline) {
@@ -593,7 +582,7 @@ impl TransactionService {
                     &self.response_sender,
                     req_id,
                     ImmediateQueryResponse::NonFatalErr(
-                        TransactionServiceError::QueryInterrupted {}.into_error_message(),
+                        TransactionServiceError::QueryInterrupted { interrupt }.into_error_message(),
                     ),
                 )
                     .await?;
@@ -605,14 +594,14 @@ impl TransactionService {
         Continue(())
     }
 
-    async fn finish_queued_write_queries(&mut self) -> Result<(), Status> {
-        self.finish_running_write_query(false).await?;
+    async fn finish_queued_write_queries(&mut self, interrupt: InterruptType) -> Result<(), Status> {
+        self.finish_running_write_query_no_transmit(interrupt).await?;
 
         let requests: Vec<_> = self.request_queue.drain(0..self.request_queue.len()).collect();
         for (req_id, pipeline) in requests.into_iter() {
             if Self::is_write_pipeline(&pipeline) {
                 match self.run_write_query(req_id, pipeline) {
-                    Ok(_) => self.finish_running_write_query(false).await?,
+                    Ok(_) => self.finish_running_write_query_no_transmit(interrupt).await?,
                     Err(err) => {
                         Self::respond_query_response(
                             &self.response_sender,
@@ -646,16 +635,17 @@ impl TransactionService {
         };
         match parsed {
             Query::Schema(schema_query) => {
+                self.interrupt_and_close_responders(InterruptType::SchemaQueryExecution).await;
+                self.cancel_queued_read_queries(InterruptType::SchemaQueryExecution).await;
+                self.finish_queued_write_queries(InterruptType::SchemaQueryExecution).await?;
+
                 // schema queries are handled immediately so there is a query response or a fatal Status
                 self.handle_query_schema(schema_query).await.map(Some)
             }
             Query::Pipeline(pipeline) => {
                 #[allow(clippy::collapsible_else_if)]
                 if Self::is_write_pipeline(&pipeline) {
-                    if !self.request_queue.is_empty()
-                        || !self.read_responders.is_empty()
-                        || self.running_write_query.is_some()
-                    {
+                    if !self.request_queue.is_empty() || self.running_write_query.is_some() {
                         self.request_queue.push((req_id, pipeline));
                         // queued queries are not handled yet so there will be no query response yet
                         Ok(None)
@@ -744,7 +734,7 @@ impl TransactionService {
             self.prefetch_size.unwrap() as usize,
             self.network_latency_millis.unwrap() as usize,
         );
-        self.write_responders.insert(req_id, (batch_reader, stream_transmitter));
+        self.responders.insert(req_id, (batch_reader, stream_transmitter));
     }
 
     fn run_and_activate_read_transmitter(&mut self, req_id: Uuid, pipeline: Pipeline) {
@@ -757,7 +747,7 @@ impl TransactionService {
             self.prefetch_size.unwrap() as usize,
             self.network_latency_millis.unwrap() as usize,
         );
-        self.read_responders.insert(req_id, (worker_handle, stream_transmitter));
+        self.responders.insert(req_id, (worker_handle, stream_transmitter));
     }
 
     fn spawn_blocking_execute_write_query(
@@ -896,10 +886,10 @@ impl TransactionService {
                 Self::submit_response_async(&sender, StreamQueryResponse::init_ok(&output_descriptor, Write)).await;
 
                 while let Some(row) = as_lending_iter.next() {
-                    if interrupt.check() {
+                    if let Some(interrupt) = interrupt.check() {
                         Self::submit_response_async(
                             &sender,
-                            StreamQueryResponse::done_err(TransactionServiceError::QueryInterrupted {}),
+                            StreamQueryResponse::done_err(TransactionServiceError::QueryInterrupted { interrupt }),
                         )
                         .await;
                         return;
@@ -951,8 +941,8 @@ impl TransactionService {
 
                 let descriptor: StreamQueryOutputDescriptor =
                     named_outputs.into_iter().map(|(name, position)| (name, position)).sorted().collect();
-                let response = StreamQueryResponse::init_ok(&descriptor, Read);
-                Self::submit_response_sync(&sender, response);
+                let initial_response = StreamQueryResponse::init_ok(&descriptor, Read);
+                Self::submit_response_sync(&sender, initial_response);
 
                 let (mut iterator, _) =
                     unwrap_or_execute_and_return!(executor.into_iterator(interrupt.clone()), |(err, _)| {
@@ -965,10 +955,10 @@ impl TransactionService {
                     });
 
                 while let Some(next) = iterator.next() {
-                    if interrupt.check() {
+                    if let Some(interrupt) = interrupt.check() {
                         Self::submit_response_sync(
                             &sender,
-                            StreamQueryResponse::done_err(TransactionServiceError::QueryInterrupted {}),
+                            StreamQueryResponse::done_err(TransactionServiceError::QueryInterrupted { interrupt }),
                         );
                         return;
                     }
@@ -1019,33 +1009,21 @@ impl TransactionService {
     }
 
     async fn handle_stream_continue(&mut self, request_id: Uuid, _stream_req: Req) -> Option<ImmediateQueryResponse> {
-        debug_assert!(
-            self.read_responders.contains_key(&request_id) || self.write_responders.contains_key(&request_id)
-        );
-        let read_responder = self.read_responders.get_mut(&request_id);
-        if let Some((worker_handle, stream_transmitter)) = read_responder {
+        debug_assert!(self.responders.contains_key(&request_id));
+        let responder = self.responders.get_mut(&request_id);
+        if let Some((worker_handle, stream_transmitter)) = responder {
             if stream_transmitter.check_finished_else_queue_continue().await {
                 debug_assert!(worker_handle.is_finished());
-                self.read_responders.remove(&request_id);
+                self.responders.remove(&request_id);
             }
             // valid query stream responses and control are reported by the transmitter directly, so no response here
             None
         } else {
-            let write_responder = self.write_responders.get_mut(&request_id);
-            if let Some((worker_handle, stream_transmitter)) = write_responder {
-                if stream_transmitter.check_finished_else_queue_continue().await {
-                    debug_assert!(worker_handle.is_finished());
-                    self.write_responders.remove(&request_id);
-                }
-                // valid query stream responses and control are reported by the transmitter directly, so no response here
-                None
-            } else {
-                // This could be a valid state - if the driver requests Continuing a stream that has already been
-                //       finished & removed, or the user committed/rolled back/closed and we cleaned up streams eagerly
-                Some(ImmediateQueryResponse::NonFatalErr(
-                    TransactionServiceError::QueryStreamNotFound { query_request_id: request_id }.into_error_message(),
-                ))
-            }
+            // This could be a valid state - if the driver requests Continuing a stream that has already been
+            //       finished & removed, or the user committed/rolled back/closed and we cleaned up streams eagerly
+            Some(ImmediateQueryResponse::NonFatalErr(
+                TransactionServiceError::QueryStreamNotFound { query_request_id: request_id }.into_error_message(),
+            ))
         }
     }
 
@@ -1301,7 +1279,7 @@ typedb_error!(
         WriteQueryRequiresSchemaOrWriteTransaction(8, "Data modification queries require either write or schema transactions."),
         TxnAbortSchemaQueryFailed(9, "Aborting transaction due to failed schema query.", ( typedb_source : QueryError )),
         NoOpenTransaction(10, "Operation failed - no open transaction."),
-        QueryInterrupted(11, "Query was interrupted by a transaction close, rollback, or commit."),
+        QueryInterrupted(11, "Execution interrupted. Cause: '{interrupt}'.", interrupt: InterruptType),
         QueryStreamNotFound(
             12,
             r#"
