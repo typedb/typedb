@@ -206,6 +206,7 @@
         * [Pattern satisfaction](#pattern-satisfaction)
             * [Block-level bindings](#block-level-bindings)
             * [Recursive definition](#recursive-definition)
+        * [`Let` declarations in patterns](#let-declarations-in-patterns)
     * [Satisfaction semantics of...](#satisfaction-semantics-of)
     * [... Function statements](#-function-statements)
         * [**Case LET_FUN_PATT**](#case-let_fun_patt)
@@ -1474,6 +1475,15 @@ We define satisfication of a pattern `PATT` in DNF by an input crow `r`. The def
             * all block-level bound variables are assigned $`\emptyset`$ (i.e. empty concept) by `r` _except_ input vars
             * after obtain `r'` from `r` by removing block-level bound, non-input variables, `r'` cannot be completed with entries for block-level bound variable to satisfy `SUBPATT`
 
+### `Let` declarations in patterns
+
+_System property_
+
+The keyword `let` has two special properties:
+
+* 🔶 `let` assignments must be acyclic
+* 🔶 No variable can be `let` assigned twice
+
 ## Satisfaction semantics of...
 
 We discuss the satisfaction semantics of various classes of statements.
@@ -1486,21 +1496,22 @@ _Math. notation (Replacing **var**s with concepts)_. When discussing pattern sem
 
 _Remark_ the following can be said in less space, but we chose the more principled longer route, via "single returns".
 
-* 🔶 `let _, ..., _, $x, _, ..., _ = f($a, $b, ...)` (where `$x` is in $i$th position of the comma-separated list, and all other positions are "blanks" `_`). This statement is satisfied if, after *function evalution* (see "Function evaluation") with inputs from the crow `r`, we have that $`r(x)`$ is among the $i$th entries of the rows of the evaluation set $`ev(f(r(a), r(b), ...)`$.
+* 🔶 `let _, ..., _, $x, _, ..., _ = f($a, $b, ...)` (where `$x` is in $i$th position of the comma-separated list of length $n$, and all other positions are "blanks" `_`). This statement is satisfied if:
+    * denoting *function evalution* (see "Function evaluation") with inputs from the crow `r` by $`ev(f(r(a), r(b), ...)`$,
+    * $`\mathsf{ev}(f(r(a), r(b), ...)`$ contains exactly one row $`w`$ of length $n$ (if it contains no row we reject)
+    * $`r(x)`$ is the $i$th entry of $`w`$ (corresponding to `$x` being used in $`i`$th position on the LHS)
 
     _Note_. This is equivalent to `$x in F_i($a, $b, ...)` where `F_i` modifies `F` with an additional selection of the `i`th variable.
 
 * 🔶 `let $x, $y?, ..., $w = f($a, $b, ...)` is satisfied if the following pattern is satisfied:
     ```
-    let $x,_,...,_ in F($a, $b, ...);               // first var
-    try { let _, $y, ...,_ in F($a, $b, ...); };    // second var
-    ...
-    _, _, ...,$w in F($a, $b, ...);             // last var
+    let $x,_,...,_ in F($a, $b, ...);               // first var (non-optional!)
+    try { let _, $y, ...,_ in F($a, $b, ...); };    // second var (optional!)
+    ...                                             // ...
+    let _, _, ...,$w in F($a, $b, ...);             // last var
     ```
     
     _Note_. `?`-marked variables are retrieved with **separate** `try`-blocks.
-
-    _Note 2_. In particular, `?`-marked variables are **optional variables**.
 
 * 🔶 `let $x, $y?, ..., $w = F($a, <EXPR_b>, ...)>` is satisfied if the following pattern is satisfied:
     ```
@@ -1513,12 +1524,11 @@ _System property_
 
 * 🔶 _Output type_ Function call must be to a **single-return** function, i.e. have output type `T, ...`.
 * 🔶 _Boundedness_ All variable arguments (or variables in expression arguments) to `f` must be set in the crow `r` (i.e. should be bound somewhere else in the pattern).
-* 🔶 _Acyclicity (pattern-level constraint)_ All let expressions must be acyclic, e.g. we **cannot have**
+* 🔶 _Acyclicity (pattern-level constraint)_ All let statements must be acyclic, e.g. we **cannot have**
     ```
     let $x = f($y); 
     let $y = f($x);
     ```
-
 
 ### **Case LET_IN_FUN_PATT**
 
@@ -1527,14 +1537,13 @@ _System property_
     let $x, $y?, ..., $w = f($a, <EXPR_b>, ...)
     ```
 
-    where `f($a, <EXPR_b>, ...)` denotes a hypothetical single-return function evaluating to row `w`.
-    
+    where `f($a, <EXPR_b>, ...)` denotes a single-return function call ***defined*** to evaluate to row `w`.
 
 _System property_
 
 * 🔶 _Output type_ Function call must be to a **stream-return** function, i.e. have output type `{ T, ... }`.
 * 🔶 _Boundedness_ All variable arguments (or variables in expression arguments) to `F` must be set in the crow `r` (i.e. should be bound somewhere else in the pattern).
-* 🔶 _Acyclicity (pattern-level constraint)_ All let expressions must be acyclic, e.g. we **cannot have**
+* 🔶 _Acyclicity (pattern-level constraint)_ All let statements must be acyclic, e.g. we **cannot have**
     ```
     let $x in F($y); 
     let $y in F($x);
