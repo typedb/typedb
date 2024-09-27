@@ -29,7 +29,7 @@ pub(crate) enum ProtocolError {
         driver_lang: String,
         driver_version: String,
     },
-    FailedQueryResponse {}
+    FailedQueryResponse {},
 }
 
 impl IntoGRPCStatus for ProtocolError {

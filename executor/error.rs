@@ -6,6 +6,7 @@
 
 use concept::error::ConceptReadError;
 use error::typedb_error;
+
 use crate::InterruptType;
 
 typedb_error!(

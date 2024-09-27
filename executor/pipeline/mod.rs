@@ -8,7 +8,10 @@ use concept::error::ConceptReadError;
 use error::typedb_error;
 use lending_iterator::LendingIterator;
 
-use crate::{batch::Batch, error::ReadExecutionError, InterruptType, pipeline::stage::StageIterator, row::MaybeOwnedRow, write::WriteError};
+use crate::{
+    batch::Batch, error::ReadExecutionError, pipeline::stage::StageIterator, row::MaybeOwnedRow, write::WriteError,
+    InterruptType,
+};
 
 pub mod delete;
 pub mod initial;

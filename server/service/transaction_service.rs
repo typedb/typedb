@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::HashMap,
+    collections::{HashMap, VecDeque},
     ops::{
         ControlFlow,
         ControlFlow::{Break, Continue},
@@ -13,26 +13,6 @@ use std::{
     sync::Arc,
     time::{Instant, SystemTime},
 };
-use std::collections::VecDeque;
-
-use itertools::Itertools;
-use tokio::{
-    sync::{
-        broadcast,
-        mpsc::{channel, Receiver, Sender},
-    },
-    task::{JoinHandle, spawn_blocking},
-};
-use tokio_stream::StreamExt;
-use tonic::{Status, Streaming};
-use tracing::{event, Level};
-use typedb_protocol::transaction::{Server, stream_signal::Req};
-use typeql::{
-    parse_query,
-    query::{Pipeline, SchemaQuery, stage::Stage},
-    Query,
-};
-use uuid::Uuid;
 
 use compiler::VariablePosition;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
@@ -41,11 +21,16 @@ use database::{
     transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
 };
 use error::typedb_error;
-use executor::{batch::Batch, ExecutionInterrupt, InterruptType, pipeline::{
-    PipelineExecutionError,
-    stage::{ExecutionContext, ReadPipelineStage, StageAPI, StageIterator},
-}};
+use executor::{
+    batch::Batch,
+    pipeline::{
+        stage::{ExecutionContext, ReadPipelineStage, StageAPI, StageIterator},
+        PipelineExecutionError,
+    },
+    ExecutionInterrupt, InterruptType,
+};
 use function::function_manager::FunctionManager;
+use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use options::TransactionOptions;
 use query::{error::QueryError, query_manager::QueryManager};
@@ -54,6 +39,26 @@ use storage::{
     durability_client::WALClient,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
+use tokio::{
+    sync::{
+        broadcast,
+        mpsc::{channel, Receiver, Sender},
+    },
+    task::{spawn_blocking, JoinHandle},
+};
+use tokio_stream::StreamExt;
+use tonic::{Status, Streaming};
+use tracing::{event, Level};
+use typedb_protocol::{
+    query::Type::{Read, Write},
+    transaction::{stream_signal::Req, Server},
+};
+use typeql::{
+    parse_query,
+    query::{stage::Stage, Pipeline, SchemaQuery},
+    Query,
+};
+use uuid::Uuid;
 
 use crate::service::{
     answer::encode_row,
@@ -102,7 +107,8 @@ pub(crate) struct TransactionService {
     transaction: Option<Transaction>,
     request_queue: VecDeque<(Uuid, Pipeline)>,
     responders: HashMap<Uuid, (JoinHandle<()>, QueryStreamTransmitter)>,
-    running_write_query: Option<(Uuid, JoinHandle<(Transaction, Result<(StreamQueryOutputDescriptor, Batch), QueryError>)>)>,
+    running_write_query:
+        Option<(Uuid, JoinHandle<(Transaction, Result<(StreamQueryOutputDescriptor, Batch), QueryError>)>)>,
 }
 
 macro_rules! unwrap_or_execute_and_return {
@@ -292,7 +298,7 @@ impl TransactionService {
                                 name: "req",
                                 description: "Transaction message must contain a request.",
                             }
-                                .into_status());
+                            .into_status());
                         }
                         Some(req) => match self.handle_request(request_id, req).await {
                             Err(err) => return Err(err),
@@ -456,8 +462,8 @@ impl TransactionService {
                     TransactionServiceError::DataCommitFailed { typedb_source: err }.into_error_message().into_status()
                 })
             })
-                .await
-                .unwrap(),
+            .await
+            .unwrap(),
             Transaction::Schema(transaction) => transaction.commit().map_err(|err| {
                 TransactionServiceError::SchemaCommitFailed { source: err }.into_error_message().into_status()
             }),
@@ -532,9 +538,11 @@ impl TransactionService {
             Self::respond_query_response(
                 &self.response_sender,
                 req_id,
-                ImmediateQueryResponse::NonFatalErr(TransactionServiceError::QueryInterrupted { interrupt }.into_error_message()),
+                ImmediateQueryResponse::NonFatalErr(
+                    TransactionServiceError::QueryInterrupted { interrupt }.into_error_message(),
+                ),
             )
-                .await?;
+            .await?;
         }
 
         self.request_queue = write_queries;
@@ -549,8 +557,12 @@ impl TransactionService {
             match Self::respond_query_response(
                 &self.response_sender,
                 req_id,
-                ImmediateQueryResponse::NonFatalErr(TransactionServiceError::QueryInterrupted { interrupt }.into_error_message()),
-            ).await {
+                ImmediateQueryResponse::NonFatalErr(
+                    TransactionServiceError::QueryInterrupted { interrupt }.into_error_message(),
+                ),
+            )
+            .await
+            {
                 Continue(_) => Ok(()),
                 Break(_) => Err(ProtocolError::FailedQueryResponse {}.into_status()),
             }
@@ -587,7 +599,7 @@ impl TransactionService {
                         TransactionServiceError::QueryInterrupted { interrupt }.into_error_message(),
                     ),
                 )
-                    .await?;
+                .await?;
             } else {
                 read_queries.push_back((req_id, pipeline));
             }
@@ -690,8 +702,8 @@ impl TransactionService {
                 let result = QueryManager::new().execute_schema(&mut snapshot, &type_manager, &thing_manager, query);
                 (snapshot, type_manager, thing_manager, result)
             })
-                .await
-                .unwrap();
+            .await
+            .unwrap();
             let message_ok_empty = result.map(|_| query_res_ok_empty()).map_err(|err| {
                 TransactionServiceError::TxnAbortSchemaQueryFailed { typedb_source: err }
                     .into_error_message()
@@ -720,14 +732,10 @@ impl TransactionService {
             Ok(handle) => {
                 // running write queries have no valid response yet (until they finish) and will respond asynchronously
                 handle
-            },
+            }
             Err(err) => {
                 // non-fatal errors we will respond immediately
-                Self::respond_query_response(
-                    &self.response_sender,
-                    req_id,
-                    ImmediateQueryResponse::non_fatal_err(err),
-                )
+                Self::respond_query_response(&self.response_sender, req_id, ImmediateQueryResponse::non_fatal_err(err))
                     .await;
                 return;
             }
@@ -1146,7 +1154,7 @@ impl QueryStreamTransmitter {
             query_response_receiver,
             StreamingCondition::Count(prefetch_size),
         )
-            .await?;
+        .await?;
         send_ok_message_else_return_break!(response_sender, transaction_server_res_part_stream_signal_continue(req_id));
 
         // stream LATENCY number of answers
@@ -1156,7 +1164,7 @@ impl QueryStreamTransmitter {
             query_response_receiver,
             StreamingCondition::Duration(Instant::now(), network_latency_millis),
         )
-            .await?;
+        .await?;
         Continue(query_response_receiver)
     }
 

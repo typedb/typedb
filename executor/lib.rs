@@ -7,8 +7,10 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use std::fmt::{Display, Formatter};
-use std::slice;
+use std::{
+    fmt::{Display, Formatter},
+    slice,
+};
 
 use compiler::VariablePosition;
 use tokio::sync::broadcast::error::TryRecvError;
