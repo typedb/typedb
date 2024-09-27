@@ -1,23 +1,31 @@
-Install & Run: https://typedb.com/docs/home/install
+### Install
 
+**Download from TypeDB Package Repository:**
+
+Distributions for 3.0.0-alpha-2
+
+**Pull the Docker image:**
+
+```docker pull vaticle/typedb:3.0.0-alpha-2```
 
 ## New Features
-- **Bundle TypeDB Console with improved error messages**
+- **Introduce reduce stages for pipelines**
+  Introduce reduce stages for pipelines to enable grouped aggregates.
+  Currently implemented: count, sum max, min, mean, median, std.
 
-- **Ignore data directories that aren't TypeDB databases**
+- **Add support for ISO timezones; finalise datetime & duration support**
 
-  TypeDB ignores directories in its configured 'data' directory that do not contain the subdirectories 'data' and 'schema'. In the past, the any directory was loaded as a TypeDB database, which could cause the server to crash on bootup.
-
-  This should help with OS-created directories in some system (such as Lost+Found), or users' debugging directories.
 
 ## Bugs Fixed
-
-
-## Code Refactors
-- **Improve define error message when role type doesn't exist**
-
+- **Fix greedy planner: variables are produced immediately**
+- **Fix QueryStreamTransmitter to not lose Continue signals and hang streaming operations**
+- **Fix reboot bugs, update logging**
 
 ## Other Improvements
-- **Remove sonarcloud dependencies**
-
-- **Simplify Github templates**
+- **Fix datetime-tz encode: send datetime as naive_utc instead of naive_local**
+- **Fix datetimes: encode in seconds instead of millis**
+- **Add query type to the query rows header. Implement connection/database bdd steps**
+  We update the server to server the [updated protocol](https://github.com/typedb/typedb-protocol/pull/209) and return the type of the executed query as a part of the query row stream answer.
+  We also fix the server's database manipulation code and implement additional bdd steps to pass the `connection/database` bdd tests.
+- **Include console in 3.0 distribution**
+  Includes console in 3.0 distribution. It can perform database management & run queries.
