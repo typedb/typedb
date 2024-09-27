@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+# TypeDB global variables
+JAVA_BIN=java
+if [[ ! -z "$JAVA_HOME" ]]; then
+    JAVA_BIN="$JAVA_HOME/bin/java"
+fi
+[[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
+TYPEDB_HOME=$(cd "$(dirname "${path}")" && pwd -P)
+
+TYPEDB_SERVER_DIR="${TYPEDB_HOME}/server"
+
+# ================================================
+# common helper functions
+# ================================================
+exit_if_java_not_found() {
+    which "${JAVA_BIN}" > /dev/null
+    exit_code=$?
+
+    if [[ $exit_code -ne 0 ]]; then
+        echo "Java is not installed on this machine. TypeDB needs Java 11+ in order to run."
+        exit 1
+    fi
+}
+
+print_usage() {
+    # TODO: Add [--help] back to server
+    echo "  Server:          typedb server"
+    echo "  Console:         typedb console [--help]"
+}
+
+# =============================================
+# main routine
+# =============================================
+
+
+case "$1" in
+    console)
+        exit_if_java_not_found
+        SERVICE_LIB_CP="console/lib/*"
+        CLASSPATH="${TYPEDB_HOME}/${SERVICE_LIB_CP}:${TYPEDB_HOME}/console/conf/"
+        # exec replaces current shell process with java so no commands after this one will ever get executed
+        exec ${JAVA_BIN} ${JAVAOPTS} -cp "${CLASSPATH}" -Dtypedb.dir="${TYPEDB_HOME}" com.vaticle.typedb.console.TypeDBConsole "${@:2}"
+        ;;
+
+    server)
+        # exec replaces current shell process with java so no commands after these ones will ever get executed
+        TYPEDB_SERVER_BIN="${TYPEDB_HOME}/server/typedb_server_bin"
+        exec ${TYPEDB_SERVER_BIN} "${@:2}"
+        ;;
+
+    "")
+        echo "Missing argument. Possible commands are:"
+        print_usage
+        exit 1
+        ;;
+    *)
+        echo "Invalid argument: $1. Possible commands are: "
+        print_usage
+        exit 1
+        ;;
+    esac
+fi

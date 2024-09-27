@@ -3,6 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
+load("@vaticle_dependencies//distribution/artifact:rules.bzl", "artifact_repackage")
 load("//:deployment.bzl", deployment_docker = "deployment", deployment_github = "deployment")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
@@ -15,6 +16,7 @@ load("@vaticle_bazel_distribution//platform:constraints.bzl", "constraint_linux_
 load("@io_bazel_rules_docker//container:image.bzl", docker_container_image = "container_image")
 load("@io_bazel_rules_docker//container:container.bzl", docker_container_push = "container_push")
 
+load("@rules_pkg//:mappings.bzl", "pkg_files", "pkg_attributes")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("@rules_rust//rust:defs.bzl", "rust_binary")
 
@@ -39,28 +41,53 @@ rust_binary(
 
 # Assembly
 assemble_files = {
-    "//resource:logo": "resource/typedb-ascii.txt",
     "//:LICENSE": "LICENSE",
 }
 empty_directories = [
     "server/data",
 ]
-permissions = {
-    "server/conf/config.yml": "0755",
-    "server/data": "0755",
-}
+
+binary_permissions = pkg_attributes(mode = "0744")
+other_permissions = {} # These don't seem to work.
+
+alias(
+    name = "typedb_console_artifact",
+    actual = select({
+        "@vaticle_bazel_distribution//platform:is_linux_arm64" : "@vaticle_typedb_console_artifact_linux-arm64//file",
+        "@vaticle_bazel_distribution//platform:is_linux_x86_64" : "@vaticle_typedb_console_artifact_linux-x86_64//file",
+        "@vaticle_bazel_distribution//platform:is_mac_arm64" : "@vaticle_typedb_console_artifact_mac-arm64//file",
+        "@vaticle_bazel_distribution//platform:is_mac_x86_64" : "@vaticle_typedb_console_artifact_mac-x86_64//file",
+        #"@vaticle_bazel_distribution//platform:is_windows_x86_64" : "@vaticle_typedb_console_artifact_windows-x86_64//file",
+    })
+)
+
+# The directory structure for distribution
+artifact_repackage(
+    name = "console-repackaged",
+    srcs = [":typedb_console_artifact"],
+    files_to_keep = ["console"],
+)
+
+pkg_files(
+    name = "package-server-and-entry",
+    srcs = ["//:typedb_server_bin", "//binary:typedb"],
+    renames = {"//:typedb_server_bin" : "server/typedb_server_bin"},
+    attributes = binary_permissions,
+)
 
 pkg_tar(
     name = "package-typedb",
-    srcs = ["//:typedb_server_bin"],
+    srcs = [":package-server-and-entry"],
+    deps = [":console-repackaged"],
 )
+
 
 assemble_zip(
     name = "assemble-mac-x86_64-zip",
     additional_files = assemble_files,
     empty_directories = empty_directories,
     output_filename = "typedb-all-mac-x86_64",
-    permissions = permissions,
+    permissions = other_permissions,
     targets = ["//:package-typedb"],
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_mac_x86_64,
@@ -71,7 +98,7 @@ assemble_zip(
     additional_files = assemble_files,
     empty_directories = empty_directories,
     output_filename = "typedb-all-mac-arm64",
-    permissions = permissions,
+    permissions = other_permissions,
     targets = ["//:package-typedb"],
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_mac_arm64,
@@ -82,7 +109,7 @@ assemble_targz(
     additional_files = assemble_files,
     empty_directories = empty_directories,
     output_filename = "typedb-all-linux-x86_64",
-    permissions = permissions,
+    permissions = other_permissions,
     targets = ["//:package-typedb"],
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_linux_x86_64,
@@ -93,7 +120,7 @@ assemble_targz(
     additional_files = assemble_files,
     empty_directories = empty_directories,
     output_filename = "typedb-all-linux-arm64",
-    permissions = permissions,
+    permissions = other_permissions,
     targets = ["//:package-typedb"],
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_linux_arm64,
@@ -164,9 +191,7 @@ docker_container_image(
     operating_system = "linux",
     architecture = "amd64",
     base = "@ubuntu-22.04-x86_64//image",
-    cmd = [
-        "/opt/typedb-all-linux-x86_64/typedb_server_bin"
-    ],
+    cmd = ["/opt/typedb-all-linux-x86_64/typedb", "server"],
     directory = "opt",
     env = {
         "LANG": "C.UTF-8",
@@ -185,9 +210,7 @@ docker_container_image(
     operating_system = "linux",
     architecture = "arm64",
     base = "@ubuntu-22.04-arm64//image",
-    cmd = [
-        "/opt/typedb-all-linux-arm64/typedb_server_bin"
-    ],
+    cmd = ["/opt/typedb-all-linux-arm64/typedb", "server"],
     directory = "opt",
     env = {
         "LANG": "C.UTF-8",
