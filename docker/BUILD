@@ -21,7 +21,7 @@ genrule(
   srcs = ["//:VERSION"],
   outs = ["version-arm64.txt"],
   tools = [],
-  cmd = "cp $(location //:VERSION) $@; echo \"-arm64\" >> $@"
+  cmd = "VERSION=$$(cat $(location //:VERSION)); echo \"$$VERSION-arm64\" > $@"
 )
 
 
@@ -30,7 +30,7 @@ genrule(
   srcs = ["//:VERSION"],
   outs = ["version-x86_64.txt"],
   tools = [],
-  cmd = "cp $(location //:VERSION) $@; echo \"-x86_64\" >> $@"
+  cmd = "VERSION=$$(cat $(location //:VERSION)); echo \"$$VERSION-x86_64\" > $@"
 )
 
 checkstyle_test(
