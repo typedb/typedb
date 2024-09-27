@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 use answer::{variable_value::VariableValue, Thing};
 use compiler::{
-    reduce::{ReduceOperation, ReduceProgram},
+    reduce::{ReduceInstruction, ReduceProgram},
     VariablePosition,
 };
 use encoding::value::value::Value;
@@ -170,22 +170,24 @@ impl ReducerExecutor {
 }
 
 impl ReducerExecutor {
-    fn build(reduce_ir: &ReduceOperation<VariablePosition>) -> Self {
+    fn build(reduce_ir: &ReduceInstruction<VariablePosition>) -> Self {
         match reduce_ir {
-            ReduceOperation::Count => ReducerExecutor::Count(CountExecutor::new()),
-            ReduceOperation::CountVar(pos) => ReducerExecutor::CountVar(CountVarExecutor::new(pos.clone())),
-            ReduceOperation::SumLong(pos) => ReducerExecutor::SumLong(SumLongExecutor::new(pos.clone())),
-            ReduceOperation::SumDouble(pos) => ReducerExecutor::SumDouble(SumDoubleExecutor::new(pos.clone())),
-            ReduceOperation::MaxLong(pos) => ReducerExecutor::MaxLong(MaxLongExecutor::new(pos.clone())),
-            ReduceOperation::MaxDouble(pos) => ReducerExecutor::MaxDouble(MaxDoubleExecutor::new(pos.clone())),
-            ReduceOperation::MinLong(pos) => ReducerExecutor::MinLong(MinLongExecutor::new(pos.clone())),
-            ReduceOperation::MinDouble(pos) => ReducerExecutor::MinDouble(MinDoubleExecutor::new(pos.clone())),
-            ReduceOperation::MeanLong(pos) => ReducerExecutor::MeanLong(MeanLongExecutor::new(pos.clone())),
-            ReduceOperation::MeanDouble(pos) => ReducerExecutor::MeanDouble(MeanDoubleExecutor::new(pos.clone())),
-            ReduceOperation::MedianLong(pos) => ReducerExecutor::MedianLong(MedianLongExecutor::new(pos.clone())),
-            ReduceOperation::MedianDouble(pos) => ReducerExecutor::MedianDouble(MedianDoubleExecutor::new(pos.clone())),
-            ReduceOperation::StdLong(pos) => ReducerExecutor::StdLong(StdLongExecutor::new(pos.clone())),
-            ReduceOperation::StdDouble(pos) => ReducerExecutor::StdDouble(StdDoubleExecutor::new(pos.clone())),
+            ReduceInstruction::Count => ReducerExecutor::Count(CountExecutor::new()),
+            ReduceInstruction::CountVar(pos) => ReducerExecutor::CountVar(CountVarExecutor::new(pos.clone())),
+            ReduceInstruction::SumLong(pos) => ReducerExecutor::SumLong(SumLongExecutor::new(pos.clone())),
+            ReduceInstruction::SumDouble(pos) => ReducerExecutor::SumDouble(SumDoubleExecutor::new(pos.clone())),
+            ReduceInstruction::MaxLong(pos) => ReducerExecutor::MaxLong(MaxLongExecutor::new(pos.clone())),
+            ReduceInstruction::MaxDouble(pos) => ReducerExecutor::MaxDouble(MaxDoubleExecutor::new(pos.clone())),
+            ReduceInstruction::MinLong(pos) => ReducerExecutor::MinLong(MinLongExecutor::new(pos.clone())),
+            ReduceInstruction::MinDouble(pos) => ReducerExecutor::MinDouble(MinDoubleExecutor::new(pos.clone())),
+            ReduceInstruction::MeanLong(pos) => ReducerExecutor::MeanLong(MeanLongExecutor::new(pos.clone())),
+            ReduceInstruction::MeanDouble(pos) => ReducerExecutor::MeanDouble(MeanDoubleExecutor::new(pos.clone())),
+            ReduceInstruction::MedianLong(pos) => ReducerExecutor::MedianLong(MedianLongExecutor::new(pos.clone())),
+            ReduceInstruction::MedianDouble(pos) => {
+                ReducerExecutor::MedianDouble(MedianDoubleExecutor::new(pos.clone()))
+            }
+            ReduceInstruction::StdLong(pos) => ReducerExecutor::StdLong(StdLongExecutor::new(pos.clone())),
+            ReduceInstruction::StdDouble(pos) => ReducerExecutor::StdDouble(StdDoubleExecutor::new(pos.clone())),
         }
     }
 }

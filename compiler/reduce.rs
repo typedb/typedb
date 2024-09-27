@@ -13,12 +13,12 @@ use ir::pattern::IrID;
 use crate::VariablePosition;
 
 pub struct ReduceProgram {
-    pub reduction_inputs: Vec<ReduceOperation<VariablePosition>>,
+    pub reduction_inputs: Vec<ReduceInstruction<VariablePosition>>,
     pub input_group_positions: Vec<VariablePosition>,
     pub output_row_mapping: HashMap<Variable, VariablePosition>, // output_row = (group_vars, reduce_outputs)
 }
 
-pub enum ReduceOperation<ID: IrID> {
+pub enum ReduceInstruction<ID: IrID> {
     Count,
     CountVar(ID),
     SumLong(ID),
@@ -35,7 +35,7 @@ pub enum ReduceOperation<ID: IrID> {
     StdDouble(ID),
 }
 
-impl<ID: IrID> ReduceOperation<ID> {
+impl<ID: IrID> ReduceInstruction<ID> {
     pub fn output_type(&self) -> ValueTypeCategory {
         match self {
             Self::Count => ValueTypeCategory::Long,

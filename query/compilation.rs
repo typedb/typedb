@@ -15,7 +15,7 @@ use compiler::{
     insert::program::InsertProgram,
     match_::{inference::annotated_functions::AnnotatedUnindexedFunctions, planner::pattern_plan::MatchProgram},
     modifiers::{LimitProgram, OffsetProgram, SelectProgram, SortProgram},
-    reduce::{ReduceOperation, ReduceProgram},
+    reduce::{ReduceInstruction, ReduceProgram},
     VariablePosition,
 };
 use concept::thing::statistics::Statistics;
@@ -175,45 +175,45 @@ fn compile_stage(
                     VariablePosition::new((input_group_positions.len() + reduction_inputs.len()) as u32),
                 );
                 let reducer_on_position = match &reducer_on_variable {
-                    ReduceOperation::Count => ReduceOperation::Count,
-                    ReduceOperation::CountVar(variable) => {
-                        ReduceOperation::CountVar(input_variables.get(variable).unwrap().clone())
+                    ReduceInstruction::Count => ReduceInstruction::Count,
+                    ReduceInstruction::CountVar(variable) => {
+                        ReduceInstruction::CountVar(input_variables.get(variable).unwrap().clone())
                     }
-                    ReduceOperation::SumLong(variable) => {
-                        ReduceOperation::SumLong(input_variables.get(variable).unwrap().clone())
+                    ReduceInstruction::SumLong(variable) => {
+                        ReduceInstruction::SumLong(input_variables.get(variable).unwrap().clone())
                     }
-                    ReduceOperation::SumDouble(variable) => {
-                        ReduceOperation::SumDouble(input_variables.get(variable).unwrap().clone())
+                    ReduceInstruction::SumDouble(variable) => {
+                        ReduceInstruction::SumDouble(input_variables.get(variable).unwrap().clone())
                     }
-                    ReduceOperation::MaxLong(variable) => {
-                        ReduceOperation::MaxLong(input_variables.get(variable).unwrap().clone())
+                    ReduceInstruction::MaxLong(variable) => {
+                        ReduceInstruction::MaxLong(input_variables.get(variable).unwrap().clone())
                     }
-                    ReduceOperation::MaxDouble(variable) => {
-                        ReduceOperation::MaxDouble(input_variables.get(variable).unwrap().clone())
+                    ReduceInstruction::MaxDouble(variable) => {
+                        ReduceInstruction::MaxDouble(input_variables.get(variable).unwrap().clone())
                     }
-                    ReduceOperation::MinLong(variable) => {
-                        ReduceOperation::MinLong(input_variables.get(variable).unwrap().clone())
+                    ReduceInstruction::MinLong(variable) => {
+                        ReduceInstruction::MinLong(input_variables.get(variable).unwrap().clone())
                     }
-                    ReduceOperation::MinDouble(variable) => {
-                        ReduceOperation::MinDouble(input_variables.get(variable).unwrap().clone())
+                    ReduceInstruction::MinDouble(variable) => {
+                        ReduceInstruction::MinDouble(input_variables.get(variable).unwrap().clone())
                     }
-                    ReduceOperation::MeanLong(variable) => {
-                        ReduceOperation::MeanLong(input_variables.get(variable).unwrap().clone())
+                    ReduceInstruction::MeanLong(variable) => {
+                        ReduceInstruction::MeanLong(input_variables.get(variable).unwrap().clone())
                     }
-                    ReduceOperation::MeanDouble(variable) => {
-                        ReduceOperation::MeanDouble(input_variables.get(variable).unwrap().clone())
+                    ReduceInstruction::MeanDouble(variable) => {
+                        ReduceInstruction::MeanDouble(input_variables.get(variable).unwrap().clone())
                     }
-                    ReduceOperation::MedianLong(variable) => {
-                        ReduceOperation::MedianLong(input_variables.get(variable).unwrap().clone())
+                    ReduceInstruction::MedianLong(variable) => {
+                        ReduceInstruction::MedianLong(input_variables.get(variable).unwrap().clone())
                     }
-                    ReduceOperation::MedianDouble(variable) => {
-                        ReduceOperation::MedianDouble(input_variables.get(variable).unwrap().clone())
+                    ReduceInstruction::MedianDouble(variable) => {
+                        ReduceInstruction::MedianDouble(input_variables.get(variable).unwrap().clone())
                     }
-                    ReduceOperation::StdLong(variable) => {
-                        ReduceOperation::StdLong(input_variables.get(variable).unwrap().clone())
+                    ReduceInstruction::StdLong(variable) => {
+                        ReduceInstruction::StdLong(input_variables.get(variable).unwrap().clone())
                     }
-                    ReduceOperation::StdDouble(variable) => {
-                        ReduceOperation::StdDouble(input_variables.get(variable).unwrap().clone())
+                    ReduceInstruction::StdDouble(variable) => {
+                        ReduceInstruction::StdDouble(input_variables.get(variable).unwrap().clone())
                     }
                 };
                 reduction_inputs.push(reducer_on_position);

@@ -18,7 +18,7 @@ use compiler::{
         type_annotations::{ConstraintTypeAnnotations, TypeAnnotations},
         type_inference::{infer_types_for_functions, infer_types_for_match_block, resolve_value_types},
     },
-    reduce::ReduceOperation,
+    reduce::ReduceInstruction,
 };
 use concept::type_::type_manager::TypeManager;
 use encoding::value::value_type::{
@@ -64,7 +64,7 @@ pub(super) enum AnnotatedStage {
     Sort(Sort),
     Offset(Offset),
     Limit(Limit),
-    Reduce(Reduce, Vec<ReduceOperation<Variable>>),
+    Reduce(Reduce, Vec<ReduceInstruction<Variable>>),
 }
 
 pub(super) fn infer_types_for_pipeline(
@@ -238,10 +238,10 @@ pub fn resolve_reducer_by_value_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
-) -> Result<ReduceOperation<Variable>, QueryError> {
+) -> Result<ReduceInstruction<Variable>, QueryError> {
     match reducer {
-        Reducer::Count => Ok(ReduceOperation::Count),
-        Reducer::CountVar(variable) => Ok(ReduceOperation::CountVar(variable.clone())),
+        Reducer::Count => Ok(ReduceInstruction::Count),
+        Reducer::CountVar(variable) => Ok(ReduceInstruction::CountVar(variable.clone())),
         Reducer::Sum(variable)
         | Reducer::Max(variable)
         | Reducer::Mean(variable)
@@ -256,7 +256,7 @@ pub fn resolve_reducer_by_value_type(
                 type_manager,
                 variable_registry,
             )?;
-            reduce_operation_from_reducer(reducer, value_type, variable_registry)
+            resolve_reduce_instruction_by_value_type(reducer, value_type, variable_registry)
         }
     }
 }
@@ -286,34 +286,34 @@ fn determine_value_type(
     }
 }
 
-pub fn reduce_operation_from_reducer(
+pub fn resolve_reduce_instruction_by_value_type(
     reducer: &Reducer,
     value_type: ValueTypeCategory,
     variable_registry: &VariableRegistry,
-) -> Result<ReduceOperation<Variable>, QueryError> {
+) -> Result<ReduceInstruction<Variable>, QueryError> {
     use encoding::value::value_type::ValueTypeCategory::{Double, Long};
     // Will have been handled earlier since it doesn't need a value type.
     debug_assert!(!matches!(reducer, Reducer::Count) && !matches!(reducer, Reducer::CountVar(_)));
     match value_type {
         Long => match reducer {
-            Reducer::Count => Ok(ReduceOperation::Count),
-            Reducer::CountVar(var) => Ok(ReduceOperation::CountVar(var.clone())),
-            Reducer::Sum(var) => Ok(ReduceOperation::SumLong(var.clone())),
-            Reducer::Max(var) => Ok(ReduceOperation::MaxLong(var.clone())),
-            Reducer::Min(var) => Ok(ReduceOperation::MinLong(var.clone())),
-            Reducer::Mean(var) => Ok(ReduceOperation::MeanLong(var.clone())),
-            Reducer::Median(var) => Ok(ReduceOperation::MedianLong(var.clone())),
-            Reducer::Std(var) => Ok(ReduceOperation::StdLong(var.clone())),
+            Reducer::Count => Ok(ReduceInstruction::Count),
+            Reducer::CountVar(var) => Ok(ReduceInstruction::CountVar(var.clone())),
+            Reducer::Sum(var) => Ok(ReduceInstruction::SumLong(var.clone())),
+            Reducer::Max(var) => Ok(ReduceInstruction::MaxLong(var.clone())),
+            Reducer::Min(var) => Ok(ReduceInstruction::MinLong(var.clone())),
+            Reducer::Mean(var) => Ok(ReduceInstruction::MeanLong(var.clone())),
+            Reducer::Median(var) => Ok(ReduceInstruction::MedianLong(var.clone())),
+            Reducer::Std(var) => Ok(ReduceInstruction::StdLong(var.clone())),
         },
         Double => match reducer {
-            Reducer::Count => Ok(ReduceOperation::Count),
-            Reducer::CountVar(var) => Ok(ReduceOperation::CountVar(var.clone())),
-            Reducer::Sum(var) => Ok(ReduceOperation::SumDouble(var.clone())),
-            Reducer::Max(var) => Ok(ReduceOperation::MaxDouble(var.clone())),
-            Reducer::Min(var) => Ok(ReduceOperation::MinDouble(var.clone())),
-            Reducer::Mean(var) => Ok(ReduceOperation::MeanDouble(var.clone())),
-            Reducer::Median(var) => Ok(ReduceOperation::MedianDouble(var.clone())),
-            Reducer::Std(var) => Ok(ReduceOperation::StdDouble(var.clone())),
+            Reducer::Count => Ok(ReduceInstruction::Count),
+            Reducer::CountVar(var) => Ok(ReduceInstruction::CountVar(var.clone())),
+            Reducer::Sum(var) => Ok(ReduceInstruction::SumDouble(var.clone())),
+            Reducer::Max(var) => Ok(ReduceInstruction::MaxDouble(var.clone())),
+            Reducer::Min(var) => Ok(ReduceInstruction::MinDouble(var.clone())),
+            Reducer::Mean(var) => Ok(ReduceInstruction::MeanDouble(var.clone())),
+            Reducer::Median(var) => Ok(ReduceInstruction::MedianDouble(var.clone())),
+            Reducer::Std(var) => Ok(ReduceInstruction::StdDouble(var.clone())),
         },
         _ => {
             let var = match reducer {
