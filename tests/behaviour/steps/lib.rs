@@ -16,9 +16,11 @@ use std::{
 };
 
 use ::concept::thing::{attribute::Attribute, object::Object};
+use ::query::error::QueryError;
 use answer::variable_value::VariableValue;
 use cucumber::{gherkin::Feature, StatsWriter, World};
 use database::Database;
+use error::TypeDBError;
 use futures::{
     future::Either,
     stream::{self, StreamExt},
@@ -102,6 +104,7 @@ impl<I: AsRef<Path>> cucumber::Parser<I> for SingletonParser {
 pub struct Context {
     server: Option<Arc<Mutex<typedb::Server>>>,
     active_transaction: Option<ActiveTransaction>,
+    active_concurrent_transactions: Vec<ActiveTransaction>,
 
     answers: Vec<HashMap<String, VariableValue<'static>>>,
     objects: HashMap<String, Option<ObjectWithKey>>,
@@ -135,10 +138,17 @@ impl Context {
             .execution_has_failed()
     }
 
+    fn close_active_concurrent_transactions(&mut self) {
+        while let Some(tx) = self.active_concurrent_transactions.pop() {
+            Self::close_transaction(tx);
+        }
+    }
+
     async fn after_scenario(&mut self, clean_databases: bool) -> Result<(), ()> {
         if self.active_transaction.is_some() {
-            self.close_transaction()
+            self.close_active_transaction();
         }
+        self.close_active_concurrent_transactions();
 
         if clean_databases {
             let database_names = self.server().unwrap().lock().unwrap().database_manager().database_names();
@@ -150,8 +160,12 @@ impl Context {
         Ok(())
     }
 
-    pub fn close_transaction(&mut self) {
-        match self.take_transaction().unwrap() {
+    pub fn close_active_transaction(&mut self) {
+        Self::close_transaction(self.take_transaction().unwrap())
+    }
+
+    pub fn close_transaction(tx: ActiveTransaction) {
+        match tx {
             ActiveTransaction::Read(tx) => tx.close(),
             ActiveTransaction::Write(tx) => tx.close(),
             ActiveTransaction::Schema(tx) => tx.close(),
@@ -166,8 +180,17 @@ impl Context {
         self.server().unwrap().lock().unwrap().database_manager().database(name).unwrap()
     }
 
-    pub fn set_transaction(&mut self, txn: ActiveTransaction) {
-        self.active_transaction = Some(txn);
+    pub fn set_transaction(&mut self, tx: ActiveTransaction) {
+        self.active_transaction = Some(tx);
+    }
+
+    pub fn set_concurrent_transactions(&mut self, txs: Vec<ActiveTransaction>) {
+        self.close_active_concurrent_transactions();
+        self.active_concurrent_transactions = txs;
+    }
+
+    pub fn get_concurrent_transactions(&self) -> &Vec<ActiveTransaction> {
+        &self.active_concurrent_transactions
     }
 
     pub fn transaction(&mut self) -> Option<&mut ActiveTransaction> {
@@ -187,6 +210,7 @@ fn is_ignore(tag: &str) -> bool {
 pub enum BehaviourTestExecutionError {
     UseInvalidTransactionAsWrite,
     UseInvalidTransactionAsSchema,
+    Query(QueryError),
 }
 
 impl fmt::Display for BehaviourTestExecutionError {
@@ -200,6 +224,7 @@ impl Error for BehaviourTestExecutionError {
         match self {
             Self::UseInvalidTransactionAsWrite => None,
             Self::UseInvalidTransactionAsSchema => None,
+            Self::Query(_) => None,
         }
     }
 }
