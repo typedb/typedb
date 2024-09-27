@@ -59,11 +59,11 @@ pub enum InterruptType {
 impl Display for InterruptType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            InterruptType::TransactionClosed => write!(f, "transaction closed"),
-            InterruptType::TransactionCommitted => write!(f, "transaction committed"),
-            InterruptType::TransactionRolledback => write!(f, "transaction rolled back"),
-            InterruptType::WriteQueryExecution => write!(f, "write query executed."),
-            InterruptType::SchemaQueryExecution => write!(f, "schema query executed."),
+            InterruptType::TransactionClosed => write!(f, "transaction close"),
+            InterruptType::TransactionCommitted => write!(f, "transaction commit"),
+            InterruptType::TransactionRolledback => write!(f, "transaction rollback"),
+            InterruptType::WriteQueryExecution => write!(f, "write query"),
+            InterruptType::SchemaQueryExecution => write!(f, "schema query"),
         }
     }
 }

@@ -10,7 +10,7 @@ use crate::InterruptType;
 
 typedb_error!(
     pub ReadExecutionError(component = "Read execution", prefix = "REX") {
-        Interrupted(1, "Execution interrupted, cause: '{interrupt}'.", interrupt: InterruptType),
+        Interrupted(1, "Execution interrupted by to a concurrent {interrupt}.", interrupt: InterruptType),
         ConceptRead(2, "Concept read error.", ( source: ConceptReadError )),
         CreatingIterator(3, "Error creating iterator from {instruction_name} instruction.", instruction_name: String, ( source: ConceptReadError )),
         AdvancingIteratorTo(4, "Error moving iterator (by steps or seek) to target value.", ( source: ConceptReadError )),

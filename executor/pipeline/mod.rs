@@ -21,7 +21,7 @@ pub mod stage;
 typedb_error!(
     pub PipelineExecutionError(component = "Pipeline execution", prefix = "PEX") {
         // TODO: migrate to `typedb_error` once they are typedb errors
-        Interrupted(1, "Execution interrupted. Cause: '{interrupt}'.", interrupt: InterruptType),
+        Interrupted(1, "Execution interrupted by to a concurrent {interrupt}.", interrupt: InterruptType),
         ConceptRead(2, "Error reading concept.", ( source: ConceptReadError )),
         InitialisingMatchIterator(3, "Error initialising Match clause iterator.", ( source: ConceptReadError )),
         WriteError(4, "Error executing write operation.", ( typedb_source: WriteError )),
