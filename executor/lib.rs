@@ -7,6 +7,7 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
+use std::fmt::{Display, Formatter};
 use std::slice;
 
 use compiler::VariablePosition;
@@ -46,13 +47,34 @@ impl<'a> IntoIterator for &'a SelectedPositions {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
+pub enum InterruptType {
+    TransactionClosed,
+    TransactionCommitted,
+    TransactionRolledback,
+    WriteQueryExecution,
+    SchemaQueryExecution,
+}
+
+impl Display for InterruptType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InterruptType::TransactionClosed => write!(f, "transaction close"),
+            InterruptType::TransactionCommitted => write!(f, "transaction commit"),
+            InterruptType::TransactionRolledback => write!(f, "transaction rollback"),
+            InterruptType::WriteQueryExecution => write!(f, "write query"),
+            InterruptType::SchemaQueryExecution => write!(f, "schema query"),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct ExecutionInterrupt {
-    signal: Option<tokio::sync::broadcast::Receiver<()>>,
+    signal: Option<tokio::sync::broadcast::Receiver<InterruptType>>,
 }
 
 impl ExecutionInterrupt {
-    pub fn new(signal: tokio::sync::broadcast::Receiver<()>) -> Self {
+    pub fn new(signal: tokio::sync::broadcast::Receiver<InterruptType>) -> Self {
         Self { signal: Some(signal) }
     }
 
@@ -60,18 +82,18 @@ impl ExecutionInterrupt {
         Self { signal: None }
     }
 
-    pub fn check(&mut self) -> bool {
+    pub fn check(&mut self) -> Option<InterruptType> {
         // TODO: if this becomes expensive to check frequently (try_recv may acquire locks), we could
         //       optimise it by caching the last time it was checked, and only actually check
         //       the signal once T micros/millis are elapsed... if this is really really cheap we can
         //       check the optimised interrupt in really hot loops as well.
         match &mut self.signal {
-            None => false,
+            None => None,
             Some(signal) => match signal.try_recv() {
-                Ok(_) => true,
-                Err(TryRecvError::Empty) => false,
+                Ok(type_) => Some(type_),
+                Err(TryRecvError::Empty) => None,
                 Err(TryRecvError::Closed) | Err(TryRecvError::Lagged(_)) => {
-                    panic!("Unexpected interrupt signal state. They should never be lagged or closed before cleaning up the receivers.")
+                    unreachable!("Unexpected interrupt signal state. They should never be lagged or closed before cleaning up the receivers.")
                 }
             },
         }

@@ -98,8 +98,8 @@ impl PatternExecutor {
 
         loop {
             // TODO: inject interrupt into Checkers that could filter out many rows without ending as well.
-            if interrupt.check() {
-                return Err(ReadExecutionError::Interrupted {});
+            if let Some(interrupt) = interrupt.check() {
+                return Err(ReadExecutionError::Interrupted { interrupt });
             }
 
             match direction {
