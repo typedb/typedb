@@ -51,7 +51,7 @@ pub async fn connection_create_databases_in_parallel(context: &mut Context, step
 #[step(expr = "connection reset database: {word}")]
 pub async fn connection_reset_database(context: &mut Context, name: String) {
     if context.active_transaction.is_some() {
-        context.close_transaction();
+        context.close_active_transaction();
     }
     context.server().unwrap().lock().unwrap().database_manager().reset_else_recreate_database(&name).unwrap();
 }

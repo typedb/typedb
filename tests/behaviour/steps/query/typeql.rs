@@ -117,7 +117,7 @@ async fn typeql_define(context: &mut Context, may_error: params::TypeQLMayError,
     let query = step.docstring.as_ref().unwrap().as_str();
     let parse_result = typeql::parse_query(query);
     if may_error.check_parsing(parse_result.as_ref()).is_some() {
-        context.close_transaction();
+        context.close_active_transaction();
         return;
     }
     let typeql_define = parse_result.unwrap().into_schema();
@@ -146,7 +146,7 @@ async fn typeql_redefine(context: &mut Context, may_error: params::TypeQLMayErro
     let query = step.docstring.as_ref().unwrap().as_str();
     let parse_result = typeql::parse_query(query);
     if may_error.check_parsing(parse_result.as_ref()).is_some() {
-        context.close_transaction();
+        context.close_active_transaction();
         return;
     }
     let typeql_redefine = parse_result.unwrap().into_schema();
@@ -174,7 +174,7 @@ async fn typeql_redefine(context: &mut Context, may_error: params::TypeQLMayErro
 async fn typeql_write(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
     let parse_result = typeql::parse_query(step.docstring.as_ref().unwrap().as_str());
     if may_error.check_parsing(parse_result.as_ref()).is_some() {
-        context.close_transaction();
+        context.close_active_transaction();
         return;
     }
     let query = parse_result.unwrap();
@@ -196,7 +196,7 @@ async fn get_answers_of_typeql_write(context: &mut Context, step: &Step) {
 async fn typeql_read(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
     let parse_result = typeql::parse_query(step.docstring.as_ref().unwrap().as_str());
     if may_error.check_parsing(parse_result.as_ref()).is_some() {
-        context.close_transaction();
+        context.close_active_transaction();
         return;
     }
     let query = parse_result.unwrap();
