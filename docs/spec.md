@@ -254,7 +254,7 @@
             * [**Case EQ_PATT**](#case-eq_patt)
             * [**Case COMP_PATT**](#case-comp_patt)
         * [List expression patterns](#list-expression-patterns)
-        * [**Case IN_LIST_PATT**](#case-in_list_patt)
+        * [**Case LET_IN_LIST_PATT**](#case-in_list_patt)
 * [Data manipulation language](#data-manipulation-language)
     * [Match semantics](#match-semantics)
     * [Function semantics](#function-semantics)
@@ -1485,14 +1485,14 @@ _Math. notation (Replacing **var**s with concepts)_. When discussing pattern sem
 
 _Remark_ the following can be said in less space, but we chose the more principled longer route, via "single returns".
 
-* 🔶 `_, ..., _, $x, _, ..., _ = F($a, $b, ...)` (where `$x` is in $i$th position of the comma-separated list, and all other positions are "blanks" `_`). This statement is satisfied if, after *function evalution* (see "Function evaluation") with inputs from the crow `r`, we have that $`r(x)`$ is among the $i$th entries of the rows of the evaluation set $`ev(f\_call)`$.
+* 🔶 `let _, ..., _, $x, _, ..., _ = f($a, $b, ...)` (where `$x` is in $i$th position of the comma-separated list, and all other positions are "blanks" `_`). This statement is satisfied if, after *function evalution* (see "Function evaluation") with inputs from the crow `r`, we have that $`r(x)`$ is among the $i$th entries of the rows of the evaluation set $`ev(f(r(a), r(b), ...)`$.
 
     _Note_. This is equivalent to `$x in F_i($a, $b, ...)` where `F_i` modifies `F` with an additional selection of the `i`th variable.
 
-* 🔶 `$x, $y?, ..., $w = F($a, $b, ...)` is satisfied if the following pattern is satisfied:
+* 🔶 `let $x, $y?, ..., $w = f($a, $b, ...)` is satisfied if the following pattern is satisfied:
     ```
-    $x,_,...,_ in F($a, $b, ...);               // first var
-    try { _, $y, ...,_ in F($a, $b, ...); };    // second var
+    let $x,_,...,_ in F($a, $b, ...);               // first var
+    try { let _, $y, ...,_ in F($a, $b, ...); };    // second var
     ...
     _, _, ...,$w in F($a, $b, ...);             // last var
     ```
@@ -1501,38 +1501,43 @@ _Remark_ the following can be said in less space, but we chose the more principl
 
     _Note 2_. In particular, `?`-marked variables are **optional variables**.
 
-* 🔶 `$x, $y?, ..., $w = F(<EXPR1>, <EXPR2>, ...)>` is satisfied if the following pattern is satisfied:
+* 🔶 `let $x, $y?, ..., $w = F($a, <EXPR_b>, ...)>` is satisfied if the following pattern is satisfied:
     ```
-    let $_1 = <EXPR1>;
-    let $_2 = <EXPR2>;
+    let $_b = <EXPR2>;
     ...
-    $x, $y?, ..., $w in F($_1, $_2, ...)
+    let $x, $y?, ..., $w in F($a, $_2, ...)
     ```
 
 _System property_
 
-* 🔶 Function call must be to a **single-return** function, i.e. have output type `T, ...`.
-* 🔶 All variable arguments (or variables in expression arguments) to `F` must be set in the crow `r`
-
-### **Case IN_FUN_PATT**
-
-_Remark_ the following can be said in less space, but we chose the more principled longer route, via "single returns".
-
-* 🔶 `$x, $y?, ..., $w in F(<EXPR1>, <EXPR2>, ...)>` is satisfied if the following pattern is satisfied:
+* 🔶 _Output type_ Function call must be to a **single-return** function, i.e. have output type `T, ...`.
+* 🔶 _Boundedness_ All variable arguments (or variables in expression arguments) to `f` must be set in the crow `r` (i.e. should be bound somewhere else in the pattern).
+* 🔶 _Acyclicity (pattern-level constraint)_ All let expressions must be acyclic, e.g. we **cannot have**
     ```
-    let $_1 = <EXPR1>;
-    let $_2 = <EXPR2>;
-    ...
-    $x, $y?, ..., $w = f($_1, $_2, ...)
+    let $x = f($y); 
+    let $y = f($x);
     ```
-    where `f($_1, $_2, ...)` is a (hypothetical) function call defined to return any result from the evaluation of the call `F($_1, $_2, ...)`
+
+
+### **Case LET_IN_FUN_PATT**
+
+* 🔶 `let $x, $y?, ..., $w in F($a, <EXPR_b>, ...)>` is satisfied if, for some choice of row $`w \in \mathsf{ev}(F(r(a),v_r(expr_b),...)`$ in the evaluation set of the function call such that the following pattern is satisfied:
+    ```
+    let $x, $y?, ..., $w = f($a, <EXPR_b>, ...)
+    ```
+
+    where `f($a, <EXPR_b>, ...)` denotes a hypothetical single-return function evaluating to row `w`.
+    
 
 _System property_
 
-* 🔶 Function call must be to a **stream-return** function, i.e. have output type `{ T, ... }`.
-* 🔶 All variable arguments (or variables in expression arguments) to `F` must be set in the crow `r`
-
-
+* 🔶 _Output type_ Function call must be to a **stream-return** function, i.e. have output type `{ T, ... }`.
+* 🔶 _Boundedness_ All variable arguments (or variables in expression arguments) to `F` must be set in the crow `r` (i.e. should be bound somewhere else in the pattern).
+* 🔶 _Acyclicity (pattern-level constraint)_ All let expressions must be acyclic, e.g. we **cannot have**
+    ```
+    let $x in F($y); 
+    let $y in F($x);
+    ```
 
 ## ... Type statements
 
@@ -1844,12 +1849,12 @@ _Remark_. Struct values are semantically considered up to reordering their compo
     * 🔶 the exception are **single-variable list indices**, i.e. `$list[$index]`; in this case `$index` is bound. (This makes sense, since `$list` must be bound elsewhere, and then `$index` is bound to range over the length of the list) (**#BDD**)
 3. 🔶 Struct components are considered to be unordered: i.e., `{ x: $x, y: $y}` is equal to `{ y: $y, x: $x }`.
 
-_Remark_: The exception for list indices is mainly for convenience. Indeed, you could always explicitly bind `$index` with the pattern `$index in [0..len($list)-1];`. See "Case **IN_LIST_PATT**" below.
+_Remark_: The exception for list indices is mainly for convenience. Indeed, you could always explicitly bind `$index` with the pattern `$index in [0..len($list)-1];`. See "Case **LET_IN_LIST_PATT**" below.
 
 ### Simple expression patterns
 
-#### **Case ASSIGN_PATT**
-* 🔷 `$x = <EXPR>` is satisfied if **both** 
+#### **Case LET_PATT**
+* 🔷 `let $x = <EXPR>` is satisfied if **both** 
     * `r($x)` equals $`v_r(expr)`$
     * `T($x)` equals $`T_r(expr)`$
 
@@ -1857,17 +1862,15 @@ _System property_
 
 1. _Assignments bind_. The left-hand variable is bound by the pattern.
 2. _Assign once, to vars only_. Any variable can be assigned only once within a pattern—importantly, the left hand side _must be_ a variable (replacing it with a concept will throw an error; this implicitly applies to "Match semantics").
-3. _Acyclicity_. It must be possibly to determine answers of all variables in `<EXPR>` before answering `$x` — this avoids cyclic assignments (like `$x = $x + $y; $y = $y - $x;`)
+3. _Acyclicity (pattern-level constraint)_. All let statements must be acyclic, i.e. the graph of variables with directed edges from RHS vars to LHS vars in let statements is acyclic (e.g. we cannot have `$x = $x + $y; $y = $y - $x;`)
 
-_Remark_. TODO: consider `let $x = <EXPR>` as alternative syntax.
-
-#### **Case DESTRUCT_PATT**
-* 🔶 `<DESTRUCT> = <STRUCT>` is satisfied if, after substituting concepts from `r`, the left hand side (up to potentially omitting components whose variables are marked as optional) matched the structure of the right and side, and each variable on the left matches the evaluated expression of the correponding position on the right.
+#### **Case LET_DESTRUCT_PATT**
+* 🔶 `let <DESTRUCT> = <STRUCT>` is satisfied if, after substituting concepts from `r`, the left hand side (up to potentially omitting components whose variables are marked as optional) matched the structure of the right and side, and each variable on the left matches the evaluated expression of the correponding position on the right.
 
 _System property_
 
 1. 🔶 _Assignments bind_. The left-hand variable is bound by the pattern.
-2. 🔶 _Acyclicity_. Applies as before (now applie to _all_ variables assigned on the LHS)
+2. _Acyclicity (pattern-level constraint)_. All let statements must be acyclic, i.e. the graph of variables with directed edges from RHS vars to LHS vars in let statements is acyclic.
 
 #### **Case EQ_PATT**
 * ✅ `<EXPR1> == <EXPR2>` is satisfied if $`v_r(expr_1) = v_r(expr_2)`$
@@ -1895,13 +1898,22 @@ _System property_
 
 ### List expression patterns
 
-### **Case IN_LIST_PATT**
-* 🔷 `$x in $l` is satisfied if $`r(x) \in r(l)`$
-* 🔶 `$x in <LIST_EXPR>` is equivalent to `$l = <LIST_EXPR>; $x in $l` (see "Syntactic Sugar") 
+### **Case LET_IN_LIST_PATT**
+* 🔷 `let $x in $l` is satisfied if $`r(x) \in r(l)`$
+* 🔶 `let $x in <LIST_EXPR>` is equivalent to `$l = <LIST_EXPR>; $x in $l` (see "Syntactic Sugar") 
 
 _System property_
 
 1. The right-hand side variable(s) of the pattern are **not bound**. (The left-hand side variable is bound.)
+1. _Acyclicity (pattern-level constraint)_.  All let statements must be acyclic, i.e. the graph of variables with directed edges from RHS vars to LHS vars in let statements is acyclic.
+
+### **Case LIST_CONTAINS_PATT**
+* 🔶 `$l contains $x` is satisfied if $`r(x) \in r(l)`$
+* 🔶 `<LIST_EXPR contains $x` is equivalent to `$l = <LIST_EXPR>; $l contains $x` (see "Syntactic Sugar") 
+
+_System property_
+
+1. _Boundedness_ no side of the patterns is binding (this is in effect a comparator).
 
 
 # Data manipulation language
@@ -2025,7 +2037,7 @@ An `insert` clause comprises collection of _insert statements_
 
 * _Extending input row_: Insert clauses can extend bindings of the input concept row `r` in two ways
   * `$x` is the subject of an `isa` statement in the `insert` clause, in which case $`r(x) =`$ _newly-inserted-concept_ (see "Case **ISA_INS**")
-  * `$x` is the subject of an `=` assignment statement in the `insert` clause, in which case $`r(x) =`$ _assigned-value_ (see "Case **ASSIGN_INS**")
+  * `$x` is the subject of an `let` assignment statement in the `insert` clause, in which case $`r(x) =`$ _assigned-value_ (see "Case **LET_INS**")
 
 #### (Theory) Execution
 
@@ -2034,9 +2046,7 @@ _Execution_: An `insert` clause is executed by executing its statements individu
   * **runnable** statements will be executed
   * **skipped** statements will not be executed
 * The order of execution is arbitrary except for:
-  1. We execute all runnable `=` assignments first.
-  2. We then execute all runnable `isa` statements.
-  3. Finally, we execute remaining runnable statements.
+  1. We always execute all `let` assignments before the runnable statements that use the assigned variables variables. (There is an acyclicity condition that guarantees this is possible).
 * Executions of statements will modify the database state by 
   * adding elements
   * refining dependencies
@@ -2051,22 +2061,27 @@ _Execution_: An `insert` clause is executed by executing its statements individu
   * variables in `try` are variables are said to be **determined** if
     * they are determined outside the block, i.e.:
         * they are assigned in the crow `r`
-        * they are subjects of `isa` or `=` statements outside the block
-    * they are subjects of `isa` or `=` statements inside the block
+        * they are subjects of `isa` or `let` statements outside the block
+    * they are subjects of `isa` or `let` statements inside the block
   * If any variable in the `try` block is _not_ determined, then `try` block statement is **skipped** (i.e. **not executed**)
   * If all variables are , the `try` block `isa` statements are marked **runnable**.
   * All variables outside of a `try` block must be bound outside of that try block (in other words, variable in a block bound with `isa` cannot be used outside of the block)
 
 ### Insert statements
 
-#### **Case ASSIGN_INS**
-* 🔷 `$x = <EXPR>` adds nothing, and sets $`r(x) = v`$ where $`v`$ is the value that `<EXPR>` evaluates to.
+#### **Case LET_INS**
+* 🔷 `let $x = <EXPR>` adds nothing to the DB, and but sets $`r(x) = v_r(expr)`$ in the in put crow
 
 _System property_:
 
-1. 🔷 `$x` cannot be bound elsewhere.
-2. 🔷 All variables in `<EXPR>` must be bound elsewhere (as before, we require acyclicity of assignement, see "Acyclicity").
-3. 🔷 `<EXPR>` cannot contain function calls.
+1. 🔷 `$x` cannot be insert-bound elsewhere (i.e. no other `isa` or `let`)
+2. 🔷 _Acyclicity_ All `isa` or `let` statements must be acyclic. For example we cannot have:
+    ```
+    insert
+      let $x = $y;
+      $y isa name $x;
+    ```
+3. 🔷 _No reading_ `<EXPR>` cannot contain function calls.
 
 _Note_. All **EXPR_INS** statements are executed first as described in the previous section.
 
@@ -2077,7 +2092,7 @@ _Note_. All **EXPR_INS** statements are executed first as described in the previ
 
 _System property_:
 
-1. ✅ `$x` cannot be bound elsewhere (i.e. `$x` cannot be bound in the input row `r` nor in other `isa` or `=` statements).
+1. ✅ `$x` cannot be bound elsewhere (i.e. `$x` cannot be bound in the input row `r` nor in other `isa` or `let` statements).
 1. 🔮 `<EXPR>` must be of the right value type, and be evaluatable (i.e. all vars are bound).
 1. 🔶 In the last case, `r(T)` must be an independent attribute, i.e. the schema must contain `attribute r(T) (sub B) @indepedent`
 
