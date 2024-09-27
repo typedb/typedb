@@ -16,7 +16,7 @@ load("@vaticle_bazel_distribution//platform:constraints.bzl", "constraint_linux_
 load("@io_bazel_rules_docker//container:image.bzl", docker_container_image = "container_image")
 load("@io_bazel_rules_docker//container:container.bzl", docker_container_push = "container_push")
 
-load("@rules_pkg//:mappings.bzl", "pkg_files")
+load("@rules_pkg//:mappings.bzl", "pkg_files", "pkg_attributes")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("@rules_rust//rust:defs.bzl", "rust_binary")
 
@@ -47,12 +47,8 @@ empty_directories = [
     "server/data",
 ]
 
-permissions = {
-    "server/conf/config.yml": "0755",
-    "server/data": "0755",
-    "server/typedb_server_bin": "0755",
-    "typedb":  "0755",
-}
+binary_permissions = pkg_attributes(mode = "0744")
+other_permissions = {} # These don't seem to work.
 
 alias(
     name = "typedb_console_artifact",
@@ -65,7 +61,7 @@ alias(
     })
 )
 
-
+# The directory structure for distribution
 artifact_repackage(
     name = "console-repackaged",
     srcs = [":typedb_console_artifact"],
@@ -75,7 +71,8 @@ artifact_repackage(
 pkg_files(
     name = "package-server-and-entry",
     srcs = ["//:typedb_server_bin", "//binary:typedb"],
-    renames = {"//:typedb_server_bin" : "server/typedb_server_bin"}
+    renames = {"//:typedb_server_bin" : "server/typedb_server_bin"},
+    attributes = binary_permissions,
 )
 
 pkg_tar(
@@ -84,12 +81,13 @@ pkg_tar(
     deps = [":console-repackaged"],
 )
 
+
 assemble_zip(
     name = "assemble-mac-x86_64-zip",
     additional_files = assemble_files,
     empty_directories = empty_directories,
     output_filename = "typedb-all-mac-x86_64",
-    permissions = permissions,
+    permissions = other_permissions,
     targets = ["//:package-typedb"],
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_mac_x86_64,
@@ -100,7 +98,7 @@ assemble_zip(
     additional_files = assemble_files,
     empty_directories = empty_directories,
     output_filename = "typedb-all-mac-arm64",
-    permissions = permissions,
+    permissions = other_permissions,
     targets = ["//:package-typedb"],
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_mac_arm64,
@@ -111,7 +109,7 @@ assemble_targz(
     additional_files = assemble_files,
     empty_directories = empty_directories,
     output_filename = "typedb-all-linux-x86_64",
-    permissions = permissions,
+    permissions = other_permissions,
     targets = ["//:package-typedb"],
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_linux_x86_64,
@@ -122,7 +120,7 @@ assemble_targz(
     additional_files = assemble_files,
     empty_directories = empty_directories,
     output_filename = "typedb-all-linux-arm64",
-    permissions = permissions,
+    permissions = other_permissions,
     targets = ["//:package-typedb"],
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_linux_arm64,
