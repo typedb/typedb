@@ -6,7 +6,7 @@
 
 use std::{
     cmp::Ord,
-    collections::{HashMap, HashSet},
+    collections::{hash_map, HashMap, HashSet},
     mem,
     sync::Arc,
 };
@@ -15,13 +15,18 @@ use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::{
     pattern::{
+        conjunction::Conjunction,
         constraint::{Comparator, Constraint, ExpressionBinding},
+        nested_pattern::NestedPattern,
         variable_category::VariableCategory,
         IrID,
     },
-    program::{block::FunctionalBlock, VariableRegistry},
+    program::{
+        block::{FunctionalBlock, ScopeContext},
+        VariableRegistry,
+    },
 };
-use itertools::Itertools;
+use itertools::{chain, Itertools};
 
 use crate::{
     expression::compiled_expression::CompiledExpression,
@@ -68,27 +73,25 @@ impl MatchProgram {
 
     pub fn compile(
         block: &FunctionalBlock,
+        input_variables: &HashMap<Variable, VariablePosition>,
         type_annotations: &TypeAnnotations,
         variable_registry: Arc<VariableRegistry>,
-        _expressions: &HashMap<Variable, CompiledExpression>,
+        expressions: &HashMap<Variable, CompiledExpression>,
         statistics: &Statistics,
     ) -> Self {
         assert!(block.modifiers().is_empty(), "TODO: modifiers in a FunctionalBlock");
         let conjunction = block.conjunction();
-        assert!(conjunction.nested_patterns().is_empty(), "TODO: nested patterns in root conjunction");
-
-        let mut plan_builder = PlanBuilder::new(
-            block.scope_context().referenced_variables(),
-            &variable_registry,
+        let scope_context = block.scope_context();
+        debug_assert!(conjunction.captured_variables(scope_context).all(|var| input_variables.contains_key(&var)));
+        compile_conjunction(
+            conjunction,
+            scope_context,
+            input_variables,
             type_annotations,
+            variable_registry,
+            expressions,
             statistics,
-        );
-        plan_builder.register_constraints(conjunction);
-        let ordering = plan_builder.initialise_greedy();
-
-        let (variable_positions, index, programs) = lower_plan(&plan_builder, ordering, type_annotations);
-        let variable_positions_index = index.into_iter().sorted_by_key(|(k, _)| k.as_usize()).map(|(_, v)| v).collect();
-        Self { programs, variable_registry: variable_registry.clone(), variable_positions, variable_positions_index }
+        )
     }
 
     pub fn programs(&self) -> &[Program] {
@@ -112,19 +115,54 @@ impl MatchProgram {
     }
 }
 
-/*
-1. Named variables that are not returned or reused beyond a program can simply be counted, and not outputted
-2. Anonymous variables that are not reused beyond a program can just be checked for a single answer
+fn compile_conjunction(
+    conjunction: &Conjunction,
+    scope_context: &ScopeContext,
+    input_variables: &HashMap<Variable, VariablePosition>,
+    type_annotations: &TypeAnnotations,
+    variable_registry: Arc<VariableRegistry>,
+    _expressions: &HashMap<Variable, CompiledExpression>,
+    statistics: &Statistics,
+) -> MatchProgram {
+    for pattern in conjunction.nested_patterns() {
+        match pattern {
+            NestedPattern::Disjunction(_) => todo!(),
+            NestedPattern::Negation(_) => todo!(),
+            NestedPattern::Optional(_) => todo!(),
+        }
+    }
 
-Planner outputs an ordering over variables, with directions over which edges should be traversed.
-If we know this we can:
-  1. group edges intersecting into the same variable as one Program.
-  2. if the ordering implies it, we may need to perform Storage/Comparison checks, if the variables are visited disconnected and then joined
-  3. some checks are fully bound, while others are not... when do we decide? What is a Check versus an Iterate instructions? Do we need to differentiate?
+    let mut plan_builder = PlanBuilder::new(
+        conjunction.declared_variables(scope_context),
+        conjunction.captured_variables(scope_context).chain(input_variables.keys().copied()),
+        &variable_registry,
+        type_annotations,
+        statistics,
+    );
+
+    plan_builder.register_constraints(conjunction);
+
+    let ordering = plan_builder.initialise_greedy();
+
+    let (variable_positions, index, programs) = lower_plan(&plan_builder, input_variables, ordering, type_annotations);
+    let variable_positions_index = index.into_iter().sorted_by_key(|(k, _)| k.as_usize()).map(|(_, v)| v).collect();
+    MatchProgram { programs, variable_registry, variable_positions, variable_positions_index }
+}
+
+/*
+ * 1. Named variables that are not returned or reused beyond a program can simply be counted, and not output
+ * 2. Anonymous variables that are not reused beyond a program can just be checked for a single answer
+ *
+ * Planner outputs an ordering over variables, with directions over which edges should be traversed.
+ * If we know this we can:
+ *   1. group edges intersecting into the same variable as one Program.
+ *   2. if the ordering implies it, we may need to perform Storage/Comparison checks, if the variables are visited disconnected and then joined
+ *   3. some checks are fully bound, while others are not... when do we decide? What is a Check versus an Iterate instructions? Do we need to differentiate?
  */
 
 #[derive(Debug)]
 struct PlanBuilder<'a> {
+    inputs: Vec<usize>,
     elements: Vec<PlannerVertex>,
     variable_index: HashMap<Variable, usize>,
     index_to_constraint: HashMap<usize, &'a Constraint<Variable>>,
@@ -136,16 +174,19 @@ struct PlanBuilder<'a> {
 impl<'a> PlanBuilder<'a> {
     fn new(
         variables: impl Iterator<Item = Variable>,
+        inputs: impl Iterator<Item = Variable>,
         variable_registry: &VariableRegistry,
         type_annotations: &'a TypeAnnotations,
         statistics: &'a Statistics,
     ) -> Self {
-        let mut elements = Vec::new();
-        let variable_index = variables
+        let inputs = inputs.collect_vec();
+        let mut elements = Vec::with_capacity(inputs.len() + variables.size_hint().0);
+
+        let variable_index: HashMap<_, _> = chain!(inputs.iter().copied(), variables)
             .map(|variable| {
                 let category = variable_registry.get_variable_category(variable).unwrap();
                 match category {
-                    VariableCategory::Type
+                    | VariableCategory::Type
                     | VariableCategory::ThingType
                     | VariableCategory::AttributeType
                     | VariableCategory::RoleType => {
@@ -173,7 +214,9 @@ impl<'a> PlanBuilder<'a> {
                 }
             })
             .collect();
+
         Self {
+            inputs: inputs.into_iter().map(|v| variable_index[&v]).collect(),
             elements,
             variable_index,
             index_to_constraint: HashMap::new(),
@@ -183,7 +226,7 @@ impl<'a> PlanBuilder<'a> {
         }
     }
 
-    fn register_constraints(&mut self, conjunction: &'a ir::pattern::conjunction::Conjunction) {
+    fn register_constraints(&mut self, conjunction: &'a Conjunction) {
         let type_annotations = self.type_annotations;
         let statistics = self.statistics;
 
@@ -216,6 +259,7 @@ impl<'a> PlanBuilder<'a> {
                     self.elements.push(planner);
                     self.elements.last()
                 }
+
                 Constraint::Sub(sub) => {
                     let planner = SubPlanner::from_constraint(sub, &self.variable_index, type_annotations);
                     self.elements.push(PlannerVertex::Sub(planner));
@@ -245,15 +289,15 @@ impl<'a> PlanBuilder<'a> {
                     self.elements.push(PlannerVertex::Isa(planner));
                     self.elements.last()
                 }
+                Constraint::Has(has) => {
+                    let planner = HasPlanner::from_constraint(has, &self.variable_index, type_annotations, statistics);
+                    self.elements.push(PlannerVertex::Has(planner));
+                    self.elements.last()
+                }
                 Constraint::Links(links) => {
                     let planner =
                         LinksPlanner::from_constraint(links, &self.variable_index, type_annotations, statistics);
                     self.elements.push(PlannerVertex::Links(planner));
-                    self.elements.last()
-                }
-                Constraint::Has(has) => {
-                    let planner = HasPlanner::from_constraint(has, &self.variable_index, type_annotations, statistics);
-                    self.elements.push(PlannerVertex::Has(planner));
                     self.elements.last()
                 }
 
@@ -333,8 +377,9 @@ impl<'a> PlanBuilder<'a> {
     }
 
     fn initialise_greedy(&self) -> Vec<usize> {
-        let mut open_set: HashSet<usize> = (0..self.elements.len()).collect();
+        let mut open_set: HashSet<usize> = (self.inputs.len()..self.elements.len()).collect();
         let mut ordering = Vec::with_capacity(self.elements.len());
+        ordering.extend_from_slice(&self.inputs);
 
         let mut produced_at_this_stage = HashSet::new();
         let mut intersection_variable = None;
@@ -407,15 +452,23 @@ impl ProgramBuilder {
     }
 }
 
-#[derive(Default)]
 struct MatchProgramBuilder {
     programs: Vec<ProgramBuilder>,
     current: ProgramBuilder,
     outputs: HashMap<VariablePosition, Variable>,
     index: HashMap<Variable, VariablePosition>,
+    next_output: VariablePosition,
 }
 
 impl MatchProgramBuilder {
+    fn with_inputs(input_variables: &HashMap<Variable, VariablePosition>) -> Self {
+        let index = input_variables.clone();
+        let outputs = index.iter().map(|(&var, &pos)| (pos, var)).collect();
+        let next_position = input_variables.values().max().map(|&pos| pos.position + 1).unwrap_or_default();
+        let next_output = VariablePosition::new(next_position);
+        Self { programs: Vec::new(), current: ProgramBuilder::default(), outputs, index, next_output }
+    }
+
     fn get_program_mut(&mut self, program: usize) -> &mut ProgramBuilder {
         self.programs.get_mut(program).unwrap_or(&mut self.current)
     }
@@ -446,15 +499,16 @@ impl MatchProgramBuilder {
     }
 
     fn register_output(&mut self, var: Variable) {
-        if !self.index.contains_key(&var) {
-            self.index.insert(var, VariablePosition::new(self.index.len() as u32));
-            self.outputs.insert(VariablePosition::new(self.outputs.len() as u32), var);
+        if let hash_map::Entry::Vacant(entry) = self.index.entry(var) {
+            entry.insert(self.next_output);
+            self.outputs.insert(self.next_output, var);
+            self.next_output.position += 1;
         }
     }
 
     fn finish_one(&mut self) {
         if !self.current.instructions.is_empty() {
-            self.current.output_width = Some(self.outputs.len() as u32);
+            self.current.output_width = Some(self.next_output.position);
             self.programs.push(mem::take(&mut self.current));
         }
     }
@@ -467,13 +521,14 @@ impl MatchProgramBuilder {
 
 fn lower_plan(
     plan_builder: &PlanBuilder,
+    input_variables: &HashMap<Variable, VariablePosition>,
     ordering: Vec<usize>,
     type_annotations: &TypeAnnotations,
 ) -> (HashMap<Variable, VariablePosition>, HashMap<VariablePosition, Variable>, Vec<Program>) {
     let index_to_variable: HashMap<_, _> =
         plan_builder.variable_index.iter().map(|(&variable, &index)| (index, variable)).collect();
 
-    let mut match_builder = MatchProgramBuilder::default();
+    let mut match_builder = MatchProgramBuilder::with_inputs(input_variables);
 
     let mut producers: HashMap<Variable, _> = HashMap::with_capacity(plan_builder.variable_index.len());
 
@@ -530,10 +585,12 @@ fn lower_plan(
                 assert!(num_input_variables > 0);
 
                 if inputs.len() == num_input_variables {
-                    let lhs_producer =
-                        lhs_var.map(|lhs| producers.get(&lhs).expect("bound lhs must have been produced"));
-                    let rhs_producer =
-                        rhs_var.map(|rhs| producers.get(&rhs).expect("bound rhs must have been produced"));
+                    let lhs_producer = lhs_var
+                        .filter(|lhs| !input_variables.contains_key(&lhs))
+                        .map(|lhs| producers.get(&lhs).expect("bound lhs must have been produced"));
+                    let rhs_producer = rhs_var
+                        .filter(|rhs| !input_variables.contains_key(&rhs))
+                        .map(|rhs| producers.get(&rhs).expect("bound rhs must have been produced"));
                     let Some(&(program, instruction)) = Ord::max(lhs_producer, rhs_producer) else {
                         unreachable!("num_input_variables > 0")
                     };
@@ -758,7 +815,7 @@ impl Program {
             Program::UnsortedJoin(program) => &program.selected_variables,
             Program::Assignment(_) => todo!(),
             Program::Disjunction(_) => todo!(),
-            Program::Negation(_) => todo!(),
+            Program::Negation(_) => &[],
             Program::Optional(_) => todo!(),
         }
     }
@@ -780,7 +837,7 @@ impl Program {
             Program::UnsortedJoin(program) => program.output_width(),
             Program::Assignment(program) => program.output_width(),
             Program::Disjunction(_) => todo!(),
-            Program::Negation(_) => todo!(),
+            Program::Negation(_) => 0,
             Program::Optional(_) => todo!(),
         }
     }

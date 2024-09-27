@@ -45,6 +45,12 @@ pub struct FunctionManager {
     function_cache: Option<Arc<FunctionCache>>,
 }
 
+impl Default for FunctionManager {
+    fn default() -> Self {
+        Self::new(Arc::new(DefinitionKeyGenerator::new()), None)
+    }
+}
+
 impl FunctionManager {
     pub fn new(
         definition_key_generator: Arc<DefinitionKeyGenerator>,

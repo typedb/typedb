@@ -53,7 +53,7 @@ impl CompiledStage {
             CompiledStage::Insert(program) => program
                 .output_row_schema
                 .iter()
-                .filter_map(|opt| opt.as_ref().map(|(v, _)| v.clone()))
+                .filter_map(|opt| opt.map(|(v, _)| v))
                 .enumerate()
                 .map(|(i, v)| (v, VariablePosition::new(i as u32)))
                 .collect(),
@@ -113,8 +113,14 @@ fn compile_stage(
 ) -> Result<CompiledStage, QueryError> {
     match &annotated_stage {
         AnnotatedStage::Match { block, block_annotations, compiled_expressions } => {
-            let plan =
-                MatchProgram::compile(block, block_annotations, variable_registry, compiled_expressions, statistics);
+            let plan = MatchProgram::compile(
+                block,
+                input_variables,
+                block_annotations,
+                variable_registry,
+                compiled_expressions,
+                statistics,
+            );
             Ok(CompiledStage::Match(plan))
         }
         AnnotatedStage::Insert { block, annotations } => {
@@ -140,10 +146,10 @@ fn compile_stage(
         AnnotatedStage::Filter(filter) => {
             let mut retained_positions = HashSet::with_capacity(filter.variables.len());
             let mut output_row_mapping = HashMap::with_capacity(filter.variables.len());
-            for variable in &filter.variables {
-                let pos = input_variables.get(variable).unwrap();
-                retained_positions.insert(pos.clone());
-                output_row_mapping.insert(variable.clone(), pos.clone());
+            for &variable in &filter.variables {
+                let pos = input_variables[&variable];
+                retained_positions.insert(pos);
+                output_row_mapping.insert(variable, pos);
             }
             Ok(CompiledStage::Filter(SelectProgram { retained_positions, output_row_mapping }))
         }

@@ -20,7 +20,7 @@ pub mod instructions;
 pub mod program;
 pub mod type_check;
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub enum VariableSource {
     InputVariable(VariablePosition), // TODO: This needs to be renamed
 }

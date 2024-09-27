@@ -30,12 +30,13 @@ use crate::{
 };
 
 pub(crate) struct PatternExecutor {
+    input: Option<MaybeOwnedRow<'static>>,
+
     variable_positions: HashMap<Variable, VariablePosition>,
     variable_positions_index: Vec<Variable>,
 
     program_executors: Vec<ProgramExecutor>,
     // modifiers: Modifier,
-    initialised: bool,
     output: Option<FixedBatch>,
 }
 
@@ -44,6 +45,7 @@ impl PatternExecutor {
         program: &MatchProgram,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
+        input: MaybeOwnedRow<'_>,
     ) -> Result<Self, ConceptReadError> {
         let programs = program.programs();
         let context = program.variable_registry();
@@ -54,12 +56,12 @@ impl PatternExecutor {
             .map(|program| ProgramExecutor::new(program, context, variable_positions, snapshot, thing_manager))
             .try_collect()?;
 
-        Ok(PatternExecutor {
+        Ok(Self {
+            input: Some(input.into_owned()),
             variable_positions: program.variable_positions().clone(),
             variable_positions_index: program.variable_positions_index().to_owned(),
             program_executors,
             // modifiers:
-            initialised: false,
             output: None,
         })
     }
@@ -89,11 +91,10 @@ impl PatternExecutor {
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         let programs_len = self.program_executors.len();
 
-        let (mut current_program, mut last_program_batch, mut direction) = if self.initialised {
-            (programs_len - 1, None, Direction::Backward)
+        let (mut current_program, mut last_program_batch, mut direction) = if let Some(input) = self.input.take() {
+            (0, Some(input.into()), Direction::Forward)
         } else {
-            self.initialised = true;
-            (0, Some(FixedBatch::SINGLE_EMPTY_ROW), Direction::Forward)
+            (programs_len - 1, None, Direction::Backward)
         };
 
         loop {
@@ -107,8 +108,8 @@ impl PatternExecutor {
                     if current_program >= programs_len {
                         return Ok(last_program_batch);
                     } else {
-                        let batch = self.program_executors[current_program]
-                            .batch_from(last_program_batch.take().unwrap(), context)?;
+                        let executor = &mut self.program_executors[current_program];
+                        let batch = executor.batch_from(last_program_batch.take().unwrap(), context, interrupt)?;
                         match batch {
                             None => {
                                 direction = Direction::Backward;
@@ -125,6 +126,7 @@ impl PatternExecutor {
                         }
                     }
                 }
+
                 Direction::Backward => {
                     let batch = self.program_executors[current_program].batch_continue(context)?;
                     match batch {
@@ -159,7 +161,7 @@ type PatternRowIterator<Snapshot> = FlatMap<
     fn(Result<FixedBatch, ReadExecutionError>) -> FixedBatchRowIterator,
 >;
 
-pub(crate) struct PatternIterator<Snapshot: ReadableSnapshot + 'static> {
+pub struct PatternIterator<Snapshot: ReadableSnapshot + 'static> {
     iterator: PatternRowIterator<Snapshot>,
 }
 
@@ -253,13 +255,15 @@ impl ProgramExecutor {
                 todo!()
             }
             Program::Negation(NegationProgram { negation: negation_plan, .. }) => {
-                let executor = PatternExecutor::new(negation_plan, snapshot, thing_manager)?;
+                todo!()
+                // let executor = PatternExecutor::new(negation_plan, snapshot, thing_manager)?;
                 // // TODO: add limit 1, filters if they aren't there already?
-                Ok(Self::Negation(NegationExecutor::new(executor, variable_positions)))
+                // Ok(Self::Negation(NegationExecutor::new(executor)))
             }
             Program::Optional(OptionalProgram { optional: optional_plan, .. }) => {
-                let pattern_executor = PatternExecutor::new(optional_plan, snapshot, thing_manager)?;
-                Ok(Self::Optional(OptionalExecutor::new(pattern_executor)))
+                todo!()
+                // let pattern_executor = PatternExecutor::new(optional_plan, snapshot, thing_manager)?;
+                // Ok(Self::Optional(OptionalExecutor::new(pattern_executor)))
             }
         }
     }
@@ -268,13 +272,14 @@ impl ProgramExecutor {
         &mut self,
         input_batch: FixedBatch,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         match self {
             ProgramExecutor::SortedJoin(sorted) => sorted.batch_from(input_batch, context),
             ProgramExecutor::UnsortedJoin(unsorted) => unsorted.batch_from(input_batch),
             ProgramExecutor::Assignment(single) => single.batch_from(input_batch),
             ProgramExecutor::Disjunction(disjunction) => disjunction.batch_from(input_batch),
-            ProgramExecutor::Negation(negation) => negation.batch_from(input_batch),
+            ProgramExecutor::Negation(negation) => negation.batch_from(input_batch, context, interrupt),
             ProgramExecutor::Optional(optional) => optional.batch_from(input_batch),
         }
     }
@@ -798,11 +803,22 @@ struct NegationExecutor {
 }
 
 impl NegationExecutor {
-    fn new(executor: PatternExecutor, variable_positions: &HashMap<Variable, VariablePosition>) -> NegationExecutor {
+    fn new(executor: PatternExecutor) -> NegationExecutor {
         Self { executor }
     }
 
-    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ReadExecutionError> {
+    fn batch_from(
+        &self,
+        input_batch: FixedBatch,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        interrupt: &mut ExecutionInterrupt,
+    ) -> Result<Option<FixedBatch>, ReadExecutionError> {
+        let width = input_batch.width();
+        let mut input = Peekable::new(FixedBatchRowIterator::new(Ok(input_batch)));
+        debug_assert!(input.peek().is_some());
+
+        let mut output = FixedBatch::new(width);
+
         todo!()
     }
 }

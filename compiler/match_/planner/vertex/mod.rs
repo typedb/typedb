@@ -52,7 +52,6 @@ pub(super) enum PlannerVertex {
     Owns(OwnsPlanner),
     Relates(RelatesPlanner),
     Plays(PlaysPlanner),
-    ValueType(ValueTypePlanner),
 }
 
 impl PlannerVertex {
@@ -86,8 +85,7 @@ impl PlannerVertex {
             | Self::Sub(_)
             | Self::Owns(_)
             | Self::Relates(_)
-            | Self::Plays(_)
-            | Self::ValueType(_) => true, // always valid: iterators
+            | Self::Plays(_) => true, // always valid: iterators
         }
     }
 
@@ -149,7 +147,6 @@ impl PlannerVertex {
             PlannerVertex::Owns(inner) => inner.unbound_direction,
             PlannerVertex::Relates(inner) => inner.unbound_direction,
             PlannerVertex::Plays(inner) => inner.unbound_direction,
-            PlannerVertex::ValueType(_) => todo!(),
         }
     }
 
@@ -172,7 +169,6 @@ impl PlannerVertex {
             Self::Owns(inner) => inner.variables(),
             Self::Relates(inner) => inner.variables(),
             Self::Plays(inner) => inner.variables(),
-            Self::ValueType(inner) => inner.variables(),
         }
     }
 
@@ -195,7 +191,6 @@ impl PlannerVertex {
             Self::Owns(_inner) => todo!(),
             Self::Relates(_inner) => todo!(),
             Self::Plays(_inner) => todo!(),
-            Self::ValueType(_inner) => todo!(),
         }
     }
 
@@ -268,7 +263,6 @@ impl Costed for PlannerVertex {
             Self::Owns(inner) => inner.cost(inputs, elements),
             Self::Relates(inner) => inner.cost(inputs, elements),
             Self::Plays(inner) => inner.cost(inputs, elements),
-            Self::ValueType(inner) => inner.cost(inputs, elements),
         }
     }
 }
@@ -873,21 +867,6 @@ impl PlaysPlanner {
 }
 
 impl Costed for PlaysPlanner {
-    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
-        VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
-    }
-}
-
-#[derive(Debug)]
-pub(super) struct ValueTypePlanner {}
-
-impl ValueTypePlanner {
-    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
-        [None; 3].into_iter().flatten()
-    }
-}
-
-impl Costed for ValueTypePlanner {
     fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
         VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
     }

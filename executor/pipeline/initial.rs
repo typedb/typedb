@@ -43,7 +43,7 @@ pub struct InitialIterator {
 
 impl InitialIterator {
     fn new() -> Self {
-        Self { single_iterator: lending_iterator::once(Ok(MaybeOwnedRow::new_owned(Vec::new(), 1))) }
+        Self { single_iterator: lending_iterator::once(Ok(MaybeOwnedRow::empty())) }
     }
 }
 

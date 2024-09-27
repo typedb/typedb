@@ -6,7 +6,7 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use compiler::VariablePosition;
+use compiler::{match_::planner::program_plan::ProgramPlan, VariablePosition};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::pipeline::{
     delete::DeleteStageExecutor,
@@ -99,7 +99,10 @@ impl QueryManager {
                 CompiledStage::Match(match_program) => {
                     // TODO: Pass expressions & functions
                     // let program_plan = ProgramPlan::new(match_program, HashMap::new(), HashMap::new());
-                    let match_stage = MatchStageExecutor::new(match_program, last_stage);
+                    let match_stage = MatchStageExecutor::new(
+                        ProgramPlan::new(match_program, HashMap::new(), HashMap::new()),
+                        last_stage,
+                    );
                     last_stage = ReadPipelineStage::Match(Box::new(match_stage));
                 }
                 CompiledStage::Insert(_) => {
@@ -196,7 +199,10 @@ impl QueryManager {
                 CompiledStage::Match(match_program) => {
                     // TODO: Pass expressions & functions
                     // let program_plan = ProgramPlan::new(match_program, HashMap::new(), HashMap::new());
-                    let match_stage = MatchStageExecutor::new(match_program, previous_stage);
+                    let match_stage = MatchStageExecutor::new(
+                        ProgramPlan::new(match_program, HashMap::new(), HashMap::new()),
+                        previous_stage,
+                    );
                     previous_stage = WritePipelineStage::Match(Box::new(match_stage));
                 }
                 CompiledStage::Insert(insert_program) => {

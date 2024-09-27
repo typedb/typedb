@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+#![allow(clippy::result_large_err)]
+
 use std::fmt::{Display, Formatter};
 
 use ir::pattern::IrID;

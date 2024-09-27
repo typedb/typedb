@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt;
+use std::{fmt, iter};
 
 use answer::variable::Variable;
 
@@ -39,6 +39,21 @@ impl Conjunction {
 
     pub fn nested_patterns(&self) -> &[NestedPattern] {
         &self.nested_patterns
+    }
+
+    pub fn captured_variables(&self, scope_context: &ScopeContext) -> impl Iterator<Item = Variable> + '_ {
+        iter::empty() // TODO
+    }
+
+    pub fn declared_variables<'a>(&self, scope_context: &'a ScopeContext) -> impl Iterator<Item = Variable> + 'a {
+        let self_scope = self.scope_id;
+        scope_context.get_variable_scopes().filter_map(move |(var, scope)| {
+            if scope == self_scope || scope_context.is_child_scope(scope, self_scope) {
+                Some(var)
+            } else {
+                None
+            }
+        })
     }
 }
 

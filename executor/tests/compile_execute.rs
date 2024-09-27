@@ -21,8 +21,9 @@ use concept::{
     type_::type_manager::TypeManager,
 };
 use executor::{
+    match_executor::MatchExecutor,
     pipeline::stage::{ExecutionContext, StageAPI},
-    program_executor::ProgramExecutor,
+    row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
@@ -123,7 +124,7 @@ fn test_has_planning_traversal() {
         &statistics,
     );
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -199,7 +200,7 @@ fn test_links_planning_traversal() {
         &statistics,
     );
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -282,7 +283,7 @@ fn test_links_intersection() {
         &statistics,
     );
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());

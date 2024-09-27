@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt::Display, vec};
-
 use answer::variable_value::VariableValue;
 use lending_iterator::LendingIterator;
 
@@ -84,6 +82,15 @@ impl FixedBatch {
 
     pub(crate) fn into_iterator(self) -> FixedBatchRowIterator {
         FixedBatchRowIterator::new(Ok(self))
+    }
+}
+
+impl From<MaybeOwnedRow<'static>> for FixedBatch {
+    fn from(row: MaybeOwnedRow<'static>) -> Self {
+        let width = row.len() as u32;
+        let mut multiplicities = FixedBatch::INIT_MULTIPLICITIES;
+        multiplicities[0] = row.multiplicity();
+        FixedBatch { width, data: row.row().to_owned(), entries: 1, multiplicities }
     }
 }
 

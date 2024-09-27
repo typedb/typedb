@@ -203,7 +203,69 @@ fn test_match() {
 
 #[test]
 fn test_match_match() {
-    todo!()
+    let context = setup_common();
+    let snapshot = context.storage.clone().open_snapshot_write();
+    let query_str = r#"
+       insert
+       $p isa person, has age 10, has name 'John';
+       $q isa person, has age 20, has name 'Alice';
+       $r isa person, has age 30, has name 'Harry';
+   "#;
+    let query = typeql::parse_query(query_str).unwrap().into_pipeline();
+    let (pipeline, _named_outputs) = context
+        .query_manager
+        .prepare_write_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            &context.function_manager,
+            &query,
+        )
+        .unwrap();
+    let (iterator, ExecutionContext { snapshot, .. }) =
+        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let _ = iterator.count();
+    // must consume iterator to ensure operation completed
+    let snapshot = Arc::into_inner(snapshot).unwrap();
+    snapshot.commit().unwrap();
+
+    let snapshot = Arc::new(context.storage.open_snapshot_read());
+    let query = "
+        match $p isa person;
+        match $p has age $a;
+    ";
+    let match_ = typeql::parse_query(query).unwrap().into_pipeline();
+    let (pipeline, _named_outputs) = context
+        .query_manager
+        .prepare_read_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            &context.function_manager,
+            &match_,
+        )
+        .unwrap();
+    let (iterator, ExecutionContext { snapshot, .. }) =
+        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let batch = iterator.collect_owned().unwrap();
+    assert_eq!(batch.len(), 3);
+
+    let query = "match $person isa person, has name 'John', has age $age;";
+    let match_ = typeql::parse_query(query).unwrap().into_pipeline();
+    let (pipeline, _named_outputs) = context
+        .query_manager
+        .prepare_read_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            &context.function_manager,
+            &match_,
+        )
+        .unwrap();
+    let (iterator, ExecutionContext { .. }) =
+        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let batch = iterator.collect_owned().unwrap();
+    assert_eq!(batch.len(), 1);
 }
 
 #[test]
