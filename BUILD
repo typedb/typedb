@@ -192,7 +192,7 @@ docker_container_image(
     architecture = "amd64",
     base = "@ubuntu-22.04-x86_64//image",
     cmd = [
-        "/opt/typedb-all-linux-x86_64/typedb_server_bin"
+        "/opt/typedb-all-linux-x86_64/typedb server"
     ],
     directory = "opt",
     env = {
@@ -213,7 +213,7 @@ docker_container_image(
     architecture = "arm64",
     base = "@ubuntu-22.04-arm64//image",
     cmd = [
-        "/opt/typedb-all-linux-arm64/typedb_server_bin"
+        "/opt/typedb-all-linux-arm64/typedb server"
     ],
     directory = "opt",
     env = {
