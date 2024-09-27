@@ -1,0 +1,3 @@
+database create foo
+database list
+database delete foo
