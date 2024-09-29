@@ -35,6 +35,7 @@ use ir::{
         VariableRegistry,
     },
 };
+use ir::program::modifier::Require;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{error::QueryError, translation::TranslatedStage};
@@ -60,10 +61,11 @@ pub(super) enum AnnotatedStage {
         annotations: TypeAnnotations,
     },
     // ...
-    Filter(Select),
+    Select(Select),
     Sort(Sort),
     Offset(Offset),
     Limit(Limit),
+    Require(Require),
     Reduce(Reduce, Vec<ReduceInstruction<Variable>>),
 }
 
@@ -209,9 +211,10 @@ fn annotate_stage(
             Ok(AnnotatedStage::Delete { block, deleted_variables, annotations: delete_annotations })
         }
         TranslatedStage::Sort(sort) => Ok(AnnotatedStage::Sort(sort)),
-        TranslatedStage::Filter(select) => Ok(AnnotatedStage::Filter(select)),
+        TranslatedStage::Select(select) => Ok(AnnotatedStage::Select(select)),
         TranslatedStage::Offset(offset) => Ok(AnnotatedStage::Offset(offset)),
         TranslatedStage::Limit(limit) => Ok(AnnotatedStage::Limit(limit)),
+        TranslatedStage::Require(require) => Ok(AnnotatedStage::Require(require)),
         TranslatedStage::Reduce(reduce) => {
             let mut typed_reducers = Vec::with_capacity(reduce.assigned_reductions.len());
             for (assigned, reducer) in &reduce.assigned_reductions {

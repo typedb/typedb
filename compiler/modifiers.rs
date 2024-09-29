@@ -30,3 +30,8 @@ pub struct LimitProgram {
     pub limit: u64,
     pub output_row_mapping: HashMap<Variable, VariablePosition>,
 }
+
+pub struct RequireProgram {
+    pub required: HashSet<VariablePosition>,
+    pub output_row_mapping: HashMap<Variable, VariablePosition>,
+}

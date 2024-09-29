@@ -4,8 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use std::cmp::Ordering;
-
-use compiler::modifiers::{LimitProgram, OffsetProgram, SelectProgram, SortProgram};
+use std::collections::HashSet;
+use answer::variable_value::VariableValue;
+use compiler::modifiers::{LimitProgram, OffsetProgram, RequireProgram, SelectProgram, SortProgram};
+use compiler::VariablePosition;
 use ir::program::modifier::SortVariable;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
@@ -278,5 +280,73 @@ where
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.previous.next()
+    }
+}
+
+// Require
+pub struct RequireStageExecutor<PreviousStage> {
+    require_program: RequireProgram,
+    previous: PreviousStage,
+}
+
+impl<PreviousStage> RequireStageExecutor<PreviousStage> {
+    pub fn new(require_program: RequireProgram, previous: PreviousStage) -> Self {
+        Self { require_program, previous }
+    }
+}
+
+impl<Snapshot, PreviousStage> StageAPI<Snapshot> for RequireStageExecutor<PreviousStage>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
+{
+    type OutputIterator = RequireStageIterator<PreviousStage::OutputIterator>;
+
+    fn into_iterator(
+        self,
+        interrupt: ExecutionInterrupt,
+    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
+    {
+        let Self { require_program, previous, .. } = self;
+        let (previous_iterator, context) = previous.into_iterator(interrupt)?;
+        Ok((RequireStageIterator::new(previous_iterator, require_program.required), context))
+    }
+}
+
+pub struct RequireStageIterator<PreviousIterator> {
+    required: HashSet<VariablePosition>,
+    previous: PreviousIterator,
+}
+
+impl<PreviousIterator> RequireStageIterator<PreviousIterator> {
+    fn new(previous: PreviousIterator, required: HashSet<VariablePosition>) -> Self {
+        Self { required: required, previous }
+    }
+}
+
+impl<PreviousIterator> StageIterator for RequireStageIterator<PreviousIterator> where PreviousIterator: StageIterator {}
+
+impl<PreviousIterator> LendingIterator for RequireStageIterator<PreviousIterator>
+where
+    PreviousIterator: StageIterator,
+{
+    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        loop {
+            let next = self.previous.next();
+            match next {
+                None => { return None; }
+                Some(Err(err)) => { return Some(Err(err)); }
+                Some(Ok(row)) => {
+                    for pos in self.required.iter() {
+                        if matches!(row.get(*pos), &VariableValue::Empty) {
+                            continue;
+                        }
+                    }
+                    return Some(Ok(row));
+                }
+            }
+        }
     }
 }

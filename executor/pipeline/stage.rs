@@ -28,6 +28,7 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
+use crate::pipeline::modifiers::{RequireStageExecutor, RequireStageIterator};
 
 #[derive(Debug)]
 pub struct ExecutionContext<Snapshot> {
@@ -100,10 +101,11 @@ pub trait StageIterator:
 pub enum ReadPipelineStage<Snapshot: ReadableSnapshot + 'static> {
     Initial(InitialStage<Snapshot>),
     Match(Box<MatchStageExecutor<ReadPipelineStage<Snapshot>>>),
+    Select(Box<SelectStageExecutor<ReadPipelineStage<Snapshot>>>),
     Sort(Box<SortStageExecutor<ReadPipelineStage<Snapshot>>>),
     Limit(Box<LimitStageExecutor<ReadPipelineStage<Snapshot>>>),
     Offset(Box<OffsetStageExecutor<ReadPipelineStage<Snapshot>>>),
-    Select(Box<SelectStageExecutor<ReadPipelineStage<Snapshot>>>),
+    Require(Box<RequireStageExecutor<ReadPipelineStage<Snapshot>>>),
     Reduce(Box<ReduceStageExecutor<ReadPipelineStage<Snapshot>>>),
 }
 
@@ -114,6 +116,7 @@ pub enum ReadStageIterator<Snapshot: ReadableSnapshot + 'static> {
     Limit(Box<LimitStageIterator<ReadStageIterator<Snapshot>>>),
     Offset(Box<OffsetStageIterator<ReadStageIterator<Snapshot>>>),
     Select(Box<SelectStageIterator<ReadStageIterator<Snapshot>>>),
+    Require(Box<RequireStageIterator<ReadStageIterator<Snapshot>>>),
     Reduce(Box<WrittenRowsIterator>), // TODO: ReduceStageIterator<ReadStageIterator<Snapshot>>>
 }
 
@@ -150,6 +153,10 @@ impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineSt
                 let (iterator, snapshot) = stage.into_iterator(interrupt)?;
                 Ok((ReadStageIterator::Select(Box::new(iterator)), snapshot))
             }
+            ReadPipelineStage::Require(stage) => {
+                let (iterator, snapshot) = stage.into_iterator(interrupt)?;
+                Ok((ReadStageIterator::Require(Box::new(iterator)), snapshot))
+            }
             ReadPipelineStage::Reduce(stage) => {
                 let (iterator, snapshot) = stage.into_iterator(interrupt)?;
                 Ok((ReadStageIterator::Reduce(Box::new(iterator)), snapshot))
@@ -169,6 +176,7 @@ impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for ReadStageIterator
             ReadStageIterator::Offset(iterator) => iterator.next(),
             ReadStageIterator::Limit(iterator) => iterator.next(),
             ReadStageIterator::Select(iterator) => iterator.next(),
+            ReadStageIterator::Require(iterator) => iterator.next(),
             ReadStageIterator::Reduce(iterator) => iterator.next(),
         }
     }
@@ -183,6 +191,7 @@ impl<Snapshot: ReadableSnapshot + 'static> StageIterator for ReadStageIterator<S
             ReadStageIterator::Offset(iterator) => iterator.collect_owned(),
             ReadStageIterator::Limit(iterator) => iterator.collect_owned(),
             ReadStageIterator::Select(iterator) => iterator.collect_owned(),
+            ReadStageIterator::Require(iterator) => iterator.collect_owned(),
             ReadStageIterator::Reduce(iterator) => iterator.collect_owned(),
         }
     }
@@ -197,6 +206,7 @@ pub enum WritePipelineStage<Snapshot: WritableSnapshot + 'static> {
     Limit(Box<LimitStageExecutor<WritePipelineStage<Snapshot>>>),
     Offset(Box<OffsetStageExecutor<WritePipelineStage<Snapshot>>>),
     Select(Box<SelectStageExecutor<WritePipelineStage<Snapshot>>>),
+    Require(Box<RequireStageExecutor<WritePipelineStage<Snapshot>>>),
     Reduce(Box<ReduceStageExecutor<WritePipelineStage<Snapshot>>>),
 }
 
@@ -241,6 +251,10 @@ impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineS
                 let (iterator, snapshot) = stage.into_iterator(interrupt)?;
                 Ok((WriteStageIterator::Select(Box::new(iterator)), snapshot))
             }
+            WritePipelineStage::Require(stage) => {
+                let (iterator, snapshot) = stage.into_iterator(interrupt)?;
+                Ok((WriteStageIterator::Require(Box::new(iterator)), snapshot))
+            }
             WritePipelineStage::Reduce(stage) => {
                 let (iterator, snapshot) = stage.into_iterator(interrupt)?;
                 Ok((WriteStageIterator::Reduce(iterator), snapshot))
@@ -257,6 +271,7 @@ pub enum WriteStageIterator<Snapshot: WritableSnapshot + 'static> {
     Limit(Box<LimitStageIterator<WriteStageIterator<Snapshot>>>),
     Offset(Box<OffsetStageIterator<WriteStageIterator<Snapshot>>>),
     Select(Box<SelectStageIterator<WriteStageIterator<Snapshot>>>),
+    Require(Box<RequireStageIterator<WriteStageIterator<Snapshot>>>),
     Reduce(WrittenRowsIterator),
 }
 
@@ -272,6 +287,7 @@ impl<Snapshot: WritableSnapshot + 'static> LendingIterator for WriteStageIterato
             WriteStageIterator::Limit(iterator) => iterator.next(),
             WriteStageIterator::Offset(iterator) => iterator.next(),
             WriteStageIterator::Select(iterator) => iterator.next(),
+            WriteStageIterator::Require(iterator) => iterator.next(),
             WriteStageIterator::Reduce(iterator) => iterator.next(),
         }
     }
@@ -287,6 +303,7 @@ impl<Snapshot: WritableSnapshot + 'static> StageIterator for WriteStageIterator<
             WriteStageIterator::Limit(iterator) => iterator.collect_owned(),
             WriteStageIterator::Offset(iterator) => iterator.collect_owned(),
             WriteStageIterator::Select(iterator) => iterator.collect_owned(),
+            WriteStageIterator::Require(iterator) => iterator.collect_owned(),
             WriteStageIterator::Reduce(iterator) => iterator.collect_owned(),
         }
     }
