@@ -7,6 +7,7 @@
 use std::{collections::HashMap, fmt};
 
 use answer::variable::Variable;
+use encoding::value;
 use itertools::Itertools;
 
 use crate::{
@@ -321,7 +322,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
         if let Some(attribute_type) = attribute_type_var {
             debug_assert!(self.context.is_variable_available(self.constraints.scope, attribute_type));
-            self.context.set_variable_category(attribute_type, VariableCategory::ThingType, owns.clone())?;
+            self.context.set_variable_category(attribute_type, VariableCategory::AttributeType, owns.clone())?;
         };
 
         let constraint = self.constraints.add_constraint(owns);

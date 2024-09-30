@@ -28,8 +28,8 @@ use compiler::{
 };
 use encoding::value::label::Label;
 use executor::{
-    error::ReadExecutionError, pipeline::stage::ExecutionContext, program_executor::ProgramExecutor,
-    row::MaybeOwnedRow, ExecutionInterrupt,
+    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    ExecutionInterrupt,
 };
 use ir::{
     pattern::{constraint::IsaKind, Vertex},
@@ -124,7 +124,7 @@ fn traverse_isa_unbounded_sorted_thing() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -135,7 +135,7 @@ fn traverse_isa_unbounded_sorted_thing() {
 
     for row in rows {
         let row = row.unwrap();
-        assert_eq!(row.get_multiplicity(), 1);
+        assert_eq!(row.multiplicity(), 1);
         print!("{}", row);
     }
 }
@@ -193,7 +193,7 @@ fn traverse_isa_unbounded_sorted_type() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -204,7 +204,7 @@ fn traverse_isa_unbounded_sorted_type() {
 
     for row in rows {
         let row = row.unwrap();
-        assert_eq!(row.get_multiplicity(), 1);
+        assert_eq!(row.multiplicity(), 1);
         print!("{}", row);
     }
 }
@@ -277,7 +277,7 @@ fn traverse_isa_bounded_thing() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -292,7 +292,7 @@ fn traverse_isa_bounded_thing() {
 
     for row in rows {
         let row = row.unwrap();
-        assert_eq!(row.get_multiplicity(), 1);
+        assert_eq!(row.multiplicity(), 1);
         print!("{}", row);
     }
 }
@@ -350,7 +350,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -361,7 +361,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
 
     for row in rows {
         let row = row.unwrap();
-        assert_eq!(row.get_multiplicity(), 1);
+        assert_eq!(row.multiplicity(), 1);
         print!("{}", row);
     }
 }
@@ -419,7 +419,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -430,7 +430,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
 
     for row in rows {
         let row = row.unwrap();
-        assert_eq!(row.get_multiplicity(), 1);
+        assert_eq!(row.multiplicity(), 1);
         print!("{}", row);
     }
 }
@@ -502,7 +502,7 @@ fn traverse_isa_reverse_bounded_type_exact() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -517,7 +517,7 @@ fn traverse_isa_reverse_bounded_type_exact() {
     assert_eq!(rows.len(), 14);
     for row in &rows {
         let row = row.as_ref().unwrap();
-        assert_eq!(row.get_multiplicity(), 1);
+        assert_eq!(row.multiplicity(), 1);
         print!("{}", row);
     }
 }
@@ -589,7 +589,7 @@ fn traverse_isa_reverse_bounded_type_subtype() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -599,7 +599,7 @@ fn traverse_isa_reverse_bounded_type_subtype() {
 
     for row in &rows {
         let row = row.as_ref().unwrap();
-        assert_eq!(row.get_multiplicity(), 1);
+        assert_eq!(row.multiplicity(), 1);
         print!("{}", row);
     }
 
@@ -662,7 +662,7 @@ fn traverse_isa_reverse_fixed_type_exact() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -672,7 +672,7 @@ fn traverse_isa_reverse_fixed_type_exact() {
 
     for row in &rows {
         let row = row.as_ref().unwrap();
-        assert_eq!(row.get_multiplicity(), 1);
+        assert_eq!(row.multiplicity(), 1);
         print!("{}", row);
     }
 
@@ -734,7 +734,7 @@ fn traverse_isa_reverse_fixed_type_subtype() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -744,7 +744,7 @@ fn traverse_isa_reverse_fixed_type_subtype() {
 
     for row in &rows {
         let row = row.as_ref().unwrap();
-        assert_eq!(row.get_multiplicity(), 1);
+        assert_eq!(row.multiplicity(), 1);
         print!("{}", row);
     }
 

@@ -4,9 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-// jk there's no planning to be done here, just execution.
-// There is a need to construct the executor though.
-
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
@@ -63,9 +60,9 @@ pub fn compile(
     add_has(constraints, &variables, &mut connection_inserts)?;
     add_role_players(constraints, type_annotations, &variables, &mut connection_inserts)?;
 
-    let output_width = variables.iter().map(|(_, i)| i.position + 1).max().unwrap_or(0);
+    let output_width = variables.values().map(|i| i.position + 1).max().unwrap_or(0);
     let mut output_row_schema = vec![None; output_width as usize];
-    variables.iter().map(|(v, i)| (i, v)).sorted().for_each(|(&i, &v)| {
+    variables.iter().map(|(v, i)| (i, v)).for_each(|(&i, &v)| {
         output_row_schema[i.position as usize] = Some((v, VariableSource::InputVariable(i)));
     });
 
@@ -83,12 +80,13 @@ fn add_inserted_concepts(
     type_annotations: &TypeAnnotations,
     vertex_instructions: &mut Vec<ConceptInstruction>,
 ) -> Result<HashMap<Variable, VariablePosition>, WriteCompilationError> {
-    let first_inserted_variable_position: usize =
-        input_variables.iter().map(|(_, pos)| pos.position + 1).max().unwrap_or(0) as usize;
+    let first_inserted_variable_position =
+        input_variables.values().map(|pos| pos.position + 1).max().unwrap_or(0) as usize;
     let mut output_variables = input_variables.clone();
     let type_bindings = collect_type_bindings(constraints, type_annotations)?;
     let value_bindings = collect_value_bindings(constraints)?;
-    filter_variants!(Constraint::Isa : constraints).try_for_each(|isa| {
+
+    for isa in filter_variants!(Constraint::Isa: constraints) {
         let &Vertex::Variable(thing) = isa.thing() else { unreachable!() };
 
         if input_variables.contains_key(&thing) {
@@ -135,10 +133,10 @@ fn add_inserted_concepts(
                 if let Some(&position) = input_variables.get(&variable) {
                     ValueSource::Variable(position)
                 } else {
-                    return Err(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute { variable: thing })?;
+                    return Err(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute { variable: thing });
                 }
             } else {
-                return Err(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute { variable: thing })?;
+                return Err(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute { variable: thing });
             };
             let write_to = VariablePosition::new((first_inserted_variable_position + vertex_instructions.len()) as u32);
             output_variables.insert(thing, write_to);
@@ -146,8 +144,7 @@ fn add_inserted_concepts(
                 ConceptInstruction::PutAttribute(PutAttribute { type_, value, write_to: ThingSource(write_to) });
             vertex_instructions.push(instruction);
         };
-        Ok(())
-    })?;
+    }
     Ok(output_variables)
 }
 
@@ -171,7 +168,7 @@ fn add_role_players(
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), WriteCompilationError> {
     let named_role_types = collect_role_type_bindings(constraints, type_annotations)?;
-    filter_variants!(Constraint::Links: constraints).try_for_each(|role_player| {
+    for role_player in filter_variants!(Constraint::Links: constraints) {
         let relation = get_thing_source(input_variables, role_player.relation().as_variable().unwrap())?;
         let player = get_thing_source(input_variables, role_player.player().as_variable().unwrap())?;
         let &Vertex::Variable(role_variable) = role_player.role_type() else { unreachable!() };
@@ -185,14 +182,13 @@ fn add_role_players(
                 if annotations.len() == 1 {
                     TypeSource::Constant(annotations.iter().find(|_| true).unwrap().clone())
                 } else {
-                    return Err(WriteCompilationError::CouldNotUniquelyDetermineRoleType { variable: role_variable })?;
+                    return Err(WriteCompilationError::CouldNotUniquelyDetermineRoleType { variable: role_variable });
                 }
             }
             (Some(_), Some(_)) => unreachable!(),
         };
         instructions.push(ConnectionInstruction::RolePlayer(RolePlayer { relation, player, role }));
-        Ok(())
-    })?;
+    }
     Ok(())
 }
 
@@ -201,7 +197,7 @@ fn resolve_value_variable_for_inserted_attribute(
     variable: Variable,
 ) -> Result<&Vertex<Variable>, WriteCompilationError> {
     // Find the comparison linking thing to value
-    let comparisons = filter_variants!(Constraint::Comparison: constraints)
+    filter_variants!(Constraint::Comparison: constraints)
         .filter_map(|cmp| {
             if cmp.lhs() == &Vertex::Variable(variable) {
                 Some(cmp.rhs())
@@ -211,13 +207,11 @@ fn resolve_value_variable_for_inserted_attribute(
                 None
             }
         })
-        .collect_vec();
-    if comparisons.len() == 1 {
-        Ok(comparisons[0])
-    } else {
-        debug_assert!(comparisons.is_empty());
-        Err(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute { variable })
-    }
+        .exactly_one()
+        .map_err(|mut err| {
+            debug_assert_eq!(err.next(), None);
+            WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute { variable }
+        })
 }
 
 fn collect_value_bindings(

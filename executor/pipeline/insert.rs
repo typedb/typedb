@@ -26,9 +26,9 @@ use crate::{
     ExecutionInterrupt,
 };
 
-pub struct InsertStageExecutor<PreviouStage> {
+pub struct InsertStageExecutor<PreviousStage> {
     program: InsertProgram,
-    previous: PreviouStage,
+    previous: PreviousStage,
 }
 
 impl<PreviousStage> InsertStageExecutor<PreviousStage> {
@@ -65,6 +65,7 @@ where
         for index in 0..batch.len() {
             // TODO: parallelise -- though this requires our snapshots support parallel writes!
             let mut row = batch.get_row_mut(index);
+
             if let Err(err) =
                 execute_insert(&program, snapshot_mut, &context.thing_manager, &context.parameters, &mut row)
             {
@@ -77,6 +78,7 @@ where
                 }
             }
         }
+
         Ok((WrittenRowsIterator::new(batch), context))
     }
 }

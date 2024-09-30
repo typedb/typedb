@@ -148,7 +148,7 @@ impl Index<ParameterID> for ParameterRegistry {
     type Output = Value<'static>;
 
     fn index(&self, id: ParameterID) -> &Self::Output {
-        self.get(id).unwrap()
+        self.registry.index(&id)
     }
 }
 
@@ -171,8 +171,15 @@ impl ScopeContext {
             Some(variable_scope) => is_equal_or_parent_scope(&self.scope_parents, scope, *variable_scope),
         }
     }
-    pub fn get_variable_scopes(&self) -> impl Iterator<Item = (&Variable, &ScopeId)> + '_ {
-        self.variable_declaration.iter()
+
+    pub fn is_child_scope(&self, child: ScopeId, candidate: ScopeId) -> bool {
+        self.scope_parents
+            .get(&child)
+            .is_some_and(|&parent| candidate == parent || self.is_child_scope(parent, candidate))
+    }
+
+    pub fn get_variable_scopes(&self) -> impl Iterator<Item = (Variable, ScopeId)> + '_ {
+        self.variable_declaration.iter().map(|(&var, &scope)| (var, scope))
     }
 }
 
@@ -288,12 +295,12 @@ impl<'a> BlockContext<'a> {
         category: VariableCategory,
         source: Constraint<Variable>,
     ) -> Result<(), PatternDefinitionError> {
-        self.record_variable_reference(variable.clone());
+        self.record_variable_reference(variable);
         self.variable_registry.set_variable_category(variable, category, VariableCategorySource::Constraint(source))
     }
 
     pub(crate) fn record_variable_reference(&mut self, variable: Variable) {
-        self.referenced_variables.insert(variable.clone());
+        self.referenced_variables.insert(variable);
     }
 
     pub(crate) fn set_variable_is_optional(&mut self, variable: Variable, optional: bool) {

@@ -33,8 +33,8 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, pipeline::stage::ExecutionContext, program_executor::ProgramExecutor,
-    row::MaybeOwnedRow, ExecutionInterrupt,
+    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    ExecutionInterrupt,
 };
 use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
 use lending_iterator::LendingIterator;
@@ -174,7 +174,7 @@ fn traverse_has_unbounded_sorted_from() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -185,7 +185,7 @@ fn traverse_has_unbounded_sorted_from() {
 
     for row in rows {
         let r = row.unwrap();
-        assert_eq!(r.get_multiplicity(), 1);
+        assert_eq!(r.multiplicity(), 1);
         print!("{}", r);
     }
 }
@@ -274,7 +274,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -285,7 +285,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
 
     for row in rows {
         let r = row.unwrap();
-        assert_eq!(r.get_multiplicity(), 1);
+        assert_eq!(r.multiplicity(), 1);
         print!("{}", r);
     }
 }
@@ -364,7 +364,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -375,7 +375,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
 
     for row in rows {
         let r = row.unwrap();
-        assert_eq!(r.get_multiplicity(), 1);
+        assert_eq!(r.multiplicity(), 1);
         print!("{}", r);
     }
 }
@@ -434,7 +434,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let variable_positions = executor.entry_variable_positions().clone();
 
@@ -450,7 +450,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
     for row in rows.iter() {
         let r = row.as_ref().unwrap();
-        assert_eq!(r.get_multiplicity(), 1);
+        assert_eq!(r.multiplicity(), 1);
         print!("{}", r);
     }
     assert_eq!(rows.len(), 10);
@@ -527,7 +527,8 @@ fn traverse_has_reverse_unbounded_sorted_from() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
@@ -537,7 +538,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
 
     for row in rows {
         let r = row.unwrap();
-        assert_eq!(r.get_multiplicity(), 1);
+        assert_eq!(r.multiplicity(), 1);
         print!("{}", r);
     }
 }

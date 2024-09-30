@@ -6,7 +6,7 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use compiler::VariablePosition;
+use compiler::{match_::planner::program_plan::ProgramPlan, VariablePosition};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::pipeline::{
     delete::DeleteStageExecutor,
@@ -98,8 +98,8 @@ impl QueryManager {
             match compiled_stage {
                 CompiledStage::Match(match_program) => {
                     // TODO: Pass expressions & functions
-                    // let program_plan = ProgramPlan::new(match_program, HashMap::new(), HashMap::new());
-                    let match_stage = MatchStageExecutor::new(match_program, last_stage);
+                    let program_plan = ProgramPlan::new(match_program, HashMap::new(), HashMap::new());
+                    let match_stage = MatchStageExecutor::new(program_plan, last_stage);
                     last_stage = ReadPipelineStage::Match(Box::new(match_stage));
                 }
                 CompiledStage::Insert(_) => {
@@ -156,11 +156,12 @@ impl QueryManager {
                 Err(err) => return Err((snapshot, err)),
             };
 
-        let annotated_functions = match function_manager.get_annotated_functions(&snapshot, &type_manager) {
+        // 2: Annotate
+        let annotated_functions = match function_manager.get_annotated_functions(&snapshot, type_manager) {
             Ok(annotated_functions) => annotated_functions,
             Err(err) => return Err((snapshot, QueryError::FunctionRetrieval { typedb_source: err })),
         };
-        // 2: Annotate
+
         let annotated_pipeline = infer_types_for_pipeline(
             &snapshot,
             type_manager,
@@ -170,6 +171,7 @@ impl QueryManager {
             translated_preamble,
             translated_stages,
         );
+
         let AnnotatedPipeline { annotated_preamble, annotated_stages } = match annotated_pipeline {
             Ok(annotated_pipeline) => annotated_pipeline,
             Err(err) => return Err((snapshot, err)),
@@ -195,8 +197,8 @@ impl QueryManager {
             match compiled_stage {
                 CompiledStage::Match(match_program) => {
                     // TODO: Pass expressions & functions
-                    // let program_plan = ProgramPlan::new(match_program, HashMap::new(), HashMap::new());
-                    let match_stage = MatchStageExecutor::new(match_program, previous_stage);
+                    let program_plan = ProgramPlan::new(match_program, HashMap::new(), HashMap::new());
+                    let match_stage = MatchStageExecutor::new(program_plan, previous_stage);
                     previous_stage = WritePipelineStage::Match(Box::new(match_stage));
                 }
                 CompiledStage::Insert(insert_program) => {

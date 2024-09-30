@@ -75,8 +75,8 @@ impl SortStageIterator {
         indices.sort_by(|x, y| {
             let x_row_as_row = unsorted.get_row(*x);
             let y_row_as_row = unsorted.get_row(*y);
-            let x_row = x_row_as_row.get_row();
-            let y_row = y_row_as_row.get_row();
+            let x_row = x_row_as_row.row();
+            let y_row = y_row_as_row.row();
             for (idx, asc) in &sort_by {
                 let ord = x_row[*idx]
                     .partial_cmp(&y_row[*idx])

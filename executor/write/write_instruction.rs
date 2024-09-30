@@ -49,7 +49,13 @@ fn get_value<'a>(input: &'a Row<'_>, parameters: &'a ParameterRegistry, source: 
 }
 
 pub trait AsWriteInstruction {
-    // fn check(&self, snapshot: &mut impl WritableSnapshot, thing_manager: &ThingManager, context: &mut WriteExecutionContext<'_, '_>) -> Result<(), CheckError>;
+    // fn check(
+    //     &self,
+    //     snapshot: &mut impl WritableSnapshot,
+    //     thing_manager: &ThingManager,
+    //     context: &mut WriteExecutionContext<'_, '_>,
+    // ) -> Result<(), CheckError>;
+
     fn execute(
         &self,
         snapshot: &mut impl WritableSnapshot,

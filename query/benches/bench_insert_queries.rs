@@ -25,11 +25,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use executor::{
-    batch::Batch,
-    pipeline::{
-        stage::{StageAPI, StageIterator},
-        PipelineExecutionError,
-    },
+    pipeline::stage::{StageAPI, StageIterator},
     ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
