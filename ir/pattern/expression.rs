@@ -170,7 +170,7 @@ impl<ID: IrID> ListIndex<ID> {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ListConstructor {
     item_expression_ids: Vec<ExpressionTreeNodeId>,
-    len_id: ParameterID
+    len_id: ParameterID,
 }
 
 impl ListConstructor {
