@@ -339,8 +339,10 @@ impl ThingPlanner {
     ) -> Self {
         let expected_size = type_annotations
             .vertex_annotations_of(&Vertex::Variable(variable))
-            .expect("expected thing variable to have been annotated with types")
+            // TODO proper fix for input variables (expected size = 1)
+            // .expect("expected thing variable to have been annotated with types")
             .iter()
+            .flat_map(|types| types.iter())
             .filter_map(|type_| match type_ {
                 answer::Type::Entity(type_) => statistics.entity_counts.get(type_),
                 answer::Type::Relation(type_) => statistics.relation_counts.get(type_),

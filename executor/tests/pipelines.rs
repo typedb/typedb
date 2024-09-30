@@ -18,20 +18,13 @@ use executor::{
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
-use storage::{
-    durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot},
-    MVCCStorage,
-};
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils::{assert_matches, TempDir};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
-const PERSON_LABEL: Label = Label::new_static("person");
 const AGE_LABEL: Label = Label::new_static("age");
-const NAME_LABEL: Label = Label::new_static("name");
 const MEMBERSHIP_LABEL: Label = Label::new_static("membership");
-const MEMBERSHIP_MEMBER_LABEL: Label = Label::new_static_scoped("member", "membership", "membership:member");
 
 struct Context {
     storage: Arc<MVCCStorage<WALClient>>,
@@ -39,11 +32,11 @@ struct Context {
     thing_manager: Arc<ThingManager>,
     function_manager: FunctionManager,
     query_manager: QueryManager,
-    tmp_dir: TempDir,
+    _tmp_dir: TempDir,
 }
 
 fn setup_common() -> Context {
-    let (tmp_dir, mut storage) = create_core_storage();
+    let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -60,11 +53,11 @@ fn setup_common() -> Context {
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(schema).unwrap().into_schema();
     query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, define).unwrap();
-    let seq = snapshot.commit().unwrap();
+    snapshot.commit().unwrap();
 
     // reload to obtain latest vertex generators and statistics entries
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    Context { tmp_dir, storage, type_manager, function_manager, query_manager, thing_manager }
+    Context { _tmp_dir, storage, type_manager, function_manager, query_manager, thing_manager }
 }
 
 #[test]
@@ -83,6 +76,7 @@ fn test_insert() {
             &query,
         )
         .unwrap();
+
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     assert_matches!(iterator.next(), Some(Ok(_)));
@@ -110,31 +104,27 @@ fn test_insert_insert() {
         (group: $org, member: $p) isa membership;
     "#;
     let query = typeql::parse_query(query_str).unwrap().into_pipeline();
-    let pipeline = context.query_manager.prepare_write_pipeline(
-        snapshot,
-        &context.type_manager,
-        context.thing_manager.clone(),
-        &context.function_manager,
-        &query,
-    );
-    if let Err((_, err)) = pipeline {
-        dbg!(err);
-    }
+    let (pipeline, _) = context
+        .query_manager
+        .prepare_write_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            &context.function_manager,
+            &query,
+        )
+        .unwrap();
 
-    // let (mut iterator, snapshot) = pipeline.into_iterator().unwrap();
-    // let row = iterator.next();
-    // assert_matches!(&row, &Some(Ok(_)));
-    // assert_eq!(row.unwrap().unwrap().len(), 3);
-    // assert_matches!(iterator.next(), None);
-    // let snapshot = Arc::into_inner(snapshot).unwrap();
-    // snapshot.commit().unwrap();
+    let (mut iterator, ExecutionContext { snapshot, .. }) =
+        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    while iterator.next().is_some() {}
+    let snapshot = Arc::into_inner(snapshot).unwrap();
+    snapshot.commit().unwrap();
 
-    {
-        let snapshot = context.storage.clone().open_snapshot_read();
-        let membership_type = context.type_manager.get_relation_type(&snapshot, &MEMBERSHIP_LABEL).unwrap().unwrap();
-        assert_eq!(context.thing_manager.get_relations_in(&snapshot, membership_type).count(), 1);
-        snapshot.close_resources()
-    }
+    let snapshot = context.storage.clone().open_snapshot_read();
+    let membership_type = context.type_manager.get_relation_type(&snapshot, &MEMBERSHIP_LABEL).unwrap().unwrap();
+    assert_eq!(context.thing_manager.get_relations_in(&snapshot, membership_type).count(), 1);
+    snapshot.close_resources()
 }
 
 #[test]
@@ -375,7 +365,7 @@ fn test_insert_match_insert() {
     "#;
 
     let query = typeql::parse_query(query_str).unwrap().into_pipeline();
-    let pipeline = context
+    let (pipeline, _) = context
         .query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -385,6 +375,12 @@ fn test_insert_match_insert() {
             &query,
         )
         .unwrap();
+
+    let (mut iterator, ExecutionContext { snapshot, .. }) =
+        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    while iterator.next().is_some() {}
+    let snapshot = Arc::into_inner(snapshot).unwrap();
+    snapshot.commit().unwrap();
 
     let snapshot = context.storage.clone().open_snapshot_read();
     let membership_type = context.type_manager.get_relation_type(&snapshot, &MEMBERSHIP_LABEL).unwrap().unwrap();
@@ -434,15 +430,14 @@ fn test_match_sort() {
 
     let batch = iterator.collect_owned().unwrap();
     assert_eq!(batch.len(), 4);
-    let pos = named_outputs.get("age").unwrap().clone();
-    let mut batch_iter = batch.into_iterator_mut();
+    let pos = named_outputs["age"];
+    let batch_iter = batch.into_iterator_mut();
     let values = batch_iter
         .map_static(move |res| {
-            let snapshot_borrow: &ReadSnapshot<WALClient> = &snapshot; // Can't get it to compile inline
             res.get(pos)
                 .as_thing()
                 .as_attribute()
-                .get_value(snapshot_borrow, &context.thing_manager)
+                .get_value(&*snapshot, &context.thing_manager)
                 .clone()
                 .unwrap()
                 .unwrap_long()
@@ -481,7 +476,7 @@ fn test_select() {
         let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
         let query = "match $p isa person, has name \"Alice\", has age $age;";
         let match_ = typeql::parse_query(query).unwrap().into_pipeline();
-        let (pipeline, named_outputs) = context
+        let (_, named_outputs) = context
             .query_manager
             .prepare_read_pipeline(
                 snapshot,
@@ -498,7 +493,7 @@ fn test_select() {
         let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
         let query = "match $p isa person, has name \"Alice\", has age $age; select $age;";
         let match_ = typeql::parse_query(query).unwrap().into_pipeline();
-        let (pipeline, named_outputs) = context
+        let (_, named_outputs) = context
             .query_manager
             .prepare_read_pipeline(
                 snapshot,

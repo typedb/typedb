@@ -156,11 +156,12 @@ impl QueryManager {
                 Err(err) => return Err((snapshot, err)),
             };
 
-        let annotated_functions = match function_manager.get_annotated_functions(&snapshot, &type_manager) {
+        // 2: Annotate
+        let annotated_functions = match function_manager.get_annotated_functions(&snapshot, type_manager) {
             Ok(annotated_functions) => annotated_functions,
             Err(err) => return Err((snapshot, QueryError::FunctionRetrieval { typedb_source: err })),
         };
-        // 2: Annotate
+
         let annotated_pipeline = infer_types_for_pipeline(
             &snapshot,
             type_manager,
@@ -170,6 +171,7 @@ impl QueryManager {
             translated_preamble,
             translated_stages,
         );
+
         let AnnotatedPipeline { annotated_preamble, annotated_stages } = match annotated_pipeline {
             Ok(annotated_pipeline) => annotated_pipeline,
             Err(err) => return Err((snapshot, err)),
