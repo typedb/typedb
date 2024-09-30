@@ -296,7 +296,7 @@ impl<'a> BlockContext<'a> {
         source: Constraint<Variable>,
     ) -> Result<(), PatternDefinitionError> {
         self.record_variable_reference(variable);
-        self.variable_registry.set_variable_category(variable, category, source)
+        self.variable_registry.set_variable_category(variable, category, VariableCategorySource::Constraint(source))
     }
 
     pub(crate) fn record_variable_reference(&mut self, variable: Variable) {
