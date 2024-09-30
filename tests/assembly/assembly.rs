@@ -45,18 +45,21 @@ fn test_assembly() {
     if !extract_output.status.success() {
         panic!("{:?}", extract_output);
     }
-    let server_process =
-        build_cmd("typedb-extracted/typedb_server_bin").spawn().expect("Failed to spawn server process");
-    let test_result = run_test_against_server();
+    let server_process = build_cmd("typedb-extracted/typedb server").spawn().expect("Failed to spawn server process");
+    let console_process_output = run_test_against_server();
     let server_process_output = kill_process(server_process);
 
-    if test_result.is_err() {
+    if !console_process_output.status.success() {
+        println!("Test failed:");
+        println!("Console process output:\n{:?}", console_process_output);
         println!("Server process output:\n{:?}", server_process_output);
-        test_result.unwrap();
+        assert!(false);
     }
 }
 
-fn run_test_against_server() -> Result<(), ()> {
-    // TODO
-    Ok(())
+fn run_test_against_server() -> Output {
+    let console_script_result = build_cmd("typedb-extracted/typedb console --script=tests/assembly/script.tql")
+        .output()
+        .expect("Failed to run console script");
+    console_script_result
 }
