@@ -937,9 +937,9 @@ _System property_
 
 * 🔷 _stream-return function_ definition takes the form: 
     ```
-    fun F <SINGLE_FUN_SIGNATURE>:
-    <FUN_PIPELINE>
-    <SINGLE_FUN_RETURN> 
+    fun F <SIGNATURE_STREAM_FUN>:
+    <READ_PIPELINE_FUN>
+    <RETURN_STREAM_FUN> 
     ```
 
 _Note_ See "Function behavior" for details on this syntax.
@@ -947,9 +947,9 @@ _Note_ See "Function behavior" for details on this syntax.
 #### **Case SINGLE_RET_FUN_DEF**
 * 🔷 _single-return function_ definition takes the form: 
     ```
-    fun f <SINGLE_FUN_SIGNATURE>:
-    <FUN_PIPELINE>
-    <SINGLE_FUN_RETURN> 
+    fun f <SIGNATURE_SINGLE_FUN>:
+    <READ_PIPELINE_FUN>
+    <RETURN_SINGLE_FUN> 
     ```
 
 _Note_ See "Function behavior" for details.
@@ -1980,20 +1980,20 @@ _STICKY: allow types to be optional in args (this extends types to sum types, in
 
 _Terminology_ If the function returns a single types (`C`) then we call it a **singleton** function.
 
-#### **Case PIPELINE_FUN**
+#### **Case READ_PIPELINE_FUN**
 
 * 🔶 Function body syntax:
     _Syntax_:
     ```
-    <PIPELINE>
+    <READ_PIPELINE>
     ```
 
 _System property_
 
-* 🔶 _Read only_. Pipeline must be read-only.
+* 🔶 _Read only_. Pipeline must be read-only, i.e. cannot use write clauses (`insert`, `delete`, `update`, `put`)
 * 🔶 _Require crow stream output_ Pipeline must be non-terminal (e.g. cannot end in `fetch`).
 
-#### **Case STREAM_RETURN_FUN**
+#### **Case RETURN_STREAM_FUN**
 
 * 🔶 Function return syntax:
     _Syntax_:
@@ -2004,7 +2004,7 @@ _System property_
 
 * 🔶 _Require bindings_ all vars (`$x`, `$y`, ...) must be bound in the pipeline (taken into account any variable selections through `select` and `reduce` operators).
 
-#### **Case SINGLE_RETURN_FUN**
+#### **Case RETURN_SINGLE_FUN**
 
 * 🔶 Function body syntax:
     _Syntax_:
@@ -2020,10 +2020,23 @@ _System property_
 
 * 🔶 _Require bindings_ all vars (`$x`, `$y`, ...) must be bound in the pipeline (taken into account any variable selections through `select` and `reduce` operators).
 
+#### **Case AGG_RETURN_FUN**
+
+* 🔶 The syntax 
+    _Syntax_:
+    ```
+    return <AGG>, ..., <AGG>;
+    ```
+    is short-hand for:
+    ```
+    return $_1 = <AGG>, ..., $_n = <AGG>;
+    return first $_1, ..., $_n;
+    ```
+
 ### (Theory) Function evaluation
 
 * A function `F` counts as ***evaluated*** on a call `F_CALL` when we completely computed its output stream as follows:
-    1. provide input arguments from the call `F_CALL` as a single crow, which is the starting point of the body `PIPELINE`
+    1. provide input arguments from the call `F_CALL` as a single crow, which is the starting point of the body `READ_PIPELINE`
     2. Then act like an ordinary pipeline, outputting a stream (see "Pipelines")
     3. perform `return` transformation outlined below for final output which is effectively a `select`.
         4. For **single-return** functions we first pick the **first**, **last** or a **random** crow in the stream, making the final output an at-most-single-row output
@@ -2447,11 +2460,20 @@ _System property_
 
 1. 🔶 fails transaction if $`T_r(x)`$ does not own $`[A]`$.
 
+#### **Case FETCH_ALL_ATTR**
+* 🔶 `"key": { $x.* }` where  $`A : \mathbf{Att}`$
+
+_System property_
+
+1. 🔶 returns document of KV-pairs
+    * `"att_label" : [ <atts> ]` and
+    * `"att_label[]" : <att-list>`.
+
 #### **Case FETCH_SNGL_FUN**
-* 🔶 `"key": fun(...)` where `fun` is single-return.
+* 🔶 `"key": fun(...)` where `fun` is **scalar** (i.e. non-tuple) single-return.
 
 #### **Case FETCH_STREAM_FUN**
-* 🔶 `"key": [ fun(...) ]` where `fun` is stream-return.
+* 🔶 `"key": [ fun(...) ]` where `fun` is **scalar** (i.e. non-tuple) stream-return.
 
 _Note_: (STICKY:) what to do if type inference for function args fails based on previous pipeline stages?
 
@@ -2459,7 +2481,7 @@ _Note_: (STICKY:) what to do if type inference for function args fails based on 
 * 🔶 Fetch list of JSON sub-documents:
 ```
 "key": [ 
-  <PIPELINE>
+  <READ_PIPELINE>
   fetch { <FETCH> }
 ]
 ```
@@ -2468,19 +2490,37 @@ _Note_: (STICKY:) what to do if type inference for function args fails based on 
 * 🔶 Fetch single-value:
 ```
 "key": ( 
-  <PIPELINE>
-  return <SINGLE_RET> <VAR>; 
+  <READ_PIPELINE>
+  return <SINGLE> <VAR>; 
 )
 ```
 
-#### **Case FETCH_REDUCE_LIST_VAL** 
+#### **Case FETCH_RETURN_STREAM** 
+* 🔶 Fetch single-value:
+```
+"key": [ 
+  <READ_PIPELINE>
+  return { <VAR> }; 
+]
+```
+
+#### **Case FETCH_RETURN_AGG** 
 * 🔶 Fetch stream as list:
 ```
 "key": [ 
-  <PIPELINE>
-  reduce <AGG>, ... , <AGG>; 
+  <READ_PIPELINE>
+  return <AGG>, ... , <AGG>; 
 ]
 ```
+
+This is short hand for:
+```
+"key": [ 
+  <PIPELINE>
+  reduce $_1 = <AGG>, ... , $_n = <AGG>; 
+  return first $_1, ..., $_n; 
+]
+``` 
 
 #### **Case FETCH_NESTED**
 * 🔶 Specify JSON sub-document:
