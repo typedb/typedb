@@ -29,7 +29,9 @@ rust_test(
     name = "test_compile_execute",
     crate_root = "compile_execute.rs",
     srcs = ["compile_execute.rs"],
-    deps = deps,
+    deps = deps + [
+        "//query:query",
+    ],
 )
 
 rust_test(
