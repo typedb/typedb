@@ -338,7 +338,58 @@ fn test_match_delete_has() {
 
 #[test]
 fn test_insert_match_insert() {
-    todo!()
+    let context = setup_common();
+    let snapshot = context.storage.clone().open_snapshot_write();
+    let query_str = r#"
+       insert
+       $p isa person, has age 10, has name 'John';
+       $q isa person, has age 20, has name 'Alice';
+       $r isa person, has age 30, has name 'Harry';
+   "#;
+    let query = typeql::parse_query(query_str).unwrap().into_pipeline();
+    let (pipeline, _named_outputs) = context
+        .query_manager
+        .prepare_write_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            &context.function_manager,
+            &query,
+        )
+        .unwrap();
+    let (iterator, ExecutionContext { snapshot, .. }) =
+        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let _ = iterator.count();
+    // must consume iterator to ensure operation completed
+    let snapshot = Arc::into_inner(snapshot).unwrap();
+    snapshot.commit().unwrap();
+
+    let snapshot = context.storage.clone().open_snapshot_write();
+    let query_str = r#"
+    insert
+        $org isa organisation;
+    match
+        $p isa person, has age 10;
+    insert
+        (group: $org, member: $p) isa membership;
+    "#;
+
+    let query = typeql::parse_query(query_str).unwrap().into_pipeline();
+    let pipeline = context
+        .query_manager
+        .prepare_write_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            &context.function_manager,
+            &query,
+        )
+        .unwrap();
+
+    let snapshot = context.storage.clone().open_snapshot_read();
+    let membership_type = context.type_manager.get_relation_type(&snapshot, &MEMBERSHIP_LABEL).unwrap().unwrap();
+    assert_eq!(context.thing_manager.get_relations_in(&snapshot, membership_type).count(), 1);
+    snapshot.close_resources()
 }
 
 #[test]
