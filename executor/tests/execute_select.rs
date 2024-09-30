@@ -30,8 +30,8 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, pipeline::stage::ExecutionContext, program_executor::ProgramExecutor,
-    row::MaybeOwnedRow, ExecutionInterrupt,
+    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    ExecutionInterrupt,
 };
 use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
 use lending_iterator::LendingIterator;
@@ -200,7 +200,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (_, thing_manager) = load_managers(storage.clone(), None);
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -213,9 +213,9 @@ fn anonymous_vars_not_enumerated_or_counted() {
     // person3, <something>
 
     assert_eq!(rows.len(), 3);
-    assert_eq!(rows[0].as_ref().unwrap().get_multiplicity(), 1);
-    assert_eq!(rows[1].as_ref().unwrap().get_multiplicity(), 1);
-    assert_eq!(rows[2].as_ref().unwrap().get_multiplicity(), 1);
+    assert_eq!(rows[0].as_ref().unwrap().multiplicity(), 1);
+    assert_eq!(rows[1].as_ref().unwrap().multiplicity(), 1);
+    assert_eq!(rows[2].as_ref().unwrap().multiplicity(), 1);
 
     for row in rows.iter() {
         let r = row.as_ref().unwrap();
@@ -283,7 +283,7 @@ fn unselected_named_vars_counted() {
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
     let (_, thing_manager) = load_managers(storage.clone(), None);
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -296,9 +296,9 @@ fn unselected_named_vars_counted() {
     // 2x person 3, <something>
 
     assert_eq!(rows.len(), 3);
-    assert_eq!(rows[0].as_ref().unwrap().get_multiplicity(), 7);
-    assert_eq!(rows[1].as_ref().unwrap().get_multiplicity(), 3);
-    assert_eq!(rows[2].as_ref().unwrap().get_multiplicity(), 2);
+    assert_eq!(rows[0].as_ref().unwrap().multiplicity(), 7);
+    assert_eq!(rows[1].as_ref().unwrap().multiplicity(), 3);
+    assert_eq!(rows[2].as_ref().unwrap().multiplicity(), 2);
 
     for row in rows.iter() {
         let r = row.as_ref().unwrap();
@@ -386,7 +386,7 @@ fn cartesian_named_counted_checked() {
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
     let (_, thing_manager) = load_managers(storage.clone(), None);
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -404,7 +404,7 @@ fn cartesian_named_counted_checked() {
     }
 
     assert_eq!(rows.len(), 3);
-    assert_eq!(rows[0].as_ref().unwrap().get_multiplicity(), 2);
-    assert_eq!(rows[1].as_ref().unwrap().get_multiplicity(), 2);
-    assert_eq!(rows[2].as_ref().unwrap().get_multiplicity(), 2);
+    assert_eq!(rows[0].as_ref().unwrap().multiplicity(), 2);
+    assert_eq!(rows[1].as_ref().unwrap().multiplicity(), 2);
+    assert_eq!(rows[2].as_ref().unwrap().multiplicity(), 2);
 }

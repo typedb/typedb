@@ -46,8 +46,8 @@ impl<'a> Row<'a> {
 
     pub(crate) fn copy_from_row(&mut self, row: MaybeOwnedRow<'_>) {
         debug_assert!(self.len() >= row.len());
-        self.row[0..row.len()].clone_from_slice(row.get_row());
-        *self.multiplicity = row.get_multiplicity();
+        self.row[0..row.len()].clone_from_slice(row.row());
+        *self.multiplicity = row.multiplicity();
     }
 
     pub(crate) fn copy_from(&mut self, row: &[VariableValue<'static>], multiplicity: u64) {
@@ -96,6 +96,11 @@ impl<'a> MaybeOwnedRow<'a> {
     }
 
     // TODO: pub(crate)
+    pub fn empty() -> Self {
+        Self { row: Cow::Owned(Vec::new()), multiplicity: Cow::Owned(1) }
+    }
+
+    // TODO: pub(crate)
     pub fn new_owned(row: Vec<VariableValue<'static>>, multiplicity: u64) -> Self {
         Self { row: Cow::Owned(row), multiplicity: Cow::Owned(multiplicity) }
     }
@@ -108,11 +113,11 @@ impl<'a> MaybeOwnedRow<'a> {
         &self.row[position.as_usize()]
     }
 
-    pub fn get_multiplicity(&self) -> u64 {
+    pub fn multiplicity(&self) -> u64 {
         *self.multiplicity.as_ref()
     }
 
-    pub fn get_row(&self) -> &[VariableValue<'static>] {
+    pub fn row(&self) -> &[VariableValue<'static>] {
         self.row.as_ref()
     }
 

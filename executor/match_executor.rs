@@ -10,27 +10,30 @@ use answer::variable::Variable;
 use compiler::match_::planner::program_plan::ProgramPlan;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use encoding::graph::definition::definition_key::DefinitionKey;
-use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    error::ReadExecutionError, function_executor::FunctionExecutor, pattern_executor::PatternExecutor,
-    pipeline::stage::ExecutionContext, row::MaybeOwnedRow, ExecutionInterrupt, VariablePosition,
+    function_executor::FunctionExecutor,
+    pattern_executor::{PatternExecutor, PatternIterator},
+    pipeline::stage::ExecutionContext,
+    row::MaybeOwnedRow,
+    ExecutionInterrupt, VariablePosition,
 };
 
-pub struct ProgramExecutor {
+pub struct MatchExecutor {
     entry: PatternExecutor,
     functions: HashMap<DefinitionKey<'static>, FunctionExecutor>,
 }
 
-impl ProgramExecutor {
+impl MatchExecutor {
     pub fn new(
         program_plan: &ProgramPlan,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
+        input: MaybeOwnedRow<'_>,
     ) -> Result<Self, ConceptReadError> {
         let ProgramPlan { entry: entry_plan, functions: function_plans, entry_value_type_annotations } = program_plan;
-        let entry = PatternExecutor::new(entry_plan, snapshot, thing_manager)?;
+        let entry = PatternExecutor::new(entry_plan, snapshot, thing_manager, input)?;
 
         // TODO: functions
 
@@ -45,11 +48,11 @@ impl ProgramExecutor {
         self.entry.variable_positions_index()
     }
 
-    pub fn into_iterator(
+    pub fn into_iterator<Snapshot: ReadableSnapshot + 'static>(
         self,
-        context: ExecutionContext<impl ReadableSnapshot + 'static>,
+        context: ExecutionContext<Snapshot>,
         interrupt: ExecutionInterrupt,
-    ) -> impl for<'a> LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, &'a ReadExecutionError>> {
+    ) -> PatternIterator<Snapshot> {
         self.entry.into_iterator(context, interrupt)
     }
 }

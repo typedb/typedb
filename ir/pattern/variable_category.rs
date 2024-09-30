@@ -10,6 +10,7 @@ use std::fmt::{Display, Formatter};
 pub enum VariableCategory {
     Type,
     ThingType,
+    AttributeType,
     RoleType,
 
     Thing,
@@ -31,6 +32,13 @@ impl VariableCategory {
             (Self::RoleType, Self::RoleType) => Some(Self::RoleType),
             (Self::RoleType, Self::Type) | (Self::Type, Self::RoleType) => Some(Self::RoleType),
             (Self::RoleType, _) | (_, Self::RoleType) => None,
+
+            (Self::Type, Self::AttributeType) | (Self::AttributeType, Self::Type) => Some(Self::AttributeType),
+            (Self::ThingType, Self::AttributeType) | (Self::AttributeType, Self::ThingType) => {
+                Some(Self::AttributeType)
+            }
+            (Self::AttributeType, Self::AttributeType) => Some(Self::AttributeType),
+            (Self::AttributeType, _) | (_, Self::AttributeType) => None,
 
             (Self::ThingType, Self::ThingType) => Some(Self::ThingType),
             (Self::ThingType, Self::Type) | (Self::Type, Self::ThingType) => Some(Self::ThingType),

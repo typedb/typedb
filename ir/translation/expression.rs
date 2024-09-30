@@ -5,6 +5,7 @@
  */
 
 use answer::variable::Variable;
+use encoding::value::value::Value;
 use typeql::{
     expression::{BuiltinFunctionName, FunctionName},
     token::{ArithmeticOperator, Function},
@@ -82,12 +83,13 @@ fn build_recursive(
             build_function(function_index, constraints, function_call, tree)?
         } // Careful, could be either.
         typeql::Expression::List(list) => {
-            let sub_exprs = list
+            let items = list
                 .items
                 .iter()
                 .map(|sub_expr| build_recursive(function_index, constraints, sub_expr, tree))
                 .collect::<Result<Vec<_>, _>>()?;
-            Expression::List(ListConstructor::new(sub_exprs))
+            let len_id = constraints.parameters().register(Value::Long(items.len() as i64));
+            Expression::List(ListConstructor::new(items, len_id))
         }
         typeql::Expression::ListIndexRange(range) => {
             let list_variable = register_typeql_var(constraints, &range.var)?;

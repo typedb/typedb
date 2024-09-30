@@ -52,7 +52,6 @@ pub(super) enum PlannerVertex {
     Owns(OwnsPlanner),
     Relates(RelatesPlanner),
     Plays(PlaysPlanner),
-    ValueType(ValueTypePlanner),
 }
 
 impl PlannerVertex {
@@ -86,8 +85,7 @@ impl PlannerVertex {
             | Self::Sub(_)
             | Self::Owns(_)
             | Self::Relates(_)
-            | Self::Plays(_)
-            | Self::ValueType(_) => true, // always valid: iterators
+            | Self::Plays(_) => true, // always valid: iterators
         }
     }
 
@@ -149,7 +147,6 @@ impl PlannerVertex {
             PlannerVertex::Owns(inner) => inner.unbound_direction,
             PlannerVertex::Relates(inner) => inner.unbound_direction,
             PlannerVertex::Plays(inner) => inner.unbound_direction,
-            PlannerVertex::ValueType(_) => todo!(),
         }
     }
 
@@ -172,7 +169,6 @@ impl PlannerVertex {
             Self::Owns(inner) => inner.variables(),
             Self::Relates(inner) => inner.variables(),
             Self::Plays(inner) => inner.variables(),
-            Self::ValueType(inner) => inner.variables(),
         }
     }
 
@@ -195,7 +191,6 @@ impl PlannerVertex {
             Self::Owns(_inner) => todo!(),
             Self::Relates(_inner) => todo!(),
             Self::Plays(_inner) => todo!(),
-            Self::ValueType(_inner) => todo!(),
         }
     }
 
@@ -224,6 +219,10 @@ impl PlannerVertex {
             Self::Thing(inner) => inner.add_upper_bound(other),
             _ => todo!(),
         }
+    }
+
+    pub(super) fn is_variable(&self) -> bool {
+        matches!(self, Self::Thing(_) | Self::Type(_) | Self::Value(_))
     }
 }
 
@@ -264,7 +263,6 @@ impl Costed for PlannerVertex {
             Self::Owns(inner) => inner.cost(inputs, elements),
             Self::Relates(inner) => inner.cost(inputs, elements),
             Self::Plays(inner) => inner.cost(inputs, elements),
-            Self::ValueType(inner) => inner.cost(inputs, elements),
         }
     }
 }
@@ -341,8 +339,10 @@ impl ThingPlanner {
     ) -> Self {
         let expected_size = type_annotations
             .vertex_annotations_of(&Vertex::Variable(variable))
-            .expect("expected thing variable to have been annotated with types")
+            // TODO proper fix for input variables (expected size = 1)
+            // .expect("expected thing variable to have been annotated with types")
             .iter()
+            .flat_map(|types| types.iter())
             .filter_map(|type_| match type_ {
                 answer::Type::Entity(type_) => statistics.entity_counts.get(type_),
                 answer::Type::Relation(type_) => statistics.relation_counts.get(type_),
@@ -869,21 +869,6 @@ impl PlaysPlanner {
 }
 
 impl Costed for PlaysPlanner {
-    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
-        VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
-    }
-}
-
-#[derive(Debug)]
-pub(super) struct ValueTypePlanner {}
-
-impl ValueTypePlanner {
-    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
-        [None; 3].into_iter().flatten()
-    }
-}
-
-impl Costed for ValueTypePlanner {
     fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
         VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
     }

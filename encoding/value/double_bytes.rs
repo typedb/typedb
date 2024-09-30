@@ -4,8 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use super::primitive_encoding::decode_u64;
-use crate::{graph::thing::vertex_attribute::AttributeIDLength, value::primitive_encoding::encode_u64};
+use crate::{
+    graph::thing::vertex_attribute::AttributeIDLength,
+    value::primitive_encoding::{decode_u64, encode_u64},
+};
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub struct DoubleBytes {

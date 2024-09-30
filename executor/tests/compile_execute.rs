@@ -5,7 +5,6 @@
  */
 
 use std::{
-    borrow::Cow,
     collections::{BTreeMap, HashMap},
     sync::Arc,
 };
@@ -18,29 +17,58 @@ use compiler::match_::{
     planner::{pattern_plan::MatchProgram, program_plan::ProgramPlan},
 };
 use concept::{
-    thing::{object::ObjectAPI, statistics::Statistics},
-    type_::{
-        annotation::AnnotationCardinality, owns::OwnsAnnotation, relates::RelatesAnnotation, Ordering, OwnerAPI,
-        PlayerAPI,
-    },
+    thing::{statistics::Statistics, thing_manager::ThingManager},
+    type_::type_manager::TypeManager,
 };
-use encoding::value::{label::Label, value::Value, value_type::ValueType};
-use executor::{pipeline::stage::ExecutionContext, program_executor::ProgramExecutor, ExecutionInterrupt};
+use executor::{
+    match_executor::MatchExecutor,
+    pipeline::stage::{ExecutionContext, StageAPI},
+    row::MaybeOwnedRow,
+    ExecutionInterrupt,
+};
+use function::function_manager::FunctionManager;
 use ir::{
     program::function_signature::HashMapFunctionSignatureIndex,
     translation::{match_::translate_match, TranslationContext},
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
-use storage::{sequence_number::SequenceNumber, snapshot::CommittableSnapshot};
+use query::query_manager::QueryManager;
+use storage::{
+    durability_client::WALClient, sequence_number::SequenceNumber, snapshot::CommittableSnapshot, MVCCStorage,
+};
+use test_utils::assert_matches;
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
-const PERSON_LABEL: Label = Label::new_static("person");
-const AGE_LABEL: Label = Label::new_static("age");
-const NAME_LABEL: Label = Label::new_static("name");
-const MEMBERSHIP_LABEL: Label = Label::new_static("membership");
-const MEMBERSHIP_MEMBER_LABEL: Label = Label::new_static_scoped("member", "membership", "membership:member");
+fn setup(
+    storage: &Arc<MVCCStorage<WALClient>>,
+    type_manager: Arc<TypeManager>,
+    thing_manager: Arc<ThingManager>,
+    schema: &str,
+    data: &str,
+) -> Statistics {
+    let mut snapshot = storage.clone().open_snapshot_schema();
+    let define = typeql::parse_query(schema).unwrap().into_schema();
+    QueryManager {}.execute_schema(&mut snapshot, &type_manager, &thing_manager, define).unwrap();
+    snapshot.commit().unwrap();
+
+    let snapshot = storage.clone().open_snapshot_write();
+    let query = typeql::parse_query(data).unwrap().into_pipeline();
+    let (pipeline, _named_outputs) = QueryManager {}
+        .prepare_write_pipeline(snapshot, &type_manager, thing_manager.clone(), &FunctionManager::default(), &query)
+        .unwrap();
+    let (mut iterator, ExecutionContext { snapshot, .. }) =
+        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    assert_matches!(iterator.next(), Some(Ok(_)));
+    assert_matches!(iterator.next(), None);
+    let snapshot = Arc::into_inner(snapshot).unwrap();
+    snapshot.commit().unwrap();
+
+    let mut statistics = Statistics::new(SequenceNumber::new(0));
+    statistics.may_synchronise(storage).unwrap();
+    statistics
+}
 
 #[test]
 fn test_has_planning_traversal() {
@@ -48,56 +76,18 @@ fn test_has_planning_traversal() {
     setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let mut snapshot = storage.clone().open_snapshot_write();
+    let schema = "define
+        attribute age value long;
+        attribute name value string;
+        entity person owns age @card(0..), owns name @card(0..);
+    ";
+    let data = "insert
+        $_ isa person, has age 10, has age 11, has age 12, has name 'John', has name 'Alice';
+        $_ isa person, has age 10, has age 13, has age 14;
+        $_ isa person, has age 13, has name 'Leila';
+    ";
 
-    const CARDINALITY_ANY: OwnsAnnotation = OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None));
-
-    let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
-
-    let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
-    age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
-
-    let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
-    name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
-
-    let person_owns_age = person_type
-        .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Unordered)
-        .unwrap();
-    person_owns_age.set_annotation(&mut snapshot, &type_manager, &thing_manager, CARDINALITY_ANY).unwrap();
-
-    let person_owns_name = person_type
-        .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered)
-        .unwrap();
-    person_owns_name.set_annotation(&mut snapshot, &type_manager, &thing_manager, CARDINALITY_ANY).unwrap();
-
-    let person = [(); 3].map(|()| thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap());
-
-    let age = [10, 11, 12, 13, 14]
-        .map(|age| thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age)).unwrap());
-
-    let name = ["John", "Alice", "Leila"].map(|name| {
-        thing_manager.create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed(name))).unwrap()
-    });
-
-    person[0].set_has_unordered(&mut snapshot, &thing_manager, age[0].clone()).unwrap();
-    person[0].set_has_unordered(&mut snapshot, &thing_manager, age[1].clone()).unwrap();
-    person[0].set_has_unordered(&mut snapshot, &thing_manager, age[2].clone()).unwrap();
-    person[0].set_has_unordered(&mut snapshot, &thing_manager, name[0].clone()).unwrap();
-    person[0].set_has_unordered(&mut snapshot, &thing_manager, name[1].clone()).unwrap();
-
-    person[1].set_has_unordered(&mut snapshot, &thing_manager, age[4].clone()).unwrap();
-    person[1].set_has_unordered(&mut snapshot, &thing_manager, age[3].clone()).unwrap();
-    person[1].set_has_unordered(&mut snapshot, &thing_manager, age[0].clone()).unwrap();
-
-    person[2].set_has_unordered(&mut snapshot, &thing_manager, age[3].clone()).unwrap();
-    person[2].set_has_unordered(&mut snapshot, &thing_manager, name[2].clone()).unwrap();
-
-    let finalise_result = thing_manager.finalise(&mut snapshot);
-    assert!(finalise_result.is_ok());
-    snapshot.commit().unwrap();
-
-    let mut statistics = Statistics::new(SequenceNumber::new(0));
-    statistics.may_synchronise(&storage).unwrap();
+    let statistics = setup(&storage, type_manager, thing_manager, schema, data);
 
     let query = "match $person isa person, has name $name, has age $age;";
     let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
@@ -127,13 +117,14 @@ fn test_has_planning_traversal() {
 
     let pattern_plan = MatchProgram::compile(
         &block,
+        &HashMap::new(),
         &entry_annotations,
         Arc::new(translation_context.variable_registry),
         &HashMap::new(),
         &statistics,
     );
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -160,85 +151,20 @@ fn test_links_planning_traversal() {
     setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let mut snapshot = storage.clone().open_snapshot_write();
+    let schema = "define
+        entity person owns name @card(0..), plays membership:member;
+        relation membership relates member @card(0..);
+        attribute name value string;
+    ";
+    let data = "insert
+        $p0 isa person, has name 'John';
+        $p1 isa person, has name 'Alice';
+        $p2 isa person, has name 'Leila';
+        (member: $p0) isa membership;
+        (member: $p2) isa membership;
+    ";
 
-    const CARDINALITY_ANY: AnnotationCardinality = AnnotationCardinality::new(0, None);
-    const OWNS_CARDINALITY_ANY: OwnsAnnotation = OwnsAnnotation::Cardinality(CARDINALITY_ANY);
-    const RELATES_CARDINALITY_ANY: RelatesAnnotation = RelatesAnnotation::Cardinality(CARDINALITY_ANY);
-
-    let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
-    let membership_type = type_manager.create_relation_type(&mut snapshot, &MEMBERSHIP_LABEL).unwrap();
-
-    let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
-    name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
-
-    let person_owns_name = person_type
-        .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered)
-        .unwrap();
-    person_owns_name.set_annotation(&mut snapshot, &type_manager, &thing_manager, OWNS_CARDINALITY_ANY).unwrap();
-
-    let relates_member = membership_type
-        .create_relates(
-            &mut snapshot,
-            &type_manager,
-            &thing_manager,
-            MEMBERSHIP_MEMBER_LABEL.name().as_str(),
-            Ordering::Unordered,
-        )
-        .unwrap();
-    relates_member.set_annotation(&mut snapshot, &type_manager, &thing_manager, RELATES_CARDINALITY_ANY).unwrap();
-    let membership_member_type = relates_member.role();
-
-    person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, membership_member_type.clone()).unwrap();
-
-    let person = [
-        thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
-        thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
-        thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap(),
-    ];
-
-    let membership = [
-        thing_manager.create_relation(&mut snapshot, membership_type.clone()).unwrap(),
-        thing_manager.create_relation(&mut snapshot, membership_type.clone()).unwrap(),
-    ];
-
-    let name = [
-        thing_manager.create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed("John"))).unwrap(),
-        thing_manager
-            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed("Alice")))
-            .unwrap(),
-        thing_manager
-            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed("Leila")))
-            .unwrap(),
-    ];
-
-    person[0].set_has_unordered(&mut snapshot, &thing_manager, name[0].clone()).unwrap();
-    person[1].set_has_unordered(&mut snapshot, &thing_manager, name[1].clone()).unwrap();
-    person[2].set_has_unordered(&mut snapshot, &thing_manager, name[2].clone()).unwrap();
-
-    membership[0]
-        .add_player(
-            &mut snapshot,
-            &thing_manager,
-            membership_member_type.clone(),
-            person[0].clone().into_owned_object(),
-        )
-        .unwrap();
-    membership[1]
-        .add_player(
-            &mut snapshot,
-            &thing_manager,
-            membership_member_type.clone(),
-            person[2].clone().into_owned_object(),
-        )
-        .unwrap();
-
-    let finalise_result = thing_manager.finalise(&mut snapshot);
-    assert!(finalise_result.is_ok());
-    snapshot.commit().unwrap();
-
-    let mut statistics = Statistics::new(SequenceNumber::new(0));
-    statistics.may_synchronise(&storage).unwrap();
+    let statistics = setup(&storage, type_manager, thing_manager, schema, data);
 
     let query = "match $person isa person, has name $name; $membership isa membership, links ($person);";
     let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
@@ -267,13 +193,14 @@ fn test_links_planning_traversal() {
 
     let pattern_plan = MatchProgram::compile(
         &block,
+        &HashMap::new(),
         &entry_annotations,
         Arc::new(translation_context.variable_registry),
         &HashMap::new(),
         &statistics,
     );
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -294,121 +221,30 @@ fn test_links_planning_traversal() {
     }
 }
 
-const USER_LABEL: Label = Label::new_static("user");
-const ORDER_LABEL: Label = Label::new_static("order");
-const PURCHASE_LABEL: Label = Label::new_static("purchase");
-const PURCHASE_BUYER_LABEL: Label = Label::new_static_scoped("buyer", "purchase", "purchase:buyer");
-const PURCHASE_ORDER_LABEL: Label = Label::new_static_scoped("order", "purchase", "purchase:order");
-const STATUS_LABEL: Label = Label::new_static("status");
-const TIMESTAMP_LABEL: Label = Label::new_static("timestamp");
-
 #[test]
 fn test_links_intersection() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let mut snapshot = storage.clone().open_snapshot_write();
+    let schema = "define
+        entity user plays purchase:buyer;
+        entity order, owns status, owns timestamp, plays purchase:order;
+        relation purchase relates buyer, relates order;
+        attribute status, value string;
+        attribute timestamp, value datetime;
+    ";
+    let data = "insert
+        $u0 isa user; $u1 isa user; $u2 isa user;
+        $o0 isa order, has status 'canceled', has timestamp 1970-01-01T00:00;
+        $o1 isa order, has status 'dispatched', has timestamp 1970-01-01T00:00;
+        $o2 isa order, has status 'paid', has timestamp 1970-01-01T00:00;
+        (buyer: $u0, order: $o0) isa purchase;
+        (buyer: $u0, order: $o0) isa purchase;
+        (buyer: $u1, order: $o1) isa purchase;
+    ";
 
-    const CARDINALITY_ANY: AnnotationCardinality = AnnotationCardinality::new(0, None);
-    const RELATES_CARDINALITY_ANY: RelatesAnnotation = RelatesAnnotation::Cardinality(CARDINALITY_ANY);
-
-    let user_type = type_manager.create_entity_type(&mut snapshot, &USER_LABEL).unwrap();
-    let order_type = type_manager.create_entity_type(&mut snapshot, &ORDER_LABEL).unwrap();
-    let purchase_type = type_manager.create_relation_type(&mut snapshot, &PURCHASE_LABEL).unwrap();
-
-    let status_type = type_manager.create_attribute_type(&mut snapshot, &STATUS_LABEL).unwrap();
-    status_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
-    let timestamp_type = type_manager.create_attribute_type(&mut snapshot, &TIMESTAMP_LABEL).unwrap();
-    timestamp_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::DateTime).unwrap();
-
-    order_type
-        .set_owns(&mut snapshot, &type_manager, &thing_manager, status_type.clone(), Ordering::Unordered)
-        .unwrap();
-    order_type
-        .set_owns(&mut snapshot, &type_manager, &thing_manager, timestamp_type.clone(), Ordering::Unordered)
-        .unwrap();
-
-    let relates_buyer = purchase_type
-        .create_relates(
-            &mut snapshot,
-            &type_manager,
-            &thing_manager,
-            PURCHASE_BUYER_LABEL.name().as_str(),
-            Ordering::Unordered,
-        )
-        .unwrap();
-    relates_buyer.set_annotation(&mut snapshot, &type_manager, &thing_manager, RELATES_CARDINALITY_ANY).unwrap();
-    let purchase_buyer_type = relates_buyer.role();
-
-    user_type.set_plays(&mut snapshot, &type_manager, &thing_manager, purchase_buyer_type.clone()).unwrap();
-
-    let relates_order = purchase_type
-        .create_relates(
-            &mut snapshot,
-            &type_manager,
-            &thing_manager,
-            PURCHASE_ORDER_LABEL.name().as_str(),
-            Ordering::Unordered,
-        )
-        .unwrap();
-    relates_order.set_annotation(&mut snapshot, &type_manager, &thing_manager, RELATES_CARDINALITY_ANY).unwrap();
-    let purchase_order_type = relates_order.role();
-
-    order_type.set_plays(&mut snapshot, &type_manager, &thing_manager, purchase_order_type.clone()).unwrap();
-
-    // END SCHEMA
-
-    let user = [(); 3].map(|_| thing_manager.create_entity(&mut snapshot, user_type.clone()).unwrap());
-    let order = [(); 3].map(|_| thing_manager.create_entity(&mut snapshot, order_type.clone()).unwrap());
-
-    let status = ["canceled", "dispatched", "paid"]
-        .map(|s| thing_manager.create_attribute(&mut snapshot, status_type.clone(), Value::String(s.into())).unwrap());
-
-    let timestamp = [(); 3].map(|_| {
-        thing_manager
-            .create_attribute(&mut snapshot, timestamp_type.clone(), Value::DateTime(Default::default()))
-            .unwrap()
-    });
-
-    order[0].set_has_unordered(&mut snapshot, &thing_manager, status[0].clone()).unwrap();
-    order[1].set_has_unordered(&mut snapshot, &thing_manager, status[1].clone()).unwrap();
-    order[2].set_has_unordered(&mut snapshot, &thing_manager, status[2].clone()).unwrap();
-
-    order[0].set_has_unordered(&mut snapshot, &thing_manager, timestamp[0].clone()).unwrap();
-    order[1].set_has_unordered(&mut snapshot, &thing_manager, timestamp[1].clone()).unwrap();
-    order[2].set_has_unordered(&mut snapshot, &thing_manager, timestamp[2].clone()).unwrap();
-
-    let purchase = [(); 3].map(|_| thing_manager.create_relation(&mut snapshot, purchase_type.clone()).unwrap());
-
-    purchase[0]
-        .add_player(&mut snapshot, &thing_manager, purchase_buyer_type.clone(), user[0].clone().into_owned_object())
-        .unwrap();
-    purchase[1]
-        .add_player(&mut snapshot, &thing_manager, purchase_buyer_type.clone(), user[0].clone().into_owned_object())
-        .unwrap();
-    purchase[2]
-        .add_player(&mut snapshot, &thing_manager, purchase_buyer_type.clone(), user[1].clone().into_owned_object())
-        .unwrap();
-
-    purchase[0]
-        .add_player(&mut snapshot, &thing_manager, purchase_order_type.clone(), order[0].clone().into_owned_object())
-        .unwrap();
-    purchase[1]
-        .add_player(&mut snapshot, &thing_manager, purchase_order_type.clone(), order[0].clone().into_owned_object())
-        .unwrap();
-    purchase[2]
-        .add_player(&mut snapshot, &thing_manager, purchase_order_type.clone(), order[1].clone().into_owned_object())
-        .unwrap();
-
-    let finalise_result = thing_manager.finalise(&mut snapshot);
-    assert!(finalise_result.is_ok());
-    snapshot.commit().unwrap();
-
-    let mut statistics = Statistics::new(SequenceNumber::new(0));
-    statistics.may_synchronise(&storage).unwrap();
-
-    // END DATA
+    let statistics = setup(&storage, type_manager, thing_manager, schema, data);
 
     let query = "match
     $p isa purchase, links (order: $order, buyer: $buyer);
@@ -440,13 +276,14 @@ fn test_links_intersection() {
 
     let pattern_plan = MatchProgram::compile(
         &block,
+        &HashMap::new(),
         &entry_annotations,
         Arc::new(translation_context.variable_registry),
         &HashMap::new(),
         &statistics,
     );
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
-    let executor = ProgramExecutor::new(&program_plan, &snapshot, &thing_manager).unwrap();
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());

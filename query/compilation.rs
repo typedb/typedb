@@ -55,7 +55,7 @@ impl CompiledStage {
             CompiledStage::Insert(program) => program
                 .output_row_schema
                 .iter()
-                .filter_map(|opt| opt.as_ref().map(|(v, _)| v.clone()))
+                .filter_map(|opt| opt.map(|(v, _)| v))
                 .enumerate()
                 .map(|(i, v)| (v, VariablePosition::new(i as u32)))
                 .collect(),
@@ -116,8 +116,14 @@ fn compile_stage(
 ) -> Result<CompiledStage, QueryError> {
     match &annotated_stage {
         AnnotatedStage::Match { block, block_annotations, compiled_expressions } => {
-            let plan =
-                MatchProgram::compile(block, block_annotations, variable_registry, compiled_expressions, statistics);
+            let plan = MatchProgram::compile(
+                block,
+                input_variables,
+                block_annotations,
+                variable_registry,
+                compiled_expressions,
+                statistics,
+            );
             Ok(CompiledStage::Match(plan))
         }
         AnnotatedStage::Insert { block, annotations } => {
@@ -143,10 +149,10 @@ fn compile_stage(
         AnnotatedStage::Select(select) => {
             let mut retained_positions = HashSet::with_capacity(select.variables.len());
             let mut output_row_mapping = HashMap::with_capacity(select.variables.len());
-            for variable in &select.variables {
-                let pos = input_variables.get(variable).unwrap();
-                retained_positions.insert(pos.clone());
-                output_row_mapping.insert(variable.clone(), pos.clone());
+            for &variable in &select.variables {
+                let pos = input_variables[&variable];
+                retained_positions.insert(pos);
+                output_row_mapping.insert(variable, pos);
             }
             Ok(CompiledStage::Select(SelectProgram { retained_positions, output_row_mapping }))
         }
@@ -163,9 +169,9 @@ fn compile_stage(
         },
         AnnotatedStage::Require(require) => {
             let mut required_positions = HashSet::with_capacity(require.variables.len());
-            for variable in &require.variables {
-                let pos = input_variables.get(variable).unwrap();
-                required_positions.insert(pos.clone());
+            for &variable in &require.variables {
+                let pos = input_variables[&variable];
+                required_positions.insert(pos);
             }
             Ok(CompiledStage::Require(RequireProgram {
                 required: required_positions,

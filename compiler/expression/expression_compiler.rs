@@ -111,8 +111,8 @@ impl<'this> ExpressionCompilationContext<'this> {
         for expression_id in list_constructor.item_expression_ids().iter().rev() {
             self.compile_recursive(self.expression_tree.get(*expression_id))?;
         }
-        // FIXME ?
-        // self.compile_constant(&Value::Long(list_constructor.item_expression_ids().len() as i64))?;
+
+        self.compile_constant(list_constructor.len_id())?;
         self.append_instruction(list_operations::ListConstructor::OP_CODE);
 
         if self.pop_type_single()? != ValueTypeCategory::Long {

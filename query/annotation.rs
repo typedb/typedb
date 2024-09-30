@@ -141,19 +141,20 @@ fn annotate_stage(
                 preamble_function_annotations,
             )
             .map_err(|source| QueryError::QueryTypeInference { typedb_source: source })?;
-            block_annotations.vertex_annotations().iter().for_each(|(k, v)| {
-                if let Some(k) = k.as_variable() {
-                    running_variable_annotations.insert(k, v.clone());
+            block_annotations.vertex_annotations().iter().for_each(|(vertex, types)| {
+                if let Some(var) = vertex.as_variable() {
+                    running_variable_annotations.insert(var, types.clone());
                 }
             });
             let compiled_expressions =
                 compile_expressions(snapshot, type_manager, &block, variable_registry, parameters, &block_annotations)
                     .map_err(|source| QueryError::ExpressionCompilation { source })?;
-            compiled_expressions.iter().for_each(|(variable, expr)| {
-                running_value_variable_assigned_types.insert(variable.clone(), expr.return_type().value_type());
+            compiled_expressions.iter().for_each(|(&variable, expr)| {
+                running_value_variable_assigned_types.insert(variable, expr.return_type().value_type());
             });
             Ok(AnnotatedStage::Match { block, block_annotations, compiled_expressions })
         }
+
         TranslatedStage::Insert { block } => {
             let insert_annotations = infer_types_for_match_block(
                 &block,
@@ -180,7 +181,6 @@ fn annotate_stage(
                 }
                 _ => {}
             });
-
             check_annotations(
                 snapshot,
                 type_manager,
@@ -190,9 +190,9 @@ fn annotate_stage(
                 &insert_annotations,
             )
             .map_err(|source| QueryError::QueryTypeInference { typedb_source: source })?;
-
             Ok(AnnotatedStage::Insert { block, annotations: insert_annotations })
         }
+
         TranslatedStage::Delete { block, deleted_variables } => {
             let delete_annotations = infer_types_for_match_block(
                 &block,
@@ -210,11 +210,13 @@ fn annotate_stage(
             // TODO: check_annotations on deletes. Can only delete links or has for types that actually are linked or owned
             Ok(AnnotatedStage::Delete { block, deleted_variables, annotations: delete_annotations })
         }
+
         TranslatedStage::Sort(sort) => Ok(AnnotatedStage::Sort(sort)),
         TranslatedStage::Select(select) => Ok(AnnotatedStage::Select(select)),
         TranslatedStage::Offset(offset) => Ok(AnnotatedStage::Offset(offset)),
         TranslatedStage::Limit(limit) => Ok(AnnotatedStage::Limit(limit)),
         TranslatedStage::Require(require) => Ok(AnnotatedStage::Require(require)),
+
         TranslatedStage::Reduce(reduce) => {
             let mut typed_reducers = Vec::with_capacity(reduce.assigned_reductions.len());
             for (assigned, reducer) in &reduce.assigned_reductions {
