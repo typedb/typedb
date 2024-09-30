@@ -115,7 +115,7 @@ fn test_has_planning_traversal() {
     )
     .unwrap();
 
-    let pattern_plan = MatchProgram::compile(
+    let pattern_plan = compiler::match_::planner::compile(
         &block,
         &HashMap::new(),
         &entry_annotations,
@@ -191,7 +191,7 @@ fn test_links_planning_traversal() {
     )
     .unwrap();
 
-    let pattern_plan = MatchProgram::compile(
+    let pattern_plan = compiler::match_::planner::compile(
         &block,
         &HashMap::new(),
         &entry_annotations,
@@ -274,7 +274,7 @@ fn test_links_intersection() {
     )
     .unwrap();
 
-    let pattern_plan = MatchProgram::compile(
+    let pattern_plan = compiler::match_::planner::compile(
         &block,
         &HashMap::new(),
         &entry_annotations,

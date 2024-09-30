@@ -261,7 +261,7 @@ fn traverse_links_unbounded_sorted_from() {
     ))];
 
     let pattern_plan =
-        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
+        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -348,7 +348,7 @@ fn traverse_links_unbounded_sorted_to() {
     ))];
 
     let pattern_plan =
-        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
+        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -451,7 +451,7 @@ fn traverse_links_bounded_relation() {
     ];
 
     let pattern_plan =
-        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
+        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -567,7 +567,7 @@ fn traverse_links_bounded_relation_player() {
     ];
 
     let pattern_plan =
-        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
+        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -654,7 +654,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
     ))];
 
     let pattern_plan =
-        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
+        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -741,7 +741,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
     ))];
 
     let pattern_plan =
-        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
+        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -839,7 +839,7 @@ fn traverse_links_reverse_bounded_player() {
     ];
 
     let pattern_plan =
-        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
+        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -955,7 +955,7 @@ fn traverse_links_reverse_bounded_player_relation() {
     ];
 
     let pattern_plan =
-        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
+        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
