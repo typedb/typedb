@@ -30,6 +30,7 @@ rust_test(
     crate_root = "compile_execute.rs",
     srcs = ["compile_execute.rs"],
     deps = deps + [
+        "//function:function",
         "//query:query",
     ],
 )
