@@ -38,6 +38,8 @@ pub(super) enum PlannerVertex {
     Constant,
     Label(LabelPlanner),
 
+    Input(InputPlanner),
+
     Type(TypePlanner),
     Thing(ThingPlanner),
     Value(ValuePlanner),
@@ -57,6 +59,10 @@ pub(super) enum PlannerVertex {
 impl PlannerVertex {
     pub(super) fn is_valid(&self, index: usize, ordered: &[usize], adjacency: &HashMap<usize, HashSet<usize>>) -> bool {
         match self {
+            Self::Constant | Self::Label(_) => true, // always valid: comes from query
+
+            Self::Input(_) => true, // always valid: comes from the enclosing scope
+
             Self::Type(_) | Self::Thing(_) | Self::Value(_) => {
                 let adjacent = &adjacency[&index];
                 ordered.iter().any(|x| adjacent.contains(x))
@@ -76,8 +82,6 @@ impl PlannerVertex {
                 }
                 true
             }
-
-            Self::Constant | Self::Label(_) => true, // always valid: comes from query
 
             | Self::Isa(_)
             | Self::Has(_)
@@ -135,6 +139,7 @@ impl PlannerVertex {
         match self {
             PlannerVertex::Constant => todo!(),
             PlannerVertex::Label(_) => todo!(),
+            PlannerVertex::Input(_) => unreachable!(),
             PlannerVertex::Type(_) => unreachable!(),
             PlannerVertex::Thing(_) => unreachable!(),
             PlannerVertex::Value(_) => unreachable!(),
@@ -154,6 +159,8 @@ impl PlannerVertex {
         match self {
             Self::Constant => [None; 3].into_iter().flatten(),
             Self::Label(inner) => inner.variables(),
+
+            Self::Input(_inner) => todo!(),
 
             Self::Type(_inner) => todo!(),
             Self::Thing(_inner) => todo!(),
@@ -177,6 +184,7 @@ impl PlannerVertex {
             Self::Constant => todo!(),
             Self::Label(_) => todo!(),
 
+            Self::Input(_inner) => todo!(),
             Self::Type(_inner) => todo!(),
             Self::Thing(inner) => inner.add_is(other),
             Self::Value(_inner) => todo!(),
@@ -224,30 +232,45 @@ impl PlannerVertex {
     pub(super) fn is_variable(&self) -> bool {
         matches!(self, Self::Thing(_) | Self::Type(_) | Self::Value(_))
     }
+
+    /// Returns `true` if the planner vertex is [`Value`].
+    ///
+    /// [`Value`]: PlannerVertex::Value
+    #[must_use]
+    pub(super) fn is_value(&self) -> bool {
+        matches!(self, Self::Value(..))
+    }
 }
 
 #[derive(Debug)]
-pub(super) struct VertexCost {
+pub(super) struct ElementCost {
     pub per_input: f64,
     pub per_output: f64,
     pub branching_factor: f64,
 }
 
-impl Default for VertexCost {
+impl ElementCost {
+    fn free_with_branching(branching_factor: f64) -> Self {
+        Self { per_input: 0.0, per_output: 0.0, branching_factor }
+    }
+}
+
+impl Default for ElementCost {
     fn default() -> Self {
         Self { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
     }
 }
 
 pub(super) trait Costed {
-    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost;
+    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> ElementCost;
 }
 
 impl Costed for PlannerVertex {
-    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
+    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> ElementCost {
         match self {
-            Self::Constant => VertexCost::default(),
-            Self::Label(_) => VertexCost::default(),
+            Self::Constant => ElementCost::default(),
+            Self::Label(_) => ElementCost::default(),
+            Self::Input(inner) => inner.cost(inputs, elements),
 
             Self::Type(inner) => inner.cost(inputs, elements),
             Self::Thing(inner) => inner.cost(inputs, elements),
@@ -303,6 +326,21 @@ impl LabelPlanner {
 }
 
 #[derive(Debug)]
+pub(super) struct InputPlanner;
+
+impl InputPlanner {
+    pub(crate) fn from_variable(_: Variable, _: &TypeAnnotations) -> Self {
+        Self
+    }
+}
+
+impl Costed for InputPlanner {
+    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> ElementCost {
+        ElementCost::default()
+    }
+}
+
+#[derive(Debug)]
 pub(super) struct TypePlanner {
     branching_factor: f64,
 }
@@ -315,12 +353,12 @@ impl TypePlanner {
 }
 
 impl Costed for TypePlanner {
-    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
-        VertexCost::default()
+    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> ElementCost {
+        ElementCost::free_with_branching(self.branching_factor)
     }
 }
 
-#[derive(Debug, Default /* todo remove */)]
+#[derive(Debug, Default)]
 pub(super) struct ThingPlanner {
     expected_size: f64,
 
@@ -339,10 +377,8 @@ impl ThingPlanner {
     ) -> Self {
         let expected_size = type_annotations
             .vertex_annotations_of(&Vertex::Variable(variable))
-            // TODO proper fix for input variables (expected size = 1)
-            // .expect("expected thing variable to have been annotated with types")
+            .expect("expected thing variable to have been annotated with types")
             .iter()
-            .flat_map(|types| types.iter())
             .filter_map(|type_| match type_ {
                 answer::Type::Entity(type_) => statistics.entity_counts.get(type_),
                 answer::Type::Relation(type_) => statistics.relation_counts.get(type_),
@@ -373,12 +409,16 @@ impl ThingPlanner {
 }
 
 impl Costed for ThingPlanner {
-    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
+    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> ElementCost {
         let bounds = chain!(&self.bound_value_equal, &self.bound_value_above, &self.bound_value_below).collect_vec();
         for &i in inputs {
             if !bounds.contains(&&Input::Variable(i)) {
-                return VertexCost::default();
+                return ElementCost::default();
             }
+        }
+
+        if self.bound_exact.iter().any(|bound| inputs.contains(bound)) {
+            return ElementCost::default();
         }
 
         let per_input = OPEN_ITERATOR_RELATIVE_COST;
@@ -441,7 +481,7 @@ impl Costed for ThingPlanner {
         }
         */
 
-        VertexCost { per_input, per_output, branching_factor }
+        ElementCost { per_input, per_output, branching_factor }
     }
 }
 
@@ -459,11 +499,11 @@ impl ValuePlanner {
 }
 
 impl Costed for ValuePlanner {
-    fn cost(&self, inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
+    fn cost(&self, inputs: &[usize], _elements: &[PlannerVertex]) -> ElementCost {
         if inputs.is_empty() {
-            VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+            ElementCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
         } else {
-            VertexCost { per_input: f64::INFINITY, per_output: 0.0, branching_factor: f64::INFINITY }
+            ElementCost { per_input: f64::INFINITY, per_output: 0.0, branching_factor: f64::INFINITY }
         }
     }
 }
@@ -516,7 +556,7 @@ impl IsaPlanner {
 }
 
 impl Costed for IsaPlanner {
-    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
+    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> ElementCost {
         elements[self.thing].cost(inputs, elements)
     }
 }
@@ -580,7 +620,7 @@ impl HasPlanner {
 }
 
 impl Costed for HasPlanner {
-    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
+    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> ElementCost {
         let is_owner_bound = inputs.contains(&self.owner);
         let is_attribute_bound = inputs.contains(&self.attribute);
 
@@ -592,17 +632,18 @@ impl Costed for HasPlanner {
             (true, false) | (false, true) => ADVANCE_ITERATOR_RELATIVE_COST,
         };
 
-        let owner = elements[self.owner].as_thing().unwrap();
-        let attribute = elements[self.attribute].as_thing().unwrap();
+        let owner_size = if let Some(owner) = elements[self.owner].as_thing() { owner.expected_size } else { 1.0 };
+        let attribute_size =
+            if let Some(attribute) = elements[self.attribute].as_thing() { attribute.expected_size } else { 1.0 };
 
         let branching_factor = match (is_owner_bound, is_attribute_bound) {
-            (true, true) => self.expected_size / owner.expected_size / attribute.expected_size,
-            (true, false) => self.expected_size / owner.expected_size,
-            (false, true) => self.expected_size / attribute.expected_size,
+            (true, true) => self.expected_size / owner_size / attribute_size,
+            (true, false) => self.expected_size / owner_size,
+            (false, true) => self.expected_size / attribute_size,
             (false, false) => self.expected_size,
         };
 
-        VertexCost { per_input, per_output, branching_factor }
+        ElementCost { per_input, per_output, branching_factor }
     }
 }
 
@@ -695,7 +736,7 @@ impl LinksPlanner {
 }
 
 impl Costed for LinksPlanner {
-    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> VertexCost {
+    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex]) -> ElementCost {
         let is_relation_bound = inputs.contains(&self.relation);
         let is_player_bound = inputs.contains(&self.player);
 
@@ -717,7 +758,7 @@ impl Costed for LinksPlanner {
             (false, false) => self.expected_size,
         };
 
-        VertexCost { per_input, per_output, branching_factor }
+        ElementCost { per_input, per_output, branching_factor }
     }
 }
 
@@ -746,8 +787,8 @@ impl ComparisonPlanner {
 }
 
 impl Costed for ComparisonPlanner {
-    fn cost(&self, _: &[usize], _: &[PlannerVertex]) -> VertexCost {
-        VertexCost::default()
+    fn cost(&self, _: &[usize], _: &[PlannerVertex]) -> ElementCost {
+        ElementCost::default()
     }
 }
 
@@ -779,8 +820,8 @@ impl SubPlanner {
 }
 
 impl Costed for SubPlanner {
-    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
-        VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> ElementCost {
+        ElementCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
     }
 }
 
@@ -809,8 +850,8 @@ impl OwnsPlanner {
 }
 
 impl Costed for OwnsPlanner {
-    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
-        VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> ElementCost {
+        ElementCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
     }
 }
 
@@ -839,8 +880,8 @@ impl RelatesPlanner {
 }
 
 impl Costed for RelatesPlanner {
-    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
-        VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> ElementCost {
+        ElementCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
     }
 }
 
@@ -869,7 +910,7 @@ impl PlaysPlanner {
 }
 
 impl Costed for PlaysPlanner {
-    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> VertexCost {
-        VertexCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> ElementCost {
+        ElementCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
     }
 }

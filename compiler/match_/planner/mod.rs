@@ -30,7 +30,10 @@ use concept::thing::statistics::Statistics;
 use ir::{
     pattern::{
         conjunction::Conjunction,
-        constraint::{Comparator, Constraint},
+        constraint::{
+            Comparator, Comparison, Constraint, ExpressionBinding, Has, Isa, Kind, Label, Links, Owns, Plays, Relates,
+            RoleName, Sub,
+        },
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
     },
@@ -39,7 +42,7 @@ use ir::{
         VariableRegistry,
     },
 };
-use itertools::{chain, Itertools};
+use itertools::Itertools;
 
 use crate::{
     expression::compiled_expression::CompiledExpression,
@@ -59,9 +62,9 @@ use crate::{
         planner::{
             pattern_plan::{IntersectionProgram, MatchProgram, Program},
             vertex::{
-                ComparisonPlanner, Costed, Direction, HasPlanner, Input, IsaPlanner, LabelPlanner, LinksPlanner,
-                OwnsPlanner, PlannerVertex, PlaysPlanner, RelatesPlanner, SubPlanner, ThingPlanner, TypePlanner,
-                ValuePlanner, VertexCost,
+                ComparisonPlanner, Costed, Direction, ElementCost, HasPlanner, Input, InputPlanner, IsaPlanner,
+                LabelPlanner, LinksPlanner, OwnsPlanner, PlannerVertex, PlaysPlanner, RelatesPlanner, SubPlanner,
+                ThingPlanner, TypePlanner, ValuePlanner,
             },
         },
     },
@@ -80,7 +83,8 @@ pub fn compile(
     let conjunction = block.conjunction();
     let scope_context = block.scope_context();
     debug_assert!(conjunction.captured_variables(scope_context).all(|var| input_variables.contains_key(&var)));
-    compile_conjunction(
+
+    plan_conjunction(
         conjunction,
         scope_context,
         input_variables,
@@ -89,41 +93,69 @@ pub fn compile(
         expressions,
         statistics,
     )
+    .lower()
 }
 
-fn compile_conjunction(
-    conjunction: &Conjunction,
+struct ConjunctionPlan<'a> {
+    inputs: Vec<usize>,
+    elements: Vec<PlannerVertex>,
+    variable_index: HashMap<Variable, usize>,
+    index_to_constraint: HashMap<usize, &'a Constraint<Variable>>,
+    adjacency: HashMap<usize, HashSet<usize>>,
+    type_annotations: &'a TypeAnnotations,
+    statistics: &'a Statistics,
+    ordering: Vec<usize>,
+    cost: ElementCost,
+}
+
+impl ConjunctionPlan<'_> {
+    fn lower(&self) -> MatchProgram {
+        todo!()
+    }
+}
+
+fn plan_conjunction<'a>(
+    conjunction: &'a Conjunction,
     scope_context: &ScopeContext,
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,
     variable_registry: Arc<VariableRegistry>,
     _expressions: &HashMap<Variable, CompiledExpression>,
     statistics: &Statistics,
-) -> MatchProgram {
-    let mut plan_builder = PlanBuilder::new(
+) -> ConjunctionPlan<'a> {
+    let subplans = conjunction
+        .nested_patterns()
+        .iter()
+        .map(|pattern| {
+            let conjunction_plan = match pattern {
+                NestedPattern::Disjunction(_) => todo!(),
+                NestedPattern::Negation(negation) => plan_conjunction(
+                    negation.conjunction(),
+                    scope_context,
+                    input_variables,
+                    type_annotations,
+                    variable_registry.clone(),
+                    _expressions,
+                    statistics,
+                ),
+                NestedPattern::Optional(_) => todo!(),
+            };
+            (pattern, conjunction_plan)
+        })
+        .collect_vec();
+
+    let mut plan_builder = PlanBuilder::new(type_annotations, statistics);
+    plan_builder.register_variables(
         conjunction.declared_variables(scope_context),
         conjunction.captured_variables(scope_context).chain(input_variables.keys().copied()),
         &variable_registry,
-        type_annotations,
-        statistics,
     );
-
     plan_builder.register_constraints(conjunction);
-
-    for pattern in conjunction.nested_patterns() {
-        match pattern {
-            NestedPattern::Disjunction(_) => todo!(),
-            NestedPattern::Negation(_) => todo!(),
-            NestedPattern::Optional(_) => todo!(),
-        }
-    }
+    plan_builder.register_nested_plans(subplans);
 
     let ordering = plan_builder.initialise_greedy();
 
-    let (variable_positions, index, programs) = lower_plan(&plan_builder, input_variables, ordering, type_annotations);
-    let variable_positions_index = index.into_iter().sorted_by_key(|(k, _)| *k).map(|(_, v)| v).collect(); // TODO handle gaps
-
-    MatchProgram::new(programs, variable_registry, variable_positions, variable_positions_index)
+    todo!()
 }
 
 /*
@@ -151,53 +183,11 @@ struct PlanBuilder<'a> {
 }
 
 impl<'a> PlanBuilder<'a> {
-    fn new(
-        variables: impl Iterator<Item = Variable>,
-        inputs: impl Iterator<Item = Variable>,
-        variable_registry: &VariableRegistry,
-        type_annotations: &'a TypeAnnotations,
-        statistics: &'a Statistics,
-    ) -> Self {
-        let inputs = inputs.collect_vec();
-        let mut elements = Vec::with_capacity(inputs.len() + variables.size_hint().0);
-
-        let variable_index: HashMap<_, _> = chain!(inputs.iter().copied(), variables)
-            .map(|variable| {
-                let category = variable_registry.get_variable_category(variable).unwrap();
-                match category {
-                    | VariableCategory::Type
-                    | VariableCategory::ThingType
-                    | VariableCategory::AttributeType
-                    | VariableCategory::RoleType => {
-                        let planner = TypePlanner::from_variable(variable, type_annotations);
-                        let index = elements.len();
-                        elements.push(PlannerVertex::Type(planner));
-                        (variable, index)
-                    }
-                    VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
-                        let planner = ThingPlanner::from_variable(variable, type_annotations, statistics);
-                        let index = elements.len();
-                        elements.push(PlannerVertex::Thing(planner));
-                        (variable, index)
-                    }
-                    VariableCategory::Value => {
-                        let planner = ValuePlanner::from_variable(variable);
-                        let index = elements.len();
-                        elements.push(PlannerVertex::Value(planner));
-                        (variable, index)
-                    }
-                    | VariableCategory::ObjectList
-                    | VariableCategory::ThingList
-                    | VariableCategory::AttributeList
-                    | VariableCategory::ValueList => todo!("list variable planning"),
-                }
-            })
-            .collect();
-
+    fn new(type_annotations: &'a TypeAnnotations, statistics: &'a Statistics) -> Self {
         Self {
-            inputs: inputs.into_iter().map(|v| variable_index[&v]).collect(),
-            elements,
-            variable_index,
+            inputs: Vec::new(),
+            elements: Vec::new(),
+            variable_index: HashMap::new(),
             index_to_constraint: HashMap::new(),
             adjacency: HashMap::new(),
             type_annotations,
@@ -205,154 +195,216 @@ impl<'a> PlanBuilder<'a> {
         }
     }
 
+    fn register_variables(
+        &mut self,
+        input_variables: impl Iterator<Item = Variable>,
+        variables: impl Iterator<Item = Variable>,
+        variable_registry: &VariableRegistry,
+    ) {
+        self.elements.reserve(input_variables.size_hint().0 + variables.size_hint().0);
+        self.inputs.reserve(input_variables.size_hint().0);
+
+        for variable in input_variables {
+            self.register_input_var(variable);
+        }
+
+        for variable in variables {
+            let category = variable_registry.get_variable_category(variable).unwrap();
+            match category {
+                | VariableCategory::Type
+                | VariableCategory::ThingType
+                | VariableCategory::AttributeType
+                | VariableCategory::RoleType => self.register_type_var(variable),
+                VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
+                    self.register_thing_var(variable)
+                }
+                VariableCategory::Value => self.register_value_var(variable),
+                | VariableCategory::ObjectList
+                | VariableCategory::ThingList
+                | VariableCategory::AttributeList
+                | VariableCategory::ValueList => todo!("list variable planning"),
+            }
+        }
+    }
+
+    fn register_input_var(&mut self, variable: Variable) {
+        let planner = InputPlanner::from_variable(variable, self.type_annotations);
+        let index = self.elements.len();
+        self.elements.push(PlannerVertex::Input(planner));
+        self.inputs.push(index);
+        self.variable_index.insert(variable, index);
+    }
+
+    fn register_type_var(&mut self, variable: Variable) {
+        let planner = TypePlanner::from_variable(variable, self.type_annotations);
+        let index = self.elements.len();
+        self.elements.push(PlannerVertex::Type(planner));
+        self.variable_index.insert(variable, index);
+    }
+
+    fn register_thing_var(&mut self, variable: Variable) {
+        let planner = ThingPlanner::from_variable(variable, self.type_annotations, self.statistics);
+        let index = self.elements.len();
+        self.elements.push(PlannerVertex::Thing(planner));
+        self.variable_index.insert(variable, index);
+    }
+
+    fn register_value_var(&mut self, variable: Variable) {
+        let planner = ValuePlanner::from_variable(variable);
+        let index = self.elements.len();
+        self.elements.push(PlannerVertex::Value(planner));
+        self.variable_index.insert(variable, index);
+    }
+
     fn register_constraints(&mut self, conjunction: &'a Conjunction) {
-        let type_annotations = self.type_annotations;
-        let statistics = self.statistics;
-
         for constraint in conjunction.constraints() {
-            let planner = match constraint {
-                Constraint::Kind(kind) => {
-                    let planner = PlannerVertex::Label(LabelPlanner::from_kind_constraint(
-                        kind,
-                        &self.variable_index,
-                        type_annotations,
-                    ));
-                    self.elements.push(planner);
-                    self.elements.last()
-                }
-                Constraint::RoleName(role_name) => {
-                    let planner = PlannerVertex::Label(LabelPlanner::from_role_name_constraint(
-                        role_name,
-                        &self.variable_index,
-                        type_annotations,
-                    ));
-                    self.elements.push(planner);
-                    self.elements.last()
-                }
-                Constraint::Label(label) => {
-                    let planner = PlannerVertex::Label(LabelPlanner::from_label_constraint(
-                        label,
-                        &self.variable_index,
-                        type_annotations,
-                    ));
-                    self.elements.push(planner);
-                    self.elements.last()
-                }
+            let planner_index = self.elements.len();
+            self.index_to_constraint.insert(planner_index, constraint);
 
-                Constraint::Sub(sub) => {
-                    let planner = SubPlanner::from_constraint(sub, &self.variable_index, type_annotations);
-                    self.elements.push(PlannerVertex::Sub(planner));
-                    self.elements.last()
-                }
-                Constraint::Owns(owns) => {
-                    let planner =
-                        OwnsPlanner::from_constraint(owns, &self.variable_index, type_annotations, statistics);
-                    self.elements.push(PlannerVertex::Owns(planner));
-                    self.elements.last()
-                }
-                Constraint::Relates(relates) => {
-                    let planner =
-                        RelatesPlanner::from_constraint(relates, &self.variable_index, type_annotations, statistics);
-                    self.elements.push(PlannerVertex::Relates(planner));
-                    self.elements.last()
-                }
-                Constraint::Plays(plays) => {
-                    let planner =
-                        PlaysPlanner::from_constraint(plays, &self.variable_index, type_annotations, statistics);
-                    self.elements.push(PlannerVertex::Plays(planner));
-                    self.elements.last()
-                }
+            match constraint {
+                Constraint::Kind(kind) => self.register_kind(kind),
+                Constraint::RoleName(role_name) => self.register_role_name(role_name),
+                Constraint::Label(label) => self.register_label(label),
 
-                Constraint::Isa(isa) => {
-                    let planner = IsaPlanner::from_constraint(isa, &self.variable_index, type_annotations, statistics);
-                    self.elements.push(PlannerVertex::Isa(planner));
-                    self.elements.last()
-                }
-                Constraint::Has(has) => {
-                    let planner = HasPlanner::from_constraint(has, &self.variable_index, type_annotations, statistics);
-                    self.elements.push(PlannerVertex::Has(planner));
-                    self.elements.last()
-                }
-                Constraint::Links(links) => {
-                    let planner =
-                        LinksPlanner::from_constraint(links, &self.variable_index, type_annotations, statistics);
-                    self.elements.push(PlannerVertex::Links(planner));
-                    self.elements.last()
-                }
+                Constraint::Sub(sub) => self.register_sub(sub),
+                Constraint::Owns(owns) => self.register_owns(owns),
+                Constraint::Relates(relates) => self.register_relates(relates),
+                Constraint::Plays(plays) => self.register_plays(plays),
+
+                Constraint::Isa(isa) => self.register_isa(isa),
+                Constraint::Has(has) => self.register_has(has),
+                Constraint::Links(links) => self.register_links(links),
+
+                Constraint::FunctionCallBinding(_) => todo!("function call"),
+                Constraint::Comparison(comparison) => self.register_comparison(comparison),
 
                 Constraint::ExpressionBinding(expression) => {
-                    let lhs = self.variable_index[&expression.left().as_variable().unwrap()];
                     if expression.expression().is_constant() {
-                        if matches!(self.elements[lhs], PlannerVertex::Value(_)) {
-                            self.elements[lhs] = PlannerVertex::Constant
+                        let lhs = self.variable_index[&expression.left().as_variable().unwrap()];
+                        if self.elements[lhs].is_value() {
+                            self.elements[lhs] = PlannerVertex::Constant;
+                            self.index_to_constraint.remove(&planner_index); // unregister
                         } else {
                             todo!("non-value var assignment?")
                         }
-                        None
                     } else {
-                        let planner_index = self.elements.len();
-                        self.adjacency.entry(lhs).or_default().insert(planner_index);
-                        self.elements.push(PlannerVertex::Expression(todo!("expression = {expression:?}")));
-                        self.elements.last()
+                        self.register_expression_binding(expression);
                     }
-                }
-
-                Constraint::FunctionCallBinding(_) => todo!("function call"),
-
-                Constraint::Comparison(comparison) => {
-                    let lhs = Input::from_vertex(comparison.lhs(), &self.variable_index);
-                    let rhs = Input::from_vertex(comparison.rhs(), &self.variable_index);
-                    if let Input::Variable(lhs) = lhs {
-                        match comparison.comparator() {
-                            Comparator::Equal => {
-                                self.elements[lhs].add_equal(rhs);
-                            }
-                            Comparator::NotEqual => (), // no tangible impact on traversal costs
-                            Comparator::Less | Comparator::LessOrEqual => {
-                                self.elements[lhs].add_upper_bound(rhs);
-                            }
-                            Comparator::Greater | Comparator::GreaterOrEqual => {
-                                self.elements[lhs].add_lower_bound(rhs);
-                            }
-                            Comparator::Like => todo!("like operator"),
-                            Comparator::Contains => todo!("contains operator"),
-                        }
-                    }
-                    if let Input::Variable(rhs) = rhs {
-                        match comparison.comparator() {
-                            Comparator::Equal => {
-                                self.elements[rhs].add_equal(lhs);
-                            }
-                            Comparator::NotEqual => (), // no tangible impact on traversal costs
-                            Comparator::Less | Comparator::LessOrEqual => {
-                                self.elements[rhs].add_upper_bound(lhs);
-                            }
-                            Comparator::Greater | Comparator::GreaterOrEqual => {
-                                self.elements[rhs].add_lower_bound(lhs);
-                            }
-                            Comparator::Like => todo!("like operator"),
-                            Comparator::Contains => todo!("contains operator"),
-                        }
-                    }
-                    self.elements.push(PlannerVertex::Comparison(ComparisonPlanner::from_constraint(
-                        comparison,
-                        &self.variable_index,
-                        type_annotations,
-                        statistics,
-                    )));
-                    self.elements.last()
-                }
-            };
-
-            if let Some(planner) = planner {
-                let planner_index = self.elements.len() - 1;
-                self.index_to_constraint.insert(planner_index, constraint);
-                self.adjacency.entry(planner_index).or_default().extend(planner.variables());
-                for v in planner.variables() {
-                    self.adjacency.entry(v).or_default().insert(planner_index);
                 }
             }
         }
+
+        for (planner_index, planner) in self.elements.iter().enumerate() {
+            self.adjacency.entry(planner_index).or_default().extend(planner.variables());
+            for v in planner.variables() {
+                self.adjacency.entry(v).or_default().insert(planner_index);
+            }
+        }
+    }
+
+    fn register_label(&mut self, label: &Label<Variable>) {
+        let planner = PlannerVertex::Label(LabelPlanner::from_label_constraint(
+            label,
+            &self.variable_index,
+            self.type_annotations,
+        ));
+        self.elements.push(planner);
+    }
+
+    fn register_role_name(&mut self, role_name: &RoleName<Variable>) {
+        let planner = PlannerVertex::Label(LabelPlanner::from_role_name_constraint(
+            role_name,
+            &self.variable_index,
+            self.type_annotations,
+        ));
+        self.elements.push(planner);
+    }
+
+    fn register_kind(&mut self, kind: &Kind<Variable>) {
+        let planner =
+            PlannerVertex::Label(LabelPlanner::from_kind_constraint(kind, &self.variable_index, self.type_annotations));
+        self.elements.push(planner);
+    }
+
+    fn register_sub(&mut self, sub: &Sub<Variable>) {
+        let planner = SubPlanner::from_constraint(sub, &self.variable_index, self.type_annotations);
+        self.elements.push(PlannerVertex::Sub(planner));
+    }
+
+    fn register_owns(&mut self, owns: &Owns<Variable>) {
+        let planner = OwnsPlanner::from_constraint(owns, &self.variable_index, self.type_annotations, self.statistics);
+        self.elements.push(PlannerVertex::Owns(planner));
+    }
+
+    fn register_relates(&mut self, relates: &Relates<Variable>) {
+        let planner =
+            RelatesPlanner::from_constraint(relates, &self.variable_index, self.type_annotations, self.statistics);
+        self.elements.push(PlannerVertex::Relates(planner));
+    }
+
+    fn register_plays(&mut self, plays: &Plays<Variable>) {
+        let planner =
+            PlaysPlanner::from_constraint(plays, &self.variable_index, self.type_annotations, self.statistics);
+        self.elements.push(PlannerVertex::Plays(planner));
+    }
+
+    fn register_isa(&mut self, isa: &Isa<Variable>) {
+        let planner = IsaPlanner::from_constraint(isa, &self.variable_index, self.type_annotations, self.statistics);
+        self.elements.push(PlannerVertex::Isa(planner));
+    }
+
+    fn register_has(&mut self, has: &Has<Variable>) {
+        let planner = HasPlanner::from_constraint(has, &self.variable_index, self.type_annotations, self.statistics);
+        self.elements.push(PlannerVertex::Has(planner));
+    }
+
+    fn register_links(&mut self, links: &Links<Variable>) {
+        let planner =
+            LinksPlanner::from_constraint(links, &self.variable_index, self.type_annotations, self.statistics);
+        self.elements.push(PlannerVertex::Links(planner));
+    }
+
+    fn register_expression_binding(&mut self, expression: &ExpressionBinding<Variable>) {
+        let lhs = self.variable_index[&expression.left().as_variable().unwrap()];
+        let planner_index = self.elements.len();
+        self.adjacency.entry(lhs).or_default().insert(planner_index);
+        todo!("expression = {expression:?}");
+        // self.elements.push(PlannerVertex::Expression());
+    }
+
+    fn register_comparison(&mut self, comparison: &Comparison<Variable>) {
+        let lhs = Input::from_vertex(comparison.lhs(), &self.variable_index);
+        let rhs = Input::from_vertex(comparison.rhs(), &self.variable_index);
+        if let Input::Variable(lhs) = lhs {
+            match comparison.comparator() {
+                Comparator::Equal => self.elements[lhs].add_equal(rhs),
+                Comparator::NotEqual => (), // no tangible impact on traversal costs
+                Comparator::Less | Comparator::LessOrEqual => self.elements[lhs].add_upper_bound(rhs),
+                Comparator::Greater | Comparator::GreaterOrEqual => self.elements[lhs].add_lower_bound(rhs),
+                Comparator::Like => todo!("like operator"),
+                Comparator::Contains => todo!("contains operator"),
+            }
+        }
+        if let Input::Variable(rhs) = rhs {
+            match comparison.comparator() {
+                Comparator::Equal => self.elements[rhs].add_equal(lhs),
+                Comparator::NotEqual => (), // no tangible impact on traversal costs
+                Comparator::Less | Comparator::LessOrEqual => self.elements[rhs].add_upper_bound(lhs),
+                Comparator::Greater | Comparator::GreaterOrEqual => self.elements[rhs].add_lower_bound(lhs),
+                Comparator::Like => todo!("like operator"),
+                Comparator::Contains => todo!("contains operator"),
+            }
+        }
+        self.elements.push(PlannerVertex::Comparison(ComparisonPlanner::from_constraint(
+            comparison,
+            &self.variable_index,
+            self.type_annotations,
+            self.statistics,
+        )));
+    }
+
+    fn register_nested_plans(&self, subplans: Vec<(&NestedPattern, ConjunctionPlan)>) {
+        todo!()
     }
 
     fn initialise_greedy(&self) -> Vec<usize> {
@@ -407,10 +459,12 @@ impl<'a> PlanBuilder<'a> {
         let adjacent = self.adjacency.get(&next);
         let preceding = adjacent.into_iter().flatten().filter(|adj| prefix.contains(adj)).copied().collect_vec();
         let planner_vertex = &self.elements[next];
-        let VertexCost { per_input, per_output, branching_factor } = planner_vertex.cost(&preceding, &self.elements);
+        let ElementCost { per_input, per_output, branching_factor } = planner_vertex.cost(&preceding, &self.elements);
         per_input + branching_factor * per_output
     }
 }
+
+// *** //
 
 #[derive(Debug, Default)]
 struct ProgramBuilder {
