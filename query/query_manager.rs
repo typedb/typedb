@@ -98,11 +98,8 @@ impl QueryManager {
             match compiled_stage {
                 CompiledStage::Match(match_program) => {
                     // TODO: Pass expressions & functions
-                    // let program_plan = ProgramPlan::new(match_program, HashMap::new(), HashMap::new());
-                    let match_stage = MatchStageExecutor::new(
-                        ProgramPlan::new(match_program, HashMap::new(), HashMap::new()),
-                        last_stage,
-                    );
+                    let program_plan = ProgramPlan::new(match_program, HashMap::new(), HashMap::new());
+                    let match_stage = MatchStageExecutor::new(program_plan, last_stage);
                     last_stage = ReadPipelineStage::Match(Box::new(match_stage));
                 }
                 CompiledStage::Insert(_) => {
@@ -198,11 +195,8 @@ impl QueryManager {
             match compiled_stage {
                 CompiledStage::Match(match_program) => {
                     // TODO: Pass expressions & functions
-                    // let program_plan = ProgramPlan::new(match_program, HashMap::new(), HashMap::new());
-                    let match_stage = MatchStageExecutor::new(
-                        ProgramPlan::new(match_program, HashMap::new(), HashMap::new()),
-                        previous_stage,
-                    );
+                    let program_plan = ProgramPlan::new(match_program, HashMap::new(), HashMap::new());
+                    let match_stage = MatchStageExecutor::new(program_plan, previous_stage);
                     previous_stage = WritePipelineStage::Match(Box::new(match_stage));
                 }
                 CompiledStage::Insert(insert_program) => {
