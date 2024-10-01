@@ -160,6 +160,7 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
             Ok(())
         }
     } else if let Some(types) = context.type_annotations.vertex_annotations_of(&Vertex::Variable(variable)) {
+        // resolve_value_types will error if the type_annotations aren't all attribute(list) types
         let value_types = resolve_value_types(types, context.snapshot, context.type_manager).map_err(|source| {
             ExpressionCompileError::CouldNotDetermineValueTypeForVariable { variable: variable.clone() }
         })?;
@@ -169,18 +170,20 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
             let value_type = value_types.iter().find(|_| true).unwrap();
             let variable_category = context.variable_registry.get_variable_category(variable).unwrap();
             match variable_category {
-                VariableCategory::Attribute | VariableCategory::Value => {
+                VariableCategory::Attribute | VariableCategory::Thing => {
+                    debug_assert!(types.iter().all(|t| matches!(t, answer::Type::Attribute(_))));
                     context.variable_value_types.insert(variable, ExpressionValueType::Single(value_type.category()));
                     Ok(())
                 }
-                VariableCategory::AttributeList | VariableCategory::ValueList => {
+                VariableCategory::AttributeList  | VariableCategory::ThingList => {
+                    debug_assert!(types.iter().all(|t| matches!(t, answer::Type::Attribute(_))));
                     context.variable_value_types.insert(variable, ExpressionValueType::List(value_type.category()));
                     Ok(())
                 }
                 _ => Err(ExpressionCompileError::VariableMustBeValueOrAttribute {
                     variable,
                     actual_category: variable_category,
-                })?,
+                })?, // TODO: I think this is practically unreachable?
             }
         }
     } else {
