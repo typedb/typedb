@@ -507,3 +507,49 @@ fn test_select() {
         assert!(!named_outputs.contains_key("p"));
     }
 }
+
+
+#[test]
+fn test_require() {
+    let context = setup_common();
+    let snapshot = context.storage.clone().open_snapshot_write();
+    let insert_query_str = r#"insert
+        $p1 isa person, has name "Alice", has age 1;
+        $p2 isa person, has name "Bob", has age 2;"#;
+    let insert_query = typeql::parse_query(insert_query_str).unwrap().into_pipeline();
+    let (insert_pipeline, _named_outputs) = context
+        .query_manager
+        .prepare_write_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            &context.function_manager,
+            &insert_query,
+        )
+        .unwrap();
+    let (mut iterator, ExecutionContext { snapshot, .. }) =
+        insert_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+
+    assert_matches!(iterator.next(), Some(Ok(_)));
+    assert_matches!(iterator.next(), None);
+    let snapshot = Arc::into_inner(snapshot).unwrap();
+    snapshot.commit().unwrap();
+
+    {
+        let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
+        let query = "match $p isa person, has name \"Alice\", has age $age; require $age;";
+        let match_ = typeql::parse_query(query).unwrap().into_pipeline();
+        let (_, named_outputs) = context
+            .query_manager
+            .prepare_read_pipeline(
+                snapshot,
+                &context.type_manager,
+                context.thing_manager.clone(),
+                &context.function_manager,
+                &match_,
+            )
+            .unwrap();
+        assert!(named_outputs.contains_key("age"));
+        assert!(named_outputs.contains_key("p"));
+    }
+}
