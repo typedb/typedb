@@ -1760,7 +1760,7 @@ _Remark_. Note that `$x has $B $y` will match the individual list elements of li
 ### **Case IS_PATT**
 * 🔷 `$x is $y` is satisfied if:
     * `$x` and `$y` are both **ivars** and: $`r(x), r(y) :_! A`$ and $`r(x) = r(y)`$ for $`A : \mathbf{ERA}`$
-    * `$x` and `$y` are both **lvars** and: $`r(x), r(y) : [A]`$ and $`r(x) = r(y)`$ for (sum type) $`A = \sum_i A_i`$, $`A_i : \mahtbf{ERA}`$ (**#BDD**)
+    * `$x` and `$y` are both **lvars** and: $`r(x), r(y) : [A]`$ and $`r(x) = r(y)`$ for (sum type) $`A = \sum_i A_i`$, $`A_i : \mathbf{ERA}`$ (**#BDD**)
     * `$x` and `$y` are both **tvars** and: $`r(x), r(y) : \mathbf{ERA}`$ and $`r(x) = r(y)`$ (**#BDD**)
 
 _System property_
