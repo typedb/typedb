@@ -242,7 +242,7 @@ impl PlannerVertex {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub(super) struct ElementCost {
     pub per_input: f64,
     pub per_output: f64,
@@ -252,6 +252,14 @@ pub(super) struct ElementCost {
 impl ElementCost {
     fn free_with_branching(branching_factor: f64) -> Self {
         Self { per_input: 0.0, per_output: 0.0, branching_factor }
+    }
+
+    pub(super) fn chain(self, other: Self) -> Self {
+        Self {
+            per_input: self.per_input + other.per_input * self.branching_factor,
+            per_output: self.per_output / other.branching_factor + other.per_output,
+            branching_factor: self.branching_factor * other.branching_factor,
+        }
     }
 }
 
