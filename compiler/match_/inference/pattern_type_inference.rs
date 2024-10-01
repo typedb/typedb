@@ -369,10 +369,10 @@ pub mod tests {
     use test_utils::assert_matches;
 
     use crate::match_::inference::{
-        annotated_functions::IndexedAnnotatedFunctions,
+        annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         pattern_type_inference::{
-            infer_types_for_block, NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
-            VertexAnnotations,
+            infer_types_for_block, run_type_inference, NestedTypeInferenceGraphDisjunction, TypeInferenceEdge,
+            TypeInferenceGraph, VertexAnnotations,
         },
         tests::{
             managers,
@@ -381,6 +381,7 @@ pub mod tests {
             },
             setup_storage,
         },
+        type_seeder::TypeSeeder,
         TypeInferenceError,
     };
 
@@ -1162,16 +1163,17 @@ pub mod tests {
 
             let block = builder.finish();
             let constraints = block.conjunction().constraints();
-            let tig = infer_types_for_block(
+            // We manually compute the graph so we can confirm it decays to empty annotations everywhere
+            let mut tig = TypeSeeder::new(
                 &snapshot,
-                &block,
-                &translation_context.variable_registry,
                 &type_manager,
-                &BTreeMap::new(),
                 &IndexedAnnotatedFunctions::empty(),
                 None,
+                &translation_context.variable_registry,
             )
+            .seed_types(block.scope_context(), &BTreeMap::new(), block.conjunction())
             .unwrap();
+            run_type_inference(&mut tig);
 
             let expected_tig = TypeInferenceGraph {
                 conjunction: block.conjunction(),

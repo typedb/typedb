@@ -136,7 +136,7 @@ pub mod tests {
         .unwrap();
 
         assert_eq!(
-            BTreeSet::from([type_animal.clone(), type_cat.clone(), type_dog.clone()]),
+            BTreeSet::from([type_cat.clone()]),
             **function_annotations
                 .get_annotations(function_id.as_usize())
                 .unwrap()
@@ -145,7 +145,7 @@ pub mod tests {
                 .unwrap()
         );
         assert_eq!(
-            BTreeSet::from([type_animal.clone(), type_cat.clone(), type_dog.clone()]),
+            BTreeSet::from([type_cat.clone()]),
             **entry_annotations.vertex_annotations_of(&var_x.into()).unwrap(),
         );
     }
