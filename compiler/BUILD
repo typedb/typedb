@@ -49,6 +49,7 @@ checkstyle_test(
         "insert/**/*.rs",
         "delete/**/*.rs",
         "expression/**/*.rs",
+        "fetch/*.rs",
     ]),
     exclude = glob([
         "Cargo.*",
