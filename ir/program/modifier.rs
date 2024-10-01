@@ -4,16 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{HashMap, HashSet},
-    error::Error,
-    fmt,
-};
+use std::collections::HashSet;
 
 use answer::variable::Variable;
 
 #[derive(Debug, Clone)]
-pub enum Modifier {
+pub enum Operator {
     Select(Select),
     Sort(Sort),
     Offset(Offset),

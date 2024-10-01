@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use compiler::delete::{instructions::ConnectionInstruction, program::DeleteProgram};
 use concept::thing::thing_manager::ThingManager;
-use ir::program::block::ParameterRegistry;
+use ir::program::ParameterRegistry;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{

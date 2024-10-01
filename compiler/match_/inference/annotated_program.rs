@@ -7,7 +7,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use answer::variable::Variable;
-use ir::program::{block::FunctionalBlock, function::Function, function_signature::FunctionID};
+use ir::program::{block::Block, function::Function, function_signature::FunctionID};
 
 use crate::{
     expression::compiled_expression::CompiledExpression,
@@ -18,7 +18,7 @@ use crate::{
 };
 
 pub struct AnnotatedProgram {
-    pub(crate) entry: FunctionalBlock,
+    pub(crate) entry: Block,
     pub(crate) entry_annotations: TypeAnnotations,
     pub(crate) entry_expressions: HashMap<Variable, CompiledExpression>,
     pub(crate) schema_functions: Arc<IndexedAnnotatedFunctions>,
@@ -27,7 +27,7 @@ pub struct AnnotatedProgram {
 
 impl AnnotatedProgram {
     pub(crate) fn new(
-        entry: FunctionalBlock,
+        entry: Block,
         entry_annotations: TypeAnnotations,
         entry_expressions: HashMap<Variable, CompiledExpression>,
         local_functions: AnnotatedUnindexedFunctions,
@@ -36,7 +36,7 @@ impl AnnotatedProgram {
         Self { entry, entry_annotations, entry_expressions, preamble_functions: local_functions, schema_functions }
     }
 
-    pub fn get_entry(&self) -> &FunctionalBlock {
+    pub fn get_entry(&self) -> &Block {
         &self.entry
     }
 
@@ -99,23 +99,25 @@ pub mod tests {
         ";
         let query = typeql::parse_query(raw_query).unwrap().into_pipeline();
         let Pipeline { stages, preambles, .. } = query;
-        let typeql_match = stages.into_iter().map(|stage| stage.into_match()).find(|_| true).unwrap();
-        let typeql_function = preambles.into_iter().map(|preamble| preamble.function).find(|_| true).unwrap();
-        let function_id = FunctionID::Preamble(0);
-        let function_index =
-            HashMapFunctionSignatureIndex::build([(FunctionID::Preamble(0), &typeql_function)].into_iter());
-        let function = translate_function(&function_index, &typeql_function).unwrap();
 
-        let mut translation_context = TranslationContext::new();
-        let entry = translate_match(&mut translation_context, &function_index, &typeql_match).unwrap().finish();
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
         let ((type_animal, type_cat, type_dog), _, _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
+        let snapshot = storage.clone().open_snapshot_read();
+
+        let typeql_match = stages.into_iter().map(|stage| stage.into_match()).find(|_| true).unwrap();
+        let typeql_function = preambles.into_iter().map(|preamble| preamble.function).find(|_| true).unwrap();
+        let function_id = FunctionID::Preamble(0);
+        let function_index =
+            HashMapFunctionSignatureIndex::build([(FunctionID::Preamble(0), &typeql_function)].into_iter());
         let empty_cache = IndexedAnnotatedFunctions::empty();
 
-        let snapshot = storage.clone().open_snapshot_read();
+        let mut translation_context = TranslationContext::new();
+        let entry = translate_match(&mut translation_context, &function_index, &typeql_match).unwrap().finish();
+        let function = translate_function(&snapshot, &function_index, &typeql_function).unwrap();
+
         let &var_f_c = function.variable_registry().variable_names().iter().find(|(_, v)| v.as_str() == "c").unwrap().0;
         let var_x = *translation_context.visible_variables.get("x").unwrap();
 

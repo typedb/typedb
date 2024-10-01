@@ -22,7 +22,7 @@ use ir::{
         IrID,
     },
     program::{
-        block::{FunctionalBlock, ScopeContext},
+        block::{Block, BlockContext},
         VariableRegistry,
     },
 };
@@ -72,14 +72,13 @@ impl MatchProgram {
     }
 
     pub fn compile(
-        block: &FunctionalBlock,
+        block: &Block,
         input_variables: &HashMap<Variable, VariablePosition>,
         type_annotations: &TypeAnnotations,
         variable_registry: Arc<VariableRegistry>,
         expressions: &HashMap<Variable, CompiledExpression>,
         statistics: &Statistics,
     ) -> Self {
-        assert!(block.modifiers().is_empty(), "TODO: modifiers in a FunctionalBlock");
         let conjunction = block.conjunction();
         let scope_context = block.scope_context();
         debug_assert!(conjunction.captured_variables(scope_context).all(|var| input_variables.contains_key(&var)));
@@ -117,7 +116,7 @@ impl MatchProgram {
 
 fn compile_conjunction(
     conjunction: &Conjunction,
-    scope_context: &ScopeContext,
+    scope_context: &BlockContext,
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,
     variable_registry: Arc<VariableRegistry>,

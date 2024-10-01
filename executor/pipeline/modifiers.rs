@@ -3,11 +3,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::cmp::Ordering;
-use std::collections::HashSet;
+use std::{cmp::Ordering, collections::HashSet};
+
 use answer::variable_value::VariableValue;
-use compiler::modifiers::{LimitProgram, OffsetProgram, RequireProgram, SelectProgram, SortProgram};
-use compiler::VariablePosition;
+use compiler::{
+    modifiers::{LimitProgram, OffsetProgram, RequireProgram, SelectProgram, SortProgram},
+    VariablePosition,
+};
 use ir::program::modifier::SortVariable;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
@@ -336,8 +338,12 @@ where
         loop {
             let next = self.previous.next();
             match next {
-                None => { return None; }
-                Some(Err(err)) => { return Some(Err(err)); }
+                None => {
+                    return None;
+                }
+                Some(Err(err)) => {
+                    return Some(Err(err));
+                }
                 Some(Ok(row)) => {
                     for pos in self.required.iter() {
                         if matches!(row.get(*pos), &VariableValue::Empty) {

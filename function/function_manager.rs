@@ -80,7 +80,7 @@ impl FunctionManager {
         // Prepare ir
         let function_index =
             HashMapFunctionSignatureIndex::build(functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)));
-        let ir = Self::translate_functions(&functions, &function_index)?;
+        let ir = Self::translate_functions(snapshot, &functions, &function_index)?;
         // Run type-inference
         infer_types_for_functions(ir, snapshot, type_manager, &IndexedAnnotatedFunctions::empty())
             .map_err(|source| FunctionError::AllFunctionsTypeCheckFailure { typedb_source: source })?;
@@ -114,7 +114,7 @@ impl FunctionManager {
             HashMapFunctionSignatureIndex::build(functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)));
         let function_index = ReadThroughFunctionSignatureIndex::new(snapshot, self, buffered);
         // Translate to ensure the function calls are valid references. Type-inference is done at commit-time.
-        Self::translate_functions(&functions, &function_index)?;
+        Self::translate_functions(snapshot, &functions, &function_index)?;
 
         for (function, definition) in zip(functions.iter(), definitions.iter()) {
             let index_key = NameToFunctionDefinitionIndex::build(function.name().as_str()).into_storage_key();
@@ -129,12 +129,13 @@ impl FunctionManager {
     }
 
     pub(crate) fn translate_functions(
+        snapshot: &impl ReadableSnapshot,
         functions: &[SchemaFunction],
         function_index: &impl FunctionSignatureIndex,
     ) -> Result<Vec<ir::program::function::Function>, FunctionError> {
         functions
             .iter()
-            .map(|function| translate_function(function_index, &function.parsed))
+            .map(|function| translate_function(snapshot, function_index, &function.parsed))
             .try_collect()
             .map_err(|err| FunctionError::FunctionTranslation { typedb_source: err })
     }

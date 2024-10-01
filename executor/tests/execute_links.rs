@@ -39,7 +39,7 @@ use executor::{
     error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-use ir::{pattern::constraint::IsaKind, program::block::FunctionalBlock, translation::TranslationContext};
+use ir::{pattern::constraint::IsaKind, program::block::Block, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -181,7 +181,7 @@ fn traverse_links_unbounded_sorted_from() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
@@ -294,7 +294,7 @@ fn traverse_links_unbounded_sorted_to() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -381,7 +381,7 @@ fn traverse_links_bounded_relation() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -484,7 +484,7 @@ fn traverse_links_bounded_relation_player() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -599,7 +599,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -686,7 +686,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -773,7 +773,7 @@ fn traverse_links_reverse_bounded_player() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -872,7 +872,7 @@ fn traverse_links_reverse_bounded_player_relation() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();

@@ -8,19 +8,19 @@ use answer::variable::Variable;
 use typeql::query::stage::delete::DeletableKind;
 
 use crate::{
-    program::{block::FunctionalBlock, function_signature::HashMapFunctionSignatureIndex},
+    program::{block::Block, function_signature::HashMapFunctionSignatureIndex},
     translation::{
         constraints::{add_statement, add_typeql_relation, register_typeql_var},
         TranslationContext,
     },
-    PatternDefinitionError,
+    RepresentationError,
 };
 
 pub fn translate_insert(
     context: &mut TranslationContext,
     insert: &typeql::query::stage::Insert,
-) -> Result<FunctionalBlock, PatternDefinitionError> {
-    let mut builder = FunctionalBlock::builder(context.next_block_context());
+) -> Result<Block, RepresentationError> {
+    let mut builder = Block::builder(context.next_block_context());
     let function_index = HashMapFunctionSignatureIndex::empty();
     for statement in &insert.statements {
         add_statement(&function_index, &mut builder.conjunction_mut(), statement)?;
@@ -31,8 +31,8 @@ pub fn translate_insert(
 pub fn translate_delete(
     context: &mut TranslationContext,
     delete: &typeql::query::stage::Delete,
-) -> Result<(FunctionalBlock, Vec<Variable>), PatternDefinitionError> {
-    let mut builder = FunctionalBlock::builder(context.next_block_context());
+) -> Result<(Block, Vec<Variable>), RepresentationError> {
+    let mut builder = Block::builder(context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
     let mut constraints = conjunction.constraints_mut();
     let mut deleted_concepts = Vec::new();

@@ -29,6 +29,7 @@ pub(crate) enum ProtocolError {
         driver_lang: String,
         driver_version: String,
     },
+    ErrorCompletingWrite {},
     FailedQueryResponse {},
 }
 
@@ -77,6 +78,9 @@ impl IntoGRPCStatus for ProtocolError {
                     ),
                 ),
             ),
+            Self::ErrorCompletingWrite {} => {
+                Status::new(Code::Internal, "Error completing currently executing write query.")
+            }
             Self::FailedQueryResponse {} => Status::internal("Failed to send response"),
         }
     }

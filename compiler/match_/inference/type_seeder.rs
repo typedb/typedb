@@ -29,7 +29,7 @@ use ir::{
         variable_category::VariableCategory,
         Scope, ScopeId, Vertex,
     },
-    program::{block::ScopeContext, function::Function, function_signature::FunctionID, VariableRegistry},
+    program::{block::BlockContext, function::Function, function_signature::FunctionID, VariableRegistry},
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
@@ -84,7 +84,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
 
     pub(crate) fn seed_types<'graph>(
         &self,
-        context: &ScopeContext,
+        context: &BlockContext,
         upstream_annotations: &BTreeMap<Variable, Arc<BTreeSet<TypeAnnotation>>>,
         conjunction: &'graph Conjunction,
     ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
@@ -111,7 +111,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
     pub(crate) fn seed_types_impl(
         &self,
         tig: &mut TypeInferenceGraph<'_>,
-        context: &ScopeContext,
+        context: &BlockContext,
         parent_vertices: &VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
         self.local_variables(context, tig.conjunction.scope_id()).for_each(|var| {
@@ -153,7 +153,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
 
     fn build_recursive<'conj>(
         &self,
-        context: &ScopeContext,
+        context: &BlockContext,
         conjunction: &'conj Conjunction,
     ) -> TypeInferenceGraph<'conj> {
         let mut nested_disjunctions = Vec::new();
@@ -185,7 +185,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
 
     fn build_disjunction_recursive<'conj>(
         &self,
-        context: &ScopeContext,
+        context: &BlockContext,
         parent_conjunction: &'conj Conjunction,
         disjunction: &'conj Disjunction,
     ) -> NestedTypeInferenceGraphDisjunction<'conj> {
@@ -279,7 +279,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
 
     fn local_variables<'a>(
         &'a self,
-        context: &'a ScopeContext,
+        context: &'a BlockContext,
         conjunction_scope_id: ScopeId,
     ) -> impl Iterator<Item = Variable> + '_ {
         context.get_variable_scopes().filter(move |&(_, scope)| scope == conjunction_scope_id).map(|(var, _)| var)
@@ -288,7 +288,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
     fn annotate_some_unannotated_vertex(
         &self,
         tig: &mut TypeInferenceGraph<'_>,
-        context: &ScopeContext,
+        context: &BlockContext,
     ) -> Result<bool, ConceptReadError> {
         let unannotated_var = self.local_variables(context, tig.conjunction.scope_id()).find(|&var| {
             let vertex = Vertex::Variable(var);
@@ -1386,7 +1386,7 @@ pub mod tests {
     use encoding::value::{label::Label, value_type::ValueType};
     use ir::{
         pattern::constraint::{Comparator, IsaKind},
-        program::block::FunctionalBlock,
+        program::block::Block,
         translation::TranslationContext,
     };
     use storage::snapshot::CommittableSnapshot;
@@ -1416,7 +1416,7 @@ pub mod tests {
 
         // Case 1: $a isa cat, has animal-name $n;
         let mut translation_context = TranslationContext::new();
-        let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+        let mut builder = Block::builder(translation_context.next_block_context());
         let mut conjunction = builder.conjunction_mut();
         let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
         let var_name = conjunction.get_or_declare_variable("name").unwrap();
@@ -1496,7 +1496,7 @@ pub mod tests {
 
         // Case 1: $a has $n;
         let mut translation_context = TranslationContext::new();
-        let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+        let mut builder = Block::builder(translation_context.next_block_context());
         let mut conjunction = builder.conjunction_mut();
         let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
         let var_name = conjunction.get_or_declare_variable("name").unwrap();
@@ -1565,7 +1565,7 @@ pub mod tests {
         {
             // // Case 1: $a > $b;
             let mut translation_context = TranslationContext::new();
-            let mut builder = FunctionalBlock::builder(translation_context.next_block_context());
+            let mut builder = Block::builder(translation_context.next_block_context());
             let mut conjunction = builder.conjunction_mut();
             let var_a = conjunction.get_or_declare_variable("a").unwrap();
             let var_b = conjunction.get_or_declare_variable("b").unwrap();

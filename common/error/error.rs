@@ -67,6 +67,40 @@ impl fmt::Display for dyn TypeDBError + '_ {
     }
 }
 
+impl<T: TypeDBError> TypeDBError for Box<T> {
+    fn variant_name(&self) -> &'static str {
+        (**self).variant_name()
+    }
+
+    fn component(&self) -> &'static str {
+        (**self).component()
+    }
+
+    fn code(&self) -> &'static str {
+        (**self).code()
+    }
+
+    fn code_prefix(&self) -> &'static str {
+        (**self).code_prefix()
+    }
+
+    fn code_number(&self) -> usize {
+        (**self).code_number()
+    }
+
+    fn format_description(&self) -> String {
+        (**self).format_description()
+    }
+
+    fn source(&self) -> Option<&(dyn Error + Sync)> {
+        (**self).source()
+    }
+
+    fn source_typedb_error(&self) -> Option<&(dyn TypeDBError + Sync)> {
+        (**self).source_typedb_error()
+    }
+}
+
 // ***USAGE WARNING***: We should not set both Source and TypeDBSource, TypeDBSource has precedence!
 #[macro_export]
 macro_rules! typedb_error {

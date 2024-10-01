@@ -14,39 +14,40 @@ use ir::{
         variable_category::{VariableCategory, VariableOptionality},
     },
     program::{
-        block::FunctionalBlock,
+        block::Block,
         function_signature::{FunctionID, FunctionSignature},
     },
     translation::TranslationContext,
 };
 
-#[test]
-fn build_modifiers() {
-    let mut context = TranslationContext::new();
-    let mut builder = FunctionalBlock::builder(context.next_block_context());
-    let mut conjunction = builder.conjunction_mut();
-
-    let var_person = conjunction.get_or_declare_variable("person").unwrap();
-    let var_name = conjunction.get_or_declare_variable("name").unwrap();
-    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
-    let var_name_type = conjunction.get_or_declare_variable("name_type").unwrap();
-
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
-    conjunction.constraints_mut().add_has(var_person, var_name).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
-    conjunction.constraints_mut().add_label(var_person_type, "person").unwrap();
-    conjunction.constraints_mut().add_label(var_name_type, "name").unwrap();
-
-    builder.add_limit(10);
-    builder.add_sort(vec![(var_person.clone(), true), (var_name.clone(), false)]);
-
-    let block = builder.finish();
-}
+// TODO: if we re-instante modifiers/stream operators as part of blocks, then we can bring this test back
+// #[test]
+// fn build_modifiers() {
+//     let mut context = TranslationContext::new();
+//     let mut builder = Block::builder(context.next_block_context());
+//     let mut conjunction = builder.conjunction_mut();
+//
+//     let var_person = conjunction.get_or_declare_variable("person").unwrap();
+//     let var_name = conjunction.get_or_declare_variable("name").unwrap();
+//     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
+//     let var_name_type = conjunction.get_or_declare_variable("name_type").unwrap();
+//
+//     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
+//     conjunction.constraints_mut().add_has(var_person, var_name).unwrap();
+//     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
+//     conjunction.constraints_mut().add_label(var_person_type, "person").unwrap();
+//     conjunction.constraints_mut().add_label(var_name_type, "name").unwrap();
+//
+//     builder.add_limit(10);
+//     builder.add_sort(vec![(var_person.clone(), true), (var_name.clone(), false)]);
+//
+//     let block = builder.finish();
+// }
 
 #[test]
 fn build_program_with_functions() {
     let mut context = TranslationContext::new();
-    let mut builder = FunctionalBlock::builder(context.next_block_context());
+    let mut builder = Block::builder(context.next_block_context());
     let mut conjunction = builder.conjunction_mut();
 
     let var_person = conjunction.get_or_declare_variable("person").unwrap();

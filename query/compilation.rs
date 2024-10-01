@@ -14,11 +14,10 @@ use compiler::{
     delete::program::DeleteProgram,
     insert::program::InsertProgram,
     match_::{inference::annotated_functions::AnnotatedUnindexedFunctions, planner::pattern_plan::MatchProgram},
-    modifiers::{LimitProgram, OffsetProgram, SelectProgram, SortProgram},
+    modifiers::{LimitProgram, OffsetProgram, RequireProgram, SelectProgram, SortProgram},
     reduce::{ReduceInstruction, ReduceProgram},
     VariablePosition,
 };
-use compiler::modifiers::RequireProgram;
 use concept::thing::statistics::Statistics;
 use ir::program::{function::Function, VariableRegistry};
 
@@ -166,7 +165,7 @@ fn compile_stage(
         })),
         AnnotatedStage::Limit(limit) => {
             Ok(CompiledStage::Limit(LimitProgram { limit: limit.limit(), output_row_mapping: input_variables.clone() }))
-        },
+        }
         AnnotatedStage::Require(require) => {
             let mut required_positions = HashSet::with_capacity(require.variables.len());
             for &variable in &require.variables {
@@ -177,7 +176,7 @@ fn compile_stage(
                 required: required_positions,
                 output_row_mapping: input_variables.clone(),
             }))
-        },
+        }
         AnnotatedStage::Reduce(reduce, typed_reducers) => {
             debug_assert_eq!(reduce.assigned_reductions.len(), typed_reducers.len());
             let mut output_row_mapping = HashMap::new();

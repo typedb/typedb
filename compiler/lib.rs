@@ -12,6 +12,7 @@ use ir::pattern::IrID;
 
 pub mod delete;
 pub mod expression;
+pub mod fetch;
 pub mod insert;
 pub mod match_;
 pub mod modifiers;

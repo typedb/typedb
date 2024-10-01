@@ -58,6 +58,17 @@ impl<'a> VariableValue<'a> {
         }
     }
 
+    pub fn as_reference(&self) -> VariableValue<'_> {
+        match self {
+            VariableValue::Empty => VariableValue::Empty,
+            VariableValue::Type(type_) => VariableValue::Type(type_.clone()),
+            VariableValue::Thing(thing) => VariableValue::Thing(thing.as_reference()),
+            VariableValue::Value(value) => VariableValue::Value(value.as_reference()),
+            VariableValue::ThingList(list) => VariableValue::ThingList(list.clone()),
+            VariableValue::ValueList(list) => VariableValue::ValueList(list.clone()),
+        }
+    }
+
     pub fn into_owned(self) -> VariableValue<'static> {
         match self {
             VariableValue::Empty => VariableValue::Empty,

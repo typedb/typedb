@@ -960,24 +960,27 @@ impl TransactionService {
                     &pipeline,
                 );
 
-                let (executor, named_outputs) = unwrap_or_execute_and_return!(prepare_result, |err| {
-                    Self::submit_response_sync(&sender, StreamQueryResponse::done_err(err));
-                });
+                let (read_pipeline_stage_executor, named_outputs) =
+                    unwrap_or_execute_and_return!(prepare_result, |err| {
+                        Self::submit_response_sync(&sender, StreamQueryResponse::done_err(err));
+                    });
 
                 let descriptor: StreamQueryOutputDescriptor =
                     named_outputs.into_iter().map(|(name, position)| (name, position)).sorted().collect();
                 let initial_response = StreamQueryResponse::init_ok(&descriptor, Read);
                 Self::submit_response_sync(&sender, initial_response);
 
-                let (mut iterator, _) =
-                    unwrap_or_execute_and_return!(executor.into_iterator(interrupt.clone()), |(err, _)| {
+                let (mut iterator, _) = unwrap_or_execute_and_return!(
+                    read_pipeline_stage_executor.into_iterator(interrupt.clone()),
+                    |(err, _)| {
                         Self::submit_response_sync(
                             &sender,
                             StreamQueryResponse::done_err(QueryError::ReadPipelineExecutionError {
                                 typedb_source: err,
                             }),
                         );
-                    });
+                    }
+                );
 
                 while let Some(next) = iterator.next() {
                     if let Some(interrupt) = interrupt.check() {
@@ -1055,7 +1058,7 @@ impl TransactionService {
         for stage in &pipeline.stages {
             match stage {
                 Stage::Insert(_) | Stage::Put(_) | Stage::Delete(_) | Stage::Update(_) => return true,
-                Stage::Fetch(_) | Stage::Reduce(_) | Stage::Modifier(_) | Stage::Match(_) => {}
+                Stage::Fetch(_) | Stage::Operator(_) | Stage::Match(_) => {}
             }
         }
         false

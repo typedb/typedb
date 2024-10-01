@@ -10,19 +10,17 @@ use answer::variable::Variable;
 
 use crate::{
     pattern::variable_category::VariableCategory,
-    program::{
-        block::{BlockContext, ParameterRegistry},
-        function::Reducer,
-        VariableRegistry,
-    },
+    program::{block::BlockBuilderContext, reduce::Reducer, ParameterRegistry, VariableRegistry},
 };
 
 mod constraints;
 mod expression;
+mod fetch;
 pub mod function;
 pub mod literal;
 pub mod match_;
 pub mod modifiers;
+pub mod pipeline;
 pub mod reduce;
 pub mod tokens;
 pub mod writes;
@@ -43,9 +41,9 @@ impl TranslationContext {
         }
     }
 
-    pub fn next_block_context(&mut self) -> BlockContext<'_> {
+    pub fn next_block_context(&mut self) -> BlockBuilderContext<'_> {
         let Self { variable_registry, visible_variables, parameters } = self;
-        BlockContext::new(variable_registry, visible_variables, parameters)
+        BlockBuilderContext::new(variable_registry, visible_variables, parameters)
     }
 
     pub(crate) fn register_reduced_variable(

@@ -7,7 +7,7 @@
 use std::sync::Arc;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use ir::program::block::ParameterRegistry;
+use ir::program::ParameterRegistry;
 use lending_iterator::LendingIterator;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -19,8 +19,8 @@ use crate::{
         insert::InsertStageExecutor,
         match_::{MatchStageExecutor, MatchStageIterator},
         modifiers::{
-            LimitStageExecutor, LimitStageIterator, OffsetStageExecutor, OffsetStageIterator, SelectStageExecutor,
-            SelectStageIterator, SortStageExecutor, SortStageIterator,
+            LimitStageExecutor, LimitStageIterator, OffsetStageExecutor, OffsetStageIterator, RequireStageExecutor,
+            RequireStageIterator, SelectStageExecutor, SelectStageIterator, SortStageExecutor, SortStageIterator,
         },
         reduce::ReduceStageExecutor,
         PipelineExecutionError, WrittenRowsIterator,
@@ -28,7 +28,6 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-use crate::pipeline::modifiers::{RequireStageExecutor, RequireStageIterator};
 
 #[derive(Debug)]
 pub struct ExecutionContext<Snapshot> {

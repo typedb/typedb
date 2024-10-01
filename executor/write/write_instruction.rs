@@ -14,7 +14,7 @@ use concept::thing::{
     ThingAPI,
 };
 use encoding::value::value::Value;
-use ir::program::block::ParameterRegistry;
+use ir::program::ParameterRegistry;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{row::Row, write::WriteError};
@@ -41,10 +41,10 @@ fn get_thing<'a>(input: &'a Row<'a>, source: &ThingSource) -> &'a answer::Thing<
     input.get(*position).as_thing()
 }
 
-fn get_value<'a>(input: &'a Row<'_>, parameters: &'a ParameterRegistry, source: ValueSource) -> &'a Value<'a> {
+fn get_value<'a>(input: &'a Row<'_>, parameters: &'a ParameterRegistry, source: ValueSource) -> Value<'a> {
     match source {
-        ValueSource::Variable(position) => input.get(position).as_value(),
-        ValueSource::Parameter(id) => &parameters[id],
+        ValueSource::Variable(position) => input.get(position).as_value().as_reference(),
+        ValueSource::Parameter(id) => parameters.value_unchecked(id).as_reference(),
     }
 }
 

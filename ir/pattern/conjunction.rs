@@ -17,8 +17,8 @@ use crate::{
         optional::Optional,
         Scope, ScopeId,
     },
-    program::block::{BlockContext, ScopeContext},
-    PatternDefinitionError,
+    program::block::{BlockBuilderContext, BlockContext},
+    RepresentationError,
 };
 
 #[derive(Debug, Clone)]
@@ -41,14 +41,14 @@ impl Conjunction {
         &self.nested_patterns
     }
 
-    pub fn captured_variables(&self, scope_context: &ScopeContext) -> impl Iterator<Item = Variable> + '_ {
+    pub fn captured_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
         iter::empty() // TODO
     }
 
-    pub fn declared_variables<'a>(&self, scope_context: &'a ScopeContext) -> impl Iterator<Item = Variable> + 'a {
+    pub fn declared_variables<'a>(&self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
         let self_scope = self.scope_id;
-        scope_context.get_variable_scopes().filter_map(move |(var, scope)| {
-            if scope == self_scope || scope_context.is_child_scope(scope, self_scope) {
+        block_context.get_variable_scopes().filter_map(move |(var, scope)| {
+            if scope == self_scope || block_context.is_child_scope(scope, self_scope) {
                 Some(var)
             } else {
                 None
@@ -78,12 +78,12 @@ impl fmt::Display for Conjunction {
 }
 
 pub struct ConjunctionBuilder<'cx, 'reg> {
-    context: &'cx mut BlockContext<'reg>,
+    context: &'cx mut BlockBuilderContext<'reg>,
     conjunction: &'cx mut Conjunction,
 }
 
 impl<'cx, 'reg> ConjunctionBuilder<'cx, 'reg> {
-    pub fn new(context: &'cx mut BlockContext<'reg>, conjunction: &'cx mut Conjunction) -> Self {
+    pub fn new(context: &'cx mut BlockBuilderContext<'reg>, conjunction: &'cx mut Conjunction) -> Self {
         Self { context, conjunction }
     }
 
@@ -118,11 +118,11 @@ impl<'cx, 'reg> ConjunctionBuilder<'cx, 'reg> {
         Optional::new_builder(self.context, optional)
     }
 
-    pub fn get_or_declare_variable(&mut self, name: &str) -> Result<Variable, PatternDefinitionError> {
+    pub fn get_or_declare_variable(&mut self, name: &str) -> Result<Variable, RepresentationError> {
         self.context.get_or_declare_variable(name, self.conjunction.scope_id)
     }
 
-    pub fn declare_variable_anonymous(&mut self) -> Result<Variable, PatternDefinitionError> {
+    pub fn declare_variable_anonymous(&mut self) -> Result<Variable, RepresentationError> {
         self.context.create_anonymous_variable(self.conjunction.scope_id)
     }
 }

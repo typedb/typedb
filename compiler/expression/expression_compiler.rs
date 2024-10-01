@@ -16,7 +16,7 @@ use ir::{
         },
         ParameterID,
     },
-    program::block::ParameterRegistry,
+    program::ParameterRegistry,
 };
 
 use crate::expression::{
@@ -88,7 +88,7 @@ impl<'this> ExpressionCompilationContext<'this> {
     fn compile_constant(&mut self, constant: ParameterID) -> Result<(), ExpressionCompileError> {
         self.constant_stack.push(constant);
 
-        self.push_type_single(self.parameters[constant].value_type().category());
+        self.push_type_single(self.parameters.value_unchecked(constant).value_type().category());
         self.append_instruction(LoadConstant::OP_CODE);
 
         Ok(())

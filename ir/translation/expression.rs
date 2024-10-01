@@ -25,14 +25,14 @@ use crate::{
         constraints::{register_typeql_var, split_out_inline_expressions},
         literal::translate_literal,
     },
-    PatternDefinitionError,
+    RepresentationError,
 };
 
 pub(super) fn add_typeql_expression(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_, '_>,
     rhs: &typeql::Expression,
-) -> Result<Vertex<Variable>, PatternDefinitionError> {
+) -> Result<Vertex<Variable>, RepresentationError> {
     if let typeql::Expression::Value(literal) = rhs {
         let id = register_typeql_literal(constraints, literal)?;
         Ok(Vertex::Parameter(id))
@@ -48,7 +48,7 @@ pub(crate) fn build_expression(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_, '_>,
     expression: &typeql::Expression,
-) -> Result<ExpressionTree<Variable>, PatternDefinitionError> {
+) -> Result<ExpressionTree<Variable>, RepresentationError> {
     let mut tree = ExpressionTree::empty();
     build_recursive(function_index, constraints, expression, &mut tree)?;
     Ok(tree)
@@ -59,7 +59,7 @@ fn build_recursive(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     expression: &typeql::Expression,
     tree: &mut ExpressionTree<Variable>,
-) -> Result<ExpressionTreeNodeId, PatternDefinitionError> {
+) -> Result<ExpressionTreeNodeId, RepresentationError> {
     let expression = match expression {
         typeql::Expression::Paren(inner) => {
             return build_recursive(function_index, constraints, &inner.inner, tree);
@@ -88,7 +88,7 @@ fn build_recursive(
                 .iter()
                 .map(|sub_expr| build_recursive(function_index, constraints, sub_expr, tree))
                 .collect::<Result<Vec<_>, _>>()?;
-            let len_id = constraints.parameters().register(Value::Long(items.len() as i64));
+            let len_id = constraints.parameters().register_value(Value::Long(items.len() as i64));
             Expression::List(ListConstructor::new(items, len_id))
         }
         typeql::Expression::ListIndexRange(range) => {
@@ -104,10 +104,10 @@ fn build_recursive(
 fn register_typeql_literal(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     literal: &typeql::Literal,
-) -> Result<ParameterID, PatternDefinitionError> {
+) -> Result<ParameterID, RepresentationError> {
     let value = translate_literal(literal)
-        .map_err(|source| PatternDefinitionError::LiteralParseError { literal: literal.to_string(), source })?;
-    let id = constraints.parameters().register(value);
+        .map_err(|source| RepresentationError::LiteralParseError { literal: literal.to_string(), source })?;
+    let id = constraints.parameters().register_value(value);
     Ok(id)
 }
 
@@ -117,14 +117,14 @@ pub(super) fn add_user_defined_function_call(
     identifier: &typeql::Identifier,
     assigned: Vec<Variable>,
     args: &[typeql::Expression],
-) -> Result<(), PatternDefinitionError> {
+) -> Result<(), RepresentationError> {
     let arguments = split_out_inline_expressions(function_index, constraints, args)?;
     let function_name = identifier.as_str();
     let callee = function_index
         .get_function_signature(function_name)
-        .map_err(|source| PatternDefinitionError::FunctionReadError { source })?;
+        .map_err(|source| RepresentationError::FunctionReadError { source })?;
     let Some(callee) = callee else {
-        return Err(PatternDefinitionError::UnresolvedFunction { function_name: function_name.to_owned() });
+        return Err(RepresentationError::UnresolvedFunction { function_name: function_name.to_owned() });
     };
     constraints.add_function_binding(assigned, &callee, arguments, function_name)?;
     Ok(())
@@ -135,7 +135,7 @@ fn build_function(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     function_call: &typeql::expression::FunctionCall,
     tree: &mut ExpressionTree<Variable>,
-) -> Result<Expression<Variable>, PatternDefinitionError> {
+) -> Result<Expression<Variable>, RepresentationError> {
     match &function_call.name {
         FunctionName::Builtin(builtin) => {
             let args = function_call
@@ -164,15 +164,15 @@ fn translate_operator(operator: &ArithmeticOperator) -> Operator {
     }
 }
 
-fn check_builtin_arg_count(builtin: Function, actual: usize, expected: usize) -> Result<(), PatternDefinitionError> {
+fn check_builtin_arg_count(builtin: Function, actual: usize, expected: usize) -> Result<(), RepresentationError> {
     if actual == expected {
         Ok(())
     } else {
-        Err(PatternDefinitionError::ExpressionBuiltinArgumentCountMismatch { builtin, expected, actual })
+        Err(RepresentationError::ExpressionBuiltinArgumentCountMismatch { builtin, expected, actual })
     }
 }
 
-fn to_builtin_id(typeql_id: &BuiltinFunctionName, args: &[usize]) -> Result<BuiltInFunctionID, PatternDefinitionError> {
+fn to_builtin_id(typeql_id: &BuiltinFunctionName, args: &[usize]) -> Result<BuiltInFunctionID, RepresentationError> {
     let token = typeql_id.token;
     match token {
         Function::Abs => {
@@ -206,15 +206,12 @@ pub mod tests {
             expression::{Expression, Operation, Operator},
             Vertex,
         },
-        program::{block::FunctionalBlock, function_signature::HashMapFunctionSignatureIndex},
+        program::{block::Block, function_signature::HashMapFunctionSignatureIndex},
         translation::{match_::translate_match, TranslationContext},
-        PatternDefinitionError,
+        RepresentationError,
     };
 
-    fn parse_query_get_match(
-        context: &mut TranslationContext,
-        query_str: &str,
-    ) -> Result<FunctionalBlock, PatternDefinitionError> {
+    fn parse_query_get_match(context: &mut TranslationContext, query_str: &str) -> Result<Block, RepresentationError> {
         let mut query = typeql::parse_query(query_str).unwrap().into_pipeline();
         let match_ = query.stages.remove(0).into_match();
         translate_match(context, &HashMapFunctionSignatureIndex::empty(), &match_).map(|builder| builder.finish())
@@ -238,11 +235,11 @@ pub mod tests {
 
         assert_eq!(rhs.len(), 5);
         let Expression::Constant(id) = rhs[0] else { panic!("Expected Constant, found: {:?}", rhs[0]) };
-        assert_eq!(context.parameters.get(id), Some(&Value::Long(5)));
+        assert_eq!(context.parameters.value(id), Some(&Value::Long(5)));
         let Expression::Constant(id) = rhs[1] else { panic!("Expected Constant, found: {:?}", rhs[1]) };
-        assert_eq!(context.parameters.get(id), Some(&Value::Long(9)));
+        assert_eq!(context.parameters.value(id), Some(&Value::Long(9)));
         let Expression::Constant(id) = rhs[2] else { panic!("Expected Constant, found: {:?}", rhs[2]) };
-        assert_eq!(context.parameters.get(id), Some(&Value::Long(6)));
+        assert_eq!(context.parameters.value(id), Some(&Value::Long(6)));
         assert_eq!(rhs[3], Expression::Operation(Operation::new(Operator::Multiply, 1, 2)));
         assert_eq!(rhs[4], Expression::Operation(Operation::new(Operator::Add, 0, 3)));
     }
