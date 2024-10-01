@@ -508,7 +508,6 @@ fn test_select() {
     }
 }
 
-
 #[test]
 fn test_require() {
     let context = setup_common();

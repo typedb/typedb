@@ -16,8 +16,8 @@ use ir::{
         },
         ParameterID,
     },
+    program::ParameterRegistry,
 };
-use ir::program::ParameterRegistry;
 
 use crate::expression::{
     compiled_expression::{CompiledExpression, ExpressionValueType},

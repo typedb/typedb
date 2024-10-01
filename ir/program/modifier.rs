@@ -4,11 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{HashMap, HashSet},
-    error::Error,
-    fmt,
-};
+use std::collections::HashSet;
 
 use answer::variable::Variable;
 

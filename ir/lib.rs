@@ -20,9 +20,8 @@ use typeql::{
 
 use crate::{
     pattern::{expression::ExpressionDefinitionError, variable_category::VariableCategory},
-    program::FunctionReadError,
+    program::{FunctionReadError, FunctionRepresentationError},
 };
-use crate::program::FunctionRepresentationError;
 
 pub mod pattern;
 pub mod program;

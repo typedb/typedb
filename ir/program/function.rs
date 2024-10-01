@@ -8,16 +8,14 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     sync::Arc,
 };
-use typeql::query::stage::Stage;
 
 use answer::{variable::Variable, Type};
 
 use crate::{
     pattern::Vertex,
-    program::{block::Block, VariableRegistry},
+    program::{reduce::Reducer, VariableRegistry},
+    translation::pipeline::TranslatedStage,
 };
-use crate::program::reduce::Reducer;
-use crate::translation::pipeline::{TranslatedPipeline, TranslatedStage};
 
 pub type PlaceholderTypeQLReturnOperation = String;
 

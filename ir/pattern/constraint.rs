@@ -7,7 +7,6 @@
 use std::{collections::HashMap, fmt};
 
 use answer::variable::Variable;
-use encoding::value;
 use itertools::Itertools;
 
 use crate::{
@@ -17,13 +16,9 @@ use crate::{
         variable_category::VariableCategory,
         IrID, ScopeId, Vertex,
     },
-    program::{
-        block::{BlockBuilderContext},
-        function_signature::FunctionSignature,
-    },
+    program::{block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry},
     RepresentationError,
 };
-use crate::program::ParameterRegistry;
 
 #[derive(Debug, Clone)]
 pub struct Constraints {
@@ -298,9 +293,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
     ) -> Result<&ExpressionBinding<Variable>, RepresentationError> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let binding = ExpressionBinding::new(variable, expression);
-        binding
-            .validate(self.context)
-            .map_err(|source| RepresentationError::ExpressionDefinitionError { source })?;
+        binding.validate(self.context).map_err(|source| RepresentationError::ExpressionDefinitionError { source })?;
         // WARNING: we can't set a variable category here, since we don't know if the expression will produce a
         //          Value, a ValueList, or a ThingList! We will know this at compilation time
         let as_ref = self.constraints.add_constraint(binding);

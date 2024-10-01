@@ -17,9 +17,9 @@ use crate::{
         optional::Optional,
         Scope, ScopeId,
     },
+    program::block::{BlockBuilderContext, BlockContext},
+    RepresentationError,
 };
-use crate::{program::block::BlockBuilderContext, RepresentationError};
-use crate::program::block::BlockContext;
 
 #[derive(Debug, Clone)]
 pub struct Conjunction {

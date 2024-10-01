@@ -78,7 +78,7 @@ impl IntoGRPCStatus for ProtocolError {
                     ),
                 ),
             ),
-            Self::ErrorCompletingWrite{} => {
+            Self::ErrorCompletingWrite {} => {
                 Status::new(Code::Internal, "Error completing currently executing write query.")
             }
             Self::FailedQueryResponse {} => Status::internal("Failed to send response"),

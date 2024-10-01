@@ -23,8 +23,7 @@ use compiler::expression::{
     },
 };
 use encoding::value::value::{NativeValueConvertible, Value};
-use ir::{pattern::ParameterID};
-use ir::program::ParameterRegistry;
+use ir::{pattern::ParameterID, program::ParameterRegistry};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ExpressionValue {

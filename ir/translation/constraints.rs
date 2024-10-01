@@ -354,9 +354,7 @@ pub(super) fn add_typeql_relation(
                     }
                     TypeRefAny::Type(TypeRef::Variable(var)) => register_typeql_var(constraints, var)?,
                     TypeRefAny::Type(TypeRef::Named(NamedType::Role(name))) => {
-                        return Err(RepresentationError::ScopedRoleNameInRelation {
-                            declaration: role_player.clone(),
-                        });
+                        return Err(RepresentationError::ScopedRoleNameInRelation { declaration: role_player.clone() });
                     }
                     TypeRefAny::Optional(_) => todo!(),
                     TypeRefAny::List(_) => todo!(),

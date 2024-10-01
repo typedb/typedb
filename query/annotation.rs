@@ -28,20 +28,17 @@ use encoding::value::value_type::{
 use ir::{
     pattern::constraint::Constraint,
     program::{
-        block::{Block},
-        function::{Function},
-        modifier::{Limit, Offset, Select, Sort},
-        reduce::Reduce,
-        VariableRegistry,
+        block::Block,
+        function::Function,
+        modifier::{Limit, Offset, Require, Select, Sort},
+        reduce::{Reduce, Reducer},
+        ParameterRegistry, VariableRegistry,
     },
+    translation::pipeline::TranslatedStage,
 };
-use ir::program::ParameterRegistry;
-use ir::program::reduce::Reducer;
-use ir::translation::pipeline::TranslatedStage;
-use ir::program::modifier::Require;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::{error::QueryError};
+use crate::error::QueryError;
 
 pub(super) struct AnnotatedPipeline {
     pub(super) annotated_preamble: AnnotatedUnindexedFunctions,

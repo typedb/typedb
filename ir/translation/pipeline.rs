@@ -10,24 +10,29 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use typeql::query::stage::{Operator as TypeQLOperator, Stage as TypeQLStage, Stage};
-
 use answer::variable::Variable;
 use storage::snapshot::ReadableSnapshot;
+use typeql::query::stage::{Operator as TypeQLOperator, Stage as TypeQLStage, Stage};
 
-use crate::program::block::{Block, };
-use crate::program::function::Function;
-use crate::program::function_signature::FunctionSignatureIndex;
-use crate::program::modifier::{Limit, Offset, Require, Select, Sort};
-use crate::program::reduce::Reduce;
-use crate::program::{ParameterRegistry, VariableRegistry};
-use crate::RepresentationError;
-use crate::translation::function::translate_function;
-use crate::translation::match_::translate_match;
-use crate::translation::modifiers::{translate_limit, translate_offset, translate_require, translate_select, translate_sort};
-use crate::translation::reduce::translate_reduce;
-use crate::translation::TranslationContext;
-use crate::translation::writes::{translate_delete, translate_insert};
+use crate::{
+    program::{
+        block::Block,
+        function::Function,
+        function_signature::FunctionSignatureIndex,
+        modifier::{Limit, Offset, Require, Select, Sort},
+        reduce::Reduce,
+        ParameterRegistry, VariableRegistry,
+    },
+    translation::{
+        function::translate_function,
+        match_::translate_match,
+        modifiers::{translate_limit, translate_offset, translate_require, translate_select, translate_sort},
+        reduce::translate_reduce,
+        writes::{translate_delete, translate_insert},
+        TranslationContext,
+    },
+    RepresentationError,
+};
 
 #[derive(Debug, Clone)]
 pub struct TranslatedPipeline {
@@ -79,7 +84,8 @@ pub fn translate_pipeline(
         .map_err(|source| RepresentationError::FunctionRepresentation { typedb_source: source })?;
 
     let mut translation_context = TranslationContext::new();
-    let translated_stages = translate_pipeline_stages(snapshot, all_function_signatures, &mut translation_context, &query.stages)?;
+    let translated_stages =
+        translate_pipeline_stages(snapshot, all_function_signatures, &mut translation_context, &query.stages)?;
 
     Ok(TranslatedPipeline {
         translated_preamble,
@@ -98,7 +104,7 @@ pub(crate) fn translate_pipeline_stages(
     let mut translated_stages: Vec<TranslatedStage> = Vec::with_capacity(stages.len());
     for (i, stage) in stages.iter().enumerate() {
         let translated = translate_stage(translation_context, all_function_signatures, stage)?;
-        if matches!(translated, TranslatedStage::Fetch {..}) && i != stages.len() - 1 {
+        if matches!(translated, TranslatedStage::Fetch { .. }) && i != stages.len() - 1 {
             return Err(RepresentationError::NonTerminalFetch { declaration: stage.clone() });
         }
         translated_stages.push(translated);
@@ -122,12 +128,14 @@ fn translate_stage(
         TypeQLStage::Fetch(fetch) => {
             // translate_fetch(translation_context, fetch)
             todo!()
-        },
+        }
         TypeQLStage::Operator(modifier) => match modifier {
             TypeQLOperator::Select(select) => {
                 translate_select(translation_context, select).map(|filter| TranslatedStage::Select(filter))
             }
-            TypeQLOperator::Sort(sort) => translate_sort(translation_context, sort).map(|sort| TranslatedStage::Sort(sort)),
+            TypeQLOperator::Sort(sort) => {
+                translate_sort(translation_context, sort).map(|sort| TranslatedStage::Sort(sort))
+            }
             TypeQLOperator::Offset(offset) => {
                 translate_offset(translation_context, offset).map(|offset| TranslatedStage::Offset(offset))
             }
@@ -141,6 +149,6 @@ fn translate_stage(
                 translate_require(translation_context, require).map(|require| TranslatedStage::Require(require))
             }
         },
-        _ => Err(RepresentationError::UnrecognisedClause { declaration: typeql_stage.clone() })
+        _ => Err(RepresentationError::UnrecognisedClause { declaration: typeql_stage.clone() }),
     }
 }

@@ -12,21 +12,26 @@ use error::typedb_error;
 use lending_iterator::LendingIterator;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use crate::{batch::Batch, error::ReadExecutionError, ExecutionInterrupt, pipeline::stage::StageIterator, row::MaybeOwnedRow, write::WriteError};
-use crate::pipeline::fetch::FetchStageExecutor;
-use crate::pipeline::stage::{ExecutionContext, StageAPI};
 use crate::{
-    InterruptType,
+    batch::Batch,
+    error::ReadExecutionError,
+    pipeline::{
+        fetch::FetchStageExecutor,
+        stage::{ExecutionContext, StageAPI, StageIterator},
+    },
+    row::MaybeOwnedRow,
+    write::WriteError,
+    ExecutionInterrupt, InterruptType,
 };
 
 pub mod delete;
+pub mod fetch;
 pub mod initial;
 pub mod insert;
 pub mod match_;
 pub mod modifiers;
 pub mod reduce;
 pub mod stage;
-pub mod fetch;
 
 pub enum Pipeline<Snapshot: ReadableSnapshot, Nonterminals: StageAPI<Snapshot>> {
     Unfetched(Nonterminals, HashMap<String, VariablePosition>),
@@ -51,12 +56,13 @@ impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pip
 
     pub fn into_rows_iterator(
         self,
-        execution_interrupt: ExecutionInterrupt
-    ) -> Result<(Nonterminals::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)> {
+        execution_interrupt: ExecutionInterrupt,
+    ) -> Result<
+        (Nonterminals::OutputIterator, ExecutionContext<Snapshot>),
+        (PipelineExecutionError, ExecutionContext<Snapshot>),
+    > {
         match self {
-            Self::Unfetched(nonterminals, _) => {
-                nonterminals.into_iterator(execution_interrupt)
-            }
+            Self::Unfetched(nonterminals, _) => nonterminals.into_iterator(execution_interrupt),
             Self::Fetched(nonterminals, _) => {
                 let (_, context) = nonterminals.into_iterator(execution_interrupt)?;
                 Err((PipelineExecutionError::FetchUsedAsRows {}, context))
@@ -66,7 +72,7 @@ impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pip
 
     pub fn into_maps_iterator(
         self,
-        execution_interrupt: ExecutionInterrupt
+        execution_interrupt: ExecutionInterrupt,
     ) -> Result<((), ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)> {
         match self {
             Self::Unfetched(nonterminals, _) => {

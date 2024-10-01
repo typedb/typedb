@@ -12,6 +12,7 @@ rust_library(
     srcs = glob([
         "*.rs",
         "match_/**/*.rs",
+        "fetch/**/*.rs",
         "insert/**/*.rs",
         "delete/**/*.rs",
         "expression/**/*.rs",

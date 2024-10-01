@@ -9,7 +9,7 @@ use std::{borrow::Cow, str::FromStr};
 use chrono::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime};
 use chrono_tz::Tz;
 use encoding::value::{
-    decimal_value::{Decimal, FRACTIONAL_PART_DENOMINATOR_LOG10},
+    decimal_value::Decimal,
     duration_value::{Duration, MONTHS_PER_YEAR, NANOS_PER_HOUR, NANOS_PER_MINUTE, NANOS_PER_SEC},
     timezone::TimeZone,
     value::Value,
@@ -266,7 +266,7 @@ pub mod tests {
             let block = translate_match(&mut context, &HashMapFunctionSignatureIndex::empty(), match_)?.finish();
             let x = block.conjunction().constraints()[0].as_expression_binding().unwrap().expression().get_root();
             match *x {
-                Expression::Constant(id) => Ok(context.parameters[id].to_owned()),
+                Expression::Constant(id) => Ok(context.parameters.value_unchecked(id).to_owned()),
                 _ => unreachable!(),
             }
         } else {

@@ -4,21 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use typeql::query::stage::{Fetch as TypeQLFetch};
+use typeql::query::stage::Fetch as TypeQLFetch;
+
 use crate::translation::TranslationContext;
 
-pub(super) fn translated_fetch(context: &TranslationContext, fetch: TypeQLFetch) {
+pub(super) fn translated_fetch(context: &TranslationContext, fetch: TypeQLFetch) {}
 
-}
+fn translate_fetch_object() {}
 
-fn translate_fetch_object() {
+fn translate_fetch_list() {}
 
-}
-
-fn translate_fetch_list() {
-
-}
-
-fn translate_fetch_single() {
-
-}
+fn translate_fetch_single() {}

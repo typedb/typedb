@@ -175,10 +175,9 @@ pub mod tests {
             function_signature::{FunctionID, FunctionSignature},
             VariableRegistry,
         },
-        translation::TranslationContext,
+        translation::{pipeline::TranslatedStage, TranslationContext},
     };
     use itertools::Itertools;
-    use ir::translation::pipeline::TranslatedStage;
 
     use crate::match_::inference::{
         annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
@@ -339,7 +338,7 @@ pub mod tests {
             f_conjunction.constraints_mut().add_has(f_var_animal, f_var_name).unwrap();
             let f_ir = Function::new(
                 "fn_test",
-                vec![TranslatedStage::Match { block: builder.finish()}],
+                vec![TranslatedStage::Match { block: builder.finish() }],
                 function_context.variable_registry,
                 vec![],
                 ReturnOperation::Stream(vec![f_var_animal]),

@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
-use std::marker::PhantomData;
+use std::{collections::HashMap, marker::PhantomData};
+
 use answer::Concept;
 use storage::snapshot::ReadableSnapshot;
 
@@ -19,8 +19,7 @@ enum ConceptMapValue {
     Map(ConceptMap),
 }
 
-struct ConceptMap {
-}
+struct ConceptMap {}
 
 struct ConceptList {
     list: Vec<ConceptMapValue>,

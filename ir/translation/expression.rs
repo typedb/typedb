@@ -211,10 +211,7 @@ pub mod tests {
         RepresentationError,
     };
 
-    fn parse_query_get_match(
-        context: &mut TranslationContext,
-        query_str: &str,
-    ) -> Result<Block, RepresentationError> {
+    fn parse_query_get_match(context: &mut TranslationContext, query_str: &str) -> Result<Block, RepresentationError> {
         let mut query = typeql::parse_query(query_str).unwrap().into_pipeline();
         let match_ = query.stages.remove(0).into_match();
         translate_match(context, &HashMapFunctionSignatureIndex::empty(), &match_).map(|builder| builder.finish())
@@ -238,11 +235,11 @@ pub mod tests {
 
         assert_eq!(rhs.len(), 5);
         let Expression::Constant(id) = rhs[0] else { panic!("Expected Constant, found: {:?}", rhs[0]) };
-        assert_eq!(context.parameters.get(id), Some(&Value::Long(5)));
+        assert_eq!(context.parameters.value(id), Some(&Value::Long(5)));
         let Expression::Constant(id) = rhs[1] else { panic!("Expected Constant, found: {:?}", rhs[1]) };
-        assert_eq!(context.parameters.get(id), Some(&Value::Long(9)));
+        assert_eq!(context.parameters.value(id), Some(&Value::Long(9)));
         let Expression::Constant(id) = rhs[2] else { panic!("Expected Constant, found: {:?}", rhs[2]) };
-        assert_eq!(context.parameters.get(id), Some(&Value::Long(6)));
+        assert_eq!(context.parameters.value(id), Some(&Value::Long(6)));
         assert_eq!(rhs[3], Expression::Operation(Operation::new(Operator::Multiply, 1, 2)));
         assert_eq!(rhs[4], Expression::Operation(Operation::new(Operator::Add, 0, 3)));
     }

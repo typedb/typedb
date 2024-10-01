@@ -5,7 +5,6 @@
  */
 
 use std::collections::{HashMap, HashSet};
-use std::thread::scope;
 
 use answer::variable::Variable;
 
@@ -13,15 +12,12 @@ use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
         constraint::Constraint,
-        Scope
-        , ScopeId, variable_category::VariableCategory,
+        variable_category::VariableCategory,
+        Scope, ScopeId,
     },
-    program::{
-        VariableCategorySource, VariableRegistry,
-    },
+    program::{ParameterRegistry, VariableCategorySource, VariableRegistry},
     RepresentationError,
 };
-use crate::program::ParameterRegistry;
 
 #[derive(Debug, Clone)]
 pub struct Block {
@@ -96,7 +92,6 @@ pub struct BlockContext {
     scope_parents: HashMap<ScopeId, ScopeId>,
     referenced_variables: HashSet<Variable>,
 }
-
 
 impl BlockContext {
     fn new() -> Self {
@@ -208,8 +203,7 @@ impl<'a> BlockBuilderContext<'a> {
                 Ok(variable)
             }
             Some(existing_variable) => {
-                self.block_context.update_scope(*existing_variable, name, scope)
-                    .map(|_| *existing_variable)
+                self.block_context.update_scope(*existing_variable, name, scope).map(|_| *existing_variable)
             }
         }
     }

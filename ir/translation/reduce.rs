@@ -7,16 +7,20 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use typeql::{query::stage::reduce::Reducer as TypeQLReducer, token::ReduceOperator as TypeQLReduceOperator, query::pipeline::stage::Operator as TypeQLOperator};
-use typeql::token::ReduceOperator;
+use typeql::{
+    query::{pipeline::stage::Operator as TypeQLOperator, stage::reduce::Reducer as TypeQLReducer},
+    token::ReduceOperator as TypeQLReduceOperator,
+};
 
 use crate::{
     pattern::variable_category::VariableCategory,
-    program::{reduce::Reduce, VariableRegistry},
+    program::{
+        reduce::{Reduce, Reducer},
+        VariableRegistry,
+    },
     translation::TranslationContext,
     RepresentationError,
 };
-use crate::program::reduce::Reducer;
 
 pub fn translate_reduce(
     context: &mut TranslationContext,
@@ -45,7 +49,9 @@ pub fn translate_reduce(
                     || {
                         Err(RepresentationError::OperatorStageVariableUnavailable {
                             variable_name: var_name.to_owned(),
-                            declaration: typeql::query::pipeline::stage::Stage::Operator(TypeQLOperator::Reduce(typeql_reduce.clone())),
+                            declaration: typeql::query::pipeline::stage::Stage::Operator(TypeQLOperator::Reduce(
+                                typeql_reduce.clone(),
+                            )),
                         })
                     },
                     |variable| Ok(variable.clone()),
@@ -56,10 +62,7 @@ pub fn translate_reduce(
     Ok(Reduce::new(reductions, group))
 }
 
-fn resolve_category_optionality(
-    reduce: &Reducer,
-    variable_registry: &VariableRegistry,
-) -> (VariableCategory, bool) {
+fn resolve_category_optionality(reduce: &Reducer, variable_registry: &VariableRegistry) -> (VariableCategory, bool) {
     match reduce {
         Reducer::Count => (VariableCategory::Value, false),
         Reducer::CountVar(_) => (VariableCategory::Value, false),
@@ -83,7 +86,9 @@ fn build_reducer(
             Some(typeql_var) => match visible_variables.get(typeql_var.name().unwrap()) {
                 None => Err(RepresentationError::OperatorStageVariableUnavailable {
                     variable_name: typeql_var.name().unwrap().to_owned(),
-                    declaration: typeql::query::pipeline::stage::Stage::Operator(TypeQLOperator::Reduce(reduce.clone())),
+                    declaration: typeql::query::pipeline::stage::Stage::Operator(TypeQLOperator::Reduce(
+                        reduce.clone(),
+                    )),
                 }),
                 Some(var) => Ok(Reducer::CountVar(var.clone())),
             },
@@ -92,7 +97,9 @@ fn build_reducer(
             let Some(var) = visible_variables.get(stat.variable.name().unwrap()) else {
                 return Err(RepresentationError::OperatorStageVariableUnavailable {
                     variable_name: stat.variable.name().unwrap().to_owned(),
-                    declaration: typeql::query::pipeline::stage::Stage::Operator(TypeQLOperator::Reduce(reduce.clone())),
+                    declaration: typeql::query::pipeline::stage::Stage::Operator(TypeQLOperator::Reduce(
+                        reduce.clone(),
+                    )),
                 });
             };
             match &stat.reduce_operator {

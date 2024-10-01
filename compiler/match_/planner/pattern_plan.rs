@@ -21,10 +21,12 @@ use ir::{
         variable_category::VariableCategory,
         IrID,
     },
-    program::{block::Block, VariableRegistry},
+    program::{
+        block::{Block, BlockContext},
+        VariableRegistry,
+    },
 };
 use itertools::{chain, Itertools};
-use ir::program::block::BlockContext;
 
 use crate::{
     expression::compiled_expression::CompiledExpression,

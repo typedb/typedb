@@ -7,22 +7,21 @@
 use std::{collections::HashMap, error::Error, fmt, sync::Arc};
 
 use answer::variable::Variable;
+use encoding::value::value::Value;
 use error::typedb_error;
 use itertools::Itertools;
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
 use typeql::schema::definable::function::{Function, ReturnStream};
-use encoding::value::value::Value;
 
 use crate::{
     pattern::{
         constraint::Constraint,
         variable_category::{VariableCategory, VariableOptionality},
+        ParameterID,
     },
-    program::{function_signature::FunctionID},
+    program::{function_signature::FunctionID, reduce::Reducer},
     RepresentationError,
 };
-use crate::pattern::ParameterID;
-use crate::program::reduce::Reducer;
 
 pub mod block;
 pub mod function;
@@ -226,7 +225,6 @@ pub enum VariableCategorySource {
     Constraint(Constraint<Variable>),
     Reduce(Reducer),
 }
-
 
 #[derive(Clone, Debug, Default)]
 pub struct ParameterRegistry {

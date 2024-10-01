@@ -5,12 +5,11 @@
  */
 
 use answer::variable::Variable;
+use storage::snapshot::ReadableSnapshot;
 use typeql::{
-    schema::definable::function::{Output, ReturnStatement, ReturnStream},
+    schema::definable::function::{Output, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream},
     TypeRefAny,
 };
-use typeql::schema::definable::function::{ReturnReduction, ReturnSingle};
-use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     pattern::{
@@ -18,14 +17,13 @@ use crate::{
         ScopeId,
     },
     program::{
-        block::{BlockBuilderContext, Block},
+        block::{Block, BlockBuilderContext},
         function::{Function, ReturnOperation},
         function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex},
         FunctionRepresentationError,
     },
-    translation::{match_::add_patterns, TranslationContext},
+    translation::{pipeline::translate_pipeline_stages, TranslationContext},
 };
-use crate::translation::pipeline::{translate_pipeline, translate_pipeline_stages};
 
 pub fn translate_function(
     snapshot: &impl ReadableSnapshot,
@@ -33,12 +31,13 @@ pub fn translate_function(
     function: &typeql::Function,
 ) -> Result<Function, FunctionRepresentationError> {
     let mut context = TranslationContext::new();
-    let pipeline = translate_pipeline_stages(
-        snapshot,
-        function_index,
-        &mut context,
-        &function.block.stages
-    ).map_err(|err| FunctionRepresentationError::PatternDefinition { declaration: function.clone(), typedb_source: Box::new(err) })?;
+    let pipeline =
+        translate_pipeline_stages(snapshot, function_index, &mut context, &function.block.stages).map_err(|err| {
+            FunctionRepresentationError::PatternDefinition {
+                declaration: function.clone(),
+                typedb_source: Box::new(err),
+            }
+        })?;
 
     // TODO: update...
     let mut builder = Block::builder(context.next_block_context());
@@ -116,7 +115,10 @@ fn build_return_stream(
     Ok(ReturnOperation::Stream(variables))
 }
 
-fn build_return_single(context: &BlockBuilderContext<'_>, single: &ReturnSingle) -> Result<ReturnOperation, FunctionRepresentationError> {
+fn build_return_single(
+    context: &BlockBuilderContext<'_>,
+    single: &ReturnSingle,
+) -> Result<ReturnOperation, FunctionRepresentationError> {
     todo!()
 }
 

@@ -51,7 +51,11 @@ pub struct DisjunctionBuilder<'cx, 'reg> {
 }
 
 impl<'cx, 'reg> DisjunctionBuilder<'cx, 'reg> {
-    pub fn new(context: &'cx mut BlockBuilderContext<'reg>, scope_id: ScopeId, disjunction: &'cx mut Disjunction) -> Self {
+    pub fn new(
+        context: &'cx mut BlockBuilderContext<'reg>,
+        scope_id: ScopeId,
+        disjunction: &'cx mut Disjunction,
+    ) -> Self {
         Self { context, disjunction, scope_id }
     }
 

@@ -6,9 +6,6 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use typeql::query::SchemaQuery;
-use compiler::match_::inference::annotated_functions::IndexedAnnotatedFunctions;
-
 use compiler::{match_::planner::program_plan::ProgramPlan, VariablePosition};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::pipeline::{
@@ -16,24 +13,26 @@ use executor::pipeline::{
     initial::InitialStage,
     insert::InsertStageExecutor,
     match_::MatchStageExecutor,
-    modifiers::{LimitStageExecutor, OffsetStageExecutor, SelectStageExecutor, SortStageExecutor},
+    modifiers::{
+        LimitStageExecutor, OffsetStageExecutor, RequireStageExecutor, SelectStageExecutor, SortStageExecutor,
+    },
     reduce::ReduceStageExecutor,
     stage::{ExecutionContext, ReadPipelineStage, WritePipelineStage},
 };
 use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex};
-use function::FunctionError;
-use ir::program::function_signature::{FunctionID, HashMapFunctionSignatureIndex};
-use ir::translation::pipeline::{translate_pipeline, TranslatedPipeline};
+use ir::{
+    program::function_signature::{FunctionID, HashMapFunctionSignatureIndex},
+    translation::pipeline::{translate_pipeline, TranslatedPipeline},
+};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use typeql::query::SchemaQuery;
 
-use executor::pipeline::modifiers::RequireStageExecutor;
 use crate::{
-    annotation::{AnnotatedPipeline, infer_types_for_pipeline},
+    annotation::{infer_types_for_pipeline, AnnotatedPipeline},
     compilation::{compile_pipeline, CompiledPipeline, CompiledStage},
     define,
     error::QueryError,
-    redefine,
-    undefine,
+    redefine, undefine,
 };
 
 pub struct QueryManager {}
@@ -265,7 +264,8 @@ impl QueryManager {
         let preamble_signatures = HashMapFunctionSignatureIndex::build(
             query.preambles.iter().enumerate().map(|(i, preamble)| (FunctionID::Preamble(i), &preamble.function)),
         );
-        let all_function_signatures = ReadThroughFunctionSignatureIndex::new(snapshot, function_manager, preamble_signatures);
+        let all_function_signatures =
+            ReadThroughFunctionSignatureIndex::new(snapshot, function_manager, preamble_signatures);
         translate_pipeline(snapshot, &all_function_signatures, query)
             .map_err(|err| QueryError::Representation { typedb_source: err })
     }

@@ -12,10 +12,10 @@ use ir::pattern::IrID;
 
 pub mod delete;
 pub mod expression;
+pub mod fetch;
 pub mod insert;
 pub mod match_;
 pub mod modifiers;
-pub mod fetch;
 pub mod reduce;
 
 macro_rules! filter_variants {

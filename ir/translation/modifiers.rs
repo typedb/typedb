@@ -6,19 +6,13 @@
 
 use std::collections::HashSet;
 
-use answer::variable::Variable;
-use typeql::{token::Order};
-use typeql::query::stage::Operator;
+use typeql::{query::stage::Operator, token::Order};
 
 use crate::{
-    program::modifier::{Limit, Offset, Select, Sort},
-    translation::{
-        literal::{translate_literal, FromTypeQLLiteral},
-        TranslationContext,
-    },
+    program::modifier::{Limit, Offset, Require, Select, Sort},
+    translation::{literal::FromTypeQLLiteral, TranslationContext},
     RepresentationError,
 };
-use crate::program::modifier::Require;
 
 pub fn translate_select(
     context: &mut TranslationContext,

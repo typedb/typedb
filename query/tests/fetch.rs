@@ -5,20 +5,13 @@
  */
 
 use std::sync::Arc;
-use typeql::builder::type_;
 
-use concept::{
-    thing::thing_manager::ThingManager,
-    type_::type_manager::TypeManager,
-};
+use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
-use executor::ExecutionInterrupt;
-use executor::pipeline::stage::StageAPI;
+use executor::{pipeline::stage::StageAPI, ExecutionInterrupt};
 use function::function_manager::FunctionManager;
 use query::query_manager::QueryManager;
-use storage::{
-    durability_client::WALClient, MVCCStorage, snapshot::CommittableSnapshot,
-};
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
@@ -39,16 +32,17 @@ fn define_schema(storage: Arc<MVCCStorage<WALClient>>, type_manager: &TypeManage
 }
 
 fn insert_data(
-    storage:  Arc<MVCCStorage<WALClient>>,
+    storage: Arc<MVCCStorage<WALClient>>,
     type_manager: &TypeManager,
     thing_manager: Arc<ThingManager>,
     function_manager: &FunctionManager,
-    query_string: &str
+    query_string: &str,
 ) {
     let mut snapshot = storage.clone().open_snapshot_write();
     let query_manager = QueryManager::new();
     let query = typeql::parse_query(query_string).unwrap().into_pipeline();
-    let (pipeline, _) = query_manager.prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, &query).unwrap();
+    let (pipeline, _) =
+        query_manager.prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, &query).unwrap();
     let (iterator, context) = pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let mut snapshot = Arc::into_inner(context.snapshot).unwrap();
     snapshot.commit().unwrap();
@@ -61,7 +55,12 @@ fn fetch() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
     define_schema(storage.clone(), type_manager.as_ref(), thing_manager.as_ref());
-    insert_data(storage.clone(), type_manager.as_ref(), thing_manager.clone(), &function_manager, r#"
+    insert_data(
+        storage.clone(),
+        type_manager.as_ref(),
+        thing_manager.clone(),
+        &function_manager,
+        r#"
         insert
           $x isa person, has age 10, has name "Alice";
           $y isa person, has age 11, has name "Bob";
@@ -72,9 +71,11 @@ fn fetch() {
           (friend: $y, friend: $z) isa friendship;
           (friend: $z, friend: $p) isa friendship;
           (friend: $p, friend: $q) isa friendship;
-    "#);
+    "#,
+    );
 
-    let query = typeql::parse_query(r#"
+    let query = typeql::parse_query(
+        r#"
 match
     $x isa person, has $a;
     $a isa age;
@@ -110,9 +111,9 @@ fetch {
     "list higher-card attributes": [ $x.name ],
     "list attributes": $x.name[],
     "all attributes": { $x.* }
-}"#).unwrap();
-
-
+}"#,
+    )
+    .unwrap();
 }
 
 //

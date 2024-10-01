@@ -650,7 +650,9 @@ impl<T: Hkt> Checker<T> {
                     let lhs_extractor = self.extractors[&lhs.as_variable().unwrap()];
                     let rhs = match rhs {
                         &CheckVertex::Variable(pos) => row.get(pos).as_reference(),
-                        &CheckVertex::Parameter(param) => VariableValue::Value(context.parameters().value_unchecked(param).as_reference()),
+                        &CheckVertex::Parameter(param) => {
+                            VariableValue::Value(context.parameters().value_unchecked(param).as_reference())
+                        }
                         CheckVertex::Type(_) => unreachable!(),
                     };
                     let snapshot = context.snapshot.clone();
@@ -712,7 +714,9 @@ fn make_const_extractor<T: Hkt>(
 ) -> Box<dyn for<'a> Fn(&'a <T as Hkt>::HktSelf<'_>) -> VariableValue<'a>> {
     let value = match vertex {
         &CheckVertex::Variable(var) => row.get(var).as_reference(),
-        &CheckVertex::Parameter(param) => VariableValue::Value(context.parameters().value_unchecked(param).as_reference()),
+        &CheckVertex::Parameter(param) => {
+            VariableValue::Value(context.parameters().value_unchecked(param).as_reference())
+        }
         CheckVertex::Type(type_) => VariableValue::Type(type_.clone()),
     };
     let owned_value = value.into_owned();

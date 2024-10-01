@@ -19,8 +19,8 @@ use crate::{
         insert::InsertStageExecutor,
         match_::{MatchStageExecutor, MatchStageIterator},
         modifiers::{
-            LimitStageExecutor, LimitStageIterator, OffsetStageExecutor, OffsetStageIterator, SelectStageExecutor,
-            SelectStageIterator, SortStageExecutor, SortStageIterator,
+            LimitStageExecutor, LimitStageIterator, OffsetStageExecutor, OffsetStageIterator, RequireStageExecutor,
+            RequireStageIterator, SelectStageExecutor, SelectStageIterator, SortStageExecutor, SortStageIterator,
         },
         reduce::ReduceStageExecutor,
         PipelineExecutionError, WrittenRowsIterator,
@@ -28,7 +28,6 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-use crate::pipeline::modifiers::{RequireStageExecutor, RequireStageIterator};
 
 #[derive(Debug)]
 pub struct ExecutionContext<Snapshot> {

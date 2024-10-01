@@ -10,25 +10,20 @@ use answer::variable::Variable;
 
 use crate::{
     pattern::variable_category::VariableCategory,
-    program::{
-        block::{BlockBuilderContext, },
-        VariableRegistry,
-    },
+    program::{block::BlockBuilderContext, reduce::Reducer, ParameterRegistry, VariableRegistry},
 };
-use crate::program::ParameterRegistry;
-use crate::program::reduce::Reducer;
 
 mod constraints;
 mod expression;
+mod fetch;
 pub mod function;
 pub mod literal;
 pub mod match_;
 pub mod modifiers;
+pub mod pipeline;
 pub mod reduce;
 pub mod tokens;
 pub mod writes;
-pub mod pipeline;
-mod fetch;
 
 #[derive(Debug)]
 pub struct TranslationContext {

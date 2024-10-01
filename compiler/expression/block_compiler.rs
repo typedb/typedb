@@ -16,13 +16,9 @@ use ir::{
         variable_category::VariableCategory,
         Vertex,
     },
-    program::{
-        block::{Block},
-        VariableRegistry,
-    },
+    program::{block::Block, ParameterRegistry, VariableRegistry},
 };
 use itertools::Itertools;
-use ir::program::ParameterRegistry;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
