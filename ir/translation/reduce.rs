@@ -22,8 +22,8 @@ pub fn translate_reduce(
     context: &mut TranslationContext,
     typeql_reduce: &typeql::query::stage::Reduce,
 ) -> Result<Reduce, RepresentationError> {
-    let mut reductions = Vec::with_capacity(typeql_reduce.reductions.len());
-    for reduce_assign in &typeql_reduce.reductions {
+    let mut reductions = Vec::with_capacity(typeql_reduce.reduce_assignments.len());
+    for reduce_assign in &typeql_reduce.reduce_assignments {
         let reducer = build_reducer(&context.visible_variables, &reduce_assign.reducer, typeql_reduce)?;
         let (category, is_optional) = resolve_category_optionality(&reducer, &context.variable_registry);
         let assigned_var = context.register_reduced_variable(

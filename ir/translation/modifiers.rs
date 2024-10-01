@@ -83,15 +83,15 @@ pub fn translate_limit(
 
 pub fn translate_require(
     context: &mut TranslationContext,
-    typeql_require: &typeql::query::stage::modifier::Require,
-) -> Result<Require, PatternDefinitionError> {
+    typeql_require: &typeql::query::pipeline::stage::modifier::Require,
+) -> Result<Require, RepresentationError> {
     let required_variables = typeql_require
         .variables
         .iter()
         .map(|typeql_var| match context.visible_variables.get(typeql_var.name().unwrap()) {
-            None => Err(PatternDefinitionError::OperatorStageVariableUnavailable {
+            None => Err(RepresentationError::OperatorStageVariableUnavailable {
                 variable_name: typeql_var.name().unwrap().to_owned(),
-                declaration: typeql::query::pipeline::stage::Stage::Modifier(Modifier::Require(typeql_require.clone())),
+                declaration: typeql::query::pipeline::stage::Stage::Operator(Operator::Require(typeql_require.clone())),
             }),
             Some(v) => Ok(v.clone()),
         })

@@ -24,6 +24,7 @@ use ir::{
     program::{block::Block, VariableRegistry},
 };
 use itertools::{chain, Itertools};
+use ir::program::block::BlockContext;
 
 use crate::{
     expression::compiled_expression::CompiledExpression,
@@ -113,7 +114,7 @@ impl MatchProgram {
 
 fn compile_conjunction(
     conjunction: &Conjunction,
-    scope_context: &ScopeContext,
+    scope_context: &BlockContext,
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,
     variable_registry: Arc<VariableRegistry>,

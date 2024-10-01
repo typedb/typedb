@@ -18,13 +18,13 @@ use storage::snapshot::ReadableSnapshot;
 use crate::program::block::{Block, };
 use crate::program::function::Function;
 use crate::program::function_signature::FunctionSignatureIndex;
-use crate::program::modifier::{Limit, Offset, Select, Sort};
+use crate::program::modifier::{Limit, Offset, Require, Select, Sort};
 use crate::program::reduce::Reduce;
 use crate::program::{ParameterRegistry, VariableRegistry};
 use crate::RepresentationError;
 use crate::translation::function::translate_function;
 use crate::translation::match_::translate_match;
-use crate::translation::modifiers::{translate_limit, translate_offset, translate_select, translate_sort};
+use crate::translation::modifiers::{translate_limit, translate_offset, translate_require, translate_select, translate_sort};
 use crate::translation::reduce::translate_reduce;
 use crate::translation::TranslationContext;
 use crate::translation::writes::{translate_delete, translate_insert};
@@ -46,11 +46,12 @@ pub enum TranslatedStage {
     Fetch { map: TranslatedFetchMap },
 
     // ...
-    Filter(Select),
+    Select(Select),
     Sort(Sort),
     Offset(Offset),
     Limit(Limit),
     Reduce(Reduce),
+    Require(Require),
 }
 
 #[derive(Debug, Clone)]
@@ -124,7 +125,7 @@ fn translate_stage(
         },
         TypeQLStage::Operator(modifier) => match modifier {
             TypeQLOperator::Select(select) => {
-                translate_select(translation_context, select).map(|filter| TranslatedStage::Filter(filter))
+                translate_select(translation_context, select).map(|filter| TranslatedStage::Select(filter))
             }
             TypeQLOperator::Sort(sort) => translate_sort(translation_context, sort).map(|sort| TranslatedStage::Sort(sort)),
             TypeQLOperator::Offset(offset) => {
@@ -135,6 +136,9 @@ fn translate_stage(
             }
             TypeQLOperator::Reduce(reduce) => {
                 translate_reduce(translation_context, reduce).map(|reduce| TranslatedStage::Reduce(reduce))
+            }
+            TypeQLOperator::Require(require) => {
+                translate_require(translation_context, require).map(|require| TranslatedStage::Require(require))
             }
         },
         _ => Err(RepresentationError::UnrecognisedClause { declaration: typeql_stage.clone() })

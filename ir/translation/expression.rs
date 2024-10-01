@@ -88,7 +88,7 @@ fn build_recursive(
                 .iter()
                 .map(|sub_expr| build_recursive(function_index, constraints, sub_expr, tree))
                 .collect::<Result<Vec<_>, _>>()?;
-            let len_id = constraints.parameters().register(Value::Long(items.len() as i64));
+            let len_id = constraints.parameters().register_value(Value::Long(items.len() as i64));
             Expression::List(ListConstructor::new(items, len_id))
         }
         typeql::Expression::ListIndexRange(range) => {
