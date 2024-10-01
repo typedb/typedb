@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt, iter};
+use std::fmt;
 
 use answer::variable::Variable;
 
@@ -17,7 +17,7 @@ use crate::{
         optional::Optional,
         Scope, ScopeId,
     },
-    program::block::{BlockBuilderContext, BlockContext},
+    program::block::{BlockBuilderContext, BlockContext, ScopeTransparency},
     RepresentationError,
 };
 
@@ -41,19 +41,20 @@ impl Conjunction {
         &self.nested_patterns
     }
 
-    pub fn captured_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        iter::empty() // TODO
+    pub fn captured_variables<'a>(&self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
+        let self_scope = self.scope_id;
+        block_context
+            .get_variable_scopes()
+            .filter(move |&(_, scope)| block_context.is_parent_scope(scope, self_scope))
+            .map(|(var, _)| var)
     }
 
     pub fn declared_variables<'a>(&self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
         let self_scope = self.scope_id;
-        block_context.get_variable_scopes().filter_map(move |(var, scope)| {
-            if scope == self_scope || block_context.is_child_scope(scope, self_scope) {
-                Some(var)
-            } else {
-                None
-            }
-        })
+        block_context
+            .get_variable_scopes()
+            .filter(move |&(_, scope)| scope == self_scope || block_context.is_visible_child(scope, self_scope))
+            .map(|(var, _)| var)
     }
 }
 
@@ -99,7 +100,7 @@ impl<'cx, 'reg> ConjunctionBuilder<'cx, 'reg> {
     }
 
     pub fn add_negation(&mut self) -> ConjunctionBuilder<'_, 'reg> {
-        let nested_scope_id = self.context.create_child_scope(self.conjunction.scope_id);
+        let nested_scope_id = self.context.create_child_scope(self.conjunction.scope_id, ScopeTransparency::Opaque);
         let negation = Negation::new(nested_scope_id);
         self.conjunction.nested_patterns.push(NestedPattern::Negation(negation));
         let Some(NestedPattern::Negation(negation)) = self.conjunction.nested_patterns.last_mut() else {
@@ -109,7 +110,8 @@ impl<'cx, 'reg> ConjunctionBuilder<'cx, 'reg> {
     }
 
     pub fn add_optional(&mut self) -> ConjunctionBuilder<'_, 'reg> {
-        let nested_scope_id = self.context.create_child_scope(self.conjunction.scope_id);
+        let nested_scope_id =
+            self.context.create_child_scope(self.conjunction.scope_id, ScopeTransparency::Transparent);
         let optional = Optional::new(nested_scope_id);
         self.conjunction.nested_patterns.push(NestedPattern::Optional(optional));
         let Some(NestedPattern::Optional(optional)) = self.conjunction.nested_patterns.last_mut() else {

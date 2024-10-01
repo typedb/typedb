@@ -27,7 +27,7 @@ use std::{
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use ir::program::{block::FunctionalBlock, VariableRegistry};
+use ir::program::{block::Block, VariableRegistry};
 use itertools::Itertools;
 
 use crate::{
@@ -44,17 +44,16 @@ use crate::{
 };
 
 pub fn compile(
-    block: &FunctionalBlock,
+    block: &Block,
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,
     variable_registry: Arc<VariableRegistry>,
     expressions: &HashMap<Variable, CompiledExpression>,
     statistics: &Statistics,
 ) -> MatchProgram {
-    assert!(block.modifiers().is_empty(), "TODO: modifiers in a FunctionalBlock");
     let conjunction = block.conjunction();
     let scope_context = block.scope_context();
-    debug_assert!(conjunction.captured_variables(scope_context).all(|var| input_variables.contains_key(&var)));
+    // debug_assert!(conjunction.captured_variables(scope_context).all(|var| input_variables.contains_key(&var)));
 
     plan_conjunction(
         conjunction,

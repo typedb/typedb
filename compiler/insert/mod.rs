@@ -7,7 +7,7 @@
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
     error::Error,
-    fmt::{Display, Formatter},
+    fmt,
 };
 
 use answer::{variable::Variable, Type};
@@ -71,8 +71,8 @@ pub enum WriteCompilationError {
     DeletedThingWasNotInInput { variable: Variable },
 }
 
-impl Display for WriteCompilationError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for WriteCompilationError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }

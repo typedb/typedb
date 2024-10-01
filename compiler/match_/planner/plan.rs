@@ -18,7 +18,7 @@ use ir::{
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
     },
-    program::{block::ScopeContext, VariableRegistry},
+    program::{block::BlockContext, VariableRegistry},
 };
 use itertools::Itertools;
 
@@ -51,7 +51,7 @@ use crate::{
 
 pub(super) fn plan_conjunction<'a>(
     conjunction: &'a Conjunction,
-    scope_context: &ScopeContext,
+    block_context: &BlockContext,
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &'a TypeAnnotations,
     variable_registry: &VariableRegistry,
@@ -66,7 +66,7 @@ pub(super) fn plan_conjunction<'a>(
                 NestedPattern::Disjunction(_) => todo!(),
                 NestedPattern::Negation(negation) => plan_conjunction(
                     negation.conjunction(),
-                    scope_context,
+                    block_context,
                     input_variables,
                     type_annotations,
                     variable_registry,
@@ -81,8 +81,8 @@ pub(super) fn plan_conjunction<'a>(
 
     let mut plan_builder = PlanBuilder::new(type_annotations, statistics);
     plan_builder.register_variables(
-        conjunction.captured_variables(scope_context).chain(input_variables.keys().copied()),
-        conjunction.declared_variables(scope_context),
+        conjunction.captured_variables(block_context).chain(input_variables.keys().copied()),
+        conjunction.declared_variables(block_context),
         variable_registry,
     );
     plan_builder.register_constraints(conjunction);

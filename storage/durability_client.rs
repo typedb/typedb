@@ -6,9 +6,7 @@
 
 use std::{
     borrow::Cow,
-    error::Error,
-    fmt, io,
-    io::{Cursor, Read, Write},
+    io::{self, Read, Write},
     sync::{mpsc, Arc},
 };
 

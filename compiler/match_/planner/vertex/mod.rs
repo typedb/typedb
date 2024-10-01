@@ -6,7 +6,7 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    iter,
+    fmt, iter,
 };
 
 use answer::variable::Variable;
@@ -338,7 +338,7 @@ impl Costed for TypePlanner {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub(super) struct ThingPlanner {
     expected_size: f64,
 
@@ -347,6 +347,12 @@ pub(super) struct ThingPlanner {
     bound_value_equal: HashSet<Input>,
     bound_value_below: HashSet<Input>,
     bound_value_above: HashSet<Input>,
+}
+
+impl fmt::Debug for ThingPlanner {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ThingPlanner").finish()
+    }
 }
 
 impl ThingPlanner {

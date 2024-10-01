@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    error::Error,
-    fmt::{Debug, Display, Formatter},
-};
+use std::{error::Error, fmt};
 
 use encoding::value::value_type::ValueTypeCategory;
 
@@ -45,14 +42,14 @@ pub enum ExpressionEvaluationError {
     ListIndexOutOfRange,
 }
 
-impl Debug for ExpressionEvaluationError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Debug for ExpressionEvaluationError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }
 
-impl Display for ExpressionEvaluationError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for ExpressionEvaluationError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }
