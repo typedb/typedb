@@ -18,6 +18,7 @@ use compiler::{
     reduce::{ReduceInstruction, ReduceProgram},
     VariablePosition,
 };
+use compiler::modifiers::RequireProgram;
 use concept::thing::statistics::Statistics;
 use ir::program::{function::Function, VariableRegistry};
 
@@ -39,10 +40,11 @@ pub enum CompiledStage {
     Insert(InsertProgram),
     Delete(DeleteProgram),
 
-    Filter(SelectProgram),
+    Select(SelectProgram),
     Sort(SortProgram),
     Offset(OffsetProgram),
     Limit(LimitProgram),
+    Require(RequireProgram),
     Reduce(ReduceProgram),
 }
 
@@ -63,10 +65,11 @@ impl CompiledStage {
                 .enumerate()
                 .filter_map(|(i, v)| v.map(|v| (v, VariablePosition::new(i as u32))))
                 .collect(),
-            CompiledStage::Filter(program) => program.output_row_mapping.clone(),
+            CompiledStage::Select(program) => program.output_row_mapping.clone(),
             CompiledStage::Sort(program) => program.output_row_mapping.clone(),
             CompiledStage::Offset(program) => program.output_row_mapping.clone(),
             CompiledStage::Limit(program) => program.output_row_mapping.clone(),
+            CompiledStage::Require(program) => program.output_row_mapping.clone(),
             CompiledStage::Reduce(program) => program.output_row_mapping.clone(),
         }
     }
@@ -143,15 +146,15 @@ fn compile_stage(
             .map_err(|source| QueryError::WriteCompilation { source })?;
             Ok(CompiledStage::Delete(plan))
         }
-        AnnotatedStage::Filter(filter) => {
-            let mut retained_positions = HashSet::with_capacity(filter.variables.len());
-            let mut output_row_mapping = HashMap::with_capacity(filter.variables.len());
-            for &variable in &filter.variables {
+        AnnotatedStage::Select(select) => {
+            let mut retained_positions = HashSet::with_capacity(select.variables.len());
+            let mut output_row_mapping = HashMap::with_capacity(select.variables.len());
+            for &variable in &select.variables {
                 let pos = input_variables[&variable];
                 retained_positions.insert(pos);
                 output_row_mapping.insert(variable, pos);
             }
-            Ok(CompiledStage::Filter(SelectProgram { retained_positions, output_row_mapping }))
+            Ok(CompiledStage::Select(SelectProgram { retained_positions, output_row_mapping }))
         }
         AnnotatedStage::Sort(sort) => Ok(CompiledStage::Sort(SortProgram {
             sort_on: sort.variables.clone(),
@@ -163,7 +166,18 @@ fn compile_stage(
         })),
         AnnotatedStage::Limit(limit) => {
             Ok(CompiledStage::Limit(LimitProgram { limit: limit.limit(), output_row_mapping: input_variables.clone() }))
-        }
+        },
+        AnnotatedStage::Require(require) => {
+            let mut required_positions = HashSet::with_capacity(require.variables.len());
+            for &variable in &require.variables {
+                let pos = input_variables[&variable];
+                required_positions.insert(pos);
+            }
+            Ok(CompiledStage::Require(RequireProgram {
+                required: required_positions,
+                output_row_mapping: input_variables.clone(),
+            }))
+        },
         AnnotatedStage::Reduce(reduce, typed_reducers) => {
             debug_assert_eq!(reduce.assigned_reductions.len(), typed_reducers.len());
             let mut output_row_mapping = HashMap::new();

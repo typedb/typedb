@@ -20,7 +20,7 @@ use executor::pipeline::{
 use function::function_manager::FunctionManager;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
-
+use executor::pipeline::modifiers::RequireStageExecutor;
 use crate::{
     annotation::{infer_types_for_pipeline, AnnotatedPipeline},
     compilation::{compile_pipeline, CompiledPipeline, CompiledStage},
@@ -108,9 +108,9 @@ impl QueryManager {
                 CompiledStage::Delete(_) => {
                     unreachable!("Delete clause cannot exist in a read pipeline.")
                 }
-                CompiledStage::Filter(filter_program) => {
-                    let filter_stage = SelectStageExecutor::new(filter_program, last_stage);
-                    last_stage = ReadPipelineStage::Select(Box::new(filter_stage));
+                CompiledStage::Select(select_program) => {
+                    let select_stage = SelectStageExecutor::new(select_program, last_stage);
+                    last_stage = ReadPipelineStage::Select(Box::new(select_stage));
                 }
                 CompiledStage::Sort(sort_program) => {
                     let sort_stage = SortStageExecutor::new(sort_program, last_stage);
@@ -123,6 +123,10 @@ impl QueryManager {
                 CompiledStage::Limit(limit_program) => {
                     let limit_stage = LimitStageExecutor::new(limit_program, last_stage);
                     last_stage = ReadPipelineStage::Limit(Box::new(limit_stage));
+                }
+                CompiledStage::Require(require_program) => {
+                    let require_stage = RequireStageExecutor::new(require_program, last_stage);
+                    last_stage = ReadPipelineStage::Require(Box::new(require_stage));
                 }
                 CompiledStage::Reduce(reduce_program) => {
                     let reduce_stage = ReduceStageExecutor::new(reduce_program, last_stage);
@@ -209,9 +213,9 @@ impl QueryManager {
                     let delete_stage = DeleteStageExecutor::new(delete_program, previous_stage);
                     previous_stage = WritePipelineStage::Delete(Box::new(delete_stage));
                 }
-                CompiledStage::Filter(filter_program) => {
-                    let filter_stage = SelectStageExecutor::new(filter_program, previous_stage);
-                    previous_stage = WritePipelineStage::Select(Box::new(filter_stage));
+                CompiledStage::Select(select_program) => {
+                    let select_stage = SelectStageExecutor::new(select_program, previous_stage);
+                    previous_stage = WritePipelineStage::Select(Box::new(select_stage));
                 }
                 CompiledStage::Sort(sort_program) => {
                     let sort_stage = SortStageExecutor::new(sort_program, previous_stage);
@@ -224,6 +228,10 @@ impl QueryManager {
                 CompiledStage::Limit(limit_program) => {
                     let limit_stage = LimitStageExecutor::new(limit_program, previous_stage);
                     previous_stage = WritePipelineStage::Limit(Box::new(limit_stage));
+                }
+                CompiledStage::Require(require_program) => {
+                    let require_stage = RequireStageExecutor::new(require_program, previous_stage);
+                    previous_stage = WritePipelineStage::Require(Box::new(require_stage));
                 }
                 CompiledStage::Reduce(reduce_program) => {
                     let reduce_stage = ReduceStageExecutor::new(reduce_program, previous_stage);

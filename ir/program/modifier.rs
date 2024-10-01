@@ -18,6 +18,7 @@ pub enum Modifier {
     Sort(Sort),
     Offset(Offset),
     Limit(Limit),
+    Require(Require),
 }
 
 #[derive(Debug, Clone)]
@@ -83,5 +84,16 @@ impl Limit {
 
     pub fn limit(&self) -> u64 {
         self.limit
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Require {
+    pub variables: HashSet<Variable>,
+}
+
+impl Require {
+    pub(crate) fn new(variables: HashSet<Variable>) -> Self {
+        Self { variables }
     }
 }
