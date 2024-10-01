@@ -22,22 +22,20 @@ pub type PlaceholderTypeQLReturnOperation = String;
 #[derive(Debug, Clone)]
 pub struct Function {
     name: String,
+    function_body: FunctionBody,
     // Variable categories for args & return can be read from the block's context.
     arguments: Vec<Variable>,
-    stages: Vec<TranslatedStage>,
     variable_registry: VariableRegistry,
-    return_operation: ReturnOperation,
 }
 
 impl Function {
     pub fn new(
         name: &str,
-        pipeline: Vec<TranslatedStage>,
         variable_registry: VariableRegistry,
         arguments: Vec<Variable>,
-        return_operation: ReturnOperation,
+        function_body: FunctionBody,
     ) -> Self {
-        Self { name: name.to_string(), stages: pipeline, variable_registry, arguments, return_operation }
+        Self { name: name.to_string(), variable_registry, function_body, arguments }
     }
 
     pub fn name(&self) -> &str {
@@ -48,12 +46,28 @@ impl Function {
         &self.arguments
     }
 
-    pub fn stages(&self) -> &[TranslatedStage] {
-        &self.stages
-    }
-
     pub fn variable_registry(&self) -> &VariableRegistry {
         &self.variable_registry
+    }
+
+    pub fn body(&self) -> &FunctionBody {
+        &self.function_body
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionBody {
+    stages: Vec<TranslatedStage>,
+    return_operation: ReturnOperation,
+}
+
+impl FunctionBody {
+    pub fn new(stages: Vec<TranslatedStage>, return_operation: ReturnOperation) -> Self {
+        Self { stages, return_operation }
+    }
+
+    pub fn stages(&self) -> &[TranslatedStage] {
+        &self.stages
     }
 
     pub fn return_operation(&self) -> &ReturnOperation {

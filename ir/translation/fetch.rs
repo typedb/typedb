@@ -8,7 +8,9 @@ use typeql::query::stage::Fetch as TypeQLFetch;
 
 use crate::translation::TranslationContext;
 
-pub(super) fn translated_fetch(context: &TranslationContext, fetch: TypeQLFetch) {}
+pub(super) fn translated_fetch(context: &TranslationContext, fetch: TypeQLFetch) {
+    
+}
 
 fn translate_fetch_object() {}
 

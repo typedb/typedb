@@ -75,7 +75,7 @@ fn attribute_equality() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_age_a = conjunction.get_or_declare_variable("a").unwrap();
     let var_age_b = conjunction.get_or_declare_variable("b").unwrap();

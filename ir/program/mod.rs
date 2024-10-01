@@ -28,6 +28,7 @@ pub mod function;
 pub mod function_signature;
 pub mod modifier;
 pub mod reduce;
+mod fetch;
 
 #[derive(Debug, Clone)]
 pub enum FunctionReadError {

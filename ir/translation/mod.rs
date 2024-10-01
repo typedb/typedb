@@ -41,7 +41,7 @@ impl TranslationContext {
         }
     }
 
-    pub fn next_block_context(&mut self) -> BlockBuilderContext<'_> {
+    pub fn new_block_builder_context(&mut self) -> BlockBuilderContext<'_> {
         let Self { variable_registry, visible_variables, parameters } = self;
         BlockBuilderContext::new(variable_registry, visible_variables, parameters)
     }

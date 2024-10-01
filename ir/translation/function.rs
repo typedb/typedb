@@ -24,6 +24,7 @@ use crate::{
     },
     translation::{pipeline::translate_pipeline_stages, TranslationContext},
 };
+use crate::program::function::FunctionBody;
 
 pub fn translate_function(
     snapshot: &impl ReadableSnapshot,
@@ -40,7 +41,7 @@ pub fn translate_function(
         })?;
 
     // TODO: update...
-    let mut builder = Block::builder(context.next_block_context());
+    let mut builder = Block::builder(context.new_block_builder_context());
     let return_operation = match &function.block.return_stmt {
         ReturnStatement::Stream(stream) => build_return_stream(builder.context_mut(), stream),
         ReturnStatement::Single(single) => build_return_single(builder.context_mut(), single),
@@ -62,10 +63,12 @@ pub fn translate_function(
 
     Ok(Function::new(
         function.signature.ident.as_str(),
-        pipeline,
         context.variable_registry,
         arguments,
-        return_operation,
+        FunctionBody::new(
+            pipeline,
+            return_operation,
+        )
     ))
 }
 

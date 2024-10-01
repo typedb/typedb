@@ -178,6 +178,7 @@ pub mod tests {
         translation::{pipeline::TranslatedStage, TranslationContext},
     };
     use itertools::Itertools;
+    use ir::program::function::FunctionBody;
 
     use crate::match_::inference::{
         annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
@@ -205,7 +206,7 @@ pub mod tests {
         let type_player_1 = Type::Relation(RelationType::build_from_type_id(TypeID::build(2)));
 
         let mut translation_context = TranslationContext::new();
-        let dummy = Block::builder(translation_context.next_block_context()).finish();
+        let dummy = Block::builder(translation_context.new_block_builder_context()).finish();
         let constraint1 = Constraint::Links(Links::new(var_relation, var_player, var_role_type));
         let constraint2 = Constraint::Links(Links::new(var_relation, var_player, var_role_type));
         let nested1 = TypeInferenceGraph {
@@ -328,7 +329,7 @@ pub mod tests {
         .iter()
         .map(|function_id| {
             let mut function_context = TranslationContext::new();
-            let mut builder = Block::builder(function_context.next_block_context());
+            let mut builder = Block::builder(function_context.new_block_builder_context());
             let mut f_conjunction = builder.conjunction_mut();
             let f_var_animal = f_conjunction.get_or_declare_variable("called_animal").unwrap();
             let f_var_animal_type = f_conjunction.get_or_declare_variable("called_animal_type").unwrap();
@@ -336,16 +337,19 @@ pub mod tests {
             f_conjunction.constraints_mut().add_label(f_var_animal_type, LABEL_CAT.scoped_name().as_str()).unwrap();
             f_conjunction.constraints_mut().add_isa(IsaKind::Subtype, f_var_animal, f_var_animal_type.into()).unwrap();
             f_conjunction.constraints_mut().add_has(f_var_animal, f_var_name).unwrap();
+            let function_block = builder.finish();
             let f_ir = Function::new(
                 "fn_test",
-                vec![TranslatedStage::Match { block: builder.finish() }],
                 function_context.variable_registry,
                 vec![],
-                ReturnOperation::Stream(vec![f_var_animal]),
+                FunctionBody::new(
+                    vec![TranslatedStage::Match { block: function_block }],
+                    ReturnOperation::Stream(vec![f_var_animal]),
+                )
             );
 
             let mut entry_context = TranslationContext::new();
-            let mut builder = Block::builder(entry_context.next_block_context());
+            let mut builder = Block::builder(entry_context.new_block_builder_context());
             let mut conjunction = builder.conjunction_mut();
             let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
 
