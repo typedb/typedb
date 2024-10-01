@@ -28,7 +28,7 @@ pub fn translate_reduce(
 ) -> Result<Reduce, RepresentationError> {
     let mut reductions = Vec::with_capacity(typeql_reduce.reduce_assignments.len());
     for reduce_assign in &typeql_reduce.reduce_assignments {
-        let reducer = build_reducer(&context.visible_variables, &reduce_assign.reducer, typeql_reduce)?;
+        let reducer = build_reducer(context, &reduce_assign.reducer, typeql_reduce)?;
         let (category, is_optional) = resolve_category_optionality(&reducer, &context.variable_registry);
         let assigned_var = context.register_reduced_variable(
             reduce_assign.variable.name().unwrap(),
@@ -76,14 +76,14 @@ fn resolve_category_optionality(reduce: &Reducer, variable_registry: &VariableRe
 }
 
 fn build_reducer(
-    visible_variables: &HashMap<String, Variable>,
+    context: &TranslationContext,
     reduce_value: &TypeQLReducer,
     reduce: &typeql::query::pipeline::stage::Reduce,
 ) -> Result<Reducer, RepresentationError> {
     match reduce_value {
         TypeQLReducer::Count(count) => match &count.variable {
             None => Ok(Reducer::Count),
-            Some(typeql_var) => match visible_variables.get(typeql_var.name().unwrap()) {
+            Some(typeql_var) => match context.get_variable(typeql_var.name().unwrap()) {
                 None => Err(RepresentationError::OperatorStageVariableUnavailable {
                     variable_name: typeql_var.name().unwrap().to_owned(),
                     declaration: typeql::query::pipeline::stage::Stage::Operator(TypeQLOperator::Reduce(
@@ -94,7 +94,7 @@ fn build_reducer(
             },
         },
         TypeQLReducer::Stat(stat) => {
-            let Some(var) = visible_variables.get(stat.variable.name().unwrap()) else {
+            let Some(var) = context.get_variable(stat.variable.name().unwrap()) else {
                 return Err(RepresentationError::OperatorStageVariableUnavailable {
                     variable_name: stat.variable.name().unwrap().to_owned(),
                     declaration: typeql::query::pipeline::stage::Stage::Operator(TypeQLOperator::Reduce(

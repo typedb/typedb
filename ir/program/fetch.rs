@@ -5,31 +5,78 @@
  */
 
 use std::collections::HashMap;
+
 use answer::variable::Variable;
+
 use crate::pattern::expression::Expression;
 use crate::pattern::ParameterID;
+use crate::program::function::FunctionBody;
+use crate::program::function_signature::FunctionID;
+use crate::translation::pipeline::TranslatedStage;
 
-enum FetchSome {}
+pub enum FetchSome {
+    SingleVar(FetchSingleVar),
+    SingleAttribute(FetchSingleAttribute),
+    SingleExpression(FetchSingleExpression),
+    SingleInlineFunction(FetchSingleInlineFunction),
 
-struct FetchSingleVar {
-    var: Variable,
+    Object(Box<FetchObject>),
+
+    ListFunction(FetchListFunction),
+    ListInlineFunction(FetchListInlineFunction),
+    ListSubFetch(FetchListSubFetch),
+    ListAttributesAsList(FetchListAttributeAsList),
+    ListAttributesFromList(FetchListAttributeFromList),
 }
 
-struct FetchSingleExpression {
-    expression: Expression<Variable>,
+pub struct FetchSingleVar {
+    pub(crate) variable: Variable,
 }
 
-struct FetchSingleReturn {
-
+pub struct FetchSingleAttribute {
+    pub(crate) variable: Variable,
+    pub(crate) attribute: String,
 }
 
-struct FetchObjectPredefined {
-    object: HashMap<ParameterID, FetchSome>,
+pub struct FetchSingleExpression {
+    pub(crate) expression: Expression<Variable>,
 }
 
-struct FetchObjectAttributes {
-    variable: Variable,
+pub struct FetchSingleInlineFunction {
+    pub(crate) body: FunctionBody,
 }
 
+pub enum FetchObject {
+    Static(FetchObjectStatic),
+    Attributes(FetchObjectAttributes),
+}
 
+pub struct FetchObjectStatic {
+    pub(crate) object: HashMap<ParameterID, FetchSome>,
+}
 
+pub struct FetchObjectAttributes {
+    pub(crate) variable: Variable,
+}
+
+pub struct FetchListFunction {
+    pub(crate) function_id: FunctionID,
+}
+
+pub struct FetchListInlineFunction {
+    pub(crate) body: FunctionBody,
+}
+
+pub struct FetchListSubFetch {
+    pub(crate) stages: Vec<TranslatedStage>,
+}
+
+pub struct FetchListAttributeAsList {
+    pub(crate) variable: Variable,
+    pub(crate) attribute: String,
+}
+
+pub struct FetchListAttributeFromList {
+    pub(crate) variable: Variable,
+    pub(crate) attribute: String,
+}

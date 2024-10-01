@@ -28,7 +28,7 @@ pub mod function;
 pub mod function_signature;
 pub mod modifier;
 pub mod reduce;
-mod fetch;
+pub mod fetch;
 
 #[derive(Debug, Clone)]
 pub enum FunctionReadError {
@@ -54,7 +54,7 @@ impl Error for FunctionReadError {
 }
 
 typedb_error!(
-    pub FunctionRepresentationError(component = "Function representation", prefix = "FRP") {
+    pub FunctionRepresentationError(component = "Function representation", prefix = "FNR") {
         FunctionArgumentUnused(
             1,
             "Function argument variable '{argument_variable}' is unused.\nSource:\n{declaration}",
@@ -245,9 +245,9 @@ impl ParameterRegistry {
         id
     }
 
-    pub(crate) fn register_fetch_key(&mut self, key: &str) -> ParameterID {
+    pub(crate) fn register_fetch_key(&mut self, key: String) -> ParameterID {
         let id = ParameterID { id: self.fetch_key_registry.len() };
-        let _prev = self.fetch_key_registry.insert(id, key.to_owned());
+        let _prev = self.fetch_key_registry.insert(id, key);
         debug_assert_eq!(_prev, None);
         id
     }

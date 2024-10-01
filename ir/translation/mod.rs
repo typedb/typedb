@@ -28,7 +28,7 @@ pub mod writes;
 #[derive(Debug)]
 pub struct TranslationContext {
     pub variable_registry: VariableRegistry, // TODO: Unpub
-    pub visible_variables: HashMap<String, Variable>,
+    visible_variables: HashMap<String, Variable>,
     pub parameters: ParameterRegistry,
 }
 
@@ -54,5 +54,9 @@ impl TranslationContext {
         reducer: Reducer,
     ) -> Variable {
         self.variable_registry.register_reduce_output_variable(name, variable_category, is_optional, reducer)
+    }
+
+    pub(crate) fn get_variable(&self, variable: &str) -> Option<Variable> {
+        self.visible_variables.get(variable).cloned()
     }
 }
