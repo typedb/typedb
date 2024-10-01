@@ -5,7 +5,6 @@
  */
 
 use std::{
-    array,
     collections::{HashMap, HashSet},
     iter,
 };
@@ -54,6 +53,8 @@ pub(super) enum PlannerVertex {
     Owns(OwnsPlanner),
     Relates(RelatesPlanner),
     Plays(PlaysPlanner),
+
+    NestedPattern(NestedPatternPlanner),
 }
 
 impl PlannerVertex {
@@ -90,6 +91,8 @@ impl PlannerVertex {
             | Self::Owns(_)
             | Self::Relates(_)
             | Self::Plays(_) => true, // always valid: iterators
+
+            Self::NestedPattern(inner) => inner.is_valid(index, ordered, adjacency),
         }
     }
 
@@ -100,82 +103,47 @@ impl PlannerVertex {
         }
     }
 
-    pub(super) fn as_isa(&self) -> Option<&IsaPlanner> {
-        match self {
-            Self::Isa(v) => Some(v),
-            _ => None,
-        }
-    }
-
-    pub(super) fn as_has(&self) -> Option<&HasPlanner> {
-        match self {
-            Self::Has(v) => Some(v),
-            _ => None,
-        }
-    }
-
-    pub(super) fn as_links(&self) -> Option<&LinksPlanner> {
-        match self {
-            Self::Links(v) => Some(v),
-            _ => None,
-        }
-    }
-
-    pub(super) fn as_sub(&self) -> Option<&SubPlanner> {
-        match self {
-            Self::Sub(v) => Some(v),
-            _ => None,
-        }
-    }
-
-    pub(super) fn as_owns(&self) -> Option<&OwnsPlanner> {
-        match self {
-            Self::Owns(v) => Some(v),
-            _ => None,
-        }
-    }
-
     pub(super) fn unbound_direction(&self) -> Direction {
         match self {
-            PlannerVertex::Constant => todo!(),
-            PlannerVertex::Label(_) => todo!(),
-            PlannerVertex::Input(_) => unreachable!(),
-            PlannerVertex::Type(_) => unreachable!(),
-            PlannerVertex::Thing(_) => unreachable!(),
-            PlannerVertex::Value(_) => unreachable!(),
-            PlannerVertex::Isa(inner) => inner.unbound_direction,
-            PlannerVertex::Has(inner) => inner.unbound_direction,
-            PlannerVertex::Links(inner) => inner.unbound_direction,
-            PlannerVertex::Expression(_) => todo!(),
-            PlannerVertex::Comparison(_) => Direction::Canonical,
-            PlannerVertex::Sub(inner) => inner.unbound_direction,
-            PlannerVertex::Owns(inner) => inner.unbound_direction,
-            PlannerVertex::Relates(inner) => inner.unbound_direction,
-            PlannerVertex::Plays(inner) => inner.unbound_direction,
+            Self::Constant => todo!(),
+            Self::Label(_) => todo!(),
+            Self::Input(_) => unreachable!(),
+            Self::Type(_) => unreachable!(),
+            Self::Thing(_) => unreachable!(),
+            Self::Value(_) => unreachable!(),
+            Self::Isa(inner) => inner.unbound_direction,
+            Self::Has(inner) => inner.unbound_direction,
+            Self::Links(inner) => inner.unbound_direction,
+            Self::Expression(_) => todo!(),
+            Self::Comparison(_) => Direction::Canonical,
+            Self::Sub(inner) => inner.unbound_direction,
+            Self::Owns(inner) => inner.unbound_direction,
+            Self::Relates(inner) => inner.unbound_direction,
+            Self::Plays(inner) => inner.unbound_direction,
+            Self::NestedPattern(_) => unreachable!(),
         }
     }
 
-    pub(super) fn variables(&self) -> impl Iterator<Item = usize> {
+    pub(super) fn variables(&self) -> Box<dyn Iterator<Item = usize> + '_> {
         match self {
-            Self::Constant => [None; 3].into_iter().flatten(),
-            Self::Label(inner) => inner.variables(),
+            Self::Constant => Box::new(iter::empty()),
+            Self::Label(inner) => Box::new(inner.variables()),
 
-            Self::Input(_inner) => todo!(),
+            Self::Input(_inner) => Box::new(iter::empty()),
+            Self::Type(_) | Self::Thing(_) | Self::Value(_) => Box::new(iter::empty()),
 
-            Self::Type(_inner) => todo!(),
-            Self::Thing(_inner) => todo!(),
-            Self::Value(_inner) => todo!(),
-
-            Self::Isa(inner) => inner.variables(),
-            Self::Has(inner) => inner.variables(),
-            Self::Links(inner) => inner.variables(),
+            Self::Isa(inner) => Box::new(inner.variables()),
+            Self::Has(inner) => Box::new(inner.variables()),
+            Self::Links(inner) => Box::new(inner.variables()),
             Self::Expression(_inner) => todo!(),
-            Self::Comparison(inner) => inner.variables(),
+            Self::Comparison(inner) => Box::new(inner.variables()),
 
-            Self::Sub(inner) => inner.variables(),
-            Self::Owns(inner) => inner.variables(),
-            Self::Relates(inner) => inner.variables(),
-            Self::Plays(inner) => inner.variables(),
+            Self::Sub(inner) => Box::new(inner.variables()),
+            Self::Owns(inner) => Box::new(inner.variables()),
+            Self::Relates(inner) => Box::new(inner.variables()),
+            Self::Plays(inner) => Box::new(inner.variables()),
+
+            Self::NestedPattern(inner) => Box::new(inner.variables()),
         }
     }
 
@@ -199,13 +167,15 @@ impl PlannerVertex {
             Self::Owns(_inner) => todo!(),
             Self::Relates(_inner) => todo!(),
             Self::Plays(_inner) => todo!(),
+
+            Self::NestedPattern(_inner) => unreachable!(),
         }
     }
 
     pub(super) fn add_equal(&mut self, other: Input) {
         match self {
-            Self::Constant => (),
-            Self::Value(_inner) => todo!(),
+            Self::Constant | Self::Input(_) => (),
+            Self::Value(_) => todo!(),
             Self::Thing(inner) => inner.add_equal(other),
             _ => todo!(),
         }
@@ -213,7 +183,7 @@ impl PlannerVertex {
 
     pub(super) fn add_lower_bound(&mut self, other: Input) {
         match self {
-            Self::Constant => (),
+            Self::Constant | Self::Input(_) => (),
             Self::Value(_inner) => todo!(),
             Self::Thing(inner) => inner.add_lower_bound(other),
             _ => todo!(),
@@ -222,7 +192,7 @@ impl PlannerVertex {
 
     pub(super) fn add_upper_bound(&mut self, other: Input) {
         match self {
-            Self::Constant => (),
+            Self::Constant | Self::Input(_) => (),
             Self::Value(_inner) => todo!(),
             Self::Thing(inner) => inner.add_upper_bound(other),
             _ => todo!(),
@@ -294,6 +264,8 @@ impl Costed for PlannerVertex {
             Self::Owns(inner) => inner.cost(inputs, elements),
             Self::Relates(inner) => inner.cost(inputs, elements),
             Self::Plays(inner) => inner.cost(inputs, elements),
+
+            Self::NestedPattern(inner) => inner.cost(inputs, elements),
         }
     }
 }
@@ -304,8 +276,8 @@ pub(super) struct LabelPlanner {
 }
 
 impl LabelPlanner {
-    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
-        [Some(self.var), None, None].into_iter().flatten()
+    fn variables(&self) -> impl Iterator<Item = usize> {
+        iter::once(self.var)
     }
 
     pub(crate) fn from_label_constraint(
@@ -558,8 +530,8 @@ impl IsaPlanner {
         Self { thing, type_, unbound_direction: Direction::Reverse }
     }
 
-    fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
-        [Some(self.thing), self.type_.as_variable(), None].into_iter().flatten()
+    fn variables(&self) -> impl Iterator<Item = usize> {
+        [Some(self.thing), self.type_.as_variable()].into_iter().flatten()
     }
 }
 
@@ -622,8 +594,8 @@ impl HasPlanner {
         }
     }
 
-    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
-        [Some(self.owner), Some(self.attribute), None].into_iter().flatten()
+    fn variables(&self) -> impl Iterator<Item = usize> {
+        [self.owner, self.attribute].into_iter()
     }
 }
 
@@ -738,8 +710,8 @@ impl LinksPlanner {
         }
     }
 
-    fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
-        [self.relation, self.player, self.role].map(Some).into_iter().flatten()
+    fn variables(&self) -> impl Iterator<Item = usize> {
+        [self.relation, self.player, self.role].into_iter()
     }
 }
 
@@ -789,8 +761,8 @@ impl ComparisonPlanner {
         }
     }
 
-    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
-        [self.lhs.as_variable(), self.rhs.as_variable(), None].into_iter().flatten()
+    fn variables(&self) -> impl Iterator<Item = usize> {
+        [self.lhs.as_variable(), self.rhs.as_variable()].into_iter().flatten()
     }
 }
 
@@ -822,8 +794,8 @@ impl SubPlanner {
         }
     }
 
-    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
-        [self.type_.as_variable(), self.supertype.as_variable(), None].into_iter().flatten()
+    fn variables(&self) -> impl Iterator<Item = usize> {
+        [self.type_.as_variable(), self.supertype.as_variable()].into_iter().flatten()
     }
 }
 
@@ -852,8 +824,8 @@ impl OwnsPlanner {
         Self { owner, attribute, unbound_direction: Direction::Canonical }
     }
 
-    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
-        [self.owner.as_variable(), self.attribute.as_variable(), None].into_iter().flatten()
+    fn variables(&self) -> impl Iterator<Item = usize> {
+        [self.owner.as_variable(), self.attribute.as_variable()].into_iter().flatten()
     }
 }
 
@@ -882,8 +854,8 @@ impl RelatesPlanner {
         Self { relation, role_type, unbound_direction: Direction::Canonical }
     }
 
-    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
-        [self.relation.as_variable(), self.role_type.as_variable(), None].into_iter().flatten()
+    fn variables(&self) -> impl Iterator<Item = usize> {
+        [self.relation.as_variable(), self.role_type.as_variable()].into_iter().flatten()
     }
 }
 
@@ -912,13 +884,40 @@ impl PlaysPlanner {
         Self { player, role_type, unbound_direction: Direction::Canonical }
     }
 
-    pub(super) fn variables(&self) -> iter::Flatten<array::IntoIter<Option<usize>, 3>> {
-        [self.player.as_variable(), self.role_type.as_variable(), None].into_iter().flatten()
+    fn variables(&self) -> impl Iterator<Item = usize> {
+        [self.player.as_variable(), self.role_type.as_variable()].into_iter().flatten()
     }
 }
 
 impl Costed for PlaysPlanner {
     fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> ElementCost {
         ElementCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct NestedPatternPlanner {
+    variables: Vec<usize>,
+    cost: ElementCost,
+}
+
+impl NestedPatternPlanner {
+    pub(super) fn new(variables: Vec<usize>, cost: ElementCost) -> Self {
+        Self { variables, cost }
+    }
+
+    fn is_valid(&self, _index: usize, ordered: &[usize], _adjacency: &HashMap<usize, HashSet<usize>>) -> bool {
+        self.variables().all(|var| ordered.contains(&var))
+    }
+
+    fn variables(&self) -> impl Iterator<Item = usize> + '_ {
+        self.variables.iter().copied()
+    }
+}
+
+impl Costed for NestedPatternPlanner {
+    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> ElementCost {
+        // TODO cost can be adjusted for disjunctions
+        self.cost
     }
 }

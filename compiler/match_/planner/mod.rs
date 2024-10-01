@@ -61,14 +61,13 @@ pub fn compile(
         scope_context,
         input_variables,
         type_annotations,
-        variable_registry,
+        &variable_registry,
         expressions,
         statistics,
     )
-    .lower()
+    .lower(input_variables)
+    .finish(variable_registry)
 }
-
-// *** //
 
 #[derive(Debug, Default)]
 struct ProgramBuilder {
@@ -150,8 +149,11 @@ impl MatchProgramBuilder {
         }
     }
 
-    fn finish(mut self) -> Vec<Program> {
+    fn finish(mut self, variable_registry: Arc<VariableRegistry>) -> MatchProgram {
         self.finish_one();
-        self.programs.into_iter().map(|builder| builder.finish(&self.outputs)).collect()
+        let programs = self.programs.into_iter().map(|builder| builder.finish(&self.outputs)).collect();
+        let variable_positions_index =
+            self.outputs.iter().sorted_by_key(|(k, _)| k.as_usize()).map(|(_, &v)| v).collect();
+        MatchProgram::new(programs, variable_registry, self.index.clone(), variable_positions_index)
     }
 }
