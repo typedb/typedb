@@ -34,7 +34,7 @@ rust_test(
 )
 
 rust_test(
-    name = "test_tech",
+    name = "test_fetch",
     crate_root = "fetch.rs",
     srcs = ["fetch.rs"],
     deps = deps,
