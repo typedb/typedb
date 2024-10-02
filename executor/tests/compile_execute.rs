@@ -317,7 +317,7 @@ fn test_negation_planning_traversal() {
 
     let statistics = setup(&storage, type_manager, thing_manager, schema, data);
 
-    let query = "match $person isa person; not { $person has age $age; };";
+    let query = "match $person isa person; not { $person has name $name; };";
     let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
 
     // IR
@@ -361,13 +361,12 @@ fn test_negation_planning_traversal() {
         .try_collect::<_, Vec<_>, _>()
         .unwrap();
 
-    assert_eq!(rows.len(), 1);
-
-    for row in rows {
-        for value in row {
+    for row in &rows {
+        for value in row.row() {
             print!("{}, ", value);
         }
         println!()
     }
-}
 
+    assert_eq!(rows.len(), 1);
+}

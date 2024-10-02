@@ -255,10 +255,8 @@ impl ProgramExecutor {
                 todo!()
             }
             Program::Negation(NegationProgram { negation: negation_plan, .. }) => {
-                todo!()
-                // let executor = PatternExecutor::new(negation_plan, snapshot, thing_manager)?;
-                // // TODO: add limit 1, filters if they aren't there already?
-                // Ok(Self::Negation(NegationExecutor::new(executor)))
+                // TODO: add limit 1, filters if they aren't there already?
+                Ok(Self::Negation(NegationExecutor::new(negation_plan.clone())))
             }
             Program::Optional(OptionalProgram { optional: optional_plan, .. }) => {
                 todo!()
@@ -799,12 +797,12 @@ impl DisjunctionExecutor {
 }
 
 struct NegationExecutor {
-    executor: PatternExecutor,
+    negation_plan: MatchProgram,
 }
 
 impl NegationExecutor {
-    fn new(executor: PatternExecutor) -> NegationExecutor {
-        Self { executor }
+    fn new(negation_plan: MatchProgram) -> Self {
+        Self { negation_plan }
     }
 
     fn batch_from(
@@ -819,7 +817,22 @@ impl NegationExecutor {
 
         let mut output = FixedBatch::new(width);
 
-        todo!()
+        while let Some(row) = input.next() {
+            let input_row = row.map_err(|err| err.clone())?;
+            let executor = PatternExecutor::new(
+                &self.negation_plan,
+                context.snapshot(),
+                context.thing_manager(),
+                input_row.clone(),
+            )
+            .map_err(|error| ReadExecutionError::ConceptRead { source: error })?;
+            let mut iterator = executor.into_iterator(context.clone(), interrupt.clone());
+            if iterator.next().transpose().map_err(|err| err.clone())?.is_none() {
+                output.append(|mut row| row.copy_from(input_row.row(), input_row.multiplicity()))
+            }
+        }
+
+        Ok(Some(output))
     }
 }
 
