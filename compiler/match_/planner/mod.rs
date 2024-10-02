@@ -21,7 +21,6 @@ mod vertex;
 
 use std::{
     collections::{hash_map, HashMap},
-    mem,
     sync::Arc,
 };
 
@@ -64,32 +63,78 @@ pub fn compile(
         expressions,
         statistics,
     )
-    .lower(input_variables)
-    .finish(variable_registry)
+    .lower(input_variables, variable_registry)
 }
 
 #[derive(Debug, Default)]
-struct ProgramBuilder {
+struct IntersectionBuilder {
     sort_variable: Option<Variable>,
     instructions: Vec<ConstraintInstruction<VariablePosition>>,
     output_width: Option<u32>,
 }
 
+#[derive(Debug)]
+struct NegationBuilder {
+    negation: MatchProgram,
+}
+
+#[derive(Debug)]
+enum ProgramBuilder {
+    Intersection(IntersectionBuilder),
+    Negation(NegationBuilder),
+}
+
 impl ProgramBuilder {
     fn finish(self, outputs: &HashMap<VariablePosition, Variable>) -> Program {
-        let sort_variable = *outputs.iter().find(|(_, &item)| Some(item) == self.sort_variable).unwrap().0;
-        Program::Intersection(IntersectionProgram::new(
-            sort_variable,
-            self.instructions,
-            &(0..self.output_width.unwrap()).map(VariablePosition::new).collect_vec(),
-            self.output_width.unwrap(),
-        ))
+        match self {
+            Self::Intersection(IntersectionBuilder { sort_variable, instructions, output_width }) => {
+                let sort_variable = *outputs.iter().find(|(_, &item)| Some(item) == sort_variable).unwrap().0;
+                Program::Intersection(IntersectionProgram::new(
+                    sort_variable,
+                    instructions,
+                    &(0..output_width.unwrap()).map(VariablePosition::new).collect_vec(),
+                    output_width.unwrap(),
+                ))
+            }
+            Self::Negation(NegationBuilder { negation }) => {
+                Program::Negation(pattern_plan::NegationProgram { negation })
+            }
+        }
+    }
+
+    fn as_intersection(&self) -> Option<&IntersectionBuilder> {
+        match self {
+            Self::Intersection(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    fn as_intersection_mut(&mut self) -> Option<&mut IntersectionBuilder> {
+        match self {
+            Self::Intersection(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    /// Returns `true` if the program builder is [`Intersection`].
+    ///
+    /// [`Intersection`]: ProgramBuilder::Intersection
+    #[must_use]
+    fn is_intersection(&self) -> bool {
+        matches!(self, Self::Intersection(..))
+    }
+
+    fn set_output_width(&mut self, position: u32) {
+        match self {
+            ProgramBuilder::Intersection(IntersectionBuilder { output_width, .. }) => *output_width = Some(position),
+            ProgramBuilder::Negation(_) => todo!(),
+        }
     }
 }
 
 struct MatchProgramBuilder {
     programs: Vec<ProgramBuilder>,
-    current: ProgramBuilder,
+    current: Option<ProgramBuilder>,
     outputs: HashMap<VariablePosition, Variable>,
     index: HashMap<Variable, VariablePosition>,
     next_output: VariablePosition,
@@ -101,11 +146,11 @@ impl MatchProgramBuilder {
         let outputs = index.iter().map(|(&var, &pos)| (pos, var)).collect();
         let next_position = input_variables.values().max().map(|&pos| pos.position + 1).unwrap_or_default();
         let next_output = VariablePosition::new(next_position);
-        Self { programs: Vec::new(), current: ProgramBuilder::default(), outputs, index, next_output }
+        Self { programs: Vec::new(), current: None, outputs, index, next_output }
     }
 
-    fn get_program_mut(&mut self, program: usize) -> &mut ProgramBuilder {
-        self.programs.get_mut(program).unwrap_or(&mut self.current)
+    fn get_program_mut(&mut self, program: usize) -> Option<&mut ProgramBuilder> {
+        self.programs.get_mut(program).or(self.current.as_mut())
     }
 
     fn push_instruction(
@@ -114,15 +159,31 @@ impl MatchProgramBuilder {
         instruction: ConstraintInstruction<Variable>,
         outputs: impl IntoIterator<Item = Variable>,
     ) -> (usize, usize) {
-        if self.current.sort_variable != Some(sort_variable) {
+        if let Some(ProgramBuilder::Intersection(intersection_builder)) = &self.current {
+            if intersection_builder.sort_variable != Some(sort_variable) {
+                self.finish_one();
+            }
+        }
+        if self.current.as_ref().is_some_and(|builder| !builder.is_intersection()) {
             self.finish_one();
         }
         for var in outputs {
             self.register_output(var);
         }
-        self.current.sort_variable = Some(sort_variable);
-        self.current.instructions.push(instruction.map(&self.index));
-        (self.programs.len(), self.current.instructions.len() - 1)
+        if self.current.is_none() {
+            self.current = Some(ProgramBuilder::Intersection(IntersectionBuilder::default()))
+        }
+        let current = self.current.as_mut().unwrap().as_intersection_mut().unwrap();
+        current.sort_variable = Some(sort_variable);
+        current.instructions.push(instruction.map(&self.index));
+        (self.programs.len(), current.instructions.len() - 1)
+    }
+
+    fn push_program(&mut self, program: ProgramBuilder) {
+        if self.current.is_some() {
+            self.finish_one();
+        }
+        self.programs.push(program);
     }
 
     fn position_mapping(&self) -> &HashMap<Variable, VariablePosition> {
@@ -142,9 +203,9 @@ impl MatchProgramBuilder {
     }
 
     fn finish_one(&mut self) {
-        if !self.current.instructions.is_empty() {
-            self.current.output_width = Some(self.next_output.position);
-            self.programs.push(mem::take(&mut self.current));
+        if let Some(mut current) = self.current.take() {
+            current.set_output_width(self.next_output.position);
+            self.programs.push(current);
         }
     }
 

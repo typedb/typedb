@@ -17,7 +17,7 @@ use ir::{
 
 use crate::{match_::instructions::ConstraintInstruction, VariablePosition};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct MatchProgram {
     pub(crate) programs: Vec<Program>,
     pub(crate) variable_registry: Arc<VariableRegistry>,
@@ -57,7 +57,7 @@ impl MatchProgram {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Program {
     Intersection(IntersectionProgram),
     UnsortedJoin(UnsortedJoinProgram),
@@ -102,7 +102,7 @@ impl Program {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct IntersectionProgram {
     pub sort_variable: VariablePosition,
     pub instructions: Vec<ConstraintInstruction<VariablePosition>>,
@@ -134,14 +134,8 @@ impl IntersectionProgram {
             });
         });
 
-        Self {
-            sort_variable,
-            instructions,
-            new_variables,
-            output_width,
-            input_variables,
-            selected_variables: selected_variables.to_owned(),
-        }
+        let selected_variables = selected_variables.to_owned();
+        Self { sort_variable, instructions, new_variables, output_width, input_variables, selected_variables }
     }
 
     fn new_variables(&self) -> &[VariablePosition] {
@@ -153,7 +147,7 @@ impl IntersectionProgram {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct UnsortedJoinProgram {
     pub iterate_instruction: ConstraintInstruction<VariablePosition>,
     pub check_instructions: Vec<ConstraintInstruction<VariablePosition>>,
@@ -205,7 +199,7 @@ impl UnsortedJoinProgram {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct AssignmentProgram {
     assign_instruction: ExpressionBinding<VariablePosition>,
     check_instructions: Vec<ConstraintInstruction<VariablePosition>>,
@@ -222,17 +216,17 @@ impl AssignmentProgram {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct DisjunctionProgram {
     pub disjunction: Vec<MatchProgram>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct NegationProgram {
     pub negation: MatchProgram,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct OptionalProgram {
     pub optional: MatchProgram,
 }

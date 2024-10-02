@@ -8,7 +8,7 @@
 
 use std::{collections::HashMap, ops::Deref};
 
-use answer::{variable::Variable, Type};
+use answer::Type;
 use ir::pattern::{
     constraint::{Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, IsaKind, SubKind},
     IrID, ParameterID, Vertex,

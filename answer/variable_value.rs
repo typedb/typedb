@@ -91,6 +91,14 @@ impl<'a> VariableValue<'a> {
             }
         }
     }
+
+    /// Returns `true` if the variable value is [`Empty`].
+    ///
+    /// [`Empty`]: VariableValue::Empty
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        matches!(self, Self::Empty)
+    }
 }
 
 impl<'a> PartialOrd for VariableValue<'a> {

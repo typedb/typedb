@@ -210,6 +210,14 @@ impl PlannerVertex {
     pub(super) fn is_value(&self) -> bool {
         matches!(self, Self::Value(..))
     }
+
+    /// Returns `true` if the planner vertex is [`Input`].
+    ///
+    /// [`Input`]: PlannerVertex::Input
+    #[must_use]
+    pub(super) fn is_input(&self) -> bool {
+        matches!(self, Self::Input(..))
+    }
 }
 
 #[derive(Clone, Copy, Debug)]

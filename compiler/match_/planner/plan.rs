@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -38,12 +41,13 @@ use crate::{
             CheckInstruction, CheckVertex, ConstraintInstruction, Inputs,
         },
         planner::{
+            pattern_plan::MatchProgram,
             vertex::{
                 ComparisonPlanner, Costed, Direction, ElementCost, HasPlanner, Input, InputPlanner, IsaPlanner,
                 LabelPlanner, LinksPlanner, NestedPatternPlanner, OwnsPlanner, PlannerVertex, PlaysPlanner,
                 RelatesPlanner, SubPlanner, ThingPlanner, TypePlanner, ValuePlanner,
             },
-            MatchProgramBuilder,
+            IntersectionBuilder, MatchProgramBuilder, NegationBuilder, ProgramBuilder,
         },
     },
     VariablePosition,

@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+#![deny(elided_lifetimes_in_paths)]
 #![allow(clippy::result_large_err)]
 
 use std::fmt::{Display, Formatter};
