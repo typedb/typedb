@@ -380,3 +380,21 @@ fn does_type_match(context: &Context, var_value: &VariableValue<'_>, expected: &
 async fn answer_size_is(context: &mut Context, answer_size: i32) {
     assert_eq!(context.answers.len(), answer_size as usize)
 }
+
+#[apply(generic_step)]
+#[step(expr = r"order of answer concepts is")]
+async fn order_of_answers_is(context: &mut Context, step: &Step) {
+    let num_specs = step.table().unwrap().rows.len() - 1;
+    let num_answers = context.answers.len();
+    assert_eq!(
+        num_specs, num_answers,
+        "expected the number of identifier entries to match the number of answers, found {} entries and {} answers",
+        num_specs, num_answers
+    );
+    for (spec_row, answer_row) in iter_table_map(step).zip(&context.answers) {
+        assert!(
+            spec_row.iter().all(|(&var, &spec)| does_var_in_row_match_spec(context, answer_row, var, spec)),
+            "The answer found did not match the specified row {spec_row:?}"
+        );
+    }
+}

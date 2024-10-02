@@ -53,6 +53,15 @@ pub enum SortVariable {
     Descending(Variable),
 }
 
+impl SortVariable {
+    pub fn variable(&self) -> Variable {
+        match self {
+            SortVariable::Ascending(var) => var.clone(),
+            SortVariable::Descending(var) => var.clone(),
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 pub struct Offset {
     offset: u64,
