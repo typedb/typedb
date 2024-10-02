@@ -155,9 +155,7 @@ impl BlockContext {
     }
 
     pub fn is_parent_scope(&self, scope: ScopeId, child: ScopeId) -> bool {
-        self.scope_parents
-            .get(&child)
-            .is_some_and(|&parent| scope == parent || self.is_parent_scope(scope, parent))
+        self.scope_parents.get(&child).is_some_and(|&parent| scope == parent || self.is_parent_scope(scope, parent))
     }
 
     pub fn is_visible_child(&self, child: ScopeId, candidate: ScopeId) -> bool {
