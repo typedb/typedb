@@ -175,7 +175,7 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
                     context.variable_value_types.insert(variable, ExpressionValueType::Single(value_type.category()));
                     Ok(())
                 }
-                VariableCategory::AttributeList  | VariableCategory::ThingList => {
+                VariableCategory::AttributeList | VariableCategory::ThingList => {
                     debug_assert!(types.iter().all(|t| matches!(t, answer::Type::Attribute(_))));
                     context.variable_value_types.insert(variable, ExpressionValueType::List(value_type.category()));
                     Ok(())
