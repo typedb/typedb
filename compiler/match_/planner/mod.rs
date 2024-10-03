@@ -33,9 +33,9 @@ use crate::{
     expression::compiled_expression::CompiledExpression,
     match_::{
         inference::type_annotations::TypeAnnotations,
-        instructions::ConstraintInstruction,
+        instructions::{CheckInstruction, ConstraintInstruction},
         planner::{
-            pattern_plan::{IntersectionProgram, MatchProgram, Program},
+            pattern_plan::{CheckProgram, IntersectionProgram, MatchProgram, Program},
             plan::plan_conjunction,
         },
     },
@@ -52,7 +52,7 @@ pub fn compile(
 ) -> MatchProgram {
     let conjunction = block.conjunction();
     let scope_context = block.scope_context();
-    // debug_assert!(conjunction.captured_variables(scope_context).all(|var| input_variables.contains_key(&var)));
+    debug_assert!(conjunction.captured_variables(scope_context).all(|var| input_variables.contains_key(&var)));
 
     plan_conjunction(
         conjunction,
@@ -73,6 +73,11 @@ struct IntersectionBuilder {
     output_width: Option<u32>,
 }
 
+#[derive(Debug, Default)]
+struct CheckBuilder {
+    instructions: Vec<CheckInstruction<VariablePosition>>,
+}
+
 #[derive(Debug)]
 struct NegationBuilder {
     negation: MatchProgram,
@@ -81,6 +86,7 @@ struct NegationBuilder {
 #[derive(Debug)]
 enum ProgramBuilder {
     Intersection(IntersectionBuilder),
+    Check(CheckBuilder),
     Negation(NegationBuilder),
 }
 
@@ -96,22 +102,23 @@ impl ProgramBuilder {
                     output_width.unwrap(),
                 ))
             }
+            Self::Check(CheckBuilder { instructions }) => Program::Check(CheckProgram::new(instructions)),
             Self::Negation(NegationBuilder { negation }) => {
                 Program::Negation(pattern_plan::NegationProgram { negation })
             }
         }
     }
 
-    fn as_intersection(&self) -> Option<&IntersectionBuilder> {
+    fn as_intersection_mut(&mut self) -> Option<&mut IntersectionBuilder> {
         match self {
             Self::Intersection(v) => Some(v),
             _ => None,
         }
     }
 
-    fn as_intersection_mut(&mut self) -> Option<&mut IntersectionBuilder> {
+    fn as_check_mut(&mut self) -> Option<&mut CheckBuilder> {
         match self {
-            Self::Intersection(v) => Some(v),
+            Self::Check(v) => Some(v),
             _ => None,
         }
     }
@@ -124,10 +131,19 @@ impl ProgramBuilder {
         matches!(self, Self::Intersection(..))
     }
 
+    /// Returns `true` if the program builder is [`Check`].
+    ///
+    /// [`Check`]: ProgramBuilder::Check
+    #[must_use]
+    fn is_check(&self) -> bool {
+        matches!(self, Self::Check(..))
+    }
+
     fn set_output_width(&mut self, position: u32) {
         match self {
             ProgramBuilder::Intersection(IntersectionBuilder { output_width, .. }) => *output_width = Some(position),
-            ProgramBuilder::Negation(_) => todo!(),
+            ProgramBuilder::Check(_) => (),
+            ProgramBuilder::Negation(_) => (),
         }
     }
 }
@@ -177,6 +193,17 @@ impl MatchProgramBuilder {
         current.sort_variable = Some(sort_variable);
         current.instructions.push(instruction.map(&self.index));
         (self.programs.len(), current.instructions.len() - 1)
+    }
+
+    fn push_check_instruction(&mut self, instruction: CheckInstruction<VariablePosition>) {
+        if self.current.as_ref().is_some_and(|builder| !builder.is_check()) {
+            self.finish_one();
+        }
+        if self.current.is_none() {
+            self.current = Some(ProgramBuilder::Check(CheckBuilder::default()))
+        }
+        let current = self.current.as_mut().unwrap().as_check_mut().unwrap();
+        current.instructions.push(instruction);
     }
 
     fn push_program(&mut self, program: ProgramBuilder) {

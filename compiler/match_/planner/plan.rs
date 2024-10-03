@@ -65,21 +65,18 @@ pub(super) fn plan_conjunction<'a>(
     let subplans = conjunction
         .nested_patterns()
         .iter()
-        .map(|pattern| {
-            let conjunction_plan = match pattern {
-                NestedPattern::Disjunction(_) => todo!(),
-                NestedPattern::Negation(negation) => plan_conjunction(
-                    negation.conjunction(),
-                    block_context,
-                    input_variables,
-                    type_annotations,
-                    variable_registry,
-                    _expressions,
-                    statistics,
-                ),
-                NestedPattern::Optional(_) => todo!(),
-            };
-            (pattern, conjunction_plan)
+        .map(|pattern| match pattern {
+            NestedPattern::Disjunction(_) => todo!(),
+            NestedPattern::Negation(negation) => plan_conjunction(
+                negation.conjunction(),
+                block_context,
+                input_variables,
+                type_annotations,
+                variable_registry,
+                _expressions,
+                statistics,
+            ),
+            NestedPattern::Optional(_) => todo!(),
         })
         .collect_vec();
 
@@ -116,7 +113,7 @@ pub(super) struct PlanBuilder<'a> {
     elements: Vec<PlannerVertex>,
     variable_index: HashMap<Variable, usize>,
     index_to_constraint: HashMap<usize, &'a Constraint<Variable>>,
-    index_to_nested_pattern: HashMap<usize, &'a NestedPattern>,
+    index_to_nested_pattern: HashMap<usize, ConjunctionPlan<'a>>,
     adjacency: HashMap<usize, HashSet<usize>>,
     type_annotations: &'a TypeAnnotations,
     statistics: &'a Statistics,
@@ -346,13 +343,14 @@ impl<'a> PlanBuilder<'a> {
         )));
     }
 
-    fn register_nested_plans(&mut self, subplans: Vec<(&'a NestedPattern, ConjunctionPlan)>) {
-        for (pattern, subplan) in subplans {
-            self.index_to_nested_pattern.insert(self.elements.len(), pattern);
+    fn register_nested_plans(&mut self, subplans: Vec<ConjunctionPlan<'a>>) {
+        for subplan in subplans {
+            let index = self.elements.len();
             self.elements.push(PlannerVertex::NestedPattern(NestedPatternPlanner::new(
                 subplan.shared_variables.clone(),
                 subplan.cost,
             )));
+            self.index_to_nested_pattern.insert(index, subplan);
         }
 
         for (planner_index, planner) in self.elements.iter().enumerate() {
@@ -435,7 +433,7 @@ impl<'a> PlanBuilder<'a> {
             index_to_nested_pattern,
             adjacency,
             type_annotations,
-            statistics,
+            statistics: _,
         } = self;
 
         ConjunctionPlan {
@@ -446,34 +444,37 @@ impl<'a> PlanBuilder<'a> {
             index_to_nested_pattern,
             adjacency,
             type_annotations,
-            statistics,
             ordering,
             cost,
         }
     }
 }
 
+#[derive(Debug)]
 pub(super) struct ConjunctionPlan<'a> {
     shared_variables: Vec<usize>,
     elements: Vec<PlannerVertex>,
     variable_index: HashMap<Variable, usize>,
     index_to_constraint: HashMap<usize, &'a Constraint<Variable>>,
-    index_to_nested_pattern: HashMap<usize, &'a NestedPattern>,
+    index_to_nested_pattern: HashMap<usize, ConjunctionPlan<'a>>,
     adjacency: HashMap<usize, HashSet<usize>>,
     type_annotations: &'a TypeAnnotations,
-    statistics: &'a Statistics,
     ordering: Vec<usize>,
     cost: ElementCost,
 }
 
 impl ConjunctionPlan<'_> {
-    pub(super) fn lower(&self, input_variables: &HashMap<Variable, VariablePosition>) -> MatchProgramBuilder {
+    pub(super) fn lower(
+        &self,
+        input_variables: &HashMap<Variable, VariablePosition>,
+        variable_registry: Arc<VariableRegistry>,
+    ) -> MatchProgram {
         let index_to_variable: HashMap<_, _> =
             self.variable_index.iter().map(|(&variable, &index)| (index, variable)).collect();
 
         let mut match_builder = MatchProgramBuilder::with_inputs(input_variables);
 
-        let mut producers: HashMap<Variable, _> = HashMap::with_capacity(self.variable_index.len());
+        let mut producers = HashMap::with_capacity(self.variable_index.len());
 
         let element_to_order: HashMap<_, _> =
             self.ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
@@ -503,250 +504,287 @@ impl ConjunctionPlan<'_> {
 
             let inputs = inputs_of(index).into_iter().map(|var| index_to_variable[&var]).collect_vec();
 
-            let sort_variable =
-                outputs_of(index).into_iter().find(|&var| inputs_of(var).len() > 1).map(|var| index_to_variable[&var]);
+            if let Some(constraint) = self.index_to_constraint.get(&index) {
+                let sort_variable = outputs_of(index)
+                    .into_iter()
+                    .find(|&var| inputs_of(var).len() > 1)
+                    .map(|var| index_to_variable[&var]);
 
-            let constraint = &self.index_to_constraint[&index];
-            if let Some(var) = &match_builder.current.sort_variable {
-                if !constraint.ids().contains(var) {
-                    match_builder.finish_one();
-                }
-            }
-
-            let planner = &self.elements[index];
-
-            macro_rules! binary {
-                ($((with $with:ident))? $lhs:ident $con:ident $rhs:ident, $fw:ident($fwi:ident), $bw:ident($bwi:ident)) => {{
-                    let lhs = $con.$lhs();
-                    let rhs = $con.$rhs();
-
-                    let lhs_var = lhs.as_variable();
-                    let rhs_var = rhs.as_variable();
-
-                    let num_input_variables = [lhs_var, rhs_var].into_iter().filter(|x| x.is_some()).count();
-
-                    assert!(num_input_variables > 0);
-
-                    if inputs.len() == num_input_variables {
-                        let lhs_producer = lhs_var
-                            .filter(|lhs| !input_variables.contains_key(&lhs))
-                            .map(|lhs| producers.get(&lhs).expect("bound lhs must have been produced"));
-                        let rhs_producer = rhs_var
-                            .filter(|rhs| !input_variables.contains_key(&rhs))
-                            .map(|rhs| producers.get(&rhs).expect("bound rhs must have been produced"));
-                        let Some(&(program, instruction)) = Ord::max(lhs_producer, rhs_producer) else {
-                            unreachable!("num_input_variables > 0")
-                        };
-                        let lhs_pos = lhs.clone().map(match_builder.position_mapping());
-                        let rhs_pos = rhs.clone().map(match_builder.position_mapping());
-                        match_builder.get_program_mut(program).instructions[instruction]
-                            .add_check(CheckInstruction::$fw {
-                                $lhs: CheckVertex::resolve(lhs_pos, self.type_annotations),
-                                $rhs: CheckVertex::resolve(rhs_pos, self.type_annotations),
-                                $($with: $con.$with(),)?
-                            });
-                        continue;
-                    }
-
-                    let sort_variable = if let Some(sort_variable) = sort_variable {
-                        sort_variable
-                    } else {
-                        match (lhs_var, rhs_var) {
-                            (Some(lhs), Some(rhs)) if !inputs.is_empty() => {
-                                if inputs.contains(&rhs) {
-                                    lhs
-                                } else {
-                                    rhs
-                                }
-                            }
-                            (Some(lhs), Some(rhs)) => {
-                                if planner.unbound_direction() == Direction::Canonical {
-                                    lhs
-                                } else {
-                                    rhs
-                                }
-                            }
-                            (Some(lhs), None) => lhs,
-                            (None, Some(rhs)) => rhs,
-                            (None, None) => unreachable!("no variables in constraint?"),
-                        }
-                    };
-
-                    let con = $con.clone();
-                    let instruction = if lhs_var.is_some_and(|lhs| inputs.contains(&lhs)) {
-                        ConstraintInstruction::$fw($fwi::new(con, Inputs::Single([lhs_var.unwrap()]), self.type_annotations))
-                    } else if rhs_var.is_some_and(|rhs| inputs.contains(&rhs)) {
-                        ConstraintInstruction::$bw($bwi::new(con, Inputs::Single([rhs_var.unwrap()]), self.type_annotations))
-                    } else if planner.unbound_direction() == Direction::Canonical {
-                        ConstraintInstruction::$fw($fwi::new(con, Inputs::None([]), self.type_annotations))
-                    } else {
-                        ConstraintInstruction::$bw($bwi::new(con, Inputs::None([]), self.type_annotations))
-                    };
-
-                    let producer_index = match_builder.push_instruction(
-                        sort_variable,
-                        instruction,
-                        [lhs_var, rhs_var].into_iter().flatten(),
-                    );
-
-                    for var in [lhs_var, rhs_var].into_iter().flatten() {
-                        if !inputs.contains(&var) {
-                            producers.insert(var, producer_index);
-                        }
-                    }
-                }};
-            }
-
-            match constraint {
-                Constraint::Kind(kind) => {
-                    let var = kind.type_().as_variable().unwrap();
-                    let instruction =
-                        ConstraintInstruction::TypeList(TypeListInstruction::new(var, self.type_annotations));
-                    let producer_index = match_builder.push_instruction(var, instruction, [var]);
-                    producers.insert(var, producer_index);
-                }
-                Constraint::RoleName(name) => {
-                    let var = name.left().as_variable().unwrap();
-                    let instruction =
-                        ConstraintInstruction::TypeList(TypeListInstruction::new(var, self.type_annotations));
-                    let producer_index = match_builder.push_instruction(var, instruction, [var]);
-                    producers.insert(var, producer_index);
-                }
-                Constraint::Label(label) => {
-                    let var = label.left().as_variable().unwrap();
-                    let instruction =
-                        ConstraintInstruction::TypeList(TypeListInstruction::new(var, self.type_annotations));
-                    let producer_index = match_builder.push_instruction(var, instruction, [var]);
-                    producers.insert(var, producer_index);
-                }
-
-                Constraint::Isa(isa) => {
-                    binary!((with isa_kind) thing isa type_, Isa(IsaInstruction), IsaReverse(IsaReverseInstruction))
-                }
-                Constraint::Sub(sub) => {
-                    binary!((with sub_kind) subtype sub supertype, Sub(SubInstruction), SubReverse(SubReverseInstruction))
-                }
-                Constraint::Owns(owns) => {
-                    binary!(owner owns attribute, Owns(OwnsInstruction), OwnsReverse(OwnsReverseInstruction))
-                }
-                Constraint::Relates(relates) => {
-                    binary!(relation relates role_type, Relates(RelatesInstruction), RelatesReverse(RelatesReverseInstruction))
-                }
-                Constraint::Plays(plays) => {
-                    binary!(player plays role_type, Plays(PlaysInstruction), PlaysReverse(PlaysReverseInstruction))
-                }
-
-                Constraint::Has(has) => {
-                    binary!(owner has attribute, Has(HasInstruction), HasReverse(HasReverseInstruction))
-                }
-
-                Constraint::Links(links) => {
-                    let relation = links.relation().as_variable().unwrap();
-                    let player = links.player().as_variable().unwrap();
-                    let role = links.role_type().as_variable().unwrap();
-
-                    if inputs.len() == 3 {
-                        let relation_producer =
-                            producers.get(&relation).expect("bound relation must have been produced");
-                        let player_producer = producers.get(&player).expect("bound player must have been produced");
-                        let (program, instruction) = std::cmp::Ord::max(*relation_producer, *player_producer);
-
-                        let relation_pos = match_builder.position(relation).into();
-                        let player_pos = match_builder.position(player).into();
-                        let role_pos = match_builder.position(role).into();
-                        match_builder.get_program_mut(program).instructions[instruction].add_check(
-                            CheckInstruction::Links {
-                                relation: CheckVertex::resolve(relation_pos, self.type_annotations),
-                                player: CheckVertex::resolve(player_pos, self.type_annotations),
-                                role: CheckVertex::resolve(role_pos, self.type_annotations),
-                            },
-                        );
-                        continue;
-                    }
-
-                    let sort_variable = if let Some(sort_variable) = sort_variable {
-                        sort_variable
-                    } else if inputs.contains(&player) {
-                        relation
-                    } else if inputs.contains(&relation) {
-                        player
-                    } else if planner.unbound_direction() == Direction::Canonical {
-                        relation
-                    } else {
-                        player
-                    };
-
-                    let links = links.clone();
-                    let instruction = if inputs.contains(&relation) {
-                        ConstraintInstruction::Links(LinksInstruction::new(
-                            links,
-                            Inputs::Single([relation]),
-                            self.type_annotations,
-                        ))
-                    } else if inputs.contains(&player) {
-                        ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
-                            links,
-                            Inputs::Single([player]),
-                            self.type_annotations,
-                        ))
-                    } else if planner.unbound_direction() == Direction::Canonical {
-                        ConstraintInstruction::Links(LinksInstruction::new(
-                            links,
-                            Inputs::None([]),
-                            self.type_annotations,
-                        ))
-                    } else {
-                        ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
-                            links,
-                            Inputs::None([]),
-                            self.type_annotations,
-                        ))
-                    };
-                    let producer_index =
-                        match_builder.push_instruction(sort_variable, instruction, [relation, player, role]);
-
-                    for &var in &[relation, player, role] {
-                        if !inputs.contains(&var) {
-                            producers.insert(var, producer_index);
-                        }
-                    }
-                }
-
-                Constraint::ExpressionBinding(_) => todo!("expression binding"),
-                Constraint::FunctionCallBinding(_) => todo!("function call binding"),
-                Constraint::Comparison(compare) => {
-                    let lhs = compare.lhs();
-                    let rhs = compare.rhs();
-                    let comparator = compare.comparator();
-
-                    let lhs_var = lhs.as_variable();
-                    let rhs_var = rhs.as_variable();
-                    let num_input_variables = [lhs_var, rhs_var].into_iter().filter(|x| x.is_some()).count();
-                    assert!(num_input_variables > 0);
-                    if inputs.len() == num_input_variables {
-                        let lhs_producer =
-                            lhs_var.map(|lhs| producers.get(&lhs).expect("bound lhs must have been produced"));
-                        let rhs_producer =
-                            rhs_var.map(|rhs| producers.get(&rhs).expect("bound rhs must have been produced"));
-                        let Some(&(program, instruction)) = Ord::max(lhs_producer, rhs_producer) else {
-                            unreachable!("num_input_variables > 0")
-                        };
-                        let lhs_pos = lhs.clone().map(match_builder.position_mapping());
-                        let rhs_pos = rhs.clone().map(match_builder.position_mapping());
-                        match_builder.get_program_mut(program).instructions[instruction].add_check(
-                            CheckInstruction::Comparison {
-                                lhs: CheckVertex::resolve(lhs_pos, self.type_annotations),
-                                rhs: CheckVertex::resolve(rhs_pos, self.type_annotations),
-                                comparator,
-                            },
-                        );
-                        continue;
-                    }
-                    todo!()
-                }
+                let planner = &self.elements[index];
+                self.lower_constraint(&mut match_builder, &mut producers, constraint, planner, inputs, sort_variable)
+            } else if let Some(subpattern) = self.index_to_nested_pattern.get(&index) {
+                assert!(outputs_of(index).is_empty());
+                let negation = subpattern.lower(match_builder.position_mapping(), variable_registry.clone());
+                match_builder.push_program(ProgramBuilder::Negation(NegationBuilder { negation }));
+            } else {
+                unreachable!()
             }
         }
 
-        match_builder
+        match_builder.finish(variable_registry)
+    }
+
+    fn lower_constraint(
+        &self,
+        match_builder: &mut MatchProgramBuilder,
+        producers: &mut HashMap<Variable, (usize, usize)>,
+        constraint: &Constraint<Variable>,
+        planner: &PlannerVertex,
+        inputs: Vec<Variable>,
+        sort_variable: Option<Variable>,
+    ) {
+        if let Some(ProgramBuilder::Intersection(IntersectionBuilder { sort_variable: Some(sort_variable), .. })) =
+            &match_builder.current
+        {
+            if !constraint.ids().contains(sort_variable) {
+                match_builder.finish_one();
+            }
+        }
+
+        macro_rules! binary {
+            ($((with $with:ident))? $lhs:ident $con:ident $rhs:ident, $fw:ident($fwi:ident), $bw:ident($bwi:ident)) => {{
+                let lhs = $con.$lhs();
+                let rhs = $con.$rhs();
+
+                let lhs_var = lhs.as_variable();
+                let rhs_var = rhs.as_variable();
+
+                let num_input_variables = [lhs_var, rhs_var].into_iter().filter(|x| x.is_some()).count();
+
+                assert!(num_input_variables > 0);
+
+                if inputs.len() == num_input_variables {
+                    let lhs_producer = lhs_var
+                        .filter(|lhs| !self.elements[self.variable_index[lhs]].is_input())
+                        .map(|lhs| producers.get(&lhs).expect("bound lhs must have been produced"));
+                    let rhs_producer = rhs_var
+                        .filter(|rhs| !self.elements[self.variable_index[rhs]].is_input())
+                        .map(|rhs| producers.get(&rhs).expect("bound rhs must have been produced"));
+
+                    let lhs_pos = lhs.clone().map(match_builder.position_mapping());
+                    let rhs_pos = rhs.clone().map(match_builder.position_mapping());
+                    let check = CheckInstruction::$fw {
+                        $lhs: CheckVertex::resolve(lhs_pos, self.type_annotations),
+                        $rhs: CheckVertex::resolve(rhs_pos, self.type_annotations),
+                        $($with: $con.$with(),)?
+                    };
+
+                    if let Some(&(program, instruction)) = Ord::max(lhs_producer, rhs_producer) {
+                        let Some(intersection) =
+                            match_builder.get_program_mut(program).and_then(|prog| prog.as_intersection_mut())
+                        else {
+                            todo!("expected an intersection to be the producer")
+                        };
+                        intersection.instructions[instruction].add_check(check);
+                    } else {
+                        // all variables are inputs
+                        match_builder.push_check_instruction(check);
+                    };
+                    return;
+                }
+
+                let sort_variable = if let Some(sort_variable) = sort_variable {
+                    sort_variable
+                } else {
+                    match (lhs_var, rhs_var) {
+                        (Some(lhs), Some(rhs)) if !inputs.is_empty() => {
+                            if inputs.contains(&rhs) {
+                                lhs
+                            } else {
+                                rhs
+                            }
+                        }
+                        (Some(lhs), Some(rhs)) => {
+                            if planner.unbound_direction() == Direction::Canonical {
+                                lhs
+                            } else {
+                                rhs
+                            }
+                        }
+                        (Some(lhs), None) => lhs,
+                        (None, Some(rhs)) => rhs,
+                        (None, None) => unreachable!("no variables in constraint?"),
+                    }
+                };
+
+                let con = $con.clone();
+                let instruction = if lhs_var.is_some_and(|lhs| inputs.contains(&lhs)) {
+                    ConstraintInstruction::$fw($fwi::new(con, Inputs::Single([lhs_var.unwrap()]), self.type_annotations))
+                } else if rhs_var.is_some_and(|rhs| inputs.contains(&rhs)) {
+                    ConstraintInstruction::$bw($bwi::new(con, Inputs::Single([rhs_var.unwrap()]), self.type_annotations))
+                } else if planner.unbound_direction() == Direction::Canonical {
+                    ConstraintInstruction::$fw($fwi::new(con, Inputs::None([]), self.type_annotations))
+                } else {
+                    ConstraintInstruction::$bw($bwi::new(con, Inputs::None([]), self.type_annotations))
+                };
+
+                let producer_index = match_builder.push_instruction(
+                    sort_variable,
+                    instruction,
+                    [lhs_var, rhs_var].into_iter().flatten(),
+                );
+
+                for var in [lhs_var, rhs_var].into_iter().flatten() {
+                    if !inputs.contains(&var) {
+                        producers.insert(var, producer_index);
+                    }
+                }
+            }};
+        }
+
+        match constraint {
+            Constraint::Kind(kind) => {
+                let var = kind.type_().as_variable().unwrap();
+                let instruction = ConstraintInstruction::TypeList(TypeListInstruction::new(var, self.type_annotations));
+                let producer_index = match_builder.push_instruction(var, instruction, [var]);
+                producers.insert(var, producer_index);
+            }
+            Constraint::RoleName(name) => {
+                let var = name.left().as_variable().unwrap();
+                let instruction = ConstraintInstruction::TypeList(TypeListInstruction::new(var, self.type_annotations));
+                let producer_index = match_builder.push_instruction(var, instruction, [var]);
+                producers.insert(var, producer_index);
+            }
+            Constraint::Label(label) => {
+                let var = label.left().as_variable().unwrap();
+                let instruction = ConstraintInstruction::TypeList(TypeListInstruction::new(var, self.type_annotations));
+                let producer_index = match_builder.push_instruction(var, instruction, [var]);
+                producers.insert(var, producer_index);
+            }
+
+            Constraint::Isa(isa) => {
+                binary!((with isa_kind) thing isa type_, Isa(IsaInstruction), IsaReverse(IsaReverseInstruction))
+            }
+            Constraint::Sub(sub) => {
+                binary!((with sub_kind) subtype sub supertype, Sub(SubInstruction), SubReverse(SubReverseInstruction))
+            }
+            Constraint::Owns(owns) => {
+                binary!(owner owns attribute, Owns(OwnsInstruction), OwnsReverse(OwnsReverseInstruction))
+            }
+            Constraint::Relates(relates) => {
+                binary!(relation relates role_type, Relates(RelatesInstruction), RelatesReverse(RelatesReverseInstruction))
+            }
+            Constraint::Plays(plays) => {
+                binary!(player plays role_type, Plays(PlaysInstruction), PlaysReverse(PlaysReverseInstruction))
+            }
+
+            Constraint::Has(has) => {
+                binary!(owner has attribute, Has(HasInstruction), HasReverse(HasReverseInstruction))
+            }
+
+            Constraint::Links(links) => {
+                let relation = links.relation().as_variable().unwrap();
+                let player = links.player().as_variable().unwrap();
+                let role = links.role_type().as_variable().unwrap();
+
+                if inputs.len() == 3 {
+                    let relation_producer = producers.get(&relation).expect("bound relation must have been produced");
+                    let player_producer = producers.get(&player).expect("bound player must have been produced");
+                    let (program, instruction) = std::cmp::Ord::max(*relation_producer, *player_producer);
+
+                    let relation_pos = match_builder.position(relation).into();
+                    let player_pos = match_builder.position(player).into();
+                    let role_pos = match_builder.position(role).into();
+                    let Some(intersection) =
+                        match_builder.get_program_mut(program).and_then(|prog| prog.as_intersection_mut())
+                    else {
+                        panic!()
+                    };
+                    intersection.instructions[instruction].add_check(CheckInstruction::Links {
+                        relation: CheckVertex::resolve(relation_pos, self.type_annotations),
+                        player: CheckVertex::resolve(player_pos, self.type_annotations),
+                        role: CheckVertex::resolve(role_pos, self.type_annotations),
+                    });
+                    return;
+                }
+
+                let sort_variable = if let Some(sort_variable) = sort_variable {
+                    sort_variable
+                } else if inputs.contains(&player) {
+                    relation
+                } else if inputs.contains(&relation) {
+                    player
+                } else if planner.unbound_direction() == Direction::Canonical {
+                    relation
+                } else {
+                    player
+                };
+
+                let links = links.clone();
+                let instruction = if inputs.contains(&relation) {
+                    ConstraintInstruction::Links(LinksInstruction::new(
+                        links,
+                        Inputs::Single([relation]),
+                        self.type_annotations,
+                    ))
+                } else if inputs.contains(&player) {
+                    ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
+                        links,
+                        Inputs::Single([player]),
+                        self.type_annotations,
+                    ))
+                } else if planner.unbound_direction() == Direction::Canonical {
+                    ConstraintInstruction::Links(LinksInstruction::new(links, Inputs::None([]), self.type_annotations))
+                } else {
+                    ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
+                        links,
+                        Inputs::None([]),
+                        self.type_annotations,
+                    ))
+                };
+                let producer_index =
+                    match_builder.push_instruction(sort_variable, instruction, [relation, player, role]);
+
+                for &var in &[relation, player, role] {
+                    if !inputs.contains(&var) {
+                        producers.insert(var, producer_index);
+                    }
+                }
+            }
+
+            Constraint::ExpressionBinding(_) => todo!("expression binding"),
+            Constraint::FunctionCallBinding(_) => todo!("function call binding"),
+            Constraint::Comparison(compare) => {
+                let lhs = compare.lhs();
+                let rhs = compare.rhs();
+                let comparator = compare.comparator();
+
+                let lhs_var = lhs.as_variable();
+                let rhs_var = rhs.as_variable();
+                let num_input_variables = [lhs_var, rhs_var].into_iter().filter(|x| x.is_some()).count();
+                assert!(num_input_variables > 0);
+                if inputs.len() == num_input_variables {
+                    let lhs_producer = lhs_var
+                        .filter(|lhs| !self.elements[self.variable_index[lhs]].is_input())
+                        .map(|lhs| producers.get(&lhs).expect("bound lhs must have been produced"));
+                    let rhs_producer = rhs_var
+                        .filter(|rhs| !self.elements[self.variable_index[rhs]].is_input())
+                        .map(|rhs| producers.get(&rhs).expect("bound rhs must have been produced"));
+
+                    let lhs_pos = lhs.clone().map(match_builder.position_mapping());
+                    let rhs_pos = rhs.clone().map(match_builder.position_mapping());
+
+                    let check = CheckInstruction::Comparison {
+                        lhs: CheckVertex::resolve(lhs_pos, self.type_annotations),
+                        rhs: CheckVertex::resolve(rhs_pos, self.type_annotations),
+                        comparator,
+                    };
+
+                    if let Some(&(program, instruction)) = Ord::max(lhs_producer, rhs_producer) {
+                        let Some(intersection) =
+                            match_builder.get_program_mut(program).and_then(|prog| prog.as_intersection_mut())
+                        else {
+                            todo!("expected an intersection to be the producer")
+                        };
+                        intersection.instructions[instruction].add_check(check);
+                    } else {
+                        // all variables are inputs
+                        match_builder.push_check_instruction(check);
+                    };
+                    return;
+                }
+                todo!()
+            }
+        }
     }
 }

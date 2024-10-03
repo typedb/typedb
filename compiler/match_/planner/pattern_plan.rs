@@ -15,7 +15,10 @@ use ir::{
     program::VariableRegistry,
 };
 
-use crate::{match_::instructions::ConstraintInstruction, VariablePosition};
+use crate::{
+    match_::instructions::{CheckInstruction, ConstraintInstruction},
+    VariablePosition,
+};
 
 #[derive(Clone, Debug)]
 pub struct MatchProgram {
@@ -62,6 +65,7 @@ pub enum Program {
     Intersection(IntersectionProgram),
     UnsortedJoin(UnsortedJoinProgram),
     Assignment(AssignmentProgram),
+    Check(CheckProgram),
     Disjunction(DisjunctionProgram),
     Negation(NegationProgram),
     Optional(OptionalProgram),
@@ -73,6 +77,7 @@ impl Program {
             Program::Intersection(program) => &program.selected_variables,
             Program::UnsortedJoin(program) => &program.selected_variables,
             Program::Assignment(_) => todo!(),
+            Program::Check(_) => &[],
             Program::Disjunction(_) => todo!(),
             Program::Negation(_) => &[],
             Program::Optional(_) => todo!(),
@@ -84,6 +89,7 @@ impl Program {
             Program::Intersection(program) => program.new_variables(),
             Program::UnsortedJoin(program) => program.new_variables(),
             Program::Assignment(program) => program.new_variables(),
+            Program::Check(_) => &[],
             Program::Disjunction(_) => todo!(),
             Program::Negation(_) => &[],
             Program::Optional(_) => todo!(),
@@ -95,6 +101,7 @@ impl Program {
             Program::Intersection(program) => program.output_width(),
             Program::UnsortedJoin(program) => program.output_width(),
             Program::Assignment(program) => program.output_width(),
+            Program::Check(_) => 0, // FIXME is this correct?
             Program::Disjunction(_) => todo!(),
             Program::Negation(_) => 0,
             Program::Optional(_) => todo!(),
@@ -213,6 +220,17 @@ impl AssignmentProgram {
 
     fn output_width(&self) -> u32 {
         todo!()
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct CheckProgram {
+    pub check_instructions: Vec<CheckInstruction<VariablePosition>>,
+}
+
+impl CheckProgram {
+    pub fn new(check_instructions: Vec<CheckInstruction<VariablePosition>>) -> Self {
+        Self { check_instructions }
     }
 }
 

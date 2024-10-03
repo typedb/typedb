@@ -114,12 +114,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         context: &BlockContext,
         parent_vertices: &VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
-        self.local_variables(context, tig.conjunction.scope_id()).for_each(|var| {
-            let vertex = Vertex::Variable(var);
-            if let Some(parent_annotations) = parent_vertices.get(&vertex) {
-                tig.vertices.insert(vertex, parent_annotations.clone());
-            }
-        });
+        for (vertex, parent_annotations) in parent_vertices.iter() {
+            tig.vertices.insert(vertex.clone(), parent_annotations.clone());
+        }
 
         // Seed vertices in root & disjunctions
         self.seed_vertex_annotations_from_type_and_function_return(tig)?;

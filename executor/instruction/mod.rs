@@ -380,14 +380,21 @@ fn type_from_row_or_annotations<'a>(
 type FilterFn<T> =
     dyn for<'a, 'b> FnHktHelper<&'a Result<<T as Hkt>::HktSelf<'b>, ConceptReadError>, Result<bool, ConceptReadError>>;
 
-struct Checker<T: Hkt> {
+pub(crate) struct Checker<T: Hkt> {
     extractors: HashMap<VariablePosition, for<'a, 'b> fn(&'a T::HktSelf<'b>) -> VariableValue<'a>>,
     checks: Vec<CheckInstruction<VariablePosition>>,
     _phantom_data: PhantomData<T>,
 }
 
 impl<T: Hkt> Checker<T> {
-    fn range_for<const N: usize>(
+    pub(crate) fn new(
+        checks: Vec<CheckInstruction<VariablePosition>>,
+        extractors: HashMap<VariablePosition, for<'a, 'b> fn(&'a T::HktSelf<'b>) -> VariableValue<'a>>,
+    ) -> Self {
+        Self { extractors, checks, _phantom_data: PhantomData }
+    }
+
+    pub(crate) fn range_for<const N: usize>(
         &self,
         row: MaybeOwnedRow<'_>,
         target: VariablePosition,
@@ -440,7 +447,7 @@ impl<T: Hkt> Checker<T> {
         todo!() as (Bound<VariableValue<'_>>, Bound<VariableValue<'_>>)
     }
 
-    fn filter_for_row(
+    pub(crate) fn filter_for_row(
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: &MaybeOwnedRow<'_>,
@@ -647,7 +654,11 @@ impl<T: Hkt> Checker<T> {
                 }
 
                 CheckInstruction::Comparison { lhs, rhs, comparator } => {
-                    let lhs_extractor = self.extractors[&lhs.as_variable().unwrap()];
+                    let maybe_lhs_extractor = lhs.as_variable().and_then(|var| self.extractors.get(&var));
+                    let lhs: BoxExtractor<T> = match maybe_lhs_extractor {
+                        Some(&lhs) => Box::new(lhs),
+                        None => make_const_extractor(lhs, context, row),
+                    };
                     let rhs = match rhs {
                         &CheckVertex::Variable(pos) => row.get(pos).as_reference(),
                         &CheckVertex::Parameter(param) => {
@@ -676,7 +687,7 @@ impl<T: Hkt> Checker<T> {
                         Comparator::Contains => todo!("contains"),
                     };
                     filters.push(Box::new(move |value| {
-                        let lhs = lhs_extractor(value);
+                        let lhs = lhs(value);
                         let lhs = match lhs {
                             VariableValue::Thing(Thing::Attribute(attr)) => {
                                 attr.get_value(&*snapshot, &thing_manager)?.into_owned()
