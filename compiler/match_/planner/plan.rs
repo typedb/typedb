@@ -515,7 +515,8 @@ impl ConjunctionPlan<'_> {
             } else if let Some(subpattern) = self.index_to_nested_pattern.get(&index) {
                 assert!(outputs_of(index).is_empty());
                 let negation = subpattern.lower(match_builder.position_mapping(), variable_registry.clone());
-                match_builder.push_program(ProgramBuilder::Negation(NegationBuilder { negation }));
+                let variable_positions = negation.variable_positions().clone(); // FIXME needless clone
+                match_builder.push_program(&variable_positions, ProgramBuilder::Negation(NegationBuilder { negation }));
             } else {
                 unreachable!()
             }
@@ -678,23 +679,37 @@ impl ConjunctionPlan<'_> {
                 let role = links.role_type().as_variable().unwrap();
 
                 if inputs.len() == 3 {
-                    let relation_producer = producers.get(&relation).expect("bound relation must have been produced");
-                    let player_producer = producers.get(&player).expect("bound player must have been produced");
-                    let (program, instruction) = std::cmp::Ord::max(*relation_producer, *player_producer);
+                    let relation_producer = Some(relation)
+                        .filter(|relation| !self.elements[self.variable_index[relation]].is_input())
+                        .map(|relation| producers.get(&relation).expect("bound relation must have been produced"));
+                    let player_producer = Some(player)
+                        .filter(|player| !self.elements[self.variable_index[player]].is_input())
+                        .map(|player| producers.get(&player).expect("bound player must have been produced"));
+                    let role_producer = Some(role)
+                        .filter(|role| !self.elements[self.variable_index[role]].is_input())
+                        .map(|role| producers.get(&role).expect("bound role must have been produced"));
 
                     let relation_pos = match_builder.position(relation).into();
                     let player_pos = match_builder.position(player).into();
                     let role_pos = match_builder.position(role).into();
-                    let Some(intersection) =
-                        match_builder.get_program_mut(program).and_then(|prog| prog.as_intersection_mut())
-                    else {
-                        panic!()
-                    };
-                    intersection.instructions[instruction].add_check(CheckInstruction::Links {
+
+                    let check = CheckInstruction::Links {
                         relation: CheckVertex::resolve(relation_pos, self.type_annotations),
                         player: CheckVertex::resolve(player_pos, self.type_annotations),
                         role: CheckVertex::resolve(role_pos, self.type_annotations),
-                    });
+                    };
+
+                    if let Some(&(program, instruction)) = relation_producer.max(player_producer).max(role_producer) {
+                        let Some(intersection) =
+                            match_builder.get_program_mut(program).and_then(|prog| prog.as_intersection_mut())
+                        else {
+                            todo!("expected an intersection to be the producer")
+                        };
+                        intersection.instructions[instruction].add_check(check);
+                    } else {
+                        // all variables are inputs
+                        match_builder.push_check_instruction(check);
+                    };
                     return;
                 }
 
@@ -711,7 +726,21 @@ impl ConjunctionPlan<'_> {
                 };
 
                 let links = links.clone();
-                let instruction = if inputs.contains(&relation) {
+                let instruction = if inputs.contains(&relation) && inputs.contains(&player) {
+                    if planner.unbound_direction() == Direction::Canonical {
+                        ConstraintInstruction::Links(LinksInstruction::new(
+                            links,
+                            Inputs::Dual([relation, player]),
+                            self.type_annotations,
+                        ))
+                    } else {
+                        ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
+                            links,
+                            Inputs::Dual([relation, player]),
+                            self.type_annotations,
+                        ))
+                    }
+                } else if inputs.contains(&relation) {
                     ConstraintInstruction::Links(LinksInstruction::new(
                         links,
                         Inputs::Single([relation]),
@@ -732,6 +761,7 @@ impl ConjunctionPlan<'_> {
                         self.type_annotations,
                     ))
                 };
+
                 let producer_index =
                     match_builder.push_instruction(sort_variable, instruction, [relation, player, role]);
 

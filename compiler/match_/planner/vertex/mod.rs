@@ -742,13 +742,14 @@ impl Costed for LinksPlanner {
             (true, false) | (false, true) => ADVANCE_ITERATOR_RELATIVE_COST,
         };
 
-        let relation = elements[self.relation].as_thing().unwrap();
-        let player = elements[self.player].as_thing().unwrap();
+        let relation_size =
+            if let Some(relation) = elements[self.relation].as_thing() { relation.expected_size } else { 1.0 };
+        let player_size = if let Some(player) = elements[self.player].as_thing() { player.expected_size } else { 1.0 };
 
         let branching_factor = match (is_relation_bound, is_player_bound) {
-            (true, true) => self.expected_size / relation.expected_size / player.expected_size,
-            (true, false) => self.expected_size / relation.expected_size,
-            (false, true) => self.expected_size / player.expected_size,
+            (true, true) => self.expected_size / relation_size / player_size,
+            (true, false) => self.expected_size / relation_size,
+            (false, true) => self.expected_size / player_size,
             (false, false) => self.expected_size,
         };
 

@@ -50,7 +50,7 @@ impl<Snapshot> ExecutionContext<Snapshot> {
     }
 
     pub(crate) fn type_manager(&self) -> &TypeManager {
-        &self.thing_manager.type_manager()
+        self.thing_manager.type_manager()
     }
 
     pub(crate) fn parameters(&self) -> &ParameterRegistry {

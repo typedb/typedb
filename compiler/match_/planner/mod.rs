@@ -35,7 +35,7 @@ use crate::{
         inference::type_annotations::TypeAnnotations,
         instructions::{CheckInstruction, ConstraintInstruction},
         planner::{
-            pattern_plan::{CheckProgram, IntersectionProgram, MatchProgram, Program},
+            pattern_plan::{CheckProgram, IntersectionProgram, MatchProgram, NegationProgram, Program},
             plan::plan_conjunction,
         },
     },
@@ -176,8 +176,10 @@ impl MatchProgramBuilder {
         outputs: impl IntoIterator<Item = Variable>,
     ) -> (usize, usize) {
         if let Some(ProgramBuilder::Intersection(intersection_builder)) = &self.current {
-            if intersection_builder.sort_variable != Some(sort_variable) {
-                self.finish_one();
+            if let Some(current_sort) = intersection_builder.sort_variable {
+                if current_sort != sort_variable || instruction.is_input_variable(current_sort) {
+                    self.finish_one();
+                }
             }
         }
         if self.current.as_ref().is_some_and(|builder| !builder.is_intersection()) {
@@ -206,9 +208,16 @@ impl MatchProgramBuilder {
         current.instructions.push(instruction);
     }
 
-    fn push_program(&mut self, program: ProgramBuilder) {
+    fn push_program(&mut self, variable_positions: &HashMap<Variable, VariablePosition>, program: ProgramBuilder) {
         if self.current.is_some() {
             self.finish_one();
+        }
+        for (&var, &pos) in variable_positions {
+            if !self.position_mapping().contains_key(&var) {
+                self.index.insert(var, pos);
+                self.outputs.insert(pos, var);
+                self.next_output.position += 1;
+            }
         }
         self.programs.push(program);
     }

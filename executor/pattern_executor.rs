@@ -92,7 +92,7 @@ impl PatternExecutor {
         let programs_len = self.program_executors.len();
 
         let (mut current_program, mut last_program_batch, mut direction) = if let Some(input) = self.input.take() {
-            (0, Some(input.into()), Direction::Forward)
+            (0, Some(FixedBatch::from(input)), Direction::Forward)
         } else {
             (programs_len - 1, None, Direction::Backward)
         };
