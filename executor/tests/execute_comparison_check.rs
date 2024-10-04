@@ -132,7 +132,7 @@ fn attribute_equality() {
     ];
 
     let pattern_plan =
-        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
+        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor

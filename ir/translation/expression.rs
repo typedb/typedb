@@ -36,6 +36,12 @@ pub(super) fn add_typeql_expression(
     if let typeql::Expression::Value(literal) = rhs {
         let id = register_typeql_literal(constraints, literal)?;
         Ok(Vertex::Parameter(id))
+    } else if let typeql::Expression::Variable(var) = rhs {
+        let variable = match var {
+            typeql::Variable::Named { ident, optional, .. } => constraints.get_or_declare_variable(ident.as_str())?,
+            typeql::Variable::Anonymous { optional, .. } => constraints.create_anonymous_variable()?,
+        };
+        Ok(Vertex::Variable(variable))
     } else {
         let expression = build_expression(function_index, constraints, rhs)?;
         let variable = constraints.create_anonymous_variable()?;

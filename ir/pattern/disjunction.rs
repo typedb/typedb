@@ -11,7 +11,7 @@ use answer::variable::Variable;
 use super::conjunction::ConjunctionBuilder;
 use crate::{
     pattern::{conjunction::Conjunction, Scope, ScopeId},
-    program::block::BlockBuilderContext,
+    program::block::{BlockBuilderContext, ScopeTransparency},
 };
 
 #[derive(Debug, Clone)]
@@ -60,7 +60,7 @@ impl<'cx, 'reg> DisjunctionBuilder<'cx, 'reg> {
     }
 
     pub fn add_conjunction(&mut self) -> ConjunctionBuilder<'_, 'reg> {
-        let conj_scope_id = self.context.create_child_scope(self.scope_id);
+        let conj_scope_id = self.context.create_child_scope(self.scope_id, ScopeTransparency::Transparent);
         self.disjunction.conjunctions.push(Conjunction::new(conj_scope_id));
         ConjunctionBuilder::new(self.context, self.disjunction.conjunctions.last_mut().unwrap())
     }

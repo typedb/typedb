@@ -194,7 +194,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
         4,
     ))];
     let pattern_plan =
-        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
+        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -277,7 +277,7 @@ fn unselected_named_vars_counted() {
     ))];
 
     let pattern_plan =
-        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
+        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -380,7 +380,7 @@ fn cartesian_named_counted_checked() {
     ))];
 
     let pattern_plan =
-        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
+        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor

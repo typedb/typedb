@@ -167,7 +167,7 @@ fn traverse_has_unbounded_sorted_from() {
     ))];
     // TODO: incorporate the filter
     let pattern_plan =
-        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
+        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -266,7 +266,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     ];
     // TODO: incorporate the filter
     let pattern_plan =
-        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
+        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -354,7 +354,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     ))];
     // TODO: incorporate the filter
     let pattern_plan =
-        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
+        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -424,7 +424,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
         2,
     ))];
     let pattern_plan =
-        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
+        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
@@ -517,7 +517,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
         2,
     ))];
     let pattern_plan =
-        MatchProgram::new(steps, translation_context.variable_registry.clone(), variable_positions, vars);
+        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor

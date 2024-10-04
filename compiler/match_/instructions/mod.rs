@@ -8,15 +8,17 @@
 
 use std::{collections::HashMap, ops::Deref};
 
-use answer::{variable::Variable, Type};
+use answer::Type;
 use ir::pattern::{
     constraint::{Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, IsaKind, SubKind},
     IrID, ParameterID, Vertex,
 };
 use itertools::Itertools;
 
-use super::inference::type_annotations::TypeAnnotations;
-use crate::{match_::planner::pattern_plan::InstructionAPI, VariablePosition};
+use crate::{
+    match_::{inference::type_annotations::TypeAnnotations, planner::pattern_plan::InstructionAPI},
+    VariablePosition,
+};
 
 pub mod thing;
 pub mod type_;

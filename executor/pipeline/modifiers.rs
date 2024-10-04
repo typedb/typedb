@@ -11,7 +11,7 @@ use compiler::{
     VariablePosition,
 };
 use ir::program::modifier::SortVariable;
-use lending_iterator::LendingIterator;
+use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -164,8 +164,10 @@ where
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         while self.remaining > 0 {
-            if self.previous.next().is_none() {
-                return None;
+            match self.previous.next() {
+                None => return None,
+                Some(Err(err)) => return Some(Err(err)),
+                Some(Ok(_)) => (),
             }
             self.remaining -= 1;
         }
@@ -315,14 +317,14 @@ where
     }
 }
 
-pub struct RequireStageIterator<PreviousIterator> {
+pub struct RequireStageIterator<PreviousIterator: LendingIterator> {
     required: HashSet<VariablePosition>,
-    previous: PreviousIterator,
+    previous: Peekable<PreviousIterator>,
 }
 
-impl<PreviousIterator> RequireStageIterator<PreviousIterator> {
+impl<PreviousIterator: LendingIterator> RequireStageIterator<PreviousIterator> {
     fn new(previous: PreviousIterator, required: HashSet<VariablePosition>) -> Self {
-        Self { required: required, previous }
+        Self { required, previous: Peekable::new(previous) }
     }
 }
 
@@ -336,23 +338,16 @@ where
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         loop {
-            let next = self.previous.next();
-            match next {
-                None => {
-                    return None;
-                }
-                Some(Err(err)) => {
-                    return Some(Err(err));
-                }
+            match self.previous.peek() {
+                None => return None,
+                Some(Err(err)) => return Some(Err(err.clone())),
                 Some(Ok(row)) => {
-                    for pos in self.required.iter() {
-                        if matches!(row.get(*pos), &VariableValue::Empty) {
-                            continue;
-                        }
+                    if self.required.iter().all(|&pos| !row.get(pos).is_empty()) {
+                        break;
                     }
-                    return Some(Ok(row));
                 }
             }
         }
+        self.previous.next()
     }
 }

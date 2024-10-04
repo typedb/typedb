@@ -21,7 +21,7 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub struct Block {
-    scope_context: BlockContext, // TODO: We only need this for type annotations
+    block_context: BlockContext, // TODO: We only need this for type annotations
     conjunction: Conjunction,
 }
 
@@ -35,7 +35,7 @@ impl Block {
     }
 
     pub fn scope_context(&self) -> &BlockContext {
-        &self.scope_context
+        &self.block_context
     }
 
     pub fn scope_id(&self) -> ScopeId {
@@ -43,7 +43,7 @@ impl Block {
     }
 
     pub fn variable_scopes(&self) -> impl Iterator<Item = (&Variable, &ScopeId)> + '_ {
-        self.scope_context.variable_declaration.iter()
+        self.block_context.variable_declaration.iter()
     }
 
     pub fn block_variables(&self) -> impl Iterator<Item = Variable> + '_ {
@@ -73,8 +73,8 @@ impl<'reg> BlockBuilder<'reg> {
 
     pub fn finish(self) -> Block {
         let Self { conjunction, context: block_context_builder } = self;
-        let BlockBuilderContext { block_context: scope_context, .. } = block_context_builder;
-        Block { conjunction, scope_context }
+        let BlockBuilderContext { block_context, .. } = block_context_builder;
+        Block { conjunction, block_context }
     }
 
     pub fn conjunction_mut(&mut self) -> ConjunctionBuilder<'_, 'reg> {
@@ -90,6 +90,7 @@ impl<'reg> BlockBuilder<'reg> {
 pub struct BlockContext {
     variable_declaration: HashMap<Variable, ScopeId>,
     scope_parents: HashMap<ScopeId, ScopeId>,
+    scope_transparency: HashMap<ScopeId, ScopeTransparency>,
     referenced_variables: HashSet<Variable>,
 }
 
@@ -129,6 +130,14 @@ impl BlockContext {
         self.variable_declaration.get(var).cloned()
     }
 
+    pub(crate) fn is_transparent(&self, scope: ScopeId) -> bool {
+        self.scope_transparency[&scope] == ScopeTransparency::Transparent
+    }
+
+    fn set_scope_transparency(&mut self, scope: ScopeId, transparency: ScopeTransparency) {
+        self.scope_transparency.insert(scope, transparency);
+    }
+
     fn add_referenced_variable(&mut self, var: Variable) {
         self.referenced_variables.insert(var);
     }
@@ -145,15 +154,27 @@ impl BlockContext {
         }
     }
 
-    pub fn is_child_scope(&self, child: ScopeId, candidate: ScopeId) -> bool {
-        self.scope_parents
-            .get(&child)
-            .is_some_and(|&parent| candidate == parent || self.is_child_scope(parent, candidate))
+    pub fn is_parent_scope(&self, scope: ScopeId, child: ScopeId) -> bool {
+        self.scope_parents.get(&child).is_some_and(|&parent| scope == parent || self.is_parent_scope(scope, parent))
+    }
+
+    pub fn is_visible_child(&self, child: ScopeId, candidate: ScopeId) -> bool {
+        self.is_transparent(child)
+            && self
+                .scope_parents
+                .get(&child)
+                .is_some_and(|&parent| candidate == parent || self.is_visible_child(parent, candidate))
     }
 
     pub fn get_variable_scopes(&self) -> impl Iterator<Item = (Variable, ScopeId)> + '_ {
         self.variable_declaration.iter().map(|(&var, &scope)| (var, scope))
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ScopeTransparency {
+    Transparent,
+    Opaque,
 }
 
 #[derive(Debug)]
@@ -177,6 +198,8 @@ impl<'a> BlockBuilderContext<'a> {
             block_context.add_input_declaration(*v);
         });
         block_context.set_scope_parent(ScopeId::ROOT, ScopeId::INPUT);
+        block_context.set_scope_transparency(ScopeId::ROOT, ScopeTransparency::Transparent);
+        block_context.set_scope_transparency(ScopeId::INPUT, ScopeTransparency::Transparent);
         Self {
             variable_registry,
             variable_names_index: input_variable_names,
@@ -226,11 +249,12 @@ impl<'a> BlockBuilderContext<'a> {
         self.block_context.is_variable_available(scope, variable)
     }
 
-    pub(crate) fn create_child_scope(&mut self, parent: ScopeId) -> ScopeId {
+    pub(crate) fn create_child_scope(&mut self, parent: ScopeId, transparency: ScopeTransparency) -> ScopeId {
         let scope = ScopeId::new(self.scope_id_allocator);
         debug_assert_ne!(scope, ScopeId::ROOT);
         self.scope_id_allocator += 1;
         self.block_context.set_scope_parent(scope, parent);
+        self.block_context.set_scope_transparency(scope, transparency);
         scope
     }
 

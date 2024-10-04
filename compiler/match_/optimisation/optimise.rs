@@ -5,7 +5,7 @@
  */
 
 type Program = (); // We eliminated program
-pub fn apply_optimisations(program: &mut Program) {
+pub fn apply_optimisations(_program: &mut Program) {
 
     // apply optimisation passes through the program
 

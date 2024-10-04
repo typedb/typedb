@@ -14,7 +14,7 @@ use compiler::match_::{
         annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         type_inference::infer_types_for_match_block,
     },
-    planner::{pattern_plan::MatchProgram, program_plan::ProgramPlan},
+    planner::program_plan::ProgramPlan,
 };
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
@@ -96,8 +96,6 @@ fn test_has_planning_traversal() {
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
     let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
-    // builder.add_limit(3);
-    // builder.add_filter(vec!["person", "age"]).unwrap();
     let block = builder.finish();
 
     // Executor
@@ -115,7 +113,7 @@ fn test_has_planning_traversal() {
     )
     .unwrap();
 
-    let pattern_plan = MatchProgram::compile(
+    let pattern_plan = compiler::match_::planner::compile(
         &block,
         &HashMap::new(),
         &entry_annotations,
@@ -173,8 +171,6 @@ fn test_links_planning_traversal() {
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
     let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
-    // builder.add_limit(3);
-    // builder.add_filter(vec!["person", "age"]).unwrap();
     let block = builder.finish();
 
     // Executor
@@ -191,7 +187,7 @@ fn test_links_planning_traversal() {
     )
     .unwrap();
 
-    let pattern_plan = MatchProgram::compile(
+    let pattern_plan = compiler::match_::planner::compile(
         &block,
         &HashMap::new(),
         &entry_annotations,
@@ -256,8 +252,6 @@ fn test_links_intersection() {
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
     let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
-    // builder.add_limit(3);
-    // builder.add_filter(vec!["user", "age"]).unwrap();
     let block = builder.finish();
 
     // Executor
@@ -274,7 +268,7 @@ fn test_links_intersection() {
     )
     .unwrap();
 
-    let pattern_plan = MatchProgram::compile(
+    let pattern_plan = compiler::match_::planner::compile(
         &block,
         &HashMap::new(),
         &entry_annotations,
@@ -302,4 +296,177 @@ fn test_links_intersection() {
         }
         println!()
     }
+}
+
+#[test]
+fn test_negation_planning_traversal() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let schema = "define
+        attribute age value long;
+        attribute name value string;
+        entity person owns age @card(0..), owns name @card(0..);
+    ";
+    let data = "insert
+        $_ isa person, has age 10, has age 11, has age 12, has name 'John', has name 'Alice';
+        $_ isa person, has age 10, has age 13, has age 14;
+        $_ isa person, has age 13, has name 'Leila';
+    ";
+
+    let statistics = setup(&storage, type_manager, thing_manager, schema, data);
+
+    let query = "match $person isa person; not { $person has name $name; };";
+    let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+
+    // IR
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
+    let mut translation_context = TranslationContext::new();
+    let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
+    let block = builder.finish();
+
+    // Executor
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let entry_annotations = infer_types_for_match_block(
+        &block,
+        &translation_context.variable_registry,
+        &*snapshot,
+        &type_manager,
+        &BTreeMap::new(),
+        &IndexedAnnotatedFunctions::empty(),
+        &AnnotatedUnindexedFunctions::empty(),
+    )
+    .unwrap();
+
+    let pattern_plan = compiler::match_::planner::compile(
+        &block,
+        &HashMap::new(),
+        &entry_annotations,
+        Arc::new(translation_context.variable_registry),
+        &HashMap::new(),
+        &statistics,
+    );
+    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+
+    let rows = iterator
+        .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
+        .into_iter()
+        .try_collect::<_, Vec<_>, _>()
+        .unwrap();
+
+    for row in &rows {
+        for value in row.row() {
+            print!("{}, ", value);
+        }
+        println!()
+    }
+
+    assert_eq!(rows.len(), 1);
+}
+
+#[test]
+fn test_forall_planning_traversal() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let schema = "define
+        relation set-membership, relates set, relates item;
+        entity set, plays set-membership:set;
+        entity item, plays set-membership:item;
+    ";
+    let data = "insert
+        $a isa item; $b isa item; $c isa item;
+        $a_ isa set;
+        (set: $a_, item: $a) isa set-membership;
+        $ab isa set;
+        (set: $ab, item: $a) isa set-membership;
+        (set: $ab, item: $b) isa set-membership;
+        $ac isa set;
+        (set: $ac, item: $a) isa set-membership;
+        (set: $ac, item: $c) isa set-membership;
+        $abc isa set;
+        (set: $abc, item: $a) isa set-membership;
+        (set: $abc, item: $b) isa set-membership;
+        (set: $abc, item: $c) isa set-membership;
+    ";
+
+    let statistics = setup(&storage, type_manager, thing_manager, schema, data);
+
+    let query = "match 
+        $sup isa set;
+        $sub isa set;
+
+        (item: $unique, set: $sup) isa set-membership;
+        not { (item: $unique, set: $sub) isa set-membership; };
+
+        not {
+            (item: $element, set: $sub) isa set-membership;
+            not { (item: $element, set: $sup) isa set-membership; };
+        };
+    ";
+    let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+
+    // IR
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
+    let mut translation_context = TranslationContext::new();
+    let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
+    let block = builder.finish();
+
+    // Executor
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let entry_annotations = infer_types_for_match_block(
+        &block,
+        &translation_context.variable_registry,
+        &*snapshot,
+        &type_manager,
+        &BTreeMap::new(),
+        &IndexedAnnotatedFunctions::empty(),
+        &AnnotatedUnindexedFunctions::empty(),
+    )
+    .unwrap();
+
+    let pattern_plan = compiler::match_::planner::compile(
+        &block,
+        &HashMap::new(),
+        &entry_annotations,
+        Arc::new(translation_context.variable_registry),
+        &HashMap::new(),
+        &statistics,
+    );
+    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
+    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+
+    let rows = iterator
+        .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
+        .into_iter()
+        .try_collect::<_, Vec<_>, _>()
+        .unwrap();
+
+    for row in &rows {
+        for value in row.row() {
+            print!("{}, ", value);
+        }
+        println!()
+    }
+
+    // 1. ab ⊃ a
+    // 2. ac ⊃ a
+    // 3. abc ⊃ a ($unique = b)
+    // 4. abc ⊃ a ($unique = c)
+    // 5. abc ⊃ ab
+    // 6. abc ⊃ ac
+    assert_eq!(rows.len(), 6);
 }

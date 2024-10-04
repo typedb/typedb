@@ -8,10 +8,10 @@ use std::{cmp::Ordering, collections::HashMap, sync::Arc};
 
 use answer::{variable::Variable, variable_value::VariableValue};
 use compiler::match_::{
-    instructions::ConstraintInstruction,
+    instructions::{CheckInstruction, ConstraintInstruction},
     planner::pattern_plan::{
-        AssignmentProgram, DisjunctionProgram, IntersectionProgram, MatchProgram, NegationProgram, OptionalProgram,
-        Program, UnsortedJoinProgram,
+        AssignmentProgram, CheckProgram, DisjunctionProgram, IntersectionProgram, MatchProgram, NegationProgram,
+        OptionalProgram, Program, UnsortedJoinProgram,
     },
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
@@ -23,7 +23,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
-    instruction::{iterator::TupleIterator, InstructionExecutor},
+    instruction::{iterator::TupleIterator, Checker, InstructionExecutor},
     pipeline::stage::ExecutionContext,
     row::{MaybeOwnedRow, Row},
     ExecutionInterrupt, SelectedPositions, VariablePosition,
@@ -92,7 +92,7 @@ impl PatternExecutor {
         let programs_len = self.program_executors.len();
 
         let (mut current_program, mut last_program_batch, mut direction) = if let Some(input) = self.input.take() {
-            (0, Some(input.into()), Direction::Forward)
+            (0, Some(FixedBatch::from(input)), Direction::Forward)
         } else {
             (programs_len - 1, None, Direction::Backward)
         };
@@ -208,6 +208,7 @@ enum ProgramExecutor {
     SortedJoin(IntersectionExecutor),
     UnsortedJoin(UnsortedJoinExecutor),
     Assignment(AssignExecutor),
+    Check(CheckExecutor),
 
     Disjunction(DisjunctionExecutor),
     Negation(NegationExecutor),
@@ -249,16 +250,17 @@ impl ProgramExecutor {
             Program::Assignment(AssignmentProgram { .. }) => {
                 todo!()
             }
+            Program::Check(CheckProgram { check_instructions }) => {
+                Ok(Self::Check(CheckExecutor::new(check_instructions.clone())))
+            }
             Program::Disjunction(DisjunctionProgram { disjunction: disjunction_plans, .. }) => {
                 // let executors = plans.into_iter().map(|pattern_plan| PatternExecutor::new(pattern_plan, )).collect();
                 // Self::Disjunction(DisjunctionExecutor::new(executors, variable_positions))
                 todo!()
             }
             Program::Negation(NegationProgram { negation: negation_plan, .. }) => {
-                todo!()
-                // let executor = PatternExecutor::new(negation_plan, snapshot, thing_manager)?;
-                // // TODO: add limit 1, filters if they aren't there already?
-                // Ok(Self::Negation(NegationExecutor::new(executor)))
+                // TODO: add limit 1, filters if they aren't there already?
+                Ok(Self::Negation(NegationExecutor::new(negation_plan.clone())))
             }
             Program::Optional(OptionalProgram { optional: optional_plan, .. }) => {
                 todo!()
@@ -278,6 +280,7 @@ impl ProgramExecutor {
             ProgramExecutor::SortedJoin(sorted) => sorted.batch_from(input_batch, context),
             ProgramExecutor::UnsortedJoin(unsorted) => unsorted.batch_from(input_batch),
             ProgramExecutor::Assignment(single) => single.batch_from(input_batch),
+            ProgramExecutor::Check(check) => check.batch_from(input_batch, context, interrupt),
             ProgramExecutor::Disjunction(disjunction) => disjunction.batch_from(input_batch),
             ProgramExecutor::Negation(negation) => negation.batch_from(input_batch, context, interrupt),
             ProgramExecutor::Optional(optional) => optional.batch_from(input_batch),
@@ -290,10 +293,10 @@ impl ProgramExecutor {
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         match self {
             ProgramExecutor::SortedJoin(sorted) => sorted.batch_continue(context),
-            ProgramExecutor::UnsortedJoin(unsorted) => todo!(), // unsorted.batch_continue(snapshot, thing_manager),
-            ProgramExecutor::Disjunction(disjunction) => todo!(),
-            ProgramExecutor::Optional(optional) => todo!(),
-            ProgramExecutor::Assignment(_) | ProgramExecutor::Negation(_) => Ok(None),
+            ProgramExecutor::UnsortedJoin(_unsorted) => todo!(), // unsorted.batch_continue(snapshot, thing_manager),
+            ProgramExecutor::Disjunction(_disjunction) => todo!(),
+            ProgramExecutor::Optional(_optional) => todo!(),
+            ProgramExecutor::Assignment(_) | ProgramExecutor::Check(_) | ProgramExecutor::Negation(_) => Ok(None),
         }
     }
 }
@@ -777,6 +780,41 @@ impl AssignExecutor {
     }
 }
 
+struct CheckExecutor {
+    checker: Checker<()>,
+}
+
+impl CheckExecutor {
+    fn new(checks: Vec<CheckInstruction<VariablePosition>>) -> Self {
+        let checker = Checker::new(checks, HashMap::new());
+        Self { checker }
+    }
+
+    fn batch_from(
+        &self,
+        input_batch: FixedBatch,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        _interrupt: &mut ExecutionInterrupt,
+    ) -> Result<Option<FixedBatch>, ReadExecutionError> {
+        let width = input_batch.width();
+        let mut input = Peekable::new(FixedBatchRowIterator::new(Ok(input_batch)));
+        debug_assert!(input.peek().is_some());
+
+        let mut output = FixedBatch::new(width);
+
+        while let Some(row) = input.next() {
+            let input_row = row.map_err(|err| err.clone())?;
+            if (self.checker.filter_for_row(context, &input_row))(&Ok(()))
+                .map_err(|err| ReadExecutionError::ConceptRead { source: err })?
+            {
+                output.append(|mut row| row.copy_from(input_row.row(), input_row.multiplicity()))
+            }
+        }
+
+        Ok(Some(output))
+    }
+}
+
 struct DisjunctionExecutor {
     executors: Vec<PatternExecutor>,
 }
@@ -799,12 +837,12 @@ impl DisjunctionExecutor {
 }
 
 struct NegationExecutor {
-    executor: PatternExecutor,
+    negation_plan: MatchProgram,
 }
 
 impl NegationExecutor {
-    fn new(executor: PatternExecutor) -> NegationExecutor {
-        Self { executor }
+    fn new(negation_plan: MatchProgram) -> Self {
+        Self { negation_plan }
     }
 
     fn batch_from(
@@ -819,7 +857,22 @@ impl NegationExecutor {
 
         let mut output = FixedBatch::new(width);
 
-        todo!()
+        while let Some(row) = input.next() {
+            let input_row = row.map_err(|err| err.clone())?;
+            let executor = PatternExecutor::new(
+                &self.negation_plan,
+                context.snapshot(),
+                context.thing_manager(),
+                input_row.clone(),
+            )
+            .map_err(|error| ReadExecutionError::ConceptRead { source: error })?;
+            let mut iterator = executor.into_iterator(context.clone(), interrupt.clone());
+            if iterator.next().transpose().map_err(|err| err.clone())?.is_none() {
+                output.append(|mut row| row.copy_from(input_row.row(), input_row.multiplicity()))
+            }
+        }
+
+        Ok(Some(output))
     }
 }
 
