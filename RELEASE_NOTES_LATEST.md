@@ -2,9 +2,9 @@ Install & Run: https://typedb.com/docs/home/install
 
 Download from TypeDB Package Repository: 
 
-Server only: [Distributions for 2.28.6](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-server+version:2.28.6)
+Server only: [Distributions for 2.29.0](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-server+version:2.29.0)
 
-Server + Console: [Distributions for 2.28.6](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-all+version:2.28.6)
+Server + Console: [Distributions for 2.29.0](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-all+version:2.29.0)
 
 
 ## New Features
