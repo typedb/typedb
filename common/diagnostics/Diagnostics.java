@@ -152,7 +152,7 @@ public abstract class Diagnostics {
             user.setUsername(serverID);
             Sentry.setUser(user);
 
-            // FIXME temporary heartbeat every 24 hours (https://github.com/vaticle/typedb/pull/7045)
+            // FIXME temporary heartbeat every 24 hours (https://github.com/typedb/typedb/pull/7045)
             if (sentryEnabled) {
                 scheduled.schedule(() -> {
                     Sentry.startTransaction(new TransactionContext("server", "bootup")).finish(SpanStatus.OK);
