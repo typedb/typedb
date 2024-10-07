@@ -33,7 +33,7 @@ public class DockerTest {
 
     @Test
     public void bootup() throws InterruptedException, TimeoutException, IOException {
-        String imagePath = Paths.get("assemble-docker.tar").toAbsolutePath().toString();
+        String imagePath = Paths.get("assemble-docker-x86_64.tar").toAbsolutePath().toString();
         ProcessResult result = execute("docker", "load", "-i", imagePath);
         LOG.info(result.outputString());
         StartedProcess typeDBProcess = executor.command(
