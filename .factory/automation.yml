@@ -229,6 +229,7 @@ build:
         owner: [typedb]
         branch: [docker-arm64-for-2.x]
       command: |
+        export VERSION=$(cat VERSION)
         docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel run --@io_bazel_rules_docker//transitions:enable=false --//server:config=release //:deploy-docker-release-x86_64
@@ -290,6 +291,7 @@ release:
         branch: master
       dependencies: [deploy-github]
       command: |
+        export VERSION=$(cat VERSION)
         docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel run --@io_bazel_rules_docker//transitions:enable=false --//server:config=release //:deploy-docker-release-x86_64
