@@ -233,7 +233,7 @@ build:
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel run --@io_bazel_rules_docker//transitions:enable=false --//server:config=release //:deploy-docker-release-x86_64
         bazel run --@io_bazel_rules_docker//transitions:enable=false --//server:config=release //:deploy-docker-release-arm64
-        export DOCKER_REPO="typedb"
+        export DOCKER_REPO="typedb-snapshot"
         docker manifest create vaticle/$DOCKER_REPO:$VERSION --amend vaticle/$DOCKER_REPO:$VERSION-x86_64 --amend vaticle/$DOCKER_REPO:$VERSION-arm64
         docker manifest push vaticle/$DOCKER_REPO:$VERSION
         docker manifest create vaticle/$DOCKER_REPO:latest --amend vaticle/$DOCKER_REPO:$VERSION-x86_64 --amend vaticle/$DOCKER_REPO:$VERSION-arm64
