@@ -23,6 +23,7 @@ use crate::{
     pattern::{expression::ExpressionDefinitionError, variable_category::VariableCategory},
     program::{FunctionReadError, FunctionRepresentationError},
 };
+use crate::translation::fetch::FetchRepresentationError;
 
 pub mod pattern;
 pub mod program;
@@ -153,8 +154,13 @@ typedb_error!(
             "Clause type not recognised.\nSource:\n{declaration}",
             declaration: typeql::query::stage::Stage
         ),
-        NonTerminalFetch(
+        FetchRepresentation(
             23,
+            "Error building representation of fetch clause.",
+            ( typedb_source : FetchRepresentationError )
+        ),
+        NonTerminalFetch(
+            24,
             "Fetch clauses must be the final clause in a query pipeline.\nSource:\n{declaration}",
             declaration: typeql::query::stage::Stage
         ),

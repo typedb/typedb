@@ -33,6 +33,8 @@ use crate::{
     },
     RepresentationError,
 };
+use crate::program::fetch::FetchObject;
+use crate::translation::fetch::translate_fetch;
 
 #[derive(Debug, Clone)]
 pub struct TranslatedPipeline {
@@ -48,7 +50,7 @@ pub enum TranslatedStage {
     Insert { block: Block },
     Delete { block: Block, deleted_variables: Vec<Variable> },
 
-    Fetch { map: TranslatedFetchMap },
+    Fetch { fetch_object: FetchObject },
 
     // ...
     Select(Select),
@@ -57,17 +59,6 @@ pub enum TranslatedStage {
     Limit(Limit),
     Reduce(Reduce),
     Require(Require),
-}
-
-#[derive(Debug, Clone)]
-pub(super) struct TranslatedFetchMap {
-    // map: HashMap<ConceptMapKey, TranslatedFetchValue>,
-}
-
-pub(super) enum TranslatedFetchValue {
-    Single(),
-    List(),
-    Map(TranslatedFetchMap),
 }
 
 pub fn translate_pipeline(
@@ -103,7 +94,7 @@ pub(crate) fn translate_pipeline_stages(
 ) -> Result<Vec<TranslatedStage>, RepresentationError> {
     let mut translated_stages: Vec<TranslatedStage> = Vec::with_capacity(stages.len());
     for (i, stage) in stages.iter().enumerate() {
-        let translated = translate_stage(translation_context, all_function_signatures, stage)?;
+        let translated = translate_stage(snapshot, translation_context, all_function_signatures, stage)?;
         if matches!(translated, TranslatedStage::Fetch { .. }) && i != stages.len() - 1 {
             return Err(RepresentationError::NonTerminalFetch { declaration: stage.clone() });
         }
@@ -113,6 +104,7 @@ pub(crate) fn translate_pipeline_stages(
 }
 
 fn translate_stage(
+    snapshot: &impl ReadableSnapshot,
     translation_context: &mut TranslationContext,
     all_function_signatures: &impl FunctionSignatureIndex,
     typeql_stage: &TypeQLStage,
@@ -126,8 +118,9 @@ fn translate_stage(
         TypeQLStage::Delete(delete) => translate_delete(translation_context, delete)
             .map(|(block, deleted_variables)| TranslatedStage::Delete { block, deleted_variables }),
         TypeQLStage::Fetch(fetch) => {
-            // translate_fetch(translation_context, fetch)
-            todo!()
+            translate_fetch(snapshot, translation_context, all_function_signatures, fetch)
+                .map(|translated| TranslatedStage::Fetch { fetch_object: translated })
+                .map_err(|err| RepresentationError::FetchRepresentation { typedb_source: err })
         }
         TypeQLStage::Operator(modifier) => match modifier {
             TypeQLOperator::Select(select) => {

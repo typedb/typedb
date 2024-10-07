@@ -84,8 +84,8 @@ pub fn infer_types_for_function(
     //     typedb_source: err,
     // })?;
     // let body_annotations = TypeAnnotations::build(root_tig);
-    // let return_annotations = function.return_operation().output_annotations(body_annotations.vertex_annotations());
-    // Ok(FunctionAnnotations { return_annotations, block_annotations: body_annotations })
+    // let return_types = function.return_operation().return_types(body_annotations.vertex_annotations());
+    // Ok(FunctionAnnotations { return_annotations: return_types, block_annotations: body_annotations })
     todo!("We need to allow a function to contain an entire pipeline, instead of just a match block")
 }
 

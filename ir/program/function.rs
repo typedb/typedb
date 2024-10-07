@@ -85,7 +85,7 @@ pub enum ReturnOperation {
 }
 
 impl ReturnOperation {
-    pub fn output_annotations(
+    pub fn return_types(
         &self,
         function_variable_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
     ) -> Vec<BTreeSet<Type>> {
@@ -93,16 +93,21 @@ impl ReturnOperation {
             ReturnOperation::Stream(vars) => {
                 let inputs = vars.iter().map(|&var| function_variable_annotations.get(&Vertex::Variable(var)).unwrap());
                 inputs
-                    .map(|types_as_arced_hashset| BTreeSet::from_iter(types_as_arced_hashset.iter().cloned()))
+                    .map(|types| BTreeSet::from_iter(types.iter().cloned()))
                     .collect()
             }
-            ReturnOperation::ReduceReducer(_) => {
-                todo!()
+            ReturnOperation::Single(_, vars) => {
+                let inputs = vars.iter().map(|&var| function_variable_annotations.get(&Vertex::Variable(var)).unwrap());
+                inputs
+                    .map(|types| BTreeSet::from_iter(types.iter().cloned()))
+                    .collect()
             }
-            ReturnOperation::Single(_, _) => {
+            ReturnOperation::ReduceReducer(reducers) => {
+                // aggregates return value types?
                 todo!()
             }
             ReturnOperation::ReduceCheck() => {
+                // aggregates return value types?
                 todo!()
             }
         }

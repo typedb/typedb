@@ -10,9 +10,9 @@ use answer::variable::Variable;
 
 use crate::pattern::ParameterID;
 use crate::program::function::FunctionBody;
-use crate::program::function_signature::FunctionID;
 use crate::translation::pipeline::TranslatedStage;
 
+#[derive(Debug, Clone)]
 pub enum FetchSome {
     SingleVar(FetchSingleVar),
     SingleAttribute(FetchSingleAttribute),
@@ -26,37 +26,45 @@ pub enum FetchSome {
     ListAttributesFromList(FetchListAttributeFromList),
 }
 
+#[derive(Debug, Clone)]
 pub struct FetchSingleVar {
     pub(crate) variable: Variable,
 }
 
+#[derive(Debug, Clone)]
 pub struct FetchSingleAttribute {
     pub(crate) variable: Variable,
     pub(crate) attribute: String,
 }
 
+#[derive(Debug, Clone)]
 pub enum FetchObject {
-    Static(FetchObjectStatic),
+    Entries(FetchObjectEntries),
     Attributes(FetchObjectAttributes),
 }
 
-pub struct FetchObjectStatic {
-    pub(crate) object: HashMap<ParameterID, FetchSome>,
+#[derive(Debug, Clone)]
+pub struct FetchObjectEntries {
+    pub(crate) entries: HashMap<ParameterID, FetchSome>,
 }
 
+#[derive(Debug, Clone)]
 pub struct FetchObjectAttributes {
     pub(crate) variable: Variable,
 }
 
+#[derive(Debug, Clone)]
 pub struct FetchListSubFetch {
     pub(crate) stages: Vec<TranslatedStage>,
 }
 
+#[derive(Debug, Clone)]
 pub struct FetchListAttributeAsList {
     pub(crate) variable: Variable,
     pub(crate) attribute: String,
 }
 
+#[derive(Debug, Clone)]
 pub struct FetchListAttributeFromList {
     pub(crate) variable: Variable,
     pub(crate) attribute: String,

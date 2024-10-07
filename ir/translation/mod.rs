@@ -15,7 +15,7 @@ use crate::{
 
 mod constraints;
 mod expression;
-mod fetch;
+pub mod fetch;
 pub mod function;
 pub mod literal;
 pub mod match_;
