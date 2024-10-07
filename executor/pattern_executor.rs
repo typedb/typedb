@@ -31,10 +31,6 @@ use crate::{
 
 pub(crate) struct PatternExecutor {
     input: Option<MaybeOwnedRow<'static>>,
-
-    variable_positions: HashMap<Variable, VariablePosition>,
-    variable_positions_index: Vec<Variable>,
-
     program_executors: Vec<ProgramExecutor>,
     // modifiers: Modifier,
     output: Option<FixedBatch>,
@@ -58,20 +54,10 @@ impl PatternExecutor {
 
         Ok(Self {
             input: Some(input.into_owned()),
-            variable_positions: program.variable_positions().clone(),
-            variable_positions_index: program.variable_positions_index().to_owned(),
             program_executors,
             // modifiers:
             output: None,
         })
-    }
-
-    pub(crate) fn variable_positions(&self) -> &HashMap<Variable, VariablePosition> {
-        &self.variable_positions
-    }
-
-    pub(crate) fn variable_positions_index(&self) -> &[Variable] {
-        &self.variable_positions_index
     }
 
     pub fn into_iterator<Snapshot: ReadableSnapshot + 'static>(

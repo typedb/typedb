@@ -40,14 +40,6 @@ impl MatchExecutor {
         Ok(Self { entry, functions: HashMap::new() })
     }
 
-    pub fn entry_variable_positions(&self) -> &HashMap<Variable, VariablePosition> {
-        self.entry.variable_positions()
-    }
-
-    pub fn entry_variable_positions_index(&self) -> &[Variable] {
-        self.entry.variable_positions_index()
-    }
-
     pub fn into_iterator<Snapshot: ReadableSnapshot + 'static>(
         self,
         context: ExecutionContext<Snapshot>,

@@ -431,7 +431,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
     let snapshot = Arc::new(snapshot);
     let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
-    let variable_positions = executor.entry_variable_positions().clone();
+    let variable_positions =  program_plan.entry().variable_positions().clone();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
