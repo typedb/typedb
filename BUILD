@@ -9,6 +9,8 @@ load("@vaticle_bazel_distribution//brew:rules.bzl", "deploy_brew")
 load("@vaticle_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble_versioned", "assemble_zip", "checksum")
 load("@vaticle_bazel_distribution//github:rules.bzl", "deploy_github")
 load("@vaticle_bazel_distribution//common/targz:rules.bzl", "targz_edit")
+load("@vaticle_bazel_distribution//platform:constraints.bzl", "constraint_linux_arm64", "constraint_linux_x86_64",
+     "constraint_mac_arm64", "constraint_mac_x86_64", "constraint_win_x86_64")
 load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
 load("@vaticle_dependencies//distribution/artifact:rules.bzl", "artifact_repackage")
@@ -16,6 +18,7 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
 load("@io_bazel_rules_docker//container:image.bzl", docker_container_image = "container_image")
 load("@io_bazel_rules_docker//container:container.bzl", docker_container_push = "container_push")
+
 
 exports_files(
     [
@@ -352,13 +355,13 @@ release_validate_deps(
     version_file = "VERSION",
 )
 
+# docker
 docker_container_image(
-    name = "assemble-docker",
-    base = "@vaticle_ubuntu_image//image",
-    cmd = [
-        "/opt/typedb-all-linux-x86_64/typedb",
-        "server",
-    ],
+    name = "assemble-docker-x86_64",
+    operating_system = "linux",
+    architecture = "amd64",
+    base = "@ubuntu-22.04-x86_64//image",
+    cmd = ["/opt/typedb-all-linux-x86_64/typedb", "server"],
     directory = "opt",
     env = {
         "LANG": "C.UTF-8",
@@ -371,6 +374,48 @@ docker_container_image(
     workdir = "/opt/typedb-all-linux-x86_64",
 )
 
+docker_container_image(
+    name = "assemble-docker-arm64",
+    operating_system = "linux",
+    architecture = "arm64",
+    base = "@ubuntu-22.04-arm64//image",
+    cmd = ["/opt/typedb-all-linux-arm64/typedb", "server"],
+    directory = "opt",
+    env = {
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+    },
+    ports = ["1729"],
+    tars = [":assemble-linux-arm64-targz"],
+    visibility = ["//test:__subpackages__"],
+    volumes = ["/opt/typedb-all-linux-arm64/server/data/"],
+    workdir = "/opt/typedb-all-linux-arm64",
+)
+
+docker_container_push(
+    name = "deploy-docker-release-x86_64",
+    format = "Docker",
+    image = ":assemble-docker-x86_64",
+    registry = deployment_docker["docker.index"],
+    repository = "{}/{}".format(
+        deployment_docker["docker.organisation"],
+        deployment_docker["docker.release.repository"],
+    ),
+    tag_file = "//docker:version-x86_64",
+)
+
+docker_container_push(
+    name = "deploy-docker-release-arm64",
+    format = "Docker",
+    image = ":assemble-docker-arm64",
+    registry = deployment_docker["docker.index"],
+    repository = "{}/{}".format(
+        deployment_docker["docker.organisation"],
+        deployment_docker["docker.release.repository"],
+    ),
+    tag_file = "//docker:version-arm64",
+)
+
 docker_container_push(
     name = "deploy-docker-release-overwrite-latest-tag",
     format = "Docker",
@@ -381,18 +426,6 @@ docker_container_push(
         deployment_docker["docker.release.repository"],
     ),
     tag = "latest",
-)
-
-docker_container_push(
-    name = "deploy-docker-release",
-    format = "Docker",
-    image = ":assemble-docker",
-    registry = deployment_docker["docker.index"],
-    repository = "{}/{}".format(
-        deployment_docker["docker.organisation"],
-        deployment_docker["docker.release.repository"],
-    ),
-    tag_file = ":VERSION",
 )
 
 checkstyle_test(

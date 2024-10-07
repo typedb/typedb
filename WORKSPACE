@@ -123,13 +123,8 @@ bazel_rules_docker_repositories()
 load("@io_bazel_rules_docker//repositories:deps.bzl", bazel_rules_docker_container_deps = "deps")
 bazel_rules_docker_container_deps()
 
-load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
-container_pull(
-  name = "vaticle_ubuntu_image",
-  registry = "index.docker.io",
-  repository = "vaticle/ubuntu",
-  tag = "4ee548cea883c716055566847c4736a7ef791c38"
-)
+load("//docker:images.bzl", docker_base_images = "base_images")
+docker_base_images()
 
 #####################################
 # Load @vaticle/typedb dependencies #
