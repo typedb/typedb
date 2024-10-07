@@ -57,7 +57,7 @@ typedb_java_test(
         "@vaticle_bazel_distribution//platform:is_windows_x86_64": "@vaticle_typedb_console_artifact_windows-x86_64//file",
     },
     data = [
-        "//:assemble-docker.tar"
+        "//:assemble-docker-x86_64"
     ]
 )
 

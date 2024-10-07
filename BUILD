@@ -17,6 +17,7 @@ load("@vaticle_dependencies//tool/release/deps:rules.bzl", "release_validate_dep
 load("@io_bazel_rules_docker//container:image.bzl", docker_container_image = "container_image")
 load("@io_bazel_rules_docker//container:container.bzl", docker_container_push = "container_push")
 
+
 exports_files(
     [
         "VERSION",
@@ -352,13 +353,13 @@ release_validate_deps(
     version_file = "VERSION",
 )
 
+# docker
 docker_container_image(
-    name = "assemble-docker",
-    base = "@vaticle_ubuntu_image//image",
-    cmd = [
-        "/opt/typedb-all-linux-x86_64/typedb",
-        "server",
-    ],
+    name = "assemble-docker-x86_64",
+    operating_system = "linux",
+    architecture = "amd64",
+    base = "@ubuntu-22.04-x86_64//image",
+    cmd = ["/opt/typedb-all-linux-x86_64/typedb", "server"],
     directory = "opt",
     env = {
         "LANG": "C.UTF-8",
@@ -371,28 +372,46 @@ docker_container_image(
     workdir = "/opt/typedb-all-linux-x86_64",
 )
 
-docker_container_push(
-    name = "deploy-docker-release-overwrite-latest-tag",
-    format = "Docker",
-    image = ":assemble-docker",
-    registry = deployment_docker["docker.index"],
-    repository = "{}/{}".format(
-        deployment_docker["docker.organisation"],
-        deployment_docker["docker.release.repository"],
-    ),
-    tag = "latest",
+docker_container_image(
+    name = "assemble-docker-arm64",
+    operating_system = "linux",
+    architecture = "arm64",
+    base = "@ubuntu-22.04-arm64//image",
+    cmd = ["/opt/typedb-all-linux-arm64/typedb", "server"],
+    directory = "opt",
+    env = {
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+    },
+    ports = ["1729"],
+    tars = [":assemble-linux-arm64-targz"],
+    visibility = ["//test:__subpackages__"],
+    volumes = ["/opt/typedb-all-linux-arm64/server/data/"],
+    workdir = "/opt/typedb-all-linux-arm64",
 )
 
 docker_container_push(
-    name = "deploy-docker-release",
+    name = "deploy-docker-release-x86_64",
     format = "Docker",
-    image = ":assemble-docker",
+    image = ":assemble-docker-x86_64",
     registry = deployment_docker["docker.index"],
     repository = "{}/{}".format(
         deployment_docker["docker.organisation"],
         deployment_docker["docker.release.repository"],
     ),
-    tag_file = ":VERSION",
+    tag_file = "//docker:version-x86_64",
+)
+
+docker_container_push(
+    name = "deploy-docker-release-arm64",
+    format = "Docker",
+    image = ":assemble-docker-arm64",
+    registry = deployment_docker["docker.index"],
+    repository = "{}/{}".format(
+        deployment_docker["docker.organisation"],
+        deployment_docker["docker.release.repository"],
+    ),
+    tag_file = "//docker:version-arm64",
 )
 
 checkstyle_test(
