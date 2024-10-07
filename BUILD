@@ -415,18 +415,18 @@ docker_container_push(
     ),
     tag_file = "//docker:version-arm64",
 )
-
-docker_container_push(
-    name = "deploy-docker-release-overwrite-latest-tag",
-    format = "Docker",
-    image = ":assemble-docker",
-    registry = deployment_docker["docker.index"],
-    repository = "{}/{}".format(
-        deployment_docker["docker.organisation"],
-        deployment_docker["docker.release.repository"],
-    ),
-    tag = "latest",
-)
+#
+#docker_container_push(
+#    name = "deploy-docker-release-overwrite-latest-tag",
+#    format = "Docker",
+#    image = ":assemble-docker",
+#    registry = deployment_docker["docker.index"],
+#    repository = "{}/{}".format(
+#        deployment_docker["docker.organisation"],
+#        deployment_docker["docker.release.repository"],
+#    ),
+#    tag = "latest",
+#)
 
 checkstyle_test(
     name = "checkstyle",
