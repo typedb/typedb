@@ -9,8 +9,6 @@ load("@vaticle_bazel_distribution//brew:rules.bzl", "deploy_brew")
 load("@vaticle_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble_versioned", "assemble_zip", "checksum")
 load("@vaticle_bazel_distribution//github:rules.bzl", "deploy_github")
 load("@vaticle_bazel_distribution//common/targz:rules.bzl", "targz_edit")
-load("@vaticle_bazel_distribution//platform:constraints.bzl", "constraint_linux_arm64", "constraint_linux_x86_64",
-     "constraint_mac_arm64", "constraint_mac_x86_64", "constraint_win_x86_64")
 load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
 load("@vaticle_dependencies//distribution/artifact:rules.bzl", "artifact_repackage")
@@ -415,18 +413,6 @@ docker_container_push(
     ),
     tag_file = "//docker:version-arm64",
 )
-#
-#docker_container_push(
-#    name = "deploy-docker-release-overwrite-latest-tag",
-#    format = "Docker",
-#    image = ":assemble-docker",
-#    registry = deployment_docker["docker.index"],
-#    repository = "{}/{}".format(
-#        deployment_docker["docker.organisation"],
-#        deployment_docker["docker.release.repository"],
-#    ),
-#    tag = "latest",
-#)
 
 checkstyle_test(
     name = "checkstyle",
