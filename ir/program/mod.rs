@@ -11,7 +11,7 @@ use encoding::value::value::Value;
 use error::typedb_error;
 use itertools::Itertools;
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
-use typeql::schema::definable::function::{Function, ReturnStream};
+use typeql::schema::definable::function::{Function, FunctionBlock, ReturnReduction, ReturnSingle, ReturnStream};
 
 use crate::{
     pattern::{
@@ -61,16 +61,28 @@ typedb_error!(
             argument_variable: String,
             declaration: Function
         ),
-        ReturnVariableUnavailable(
+        StreamReturnVariableUnavailable(
             2,
-            "Function return variable '{return_variable}' is not available or defined.\nSource:\n{declaration:?}", // TODO: formatted
+            "Function return variable '{return_variable}' is not available or defined.\nSource:\n{declaration}", // TODO: formatted
             return_variable: String,
             declaration: ReturnStream
         ),
-        PatternDefinition(
+        SingleReturnVariableUnavailable(
             3,
+            "Function return variable '{return_variable}' is not available or defined.\nSource:\n{declaration}", // TODO: formatted
+            return_variable: String,
+            declaration: ReturnSingle
+        ),
+        BlockDefinition(
+            4,
             "Function pattern contains an error.\nSource:\n{declaration}",
-            declaration: Function,
+            declaration: FunctionBlock,
+            ( typedb_source : Box<RepresentationError>)
+        ),
+        ReturnReduction(
+            5,
+            "Error building representation of the return reduction.\nSource:\n{declaration}",
+            declaration: ReturnReduction,
             ( typedb_source : Box<RepresentationError>)
         ),
     }

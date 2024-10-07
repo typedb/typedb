@@ -8,6 +8,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     sync::Arc,
 };
+use typeql::schema::definable::function::SingleSelector;
 
 use answer::{variable::Variable, Type};
 
@@ -78,7 +79,9 @@ impl FunctionBody {
 #[derive(Debug, Clone)]
 pub enum ReturnOperation {
     Stream(Vec<Variable>),
-    Reduce(Vec<Reducer>),
+    Single(SingleSelector, Vec<Variable>),
+    ReduceCheck(),
+    ReduceReducer(Vec<Reducer>),
 }
 
 impl ReturnOperation {
@@ -93,7 +96,13 @@ impl ReturnOperation {
                     .map(|types_as_arced_hashset| BTreeSet::from_iter(types_as_arced_hashset.iter().cloned()))
                     .collect()
             }
-            ReturnOperation::Reduce(_) => {
+            ReturnOperation::ReduceReducer(_) => {
+                todo!()
+            }
+            ReturnOperation::Single(_, _) => {
+                todo!()
+            }
+            ReturnOperation::ReduceCheck() => {
                 todo!()
             }
         }
@@ -104,7 +113,7 @@ impl ReturnOperation {
     pub(crate) fn is_stream(&self) -> bool {
         match self {
             Self::Stream(_) => true,
-            Self::Reduce(_) => false,
+            Self::ReduceReducer(_) | Self::Single(_, _) | Self::ReduceCheck() => false,
         }
     }
 }

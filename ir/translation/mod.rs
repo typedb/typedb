@@ -25,7 +25,7 @@ pub mod reduce;
 pub mod tokens;
 pub mod writes;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TranslationContext {
     pub variable_registry: VariableRegistry, // TODO: Unpub
     visible_variables: HashMap<String, Variable>,

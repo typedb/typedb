@@ -4,9 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
-
-use answer::variable::Variable;
 use typeql::{
     query::{pipeline::stage::Operator as TypeQLOperator, stage::reduce::Reducer as TypeQLReducer},
     token::ReduceOperator as TypeQLReduceOperator,
@@ -18,8 +15,8 @@ use crate::{
         reduce::{Reduce, Reducer},
         VariableRegistry,
     },
-    translation::TranslationContext,
     RepresentationError,
+    translation::TranslationContext,
 };
 
 pub fn translate_reduce(
@@ -28,7 +25,7 @@ pub fn translate_reduce(
 ) -> Result<Reduce, RepresentationError> {
     let mut reductions = Vec::with_capacity(typeql_reduce.reduce_assignments.len());
     for reduce_assign in &typeql_reduce.reduce_assignments {
-        let reducer = build_reducer(context, &reduce_assign.reducer, typeql_reduce)?;
+        let reducer = build_reducer(context, &reduce_assign.reducer)?;
         let (category, is_optional) = resolve_category_optionality(&reducer, &context.variable_registry);
         let assigned_var = context.register_reduced_variable(
             reduce_assign.variable.name().unwrap(),
@@ -75,31 +72,26 @@ fn resolve_category_optionality(reduce: &Reducer, variable_registry: &VariableRe
     }
 }
 
-fn build_reducer(
+pub(crate) fn build_reducer(
     context: &TranslationContext,
     reduce_value: &TypeQLReducer,
-    reduce: &typeql::query::pipeline::stage::Reduce,
 ) -> Result<Reducer, RepresentationError> {
     match reduce_value {
         TypeQLReducer::Count(count) => match &count.variable {
             None => Ok(Reducer::Count),
             Some(typeql_var) => match context.get_variable(typeql_var.name().unwrap()) {
-                None => Err(RepresentationError::OperatorStageVariableUnavailable {
+                None => Err(RepresentationError::ReduceVariableNotAvailable {
                     variable_name: typeql_var.name().unwrap().to_owned(),
-                    declaration: typeql::query::pipeline::stage::Stage::Operator(TypeQLOperator::Reduce(
-                        reduce.clone(),
-                    )),
+                    declaration: reduce_value.clone(),
                 }),
                 Some(var) => Ok(Reducer::CountVar(var.clone())),
             },
         },
         TypeQLReducer::Stat(stat) => {
             let Some(var) = context.get_variable(stat.variable.name().unwrap()) else {
-                return Err(RepresentationError::OperatorStageVariableUnavailable {
+                return Err(RepresentationError::ReduceVariableNotAvailable {
                     variable_name: stat.variable.name().unwrap().to_owned(),
-                    declaration: typeql::query::pipeline::stage::Stage::Operator(TypeQLOperator::Reduce(
-                        reduce.clone(),
-                    )),
+                    declaration: reduce_value.clone(),
                 });
             };
             match &stat.reduce_operator {

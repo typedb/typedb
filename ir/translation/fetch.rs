@@ -9,73 +9,107 @@ use typeql::query::stage::Fetch as TypeQLFetch;
 use typeql::query::stage::fetch::{FetchObject as TypeQLFetchObject, FetchObjectBody as TypeQLFetchObjectBody, FetchSome as TypeQLFetchSome, FetchList as TypeQLFetchList, FetchSingle as TypeQLFetchSingle, FetchSingle};
 use typeql::value::StringLiteral;
 use typeql::{Expression, TypeRef, TypeRefAny, Variable as TypeQLVariable};
+use typeql::expression::{FunctionCall, FunctionName};
+use typeql::schema::definable::function::{FunctionBlock, SingleSelector};
 use typeql::type_::NamedType;
 use typeql::Variable::Named;
 use answer::variable::Variable;
 use error::typedb_error;
+use storage::snapshot::ReadableSnapshot;
 use crate::pattern::ParameterID;
-use crate::program::block::{Block, BlockBuilderContext};
+use crate::program::block::{Block, BlockBuilder, BlockBuilderContext};
 use crate::program::fetch::{FetchListAttributeFromList, FetchObject, FetchObjectAttributes, FetchObjectStatic, FetchSingleAttribute, FetchSingleVar, FetchSome};
-use crate::translation::expression::build_expression;
+use crate::program::function::{FunctionBody, ReturnOperation};
+use crate::program::function_signature::FunctionSignatureIndex;
+use crate::program::FunctionReadError;
+use crate::RepresentationError;
+use crate::translation::expression::{add_typeql_expression, build_expression};
 use crate::translation::fetch::FetchRepresentationError::{AnonymousVariableEncountered, InvalidAttributeLabelEncountered, NamedVariableEncountered, OptionalVariableEncountered, VariableNotAvailable};
+use crate::translation::function::{translate_function, translate_function_block};
+use crate::translation::pipeline::TranslatedStage;
 
 use crate::translation::TranslationContext;
 
-pub(super) fn translate_fetch(context: &mut TranslationContext, fetch: TypeQLFetch) -> Result<FetchObject, FetchRepresentationError> {
+pub(super) fn translate_fetch(
+    snapshot: &impl ReadableSnapshot,
+    context: &mut TranslationContext,
+    function_index: &impl FunctionSignatureIndex,
+    fetch: TypeQLFetch,
+) -> Result<FetchObject, FetchRepresentationError> {
     let object = fetch.object;
-    translate_fetch_object(context, object)
+    translate_fetch_object(snapshot, context, function_index, object)
 }
 
 // This function returns a specific `FetchObject`, rather than the FetchSome` higher-level enum
 // This gives us a simpler entry point for the fetch clause translation
-fn translate_fetch_object(context: &mut TranslationContext, object: TypeQLFetchObject) -> Result<FetchObject, FetchRepresentationError> {
+fn translate_fetch_object(
+    snapshot: &impl ReadableSnapshot,
+    context: &mut TranslationContext,
+    function_index: &impl FunctionSignatureIndex,
+    object: TypeQLFetchObject,
+) -> Result<FetchObject, FetchRepresentationError> {
     match object.body {
         TypeQLFetchObjectBody::Entries(entries) => {
             let mut object = HashMap::new();
             for entry in entries {
                 let (key, value) = (entry.key, entry.value);
                 let key_id = register_key(context, key);
-                object.insert(key_id, translate_fetch_some(context, value)?);
+                object.insert(key_id, translate_fetch_some(snapshot, context, function_index, value)?);
             }
             Ok(FetchObject::Static(FetchObjectStatic { object }))
         }
         TypeQLFetchObjectBody::AttributesAll(variable) => {
-            let var = try_get_variable(context, variable)?;
+            let var = try_get_variable(context, &variable)?;
             Ok(FetchObject::Attributes(FetchObjectAttributes { variable: var }))
         }
     }
 }
 
-fn translate_fetch_some(context: &mut TranslationContext, fetch_some: TypeQLFetchSome) -> Result<FetchSome, FetchRepresentationError> {
+fn translate_fetch_some(
+    snapshot: &impl ReadableSnapshot,
+    context: &mut TranslationContext,
+    function_index: &impl FunctionSignatureIndex,
+    fetch_some: TypeQLFetchSome,
+) -> Result<FetchSome, FetchRepresentationError> {
     match fetch_some {
         TypeQLFetchSome::Object(object) => {
-            translate_fetch_object(context, object).map(|object| FetchSome::Object(Box::new(object)))
+            translate_fetch_object(snapshot, context, function_index, object).map(|object| FetchSome::Object(Box::new(object)))
         }
         TypeQLFetchSome::List(list) => {
-            translate_fetch_list(context, list)
+            translate_fetch_list(snapshot, context, function_index, list)
         }
         TypeQLFetchSome::Single(some) => {
-            translate_fetch_single(context, some)
+            translate_fetch_single(snapshot, context, function_index, some)
         }
     }
 }
 
-fn translate_fetch_list(context: &mut TranslationContext, list: TypeQLFetchList) -> Result<FetchSome, FetchRepresentationError> {
-    todo!()
+fn translate_fetch_list(
+    _snapshot: &impl ReadableSnapshot,
+    _context: &mut TranslationContext,
+    _function_index: &impl FunctionSignatureIndex,
+    _list: TypeQLFetchList,
+) -> Result<FetchSome, FetchRepresentationError> {
+    return Err(FetchRepresentationError::Unimplemented {})
 }
 
 // Note: TypeQL fetch-single can turn either into a List or a Single IR
-fn translate_fetch_single(context: &mut TranslationContext, single: TypeQLFetchSingle) -> Result<FetchSome, FetchRepresentationError> {
+fn translate_fetch_single(
+    snapshot: &impl ReadableSnapshot,
+    context: &mut TranslationContext,
+    function_index: &impl FunctionSignatureIndex,
+    single: TypeQLFetchSingle,
+) -> Result<FetchSome, FetchRepresentationError> {
     match single {
         FetchSingle::Attribute(fetch_attribute) => {
-            let owner = try_get_variable(context, fetch_attribute.owner)?;
+            let owner = try_get_variable(context, &fetch_attribute.owner)?;
             match fetch_attribute.attribute {
                 TypeRefAny::Type(type_ref) => {
-                    match type_ref {
+                    match &type_ref {
                         TypeRef::Named(type_) => {
                             match type_ {
                                 NamedType::Label(label) => {
-                                    Ok(FetchSome::SingleAttribute(FetchSingleAttribute { variable: owner, attribute: label.ident.as_str().to_owned()}))
+                                    Ok(FetchSome::SingleAttribute(FetchSingleAttribute { variable: owner, attribute: label.ident.as_str().to_owned() }))
                                 }
                                 NamedType::Role(_) | NamedType::BuiltinValueType(_) => {
                                     Err(InvalidAttributeLabelEncountered { declaration: type_ref.clone() })
@@ -86,7 +120,7 @@ fn translate_fetch_single(context: &mut TranslationContext, single: TypeQLFetchS
                     }
                 }
                 TypeRefAny::List(list) => {
-                    match list.inner {
+                    match &list.inner {
                         TypeRef::Named(named_type) => {
                             match named_type {
                                 NamedType::Label(label) => {
@@ -104,45 +138,142 @@ fn translate_fetch_single(context: &mut TranslationContext, single: TypeQLFetchS
             }
         }
         FetchSingle::Expression(expression) => {
-            match expression {
+            match &expression {
                 Expression::Variable(variable) => {
                     let var = try_get_variable(context, variable)?;
                     Ok(FetchSome::SingleVar(FetchSingleVar { variable: var }))
                 }
                 Expression::ListIndex(_) | Expression::Value(_) | Expression::Operation(_) | Expression::Paren(_) => {
-                    // because expressions expect to be able to extract out function calls, we'll translate an expression
-                    // into a match-return
-
-                    // we don't want anything here to affect the parent contexts, so clone
-                    let builder_context = BlockBuilderContext::new(
-                        &mut context.variable_registry.clone(),
-                        &mut context.visible_variables.clone(),
-                        &mut context.parameters.clone(),
-                    );
-                    let builder = Block::builder(builder_context);
-                    let constraints_builder = builder.conjunction_mut();
-                    let expression = build_expression()
+                    translate_inline_expression(context, function_index, &expression)
                 }
                 // function expressions may return Single or List, depending on signature invoked
-                Expression::Function(_) => {
-                    todo!()
+                Expression::Function(call) => {
+                    let function_name = match &call.name {
+                        FunctionName::Builtin(_) => {
+                            return translate_inline_expression(context, function_index, &expression);
+                        }
+                        FunctionName::Identifier(name) => name.as_str(),
+                    };
+                    translate_inline_user_function_call(context, function_index, &call, function_name)
                 }
                 // list expressions should be mapped to FetchList
                 Expression::List(_) => {
-                    todo!()
+                    return Err(FetchRepresentationError::Unimplemented {})
                 }
                 Expression::ListIndexRange(_) => {
-                    todo!()
+                    return Err(FetchRepresentationError::Unimplemented {})
                 }
             }
         }
-        FetchSingle::FunctionBlock(_) => {}
+        FetchSingle::FunctionBlock(block) => {
+            // clone context, since we don't want the inline function to affect the parent context
+            let sub_context = &mut context.clone();
+            let translated = translate_function_block(snapshot, function_index, sub_context, &block)
+                .map_err(|err| FetchRepresentationError::FunctionRepresentation { declaration: block.clone() })?;
+            if translated.return_operation().is_stream() {
+                Err(FetchRepresentationError::ExpectedSingleInlineFunction { declaration: block.clone() })
+            } else {
+                Ok(FetchSome::SingleInlineFunction(translated))
+            }
+        }
     }
 }
 
-fn try_get_variable(context: &TranslationContext, variable: TypeQLVariable) -> Result<Variable, FetchRepresentationError> {
+fn translate_inline_expression(
+    context: &mut TranslationContext,
+    function_index: &impl FunctionSignatureIndex,
+    expression: &Expression,
+) -> Result<FetchSome, FetchRepresentationError> {
+    // because expressions expect to be able to extract out function calls, we'll translate an expression
+    // into a match-return
+    // we also don't want anything here to affect the parent contexts, so clone
+    let mut variable_registry = context.variable_registry.clone();
+    let mut visible_variables = context.visible_variables.clone();
+    let mut parameters = context.parameters.clone();
+    let builder_context = BlockBuilderContext::new(
+        &mut variable_registry,
+        &mut visible_variables,
+        &mut parameters,
+    );
+    let mut builder = Block::builder(builder_context);
+    let assign_var = add_expression(function_index, &mut builder, &expression)?;
+    let block = TranslatedStage::Match { block: builder.finish() };
+    let return_ = ReturnOperation::Single(SingleSelector::First, vec![assign_var]);
+    Ok(FetchSome::SingleInlineFunction(FunctionBody::new(vec![block], return_)))
+}
+
+fn translate_inline_user_function_call(
+    context: &mut TranslationContext,
+    function_index: &impl FunctionSignatureIndex,
+    call: &FunctionCall,
+    function_name: &str,
+) -> Result<FetchSome, FetchRepresentationError> {
+    let signature = function_index.get_function_signature(function_name)
+        .map_err(|err| FetchRepresentationError::FunctionRetrieval {
+            name: function_name.to_owned(),
+            source: err,
+        })?
+        .ok_or_else(|| FetchRepresentationError::FunctionNotFound {
+            name: function_name.to_owned(),
+            declaration: call.clone(),
+        })?;
+
+    // because function calls expect to be able to extract out expression calls, we'll translate
+    // into a match-return
+    // we also don't want anything here to affect the parent contexts, so clone
+    let mut variable_registry = context.variable_registry.clone();
+    let mut visible_variables = context.visible_variables.clone();
+    let mut parameters = context.parameters.clone();
+    let builder_context = BlockBuilderContext::new(
+        &mut variable_registry,
+        &mut visible_variables,
+        &mut parameters,
+    );
+    let mut builder = Block::builder(builder_context);
+    let mut assign_vars = Vec::new();
+    for _ in &signature.returns {
+        assign_vars.push(builder.conjunction_mut().declare_variable_anonymous()
+            .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?);
+    }
+    let mut arg_vars = Vec::new();
+    for arg in &call.args {
+        arg_vars.push(add_expression(function_index, &mut builder, arg)?);
+    }
+
+    builder.conjunction_mut()
+        .constraints_mut()
+        .add_function_binding(assign_vars.clone(), &signature, arg_vars, function_name)
+        .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
+
+    let stage = TranslatedStage::Match { block: builder.finish() };
+    if signature.return_is_stream {
+        let return_ = ReturnOperation::Stream(assign_vars);
+        Ok(FetchSome::ListFunction(FunctionBody::new(vec![stage], return_)))
+    } else {
+        let return_ = ReturnOperation::Single(SingleSelector::First, assign_vars);
+        Ok(FetchSome::SingleInlineFunction(FunctionBody::new(vec![stage], return_)))
+    }
+}
+
+fn add_expression(
+    function_index: &impl FunctionSignatureIndex,
+    builder: &mut BlockBuilder<'_>,
+    expression: &Expression,
+) -> Result<Variable, FetchRepresentationError> {
+    let mut conjunction_builder = builder.conjunction_mut();
+    let assign_var = conjunction_builder.declare_variable_anonymous()
+        .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
+    let expression = build_expression(function_index, &mut conjunction_builder.constraints_mut(), &expression)
+        .map_err(|err| FetchRepresentationError::ExpressionRepresentation { typedb_source: err })?;
+    let _ = conjunction_builder.constraints_mut()
+        .add_assignment(assign_var.clone(), expression)
+        .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
+    Ok(assign_var)
+}
+
+fn try_get_variable(context: &TranslationContext, variable: &TypeQLVariable) -> Result<Variable, FetchRepresentationError> {
     let name = match variable {
-        TypeQLVariable::Anonymous { .. } => return Err(AnonymousVariableEncountered { declaration: variable }),
+        TypeQLVariable::Anonymous { .. } => return Err(AnonymousVariableEncountered { declaration: variable.clone() }),
         TypeQLVariable::Named { .. } => variable.name().unwrap(),
     };
     context.get_variable(name)
@@ -155,6 +286,10 @@ fn register_key(context: &mut TranslationContext, key: StringLiteral) -> Paramet
 
 typedb_error!(
     pub FetchRepresentationError(component = "Fetch representation", prefix = "FER") {
+        Unimplemented(
+            0,
+            "Functionality is not implemented."
+        ),
         AnonymousVariableEncountered(
             1,
             "Encountered anonymous variable where it is not permitted.\nSource:\n{declaration}",
@@ -180,6 +315,38 @@ typedb_error!(
             "The variable '{variable}' is not available.\nSource:\n{declaration}",
             variable: String,
             declaration: TypeQLVariable
+        ),
+        ExpressionRepresentation(
+            6,
+            "Error building representation of expression.",
+            ( typedb_source : RepresentationError )
+        ),
+        ExpressionAsMatchRepresentation(
+            7,
+            "Failed to convert fetch-expression ('key': <expression>) into full match-return ('key': (match $anon = <expression>; return first $anon;)) failed.",
+            ( typedb_source : RepresentationError )
+        ),
+        FunctionRetrieval(
+            8,
+            "Error while retrieving function '{name}'.",
+            name: String,
+            ( source : FunctionReadError )
+        ),
+        FunctionNotFound(
+            9,
+            "Function '{name}' was not found.",
+            name: String,
+            declaration: FunctionCall
+        ),
+        FunctionRepresentation(
+            10,
+            "Failed to build inline function representation.",
+            declaration: FunctionBlock
+        ),
+        ExpectedSingleInlineFunction(
+            11,
+            "The inline match-return function declaration returns a stream, which must be wrapped in `[]` to collect into a list.\nSource:\n{declaration}",
+            declaration: FunctionBlock
         ),
     }
 );
