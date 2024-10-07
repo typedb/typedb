@@ -39,7 +39,7 @@ public class DockerTest {
         StartedProcess typeDBProcess = executor.command(
                 "docker", "run", "--name", "typedb",
                 "--rm", "-t", "-p", String.format("%d:%d", typeDBPort, typeDBPort),
-                "bazel:assemble-docker",
+                "bazel:assemble-docker-x86_64",
                 "/opt/typedb-all-linux-x86_64/typedb", "server", "--development-mode.enable=true"
         ).start();
         TypeDBConsoleRunner consoleRunner = new TypeDBConsoleRunner();
