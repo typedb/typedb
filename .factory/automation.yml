@@ -130,9 +130,9 @@ build:
     test-assembly-docker:
       image: vaticle-ubuntu-22.04
       filter:
-        owner: typedb
-        branch: [master, development]
-      dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour-connection, test-behaviour-concept, test-behaviour-query-read, test-behaviour-query-write, test-behaviour-query-definable, test-behaviour-reasoner]
+        owner: krishnangovindraj
+        branch: test-assembly-docker
+      # dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour-connection, test-behaviour-concept, test-behaviour-query-read, test-behaviour-query-write, test-behaviour-query-definable, test-behaviour-reasoner]
       command: |
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //test/assembly:docker --test_output=streamed
