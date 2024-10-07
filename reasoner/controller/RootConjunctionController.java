@@ -14,6 +14,7 @@ import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.RootSink;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
 
+import javax.annotation.Nullable;
 import java.util.function.Supplier;
 
 public class RootConjunctionController
@@ -48,9 +49,11 @@ public class RootConjunctionController
     }
 
     @Override
-    public void terminate(Throwable cause) {
+    public void terminate(@Nullable Throwable cause) {
         super.terminate(cause);
-        reasonerConsumer.exception(cause);
+        if (cause != null) {
+            reasonerConsumer.exception(cause);
+        }
     }
 
     protected static class Processor extends ConjunctionController.Processor<Processor> {

@@ -145,7 +145,9 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         @Override
         public void terminate(@Nullable Throwable cause) {
             super.terminate(cause);
-            reasonerConsumer.exception(cause);
+            if (cause != null) {
+                reasonerConsumer.exception(cause);
+            }
         }
 
         @Override

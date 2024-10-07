@@ -1,50 +1,35 @@
 [![TypeDB](./docs/banner.png)](https://typedb.com/introduction)
 
-[![Factory](https://factory.vaticle.com/api/status/vaticle/typedb/badge.svg)](https://factory.vaticle.com/vaticle/typedb)
-[![CircleCI](https://circleci.com/gh/vaticle/typedb/tree/master.svg?style=shield)](https://circleci.com/gh/vaticle/typedb/tree/master)
-[![GitHub release](https://img.shields.io/github/release/vaticle/typedb.svg)](https://github.com/vaticle/typedb/releases/latest)
-[![Discord](https://img.shields.io/discord/665254494820368395?color=7389D8&label=chat&logo=discord&logoColor=ffffff)](https://typedb.com/discord)
+[![Factory](https://factory.vaticle.com/api/status/typedb/typedb/badge.svg)](https://factory.vaticle.com/typedb/typedb)
+[![CircleCI](https://circleci.com/gh/typedb/typedb/tree/master.svg?style=shield)](https://circleci.com/gh/typedb/typedb/tree/master)
+[![GitHub release](https://img.shields.io/github/release/typedb/typedb.svg)](https://github.com/typedb/typedb/releases/latest)
+[![Discord](https://img.shields.io/discord/665254494820368395?color=7389D8&label=discord&logo=discord&logoColor=ffffff)](https://typedb.com/discord)
 [![Discussion Forum](https://img.shields.io/badge/discourse-forum-blue.svg)](https://forum.typedb.com)
-[![Stack Overflow](https://img.shields.io/badge/stackoverflow-typedb-796de3.svg)](https://stackoverflow.com/questions/tagged/typedb)
-[![Stack Overflow](https://img.shields.io/badge/stackoverflow-typeql-3dce8c.svg)](https://stackoverflow.com/questions/tagged/typeql)
 [![Hosted By: Cloudsmith](https://img.shields.io/badge/OSS%20hosting%20by-cloudsmith-blue?logo=cloudsmith&style=flat)](https://cloudsmith.com)
 
 # Introducing TypeDB
 
-TypeDB is a general-purpose database designed with a new kind of high-level, declarative query language that drastically simplifies handling complex data and logic. TypeDB is built for the performance, maintainability, safety, and scalability needs of modern applications, and is specifically tailored to cloud-based development.
+**TypeDB** is a next-gen database with a modern programming paradigm that lets you build data applications faster, safer, and more elegantly. Its intuitive and powerful data model unifies the strengths of relational, document and graph databases without their shortcomings. **TypeQL**, its groundbreaking query language, is declarative, functional, and strongly-typed, drastically simplifying data handling and logic. So now, even the most nested and interconnected datasets can be managed with ease. With TypeDB, we’ve reinvented the database for the modern programming era.
+
+## Getting started
 
 - Get started by [installing TypeDB](https://typedb.com/docs/home/install/overview).
-- Explore the basics of TypeDB in our easy [Crash Course](https://typedb.com/docs/home/crash-course).
-- Discover more of TypeDB’s unique [features](https://typedb.com/features).
-- Master TypeDB with our end-to-end [Learning Course](https://typedb.com/docs/learn/overview).
-- Learn more at TypeDB's [Learning Center](https://typedb.com/learn).
+- Explore the basics of TypeDB in our [Quickstart](https://typedb.com/docs/home/quickstart) and [Crash Course](https://typedb.com/docs/home/crash-course).
+- Master TypeDB with [TypeDB Academy](https://typedb.com/docs/academy).
+- Discover more of TypeDB’s unique [Features](https://typedb.com/features).
+- Find further articles and lectures in our [Learning Center](https://typedb.com/learn).
 
-> **IMPORTANT NOTE:** TypeDB & TypeQL are in the process of being rewritten in [Rust](https://www.rust-lang.org). There will be significant refinement to the language, and minor breaks in backwards compatibility. Learn about the changes on our [roadmap issue on GitHub](https://github.com/vaticle/typedb/issues/6764). The biggest change to TypeDB 3.0 will be our storage data structure and architecture that significantly boosts performance. We’re aiming to release 3.0 in the summer this year, along with preliminary benchmarks of TypeDB.
+> **IMPORTANT NOTE:** TypeDB & TypeQL are in the process of being rewritten in [Rust](https://www.rust-lang.org). There will be significant refinement to the language, and minor breaks in backwards compatibility. Learn about the changes on our [roadmap blog post](https://typedb.com/blog/typedb-3-roadmap). The biggest change to TypeDB 3.0 will be our storage data structure and architecture that significantly boosts performance. We’re aiming to release 3.0 in the summer this year, along with preliminary benchmarks of TypeDB.
 
-## Polymorphic databases
+##  Why TypeDB?
 
-###  Why TypeDB was built
-
-Data frequently exhibits polymorphic features in the form of inheritance hierarchies and interface dependencies. TypeDB was crafted to solve the inability of current database paradigms to natively express these polymorphic features.
-
-- Relational schemas have [no native capability for modeling polymorphic data](https://typedb.com/philosophy#why-do-we-need-a-polymorphic-database).
-- Unstructured databases eliminate the schemas entirely, but this [prevents declarative data retrieval](https://typedb.com/philosophy#why-do-we-need-a-polymorphic-database).
-- [ORMs work around the fundamental problem](https://typedb.com/philosophy#why-do-we-need-a-polymorphic-database) by trading off performance.
+* TypeDB was crafted to natively express and combine diverse data features, allowing users to build advanced data models from a set of simple and intuitive building blocks.
+* TypeDB's type system provides safety and flexibility at the same time, which makes both prototyping and building performant, production-ready data applications fast, elegant, and _enjoyable_.
+* With TypeDB, and its query language TypeQL, we envision databases catching up with modern typed programming languages, allowing users to write clear, intuitive, and easy to maintain code.
+* TypeDB comes with a mature ecosystem include language drivers and a graphical user interface: **TypeDB Studio!**
 
 
-### Providing full support for polymorphism
-
-<!-- Polymorphism in programming languages and data modeling comes in the form of [interface](https://typedb.com/philosophy#what-defines-a-polymorphic-database), [inheritance](https://typedb.com/philosophy#what-defines-a-polymorphic-database), and [parametric polymorphism](https://typedb.com/philosophy#what-defines-a-polymorphic-database).  -->
-
-In order to fully support polymorphism, a database needs to implement three key components:
-
-- Support for [**polymorphic** **schemas**](https://typedb.com/features#conceptual-modeling) that can express inheritance hierarchies and interface implementations.
-- Implementation of a fully [**variablizable** **query language**](https://typedb.com/features#polymorphic-queries) to support powerful [parametric](https://typedb.com/philosophy#what-defines-a-polymorphic-database) database operations.
-- Integration of an [**inference engine**](https://typedb.com/features#strong-type-system) to interpret variables in the semantic context given by the schema.
-
-
-
-## The TypeDB database
+## Database Fundamentals
 
 ### The schema
 
@@ -119,14 +104,14 @@ rule transitive-team-membership:
     };
 
 insert
-$john isa user, has email "john@vaticle.com";
+$john isa user, has email "john@typedb.com";
 $eng isa team, has name "Engineering ";
 $cloud isa team, has name "Cloud";
 (team: $eng, member: $cloud) isa team-membership;
 (team: $cloud, member: $john) isa team-membership;
 
 match
-$john isa user, has email "john@vaticle.com";
+$john isa user, has email "john@typedb.com";
 (team: $team, member: $john) isa team-membership;
 # This will return both Cloud and Engineering for $team due to the defined rule
 ```
@@ -149,7 +134,7 @@ TypeDB breaks down the patchwork of existing database paradigms into three funda
 ### TypeDB editions
 
 * [TypeDB Cloud](https://cloud.typedb.com) — multi-cloud DBaaS
-* [TypeDB Cloud self-hosted](mailto://sales@vaticle.com) — allows you to deploy TypeDB Cloud in your own environment
+* [TypeDB Enterprise](mailto://enterprise@typedb.com) — allows you to deploy TypeDB Cloud in your own environment
 * **TypeDB Core** — Open-source edition of TypeDB ← _This repository_
 
 For a comparison of all three editions, see the [Deploy](https://typedb.com/deploy) page on our website.
@@ -157,7 +142,7 @@ For a comparison of all three editions, see the [Deploy](https://typedb.com/depl
 
 ### Download and run TypeDB Core
 
-You can download TypeDB from the [GitHub Releases](https://github.com/vaticle/typedb/releases). 
+You can download TypeDB from the [GitHub Releases](https://github.com/typedb/typedb/releases). 
 
 Check our [Installation guide](https://typedb.com/docs/typedb/2.x/installation) to get started.
 
@@ -204,11 +189,10 @@ Check our [Installation guide](https://typedb.com/docs/typedb/2.x/installation) 
 If you want to begin your journey with TypeDB, you can explore the following resources:
 
 * More on TypeDB's [features](https://typedb.com/features)
-* In-depth dive into TypeDB's [philosophy](https://typedb.com/philosophy)
-* Our [TypeDB quickstart](https://typedb.com/docs/home/quickstart)
-* [TypeDB in 25 queries](https://typedb.com/docs/home/25-queries)
-* **[TypeQL](https://github.com/vaticle/typeql)**
-* **[TypeDB Studio](https://github.com/vaticle/typedb-studio)**
+* [TypeDB Quickstart](https://typedb.com/docs/home/quickstart) and [Crash Course](https://typedb.com/docs/home/crash-course)
+* [TypeDB Academy](https://typedb.com/docs/academy)
+* **[TypeQL](https://github.com/typedb/typeql)**
+* **[TypeDB Studio](https://github.com/typedb/typedb-studio)**
 
 
 ## Contributions
@@ -242,11 +226,5 @@ confidence.
 
 ## Licensing
 
-This software is developed by [Vaticle](https://vaticle.com/).  
 It's released under the Mozilla Public License 2.0 (MPL 2.0).
-For license information, please see [LICENSE](https://github.com/vaticle/typedb/blob/master/LICENSE). 
-
-Vaticle also provides a commercial license for TypeDB Cloud self-hosted - get in touch with our team at 
-[commercial@vaticle.com](emailto://sales@vaticle.com).
-
-Copyright (C) 2023 Vaticle.
+For license information, please see [LICENSE](https://github.com/typedb/typedb/blob/master/LICENSE). 

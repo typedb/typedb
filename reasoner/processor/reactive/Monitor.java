@@ -296,7 +296,7 @@ public class Monitor extends Actor<Monitor> {
 
         private void checkFinished() {
             assert !finishing;
-            if (!finished && activeSources.isEmpty()){
+            if (!finished && activeSources.isEmpty()) {
                 assert activeFrontiers >= 0;
                 if (activeFrontiers == 0) {
                     assert activeAnswers >= 0;
@@ -363,7 +363,7 @@ public class Monitor extends Actor<Monitor> {
     }
 
     public void terminate(Throwable cause) {
-        LOG.debug("Monitor terminated.", cause);
+        if (cause != null) LOG.debug("Monitor terminated.", cause);
         this.terminated = true;
     }
 

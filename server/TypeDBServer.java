@@ -25,12 +25,17 @@ import com.vaticle.typedb.core.server.parameters.CoreConfigParser;
 import com.vaticle.typedb.core.server.parameters.CoreSubcommand;
 import com.vaticle.typedb.core.server.parameters.CoreSubcommandParser;
 import com.vaticle.typedb.core.server.parameters.util.ArgsParser;
+import com.vaticle.typedb.protocol.TypeDBGrpc;
+import io.grpc.Metadata;
+import io.grpc.ServerCall;
+import io.grpc.ServerCallExecutorSupplier;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.sentry.Sentry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.BindException;
 import java.net.InetAddress;
@@ -42,6 +47,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Random;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -248,7 +254,8 @@ public class TypeDBServer implements AutoCloseable {
         MigratorService migratorService = new MigratorService(databaseMgr, Version.VERSION);
 
         return NettyServerBuilder.forAddress(config.server().address())
-                .executor(Executors.service())
+                .executor(Executors.network()) //  "executor(Executor) runs necessary tasks before the ServerCallExecutorSupplier is ready to be called, then it switches over."
+                .callExecutor(new ExecutorSelector(Executors.service(), Executors.transactionService()))
                 .workerEventLoopGroup(Executors.network())
                 .bossEventLoopGroup(Executors.network())
                 .maxConnectionIdle(1, TimeUnit.HOURS) // TODO: why 1 hour?
@@ -400,5 +407,26 @@ public class TypeDBServer implements AutoCloseable {
         CoreMigratorClient migrator = CoreMigratorClient.create(subcmdImport.port());
         boolean success = migrator.importDatabase(subcmdImport.database(), subcmdImport.schemaFile(), subcmdImport.dataFile());
         System.exit(success ? 0 : 1);
+    }
+
+    private static class ExecutorSelector implements ServerCallExecutorSupplier {
+
+        private final Executor nonBlockingCallExecutor;
+        private final Executor blockingCallExecutor;
+
+        public ExecutorSelector(Executor nonBlockingCallExecutor, Executor blockingCallExecutor) {
+            this.nonBlockingCallExecutor = nonBlockingCallExecutor;
+            this.blockingCallExecutor = blockingCallExecutor;
+        }
+
+        @Nullable
+        @Override
+        public <ReqT, RespT> Executor getExecutor(ServerCall<ReqT, RespT> call, Metadata metadata) {
+            if (call.getMethodDescriptor() == TypeDBGrpc.getTransactionMethod()) {
+                return blockingCallExecutor;
+            } else {
+                return nonBlockingCallExecutor;
+            }
+        }
     }
 }
