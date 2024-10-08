@@ -114,15 +114,15 @@ fn execute_write_query(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"typeql define{typeql_may_error}")]
-async fn typeql_define(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
+#[step(expr = r"typeql schema query{typeql_may_error}")]
+async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
     let query = step.docstring.as_ref().unwrap().as_str();
     let parse_result = typeql::parse_query(query);
     if may_error.check_parsing(parse_result.as_ref()).is_some() {
         context.close_active_transaction();
         return;
     }
-    let typeql_define = parse_result.unwrap().into_schema();
+    let typeql_schema = parse_result.unwrap().into_schema();
 
     if !matches!(context.active_transaction.as_ref().unwrap(), Schema(_)) {
         may_error.check_logic::<(), BehaviourTestExecutionError>(Err(
@@ -136,36 +136,7 @@ async fn typeql_define(context: &mut Context, may_error: params::TypeQLMayError,
             Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
-            typeql_define,
-        );
-        may_error.check_logic(result);
-    });
-}
-
-#[apply(generic_step)]
-#[step(expr = r"typeql redefine{typeql_may_error}")]
-async fn typeql_redefine(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
-    let query = step.docstring.as_ref().unwrap().as_str();
-    let parse_result = typeql::parse_query(query);
-    if may_error.check_parsing(parse_result.as_ref()).is_some() {
-        context.close_active_transaction();
-        return;
-    }
-    let typeql_redefine = parse_result.unwrap().into_schema();
-
-    if !matches!(context.active_transaction.as_ref().unwrap(), Schema(_)) {
-        may_error.check_logic::<(), BehaviourTestExecutionError>(Err(
-            BehaviourTestExecutionError::UseInvalidTransactionAsSchema,
-        ));
-        return;
-    }
-
-    with_schema_tx!(context, |tx| {
-        let result = QueryManager::new().execute_schema(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
-            &tx.type_manager,
-            &tx.thing_manager,
-            typeql_redefine,
+            typeql_schema,
         );
         may_error.check_logic(result);
     });
@@ -173,7 +144,7 @@ async fn typeql_redefine(context: &mut Context, may_error: params::TypeQLMayErro
 
 #[apply(generic_step)]
 #[step(expr = r"typeql write query{typeql_may_error}")]
-async fn typeql_write(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
+async fn typeql_write_query(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
     let parse_result = typeql::parse_query(step.docstring.as_ref().unwrap().as_str());
     if may_error.check_parsing(parse_result.as_ref()).is_some() {
         context.close_active_transaction();
@@ -187,7 +158,7 @@ async fn typeql_write(context: &mut Context, may_error: params::TypeQLMayError, 
 
 #[apply(generic_step)]
 #[step(expr = r"get answers of typeql write query")]
-async fn get_answers_of_typeql_write(context: &mut Context, step: &Step) {
+async fn get_answers_of_typeql_write_query(context: &mut Context, step: &Step) {
     let query = typeql::parse_query(step.docstring.as_ref().unwrap().as_str()).unwrap();
     let result = execute_write_query(context, query);
     context.answers = result.unwrap();
@@ -195,7 +166,7 @@ async fn get_answers_of_typeql_write(context: &mut Context, step: &Step) {
 
 #[apply(generic_step)]
 #[step(expr = r"typeql read query{typeql_may_error}")]
-async fn typeql_read(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
+async fn typeql_read_query(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
     let parse_result = typeql::parse_query(step.docstring.as_ref().unwrap().as_str());
     if may_error.check_parsing(parse_result.as_ref()).is_some() {
         context.close_active_transaction();
@@ -208,7 +179,7 @@ async fn typeql_read(context: &mut Context, may_error: params::TypeQLMayError, s
 
 #[apply(generic_step)]
 #[step(expr = r"get answers of typeql read query")]
-async fn get_answers_of_typeql_read(context: &mut Context, step: &Step) {
+async fn get_answers_of_typeql_read_query(context: &mut Context, step: &Step) {
     let query = typeql::parse_query(step.docstring.as_ref().unwrap().as_str()).unwrap();
     context.answers = execute_read_query(context, query).unwrap();
 }
