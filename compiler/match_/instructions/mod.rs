@@ -16,9 +16,10 @@ use ir::pattern::{
 use itertools::Itertools;
 
 use crate::{
-    match_::{inference::type_annotations::TypeAnnotations, planner::pattern_plan::InstructionAPI},
+    {inference::type_annotations::TypeAnnotations},
     VariablePosition,
 };
+use crate::match_::planner::pattern_plan::InstructionAPI;
 
 pub mod thing;
 pub mod type_;

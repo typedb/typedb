@@ -7,7 +7,7 @@
 use std::{iter::zip, sync::Arc};
 
 use bytes::{byte_array::ByteArray, Bytes};
-use compiler::match_::inference::{
+use compiler::inference::{
     annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types_for_functions,
 };
 use concept::type_::type_manager::TypeManager;

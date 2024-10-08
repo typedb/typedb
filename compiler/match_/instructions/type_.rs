@@ -15,8 +15,8 @@ use ir::pattern::{
     IrID, Vertex,
 };
 
+use crate::inference::type_annotations::TypeAnnotations;
 use crate::match_::{
-    inference::type_annotations::TypeAnnotations,
     instructions::{CheckInstruction, Inputs},
 };
 

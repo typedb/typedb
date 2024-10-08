@@ -11,10 +11,10 @@ use std::{
 };
 
 use compiler::{
+    inference::{
+        annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+    },
     match_::{
-        inference::{
-            annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-        },
         instructions::{
             thing::{HasInstruction, HasReverseInstruction, IsaReverseInstruction},
             ConstraintInstruction, Inputs,
@@ -26,6 +26,7 @@ use compiler::{
     },
     VariablePosition,
 };
+use compiler::inference::match_inference::infer_types;
 use concept::{
     thing::object::ObjectAPI,
     type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
@@ -145,7 +146,7 @@ fn traverse_has_unbounded_sorted_from() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -154,7 +155,7 @@ fn traverse_has_unbounded_sorted_from() {
         annotated_schema_functions,
         Some(annotated_preamble_functions),
     )
-    .unwrap();
+        .unwrap();
     let vars = vec![var_person, var_age, var_age_type, var_person_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
@@ -230,7 +231,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -239,7 +240,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
         annotated_schema_functions,
         Some(annotated_preamble_functions),
     )
-    .unwrap();
+        .unwrap();
 
     let vars = vec![var_person_1, var_person_type, var_person_2, var_name, var_name_type];
     let variable_positions =
@@ -334,7 +335,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -343,7 +344,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
         annotated_schema_functions,
         Some(annotated_preamble_functions),
     )
-    .unwrap();
+        .unwrap();
 
     let vars = vec![var_person, var_name, var_age, var_person_type, var_name_type, var_age_type];
     let variable_positions =
@@ -414,7 +415,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -423,7 +424,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
         annotated_schema_functions,
         Some(annotated_preamble_functions),
     )
-    .unwrap();
+        .unwrap();
 
     let vars = vec![var_person, var_attribute, var_person_type];
     let variable_positions =
@@ -511,7 +512,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -520,7 +521,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
         annotated_schema_functions,
         Some(annotated_preamble_functions),
     )
-    .unwrap();
+        .unwrap();
 
     let vars = vec![var_person, var_age, var_person_type, var_age_type];
     let variable_positions =

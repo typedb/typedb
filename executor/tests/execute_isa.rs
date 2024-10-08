@@ -10,10 +10,10 @@ use std::{
 };
 
 use compiler::{
+    inference::{
+        annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+    },
     match_::{
-        inference::{
-            annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-        },
         instructions::{
             thing::{IsaInstruction, IsaReverseInstruction},
             ConstraintInstruction, Inputs,
@@ -25,6 +25,7 @@ use compiler::{
     },
     VariablePosition,
 };
+use compiler::inference::match_inference::infer_types;
 use encoding::value::label::Label;
 use executor::{
     error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
@@ -96,7 +97,7 @@ fn traverse_isa_unbounded_sorted_thing() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -169,7 +170,7 @@ fn traverse_isa_unbounded_sorted_type() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -245,7 +246,7 @@ fn traverse_isa_bounded_thing() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -334,7 +335,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -407,7 +408,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -483,7 +484,7 @@ fn traverse_isa_reverse_bounded_type_exact() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -574,7 +575,7 @@ fn traverse_isa_reverse_bounded_type_subtype() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -662,7 +663,7 @@ fn traverse_isa_reverse_fixed_type_exact() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -738,7 +739,7 @@ fn traverse_isa_reverse_fixed_type_subtype() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,

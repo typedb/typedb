@@ -27,8 +27,9 @@ use crate::{
         expression_compiler::ExpressionCompilationContext,
         ExpressionCompileError,
     },
-    match_::inference::{type_annotations::TypeAnnotations, type_inference::resolve_value_types, TypeInferenceError},
 };
+use crate::inference::type_annotations::TypeAnnotations;
+use crate::inference::type_inference::resolve_value_types;
 
 struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
     block: &'block Block,

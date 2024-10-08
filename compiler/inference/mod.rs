@@ -7,12 +7,13 @@
 use concept::error::ConceptReadError;
 use error::typedb_error;
 
-pub mod annotated_functions;
-pub mod annotated_program;
-pub mod pattern_type_inference;
+pub mod match_inference;
 pub mod type_annotations;
 pub mod type_inference;
-mod type_inference_intialiser;
+mod type_seeder;
+pub mod annotated_functions;
+pub mod annotated_program;
+
 
 typedb_error!(
     pub FunctionTypeInferenceError(component = "Function type inference", prefix = "FIN") {
@@ -89,10 +90,7 @@ pub mod tests {
     };
     use storage::{durability_client::WALClient, MVCCStorage};
     use test_utils::{create_tmp_dir, init_logging, TempDir};
-
-    use crate::match_::inference::pattern_type_inference::{
-        NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
-    };
+    use crate::inference::match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph};
 
     impl<'this> PartialEq<Self> for TypeInferenceEdge<'this> {
         fn eq(&self, other: &Self) -> bool {
@@ -200,7 +198,7 @@ pub mod tests {
                 thing_manager,
                 AttributeTypeAnnotation::Abstract(AnnotationAbstract),
             )
-            .unwrap();
+                .unwrap();
             catname.set_supertype(&mut snapshot, type_manager, thing_manager, name.clone()).unwrap();
             dogname.set_supertype(&mut snapshot, type_manager, thing_manager, name.clone()).unwrap();
 

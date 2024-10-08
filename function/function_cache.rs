@@ -6,11 +6,11 @@
 
 use std::{collections::HashMap, iter::zip, sync::Arc};
 
-use compiler::match_::inference::{
+use compiler::inference::{
     annotated_functions::{AnnotatedFunctions, IndexedAnnotatedFunctions},
     type_annotations::FunctionAnnotations,
-    type_inference::infer_types_for_functions,
 };
+use compiler::inference::type_inference::infer_types_for_functions;
 use concept::type_::type_manager::TypeManager;
 use encoding::graph::definition::definition_key::DefinitionKey;
 use ir::program::{

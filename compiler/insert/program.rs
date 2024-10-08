@@ -24,9 +24,9 @@ use crate::{
         instructions::{ConceptInstruction, ConnectionInstruction, Has, PutAttribute, PutObject, RolePlayer},
         ThingSource, TypeSource, ValueSource, VariableSource, WriteCompilationError,
     },
-    match_::inference::type_annotations::TypeAnnotations,
     VariablePosition,
 };
+use crate::inference::type_annotations::TypeAnnotations;
 
 pub struct InsertProgram {
     pub concept_instructions: Vec<ConceptInstruction>,

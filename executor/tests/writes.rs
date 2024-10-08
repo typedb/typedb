@@ -12,11 +12,12 @@ use std::{
 
 use answer::variable_value::VariableValue;
 use compiler::{
-    match_::inference::{
+    inference::{
         annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
     },
     VariablePosition,
 };
+use compiler::inference::match_inference::infer_types;
 use concept::{
     thing::{object::ObjectAPI, relation::Relation, thing_manager::ThingManager},
     type_::{object_type::ObjectType, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
@@ -148,14 +149,14 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let input_row_format = input_row_var_names
         .iter()
         .enumerate()
-        .map(|(i, v)| (*translation_context.visible_variables.get(*v).unwrap(), VariablePosition::new(i as u32)))
+        .map(|(i, v)| (translation_context.get_variable(*v).unwrap(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         &snapshot,
         &block,
         variable_registry,
@@ -232,7 +233,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
         let previous_stage_variable_annotations = &BTreeMap::new();
         let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
         let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-        infer_types_for_block(
+        infer_types(
             &snapshot,
             &block,
             variable_registry,
@@ -250,7 +251,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     let input_row_format = input_row_var_names
         .iter()
         .enumerate()
-        .map(|(i, v)| (*translation_context.visible_variables.get(*v).unwrap(), VariablePosition::new(i as u32)))
+        .map(|(i, v)| (translation_context.get_variable(*v).unwrap(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
     let delete_plan = compiler::delete::program::compile(

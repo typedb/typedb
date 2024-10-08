@@ -13,13 +13,14 @@ use answer::{variable::Variable, Type};
 use compiler::{
     expression::{block_compiler::compile_expressions, compiled_expression::CompiledExpression},
     insert::type_check::check_annotations,
-    match_::inference::{
+    inference::{
         annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         type_annotations::{ConstraintTypeAnnotations, TypeAnnotations},
         type_inference::{infer_types_for_functions, resolve_value_types},
     },
     reduce::ReduceInstruction,
 };
+use compiler::inference::match_inference::infer_types;
 use concept::type_::type_manager::TypeManager;
 use encoding::value::value_type::{
     ValueTypeCategory,
@@ -131,7 +132,7 @@ fn annotate_stage(
 ) -> Result<AnnotatedStage, QueryError> {
     match stage {
         TranslatedStage::Match { block } => {
-            let block_annotations = infer_types_for_block(
+            let block_annotations = infer_types(
                 snapshot,
                 &block,
                 variable_registry,
@@ -158,7 +159,7 @@ fn annotate_stage(
         TranslatedStage::Insert { block } => {
             let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
             let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-            let insert_annotations = infer_types_for_block(
+            let insert_annotations = infer_types(
                 snapshot,
                 &block,
                 variable_registry,
@@ -198,7 +199,7 @@ fn annotate_stage(
         TranslatedStage::Delete { block, deleted_variables } => {
             let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
             let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-            let delete_annotations = infer_types_for_block(
+            let delete_annotations = infer_types(
                 snapshot,
                 &block,
                 variable_registry,

@@ -11,10 +11,10 @@ use std::{
 };
 
 use compiler::{
+    inference::{
+        annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+    },
     match_::{
-        inference::{
-            annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-        },
         instructions::{
             thing::{IsaReverseInstruction, LinksInstruction, LinksReverseInstruction},
             ConstraintInstruction, Inputs,
@@ -26,6 +26,7 @@ use compiler::{
     },
     VariablePosition,
 };
+use compiler::inference::match_inference::infer_types;
 use concept::{
     thing::object::ObjectAPI,
     type_::{
@@ -222,7 +223,7 @@ fn traverse_links_unbounded_sorted_from() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -328,7 +329,7 @@ fn traverse_links_unbounded_sorted_to() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -424,7 +425,7 @@ fn traverse_links_bounded_relation() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -532,7 +533,7 @@ fn traverse_links_bounded_relation_player() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -647,7 +648,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         snapshot1,
         &entry,
         variable_registry,
@@ -739,7 +740,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         snapshot1,
         &entry,
         variable_registry,
@@ -831,7 +832,7 @@ fn traverse_links_reverse_bounded_player() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -938,7 +939,7 @@ fn traverse_links_reverse_bounded_player_relation() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,

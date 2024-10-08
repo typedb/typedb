@@ -27,8 +27,8 @@ use itertools::Itertools;
 
 use crate::{
     expression::compiled_expression::CompiledExpression,
+    inference::type_annotations::TypeAnnotations,
     match_::{
-        inference::type_annotations::TypeAnnotations,
         instructions::{
             thing::{
                 HasInstruction, HasReverseInstruction, IsaInstruction, IsaReverseInstruction, LinksInstruction,

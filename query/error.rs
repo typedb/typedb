@@ -7,7 +7,7 @@
 use compiler::{
     expression::ExpressionCompileError,
     insert::WriteCompilationError,
-    match_::inference::{FunctionTypeInferenceError, TypeInferenceError},
+    inference::{FunctionTypeInferenceError, TypeInferenceError},
 };
 use encoding::value::value_type::ValueTypeCategory;
 use error::typedb_error;

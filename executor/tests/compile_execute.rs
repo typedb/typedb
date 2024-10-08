@@ -9,10 +9,10 @@ use std::{
     sync::Arc,
 };
 
+use compiler::inference::{
+    annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+};
 use compiler::match_::{
-    inference::{
-        annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-    },
     planner::program_plan::ProgramPlan,
 };
 use concept::{
@@ -31,6 +31,7 @@ use ir::{
     translation::{match_::translate_match, TranslationContext},
 };
 use itertools::Itertools;
+use compiler::inference::match_inference::infer_types;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
 use storage::{
@@ -106,7 +107,7 @@ fn test_has_planning_traversal() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         snapshot1,
         &block,
         variable_registry,
@@ -115,7 +116,7 @@ fn test_has_planning_traversal() {
         annotated_schema_functions,
         Some(annotated_preamble_functions),
     )
-    .unwrap();
+        .unwrap();
 
     let pattern_plan = compiler::match_::planner::compile(
         &block,
@@ -185,7 +186,7 @@ fn test_links_planning_traversal() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         snapshot1,
         &block,
         variable_registry,
@@ -194,7 +195,7 @@ fn test_links_planning_traversal() {
         annotated_schema_functions,
         Some(annotated_preamble_functions),
     )
-    .unwrap();
+        .unwrap();
 
     let pattern_plan = compiler::match_::planner::compile(
         &block,
@@ -271,7 +272,7 @@ fn test_links_intersection() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         snapshot1,
         &block,
         variable_registry,
@@ -280,7 +281,7 @@ fn test_links_intersection() {
         annotated_schema_functions,
         Some(annotated_preamble_functions),
     )
-    .unwrap();
+        .unwrap();
 
     let pattern_plan = compiler::match_::planner::compile(
         &block,
@@ -349,7 +350,7 @@ fn test_negation_planning_traversal() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         snapshot1,
         &block,
         variable_registry,
@@ -358,7 +359,7 @@ fn test_negation_planning_traversal() {
         annotated_schema_functions,
         Some(annotated_preamble_functions),
     )
-    .unwrap();
+        .unwrap();
 
     let pattern_plan = compiler::match_::planner::compile(
         &block,
@@ -448,7 +449,7 @@ fn test_forall_planning_traversal() {
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
     let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-    let entry_annotations = infer_types_for_block(
+    let entry_annotations = infer_types(
         snapshot1,
         &block,
         variable_registry,
@@ -457,7 +458,7 @@ fn test_forall_planning_traversal() {
         annotated_schema_functions,
         Some(annotated_preamble_functions),
     )
-    .unwrap();
+        .unwrap();
 
     let pattern_plan = compiler::match_::planner::compile(
         &block,

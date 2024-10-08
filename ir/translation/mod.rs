@@ -56,7 +56,7 @@ impl TranslationContext {
         self.variable_registry.register_reduce_output_variable(name, variable_category, is_optional, reducer)
     }
 
-    pub(crate) fn get_variable(&self, variable: &str) -> Option<Variable> {
+    pub fn get_variable(&self, variable: &str) -> Option<Variable> {
         self.visible_variables.get(variable).cloned()
     }
 }

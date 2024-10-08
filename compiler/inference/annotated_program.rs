@@ -11,11 +11,9 @@ use ir::program::{block::Block, function::Function, function_signature::Function
 
 use crate::{
     expression::compiled_expression::CompiledExpression,
-    match_::inference::{
-        annotated_functions::{AnnotatedFunctions, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-        type_annotations::{FunctionAnnotations, TypeAnnotations},
-    },
 };
+use crate::inference::annotated_functions::{AnnotatedFunctions, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions};
+use crate::inference::type_annotations::{FunctionAnnotations, TypeAnnotations};
 
 pub struct AnnotatedProgram {
     pub(crate) entry: Block,
@@ -76,12 +74,11 @@ pub mod tests {
         translation::{function::translate_function, match_::translate_match, TranslationContext},
     };
     use typeql::query::Pipeline;
-
-    use crate::match_::inference::{
-        annotated_functions::{AnnotatedFunctions, IndexedAnnotatedFunctions},
-        tests::{managers, schema_consts::setup_types, setup_storage},
-        type_inference::infer_types_for_functions,
-    };
+    use crate::inference::annotated_functions::{AnnotatedFunctions, IndexedAnnotatedFunctions};
+    use crate::inference::match_inference::infer_types;
+    use crate::inference::tests::{managers, setup_storage};
+    use crate::inference::tests::schema_consts::setup_types;
+    use crate::inference::type_inference::infer_types_for_functions;
 
     #[test]
     fn from_typeql() {
@@ -119,14 +116,14 @@ pub mod tests {
         let function = translate_function(&snapshot, &function_index, &typeql_function).unwrap();
 
         let &var_f_c = function.variable_registry().variable_names().iter().find(|(_, v)| v.as_str() == "c").unwrap().0;
-        let var_x = *translation_context.visible_variables.get("x").unwrap();
+        let var_x = translation_context.get_variable("x").unwrap();
 
         let function_annotations =
             infer_types_for_functions(vec![function], &snapshot, &type_manager, &empty_cache).unwrap();
 
         let variable_registry = &translation_context.variable_registry;
         let previous_stage_variable_annotations = &BTreeMap::new();
-        let entry_annotations = infer_types_for_block(
+        let entry_annotations = infer_types(
             &snapshot,
             &entry,
             variable_registry,

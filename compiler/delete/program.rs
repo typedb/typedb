@@ -13,9 +13,9 @@ use ir::pattern::{constraint::Constraint, Vertex};
 use crate::{
     delete::instructions::{ConnectionInstruction, Has, RolePlayer, ThingInstruction},
     insert::{get_thing_source, program::collect_role_type_bindings, ThingSource, TypeSource, WriteCompilationError},
-    match_::inference::type_annotations::TypeAnnotations,
     VariablePosition,
 };
+use crate::inference::type_annotations::TypeAnnotations;
 
 pub struct DeleteProgram {
     pub concept_instructions: Vec<ThingInstruction>,

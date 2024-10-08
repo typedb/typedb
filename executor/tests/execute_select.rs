@@ -11,10 +11,10 @@ use std::{
 };
 
 use compiler::{
+    inference::{
+        annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+    },
     match_::{
-        inference::{
-            annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-        },
         instructions::{thing::HasInstruction, ConstraintInstruction, Inputs},
         planner::{
             pattern_plan::{IntersectionProgram, MatchProgram, Program},
@@ -23,6 +23,7 @@ use compiler::{
     },
     VariablePosition,
 };
+use compiler::inference::match_inference::infer_types;
 use concept::{
     thing::object::ObjectAPI,
     type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
@@ -171,7 +172,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
         let previous_stage_variable_annotations = &BTreeMap::new();
         let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
         let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-        infer_types_for_block(
+        infer_types(
             &snapshot,
             &entry,
             variable_registry,
@@ -257,7 +258,7 @@ fn unselected_named_vars_counted() {
         let previous_stage_variable_annotations = &BTreeMap::new();
         let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
         let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-        infer_types_for_block(
+        infer_types(
             &snapshot,
             &entry,
             variable_registry,
@@ -355,7 +356,7 @@ fn cartesian_named_counted_checked() {
         let previous_stage_variable_annotations = &BTreeMap::new();
         let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
         let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-        infer_types_for_block(
+        infer_types(
             &snapshot,
             &entry,
             variable_registry,

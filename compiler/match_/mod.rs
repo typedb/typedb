@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub mod inference;
 pub mod instructions;
 mod optimisation;
 pub mod planner;

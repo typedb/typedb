@@ -13,7 +13,8 @@ use answer::variable::Variable;
 use compiler::{
     delete::program::DeleteProgram,
     insert::program::InsertProgram,
-    match_::{inference::annotated_functions::AnnotatedUnindexedFunctions, planner::pattern_plan::MatchProgram},
+    inference::annotated_functions::AnnotatedUnindexedFunctions,
+    match_::planner::pattern_plan::MatchProgram,
     modifiers::{LimitProgram, OffsetProgram, RequireProgram, SelectProgram, SortProgram},
     reduce::{ReduceInstruction, ReduceProgram},
     VariablePosition,

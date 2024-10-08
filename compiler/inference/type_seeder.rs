@@ -33,17 +33,13 @@ use ir::{
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
+use crate::inference::annotated_functions::{AnnotatedFunctions, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions};
+use crate::inference::match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations};
+use crate::inference::type_annotations::FunctionAnnotations;
+use crate::inference::TypeInferenceError;
 
-use crate::match_::inference::{
-    annotated_functions::{AnnotatedFunctions, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-    pattern_type_inference::{
-        NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
-    },
-    type_annotations::FunctionAnnotations,
-    TypeInferenceError,
-};
 
-pub struct TypeInferenceContext<'this, Snapshot: ReadableSnapshot> {
+pub struct TypeGraphSeedingContext<'this, Snapshot: ReadableSnapshot> {
     snapshot: &'this Snapshot,
     type_manager: &'this TypeManager,
     schema_functions: &'this IndexedAnnotatedFunctions,
@@ -51,7 +47,7 @@ pub struct TypeInferenceContext<'this, Snapshot: ReadableSnapshot> {
     variable_registry: &'this VariableRegistry,
 }
 
-impl<'this, Snapshot: ReadableSnapshot> TypeInferenceContext<'this, Snapshot> {
+impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot> {
     pub(crate) fn new(
         snapshot: &'this Snapshot,
         type_manager: &'this TypeManager,
@@ -59,7 +55,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeInferenceContext<'this, Snapshot> {
         local_functions: Option<&'this AnnotatedUnindexedFunctions>,
         variable_registry: &'this VariableRegistry,
     ) -> Self {
-        TypeInferenceContext { snapshot, type_manager, schema_functions, local_functions, variable_registry }
+        TypeGraphSeedingContext { snapshot, type_manager, schema_functions, local_functions, variable_registry }
     }
 
     fn get_function_annotations(&self, function_id: FunctionID) -> Option<&FunctionAnnotations> {
@@ -82,7 +78,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeInferenceContext<'this, Snapshot> {
         }
     }
 
-    pub(crate) fn initialise_graph<'graph>(
+    pub(crate) fn create_graph<'graph>(
         &self,
         context: &BlockContext,
         upstream_annotations: &BTreeMap<Variable, Arc<BTreeSet<TypeAnnotation>>>,
@@ -524,7 +520,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeInferenceContext<'this, Snapshot> {
 trait UnaryConstraint {
     fn apply<Snapshot: ReadableSnapshot>(
         &self,
-        seeder: &TypeInferenceContext<'_, Snapshot>,
+        seeder: &TypeGraphSeedingContext<'_, Snapshot>,
         graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError>;
 }
@@ -550,7 +546,7 @@ pub(crate) fn get_type_annotation_from_label<Snapshot: ReadableSnapshot>(
 impl UnaryConstraint for Kind<Variable> {
     fn apply<Snapshot: ReadableSnapshot>(
         &self,
-        seeder: &TypeInferenceContext<'_, Snapshot>,
+        seeder: &TypeGraphSeedingContext<'_, Snapshot>,
         graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
         let type_manager = &seeder.type_manager;
@@ -588,7 +584,7 @@ impl UnaryConstraint for Kind<Variable> {
 impl UnaryConstraint for Label<Variable> {
     fn apply<Snapshot: ReadableSnapshot>(
         &self,
-        seeder: &TypeInferenceContext<'_, Snapshot>,
+        seeder: &TypeGraphSeedingContext<'_, Snapshot>,
         graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
         let annotation_opt = get_type_annotation_from_label(
@@ -609,7 +605,7 @@ impl UnaryConstraint for Label<Variable> {
 impl UnaryConstraint for RoleName<Variable> {
     fn apply<Snapshot: ReadableSnapshot>(
         &self,
-        seeder: &TypeInferenceContext<'_, Snapshot>,
+        seeder: &TypeGraphSeedingContext<'_, Snapshot>,
         graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
         let role_types_opt = seeder
@@ -636,7 +632,7 @@ impl UnaryConstraint for RoleName<Variable> {
 impl UnaryConstraint for FunctionCallBinding<Variable> {
     fn apply<Snapshot: ReadableSnapshot>(
         &self,
-        seeder: &TypeInferenceContext<'_, Snapshot>,
+        seeder: &TypeGraphSeedingContext<'_, Snapshot>,
         graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
         if let Some(callee_annotations) = seeder.get_function_annotations(self.function_call().function_id()) {
@@ -663,7 +659,7 @@ trait BinaryConstraint {
 
     fn annotate_left_to_right(
         &self,
-        seeder: &TypeInferenceContext<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_types: &BTreeSet<TypeAnnotation>,
     ) -> Result<BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>, ConceptReadError> {
         let mut left_to_right = BTreeMap::new();
@@ -677,7 +673,7 @@ trait BinaryConstraint {
 
     fn annotate_right_to_left(
         &self,
-        seeder: &TypeInferenceContext<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_types: &BTreeSet<TypeAnnotation>,
     ) -> Result<BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>, ConceptReadError> {
         let mut right_to_left = BTreeMap::new();
@@ -691,14 +687,14 @@ trait BinaryConstraint {
 
     fn annotate_left_to_right_for_type(
         &self,
-        seeder: &TypeInferenceContext<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError>;
 
     fn annotate_right_to_left_for_type(
         &self,
-        seeder: &TypeInferenceContext<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError>;
@@ -716,7 +712,7 @@ impl BinaryConstraint for Has<Variable> {
 
     fn annotate_left_to_right_for_type(
         &self,
-        seeder: &TypeInferenceContext<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -736,7 +732,7 @@ impl BinaryConstraint for Has<Variable> {
 
     fn annotate_right_to_left_for_type(
         &self,
-        seeder: &TypeInferenceContext<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -765,7 +761,7 @@ impl BinaryConstraint for Owns<Variable> {
 
     fn annotate_left_to_right_for_type(
         &self,
-        seeder: &TypeInferenceContext<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -788,7 +784,7 @@ impl BinaryConstraint for Owns<Variable> {
 
     fn annotate_right_to_left_for_type(
         &self,
-        seeder: &TypeInferenceContext<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -823,7 +819,7 @@ impl BinaryConstraint for Isa<Variable> {
 
     fn annotate_left_to_right_for_type(
         &self,
-        seeder: &TypeInferenceContext<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -865,7 +861,7 @@ impl BinaryConstraint for Isa<Variable> {
 
     fn annotate_right_to_left_for_type(
         &self,
-        seeder: &TypeInferenceContext<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -917,7 +913,7 @@ impl BinaryConstraint for Sub<Variable> {
 
     fn annotate_left_to_right_for_type(
         &self,
-        seeder: &TypeInferenceContext<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -990,7 +986,7 @@ impl BinaryConstraint for Sub<Variable> {
 
     fn annotate_right_to_left_for_type(
         &self,
-        seeder: &TypeInferenceContext<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -1090,7 +1086,7 @@ impl BinaryConstraint for Comparison<Variable> {
 
     fn annotate_left_to_right_for_type(
         &self,
-        seeder: &TypeInferenceContext<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -1117,7 +1113,7 @@ impl BinaryConstraint for Comparison<Variable> {
 
     fn annotate_right_to_left_for_type(
         &self,
-        seeder: &TypeInferenceContext<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -1162,7 +1158,7 @@ impl<'graph> BinaryConstraint for PlayerRoleEdge<'graph> {
 
     fn annotate_left_to_right_for_type(
         &self,
-        seeder: &TypeInferenceContext<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -1185,7 +1181,7 @@ impl<'graph> BinaryConstraint for PlayerRoleEdge<'graph> {
 
     fn annotate_right_to_left_for_type(
         &self,
-        seeder: &TypeInferenceContext<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -1220,7 +1216,7 @@ impl BinaryConstraint for Plays<Variable> {
 
     fn annotate_left_to_right_for_type(
         &self,
-        seeder: &TypeInferenceContext<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -1243,7 +1239,7 @@ impl BinaryConstraint for Plays<Variable> {
 
     fn annotate_right_to_left_for_type(
         &self,
-        seeder: &TypeInferenceContext<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -1278,7 +1274,7 @@ impl<'graph> BinaryConstraint for RelationRoleEdge<'graph> {
 
     fn annotate_left_to_right_for_type(
         &self,
-        seeder: &TypeInferenceContext<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -1300,7 +1296,7 @@ impl<'graph> BinaryConstraint for RelationRoleEdge<'graph> {
 
     fn annotate_right_to_left_for_type(
         &self,
-        seeder: &TypeInferenceContext<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -1332,7 +1328,7 @@ impl BinaryConstraint for Relates<Variable> {
 
     fn annotate_left_to_right_for_type(
         &self,
-        seeder: &TypeInferenceContext<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -1354,7 +1350,7 @@ impl BinaryConstraint for Relates<Variable> {
 
     fn annotate_right_to_left_for_type(
         &self,
-        seeder: &TypeInferenceContext<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -1387,17 +1383,13 @@ pub mod tests {
         translation::TranslationContext,
     };
     use storage::snapshot::CommittableSnapshot;
+    use crate::inference::annotated_functions::IndexedAnnotatedFunctions;
+    use crate::inference::match_inference::{TypeInferenceGraph, VertexAnnotations};
+    use crate::inference::tests::schema_consts::{LABEL_CAT, LABEL_NAME, setup_types};
+    use crate::inference::tests::{managers, setup_storage};
+    use crate::inference::type_inference::tests::expected_edge;
+    use crate::inference::type_seeder::TypeGraphSeedingContext;
 
-    use crate::match_::inference::{
-        annotated_functions::IndexedAnnotatedFunctions,
-        pattern_type_inference::{tests::expected_edge, TypeInferenceGraph, VertexAnnotations},
-        tests::{
-            managers,
-            schema_consts::{setup_types, LABEL_CAT, LABEL_NAME},
-            setup_storage,
-        },
-        type_inference_intialiser::TypeInferenceContext,
-    };
 
     #[test]
     fn test_has() {
@@ -1470,14 +1462,14 @@ pub mod tests {
 
         let snapshot = storage.clone().open_snapshot_write();
         let empty_function_cache = IndexedAnnotatedFunctions::empty();
-        let seeder = TypeInferenceContext::new(
+        let seeder = TypeGraphSeedingContext::new(
             &snapshot,
             &type_manager,
             &empty_function_cache,
             None,
             &translation_context.variable_registry,
         );
-        let graph = seeder.initialise_graph(block.scope_context(), &BTreeMap::new(), conjunction).unwrap();
+        let graph = seeder.create_graph(block.scope_context(), &BTreeMap::new(), conjunction).unwrap();
         assert_eq!(expected_graph, graph);
     }
 
@@ -1530,14 +1522,14 @@ pub mod tests {
 
         let snapshot = storage.clone().open_snapshot_write();
         let empty_function_cache = IndexedAnnotatedFunctions::empty();
-        let seeder = TypeInferenceContext::new(
+        let seeder = TypeGraphSeedingContext::new(
             &snapshot,
             &type_manager,
             &empty_function_cache,
             None,
             &translation_context.variable_registry,
         );
-        let graph = seeder.initialise_graph(block.scope_context(), &BTreeMap::new(), conjunction).unwrap();
+        let graph = seeder.create_graph(block.scope_context(), &BTreeMap::new(), conjunction).unwrap();
         if expected_graph != graph {
             // We need this because of non-determinism
             expected_graph.vertices.get_mut(&var_animal.into()).unwrap().insert(type_fears.clone());
@@ -1604,14 +1596,14 @@ pub mod tests {
 
             let snapshot = storage.clone().open_snapshot_write();
             let empty_function_cache = IndexedAnnotatedFunctions::empty();
-            let seeder = TypeInferenceContext::new(
+            let seeder = TypeGraphSeedingContext::new(
                 &snapshot,
                 &type_manager,
                 &empty_function_cache,
                 None,
                 &translation_context.variable_registry,
             );
-            let graph = seeder.initialise_graph(block.scope_context(), &BTreeMap::new(), conjunction).unwrap();
+            let graph = seeder.create_graph(block.scope_context(), &BTreeMap::new(), conjunction).unwrap();
             assert_eq!(expected_graph.vertices, graph.vertices);
             assert_eq!(expected_graph, graph);
         }

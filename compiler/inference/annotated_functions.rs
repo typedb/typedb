@@ -6,8 +6,8 @@
 
 use encoding::graph::definition::definition_key::DefinitionKey;
 use ir::program::{function::Function, function_signature::FunctionIDAPI};
+use crate::inference::type_annotations::FunctionAnnotations;
 
-use crate::match_::inference::type_annotations::FunctionAnnotations;
 
 /// Indexed by Function ID
 #[derive(Debug)]
