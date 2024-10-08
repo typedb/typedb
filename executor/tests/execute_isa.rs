@@ -10,7 +10,7 @@ use std::{
 };
 
 use compiler::{
-    inference::{
+    annotation::{
         annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
     },
     match_::{
@@ -25,7 +25,7 @@ use compiler::{
     },
     VariablePosition,
 };
-use compiler::inference::match_inference::infer_types;
+use compiler::annotation::match_inference::infer_types;
 use encoding::value::label::Label;
 use executor::{
     error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,

@@ -13,7 +13,7 @@ rust_library(
         "*.rs",
         "match_/**/*.rs",
         "fetch/**/*.rs",
-        "inference/**/*.rs",
+        "annotation/**/*.rs",
         "insert/**/*.rs",
         "delete/**/*.rs",
         "expression/**/*.rs",

@@ -26,9 +26,9 @@ use ir::{
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
+use compiler::annotation::pipeline::{AnnotatedPipeline, infer_types_for_pipeline};
 
 use crate::{
-    annotation::{infer_types_for_pipeline, AnnotatedPipeline},
     compilation::{compile_pipeline, CompiledPipeline, CompiledStage},
     define,
     error::QueryError,
@@ -85,7 +85,7 @@ impl QueryManager {
             &value_parameters,
             translated_preamble,
             translated_stages,
-        )?;
+        ).map_err(|err| QueryError::Annotation { typedb_source: err })?;
 
         // 3: Compile
         let variable_registry = Arc::new(variable_registry);
@@ -184,7 +184,7 @@ impl QueryManager {
 
         let AnnotatedPipeline { annotated_preamble, annotated_stages } = match annotated_pipeline {
             Ok(annotated_pipeline) => annotated_pipeline,
-            Err(err) => return Err((snapshot, err)),
+            Err(err) => return Err((snapshot, QueryError::Annotation { typedb_source: err })),
         };
 
         // // 3: Compile

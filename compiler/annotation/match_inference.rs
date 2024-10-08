@@ -19,10 +19,10 @@ use ir::{
 };
 use itertools::chain;
 use storage::snapshot::ReadableSnapshot;
-use crate::inference::annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions};
-use crate::inference::type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations, TypeAnnotations};
-use crate::inference::type_seeder::TypeGraphSeedingContext;
-use crate::inference::TypeInferenceError;
+use crate::annotation::annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions};
+use crate::annotation::type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations, TypeAnnotations};
+use crate::annotation::type_seeder::TypeGraphSeedingContext;
+use crate::annotation::TypeInferenceError;
 
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]

@@ -31,7 +31,7 @@ use itertools::Itertools;
 
 use crate::{
     expression::compiled_expression::CompiledExpression,
-    inference::type_annotations::TypeAnnotations,
+    annotation::type_annotations::TypeAnnotations,
     match_::{
         instructions::{CheckInstruction, ConstraintInstruction},
         planner::{

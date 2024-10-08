@@ -7,8 +7,9 @@
 use compiler::{
     expression::ExpressionCompileError,
     insert::WriteCompilationError,
-    inference::{FunctionTypeInferenceError, TypeInferenceError},
+    annotation::{FunctionTypeInferenceError, TypeInferenceError},
 };
+use compiler::annotation::AnnotationError;
 use encoding::value::value_type::ValueTypeCategory;
 use error::typedb_error;
 use executor::pipeline::PipelineExecutionError;
@@ -27,16 +28,11 @@ typedb_error!(
         FunctionDefinition(5, "Error in provided function. ", ( typedb_source: FunctionRepresentationError )),
         FunctionRetrieval(6, "Failed to retrieve function. ",  ( typedb_source: FunctionError )),
         Representation(7, "Error in provided query. ", ( typedb_source: RepresentationError )),
-        QueryTypeInference(8, "Error during query type inference. ", ( typedb_source: TypeInferenceError )),
-        FunctionTypeInference(9, "Error during function type inference. ", ( typedb_source: FunctionTypeInferenceError )),
+        Annotation(8, "Error in provided query. ", ( typedb_source: AnnotationError )),
         WriteCompilation(10, "Error while compiling write query.", ( source: WriteCompilationError )),
         ExpressionCompilation(11, "Error while compiling expression.", ( source: ExpressionCompileError )),
         WritePipelineExecutionError(12, "Error while execution write pipeline.", ( typedb_source: PipelineExecutionError )),
         ReadPipelineExecutionError(13, "Error while executing read pipeline.", ( typedb_source: PipelineExecutionError )),
         QueryExecutionClosedEarly(14, "Query execution was closed before it finished, possibly due to transaction close, rollback, commit, or a server-side error (these should be visible in the server logs)."),
-        CouldNotDetermineValueTypeForReducerInput(15, "The value-type for the reducer input variable '{variable}' could not be determined.", variable: String),
-        ReducerInputVariableDidNotHaveSingleValueType(16, "The reducer input variable '{variable}' had multiple value-types.", variable: String),
-        UnsupportedValueTypeForReducer(17, "The input variable to the reducer'{reducer}({variable})' reducer had an unsupported value-type: '{value_type}'", reducer: String, variable: String, value_type: ValueTypeCategory),
-        UncomparableValueTypesForSortVariable(18, "The sort variable '{variable}' could return uncomparable value-types '{category1}' & '{category2}'.", variable: String, category1: ValueTypeCategory, category2: ValueTypeCategory),
     }
 );

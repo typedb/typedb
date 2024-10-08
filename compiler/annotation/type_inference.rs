@@ -14,9 +14,9 @@ use encoding::value::value_type::ValueType;
 use ir::program::function::Function;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::inference::{FunctionTypeInferenceError, TypeInferenceError};
-use crate::inference::annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions};
-use crate::inference::type_annotations::FunctionAnnotations;
+use crate::annotation::{FunctionTypeInferenceError, TypeInferenceError};
+use crate::annotation::annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions};
+use crate::annotation::type_annotations::FunctionAnnotations;
 
 pub fn infer_types_for_functions(
     functions: Vec<Function>,
@@ -148,15 +148,15 @@ pub mod tests {
     use ir::pattern::constraint::SubKind;
     use ir::program::function::FunctionBody;
     use test_utils::assert_matches;
-    use crate::inference::annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions};
+    use crate::annotation::annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions};
 
-    use crate::inference::match_inference::{compute_type_inference_graph, infer_types, NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations};
-    use crate::inference::tests::{managers, setup_storage};
-    use crate::inference::tests::schema_consts::{LABEL_ANIMAL, LABEL_CAT, LABEL_CATNAME, LABEL_DOG, LABEL_DOGNAME, LABEL_FEARS, LABEL_NAME, setup_types};
-    use crate::inference::type_inference::infer_types_for_function;
-    use crate::inference::type_seeder::TypeGraphSeedingContext;
-    use crate::inference::type_annotations::{ConstraintTypeAnnotations, LeftRightFilteredAnnotations, TypeAnnotations};
-    use crate::inference::TypeInferenceError;
+    use crate::annotation::match_inference::{compute_type_inference_graph, infer_types, NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations};
+    use crate::annotation::tests::{managers, setup_storage};
+    use crate::annotation::tests::schema_consts::{LABEL_ANIMAL, LABEL_CAT, LABEL_CATNAME, LABEL_DOG, LABEL_DOGNAME, LABEL_FEARS, LABEL_NAME, setup_types};
+    use crate::annotation::type_inference::infer_types_for_function;
+    use crate::annotation::type_seeder::TypeGraphSeedingContext;
+    use crate::annotation::type_annotations::{ConstraintTypeAnnotations, LeftRightFilteredAnnotations, TypeAnnotations};
+    use crate::annotation::TypeInferenceError;
 
     #[test]
     fn test_translation() {
@@ -1231,7 +1231,7 @@ pub mod tests {
             )
                 .create_graph(block.scope_context(), &BTreeMap::new(), block.conjunction())
                 .unwrap();
-            crate::inference::match_inference::prune_types(&mut graph);
+            crate::annotation::match_inference::prune_types(&mut graph);
 
             let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),

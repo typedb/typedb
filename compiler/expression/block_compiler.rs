@@ -28,8 +28,8 @@ use crate::{
         ExpressionCompileError,
     },
 };
-use crate::inference::type_annotations::TypeAnnotations;
-use crate::inference::type_inference::resolve_value_types;
+use crate::annotation::type_annotations::TypeAnnotations;
+use crate::annotation::type_inference::resolve_value_types;
 
 struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
     block: &'block Block,

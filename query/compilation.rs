@@ -13,16 +13,17 @@ use answer::variable::Variable;
 use compiler::{
     delete::program::DeleteProgram,
     insert::program::InsertProgram,
-    inference::annotated_functions::AnnotatedUnindexedFunctions,
+    annotation::annotated_functions::AnnotatedUnindexedFunctions,
     match_::planner::pattern_plan::MatchProgram,
     modifiers::{LimitProgram, OffsetProgram, RequireProgram, SelectProgram, SortProgram},
     reduce::{ReduceInstruction, ReduceProgram},
     VariablePosition,
 };
+use compiler::annotation::pipeline::AnnotatedStage;
 use concept::thing::statistics::Statistics;
 use ir::program::{function::Function, VariableRegistry};
 
-use crate::{annotation::AnnotatedStage, error::QueryError};
+use crate::{error::QueryError};
 
 pub struct CompiledPipeline {
     pub(super) compiled_functions: Vec<CompiledFunction>,

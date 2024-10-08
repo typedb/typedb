@@ -17,7 +17,7 @@ use ir::{
 };
 use storage::snapshot::ReadableSnapshot;
 
-use crate::inference::{
+use crate::annotation::{
     type_annotations::{
         ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations, TypeAnnotations,
     },

@@ -26,7 +26,7 @@ use crate::{
     },
     VariablePosition,
 };
-use crate::inference::type_annotations::TypeAnnotations;
+use crate::annotation::type_annotations::TypeAnnotations;
 
 pub struct InsertProgram {
     pub concept_instructions: Vec<ConceptInstruction>,

@@ -16,7 +16,7 @@ use ir::pattern::{
 use itertools::Itertools;
 
 use crate::{
-    {inference::type_annotations::TypeAnnotations},
+    annotation::type_annotations::TypeAnnotations,
     VariablePosition,
 };
 use crate::match_::planner::pattern_plan::InstructionAPI;

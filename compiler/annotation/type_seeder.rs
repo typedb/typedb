@@ -33,10 +33,10 @@ use ir::{
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
-use crate::inference::annotated_functions::{AnnotatedFunctions, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions};
-use crate::inference::match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations};
-use crate::inference::type_annotations::FunctionAnnotations;
-use crate::inference::TypeInferenceError;
+use crate::annotation::annotated_functions::{AnnotatedFunctions, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions};
+use crate::annotation::match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations};
+use crate::annotation::type_annotations::FunctionAnnotations;
+use crate::annotation::TypeInferenceError;
 
 
 pub struct TypeGraphSeedingContext<'this, Snapshot: ReadableSnapshot> {
@@ -1383,12 +1383,12 @@ pub mod tests {
         translation::TranslationContext,
     };
     use storage::snapshot::CommittableSnapshot;
-    use crate::inference::annotated_functions::IndexedAnnotatedFunctions;
-    use crate::inference::match_inference::{TypeInferenceGraph, VertexAnnotations};
-    use crate::inference::tests::schema_consts::{LABEL_CAT, LABEL_NAME, setup_types};
-    use crate::inference::tests::{managers, setup_storage};
-    use crate::inference::type_inference::tests::expected_edge;
-    use crate::inference::type_seeder::TypeGraphSeedingContext;
+    use crate::annotation::annotated_functions::IndexedAnnotatedFunctions;
+    use crate::annotation::match_inference::{TypeInferenceGraph, VertexAnnotations};
+    use crate::annotation::tests::schema_consts::{LABEL_CAT, LABEL_NAME, setup_types};
+    use crate::annotation::tests::{managers, setup_storage};
+    use crate::annotation::type_inference::tests::expected_edge;
+    use crate::annotation::type_seeder::TypeGraphSeedingContext;
 
 
     #[test]

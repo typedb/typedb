@@ -18,7 +18,7 @@ pub mod insert;
 pub mod match_;
 pub mod modifiers;
 pub mod reduce;
-pub mod inference;
+pub mod annotation;
 
 macro_rules! filter_variants {
     ($variant:path : $iterable:expr) => {

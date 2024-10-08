@@ -11,7 +11,7 @@ use std::{
 };
 
 use compiler::{
-    inference::{
+    annotation::{
         annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
     },
     match_::{
@@ -26,7 +26,7 @@ use compiler::{
     },
     VariablePosition,
 };
-use compiler::inference::match_inference::infer_types;
+use compiler::annotation::match_inference::infer_types;
 use concept::{
     thing::object::ObjectAPI,
     type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},

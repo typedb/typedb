@@ -15,7 +15,7 @@ use crate::{
     insert::{get_thing_source, program::collect_role_type_bindings, ThingSource, TypeSource, WriteCompilationError},
     VariablePosition,
 };
-use crate::inference::type_annotations::TypeAnnotations;
+use crate::annotation::type_annotations::TypeAnnotations;
 
 pub struct DeleteProgram {
     pub concept_instructions: Vec<ThingInstruction>,

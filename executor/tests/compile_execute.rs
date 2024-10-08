@@ -9,7 +9,7 @@ use std::{
     sync::Arc,
 };
 
-use compiler::inference::{
+use compiler::annotation::{
     annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
 };
 use compiler::match_::{
@@ -31,7 +31,7 @@ use ir::{
     translation::{match_::translate_match, TranslationContext},
 };
 use itertools::Itertools;
-use compiler::inference::match_inference::infer_types;
+use compiler::annotation::match_inference::infer_types;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
 use storage::{

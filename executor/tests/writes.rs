@@ -12,12 +12,12 @@ use std::{
 
 use answer::variable_value::VariableValue;
 use compiler::{
-    inference::{
+    annotation::{
         annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
     },
     VariablePosition,
 };
-use compiler::inference::match_inference::infer_types;
+use compiler::annotation::match_inference::infer_types;
 use concept::{
     thing::{object::ObjectAPI, relation::Relation, thing_manager::ThingManager},
     type_::{object_type::ObjectType, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
