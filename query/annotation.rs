@@ -16,7 +16,7 @@ use compiler::{
     match_::inference::{
         annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         type_annotations::{ConstraintTypeAnnotations, TypeAnnotations},
-        type_inference::{infer_types_for_functions, infer_types_for_match_block, resolve_value_types},
+        type_inference::{infer_types_for_functions, resolve_value_types},
     },
     reduce::ReduceInstruction,
 };
@@ -131,14 +131,14 @@ fn annotate_stage(
 ) -> Result<AnnotatedStage, QueryError> {
     match stage {
         TranslatedStage::Match { block } => {
-            let block_annotations = infer_types_for_match_block(
+            let block_annotations = infer_types_for_block(
+                snapshot,
                 &block,
                 variable_registry,
-                snapshot,
                 type_manager,
                 running_variable_annotations,
                 schema_function_annotations,
-                preamble_function_annotations,
+                Some(preamble_function_annotations),
             )
             .map_err(|source| QueryError::QueryTypeInference { typedb_source: source })?;
             block_annotations.vertex_annotations().iter().for_each(|(vertex, types)| {
@@ -156,14 +156,16 @@ fn annotate_stage(
         }
 
         TranslatedStage::Insert { block } => {
-            let insert_annotations = infer_types_for_match_block(
+            let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+            let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+            let insert_annotations = infer_types_for_block(
+                snapshot,
                 &block,
                 variable_registry,
-                snapshot,
                 type_manager,
                 running_variable_annotations,
-                &IndexedAnnotatedFunctions::empty(),
-                &AnnotatedUnindexedFunctions::empty(),
+                annotated_schema_functions,
+                Some(annotated_preamble_functions),
             )
             .map_err(|source| QueryError::QueryTypeInference { typedb_source: source })?;
             block.conjunction().constraints().iter().for_each(|constraint| match constraint {
@@ -194,14 +196,16 @@ fn annotate_stage(
         }
 
         TranslatedStage::Delete { block, deleted_variables } => {
-            let delete_annotations = infer_types_for_match_block(
+            let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+            let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+            let delete_annotations = infer_types_for_block(
+                snapshot,
                 &block,
                 variable_registry,
-                snapshot,
                 type_manager,
                 running_variable_annotations,
-                &IndexedAnnotatedFunctions::empty(),
-                &AnnotatedUnindexedFunctions::empty(),
+                annotated_schema_functions,
+                Some(annotated_preamble_functions),
             )
             .map_err(|source| QueryError::QueryTypeInference { typedb_source: source })?;
             deleted_variables.iter().for_each(|v| {

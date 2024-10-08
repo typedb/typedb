@@ -14,7 +14,6 @@ use compiler::{
     match_::{
         inference::{
             annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-            type_inference::infer_types_for_match_block,
         },
         instructions::{thing::HasInstruction, ConstraintInstruction, Inputs},
         planner::{
@@ -168,14 +167,18 @@ fn anonymous_vars_not_enumerated_or_counted() {
     let entry_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone(), None);
-        infer_types_for_match_block(
-            &entry,
-            &translation_context.variable_registry,
+        let variable_registry = &translation_context.variable_registry;
+        let previous_stage_variable_annotations = &BTreeMap::new();
+        let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+        let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+        infer_types_for_block(
             &snapshot,
+            &entry,
+            variable_registry,
             &type_manager,
-            &BTreeMap::new(),
-            &IndexedAnnotatedFunctions::empty(),
-            &AnnotatedUnindexedFunctions::empty(),
+            previous_stage_variable_annotations,
+            annotated_schema_functions,
+            Some(annotated_preamble_functions),
         )
         .unwrap()
     };
@@ -250,14 +253,18 @@ fn unselected_named_vars_counted() {
     let entry_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone(), None);
-        infer_types_for_match_block(
-            &entry,
-            &translation_context.variable_registry,
+        let variable_registry = &translation_context.variable_registry;
+        let previous_stage_variable_annotations = &BTreeMap::new();
+        let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+        let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+        infer_types_for_block(
             &snapshot,
+            &entry,
+            variable_registry,
             &type_manager,
-            &BTreeMap::new(),
-            &IndexedAnnotatedFunctions::empty(),
-            &AnnotatedUnindexedFunctions::empty(),
+            previous_stage_variable_annotations,
+            annotated_schema_functions,
+            Some(annotated_preamble_functions),
         )
         .unwrap()
     };
@@ -344,14 +351,18 @@ fn cartesian_named_counted_checked() {
     let entry_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone(), None);
-        infer_types_for_match_block(
-            &entry,
-            &translation_context.variable_registry,
+        let variable_registry = &translation_context.variable_registry;
+        let previous_stage_variable_annotations = &BTreeMap::new();
+        let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+        let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+        infer_types_for_block(
             &snapshot,
+            &entry,
+            variable_registry,
             &type_manager,
-            &BTreeMap::new(),
-            &IndexedAnnotatedFunctions::empty(),
-            &AnnotatedUnindexedFunctions::empty(),
+            previous_stage_variable_annotations,
+            annotated_schema_functions,
+            Some(annotated_preamble_functions),
         )
         .unwrap()
     };

@@ -54,7 +54,7 @@ pub fn infer_types_for_functions(
         })
         .collect::<Result<Vec<FunctionAnnotations>, FunctionTypeInferenceError>>()?;
 
-    // TODO: ^Optimise. There's no reason to do all of type inference again. We can re-use the tigs, and restart at the source of any SCC.
+    // TODO: ^Optimise. There's no reason to do all of type inference again. We can re-use the graphs, and restart at the source of any SCC.
     // TODO: We don't propagate annotations until convergence, so we don't always detect unsatisfiable queries
     // Further, In a chain of three functions where the first two bodies have no function calls
     // but rely on the third function to infer annotations, the annotations will not reach the first function.
@@ -70,7 +70,7 @@ pub fn infer_types_for_function(
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
     local_functions: Option<&AnnotatedUnindexedFunctions>,
 ) -> Result<FunctionAnnotations, FunctionTypeInferenceError> {
-    // let root_tig = infer_types_for_block(
+    // let root_graph = infer_types_for_block(
     //     snapshot,
     //     function.block(),
     //     function.variable_registry(),
@@ -83,36 +83,10 @@ pub fn infer_types_for_function(
     //     name: function.name().to_string(),
     //     typedb_source: err,
     // })?;
-    // let body_annotations = TypeAnnotations::build(root_tig);
+    // let body_annotations = TypeAnnotations::build(root_graph);
     // let return_types = function.return_operation().return_types(body_annotations.vertex_annotations());
     // Ok(FunctionAnnotations { return_annotations: return_types, block_annotations: body_annotations })
     todo!("We need to allow a function to contain an entire pipeline, instead of just a match block")
-}
-
-pub fn infer_types_for_match_block(
-    match_block: &Block,
-    variable_registry: &VariableRegistry,
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    previous_stage_variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
-    annotated_schema_functions: &IndexedAnnotatedFunctions,
-    annotated_preamble_functions: &AnnotatedUnindexedFunctions,
-) -> Result<TypeAnnotations, TypeInferenceError> {
-    let root_tig = infer_types_for_block(
-        snapshot,
-        match_block,
-        variable_registry,
-        type_manager,
-        previous_stage_variable_annotations,
-        annotated_schema_functions,
-        Some(annotated_preamble_functions),
-    )?;
-    let type_annotations = TypeAnnotations::build(root_tig);
-    debug_assert!(match_block
-        .scope_context()
-        .referenced_variables() // FIXME vertices?
-        .all(|var| type_annotations.vertex_annotations_of(&Vertex::Variable(var)).is_some()));
-    Ok(type_annotations)
 }
 
 pub fn resolve_value_types(
@@ -192,7 +166,7 @@ pub mod tests {
             setup_storage,
         },
         type_annotations::{ConstraintTypeAnnotations, LeftRightFilteredAnnotations},
-        type_inference::{infer_types_for_function, infer_types_for_match_block, TypeAnnotations},
+        type_inference::{infer_types_for_function, TypeAnnotations},
     };
 
     #[test]
@@ -261,7 +235,7 @@ pub mod tests {
             nested_negations: vec![],
             nested_optionals: vec![],
         };
-        let tig = TypeInferenceGraph {
+        let graph = TypeInferenceGraph {
             conjunction: dummy.conjunction(),
             vertices: VertexAnnotations::from([
                 (var_relation.into(), BTreeSet::from([type_rel_0.clone(), type_rel_1.clone()])),
@@ -277,7 +251,7 @@ pub mod tests {
             nested_negations: vec![],
             nested_optionals: vec![],
         };
-        let type_annotations = TypeAnnotations::build(tig);
+        let type_annotations = TypeAnnotations::build(graph);
 
         let lra1 = LeftRightFilteredAnnotations {
             left_to_right: Arc::new(BTreeMap::from([(type_rel_0.clone(), vec![type_player_0.clone()])])),
@@ -415,14 +389,17 @@ pub mod tests {
 
             let var_animal = var_from_registry(&entry_context.variable_registry, "animal").unwrap();
             let local_cache = AnnotatedUnindexedFunctions::new(Box::new([f_ir]), Box::new([f_annotations]));
-            let entry_annotations = infer_types_for_match_block(
-                &entry,
-                &entry_context.variable_registry,
+            let variable_registry = &entry_context.variable_registry;
+            let previous_stage_variable_annotations = &BTreeMap::new();
+            let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+            let entry_annotations = infer_types_for_block(
                 &snapshot,
+                &entry,
+                variable_registry,
                 &type_manager,
-                &BTreeMap::new(),
-                &IndexedAnnotatedFunctions::empty(),
-                &local_cache,
+                previous_stage_variable_annotations,
+                annotated_schema_functions,
+                Some(&local_cache),
             )
             .unwrap();
             assert_eq!(
@@ -453,14 +430,17 @@ pub mod tests {
 
             let var_animal = var_from_registry(&entry_context.variable_registry, "animal").unwrap();
             let schema_cache = IndexedAnnotatedFunctions::new(Box::new([Some(f_ir)]), Box::new([Some(f_annotations)]));
-            let entry_annotations = infer_types_for_match_block(
-                &entry,
-                &entry_context.variable_registry,
+            let variable_registry = &entry_context.variable_registry;
+            let previous_stage_variable_annotations = &BTreeMap::new();
+            let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+            let entry_annotations = infer_types_for_block(
                 &snapshot,
+                &entry,
+                variable_registry,
                 &type_manager,
-                &BTreeMap::new(),
+                previous_stage_variable_annotations,
                 &schema_cache,
-                &AnnotatedUnindexedFunctions::empty(),
+                Some(annotated_preamble_functions),
             )
             .unwrap();
             assert_eq!(

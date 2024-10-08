@@ -12,7 +12,7 @@ pub mod annotated_program;
 pub mod pattern_type_inference;
 pub mod type_annotations;
 pub mod type_inference;
-mod type_seeder;
+mod type_inference_intialiser;
 
 typedb_error!(
     pub FunctionTypeInferenceError(component = "Function type inference", prefix = "FIN") {

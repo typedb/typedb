@@ -14,7 +14,6 @@ use compiler::{
     match_::{
         inference::{
             annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-            type_inference::infer_types_for_match_block,
         },
         instructions::{
             thing::{HasInstruction, HasReverseInstruction, IsaReverseInstruction},
@@ -142,14 +141,18 @@ fn traverse_has_unbounded_sorted_from() {
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types_for_block(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
     let vars = vec![var_person, var_age, var_age_type, var_person_type];
@@ -223,14 +226,18 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let entry = builder.finish();
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types_for_block(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -323,14 +330,18 @@ fn traverse_has_unbounded_sorted_from_intersect() {
 
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types_for_block(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -399,14 +410,18 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types_for_block(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -492,14 +507,18 @@ fn traverse_has_reverse_unbounded_sorted_from() {
 
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types_for_block(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 

@@ -80,7 +80,7 @@ pub mod tests {
     use crate::match_::inference::{
         annotated_functions::{AnnotatedFunctions, IndexedAnnotatedFunctions},
         tests::{managers, schema_consts::setup_types, setup_storage},
-        type_inference::{infer_types_for_functions, infer_types_for_match_block},
+        type_inference::infer_types_for_functions,
     };
 
     #[test]
@@ -124,14 +124,16 @@ pub mod tests {
         let function_annotations =
             infer_types_for_functions(vec![function], &snapshot, &type_manager, &empty_cache).unwrap();
 
-        let entry_annotations = infer_types_for_match_block(
-            &entry,
-            &translation_context.variable_registry,
+        let variable_registry = &translation_context.variable_registry;
+        let previous_stage_variable_annotations = &BTreeMap::new();
+        let entry_annotations = infer_types_for_block(
             &snapshot,
+            &entry,
+            variable_registry,
             &type_manager,
-            &BTreeMap::new(),
+            previous_stage_variable_annotations,
             &empty_cache,
-            &function_annotations,
+            Some(&function_annotations),
         )
         .unwrap();
 

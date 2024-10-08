@@ -23,9 +23,10 @@ use storage::snapshot::ReadableSnapshot;
 use crate::match_::inference::{
     annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
     type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations},
-    type_seeder::TypeSeeder,
+    type_inference_intialiser::TypeInferenceContext,
     TypeInferenceError,
 };
+use crate::match_::inference::type_annotations::TypeAnnotations;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub(crate) struct VertexAnnotations {
@@ -96,7 +97,7 @@ where
     }
 }
 
-pub(crate) fn infer_types_for_block<'graph>(
+pub fn infer_types_for_block<'graph>(
     snapshot: &impl ReadableSnapshot,
     block: &'graph Block,
     variable_registry: &VariableRegistry,
@@ -104,30 +105,34 @@ pub(crate) fn infer_types_for_block<'graph>(
     previous_stage_variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<TypeAnnotation>>>,
     schema_functions: &IndexedAnnotatedFunctions,
     local_function_cache: Option<&AnnotatedUnindexedFunctions>,
-) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
-    let mut tig = TypeSeeder::new(snapshot, type_manager, schema_functions, local_function_cache, variable_registry)
-        .seed_types(block.scope_context(), previous_stage_variable_annotations, block.conjunction())?;
-    run_type_inference(&mut tig);
+) -> Result<TypeAnnotations, TypeInferenceError> {
+    let mut graph = TypeInferenceContext::new(snapshot, type_manager, schema_functions, local_function_cache, variable_registry)
+        .initialise_graph(block.scope_context(), previous_stage_variable_annotations, block.conjunction())?;
+    prune_types(&mut graph);
     // TODO: Throw error when any set becomes empty happens, rather than waiting for the it to propagate
-    if tig.vertices.iter().any(|(_, types)| types.is_empty()) {
-        Err(TypeInferenceError::DetectedUnsatisfiablePattern {})
-    } else {
-        Ok(tig)
+    if graph.vertices.iter().any(|(_, types)| types.is_empty()) {
+        return Err(TypeInferenceError::DetectedUnsatisfiablePattern {});
     }
+    let type_annotations = TypeAnnotations::build(graph);
+    debug_assert!(block
+        .scope_context()
+        .referenced_variables() // FIXME vertices?
+        .all(|var| type_annotations.vertex_annotations_of(&Vertex::Variable(var)).is_some()));
+    Ok(type_annotations)
 }
 
-fn run_type_inference(tig: &mut TypeInferenceGraph<'_>) {
-    while tig.prune_vertices_from_constraints() {
-        tig.prune_constraints_from_vertices();
+fn prune_types(graph: &mut TypeInferenceGraph<'_>) {
+    while graph.prune_vertices_from_constraints() {
+        graph.prune_constraints_from_vertices();
     }
 
     // Then do it for the nested negations & optionals
-    tig.nested_negations.iter_mut().for_each(|nested| run_type_inference(nested));
-    tig.nested_optionals.iter_mut().for_each(|nested| run_type_inference(nested));
+    graph.nested_negations.iter_mut().for_each(|nested| prune_types(nested));
+    graph.nested_optionals.iter_mut().for_each(|nested| prune_types(nested));
 }
 
 #[derive(Debug)]
-pub struct TypeInferenceGraph<'this> {
+pub(crate) struct TypeInferenceGraph<'this> {
     pub(crate) conjunction: &'this Conjunction,
     pub(crate) vertices: VertexAnnotations,
     pub(crate) edges: Vec<TypeInferenceEdge<'this>>,
@@ -371,7 +376,7 @@ pub mod tests {
     use crate::match_::inference::{
         annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         pattern_type_inference::{
-            infer_types_for_block, run_type_inference, NestedTypeInferenceGraphDisjunction, TypeInferenceEdge,
+            infer_types_for_block, prune_types, NestedTypeInferenceGraphDisjunction, TypeInferenceEdge,
             TypeInferenceGraph, VertexAnnotations,
         },
         tests::{
@@ -381,7 +386,7 @@ pub mod tests {
             },
             setup_storage,
         },
-        type_seeder::TypeSeeder,
+        type_inference_intialiser::TypeInferenceContext,
         TypeInferenceError,
     };
 
@@ -438,7 +443,7 @@ pub mod tests {
 
             let block = builder.finish();
             let constraints = block.conjunction().constraints();
-            let tig = infer_types_for_block(
+            let graph = infer_types_for_block(
                 &snapshot,
                 &block,
                 &translation_context.variable_registry,
@@ -449,7 +454,7 @@ pub mod tests {
             )
             .unwrap();
 
-            let expected_tig = TypeInferenceGraph {
+            let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
                 vertices: VertexAnnotations::from([
                     (var_animal.into(), BTreeSet::from([type_cat.clone()])),
@@ -482,7 +487,7 @@ pub mod tests {
                 nested_optionals: Vec::new(),
             };
 
-            assert_eq!(expected_tig, tig);
+            assert_eq!(expected_graph, graph);
         }
 
         {
@@ -506,7 +511,7 @@ pub mod tests {
             let block = builder.finish();
 
             let constraints = block.conjunction().constraints();
-            let tig = infer_types_for_block(
+            let graph = infer_types_for_block(
                 &snapshot,
                 &block,
                 &translation_context.variable_registry,
@@ -517,7 +522,7 @@ pub mod tests {
             )
             .unwrap();
 
-            let expected_tig = TypeInferenceGraph {
+            let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
                 vertices: VertexAnnotations::from([
                     (var_animal.into(), BTreeSet::from([type_cat.clone()])),
@@ -549,7 +554,7 @@ pub mod tests {
                 nested_negations: Vec::new(),
                 nested_optionals: Vec::new(),
             };
-            assert_eq!(expected_tig, tig);
+            assert_eq!(expected_graph, graph);
         }
 
         {
@@ -607,7 +612,7 @@ pub mod tests {
 
             let block = builder.finish();
             let constraints = block.conjunction().constraints();
-            let tig = infer_types_for_block(
+            let graph = infer_types_for_block(
                 &snapshot,
                 &block,
                 &translation_context.variable_registry,
@@ -618,7 +623,7 @@ pub mod tests {
             )
             .unwrap();
 
-            let expected_tig = TypeInferenceGraph {
+            let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
                 vertices: VertexAnnotations::from([
                     (var_animal.into(), types_a),
@@ -664,7 +669,7 @@ pub mod tests {
                 nested_negations: Vec::new(),
                 nested_optionals: Vec::new(),
             };
-            assert_eq!(expected_tig, tig);
+            assert_eq!(expected_graph, graph);
         }
     }
 
@@ -708,7 +713,7 @@ pub mod tests {
         let block = builder.finish();
 
         let snapshot = storage.clone().open_snapshot_write();
-        let tig = infer_types_for_block(
+        let graph = infer_types_for_block(
             &snapshot,
             &block,
             &translation_context.variable_registry,
@@ -798,7 +803,7 @@ pub mod tests {
             nested_optionals: Vec::new(),
         };
 
-        assert_eq!(expected_graph, tig);
+        assert_eq!(expected_graph, graph);
     }
 
     #[test]
@@ -825,7 +830,7 @@ pub mod tests {
         let block = builder.finish();
         let conjunction = block.conjunction();
         let constraints = conjunction.constraints();
-        let tig = infer_types_for_block(
+        let graph = infer_types_for_block(
             &snapshot,
             &block,
             &translation_context.variable_registry,
@@ -836,7 +841,7 @@ pub mod tests {
         )
         .unwrap();
 
-        let expected_tig = TypeInferenceGraph {
+        let expected_graph = TypeInferenceGraph {
             conjunction,
             vertices: VertexAnnotations::from([
                 (var_animal.into(), BTreeSet::from([type_animal.clone(), type_cat.clone(), type_dog.clone()])),
@@ -859,7 +864,7 @@ pub mod tests {
             nested_optionals: Vec::new(),
         };
 
-        assert_eq!(expected_tig, tig);
+        assert_eq!(expected_graph, graph);
     }
 
     #[test]
@@ -919,7 +924,7 @@ pub mod tests {
 
         let conjunction = block.conjunction();
 
-        let tig = infer_types_for_block(
+        let graph = infer_types_for_block(
             &snapshot,
             &block,
             &translation_context.variable_registry,
@@ -994,7 +999,7 @@ pub mod tests {
             nested_optionals: Vec::new(),
         };
 
-        assert_eq!(expected_graph, tig);
+        assert_eq!(expected_graph, graph);
     }
 
     #[test]
@@ -1029,7 +1034,7 @@ pub mod tests {
 
             let block = builder.finish();
             let constraints = block.conjunction().constraints();
-            let tig = infer_types_for_block(
+            let graph = infer_types_for_block(
                 &snapshot,
                 &block,
                 &translation_context.variable_registry,
@@ -1040,7 +1045,7 @@ pub mod tests {
             )
             .unwrap();
 
-            let expected_tig = TypeInferenceGraph {
+            let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
                 vertices: VertexAnnotations::from([
                     (var_animal.into(), BTreeSet::from([type_cat.clone()])),
@@ -1073,7 +1078,7 @@ pub mod tests {
                 nested_optionals: Vec::new(),
             };
 
-            assert_eq!(expected_tig, tig);
+            assert_eq!(expected_graph, graph);
         }
 
         {
@@ -1097,7 +1102,7 @@ pub mod tests {
             let block = builder.finish();
 
             let constraints = block.conjunction().constraints();
-            let tig = infer_types_for_block(
+            let graph = infer_types_for_block(
                 &snapshot,
                 &block,
                 &translation_context.variable_registry,
@@ -1108,7 +1113,7 @@ pub mod tests {
             )
             .unwrap();
 
-            let expected_tig = TypeInferenceGraph {
+            let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
                 vertices: VertexAnnotations::from([
                     (var_animal.into(), BTreeSet::from([type_cat.clone()])),
@@ -1140,7 +1145,7 @@ pub mod tests {
                 nested_negations: Vec::new(),
                 nested_optionals: Vec::new(),
             };
-            assert_eq!(expected_tig, tig);
+            assert_eq!(expected_graph, graph);
         }
 
         {
@@ -1164,18 +1169,18 @@ pub mod tests {
             let block = builder.finish();
             let constraints = block.conjunction().constraints();
             // We manually compute the graph so we can confirm it decays to empty annotations everywhere
-            let mut tig = TypeSeeder::new(
+            let mut graph = TypeInferenceContext::new(
                 &snapshot,
                 &type_manager,
                 &IndexedAnnotatedFunctions::empty(),
                 None,
                 &translation_context.variable_registry,
             )
-            .seed_types(block.scope_context(), &BTreeMap::new(), block.conjunction())
+            .initialise_graph(block.scope_context(), &BTreeMap::new(), block.conjunction())
             .unwrap();
-            run_type_inference(&mut tig);
+            prune_types(&mut graph);
 
-            let expected_tig = TypeInferenceGraph {
+            let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
                 vertices: VertexAnnotations::from([
                     (var_animal.into(), BTreeSet::new()),
@@ -1192,7 +1197,7 @@ pub mod tests {
                 nested_negations: Vec::new(),
                 nested_optionals: Vec::new(),
             };
-            assert_eq!(expected_tig, tig);
+            assert_eq!(expected_graph, graph);
         }
 
         {
@@ -1215,7 +1220,7 @@ pub mod tests {
 
             let block = builder.finish();
             let constraints = block.conjunction().constraints();
-            let tig = infer_types_for_block(
+            let graph = infer_types_for_block(
                 &snapshot,
                 &block,
                 &translation_context.variable_registry,
@@ -1226,7 +1231,7 @@ pub mod tests {
             )
             .unwrap();
 
-            let expected_tig = TypeInferenceGraph {
+            let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
                 vertices: VertexAnnotations::from([
                     (var_animal.into(), types_a.clone()),
@@ -1273,7 +1278,7 @@ pub mod tests {
                 nested_optionals: Vec::new(),
             };
 
-            assert_eq!(expected_tig, tig);
+            assert_eq!(expected_graph, graph);
         }
     }
 
@@ -1304,7 +1309,7 @@ pub mod tests {
 
             let block = builder.finish();
             let constraints = block.conjunction().constraints();
-            let tig = infer_types_for_block(
+            let graph = infer_types_for_block(
                 &snapshot,
                 &block,
                 &translation_context.variable_registry,
@@ -1315,7 +1320,7 @@ pub mod tests {
             )
             .unwrap();
 
-            let expected_tig = TypeInferenceGraph {
+            let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
                 vertices: VertexAnnotations::from([
                     (var_animal.into(), BTreeSet::from([type_cat.clone()])),
@@ -1348,9 +1353,9 @@ pub mod tests {
                 nested_optionals: Vec::new(),
             };
 
-            assert_eq!(expected_tig.vertices, tig.vertices);
-            assert_eq!(expected_tig.edges, tig.edges);
-            assert_eq!(expected_tig, tig);
+            assert_eq!(expected_graph.vertices, graph.vertices);
+            assert_eq!(expected_graph.edges, graph.edges);
+            assert_eq!(expected_graph, graph);
         }
 
         {
@@ -1369,7 +1374,7 @@ pub mod tests {
             let block = builder.finish();
 
             let constraints = block.conjunction().constraints();
-            let tig = infer_types_for_block(
+            let graph = infer_types_for_block(
                 &snapshot,
                 &block,
                 &translation_context.variable_registry,
@@ -1380,7 +1385,7 @@ pub mod tests {
             )
             .unwrap();
 
-            let expected_tig = TypeInferenceGraph {
+            let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
                 vertices: VertexAnnotations::from([
                     (var_animal.into(), BTreeSet::from([type_cat.clone()])),
@@ -1412,7 +1417,7 @@ pub mod tests {
                 nested_negations: Vec::new(),
                 nested_optionals: Vec::new(),
             };
-            assert_eq!(expected_tig, tig);
+            assert_eq!(expected_graph, graph);
         }
 
         {
@@ -1459,7 +1464,7 @@ pub mod tests {
 
             let block = builder.finish();
             let constraints = block.conjunction().constraints();
-            let tig = infer_types_for_block(
+            let graph = infer_types_for_block(
                 &snapshot,
                 &block,
                 &translation_context.variable_registry,
@@ -1470,7 +1475,7 @@ pub mod tests {
             )
             .unwrap();
 
-            let expected_tig = TypeInferenceGraph {
+            let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
                 vertices: VertexAnnotations::from([
                     (var_animal.into(), types_a),
@@ -1516,7 +1521,7 @@ pub mod tests {
                 nested_negations: Vec::new(),
                 nested_optionals: Vec::new(),
             };
-            assert_eq!(expected_tig, tig);
+            assert_eq!(expected_graph, graph);
         }
     }
 }
