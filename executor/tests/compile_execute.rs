@@ -134,14 +134,14 @@ fn test_has_planning_traversal() {
         .try_collect::<_, Vec<_>, _>()
         .unwrap();
 
-    assert_eq!(rows.len(), 7);
-
-    for row in rows {
+    for row in &rows {
         for value in row {
             print!("{}, ", value);
         }
         println!()
     }
+
+    assert_eq!(rows.len(), 7);
 }
 
 #[test]
@@ -212,14 +212,14 @@ fn test_links_planning_traversal() {
         .try_collect::<_, Vec<_>, _>()
         .unwrap();
 
-    assert_eq!(rows.len(), 2);
-
-    for row in rows {
+    for row in &rows {
         for value in row {
             print!("{}, ", value);
         }
         println!()
     }
+
+    assert_eq!(rows.len(), 2);
 }
 
 #[test]
@@ -297,14 +297,14 @@ fn test_links_intersection() {
         .try_collect::<_, Vec<_>, _>()
         .unwrap();
 
-    assert_eq!(rows.len(), 3);
-
-    for row in rows {
+    for row in &rows {
         for value in row {
             print!("{}, ", value);
         }
         println!()
     }
+
+    assert_eq!(rows.len(), 3);
 }
 
 #[test]
@@ -375,7 +375,7 @@ fn test_negation_planning_traversal() {
         .unwrap();
 
     for row in &rows {
-        for value in row.row() {
+        for value in row {
             print!("{}, ", value);
         }
         println!()
@@ -473,7 +473,7 @@ fn test_forall_planning_traversal() {
         .unwrap();
 
     for row in &rows {
-        for value in row.row() {
+        for value in row {
             print!("{}, ", value);
         }
         println!()
