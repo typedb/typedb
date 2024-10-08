@@ -264,11 +264,11 @@ fn annotate_stage(
                 }
                 Constraint::RoleName(role_name) => {
                     running_variable_annotations.insert(
-                        role_name.left().as_variable().unwrap(),
-                        insert_annotations.vertex_annotations_of(role_name.left()).unwrap().clone(),
+                        role_name.type_().as_variable().unwrap(),
+                        insert_annotations.vertex_annotations_of(role_name.type_()).unwrap().clone(),
                     );
                 }
-                _ => {}
+                _ => (),
             });
             check_annotations(
                 snapshot,
