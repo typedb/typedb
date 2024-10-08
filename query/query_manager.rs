@@ -26,7 +26,7 @@ use ir::{
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
-use compiler::annotation::pipeline::{AnnotatedPipeline, infer_types_for_pipeline};
+use compiler::annotation::pipeline::{AnnotatedPipeline, annotate_pipeline};
 
 use crate::{
     compilation::{compile_pipeline, CompiledPipeline, CompiledStage},
@@ -77,7 +77,7 @@ impl QueryManager {
             .get_annotated_functions(snapshot.as_ref(), &type_manager)
             .map_err(|err| QueryError::FunctionRetrieval { typedb_source: err })?;
 
-        let AnnotatedPipeline { annotated_preamble, annotated_stages } = infer_types_for_pipeline(
+        let AnnotatedPipeline { annotated_preamble, annotated_stages } = annotate_pipeline(
             snapshot.as_ref(),
             type_manager,
             &annotated_functions,
@@ -172,7 +172,7 @@ impl QueryManager {
             }
         };
 
-        let annotated_pipeline = infer_types_for_pipeline(
+        let annotated_pipeline = annotate_pipeline(
             &snapshot,
             type_manager,
             &annotated_functions,

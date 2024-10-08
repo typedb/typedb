@@ -7,24 +7,27 @@
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::sync::Arc;
+
 use answer::Type;
 use answer::variable::Variable;
 use concept::type_::type_manager::TypeManager;
 use encoding::value::value_type::ValueTypeCategory;
 use encoding::value::value_type::ValueTypeCategory::{Double, Long};
 use ir::pattern::constraint::Constraint;
+use ir::program::{ParameterRegistry, VariableRegistry};
 use ir::program::block::Block;
+use ir::program::function::Function;
 use ir::program::modifier::{Limit, Offset, Require, Select, Sort};
 use ir::program::reduce::{Reduce, Reducer};
-use ir::program::{ParameterRegistry, VariableRegistry};
-use ir::program::function::Function;
 use ir::translation::pipeline::TranslatedStage;
 use storage::snapshot::ReadableSnapshot;
-use crate::annotation::annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions};
+
 use crate::annotation::AnnotationError;
+use crate::annotation::fetch::AnnotatedFetch;
+use crate::annotation::function::{annotate_functions, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions};
 use crate::annotation::match_inference::infer_types;
 use crate::annotation::type_annotations::{ConstraintTypeAnnotations, TypeAnnotations};
-use crate::annotation::type_inference::{infer_types_for_functions, resolve_value_types};
+use crate::annotation::type_inference::resolve_value_types;
 use crate::expression::block_compiler::compile_expressions;
 use crate::expression::compiled_expression::CompiledExpression;
 use crate::insert::type_check::check_annotations;
@@ -35,6 +38,7 @@ pub struct AnnotatedPipeline {
     pub annotated_stages: Vec<AnnotatedStage>,
 }
 
+#[derive(Debug, Clone)]
 pub enum AnnotatedStage {
     Match {
         block: Block,
@@ -50,6 +54,9 @@ pub enum AnnotatedStage {
         deleted_variables: Vec<Variable>,
         annotations: TypeAnnotations,
     },
+    Fetch {
+        annotated_fetch: AnnotatedFetch
+    },
     // ...
     Select(Select),
     Sort(Sort),
@@ -59,7 +66,7 @@ pub enum AnnotatedStage {
     Reduce(Reduce, Vec<ReduceInstruction<Variable>>),
 }
 
-pub fn infer_types_for_pipeline(
+pub fn annotate_pipeline(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     schema_function_annotations: &IndexedAnnotatedFunctions,
@@ -69,8 +76,8 @@ pub fn infer_types_for_pipeline(
     translated_stages: Vec<TranslatedStage>,
 ) -> Result<AnnotatedPipeline, AnnotationError> {
     let annotated_preamble =
-        infer_types_for_functions(translated_preamble, snapshot, type_manager, schema_function_annotations)
-            .map_err(|typedb_source| AnnotationError::PreambleTypeInference{  typedb_source })?;
+        annotate_functions(translated_preamble, snapshot, type_manager, schema_function_annotations)
+            .map_err(|typedb_source| AnnotationError::PreambleTypeInference { typedb_source })?;
 
     let mut running_variable_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>> = BTreeMap::new();
     let mut running_value_variable_types: BTreeMap<Variable, ValueTypeCategory> = BTreeMap::new();
@@ -236,7 +243,7 @@ fn annotate_stage(
             }
             Ok(AnnotatedStage::Reduce(reduce, reduce_instructions))
         }
-        TranslatedStage::Fetch { .. } => {
+        TranslatedStage::Fetch { fetch_object } => {
             todo!()
         }
     }

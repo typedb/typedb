@@ -5,7 +5,7 @@
  */
 
 // TODO: Rewrite so we generate the dispatcher macro along with the enum. SEe https://cprohm.de/blog/rust-macros/
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ExpressionOpCode {
     // Basics
     LoadConstant,

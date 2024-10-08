@@ -11,6 +11,7 @@ use answer::variable::Variable;
 use crate::pattern::ParameterID;
 use crate::program::function::AnonymousFunction;
 use crate::translation::pipeline::TranslatedStage;
+use crate::translation::TranslationContext;
 
 #[derive(Debug, Clone)]
 pub enum FetchSome {
@@ -55,6 +56,7 @@ pub struct FetchObjectAttributes {
 
 #[derive(Debug, Clone)]
 pub struct FetchListSubFetch {
+    pub(crate) context: TranslationContext,
     pub(crate) stages: Vec<TranslatedStage>,
 }
 

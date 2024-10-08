@@ -18,6 +18,7 @@ pub struct ReduceProgram {
     pub output_row_mapping: HashMap<Variable, VariablePosition>, // output_row = (group_vars, reduce_outputs)
 }
 
+#[derive(Debug, Clone)]
 pub enum ReduceInstruction<ID: IrID> {
     Count,
     CountVar(ID),

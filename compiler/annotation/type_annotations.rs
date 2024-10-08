@@ -161,19 +161,3 @@ impl LeftRightFilteredAnnotations {
         self.filters_on_left.clone()
     }
 }
-
-#[derive(Debug)]
-pub struct FunctionAnnotations {
-    pub(crate) block_annotations: TypeAnnotations,
-    pub(crate) return_annotations: Vec<BTreeSet<Type>>,
-}
-
-impl FunctionAnnotations {
-    pub fn body_annotations(&self) -> &TypeAnnotations {
-        &self.block_annotations
-    }
-
-    pub fn return_annotations(&self) -> &[BTreeSet<Type>] {
-        &self.return_annotations
-    }
-}

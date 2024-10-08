@@ -33,9 +33,8 @@ use ir::{
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
-use crate::annotation::annotated_functions::{AnnotatedFunctions, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions};
+use crate::annotation::function::{AnnotatedFunction, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions};
 use crate::annotation::match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations};
-use crate::annotation::type_annotations::FunctionAnnotations;
 use crate::annotation::TypeInferenceError;
 
 
@@ -58,23 +57,17 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         TypeGraphSeedingContext { snapshot, type_manager, schema_functions, local_functions, variable_registry }
     }
 
-    fn get_function_annotations(&self, function_id: FunctionID) -> Option<&FunctionAnnotations> {
+    fn get_annotated_function(&self, function_id: FunctionID) -> Option<&AnnotatedFunction> {
         match function_id {
             FunctionID::Schema(definition_key) => {
-                debug_assert!(self.schema_functions.get_annotations(definition_key.clone()).is_some());
-                self.schema_functions.get_annotations(definition_key.clone())
+                // debug_assert!(self.schema_functions.get_annotations(definition_key.clone()).is_some());
+                // self.schema_functions.get_annotations(definition_key.clone())
+                todo!()
             }
-            FunctionID::Preamble(index) => self.local_functions?.get_annotations(index),
-        }
-    }
-
-    fn get_function_ir(&self, function_id: FunctionID) -> Option<&Function> {
-        match function_id {
-            FunctionID::Schema(definition_key) => {
-                debug_assert!(self.schema_functions.get_function(definition_key.clone()).is_some());
-                self.schema_functions.get_function(definition_key.clone())
-            }
-            FunctionID::Preamble(index) => self.local_functions?.get_function(index),
+            FunctionID::Preamble(index) => {
+                // self.local_functions?.get_annotations(index)
+                todo!()
+            },
         }
     }
 
@@ -635,19 +628,21 @@ impl UnaryConstraint for FunctionCallBinding<Variable> {
         seeder: &TypeGraphSeedingContext<'_, Snapshot>,
         graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
-        if let Some(callee_annotations) = seeder.get_function_annotations(self.function_call().function_id()) {
-            for (assigned_variable, return_annotation) in zip(self.assigned(), &callee_annotations.return_annotations) {
-                graph_vertices.add_or_intersect(assigned_variable, Cow::Borrowed(return_annotation));
-            }
+        if let Some(annotated_function) = seeder.get_annotated_function(self.function_call().function_id()) {
+            todo!();
+            // for (assigned_variable, return_annotation) in zip(self.assigned(), &annotated_function.return_annotations) {
+            //     graph_vertices.add_or_intersect(assigned_variable, Cow::Borrowed(return_annotation));
+            // }
 
-            let ir = seeder.get_function_ir(self.function_call().function_id()).unwrap();
-            for (caller_variable, &arg_index) in self.function_call().call_id_mapping() {
-                let arg_annotations = callee_annotations
-                    .block_annotations
-                    .vertex_annotations_of(&Vertex::Variable(ir.arguments()[arg_index]))
-                    .unwrap();
-                graph_vertices.add_or_intersect(caller_variable, Cow::Owned(arg_annotations.iter().cloned().collect()));
-            }
+            todo!()
+            // let ir = seeder.get_function_ir(self.function_call().function_id()).unwrap();
+            // for (caller_variable, &arg_index) in self.function_call().call_id_mapping() {
+            //     let arg_annotations = annotated_function
+            //         .block_annotations
+            //         .vertex_annotations_of(&Vertex::Variable(ir.arguments()[arg_index]))
+            //         .unwrap();
+            //     graph_vertices.add_or_intersect(caller_variable, Cow::Owned(arg_annotations.iter().cloned().collect()));
+            // }
         }
         Ok(())
     }
@@ -1383,7 +1378,7 @@ pub mod tests {
         translation::TranslationContext,
     };
     use storage::snapshot::CommittableSnapshot;
-    use crate::annotation::annotated_functions::IndexedAnnotatedFunctions;
+    use crate::annotation::function::IndexedAnnotatedFunctions;
     use crate::annotation::match_inference::{TypeInferenceGraph, VertexAnnotations};
     use crate::annotation::tests::schema_consts::{LABEL_CAT, LABEL_NAME, setup_types};
     use crate::annotation::tests::{managers, setup_storage};

@@ -13,12 +13,12 @@ use answer::variable::Variable;
 use compiler::{
     delete::program::DeleteProgram,
     insert::program::InsertProgram,
-    annotation::annotated_functions::AnnotatedUnindexedFunctions,
     match_::planner::pattern_plan::MatchProgram,
     modifiers::{LimitProgram, OffsetProgram, RequireProgram, SelectProgram, SortProgram},
     reduce::{ReduceInstruction, ReduceProgram},
     VariablePosition,
 };
+use compiler::annotation::function::{AnnotatedFunction, AnnotatedUnindexedFunctions};
 use compiler::annotation::pipeline::AnnotatedStage;
 use concept::thing::statistics::Statistics;
 use ir::program::{function::Function, VariableRegistry};
@@ -104,7 +104,7 @@ pub(super) fn compile_pipeline(
 fn compile_function(
     statistics: &Statistics,
     variable_registry: Arc<VariableRegistry>,
-    function: &Function,
+    function: &AnnotatedFunction,
 ) -> Result<CompiledFunction, QueryError> {
     todo!()
 }
@@ -240,6 +240,9 @@ fn compile_stage(
                 reduction_inputs.push(reducer_on_position);
             }
             Ok(CompiledStage::Reduce(ReduceProgram { reduction_inputs, input_group_positions, output_row_mapping }))
+        }
+        AnnotatedStage::Fetch { .. } => {
+            todo!()
         }
     }
 }

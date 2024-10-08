@@ -66,8 +66,8 @@ pub enum TranslatedStage {
     Sort(Sort),
     Offset(Offset),
     Limit(Limit),
-    Reduce(Reduce),
     Require(Require),
+    Reduce(Reduce),
 }
 
 pub fn translate_pipeline(

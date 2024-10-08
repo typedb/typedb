@@ -4,8 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::BTreeSet;
+use answer::Type;
 use concept::error::ConceptReadError;
-use encoding::value::value_type::ValueTypeCategory;
+use encoding::value::value_type::{ValueType, ValueTypeCategory};
 use error::typedb_error;
 use crate::expression::ExpressionCompileError;
 
@@ -13,9 +15,9 @@ pub mod match_inference;
 pub mod type_annotations;
 pub mod type_inference;
 mod type_seeder;
-pub mod annotated_functions;
 pub mod pipeline;
-mod function;
+pub mod function;
+pub mod fetch;
 
 typedb_error!(
     pub AnnotationError(component = "Query annotation", prefix = "QUA") {
@@ -60,31 +62,6 @@ typedb_error!(
         ),
     }
 );
-
-// #[derive(Debug, Clone)]
-// pub enum TypeInferenceError {
-//     ConceptRead { source: ConceptReadError },
-//     LabelNotResolved(String),
-//     RoleNameNotResolved(String),
-//     IllegalInsertTypes { constraint: Constraint<Variable>, left_type: String, right_type: String },
-// }
-//
-// impl Display for TypeInferenceError {
-//     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-//         todo!()
-//     }
-// }
-//
-// impl Error for TypeInferenceError {
-//     fn source(&self) -> Option<&(dyn Error + 'static)> {
-//         match self {
-//             TypeInferenceError::ConceptRead { source } => Some(source),
-//             TypeInferenceError::LabelNotResolved(_) => None,
-//             TypeInferenceError::RoleNameNotResolved(_) => None,
-//             TypeInferenceError::IllegalInsertTypes { .. } => None,
-//         }
-//     }
-// }
 
 #[cfg(test)]
 pub mod tests {

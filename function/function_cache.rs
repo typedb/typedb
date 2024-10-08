@@ -7,10 +7,8 @@
 use std::{collections::HashMap, iter::zip, sync::Arc};
 
 use compiler::annotation::{
-    annotated_functions::{AnnotatedFunctions, IndexedAnnotatedFunctions},
-    type_annotations::FunctionAnnotations,
 };
-use compiler::annotation::type_inference::infer_types_for_functions;
+use compiler::annotation::function::{annotate_functions, AnnotatedFunction, AnnotatedFunctions, IndexedAnnotatedFunctions};
 use concept::type_::type_manager::TypeManager;
 use encoding::graph::definition::definition_key::DefinitionKey;
 use ir::program::{
@@ -65,7 +63,7 @@ impl FunctionCache {
 
         // Run type-inference
         let unindexed_cache =
-            infer_types_for_functions(functions_ir, snapshot, type_manager, &IndexedAnnotatedFunctions::empty())
+            annotate_functions(functions_ir, snapshot, type_manager, &IndexedAnnotatedFunctions::empty())
                 .map_err(|source| FunctionError::CommittedFunctionsTypeCheck { typedb_source: source })?;
 
         // Convert them to our cache
@@ -75,22 +73,23 @@ impl FunctionCache {
             (0..required_cache_count).map(|_| None).collect::<Box<[Option<SchemaFunction>]>>();
         let mut translated_schema_functions_index =
             (0..required_cache_count).map(|_| None).collect::<Box<[Option<Function>]>>();
-        let mut annotated_schema_functions_index =
-            (0..required_cache_count).map(|_| None).collect::<Box<[Option<FunctionAnnotations>]>>();
-
-        let (boxed_translated, boxed_annotations) = unindexed_cache.into_parts();
-        let zipped = zip(schema_functions, zip(boxed_translated.into_vec(), boxed_annotations.into_vec()));
-        for (schema_function, (translated_function, annotations)) in zipped {
-            let cache_index = schema_function.function_id.as_usize();
-            schema_functions_index[cache_index] = Some(schema_function);
-            translated_schema_functions_index[cache_index] = Some(translated_function);
-            annotated_schema_functions_index[cache_index] = Some(annotations);
-        }
-        Ok((
-            function_index,
-            schema_functions_index,
-            IndexedAnnotatedFunctions::new(translated_schema_functions_index, annotated_schema_functions_index),
-        ))
+        // let mut annotated_schema_functions_index =
+        //     (0..required_cache_count).map(|_| None).collect::<Box<[Option<FunctionAnnotations>]>>();
+        //
+        // let (boxed_translated, boxed_annotations) = unindexed_cache.into_parts();
+        // let zipped = zip(schema_functions, zip(boxed_translated.into_vec(), boxed_annotations.into_vec()));
+        // for (schema_function, (translated_function, annotations)) in zipped {
+        //     let cache_index = schema_function.function_id.as_usize();
+        //     schema_functions_index[cache_index] = Some(schema_function);
+        //     translated_schema_functions_index[cache_index] = Some(translated_function);
+        //     annotated_schema_functions_index[cache_index] = Some(annotations);
+        // }
+        // Ok((
+        //     function_index,
+        //     schema_functions_index,
+        //     IndexedAnnotatedFunctions::new(translated_schema_functions_index, annotated_schema_functions_index),
+        // ))
+        todo!()
     }
 
     pub(crate) fn get_function_key(&self, name: &str) -> Option<DefinitionKey<'static>> {
@@ -105,14 +104,10 @@ impl FunctionCache {
         self.indexed_annotated_functions.clone()
     }
 
-    pub(crate) fn get_function_ir(&self, definition_key: DefinitionKey<'static>) -> Option<&Function> {
-        self.indexed_annotated_functions.get_function(definition_key)
-    }
-
-    pub(crate) fn get_function_annotations(
+    pub(crate) fn get_annotated_function(
         &self,
         definition_key: DefinitionKey<'static>,
-    ) -> Option<&FunctionAnnotations> {
-        self.indexed_annotated_functions.get_annotations(definition_key)
+    ) -> Option<&AnnotatedFunction> {
+        self.indexed_annotated_functions.get_function(definition_key)
     }
 }
