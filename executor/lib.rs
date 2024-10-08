@@ -26,7 +26,6 @@ pub mod pipeline;
 pub(crate) mod reduce_executor;
 pub mod row;
 pub mod write;
-mod query_executor;
 mod program_executors;
 
 // TODO: use a bit-vec, since we have a continuously allocated range of positions
