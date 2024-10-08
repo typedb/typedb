@@ -66,68 +66,43 @@ impl MatchExecutor {
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         let steps_len = self.step_executors.len();
 
-        let (mut current_step, mut last_step_batch, mut direction) = if let Some(input) = self.input.take() {
-            (0, Some(FixedBatch::from(input)), Direction::Forward)
+        let (mut current_step, mut last_step_batch) = if let Some(input) = self.input.take() {
+            (0, Some(FixedBatch::from(input)))
         } else {
-            (steps_len - 1, None, Direction::Backward)
+            (steps_len - 1, None)
         };
 
         loop {
+            debug_assert!(current_step >= 0 && current_step <= programs_len - 1);
             // TODO: inject interrupt into Checkers that could filter out many rows without ending as well.
             if let Some(interrupt) = interrupt.check() {
                 return Err(ReadExecutionError::Interrupted { interrupt });
             }
 
-            match direction {
-                Direction::Forward => {
-                    if current_step >= steps_len {
-                        return Ok(last_step_batch);
-                    } else {
-                        let executor = &mut self.step_executors[current_step];
-                        let batch = executor.batch_from(last_step_batch.take().unwrap(), context, interrupt)?;
-                        match batch {
-                            None => {
-                                direction = Direction::Backward;
-                                if current_step == 0 {
-                                    return Ok(None);
-                                } else {
-                                    current_step -= 1;
-                                }
-                            }
-                            Some(batch) => {
-                                last_step_batch = Some(batch);
-                                current_step += 1;
-                            }
-                        }
-                    }
-                }
+            let executor = &mut self.step_executors[current_step];
+            let next_batch = if last_step_batch.is_some() {
+                executor.batch_from(last_step_batch.take().unwrap(), context, interrupt)?
+            } else {
+                executor.batch_continue(context)?
+            };
 
-                Direction::Backward => {
-                    let batch = self.step_executors[current_step].batch_continue(context)?;
-                    match batch {
-                        None => {
-                            if current_step == 0 {
-                                return Ok(None);
-                            } else {
-                                current_step -= 1;
-                            }
-                        }
-                        Some(batch) => {
-                            direction = Direction::Forward;
-                            last_step_batch = Some(batch);
-                            current_step += 1;
-                        }
-                    }
+            if let Some(batch) = next_batch {
+                if current_step == steps_len - 1 {
+                    return Ok(Some(batch));
+                } else {
+                    current_step += 1;
+                    last_step_batch = Some(batch);
+                }
+            } else {
+                if current_step == 0 {
+                    return Ok(None);
+                } else {
+                    current_step -= 1;
+                    last_step_batch = None;
                 }
             }
         }
     }
-}
-
-#[derive(Clone, Copy, Debug)]
-enum Direction {
-    Forward,
-    Backward,
 }
 
 type PatternRowIterator<Snapshot> = FlatMap<
