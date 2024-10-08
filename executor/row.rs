@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, fmt, ops::Deref, vec};
+use std::{borrow::Cow, fmt, ops::Deref, slice, vec};
 
 use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
@@ -159,6 +159,14 @@ impl IntoIterator for MaybeOwnedRow<'static> {
     fn into_iter(self) -> Self::IntoIter {
         #[allow(clippy::unnecessary_to_owned)]
         self.row.into_owned().into_iter()
+    }
+}
+
+impl<'a, 'b: 'a> IntoIterator for &'a MaybeOwnedRow<'b> {
+    type Item = &'a VariableValue<'b>;
+    type IntoIter = slice::Iter<'a, VariableValue<'b>>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.row.iter()
     }
 }
 
