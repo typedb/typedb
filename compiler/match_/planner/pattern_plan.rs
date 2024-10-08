@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use answer::variable::Variable;
 use ir::{
@@ -16,14 +19,14 @@ use ir::{
 };
 
 use crate::{
-    match_::instructions::{CheckInstruction, ConstraintInstruction},
+    match_::instructions::{CheckInstruction, ConstraintInstruction, VariableModes},
     VariablePosition,
 };
 
 #[derive(Clone, Debug)]
 pub struct MatchProgram {
     pub(crate) programs: Vec<Program>,
-    pub(crate) variable_registry: Arc<VariableRegistry>,
+    pub(crate) variable_registry: Arc<VariableRegistry>, // TODO: Maybe we never need this?
 
     variable_positions: HashMap<Variable, VariablePosition>,
     variable_positions_index: Vec<Variable>,
@@ -112,7 +115,7 @@ impl Program {
 #[derive(Clone, Debug)]
 pub struct IntersectionProgram {
     pub sort_variable: VariablePosition,
-    pub instructions: Vec<ConstraintInstruction<VariablePosition>>,
+    pub instructions: Vec<(ConstraintInstruction<VariablePosition>, VariableModes)>,
     new_variables: Vec<VariablePosition>,
     output_width: u32,
     input_variables: Vec<VariablePosition>,
@@ -124,6 +127,7 @@ impl IntersectionProgram {
         sort_variable: VariablePosition,
         instructions: Vec<ConstraintInstruction<VariablePosition>>,
         selected_variables: &[VariablePosition],
+        named_variables: &HashSet<VariablePosition>,
         output_width: u32,
     ) -> Self {
         let mut input_variables = Vec::with_capacity(instructions.len() * 2);
@@ -141,6 +145,13 @@ impl IntersectionProgram {
             });
         });
 
+        let instructions = instructions
+            .into_iter()
+            .map(|instruction| {
+                let variable_modes = VariableModes::new_for(&instruction, selected_variables, named_variables);
+                (instruction, variable_modes)
+            })
+            .collect();
         let selected_variables = selected_variables.to_owned();
         Self { sort_variable, instructions, new_variables, output_width, input_variables, selected_variables }
     }

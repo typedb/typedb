@@ -6,7 +6,10 @@
 
 #![allow(clippy::large_enum_variant)]
 
-use std::{collections::HashMap, ops::Deref};
+use std::{
+    collections::{HashMap, HashSet},
+    ops::Deref,
+};
 
 use answer::Type;
 use ir::pattern::{
@@ -22,6 +25,70 @@ use crate::{
 
 pub mod thing;
 pub mod type_;
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum VariableMode {
+    Input,
+    Output,
+    Count,
+    Check,
+}
+
+impl VariableMode {
+    const fn new(is_input: bool, is_selected: bool, is_named: bool) -> VariableMode {
+        if is_input {
+            Self::Input
+        } else if is_selected {
+            Self::Output
+        } else if is_named {
+            Self::Count
+        } else {
+            Self::Check
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct VariableModes {
+    modes: HashMap<VariablePosition, VariableMode>,
+}
+
+impl VariableModes {
+    fn new() -> Self {
+        VariableModes { modes: HashMap::new() }
+    }
+
+    pub(crate) fn new_for(
+        instruction: &ConstraintInstruction<VariablePosition>,
+        selected: &[VariablePosition],
+        named: &HashSet<VariablePosition>,
+    ) -> Self {
+        let mut modes = Self::new();
+        instruction.ids_foreach(|id| {
+            let var_mode =
+                VariableMode::new(instruction.is_input_variable(id), selected.contains(&id), named.contains(&id));
+            modes.insert(id, var_mode)
+        });
+        modes
+    }
+
+    fn insert(&mut self, variable_position: VariablePosition, mode: VariableMode) {
+        let existing = self.modes.insert(variable_position, mode);
+        debug_assert!(existing.is_none())
+    }
+
+    pub fn get(&self, variable_position: VariablePosition) -> Option<&VariableMode> {
+        self.modes.get(&variable_position)
+    }
+
+    pub fn all_inputs(&self) -> bool {
+        self.modes.values().all(|mode| mode == &VariableMode::Input)
+    }
+
+    pub fn none_inputs(&self) -> bool {
+        self.modes.values().all(|mode| mode != &VariableMode::Input)
+    }
+}
 
 #[derive(Debug, Clone)]
 pub enum ConstraintInstruction<ID> {

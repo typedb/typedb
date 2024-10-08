@@ -6,7 +6,6 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use answer::variable::Variable;
 use compiler::match_::planner::program_plan::ProgramPlan;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use encoding::graph::definition::definition_key::DefinitionKey;
@@ -17,7 +16,7 @@ use crate::{
     pattern_executor::{PatternExecutor, PatternIterator},
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
-    ExecutionInterrupt, VariablePosition,
+    ExecutionInterrupt,
 };
 
 pub struct MatchExecutor {
@@ -38,14 +37,6 @@ impl MatchExecutor {
         // TODO: functions
 
         Ok(Self { entry, functions: HashMap::new() })
-    }
-
-    pub fn entry_variable_positions(&self) -> &HashMap<Variable, VariablePosition> {
-        self.entry.variable_positions()
-    }
-
-    pub fn entry_variable_positions_index(&self) -> &[Variable] {
-        self.entry.variable_positions_index()
     }
 
     pub fn into_iterator<Snapshot: ReadableSnapshot + 'static>(

@@ -106,6 +106,7 @@ fn attribute_equality() {
     let vars = vec![var_age_a, var_age_type_a, var_age_b, var_age_type_b];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let named_variables = variable_positions.values().map(|p| p.clone()).collect();
 
     // Plan
     let steps = vec![
@@ -114,6 +115,7 @@ fn attribute_equality() {
             vec![ConstraintInstruction::Isa(IsaInstruction::new(isa_a, Inputs::None([]), &entry_annotations))
                 .map(&variable_positions)],
             &[variable_positions[&var_age_a]],
+            &named_variables,
             2,
         )),
         Program::Intersection(IntersectionProgram::new(
@@ -127,6 +129,7 @@ fn attribute_equality() {
             ))
             .map(&variable_positions)],
             &[variable_positions[&var_age_a], variable_positions[&var_age_b]],
+            &named_variables,
             4,
         )),
     ];
