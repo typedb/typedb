@@ -306,7 +306,7 @@ pub mod tests {
             let function_block = builder.finish();
             let f_ir = Function::new(
                 "fn_test",
-                function_context.variable_registry,
+                function_context,
                 vec![],
                 FunctionBody::new(
                     vec![TranslatedStage::Match { block: function_block }],
@@ -363,9 +363,9 @@ pub mod tests {
             let f_annotations =
                 infer_types_for_function(&f_ir, &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
                     .unwrap();
-            let f_var_animal = var_from_registry(f_ir.variable_registry(), "called_animal").unwrap();
-            let f_var_animal_type = var_from_registry(f_ir.variable_registry(), "called_animal_type").unwrap();
-            let f_var_name = var_from_registry(f_ir.variable_registry(), "called_name").unwrap();
+            let f_var_animal = var_from_registry(&f_ir.translation_context().variable_registry, "called_animal").unwrap();
+            let f_var_animal_type = var_from_registry(&f_ir.translation_context().variable_registry, "called_animal_type").unwrap();
+            let f_var_name = var_from_registry(&f_ir.translation_context().variable_registry, "called_name").unwrap();
 
             assert_eq!(
                 *f_annotations.block_annotations.vertex_annotations(),
@@ -404,9 +404,9 @@ pub mod tests {
             let f_annotations =
                 infer_types_for_function(&f_ir, &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
                     .unwrap();
-            let f_var_animal = var_from_registry(f_ir.variable_registry(), "called_animal").unwrap();
-            let f_var_animal_type = var_from_registry(f_ir.variable_registry(), "called_animal_type").unwrap();
-            let f_var_name = var_from_registry(f_ir.variable_registry(), "called_name").unwrap();
+            let f_var_animal = var_from_registry(&f_ir.translation_context().variable_registry, "called_animal").unwrap();
+            let f_var_animal_type = var_from_registry(&f_ir.translation_context().variable_registry, "called_animal_type").unwrap();
+            let f_var_name = var_from_registry(&f_ir.translation_context().variable_registry, "called_name").unwrap();
 
             assert_eq!(
                 *f_annotations.block_annotations.vertex_annotations(),

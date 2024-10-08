@@ -17,26 +17,27 @@ use crate::{
     program::{reduce::Reducer, VariableRegistry},
     translation::pipeline::TranslatedStage,
 };
+use crate::translation::TranslationContext;
 
 pub type PlaceholderTypeQLReturnOperation = String;
 
 #[derive(Debug, Clone)]
 pub struct Function {
+    context: TranslationContext,
     name: String,
     function_body: FunctionBody,
     // Variable categories for args & return can be read from the block's context.
     arguments: Vec<Variable>,
-    variable_registry: VariableRegistry,
 }
 
 impl Function {
     pub fn new(
         name: &str,
-        variable_registry: VariableRegistry,
+        context: TranslationContext,
         arguments: Vec<Variable>,
         function_body: FunctionBody,
     ) -> Self {
-        Self { name: name.to_string(), variable_registry, function_body, arguments }
+        Self { name: name.to_string(), context, function_body, arguments }
     }
 
     pub fn name(&self) -> &str {
@@ -47,12 +48,24 @@ impl Function {
         &self.arguments
     }
 
-    pub fn variable_registry(&self) -> &VariableRegistry {
-        &self.variable_registry
+    pub fn translation_context(&self) -> &TranslationContext {
+        &self.context
     }
 
     pub fn body(&self) -> &FunctionBody {
         &self.function_body
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AnonymousFunction {
+    translation_context: TranslationContext,
+    body: FunctionBody,
+}
+
+impl AnonymousFunction {
+    pub(crate) fn new(context: TranslationContext, body: FunctionBody) -> Self {
+        Self { translation_context: context, body }
     }
 }
 

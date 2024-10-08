@@ -4,12 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-/*
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */
-
 use answer::variable::Variable;
 use storage::snapshot::ReadableSnapshot;
 use typeql::query::stage::{Operator as TypeQLOperator, Stage as TypeQLStage, Stage};
@@ -42,6 +36,21 @@ pub struct TranslatedPipeline {
     pub translated_stages: Vec<TranslatedStage>,
     pub variable_registry: VariableRegistry,
     pub value_parameters: ParameterRegistry,
+}
+
+impl TranslatedPipeline {
+    pub(crate) fn new(
+        translation_context: TranslationContext,
+        translated_preamble: Vec<Function>,
+        translated_stages: Vec<TranslatedStage>,
+    ) -> Self {
+        TranslatedPipeline {
+            translated_preamble,
+            translated_stages,
+            variable_registry: translation_context.variable_registry,
+            value_parameters: translation_context.parameters,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

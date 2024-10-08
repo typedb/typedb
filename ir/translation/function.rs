@@ -47,7 +47,7 @@ pub fn translate_function(
     let body = translate_function_block(snapshot, function_index, &mut context, &function.block)?;
     Ok(Function::new(
         function.signature.ident.as_str(),
-        context.variable_registry,
+        context,
         arguments,
         body,
     ))
@@ -59,8 +59,8 @@ pub(crate) fn translate_function_block(
     context: &mut TranslationContext,
     function_block: &FunctionBlock,
 ) -> Result<FunctionBody, FunctionRepresentationError> {
-    let pipeline =
-        translate_pipeline_stages(snapshot, function_index, context, &function_block.stages).map_err(|err| {
+    let stages = translate_pipeline_stages(snapshot, function_index, context, &function_block.stages)
+        .map_err(|err| {
             FunctionRepresentationError::BlockDefinition {
                 declaration: function_block.clone(),
                 typedb_source: Box::new(err),
@@ -72,7 +72,7 @@ pub(crate) fn translate_function_block(
         ReturnStatement::Single(single) => build_return_single(&context, single),
         ReturnStatement::Reduce(reduction) => build_return_reduce(&context, reduction),
     }?;
-    Ok(FunctionBody::new(pipeline, return_operation))
+    Ok(FunctionBody::new(stages, return_operation))
 }
 
 pub fn build_signature(function_id: FunctionID, function: &typeql::Function) -> FunctionSignature {

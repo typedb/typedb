@@ -15,20 +15,19 @@ pub mod type_inference;
 mod type_seeder;
 pub mod annotated_functions;
 pub mod pipeline;
+mod function;
 
 typedb_error!(
     pub AnnotationError(component = "Query annotation", prefix = "QUA") {
         TypeInference(0, "Type inference error while compiling query annotations.", ( typedb_source : TypeInferenceError )),
         PreambleTypeInference(1, "Type inference error while compiling query premable functions.", ( typedb_source : FunctionTypeInferenceError )),
         ExpressionCompilation(2, "Error inferring correct expression types.", ( source : ExpressionCompileError )),
-        CouldNotDetermineValueTypeForReducerInput(15, "The value-type for the reducer input variable '{variable}' could not be determined.", variable: String),
-        ReducerInputVariableDidNotHaveSingleValueType(16, "The reducer input variable '{variable}' had multiple value-types.", variable: String),
-        UnsupportedValueTypeForReducer(17, "The input variable to the reducer'{reducer}({variable})' reducer had an unsupported value-type: '{value_type}'", reducer: String, variable: String, value_type: ValueTypeCategory),
-        UncomparableValueTypesForSortVariable(18, "The sort variable '{variable}' could return incomparable value-types '{category1}' & '{category2}'.", variable: String, category1: ValueTypeCategory, category2: ValueTypeCategory),
+        CouldNotDetermineValueTypeForReducerInput(10, "The value-type for the reducer input variable '{variable}' could not be determined.", variable: String),
+        ReducerInputVariableDidNotHaveSingleValueType(11, "The reducer input variable '{variable}' had multiple value-types.", variable: String),
+        UnsupportedValueTypeForReducer(12, "The input variable to the reducer'{reducer}({variable})' reducer had an unsupported value-type: '{value_type}'", reducer: String, variable: String, value_type: ValueTypeCategory),
+        UncomparableValueTypesForSortVariable(13, "The sort variable '{variable}' could return incomparable value-types '{category1}' & '{category2}'.", variable: String, category1: ValueTypeCategory, category2: ValueTypeCategory),
     }
 );
-
-
 
 typedb_error!(
     pub FunctionTypeInferenceError(component = "Function type inference", prefix = "FIN") {

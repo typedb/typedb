@@ -21,7 +21,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::pattern::ParameterID;
 use crate::program::block::{Block, BlockBuilder, BlockBuilderContext};
 use crate::program::fetch::{FetchListAttributeFromList, FetchObject, FetchObjectAttributes, FetchObjectEntries, FetchSingleAttribute, FetchSingleVar, FetchSome};
-use crate::program::function::{FunctionBody, ReturnOperation};
+use crate::program::function::{AnonymousFunction, FunctionBody, ReturnOperation};
 use crate::program::function_signature::FunctionSignatureIndex;
 use crate::program::FunctionReadError;
 use crate::RepresentationError;
@@ -33,18 +33,18 @@ use crate::translation::TranslationContext;
 
 pub(super) fn translate_fetch(
     snapshot: &impl ReadableSnapshot,
-    context: &mut TranslationContext,
+    parent_context: &mut TranslationContext,
     function_index: &impl FunctionSignatureIndex,
     fetch: &TypeQLFetch,
 ) -> Result<FetchObject, FetchRepresentationError> {
-    translate_fetch_object(snapshot, context, function_index, &fetch.object)
+    translate_fetch_object(snapshot, parent_context, function_index, &fetch.object)
 }
 
 // This function returns a specific `FetchObject`, rather than the FetchSome` higher-level enum
 // This gives us a simpler entry point for the fetch clause translation
 fn translate_fetch_object(
     snapshot: &impl ReadableSnapshot,
-    context: &mut TranslationContext,
+    parent_context: &mut TranslationContext,
     function_index: &impl FunctionSignatureIndex,
     object: &TypeQLFetchObject,
 ) -> Result<FetchObject, FetchRepresentationError> {
@@ -53,13 +53,13 @@ fn translate_fetch_object(
             let mut object = HashMap::new();
             for entry in entries {
                 let (key, value) = (&entry.key, &entry.value);
-                let key_id = register_key(context, key);
-                object.insert(key_id, translate_fetch_some(snapshot, context, function_index, value)?);
+                let key_id = register_key(parent_context, key);
+                object.insert(key_id, translate_fetch_some(snapshot, parent_context, function_index, value)?);
             }
             Ok(FetchObject::Entries(FetchObjectEntries { entries: object }))
         }
         TypeQLFetchObjectBody::AttributesAll(variable) => {
-            let var = try_get_variable(context, &variable)?;
+            let var = try_get_variable(parent_context, &variable)?;
             Ok(FetchObject::Attributes(FetchObjectAttributes { variable: var }))
         }
     }
@@ -67,26 +67,27 @@ fn translate_fetch_object(
 
 fn translate_fetch_some(
     snapshot: &impl ReadableSnapshot,
-    context: &mut TranslationContext,
+    parent_context: &mut TranslationContext,
     function_index: &impl FunctionSignatureIndex,
     fetch_some: &TypeQLFetchSome,
 ) -> Result<FetchSome, FetchRepresentationError> {
     match fetch_some {
         TypeQLFetchSome::Object(object) => {
-            translate_fetch_object(snapshot, context, function_index, object).map(|object| FetchSome::Object(Box::new(object)))
+            translate_fetch_object(snapshot, parent_context, function_index, object)
+                .map(|object| FetchSome::Object(Box::new(object)))
         }
         TypeQLFetchSome::List(list) => {
-            translate_fetch_list(snapshot, context, function_index, list)
+            translate_fetch_list(snapshot, parent_context, function_index, list)
         }
         TypeQLFetchSome::Single(some) => {
-            translate_fetch_single(snapshot, context, function_index, some)
+            translate_fetch_single(snapshot, parent_context, function_index, some)
         }
     }
 }
 
 fn translate_fetch_list(
     _snapshot: &impl ReadableSnapshot,
-    _context: &mut TranslationContext,
+    _parent_context: &mut TranslationContext,
     _function_index: &impl FunctionSignatureIndex,
     _list: &TypeQLFetchList,
 ) -> Result<FetchSome, FetchRepresentationError> {
@@ -96,13 +97,13 @@ fn translate_fetch_list(
 // Note: TypeQL fetch-single can turn either into a List or a Single IR
 fn translate_fetch_single(
     snapshot: &impl ReadableSnapshot,
-    context: &mut TranslationContext,
+    parent_context: &mut TranslationContext,
     function_index: &impl FunctionSignatureIndex,
     single: &TypeQLFetchSingle,
 ) -> Result<FetchSome, FetchRepresentationError> {
     match single {
         FetchSingle::Attribute(fetch_attribute) => {
-            let owner = try_get_variable(context, &fetch_attribute.owner)?;
+            let owner = try_get_variable(parent_context, &fetch_attribute.owner)?;
             match &fetch_attribute.attribute {
                 TypeRefAny::Type(type_ref) => {
                     match &type_ref {
@@ -140,21 +141,21 @@ fn translate_fetch_single(
         FetchSingle::Expression(expression) => {
             match &expression {
                 Expression::Variable(variable) => {
-                    let var = try_get_variable(context, variable)?;
+                    let var = try_get_variable(parent_context, variable)?;
                     Ok(FetchSome::SingleVar(FetchSingleVar { variable: var }))
                 }
                 Expression::ListIndex(_) | Expression::Value(_) | Expression::Operation(_) | Expression::Paren(_) => {
-                    translate_inline_expression(context, function_index, &expression)
+                    translate_inline_expression(parent_context, function_index, &expression)
                 }
                 // function expressions may return Single or List, depending on signature invoked
                 Expression::Function(call) => {
                     let function_name = match &call.name {
                         FunctionName::Builtin(_) => {
-                            return translate_inline_expression(context, function_index, &expression);
+                            return translate_inline_expression(parent_context, function_index, &expression);
                         }
                         FunctionName::Identifier(name) => name.as_str(),
                     };
-                    translate_inline_user_function_call(context, function_index, &call, function_name)
+                    translate_inline_user_function_call(parent_context, function_index, &call, function_name)
                 }
                 // list expressions should be mapped to FetchList
                 Expression::List(_) => {
@@ -167,13 +168,14 @@ fn translate_fetch_single(
         }
         FetchSingle::FunctionBlock(block) => {
             // clone context, since we don't want the inline function to affect the parent context
-            let sub_context = &mut context.clone();
-            let translated = translate_function_block(snapshot, function_index, sub_context, &block)
+            let mut local_context = parent_context.clone();
+            let translated = translate_function_block(snapshot, function_index, &mut local_context, &block)
                 .map_err(|err| FetchRepresentationError::FunctionRepresentation { declaration: block.clone() })?;
             if translated.return_operation().is_stream() {
                 Err(FetchRepresentationError::ExpectedSingleInlineFunction { declaration: block.clone() })
             } else {
-                Ok(FetchSome::SingleInlineFunction(translated))
+                let inline_function = AnonymousFunction::new(local_context, translated);
+                Ok(FetchSome::SingleFunction(inline_function))
             }
         }
     }
@@ -187,19 +189,17 @@ fn translate_inline_expression(
     // because expressions expect to be able to extract out function calls, we'll translate an expression
     // into a match-return
     // we also don't want anything here to affect the parent contexts, so clone
-    let mut variable_registry = context.variable_registry.clone();
-    let mut visible_variables = context.visible_variables.clone();
-    let mut parameters = context.parameters.clone();
+    let mut local_context = context.clone();
     let builder_context = BlockBuilderContext::new(
-        &mut variable_registry,
-        &mut visible_variables,
-        &mut parameters,
+        &mut local_context.variable_registry,
+        &mut local_context.visible_variables,
+        &mut local_context.parameters,
     );
     let mut builder = Block::builder(builder_context);
     let assign_var = add_expression(function_index, &mut builder, &expression)?;
     let block = TranslatedStage::Match { block: builder.finish() };
     let return_ = ReturnOperation::Single(SingleSelector::First, vec![assign_var]);
-    Ok(FetchSome::SingleInlineFunction(FunctionBody::new(vec![block], return_)))
+    Ok(FetchSome::SingleFunction(AnonymousFunction::new(local_context, FunctionBody::new(vec![block], return_))))
 }
 
 fn translate_inline_user_function_call(
@@ -221,13 +221,11 @@ fn translate_inline_user_function_call(
     // because function calls expect to be able to extract out expression calls, we'll translate
     // into a match-return
     // we also don't want anything here to affect the parent contexts, so clone
-    let mut variable_registry = context.variable_registry.clone();
-    let mut visible_variables = context.visible_variables.clone();
-    let mut parameters = context.parameters.clone();
+    let mut local_context = context.clone();
     let builder_context = BlockBuilderContext::new(
-        &mut variable_registry,
-        &mut visible_variables,
-        &mut parameters,
+        &mut local_context.variable_registry,
+        &mut local_context.visible_variables,
+        &mut local_context.parameters,
     );
     let mut builder = Block::builder(builder_context);
     let mut assign_vars = Vec::new();
@@ -248,10 +246,10 @@ fn translate_inline_user_function_call(
     let stage = TranslatedStage::Match { block: builder.finish() };
     if signature.return_is_stream {
         let return_ = ReturnOperation::Stream(assign_vars);
-        Ok(FetchSome::ListFunction(FunctionBody::new(vec![stage], return_)))
+        Ok(FetchSome::ListFunction(AnonymousFunction::new(local_context, FunctionBody::new(vec![stage], return_))))
     } else {
         let return_ = ReturnOperation::Single(SingleSelector::First, assign_vars);
-        Ok(FetchSome::SingleInlineFunction(FunctionBody::new(vec![stage], return_)))
+        Ok(FetchSome::SingleFunction(AnonymousFunction::new(local_context, FunctionBody::new(vec![stage], return_))))
     }
 }
 
