@@ -646,7 +646,7 @@ impl<ID: IrID> Label<ID> {
         Self { left: Vertex::Variable(left), type_label }
     }
 
-    pub fn left(&self) -> &Vertex<ID> {
+    pub fn type_(&self) -> &Vertex<ID> {
         &self.left
     }
 
@@ -699,7 +699,7 @@ impl<ID: IrID> RoleName<ID> {
         Self { left: Vertex::Variable(left), name }
     }
 
-    pub fn left(&self) -> &Vertex<ID> {
+    pub fn type_(&self) -> &Vertex<ID> {
         &self.left
     }
 

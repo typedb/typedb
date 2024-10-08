@@ -190,15 +190,23 @@ impl MatchExecutableBuilder {
         (self.steps.len(), current.instructions.len() - 1)
     }
 
-    fn push_check_instruction(&mut self, instruction: CheckInstruction<VariablePosition>) {
-        if self.current.as_ref().is_some_and(|builder| !builder.is_check()) {
-            self.finish_one();
-        }
-        if self.current.is_none() {
-            self.current = Some(StepBuilder::Check(CheckBuilder::default()))
-        }
-        let current = self.current.as_mut().unwrap().as_check_mut().unwrap();
-        current.instructions.push(instruction);
+    fn push_check(&mut self, producer: Option<&(usize, usize)>, check: CheckInstruction<VariablePosition>) {
+        if let Some(&(program, instruction)) = producer {
+            let Some(intersection) = self.get_step_mut(program).and_then(|step| step.as_intersection_mut()) else {
+                todo!("expected an intersection to be the producer")
+            };
+            intersection.instructions[instruction].add_check(check);
+        } else {
+            // all variables are inputs
+            if self.current.as_ref().is_some_and(|builder| !builder.is_check()) {
+                self.finish_one();
+            }
+            if self.current.is_none() {
+                self.current = Some(StepBuilder::Check(CheckBuilder::default()))
+            }
+            let current = self.current.as_mut().unwrap().as_check_mut().unwrap();
+            current.instructions.push(check);
+        };
     }
 
     fn push_step(&mut self, variable_positions: &HashMap<Variable, VariablePosition>, step: StepBuilder) {
