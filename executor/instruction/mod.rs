@@ -12,7 +12,9 @@ use std::{
 };
 
 use answer::{variable_value::VariableValue, Thing, Type};
-use compiler::match_::instructions::{CheckInstruction, CheckVertex, ConstraintInstruction};
+use compiler::match_::instructions::{
+    CheckInstruction, CheckVertex, ConstraintInstruction, VariableMode, VariableModes,
+};
 use concept::{
     error::ConceptReadError,
     thing::{object::ObjectAPI, thing_manager::ThingManager},
@@ -96,13 +98,11 @@ pub(crate) enum InstructionExecutor {
 impl InstructionExecutor {
     pub(crate) fn new(
         instruction: ConstraintInstruction<VariablePosition>,
-        selected: &[VariablePosition],
-        named: &HashMap<VariablePosition, String>,
+        variable_modes: VariableModes,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         sort_by: Option<VariablePosition>,
     ) -> Result<Self, ConceptReadError> {
-        let variable_modes = VariableModes::new_for(&instruction, selected, named);
         match instruction {
             ConstraintInstruction::TypeList(type_) => {
                 Ok(Self::TypeList(TypeListExecutor::new(type_, variable_modes, sort_by)))
@@ -201,73 +201,6 @@ impl InstructionExecutor {
             InstructionExecutor::Plays(_) => "plays",
             InstructionExecutor::PlaysReverse(_) => "plays_reverse",
         }
-    }
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub(crate) enum VariableMode {
-    Input,
-    Output,
-    Count,
-    Check,
-}
-
-impl VariableMode {
-    pub(crate) const fn new(is_input: bool, is_selected: bool, is_named: bool) -> VariableMode {
-        if is_input {
-            Self::Input
-        } else if is_selected {
-            Self::Output
-        } else if is_named {
-            Self::Count
-        } else {
-            Self::Check
-        }
-    }
-}
-
-pub(crate) struct VariableModes {
-    modes: HashMap<VariablePosition, VariableMode>,
-}
-
-impl VariableModes {
-    fn new() -> Self {
-        VariableModes { modes: HashMap::new() }
-    }
-
-    pub(crate) fn new_for(
-        instruction: &ConstraintInstruction<VariablePosition>,
-        selected: &[VariablePosition],
-        named: &HashMap<VariablePosition, String>,
-    ) -> Self {
-        let mut modes = Self::new();
-        instruction.ids_foreach(|id| {
-            let var_mode =
-                VariableMode::new(instruction.is_input_variable(id), selected.contains(&id), named.contains_key(&id));
-            modes.insert(id, var_mode)
-        });
-        modes
-    }
-
-    fn insert(&mut self, variable_position: VariablePosition, mode: VariableMode) {
-        let existing = self.modes.insert(variable_position, mode);
-        debug_assert!(existing.is_none())
-    }
-
-    pub(crate) fn get(&self, variable_position: VariablePosition) -> Option<&VariableMode> {
-        self.modes.get(&variable_position)
-    }
-
-    pub(crate) fn all_inputs(&self) -> bool {
-        self.modes.values().all(|mode| mode == &VariableMode::Input)
-    }
-
-    pub(crate) fn none_inputs(&self) -> bool {
-        self.modes.values().all(|mode| mode != &VariableMode::Input)
-    }
-
-    fn len(&self) -> usize {
-        self.modes.len()
     }
 }
 

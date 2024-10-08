@@ -4,31 +4,22 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
-use answer::{variable::Variable, variable_value::VariableValue};
-use compiler::match_::{
-    instructions::{CheckInstruction, ConstraintInstruction},
-    planner::pattern_plan::{
-        AssignmentProgram, CheckProgram, DisjunctionProgram, IntersectionProgram, MatchProgram, NegationProgram,
-        OptionalProgram, Program, UnsortedJoinProgram,
-    },
-};
+use compiler::match_::planner::pattern_plan::MatchProgram;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use ir::program::VariableRegistry;
 use itertools::Itertools;
-use lending_iterator::{adaptors::FlatMap, AsLendingIterator, LendingIterator, Peekable};
+use lending_iterator::{adaptors::FlatMap, AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
-    instruction::{iterator::TupleIterator, Checker, InstructionExecutor},
     pipeline::stage::ExecutionContext,
-    row::{MaybeOwnedRow, Row},
-    ExecutionInterrupt, SelectedPositions, VariablePosition,
+    program_executors::ProgramExecutor,
+    row::MaybeOwnedRow,
+    ExecutionInterrupt,
 };
-use crate::program_executors::ProgramExecutor;
 
 pub(crate) struct PatternExecutor {
     input: Option<MaybeOwnedRow<'static>>,
@@ -44,11 +35,10 @@ impl PatternExecutor {
         thing_manager: &Arc<ThingManager>,
         input: MaybeOwnedRow<'_>,
     ) -> Result<Self, ConceptReadError> {
-        let context = match_program.variable_registry();
-
-        let program_executors = match_program.programs()
+        let program_executors = match_program
+            .programs()
             .iter()
-            .map(|program| ProgramExecutor::new(program, context, match_program.variable_positions(), snapshot, thing_manager))
+            .map(|program| ProgramExecutor::new(program, snapshot, thing_manager))
             .try_collect()?;
 
         Ok(Self {
@@ -188,7 +178,6 @@ impl<Snapshot: ReadableSnapshot + 'static> Iterator for BatchIterator<Snapshot> 
         batch.transpose()
     }
 }
-
 
 // struct ResumeExecutor {
 //     resume_points: Vec<SuspensionPoint>,

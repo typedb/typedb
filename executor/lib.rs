@@ -23,10 +23,10 @@ pub(crate) mod instruction;
 pub mod match_executor;
 pub mod pattern_executor;
 pub mod pipeline;
+mod program_executors;
 pub(crate) mod reduce_executor;
 pub mod row;
 pub mod write;
-mod program_executors;
 
 // TODO: use a bit-vec, since we have a continuously allocated range of positions
 // ---> for now, using a byte vec, which is 8x wasteful and on the heap!

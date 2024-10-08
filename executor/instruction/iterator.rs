@@ -7,7 +7,10 @@
 use std::{cmp::Ordering, iter::Iterator, ops::RangeInclusive};
 
 use answer::variable_value::VariableValue;
-use compiler::VariablePosition;
+use compiler::{
+    match_::instructions::{VariableMode, VariableModes},
+    VariablePosition,
+};
 use concept::error::ConceptReadError;
 use itertools::zip_eq;
 use lending_iterator::{LendingIterator, Peekable};
@@ -50,7 +53,6 @@ use crate::{
         sub_reverse_executor::{SubReverseBoundedSortedSuper, SubReverseUnboundedSortedSub},
         tuple::{Tuple, TupleIndex, TuplePositions, TupleResult},
         type_list_executor::TypeIterator,
-        VariableMode, VariableModes,
     },
     row::Row,
 };

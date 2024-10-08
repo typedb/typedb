@@ -20,7 +20,7 @@ pub mod program_plan;
 mod vertex;
 
 use std::{
-    collections::{hash_map, HashMap},
+    collections::{hash_map, HashMap, HashSet},
     sync::Arc,
 };
 
@@ -91,14 +91,19 @@ enum ProgramBuilder {
 }
 
 impl ProgramBuilder {
-    fn finish(self, outputs: &HashMap<VariablePosition, Variable>) -> Program {
+    fn finish(
+        self,
+        index: &HashMap<Variable, VariablePosition>,
+        named_variables: &HashSet<VariablePosition>,
+    ) -> Program {
         match self {
             Self::Intersection(IntersectionBuilder { sort_variable, instructions, output_width }) => {
-                let sort_variable = *outputs.iter().find(|(_, &item)| Some(item) == sort_variable).unwrap().0;
+                let sort_variable = sort_variable.map(|var| index.get(&var).unwrap()).unwrap().clone();
                 Program::Intersection(IntersectionProgram::new(
                     sort_variable,
                     instructions,
                     &(0..output_width.unwrap()).map(VariablePosition::new).collect_vec(),
+                    named_variables,
                     output_width.unwrap(),
                 ))
             }
@@ -247,7 +252,12 @@ impl MatchProgramBuilder {
 
     fn finish(mut self, variable_registry: Arc<VariableRegistry>) -> MatchProgram {
         self.finish_one();
-        let programs = self.programs.into_iter().map(|builder| builder.finish(&self.outputs)).collect();
+        let named_variables = self
+            .index
+            .iter()
+            .filter_map(|(var, pos)| variable_registry.variable_names().get(var).map(|_| pos.clone()))
+            .collect();
+        let programs = self.programs.into_iter().map(|builder| builder.finish(&self.index, &named_variables)).collect();
         let variable_positions_index =
             self.outputs.iter().sorted_by_key(|(k, _)| k.as_usize()).map(|(_, &v)| v).collect();
         MatchProgram::new(programs, variable_registry, self.index.clone(), variable_positions_index)

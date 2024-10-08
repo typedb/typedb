@@ -107,6 +107,7 @@ fn traverse_isa_unbounded_sorted_thing() {
     let vars = vec![var_dog, var_dog_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let named_variables = variable_positions.values().map(|p| p.clone()).collect();
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
@@ -115,6 +116,7 @@ fn traverse_isa_unbounded_sorted_thing() {
             IsaInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&variable_positions),
         )],
         &[variable_positions[&var_dog], variable_positions[&var_dog_type]],
+        &named_variables,
         2,
     ))];
 
@@ -176,6 +178,7 @@ fn traverse_isa_unbounded_sorted_type() {
     let vars = vec![var_dog, var_dog_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let named_variables = variable_positions.values().map(|p| p.clone()).collect();
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
@@ -184,6 +187,7 @@ fn traverse_isa_unbounded_sorted_type() {
             IsaInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&variable_positions),
         )],
         &[variable_positions[&var_dog], variable_positions[&var_dog_type]],
+        &named_variables,
         2,
     ))];
 
@@ -248,6 +252,7 @@ fn traverse_isa_bounded_thing() {
     let vars = vec![var_type_from, var_thing, var_type_to];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let named_variables = variable_positions.values().map(|p| p.clone()).collect();
 
     // Plan
     let steps = vec![
@@ -258,6 +263,7 @@ fn traverse_isa_bounded_thing() {
                     .map(&variable_positions),
             )],
             &[variable_positions[&var_thing]],
+            &named_variables,
             2,
         )),
         Program::Intersection(IntersectionProgram::new(
@@ -267,6 +273,7 @@ fn traverse_isa_bounded_thing() {
                     .map(&variable_positions),
             )],
             &[variable_positions[&var_type_to]],
+            &named_variables,
             3,
         )),
     ];
@@ -333,6 +340,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
     let vars = vec![var_dog, var_dog_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let named_variables = variable_positions.values().map(|p| p.clone()).collect();
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
@@ -341,6 +349,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
             IsaReverseInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&variable_positions),
         )],
         &[variable_positions[&var_dog], variable_positions[&var_dog_type]],
+        &named_variables,
         2,
     ))];
 
@@ -402,6 +411,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
     let vars = vec![var_dog, var_dog_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let named_variables = variable_positions.values().map(|p| p.clone()).collect();
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
@@ -410,6 +420,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
             IsaReverseInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&variable_positions),
         )],
         &[variable_positions[&var_dog], variable_positions[&var_dog_type]],
+        &named_variables,
         2,
     ))];
 
@@ -474,6 +485,7 @@ fn traverse_isa_reverse_bounded_type_exact() {
     let vars = vec![var_thing_from, var_type, var_thing_to];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let named_variables = variable_positions.values().map(|p| p.clone()).collect();
 
     // Plan
     let steps = vec![
@@ -483,6 +495,7 @@ fn traverse_isa_reverse_bounded_type_exact() {
                 IsaInstruction::new(isa_from_thing, Inputs::None([]), &entry_annotations).map(&variable_positions),
             )],
             &[variable_positions[&var_thing_from], variable_positions[&var_type]],
+            &named_variables,
             2,
         )),
         Program::Intersection(IntersectionProgram::new(
@@ -492,6 +505,7 @@ fn traverse_isa_reverse_bounded_type_exact() {
                     .map(&variable_positions),
             )],
             &[variable_positions[&var_thing_from], variable_positions[&var_type], variable_positions[&var_thing_to]],
+            &named_variables,
             3,
         )),
     ];
@@ -561,6 +575,7 @@ fn traverse_isa_reverse_bounded_type_subtype() {
     let vars = vec![var_thing_from, var_type, var_thing_to];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let named_variables = variable_positions.values().map(|p| p.clone()).collect();
 
     // Plan
     let steps = vec![
@@ -570,6 +585,7 @@ fn traverse_isa_reverse_bounded_type_subtype() {
                 IsaInstruction::new(isa_from_thing, Inputs::None([]), &entry_annotations).map(&variable_positions),
             )],
             &[variable_positions[&var_thing_from], variable_positions[&var_type]],
+            &named_variables,
             2,
         )),
         Program::Intersection(IntersectionProgram::new(
@@ -579,6 +595,7 @@ fn traverse_isa_reverse_bounded_type_subtype() {
                     .map(&variable_positions),
             )],
             &[variable_positions[&var_thing_from], variable_positions[&var_type], variable_positions[&var_thing_to]],
+            &named_variables,
             3,
         )),
     ];
@@ -645,6 +662,7 @@ fn traverse_isa_reverse_fixed_type_exact() {
     let vars = vec![var_thing];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let named_variables = variable_positions.values().map(|p| p.clone()).collect();
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
@@ -653,6 +671,7 @@ fn traverse_isa_reverse_fixed_type_exact() {
             IsaReverseInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&variable_positions),
         )],
         &[variable_positions[&var_thing]],
+        &named_variables,
         1,
     ))];
 
@@ -717,6 +736,7 @@ fn traverse_isa_reverse_fixed_type_subtype() {
     let vars = vec![var_thing];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let named_variables = variable_positions.values().map(|p| p.clone()).collect();
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
@@ -725,6 +745,7 @@ fn traverse_isa_reverse_fixed_type_subtype() {
             IsaReverseInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&variable_positions),
         )],
         &[variable_positions[&var_thing]],
+        &named_variables,
         1,
     ))];
 

@@ -183,6 +183,10 @@ fn anonymous_vars_not_enumerated_or_counted() {
     let vars = vec![var_attribute, var_person, var_attribute_type, var_person_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let named_variables = variable_positions
+        .iter()
+        .filter_map(|(v, p)| translation_context.variable_registry.variable_names().get(&v).map(|_| p.clone()))
+        .collect();
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
@@ -191,6 +195,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
             HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations).map(&variable_positions),
         )],
         &[variable_positions[&var_person]],
+        &named_variables,
         4,
     ))];
     let pattern_plan =
@@ -265,6 +270,10 @@ fn unselected_named_vars_counted() {
     let vars = vec![var_person, var_attribute, var_attribute_type, var_person_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let named_variables = variable_positions
+        .iter()
+        .filter_map(|(v, p)| translation_context.variable_registry.variable_names().get(&v).map(|_| p.clone()))
+        .collect();
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
@@ -273,6 +282,7 @@ fn unselected_named_vars_counted() {
             HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations).map(&variable_positions),
         )],
         &[variable_positions[&var_person]],
+        &named_variables,
         2,
     ))];
 
@@ -360,6 +370,10 @@ fn cartesian_named_counted_checked() {
         vec![var_person, var_age, var_name, var_email, var_age_type, var_person_type, var_name_type, var_email_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let named_variables = variable_positions
+        .iter()
+        .filter_map(|(v, p)| translation_context.variable_registry.variable_names().get(&v).map(|_| p.clone()))
+        .collect();
 
     // Plan
     let steps = vec![Program::Intersection(IntersectionProgram::new(
@@ -376,6 +390,7 @@ fn cartesian_named_counted_checked() {
             ),
         ],
         &[variable_positions[&var_person], variable_positions[&var_age]],
+        &named_variables,
         4,
     ))];
 

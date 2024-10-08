@@ -4,33 +4,33 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::cmp::Ordering;
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{cmp::Ordering, collections::HashMap, sync::Arc};
+
+use answer::{variable::Variable, variable_value::VariableValue};
+use compiler::{
+    match_::{
+        instructions::{CheckInstruction, ConstraintInstruction, VariableModes},
+        planner::pattern_plan::{
+            AssignmentProgram, CheckProgram, DisjunctionProgram, IntersectionProgram, MatchProgram, NegationProgram,
+            OptionalProgram, Program, UnsortedJoinProgram,
+        },
+    },
+    VariablePosition,
+};
+use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use itertools::Itertools;
-use answer::variable::Variable;
-use answer::variable_value::VariableValue;
-use compiler::match_::instructions::{CheckInstruction, ConstraintInstruction};
-use compiler::match_::planner::pattern_plan::{AssignmentProgram, CheckProgram, DisjunctionProgram, IntersectionProgram, MatchProgram, NegationProgram, OptionalProgram, Program, UnsortedJoinProgram};
-use compiler::VariablePosition;
-use concept::error::ConceptReadError;
-use concept::thing::thing_manager::ThingManager;
-use ir::program::VariableRegistry;
-use lending_iterator::adaptors::FlatMap;
-use lending_iterator::{AsLendingIterator, LendingIterator, Peekable};
+use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
-use crate::batch::{FixedBatch, FixedBatchRowIterator};
-use crate::error::ReadExecutionError;
-use crate::{ExecutionInterrupt, SelectedPositions};
-use crate::instruction::{Checker, InstructionExecutor};
-use crate::instruction::iterator::TupleIterator;
-use crate::pattern_executor::PatternExecutor;
-use crate::pipeline::stage::ExecutionContext;
-use crate::row::{MaybeOwnedRow, Row};
 
-pub(super) trait ProgramExecutorTrait {
-
-}
+use crate::{
+    batch::{FixedBatch, FixedBatchRowIterator},
+    error::ReadExecutionError,
+    instruction::{iterator::TupleIterator, Checker, InstructionExecutor},
+    pattern_executor::PatternExecutor,
+    pipeline::stage::ExecutionContext,
+    row::{MaybeOwnedRow, Row},
+    ExecutionInterrupt, SelectedPositions,
+};
 
 pub(super) enum ProgramExecutor {
     SortedJoin(IntersectionExecutor),
@@ -46,8 +46,6 @@ pub(super) enum ProgramExecutor {
 impl ProgramExecutor {
     pub(super) fn new(
         program: &Program,
-        variable_registry: &VariableRegistry,
-        variable_positions: &HashMap<Variable, VariablePosition>,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
     ) -> Result<Self, ConceptReadError> {
@@ -59,12 +57,6 @@ impl ProgramExecutor {
                     instructions.clone(),
                     row_width,
                     selected_variables.clone(),
-                    &variable_positions
-                        .iter()
-                        .filter_map(|(var, &pos)| {
-                            variable_registry.variable_names().get(var).map(|name| (pos, name.to_owned()))
-                        })
-                        .collect(),
                     snapshot,
                     thing_manager,
                 )?;
@@ -149,25 +141,17 @@ struct IntersectionExecutor {
 impl IntersectionExecutor {
     fn new(
         sort_variable: VariablePosition,
-        instructions: Vec<ConstraintInstruction<VariablePosition>>,
+        instructions: Vec<(ConstraintInstruction<VariablePosition>, VariableModes)>,
         output_width: u32,
         select_variables: Vec<VariablePosition>,
-        named_variables: &HashMap<VariablePosition, String>,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
     ) -> Result<Self, ConceptReadError> {
         let instruction_count = instructions.len();
         let executors: Vec<InstructionExecutor> = instructions
             .into_iter()
-            .map(|instruction| {
-                InstructionExecutor::new(
-                    instruction,
-                    &select_variables,
-                    named_variables,
-                    &**snapshot,
-                    thing_manager,
-                    Some(sort_variable),
-                )
+            .map(|(instruction, variable_modes)| {
+                InstructionExecutor::new(instruction, variable_modes, &**snapshot, thing_manager, Some(sort_variable))
             })
             .try_collect()?;
 
@@ -693,7 +677,7 @@ impl NegationExecutor {
                 context.thing_manager(),
                 input_row.clone(),
             )
-                .map_err(|error| ReadExecutionError::ConceptRead { source: error })?;
+            .map_err(|error| ReadExecutionError::ConceptRead { source: error })?;
             let mut iterator = executor.into_iterator(context.clone(), interrupt.clone());
             if iterator.next().transpose().map_err(|err| err.clone())?.is_none() {
                 output.append(|mut row| row.copy_from(input_row.row(), input_row.multiplicity()))
