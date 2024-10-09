@@ -59,7 +59,7 @@ impl MatchExecutor {
         )
     }
 
-    fn compute_next_batch(
+    pub(super) fn compute_next_batch(
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
