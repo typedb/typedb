@@ -16,7 +16,7 @@ use ir::{
         },
         ParameterID,
     },
-    program::ParameterRegistry,
+    pipeline::ParameterRegistry,
 };
 
 use crate::annotation::expression::{

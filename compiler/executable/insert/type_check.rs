@@ -13,7 +13,7 @@ use answer::variable::Variable;
 use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::constraint::{Constraint, Has, Links},
-    program::block::Block,
+    pipeline::block::Block,
 };
 use storage::snapshot::ReadableSnapshot;
 

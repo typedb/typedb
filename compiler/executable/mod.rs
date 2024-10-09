@@ -4,9 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+pub mod delete;
+pub mod fetch;
+pub mod insert;
+pub mod match_;
 pub mod modifiers;
 pub mod reduce;
-pub mod match_;
-pub mod delete;
-pub mod insert;
-pub mod fetch;

@@ -4,14 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, iter::zip, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use compiler::annotation::function::{
     annotate_functions, AnnotatedFunction, AnnotatedFunctions, IndexedAnnotatedFunctions,
 };
 use concept::type_::type_manager::TypeManager;
 use encoding::graph::definition::definition_key::DefinitionKey;
-use ir::program::{
+use ir::pipeline::{
     function::Function,
     function_signature::{FunctionIDAPI, FunctionSignature, HashMapFunctionSignatureIndex},
 };
@@ -91,11 +91,7 @@ impl FunctionCache {
         // ))
 
         // TODO
-        Ok((
-            function_index,
-            schema_functions_index,
-            IndexedAnnotatedFunctions::empty()
-        ))
+        Ok((function_index, schema_functions_index, IndexedAnnotatedFunctions::empty()))
     }
 
     pub(crate) fn get_function_key(&self, name: &str) -> Option<DefinitionKey<'static>> {

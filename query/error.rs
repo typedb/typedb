@@ -4,12 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use compiler::{annotation::AnnotationError, executable::insert::WriteCompilationError};
-use compiler::annotation::expression::ExpressionCompileError;
+use compiler::{
+    annotation::{expression::ExpressionCompileError, AnnotationError},
+    executable::insert::WriteCompilationError,
+};
 use error::typedb_error;
 use executor::pipeline::PipelineExecutionError;
 use function::FunctionError;
-use ir::{program::FunctionRepresentationError, RepresentationError};
+use ir::{pipeline::FunctionRepresentationError, RepresentationError};
 
 use crate::{define::DefineError, redefine::RedefineError, undefine::UndefineError};
 

@@ -8,7 +8,13 @@ use std::marker::PhantomData;
 
 use encoding::value::{value::NativeValueConvertible, value_type::ValueTypeCategory};
 
-use crate::annotation::expression::{expression_compiler::ExpressionCompilationContext, ExpressionCompileError};
+use crate::annotation::expression::{
+    expression_compiler::ExpressionCompilationContext,
+    instructions::{
+        op_codes::ExpressionOpCode, CompilableExpression, ExpressionEvaluationError, ExpressionInstruction,
+    },
+    ExpressionCompileError,
+};
 
 pub trait UnaryExpression<T1: NativeValueConvertible, R: NativeValueConvertible> {
     const OP_CODE: ExpressionOpCode;
@@ -68,10 +74,6 @@ macro_rules! unary_instruction {
 }
 
 pub(crate) use unary_instruction;
-
-use crate::annotation::expression::instructions::{
-    op_codes::ExpressionOpCode, CompilableExpression, ExpressionEvaluationError, ExpressionInstruction,
-};
 
 unary_instruction! {
     MathAbsLong = MathAbsLongImpl(a1: i64) -> i64 { Ok(i64::abs(a1)) }

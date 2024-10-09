@@ -4,5 +4,5 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub mod instructions;
 pub mod executable;
+pub mod instructions;

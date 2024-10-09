@@ -11,7 +11,7 @@ use typeql::{
 
 use crate::{
     pattern::variable_category::VariableCategory,
-    program::{
+    pipeline::{
         reduce::{Reduce, Reducer},
         VariableRegistry,
     },

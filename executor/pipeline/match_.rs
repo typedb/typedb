@@ -4,13 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use compiler::executable::match_::planner::program_executable::ProgramExecutable;
+use compiler::executable::match_::planner::match_executable::MatchExecutable;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    match_executor::MatchExecutor,
-    pattern_executor::PatternIterator,
+    pattern_executor::{MatchExecutor, PatternIterator},
     pipeline::{
         stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator,
@@ -20,13 +19,13 @@ use crate::{
 };
 
 pub struct MatchStageExecutor<PreviousStage> {
-    program: ProgramExecutable,
+    executable: MatchExecutable,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> MatchStageExecutor<PreviousStage> {
-    pub fn new(program: ProgramExecutable, previous: PreviousStage) -> Self {
-        Self { program, previous }
+    pub fn new(executable: MatchExecutable, previous: PreviousStage) -> Self {
+        Self { executable, previous }
     }
 }
 
@@ -42,16 +41,16 @@ where
         interrupt: ExecutionInterrupt,
     ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
     {
-        let Self { previous: previous_stage, program, .. } = self;
+        let Self { previous: previous_stage, executable, .. } = self;
         let (previous_iterator, context) = previous_stage.into_iterator(interrupt.clone())?;
         let iterator = previous_iterator;
-        Ok((MatchStageIterator::new(iterator, program, context.clone(), interrupt), context))
+        Ok((MatchStageIterator::new(iterator, executable, context.clone(), interrupt), context))
     }
 }
 
 pub struct MatchStageIterator<Snapshot: ReadableSnapshot + 'static, Iterator> {
     context: ExecutionContext<Snapshot>,
-    program: ProgramExecutable,
+    executable: MatchExecutable,
     source_iterator: Iterator,
     current_iterator: Option<Peekable<PatternIterator<Snapshot>>>,
     interrupt: ExecutionInterrupt,
@@ -60,11 +59,11 @@ pub struct MatchStageIterator<Snapshot: ReadableSnapshot + 'static, Iterator> {
 impl<Snapshot: ReadableSnapshot + 'static, Iterator> MatchStageIterator<Snapshot, Iterator> {
     fn new(
         iterator: Iterator,
-        program: ProgramExecutable,
+        executable: MatchExecutable,
         context: ExecutionContext<Snapshot>,
         interrupt: ExecutionInterrupt,
     ) -> Self {
-        Self { context, program, source_iterator: iterator, current_iterator: None, interrupt }
+        Self { context, executable, source_iterator: iterator, current_iterator: None, interrupt }
     }
 }
 
@@ -84,7 +83,7 @@ where
                 Err(err) => return Some(Err(err)),
             };
 
-            let executor = MatchExecutor::new(&self.program, snapshot, thing_manager, input_row)
+            let executor = MatchExecutor::new(&self.executable, snapshot, thing_manager, input_row)
                 .map_err(|err| PipelineExecutionError::InitialisingMatchIterator { source: err });
 
             match executor {

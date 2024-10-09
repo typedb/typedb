@@ -11,8 +11,8 @@ use compiler::{
     executable::match_::{
         instructions::{CheckInstruction, ConstraintInstruction, VariableModes},
         planner::match_executable::{
-            AssignmentStep, CheckStep, DisjunctionStep, IntersectionStep, MatchExecutable, NegationStep,
-            OptionalStep, ExecutionStep, UnsortedJoinStep,
+            AssignmentStep, CheckStep, DisjunctionStep, ExecutionStep, IntersectionStep, MatchExecutable, NegationStep,
+            OptionalStep, UnsortedJoinStep,
         },
     },
     VariablePosition,
@@ -26,7 +26,7 @@ use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
     instruction::{iterator::TupleIterator, Checker, InstructionExecutor},
-    pattern_executor::PatternExecutor,
+    pattern_executor::MatchExecutor,
     pipeline::stage::ExecutionContext,
     row::{MaybeOwnedRow, Row},
     ExecutionInterrupt, SelectedPositions,
@@ -51,7 +51,9 @@ impl StepExecutor {
     ) -> Result<Self, ConceptReadError> {
         let row_width = step.output_width();
         match step {
-            ExecutionStep::Intersection(IntersectionStep { sort_variable, instructions, selected_variables, .. }) => {
+            ExecutionStep::Intersection(IntersectionStep {
+                sort_variable, instructions, selected_variables, ..
+            }) => {
                 let executor = IntersectionExecutor::new(
                     *sort_variable,
                     instructions.clone(),
@@ -628,12 +630,12 @@ impl CheckExecutor {
 }
 
 struct DisjunctionExecutor {
-    executors: Vec<PatternExecutor>,
+    executors: Vec<MatchExecutor>,
 }
 
 impl DisjunctionExecutor {
     fn new(
-        executors: Vec<PatternExecutor>,
+        executors: Vec<MatchExecutor>,
         variable_positions: &HashMap<Variable, VariablePosition>,
     ) -> DisjunctionExecutor {
         Self { executors }
@@ -671,13 +673,9 @@ impl NegationExecutor {
 
         while let Some(row) = input.next() {
             let input_row = row.map_err(|err| err.clone())?;
-            let executor = PatternExecutor::new(
-                &self.executable,
-                context.snapshot(),
-                context.thing_manager(),
-                input_row.clone(),
-            )
-            .map_err(|error| ReadExecutionError::ConceptRead { source: error })?;
+            let executor =
+                MatchExecutor::new(&self.executable, context.snapshot(), context.thing_manager(), input_row.clone())
+                    .map_err(|error| ReadExecutionError::ConceptRead { source: error })?;
             let mut iterator = executor.into_iterator(context.clone(), interrupt.clone());
             if iterator.next().transpose().map_err(|err| err.clone())?.is_none() {
                 output.append(|mut row| row.copy_from(input_row.row(), input_row.multiplicity()))
@@ -689,11 +687,11 @@ impl NegationExecutor {
 }
 
 struct OptionalExecutor {
-    executor: PatternExecutor,
+    executor: MatchExecutor,
 }
 
 impl OptionalExecutor {
-    fn new(executor: PatternExecutor) -> OptionalExecutor {
+    fn new(executor: MatchExecutor) -> OptionalExecutor {
         Self { executor }
     }
 

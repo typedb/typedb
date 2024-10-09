@@ -6,9 +6,9 @@
 
 use std::sync::Arc;
 
-use compiler::executable::delete::{instructions::ConnectionInstruction, executable::DeleteExecutable};
+use compiler::executable::delete::{executable::DeleteExecutable, instructions::ConnectionInstruction};
 use concept::thing::thing_manager::ThingManager;
-use ir::program::ParameterRegistry;
+use ir::pipeline::ParameterRegistry;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
@@ -22,13 +22,13 @@ use crate::{
 };
 
 pub struct DeleteStageExecutor<PreviousStage> {
-    program: DeleteExecutable,
+    executable: DeleteExecutable,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> DeleteStageExecutor<PreviousStage> {
-    pub fn new(program: DeleteExecutable, previous: PreviousStage) -> Self {
-        Self { program, previous }
+    pub fn new(executable: DeleteExecutable, previous: PreviousStage) -> Self {
+        Self { executable, previous }
     }
 }
 
@@ -59,7 +59,7 @@ where
             // TODO: parallelise -- though this requires our snapshots support parallel writes!
             let mut row = batch.get_row_mut(index);
             if let Err(err) =
-                execute_delete(&self.program, snapshot_mut, &context.thing_manager, &context.parameters, &mut row)
+                execute_delete(&self.executable, snapshot_mut, &context.thing_manager, &context.parameters, &mut row)
             {
                 return Err((PipelineExecutionError::WriteError { typedb_source: err }, context));
             }
@@ -76,14 +76,14 @@ where
 }
 
 pub fn execute_delete(
-    program: &DeleteExecutable,
+    executable: &DeleteExecutable,
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     input_output_row: &mut Row<'_>,
 ) -> Result<(), WriteError> {
     // Row multiplicity doesn't matter. You can't delete the same thing twice
-    for instruction in &program.connection_instructions {
+    for instruction in &executable.connection_instructions {
         match instruction {
             ConnectionInstruction::Has(has) => has.execute(snapshot, thing_manager, parameters, input_output_row)?,
             ConnectionInstruction::RolePlayer(role_player) => {
@@ -92,7 +92,7 @@ pub fn execute_delete(
         }
     }
 
-    for instruction in &program.concept_instructions {
+    for instruction in &executable.concept_instructions {
         instruction.execute(snapshot, thing_manager, parameters, input_output_row)?;
     }
 

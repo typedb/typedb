@@ -4,21 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-/*
- * The planner should take a Program, and produce a Plan.
- *
- * A Plan should have an order over the Variables in a Pattern's constraint, for each Functional Block.
- *
- * We may need to be able to indicate which constraints are 'Seekable (+ ordered)' and therefore can be utilised in an intersection.
- * For example, function stream outputs are probably not seekable since we won't have traversals be seekable (at least to start!).
- */
-
-pub mod function_plan;
-pub mod match_executable;
-mod plan;
-pub mod program_executable;
-mod vertex;
-
 use std::{
     collections::{hash_map, HashMap, HashSet},
     sync::Arc,
@@ -26,21 +11,25 @@ use std::{
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use ir::program::{block::Block, VariableRegistry};
+use ir::pipeline::{block::Block, VariableRegistry};
 use itertools::Itertools;
 
 use crate::{
-    annotation::type_annotations::TypeAnnotations,
+    annotation::{expression::compiled_expression::CompiledExpression, type_annotations::TypeAnnotations},
     executable::match_::{
         instructions::{CheckInstruction, ConstraintInstruction},
         planner::{
-            match_executable::{CheckStep, IntersectionStep, MatchExecutable, ExecutionStep},
+            match_executable::{CheckStep, ExecutionStep, IntersectionStep, MatchExecutable},
             plan::plan_conjunction,
         },
     },
     VariablePosition,
 };
-use crate::annotation::expression::compiled_expression::CompiledExpression;
+
+pub mod function_plan;
+pub mod match_executable;
+mod plan;
+mod vertex;
 
 pub fn compile(
     block: &Block,
@@ -128,7 +117,7 @@ impl StepBuilder {
         }
     }
 
-    /// Returns `true` if the program builder is [`Intersection`].
+    /// Returns `true` if the step builder is [`Intersection`].
     ///
     /// [`Intersection`]: StepBuilder::Intersection
     #[must_use]
@@ -136,7 +125,7 @@ impl StepBuilder {
         matches!(self, Self::Intersection(..))
     }
 
-    /// Returns `true` if the program builder is [`Check`].
+    /// Returns `true` if the step builder is [`Check`].
     ///
     /// [`Check`]: StepBuilder::Check
     #[must_use]
@@ -170,8 +159,8 @@ impl MatchExecutableBuilder {
         Self { steps: Vec::new(), current: None, outputs, index, next_output }
     }
 
-    fn get_program_mut(&mut self, program: usize) -> Option<&mut StepBuilder> {
-        self.steps.get_mut(program).or(self.current.as_mut())
+    fn get_step_mut(&mut self, step: usize) -> Option<&mut StepBuilder> {
+        self.steps.get_mut(step).or(self.current.as_mut())
     }
 
     fn push_instruction(

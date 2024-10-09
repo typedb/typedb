@@ -14,7 +14,7 @@ use typeql::schema::definable::function::SingleSelector;
 
 use crate::{
     pattern::Vertex,
-    program::reduce::Reducer,
+    pipeline::reduce::Reducer,
     translation::{pipeline::TranslatedStage, TranslationContext},
 };
 

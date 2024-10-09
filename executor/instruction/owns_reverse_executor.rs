@@ -12,7 +12,7 @@ use std::{
     vec,
 };
 
-use answer::{Type};
+use answer::Type;
 use compiler::executable::match_::instructions::type_::OwnsReverseInstruction;
 use concept::{error::ConceptReadError, type_::owns::Owns};
 use itertools::Itertools;

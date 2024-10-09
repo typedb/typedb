@@ -9,7 +9,7 @@ use std::collections::BTreeSet;
 use answer::Type;
 use concept::type_::type_manager::TypeManager;
 use encoding::{graph::definition::definition_key::DefinitionKey, value::value_type::ValueType};
-use ir::program::{function::Function, function_signature::FunctionIDAPI};
+use ir::pipeline::{function::Function, function_signature::FunctionIDAPI};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{pipeline::AnnotatedStage, FunctionTypeInferenceError};

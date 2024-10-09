@@ -6,7 +6,7 @@
 
 use crate::{
     pattern::conjunction::ConjunctionBuilder,
-    program::{
+    pipeline::{
         block::{Block, BlockBuilder},
         function_signature::FunctionSignatureIndex,
     },

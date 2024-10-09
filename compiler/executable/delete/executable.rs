@@ -12,8 +12,12 @@ use ir::pattern::{constraint::Constraint, Vertex};
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
-    executable::delete::instructions::{ConnectionInstruction, Has, RolePlayer, ThingInstruction},
-    executable::insert::{get_thing_source, executable::collect_role_type_bindings, ThingSource, TypeSource, WriteCompilationError},
+    executable::{
+        delete::instructions::{ConnectionInstruction, Has, RolePlayer, ThingInstruction},
+        insert::{
+            executable::collect_role_type_bindings, get_thing_source, ThingSource, TypeSource, WriteCompilationError,
+        },
+    },
     VariablePosition,
 };
 

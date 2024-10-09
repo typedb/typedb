@@ -6,37 +6,36 @@
 
 use std::sync::Arc;
 
-use itertools::Itertools;
-
 use compiler::executable::match_::planner::match_executable::MatchExecutable;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use itertools::Itertools;
 use lending_iterator::{adaptors::FlatMap, AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
-    ExecutionInterrupt,
     pipeline::stage::ExecutionContext,
-    step_executors::StepExecutor,
     row::MaybeOwnedRow,
+    step_executors::StepExecutor,
+    ExecutionInterrupt,
 };
 
-pub(crate) struct PatternExecutor {
+pub struct MatchExecutor {
     input: Option<MaybeOwnedRow<'static>>,
     step_executors: Vec<StepExecutor>,
     // modifiers: Modifier,
     output: Option<FixedBatch>,
 }
 
-impl PatternExecutor {
-    pub(crate) fn new(
-        match_program: &MatchExecutable,
+impl MatchExecutor {
+    pub fn new(
+        match_executable: &MatchExecutable,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
         input: MaybeOwnedRow<'_>,
     ) -> Result<Self, ConceptReadError> {
-        let program_executors = match_program
+        let step_executors = match_executable
             .steps()
             .iter()
             .map(|step| StepExecutor::new(step, snapshot, thing_manager))
@@ -44,7 +43,7 @@ impl PatternExecutor {
 
         Ok(Self {
             input: Some(input.into_owned()),
-            step_executors: program_executors,
+            step_executors,
             // modifiers:
             output: None,
         })
@@ -65,12 +64,12 @@ impl PatternExecutor {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        let programs_len = self.step_executors.len();
+        let steps_len = self.step_executors.len();
 
-        let (mut current_program, mut last_program_batch, mut direction) = if let Some(input) = self.input.take() {
+        let (mut current_step, mut last_step_batch, mut direction) = if let Some(input) = self.input.take() {
             (0, Some(FixedBatch::from(input)), Direction::Forward)
         } else {
-            (programs_len - 1, None, Direction::Backward)
+            (steps_len - 1, None, Direction::Backward)
         };
 
         loop {
@@ -81,42 +80,42 @@ impl PatternExecutor {
 
             match direction {
                 Direction::Forward => {
-                    if current_program >= programs_len {
-                        return Ok(last_program_batch);
+                    if current_step >= steps_len {
+                        return Ok(last_step_batch);
                     } else {
-                        let executor = &mut self.step_executors[current_program];
-                        let batch = executor.batch_from(last_program_batch.take().unwrap(), context, interrupt)?;
+                        let executor = &mut self.step_executors[current_step];
+                        let batch = executor.batch_from(last_step_batch.take().unwrap(), context, interrupt)?;
                         match batch {
                             None => {
                                 direction = Direction::Backward;
-                                if current_program == 0 {
+                                if current_step == 0 {
                                     return Ok(None);
                                 } else {
-                                    current_program -= 1;
+                                    current_step -= 1;
                                 }
                             }
                             Some(batch) => {
-                                last_program_batch = Some(batch);
-                                current_program += 1;
+                                last_step_batch = Some(batch);
+                                current_step += 1;
                             }
                         }
                     }
                 }
 
                 Direction::Backward => {
-                    let batch = self.step_executors[current_program].batch_continue(context)?;
+                    let batch = self.step_executors[current_step].batch_continue(context)?;
                     match batch {
                         None => {
-                            if current_program == 0 {
+                            if current_step == 0 {
                                 return Ok(None);
                             } else {
-                                current_program -= 1;
+                                current_step -= 1;
                             }
                         }
                         Some(batch) => {
                             direction = Direction::Forward;
-                            last_program_batch = Some(batch);
-                            current_program += 1;
+                            last_step_batch = Some(batch);
+                            current_step += 1;
                         }
                     }
                 }
@@ -156,14 +155,14 @@ impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for PatternIterator<S
 }
 
 pub(crate) struct BatchIterator<Snapshot> {
-    executor: PatternExecutor,
+    executor: MatchExecutor,
     context: ExecutionContext<Snapshot>,
     interrupt: ExecutionInterrupt,
 }
 
 impl<Snapshot> BatchIterator<Snapshot> {
     pub(crate) fn new(
-        executor: PatternExecutor,
+        executor: MatchExecutor,
         context: ExecutionContext<Snapshot>,
         interrupt: ExecutionInterrupt,
     ) -> Self {

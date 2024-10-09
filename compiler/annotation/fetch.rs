@@ -13,7 +13,7 @@ use answer::{variable::Variable, Type};
 use encoding::value::value_type::ValueType;
 use ir::{
     pattern::{ParameterID, Vertex},
-    program::fetch::{
+    pipeline::fetch::{
         FetchListAttributeAsList, FetchListAttributeFromList, FetchObjectAttributes, FetchSingleAttribute,
         FetchSingleVar,
     },

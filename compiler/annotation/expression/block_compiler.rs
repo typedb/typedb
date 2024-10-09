@@ -16,16 +16,19 @@ use ir::{
         variable_category::VariableCategory,
         Vertex,
     },
-    program::{block::Block, ParameterRegistry, VariableRegistry},
+    pipeline::{block::Block, ParameterRegistry, VariableRegistry},
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::annotation::{type_annotations::TypeAnnotations, type_inference::resolve_value_types};
-use crate::annotation::expression::{
-    compiled_expression::{CompiledExpression, ExpressionValueType},
-    expression_compiler::ExpressionCompilationContext,
-    ExpressionCompileError,
+use crate::annotation::{
+    expression::{
+        compiled_expression::{CompiledExpression, ExpressionValueType},
+        expression_compiler::ExpressionCompilationContext,
+        ExpressionCompileError,
+    },
+    type_annotations::TypeAnnotations,
+    type_inference::resolve_value_types,
 };
 
 struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {

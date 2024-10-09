@@ -20,7 +20,7 @@ use crate::{
         },
         ParameterID, Vertex,
     },
-    program::function_signature::FunctionSignatureIndex,
+    pipeline::function_signature::FunctionSignatureIndex,
     translation::{
         constraints::{register_typeql_var, split_out_inline_expressions},
         literal::translate_literal,
@@ -212,7 +212,7 @@ pub mod tests {
             expression::{Expression, Operation, Operator},
             Vertex,
         },
-        program::{block::Block, function_signature::HashMapFunctionSignatureIndex},
+        pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex},
         translation::{match_::translate_match, TranslationContext},
         RepresentationError,
     };

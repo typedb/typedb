@@ -12,27 +12,25 @@ use std::{
     vec,
 };
 
-use itertools::Itertools;
-
 use answer::Type;
 use compiler::executable::match_::instructions::type_::PlaysReverseInstruction;
 use concept::{error::ConceptReadError, type_::plays::Plays};
+use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
+use super::type_from_row_or_annotations;
 use crate::{
     instruction::{
-        BinaryIterateMode,
-        Checker,
         iterator::{SortedTupleIterator, TupleIterator},
-        plays_executor::{EXTRACT_PLAYER, EXTRACT_ROLE, PlaysFilterFn, PlaysTupleIterator}, tuple::{plays_to_tuple_role_player, TuplePositions}, VariableModes,
+        plays_executor::{PlaysFilterFn, PlaysTupleIterator, EXTRACT_PLAYER, EXTRACT_ROLE},
+        tuple::{plays_to_tuple_role_player, TuplePositions},
+        BinaryIterateMode, Checker, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
     VariablePosition,
 };
-
-use super::type_from_row_or_annotations;
 
 pub(crate) struct PlaysReverseExecutor {
     plays: ir::pattern::constraint::Plays<VariablePosition>,

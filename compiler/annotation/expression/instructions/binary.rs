@@ -7,7 +7,13 @@ use std::{marker::PhantomData, ops::Rem};
 
 use encoding::value::{value::NativeValueConvertible, value_type::ValueTypeCategory};
 
-use crate::annotation::expression::{expression_compiler::ExpressionCompilationContext, ExpressionCompileError};
+use crate::annotation::expression::{
+    expression_compiler::ExpressionCompilationContext,
+    instructions::{
+        op_codes::ExpressionOpCode, CompilableExpression, ExpressionEvaluationError, ExpressionInstruction,
+    },
+    ExpressionCompileError,
+};
 
 pub trait BinaryExpression<T1: NativeValueConvertible, T2: NativeValueConvertible, R: NativeValueConvertible> {
     const OP_CODE: ExpressionOpCode;
@@ -71,10 +77,6 @@ macro_rules! binary_instruction {
 }
 
 pub(crate) use binary_instruction;
-
-use crate::annotation::expression::instructions::{
-    op_codes::ExpressionOpCode, CompilableExpression, ExpressionEvaluationError, ExpressionInstruction,
-};
 
 binary_instruction! {
     MathRemainderLong = MathRemainderLongImpl(a1: i64, a2: i64) -> i64 { Ok(i64::rem(a1, a2)) }

@@ -14,7 +14,7 @@ use concept::thing::{
     ThingAPI,
 };
 use encoding::value::value::Value;
-use ir::program::ParameterRegistry;
+use ir::pipeline::ParameterRegistry;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{row::Row, write::WriteError};

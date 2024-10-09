@@ -12,11 +12,8 @@ use std::{
 
 use compiler::{
     executable::match_::{
-        instructions::{thing::IsaInstruction, ConstraintInstruction, Inputs},
-        planner::{
-            match_executable::{IntersectionStep, MatchExecutable, ExecutionStep},
-            program_executable::ProgramExecutable,
-        },
+        instructions::{ConstraintInstruction, Inputs, thing::IsaInstruction},
+        planner::match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
     },
     VariablePosition,
 };
@@ -25,12 +22,13 @@ use compiler::annotation::match_inference::infer_types;
 use concept::type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    error::ReadExecutionError, ExecutionInterrupt, pipeline::stage::ExecutionContext,
+    row::MaybeOwnedRow,
 };
-use ir::{pattern::constraint::IsaKind, program::block::Block, translation::TranslationContext};
+use executor::pattern_executor::MatchExecutor;
+use ir::{pattern::constraint::IsaKind, pipeline::block::Block, translation::TranslationContext};
 use lending_iterator::LendingIterator;
-use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
+use storage::{durability_client::WALClient, MVCCStorage, snapshot::CommittableSnapshot};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
@@ -136,13 +134,11 @@ fn attribute_equality() {
         )),
     ];
 
-    let pattern_plan =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramExecutable::new(pattern_plan, HashMap::new(), HashMap::new());
+    let executable = MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());

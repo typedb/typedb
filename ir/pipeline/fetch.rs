@@ -10,7 +10,7 @@ use answer::variable::Variable;
 
 use crate::{
     pattern::ParameterID,
-    program::function::AnonymousFunction,
+    pipeline::function::AnonymousFunction,
     translation::{pipeline::TranslatedStage, TranslationContext},
 };
 

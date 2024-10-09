@@ -14,7 +14,7 @@ use primitive::maybe_owns::MaybeOwns;
 
 use crate::{
     pattern::variable_category::{VariableCategory, VariableOptionality},
-    program::FunctionReadError,
+    pipeline::FunctionReadError,
     translation::function::build_signature,
 };
 

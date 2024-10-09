@@ -15,7 +15,7 @@ use ir::{
         constraint::{Constraint, ExpressionBinding},
         IrID,
     },
-    program::VariableRegistry,
+    pipeline::VariableRegistry,
 };
 
 use crate::{
@@ -34,12 +34,12 @@ pub struct MatchExecutable {
 
 impl MatchExecutable {
     pub fn new(
-        programs: Vec<ExecutionStep>,
+        steps: Vec<ExecutionStep>,
         variable_registry: Arc<VariableRegistry>,
         variable_positions: HashMap<Variable, VariablePosition>,
         variable_positions_index: Vec<Variable>,
     ) -> Self {
-        Self { steps: programs, variable_registry, variable_positions, variable_positions_index }
+        Self { steps, variable_registry, variable_positions, variable_positions_index }
     }
 
     pub fn steps(&self) -> &[ExecutionStep] {
@@ -77,8 +77,8 @@ pub enum ExecutionStep {
 impl ExecutionStep {
     pub fn selected_variables(&self) -> &[VariablePosition] {
         match self {
-            ExecutionStep::Intersection(program) => &program.selected_variables,
-            ExecutionStep::UnsortedJoin(program) => &program.selected_variables,
+            ExecutionStep::Intersection(step) => &step.selected_variables,
+            ExecutionStep::UnsortedJoin(step) => &step.selected_variables,
             ExecutionStep::Assignment(_) => todo!(),
             ExecutionStep::Check(_) => &[],
             ExecutionStep::Disjunction(_) => todo!(),
@@ -89,9 +89,9 @@ impl ExecutionStep {
 
     pub fn new_variables(&self) -> &[VariablePosition] {
         match self {
-            ExecutionStep::Intersection(program) => program.new_variables(),
-            ExecutionStep::UnsortedJoin(program) => program.new_variables(),
-            ExecutionStep::Assignment(program) => program.new_variables(),
+            ExecutionStep::Intersection(step) => step.new_variables(),
+            ExecutionStep::UnsortedJoin(step) => step.new_variables(),
+            ExecutionStep::Assignment(step) => step.new_variables(),
             ExecutionStep::Check(_) => &[],
             ExecutionStep::Disjunction(_) => todo!(),
             ExecutionStep::Negation(_) => &[],
@@ -101,9 +101,9 @@ impl ExecutionStep {
 
     pub fn output_width(&self) -> u32 {
         match self {
-            ExecutionStep::Intersection(program) => program.output_width(),
-            ExecutionStep::UnsortedJoin(program) => program.output_width(),
-            ExecutionStep::Assignment(program) => program.output_width(),
+            ExecutionStep::Intersection(step) => step.output_width(),
+            ExecutionStep::UnsortedJoin(step) => step.output_width(),
+            ExecutionStep::Assignment(step) => step.output_width(),
             ExecutionStep::Check(_) => 0, // FIXME is this correct?
             ExecutionStep::Disjunction(_) => todo!(),
             ExecutionStep::Negation(_) => 0,

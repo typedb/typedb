@@ -16,7 +16,6 @@ use concept::{
 };
 use error::typedb_error;
 use function::{function_manager::FunctionManager, FunctionError};
-use itertools::Itertools;
 use options::TransactionOptions;
 use storage::{
     durability_client::DurabilityClient,

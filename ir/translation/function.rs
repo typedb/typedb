@@ -15,7 +15,7 @@ use typeql::{
 
 use crate::{
     pattern::variable_category::{VariableCategory, VariableOptionality},
-    program::{
+    pipeline::{
         function::{Function, FunctionBody, ReturnOperation},
         function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex},
         FunctionRepresentationError,

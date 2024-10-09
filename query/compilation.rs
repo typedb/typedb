@@ -15,15 +15,17 @@ use compiler::{
         function::{AnnotatedFunction, AnnotatedUnindexedFunctions},
         pipeline::AnnotatedStage,
     },
-    executable::delete::executable::DeleteExecutable,
-    executable::insert::executable::InsertExecutable,
-    executable::match_::planner::match_executable::MatchExecutable,
+    executable::{
+        delete::executable::DeleteExecutable,
+        insert::executable::InsertExecutable,
+        match_::planner::match_executable::MatchExecutable,
+        modifiers::{LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable},
+        reduce::{ReduceExecutable, ReduceInstruction},
+    },
     VariablePosition,
 };
-use compiler::executable::modifiers::{LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable};
-use compiler::executable::reduce::{ReduceInstruction, ReduceExecutable};
 use concept::thing::statistics::Statistics;
-use ir::program::VariableRegistry;
+use ir::pipeline::VariableRegistry;
 
 use crate::error::QueryError;
 
@@ -54,26 +56,26 @@ pub enum CompiledStage {
 impl CompiledStage {
     fn output_row_mapping(&self) -> HashMap<Variable, VariablePosition> {
         match self {
-            CompiledStage::Match(program) => program.variable_positions().to_owned(),
-            CompiledStage::Insert(program) => program
+            CompiledStage::Match(executable) => executable.variable_positions().to_owned(),
+            CompiledStage::Insert(executable) => executable
                 .output_row_schema
                 .iter()
                 .filter_map(|opt| opt.map(|(v, _)| v))
                 .enumerate()
                 .map(|(i, v)| (v, VariablePosition::new(i as u32)))
                 .collect(),
-            CompiledStage::Delete(program) => program
+            CompiledStage::Delete(executable) => executable
                 .output_row_schema
                 .iter()
                 .enumerate()
                 .filter_map(|(i, v)| v.map(|v| (v, VariablePosition::new(i as u32))))
                 .collect(),
-            CompiledStage::Select(program) => program.output_row_mapping.clone(),
-            CompiledStage::Sort(program) => program.output_row_mapping.clone(),
-            CompiledStage::Offset(program) => program.output_row_mapping.clone(),
-            CompiledStage::Limit(program) => program.output_row_mapping.clone(),
-            CompiledStage::Require(program) => program.output_row_mapping.clone(),
-            CompiledStage::Reduce(program) => program.output_row_mapping.clone(),
+            CompiledStage::Select(executable) => executable.output_row_mapping.clone(),
+            CompiledStage::Sort(executable) => executable.output_row_mapping.clone(),
+            CompiledStage::Offset(executable) => executable.output_row_mapping.clone(),
+            CompiledStage::Limit(executable) => executable.output_row_mapping.clone(),
+            CompiledStage::Require(executable) => executable.output_row_mapping.clone(),
+            CompiledStage::Reduce(executable) => executable.output_row_mapping.clone(),
         }
     }
 }
@@ -167,9 +169,10 @@ fn compile_stage(
             offset: offset.offset(),
             output_row_mapping: input_variables.clone(),
         })),
-        AnnotatedStage::Limit(limit) => {
-            Ok(CompiledStage::Limit(LimitExecutable { limit: limit.limit(), output_row_mapping: input_variables.clone() }))
-        }
+        AnnotatedStage::Limit(limit) => Ok(CompiledStage::Limit(LimitExecutable {
+            limit: limit.limit(),
+            output_row_mapping: input_variables.clone(),
+        })),
         AnnotatedStage::Require(require) => {
             let mut required_positions = HashSet::with_capacity(require.variables.len());
             for &variable in &require.variables {

@@ -12,8 +12,8 @@ use std::fmt::{Display, Formatter};
 use ir::pattern::IrID;
 
 pub mod annotation;
-mod optimisation;
 pub mod executable;
+mod optimisation;
 
 macro_rules! filter_variants {
     ($variant:path : $iterable:expr) => {

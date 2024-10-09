@@ -20,7 +20,7 @@ use encoding::{
     AsBytes, Keyable,
 };
 use ir::{
-    program::{
+    pipeline::{
         function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex},
         FunctionReadError,
     },
@@ -130,7 +130,7 @@ impl FunctionManager {
         snapshot: &impl ReadableSnapshot,
         functions: &[SchemaFunction],
         function_index: &impl FunctionSignatureIndex,
-    ) -> Result<Vec<ir::program::function::Function>, FunctionError> {
+    ) -> Result<Vec<ir::pipeline::function::Function>, FunctionError> {
         functions
             .iter()
             .map(|function| translate_function(snapshot, function_index, &function.parsed))
@@ -267,7 +267,7 @@ pub mod tests {
     };
     use ir::{
         pattern::variable_category::{VariableCategory, VariableOptionality},
-        program::function_signature::{
+        pipeline::function_signature::{
             FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex,
         },
     };

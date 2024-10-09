@@ -6,7 +6,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use encoding::graph::{definition::r#struct::StructDefinition, type_::CapabilityKind};
+use encoding::graph::definition::r#struct::StructDefinition;
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 

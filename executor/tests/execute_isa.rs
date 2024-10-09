@@ -20,21 +20,18 @@ use compiler::{
             thing::{IsaInstruction, IsaReverseInstruction},
             ConstraintInstruction, Inputs,
         },
-        planner::{
-            match_executable::{IntersectionStep, MatchExecutable, ExecutionStep},
-            program_executable::ProgramExecutable,
-        },
+        planner::match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
     },
     VariablePosition,
 };
 use encoding::value::label::Label;
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    error::ReadExecutionError, pattern_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
 use ir::{
     pattern::{constraint::IsaKind, Vertex},
-    program::block::Block,
+    pipeline::block::Block,
     translation::TranslationContext,
 };
 use lending_iterator::LendingIterator;
@@ -125,13 +122,12 @@ fn traverse_isa_unbounded_sorted_thing() {
         2,
     ))];
 
-    let pattern_plan =
+    let executable =
         MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramExecutable::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -200,13 +196,12 @@ fn traverse_isa_unbounded_sorted_type() {
         2,
     ))];
 
-    let pattern_plan =
+    let executable =
         MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramExecutable::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -291,13 +286,12 @@ fn traverse_isa_bounded_thing() {
         )),
     ];
 
-    let pattern_plan =
+    let executable =
         MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramExecutable::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -370,13 +364,12 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
         2,
     ))];
 
-    let pattern_plan =
+    let executable =
         MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramExecutable::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -445,13 +438,12 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
         2,
     ))];
 
-    let pattern_plan =
+    let executable =
         MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramExecutable::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -535,13 +527,12 @@ fn traverse_isa_reverse_bounded_type_exact() {
         )),
     ];
 
-    let pattern_plan =
+    let executable =
         MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramExecutable::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -629,13 +620,12 @@ fn traverse_isa_reverse_bounded_type_subtype() {
         )),
     ];
 
-    let pattern_plan =
+    let executable =
         MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramExecutable::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -708,13 +698,12 @@ fn traverse_isa_reverse_fixed_type_exact() {
         1,
     ))];
 
-    let pattern_plan =
+    let executable =
         MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramExecutable::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -786,13 +775,12 @@ fn traverse_isa_reverse_fixed_type_subtype() {
         1,
     ))];
 
-    let pattern_plan =
+    let executable =
         MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramExecutable::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());

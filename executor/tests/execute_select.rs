@@ -17,22 +17,20 @@ use compiler::{
     },
     executable::match_::{
         instructions::{thing::HasInstruction, ConstraintInstruction, Inputs},
+        planner::match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
     },
     VariablePosition,
 };
-use compiler::executable::match_::planner::match_executable::{ExecutionStep, IntersectionStep, MatchExecutable};
-use compiler::executable::match_::planner::program_executable::ProgramExecutable;
 use concept::{
     thing::object::ObjectAPI,
     type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    error::ReadExecutionError, pattern_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-use executor::match_executor::MatchExecutor;
-use ir::{pattern::constraint::IsaKind, program::block::Block, translation::TranslationContext};
+use ir::{pattern::constraint::IsaKind, pipeline::block::Block, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
@@ -201,13 +199,13 @@ fn anonymous_vars_not_enumerated_or_counted() {
         &named_variables,
         4,
     ))];
-    let match_executable = MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_executable = ProgramExecutable::new(match_executable, HashMap::new(), HashMap::new());
+    let executable =
+        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (_, thing_manager) = load_managers(storage.clone(), None);
-    let executor = MatchExecutor::new(&program_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -292,13 +290,13 @@ fn unselected_named_vars_counted() {
         2,
     ))];
 
-    let match_executable = MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_executable = ProgramExecutable::new(match_executable, HashMap::new(), HashMap::new());
+    let executable =
+        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
 
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
     let (_, thing_manager) = load_managers(storage.clone(), None);
-    let executor = MatchExecutor::new(&program_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -403,13 +401,13 @@ fn cartesian_named_counted_checked() {
         4,
     ))];
 
-    let match_executable = MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_executable = ProgramExecutable::new(match_executable, HashMap::new(), HashMap::new());
+    let match_executable =
+        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
 
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
     let (_, thing_manager) = load_managers(storage.clone(), None);
-    let executor = MatchExecutor::new(&program_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());

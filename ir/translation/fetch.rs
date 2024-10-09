@@ -26,7 +26,7 @@ use typeql::{
 
 use crate::{
     pattern::ParameterID,
-    program::{
+    pipeline::{
         block::{Block, BlockBuilder, BlockBuilderContext},
         fetch::{
             FetchListAttributeFromList, FetchObject, FetchObjectAttributes, FetchObjectEntries, FetchSingleAttribute,

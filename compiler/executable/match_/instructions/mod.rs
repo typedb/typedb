@@ -19,7 +19,8 @@ use ir::pattern::{
 use itertools::Itertools;
 
 use crate::{
-    annotation::type_annotations::TypeAnnotations, executable::match_::planner::match_executable::InstructionAPI, VariablePosition,
+    annotation::type_annotations::TypeAnnotations, executable::match_::planner::match_executable::InstructionAPI,
+    VariablePosition,
 };
 
 pub mod thing;

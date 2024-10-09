@@ -8,7 +8,6 @@ use std::{collections::HashMap, sync::Arc};
 
 use compiler::{
     annotation::pipeline::{annotate_pipeline, AnnotatedPipeline},
-    executable::match_::planner::match_executable::MatchExecutable,
     VariablePosition,
 };
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
@@ -25,12 +24,11 @@ use executor::pipeline::{
 };
 use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex};
 use ir::{
-    program::function_signature::{FunctionID, HashMapFunctionSignatureIndex},
+    pipeline::function_signature::{FunctionID, HashMapFunctionSignatureIndex},
     translation::pipeline::{translate_pipeline, TranslatedPipeline},
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
-use compiler::executable::match_::planner::program_executable::ProgramExecutable;
 
 use crate::{
     compilation::{compile_pipeline, CompiledPipeline, CompiledStage},
@@ -107,8 +105,7 @@ impl QueryManager {
             match compiled_stage {
                 CompiledStage::Match(match_executable) => {
                     // TODO: Pass expressions & functions
-                    let program_plan = ProgramExecutable::new(match_executable, HashMap::new(), HashMap::new());
-                    let match_stage = MatchStageExecutor::new(program_plan, last_stage);
+                    let match_stage = MatchStageExecutor::new(match_executable, last_stage);
                     last_stage = ReadPipelineStage::Match(Box::new(match_stage));
                 }
                 CompiledStage::Insert(_) => {
@@ -117,28 +114,28 @@ impl QueryManager {
                 CompiledStage::Delete(_) => {
                     unreachable!("Delete clause cannot exist in a read pipeline.")
                 }
-                CompiledStage::Select(select_program) => {
-                    let select_stage = SelectStageExecutor::new(select_program, last_stage);
+                CompiledStage::Select(select_executable) => {
+                    let select_stage = SelectStageExecutor::new(select_executable, last_stage);
                     last_stage = ReadPipelineStage::Select(Box::new(select_stage));
                 }
-                CompiledStage::Sort(sort_program) => {
-                    let sort_stage = SortStageExecutor::new(sort_program, last_stage);
+                CompiledStage::Sort(sort_executable) => {
+                    let sort_stage = SortStageExecutor::new(sort_executable, last_stage);
                     last_stage = ReadPipelineStage::Sort(Box::new(sort_stage));
                 }
-                CompiledStage::Offset(offset_program) => {
-                    let offset_stage = OffsetStageExecutor::new(offset_program, last_stage);
+                CompiledStage::Offset(offset_executable) => {
+                    let offset_stage = OffsetStageExecutor::new(offset_executable, last_stage);
                     last_stage = ReadPipelineStage::Offset(Box::new(offset_stage));
                 }
-                CompiledStage::Limit(limit_program) => {
-                    let limit_stage = LimitStageExecutor::new(limit_program, last_stage);
+                CompiledStage::Limit(limit_executable) => {
+                    let limit_stage = LimitStageExecutor::new(limit_executable, last_stage);
                     last_stage = ReadPipelineStage::Limit(Box::new(limit_stage));
                 }
-                CompiledStage::Require(require_program) => {
-                    let require_stage = RequireStageExecutor::new(require_program, last_stage);
+                CompiledStage::Require(require_executable) => {
+                    let require_stage = RequireStageExecutor::new(require_executable, last_stage);
                     last_stage = ReadPipelineStage::Require(Box::new(require_stage));
                 }
-                CompiledStage::Reduce(reduce_program) => {
-                    let reduce_stage = ReduceStageExecutor::new(reduce_program, last_stage);
+                CompiledStage::Reduce(reduce_executable) => {
+                    let reduce_stage = ReduceStageExecutor::new(reduce_executable, last_stage);
                     last_stage = ReadPipelineStage::Reduce(Box::new(reduce_stage));
                 }
             }
@@ -212,40 +209,39 @@ impl QueryManager {
             match compiled_stage {
                 CompiledStage::Match(match_executable) => {
                     // TODO: Pass expressions & functions
-                    let program_executable = ProgramExecutable::new(match_executable, HashMap::new(), HashMap::new());
-                    let match_stage = MatchStageExecutor::new(program_executable, previous_stage);
+                    let match_stage = MatchStageExecutor::new(match_executable, previous_stage);
                     previous_stage = WritePipelineStage::Match(Box::new(match_stage));
                 }
-                CompiledStage::Insert(insert_program) => {
-                    let insert_stage = InsertStageExecutor::new(insert_program, previous_stage);
+                CompiledStage::Insert(insert_executable) => {
+                    let insert_stage = InsertStageExecutor::new(insert_executable, previous_stage);
                     previous_stage = WritePipelineStage::Insert(Box::new(insert_stage));
                 }
-                CompiledStage::Delete(delete_program) => {
-                    let delete_stage = DeleteStageExecutor::new(delete_program, previous_stage);
+                CompiledStage::Delete(delete_executable) => {
+                    let delete_stage = DeleteStageExecutor::new(delete_executable, previous_stage);
                     previous_stage = WritePipelineStage::Delete(Box::new(delete_stage));
                 }
-                CompiledStage::Select(select_program) => {
-                    let select_stage = SelectStageExecutor::new(select_program, previous_stage);
+                CompiledStage::Select(select_executable) => {
+                    let select_stage = SelectStageExecutor::new(select_executable, previous_stage);
                     previous_stage = WritePipelineStage::Select(Box::new(select_stage));
                 }
-                CompiledStage::Sort(sort_program) => {
-                    let sort_stage = SortStageExecutor::new(sort_program, previous_stage);
+                CompiledStage::Sort(sort_executable) => {
+                    let sort_stage = SortStageExecutor::new(sort_executable, previous_stage);
                     previous_stage = WritePipelineStage::Sort(Box::new(sort_stage));
                 }
-                CompiledStage::Offset(offset_program) => {
-                    let offset_stage = OffsetStageExecutor::new(offset_program, previous_stage);
+                CompiledStage::Offset(offset_executable) => {
+                    let offset_stage = OffsetStageExecutor::new(offset_executable, previous_stage);
                     previous_stage = WritePipelineStage::Offset(Box::new(offset_stage));
                 }
-                CompiledStage::Limit(limit_program) => {
-                    let limit_stage = LimitStageExecutor::new(limit_program, previous_stage);
+                CompiledStage::Limit(limit_executable) => {
+                    let limit_stage = LimitStageExecutor::new(limit_executable, previous_stage);
                     previous_stage = WritePipelineStage::Limit(Box::new(limit_stage));
                 }
-                CompiledStage::Require(require_program) => {
-                    let require_stage = RequireStageExecutor::new(require_program, previous_stage);
+                CompiledStage::Require(require_executable) => {
+                    let require_stage = RequireStageExecutor::new(require_executable, previous_stage);
                     previous_stage = WritePipelineStage::Require(Box::new(require_stage));
                 }
-                CompiledStage::Reduce(reduce_program) => {
-                    let reduce_stage = ReduceStageExecutor::new(reduce_program, previous_stage);
+                CompiledStage::Reduce(reduce_executable) => {
+                    let reduce_stage = ReduceStageExecutor::new(reduce_executable, previous_stage);
                     previous_stage = WritePipelineStage::Reduce(Box::new(reduce_stage));
                 }
             }

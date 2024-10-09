@@ -21,39 +21,36 @@ use ir::{
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
     },
-    program::{block::BlockContext, VariableRegistry},
+    pipeline::{block::BlockContext, VariableRegistry},
 };
 use itertools::Itertools;
 
 use crate::{
-    annotation::type_annotations::TypeAnnotations,
+    annotation::{expression::compiled_expression::CompiledExpression, type_annotations::TypeAnnotations},
     executable::match_::{
         instructions::{
-            CheckInstruction,
-            CheckVertex,
-            ConstraintInstruction, Inputs, thing::{
+            thing::{
                 HasInstruction, HasReverseInstruction, IsaInstruction, IsaReverseInstruction, LinksInstruction,
                 LinksReverseInstruction,
-            }, type_::{
+            },
+            type_::{
                 OwnsInstruction, OwnsReverseInstruction, PlaysInstruction, PlaysReverseInstruction, RelatesInstruction,
                 RelatesReverseInstruction, SubInstruction, SubReverseInstruction, TypeListInstruction,
             },
+            CheckInstruction, CheckVertex, ConstraintInstruction, Inputs,
         },
         planner::{
-            IntersectionBuilder,
-            MatchExecutableBuilder,
-            NegationBuilder, vertex::{
+            match_executable::MatchExecutable,
+            vertex::{
                 ComparisonPlanner, Costed, Direction, ElementCost, HasPlanner, Input, InputPlanner, IsaPlanner,
                 LabelPlanner, LinksPlanner, NestedPatternPlanner, OwnsPlanner, PlannerVertex, PlaysPlanner,
                 RelatesPlanner, SubPlanner, ThingPlanner, TypePlanner, ValuePlanner,
             },
+            IntersectionBuilder, MatchExecutableBuilder, NegationBuilder, StepBuilder,
         },
     },
     VariablePosition,
 };
-use crate::annotation::expression::compiled_expression::CompiledExpression;
-use crate::executable::match_::planner::match_executable::MatchExecutable;
-use crate::executable::match_::planner::StepBuilder;
 
 pub(crate) fn plan_conjunction<'a>(
     conjunction: &'a Conjunction,
@@ -97,12 +94,12 @@ pub(crate) fn plan_conjunction<'a>(
 }
 
 /*
- * 1. Named variables that are not returned or reused beyond a program can simply be counted, and not output
- * 2. Anonymous variables that are not reused beyond a program can just be checked for a single answer
+ * 1. Named variables that are not returned or reused beyond a step can simply be counted, and not output
+ * 2. Anonymous variables that are not reused beyond a step can just be checked for a single answer
  *
  * Planner outputs an ordering over variables, with directions over which edges should be traversed.
  * If we know this we can:
- *   1. group edges intersecting into the same variable as one Program.
+ *   1. group edges intersecting into the same variable as one step.
  *   2. if the ordering implies it, we may need to perform Storage/Comparison checks, if the variables are visited,
  *      disconnected and then joined
  *   3. some checks are fully bound, while others are not... when do we decide? What is a Check versus an Iterate
@@ -572,9 +569,9 @@ impl ConjunctionPlan<'_> {
                         $($with: $con.$with(),)?
                     };
 
-                    if let Some(&(program, instruction)) = Ord::max(lhs_producer, rhs_producer) {
+                    if let Some(&(step, instruction)) = Ord::max(lhs_producer, rhs_producer) {
                         let Some(intersection) =
-                            match_builder.get_program_mut(program).and_then(|prog| prog.as_intersection_mut())
+                            match_builder.get_step_mut(step).and_then(|prog| prog.as_intersection_mut())
                         else {
                             todo!("expected an intersection to be the producer")
                         };
@@ -701,9 +698,9 @@ impl ConjunctionPlan<'_> {
                         role: CheckVertex::resolve(role_pos, self.type_annotations),
                     };
 
-                    if let Some(&(program, instruction)) = relation_producer.max(player_producer).max(role_producer) {
+                    if let Some(&(step, instruction)) = relation_producer.max(player_producer).max(role_producer) {
                         let Some(intersection) =
-                            match_builder.get_program_mut(program).and_then(|prog| prog.as_intersection_mut())
+                            match_builder.get_step_mut(step).and_then(|prog| prog.as_intersection_mut())
                         else {
                             todo!("expected an intersection to be the producer")
                         };
@@ -802,9 +799,9 @@ impl ConjunctionPlan<'_> {
                         comparator,
                     };
 
-                    if let Some(&(program, instruction)) = Ord::max(lhs_producer, rhs_producer) {
+                    if let Some(&(step, instruction)) = Ord::max(lhs_producer, rhs_producer) {
                         let Some(intersection) =
-                            match_builder.get_program_mut(program).and_then(|prog| prog.as_intersection_mut())
+                            match_builder.get_step_mut(step).and_then(|prog| prog.as_intersection_mut())
                         else {
                             todo!("expected an intersection to be the producer")
                         };

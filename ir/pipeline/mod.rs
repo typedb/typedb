@@ -19,7 +19,7 @@ use crate::{
         variable_category::{VariableCategory, VariableOptionality},
         ParameterID,
     },
-    program::{function_signature::FunctionID, reduce::Reducer},
+    pipeline::{function_signature::FunctionID, reduce::Reducer},
     RepresentationError,
 };
 

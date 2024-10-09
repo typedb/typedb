@@ -12,7 +12,7 @@ use concept::{
     thing::{thing_manager::ThingManager, ThingAPI},
     type_::{
         attribute_type::AttributeType, entity_type::EntityType, relation_type::RelationType, role_type::RoleType,
-        type_manager::TypeManager, KindAPI, TypeAPI,
+        type_manager::TypeManager, TypeAPI,
     },
 };
 use encoding::value::{timezone::TimeZone, value::Value, value_type::ValueType};

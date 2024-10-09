@@ -13,7 +13,7 @@ use ir::{
         constraint::IsaKind,
         variable_category::{VariableCategory, VariableOptionality},
     },
-    program::{
+    pipeline::{
         block::Block,
         function_signature::{FunctionID, FunctionSignature},
     },
@@ -45,7 +45,7 @@ use ir::{
 // }
 
 #[test]
-fn build_program_with_functions() {
+fn build_with_functions() {
     let mut context = TranslationContext::new();
     let mut builder = Block::builder(context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
@@ -77,5 +77,4 @@ fn build_program_with_functions() {
     println!("{}", block.conjunction());
 
     // TODO: incomplete, since we don't have the called function IR
-    // let program = Program::new(Pattern::Conjunction(conjunction), HashMap::new());
 }

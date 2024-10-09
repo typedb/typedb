@@ -21,12 +21,12 @@ use typeql::{
 
 use crate::{
     pattern::{expression::ExpressionDefinitionError, variable_category::VariableCategory},
-    program::{FunctionReadError, FunctionRepresentationError},
+    pipeline::{FunctionReadError, FunctionRepresentationError},
     translation::fetch::FetchRepresentationError,
 };
 
 pub mod pattern;
-pub mod program;
+pub mod pipeline;
 pub mod translation;
 
 // TODO: include declaration source for each error message

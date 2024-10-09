@@ -16,8 +16,8 @@ use ir::pattern::{constraint::Isa, ParameterID};
 
 use crate::VariablePosition;
 
-pub mod instructions;
 pub mod executable;
+pub mod instructions;
 pub mod type_check;
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]

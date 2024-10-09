@@ -13,19 +13,18 @@ use answer::variable::Variable;
 use encoding::graph::type_::Kind;
 use ir::{
     pattern::{constraint::Constraint, expression::Expression, ParameterID, Vertex},
-    program::VariableRegistry,
+    pipeline::VariableRegistry,
 };
 use itertools::Itertools;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
-    filter_variants,
     executable::insert::{
         get_kinds_from_annotations, get_thing_source,
         instructions::{ConceptInstruction, ConnectionInstruction, Has, PutAttribute, PutObject, RolePlayer},
         ThingSource, TypeSource, ValueSource, VariableSource, WriteCompilationError,
     },
-    VariablePosition,
+    filter_variants, VariablePosition,
 };
 
 pub struct InsertExecutable {

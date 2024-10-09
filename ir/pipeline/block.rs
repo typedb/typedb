@@ -15,7 +15,7 @@ use crate::{
         variable_category::VariableCategory,
         Scope, ScopeId,
     },
-    program::{ParameterRegistry, VariableCategorySource, VariableRegistry},
+    pipeline::{ParameterRegistry, VariableCategorySource, VariableRegistry},
     RepresentationError,
 };
 

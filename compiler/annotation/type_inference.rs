@@ -60,7 +60,7 @@ pub mod tests {
             constraint::{Constraint, IsaKind, Links, SubKind},
             Vertex,
         },
-        program::block::Block,
+        pipeline::block::Block,
         translation::TranslationContext,
     };
     use itertools::Itertools;

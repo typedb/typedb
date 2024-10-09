@@ -7,11 +7,11 @@
 use std::sync::Arc;
 
 use compiler::executable::insert::{
-    instructions::{ConceptInstruction, ConnectionInstruction},
     executable::InsertExecutable,
+    instructions::{ConceptInstruction, ConnectionInstruction},
 };
 use concept::thing::thing_manager::ThingManager;
-use ir::program::ParameterRegistry;
+use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;
 use storage::snapshot::WritableSnapshot;
 
@@ -27,17 +27,17 @@ use crate::{
 };
 
 pub struct InsertStageExecutor<PreviousStage> {
-    program: InsertExecutable,
+    executable: InsertExecutable,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> InsertStageExecutor<PreviousStage> {
-    pub fn new(program: InsertExecutable, previous: PreviousStage) -> Self {
-        Self { program, previous }
+    pub fn new(executable: InsertExecutable, previous: PreviousStage) -> Self {
+        Self { executable, previous }
     }
 
     pub(crate) fn output_width(&self) -> usize {
-        self.program.output_width()
+        self.executable.output_width()
     }
 }
 
@@ -53,9 +53,9 @@ where
         mut interrupt: ExecutionInterrupt,
     ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
     {
-        let Self { program, previous } = self;
+        let Self { executable, previous } = self;
         let (previous_iterator, mut context) = previous.into_iterator(interrupt.clone())?;
-        let mut batch = match prepare_output_rows(program.output_width() as u32, previous_iterator) {
+        let mut batch = match prepare_output_rows(executable.output_width() as u32, previous_iterator) {
             Ok(output_rows) => output_rows,
             Err(err) => return Err((err, context)),
         };
@@ -67,7 +67,7 @@ where
             let mut row = batch.get_row_mut(index);
 
             if let Err(err) =
-                execute_insert(&program, snapshot_mut, &context.thing_manager, &context.parameters, &mut row)
+                execute_insert(&executable, snapshot_mut, &context.thing_manager, &context.parameters, &mut row)
             {
                 return Err((PipelineExecutionError::WriteError { typedb_source: err }, context));
             }
@@ -103,15 +103,15 @@ fn prepare_output_rows(output_width: u32, input_iterator: impl StageIterator) ->
 }
 
 fn execute_insert(
-    program: &InsertExecutable,
+    executable: &InsertExecutable,
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
 ) -> Result<(), WriteError> {
     debug_assert!(row.get_multiplicity() == 1);
-    debug_assert!(row.len() == program.output_row_schema.len());
-    for instruction in &program.concept_instructions {
+    debug_assert!(row.len() == executable.output_row_schema.len());
+    for instruction in &executable.concept_instructions {
         match instruction {
             ConceptInstruction::PutAttribute(isa_attr) => {
                 isa_attr.execute(snapshot, thing_manager, parameters, row)?;
@@ -121,7 +121,7 @@ fn execute_insert(
             }
         }
     }
-    for instruction in &program.connection_instructions {
+    for instruction in &executable.connection_instructions {
         match instruction {
             ConnectionInstruction::Has(has) => {
                 has.execute(snapshot, thing_manager, parameters, row)?;
