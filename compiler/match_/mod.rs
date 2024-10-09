@@ -5,5 +5,4 @@
  */
 
 pub mod instructions;
-mod optimisation;
 pub mod planner;

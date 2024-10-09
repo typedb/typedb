@@ -30,7 +30,7 @@ pub(crate) struct GroupedReducer {
 
 impl GroupedReducer {
     pub(crate) fn new(program: ReduceProgram) -> Self {
-        let reducers: Vec<ReducerExecutor> = program.reduction_inputs.iter().map(ReducerExecutor::build).collect();
+        let reducers: Vec<ReducerExecutor> = program.reductions.iter().map(ReducerExecutor::build).collect();
         let reused_group = Vec::with_capacity(program.input_group_positions.len());
         let mut grouped_reductions = HashMap::new();
         // Empty result sets behave different for an empty grouping

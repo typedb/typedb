@@ -187,13 +187,13 @@ fn compile_stage(
                 output_row_mapping.insert(variable.clone(), VariablePosition::new(input_group_positions.len() as u32));
                 input_group_positions.push(input_variables.get(variable).unwrap().clone());
             }
-            let mut reduction_inputs = Vec::with_capacity(reduce.assigned_reductions.len());
+            let mut reductions = Vec::with_capacity(reduce.assigned_reductions.len());
             for ((assigned_variable, _), reducer_on_variable) in
                 zip(reduce.assigned_reductions.iter(), typed_reducers.iter())
             {
                 output_row_mapping.insert(
                     assigned_variable.clone(),
-                    VariablePosition::new((input_group_positions.len() + reduction_inputs.len()) as u32),
+                    VariablePosition::new((input_group_positions.len() + reductions.len()) as u32),
                 );
                 let reducer_on_position = match &reducer_on_variable {
                     ReduceInstruction::Count => ReduceInstruction::Count,
@@ -237,9 +237,9 @@ fn compile_stage(
                         ReduceInstruction::StdDouble(input_variables.get(variable).unwrap().clone())
                     }
                 };
-                reduction_inputs.push(reducer_on_position);
+                reductions.push(reducer_on_position);
             }
-            Ok(CompiledStage::Reduce(ReduceProgram { reduction_inputs, input_group_positions, output_row_mapping }))
+            Ok(CompiledStage::Reduce(ReduceProgram { reductions: reductions, input_group_positions, output_row_mapping }))
         }
         AnnotatedStage::Fetch { .. } => {
             todo!()
