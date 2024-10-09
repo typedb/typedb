@@ -6,7 +6,7 @@
 
 use std::{cmp::Ordering, collections::HashMap, sync::Arc};
 
-use answer::{variable::Variable, variable_value::VariableValue};
+use answer::variable_value::VariableValue;
 use compiler::{
     executable::match_::{
         instructions::{CheckInstruction, ConstraintInstruction, VariableModes},
@@ -75,7 +75,7 @@ impl StepExecutor {
             ExecutionStep::Check(CheckStep { check_instructions }) => {
                 Ok(Self::Check(CheckExecutor::new(check_instructions.clone())))
             }
-            ExecutionStep::Disjunction(DisjunctionStep { disjunction: disjunction_plans, .. }) => {
+            ExecutionStep::Disjunction(DisjunctionStep { disjunction: _disjunction_plans, .. }) => {
                 // let executors = plans.into_iter().map(|pattern_plan| PatternExecutor::new(pattern_plan, )).collect();
                 // Self::Disjunction(DisjunctionExecutor::new(executors, variable_positions))
                 todo!()
@@ -84,7 +84,7 @@ impl StepExecutor {
                 // TODO: add limit 1, filters if they aren't there already?
                 Ok(Self::Negation(NegationExecutor::new(negation_plan.clone())))
             }
-            ExecutionStep::Optional(OptionalStep { optional: optional_plan, .. }) => {
+            ExecutionStep::Optional(OptionalStep { optional: _optional_plan, .. }) => {
                 todo!()
                 // let pattern_executor = PatternExecutor::new(optional_plan, snapshot, thing_manager)?;
                 // Ok(Self::Optional(OptionalExecutor::new(pattern_executor)))
@@ -103,7 +103,7 @@ impl StepExecutor {
             StepExecutor::UnsortedJoin(unsorted) => unsorted.batch_from(input_batch),
             StepExecutor::Assignment(single) => single.batch_from(input_batch),
             StepExecutor::Check(check) => check.batch_from(input_batch, context, interrupt),
-            StepExecutor::Disjunction(disjunction) => disjunction.batch_from(input_batch),
+            StepExecutor::Disjunction(disjunction) => disjunction.batch_from(input_batch, context, interrupt),
             StepExecutor::Negation(negation) => negation.batch_from(input_batch, context, interrupt),
             StepExecutor::Optional(optional) => optional.batch_from(input_batch),
         }
@@ -126,7 +126,7 @@ impl StepExecutor {
 /// Performs an n-way intersection/join using sorted iterators.
 /// To avoid missing cartesian outputs when multiple variables are unbound, the executor can leverage a
 /// Cartesian sub-program, which generates all cartesian answers within one intersection, if there are any.
-struct IntersectionExecutor {
+pub(super) struct IntersectionExecutor {
     instruction_executors: Vec<InstructionExecutor>,
     sort_variable: VariablePosition,
     output_width: u32,
@@ -451,7 +451,7 @@ impl CartesianIterator {
         iterator_executors: &[InstructionExecutor],
         source_intersection: &[VariableValue<'static>],
         source_multiplicity: u64,
-        intersection_iterators: &mut Vec<TupleIterator>,
+        intersection_iterators: &mut [TupleIterator],
     ) -> Result<(), ReadExecutionError> {
         debug_assert!(source_intersection.len() == self.intersection_source.len());
         self.is_active = true;
@@ -557,7 +557,7 @@ impl CartesianIterator {
     }
 }
 
-struct UnsortedJoinExecutor {
+pub(super) struct UnsortedJoinExecutor {
     iterate: ConstraintInstruction<VariablePosition>,
     checks: Vec<ConstraintInstruction<VariablePosition>>,
 
@@ -574,7 +574,7 @@ impl UnsortedJoinExecutor {
         Self { iterate, checks, output_width: total_vars, output: None }
     }
 
-    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ReadExecutionError> {
+    fn batch_from(&mut self, _input_batch: FixedBatch) -> Result<Option<FixedBatch>, ReadExecutionError> {
         todo!()
     }
 
@@ -583,18 +583,18 @@ impl UnsortedJoinExecutor {
     }
 }
 
-struct AssignExecutor {
+pub(super) struct AssignExecutor {
     // executor: AssignInstruction,
     // checks: Vec<CheckInstruction>,
 }
 
 impl AssignExecutor {
-    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ReadExecutionError> {
+    fn batch_from(&mut self, _input_batch: FixedBatch) -> Result<Option<FixedBatch>, ReadExecutionError> {
         todo!()
     }
 }
 
-struct CheckExecutor {
+pub(super) struct CheckExecutor {
     checker: Checker<()>,
 }
 
@@ -629,28 +629,114 @@ impl CheckExecutor {
     }
 }
 
-struct DisjunctionExecutor {
-    executors: Vec<MatchExecutor>,
+pub(super) struct DisjunctionExecutor {
+    executables: Vec<MatchExecutable>,
+
+    current_branch: Option<(usize, MatchExecutor)>,
+    current_input_row: Option<MaybeOwnedRow<'static>>,
+
+    input: Option<Peekable<FixedBatchRowIterator>>,
+    output: Option<FixedBatch>,
+
+    output_width: u32, // we should at least make sure all branches have the same batch width
 }
 
 impl DisjunctionExecutor {
-    fn new(
-        executors: Vec<MatchExecutor>,
-        variable_positions: &HashMap<Variable, VariablePosition>,
-    ) -> DisjunctionExecutor {
-        Self { executors }
+    fn new(executors: Vec<MatchExecutable>, output_width: u32) -> DisjunctionExecutor {
+        Self {
+            executables: executors,
+            current_branch: None,
+            current_input_row: None,
+            input: None,
+            output: None,
+            output_width,
+        }
     }
 
-    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        todo!()
+    fn batch_from(
+        &mut self,
+        input_batch: FixedBatch,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        interrupt: &mut ExecutionInterrupt,
+    ) -> Result<Option<FixedBatch>, ReadExecutionError> {
+        debug_assert!(
+            self.output.is_none()
+                && self.current_branch.is_none()
+                && !self.input.as_mut().is_some_and(|it| it.peek().is_some())
+        );
+        self.input = Some(Peekable::new(FixedBatchRowIterator::new(Ok(input_batch))));
+        debug_assert!(self.input.as_mut().unwrap().peek().is_some());
+        self.batch_continue(context, interrupt)
     }
 
-    fn batch_continue(&mut self) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        todo!()
+    fn batch_continue(
+        &mut self,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        interrupt: &mut ExecutionInterrupt,
+    ) -> Result<Option<FixedBatch>, ReadExecutionError> {
+        debug_assert!(self.output.is_none());
+        self.compute_next_batch(context, interrupt)?;
+        Ok(self.output.take())
+    }
+
+    fn compute_next_batch(
+        &mut self,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        interrupt: &mut ExecutionInterrupt,
+    ) -> Result<(), ReadExecutionError> {
+        if self.current_branch.is_none() {
+            self.initialize_executor_for_next_input_row(context)?;
+        }
+        while let Some((index, mut executor)) = self.current_branch.take() {
+            if let Some(batch) = executor.compute_next_batch(context, interrupt)? {
+                self.output = Some(batch);
+                self.current_branch = Some((index, executor));
+                break;
+            } else {
+                let next_branch = index + 1;
+                if next_branch < self.executables.len() {
+                    self.initialize_branch_executor(next_branch, context)?;
+                } else {
+                    self.initialize_executor_for_next_input_row(context)?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn initialize_branch_executor(
+        &mut self,
+        next_branch: usize,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+    ) -> Result<(), ReadExecutionError> {
+        if let Some(input_row) = &self.current_input_row {
+            self.current_branch = Some((
+                next_branch,
+                MatchExecutor::new(
+                    &self.executables[next_branch],
+                    context.snapshot(),
+                    context.thing_manager(),
+                    input_row.clone(),
+                )
+                .map_err(|err| ReadExecutionError::ConceptRead { source: err })?,
+            ));
+        }
+        Ok(())
+    }
+
+    fn initialize_executor_for_next_input_row(
+        &mut self,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+    ) -> Result<(), ReadExecutionError> {
+        if let Some(input_row) = self.input.as_mut().unwrap().next().transpose().map_err(|err| err.clone())? {
+            self.current_input_row = Some(input_row.into_owned());
+            self.initialize_branch_executor(0, context)?;
+        }
+        Ok(())
     }
 }
 
-struct NegationExecutor {
+pub(super) struct NegationExecutor {
     executable: MatchExecutable,
 }
 
@@ -686,7 +772,7 @@ impl NegationExecutor {
     }
 }
 
-struct OptionalExecutor {
+pub(super) struct OptionalExecutor {
     executor: MatchExecutor,
 }
 
