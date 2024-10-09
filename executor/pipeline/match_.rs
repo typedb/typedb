@@ -9,13 +9,13 @@ use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
+    ExecutionInterrupt,
     pattern_executor::{MatchExecutor, PatternIterator},
     pipeline::{
-        stage::{ExecutionContext, StageAPI},
-        PipelineExecutionError, StageIterator,
+        PipelineExecutionError,
+        stage::{ExecutionContext, StageAPI}, StageIterator,
     },
     row::MaybeOwnedRow,
-    ExecutionInterrupt,
 };
 
 pub struct MatchStageExecutor<PreviousStage> {

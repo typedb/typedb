@@ -25,14 +25,14 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
+    ExecutionInterrupt,
     instruction::{iterator::TupleIterator, Checker, InstructionExecutor},
     pattern_executor::MatchExecutor,
     pipeline::stage::ExecutionContext,
-    row::{MaybeOwnedRow, Row},
-    ExecutionInterrupt, SelectedPositions,
+    row::{MaybeOwnedRow, Row}, SelectedPositions,
 };
 
-pub(super) enum StepExecutor {
+pub(crate) enum StepExecutor {
     SortedJoin(IntersectionExecutor),
     UnsortedJoin(UnsortedJoinExecutor),
     Assignment(AssignExecutor),
@@ -44,7 +44,7 @@ pub(super) enum StepExecutor {
 }
 
 impl StepExecutor {
-    pub(super) fn new(
+    pub(crate) fn new(
         step: &ExecutionStep,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
@@ -92,7 +92,7 @@ impl StepExecutor {
         }
     }
 
-    pub(super) fn batch_from(
+    pub(crate) fn batch_from(
         &mut self,
         input_batch: FixedBatch,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
@@ -109,7 +109,7 @@ impl StepExecutor {
         }
     }
 
-    pub(super) fn batch_continue(
+    pub(crate) fn batch_continue(
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {

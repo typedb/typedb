@@ -17,15 +17,13 @@ use tokio::sync::broadcast::error::TryRecvError;
 
 pub mod batch;
 pub mod error;
-pub mod expression_executor;
-mod function_executor;
 pub(crate) mod instruction;
 pub mod pattern_executor;
 pub mod pipeline;
 pub(crate) mod reduce_executor;
 pub mod row;
-mod step_executors;
 pub mod write;
+pub mod read;
 
 // TODO: use a bit-vec, since we have a continuously allocated range of positions
 // ---> for now, using a byte vec, which is 8x wasteful and on the heap!

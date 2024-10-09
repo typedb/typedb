@@ -17,7 +17,7 @@ use crate::{
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
-    step_executors::StepExecutor,
+    read::step_executors::StepExecutor,
     ExecutionInterrupt,
 };
 
@@ -73,7 +73,7 @@ impl MatchExecutor {
         };
 
         loop {
-            debug_assert!(current_step >= 0 && current_step <= programs_len - 1);
+            debug_assert!(current_step >= 0 && current_step <= steps_len - 1);
             // TODO: inject interrupt into Checkers that could filter out many rows without ending as well.
             if let Some(interrupt) = interrupt.check() {
                 return Err(ReadExecutionError::Interrupted { interrupt });
