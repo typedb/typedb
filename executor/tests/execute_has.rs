@@ -9,6 +9,7 @@ use std::{
     collections::{BTreeMap, HashMap},
     sync::Arc,
 };
+use std::collections::HashSet;
 
 use compiler::{
     annotation::{
