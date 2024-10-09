@@ -31,7 +31,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
 
 use crate::{
-    compilation::{compile_pipeline, CompiledPipeline, CompiledStage},
+    compilation::{compile_pipeline, ExecutablePipeline, ExecutableStage},
     define,
     error::QueryError,
     redefine, undefine,
@@ -92,7 +92,7 @@ impl QueryManager {
 
         // 3: Compile
         let variable_registry = Arc::new(variable_registry);
-        let CompiledPipeline { compiled_functions, compiled_stages, output_variable_positions } = compile_pipeline(
+        let ExecutablePipeline { executable_functions: compiled_functions, executable_stages: compiled_stages, output_variable_positions } = compile_pipeline(
             thing_manager.statistics(),
             variable_registry.clone(),
             annotated_preamble,
@@ -103,38 +103,38 @@ impl QueryManager {
         let mut last_stage = ReadPipelineStage::Initial(InitialStage::new(context));
         for compiled_stage in compiled_stages {
             match compiled_stage {
-                CompiledStage::Match(match_executable) => {
+                ExecutableStage::Match(match_executable) => {
                     // TODO: Pass expressions & functions
                     let match_stage = MatchStageExecutor::new(match_executable, last_stage);
                     last_stage = ReadPipelineStage::Match(Box::new(match_stage));
                 }
-                CompiledStage::Insert(_) => {
+                ExecutableStage::Insert(_) => {
                     unreachable!("Insert clause cannot exist in a read pipeline.")
                 }
-                CompiledStage::Delete(_) => {
+                ExecutableStage::Delete(_) => {
                     unreachable!("Delete clause cannot exist in a read pipeline.")
                 }
-                CompiledStage::Select(select_executable) => {
+                ExecutableStage::Select(select_executable) => {
                     let select_stage = SelectStageExecutor::new(select_executable, last_stage);
                     last_stage = ReadPipelineStage::Select(Box::new(select_stage));
                 }
-                CompiledStage::Sort(sort_executable) => {
+                ExecutableStage::Sort(sort_executable) => {
                     let sort_stage = SortStageExecutor::new(sort_executable, last_stage);
                     last_stage = ReadPipelineStage::Sort(Box::new(sort_stage));
                 }
-                CompiledStage::Offset(offset_executable) => {
+                ExecutableStage::Offset(offset_executable) => {
                     let offset_stage = OffsetStageExecutor::new(offset_executable, last_stage);
                     last_stage = ReadPipelineStage::Offset(Box::new(offset_stage));
                 }
-                CompiledStage::Limit(limit_executable) => {
+                ExecutableStage::Limit(limit_executable) => {
                     let limit_stage = LimitStageExecutor::new(limit_executable, last_stage);
                     last_stage = ReadPipelineStage::Limit(Box::new(limit_stage));
                 }
-                CompiledStage::Require(require_executable) => {
+                ExecutableStage::Require(require_executable) => {
                     let require_stage = RequireStageExecutor::new(require_executable, last_stage);
                     last_stage = ReadPipelineStage::Require(Box::new(require_stage));
                 }
-                CompiledStage::Reduce(reduce_executable) => {
+                ExecutableStage::Reduce(reduce_executable) => {
                     let reduce_stage = ReduceStageExecutor::new(reduce_executable, last_stage);
                     last_stage = ReadPipelineStage::Reduce(Box::new(reduce_stage));
                 }
@@ -197,7 +197,7 @@ impl QueryManager {
             annotated_preamble,
             annotated_stages,
         );
-        let CompiledPipeline { compiled_functions, compiled_stages, output_variable_positions } =
+        let ExecutablePipeline { executable_functions: compiled_functions, executable_stages: compiled_stages, output_variable_positions } =
             match compiled_pipeline {
                 Ok(compiled_pipeline) => compiled_pipeline,
                 Err(err) => return Err((snapshot, err)),
@@ -207,40 +207,40 @@ impl QueryManager {
         let mut previous_stage = WritePipelineStage::Initial(InitialStage::new(context));
         for compiled_stage in compiled_stages {
             match compiled_stage {
-                CompiledStage::Match(match_executable) => {
+                ExecutableStage::Match(match_executable) => {
                     // TODO: Pass expressions & functions
                     let match_stage = MatchStageExecutor::new(match_executable, previous_stage);
                     previous_stage = WritePipelineStage::Match(Box::new(match_stage));
                 }
-                CompiledStage::Insert(insert_executable) => {
+                ExecutableStage::Insert(insert_executable) => {
                     let insert_stage = InsertStageExecutor::new(insert_executable, previous_stage);
                     previous_stage = WritePipelineStage::Insert(Box::new(insert_stage));
                 }
-                CompiledStage::Delete(delete_executable) => {
+                ExecutableStage::Delete(delete_executable) => {
                     let delete_stage = DeleteStageExecutor::new(delete_executable, previous_stage);
                     previous_stage = WritePipelineStage::Delete(Box::new(delete_stage));
                 }
-                CompiledStage::Select(select_executable) => {
+                ExecutableStage::Select(select_executable) => {
                     let select_stage = SelectStageExecutor::new(select_executable, previous_stage);
                     previous_stage = WritePipelineStage::Select(Box::new(select_stage));
                 }
-                CompiledStage::Sort(sort_executable) => {
+                ExecutableStage::Sort(sort_executable) => {
                     let sort_stage = SortStageExecutor::new(sort_executable, previous_stage);
                     previous_stage = WritePipelineStage::Sort(Box::new(sort_stage));
                 }
-                CompiledStage::Offset(offset_executable) => {
+                ExecutableStage::Offset(offset_executable) => {
                     let offset_stage = OffsetStageExecutor::new(offset_executable, previous_stage);
                     previous_stage = WritePipelineStage::Offset(Box::new(offset_stage));
                 }
-                CompiledStage::Limit(limit_executable) => {
+                ExecutableStage::Limit(limit_executable) => {
                     let limit_stage = LimitStageExecutor::new(limit_executable, previous_stage);
                     previous_stage = WritePipelineStage::Limit(Box::new(limit_stage));
                 }
-                CompiledStage::Require(require_executable) => {
+                ExecutableStage::Require(require_executable) => {
                     let require_stage = RequireStageExecutor::new(require_executable, previous_stage);
                     previous_stage = WritePipelineStage::Require(Box::new(require_stage));
                 }
-                CompiledStage::Reduce(reduce_executable) => {
+                ExecutableStage::Reduce(reduce_executable) => {
                     let reduce_stage = ReduceStageExecutor::new(reduce_executable, previous_stage);
                     previous_stage = WritePipelineStage::Reduce(Box::new(reduce_stage));
                 }

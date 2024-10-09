@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 use answer::variable::Variable;
 use compiler::annotation::expression::{
-    compiled_expression::{CompiledExpression, ExpressionValueType},
+    compiled_expression::{ExecutableExpression, ExpressionValueType},
     expression_compiler::ExpressionCompilationContext,
     ExpressionCompileError,
 };
@@ -44,7 +44,7 @@ impl From<ExpressionCompileError> for PatternDefitionOrExpressionCompileError {
 fn compile_expression_via_match(
     s: &str,
     variable_types: HashMap<&str, ExpressionValueType>,
-) -> Result<(HashMap<String, Variable>, CompiledExpression, ParameterRegistry), PatternDefitionOrExpressionCompileError>
+) -> Result<(HashMap<String, Variable>, ExecutableExpression, ParameterRegistry), PatternDefitionOrExpressionCompileError>
 {
     let query = format!("match $x = {}; select $x;", s);
     let mut translation_context = TranslationContext::new();

@@ -23,7 +23,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
     expression::{
-        compiled_expression::{CompiledExpression, ExpressionValueType},
+        compiled_expression::{ExecutableExpression, ExpressionValueType},
         expression_compiler::ExpressionCompilationContext,
         ExpressionCompileError,
     },
@@ -40,7 +40,7 @@ struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
     type_manager: &'block TypeManager,
     type_annotations: &'block TypeAnnotations,
 
-    compiled_expressions: HashMap<Variable, CompiledExpression>,
+    compiled_expressions: HashMap<Variable, ExecutableExpression>,
     variable_value_types: HashMap<Variable, ExpressionValueType>,
     visited_expressions: HashSet<Variable>,
 }
@@ -52,7 +52,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     variable_registry: &'block mut VariableRegistry,
     parameters: &'block ParameterRegistry,
     type_annotations: &'block TypeAnnotations,
-) -> Result<HashMap<Variable, CompiledExpression>, ExpressionCompileError> {
+) -> Result<HashMap<Variable, ExecutableExpression>, ExpressionCompileError> {
     let mut expression_index = HashMap::new();
     index_expressions(block.conjunction(), &mut expression_index)?;
     let assigned_variables = expression_index.keys().cloned().collect_vec();

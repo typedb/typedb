@@ -30,7 +30,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     annotation::{
-        expression::{block_compiler::compile_expressions, compiled_expression::CompiledExpression},
+        expression::{block_compiler::compile_expressions, compiled_expression::ExecutableExpression},
         fetch::AnnotatedFetch,
         function::{annotate_functions, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         match_inference::infer_types,
@@ -51,7 +51,8 @@ pub enum AnnotatedStage {
     Match {
         block: Block,
         block_annotations: TypeAnnotations,
-        compiled_expressions: HashMap<Variable, CompiledExpression>,
+        // expressions skip annotation and go straight to executable, breaking the abstraction a bit...
+        executable_expressions: HashMap<Variable, ExecutableExpression>,
     },
     Insert {
         block: Block,
@@ -157,7 +158,7 @@ fn annotate_stage(
             compiled_expressions.iter().for_each(|(&variable, expr)| {
                 running_value_variable_assigned_types.insert(variable, expr.return_type().value_type());
             });
-            Ok(AnnotatedStage::Match { block, block_annotations, compiled_expressions })
+            Ok(AnnotatedStage::Match { block, block_annotations, executable_expressions: compiled_expressions })
         }
 
         TranslatedStage::Insert { block } => {

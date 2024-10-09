@@ -15,7 +15,7 @@ use ir::pipeline::{block::Block, VariableRegistry};
 use itertools::Itertools;
 
 use crate::{
-    annotation::{expression::compiled_expression::CompiledExpression, type_annotations::TypeAnnotations},
+    annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
     executable::match_::{
         instructions::{CheckInstruction, ConstraintInstruction},
         planner::{
@@ -36,7 +36,7 @@ pub fn compile(
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,
     variable_registry: Arc<VariableRegistry>,
-    expressions: &HashMap<Variable, CompiledExpression>,
+    expressions: &HashMap<Variable, ExecutableExpression>,
     statistics: &Statistics,
 ) -> MatchExecutable {
     let conjunction = block.conjunction();

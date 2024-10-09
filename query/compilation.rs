@@ -29,18 +29,18 @@ use ir::pipeline::VariableRegistry;
 
 use crate::error::QueryError;
 
-pub struct CompiledPipeline {
-    pub(super) compiled_functions: Vec<CompiledFunction>,
-    pub(super) compiled_stages: Vec<CompiledStage>,
+pub struct ExecutablePipeline {
+    pub(super) executable_functions: Vec<ExecutableFunction>,
+    pub(super) executable_stages: Vec<ExecutableStage>,
     pub(super) output_variable_positions: HashMap<Variable, VariablePosition>,
 }
 
-pub struct CompiledFunction {
-    executable: MatchExecutable,
+pub struct ExecutableFunction {
+    executable: ExecutablePipeline,
     returns: HashMap<Variable, VariablePosition>,
 }
 
-pub enum CompiledStage {
+pub enum ExecutableStage {
     Match(MatchExecutable),
     Insert(InsertExecutable),
     Delete(DeleteExecutable),
@@ -53,29 +53,29 @@ pub enum CompiledStage {
     Reduce(ReduceExecutable),
 }
 
-impl CompiledStage {
+impl ExecutableStage {
     fn output_row_mapping(&self) -> HashMap<Variable, VariablePosition> {
         match self {
-            CompiledStage::Match(executable) => executable.variable_positions().to_owned(),
-            CompiledStage::Insert(executable) => executable
+            ExecutableStage::Match(executable) => executable.variable_positions().to_owned(),
+            ExecutableStage::Insert(executable) => executable
                 .output_row_schema
                 .iter()
                 .filter_map(|opt| opt.map(|(v, _)| v))
                 .enumerate()
                 .map(|(i, v)| (v, VariablePosition::new(i as u32)))
                 .collect(),
-            CompiledStage::Delete(executable) => executable
+            ExecutableStage::Delete(executable) => executable
                 .output_row_schema
                 .iter()
                 .enumerate()
                 .filter_map(|(i, v)| v.map(|v| (v, VariablePosition::new(i as u32))))
                 .collect(),
-            CompiledStage::Select(executable) => executable.output_row_mapping.clone(),
-            CompiledStage::Sort(executable) => executable.output_row_mapping.clone(),
-            CompiledStage::Offset(executable) => executable.output_row_mapping.clone(),
-            CompiledStage::Limit(executable) => executable.output_row_mapping.clone(),
-            CompiledStage::Require(executable) => executable.output_row_mapping.clone(),
-            CompiledStage::Reduce(executable) => executable.output_row_mapping.clone(),
+            ExecutableStage::Select(executable) => executable.output_row_mapping.clone(),
+            ExecutableStage::Sort(executable) => executable.output_row_mapping.clone(),
+            ExecutableStage::Offset(executable) => executable.output_row_mapping.clone(),
+            ExecutableStage::Limit(executable) => executable.output_row_mapping.clone(),
+            ExecutableStage::Require(executable) => executable.output_row_mapping.clone(),
+            ExecutableStage::Reduce(executable) => executable.output_row_mapping.clone(),
         }
     }
 }
@@ -85,31 +85,31 @@ pub(super) fn compile_pipeline(
     variable_registry: Arc<VariableRegistry>,
     annotated_functions: AnnotatedUnindexedFunctions,
     annotated_stages: Vec<AnnotatedStage>,
-) -> Result<CompiledPipeline, QueryError> {
-    let compiled_functions = annotated_functions
+) -> Result<ExecutablePipeline, QueryError> {
+    let executable_functions = annotated_functions
         .iter_functions()
         .map(|function| compile_function(statistics, variable_registry.clone(), function))
         .collect::<Result<Vec<_>, _>>()?;
 
-    let mut compiled_stages = Vec::with_capacity(annotated_stages.len());
+    let mut executable_stages = Vec::with_capacity(annotated_stages.len());
     for stage in annotated_stages {
         let input_variable_positions =
-            compiled_stages.last().map(|stage: &CompiledStage| stage.output_row_mapping()).unwrap_or(HashMap::new());
+            executable_stages.last().map(|stage: &ExecutableStage| stage.output_row_mapping()).unwrap_or(HashMap::new());
 
-        let compiled_stage = compile_stage(statistics, variable_registry.clone(), &input_variable_positions, stage)?;
-        compiled_stages.push(compiled_stage);
+        let executable_stage = compile_stage(statistics, variable_registry.clone(), &input_variable_positions, stage)?;
+        executable_stages.push(executable_stage);
     }
     let output_variable_positions =
-        compiled_stages.last().map(|stage: &CompiledStage| stage.output_row_mapping()).unwrap_or(HashMap::new());
+        executable_stages.last().map(|stage: &ExecutableStage| stage.output_row_mapping()).unwrap_or(HashMap::new());
 
-    Ok(CompiledPipeline { compiled_functions, compiled_stages, output_variable_positions })
+    Ok(ExecutablePipeline { executable_functions: executable_functions, executable_stages: executable_stages, output_variable_positions })
 }
 
 fn compile_function(
     statistics: &Statistics,
     variable_registry: Arc<VariableRegistry>,
     function: &AnnotatedFunction,
-) -> Result<CompiledFunction, QueryError> {
+) -> Result<ExecutableFunction, QueryError> {
     todo!()
 }
 
@@ -118,18 +118,18 @@ fn compile_stage(
     variable_registry: Arc<VariableRegistry>,
     input_variables: &HashMap<Variable, VariablePosition>,
     annotated_stage: AnnotatedStage,
-) -> Result<CompiledStage, QueryError> {
+) -> Result<ExecutableStage, QueryError> {
     match &annotated_stage {
-        AnnotatedStage::Match { block, block_annotations, compiled_expressions } => {
+        AnnotatedStage::Match { block, block_annotations, executable_expressions } => {
             let plan = compiler::executable::match_::planner::compile(
                 block,
                 input_variables,
                 block_annotations,
                 variable_registry,
-                compiled_expressions,
+                executable_expressions,
                 statistics,
             );
-            Ok(CompiledStage::Match(plan))
+            Ok(ExecutableStage::Match(plan))
         }
         AnnotatedStage::Insert { block, annotations } => {
             let plan = compiler::executable::insert::executable::compile(
@@ -139,7 +139,7 @@ fn compile_stage(
                 annotations,
             )
             .map_err(|source| QueryError::WriteCompilation { source })?;
-            Ok(CompiledStage::Insert(plan))
+            Ok(ExecutableStage::Insert(plan))
         }
         AnnotatedStage::Delete { block, deleted_variables, annotations } => {
             let plan = compiler::executable::delete::executable::compile(
@@ -149,7 +149,7 @@ fn compile_stage(
                 deleted_variables,
             )
             .map_err(|source| QueryError::WriteCompilation { source })?;
-            Ok(CompiledStage::Delete(plan))
+            Ok(ExecutableStage::Delete(plan))
         }
         AnnotatedStage::Select(select) => {
             let mut retained_positions = HashSet::with_capacity(select.variables.len());
@@ -159,17 +159,17 @@ fn compile_stage(
                 retained_positions.insert(pos);
                 output_row_mapping.insert(variable, pos);
             }
-            Ok(CompiledStage::Select(SelectExecutable { retained_positions, output_row_mapping }))
+            Ok(ExecutableStage::Select(SelectExecutable { retained_positions, output_row_mapping }))
         }
-        AnnotatedStage::Sort(sort) => Ok(CompiledStage::Sort(SortExecutable {
+        AnnotatedStage::Sort(sort) => Ok(ExecutableStage::Sort(SortExecutable {
             sort_on: sort.variables.clone(),
             output_row_mapping: input_variables.clone(),
         })),
-        AnnotatedStage::Offset(offset) => Ok(CompiledStage::Offset(OffsetExecutable {
+        AnnotatedStage::Offset(offset) => Ok(ExecutableStage::Offset(OffsetExecutable {
             offset: offset.offset(),
             output_row_mapping: input_variables.clone(),
         })),
-        AnnotatedStage::Limit(limit) => Ok(CompiledStage::Limit(LimitExecutable {
+        AnnotatedStage::Limit(limit) => Ok(ExecutableStage::Limit(LimitExecutable {
             limit: limit.limit(),
             output_row_mapping: input_variables.clone(),
         })),
@@ -179,7 +179,7 @@ fn compile_stage(
                 let pos = input_variables[&variable];
                 required_positions.insert(pos);
             }
-            Ok(CompiledStage::Require(RequireExecutable {
+            Ok(ExecutableStage::Require(RequireExecutable {
                 required: required_positions,
                 output_row_mapping: input_variables.clone(),
             }))
@@ -244,7 +244,7 @@ fn compile_stage(
                 };
                 reductions.push(reducer_on_position);
             }
-            Ok(CompiledStage::Reduce(ReduceExecutable {
+            Ok(ExecutableStage::Reduce(ReduceExecutable {
                 reductions: reductions,
                 input_group_positions,
                 output_row_mapping,

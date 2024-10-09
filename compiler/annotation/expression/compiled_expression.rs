@@ -11,14 +11,14 @@ use ir::pattern::ParameterID;
 use crate::annotation::expression::instructions::op_codes::ExpressionOpCode;
 
 #[derive(Debug, Clone)]
-pub struct CompiledExpression {
+pub struct ExecutableExpression {
     pub(crate) instructions: Vec<ExpressionOpCode>,
     pub(crate) variables: Vec<Variable>,
     pub(crate) constants: Vec<ParameterID>,
     pub(crate) return_type: ExpressionValueType,
 }
 
-impl CompiledExpression {
+impl ExecutableExpression {
     pub fn instructions(&self) -> &[ExpressionOpCode] {
         &self.instructions
     }

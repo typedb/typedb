@@ -20,7 +20,7 @@ use ir::{
 };
 
 use crate::annotation::expression::{
-    compiled_expression::{CompiledExpression, ExpressionValueType},
+    compiled_expression::{ExecutableExpression, ExpressionValueType},
     instructions::{
         list_operations,
         load_cast::{CastLeftLongToDouble, CastRightLongToDouble, LoadConstant, LoadVariable},
@@ -64,13 +64,13 @@ impl<'this> ExpressionCompilationContext<'this> {
         expression_tree: &ExpressionTree<Variable>,
         variable_value_categories: &HashMap<Variable, ExpressionValueType>,
         parameters: &ParameterRegistry,
-    ) -> Result<CompiledExpression, ExpressionCompileError> {
+    ) -> Result<ExecutableExpression, ExpressionCompileError> {
         debug_assert!(expression_tree.variables().all(|var| variable_value_categories.contains_key(&var)));
         let mut builder = ExpressionCompilationContext::empty(expression_tree, variable_value_categories, parameters);
         builder.compile_recursive(expression_tree.get_root())?;
         let return_type = builder.pop_type()?;
         let ExpressionCompilationContext { instructions, variable_stack, constant_stack, .. } = builder;
-        Ok(CompiledExpression { instructions, variables: variable_stack, constants: constant_stack, return_type })
+        Ok(ExecutableExpression { instructions, variables: variable_stack, constants: constant_stack, return_type })
     }
 
     fn compile_recursive(&mut self, expression: &Expression<Variable>) -> Result<(), ExpressionCompileError> {

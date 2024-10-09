@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 use answer::variable::Variable;
 use compiler::annotation::expression::{
-    compiled_expression::CompiledExpression,
+    compiled_expression::ExecutableExpression,
     instructions::{
         binary::{Binary, BinaryExpression, MathRemainderLong},
         list_operations::{ListConstructor, ListIndex, ListIndexRange},
@@ -95,7 +95,7 @@ pub struct ExpressionExecutor {}
 
 impl ExpressionExecutor {
     pub fn evaluate(
-        compiled: CompiledExpression,
+        compiled: ExecutableExpression,
         input: HashMap<Variable, ExpressionValue>,
         parameters: &ParameterRegistry,
     ) -> Result<ExpressionValue, ExpressionEvaluationError> {
