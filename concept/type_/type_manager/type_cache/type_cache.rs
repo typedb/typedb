@@ -6,8 +6,6 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    error::Error,
-    fmt,
     sync::Arc,
 };
 
@@ -19,9 +17,8 @@ use error::typedb_error;
 use storage::{sequence_number::SequenceNumber, MVCCStorage};
 
 use crate::type_::{
-    annotation::{Annotation, AnnotationCardinality},
     attribute_type::AttributeType,
-    constraint::{CapabilityConstraint, Constraint, ConstraintCategory, ConstraintDescription, TypeConstraint},
+    constraint::{CapabilityConstraint, Constraint, ConstraintCategory, TypeConstraint},
     entity_type::EntityType,
     object_type::ObjectType,
     owns::{Owns, OwnsAnnotation},

@@ -41,7 +41,7 @@ use crate::{
     },
     type_::{
         relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, Capability, ObjectTypeAPI,
-        Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        Ordering, OwnerAPI, TypeAPI,
     },
     ByteReference, ConceptAPI, ConceptStatus,
 };

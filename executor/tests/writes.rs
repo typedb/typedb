@@ -35,7 +35,7 @@ use executor::{
     write::WriteError,
     ExecutionInterrupt,
 };
-use ir::{program::function_signature::HashMapFunctionSignatureIndex, translation::TranslationContext};
+use ir::{pipeline::function_signature::HashMapFunctionSignatureIndex, translation::TranslationContext};
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::{
     durability_client::WALClient,
@@ -170,7 +170,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
 
     let variable_registry = Arc::new(translation_context.variable_registry);
 
-    let insert_plan = compiler::insert::program::compile(
+    let insert_plan = compiler::executable::insert::executable::compile(
         variable_registry,
         block.conjunction().constraints(),
         &input_row_format,
@@ -255,7 +255,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
         .map(|(i, v)| (translation_context.get_variable(*v).unwrap(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
-    let delete_plan = compiler::delete::program::compile(
+    let delete_plan = compiler::executable::delete::executable::compile(
         &input_row_format,
         &entry_annotations,
         block.conjunction().constraints(),

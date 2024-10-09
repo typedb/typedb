@@ -7,7 +7,7 @@
 use std::vec;
 
 use answer::Type;
-use compiler::match_::instructions::type_::TypeListInstruction;
+use compiler::executable::match_::instructions::type_::TypeListInstruction;
 use concept::error::ConceptReadError;
 use itertools::Itertools;
 use lending_iterator::{adaptors::Map, higher_order::AdHocHkt, AsLendingIterator, LendingIterator};

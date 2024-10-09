@@ -6,7 +6,7 @@
 
 use crate::annotation::pipeline::AnnotatedPipeline;
 
-pub fn apply_optimisations(_program: &mut AnnotatedPipeline) {
+pub fn apply_optimisations(_pipeline: &mut AnnotatedPipeline) {
 
     // apply optimisation passes through pipeline, within stages and across stages
 

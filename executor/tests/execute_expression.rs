@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use compiler::expression::{
+use compiler::annotation::expression::{
     compiled_expression::{CompiledExpression, ExpressionValueType},
     expression_compiler::ExpressionCompilationContext,
     ExpressionCompileError,
@@ -16,7 +16,7 @@ use encoding::value::{value::Value, value_type::ValueTypeCategory};
 use executor::expression_executor::{ExpressionExecutor, ExpressionValue};
 use ir::{
     pattern::constraint::Constraint,
-    program::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
+    pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
     translation::{match_::translate_match, TranslationContext},
     RepresentationError,
 };

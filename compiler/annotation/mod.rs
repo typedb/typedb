@@ -4,15 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::BTreeSet;
-
-use answer::Type;
 use concept::error::ConceptReadError;
-use encoding::value::value_type::{ValueType, ValueTypeCategory};
+use encoding::value::value_type::ValueTypeCategory;
 use error::typedb_error;
+use expression::ExpressionCompileError;
 
-use crate::expression::ExpressionCompileError;
-
+pub mod expression;
 pub mod fetch;
 pub mod function;
 pub mod match_inference;

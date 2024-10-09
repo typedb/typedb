@@ -17,7 +17,7 @@ use encoding::value::value_type::{
 };
 use ir::{
     pattern::constraint::Constraint,
-    program::{
+    pipeline::{
         block::Block,
         function::Function,
         modifier::{Limit, Offset, Require, Select, Sort},
@@ -30,6 +30,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     annotation::{
+        expression::{block_compiler::compile_expressions, compiled_expression::CompiledExpression},
         fetch::AnnotatedFetch,
         function::{annotate_functions, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         match_inference::infer_types,
@@ -37,9 +38,7 @@ use crate::{
         type_inference::resolve_value_types,
         AnnotationError,
     },
-    expression::{block_compiler::compile_expressions, compiled_expression::CompiledExpression},
-    insert::type_check::check_annotations,
-    reduce::ReduceInstruction,
+    executable::{insert::type_check::check_annotations, reduce::ReduceInstruction},
 };
 
 pub struct AnnotatedPipeline {

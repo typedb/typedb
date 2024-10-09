@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 use answer::{variable_value::VariableValue, Thing};
 use compiler::{
-    reduce::{ReduceInstruction, ReduceProgram},
+    executable::reduce::{ReduceExecutable, ReduceInstruction},
     VariablePosition,
 };
 use encoding::value::value::Value;
@@ -29,16 +29,16 @@ pub(crate) struct GroupedReducer {
 }
 
 impl GroupedReducer {
-    pub(crate) fn new(program: ReduceProgram) -> Self {
-        let reducers: Vec<ReducerExecutor> = program.reductions.iter().map(ReducerExecutor::build).collect();
-        let reused_group = Vec::with_capacity(program.input_group_positions.len());
+    pub(crate) fn new(executable: ReduceExecutable) -> Self {
+        let reducers: Vec<ReducerExecutor> = executable.reductions.iter().map(ReducerExecutor::build).collect();
+        let reused_group = Vec::with_capacity(executable.input_group_positions.len());
         let mut grouped_reductions = HashMap::new();
         // Empty result sets behave different for an empty grouping
-        if program.input_group_positions.is_empty() {
+        if executable.input_group_positions.is_empty() {
             grouped_reductions.insert(Vec::new(), reducers.clone());
         }
         Self {
-            input_group_positions: program.input_group_positions,
+            input_group_positions: executable.input_group_positions,
             grouped_reductions,
             reused_group,
             uninitialised_reducer_executors: reducers,

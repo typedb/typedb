@@ -12,8 +12,8 @@ use std::{
     vec,
 };
 
-use answer::{variable_value::VariableValue, Type};
-use compiler::match_::instructions::type_::OwnsReverseInstruction;
+use answer::Type;
+use compiler::executable::match_::instructions::type_::OwnsReverseInstruction;
 use concept::{error::ConceptReadError, type_::owns::Owns};
 use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};

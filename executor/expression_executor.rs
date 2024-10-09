@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use compiler::expression::{
+use compiler::annotation::expression::{
     compiled_expression::CompiledExpression,
     instructions::{
         binary::{Binary, BinaryExpression, MathRemainderLong},
@@ -23,7 +23,7 @@ use compiler::expression::{
     },
 };
 use encoding::value::value::{NativeValueConvertible, Value};
-use ir::{pattern::ParameterID, program::ParameterRegistry};
+use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ExpressionValue {

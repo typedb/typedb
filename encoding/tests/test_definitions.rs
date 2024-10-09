@@ -6,10 +6,7 @@
 
 #![deny(unused_must_use)]
 
-use std::{rc::Rc, sync::Arc};
-
 use bytes::{byte_array::ByteArray, Bytes};
-use durability::wal::WAL;
 use encoding::{
     graph::{
         definition::{
@@ -19,15 +16,10 @@ use encoding::{
         type_::index::NameToStructDefinitionIndex,
     },
     value::value_type::ValueType,
-    AsBytes, EncodingKeyspace, Keyable,
+    AsBytes, Keyable,
 };
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
-use storage::{
-    durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
-    MVCCStorage,
-};
-use test_utils::{create_tmp_dir, init_logging};
+use storage::snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot};
 use test_utils_encoding::create_core_storage;
 
 fn define_struct<Snapshot: WritableSnapshot>(

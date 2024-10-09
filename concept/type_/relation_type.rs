@@ -5,9 +5,8 @@
  */
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     fmt::{Display, Formatter},
-    vec,
 };
 
 use encoding::{
@@ -23,7 +22,6 @@ use encoding::{
     value::label::Label,
     Prefixed,
 };
-use itertools::Itertools;
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
@@ -38,12 +36,10 @@ use crate::{
     thing::{relation::Relation, thing_manager::ThingManager},
     type_::{
         annotation::{
-            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory,
-            AnnotationError, DefaultFrom,
+            Annotation, AnnotationAbstract, AnnotationCascade, AnnotationCategory, AnnotationError, DefaultFrom,
         },
         attribute_type::AttributeType,
         constraint::{CapabilityConstraint, TypeConstraint},
-        entity_type::EntityType,
         get_with_specialised,
         object_type::ObjectType,
         owns::Owns,

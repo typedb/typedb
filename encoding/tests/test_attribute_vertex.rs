@@ -6,7 +6,7 @@
 
 #![deny(unused_must_use)]
 
-use std::{rc::Rc, sync::Arc};
+use std::sync::Arc;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use durability::wal::WAL;

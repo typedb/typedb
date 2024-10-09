@@ -18,10 +18,14 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::type_::{
     annotation::{
-        Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationDistinct, AnnotationIndependent,
-        AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
+        Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationDistinct,
+        AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
     },
-    Capability, KindAPI, TypeAPI,
+    owns::Owns,
+    plays::Plays,
+    relates::Relates,
+    type_manager::TypeManager,
+    Capability, KindAPI, Ordering, TypeAPI,
 };
 
 macro_rules! with_constraint_description {
@@ -391,10 +395,6 @@ macro_rules! filter_out_unchecked_constraints {
     };
 }
 pub(crate) use filter_out_unchecked_constraints;
-
-use crate::type_::{
-    annotation::AnnotationCategory, owns::Owns, plays::Plays, relates::Relates, type_manager::TypeManager, Ordering,
-};
 
 pub(crate) fn get_cardinality_constraints<C: Constraint<T>, T: Hash + Eq>(
     constraints: impl IntoIterator<Item = C>,

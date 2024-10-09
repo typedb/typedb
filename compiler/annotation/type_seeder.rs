@@ -7,7 +7,6 @@
 use std::{
     borrow::Cow,
     collections::{BTreeMap, BTreeSet},
-    iter::zip,
     sync::Arc,
 };
 
@@ -29,7 +28,7 @@ use ir::{
         variable_category::VariableCategory,
         Scope, ScopeId, Vertex,
     },
-    program::{block::BlockContext, function::Function, function_signature::FunctionID, VariableRegistry},
+    pipeline::{block::BlockContext, function_signature::FunctionID, VariableRegistry},
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
@@ -1376,7 +1375,7 @@ pub mod tests {
     use encoding::value::{label::Label, value_type::ValueType};
     use ir::{
         pattern::constraint::{Comparator, IsaKind},
-        program::block::Block,
+        pipeline::block::Block,
         translation::TranslationContext,
     };
     use storage::snapshot::CommittableSnapshot;

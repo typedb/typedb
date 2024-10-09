@@ -5,7 +5,7 @@
  */
 
 use encoding::graph::definition::{definition_key::DefinitionKey, function::FunctionDefinition};
-use ir::{program::function_signature::FunctionIDAPI, translation::function::translate_function};
+use ir::pipeline::function_signature::FunctionIDAPI;
 
 use crate::FunctionError;
 

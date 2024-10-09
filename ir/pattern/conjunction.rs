@@ -17,7 +17,7 @@ use crate::{
         optional::Optional,
         Scope, ScopeId,
     },
-    program::block::{BlockBuilderContext, BlockContext, ScopeTransparency},
+    pipeline::block::{BlockBuilderContext, BlockContext, ScopeTransparency},
     RepresentationError,
 };
 

@@ -12,7 +12,7 @@ use std::{
 };
 
 use answer::Type;
-use compiler::match_::instructions::thing::HasReverseInstruction;
+use compiler::executable::match_::instructions::thing::HasReverseInstruction;
 use concept::{
     error::ConceptReadError,
     thing::{attribute::Attribute, has::Has, object::HasReverseIterator, thing_manager::ThingManager},

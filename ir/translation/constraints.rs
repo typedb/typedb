@@ -22,7 +22,7 @@ use crate::{
         constraint::{Comparator, ConstraintsBuilder, IsaKind},
         Vertex,
     },
-    program::function_signature::FunctionSignatureIndex,
+    pipeline::function_signature::FunctionSignatureIndex,
     translation::{
         expression::{add_typeql_expression, add_user_defined_function_call, build_expression},
         literal::translate_literal,

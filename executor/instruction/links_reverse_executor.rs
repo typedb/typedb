@@ -12,7 +12,7 @@ use std::{
 };
 
 use answer::Type;
-use compiler::match_::instructions::thing::LinksReverseInstruction;
+use compiler::executable::match_::instructions::thing::LinksReverseInstruction;
 use concept::{
     error::ConceptReadError,
     thing::{

@@ -9,7 +9,7 @@ use storage::snapshot::ReadableSnapshot;
 use typeql::query::stage::{Operator as TypeQLOperator, Stage as TypeQLStage, Stage};
 
 use crate::{
-    program::{
+    pipeline::{
         block::Block,
         fetch::FetchObject,
         function::Function,
