@@ -4,7 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use compiler::{annotation::AnnotationError, expression::ExpressionCompileError, insert::WriteCompilationError};
+use compiler::{annotation::AnnotationError, executable::insert::WriteCompilationError};
+use compiler::annotation::expression::ExpressionCompileError;
 use error::typedb_error;
 use executor::pipeline::PipelineExecutionError;
 use function::FunctionError;

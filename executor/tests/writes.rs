@@ -170,7 +170,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
 
     let variable_registry = Arc::new(translation_context.variable_registry);
 
-    let insert_plan = compiler::insert::program::compile(
+    let insert_plan = compiler::executable::insert::program::compile(
         variable_registry,
         block.conjunction().constraints(),
         &input_row_format,
@@ -223,7 +223,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
             .pop()
             .unwrap()
             .into_match();
-        let block = ir::translation::match_::translate_match(
+        let block = ir::translation::executable::match_::translate_match(
             &mut translation_context,
             &HashMapFunctionSignatureIndex::empty(),
             &typeql_match,
@@ -255,7 +255,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
         .map(|(i, v)| (translation_context.get_variable(*v).unwrap(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
-    let delete_plan = compiler::delete::program::compile(
+    let delete_plan = compiler::executable::delete::program::compile(
         &input_row_format,
         &entry_annotations,
         block.conjunction().constraints(),

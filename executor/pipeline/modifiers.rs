@@ -5,33 +5,30 @@
  */
 use std::{cmp::Ordering, collections::HashSet};
 
-use answer::variable_value::VariableValue;
-use compiler::{
-    modifiers::{LimitProgram, OffsetProgram, RequireProgram, SelectProgram, SortProgram},
-    VariablePosition,
-};
+use compiler::VariablePosition;
+use compiler::executable::modifiers::{LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable};
 use ir::program::modifier::SortVariable;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::Batch,
+    ExecutionInterrupt,
     pipeline::{
-        stage::{ExecutionContext, StageAPI},
-        PipelineExecutionError, StageIterator,
+        PipelineExecutionError,
+        stage::{ExecutionContext, StageAPI}, StageIterator,
     },
     row::MaybeOwnedRow,
-    ExecutionInterrupt,
 };
 
 // Sort
 pub struct SortStageExecutor<PreviousStage> {
-    program: SortProgram,
+    program: SortExecutable,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> SortStageExecutor<PreviousStage> {
-    pub fn new(program: SortProgram, previous: PreviousStage) -> Self {
+    pub fn new(program: SortExecutable, previous: PreviousStage) -> Self {
         Self { program, previous }
     }
 }
@@ -66,7 +63,7 @@ pub struct SortStageIterator {
 }
 
 impl SortStageIterator {
-    fn from_unsorted(unsorted: Batch, sort_program: SortProgram) -> Self {
+    fn from_unsorted(unsorted: Batch, sort_program: SortExecutable) -> Self {
         let mut indices: Vec<usize> = (0..unsorted.len()).collect();
         let sort_by: Vec<(usize, bool)> = sort_program
             .sort_on
@@ -115,12 +112,12 @@ impl StageIterator for SortStageIterator {}
 
 // Offset
 pub struct OffsetStageExecutor<PreviousStage> {
-    offset_program: OffsetProgram,
+    offset_program: OffsetExecutable,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> OffsetStageExecutor<PreviousStage> {
-    pub fn new(offset_program: OffsetProgram, previous: PreviousStage) -> Self {
+    pub fn new(offset_program: OffsetExecutable, previous: PreviousStage) -> Self {
         Self { offset_program, previous }
     }
 }
@@ -177,12 +174,12 @@ where
 
 // Limit
 pub struct LimitStageExecutor<PreviousStage> {
-    limit_program: LimitProgram,
+    limit_program: LimitExecutable,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> LimitStageExecutor<PreviousStage> {
-    pub fn new(limit_program: LimitProgram, previous: PreviousStage) -> Self {
+    pub fn new(limit_program: LimitExecutable, previous: PreviousStage) -> Self {
         Self { limit_program, previous }
     }
 }
@@ -236,12 +233,12 @@ where
 
 // Select
 pub struct SelectStageExecutor<PreviousStage> {
-    select_program: SelectProgram,
+    select_program: SelectExecutable,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> SelectStageExecutor<PreviousStage> {
-    pub fn new(select_program: SelectProgram, previous: PreviousStage) -> Self {
+    pub fn new(select_program: SelectExecutable, previous: PreviousStage) -> Self {
         Self { select_program, previous }
     }
 }
@@ -289,12 +286,12 @@ where
 
 // Require
 pub struct RequireStageExecutor<PreviousStage> {
-    require_program: RequireProgram,
+    require_program: RequireExecutable,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> RequireStageExecutor<PreviousStage> {
-    pub fn new(require_program: RequireProgram, previous: PreviousStage) -> Self {
+    pub fn new(require_program: RequireExecutable, previous: PreviousStage) -> Self {
         Self { require_program, previous }
     }
 }

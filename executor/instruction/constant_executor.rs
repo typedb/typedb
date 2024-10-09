@@ -5,7 +5,7 @@
  */
 
 use answer::variable_value::VariableValue;
-use compiler::match_::instructions::thing::ConstantInstruction;
+use compiler::executable::match_::instructions::thing::ConstantInstruction;
 use concept::error::ConceptReadError;
 use storage::snapshot::ReadableSnapshot;
 

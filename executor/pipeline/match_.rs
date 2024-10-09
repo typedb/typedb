@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use compiler::match_::planner::program_plan::ProgramPlan;
+use compiler::executable::match_::planner::program_executable::ProgramExecutable;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
@@ -20,12 +20,12 @@ use crate::{
 };
 
 pub struct MatchStageExecutor<PreviousStage> {
-    program: ProgramPlan,
+    program: ProgramExecutable,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> MatchStageExecutor<PreviousStage> {
-    pub fn new(program: ProgramPlan, previous: PreviousStage) -> Self {
+    pub fn new(program: ProgramExecutable, previous: PreviousStage) -> Self {
         Self { program, previous }
     }
 }
@@ -51,7 +51,7 @@ where
 
 pub struct MatchStageIterator<Snapshot: ReadableSnapshot + 'static, Iterator> {
     context: ExecutionContext<Snapshot>,
-    program: ProgramPlan,
+    program: ProgramExecutable,
     source_iterator: Iterator,
     current_iterator: Option<Peekable<PatternIterator<Snapshot>>>,
     interrupt: ExecutionInterrupt,
@@ -60,7 +60,7 @@ pub struct MatchStageIterator<Snapshot: ReadableSnapshot + 'static, Iterator> {
 impl<Snapshot: ReadableSnapshot + 'static, Iterator> MatchStageIterator<Snapshot, Iterator> {
     fn new(
         iterator: Iterator,
-        program: ProgramPlan,
+        program: ProgramExecutable,
         context: ExecutionContext<Snapshot>,
         interrupt: ExecutionInterrupt,
     ) -> Self {

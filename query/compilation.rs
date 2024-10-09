@@ -15,13 +15,13 @@ use compiler::{
         function::{AnnotatedFunction, AnnotatedUnindexedFunctions},
         pipeline::AnnotatedStage,
     },
-    delete::program::DeleteProgram,
-    insert::program::InsertProgram,
-    match_::planner::pattern_plan::MatchProgram,
-    modifiers::{LimitProgram, OffsetProgram, RequireProgram, SelectProgram, SortProgram},
-    reduce::{ReduceInstruction, ReduceProgram},
+    executable::delete::executable::DeleteExecutable,
+    executable::insert::executable::InsertExecutable,
+    executable::match_::planner::match_executable::MatchExecutable,
     VariablePosition,
 };
+use compiler::executable::modifiers::{LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable};
+use compiler::executable::reduce::{ReduceInstruction, ReduceExecutable};
 use concept::thing::statistics::Statistics;
 use ir::program::VariableRegistry;
 
@@ -34,21 +34,21 @@ pub struct CompiledPipeline {
 }
 
 pub struct CompiledFunction {
-    plan: MatchProgram,
+    executable: MatchExecutable,
     returns: HashMap<Variable, VariablePosition>,
 }
 
 pub enum CompiledStage {
-    Match(MatchProgram),
-    Insert(InsertProgram),
-    Delete(DeleteProgram),
+    Match(MatchExecutable),
+    Insert(InsertExecutable),
+    Delete(DeleteExecutable),
 
-    Select(SelectProgram),
-    Sort(SortProgram),
-    Offset(OffsetProgram),
-    Limit(LimitProgram),
-    Require(RequireProgram),
-    Reduce(ReduceProgram),
+    Select(SelectExecutable),
+    Sort(SortExecutable),
+    Offset(OffsetExecutable),
+    Limit(LimitExecutable),
+    Require(RequireExecutable),
+    Reduce(ReduceExecutable),
 }
 
 impl CompiledStage {
@@ -119,7 +119,7 @@ fn compile_stage(
 ) -> Result<CompiledStage, QueryError> {
     match &annotated_stage {
         AnnotatedStage::Match { block, block_annotations, compiled_expressions } => {
-            let plan = compiler::match_::planner::compile(
+            let plan = compiler::executable::match_::planner::compile(
                 block,
                 input_variables,
                 block_annotations,
@@ -130,7 +130,7 @@ fn compile_stage(
             Ok(CompiledStage::Match(plan))
         }
         AnnotatedStage::Insert { block, annotations } => {
-            let plan = compiler::insert::program::compile(
+            let plan = compiler::executable::insert::executable::compile(
                 variable_registry,
                 block.conjunction().constraints(),
                 input_variables,
@@ -140,7 +140,7 @@ fn compile_stage(
             Ok(CompiledStage::Insert(plan))
         }
         AnnotatedStage::Delete { block, deleted_variables, annotations } => {
-            let plan = compiler::delete::program::compile(
+            let plan = compiler::executable::delete::executable::compile(
                 input_variables,
                 annotations,
                 block.conjunction().constraints(),
@@ -157,18 +157,18 @@ fn compile_stage(
                 retained_positions.insert(pos);
                 output_row_mapping.insert(variable, pos);
             }
-            Ok(CompiledStage::Select(SelectProgram { retained_positions, output_row_mapping }))
+            Ok(CompiledStage::Select(SelectExecutable { retained_positions, output_row_mapping }))
         }
-        AnnotatedStage::Sort(sort) => Ok(CompiledStage::Sort(SortProgram {
+        AnnotatedStage::Sort(sort) => Ok(CompiledStage::Sort(SortExecutable {
             sort_on: sort.variables.clone(),
             output_row_mapping: input_variables.clone(),
         })),
-        AnnotatedStage::Offset(offset) => Ok(CompiledStage::Offset(OffsetProgram {
+        AnnotatedStage::Offset(offset) => Ok(CompiledStage::Offset(OffsetExecutable {
             offset: offset.offset(),
             output_row_mapping: input_variables.clone(),
         })),
         AnnotatedStage::Limit(limit) => {
-            Ok(CompiledStage::Limit(LimitProgram { limit: limit.limit(), output_row_mapping: input_variables.clone() }))
+            Ok(CompiledStage::Limit(LimitExecutable { limit: limit.limit(), output_row_mapping: input_variables.clone() }))
         }
         AnnotatedStage::Require(require) => {
             let mut required_positions = HashSet::with_capacity(require.variables.len());
@@ -176,7 +176,7 @@ fn compile_stage(
                 let pos = input_variables[&variable];
                 required_positions.insert(pos);
             }
-            Ok(CompiledStage::Require(RequireProgram {
+            Ok(CompiledStage::Require(RequireExecutable {
                 required: required_positions,
                 output_row_mapping: input_variables.clone(),
             }))
@@ -241,7 +241,7 @@ fn compile_stage(
                 };
                 reductions.push(reducer_on_position);
             }
-            Ok(CompiledStage::Reduce(ReduceProgram {
+            Ok(CompiledStage::Reduce(ReduceExecutable {
                 reductions: reductions,
                 input_group_positions,
                 output_row_mapping,

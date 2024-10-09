@@ -6,17 +6,15 @@
 
 use std::collections::HashMap;
 
-use answer::{variable_value::VariableValue, Thing};
-use compiler::{
-    reduce::{ReduceInstruction, ReduceProgram},
-    VariablePosition,
-};
+use answer::{Thing, variable_value::VariableValue};
+use compiler::VariablePosition;
+use compiler::executable::reduce::{ReduceInstruction, ReduceExecutable};
 use encoding::value::value::Value;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::Batch,
-    pipeline::{stage::ExecutionContext, PipelineExecutionError},
+    pipeline::{PipelineExecutionError, stage::ExecutionContext},
     row::MaybeOwnedRow,
 };
 
@@ -29,7 +27,7 @@ pub(crate) struct GroupedReducer {
 }
 
 impl GroupedReducer {
-    pub(crate) fn new(program: ReduceProgram) -> Self {
+    pub(crate) fn new(program: ReduceExecutable) -> Self {
         let reducers: Vec<ReducerExecutor> = program.reductions.iter().map(ReducerExecutor::build).collect();
         let reused_group = Vec::with_capacity(program.input_group_positions.len());
         let mut grouped_reductions = HashMap::new();

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use compiler::reduce::ReduceProgram;
+use compiler::executable::reduce::ReduceExecutable;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -18,12 +18,12 @@ use crate::{
 };
 
 pub struct ReduceStageExecutor<PreviousStage> {
-    program: ReduceProgram,
+    program: ReduceExecutable,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> ReduceStageExecutor<PreviousStage> {
-    pub fn new(program: ReduceProgram, previous: PreviousStage) -> Self {
+    pub fn new(program: ReduceExecutable, previous: PreviousStage) -> Self {
         Self { program, previous }
     }
 }
@@ -52,7 +52,7 @@ where
 
 fn reduce_iterator<Snapshot: ReadableSnapshot>(
     context: &ExecutionContext<Snapshot>,
-    program: ReduceProgram,
+    program: ReduceExecutable,
     iterator: impl StageIterator,
 ) -> Result<Batch, PipelineExecutionError> {
     let mut iterator = iterator;

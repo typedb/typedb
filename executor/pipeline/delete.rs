@@ -6,7 +6,7 @@
 
 use std::sync::Arc;
 
-use compiler::delete::{instructions::ConnectionInstruction, program::DeleteProgram};
+use compiler::executable::delete::{instructions::ConnectionInstruction, executable::DeleteExecutable};
 use concept::thing::thing_manager::ThingManager;
 use ir::program::ParameterRegistry;
 use storage::snapshot::WritableSnapshot;
@@ -22,12 +22,12 @@ use crate::{
 };
 
 pub struct DeleteStageExecutor<PreviousStage> {
-    program: DeleteProgram,
+    program: DeleteExecutable,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> DeleteStageExecutor<PreviousStage> {
-    pub fn new(program: DeleteProgram, previous: PreviousStage) -> Self {
+    pub fn new(program: DeleteExecutable, previous: PreviousStage) -> Self {
         Self { program, previous }
     }
 }
@@ -76,7 +76,7 @@ where
 }
 
 pub fn execute_delete(
-    program: &DeleteProgram,
+    program: &DeleteExecutable,
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,

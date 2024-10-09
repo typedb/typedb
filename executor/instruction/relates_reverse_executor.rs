@@ -13,7 +13,7 @@ use std::{
 };
 
 use answer::Type;
-use compiler::match_::instructions::type_::RelatesReverseInstruction;
+use compiler::executable::match_::instructions::type_::RelatesReverseInstruction;
 use concept::{error::ConceptReadError, type_::relates::Relates};
 use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};

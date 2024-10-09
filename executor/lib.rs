@@ -23,7 +23,7 @@ pub(crate) mod instruction;
 pub mod match_executor;
 pub mod pattern_executor;
 pub mod pipeline;
-mod program_executors;
+mod step_executors;
 pub(crate) mod reduce_executor;
 pub mod row;
 pub mod write;

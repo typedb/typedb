@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use compiler::match_::planner::pattern_plan::MatchProgram;
+use compiler::executable::match_::planner::match_executable::MatchExecutable;
 
 pub(crate) struct FunctionExecutor {
-    plan: MatchProgram,
+    plan: MatchExecutable,
 }

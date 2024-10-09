@@ -9,7 +9,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
+use answer::{Type, variable::Variable};
 use concept::type_::type_manager::TypeManager;
 use encoding::value::value_type::{
     ValueTypeCategory,
@@ -21,8 +21,8 @@ use ir::{
         block::Block,
         function::Function,
         modifier::{Limit, Offset, Require, Select, Sort},
-        reduce::{Reduce, Reducer},
-        ParameterRegistry, VariableRegistry,
+        ParameterRegistry,
+        reduce::{Reduce, Reducer}, VariableRegistry,
     },
     translation::pipeline::TranslatedStage,
 };
@@ -30,17 +30,17 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     annotation::{
+        AnnotationError,
         fetch::AnnotatedFetch,
         function::{annotate_functions, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         match_inference::infer_types,
         type_annotations::{ConstraintTypeAnnotations, TypeAnnotations},
         type_inference::resolve_value_types,
-        AnnotationError,
     },
-    expression::{block_compiler::compile_expressions, compiled_expression::CompiledExpression},
-    insert::type_check::check_annotations,
-    reduce::ReduceInstruction,
+    executable::insert::type_check::check_annotations,
 };
+use crate::annotation::expression::{block_compiler::compile_expressions, compiled_expression::CompiledExpression};
+use crate::executable::reduce::ReduceInstruction;
 
 pub struct AnnotatedPipeline {
     pub annotated_preamble: AnnotatedUnindexedFunctions,

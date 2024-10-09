@@ -12,12 +12,8 @@ rust_library(
     srcs = glob([
         "*.rs",
         "annotation/**/*.rs",
-        "delete/**/*.rs",
-        "expression/**/*.rs",
-        "fetch/**/*.rs",
-        "insert/**/*.rs",
-        "match_/**/*.rs",
         "optimisation/**/*.rs",
+        "executable/**/*.rs",
     ]),
     deps = [
         "//common/error",

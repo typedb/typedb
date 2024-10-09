@@ -11,13 +11,11 @@ use std::{
 };
 
 use compiler::{
-    annotation::{
-    },
-    match_::{
+    executable::match_::{
         instructions::{thing::IsaInstruction, ConstraintInstruction, Inputs},
         planner::{
-            pattern_plan::{IntersectionProgram, MatchProgram, Program},
-            program_plan::ProgramPlan,
+            match_executable::{IntersectionStep, MatchExecutable, ExecutionStep},
+            program_executable::ProgramExecutable,
         },
     },
     VariablePosition,
@@ -114,7 +112,7 @@ fn attribute_equality() {
 
     // Plan
     let steps = vec![
-        Program::Intersection(IntersectionProgram::new(
+        ExecutionStep::Intersection(IntersectionStep::new(
             variable_positions[&var_age_a],
             vec![ConstraintInstruction::Isa(IsaInstruction::new(isa_a, Inputs::None([]), &entry_annotations))
                 .map(&variable_positions)],
@@ -122,7 +120,7 @@ fn attribute_equality() {
             &named_variables,
             2,
         )),
-        Program::Intersection(IntersectionProgram::new(
+        ExecutionStep::Intersection(IntersectionStep::new(
             variable_positions[&var_age_b],
             vec![ConstraintInstruction::Isa(IsaInstruction::new(
                 isa_b,
@@ -139,8 +137,8 @@ fn attribute_equality() {
     ];
 
     let pattern_plan =
-        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
+        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let program_plan = ProgramExecutable::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());

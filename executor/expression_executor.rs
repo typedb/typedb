@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use compiler::expression::{
+use compiler::annotation::expression::{
     compiled_expression::CompiledExpression,
     instructions::{
         binary::{Binary, BinaryExpression, MathRemainderLong},

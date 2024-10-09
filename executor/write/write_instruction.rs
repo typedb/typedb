@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use answer::{variable_value::VariableValue, Thing, Type};
-use compiler::insert::{
+use compiler::executable::insert::{
     instructions::{PutAttribute, PutObject},
     ThingSource, TypeSource, ValueSource,
 };
@@ -113,7 +113,7 @@ impl AsWriteInstruction for PutObject {
     }
 }
 
-impl AsWriteInstruction for compiler::insert::instructions::Has {
+impl AsWriteInstruction for compiler::executable::insert::instructions::Has {
     fn execute(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -131,7 +131,7 @@ impl AsWriteInstruction for compiler::insert::instructions::Has {
     }
 }
 
-impl AsWriteInstruction for compiler::insert::instructions::RolePlayer {
+impl AsWriteInstruction for compiler::executable::insert::instructions::RolePlayer {
     fn execute(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -149,7 +149,7 @@ impl AsWriteInstruction for compiler::insert::instructions::RolePlayer {
     }
 }
 
-impl AsWriteInstruction for compiler::delete::instructions::ThingInstruction {
+impl AsWriteInstruction for compiler::executable::delete::instructions::ThingInstruction {
     fn execute(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -181,7 +181,7 @@ impl AsWriteInstruction for compiler::delete::instructions::ThingInstruction {
     }
 }
 
-impl AsWriteInstruction for compiler::delete::instructions::Has {
+impl AsWriteInstruction for compiler::executable::delete::instructions::Has {
     fn execute(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -198,7 +198,7 @@ impl AsWriteInstruction for compiler::delete::instructions::Has {
     }
 }
 
-impl AsWriteInstruction for compiler::delete::instructions::RolePlayer {
+impl AsWriteInstruction for compiler::executable::delete::instructions::RolePlayer {
     fn execute(
         &self,
         snapshot: &mut impl WritableSnapshot,

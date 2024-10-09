@@ -8,7 +8,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use compiler::{
     annotation::pipeline::{annotate_pipeline, AnnotatedPipeline},
-    match_::planner::program_plan::ProgramPlan,
+    executable::match_::planner::match_executable::MatchExecutable,
     VariablePosition,
 };
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
@@ -30,6 +30,7 @@ use ir::{
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
+use compiler::executable::match_::planner::program_executable::ProgramExecutable;
 
 use crate::{
     compilation::{compile_pipeline, CompiledPipeline, CompiledStage},
@@ -104,9 +105,9 @@ impl QueryManager {
         let mut last_stage = ReadPipelineStage::Initial(InitialStage::new(context));
         for compiled_stage in compiled_stages {
             match compiled_stage {
-                CompiledStage::Match(match_program) => {
+                CompiledStage::Match(match_executable) => {
                     // TODO: Pass expressions & functions
-                    let program_plan = ProgramPlan::new(match_program, HashMap::new(), HashMap::new());
+                    let program_plan = ProgramExecutable::new(match_executable, HashMap::new(), HashMap::new());
                     let match_stage = MatchStageExecutor::new(program_plan, last_stage);
                     last_stage = ReadPipelineStage::Match(Box::new(match_stage));
                 }
@@ -209,10 +210,10 @@ impl QueryManager {
         let mut previous_stage = WritePipelineStage::Initial(InitialStage::new(context));
         for compiled_stage in compiled_stages {
             match compiled_stage {
-                CompiledStage::Match(match_program) => {
+                CompiledStage::Match(match_executable) => {
                     // TODO: Pass expressions & functions
-                    let program_plan = ProgramPlan::new(match_program, HashMap::new(), HashMap::new());
-                    let match_stage = MatchStageExecutor::new(program_plan, previous_stage);
+                    let program_executable = ProgramExecutable::new(match_executable, HashMap::new(), HashMap::new());
+                    let match_stage = MatchStageExecutor::new(program_executable, previous_stage);
                     previous_stage = WritePipelineStage::Match(Box::new(match_stage));
                 }
                 CompiledStage::Insert(insert_program) => {

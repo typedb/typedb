@@ -14,7 +14,7 @@ use compiler::{
         function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         match_inference::infer_types,
     },
-    match_::planner::program_plan::ProgramPlan,
+    executable::match_::planner::match_executable::MatchExecutable,
 };
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
@@ -32,6 +32,7 @@ use ir::{
     translation::{match_::translate_match, TranslationContext},
 };
 use itertools::Itertools;
+use compiler::executable::match_::planner::program_executable::ProgramExecutable;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
 use storage::{
@@ -118,7 +119,7 @@ fn test_has_planning_traversal() {
     )
     .unwrap();
 
-    let pattern_plan = compiler::match_::planner::compile(
+    let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
         &entry_annotations,
@@ -126,8 +127,8 @@ fn test_has_planning_traversal() {
         &HashMap::new(),
         &statistics,
     );
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let program_executable = ProgramExecutable::new(match_executable, HashMap::new(), HashMap::new());
+    let executor = MatchExecutor::new(&program_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -197,7 +198,7 @@ fn test_links_planning_traversal() {
     )
     .unwrap();
 
-    let pattern_plan = compiler::match_::planner::compile(
+    let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
         &entry_annotations,
@@ -205,8 +206,8 @@ fn test_links_planning_traversal() {
         &HashMap::new(),
         &statistics,
     );
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let program_executable = ProgramExecutable::new(match_executable, HashMap::new(), HashMap::new());
+    let executor = MatchExecutor::new(&program_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -283,7 +284,7 @@ fn test_links_intersection() {
     )
     .unwrap();
 
-    let pattern_plan = compiler::match_::planner::compile(
+    let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
         &entry_annotations,
@@ -291,8 +292,8 @@ fn test_links_intersection() {
         &HashMap::new(),
         &statistics,
     );
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let program_executable = ProgramExecutable::new(match_executable, HashMap::new(), HashMap::new());
+    let executor = MatchExecutor::new(&program_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -361,7 +362,7 @@ fn test_negation_planning_traversal() {
     )
     .unwrap();
 
-    let pattern_plan = compiler::match_::planner::compile(
+    let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
         &entry_annotations,
@@ -369,8 +370,8 @@ fn test_negation_planning_traversal() {
         &HashMap::new(),
         &statistics,
     );
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let program_executable = ProgramExecutable::new(match_executable, HashMap::new(), HashMap::new());
+    let executor = MatchExecutor::new(&program_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -460,7 +461,7 @@ fn test_forall_planning_traversal() {
     )
     .unwrap();
 
-    let pattern_plan = compiler::match_::planner::compile(
+    let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
         &entry_annotations,
@@ -468,8 +469,8 @@ fn test_forall_planning_traversal() {
         &HashMap::new(),
         &statistics,
     );
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let program_executable = ProgramExecutable::new(match_executable, HashMap::new(), HashMap::new());
+    let executor = MatchExecutor::new(&program_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());

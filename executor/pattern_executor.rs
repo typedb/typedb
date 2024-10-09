@@ -6,44 +6,45 @@
 
 use std::sync::Arc;
 
-use compiler::match_::planner::pattern_plan::MatchProgram;
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use itertools::Itertools;
+
+use compiler::executable::match_::planner::match_executable::MatchExecutable;
+use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use lending_iterator::{adaptors::FlatMap, AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
-    pipeline::stage::ExecutionContext,
-    program_executors::ProgramExecutor,
-    row::MaybeOwnedRow,
     ExecutionInterrupt,
+    pipeline::stage::ExecutionContext,
+    step_executors::StepExecutor,
+    row::MaybeOwnedRow,
 };
 
 pub(crate) struct PatternExecutor {
     input: Option<MaybeOwnedRow<'static>>,
-    program_executors: Vec<ProgramExecutor>,
+    step_executors: Vec<StepExecutor>,
     // modifiers: Modifier,
     output: Option<FixedBatch>,
 }
 
 impl PatternExecutor {
     pub(crate) fn new(
-        match_program: &MatchProgram,
+        match_program: &MatchExecutable,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
         input: MaybeOwnedRow<'_>,
     ) -> Result<Self, ConceptReadError> {
         let program_executors = match_program
-            .programs()
+            .steps()
             .iter()
-            .map(|program| ProgramExecutor::new(program, snapshot, thing_manager))
+            .map(|step| StepExecutor::new(step, snapshot, thing_manager))
             .try_collect()?;
 
         Ok(Self {
             input: Some(input.into_owned()),
-            program_executors,
+            step_executors: program_executors,
             // modifiers:
             output: None,
         })
@@ -64,7 +65,7 @@ impl PatternExecutor {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        let programs_len = self.program_executors.len();
+        let programs_len = self.step_executors.len();
 
         let (mut current_program, mut last_program_batch, mut direction) = if let Some(input) = self.input.take() {
             (0, Some(FixedBatch::from(input)), Direction::Forward)
@@ -83,7 +84,7 @@ impl PatternExecutor {
                     if current_program >= programs_len {
                         return Ok(last_program_batch);
                     } else {
-                        let executor = &mut self.program_executors[current_program];
+                        let executor = &mut self.step_executors[current_program];
                         let batch = executor.batch_from(last_program_batch.take().unwrap(), context, interrupt)?;
                         match batch {
                             None => {
@@ -103,7 +104,7 @@ impl PatternExecutor {
                 }
 
                 Direction::Backward => {
-                    let batch = self.program_executors[current_program].batch_continue(context)?;
+                    let batch = self.step_executors[current_program].batch_continue(context)?;
                     match batch {
                         None => {
                             if current_program == 0 {

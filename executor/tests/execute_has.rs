@@ -9,20 +9,21 @@ use std::{
     collections::{BTreeMap, HashMap},
     sync::Arc,
 };
+use std::collections::HashSet;
 
 use compiler::{
     annotation::{
         function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         match_inference::infer_types,
     },
-    match_::{
+    executable::match_::{
         instructions::{
             thing::{HasInstruction, HasReverseInstruction, IsaReverseInstruction},
             ConstraintInstruction, Inputs,
         },
         planner::{
-            pattern_plan::{IntersectionProgram, MatchProgram, Program},
-            program_plan::ProgramPlan,
+            match_executable::{IntersectionStep, MatchExecutable, ExecutionStep},
+            program_executable::ProgramExecutable,
         },
     },
     VariablePosition,
@@ -155,13 +156,13 @@ fn traverse_has_unbounded_sorted_from() {
         annotated_schema_functions,
         Some(annotated_preamble_functions),
     )
-    .unwrap();
+        .unwrap();
     let vars = vec![var_person, var_age, var_age_type, var_person_type];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
 
     // Plan
-    let steps = vec![Program::Intersection(IntersectionProgram::new(
+    let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
         variable_positions[&var_person],
         vec![ConstraintInstruction::Has(
             HasInstruction::new(has_age, Inputs::None([]), &entry_annotations).map(&variable_positions),
@@ -172,8 +173,8 @@ fn traverse_has_unbounded_sorted_from() {
     ))];
     // TODO: incorporate the filter
     let pattern_plan =
-        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
+        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let program_plan = ProgramExecutable::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
     let snapshot = Arc::new(snapshot);
@@ -241,7 +242,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
         annotated_schema_functions,
         Some(annotated_preamble_functions),
     )
-    .unwrap();
+        .unwrap();
 
     let vars = vec![var_person_1, var_person_type, var_person_2, var_name, var_name_type];
     let variable_positions =
@@ -250,7 +251,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
 
     // Plan
     let steps = vec![
-        Program::Intersection(IntersectionProgram::new(
+        ExecutionStep::Intersection(IntersectionStep::new(
             variable_positions[&var_person_1],
             vec![ConstraintInstruction::IsaReverse(
                 IsaReverseInstruction::new(isa_person_1, Inputs::None([]), &entry_annotations).map(&variable_positions),
@@ -259,7 +260,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
             &named_variables,
             2,
         )),
-        Program::Intersection(IntersectionProgram::new(
+        ExecutionStep::Intersection(IntersectionStep::new(
             variable_positions[&var_name],
             vec![
                 ConstraintInstruction::Has(
@@ -278,8 +279,8 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     ];
     // TODO: incorporate the filter
     let pattern_plan =
-        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
+        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let program_plan = ProgramExecutable::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
     let snapshot = Arc::new(snapshot);
@@ -348,7 +349,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
         annotated_schema_functions,
         Some(annotated_preamble_functions),
     )
-    .unwrap();
+        .unwrap();
 
     let vars = vec![var_person, var_name, var_age, var_person_type, var_name_type, var_age_type];
     let variable_positions =
@@ -356,7 +357,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     let named_variables = variable_positions.values().map(|p| p.clone()).collect();
 
     // Plan
-    let steps = vec![Program::Intersection(IntersectionProgram::new(
+    let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
         variable_positions[&var_person],
         vec![
             ConstraintInstruction::Has(
@@ -372,8 +373,8 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     ))];
     // TODO: incorporate the filter
     let pattern_plan =
-        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
+        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let program_plan = ProgramExecutable::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
     let snapshot = Arc::new(snapshot);
@@ -430,7 +431,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
         annotated_schema_functions,
         Some(annotated_preamble_functions),
     )
-    .unwrap();
+        .unwrap();
 
     let vars = vec![var_person, var_attribute, var_person_type];
     let variable_positions =
@@ -438,7 +439,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
     let named_variables = variable_positions.values().map(|p| p.clone()).collect();
 
     // Plan
-    let steps = vec![Program::Intersection(IntersectionProgram::new(
+    let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
         variable_positions[&var_attribute],
         vec![ConstraintInstruction::Has(
             HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations).map(&variable_positions),
@@ -448,8 +449,8 @@ fn traverse_has_unbounded_sorted_to_merged() {
         2,
     ))];
     let pattern_plan =
-        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
+        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let program_plan = ProgramExecutable::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
     let snapshot = Arc::new(snapshot);
@@ -529,7 +530,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
         annotated_schema_functions,
         Some(annotated_preamble_functions),
     )
-    .unwrap();
+        .unwrap();
 
     let vars = vec![var_person, var_age, var_person_type, var_age_type];
     let variable_positions =
@@ -537,7 +538,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     let named_variables = variable_positions.values().map(|p| p.clone()).collect();
 
     // Plan
-    let steps = vec![Program::Intersection(IntersectionProgram::new(
+    let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
         variable_positions[&var_age],
         vec![ConstraintInstruction::HasReverse(
             HasReverseInstruction::new(has_age, Inputs::None([]), &entry_annotations).map(&variable_positions),
@@ -547,8 +548,8 @@ fn traverse_has_reverse_unbounded_sorted_from() {
         2,
     ))];
     let pattern_plan =
-        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
+        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let program_plan = ProgramExecutable::new(pattern_plan, HashMap::new(), HashMap::new());
 
     // Executor
     let snapshot = Arc::new(snapshot);

@@ -6,7 +6,7 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use compiler::match_::planner::program_plan::ProgramPlan;
+use compiler::executable::match_::planner::program_executable::ProgramExecutable;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use encoding::graph::definition::definition_key::DefinitionKey;
 use storage::snapshot::ReadableSnapshot;
@@ -26,12 +26,12 @@ pub struct MatchExecutor {
 
 impl MatchExecutor {
     pub fn new(
-        program_plan: &ProgramPlan,
+        program_plan: &ProgramExecutable,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
         input: MaybeOwnedRow<'_>,
     ) -> Result<Self, ConceptReadError> {
-        let ProgramPlan { entry: entry_plan, functions: function_plans, entry_value_type_annotations } = program_plan;
+        let ProgramExecutable { entry: entry_plan, functions: function_plans, entry_value_type_annotations } = program_plan;
         let entry = PatternExecutor::new(entry_plan, snapshot, thing_manager, input)?;
 
         // TODO: functions

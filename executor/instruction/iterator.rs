@@ -8,7 +8,7 @@ use std::{cmp::Ordering, iter::Iterator, ops::RangeInclusive};
 
 use answer::variable_value::VariableValue;
 use compiler::{
-    match_::instructions::{VariableMode, VariableModes},
+    executable::match_::instructions::{VariableMode, VariableModes},
     VariablePosition,
 };
 use concept::error::ConceptReadError;

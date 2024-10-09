@@ -4,14 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::BTreeSet;
-
-use answer::Type;
 use concept::error::ConceptReadError;
-use encoding::value::value_type::{ValueType, ValueTypeCategory};
+use encoding::value::value_type::ValueTypeCategory;
 use error::typedb_error;
 
-use crate::expression::ExpressionCompileError;
+use expression::ExpressionCompileError;
 
 pub mod fetch;
 pub mod function;
@@ -20,6 +17,7 @@ pub mod pipeline;
 pub mod type_annotations;
 pub mod type_inference;
 mod type_seeder;
+pub mod expression;
 
 typedb_error!(
     pub AnnotationError(component = "Query annotation", prefix = "QUA") {
@@ -73,13 +71,13 @@ pub mod tests {
         thing::{statistics::Statistics, thing_manager::ThingManager},
         type_::type_manager::TypeManager,
     };
-    use durability::{wal::WAL, DurabilitySequenceNumber};
+    use durability::{DurabilitySequenceNumber, wal::WAL};
     use encoding::{
+        EncodingKeyspace,
         graph::{
             definition::definition_key_generator::DefinitionKeyGenerator,
             thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator,
         },
-        EncodingKeyspace,
     };
     use storage::{durability_client::WALClient, MVCCStorage};
     use test_utils::{create_tmp_dir, init_logging, TempDir};
@@ -150,7 +148,7 @@ pub mod tests {
             thing::thing_manager::ThingManager,
             type_::{
                 annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation,
-                entity_type::EntityTypeAnnotation, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI,
+                entity_type::EntityTypeAnnotation, Ordering, OwnerAPI, PlayerAPI, type_manager::TypeManager,
             },
         };
         use encoding::value::{label::Label, value_type::ValueType};

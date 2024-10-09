@@ -6,9 +6,9 @@
 
 use std::sync::Arc;
 
-use compiler::insert::{
+use compiler::executable::insert::{
     instructions::{ConceptInstruction, ConnectionInstruction},
-    program::InsertProgram,
+    executable::InsertExecutable,
 };
 use concept::thing::thing_manager::ThingManager;
 use ir::program::ParameterRegistry;
@@ -27,12 +27,12 @@ use crate::{
 };
 
 pub struct InsertStageExecutor<PreviousStage> {
-    program: InsertProgram,
+    program: InsertExecutable,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> InsertStageExecutor<PreviousStage> {
-    pub fn new(program: InsertProgram, previous: PreviousStage) -> Self {
+    pub fn new(program: InsertExecutable, previous: PreviousStage) -> Self {
         Self { program, previous }
     }
 
@@ -103,7 +103,7 @@ fn prepare_output_rows(output_width: u32, input_iterator: impl StageIterator) ->
 }
 
 fn execute_insert(
-    program: &InsertProgram,
+    program: &InsertExecutable,
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
