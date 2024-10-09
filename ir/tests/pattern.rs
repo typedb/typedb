@@ -5,7 +5,7 @@
  */
 
 use ir::{
-    program::function_signature::HashMapFunctionSignatureIndex,
+    pipeline::function_signature::HashMapFunctionSignatureIndex,
     translation::{match_::translate_match, TranslationContext},
     RepresentationError,
 };

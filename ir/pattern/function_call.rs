@@ -10,7 +10,7 @@ use itertools::Itertools;
 
 use crate::{
     pattern::{IrID, Vertex},
-    program::function_signature::FunctionID,
+    pipeline::function_signature::FunctionID,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

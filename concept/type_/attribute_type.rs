@@ -33,7 +33,7 @@ use crate::{
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationError, AnnotationIndependent, DefaultFrom},
         constraint::{CapabilityConstraint, TypeConstraint},
-        object_type::{with_object_type, ObjectType},
+        object_type::ObjectType,
         owns::Owns,
         type_manager::TypeManager,
         Capability, KindAPI, ThingTypeAPI, TypeAPI,

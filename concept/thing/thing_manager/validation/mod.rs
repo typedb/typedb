@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fmt};
+use std::error::Error;
 
 use bytes::util::HexBytesFormatter;
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
@@ -12,11 +12,7 @@ use error::typedb_error;
 
 use crate::{
     error::ConceptReadError,
-    thing::{attribute::Attribute, object::Object, relation::Relation},
-    type_::{
-        attribute_type::AttributeType, constraint::ConstraintError, entity_type::EntityType, object_type::ObjectType,
-        owns::Owns, plays::Plays, relates::Relates, relation_type::RelationType, role_type::RoleType,
-    },
+    type_::{constraint::ConstraintError, owns::Owns},
 };
 
 pub(crate) mod commit_time_validation;

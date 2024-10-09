@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, marker::PhantomData};
+use std::marker::PhantomData;
 
 use answer::Concept;
 use storage::snapshot::ReadableSnapshot;

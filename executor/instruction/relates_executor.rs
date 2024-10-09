@@ -13,7 +13,7 @@ use std::{
 };
 
 use answer::{variable_value::VariableValue, Type};
-use compiler::match_::instructions::type_::RelatesInstruction;
+use compiler::executable::match_::instructions::type_::RelatesInstruction;
 use concept::{error::ConceptReadError, type_::relates::Relates};
 use itertools::Itertools;
 use lending_iterator::{

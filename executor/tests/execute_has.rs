@@ -11,19 +11,16 @@ use std::{
 };
 
 use compiler::{
-    match_::{
-        inference::{
-            annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-            type_inference::infer_types_for_match_block,
-        },
+    annotation::{
+        function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+        match_inference::infer_types,
+    },
+    executable::match_::{
         instructions::{
             thing::{HasInstruction, HasReverseInstruction, IsaReverseInstruction},
             ConstraintInstruction, Inputs,
         },
-        planner::{
-            pattern_plan::{IntersectionProgram, MatchProgram, Program},
-            program_plan::ProgramPlan,
-        },
+        planner::match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
     },
     VariablePosition,
 };
@@ -33,10 +30,10 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    error::ReadExecutionError, pattern_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-use ir::{pattern::constraint::IsaKind, program::block::Block, translation::TranslationContext};
+use ir::{pattern::constraint::IsaKind, pipeline::block::Block, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
@@ -123,7 +120,7 @@ fn traverse_has_unbounded_sorted_from() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_age_type = conjunction.get_or_declare_variable("age_type").unwrap();
@@ -142,14 +139,18 @@ fn traverse_has_unbounded_sorted_from() {
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
     let vars = vec![var_person, var_age, var_age_type, var_person_type];
@@ -157,7 +158,7 @@ fn traverse_has_unbounded_sorted_from() {
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
 
     // Plan
-    let steps = vec![Program::Intersection(IntersectionProgram::new(
+    let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
         variable_positions[&var_person],
         vec![ConstraintInstruction::Has(
             HasInstruction::new(has_age, Inputs::None([]), &entry_annotations).map(&variable_positions),
@@ -166,14 +167,12 @@ fn traverse_has_unbounded_sorted_from() {
         &HashSet::from([variable_positions[&var_person].clone(), variable_positions[&var_age].clone()]),
         4,
     ))];
-    // TODO: incorporate the filter
-    let pattern_plan =
-        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
+    let executable =
+        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -202,7 +201,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_name_type = conjunction.get_or_declare_variable("name_type").unwrap();
@@ -224,14 +223,18 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let entry = builder.finish();
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -242,7 +245,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
 
     // Plan
     let steps = vec![
-        Program::Intersection(IntersectionProgram::new(
+        ExecutionStep::Intersection(IntersectionStep::new(
             variable_positions[&var_person_1],
             vec![ConstraintInstruction::IsaReverse(
                 IsaReverseInstruction::new(isa_person_1, Inputs::None([]), &entry_annotations).map(&variable_positions),
@@ -251,7 +254,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
             &named_variables,
             2,
         )),
-        Program::Intersection(IntersectionProgram::new(
+        ExecutionStep::Intersection(IntersectionStep::new(
             variable_positions[&var_name],
             vec![
                 ConstraintInstruction::Has(
@@ -268,14 +271,12 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
             5,
         )),
     ];
-    // TODO: incorporate the filter
-    let pattern_plan =
-        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
+    let executable =
+        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -303,7 +304,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     // IR
 
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_age_type = conjunction.get_or_declare_variable("age_type").unwrap();
@@ -327,14 +328,18 @@ fn traverse_has_unbounded_sorted_from_intersect() {
 
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -344,7 +349,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     let named_variables = variable_positions.values().map(|p| p.clone()).collect();
 
     // Plan
-    let steps = vec![Program::Intersection(IntersectionProgram::new(
+    let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
         variable_positions[&var_person],
         vec![
             ConstraintInstruction::Has(
@@ -358,14 +363,12 @@ fn traverse_has_unbounded_sorted_from_intersect() {
         &named_variables,
         3,
     ))];
-    // TODO: incorporate the filter
-    let pattern_plan =
-        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
+    let executable =
+        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -393,7 +396,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
     // IR
 
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_person = conjunction.get_or_declare_variable("person").unwrap();
@@ -405,14 +408,18 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -422,7 +429,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
     let named_variables = variable_positions.values().map(|p| p.clone()).collect();
 
     // Plan
-    let steps = vec![Program::Intersection(IntersectionProgram::new(
+    let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
         variable_positions[&var_attribute],
         vec![ConstraintInstruction::Has(
             HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations).map(&variable_positions),
@@ -431,15 +438,16 @@ fn traverse_has_unbounded_sorted_to_merged() {
         &named_variables,
         2,
     ))];
-    let pattern_plan =
-        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
+    let executable = MatchExecutable::new(
+        steps,
+        Arc::new(translation_context.variable_registry.clone()),
+        variable_positions.clone(),
+        vars,
+    );
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
-
-    let variable_positions = program_plan.entry().variable_positions().clone();
+    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -481,7 +489,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     // IR
 
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_age_type = conjunction.get_or_declare_variable("age_type").unwrap();
@@ -500,14 +508,18 @@ fn traverse_has_reverse_unbounded_sorted_from() {
 
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -517,7 +529,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     let named_variables = variable_positions.values().map(|p| p.clone()).collect();
 
     // Plan
-    let steps = vec![Program::Intersection(IntersectionProgram::new(
+    let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
         variable_positions[&var_age],
         vec![ConstraintInstruction::HasReverse(
             HasReverseInstruction::new(has_age, Inputs::None([]), &entry_annotations).map(&variable_positions),
@@ -526,13 +538,12 @@ fn traverse_has_reverse_unbounded_sorted_from() {
         &named_variables,
         2,
     ))];
-    let pattern_plan =
-        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
+    let executable =
+        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());

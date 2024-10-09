@@ -6,44 +6,46 @@
 
 use std::sync::Arc;
 
-use compiler::match_::planner::pattern_plan::MatchProgram;
+use compiler::executable::match_::planner::match_executable::MatchExecutable;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use itertools::Itertools;
-use lending_iterator::{adaptors::FlatMap, AsLendingIterator, LendingIterator};
+use lending_iterator::adaptors::FlatMap;
+use lending_iterator::{AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    batch::{FixedBatch, FixedBatchRowIterator},
+    batch::FixedBatch,
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
-    program_executors::ProgramExecutor,
     row::MaybeOwnedRow,
+    read::step_executors::StepExecutor,
     ExecutionInterrupt,
 };
+use crate::batch::FixedBatchRowIterator;
 
-pub(crate) struct PatternExecutor {
+pub struct MatchExecutor {
     input: Option<MaybeOwnedRow<'static>>,
-    program_executors: Vec<ProgramExecutor>,
+    step_executors: Vec<StepExecutor>,
     // modifiers: Modifier,
     output: Option<FixedBatch>,
 }
 
-impl PatternExecutor {
-    pub(crate) fn new(
-        match_program: &MatchProgram,
+impl MatchExecutor {
+    pub fn new(
+        match_executable: &MatchExecutable,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
         input: MaybeOwnedRow<'_>,
     ) -> Result<Self, ConceptReadError> {
-        let program_executors = match_program
-            .programs()
+        let step_executors = match_executable
+            .steps()
             .iter()
-            .map(|program| ProgramExecutor::new(program, snapshot, thing_manager))
+            .map(|step| StepExecutor::new(step, snapshot, thing_manager))
             .try_collect()?;
 
         Ok(Self {
             input: Some(input.into_owned()),
-            program_executors,
+            step_executors,
             // modifiers:
             output: None,
         })
@@ -64,72 +66,73 @@ impl PatternExecutor {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        let programs_len = self.program_executors.len();
+        let steps_len = self.step_executors.len();
 
-        let (mut current_program, mut last_program_batch, mut direction) = if let Some(input) = self.input.take() {
-            (0, Some(FixedBatch::from(input)), Direction::Forward)
+        let (mut current_step, mut last_step_batch) = if let Some(input) = self.input.take() {
+            (0, Some(FixedBatch::from(input)))
         } else {
-            (programs_len - 1, None, Direction::Backward)
+            (steps_len - 1, None)
         };
 
         loop {
+            debug_assert!(current_step >= 0 && current_step <= steps_len - 1);
             // TODO: inject interrupt into Checkers that could filter out many rows without ending as well.
             if let Some(interrupt) = interrupt.check() {
                 return Err(ReadExecutionError::Interrupted { interrupt });
             }
 
-            match direction {
-                Direction::Forward => {
-                    if current_program >= programs_len {
-                        return Ok(last_program_batch);
-                    } else {
-                        let executor = &mut self.program_executors[current_program];
-                        let batch = executor.batch_from(last_program_batch.take().unwrap(), context, interrupt)?;
-                        match batch {
-                            None => {
-                                direction = Direction::Backward;
-                                if current_program == 0 {
-                                    return Ok(None);
-                                } else {
-                                    current_program -= 1;
-                                }
-                            }
-                            Some(batch) => {
-                                last_program_batch = Some(batch);
-                                current_program += 1;
-                            }
-                        }
-                    }
-                }
+            let executor = &mut self.step_executors[current_step];
+            let next_batch = if last_step_batch.is_some() {
+                executor.batch_from(last_step_batch.take().unwrap(), context, interrupt)?
+            } else {
+                executor.batch_continue(context)?
+            };
 
-                Direction::Backward => {
-                    let batch = self.program_executors[current_program].batch_continue(context)?;
-                    match batch {
-                        None => {
-                            if current_program == 0 {
-                                return Ok(None);
-                            } else {
-                                current_program -= 1;
-                            }
-                        }
-                        Some(batch) => {
-                            direction = Direction::Forward;
-                            last_program_batch = Some(batch);
-                            current_program += 1;
-                        }
-                    }
+            if let Some(batch) = next_batch {
+                if current_step == steps_len - 1 {
+                    return Ok(Some(batch));
+                } else {
+                    current_step += 1;
+                    last_step_batch = Some(batch);
+                }
+            } else {
+                if current_step == 0 {
+                    return Ok(None);
+                } else {
+                    current_step -= 1;
+                    last_step_batch = None;
                 }
             }
         }
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-enum Direction {
-    Forward,
-    Backward,
+pub(crate) struct BatchIterator<Snapshot> {
+    executor: MatchExecutor,
+    context: ExecutionContext<Snapshot>,
+    interrupt: ExecutionInterrupt,
 }
 
+impl<Snapshot> BatchIterator<Snapshot> {
+    pub(crate) fn new(
+        executor: MatchExecutor,
+        context: ExecutionContext<Snapshot>,
+        interrupt: ExecutionInterrupt,
+    ) -> Self {
+        Self { executor, context, interrupt }
+    }
+}
+
+impl<Snapshot: ReadableSnapshot + 'static> Iterator for BatchIterator<Snapshot> {
+    type Item = Result<FixedBatch, ReadExecutionError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let batch = self.executor.compute_next_batch(&self.context, &mut self.interrupt);
+        batch.transpose()
+    }
+}
+
+// Wrappers around
 type PatternRowIterator<Snapshot> = FlatMap<
     AsLendingIterator<BatchIterator<Snapshot>>,
     FixedBatchRowIterator,
@@ -153,32 +156,3 @@ impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for PatternIterator<S
         self.iterator.next()
     }
 }
-
-pub(crate) struct BatchIterator<Snapshot> {
-    executor: PatternExecutor,
-    context: ExecutionContext<Snapshot>,
-    interrupt: ExecutionInterrupt,
-}
-
-impl<Snapshot> BatchIterator<Snapshot> {
-    pub(crate) fn new(
-        executor: PatternExecutor,
-        context: ExecutionContext<Snapshot>,
-        interrupt: ExecutionInterrupt,
-    ) -> Self {
-        Self { executor, context, interrupt }
-    }
-}
-
-impl<Snapshot: ReadableSnapshot + 'static> Iterator for BatchIterator<Snapshot> {
-    type Item = Result<FixedBatch, ReadExecutionError>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let batch = self.executor.compute_next_batch(&self.context, &mut self.interrupt);
-        batch.transpose()
-    }
-}
-
-// struct ResumeExecutor {
-//     resume_points: Vec<SuspensionPoint>,
-// }

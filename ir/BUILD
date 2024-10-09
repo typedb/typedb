@@ -15,7 +15,7 @@ rust_library(
         "expressions/builtins/*.rs",
         "optimisation/*.rs",
         "pattern/*.rs",
-        "program/*.rs",
+        "pipeline/*.rs",
         "translation/*.rs",
     ]),
     deps = [

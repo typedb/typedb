@@ -12,7 +12,7 @@ use std::{
 };
 
 use answer::{variable_value::VariableValue, Type};
-use compiler::match_::instructions::type_::SubInstruction;
+use compiler::executable::match_::instructions::type_::SubInstruction;
 use concept::{
     error::ConceptReadError,
     type_::{type_manager::TypeManager, TypeAPI},

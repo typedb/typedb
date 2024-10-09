@@ -7,9 +7,7 @@
 use std::{iter::zip, sync::Arc};
 
 use bytes::{byte_array::ByteArray, Bytes};
-use compiler::match_::inference::{
-    annotated_functions::IndexedAnnotatedFunctions, type_inference::infer_types_for_functions,
-};
+use compiler::annotation::function::{annotate_functions, IndexedAnnotatedFunctions};
 use concept::type_::type_manager::TypeManager;
 use encoding::{
     graph::{
@@ -22,7 +20,7 @@ use encoding::{
     AsBytes, Keyable,
 };
 use ir::{
-    program::{
+    pipeline::{
         function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex},
         FunctionReadError,
     },
@@ -82,7 +80,7 @@ impl FunctionManager {
             HashMapFunctionSignatureIndex::build(functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)));
         let ir = Self::translate_functions(snapshot, &functions, &function_index)?;
         // Run type-inference
-        infer_types_for_functions(ir, snapshot, type_manager, &IndexedAnnotatedFunctions::empty())
+        annotate_functions(ir, snapshot, type_manager, &IndexedAnnotatedFunctions::empty())
             .map_err(|source| FunctionError::AllFunctionsTypeCheckFailure { typedb_source: source })?;
         Ok(())
     }
@@ -132,7 +130,7 @@ impl FunctionManager {
         snapshot: &impl ReadableSnapshot,
         functions: &[SchemaFunction],
         function_index: &impl FunctionSignatureIndex,
-    ) -> Result<Vec<ir::program::function::Function>, FunctionError> {
+    ) -> Result<Vec<ir::pipeline::function::Function>, FunctionError> {
         functions
             .iter()
             .map(|function| translate_function(snapshot, function_index, &function.parsed))
@@ -269,7 +267,7 @@ pub mod tests {
     };
     use ir::{
         pattern::variable_category::{VariableCategory, VariableOptionality},
-        program::function_signature::{
+        pipeline::function_signature::{
             FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex,
         },
     };
@@ -378,9 +376,9 @@ pub mod tests {
             let looked_up = index.get_function_signature("cat_names").unwrap().unwrap();
             assert_eq!(expected_signature.function_id(), looked_up.function_id());
 
-            let function_annotations = cache.get_function_annotations(expected_function_id.clone()).unwrap();
-            let function_ir = cache.get_function_ir(expected_function_id.clone()).unwrap();
             todo!("the following lines no longer compile")
+            // let function_annotations = cache.get_function_annotations(expected_function_id.clone()).unwrap();
+            // let function_ir = cache.get_function_ir(expected_function_id.clone()).unwrap();
             // let var_c = *function_ir.block().context().get_variable_named("c", function_ir.block().scope_id()).unwrap();
             // let var_c_annotations = function_annotations.body_annotations().variable_annotations_of(var_c).unwrap();
             // assert_eq!(&Arc::new(HashSet::from([type_cat.clone()])), var_c_annotations);

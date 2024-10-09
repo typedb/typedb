@@ -7,7 +7,7 @@
 use std::{collections::BTreeSet, iter, marker::PhantomData, sync::Arc, vec};
 
 use answer::{variable_value::VariableValue, Thing, Type};
-use compiler::match_::instructions::thing::IsaInstruction;
+use compiler::executable::match_::instructions::thing::IsaInstruction;
 use concept::{
     error::ConceptReadError,
     iterator::InstanceIterator,

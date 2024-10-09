@@ -16,7 +16,7 @@ use crate::{
         variable_category::VariableCategory,
         IrID, ScopeId, Vertex,
     },
-    program::{block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry},
+    pipeline::{block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry},
     RepresentationError,
 };
 

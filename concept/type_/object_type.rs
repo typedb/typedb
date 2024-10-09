@@ -24,7 +24,7 @@ use crate::{
     type_::{
         attribute_type::AttributeType, constraint::CapabilityConstraint, entity_type::EntityType, owns::Owns,
         plays::Plays, relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI,
-        OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
+        Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
     },
     ConceptAPI,
 };
@@ -38,8 +38,6 @@ macro_rules! with_object_type {
     };
 }
 pub(crate) use with_object_type;
-
-use crate::type_::Ordering;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum ObjectType<'a> {

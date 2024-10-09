@@ -5,12 +5,11 @@
  */
 use std::{cmp::Ordering, collections::HashSet};
 
-use answer::variable_value::VariableValue;
 use compiler::{
-    modifiers::{LimitProgram, OffsetProgram, RequireProgram, SelectProgram, SortProgram},
+    executable::modifiers::{LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable},
     VariablePosition,
 };
-use ir::program::modifier::SortVariable;
+use ir::pipeline::modifier::SortVariable;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
@@ -26,13 +25,13 @@ use crate::{
 
 // Sort
 pub struct SortStageExecutor<PreviousStage> {
-    program: SortProgram,
+    executable: SortExecutable,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> SortStageExecutor<PreviousStage> {
-    pub fn new(program: SortProgram, previous: PreviousStage) -> Self {
-        Self { program, previous }
+    pub fn new(executable: SortExecutable, previous: PreviousStage) -> Self {
+        Self { executable, previous }
     }
 }
 
@@ -48,14 +47,14 @@ where
         interrupt: ExecutionInterrupt,
     ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
     {
-        let Self { previous, program, .. } = self;
+        let Self { previous, executable, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
         // accumulate once, then we will operate in-place
         let batch = match previous_iterator.collect_owned() {
             Ok(batch) => batch,
             Err(err) => return Err((err, context)),
         };
-        Ok((SortStageIterator::from_unsorted(batch, program), context))
+        Ok((SortStageIterator::from_unsorted(batch, executable), context))
     }
 }
 
@@ -66,14 +65,14 @@ pub struct SortStageIterator {
 }
 
 impl SortStageIterator {
-    fn from_unsorted(unsorted: Batch, sort_program: SortProgram) -> Self {
+    fn from_unsorted(unsorted: Batch, sort_executable: SortExecutable) -> Self {
         let mut indices: Vec<usize> = (0..unsorted.len()).collect();
-        let sort_by: Vec<(usize, bool)> = sort_program
+        let sort_by: Vec<(usize, bool)> = sort_executable
             .sort_on
             .iter()
             .map(|sort_variable| match sort_variable {
-                SortVariable::Ascending(v) => (sort_program.output_row_mapping.get(v).unwrap().as_usize(), true),
-                SortVariable::Descending(v) => (sort_program.output_row_mapping.get(v).unwrap().as_usize(), false),
+                SortVariable::Ascending(v) => (sort_executable.output_row_mapping.get(v).unwrap().as_usize(), true),
+                SortVariable::Descending(v) => (sort_executable.output_row_mapping.get(v).unwrap().as_usize(), false),
             })
             .collect();
         indices.sort_by(|x, y| {
@@ -115,13 +114,13 @@ impl StageIterator for SortStageIterator {}
 
 // Offset
 pub struct OffsetStageExecutor<PreviousStage> {
-    offset_program: OffsetProgram,
+    offset_executable: OffsetExecutable,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> OffsetStageExecutor<PreviousStage> {
-    pub fn new(offset_program: OffsetProgram, previous: PreviousStage) -> Self {
-        Self { offset_program, previous }
+    pub fn new(offset_executable: OffsetExecutable, previous: PreviousStage) -> Self {
+        Self { offset_executable, previous }
     }
 }
 
@@ -137,9 +136,9 @@ where
         interrupt: ExecutionInterrupt,
     ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
     {
-        let Self { offset_program, previous, .. } = self;
+        let Self { offset_executable, previous, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
-        Ok((OffsetStageIterator::new(previous_iterator, offset_program.offset), context))
+        Ok((OffsetStageIterator::new(previous_iterator, offset_executable.offset), context))
     }
 }
 
@@ -177,13 +176,13 @@ where
 
 // Limit
 pub struct LimitStageExecutor<PreviousStage> {
-    limit_program: LimitProgram,
+    limit_executable: LimitExecutable,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> LimitStageExecutor<PreviousStage> {
-    pub fn new(limit_program: LimitProgram, previous: PreviousStage) -> Self {
-        Self { limit_program, previous }
+    pub fn new(limit_executable: LimitExecutable, previous: PreviousStage) -> Self {
+        Self { limit_executable, previous }
     }
 }
 
@@ -199,9 +198,9 @@ where
         interrupt: ExecutionInterrupt,
     ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
     {
-        let Self { limit_program, previous, .. } = self;
+        let Self { limit_executable, previous, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
-        Ok((LimitStageIterator::new(previous_iterator, limit_program.limit), context))
+        Ok((LimitStageIterator::new(previous_iterator, limit_executable.limit), context))
     }
 }
 
@@ -236,13 +235,13 @@ where
 
 // Select
 pub struct SelectStageExecutor<PreviousStage> {
-    select_program: SelectProgram,
+    select_executable: SelectExecutable,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> SelectStageExecutor<PreviousStage> {
-    pub fn new(select_program: SelectProgram, previous: PreviousStage) -> Self {
-        Self { select_program, previous }
+    pub fn new(select_executable: SelectExecutable, previous: PreviousStage) -> Self {
+        Self { select_executable, previous }
     }
 }
 
@@ -289,13 +288,13 @@ where
 
 // Require
 pub struct RequireStageExecutor<PreviousStage> {
-    require_program: RequireProgram,
+    require_executable: RequireExecutable,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> RequireStageExecutor<PreviousStage> {
-    pub fn new(require_program: RequireProgram, previous: PreviousStage) -> Self {
-        Self { require_program, previous }
+    pub fn new(require_executable: RequireExecutable, previous: PreviousStage) -> Self {
+        Self { require_executable, previous }
     }
 }
 
@@ -311,9 +310,9 @@ where
         interrupt: ExecutionInterrupt,
     ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
     {
-        let Self { require_program, previous, .. } = self;
+        let Self { require_executable, previous, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
-        Ok((RequireStageIterator::new(previous_iterator, require_program.required), context))
+        Ok((RequireStageIterator::new(previous_iterator, require_executable.required), context))
     }
 }
 

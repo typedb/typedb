@@ -12,9 +12,10 @@ use std::{
 
 use answer::variable_value::VariableValue;
 use compiler::{
-    match_::inference::{
-        annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-        type_inference::infer_types_for_match_block,
+    self,
+    annotation::{
+        function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+        match_inference::infer_types,
     },
     VariablePosition,
 };
@@ -34,7 +35,7 @@ use executor::{
     write::WriteError,
     ExecutionInterrupt,
 };
-use ir::{program::function_signature::HashMapFunctionSignatureIndex, translation::TranslationContext};
+use ir::{pipeline::function_signature::HashMapFunctionSignatureIndex, translation::TranslationContext};
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::{
     durability_client::WALClient,
@@ -149,23 +150,27 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let input_row_format = input_row_var_names
         .iter()
         .enumerate()
-        .map(|(i, v)| (*translation_context.visible_variables.get(*v).unwrap(), VariablePosition::new(i as u32)))
+        .map(|(i, v)| (translation_context.get_variable(*v).unwrap(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
-    let entry_annotations = infer_types_for_match_block(
-        &block,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
         &snapshot,
+        &block,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
     let variable_registry = Arc::new(translation_context.variable_registry);
 
-    let insert_plan = compiler::insert::program::compile(
+    let insert_plan = compiler::executable::insert::executable::compile(
         variable_registry,
         block.conjunction().constraints(),
         &input_row_format,
@@ -225,14 +230,18 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
         )
         .unwrap()
         .finish();
-        infer_types_for_match_block(
-            &block,
-            &translation_context.variable_registry,
+        let variable_registry = &translation_context.variable_registry;
+        let previous_stage_variable_annotations = &BTreeMap::new();
+        let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+        let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+        infer_types(
             &snapshot,
+            &block,
+            variable_registry,
             &type_manager,
-            &BTreeMap::new(),
-            &IndexedAnnotatedFunctions::empty(),
-            &AnnotatedUnindexedFunctions::empty(),
+            previous_stage_variable_annotations,
+            annotated_schema_functions,
+            Some(annotated_preamble_functions),
         )
         .unwrap()
     };
@@ -243,10 +252,10 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     let input_row_format = input_row_var_names
         .iter()
         .enumerate()
-        .map(|(i, v)| (*translation_context.visible_variables.get(*v).unwrap(), VariablePosition::new(i as u32)))
+        .map(|(i, v)| (translation_context.get_variable(*v).unwrap(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
-    let delete_plan = compiler::delete::program::compile(
+    let delete_plan = compiler::executable::delete::executable::compile(
         &input_row_format,
         &entry_annotations,
         block.conjunction().constraints(),

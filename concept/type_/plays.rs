@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use encoding::{
     graph::type_::{edge::TypeEdgeEncoding, vertex::TypeVertexEncoding, CapabilityKind},
@@ -21,11 +21,9 @@ use crate::{
         annotation::{Annotation, AnnotationCardinality, AnnotationCategory, AnnotationError, DefaultFrom},
         constraint::CapabilityConstraint,
         object_type::ObjectType,
-        owns::Owns,
-        relates::Relates,
         role_type::RoleType,
         type_manager::TypeManager,
-        Capability, Ordering, TypeAPI,
+        Capability, TypeAPI,
     },
 };
 

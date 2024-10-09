@@ -7,7 +7,7 @@
 use std::{collections::BTreeSet, marker::PhantomData, sync::Arc};
 
 use answer::{Thing, Type};
-use compiler::match_::instructions::thing::IsaReverseInstruction;
+use compiler::executable::match_::instructions::thing::IsaReverseInstruction;
 use concept::error::ConceptReadError;
 use ir::pattern::constraint::{Isa, IsaKind, SubKind};
 use lending_iterator::{AsHkt, LendingIterator};

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use compiler::reduce::ReduceProgram;
+use compiler::executable::reduce::ReduceExecutable;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -18,13 +18,13 @@ use crate::{
 };
 
 pub struct ReduceStageExecutor<PreviousStage> {
-    program: ReduceProgram,
+    executable: ReduceExecutable,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> ReduceStageExecutor<PreviousStage> {
-    pub fn new(program: ReduceProgram, previous: PreviousStage) -> Self {
-        Self { program, previous }
+    pub fn new(executable: ReduceExecutable, previous: PreviousStage) -> Self {
+        Self { executable, previous }
     }
 }
 
@@ -40,9 +40,9 @@ where
         interrupt: ExecutionInterrupt,
     ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
     {
-        let Self { previous, program, .. } = self;
+        let Self { previous, executable, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
-        let rows = match reduce_iterator(&context, program, previous_iterator) {
+        let rows = match reduce_iterator(&context, executable, previous_iterator) {
             Ok(rows) => rows,
             Err(err) => return Err((err, context)),
         };
@@ -52,11 +52,11 @@ where
 
 fn reduce_iterator<Snapshot: ReadableSnapshot>(
     context: &ExecutionContext<Snapshot>,
-    program: ReduceProgram,
+    executable: ReduceExecutable,
     iterator: impl StageIterator,
 ) -> Result<Batch, PipelineExecutionError> {
     let mut iterator = iterator;
-    let mut grouped_reducer = GroupedReducer::new(program);
+    let mut grouped_reducer = GroupedReducer::new(executable);
     while let Some(result) = iterator.next() {
         grouped_reducer.accept(&result?, &context)?;
     }

@@ -11,16 +11,13 @@ use std::{
 };
 
 use compiler::{
-    match_::{
-        inference::{
-            annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-            type_inference::infer_types_for_match_block,
-        },
+    annotation::{
+        function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+        match_inference::infer_types,
+    },
+    executable::match_::{
         instructions::{thing::HasInstruction, ConstraintInstruction, Inputs},
-        planner::{
-            pattern_plan::{IntersectionProgram, MatchProgram, Program},
-            program_plan::ProgramPlan,
-        },
+        planner::match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
     },
     VariablePosition,
 };
@@ -30,10 +27,10 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    error::ReadExecutionError, pattern_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-use ir::{pattern::constraint::IsaKind, program::block::Block, translation::TranslationContext};
+use ir::{pattern::constraint::IsaKind, pipeline::block::Block, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
@@ -153,7 +150,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_attribute_type = conjunction.declare_variable_anonymous().unwrap();
@@ -168,14 +165,18 @@ fn anonymous_vars_not_enumerated_or_counted() {
     let entry_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone(), None);
-        infer_types_for_match_block(
-            &entry,
-            &translation_context.variable_registry,
+        let variable_registry = &translation_context.variable_registry;
+        let previous_stage_variable_annotations = &BTreeMap::new();
+        let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+        let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+        infer_types(
             &snapshot,
+            &entry,
+            variable_registry,
             &type_manager,
-            &BTreeMap::new(),
-            &IndexedAnnotatedFunctions::empty(),
-            &AnnotatedUnindexedFunctions::empty(),
+            previous_stage_variable_annotations,
+            annotated_schema_functions,
+            Some(annotated_preamble_functions),
         )
         .unwrap()
     };
@@ -189,7 +190,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
         .collect();
 
     // Plan
-    let steps = vec![Program::Intersection(IntersectionProgram::new(
+    let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
         variable_positions[&var_person],
         vec![ConstraintInstruction::Has(
             HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations).map(&variable_positions),
@@ -198,14 +199,13 @@ fn anonymous_vars_not_enumerated_or_counted() {
         &named_variables,
         4,
     ))];
-    let pattern_plan =
-        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
+    let executable =
+        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (_, thing_manager) = load_managers(storage.clone(), None);
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -240,7 +240,7 @@ fn unselected_named_vars_counted() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_attribute_type = conjunction.get_or_declare_variable("attr_type").unwrap();
@@ -255,14 +255,18 @@ fn unselected_named_vars_counted() {
     let entry_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone(), None);
-        infer_types_for_match_block(
-            &entry,
-            &translation_context.variable_registry,
+        let variable_registry = &translation_context.variable_registry;
+        let previous_stage_variable_annotations = &BTreeMap::new();
+        let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+        let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+        infer_types(
             &snapshot,
+            &entry,
+            variable_registry,
             &type_manager,
-            &BTreeMap::new(),
-            &IndexedAnnotatedFunctions::empty(),
-            &AnnotatedUnindexedFunctions::empty(),
+            previous_stage_variable_annotations,
+            annotated_schema_functions,
+            Some(annotated_preamble_functions),
         )
         .unwrap()
     };
@@ -276,7 +280,7 @@ fn unselected_named_vars_counted() {
         .collect();
 
     // Plan
-    let steps = vec![Program::Intersection(IntersectionProgram::new(
+    let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
         variable_positions[&var_person],
         vec![ConstraintInstruction::Has(
             HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations).map(&variable_positions),
@@ -286,14 +290,13 @@ fn unselected_named_vars_counted() {
         2,
     ))];
 
-    let pattern_plan =
-        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
+    let executable =
+        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
 
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
     let (_, thing_manager) = load_managers(storage.clone(), None);
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -328,7 +331,7 @@ fn cartesian_named_counted_checked() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_name_type = conjunction.declare_variable_anonymous().unwrap();
@@ -354,14 +357,18 @@ fn cartesian_named_counted_checked() {
     let entry_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone(), None);
-        infer_types_for_match_block(
-            &entry,
-            &translation_context.variable_registry,
+        let variable_registry = &translation_context.variable_registry;
+        let previous_stage_variable_annotations = &BTreeMap::new();
+        let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+        let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+        infer_types(
             &snapshot,
+            &entry,
+            variable_registry,
             &type_manager,
-            &BTreeMap::new(),
-            &IndexedAnnotatedFunctions::empty(),
-            &AnnotatedUnindexedFunctions::empty(),
+            previous_stage_variable_annotations,
+            annotated_schema_functions,
+            Some(annotated_preamble_functions),
         )
         .unwrap()
     };
@@ -376,7 +383,7 @@ fn cartesian_named_counted_checked() {
         .collect();
 
     // Plan
-    let steps = vec![Program::Intersection(IntersectionProgram::new(
+    let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
         variable_positions[&var_person],
         vec![
             ConstraintInstruction::Has(
@@ -394,14 +401,13 @@ fn cartesian_named_counted_checked() {
         4,
     ))];
 
-    let pattern_plan =
-        MatchProgram::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
+    let match_executable =
+        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
 
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
     let (_, thing_manager) = load_managers(storage.clone(), None);
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fmt};
+use std::error::Error;
 
 use encoding::{
     graph::type_::{CapabilityKind, Kind},
@@ -18,9 +18,6 @@ use crate::{
     type_::{
         annotation::{AnnotationCardinality, AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationValues},
         constraint::{ConstraintDescription, ConstraintError},
-        relates::Relates,
-        relation_type::RelationType,
-        role_type::RoleType,
         Ordering,
     },
 };

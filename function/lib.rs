@@ -6,10 +6,10 @@
 
 use std::error::Error;
 
-use compiler::match_::inference::FunctionTypeInferenceError;
+use compiler::annotation::FunctionTypeInferenceError;
 use encoding::error::EncodingError;
 use error::typedb_error;
-use ir::program::{FunctionReadError, FunctionRepresentationError};
+use ir::pipeline::{FunctionReadError, FunctionRepresentationError};
 
 pub mod function;
 pub mod function_cache;

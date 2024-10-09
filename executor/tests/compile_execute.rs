@@ -9,26 +9,23 @@ use std::{
     sync::Arc,
 };
 
-use compiler::match_::{
-    inference::{
-        annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-        type_inference::infer_types_for_match_block,
-    },
-    planner::program_plan::ProgramPlan,
+use compiler::annotation::{
+    function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+    match_inference::infer_types,
 };
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
     type_::type_manager::TypeManager,
 };
 use executor::{
-    match_executor::MatchExecutor,
+    pattern_executor::MatchExecutor,
     pipeline::stage::{ExecutionContext, StageAPI},
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
 use ir::{
-    program::function_signature::HashMapFunctionSignatureIndex,
+    pipeline::function_signature::HashMapFunctionSignatureIndex,
     translation::{match_::translate_match, TranslationContext},
 };
 use itertools::Itertools;
@@ -102,18 +99,23 @@ fn test_has_planning_traversal() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let entry_annotations = infer_types_for_match_block(
+    let variable_registry = &translation_context.variable_registry;
+    let snapshot1 = &*snapshot;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
+        snapshot1,
         &block,
-        &translation_context.variable_registry,
-        &*snapshot,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
-    let pattern_plan = compiler::match_::planner::compile(
+    let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
         &entry_annotations,
@@ -121,8 +123,7 @@ fn test_has_planning_traversal() {
         &HashMap::new(),
         &statistics,
     );
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -176,18 +177,23 @@ fn test_links_planning_traversal() {
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
+    let variable_registry = &translation_context.variable_registry;
+    let snapshot1 = &*snapshot;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
+        snapshot1,
         &block,
-        &translation_context.variable_registry,
-        &*snapshot,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
-    let pattern_plan = compiler::match_::planner::compile(
+    let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
         &entry_annotations,
@@ -195,8 +201,7 @@ fn test_links_planning_traversal() {
         &HashMap::new(),
         &statistics,
     );
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -257,18 +262,23 @@ fn test_links_intersection() {
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
+    let variable_registry = &translation_context.variable_registry;
+    let snapshot1 = &*snapshot;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
+        snapshot1,
         &block,
-        &translation_context.variable_registry,
-        &*snapshot,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
-    let pattern_plan = compiler::match_::planner::compile(
+    let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
         &entry_annotations,
@@ -276,8 +286,7 @@ fn test_links_intersection() {
         &HashMap::new(),
         &statistics,
     );
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -330,18 +339,23 @@ fn test_negation_planning_traversal() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let entry_annotations = infer_types_for_match_block(
+    let variable_registry = &translation_context.variable_registry;
+    let snapshot1 = &*snapshot;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
+        snapshot1,
         &block,
-        &translation_context.variable_registry,
-        &*snapshot,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
-    let pattern_plan = compiler::match_::planner::compile(
+    let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
         &entry_annotations,
@@ -349,8 +363,7 @@ fn test_negation_planning_traversal() {
         &HashMap::new(),
         &statistics,
     );
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -424,18 +437,23 @@ fn test_forall_planning_traversal() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let entry_annotations = infer_types_for_match_block(
+    let variable_registry = &translation_context.variable_registry;
+    let snapshot1 = &*snapshot;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
+        snapshot1,
         &block,
-        &translation_context.variable_registry,
-        &*snapshot,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
-    let pattern_plan = compiler::match_::planner::compile(
+    let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
         &entry_annotations,
@@ -443,8 +461,7 @@ fn test_forall_planning_traversal() {
         &HashMap::new(),
         &statistics,
     );
-    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new(), HashMap::new());
-    let executor = MatchExecutor::new(&program_plan, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());

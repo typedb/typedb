@@ -13,7 +13,7 @@ use crate::{
         conjunction::{Conjunction, ConjunctionBuilder},
         Scope, ScopeId,
     },
-    program::block::BlockBuilderContext,
+    pipeline::block::BlockBuilderContext,
 };
 
 #[derive(Debug, Clone)]

@@ -7,7 +7,6 @@
 use std::{
     collections::{BTreeMap, HashMap},
     error::Error,
-    fmt,
     ops::Bound,
 };
 

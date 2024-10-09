@@ -11,7 +11,7 @@ use answer::variable::Variable;
 use super::conjunction::ConjunctionBuilder;
 use crate::{
     pattern::{conjunction::Conjunction, Scope, ScopeId},
-    program::block::{BlockBuilderContext, ScopeTransparency},
+    pipeline::block::{BlockBuilderContext, ScopeTransparency},
 };
 
 #[derive(Debug, Clone)]

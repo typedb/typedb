@@ -17,9 +17,9 @@ rust_test(
 )
 
 rust_test(
-    name = "program",
-    crate_root = "program.rs",
-    srcs =  ["program.rs"],
+    name = "pipeline",
+    crate_root = "pipeline.rs",
+    srcs =  ["pipeline.rs"],
     deps = [
         "//answer",
         "//common/bytes",

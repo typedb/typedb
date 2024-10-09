@@ -12,7 +12,7 @@ use std::{
 };
 
 use answer::Type;
-use compiler::match_::instructions::type_::SubReverseInstruction;
+use compiler::executable::match_::instructions::type_::SubReverseInstruction;
 use concept::{
     error::ConceptReadError,
     type_::{type_manager::TypeManager, TypeAPI},
