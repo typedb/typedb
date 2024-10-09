@@ -17,7 +17,7 @@ use ir::pattern::{
 };
 use itertools::{chain, Itertools};
 
-use crate::match_::inference::type_annotations::TypeAnnotations;
+use crate::annotation::type_annotations::TypeAnnotations;
 
 const OPEN_ITERATOR_RELATIVE_COST: f64 = 5.0;
 const ADVANCE_ITERATOR_RELATIVE_COST: f64 = 1.0;

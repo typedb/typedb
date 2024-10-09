@@ -12,8 +12,6 @@ use std::{
 use answer::{variable::Variable, Type};
 use ir::pattern::{constraint::Constraint, Vertex};
 
-use crate::match_::inference::pattern_type_inference::TypeInferenceGraph;
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypeAnnotations {
     vertex: BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
@@ -21,13 +19,6 @@ pub struct TypeAnnotations {
 }
 
 impl TypeAnnotations {
-    pub(crate) fn build(inference_graph: TypeInferenceGraph<'_>) -> Self {
-        let mut vertex_annotations = BTreeMap::new();
-        let mut constraint_annotations = HashMap::new();
-        inference_graph.collect_type_annotations(&mut vertex_annotations, &mut constraint_annotations);
-        Self::new(vertex_annotations, constraint_annotations)
-    }
-
     pub fn new(
         variables: BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
         constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
@@ -168,21 +159,5 @@ impl LeftRightFilteredAnnotations {
 
     pub fn filters_on_left(&self) -> Arc<BTreeMap<Type, BTreeSet<Type>>> {
         self.filters_on_left.clone()
-    }
-}
-
-#[derive(Debug)]
-pub struct FunctionAnnotations {
-    pub(crate) block_annotations: TypeAnnotations,
-    pub(crate) return_annotations: Vec<BTreeSet<Type>>,
-}
-
-impl FunctionAnnotations {
-    pub fn body_annotations(&self) -> &TypeAnnotations {
-        &self.block_annotations
-    }
-
-    pub fn return_annotations(&self) -> &[BTreeSet<Type>] {
-        &self.return_annotations
     }
 }

@@ -10,34 +10,28 @@ use std::{
 };
 
 use answer::{variable::Variable, Type};
+use typeql::schema::definable::function::SingleSelector;
 
 use crate::{
     pattern::Vertex,
-    program::{reduce::Reducer, VariableRegistry},
-    translation::pipeline::TranslatedStage,
+    program::reduce::Reducer,
+    translation::{pipeline::TranslatedStage, TranslationContext},
 };
 
 pub type PlaceholderTypeQLReturnOperation = String;
 
 #[derive(Debug, Clone)]
 pub struct Function {
+    context: TranslationContext,
     name: String,
+    function_body: FunctionBody,
     // Variable categories for args & return can be read from the block's context.
     arguments: Vec<Variable>,
-    stages: Vec<TranslatedStage>,
-    variable_registry: VariableRegistry,
-    return_operation: ReturnOperation,
 }
 
 impl Function {
-    pub fn new(
-        name: &str,
-        pipeline: Vec<TranslatedStage>,
-        variable_registry: VariableRegistry,
-        arguments: Vec<Variable>,
-        return_operation: ReturnOperation,
-    ) -> Self {
-        Self { name: name.to_string(), stages: pipeline, variable_registry, arguments, return_operation }
+    pub fn new(name: &str, context: TranslationContext, arguments: Vec<Variable>, function_body: FunctionBody) -> Self {
+        Self { name: name.to_string(), context, function_body, arguments }
     }
 
     pub fn name(&self) -> &str {
@@ -48,12 +42,40 @@ impl Function {
         &self.arguments
     }
 
-    pub fn stages(&self) -> &[TranslatedStage] {
-        &self.stages
+    pub fn translation_context(&self) -> &TranslationContext {
+        &self.context
     }
 
-    pub fn variable_registry(&self) -> &VariableRegistry {
-        &self.variable_registry
+    pub fn body(&self) -> &FunctionBody {
+        &self.function_body
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AnonymousFunction {
+    translation_context: TranslationContext,
+    body: FunctionBody,
+}
+
+impl AnonymousFunction {
+    pub(crate) fn new(context: TranslationContext, body: FunctionBody) -> Self {
+        Self { translation_context: context, body }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionBody {
+    stages: Vec<TranslatedStage>,
+    return_operation: ReturnOperation,
+}
+
+impl FunctionBody {
+    pub fn new(stages: Vec<TranslatedStage>, return_operation: ReturnOperation) -> Self {
+        Self { stages, return_operation }
+    }
+
+    pub fn stages(&self) -> &[TranslatedStage] {
+        &self.stages
     }
 
     pub fn return_operation(&self) -> &ReturnOperation {
@@ -64,22 +86,31 @@ impl Function {
 #[derive(Debug, Clone)]
 pub enum ReturnOperation {
     Stream(Vec<Variable>),
-    Reduce(Vec<Reducer>),
+    Single(SingleSelector, Vec<Variable>),
+    ReduceCheck(),
+    ReduceReducer(Vec<Reducer>),
 }
 
 impl ReturnOperation {
-    pub fn output_annotations(
+    pub fn return_types(
         &self,
         function_variable_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
     ) -> Vec<BTreeSet<Type>> {
         match self {
             ReturnOperation::Stream(vars) => {
                 let inputs = vars.iter().map(|&var| function_variable_annotations.get(&Vertex::Variable(var)).unwrap());
-                inputs
-                    .map(|types_as_arced_hashset| BTreeSet::from_iter(types_as_arced_hashset.iter().cloned()))
-                    .collect()
+                inputs.map(|types| BTreeSet::from_iter(types.iter().cloned())).collect()
             }
-            ReturnOperation::Reduce(_) => {
+            ReturnOperation::Single(_, vars) => {
+                let inputs = vars.iter().map(|&var| function_variable_annotations.get(&Vertex::Variable(var)).unwrap());
+                inputs.map(|types| BTreeSet::from_iter(types.iter().cloned())).collect()
+            }
+            ReturnOperation::ReduceReducer(reducers) => {
+                // aggregates return value types?
+                todo!()
+            }
+            ReturnOperation::ReduceCheck() => {
+                // aggregates return value types?
                 todo!()
             }
         }
@@ -90,7 +121,7 @@ impl ReturnOperation {
     pub(crate) fn is_stream(&self) -> bool {
         match self {
             Self::Stream(_) => true,
-            Self::Reduce(_) => false,
+            Self::ReduceReducer(_) | Self::Single(_, _) | Self::ReduceCheck() => false,
         }
     }
 }

@@ -19,7 +19,7 @@ pub fn translate_match<'a>(
     function_index: &impl FunctionSignatureIndex,
     match_: &typeql::query::stage::Match,
 ) -> Result<BlockBuilder<'a>, RepresentationError> {
-    let mut builder = Block::builder(context.next_block_context());
+    let mut builder = Block::builder(context.new_block_builder_context());
     add_patterns(function_index, &mut builder.conjunction_mut(), &match_.patterns)?;
     Ok(builder)
 }

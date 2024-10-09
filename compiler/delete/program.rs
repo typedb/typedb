@@ -11,9 +11,9 @@ use encoding::graph::type_::Kind;
 use ir::pattern::{constraint::Constraint, Vertex};
 
 use crate::{
+    annotation::type_annotations::TypeAnnotations,
     delete::instructions::{ConnectionInstruction, Has, RolePlayer, ThingInstruction},
     insert::{get_thing_source, program::collect_role_type_bindings, ThingSource, TypeSource, WriteCompilationError},
-    match_::inference::type_annotations::TypeAnnotations,
     VariablePosition,
 };
 

@@ -47,7 +47,7 @@ use ir::{
 #[test]
 fn build_program_with_functions() {
     let mut context = TranslationContext::new();
-    let mut builder = Block::builder(context.next_block_context());
+    let mut builder = Block::builder(context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
 
     let var_person = conjunction.get_or_declare_variable("person").unwrap();

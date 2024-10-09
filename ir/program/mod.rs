@@ -11,7 +11,7 @@ use encoding::value::value::Value;
 use error::typedb_error;
 use itertools::Itertools;
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
-use typeql::schema::definable::function::{Function, ReturnStream};
+use typeql::schema::definable::function::{Function, FunctionBlock, ReturnReduction, ReturnSingle, ReturnStream};
 
 use crate::{
     pattern::{
@@ -24,6 +24,7 @@ use crate::{
 };
 
 pub mod block;
+pub mod fetch;
 pub mod function;
 pub mod function_signature;
 pub mod modifier;
@@ -53,23 +54,35 @@ impl Error for FunctionReadError {
 }
 
 typedb_error!(
-    pub FunctionRepresentationError(component = "Function representation", prefix = "FRP") {
+    pub FunctionRepresentationError(component = "Function representation", prefix = "FNR") {
         FunctionArgumentUnused(
             1,
             "Function argument variable '{argument_variable}' is unused.\nSource:\n{declaration}",
             argument_variable: String,
             declaration: Function
         ),
-        ReturnVariableUnavailable(
+        StreamReturnVariableUnavailable(
             2,
-            "Function return variable '{return_variable}' is not available or defined.\nSource:\n{declaration:?}", // TODO: formatted
+            "Function return variable '{return_variable}' is not available or defined.\nSource:\n{declaration}", // TODO: formatted
             return_variable: String,
             declaration: ReturnStream
         ),
-        PatternDefinition(
+        SingleReturnVariableUnavailable(
             3,
+            "Function return variable '{return_variable}' is not available or defined.\nSource:\n{declaration}", // TODO: formatted
+            return_variable: String,
+            declaration: ReturnSingle
+        ),
+        BlockDefinition(
+            4,
             "Function pattern contains an error.\nSource:\n{declaration}",
-            declaration: Function,
+            declaration: FunctionBlock,
+            ( typedb_source : Box<RepresentationError>)
+        ),
+        ReturnReduction(
+            5,
+            "Error building representation of the return reduction.\nSource:\n{declaration}",
+            declaration: ReturnReduction,
             ( typedb_source : Box<RepresentationError>)
         ),
     }
@@ -244,9 +257,9 @@ impl ParameterRegistry {
         id
     }
 
-    pub(crate) fn register_fetch_key(&mut self, key: &str) -> ParameterID {
+    pub(crate) fn register_fetch_key(&mut self, key: String) -> ParameterID {
         let id = ParameterID { id: self.fetch_key_registry.len() };
-        let _prev = self.fetch_key_registry.insert(id, key.to_owned());
+        let _prev = self.fetch_key_registry.insert(id, key);
         debug_assert_eq!(_prev, None);
         id
     }

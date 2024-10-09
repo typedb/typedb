@@ -20,7 +20,7 @@ pub fn translate_insert(
     context: &mut TranslationContext,
     insert: &typeql::query::stage::Insert,
 ) -> Result<Block, RepresentationError> {
-    let mut builder = Block::builder(context.next_block_context());
+    let mut builder = Block::builder(context.new_block_builder_context());
     let function_index = HashMapFunctionSignatureIndex::empty();
     for statement in &insert.statements {
         add_statement(&function_index, &mut builder.conjunction_mut(), statement)?;
@@ -32,7 +32,7 @@ pub fn translate_delete(
     context: &mut TranslationContext,
     delete: &typeql::query::stage::Delete,
 ) -> Result<(Block, Vec<Variable>), RepresentationError> {
-    let mut builder = Block::builder(context.next_block_context());
+    let mut builder = Block::builder(context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let mut constraints = conjunction.constraints_mut();
     let mut deleted_concepts = Vec::new();

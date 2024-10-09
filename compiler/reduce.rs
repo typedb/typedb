@@ -13,11 +13,12 @@ use ir::pattern::IrID;
 use crate::VariablePosition;
 
 pub struct ReduceProgram {
-    pub reduction_inputs: Vec<ReduceInstruction<VariablePosition>>,
+    pub reductions: Vec<ReduceInstruction<VariablePosition>>,
     pub input_group_positions: Vec<VariablePosition>,
     pub output_row_mapping: HashMap<Variable, VariablePosition>, // output_row = (group_vars, reduce_outputs)
 }
 
+#[derive(Debug, Clone)]
 pub enum ReduceInstruction<ID: IrID> {
     Count,
     CountVar(ID),

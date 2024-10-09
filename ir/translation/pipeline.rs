@@ -4,12 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-/*
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */
-
 use answer::variable::Variable;
 use storage::snapshot::ReadableSnapshot;
 use typeql::query::stage::{Operator as TypeQLOperator, Stage as TypeQLStage, Stage};
@@ -17,6 +11,7 @@ use typeql::query::stage::{Operator as TypeQLOperator, Stage as TypeQLStage, Sta
 use crate::{
     program::{
         block::Block,
+        fetch::FetchObject,
         function::Function,
         function_signature::FunctionSignatureIndex,
         modifier::{Limit, Offset, Require, Select, Sort},
@@ -24,6 +19,7 @@ use crate::{
         ParameterRegistry, VariableRegistry,
     },
     translation::{
+        fetch::translate_fetch,
         function::translate_function,
         match_::translate_match,
         modifiers::{translate_limit, translate_offset, translate_require, translate_select, translate_sort},
@@ -42,32 +38,36 @@ pub struct TranslatedPipeline {
     pub value_parameters: ParameterRegistry,
 }
 
+impl TranslatedPipeline {
+    pub(crate) fn new(
+        translation_context: TranslationContext,
+        translated_preamble: Vec<Function>,
+        translated_stages: Vec<TranslatedStage>,
+    ) -> Self {
+        TranslatedPipeline {
+            translated_preamble,
+            translated_stages,
+            variable_registry: translation_context.variable_registry,
+            value_parameters: translation_context.parameters,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum TranslatedStage {
     Match { block: Block },
     Insert { block: Block },
     Delete { block: Block, deleted_variables: Vec<Variable> },
 
-    Fetch { map: TranslatedFetchMap },
+    Fetch { fetch_object: FetchObject },
 
     // ...
     Select(Select),
     Sort(Sort),
     Offset(Offset),
     Limit(Limit),
-    Reduce(Reduce),
     Require(Require),
-}
-
-#[derive(Debug, Clone)]
-pub(super) struct TranslatedFetchMap {
-    // map: HashMap<ConceptMapKey, TranslatedFetchValue>,
-}
-
-pub(super) enum TranslatedFetchValue {
-    Single(),
-    List(),
-    Map(TranslatedFetchMap),
+    Reduce(Reduce),
 }
 
 pub fn translate_pipeline(
@@ -103,7 +103,7 @@ pub(crate) fn translate_pipeline_stages(
 ) -> Result<Vec<TranslatedStage>, RepresentationError> {
     let mut translated_stages: Vec<TranslatedStage> = Vec::with_capacity(stages.len());
     for (i, stage) in stages.iter().enumerate() {
-        let translated = translate_stage(translation_context, all_function_signatures, stage)?;
+        let translated = translate_stage(snapshot, translation_context, all_function_signatures, stage)?;
         if matches!(translated, TranslatedStage::Fetch { .. }) && i != stages.len() - 1 {
             return Err(RepresentationError::NonTerminalFetch { declaration: stage.clone() });
         }
@@ -113,6 +113,7 @@ pub(crate) fn translate_pipeline_stages(
 }
 
 fn translate_stage(
+    snapshot: &impl ReadableSnapshot,
     translation_context: &mut TranslationContext,
     all_function_signatures: &impl FunctionSignatureIndex,
     typeql_stage: &TypeQLStage,
@@ -125,10 +126,9 @@ fn translate_stage(
         }
         TypeQLStage::Delete(delete) => translate_delete(translation_context, delete)
             .map(|(block, deleted_variables)| TranslatedStage::Delete { block, deleted_variables }),
-        TypeQLStage::Fetch(fetch) => {
-            // translate_fetch(translation_context, fetch)
-            todo!()
-        }
+        TypeQLStage::Fetch(fetch) => translate_fetch(snapshot, translation_context, all_function_signatures, fetch)
+            .map(|translated| TranslatedStage::Fetch { fetch_object: translated })
+            .map_err(|err| RepresentationError::FetchRepresentation { typedb_source: err }),
         TypeQLStage::Operator(modifier) => match modifier {
             TypeQLOperator::Select(select) => {
                 translate_select(translation_context, select).map(|filter| TranslatedStage::Select(filter))

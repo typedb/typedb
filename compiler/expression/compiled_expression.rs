@@ -10,6 +10,7 @@ use ir::pattern::ParameterID;
 
 use crate::expression::instructions::op_codes::ExpressionOpCode;
 
+#[derive(Debug, Clone)]
 pub struct CompiledExpression {
     pub(super) instructions: Vec<ExpressionOpCode>,
     pub(super) variables: Vec<Variable>,

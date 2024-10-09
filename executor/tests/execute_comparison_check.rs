@@ -11,11 +11,9 @@ use std::{
 };
 
 use compiler::{
+    annotation::{
+    },
     match_::{
-        inference::{
-            annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-            type_inference::infer_types_for_match_block,
-        },
         instructions::{thing::IsaInstruction, ConstraintInstruction, Inputs},
         planner::{
             pattern_plan::{IntersectionProgram, MatchProgram, Program},
@@ -24,6 +22,8 @@ use compiler::{
     },
     VariablePosition,
 };
+use compiler::annotation::function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions};
+use compiler::annotation::match_inference::infer_types;
 use concept::type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
@@ -75,7 +75,7 @@ fn attribute_equality() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_age_a = conjunction.get_or_declare_variable("a").unwrap();
     let var_age_b = conjunction.get_or_declare_variable("b").unwrap();
@@ -92,14 +92,18 @@ fn attribute_equality() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 

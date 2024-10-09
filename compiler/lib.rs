@@ -11,12 +11,14 @@ use std::fmt::{Display, Formatter};
 
 use ir::pattern::IrID;
 
+pub mod annotation;
 pub mod delete;
 pub mod expression;
 pub mod fetch;
 pub mod insert;
 pub mod match_;
 pub mod modifiers;
+mod optimisation;
 pub mod reduce;
 
 macro_rules! filter_variants {

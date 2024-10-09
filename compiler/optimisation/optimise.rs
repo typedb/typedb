@@ -4,10 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-type Program = (); // We eliminated program
-pub fn apply_optimisations(_program: &mut Program) {
+use crate::annotation::pipeline::AnnotatedPipeline;
 
-    // apply optimisation passes through the program
+pub fn apply_optimisations(_program: &mut AnnotatedPipeline) {
+
+    // apply optimisation passes through pipeline, within stages and across stages
 
     // 1. apply role player indexing
 

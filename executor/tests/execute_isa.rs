@@ -10,11 +10,12 @@ use std::{
 };
 
 use compiler::{
+    self,
+    annotation::{
+        function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+        match_inference::infer_types,
+    },
     match_::{
-        inference::{
-            annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-            type_inference::infer_types_for_match_block,
-        },
         instructions::{
             thing::{IsaInstruction, IsaReverseInstruction},
             ConstraintInstruction, Inputs,
@@ -81,7 +82,7 @@ fn traverse_isa_unbounded_sorted_thing() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_dog_type = conjunction.get_or_declare_variable("dog_type").unwrap();
     let var_dog = conjunction.get_or_declare_variable("dog").unwrap();
@@ -93,14 +94,18 @@ fn traverse_isa_unbounded_sorted_thing() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -152,7 +157,7 @@ fn traverse_isa_unbounded_sorted_type() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_dog_type = conjunction.get_or_declare_variable("dog_type").unwrap();
     let var_dog = conjunction.get_or_declare_variable("dog").unwrap();
@@ -164,14 +169,18 @@ fn traverse_isa_unbounded_sorted_type() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -223,7 +232,7 @@ fn traverse_isa_bounded_thing() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_type_from = conjunction.get_or_declare_variable("t").unwrap();
     let var_type_to = conjunction.get_or_declare_variable("u").unwrap();
@@ -238,14 +247,18 @@ fn traverse_isa_bounded_thing() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -314,7 +327,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_dog_type = conjunction.get_or_declare_variable("dog_type").unwrap();
     let var_dog = conjunction.get_or_declare_variable("dog").unwrap();
@@ -326,14 +339,18 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -385,7 +402,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_dog_type = conjunction.get_or_declare_variable("dog_type").unwrap();
     let var_dog = conjunction.get_or_declare_variable("dog").unwrap();
@@ -397,14 +414,18 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -456,7 +477,7 @@ fn traverse_isa_reverse_bounded_type_exact() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_thing_from = conjunction.get_or_declare_variable("x").unwrap();
     let var_thing_to = conjunction.get_or_declare_variable("y").unwrap();
@@ -471,14 +492,18 @@ fn traverse_isa_reverse_bounded_type_exact() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -546,7 +571,7 @@ fn traverse_isa_reverse_bounded_type_subtype() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_thing_from = conjunction.get_or_declare_variable("x").unwrap();
     let var_thing_to = conjunction.get_or_declare_variable("y").unwrap();
@@ -561,14 +586,18 @@ fn traverse_isa_reverse_bounded_type_subtype() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -637,7 +666,7 @@ fn traverse_isa_reverse_fixed_type_exact() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_thing = conjunction.get_or_declare_variable("x").unwrap();
 
@@ -648,14 +677,18 @@ fn traverse_isa_reverse_fixed_type_exact() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -708,7 +741,7 @@ fn traverse_isa_reverse_fixed_type_subtype() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_thing = conjunction.get_or_declare_variable("x").unwrap();
 
@@ -722,14 +755,18 @@ fn traverse_isa_reverse_fixed_type_subtype() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 

@@ -11,11 +11,11 @@ use std::{
 };
 
 use compiler::{
+    annotation::{
+        function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+        match_inference::infer_types,
+    },
     match_::{
-        inference::{
-            annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-            type_inference::infer_types_for_match_block,
-        },
         instructions::{
             thing::{IsaReverseInstruction, LinksInstruction, LinksReverseInstruction},
             ConstraintInstruction, Inputs,
@@ -181,7 +181,7 @@ fn traverse_links_unbounded_sorted_from() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
@@ -219,14 +219,18 @@ fn traverse_links_unbounded_sorted_from() {
     let entry = builder.finish();
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -296,7 +300,7 @@ fn traverse_links_unbounded_sorted_to() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -323,14 +327,18 @@ fn traverse_links_unbounded_sorted_to() {
     let entry = builder.finish();
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -385,7 +393,7 @@ fn traverse_links_bounded_relation() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -417,14 +425,18 @@ fn traverse_links_bounded_relation() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -491,7 +503,7 @@ fn traverse_links_bounded_relation_player() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -524,14 +536,18 @@ fn traverse_links_bounded_relation_player() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -610,7 +626,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -638,14 +654,19 @@ fn traverse_links_reverse_unbounded_sorted_from() {
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
+    let variable_registry = &translation_context.variable_registry;
+    let snapshot1 = &*snapshot;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
+        snapshot1,
         &entry,
-        &translation_context.variable_registry,
-        &*snapshot,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -699,7 +720,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -727,14 +748,19 @@ fn traverse_links_reverse_unbounded_sorted_to() {
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
+    let variable_registry = &translation_context.variable_registry;
+    let snapshot1 = &*snapshot;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
+        snapshot1,
         &entry,
-        &translation_context.variable_registry,
-        &*snapshot,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -788,7 +814,7 @@ fn traverse_links_reverse_bounded_player() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -817,14 +843,18 @@ fn traverse_links_reverse_bounded_player() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -890,7 +920,7 @@ fn traverse_links_reverse_bounded_player_relation() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.next_block_context());
+    let mut builder = Block::builder(translation_context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -923,14 +953,18 @@ fn traverse_links_reverse_bounded_player_relation() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
-        &entry,
-        &translation_context.variable_registry,
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
         &snapshot,
+        &entry,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 

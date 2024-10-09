@@ -15,7 +15,7 @@ use crate::{
 
 mod constraints;
 mod expression;
-mod fetch;
+pub mod fetch;
 pub mod function;
 pub mod literal;
 pub mod match_;
@@ -25,10 +25,10 @@ pub mod reduce;
 pub mod tokens;
 pub mod writes;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TranslationContext {
     pub variable_registry: VariableRegistry, // TODO: Unpub
-    pub visible_variables: HashMap<String, Variable>,
+    visible_variables: HashMap<String, Variable>,
     pub parameters: ParameterRegistry,
 }
 
@@ -41,7 +41,7 @@ impl TranslationContext {
         }
     }
 
-    pub fn next_block_context(&mut self) -> BlockBuilderContext<'_> {
+    pub fn new_block_builder_context(&mut self) -> BlockBuilderContext<'_> {
         let Self { variable_registry, visible_variables, parameters } = self;
         BlockBuilderContext::new(variable_registry, visible_variables, parameters)
     }
@@ -54,5 +54,9 @@ impl TranslationContext {
         reducer: Reducer,
     ) -> Variable {
         self.variable_registry.register_reduce_output_variable(name, variable_category, is_optional, reducer)
+    }
+
+    pub fn get_variable(&self, variable: &str) -> Option<Variable> {
+        self.visible_variables.get(variable).cloned()
     }
 }

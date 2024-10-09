@@ -26,9 +26,9 @@ use ir::{
 use itertools::Itertools;
 
 use crate::{
+    annotation::type_annotations::TypeAnnotations,
     expression::compiled_expression::CompiledExpression,
     match_::{
-        inference::type_annotations::TypeAnnotations,
         instructions::{
             thing::{
                 HasInstruction, HasReverseInstruction, IsaInstruction, IsaReverseInstruction, LinksInstruction,

@@ -49,6 +49,7 @@ pub trait IrID: Copy + fmt::Display + Hash + Eq + PartialEq + Ord + PartialOrd +
 
 impl IrID for Variable {}
 
+// TODO: rename to 'Identifier' in lieu of a better name
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Vertex<ID> {
     Variable(ID),

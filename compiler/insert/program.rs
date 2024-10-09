@@ -18,13 +18,13 @@ use ir::{
 use itertools::Itertools;
 
 use crate::{
+    annotation::type_annotations::TypeAnnotations,
     filter_variants,
     insert::{
         get_kinds_from_annotations, get_thing_source,
         instructions::{ConceptInstruction, ConnectionInstruction, Has, PutAttribute, PutObject, RolePlayer},
         ThingSource, TypeSource, ValueSource, VariableSource, WriteCompilationError,
     },
-    match_::inference::type_annotations::TypeAnnotations,
     VariablePosition,
 };
 

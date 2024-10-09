@@ -6,7 +6,11 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use compiler::{match_::planner::program_plan::ProgramPlan, VariablePosition};
+use compiler::{
+    annotation::pipeline::{annotate_pipeline, AnnotatedPipeline},
+    match_::planner::program_plan::ProgramPlan,
+    VariablePosition,
+};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::pipeline::{
     delete::DeleteStageExecutor,
@@ -28,7 +32,6 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
 
 use crate::{
-    annotation::{infer_types_for_pipeline, AnnotatedPipeline},
     compilation::{compile_pipeline, CompiledPipeline, CompiledStage},
     define,
     error::QueryError,
@@ -77,7 +80,7 @@ impl QueryManager {
             .get_annotated_functions(snapshot.as_ref(), &type_manager)
             .map_err(|err| QueryError::FunctionRetrieval { typedb_source: err })?;
 
-        let AnnotatedPipeline { annotated_preamble, annotated_stages } = infer_types_for_pipeline(
+        let AnnotatedPipeline { annotated_preamble, annotated_stages } = annotate_pipeline(
             snapshot.as_ref(),
             type_manager,
             &annotated_functions,
@@ -85,7 +88,8 @@ impl QueryManager {
             &value_parameters,
             translated_preamble,
             translated_stages,
-        )?;
+        )
+        .map_err(|err| QueryError::Annotation { typedb_source: err })?;
 
         // 3: Compile
         let variable_registry = Arc::new(variable_registry);
@@ -172,7 +176,7 @@ impl QueryManager {
             }
         };
 
-        let annotated_pipeline = infer_types_for_pipeline(
+        let annotated_pipeline = annotate_pipeline(
             &snapshot,
             type_manager,
             &annotated_functions,
@@ -184,7 +188,7 @@ impl QueryManager {
 
         let AnnotatedPipeline { annotated_preamble, annotated_stages } = match annotated_pipeline {
             Ok(annotated_pipeline) => annotated_pipeline,
-            Err(err) => return Err((snapshot, err)),
+            Err(err) => return Err((snapshot, QueryError::Annotation { typedb_source: err })),
         };
 
         // // 3: Compile

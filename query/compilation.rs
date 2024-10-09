@@ -11,17 +11,21 @@ use std::{
 
 use answer::variable::Variable;
 use compiler::{
+    annotation::{
+        function::{AnnotatedFunction, AnnotatedUnindexedFunctions},
+        pipeline::AnnotatedStage,
+    },
     delete::program::DeleteProgram,
     insert::program::InsertProgram,
-    match_::{inference::annotated_functions::AnnotatedUnindexedFunctions, planner::pattern_plan::MatchProgram},
+    match_::planner::pattern_plan::MatchProgram,
     modifiers::{LimitProgram, OffsetProgram, RequireProgram, SelectProgram, SortProgram},
     reduce::{ReduceInstruction, ReduceProgram},
     VariablePosition,
 };
 use concept::thing::statistics::Statistics;
-use ir::program::{function::Function, VariableRegistry};
+use ir::program::VariableRegistry;
 
-use crate::{annotation::AnnotatedStage, error::QueryError};
+use crate::error::QueryError;
 
 pub struct CompiledPipeline {
     pub(super) compiled_functions: Vec<CompiledFunction>,
@@ -102,7 +106,7 @@ pub(super) fn compile_pipeline(
 fn compile_function(
     statistics: &Statistics,
     variable_registry: Arc<VariableRegistry>,
-    function: &Function,
+    function: &AnnotatedFunction,
 ) -> Result<CompiledFunction, QueryError> {
     todo!()
 }
@@ -185,13 +189,13 @@ fn compile_stage(
                 output_row_mapping.insert(variable.clone(), VariablePosition::new(input_group_positions.len() as u32));
                 input_group_positions.push(input_variables.get(variable).unwrap().clone());
             }
-            let mut reduction_inputs = Vec::with_capacity(reduce.assigned_reductions.len());
+            let mut reductions = Vec::with_capacity(reduce.assigned_reductions.len());
             for ((assigned_variable, _), reducer_on_variable) in
                 zip(reduce.assigned_reductions.iter(), typed_reducers.iter())
             {
                 output_row_mapping.insert(
                     assigned_variable.clone(),
-                    VariablePosition::new((input_group_positions.len() + reduction_inputs.len()) as u32),
+                    VariablePosition::new((input_group_positions.len() + reductions.len()) as u32),
                 );
                 let reducer_on_position = match &reducer_on_variable {
                     ReduceInstruction::Count => ReduceInstruction::Count,
@@ -235,9 +239,16 @@ fn compile_stage(
                         ReduceInstruction::StdDouble(input_variables.get(variable).unwrap().clone())
                     }
                 };
-                reduction_inputs.push(reducer_on_position);
+                reductions.push(reducer_on_position);
             }
-            Ok(CompiledStage::Reduce(ReduceProgram { reduction_inputs, input_group_positions, output_row_mapping }))
+            Ok(CompiledStage::Reduce(ReduceProgram {
+                reductions: reductions,
+                input_group_positions,
+                output_row_mapping,
+            }))
+        }
+        AnnotatedStage::Fetch { .. } => {
+            todo!()
         }
     }
 }

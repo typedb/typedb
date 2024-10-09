@@ -13,6 +13,7 @@ use std::{error::Error, fmt};
 
 use error::typedb_error;
 use typeql::{
+    query::stage::reduce::Reducer,
     statement::{InIterable, StructDeconstruct},
     token,
     value::StringLiteral,
@@ -21,6 +22,7 @@ use typeql::{
 use crate::{
     pattern::{expression::ExpressionDefinitionError, variable_category::VariableCategory},
     program::{FunctionReadError, FunctionRepresentationError},
+    translation::fetch::FetchRepresentationError,
 };
 
 pub mod pattern;
@@ -131,23 +133,34 @@ typedb_error!(
             variable_name: String,
             declaration: typeql::query::pipeline::stage::Stage
         ),
-        LabelWithKind(
+        ReduceVariableNotAvailable(
             19,
+            "The variable '{variable_name}' was not available in for use in the reduce.\nSource:\n{declaration}",
+            variable_name: String,
+            declaration: Reducer
+        ),
+        LabelWithKind(
+            20,
             "Specifying a kind on a label is not allowed.\nSource:\n{declaration}",
             declaration: typeql::statement::Type
         ),
         LabelWithLabel(
-            20,
+            30,
             "Specifying a label constraint on a label is not allowed.\nSource:\n{declaration}",
             declaration: typeql::Label
         ),
         UnrecognisedClause(
-            21,
+            22,
             "Clause type not recognised.\nSource:\n{declaration}",
             declaration: typeql::query::stage::Stage
         ),
+        FetchRepresentation(
+            23,
+            "Error building representation of fetch clause.",
+            ( typedb_source : FetchRepresentationError )
+        ),
         NonTerminalFetch(
-            22,
+            24,
             "Fetch clauses must be the final clause in a query pipeline.\nSource:\n{declaration}",
             declaration: typeql::query::stage::Stage
         ),

@@ -34,16 +34,13 @@ use ir::{
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::match_::inference::{
-    annotated_functions::{AnnotatedFunctions, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-    pattern_type_inference::{
-        NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
-    },
-    type_annotations::FunctionAnnotations,
+use crate::annotation::{
+    function::{AnnotatedFunction, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+    match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations},
     TypeInferenceError,
 };
 
-pub struct TypeSeeder<'this, Snapshot: ReadableSnapshot> {
+pub struct TypeGraphSeedingContext<'this, Snapshot: ReadableSnapshot> {
     snapshot: &'this Snapshot,
     type_manager: &'this TypeManager,
     schema_functions: &'this IndexedAnnotatedFunctions,
@@ -51,7 +48,7 @@ pub struct TypeSeeder<'this, Snapshot: ReadableSnapshot> {
     variable_registry: &'this VariableRegistry,
 }
 
-impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
+impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot> {
     pub(crate) fn new(
         snapshot: &'this Snapshot,
         type_manager: &'this TypeManager,
@@ -59,91 +56,85 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         local_functions: Option<&'this AnnotatedUnindexedFunctions>,
         variable_registry: &'this VariableRegistry,
     ) -> Self {
-        TypeSeeder { snapshot, type_manager, schema_functions, local_functions, variable_registry }
+        TypeGraphSeedingContext { snapshot, type_manager, schema_functions, local_functions, variable_registry }
     }
 
-    fn get_function_annotations(&self, function_id: FunctionID) -> Option<&FunctionAnnotations> {
+    fn get_annotated_function(&self, function_id: FunctionID) -> Option<&AnnotatedFunction> {
         match function_id {
             FunctionID::Schema(definition_key) => {
-                debug_assert!(self.schema_functions.get_annotations(definition_key.clone()).is_some());
-                self.schema_functions.get_annotations(definition_key.clone())
+                // debug_assert!(self.schema_functions.get_annotations(definition_key.clone()).is_some());
+                // self.schema_functions.get_annotations(definition_key.clone())
+                todo!()
             }
-            FunctionID::Preamble(index) => self.local_functions?.get_annotations(index),
+            FunctionID::Preamble(index) => {
+                // self.local_functions?.get_annotations(index)
+                todo!()
+            }
         }
     }
 
-    fn get_function_ir(&self, function_id: FunctionID) -> Option<&Function> {
-        match function_id {
-            FunctionID::Schema(definition_key) => {
-                debug_assert!(self.schema_functions.get_function(definition_key.clone()).is_some());
-                self.schema_functions.get_function(definition_key.clone())
-            }
-            FunctionID::Preamble(index) => self.local_functions?.get_function(index),
-        }
-    }
-
-    pub(crate) fn seed_types<'graph>(
+    pub(crate) fn create_graph<'graph>(
         &self,
         context: &BlockContext,
         upstream_annotations: &BTreeMap<Variable, Arc<BTreeSet<TypeAnnotation>>>,
         conjunction: &'graph Conjunction,
     ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
-        let mut tig = self.build_recursive(context, conjunction);
+        let mut graph = self.build_recursive(context, conjunction);
         // Pre-seed with upstream variable annotations.
         for variable in context.referenced_variables() {
             if let Some(annotations) = upstream_annotations.get(&variable) {
-                tig.vertices.add_or_intersect(&Vertex::Variable(variable), Cow::Borrowed(annotations));
+                graph.vertices.add_or_intersect(&Vertex::Variable(variable), Cow::Borrowed(annotations));
             }
         }
         // Advanced TODO: Copying upstream binary constraints as schema constraints.
-        self.seed_types_impl(&mut tig, context, &VertexAnnotations::default())?;
+        self.seed_types(&mut graph, context, &VertexAnnotations::default())?;
 
         debug_assert!(conjunction
             .constraints()
             .iter()
             .flat_map(|constraint| constraint.vertices())
             .unique()
-            .all(|vertex| tig.vertices.contains_key(vertex)));
+            .all(|vertex| graph.vertices.contains_key(vertex)));
 
-        Ok(tig)
+        Ok(graph)
     }
 
-    pub(crate) fn seed_types_impl(
+    pub(crate) fn seed_types(
         &self,
-        tig: &mut TypeInferenceGraph<'_>,
+        graph: &mut TypeInferenceGraph<'_>,
         context: &BlockContext,
         parent_vertices: &VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
         for (vertex, parent_annotations) in parent_vertices.iter() {
-            tig.vertices.insert(vertex.clone(), parent_annotations.clone());
+            graph.vertices.insert(vertex.clone(), parent_annotations.clone());
         }
 
         // Seed vertices in root & disjunctions
-        self.seed_vertex_annotations_from_type_and_function_return(tig)?;
-        self.annotate_fixed_vertices(tig)?;
+        self.seed_vertex_annotations_from_type_and_function_return(graph)?;
+        self.annotate_fixed_vertices(graph)?;
         let mut some_vertex_was_directly_annotated = true;
         while some_vertex_was_directly_annotated {
             let mut changed = true;
             while changed {
                 changed = self
-                    .propagate_vertex_annotations(tig)
+                    .propagate_vertex_annotations(graph)
                     .map_err(|source| TypeInferenceError::ConceptRead { source })?;
             }
             some_vertex_was_directly_annotated = self
-                .annotate_some_unannotated_vertex(tig, context)
+                .annotate_some_unannotated_vertex(graph, context)
                 .map_err(|source| TypeInferenceError::ConceptRead { source })?;
         }
 
         // Seed edges in root & disjunctions
-        self.seed_edges(tig).map_err(|source| TypeInferenceError::ConceptRead { source })?;
+        self.seed_edges(graph).map_err(|source| TypeInferenceError::ConceptRead { source })?;
 
         // Now we recurse into the nested negations & optionals
-        let TypeInferenceGraph { vertices, nested_negations, nested_optionals, .. } = tig;
-        for nested_tig in nested_negations {
-            self.seed_types_impl(nested_tig, context, vertices)?;
+        let TypeInferenceGraph { vertices, nested_negations, nested_optionals, .. } = graph;
+        for nested_graph in nested_negations {
+            self.seed_types(nested_graph, context, vertices)?;
         }
-        for nested_tig in nested_optionals {
-            self.seed_types_impl(nested_tig, context, vertices)?;
+        for nested_graph in nested_optionals {
+            self.seed_types(nested_graph, context, vertices)?;
         }
         Ok(())
     }
@@ -186,20 +177,20 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         parent_conjunction: &'conj Conjunction,
         disjunction: &'conj Disjunction,
     ) -> NestedTypeInferenceGraphDisjunction<'conj> {
-        let nested_tigs =
+        let nested_graphs =
             disjunction.conjunctions().iter().map(|conj| self.build_recursive(context, conj)).collect_vec();
-        let shared_variables: BTreeSet<Variable> = nested_tigs
+        let shared_variables: BTreeSet<Variable> = nested_graphs
             .iter()
-            .flat_map(|nested_tig| {
+            .flat_map(|nested_graph| {
                 Iterator::chain(
-                    self.local_variables(context, nested_tig.conjunction.scope_id()),
-                    nested_tig.nested_disjunctions.iter().flat_map(|disj| disj.shared_variables.iter().copied()),
+                    self.local_variables(context, nested_graph.conjunction.scope_id()),
+                    nested_graph.nested_disjunctions.iter().flat_map(|disj| disj.shared_variables.iter().copied()),
                 )
                 .filter(|variable| context.is_variable_available(parent_conjunction.scope_id(), *variable))
             })
             .collect();
         NestedTypeInferenceGraphDisjunction {
-            disjunction: nested_tigs,
+            disjunction: nested_graphs,
             shared_variables,
             shared_vertex_annotations: VertexAnnotations::default(),
         }
@@ -208,11 +199,11 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
     // Phase 1: Collect all type & function return annotations
     fn seed_vertex_annotations_from_type_and_function_return(
         &self,
-        tig: &mut TypeInferenceGraph<'_>,
+        graph: &mut TypeInferenceGraph<'_>,
     ) -> Result<(), TypeInferenceError> {
         // Get vertex annotations from Type & Function returns
-        let TypeInferenceGraph { vertices, .. } = tig;
-        for constraint in tig.conjunction.constraints() {
+        let TypeInferenceGraph { vertices, .. } = graph;
+        for constraint in graph.conjunction.constraints() {
             match constraint {
                 Constraint::Kind(c) => c.apply(self, vertices)?,
                 Constraint::Label(c) => c.apply(self, vertices)?,
@@ -229,22 +220,22 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
                 | Constraint::Comparison(_) => (),
             }
         }
-        for nested_tig in tig.nested_disjunctions.iter_mut().flat_map(|nested| &mut nested.disjunction) {
-            self.seed_vertex_annotations_from_type_and_function_return(nested_tig)?;
+        for nested_graph in graph.nested_disjunctions.iter_mut().flat_map(|nested| &mut nested.disjunction) {
+            self.seed_vertex_annotations_from_type_and_function_return(nested_graph)?;
         }
         Ok(())
     }
 
-    fn annotate_fixed_vertices(&self, tig: &mut TypeInferenceGraph<'_>) -> Result<(), TypeInferenceError> {
-        for vertex in self.fixed_vertices(tig.conjunction.constraints()) {
+    fn annotate_fixed_vertices(&self, graph: &mut TypeInferenceGraph<'_>) -> Result<(), TypeInferenceError> {
+        for vertex in self.fixed_vertices(graph.conjunction.constraints()) {
             match vertex {
                 Vertex::Variable(_) => unreachable!("variable in fixed vertices"),
                 Vertex::Label(label) => {
-                    if !tig.vertices.contains_key(vertex) {
+                    if !graph.vertices.contains_key(vertex) {
                         let annotation_opt = get_type_annotation_from_label(self.snapshot, self.type_manager, label)
                             .map_err(|source| TypeInferenceError::ConceptRead { source })?;
                         if let Some(annotation) = annotation_opt {
-                            tig.vertices.insert(vertex.clone(), BTreeSet::from([annotation]));
+                            graph.vertices.insert(vertex.clone(), BTreeSet::from([annotation]));
                         } else {
                             return Err(TypeInferenceError::LabelNotResolved { name: label.to_string() });
                         }
@@ -255,12 +246,12 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
                                 get_type_annotation_from_label(self.snapshot, self.type_manager, label)
                                     .map_err(|source| TypeInferenceError::ConceptRead { source })?;
                             debug_assert_ne!(annotation_opt, None);
-                            debug_assert_eq!(tig.vertices[vertex], BTreeSet::from([annotation_opt.unwrap()]));
+                            debug_assert_eq!(graph.vertices[vertex], BTreeSet::from([annotation_opt.unwrap()]));
                         }
                     }
                 }
                 &Vertex::Parameter(_) => {
-                    assert!(!tig.vertices.contains_key(vertex));
+                    assert!(!graph.vertices.contains_key(vertex));
                 }
             }
         }
@@ -284,25 +275,25 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
 
     fn annotate_some_unannotated_vertex(
         &self,
-        tig: &mut TypeInferenceGraph<'_>,
+        graph: &mut TypeInferenceGraph<'_>,
         context: &BlockContext,
     ) -> Result<bool, ConceptReadError> {
-        let unannotated_var = self.local_variables(context, tig.conjunction.scope_id()).find(|&var| {
+        let unannotated_var = self.local_variables(context, graph.conjunction.scope_id()).find(|&var| {
             let vertex = Vertex::Variable(var);
-            !tig.vertices.contains_key(&vertex)
+            !graph.vertices.contains_key(&vertex)
         });
         if let Some(var) = unannotated_var {
             let annotations = self.get_unbounded_type_annotations(
                 self.variable_registry.get_variable_category(var).unwrap_or(VariableCategory::Type),
             )?;
             let vertex = Vertex::Variable(var);
-            tig.vertices.insert(vertex, annotations);
+            graph.vertices.insert(vertex, annotations);
             Ok(true)
         } else {
             let mut any = false;
-            for disj in &mut tig.nested_disjunctions {
-                for nested_tig in &mut disj.disjunction {
-                    any |= self.annotate_some_unannotated_vertex(nested_tig, context)?;
+            for disj in &mut graph.nested_disjunctions {
+                for nested_graph in &mut disj.disjunction {
+                    any |= self.annotate_some_unannotated_vertex(nested_graph, context)?;
                 }
             }
             Ok(any)
@@ -344,15 +335,15 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
     }
 
     // Phase 2: Use constraints to infer annotations on other vertices
-    fn propagate_vertex_annotations(&self, tig: &mut TypeInferenceGraph<'_>) -> Result<bool, ConceptReadError> {
+    fn propagate_vertex_annotations(&self, graph: &mut TypeInferenceGraph<'_>) -> Result<bool, ConceptReadError> {
         let mut is_modified = false;
-        for c in tig.conjunction.constraints() {
-            is_modified |= self.try_propagating_vertex_annotation(c, &mut tig.vertices)?;
+        for c in graph.conjunction.constraints() {
+            is_modified |= self.try_propagating_vertex_annotation(c, &mut graph.vertices)?;
         }
 
         // Propagate to & from nested disjunctions
-        for nested in &mut tig.nested_disjunctions {
-            is_modified |= self.reconcile_nested_disjunction(nested, &mut tig.vertices)?;
+        for nested in &mut graph.nested_disjunctions {
+            is_modified |= self.reconcile_nested_disjunction(nested, &mut graph.vertices)?;
         }
 
         Ok(is_modified)
@@ -419,15 +410,15 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         for &variable in nested.shared_variables.iter() {
             let vertex = Vertex::Variable(variable);
             if let Some(parent_annotations) = parent_vertices.get_mut(&vertex) {
-                for nested_tig in &mut nested.disjunction {
-                    nested_tig.vertices.add_or_intersect(&vertex, Cow::Borrowed(parent_annotations));
+                for nested_graph in &mut nested.disjunction {
+                    nested_graph.vertices.add_or_intersect(&vertex, Cow::Borrowed(parent_annotations));
                 }
             }
         }
 
         // Propagate it within the child & recursively into nested
-        for nested_tig in &mut nested.disjunction {
-            something_changed |= self.propagate_vertex_annotations(nested_tig)?;
+        for nested_graph in &mut nested.disjunction {
+            something_changed |= self.propagate_vertex_annotations(nested_graph)?;
         }
 
         // Update shared variables of the disjunction
@@ -462,11 +453,11 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         disjunction: &[TypeInferenceGraph<'_>],
         vertex: &Vertex<Variable>,
     ) -> Option<BTreeSet<TypeAnnotation>> {
-        if disjunction.iter().all(|nested_tig| nested_tig.vertices.contains_key(vertex)) {
+        if disjunction.iter().all(|nested_graph| nested_graph.vertices.contains_key(vertex)) {
             Some(
                 disjunction
                     .iter()
-                    .flat_map(|nested_tig| nested_tig.vertices.get(vertex).unwrap().iter().cloned())
+                    .flat_map(|nested_graph| nested_graph.vertices.get(vertex).unwrap().iter().cloned())
                     .collect(),
             )
         } else {
@@ -475,8 +466,8 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
     }
 
     // Phase 3: seed edges
-    fn seed_edges(&self, tig: &mut TypeInferenceGraph<'_>) -> Result<(), ConceptReadError> {
-        let TypeInferenceGraph { conjunction, edges, vertices, .. } = tig;
+    fn seed_edges(&self, graph: &mut TypeInferenceGraph<'_>) -> Result<(), ConceptReadError> {
+        let TypeInferenceGraph { conjunction, edges, vertices, .. } = graph;
         for constraint in conjunction.constraints() {
             match constraint {
                 Constraint::Isa(isa) => edges.push(self.seed_edge(constraint, isa, vertices)?),
@@ -499,9 +490,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
                 | Constraint::Kind(_) => (), // Do nothing
             }
         }
-        for disj in &mut tig.nested_disjunctions {
-            for nested_tig in &mut disj.disjunction {
-                self.seed_edges(nested_tig)?;
+        for disj in &mut graph.nested_disjunctions {
+            for nested_graph in &mut disj.disjunction {
+                self.seed_edges(nested_graph)?;
             }
         }
         Ok(())
@@ -524,8 +515,8 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
 trait UnaryConstraint {
     fn apply<Snapshot: ReadableSnapshot>(
         &self,
-        seeder: &TypeSeeder<'_, Snapshot>,
-        tig_vertices: &mut VertexAnnotations,
+        seeder: &TypeGraphSeedingContext<'_, Snapshot>,
+        graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError>;
 }
 
@@ -550,8 +541,8 @@ pub(crate) fn get_type_annotation_from_label<Snapshot: ReadableSnapshot>(
 impl UnaryConstraint for Kind<Variable> {
     fn apply<Snapshot: ReadableSnapshot>(
         &self,
-        seeder: &TypeSeeder<'_, Snapshot>,
-        tig_vertices: &mut VertexAnnotations,
+        seeder: &TypeGraphSeedingContext<'_, Snapshot>,
+        graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
         let type_manager = &seeder.type_manager;
         let annotations = match self.kind() {
@@ -580,7 +571,7 @@ impl UnaryConstraint for Kind<Variable> {
                 .map(|t| TypeAnnotation::RoleType(t.clone()))
                 .collect(),
         };
-        tig_vertices.add_or_intersect(self.type_(), Cow::Owned(annotations));
+        graph_vertices.add_or_intersect(self.type_(), Cow::Owned(annotations));
         Ok(())
     }
 }
@@ -588,8 +579,8 @@ impl UnaryConstraint for Kind<Variable> {
 impl UnaryConstraint for Label<Variable> {
     fn apply<Snapshot: ReadableSnapshot>(
         &self,
-        seeder: &TypeSeeder<'_, Snapshot>,
-        tig_vertices: &mut VertexAnnotations,
+        seeder: &TypeGraphSeedingContext<'_, Snapshot>,
+        graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
         let annotation_opt = get_type_annotation_from_label(
             seeder.snapshot,
@@ -598,7 +589,7 @@ impl UnaryConstraint for Label<Variable> {
         )
         .map_err(|source| TypeInferenceError::ConceptRead { source })?;
         if let Some(annotation) = annotation_opt {
-            tig_vertices.add_or_intersect(self.left(), Cow::Owned(BTreeSet::from([annotation])));
+            graph_vertices.add_or_intersect(self.left(), Cow::Owned(BTreeSet::from([annotation])));
             Ok(())
         } else {
             Err(TypeInferenceError::LabelNotResolved { name: self.type_label().to_string() })
@@ -609,8 +600,8 @@ impl UnaryConstraint for Label<Variable> {
 impl UnaryConstraint for RoleName<Variable> {
     fn apply<Snapshot: ReadableSnapshot>(
         &self,
-        seeder: &TypeSeeder<'_, Snapshot>,
-        tig_vertices: &mut VertexAnnotations,
+        seeder: &TypeGraphSeedingContext<'_, Snapshot>,
+        graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
         let role_types_opt = seeder
             .type_manager
@@ -625,7 +616,7 @@ impl UnaryConstraint for RoleName<Variable> {
                     .map_err(|source| TypeInferenceError::ConceptRead { source })?;
                 annotations.extend(subtypes.into_iter().map(|subtype| TypeAnnotation::RoleType(subtype.clone())));
             }
-            tig_vertices.add_or_intersect(self.left(), Cow::Owned(annotations));
+            graph_vertices.add_or_intersect(self.left(), Cow::Owned(annotations));
             Ok(())
         } else {
             Err(TypeInferenceError::RoleNameNotResolved { name: self.name().to_string() })
@@ -636,22 +627,24 @@ impl UnaryConstraint for RoleName<Variable> {
 impl UnaryConstraint for FunctionCallBinding<Variable> {
     fn apply<Snapshot: ReadableSnapshot>(
         &self,
-        seeder: &TypeSeeder<'_, Snapshot>,
-        tig_vertices: &mut VertexAnnotations,
+        seeder: &TypeGraphSeedingContext<'_, Snapshot>,
+        graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
-        if let Some(callee_annotations) = seeder.get_function_annotations(self.function_call().function_id()) {
-            for (assigned_variable, return_annotation) in zip(self.assigned(), &callee_annotations.return_annotations) {
-                tig_vertices.add_or_intersect(assigned_variable, Cow::Borrowed(return_annotation));
-            }
+        if let Some(annotated_function) = seeder.get_annotated_function(self.function_call().function_id()) {
+            todo!();
+            // for (assigned_variable, return_annotation) in zip(self.assigned(), &annotated_function.return_annotations) {
+            //     graph_vertices.add_or_intersect(assigned_variable, Cow::Borrowed(return_annotation));
+            // }
 
-            let ir = seeder.get_function_ir(self.function_call().function_id()).unwrap();
-            for (caller_variable, &arg_index) in self.function_call().call_id_mapping() {
-                let arg_annotations = callee_annotations
-                    .block_annotations
-                    .vertex_annotations_of(&Vertex::Variable(ir.arguments()[arg_index]))
-                    .unwrap();
-                tig_vertices.add_or_intersect(caller_variable, Cow::Owned(arg_annotations.iter().cloned().collect()));
-            }
+            todo!()
+            // let ir = seeder.get_function_ir(self.function_call().function_id()).unwrap();
+            // for (caller_variable, &arg_index) in self.function_call().call_id_mapping() {
+            //     let arg_annotations = annotated_function
+            //         .block_annotations
+            //         .vertex_annotations_of(&Vertex::Variable(ir.arguments()[arg_index]))
+            //         .unwrap();
+            //     graph_vertices.add_or_intersect(caller_variable, Cow::Owned(arg_annotations.iter().cloned().collect()));
+            // }
         }
         Ok(())
     }
@@ -663,7 +656,7 @@ trait BinaryConstraint {
 
     fn annotate_left_to_right(
         &self,
-        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_types: &BTreeSet<TypeAnnotation>,
     ) -> Result<BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>, ConceptReadError> {
         let mut left_to_right = BTreeMap::new();
@@ -677,7 +670,7 @@ trait BinaryConstraint {
 
     fn annotate_right_to_left(
         &self,
-        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_types: &BTreeSet<TypeAnnotation>,
     ) -> Result<BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>, ConceptReadError> {
         let mut right_to_left = BTreeMap::new();
@@ -691,14 +684,14 @@ trait BinaryConstraint {
 
     fn annotate_left_to_right_for_type(
         &self,
-        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError>;
 
     fn annotate_right_to_left_for_type(
         &self,
-        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError>;
@@ -716,7 +709,7 @@ impl BinaryConstraint for Has<Variable> {
 
     fn annotate_left_to_right_for_type(
         &self,
-        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -736,7 +729,7 @@ impl BinaryConstraint for Has<Variable> {
 
     fn annotate_right_to_left_for_type(
         &self,
-        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -765,7 +758,7 @@ impl BinaryConstraint for Owns<Variable> {
 
     fn annotate_left_to_right_for_type(
         &self,
-        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -788,7 +781,7 @@ impl BinaryConstraint for Owns<Variable> {
 
     fn annotate_right_to_left_for_type(
         &self,
-        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -823,7 +816,7 @@ impl BinaryConstraint for Isa<Variable> {
 
     fn annotate_left_to_right_for_type(
         &self,
-        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -865,7 +858,7 @@ impl BinaryConstraint for Isa<Variable> {
 
     fn annotate_right_to_left_for_type(
         &self,
-        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -917,7 +910,7 @@ impl BinaryConstraint for Sub<Variable> {
 
     fn annotate_left_to_right_for_type(
         &self,
-        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -990,7 +983,7 @@ impl BinaryConstraint for Sub<Variable> {
 
     fn annotate_right_to_left_for_type(
         &self,
-        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -1090,7 +1083,7 @@ impl BinaryConstraint for Comparison<Variable> {
 
     fn annotate_left_to_right_for_type(
         &self,
-        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -1117,7 +1110,7 @@ impl BinaryConstraint for Comparison<Variable> {
 
     fn annotate_right_to_left_for_type(
         &self,
-        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -1162,7 +1155,7 @@ impl<'graph> BinaryConstraint for PlayerRoleEdge<'graph> {
 
     fn annotate_left_to_right_for_type(
         &self,
-        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -1185,7 +1178,7 @@ impl<'graph> BinaryConstraint for PlayerRoleEdge<'graph> {
 
     fn annotate_right_to_left_for_type(
         &self,
-        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -1220,7 +1213,7 @@ impl BinaryConstraint for Plays<Variable> {
 
     fn annotate_left_to_right_for_type(
         &self,
-        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -1243,7 +1236,7 @@ impl BinaryConstraint for Plays<Variable> {
 
     fn annotate_right_to_left_for_type(
         &self,
-        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -1278,7 +1271,7 @@ impl<'graph> BinaryConstraint for RelationRoleEdge<'graph> {
 
     fn annotate_left_to_right_for_type(
         &self,
-        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -1300,7 +1293,7 @@ impl<'graph> BinaryConstraint for RelationRoleEdge<'graph> {
 
     fn annotate_right_to_left_for_type(
         &self,
-        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -1332,7 +1325,7 @@ impl BinaryConstraint for Relates<Variable> {
 
     fn annotate_left_to_right_for_type(
         &self,
-        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -1354,7 +1347,7 @@ impl BinaryConstraint for Relates<Variable> {
 
     fn annotate_right_to_left_for_type(
         &self,
-        seeder: &TypeSeeder<'_, impl ReadableSnapshot>,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
@@ -1388,15 +1381,16 @@ pub mod tests {
     };
     use storage::snapshot::CommittableSnapshot;
 
-    use crate::match_::inference::{
-        annotated_functions::IndexedAnnotatedFunctions,
-        pattern_type_inference::{tests::expected_edge, TypeInferenceGraph, VertexAnnotations},
+    use crate::annotation::{
+        function::IndexedAnnotatedFunctions,
+        match_inference::{TypeInferenceGraph, VertexAnnotations},
         tests::{
             managers,
             schema_consts::{setup_types, LABEL_CAT, LABEL_NAME},
             setup_storage,
         },
-        type_seeder::TypeSeeder,
+        type_inference::tests::expected_edge,
+        type_seeder::TypeGraphSeedingContext,
     };
 
     #[test]
@@ -1413,7 +1407,7 @@ pub mod tests {
 
         // Case 1: $a isa cat, has animal-name $n;
         let mut translation_context = TranslationContext::new();
-        let mut builder = Block::builder(translation_context.next_block_context());
+        let mut builder = Block::builder(translation_context.new_block_builder_context());
         let mut conjunction = builder.conjunction_mut();
         let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
         let var_name = conjunction.get_or_declare_variable("name").unwrap();
@@ -1431,7 +1425,7 @@ pub mod tests {
         let conjunction = block.conjunction();
 
         let constraints = conjunction.constraints();
-        let expected_tig = TypeInferenceGraph {
+        let expected_graph = TypeInferenceGraph {
             conjunction,
             vertices: VertexAnnotations::from([
                 (var_animal.into(), BTreeSet::from([type_cat.clone()])),
@@ -1470,15 +1464,15 @@ pub mod tests {
 
         let snapshot = storage.clone().open_snapshot_write();
         let empty_function_cache = IndexedAnnotatedFunctions::empty();
-        let seeder = TypeSeeder::new(
+        let seeder = TypeGraphSeedingContext::new(
             &snapshot,
             &type_manager,
             &empty_function_cache,
             None,
             &translation_context.variable_registry,
         );
-        let tig = seeder.seed_types(block.scope_context(), &BTreeMap::new(), conjunction).unwrap();
-        assert_eq!(expected_tig, tig);
+        let graph = seeder.create_graph(block.scope_context(), &BTreeMap::new(), conjunction).unwrap();
+        assert_eq!(expected_graph, graph);
     }
 
     #[test]
@@ -1493,7 +1487,7 @@ pub mod tests {
 
         // Case 1: $a has $n;
         let mut translation_context = TranslationContext::new();
-        let mut builder = Block::builder(translation_context.next_block_context());
+        let mut builder = Block::builder(translation_context.new_block_builder_context());
         let mut conjunction = builder.conjunction_mut();
         let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
         let var_name = conjunction.get_or_declare_variable("name").unwrap();
@@ -1505,7 +1499,7 @@ pub mod tests {
         let conjunction = block.conjunction();
 
         let constraints = conjunction.constraints();
-        let mut expected_tig = TypeInferenceGraph {
+        let mut expected_graph = TypeInferenceGraph {
             conjunction,
             vertices: VertexAnnotations::from([
                 (var_animal.into(), BTreeSet::from([type_cat.clone(), type_dog.clone(), type_animal.clone()])),
@@ -1530,18 +1524,18 @@ pub mod tests {
 
         let snapshot = storage.clone().open_snapshot_write();
         let empty_function_cache = IndexedAnnotatedFunctions::empty();
-        let seeder = TypeSeeder::new(
+        let seeder = TypeGraphSeedingContext::new(
             &snapshot,
             &type_manager,
             &empty_function_cache,
             None,
             &translation_context.variable_registry,
         );
-        let tig = seeder.seed_types(block.scope_context(), &BTreeMap::new(), conjunction).unwrap();
-        if expected_tig != tig {
+        let graph = seeder.create_graph(block.scope_context(), &BTreeMap::new(), conjunction).unwrap();
+        if expected_graph != graph {
             // We need this because of non-determinism
-            expected_tig.vertices.get_mut(&var_animal.into()).unwrap().insert(type_fears.clone());
-            assert_eq!(expected_tig, tig)
+            expected_graph.vertices.get_mut(&var_animal.into()).unwrap().insert(type_fears.clone());
+            assert_eq!(expected_graph, graph)
         }
     }
 
@@ -1562,7 +1556,7 @@ pub mod tests {
         {
             // // Case 1: $a > $b;
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.next_block_context());
+            let mut builder = Block::builder(translation_context.new_block_builder_context());
             let mut conjunction = builder.conjunction_mut();
             let var_a = conjunction.get_or_declare_variable("a").unwrap();
             let var_b = conjunction.get_or_declare_variable("b").unwrap();
@@ -1577,7 +1571,7 @@ pub mod tests {
             let types_b =
                 BTreeSet::from([type_age.clone(), type_name.clone(), type_catname.clone(), type_dogname.clone()]);
             let constraints = conjunction.constraints();
-            let expected_tig = TypeInferenceGraph {
+            let expected_graph = TypeInferenceGraph {
                 conjunction,
                 vertices: VertexAnnotations::from([(var_a.into(), types_a), (var_b.into(), types_b)]),
                 edges: vec![expected_edge(
@@ -1604,16 +1598,16 @@ pub mod tests {
 
             let snapshot = storage.clone().open_snapshot_write();
             let empty_function_cache = IndexedAnnotatedFunctions::empty();
-            let seeder = TypeSeeder::new(
+            let seeder = TypeGraphSeedingContext::new(
                 &snapshot,
                 &type_manager,
                 &empty_function_cache,
                 None,
                 &translation_context.variable_registry,
             );
-            let tig = seeder.seed_types(block.scope_context(), &BTreeMap::new(), conjunction).unwrap();
-            assert_eq!(expected_tig.vertices, tig.vertices);
-            assert_eq!(expected_tig, tig);
+            let graph = seeder.create_graph(block.scope_context(), &BTreeMap::new(), conjunction).unwrap();
+            assert_eq!(expected_graph.vertices, graph.vertices);
+            assert_eq!(expected_graph, graph);
         }
     }
 }

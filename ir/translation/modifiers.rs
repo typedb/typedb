@@ -21,7 +21,7 @@ pub fn translate_select(
     let selected_variables = typeql_select
         .variables
         .iter()
-        .map(|typeql_var| match context.visible_variables.get(typeql_var.name().unwrap()) {
+        .map(|typeql_var| match context.get_variable(typeql_var.name().unwrap()) {
             None => Err(RepresentationError::OperatorStageVariableUnavailable {
                 variable_name: typeql_var.name().unwrap().to_owned(),
                 declaration: typeql::query::pipeline::stage::Stage::Operator(Operator::Select(typeql_select.clone())),
@@ -43,7 +43,7 @@ pub fn translate_sort(
         .iter()
         .map(|ordered_var| {
             let is_ascending = ordered_var.ordering.map(|order| order == Order::Asc).unwrap_or(true);
-            match context.visible_variables.get(ordered_var.variable.name().unwrap()) {
+            match context.get_variable(ordered_var.variable.name().unwrap()) {
                 None => Err(RepresentationError::OperatorStageVariableUnavailable {
                     variable_name: ordered_var.variable.name().unwrap().to_owned(),
                     declaration: typeql::query::pipeline::stage::Stage::Operator(

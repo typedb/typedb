@@ -4,15 +4,34 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::BTreeSet;
+
+use answer::Type;
 use concept::error::ConceptReadError;
+use encoding::value::value_type::{ValueType, ValueTypeCategory};
 use error::typedb_error;
 
-pub mod annotated_functions;
-pub mod annotated_program;
-pub mod pattern_type_inference;
+use crate::expression::ExpressionCompileError;
+
+pub mod fetch;
+pub mod function;
+pub mod match_inference;
+pub mod pipeline;
 pub mod type_annotations;
 pub mod type_inference;
 mod type_seeder;
+
+typedb_error!(
+    pub AnnotationError(component = "Query annotation", prefix = "QUA") {
+        TypeInference(0, "Type inference error while compiling query annotations.", ( typedb_source : TypeInferenceError )),
+        PreambleTypeInference(1, "Type inference error while compiling query premable functions.", ( typedb_source : FunctionTypeInferenceError )),
+        ExpressionCompilation(2, "Error inferring correct expression types.", ( source : ExpressionCompileError )),
+        CouldNotDetermineValueTypeForReducerInput(10, "The value-type for the reducer input variable '{variable}' could not be determined.", variable: String),
+        ReducerInputVariableDidNotHaveSingleValueType(11, "The reducer input variable '{variable}' had multiple value-types.", variable: String),
+        UnsupportedValueTypeForReducer(12, "The input variable to the reducer'{reducer}({variable})' reducer had an unsupported value-type: '{value_type}'", reducer: String, variable: String, value_type: ValueTypeCategory),
+        UncomparableValueTypesForSortVariable(13, "The sort variable '{variable}' could return incomparable value-types '{category1}' & '{category2}'.", variable: String, category1: ValueTypeCategory, category2: ValueTypeCategory),
+    }
+);
 
 typedb_error!(
     pub FunctionTypeInferenceError(component = "Function type inference", prefix = "FIN") {
@@ -46,31 +65,6 @@ typedb_error!(
     }
 );
 
-// #[derive(Debug, Clone)]
-// pub enum TypeInferenceError {
-//     ConceptRead { source: ConceptReadError },
-//     LabelNotResolved(String),
-//     RoleNameNotResolved(String),
-//     IllegalInsertTypes { constraint: Constraint<Variable>, left_type: String, right_type: String },
-// }
-//
-// impl Display for TypeInferenceError {
-//     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-//         todo!()
-//     }
-// }
-//
-// impl Error for TypeInferenceError {
-//     fn source(&self) -> Option<&(dyn Error + 'static)> {
-//         match self {
-//             TypeInferenceError::ConceptRead { source } => Some(source),
-//             TypeInferenceError::LabelNotResolved(_) => None,
-//             TypeInferenceError::RoleNameNotResolved(_) => None,
-//             TypeInferenceError::IllegalInsertTypes { .. } => None,
-//         }
-//     }
-// }
-
 #[cfg(test)]
 pub mod tests {
     use std::sync::Arc;
@@ -90,7 +84,7 @@ pub mod tests {
     use storage::{durability_client::WALClient, MVCCStorage};
     use test_utils::{create_tmp_dir, init_logging, TempDir};
 
-    use crate::match_::inference::pattern_type_inference::{
+    use crate::annotation::match_inference::{
         NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
     };
 

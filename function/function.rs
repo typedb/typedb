@@ -5,7 +5,7 @@
  */
 
 use encoding::graph::definition::{definition_key::DefinitionKey, function::FunctionDefinition};
-use ir::program::function_signature::FunctionIDAPI;
+use ir::{program::function_signature::FunctionIDAPI, translation::function::translate_function};
 
 use crate::FunctionError;
 
@@ -15,6 +15,7 @@ pub type SchemaFunction = Function<DefinitionKey<'static>>;
 pub struct Function<FunctionIDType: FunctionIDAPI> {
     pub(crate) function_id: FunctionIDType,
     pub(crate) parsed: typeql::schema::definable::Function,
+    pub(crate) compiled: Option<()>, // TODO: store compiled function
 }
 
 impl<FunctionIDType: FunctionIDAPI> Function<FunctionIDType> {
@@ -31,6 +32,6 @@ impl<FunctionIDType: FunctionIDAPI> Function<FunctionIDType> {
     pub(crate) fn build(function_id: FunctionIDType, definition: FunctionDefinition) -> Result<Self, FunctionError> {
         let parsed = typeql::parse_definition_function(definition.as_str().as_str())
             .map_err(|source| FunctionError::CommittedFunctionParseError { typedb_source: source })?;
-        Ok(Self { function_id, parsed })
+        Ok(Self { function_id, parsed, compiled: None })
     }
 }

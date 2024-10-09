@@ -30,9 +30,9 @@ use ir::program::{block::Block, VariableRegistry};
 use itertools::Itertools;
 
 use crate::{
+    annotation::type_annotations::TypeAnnotations,
     expression::compiled_expression::CompiledExpression,
     match_::{
-        inference::type_annotations::TypeAnnotations,
         instructions::{CheckInstruction, ConstraintInstruction},
         planner::{
             pattern_plan::{CheckProgram, IntersectionProgram, MatchProgram, NegationProgram, Program},

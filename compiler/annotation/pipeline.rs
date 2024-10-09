@@ -10,16 +10,6 @@ use std::{
 };
 
 use answer::{variable::Variable, Type};
-use compiler::{
-    expression::{block_compiler::compile_expressions, compiled_expression::CompiledExpression},
-    insert::type_check::check_annotations,
-    match_::inference::{
-        annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-        type_annotations::{ConstraintTypeAnnotations, TypeAnnotations},
-        type_inference::{infer_types_for_functions, infer_types_for_match_block, resolve_value_types},
-    },
-    reduce::ReduceInstruction,
-};
 use concept::type_::type_manager::TypeManager;
 use encoding::value::value_type::{
     ValueTypeCategory,
@@ -38,14 +28,27 @@ use ir::{
 };
 use storage::snapshot::ReadableSnapshot;
 
-use crate::error::QueryError;
+use crate::{
+    annotation::{
+        fetch::AnnotatedFetch,
+        function::{annotate_functions, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+        match_inference::infer_types,
+        type_annotations::{ConstraintTypeAnnotations, TypeAnnotations},
+        type_inference::resolve_value_types,
+        AnnotationError,
+    },
+    expression::{block_compiler::compile_expressions, compiled_expression::CompiledExpression},
+    insert::type_check::check_annotations,
+    reduce::ReduceInstruction,
+};
 
-pub(super) struct AnnotatedPipeline {
-    pub(super) annotated_preamble: AnnotatedUnindexedFunctions,
-    pub(super) annotated_stages: Vec<AnnotatedStage>,
+pub struct AnnotatedPipeline {
+    pub annotated_preamble: AnnotatedUnindexedFunctions,
+    pub annotated_stages: Vec<AnnotatedStage>,
 }
 
-pub(super) enum AnnotatedStage {
+#[derive(Debug, Clone)]
+pub enum AnnotatedStage {
     Match {
         block: Block,
         block_annotations: TypeAnnotations,
@@ -60,6 +63,9 @@ pub(super) enum AnnotatedStage {
         deleted_variables: Vec<Variable>,
         annotations: TypeAnnotations,
     },
+    Fetch {
+        annotated_fetch: AnnotatedFetch,
+    },
     // ...
     Select(Select),
     Sort(Sort),
@@ -69,7 +75,7 @@ pub(super) enum AnnotatedStage {
     Reduce(Reduce, Vec<ReduceInstruction<Variable>>),
 }
 
-pub(super) fn infer_types_for_pipeline(
+pub fn annotate_pipeline(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     schema_function_annotations: &IndexedAnnotatedFunctions,
@@ -77,10 +83,10 @@ pub(super) fn infer_types_for_pipeline(
     parameters: &ParameterRegistry,
     translated_preamble: Vec<Function>,
     translated_stages: Vec<TranslatedStage>,
-) -> Result<AnnotatedPipeline, QueryError> {
+) -> Result<AnnotatedPipeline, AnnotationError> {
     let annotated_preamble =
-        infer_types_for_functions(translated_preamble, snapshot, type_manager, schema_function_annotations)
-            .map_err(|source| QueryError::FunctionTypeInference { typedb_source: source })?;
+        annotate_functions(translated_preamble, snapshot, type_manager, schema_function_annotations)
+            .map_err(|typedb_source| AnnotationError::PreambleTypeInference { typedb_source })?;
 
     let mut running_variable_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>> = BTreeMap::new();
     let mut running_value_variable_types: BTreeMap<Variable, ValueTypeCategory> = BTreeMap::new();
@@ -128,19 +134,19 @@ fn annotate_stage(
     preamble_function_annotations: &AnnotatedUnindexedFunctions,
     running_constraint_annotations: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
     stage: TranslatedStage,
-) -> Result<AnnotatedStage, QueryError> {
+) -> Result<AnnotatedStage, AnnotationError> {
     match stage {
         TranslatedStage::Match { block } => {
-            let block_annotations = infer_types_for_match_block(
+            let block_annotations = infer_types(
+                snapshot,
                 &block,
                 variable_registry,
-                snapshot,
                 type_manager,
                 running_variable_annotations,
                 schema_function_annotations,
-                preamble_function_annotations,
+                Some(preamble_function_annotations),
             )
-            .map_err(|source| QueryError::QueryTypeInference { typedb_source: source })?;
+            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             block_annotations.vertex_annotations().iter().for_each(|(vertex, types)| {
                 if let Some(var) = vertex.as_variable() {
                     running_variable_annotations.insert(var, types.clone());
@@ -148,7 +154,7 @@ fn annotate_stage(
             });
             let compiled_expressions =
                 compile_expressions(snapshot, type_manager, &block, variable_registry, parameters, &block_annotations)
-                    .map_err(|source| QueryError::ExpressionCompilation { source })?;
+                    .map_err(|source| AnnotationError::ExpressionCompilation { source })?;
             compiled_expressions.iter().for_each(|(&variable, expr)| {
                 running_value_variable_assigned_types.insert(variable, expr.return_type().value_type());
             });
@@ -156,16 +162,18 @@ fn annotate_stage(
         }
 
         TranslatedStage::Insert { block } => {
-            let insert_annotations = infer_types_for_match_block(
+            let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+            let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+            let insert_annotations = infer_types(
+                snapshot,
                 &block,
                 variable_registry,
-                snapshot,
                 type_manager,
                 running_variable_annotations,
-                &IndexedAnnotatedFunctions::empty(),
-                &AnnotatedUnindexedFunctions::empty(),
+                annotated_schema_functions,
+                Some(annotated_preamble_functions),
             )
-            .map_err(|source| QueryError::QueryTypeInference { typedb_source: source })?;
+            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             block.conjunction().constraints().iter().for_each(|constraint| match constraint {
                 Constraint::Isa(isa) => {
                     running_variable_annotations.insert(
@@ -189,21 +197,23 @@ fn annotate_stage(
                 running_constraint_annotations,
                 &insert_annotations,
             )
-            .map_err(|source| QueryError::QueryTypeInference { typedb_source: source })?;
+            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             Ok(AnnotatedStage::Insert { block, annotations: insert_annotations })
         }
 
         TranslatedStage::Delete { block, deleted_variables } => {
-            let delete_annotations = infer_types_for_match_block(
+            let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+            let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+            let delete_annotations = infer_types(
+                snapshot,
                 &block,
                 variable_registry,
-                snapshot,
                 type_manager,
                 running_variable_annotations,
-                &IndexedAnnotatedFunctions::empty(),
-                &AnnotatedUnindexedFunctions::empty(),
+                annotated_schema_functions,
+                Some(annotated_preamble_functions),
             )
-            .map_err(|source| QueryError::QueryTypeInference { typedb_source: source })?;
+            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             deleted_variables.iter().for_each(|v| {
                 running_variable_annotations.remove(v);
             });
@@ -242,7 +252,7 @@ fn annotate_stage(
             }
             Ok(AnnotatedStage::Reduce(reduce, reduce_instructions))
         }
-        TranslatedStage::Fetch { .. } => {
+        TranslatedStage::Fetch { fetch_object } => {
             todo!()
         }
     }
@@ -255,16 +265,16 @@ pub fn validate_sort_variables_comparable(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
-) -> Result<(), QueryError> {
+) -> Result<(), AnnotationError> {
     for sort_var in &sort.variables {
         if assigned_value_types.contains_key(&sort_var.variable()) {
             continue;
         } else if let Some(types) = variable_annotations.get(&sort_var.variable()) {
             let value_types = resolve_value_types(types, snapshot, type_manager)
-                .map_err(|typedb_source| QueryError::QueryTypeInference { typedb_source })?;
+                .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             if value_types.len() == 0 {
                 let variable_name = variable_registry.variable_names().get(&sort_var.variable()).unwrap().clone();
-                return Err(QueryError::CouldNotDetermineValueTypeForReducerInput { variable: variable_name });
+                return Err(AnnotationError::CouldNotDetermineValueTypeForReducerInput { variable: variable_name });
             }
             let first_category = value_types.iter().find(|_| true).unwrap().category();
             let allowed_categories = ValueTypeCategory::comparable_categories(first_category);
@@ -272,7 +282,7 @@ pub fn validate_sort_variables_comparable(
                 // Don't need to do pairwise if comparable is transitive
                 if !allowed_categories.contains(&other_type) {
                     let variable_name = variable_registry.variable_names().get(&sort_var.variable()).unwrap().clone();
-                    return Err(QueryError::UncomparableValueTypesForSortVariable {
+                    return Err(AnnotationError::UncomparableValueTypesForSortVariable {
                         variable: variable_name,
                         category1: first_category,
                         category2: other_type,
@@ -293,7 +303,7 @@ pub fn resolve_reducer_by_value_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
-) -> Result<ReduceInstruction<Variable>, QueryError> {
+) -> Result<ReduceInstruction<Variable>, AnnotationError> {
     match reducer {
         Reducer::Count => Ok(ReduceInstruction::Count),
         Reducer::CountVar(variable) => Ok(ReduceInstruction::CountVar(variable.clone())),
@@ -323,21 +333,21 @@ fn determine_value_type_for_reducer(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
-) -> Result<ValueTypeCategory, QueryError> {
+) -> Result<ValueTypeCategory, AnnotationError> {
     if let Some(assigned_type) = assigned_value_types.get(variable) {
         Ok(assigned_type.clone())
     } else if let Some(types) = variable_annotations.get(variable) {
         let value_types = resolve_value_types(&types, snapshot, type_manager)
-            .map_err(|source| QueryError::QueryTypeInference { typedb_source: source })?;
+            .map_err(|source| AnnotationError::TypeInference { typedb_source: source })?;
         if value_types.len() != 1 {
             let variable_name = variable_registry.variable_names().get(variable).unwrap().clone();
-            Err(QueryError::ReducerInputVariableDidNotHaveSingleValueType { variable: variable_name })
+            Err(AnnotationError::ReducerInputVariableDidNotHaveSingleValueType { variable: variable_name })
         } else {
             Ok(value_types.iter().find(|_| true).unwrap().category())
         }
     } else {
         let variable_name = variable_registry.variable_names().get(variable).unwrap().clone();
-        Err(QueryError::CouldNotDetermineValueTypeForReducerInput { variable: variable_name })
+        Err(AnnotationError::CouldNotDetermineValueTypeForReducerInput { variable: variable_name })
     }
 }
 
@@ -345,7 +355,7 @@ pub fn resolve_reduce_instruction_by_value_type(
     reducer: &Reducer,
     value_type: ValueTypeCategory,
     variable_registry: &VariableRegistry,
-) -> Result<ReduceInstruction<Variable>, QueryError> {
+) -> Result<ReduceInstruction<Variable>, AnnotationError> {
     use encoding::value::value_type::ValueTypeCategory::{Double, Long};
     // Will have been handled earlier since it doesn't need a value type.
     debug_assert!(!matches!(reducer, Reducer::Count) && !matches!(reducer, Reducer::CountVar(_)));
@@ -383,7 +393,7 @@ pub fn resolve_reduce_instruction_by_value_type(
             };
             let reducer_name = reducer.name();
             let variable_name = variable_registry.variable_names().get(&var).unwrap().clone();
-            Err(QueryError::UnsupportedValueTypeForReducer {
+            Err(AnnotationError::UnsupportedValueTypeForReducer {
                 reducer: reducer_name,
                 variable: variable_name,
                 value_type,

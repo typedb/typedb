@@ -9,12 +9,12 @@ use std::{
     sync::Arc,
 };
 
-use compiler::match_::{
-    inference::{
-        annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-        type_inference::infer_types_for_match_block,
+use compiler::{
+    annotation::{
+        function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+        match_inference::infer_types,
     },
-    planner::program_plan::ProgramPlan,
+    match_::planner::program_plan::ProgramPlan,
 };
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
@@ -102,14 +102,19 @@ fn test_has_planning_traversal() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let entry_annotations = infer_types_for_match_block(
+    let variable_registry = &translation_context.variable_registry;
+    let snapshot1 = &*snapshot;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
+        snapshot1,
         &block,
-        &translation_context.variable_registry,
-        &*snapshot,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -176,14 +181,19 @@ fn test_links_planning_traversal() {
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
+    let variable_registry = &translation_context.variable_registry;
+    let snapshot1 = &*snapshot;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
+        snapshot1,
         &block,
-        &translation_context.variable_registry,
-        &*snapshot,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -257,14 +267,19 @@ fn test_links_intersection() {
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = infer_types_for_match_block(
+    let variable_registry = &translation_context.variable_registry;
+    let snapshot1 = &*snapshot;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
+        snapshot1,
         &block,
-        &translation_context.variable_registry,
-        &*snapshot,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -330,14 +345,19 @@ fn test_negation_planning_traversal() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let entry_annotations = infer_types_for_match_block(
+    let variable_registry = &translation_context.variable_registry;
+    let snapshot1 = &*snapshot;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
+        snapshot1,
         &block,
-        &translation_context.variable_registry,
-        &*snapshot,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
@@ -424,14 +444,19 @@ fn test_forall_planning_traversal() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let entry_annotations = infer_types_for_match_block(
+    let variable_registry = &translation_context.variable_registry;
+    let snapshot1 = &*snapshot;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+    let entry_annotations = infer_types(
+        snapshot1,
         &block,
-        &translation_context.variable_registry,
-        &*snapshot,
+        variable_registry,
         &type_manager,
-        &BTreeMap::new(),
-        &IndexedAnnotatedFunctions::empty(),
-        &AnnotatedUnindexedFunctions::empty(),
+        previous_stage_variable_annotations,
+        annotated_schema_functions,
+        Some(annotated_preamble_functions),
     )
     .unwrap();
 
