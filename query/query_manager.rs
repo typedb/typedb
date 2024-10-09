@@ -6,7 +6,11 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use compiler::{match_::planner::program_plan::ProgramPlan, VariablePosition};
+use compiler::{
+    annotation::pipeline::{annotate_pipeline, AnnotatedPipeline},
+    match_::planner::program_plan::ProgramPlan,
+    VariablePosition,
+};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::pipeline::{
     delete::DeleteStageExecutor,
@@ -26,7 +30,6 @@ use ir::{
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
-use compiler::annotation::pipeline::{AnnotatedPipeline, annotate_pipeline};
 
 use crate::{
     compilation::{compile_pipeline, CompiledPipeline, CompiledStage},
@@ -85,7 +88,8 @@ impl QueryManager {
             &value_parameters,
             translated_preamble,
             translated_stages,
-        ).map_err(|err| QueryError::Annotation { typedb_source: err })?;
+        )
+        .map_err(|err| QueryError::Annotation { typedb_source: err })?;
 
         // 3: Compile
         let variable_registry = Arc::new(variable_registry);

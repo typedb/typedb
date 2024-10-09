@@ -118,8 +118,8 @@ fetch {
     let pipeline = query.into_pipeline();
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (executable_pipeline, descriptor) = QueryManager::new()
-        .prepare_read_pipeline(snapshot.clone(), &type_manager, thing_manager.clone(), &function_manager, &pipeline).unwrap();
-
+        .prepare_read_pipeline(snapshot.clone(), &type_manager, thing_manager.clone(), &function_manager, &pipeline)
+        .unwrap();
 }
 
 //

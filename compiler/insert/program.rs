@@ -18,6 +18,7 @@ use ir::{
 use itertools::Itertools;
 
 use crate::{
+    annotation::type_annotations::TypeAnnotations,
     filter_variants,
     insert::{
         get_kinds_from_annotations, get_thing_source,
@@ -26,7 +27,6 @@ use crate::{
     },
     VariablePosition,
 };
-use crate::annotation::type_annotations::TypeAnnotations;
 
 pub struct InsertProgram {
     pub concept_instructions: Vec<ConceptInstruction>,

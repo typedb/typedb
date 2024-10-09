@@ -4,13 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use compiler::{
-    expression::ExpressionCompileError,
-    insert::WriteCompilationError,
-    annotation::{FunctionTypeInferenceError, TypeInferenceError},
-};
-use compiler::annotation::AnnotationError;
-use encoding::value::value_type::ValueTypeCategory;
+use compiler::{annotation::AnnotationError, expression::ExpressionCompileError, insert::WriteCompilationError};
 use error::typedb_error;
 use executor::pipeline::PipelineExecutionError;
 use function::FunctionError;

@@ -7,8 +7,7 @@
 use std::{iter::zip, sync::Arc};
 
 use bytes::{byte_array::ByteArray, Bytes};
-use compiler::annotation::{
-};
+use compiler::annotation::function::{annotate_functions, IndexedAnnotatedFunctions};
 use concept::type_::type_manager::TypeManager;
 use encoding::{
     graph::{
@@ -28,7 +27,6 @@ use ir::{
     translation::function::{build_signature, translate_function},
 };
 use itertools::Itertools;
-use compiler::annotation::function::{annotate_functions, IndexedAnnotatedFunctions};
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::{

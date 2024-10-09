@@ -8,10 +8,11 @@ use std::collections::HashMap;
 
 use answer::variable::Variable;
 
-use crate::pattern::ParameterID;
-use crate::program::function::AnonymousFunction;
-use crate::translation::pipeline::TranslatedStage;
-use crate::translation::TranslationContext;
+use crate::{
+    pattern::ParameterID,
+    program::function::AnonymousFunction,
+    translation::{pipeline::TranslatedStage, TranslationContext},
+};
 
 #[derive(Debug, Clone)]
 pub enum FetchSome {

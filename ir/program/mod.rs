@@ -24,11 +24,11 @@ use crate::{
 };
 
 pub mod block;
+pub mod fetch;
 pub mod function;
 pub mod function_signature;
 pub mod modifier;
 pub mod reduce;
-pub mod fetch;
 
 #[derive(Debug, Clone)]
 pub enum FunctionReadError {

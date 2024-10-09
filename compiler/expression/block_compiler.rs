@@ -22,14 +22,13 @@ use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
+    annotation::{type_annotations::TypeAnnotations, type_inference::resolve_value_types},
     expression::{
         compiled_expression::{CompiledExpression, ExpressionValueType},
         expression_compiler::ExpressionCompilationContext,
         ExpressionCompileError,
     },
 };
-use crate::annotation::type_annotations::TypeAnnotations;
-use crate::annotation::type_inference::resolve_value_types;
 
 struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
     block: &'block Block,

@@ -4,17 +4,22 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{BTreeMap, BTreeSet, HashMap};
-use std::sync::Arc;
+use std::{
+    collections::{BTreeMap, BTreeSet, HashMap},
+    sync::Arc,
+};
 
-use answer::Type;
-use answer::variable::Variable;
+use answer::{variable::Variable, Type};
 use encoding::value::value_type::ValueType;
-use ir::pattern::{ParameterID, Vertex};
-use ir::program::fetch::{FetchListAttributeAsList, FetchListAttributeFromList, FetchObjectAttributes, FetchSingleAttribute, FetchSingleVar};
+use ir::{
+    pattern::{ParameterID, Vertex},
+    program::fetch::{
+        FetchListAttributeAsList, FetchListAttributeFromList, FetchObjectAttributes, FetchSingleAttribute,
+        FetchSingleVar,
+    },
+};
 
-use crate::annotation::function::AnnotatedAnonymousFunction;
-use crate::annotation::pipeline::AnnotatedStage;
+use crate::annotation::{function::AnnotatedAnonymousFunction, pipeline::AnnotatedStage};
 
 #[derive(Debug, Clone)]
 pub struct AnnotatedFetch {

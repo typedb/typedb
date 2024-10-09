@@ -33,10 +33,12 @@ use ir::{
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
-use crate::annotation::function::{AnnotatedFunction, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions};
-use crate::annotation::match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations};
-use crate::annotation::TypeInferenceError;
 
+use crate::annotation::{
+    function::{AnnotatedFunction, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+    match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations},
+    TypeInferenceError,
+};
 
 pub struct TypeGraphSeedingContext<'this, Snapshot: ReadableSnapshot> {
     snapshot: &'this Snapshot,
@@ -67,7 +69,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             FunctionID::Preamble(index) => {
                 // self.local_functions?.get_annotations(index)
                 todo!()
-            },
+            }
         }
     }
 
@@ -1378,13 +1380,18 @@ pub mod tests {
         translation::TranslationContext,
     };
     use storage::snapshot::CommittableSnapshot;
-    use crate::annotation::function::IndexedAnnotatedFunctions;
-    use crate::annotation::match_inference::{TypeInferenceGraph, VertexAnnotations};
-    use crate::annotation::tests::schema_consts::{LABEL_CAT, LABEL_NAME, setup_types};
-    use crate::annotation::tests::{managers, setup_storage};
-    use crate::annotation::type_inference::tests::expected_edge;
-    use crate::annotation::type_seeder::TypeGraphSeedingContext;
 
+    use crate::annotation::{
+        function::IndexedAnnotatedFunctions,
+        match_inference::{TypeInferenceGraph, VertexAnnotations},
+        tests::{
+            managers,
+            schema_consts::{setup_types, LABEL_CAT, LABEL_NAME},
+            setup_storage,
+        },
+        type_inference::tests::expected_edge,
+        type_seeder::TypeGraphSeedingContext,
+    };
 
     #[test]
     fn test_has() {

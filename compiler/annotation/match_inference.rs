@@ -19,11 +19,15 @@ use ir::{
 };
 use itertools::chain;
 use storage::snapshot::ReadableSnapshot;
-use crate::annotation::function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions};
-use crate::annotation::type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations, TypeAnnotations};
-use crate::annotation::type_seeder::TypeGraphSeedingContext;
-use crate::annotation::TypeInferenceError;
 
+use crate::annotation::{
+    function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+    type_annotations::{
+        ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations, TypeAnnotations,
+    },
+    type_seeder::TypeGraphSeedingContext,
+    TypeInferenceError,
+};
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub(crate) struct VertexAnnotations {
@@ -110,7 +114,7 @@ pub fn infer_types<'graph>(
         type_manager,
         previous_stage_variable_annotations,
         schema_functions,
-        local_function_cache
+        local_function_cache,
     )?;
     // TODO: Throw error when any set becomes empty happens, rather than waiting for the it to propagate
     if graph.vertices.iter().any(|(_, types)| types.is_empty()) {
@@ -136,12 +140,12 @@ pub(crate) fn compute_type_inference_graph<'graph>(
     schema_functions: &IndexedAnnotatedFunctions,
     local_function_cache: Option<&AnnotatedUnindexedFunctions>,
 ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
-    let mut graph = TypeGraphSeedingContext::new(snapshot, type_manager, schema_functions, local_function_cache, variable_registry)
-        .create_graph(block.scope_context(), previous_stage_variable_annotations, block.conjunction())?;
+    let mut graph =
+        TypeGraphSeedingContext::new(snapshot, type_manager, schema_functions, local_function_cache, variable_registry)
+            .create_graph(block.scope_context(), previous_stage_variable_annotations, block.conjunction())?;
     prune_types(&mut graph);
     Ok(graph)
 }
-
 
 pub(crate) fn prune_types(graph: &mut TypeInferenceGraph<'_>) {
     while graph.prune_vertices_from_constraints() {
@@ -380,5 +384,4 @@ impl<'this> NestedTypeInferenceGraphDisjunction<'this> {
 }
 
 #[cfg(test)]
-pub mod tests {
-}
+pub mod tests {}

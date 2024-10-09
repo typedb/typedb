@@ -5,15 +5,14 @@
  */
 
 use std::collections::BTreeSet;
+
 use answer::Type;
 use concept::type_::type_manager::TypeManager;
-use encoding::graph::definition::definition_key::DefinitionKey;
-use encoding::value::value_type::ValueType;
-use ir::program::function::Function;
-use ir::program::function_signature::FunctionIDAPI;
+use encoding::{graph::definition::definition_key::DefinitionKey, value::value_type::ValueType};
+use ir::program::{function::Function, function_signature::FunctionIDAPI};
 use storage::snapshot::ReadableSnapshot;
-use crate::annotation::FunctionTypeInferenceError;
-use crate::annotation::pipeline::AnnotatedStage;
+
+use crate::annotation::{pipeline::AnnotatedStage, FunctionTypeInferenceError};
 
 #[derive(Debug, Clone)]
 pub enum FunctionParameterAnnotation {
@@ -24,13 +23,13 @@ pub enum FunctionParameterAnnotation {
 #[derive(Debug, Clone)]
 pub struct AnnotatedFunction {
     stages: Vec<AnnotatedStage>,
-    return_annotations: Vec<BTreeSet<FunctionParameterAnnotation>>
+    return_annotations: Vec<BTreeSet<FunctionParameterAnnotation>>,
 }
 
 #[derive(Debug, Clone)]
 pub struct AnnotatedAnonymousFunction {
     stages: Vec<AnnotatedStage>,
-    return_annotations: Vec<BTreeSet<FunctionParameterAnnotation>>
+    return_annotations: Vec<BTreeSet<FunctionParameterAnnotation>>,
 }
 
 /// Indexed by Function ID
@@ -81,7 +80,7 @@ impl AnnotatedUnindexedFunctions {
     }
 
     pub fn empty() -> Self {
-        Self {  unindexed_functions: Vec::new() }
+        Self { unindexed_functions: Vec::new() }
     }
 
     pub fn iter_functions(&self) -> impl Iterator<Item = &AnnotatedFunction> {

@@ -8,16 +8,15 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     sync::Arc,
 };
-use typeql::schema::definable::function::SingleSelector;
 
 use answer::{variable::Variable, Type};
+use typeql::schema::definable::function::SingleSelector;
 
 use crate::{
     pattern::Vertex,
-    program::{reduce::Reducer, VariableRegistry},
-    translation::pipeline::TranslatedStage,
+    program::reduce::Reducer,
+    translation::{pipeline::TranslatedStage, TranslationContext},
 };
-use crate::translation::TranslationContext;
 
 pub type PlaceholderTypeQLReturnOperation = String;
 
@@ -31,12 +30,7 @@ pub struct Function {
 }
 
 impl Function {
-    pub fn new(
-        name: &str,
-        context: TranslationContext,
-        arguments: Vec<Variable>,
-        function_body: FunctionBody,
-    ) -> Self {
+    pub fn new(name: &str, context: TranslationContext, arguments: Vec<Variable>, function_body: FunctionBody) -> Self {
         Self { name: name.to_string(), context, function_body, arguments }
     }
 
@@ -105,15 +99,11 @@ impl ReturnOperation {
         match self {
             ReturnOperation::Stream(vars) => {
                 let inputs = vars.iter().map(|&var| function_variable_annotations.get(&Vertex::Variable(var)).unwrap());
-                inputs
-                    .map(|types| BTreeSet::from_iter(types.iter().cloned()))
-                    .collect()
+                inputs.map(|types| BTreeSet::from_iter(types.iter().cloned())).collect()
             }
             ReturnOperation::Single(_, vars) => {
                 let inputs = vars.iter().map(|&var| function_variable_annotations.get(&Vertex::Variable(var)).unwrap());
-                inputs
-                    .map(|types| BTreeSet::from_iter(types.iter().cloned()))
-                    .collect()
+                inputs.map(|types| BTreeSet::from_iter(types.iter().cloned())).collect()
             }
             ReturnOperation::ReduceReducer(reducers) => {
                 // aggregates return value types?

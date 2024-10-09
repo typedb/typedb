@@ -6,9 +6,9 @@
 
 use std::{collections::HashMap, iter::zip, sync::Arc};
 
-use compiler::annotation::{
+use compiler::annotation::function::{
+    annotate_functions, AnnotatedFunction, AnnotatedFunctions, IndexedAnnotatedFunctions,
 };
-use compiler::annotation::function::{annotate_functions, AnnotatedFunction, AnnotatedFunctions, IndexedAnnotatedFunctions};
 use concept::type_::type_manager::TypeManager;
 use encoding::graph::definition::definition_key::DefinitionKey;
 use ir::program::{
@@ -104,10 +104,7 @@ impl FunctionCache {
         self.indexed_annotated_functions.clone()
     }
 
-    pub(crate) fn get_annotated_function(
-        &self,
-        definition_key: DefinitionKey<'static>,
-    ) -> Option<&AnnotatedFunction> {
+    pub(crate) fn get_annotated_function(&self, definition_key: DefinitionKey<'static>) -> Option<&AnnotatedFunction> {
         self.indexed_annotated_functions.get_function(definition_key)
     }
 }

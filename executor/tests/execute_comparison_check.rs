@@ -12,7 +12,6 @@ use std::{
 
 use compiler::{
     annotation::{
-        annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
     },
     match_::{
         instructions::{thing::IsaInstruction, ConstraintInstruction, Inputs},
@@ -23,6 +22,8 @@ use compiler::{
     },
     VariablePosition,
 };
+use compiler::annotation::function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions};
+use compiler::annotation::match_inference::infer_types;
 use concept::type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{

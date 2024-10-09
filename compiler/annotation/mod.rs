@@ -5,19 +5,21 @@
  */
 
 use std::collections::BTreeSet;
+
 use answer::Type;
 use concept::error::ConceptReadError;
 use encoding::value::value_type::{ValueType, ValueTypeCategory};
 use error::typedb_error;
+
 use crate::expression::ExpressionCompileError;
 
+pub mod fetch;
+pub mod function;
 pub mod match_inference;
+pub mod pipeline;
 pub mod type_annotations;
 pub mod type_inference;
 mod type_seeder;
-pub mod pipeline;
-pub mod function;
-pub mod fetch;
 
 typedb_error!(
     pub AnnotationError(component = "Query annotation", prefix = "QUA") {
@@ -81,7 +83,10 @@ pub mod tests {
     };
     use storage::{durability_client::WALClient, MVCCStorage};
     use test_utils::{create_tmp_dir, init_logging, TempDir};
-    use crate::annotation::match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph};
+
+    use crate::annotation::match_inference::{
+        NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
+    };
 
     impl<'this> PartialEq<Self> for TypeInferenceEdge<'this> {
         fn eq(&self, other: &Self) -> bool {
@@ -189,7 +194,7 @@ pub mod tests {
                 thing_manager,
                 AttributeTypeAnnotation::Abstract(AnnotationAbstract),
             )
-                .unwrap();
+            .unwrap();
             catname.set_supertype(&mut snapshot, type_manager, thing_manager, name.clone()).unwrap();
             dogname.set_supertype(&mut snapshot, type_manager, thing_manager, name.clone()).unwrap();
 

@@ -111,7 +111,12 @@ impl BlockContext {
         self.scope_parents.insert(scope_id, parent_scope_id);
     }
 
-    fn may_update_declaration_scope(&mut self, var: Variable, var_name: &str, scope: ScopeId) -> Result<(), RepresentationError> {
+    fn may_update_declaration_scope(
+        &mut self,
+        var: Variable,
+        var_name: &str,
+        scope: ScopeId,
+    ) -> Result<(), RepresentationError> {
         debug_assert!(self.variable_declaration.contains_key(&var));
         let existing_scope = self.variable_declaration.get_mut(&var).unwrap();
         if is_equal_or_parent_scope(&self.scope_parents, scope, *existing_scope) {
@@ -225,9 +230,10 @@ impl<'a> BlockBuilderContext<'a> {
                 self.variable_names_index.insert(name.to_string(), variable);
                 Ok(variable)
             }
-            Some(existing_variable) => {
-                self.block_context.may_update_declaration_scope(*existing_variable, name, scope).map(|_| *existing_variable)
-            }
+            Some(existing_variable) => self
+                .block_context
+                .may_update_declaration_scope(*existing_variable, name, scope)
+                .map(|_| *existing_variable),
         }
     }
 

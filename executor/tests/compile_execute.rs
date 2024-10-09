@@ -9,11 +9,12 @@ use std::{
     sync::Arc,
 };
 
-use compiler::annotation::{
-    annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-};
-use compiler::match_::{
-    planner::program_plan::ProgramPlan,
+use compiler::{
+    annotation::{
+        function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+        match_inference::infer_types,
+    },
+    match_::planner::program_plan::ProgramPlan,
 };
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
@@ -31,7 +32,6 @@ use ir::{
     translation::{match_::translate_match, TranslationContext},
 };
 use itertools::Itertools;
-use compiler::annotation::match_inference::infer_types;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
 use storage::{
@@ -116,7 +116,7 @@ fn test_has_planning_traversal() {
         annotated_schema_functions,
         Some(annotated_preamble_functions),
     )
-        .unwrap();
+    .unwrap();
 
     let pattern_plan = compiler::match_::planner::compile(
         &block,
@@ -195,7 +195,7 @@ fn test_links_planning_traversal() {
         annotated_schema_functions,
         Some(annotated_preamble_functions),
     )
-        .unwrap();
+    .unwrap();
 
     let pattern_plan = compiler::match_::planner::compile(
         &block,
@@ -281,7 +281,7 @@ fn test_links_intersection() {
         annotated_schema_functions,
         Some(annotated_preamble_functions),
     )
-        .unwrap();
+    .unwrap();
 
     let pattern_plan = compiler::match_::planner::compile(
         &block,
@@ -359,7 +359,7 @@ fn test_negation_planning_traversal() {
         annotated_schema_functions,
         Some(annotated_preamble_functions),
     )
-        .unwrap();
+    .unwrap();
 
     let pattern_plan = compiler::match_::planner::compile(
         &block,
@@ -458,7 +458,7 @@ fn test_forall_planning_traversal() {
         annotated_schema_functions,
         Some(annotated_preamble_functions),
     )
-        .unwrap();
+    .unwrap();
 
     let pattern_plan = compiler::match_::planner::compile(
         &block,

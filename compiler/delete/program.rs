@@ -11,11 +11,11 @@ use encoding::graph::type_::Kind;
 use ir::pattern::{constraint::Constraint, Vertex};
 
 use crate::{
+    annotation::type_annotations::TypeAnnotations,
     delete::instructions::{ConnectionInstruction, Has, RolePlayer, ThingInstruction},
     insert::{get_thing_source, program::collect_role_type_bindings, ThingSource, TypeSource, WriteCompilationError},
     VariablePosition,
 };
-use crate::annotation::type_annotations::TypeAnnotations;
 
 pub struct DeleteProgram {
     pub concept_instructions: Vec<ThingInstruction>,

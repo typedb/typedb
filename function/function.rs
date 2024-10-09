@@ -5,8 +5,7 @@
  */
 
 use encoding::graph::definition::{definition_key::DefinitionKey, function::FunctionDefinition};
-use ir::program::function_signature::FunctionIDAPI;
-use ir::translation::function::translate_function;
+use ir::{program::function_signature::FunctionIDAPI, translation::function::translate_function};
 
 use crate::FunctionError;
 
@@ -16,7 +15,7 @@ pub type SchemaFunction = Function<DefinitionKey<'static>>;
 pub struct Function<FunctionIDType: FunctionIDAPI> {
     pub(crate) function_id: FunctionIDType,
     pub(crate) parsed: typeql::schema::definable::Function,
-    pub(crate) compiled: Option<()> // TODO: store compiled function
+    pub(crate) compiled: Option<()>, // TODO: store compiled function
 }
 
 impl<FunctionIDType: FunctionIDAPI> Function<FunctionIDType> {

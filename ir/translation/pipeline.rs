@@ -11,6 +11,7 @@ use typeql::query::stage::{Operator as TypeQLOperator, Stage as TypeQLStage, Sta
 use crate::{
     program::{
         block::Block,
+        fetch::FetchObject,
         function::Function,
         function_signature::FunctionSignatureIndex,
         modifier::{Limit, Offset, Require, Select, Sort},
@@ -18,6 +19,7 @@ use crate::{
         ParameterRegistry, VariableRegistry,
     },
     translation::{
+        fetch::translate_fetch,
         function::translate_function,
         match_::translate_match,
         modifiers::{translate_limit, translate_offset, translate_require, translate_select, translate_sort},
@@ -27,8 +29,6 @@ use crate::{
     },
     RepresentationError,
 };
-use crate::program::fetch::FetchObject;
-use crate::translation::fetch::translate_fetch;
 
 #[derive(Debug, Clone)]
 pub struct TranslatedPipeline {
@@ -126,11 +126,9 @@ fn translate_stage(
         }
         TypeQLStage::Delete(delete) => translate_delete(translation_context, delete)
             .map(|(block, deleted_variables)| TranslatedStage::Delete { block, deleted_variables }),
-        TypeQLStage::Fetch(fetch) => {
-            translate_fetch(snapshot, translation_context, all_function_signatures, fetch)
-                .map(|translated| TranslatedStage::Fetch { fetch_object: translated })
-                .map_err(|err| RepresentationError::FetchRepresentation { typedb_source: err })
-        }
+        TypeQLStage::Fetch(fetch) => translate_fetch(snapshot, translation_context, all_function_signatures, fetch)
+            .map(|translated| TranslatedStage::Fetch { fetch_object: translated })
+            .map_err(|err| RepresentationError::FetchRepresentation { typedb_source: err }),
         TypeQLStage::Operator(modifier) => match modifier {
             TypeQLOperator::Select(select) => {
                 translate_select(translation_context, select).map(|filter| TranslatedStage::Select(filter))

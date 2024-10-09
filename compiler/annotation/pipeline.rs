@@ -4,34 +4,43 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::{
+    collections::{BTreeMap, BTreeSet, HashMap},
+    sync::Arc,
+};
 
-use std::collections::{BTreeMap, BTreeSet, HashMap};
-use std::sync::Arc;
-
-use answer::Type;
-use answer::variable::Variable;
+use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
-use encoding::value::value_type::ValueTypeCategory;
-use encoding::value::value_type::ValueTypeCategory::{Double, Long};
-use ir::pattern::constraint::Constraint;
-use ir::program::{ParameterRegistry, VariableRegistry};
-use ir::program::block::Block;
-use ir::program::function::Function;
-use ir::program::modifier::{Limit, Offset, Require, Select, Sort};
-use ir::program::reduce::{Reduce, Reducer};
-use ir::translation::pipeline::TranslatedStage;
+use encoding::value::value_type::{
+    ValueTypeCategory,
+    ValueTypeCategory::{Double, Long},
+};
+use ir::{
+    pattern::constraint::Constraint,
+    program::{
+        block::Block,
+        function::Function,
+        modifier::{Limit, Offset, Require, Select, Sort},
+        reduce::{Reduce, Reducer},
+        ParameterRegistry, VariableRegistry,
+    },
+    translation::pipeline::TranslatedStage,
+};
 use storage::snapshot::ReadableSnapshot;
 
-use crate::annotation::AnnotationError;
-use crate::annotation::fetch::AnnotatedFetch;
-use crate::annotation::function::{annotate_functions, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions};
-use crate::annotation::match_inference::infer_types;
-use crate::annotation::type_annotations::{ConstraintTypeAnnotations, TypeAnnotations};
-use crate::annotation::type_inference::resolve_value_types;
-use crate::expression::block_compiler::compile_expressions;
-use crate::expression::compiled_expression::CompiledExpression;
-use crate::insert::type_check::check_annotations;
-use crate::reduce::ReduceInstruction;
+use crate::{
+    annotation::{
+        fetch::AnnotatedFetch,
+        function::{annotate_functions, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+        match_inference::infer_types,
+        type_annotations::{ConstraintTypeAnnotations, TypeAnnotations},
+        type_inference::resolve_value_types,
+        AnnotationError,
+    },
+    expression::{block_compiler::compile_expressions, compiled_expression::CompiledExpression},
+    insert::type_check::check_annotations,
+    reduce::ReduceInstruction,
+};
 
 pub struct AnnotatedPipeline {
     pub annotated_preamble: AnnotatedUnindexedFunctions,
@@ -55,7 +64,7 @@ pub enum AnnotatedStage {
         annotations: TypeAnnotations,
     },
     Fetch {
-        annotated_fetch: AnnotatedFetch
+        annotated_fetch: AnnotatedFetch,
     },
     // ...
     Select(Select),
@@ -137,7 +146,7 @@ fn annotate_stage(
                 schema_function_annotations,
                 Some(preamble_function_annotations),
             )
-                .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             block_annotations.vertex_annotations().iter().for_each(|(vertex, types)| {
                 if let Some(var) = vertex.as_variable() {
                     running_variable_annotations.insert(var, types.clone());
@@ -164,7 +173,7 @@ fn annotate_stage(
                 annotated_schema_functions,
                 Some(annotated_preamble_functions),
             )
-                .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             block.conjunction().constraints().iter().for_each(|constraint| match constraint {
                 Constraint::Isa(isa) => {
                     running_variable_annotations.insert(
@@ -188,7 +197,7 @@ fn annotate_stage(
                 running_constraint_annotations,
                 &insert_annotations,
             )
-                .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             Ok(AnnotatedStage::Insert { block, annotations: insert_annotations })
         }
 
@@ -204,7 +213,7 @@ fn annotate_stage(
                 annotated_schema_functions,
                 Some(annotated_preamble_functions),
             )
-                .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             deleted_variables.iter().for_each(|v| {
                 running_variable_annotations.remove(v);
             });

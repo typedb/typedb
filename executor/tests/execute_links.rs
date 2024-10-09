@@ -11,6 +11,10 @@ use std::{
 };
 
 use compiler::{
+    annotation::{
+        function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+        match_inference::infer_types,
+    },
     match_::{
         instructions::{
             thing::{IsaReverseInstruction, LinksInstruction, LinksReverseInstruction},
@@ -23,8 +27,6 @@ use compiler::{
     },
     VariablePosition,
 };
-use compiler::annotation::annotated_functions::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions};
-use compiler::annotation::match_inference::infer_types;
 use concept::{
     thing::object::ObjectAPI,
     type_::{

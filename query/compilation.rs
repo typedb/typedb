@@ -11,6 +11,10 @@ use std::{
 
 use answer::variable::Variable;
 use compiler::{
+    annotation::{
+        function::{AnnotatedFunction, AnnotatedUnindexedFunctions},
+        pipeline::AnnotatedStage,
+    },
     delete::program::DeleteProgram,
     insert::program::InsertProgram,
     match_::planner::pattern_plan::MatchProgram,
@@ -18,12 +22,10 @@ use compiler::{
     reduce::{ReduceInstruction, ReduceProgram},
     VariablePosition,
 };
-use compiler::annotation::function::{AnnotatedFunction, AnnotatedUnindexedFunctions};
-use compiler::annotation::pipeline::AnnotatedStage;
 use concept::thing::statistics::Statistics;
-use ir::program::{function::Function, VariableRegistry};
+use ir::program::VariableRegistry;
 
-use crate::{error::QueryError};
+use crate::error::QueryError;
 
 pub struct CompiledPipeline {
     pub(super) compiled_functions: Vec<CompiledFunction>,
@@ -239,7 +241,11 @@ fn compile_stage(
                 };
                 reductions.push(reducer_on_position);
             }
-            Ok(CompiledStage::Reduce(ReduceProgram { reductions: reductions, input_group_positions, output_row_mapping }))
+            Ok(CompiledStage::Reduce(ReduceProgram {
+                reductions: reductions,
+                input_group_positions,
+                output_row_mapping,
+            }))
         }
         AnnotatedStage::Fetch { .. } => {
             todo!()

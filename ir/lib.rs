@@ -13,17 +13,17 @@ use std::{error::Error, fmt};
 
 use error::typedb_error;
 use typeql::{
+    query::stage::reduce::Reducer,
     statement::{InIterable, StructDeconstruct},
     token,
     value::StringLiteral,
 };
-use typeql::query::stage::reduce::Reducer;
 
 use crate::{
     pattern::{expression::ExpressionDefinitionError, variable_category::VariableCategory},
     program::{FunctionReadError, FunctionRepresentationError},
+    translation::fetch::FetchRepresentationError,
 };
-use crate::translation::fetch::FetchRepresentationError;
 
 pub mod pattern;
 pub mod program;

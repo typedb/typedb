@@ -15,9 +15,9 @@ use ir::pattern::{
     IrID,
 };
 
-use crate::annotation::type_annotations::TypeAnnotations;
-use crate::match_::{
-    instructions::{CheckInstruction, Inputs},
+use crate::{
+    annotation::type_annotations::TypeAnnotations,
+    match_::instructions::{CheckInstruction, Inputs},
 };
 
 #[derive(Debug, Clone)]
