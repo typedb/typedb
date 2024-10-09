@@ -3,6 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+
 use std::{
     collections::{HashMap, HashSet},
     iter::zip,
@@ -10,34 +11,26 @@ use std::{
 };
 
 use answer::variable::Variable;
-use compiler::{
-    annotation::{
-        function::{AnnotatedFunction, AnnotatedUnindexedFunctions},
-        pipeline::AnnotatedStage,
-    },
-    executable::{
-        delete::executable::DeleteExecutable,
-        insert::executable::InsertExecutable,
-        match_::planner::match_executable::MatchExecutable,
-        modifiers::{LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable},
-        reduce::{ReduceExecutable, ReduceInstruction},
-    },
-    VariablePosition,
-};
 use concept::thing::statistics::Statistics;
 use ir::pipeline::VariableRegistry;
-
-use crate::error::QueryError;
+use crate::annotation::fetch::AnnotatedFetch;
+use crate::annotation::function::{AnnotatedFunction, AnnotatedUnindexedFunctions};
+use crate::annotation::pipeline::AnnotatedStage;
+use crate::executable::delete::executable::DeleteExecutable;
+use crate::executable::ExecutableError;
+use crate::executable::fetch::executable::FetchExecutable;
+use crate::executable::function::{compile_function, ExecutableFunction};
+use crate::executable::insert::executable::InsertExecutable;
+use crate::executable::match_::planner::match_executable::MatchExecutable;
+use crate::executable::modifiers::{LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable};
+use crate::executable::reduce::{ReduceExecutable, ReduceInstruction};
+use crate::VariablePosition;
 
 pub struct ExecutablePipeline {
-    pub(super) executable_functions: Vec<ExecutableFunction>,
-    pub(super) executable_stages: Vec<ExecutableStage>,
-    pub(super) output_variable_positions: HashMap<Variable, VariablePosition>,
-}
-
-pub struct ExecutableFunction {
-    executable: ExecutablePipeline,
-    returns: HashMap<Variable, VariablePosition>,
+    pub executable_functions: Vec<ExecutableFunction>,
+    pub executable_stages: Vec<ExecutableStage>,
+    pub stages_variable_positions: HashMap<Variable, VariablePosition>,
+    pub executable_fetch: Option<FetchExecutable>,
 }
 
 pub enum ExecutableStage {
@@ -80,12 +73,13 @@ impl ExecutableStage {
     }
 }
 
-pub(super) fn compile_pipeline(
+pub fn compile_pipeline(
     statistics: &Statistics,
     variable_registry: Arc<VariableRegistry>,
     annotated_functions: AnnotatedUnindexedFunctions,
     annotated_stages: Vec<AnnotatedStage>,
-) -> Result<ExecutablePipeline, QueryError> {
+    annotated_fetch: Option<AnnotatedFetch>,
+) -> Result<ExecutablePipeline, ExecutableError> {
     let executable_functions = annotated_functions
         .iter_functions()
         .map(|function| compile_function(statistics, variable_registry.clone(), function))
@@ -99,18 +93,11 @@ pub(super) fn compile_pipeline(
         let executable_stage = compile_stage(statistics, variable_registry.clone(), &input_variable_positions, stage)?;
         executable_stages.push(executable_stage);
     }
-    let output_variable_positions =
+    let stages_variable_positions =
         executable_stages.last().map(|stage: &ExecutableStage| stage.output_row_mapping()).unwrap_or(HashMap::new());
 
-    Ok(ExecutablePipeline { executable_functions: executable_functions, executable_stages: executable_stages, output_variable_positions })
-}
-
-fn compile_function(
-    statistics: &Statistics,
-    variable_registry: Arc<VariableRegistry>,
-    function: &AnnotatedFunction,
-) -> Result<ExecutableFunction, QueryError> {
-    todo!()
+    let executable_fetch = annotated_fetch.map(|fetch| compile_fetch(fetch));
+    Ok(ExecutablePipeline { executable_functions, executable_stages, stages_variable_positions, executable_fetch })
 }
 
 fn compile_stage(
@@ -118,10 +105,10 @@ fn compile_stage(
     variable_registry: Arc<VariableRegistry>,
     input_variables: &HashMap<Variable, VariablePosition>,
     annotated_stage: AnnotatedStage,
-) -> Result<ExecutableStage, QueryError> {
+) -> Result<ExecutableStage, ExecutableError> {
     match &annotated_stage {
         AnnotatedStage::Match { block, block_annotations, executable_expressions } => {
-            let plan = compiler::executable::match_::planner::compile(
+            let plan = crate::executable::match_::planner::compile(
                 block,
                 input_variables,
                 block_annotations,
@@ -132,23 +119,23 @@ fn compile_stage(
             Ok(ExecutableStage::Match(plan))
         }
         AnnotatedStage::Insert { block, annotations } => {
-            let plan = compiler::executable::insert::executable::compile(
+            let plan = crate::executable::insert::executable::compile(
                 variable_registry,
                 block.conjunction().constraints(),
                 input_variables,
                 annotations,
             )
-            .map_err(|source| QueryError::WriteCompilation { source })?;
+            .map_err(|source| ExecutableError::InsertExecutableCompilation { source })?;
             Ok(ExecutableStage::Insert(plan))
         }
         AnnotatedStage::Delete { block, deleted_variables, annotations } => {
-            let plan = compiler::executable::delete::executable::compile(
+            let plan = crate::executable::delete::executable::compile(
                 input_variables,
                 annotations,
                 block.conjunction().constraints(),
                 deleted_variables,
             )
-            .map_err(|source| QueryError::WriteCompilation { source })?;
+            .map_err(|source| ExecutableError::DeleteExecutableCompilation { source })?;
             Ok(ExecutableStage::Delete(plan))
         }
         AnnotatedStage::Select(select) => {
@@ -250,8 +237,9 @@ fn compile_stage(
                 output_row_mapping,
             }))
         }
-        AnnotatedStage::Fetch { .. } => {
-            todo!()
-        }
     }
+}
+
+fn compile_fetch(fetch: AnnotatedFetch) -> FetchExecutable {
+    todo!()
 }

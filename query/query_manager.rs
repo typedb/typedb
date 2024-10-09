@@ -29,9 +29,9 @@ use ir::{
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
+use compiler::executable::pipeline::{compile_pipeline, ExecutablePipeline, ExecutableStage};
 
 use crate::{
-    compilation::{compile_pipeline, ExecutablePipeline, ExecutableStage},
     define,
     error::QueryError,
     redefine, undefine,
@@ -92,7 +92,7 @@ impl QueryManager {
 
         // 3: Compile
         let variable_registry = Arc::new(variable_registry);
-        let ExecutablePipeline { executable_functions: compiled_functions, executable_stages: compiled_stages, output_variable_positions } = compile_pipeline(
+        let ExecutablePipeline { executable_functions: compiled_functions, executable_stages: compiled_stages, stages_variable_positions: output_variable_positions } = compile_pipeline(
             thing_manager.statistics(),
             variable_registry.clone(),
             annotated_preamble,
@@ -191,22 +191,22 @@ impl QueryManager {
 
         // // 3: Compile
         let variable_registry = Arc::new(variable_registry);
-        let compiled_pipeline = compile_pipeline(
+        let executable_pipeline = compile_pipeline(
             thing_manager.statistics(),
             variable_registry.clone(),
             annotated_preamble,
             annotated_stages,
         );
-        let ExecutablePipeline { executable_functions: compiled_functions, executable_stages: compiled_stages, output_variable_positions } =
-            match compiled_pipeline {
-                Ok(compiled_pipeline) => compiled_pipeline,
+        let ExecutablePipeline { executable_functions, executable_stages, stages_variable_positions: output_variable_positions } =
+            match executable_pipeline {
+                Ok(executable) => executable,
                 Err(err) => return Err((snapshot, err)),
             };
 
         let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::new(value_parameters));
         let mut previous_stage = WritePipelineStage::Initial(InitialStage::new(context));
-        for compiled_stage in compiled_stages {
-            match compiled_stage {
+        for executable_stage in executable_stages {
+            match executable_stage {
                 ExecutableStage::Match(match_executable) => {
                     // TODO: Pass expressions & functions
                     let match_stage = MatchStageExecutor::new(match_executable, previous_stage);

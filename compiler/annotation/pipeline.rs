@@ -26,6 +26,7 @@ use ir::{
     },
     translation::pipeline::TranslatedStage,
 };
+use ir::pipeline::fetch::FetchObject;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -44,6 +45,7 @@ use crate::{
 pub struct AnnotatedPipeline {
     pub annotated_preamble: AnnotatedUnindexedFunctions,
     pub annotated_stages: Vec<AnnotatedStage>,
+    pub annotated_fetch: Option<AnnotatedFetch>,
 }
 
 #[derive(Debug, Clone)]
@@ -63,9 +65,6 @@ pub enum AnnotatedStage {
         deleted_variables: Vec<Variable>,
         annotations: TypeAnnotations,
     },
-    Fetch {
-        annotated_fetch: AnnotatedFetch,
-    },
     // ...
     Select(Select),
     Sort(Sort),
@@ -82,6 +81,7 @@ pub fn annotate_pipeline(
     variable_registry: &mut VariableRegistry,
     parameters: &ParameterRegistry,
     translated_preamble: Vec<Function>,
+    translated_fetch: Option<FetchObject>,
     translated_stages: Vec<TranslatedStage>,
 ) -> Result<AnnotatedPipeline, AnnotationError> {
     let annotated_preamble =
@@ -120,7 +120,8 @@ pub fn annotate_pipeline(
         }
         annotated_stages.push(annotated_stage);
     }
-    Ok(AnnotatedPipeline { annotated_stages, annotated_preamble })
+    let annotated_fetch = translated_fetch.map(|fetch| annotate_fetch(fetch));
+    Ok(AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble })
 }
 
 fn annotate_stage(
@@ -252,10 +253,11 @@ fn annotate_stage(
             }
             Ok(AnnotatedStage::Reduce(reduce, reduce_instructions))
         }
-        TranslatedStage::Fetch { fetch_object } => {
-            todo!()
-        }
     }
+}
+
+fn annotate_fetch(fetch: FetchObject) -> AnnotatedFetch {
+    todo!()
 }
 
 pub fn validate_sort_variables_comparable(
