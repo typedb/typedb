@@ -109,7 +109,7 @@ pub fn annotate_functions(
     // // In the preliminary annotations, functions are annotated based only on the variable categories of the called function.
     // let preliminary_annotations_res: Result<Vec<FunctionAnnotations>, FunctionTypeInferenceError> = functions
     //     .iter()
-    //     .map(|function| infer_types_for_function(function, snapshot, type_manager, indexed_annotated_functions, None))
+    //     .map(|function| annotate_function(function, snapshot, type_manager, indexed_annotated_functions, None))
     //     .collect();
     // let preliminary_annotations =
     //     AnnotatedUnindexedFunctions::new(functions.into_boxed_slice(), preliminary_annotations_res?.into_boxed_slice());
@@ -135,7 +135,9 @@ pub fn annotate_functions(
     // let (ir, _) = preliminary_annotations.into_parts();
     // let annotated = AnnotatedUnindexedFunctions::new(ir, annotations_res.into_boxed_slice());
     // Ok(annotated)
-    todo!()
+
+    // TODO: implement
+    Ok(AnnotatedUnindexedFunctions::empty())
 }
 
 pub fn annotate_function(

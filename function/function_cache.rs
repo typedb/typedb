@@ -89,7 +89,13 @@ impl FunctionCache {
         //     schema_functions_index,
         //     IndexedAnnotatedFunctions::new(translated_schema_functions_index, annotated_schema_functions_index),
         // ))
-        todo!()
+
+        // TODO
+        Ok((
+            function_index,
+            schema_functions_index,
+            IndexedAnnotatedFunctions::empty()
+        ))
     }
 
     pub(crate) fn get_function_key(&self, name: &str) -> Option<DefinitionKey<'static>> {
