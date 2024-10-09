@@ -9,17 +9,19 @@ use std::sync::Arc;
 use compiler::executable::match_::planner::match_executable::MatchExecutable;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use itertools::Itertools;
-use lending_iterator::{adaptors::FlatMap, AsLendingIterator, LendingIterator};
+use lending_iterator::adaptors::FlatMap;
+use lending_iterator::{AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    batch::{FixedBatch, FixedBatchRowIterator},
+    batch::FixedBatch,
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
     read::step_executors::StepExecutor,
     ExecutionInterrupt,
 };
+use crate::batch::FixedBatchRowIterator;
 
 pub struct MatchExecutor {
     input: Option<MaybeOwnedRow<'static>>,
@@ -105,30 +107,6 @@ impl MatchExecutor {
     }
 }
 
-type PatternRowIterator<Snapshot> = FlatMap<
-    AsLendingIterator<BatchIterator<Snapshot>>,
-    FixedBatchRowIterator,
-    fn(Result<FixedBatch, ReadExecutionError>) -> FixedBatchRowIterator,
->;
-
-pub struct PatternIterator<Snapshot: ReadableSnapshot + 'static> {
-    iterator: PatternRowIterator<Snapshot>,
-}
-
-impl<Snapshot: ReadableSnapshot> PatternIterator<Snapshot> {
-    fn new(iterator: PatternRowIterator<Snapshot>) -> Self {
-        Self { iterator }
-    }
-}
-
-impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for PatternIterator<Snapshot> {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, &'a ReadExecutionError>;
-
-    fn next(&mut self) -> Option<Self::Item<'_>> {
-        self.iterator.next()
-    }
-}
-
 pub(crate) struct BatchIterator<Snapshot> {
     executor: MatchExecutor,
     context: ExecutionContext<Snapshot>,
@@ -154,6 +132,27 @@ impl<Snapshot: ReadableSnapshot + 'static> Iterator for BatchIterator<Snapshot> 
     }
 }
 
-// struct ResumeExecutor {
-//     resume_points: Vec<SuspensionPoint>,
-// }
+// Wrappers around
+type PatternRowIterator<Snapshot> = FlatMap<
+    AsLendingIterator<BatchIterator<Snapshot>>,
+    FixedBatchRowIterator,
+    fn(Result<FixedBatch, ReadExecutionError>) -> FixedBatchRowIterator,
+>;
+
+pub struct PatternIterator<Snapshot: ReadableSnapshot + 'static> {
+    iterator: PatternRowIterator<Snapshot>,
+}
+
+impl<Snapshot: ReadableSnapshot> PatternIterator<Snapshot> {
+    fn new(iterator: PatternRowIterator<Snapshot>) -> Self {
+        Self { iterator }
+    }
+}
+
+impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for PatternIterator<Snapshot> {
+    type Item<'a> = Result<MaybeOwnedRow<'a>, &'a ReadExecutionError>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        self.iterator.next()
+    }
+}

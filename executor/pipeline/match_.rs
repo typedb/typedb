@@ -18,6 +18,7 @@ use crate::{
     row::MaybeOwnedRow,
 };
 
+
 pub struct MatchStageExecutor<PreviousStage> {
     executable: MatchExecutable,
     previous: PreviousStage,
