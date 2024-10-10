@@ -60,6 +60,7 @@ pub struct FetchObjectAttributes {
 pub struct FetchListSubFetch {
     pub(crate) context: TranslationContext,
     pub(crate) stages: Vec<TranslatedStage>,
+    pub(crate) fetch: FetchObject,
 }
 
 #[derive(Debug, Clone)]
