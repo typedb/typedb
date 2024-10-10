@@ -214,7 +214,7 @@ fn annotate_arguments(
             TypeRefAny::Optional(typeql::type_::Optional { inner: _inner, .. }) => todo!(),
             TypeRefAny::List(typeql::type_::List { inner: _inner, .. }) => todo!(),
         }) else {
-            unreachable!(); // Variables as function argument labels? No.
+            unreachable!("Function argument labels cannot be variable.");
         };
         match inner_type {
             NamedType::Label(label) => {
@@ -230,7 +230,7 @@ fn annotate_arguments(
                 value_types.insert(var.clone(), ExpressionValueType::Single(translate_value_type(&value_type.token)));
                 // TODO: This may be list
             }
-            NamedType::Role(_) => unreachable!(),
+            NamedType::Role(_) => unreachable!("A function argument label was wrongly parsed as role-type."),
         }
     }
     Ok((variable_types, value_types))
@@ -277,6 +277,6 @@ fn get_function_parameter(
     } else if let Some(expression_value_type) = body_variable_value_types.get(variable) {
         FunctionParameterAnnotation::Value(expression_value_type.value_type().clone())
     } else {
-        unreachable!()
+        unreachable!("Could not find annotations for a function return variable.")
     }
 }

@@ -144,7 +144,7 @@ pub(crate) fn annotate_pipeline_stages(
         let running_constraint_annotations = latest_match_index
             .map(|idx| {
                 let AnnotatedStage::Match { block_annotations, .. } = annotated_stages.get(idx).unwrap() else {
-                    unreachable!();
+                    unreachable!("LatestMatchIndex will always be a match");
                 };
                 block_annotations.constraint_annotations()
             })

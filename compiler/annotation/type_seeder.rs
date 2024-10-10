@@ -571,7 +571,12 @@ pub(crate) fn get_type_annotation_and_subtypes_from_label<Snapshot: ReadableSnap
             .iter()
             .map(|t| TypeAnnotation::Attribute(t.clone()))
             .collect(),
-        TypeAnnotation::RoleType(_) => unreachable!(),
+        TypeAnnotation::RoleType(type_) => type_
+            .get_subtypes_transitive(snapshot, type_manager)
+            .map_err(|source| TypeInferenceError::ConceptRead { source })?
+            .iter()
+            .map(|t| TypeAnnotation::RoleType(t.clone()))
+            .collect(),
     };
     types.insert(type_);
     Ok(types)
