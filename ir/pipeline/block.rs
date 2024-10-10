@@ -42,8 +42,12 @@ impl Block {
         Scope::scope_id(self)
     }
 
-    pub fn variable_scopes(&self) -> impl Iterator<Item = (&Variable, &ScopeId)> + '_ {
+    fn variable_scopes(&self) -> impl Iterator<Item = (&Variable, &ScopeId)> + '_ {
         self.block_context.variable_declaration.iter()
+    }
+
+    pub fn variables(&self) -> impl Iterator<Item=Variable> + '_ {
+        self.variable_scopes().map(|(&v, _)| v)
     }
 
     pub fn block_variables(&self) -> impl Iterator<Item = Variable> + '_ {

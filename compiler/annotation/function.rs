@@ -17,11 +17,12 @@ use encoding::{
 };
 use ir::{
     pipeline::{
-        function::{AnonymousFunction, Function, FunctionBody, ReturnOperation},
+        function::{Function, FunctionBody, ReturnOperation},
         function_signature::FunctionIDAPI,
     },
     translation::tokens::translate_value_type,
 };
+use ir::pipeline::function::{FunctionBody, ReturnOperation};
 use storage::snapshot::ReadableSnapshot;
 use typeql::{type_::NamedType, TypeRef, TypeRefAny};
 
@@ -256,8 +257,7 @@ fn extract_return_type_annotations(
             .map(|var| get_function_parameter(var, body_variable_annotations, body_variable_value_types))
             .collect(),
         ReturnOperation::ReduceReducer(reducers) => {
-            // aggregates return value types?
-            todo!()
+
         }
         ReturnOperation::ReduceCheck() => {
             // aggregates return value types?

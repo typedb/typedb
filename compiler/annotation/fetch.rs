@@ -9,7 +9,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
+use answer::{Type, variable::Variable};
 use concept::type_::type_manager::TypeManager;
 use encoding::value::value_type::ValueType;
 use ir::{
@@ -19,16 +19,19 @@ use ir::{
         FetchObjectEntries, FetchSingleAttribute, FetchSingleVar, FetchSome,
     },
 };
+use ir::translation::TranslationContext;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
+    AnnotationError,
     expression::compiled_expression::ExpressionValueType,
     function::{
-        annotate_anonymous_function, AnnotatedAnonymousFunction, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions,
+        AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions,
     },
     pipeline::AnnotatedStage,
-    AnnotationError,
 };
+use crate::annotation::function::{annotate_function, AnnotatedFunction};
+use crate::annotation::pipeline::annotate_stages_and_fetch;
 
 #[derive(Debug, Clone)]
 pub struct AnnotatedFetch {
@@ -42,11 +45,11 @@ pub struct AnnotatedFetch {
 pub enum AnnotatedFetchSome {
     SingleVar(FetchSingleVar),
     SingleAttribute(FetchSingleAttribute),
-    SingleFunction(AnnotatedAnonymousFunction),
+    SingleFunction(AnnotatedFunction),
 
     Object(Box<AnnotatedFetchObject>),
 
-    ListFunction(AnnotatedAnonymousFunction),
+    ListFunction(AnnotatedFunction),
     ListSubFetch(AnnotatedFetchListSubFetch),
     ListAttributesAsList(FetchListAttributeAsList),
     ListAttributesFromList(FetchListAttributeFromList),
@@ -66,6 +69,7 @@ pub struct AnnotatedFetchObjectEntries {
 #[derive(Debug, Clone)]
 pub struct AnnotatedFetchListSubFetch {
     stages: Vec<AnnotatedStage>,
+    fetch: AnnotatedFetch,
 }
 
 pub(crate) fn annotate_fetch(
@@ -129,9 +133,9 @@ fn annotate_some(
     match some {
         FetchSome::SingleVar(var) => Ok(AnnotatedFetchSome::SingleVar(var)),
         FetchSome::SingleAttribute(attr) => Ok(AnnotatedFetchSome::SingleAttribute(attr)),
-        FetchSome::SingleFunction(function) => {
-            let annotated_function = annotate_anonymous_function(
-                &function,
+        FetchSome::SingleFunction(mut function) => {
+            let annotated_function = annotate_function(
+                &mut function,
                 snapshot,
                 type_manager,
                 indexed_annotated_functions,
@@ -145,9 +149,9 @@ fn annotate_some(
                 annotate_object(*object, snapshot, type_manager, indexed_annotated_functions, local_functions)?;
             Ok(AnnotatedFetchSome::Object(Box::new(object)))
         }
-        FetchSome::ListFunction(function) => {
-            let annotated_function = annotate_anonymous_function(
-                &function,
+        FetchSome::ListFunction(mut function) => {
+            let annotated_function = annotate_function(
+                &mut function,
                 snapshot,
                 type_manager,
                 indexed_annotated_functions,
@@ -156,12 +160,39 @@ fn annotate_some(
             .map_err(|err| AnnotationError::FetchBlockFunctionInferenceError { typedb_source: err })?;
             Ok(AnnotatedFetchSome::ListFunction(annotated_function))
         }
-        FetchSome::ListSubFetch(sub_fetch) => Ok(AnnotatedFetchSome::ListSubFetch(annotate_sub_fetch(sub_fetch))),
+        FetchSome::ListSubFetch(sub_fetch) => {
+            let annotated_sub_fetch = annotate_sub_fetch(
+                snapshot,
+                type_manager,
+                indexed_annotated_functions,
+                local_functions,
+                sub_fetch
+            );
+            Ok(AnnotatedFetchSome::ListSubFetch(annotated_sub_fetch?))
+        },
         FetchSome::ListAttributesAsList(fetch) => Ok(AnnotatedFetchSome::ListAttributesAsList(fetch)),
         FetchSome::ListAttributesFromList(fetch) => Ok(AnnotatedFetchSome::ListAttributesFromList(fetch)),
     }
 }
 
-fn annotate_sub_fetch(sub_fetch: FetchListSubFetch) -> AnnotatedFetchListSubFetch {
-    todo!()
+fn annotate_sub_fetch(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    schema_function_annotations: &IndexedAnnotatedFunctions,
+    annotated_preamble: Option<&AnnotatedUnindexedFunctions>,
+    sub_fetch: FetchListSubFetch
+) -> Result<AnnotatedFetchListSubFetch, AnnotationError> {
+    let FetchListSubFetch { context, stages, fetch } = sub_fetch;
+    let TranslationContext { mut variable_registry, parameters, .. } = context;
+    let (annotated_stages, annotated_fetch) = annotate_stages_and_fetch(
+        snapshot,
+        type_manager,
+        schema_function_annotations,
+        &mut variable_registry,
+        &parameters,
+        annotated_preamble,
+        stages,
+        Some(fetch)
+    )?;
+    Ok(AnnotatedFetchListSubFetch { stages: annotated_stages, fetch: annotated_fetch.unwrap()})
 }

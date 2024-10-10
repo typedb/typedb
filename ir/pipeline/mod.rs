@@ -206,6 +206,10 @@ impl VariableRegistry {
         }
     }
 
+    pub fn has_variable_as_named(&self, variable: &Variable) -> bool {
+        self.variable_names.contains_key(variable)
+    }
+
     pub(crate) fn register_reduce_output_variable(
         &mut self,
         name: &str,

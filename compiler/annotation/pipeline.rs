@@ -44,6 +44,7 @@ use crate::{
     },
     executable::{insert::type_check::check_annotations, reduce::ReduceInstruction},
 };
+use crate::annotation::function::AnnotatedFunction;
 
 pub struct AnnotatedPipeline {
     pub annotated_preamble: AnnotatedUnindexedFunctions,
@@ -90,8 +91,7 @@ pub fn annotate_pipeline(
     let annotated_preamble =
         annotate_functions(translated_preamble, snapshot, type_manager, schema_function_annotations)
             .map_err(|typedb_source| AnnotationError::PreambleTypeInference { typedb_source })?;
-
-    let (annotated_stages, running_variable_annotations, running_value_variable_types) = annotate_pipeline_stages(
+    let (annotated_stages, annotated_fetch) = annotate_stages_and_fetch(
         snapshot,
         type_manager,
         schema_function_annotations,
@@ -99,8 +99,29 @@ pub fn annotate_pipeline(
         parameters,
         Some(&annotated_preamble),
         translated_stages,
-        BTreeMap::new(),
-        BTreeMap::new(),
+        translated_fetch,
+    )?;
+    Ok(AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble })
+}
+
+pub(crate) fn annotate_stages_and_fetch(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    schema_function_annotations: &IndexedAnnotatedFunctions,
+    variable_registry: &mut VariableRegistry,
+    parameters: &ParameterRegistry,
+    annotated_preamble: Option<&AnnotatedUnindexedFunctions>,
+    translated_stages: Vec<TranslatedStage>,
+    translated_fetch: Option<FetchObject>,
+) -> Result<(Vec<AnnotatedStage>, Option<AnnotatedFetch>), AnnotationError> {
+    let (annotated_stages, running_variable_annotations, running_value_variable_types) = annotate_pipeline_stages(
+        snapshot,
+        type_manager,
+        schema_function_annotations,
+        variable_registry,
+        parameters,
+        annotated_preamble,
+        translated_stages,
     )?;
     let annotated_fetch = match translated_fetch {
         None => None,
@@ -112,12 +133,12 @@ pub fn annotate_pipeline(
                 snapshot,
                 type_manager,
                 schema_function_annotations,
-                Some(&annotated_preamble),
+                annotated_preamble,
             );
             Some(annotated?)
         }
     };
-    Ok(AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble })
+    Ok((annotated_stages, annotated_fetch))
 }
 
 pub(crate) fn annotate_pipeline_stages(

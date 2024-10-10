@@ -55,9 +55,6 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     type_annotations: &'block TypeAnnotations,
     input_value_variable_types: &mut BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<HashMap<Variable, ExecutableExpression>, ExpressionCompileError> {
-    let mut expression_index = HashMap::new();
-    index_expressions(block.conjunction(), &mut expression_index)?;
-    let assigned_variables = expression_index.keys().cloned().collect_vec();
     let mut context = BlockExpressionsCompilationContext {
         block,
         variable_registry,
@@ -69,6 +66,9 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
         visited_expressions: HashSet::new(),
         compiled_expressions: HashMap::new(),
     };
+    let mut expression_index = HashMap::new();
+    index_expressions(&context, block.conjunction(), &mut expression_index)?;
+    let assigned_variables = expression_index.keys().cloned().collect_vec();
 
     for variable in assigned_variables {
         compile_expressions_recursive(&mut context, variable, &expression_index)?
@@ -95,7 +95,8 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     Ok(compiled_expressions)
 }
 
-fn index_expressions<'block>(
+fn index_expressions<'a, 'block, Snapshot: ReadableSnapshot>(
+    context: &BlockExpressionsCompilationContext<'a, Snapshot>,
     conjunction: &'block Conjunction,
     index: &mut HashMap<Variable, &'block ExpressionBinding<Variable>>,
 ) -> Result<(), ExpressionCompileError> {
@@ -103,7 +104,9 @@ fn index_expressions<'block>(
         if let Some(expression_binding) = constraint.as_expression_binding() {
             let &Vertex::Variable(left) = expression_binding.left() else { unreachable!() };
             if index.contains_key(&left) {
-                Err(ExpressionCompileError::MultipleAssignmentsForSingleVariable { assign_variable: left })?;
+                Err(ExpressionCompileError::MultipleAssignmentsForSingleVariable {
+                    assign_variable: context.variable_registry.variable_names().get(&left).cloned()
+                })?;
             }
             index.insert(left, expression_binding);
         }
@@ -112,14 +115,14 @@ fn index_expressions<'block>(
         match nested {
             NestedPattern::Disjunction(disjunction) => {
                 for nested_conjunction in disjunction.conjunctions() {
-                    index_expressions(nested_conjunction, index)?;
+                    index_expressions(context, nested_conjunction, index)?;
                 }
             }
             NestedPattern::Negation(negation) => {
-                index_expressions(negation.conjunction(), index)?;
+                index_expressions(context, negation.conjunction(), index)?;
             }
             NestedPattern::Optional(optional) => {
-                index_expressions(optional.conjunction(), index)?;
+                index_expressions(context, optional.conjunction(), index)?;
             }
         }
     }
@@ -152,7 +155,9 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
         if !context.compiled_expressions.contains_key(&variable) {
             if context.visited_expressions.contains(&variable) {
                 // TODO: Do we catch double assignments?
-                Err(ExpressionCompileError::CircularDependencyInExpressions { assign_variable: variable })
+                Err(ExpressionCompileError::CircularDependencyInExpressions {
+                    assign_variable: context.variable_registry.variable_names().get(&variable).cloned()
+                })
             } else {
                 compile_expressions_recursive(context, variable, expression_assignments)?;
                 context
@@ -168,10 +173,14 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
     } else if let Some(types) = context.type_annotations.vertex_annotations_of(&Vertex::Variable(variable)) {
         // resolve_value_types will error if the type_annotations aren't all attribute(list) types
         let value_types = resolve_value_types(types, context.snapshot, context.type_manager).map_err(|source| {
-            ExpressionCompileError::CouldNotDetermineValueTypeForVariable { variable: variable.clone() }
+            ExpressionCompileError::CouldNotDetermineValueTypeForVariable {
+                variable: context.variable_registry.variable_names().get(&variable).cloned()
+            }
         })?;
         if value_types.len() != 1 {
-            Err(ExpressionCompileError::VariableDidNotHaveSingleValueType { variable })
+            Err(ExpressionCompileError::VariableDidNotHaveSingleValueType {
+                variable: context.variable_registry.variable_names().get(&variable).cloned()
+            })
         } else {
             let value_type = value_types.iter().find(|_| true).unwrap();
             let variable_category = context.variable_registry.get_variable_category(variable).unwrap();
@@ -187,12 +196,14 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
                     Ok(())
                 }
                 _ => Err(ExpressionCompileError::VariableMustBeValueOrAttribute {
-                    variable,
+                    variable: context.variable_registry.variable_names().get(&variable).cloned(),
                     actual_category: variable_category,
                 })?, // TODO: I think this is practically unreachable?
             }
         }
     } else {
-        Err(ExpressionCompileError::CouldNotDetermineValueTypeForVariable { variable })
+        Err(ExpressionCompileError::CouldNotDetermineValueTypeForVariable {
+            variable: context.variable_registry.variable_names().get(&variable).cloned()
+        })
     }
 }
