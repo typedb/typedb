@@ -78,9 +78,9 @@ impl FunctionManager {
         // Prepare ir
         let function_index =
             HashMapFunctionSignatureIndex::build(functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)));
-        let ir = Self::translate_functions(snapshot, &functions, &function_index)?;
+        let translated = Self::translate_functions(snapshot, &functions, &function_index)?;
         // Run type-inference
-        annotate_functions(ir, snapshot, type_manager, &IndexedAnnotatedFunctions::empty())
+        annotate_functions(translated, snapshot, type_manager, &IndexedAnnotatedFunctions::empty())
             .map_err(|source| FunctionError::AllFunctionsTypeCheckFailure { typedb_source: source })?;
         Ok(())
     }

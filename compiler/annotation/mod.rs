@@ -33,7 +33,7 @@ typedb_error!(
 
 typedb_error!(
     pub FunctionTypeInferenceError(component = "Function type inference", prefix = "FIN") {
-        TypeInference(0, "Type inference error while type checking function '{name}'.", name: String, ( typedb_source : TypeInferenceError )),
+        TypeInference(0, "Type inference error while type checking function '{name}'.", name: String, ( typedb_source : Box<AnnotationError> )),
     }
 );
 
