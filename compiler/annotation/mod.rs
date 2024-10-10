@@ -28,12 +28,19 @@ typedb_error!(
         ReducerInputVariableDidNotHaveSingleValueType(11, "The reducer input variable '{variable}' had multiple value-types.", variable: String),
         UnsupportedValueTypeForReducer(12, "The input variable to the reducer'{reducer}({variable})' reducer had an unsupported value-type: '{value_type}'", reducer: String, variable: String, value_type: ValueTypeCategory),
         UncomparableValueTypesForSortVariable(13, "The sort variable '{variable}' could return incomparable value-types '{category1}' & '{category2}'.", variable: String, category1: ValueTypeCategory, category2: ValueTypeCategory),
+        ReducerInputVariableIsList(14, "The input variable '{variable}' to the reducer '{reducer}' was a list.", reducer: String, variable: String),
     }
 );
 
 typedb_error!(
     pub FunctionTypeInferenceError(component = "Function type inference", prefix = "FIN") {
         TypeInference(0, "Type inference error while type checking function '{name}'.", name: String, ( typedb_source : Box<AnnotationError> )),
+        CouldNotResolveArgumentType(
+            1,
+            "An error occurred when trying to resolve the type of the argument at index: {index}.",
+            index: usize,
+            source: TypeInferenceError
+        ),
     }
 );
 

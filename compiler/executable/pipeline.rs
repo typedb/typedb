@@ -50,7 +50,7 @@ pub enum ExecutableStage {
 }
 
 impl ExecutableStage {
-    fn output_row_mapping(&self) -> HashMap<Variable, VariablePosition> {
+    pub(crate) fn output_row_mapping(&self) -> HashMap<Variable, VariablePosition> {
         match self {
             ExecutableStage::Match(executable) => executable.variable_positions().to_owned(),
             ExecutableStage::Insert(executable) => executable
@@ -84,10 +84,22 @@ pub fn compile_pipeline(
     annotated_fetch: Option<AnnotatedFetch>,
 ) -> Result<ExecutablePipeline, ExecutableCompilationError> {
     let executable_functions = annotated_functions
-        .iter_functions()
+        .into_iter_functions()
         .map(|function| compile_function(statistics, variable_registry.clone(), function))
         .collect::<Result<Vec<_>, _>>()?;
+    let executable_stages = compile_pipeline_stages(statistics, variable_registry, annotated_stages)?;
+    let stages_variable_positions =
+        executable_stages.last().map(|stage: &ExecutableStage| stage.output_row_mapping()).unwrap_or(HashMap::new());
 
+    let executable_fetch = annotated_fetch.map(|fetch| compile_fetch(fetch));
+    Ok(ExecutablePipeline { executable_functions, executable_stages, stages_variable_positions, executable_fetch })
+}
+
+pub(crate) fn compile_pipeline_stages(
+    statistics: &Statistics,
+    variable_registry: Arc<VariableRegistry>,
+    annotated_stages: Vec<AnnotatedStage>,
+) -> Result<Vec<ExecutableStage>, ExecutableCompilationError> {
     let mut executable_stages = Vec::with_capacity(annotated_stages.len());
     for stage in annotated_stages {
         let input_variable_positions = executable_stages
@@ -98,11 +110,7 @@ pub fn compile_pipeline(
         let executable_stage = compile_stage(statistics, variable_registry.clone(), &input_variable_positions, stage)?;
         executable_stages.push(executable_stage);
     }
-    let stages_variable_positions =
-        executable_stages.last().map(|stage: &ExecutableStage| stage.output_row_mapping()).unwrap_or(HashMap::new());
-
-    let executable_fetch = annotated_fetch.map(|fetch| compile_fetch(fetch));
-    Ok(ExecutablePipeline { executable_functions, executable_stages, stages_variable_positions, executable_fetch })
+    Ok(executable_stages)
 }
 
 fn compile_stage(

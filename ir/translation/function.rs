@@ -29,20 +29,21 @@ pub fn translate_function(
     function: &typeql::Function,
 ) -> Result<Function, FunctionRepresentationError> {
     let mut context = TranslationContext::new();
-    let arguments: Vec<Variable> = function
+    let body = translate_function_block(snapshot, function_index, &mut context, &function.block)?;
+    let arguments = function
         .signature
         .args
         .iter()
         .map(|typeql_arg| {
-            context.get_variable(typeql_arg.var.name().unwrap()).ok_or_else(|| {
+            let var = context.get_variable(typeql_arg.var.name().unwrap()).ok_or_else(|| {
                 FunctionRepresentationError::FunctionArgumentUnused {
                     argument_variable: typeql_arg.var.name().unwrap().to_string(),
                     declaration: function.clone(),
                 }
-            })
+            })?;
+            Ok((var, typeql_arg.type_.clone()))
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let body = translate_function_block(snapshot, function_index, &mut context, &function.block)?;
     Ok(Function::new(function.signature.ident.as_str(), context, arguments, body))
 }
 

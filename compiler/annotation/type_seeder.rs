@@ -11,7 +11,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type as TypeAnnotation};
+use answer::{variable::Variable, Type as TypeAnnotation, Type};
 use concept::{
     error::ConceptReadError,
     type_::{object_type::ObjectType, type_manager::TypeManager, OwnerAPI, PlayerAPI, TypeAPI},
@@ -542,6 +542,46 @@ pub(crate) fn get_type_annotation_from_label<Snapshot: ReadableSnapshot>(
     }
 }
 
+pub(crate) fn get_type_annotation_and_subtypes_from_label<Snapshot: ReadableSnapshot>(
+    snapshot: &Snapshot,
+    type_manager: &TypeManager,
+    label_value: &encoding::value::label::Label<'static>,
+) -> Result<BTreeSet<TypeAnnotation>, TypeInferenceError> {
+    let type_opt = get_type_annotation_from_label(snapshot, type_manager, label_value)
+        .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+    let Some(type_) = type_opt else {
+        return Err(TypeInferenceError::LabelNotResolved { name: label_value.scoped_name().to_string() });
+    };
+    let mut types: BTreeSet<Type> = match &type_ {
+        TypeAnnotation::Entity(type_) => type_
+            .get_subtypes_transitive(snapshot, type_manager)
+            .map_err(|source| TypeInferenceError::ConceptRead { source })?
+            .iter()
+            .map(|t| TypeAnnotation::Entity(t.clone()))
+            .collect(),
+        TypeAnnotation::Relation(type_) => type_
+            .get_subtypes_transitive(snapshot, type_manager)
+            .map_err(|source| TypeInferenceError::ConceptRead { source })?
+            .iter()
+            .map(|t| TypeAnnotation::Relation(t.clone()))
+            .collect(),
+        TypeAnnotation::Attribute(type_) => type_
+            .get_subtypes_transitive(snapshot, type_manager)
+            .map_err(|source| TypeInferenceError::ConceptRead { source })?
+            .iter()
+            .map(|t| TypeAnnotation::Attribute(t.clone()))
+            .collect(),
+        TypeAnnotation::RoleType(type_) => type_
+            .get_subtypes_transitive(snapshot, type_manager)
+            .map_err(|source| TypeInferenceError::ConceptRead { source })?
+            .iter()
+            .map(|t| TypeAnnotation::RoleType(t.clone()))
+            .collect(),
+    };
+    types.insert(type_);
+    Ok(types)
+}
+
 impl UnaryConstraint for Kind<Variable> {
     fn apply<Snapshot: ReadableSnapshot>(
         &self,
@@ -635,8 +675,7 @@ impl UnaryConstraint for FunctionCallBinding<Variable> {
         graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
         if let Some(annotated_function) = seeder.get_annotated_function(self.function_call().function_id()) {
-            for (assigned_variable, return_annotation) in zip(self.assigned(), annotated_function.return_annotations())
-            {
+            for (assigned_variable, return_annotation) in zip(self.assigned(), &annotated_function.return_annotations) {
                 if let FunctionParameterAnnotation::Concept(types) = return_annotation {
                     graph_vertices.add_or_intersect(assigned_variable, Cow::Borrowed(types));
                 }

@@ -308,9 +308,7 @@ pub mod tests {
             let f_var_animal_type =
                 var_from_registry(&f_ir.translation_context().variable_registry, "called_animal_type").unwrap();
             let f_var_name = var_from_registry(&f_ir.translation_context().variable_registry, "called_name").unwrap();
-            let AnnotatedStage::Match { block_annotations, .. } = &f_annotations.pipeline_annotations()[0] else {
-                unreachable!()
-            };
+            let AnnotatedStage::Match { block_annotations, .. } = &f_annotations.stages[0] else { unreachable!() };
             assert_eq!(
                 block_annotations.vertex_annotations(),
                 &BTreeMap::from([
@@ -354,9 +352,7 @@ pub mod tests {
                 var_from_registry(&f_ir.translation_context().variable_registry, "called_animal_type").unwrap();
             let f_var_name = var_from_registry(&f_ir.translation_context().variable_registry, "called_name").unwrap();
 
-            let AnnotatedStage::Match { block_annotations, .. } = &f_annotations.pipeline_annotations()[0] else {
-                unreachable!()
-            };
+            let AnnotatedStage::Match { block_annotations, .. } = &f_annotations.stages[0] else { unreachable!() };
             assert_eq!(
                 block_annotations.vertex_annotations(),
                 &BTreeMap::from([

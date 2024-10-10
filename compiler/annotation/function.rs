@@ -10,20 +10,25 @@ use std::{
 };
 
 use answer::{variable::Variable, Type};
-use concept::type_::type_manager::TypeManager;
-use encoding::{graph::definition::definition_key::DefinitionKey, value::value_type::ValueType};
+use concept::type_::{type_manager::TypeManager, TypeAPI};
+use encoding::{
+    graph::definition::definition_key::DefinitionKey,
+    value::{label::Label, value_type::ValueType},
+};
 use ir::{
-    pattern::Vertex,
     pipeline::{
         function::{AnonymousFunction, Function, FunctionBody, ReturnOperation},
         function_signature::FunctionIDAPI,
     },
+    translation::tokens::translate_value_type,
 };
 use storage::snapshot::ReadableSnapshot;
+use typeql::{type_::NamedType, TypeRef, TypeRefAny};
 
 use crate::annotation::{
-    pipeline::{annotate_pipeline, annotate_pipeline_stages, AnnotatedStage},
-    FunctionTypeInferenceError,
+    expression::compiled_expression::ExpressionValueType,
+    pipeline::{annotate_pipeline_stages, AnnotatedStage},
+    type_seeder, FunctionTypeInferenceError, TypeInferenceError,
 };
 
 #[derive(Debug, Clone)]
@@ -34,18 +39,9 @@ pub enum FunctionParameterAnnotation {
 
 #[derive(Debug, Clone)]
 pub struct AnnotatedFunction {
-    stages: Vec<AnnotatedStage>,
-    return_annotations: Vec<FunctionParameterAnnotation>,
-}
-
-impl AnnotatedFunction {
-    pub fn pipeline_annotations(&self) -> &Vec<AnnotatedStage> {
-        &self.stages
-    }
-
-    pub fn return_annotations(&self) -> &Vec<FunctionParameterAnnotation> {
-        &self.return_annotations
-    }
+    pub stages: Vec<AnnotatedStage>,
+    pub return_operation: ReturnOperation,
+    pub return_annotations: Vec<FunctionParameterAnnotation>,
 }
 
 #[derive(Debug, Clone)]
@@ -108,6 +104,10 @@ impl AnnotatedUnindexedFunctions {
     pub fn iter_functions(&self) -> impl Iterator<Item = &AnnotatedFunction> {
         self.unindexed_functions.iter()
     }
+
+    pub fn into_iter_functions(self) -> impl Iterator<Item = AnnotatedFunction> {
+        self.unindexed_functions.into_iter()
+    }
 }
 
 impl AnnotatedFunctions for AnnotatedUnindexedFunctions {
@@ -156,7 +156,7 @@ pub fn annotate_functions(
     Ok(AnnotatedUnindexedFunctions::new(annotated_functions))
 }
 
-pub fn annotate_function(
+pub(crate) fn annotate_function(
     function: &mut Function,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
@@ -164,7 +164,9 @@ pub fn annotate_function(
     local_functions: Option<&AnnotatedUnindexedFunctions>,
 ) -> Result<AnnotatedFunction, FunctionTypeInferenceError> {
     let Function { name, context, function_body: FunctionBody { stages, return_operation }, arguments } = function;
-    // TODO: Work the argument in.
+    let (argument_concept_variable_types, argument_value_variable_types) =
+        annotate_arguments(arguments, snapshot, type_manager)?;
+
     let (stages, running_variable_types, running_value_types) = annotate_pipeline_stages(
         snapshot,
         type_manager,
@@ -173,6 +175,8 @@ pub fn annotate_function(
         &context.parameters,
         local_functions,
         stages.clone(),
+        argument_concept_variable_types,
+        argument_value_variable_types,
     )
     .map_err(|err| FunctionTypeInferenceError::TypeInference {
         name: name.to_string(),
@@ -180,14 +184,64 @@ pub fn annotate_function(
     })?;
     let return_annotations =
         extract_return_type_annotations(return_operation, &running_variable_types, &running_value_types);
-    Ok(AnnotatedFunction { return_annotations, stages })
+    Ok(AnnotatedFunction { stages, return_annotations, return_operation: return_operation.clone() })
 }
 
-pub fn extract_return_type_annotations(
+pub fn annotate_anonymous_function(
+    function: &AnonymousFunction,
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    indexed_annotated_functions: &IndexedAnnotatedFunctions,
+    local_functions: Option<&AnnotatedUnindexedFunctions>,
+) -> Result<AnnotatedAnonymousFunction, FunctionTypeInferenceError> {
+    todo!("Delete me when anonymous functions disappear")
+}
+
+fn annotate_arguments(
+    function_arguments: &mut Vec<(Variable, TypeRefAny)>,
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+) -> Result<
+    (BTreeMap<Variable, Arc<BTreeSet<Type>>>, BTreeMap<Variable, ExpressionValueType>),
+    FunctionTypeInferenceError,
+> {
+    // TODO
+    let mut variable_types = BTreeMap::new();
+    let mut value_types = BTreeMap::new();
+    for (idx, (var, typeql_type)) in function_arguments.iter().enumerate() {
+        let TypeRef::Named(inner_type) = (match typeql_type {
+            TypeRefAny::Type(inner) => inner,
+            TypeRefAny::Optional(typeql::type_::Optional { inner: _inner, .. }) => todo!(),
+            TypeRefAny::List(typeql::type_::List { inner: _inner, .. }) => todo!(),
+        }) else {
+            unreachable!("Function argument labels cannot be variable.");
+        };
+        match inner_type {
+            NamedType::Label(label) => {
+                let types = type_seeder::get_type_annotation_and_subtypes_from_label(
+                    snapshot,
+                    type_manager,
+                    &Label::build(label.ident.as_str()),
+                )
+                .map_err(|source| FunctionTypeInferenceError::CouldNotResolveArgumentType { index: idx, source })?;
+                variable_types.insert(var.clone(), Arc::new(types));
+            }
+            NamedType::BuiltinValueType(value_type) => {
+                value_types.insert(var.clone(), ExpressionValueType::Single(translate_value_type(&value_type.token)));
+                // TODO: This may be list
+            }
+            NamedType::Role(_) => unreachable!("A function argument label was wrongly parsed as role-type."),
+        }
+    }
+    Ok((variable_types, value_types))
+}
+
+fn extract_return_type_annotations(
     return_operation: &ReturnOperation,
     body_variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    body_variable_value_types: &BTreeMap<Variable, ValueType>,
+    body_variable_value_types: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Vec<FunctionParameterAnnotation> {
+    // TODO: We don't consider the user annotations.
     match return_operation {
         ReturnOperation::Stream(vars) => {
             vars.iter()
@@ -215,40 +269,14 @@ pub fn extract_return_type_annotations(
 fn get_function_parameter(
     variable: &Variable,
     body_variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    body_variable_value_types: &BTreeMap<Variable, ValueType>,
+    body_variable_value_types: &BTreeMap<Variable, ExpressionValueType>,
 ) -> FunctionParameterAnnotation {
     if let Some(arced_types) = body_variable_annotations.get(variable) {
         let types: &BTreeSet<Type> = &arced_types;
         FunctionParameterAnnotation::Concept(types.clone())
-    } else if let Some(value_type) = body_variable_value_types.get(variable) {
-        FunctionParameterAnnotation::Value(value_type.clone())
+    } else if let Some(expression_value_type) = body_variable_value_types.get(variable) {
+        FunctionParameterAnnotation::Value(expression_value_type.value_type().clone())
     } else {
-        unreachable!()
+        unreachable!("Could not find annotations for a function return variable.")
     }
-}
-
-pub fn annotate_anonymous_function(
-    function: &AnonymousFunction,
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    indexed_annotated_functions: &IndexedAnnotatedFunctions,
-    local_functions: Option<&AnnotatedUnindexedFunctions>,
-) -> Result<AnnotatedAnonymousFunction, FunctionTypeInferenceError> {
-    // let root_graph = infer_types(
-    //     snapshot,
-    //     function.block(),
-    //     function.variable_registry(),
-    //     type_manager,
-    //     &BTreeMap::new(),
-    //     indexed_annotated_functions,
-    //     local_functions,
-    // )
-    // .map_err(|err| FunctionTypeInferenceError::TypeInference {
-    //     name: function.name().to_string(),
-    //     typedb_source: err,
-    // })?;
-    // let body_annotations = TypeAnnotations::build(root_graph);
-    // let return_types = function.return_operation().return_types(body_annotations.vertex_annotations());
-    // Ok(FunctionAnnotations { return_annotations: return_types, block_annotations: body_annotations })
-    todo!("We need to allow a function to contain an entire pipeline, instead of just a match block")
 }
