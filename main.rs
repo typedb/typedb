@@ -10,7 +10,6 @@
 use logger::initialise_logging_global;
 use resource::constants::server::ASCII_LOGO;
 use server::parameters::config::Config;
-use resource::constants::server::ASCII_LOGO;
 
 #[tokio::main]
 async fn main() {

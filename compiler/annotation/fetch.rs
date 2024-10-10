@@ -129,9 +129,9 @@ fn annotate_some(
     match some {
         FetchSome::SingleVar(var) => Ok(AnnotatedFetchSome::SingleVar(var)),
         FetchSome::SingleAttribute(attr) => Ok(AnnotatedFetchSome::SingleAttribute(attr)),
-        FetchSome::SingleFunction(function) => {
+        FetchSome::SingleFunction(mut function) => {
             let annotated_function = annotate_function(
-                &function,
+                &mut function,
                 snapshot,
                 type_manager,
                 indexed_annotated_functions,
@@ -145,9 +145,9 @@ fn annotate_some(
                 annotate_object(*object, snapshot, type_manager, indexed_annotated_functions, local_functions)?;
             Ok(AnnotatedFetchSome::Object(Box::new(object)))
         }
-        FetchSome::ListFunction(function) => {
+        FetchSome::ListFunction(mut function) => {
             let annotated_function = annotate_function(
-                &function,
+                &mut function,
                 snapshot,
                 type_manager,
                 indexed_annotated_functions,

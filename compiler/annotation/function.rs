@@ -16,6 +16,7 @@ use ir::pipeline::{
     function::{Function},
     function_signature::FunctionIDAPI,
 };
+use ir::pipeline::function::{FunctionBody, ReturnOperation};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
