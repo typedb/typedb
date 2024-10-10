@@ -104,11 +104,11 @@ pub async fn transaction_has_type(context: &mut Context, tx_type: String) {
 #[apply(generic_step)]
 #[step(expr = "transactions( in parallel) have type:")]
 pub async fn transactions_in_parallel_have_type(context: &mut Context, step: &Step) {
-    // let mut active_transaction_iter = context.get_concurrent_transactions().iter();
-    // for tx_type in util::iter_table(step) {
-    //     transaction_type_matches(active_transaction_iter.next().unwrap(), &tx_type)
-    // }
-    // assert!(active_transaction_iter.next().is_none(), "Opened more transactions than tested!")
+    let mut active_transaction_iter = context.get_concurrent_transactions().iter();
+    for tx_type in util::iter_table(step) {
+        transaction_type_matches(active_transaction_iter.next().unwrap(), &tx_type)
+    }
+    assert!(active_transaction_iter.next().is_none(), "Opened more transactions than tested!")
 }
 
 #[apply(generic_step)]

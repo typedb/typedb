@@ -58,12 +58,12 @@ build:
 #        bazel test //ir/tests/... --test_output=streamed
 #        bazel test //query/tests/... --test_output=streamed
 #        bazel test //storage/tests/... --test_output=streamed
-#    test-behaviour-connection:
-#      image: vaticle-ubuntu-22.04
-#      dependencies: [build]
-#      command: |
-#        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-#        bazel test //test/behaviour/connection/... --test_output=streamed
+    test-behaviour-connection:
+      image: vaticle-ubuntu-22.04
+      dependencies: [build]
+      command: |
+        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
+        bazel test //tests/behaviour/connection/... --test_output=streamed
 #    test-behaviour-concept:
 #      image: vaticle-ubuntu-22.04
 #      dependencies: [build]

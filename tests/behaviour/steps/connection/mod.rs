@@ -36,13 +36,15 @@ pub async fn typedb_starts(context: &mut Context) {
 
 #[apply(generic_step)]
 #[step("connection opens with default authentication")]
-#[step("connection has been opened")]
+#[step("connection closes")]
+#[step("connection is open: true")]
+#[step("connection is open: false")]
 pub async fn connection_ignore(_: &mut Context) {}
 
 #[apply(generic_step)]
-#[step("connection does not have any database")]
-pub async fn connection_does_not_have_any_database(context: &mut Context) {
-    assert!(context.server().unwrap().lock().unwrap().database_manager().database_names().is_empty())
+#[step(expr = r"connection has {int} database(s)")]
+pub async fn connection_has_count_databases(context: &mut Context, count: usize) {
+    assert_eq!(context.server().unwrap().lock().unwrap().database_manager().database_names().len(), count)
 }
 
 #[derive(Debug, Clone)]
