@@ -219,7 +219,6 @@ pub mod tests {
     //
     #[test]
     fn test_functions() {
-        // todo!()
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
 

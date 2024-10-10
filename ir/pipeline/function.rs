@@ -43,10 +43,6 @@ impl Function {
         &self.context
     }
 
-    pub fn translation_context_mut(&mut self) -> &mut TranslationContext {
-        &mut self.context
-    }
-
     pub fn body(&self) -> &FunctionBody {
         &self.function_body
     }
