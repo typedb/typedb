@@ -13,20 +13,17 @@ use answer::{variable::Variable, Type};
 use typeql::schema::definable::function::SingleSelector;
 
 use crate::{
-    pattern::Vertex,
     pipeline::reduce::Reducer,
     translation::{pipeline::TranslatedStage, TranslationContext},
 };
 
-pub type PlaceholderTypeQLReturnOperation = String;
-
 #[derive(Debug, Clone)]
 pub struct Function {
-    context: TranslationContext,
-    name: String,
-    function_body: FunctionBody,
+    pub context: TranslationContext,
+    pub name: String,
+    pub function_body: FunctionBody,
     // Variable categories for args & return can be read from the block's context.
-    arguments: Vec<Variable>,
+    pub arguments: Vec<Variable>,
 }
 
 impl Function {
@@ -65,8 +62,8 @@ impl AnonymousFunction {
 
 #[derive(Debug, Clone)]
 pub struct FunctionBody {
-    stages: Vec<TranslatedStage>,
-    return_operation: ReturnOperation,
+    pub stages: Vec<TranslatedStage>,
+    pub return_operation: ReturnOperation,
 }
 
 impl FunctionBody {
@@ -89,32 +86,6 @@ pub enum ReturnOperation {
     Single(SingleSelector, Vec<Variable>),
     ReduceCheck(),
     ReduceReducer(Vec<Reducer>),
-}
-
-impl ReturnOperation {
-    pub fn return_types(
-        &self,
-        function_variable_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
-    ) -> Vec<BTreeSet<Type>> {
-        match self {
-            ReturnOperation::Stream(vars) => {
-                let inputs = vars.iter().map(|&var| function_variable_annotations.get(&Vertex::Variable(var)).unwrap());
-                inputs.map(|types| BTreeSet::from_iter(types.iter().cloned())).collect()
-            }
-            ReturnOperation::Single(_, vars) => {
-                let inputs = vars.iter().map(|&var| function_variable_annotations.get(&Vertex::Variable(var)).unwrap());
-                inputs.map(|types| BTreeSet::from_iter(types.iter().cloned())).collect()
-            }
-            ReturnOperation::ReduceReducer(reducers) => {
-                // aggregates return value types?
-                todo!()
-            }
-            ReturnOperation::ReduceCheck() => {
-                // aggregates return value types?
-                todo!()
-            }
-        }
-    }
 }
 
 impl ReturnOperation {

@@ -88,6 +88,45 @@ pub fn annotate_pipeline(
         annotate_functions(translated_preamble, snapshot, type_manager, schema_function_annotations)
             .map_err(|typedb_source| AnnotationError::PreambleTypeInference { typedb_source })?;
 
+    let (annotated_stages, running_variable_annotations, running_value_variable_types) = annotate_pipeline_stages(
+        snapshot,
+        type_manager,
+        schema_function_annotations,
+        variable_registry,
+        parameters,
+        Some(&annotated_preamble),
+        translated_stages,
+    )?;
+    let annotated_fetch = match translated_fetch {
+        None => None,
+        Some(fetch) => {
+            let annotated = annotate_fetch(
+                fetch,
+                running_variable_annotations,
+                running_value_variable_types,
+                snapshot,
+                type_manager,
+                schema_function_annotations,
+                Some(&annotated_preamble),
+            );
+            Some(annotated?)
+        }
+    };
+    Ok(AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble })
+}
+
+pub(crate) fn annotate_pipeline_stages(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    schema_function_annotations: &IndexedAnnotatedFunctions,
+    variable_registry: &mut VariableRegistry,
+    parameters: &ParameterRegistry,
+    annotated_preamble: Option<&AnnotatedUnindexedFunctions>,
+    translated_stages: Vec<TranslatedStage>,
+) -> Result<
+    (Vec<AnnotatedStage>, BTreeMap<Variable, Arc<BTreeSet<Type>>>, BTreeMap<Variable, ValueType>),
+    AnnotationError,
+> {
     let mut running_variable_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>> = BTreeMap::new();
     let mut running_value_variable_types: BTreeMap<Variable, ValueType> = BTreeMap::new();
     let mut annotated_stages = Vec::with_capacity(translated_stages.len());
@@ -111,7 +150,7 @@ pub fn annotate_pipeline(
             snapshot,
             type_manager,
             schema_function_annotations,
-            &annotated_preamble,
+            annotated_preamble,
             running_constraint_annotations,
             stage,
         )?;
@@ -120,22 +159,7 @@ pub fn annotate_pipeline(
         }
         annotated_stages.push(annotated_stage);
     }
-    let annotated_fetch = match translated_fetch {
-        None => None,
-        Some(fetch) => {
-            let annotated = annotate_fetch(
-                fetch,
-                running_variable_annotations,
-                running_value_variable_types,
-                snapshot,
-                type_manager,
-                schema_function_annotations,
-                Some(&annotated_preamble),
-            );
-            Some(annotated?)
-        }
-    };
-    Ok(AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble })
+    Ok((annotated_stages, running_variable_annotations, running_value_variable_types))
 }
 
 fn annotate_stage(
@@ -146,7 +170,7 @@ fn annotate_stage(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     schema_function_annotations: &IndexedAnnotatedFunctions,
-    preamble_function_annotations: &AnnotatedUnindexedFunctions,
+    preamble_function_annotations: Option<&AnnotatedUnindexedFunctions>,
     running_constraint_annotations: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
     stage: TranslatedStage,
 ) -> Result<AnnotatedStage, AnnotationError> {
@@ -159,7 +183,7 @@ fn annotate_stage(
                 type_manager,
                 running_variable_annotations,
                 schema_function_annotations,
-                Some(preamble_function_annotations),
+                preamble_function_annotations,
             )
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             block_annotations.vertex_annotations().iter().for_each(|(vertex, types)| {
