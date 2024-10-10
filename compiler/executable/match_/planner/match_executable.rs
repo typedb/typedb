@@ -101,7 +101,7 @@ impl ExecutionStep {
             ExecutionStep::UnsortedJoin(step) => step.output_width(),
             ExecutionStep::Assignment(step) => step.output_width(),
             ExecutionStep::Check(_) => 0, // FIXME is this correct?
-            ExecutionStep::Disjunction(_) => todo!(),
+            ExecutionStep::Disjunction(step) => step.output_width(),
             ExecutionStep::Negation(_) => 0,
             ExecutionStep::Optional(_) => todo!(),
         }
@@ -243,7 +243,14 @@ impl CheckStep {
 
 #[derive(Clone, Debug)]
 pub struct DisjunctionStep {
-    pub disjunction: Vec<MatchExecutable>,
+    pub branches: Vec<MatchExecutable>,
+    pub output_width: u32,
+}
+
+impl DisjunctionStep {
+    pub fn output_width(&self) -> u32 {
+        self.output_width
+    }
 }
 
 #[derive(Clone, Debug)]

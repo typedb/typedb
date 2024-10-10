@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, iter};
+use std::{collections::HashMap, iter, ops::Add};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -30,7 +30,7 @@ const _REGEX_EXPECTED_CHECKS_PER_MATCH: f64 = 2.0;
 const _CONTAINS_EXPECTED_CHECKS_PER_MATCH: f64 = 2.0;
 
 // FIXME name
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(super) enum PlannerVertex<'a> {
     Variable(VariableVertex),
     Constraint(ConstraintVertex<'a>),
@@ -150,6 +150,21 @@ impl ElementCost {
     }
 }
 
+impl Add for ElementCost {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        fn weighted_mean((lhs_value, lhs_weight): (f64, f64), (rhs_value, rhs_weight): (f64, f64)) -> f64 {
+            (lhs_value * lhs_weight + rhs_value * rhs_weight) / (lhs_weight + rhs_weight)
+        }
+        Self {
+            per_input: self.per_input + rhs.per_input,
+            per_output: weighted_mean((self.per_output, self.branching_factor), (rhs.per_output, rhs.branching_factor)),
+            branching_factor: self.branching_factor + rhs.branching_factor,
+        }
+    }
+}
+
 impl Default for ElementCost {
     fn default() -> Self {
         Self { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
@@ -227,8 +242,8 @@ impl Costed for FunctionCallPlanner {
     }
 }
 
-#[derive(Debug)]
-pub(crate) struct ComparisonPlanner<'a> {
+#[derive(Clone, Debug)]
+pub(super) struct ComparisonPlanner<'a> {
     comparison: &'a Comparison<Variable>,
     pub lhs: Input,
     pub rhs: Input,
@@ -263,7 +278,7 @@ impl Costed for ComparisonPlanner<'_> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(super) struct NegationPlanner<'a> {
     plan: ConjunctionPlan<'a>,
 }
@@ -292,7 +307,7 @@ impl Costed for NegationPlanner<'_> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(super) struct DisjunctionPlanner<'a> {
     input_variables: Vec<VariableVertexId>,
     shared_variables: Vec<VariableVertexId>,
@@ -301,7 +316,8 @@ pub(super) struct DisjunctionPlanner<'a> {
 
 impl<'a> DisjunctionPlanner<'a> {
     pub(super) fn from_builders(branch_builders: Vec<PlanBuilder<'a>>) -> Self {
-        Self { input_variables: Vec::new(), shared_variables: Vec::new(), branch_builders }
+        let shared_variables = branch_builders.iter().flat_map(|pb| pb.shared_variables().to_owned()).collect();
+        Self { input_variables: Vec::new(), shared_variables, branch_builders }
     }
 
     fn is_valid(&self, _index: VertexId, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
@@ -311,10 +327,19 @@ impl<'a> DisjunctionPlanner<'a> {
     pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
         chain!(&self.input_variables, &self.shared_variables).copied()
     }
+
+    pub(super) fn branch_builders(&self) -> &[PlanBuilder<'a>] {
+        &self.branch_builders
+    }
 }
 
 impl Costed for DisjunctionPlanner<'_> {
-    fn cost(&self, _inputs: &[VertexId], _: &Graph<'_>) -> ElementCost {
-        todo!()
+    fn cost(&self, inputs: &[VertexId], graph: &Graph<'_>) -> ElementCost {
+        let input_variables =
+            inputs.iter().filter_map(|id| graph.elements()[id].as_variable()).map(|var| var.variable());
+        self.branch_builders
+            .iter()
+            .map(|branch| branch.clone().with_inputs(input_variables.clone()).plan().cost())
+            .fold(ElementCost { per_input: 0.0, per_output: 0.0, branching_factor: 0.0 }, ElementCost::add)
     }
 }

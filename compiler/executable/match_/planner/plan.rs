@@ -51,7 +51,7 @@ use crate::{
                 ComparisonPlanner, Costed, Direction, DisjunctionPlanner, ElementCost, FunctionCallPlanner, Input,
                 NegationPlanner, PlannerVertex,
             },
-            IntersectionBuilder, MatchExecutableBuilder, NegationBuilder, StepBuilder,
+            DisjunctionBuilder, IntersectionBuilder, MatchExecutableBuilder, NegationBuilder, StepBuilder,
         },
     },
     VariablePosition,
@@ -175,7 +175,7 @@ impl VertexId {
  *      instructions? Do we need to differentiate?
  */
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(super) struct PlanBuilder<'a> {
     shared_variables: Vec<VariableVertexId>,
     graph: Graph<'a>,
@@ -186,6 +186,18 @@ pub(super) struct PlanBuilder<'a> {
 impl<'a> PlanBuilder<'a> {
     fn new(type_annotations: &'a TypeAnnotations, statistics: &'a Statistics) -> Self {
         Self { shared_variables: Vec::new(), graph: Graph::default(), type_annotations, statistics }
+    }
+
+    pub(super) fn with_inputs(mut self, input_variables: impl Iterator<Item = Variable>) -> Self {
+        for var in input_variables {
+            if let Some(&id) = self.graph.variable_index.get(&var) {
+                self.graph.elements.insert(
+                    VertexId::Variable(id),
+                    PlannerVertex::Variable(VariableVertex::Input(InputPlanner::from_variable(var))),
+                );
+            }
+        }
+        self
     }
 
     fn register_variables(
@@ -222,7 +234,7 @@ impl<'a> PlanBuilder<'a> {
     }
 
     fn register_input_var(&mut self, variable: Variable) {
-        let planner = InputPlanner::from_variable(variable, self.type_annotations);
+        let planner = InputPlanner::from_variable(variable);
         let index = self.graph.push_variable(variable, VariableVertex::Input(planner));
         self.shared_variables.push(index);
     }
@@ -444,10 +456,18 @@ impl<'a> PlanBuilder<'a> {
                 }
 
                 produced_at_this_stage.extend(element.variables());
-            }
 
-            ordering.push(next);
-            open_set.remove(&next);
+                ordering.push(next);
+                open_set.remove(&next);
+            } else {
+                for var in produced_at_this_stage.drain().map(VertexId::Variable) {
+                    if !ordering.contains(&var) {
+                        ordering.push(var);
+                        open_set.remove(&var);
+                    }
+                }
+                intersection_variable = None;
+            }
         }
         ordering
     }
@@ -459,7 +479,7 @@ impl<'a> PlanBuilder<'a> {
         per_input + branching_factor * per_output
     }
 
-    fn plan(self) -> ConjunctionPlan<'a> {
+    pub(super) fn plan(self) -> ConjunctionPlan<'a> {
         let ordering = self.initialise_greedy_ordering();
 
         let cost = ordering
@@ -472,9 +492,13 @@ impl<'a> PlanBuilder<'a> {
 
         ConjunctionPlan { shared_variables, graph, type_annotations, ordering, cost }
     }
+
+    pub(super) fn shared_variables(&self) -> &[VariableVertexId] {
+        &self.shared_variables
+    }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(super) struct ConjunctionPlan<'a> {
     shared_variables: Vec<VariableVertexId>,
     graph: Graph<'a>,
@@ -546,15 +570,32 @@ impl ConjunctionPlan<'_> {
             if let PlannerVertex::Constraint(constraint) = planner {
                 let sort_variable = outputs_of(index)
                     .into_iter()
-                    .find(|&var| var_inputs_of(var).len() > 1)
-                    .map(|var| index_to_variable[&var]);
+                    .filter(|&var| var_inputs_of(var).len() > 1)
+                    .exactly_one()
+                    .map(|var| index_to_variable[&var])
+                    .ok();
 
                 self.lower_constraint(&mut match_builder, &mut producers, constraint, inputs, sort_variable)
-            } else if let PlannerVertex::Negation(subpattern) = planner {
+            } else if let PlannerVertex::Negation(negation) = planner {
                 assert!(outputs_of(index).is_empty());
-                let negation = subpattern.plan().lower(match_builder.position_mapping(), variable_registry.clone());
+                let negation = negation.plan().lower(match_builder.position_mapping(), variable_registry.clone());
                 let variable_positions = negation.variable_positions().clone(); // FIXME needless clone
                 match_builder.push_step(&variable_positions, StepBuilder::Negation(NegationBuilder { negation }));
+            } else if let PlannerVertex::Disjunction(disjunction) = planner {
+                let branches = disjunction
+                    .branch_builders()
+                    .iter()
+                    .map(|branch| {
+                        branch
+                            .clone() // FIXME
+                            .with_inputs(match_builder.position_mapping().keys().copied())
+                            .plan()
+                            .lower(match_builder.position_mapping(), variable_registry.clone())
+                    })
+                    .collect_vec();
+                let variable_positions = branches.iter().flat_map(|x| x.variable_positions().clone()).collect();
+                match_builder
+                    .push_step(&variable_positions, StepBuilder::Disjunction(DisjunctionBuilder::new(branches)));
             } else if let PlannerVertex::Comparison(compare) = planner {
                 let compare = compare.comparison();
                 let lhs = compare.lhs();
@@ -842,7 +883,7 @@ impl ConjunctionPlan<'_> {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub(super) struct Graph<'a> {
     variable_to_pattern: HashMap<VariableVertexId, HashSet<PatternVertexId>>,
     pattern_to_variable: HashMap<PatternVertexId, HashSet<VariableVertexId>>,
