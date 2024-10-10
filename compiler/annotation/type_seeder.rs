@@ -115,7 +115,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
 
         // Seed vertices in root & disjunctions
         self.seed_vertex_annotations_from_type_and_function_return(graph)?;
-        self.annotate_fixed_vertices(graph)?;
+
         let mut some_vertex_was_directly_annotated = true;
         while some_vertex_was_directly_annotated {
             let mut changed = true;
@@ -205,6 +205,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         &self,
         graph: &mut TypeInferenceGraph<'_>,
     ) -> Result<(), TypeInferenceError> {
+        self.annotate_fixed_vertices(graph)?;
         // Get vertex annotations from Type & Function returns
         let TypeInferenceGraph { vertices, .. } = graph;
         for constraint in graph.conjunction.constraints() {
