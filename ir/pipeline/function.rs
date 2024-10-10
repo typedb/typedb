@@ -49,18 +49,6 @@ impl Function {
 }
 
 #[derive(Debug, Clone)]
-pub struct AnonymousFunction {
-    translation_context: TranslationContext,
-    body: FunctionBody,
-}
-
-impl AnonymousFunction {
-    pub(crate) fn new(context: TranslationContext, body: FunctionBody) -> Self {
-        Self { translation_context: context, body }
-    }
-}
-
-#[derive(Debug, Clone)]
 pub struct FunctionBody {
     pub stages: Vec<TranslatedStage>,
     pub return_operation: ReturnOperation,

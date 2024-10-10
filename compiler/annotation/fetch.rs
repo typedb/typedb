@@ -23,11 +23,12 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
     function::{
-        annotate_anonymous_function, AnnotatedAnonymousFunction, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions,
+        AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions,
     },
     pipeline::AnnotatedStage,
     AnnotationError,
 };
+use crate::annotation::function::{annotate_function, AnnotatedFunction};
 
 #[derive(Debug, Clone)]
 pub struct AnnotatedFetch {
@@ -41,11 +42,11 @@ pub struct AnnotatedFetch {
 pub enum AnnotatedFetchSome {
     SingleVar(FetchSingleVar),
     SingleAttribute(FetchSingleAttribute),
-    SingleFunction(AnnotatedAnonymousFunction),
+    SingleFunction(AnnotatedFunction),
 
     Object(Box<AnnotatedFetchObject>),
 
-    ListFunction(AnnotatedAnonymousFunction),
+    ListFunction(AnnotatedFunction),
     ListSubFetch(AnnotatedFetchListSubFetch),
     ListAttributesAsList(FetchListAttributeAsList),
     ListAttributesFromList(FetchListAttributeFromList),
@@ -128,9 +129,9 @@ fn annotate_some(
     match some {
         FetchSome::SingleVar(var) => Ok(AnnotatedFetchSome::SingleVar(var)),
         FetchSome::SingleAttribute(attr) => Ok(AnnotatedFetchSome::SingleAttribute(attr)),
-        FetchSome::SingleFunction(function) => {
-            let annotated_function = annotate_anonymous_function(
-                &function,
+        FetchSome::SingleFunction(mut function) => {
+            let annotated_function = annotate_function(
+                &mut function,
                 snapshot,
                 type_manager,
                 indexed_annotated_functions,
@@ -144,9 +145,9 @@ fn annotate_some(
                 annotate_object(*object, snapshot, type_manager, indexed_annotated_functions, local_functions)?;
             Ok(AnnotatedFetchSome::Object(Box::new(object)))
         }
-        FetchSome::ListFunction(function) => {
-            let annotated_function = annotate_anonymous_function(
-                &function,
+        FetchSome::ListFunction(mut function) => {
+            let annotated_function = annotate_function(
+                &mut function,
                 snapshot,
                 type_manager,
                 indexed_annotated_functions,

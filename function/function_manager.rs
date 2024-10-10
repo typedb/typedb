@@ -24,7 +24,7 @@ use ir::{
         function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex},
         FunctionReadError,
     },
-    translation::function::{build_signature, translate_function},
+    translation::function::{build_signature, translate_typeql_function},
 };
 use itertools::Itertools;
 use primitive::maybe_owns::MaybeOwns;
@@ -133,7 +133,7 @@ impl FunctionManager {
     ) -> Result<Vec<ir::pipeline::function::Function>, FunctionError> {
         functions
             .iter()
-            .map(|function| translate_function(snapshot, function_index, &function.parsed))
+            .map(|function| translate_typeql_function(snapshot, function_index, &function.parsed))
             .try_collect()
             .map_err(|err| FunctionError::FunctionTranslation { typedb_source: err })
     }
