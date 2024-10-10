@@ -98,9 +98,9 @@ where
     }
 }
 
-pub fn infer_types<'graph>(
+pub fn infer_types(
     snapshot: &impl ReadableSnapshot,
-    block: &'graph Block,
+    block: &Block,
     variable_registry: &VariableRegistry,
     type_manager: &TypeManager,
     previous_stage_variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<TypeAnnotation>>>,

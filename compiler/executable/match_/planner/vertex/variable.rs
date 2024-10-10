@@ -4,20 +4,20 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{HashMap, HashSet},
-    fmt,
-};
+use std::{collections::HashSet, fmt};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::pattern::Vertex;
 use itertools::{chain, Itertools};
 
-use crate::match_::{
-    inference::type_annotations::TypeAnnotations,
-    planner::vertex::{
-        Costed, ElementCost, Input, PlannerVertex, ADVANCE_ITERATOR_RELATIVE_COST, OPEN_ITERATOR_RELATIVE_COST,
+use crate::{
+    annotation::type_annotations::TypeAnnotations,
+    executable::match_::planner::{
+        plan::{Graph, VariableVertexId, VertexId},
+        vertex::{
+            Costed, ElementCost, Input, PlannerVertex, ADVANCE_ITERATOR_RELATIVE_COST, OPEN_ITERATOR_RELATIVE_COST,
+        },
     },
 };
 
@@ -32,14 +32,15 @@ pub(crate) enum VariableVertex {
 }
 
 impl VariableVertex {
-    pub(super) fn is_valid(&self, index: usize, ordered: &[usize], adjacency: &HashMap<usize, HashSet<usize>>) -> bool {
+    pub(super) fn is_valid(&self, index: VertexId, ordered: &[VertexId], graph: &Graph<'_>) -> bool {
+        let VertexId::Variable(index) = index else { unreachable!("variable with incompatible index: {index:?}") };
         match self {
             Self::Input(_) => true, // always valid: comes from the enclosing scope
             Self::Shared(_) => todo!(),
 
             Self::Type(_) | Self::Thing(_) | Self::Value(_) => {
-                let adjacent = &adjacency[&index];
-                ordered.iter().any(|x| adjacent.contains(x))
+                let adjacent = graph.variable_to_pattern().get(&index).unwrap();
+                ordered.iter().filter_map(VertexId::as_pattern_id).any(|id| adjacent.contains(&id))
             } // may be invalid: must be produced
         }
     }
@@ -54,7 +55,7 @@ impl VariableVertex {
         }
     }
 
-    pub(crate) fn add_is(&mut self, other: usize) {
+    pub(crate) fn add_is(&mut self, other: VariableVertexId) {
         match self {
             Self::Input(_inner) => todo!(),
             Self::Shared(_) => todo!(),
@@ -112,14 +113,14 @@ impl VariableVertex {
 }
 
 impl Costed for VariableVertex {
-    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex<'_>]) -> ElementCost {
+    fn cost(&self, inputs: &[VertexId], graph: &Graph<'_>) -> ElementCost {
         match self {
-            Self::Input(inner) => inner.cost(inputs, elements),
-            Self::Shared(inner) => inner.cost(inputs, elements),
+            Self::Input(inner) => inner.cost(inputs, graph),
+            Self::Shared(inner) => inner.cost(inputs, graph),
 
-            Self::Type(inner) => inner.cost(inputs, elements),
-            Self::Thing(inner) => inner.cost(inputs, elements),
-            Self::Value(inner) => inner.cost(inputs, elements),
+            Self::Type(inner) => inner.cost(inputs, graph),
+            Self::Thing(inner) => inner.cost(inputs, graph),
+            Self::Value(inner) => inner.cost(inputs, graph),
         }
     }
 }
@@ -134,7 +135,7 @@ impl InputPlanner {
 }
 
 impl Costed for InputPlanner {
-    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex<'_>]) -> ElementCost {
+    fn cost(&self, _: &[VertexId], _: &Graph<'_>) -> ElementCost {
         ElementCost::default()
     }
 }
@@ -149,7 +150,7 @@ impl SharedPlanner {
 }
 
 impl Costed for SharedPlanner {
-    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex<'_>]) -> ElementCost {
+    fn cost(&self, _: &[VertexId], _: &Graph<'_>) -> ElementCost {
         ElementCost::default()
     }
 }
@@ -167,7 +168,7 @@ impl TypePlanner {
 }
 
 impl Costed for TypePlanner {
-    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex<'_>]) -> ElementCost {
+    fn cost(&self, _: &[VertexId], _: &Graph<'_>) -> ElementCost {
         ElementCost::free_with_branching(self.expected_size)
     }
 }
@@ -176,7 +177,7 @@ impl Costed for TypePlanner {
 pub(crate) struct ThingPlanner {
     expected_size: f64,
 
-    bound_exact: HashSet<usize>, // IID or exact Type + Value
+    bound_exact: HashSet<VariableVertexId>, // IID or exact Type + Value
 
     bound_value_equal: HashSet<Input>,
     bound_value_below: HashSet<Input>,
@@ -211,7 +212,7 @@ impl ThingPlanner {
         Self { expected_size, ..Default::default() }
     }
 
-    pub(crate) fn add_is(&mut self, other: usize) {
+    pub(crate) fn add_is(&mut self, other: VariableVertexId) {
         self.bound_exact.insert(other);
     }
 
@@ -229,15 +230,16 @@ impl ThingPlanner {
 }
 
 impl Costed for ThingPlanner {
-    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex<'_>]) -> ElementCost {
+    fn cost(&self, inputs: &[VertexId], graph: &Graph<'_>) -> ElementCost {
         let bounds = chain!(&self.bound_value_equal, &self.bound_value_above, &self.bound_value_below).collect_vec();
         for &i in inputs {
+            let VertexId::Variable(i) = i else { continue };
             if !bounds.contains(&&Input::Variable(i)) {
                 return ElementCost::default();
             }
         }
 
-        if self.bound_exact.iter().any(|bound| inputs.contains(bound)) {
+        if self.bound_exact.iter().any(|&bound| inputs.contains(&VertexId::Variable(bound))) {
             return ElementCost::default();
         }
 
@@ -248,14 +250,17 @@ impl Costed for ThingPlanner {
         for bound in &self.bound_value_equal {
             if bound == &Input::Fixed {
                 branching_factor /= self.expected_size;
-            } else if matches!(bound, Input::Variable(var) if inputs.contains(var)) {
-                let b = match &elements[bound.as_variable().unwrap()] {
-                    PlannerVertex::Fixed(_) => 1.0,
-                    PlannerVertex::Variable(VariableVertex::Value(value)) => 1.0 / value.expected_size(inputs),
-                    PlannerVertex::Variable(VariableVertex::Thing(thing)) => 1.0 / thing.expected_size,
-                    _ => unreachable!("equality with an edge"),
-                };
-                branching_factor = f64::min(branching_factor, b);
+            } else if let &Input::Variable(var) = bound {
+                let id = VertexId::Variable(var);
+                if inputs.contains(&id) {
+                    let b = match &graph.elements()[&id] {
+                        // PlannerVertex::Fixed(_) => 1.0, // TODO
+                        PlannerVertex::Variable(VariableVertex::Value(value)) => 1.0 / value.expected_size(inputs),
+                        PlannerVertex::Variable(VariableVertex::Thing(thing)) => 1.0 / thing.expected_size,
+                        _ => unreachable!("equality with an edge"),
+                    };
+                    branching_factor = f64::min(branching_factor, b);
+                }
             }
         }
 
@@ -313,13 +318,13 @@ impl ValuePlanner {
         Self
     }
 
-    fn expected_size(&self, _inputs: &[usize]) -> f64 {
+    fn expected_size(&self, _inputs: &[VertexId]) -> f64 {
         todo!("value planner expected size")
     }
 }
 
 impl Costed for ValuePlanner {
-    fn cost(&self, inputs: &[usize], _elements: &[PlannerVertex<'_>]) -> ElementCost {
+    fn cost(&self, inputs: &[VertexId], _: &Graph<'_>) -> ElementCost {
         if inputs.is_empty() {
             ElementCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
         } else {
