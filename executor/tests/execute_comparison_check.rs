@@ -11,24 +11,25 @@ use std::{
 };
 
 use compiler::{
+    annotation::{
+        function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+        match_inference::infer_types,
+    },
     executable::match_::{
-        instructions::{ConstraintInstruction, Inputs, thing::IsaInstruction},
+        instructions::{thing::IsaInstruction, ConstraintInstruction, Inputs},
         planner::match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
     },
     VariablePosition,
 };
-use compiler::annotation::function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions};
-use compiler::annotation::match_inference::infer_types;
 use concept::type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, ExecutionInterrupt, pipeline::stage::ExecutionContext,
-    row::MaybeOwnedRow,
+    error::ReadExecutionError, pattern_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    ExecutionInterrupt,
 };
-use executor::pattern_executor::MatchExecutor;
 use ir::{pattern::constraint::IsaKind, pipeline::block::Block, translation::TranslationContext};
 use lending_iterator::LendingIterator;
-use storage::{durability_client::WALClient, MVCCStorage, snapshot::CommittableSnapshot};
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
@@ -134,7 +135,8 @@ fn attribute_equality() {
         )),
     ];
 
-    let executable = MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable =
+        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
