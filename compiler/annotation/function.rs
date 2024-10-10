@@ -8,20 +8,27 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     sync::Arc,
 };
-use typeql::TypeRefAny;
 
 use answer::{variable::Variable, Type};
-use concept::type_::type_manager::TypeManager;
-use encoding::{graph::definition::definition_key::DefinitionKey, value::value_type::ValueType};
-use ir::pipeline::{
-    function::{AnonymousFunction, Function, FunctionBody, ReturnOperation},
-    function_signature::FunctionIDAPI,
+use concept::type_::{type_manager::TypeManager, TypeAPI};
+use encoding::{
+    graph::definition::definition_key::DefinitionKey,
+    value::{label::Label, value_type::ValueType},
+};
+use ir::{
+    pipeline::{
+        function::{AnonymousFunction, Function, FunctionBody, ReturnOperation},
+        function_signature::FunctionIDAPI,
+    },
+    translation::tokens::translate_value_type,
 };
 use storage::snapshot::ReadableSnapshot;
+use typeql::{type_::NamedType, TypeRef, TypeRefAny};
 
 use crate::annotation::{
+    expression::compiled_expression::ExpressionValueType,
     pipeline::{annotate_pipeline_stages, AnnotatedStage},
-    FunctionTypeInferenceError,
+    type_seeder, FunctionTypeInferenceError, TypeInferenceError,
 };
 
 #[derive(Debug, Clone)]
@@ -194,16 +201,47 @@ fn annotate_arguments(
     function_arguments: &mut Vec<(Variable, TypeRefAny)>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-) -> Result<(BTreeMap<Variable, Arc<BTreeSet<Type>>>, BTreeMap<Variable, ValueType>), FunctionTypeInferenceError> {
+) -> Result<
+    (BTreeMap<Variable, Arc<BTreeSet<Type>>>, BTreeMap<Variable, ExpressionValueType>),
+    FunctionTypeInferenceError,
+> {
     // TODO
-    Ok((BTreeMap::new(), BTreeMap::new()))
+    let mut variable_types = BTreeMap::new();
+    let mut value_types = BTreeMap::new();
+    for (idx, (var, typeql_type)) in function_arguments.iter().enumerate() {
+        let TypeRef::Named(inner_type) = (match typeql_type {
+            TypeRefAny::Type(inner) => inner,
+            TypeRefAny::Optional(typeql::type_::Optional { inner: _inner, .. }) => todo!(),
+            TypeRefAny::List(typeql::type_::List { inner: _inner, .. }) => todo!(),
+        }) else {
+            unreachable!(); // Variables as function argument labels? No.
+        };
+        match inner_type {
+            NamedType::Label(label) => {
+                let types = type_seeder::get_type_annotation_and_subtypes_from_label(
+                    snapshot,
+                    type_manager,
+                    &Label::build(label.ident.as_str()),
+                )
+                .map_err(|source| FunctionTypeInferenceError::CouldNotResolveArgumentType { index: idx, source })?;
+                variable_types.insert(var.clone(), Arc::new(types));
+            }
+            NamedType::BuiltinValueType(value_type) => {
+                value_types.insert(var.clone(), ExpressionValueType::Single(translate_value_type(&value_type.token)));
+                // TODO: This may be list
+            }
+            NamedType::Role(_) => unreachable!(),
+        }
+    }
+    Ok((variable_types, value_types))
 }
 
 fn extract_return_type_annotations(
     return_operation: &ReturnOperation,
     body_variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    body_variable_value_types: &BTreeMap<Variable, ValueType>,
+    body_variable_value_types: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Vec<FunctionParameterAnnotation> {
+    // TODO: We don't consider the user annotations.
     match return_operation {
         ReturnOperation::Stream(vars) => {
             vars.iter()
@@ -231,13 +269,13 @@ fn extract_return_type_annotations(
 fn get_function_parameter(
     variable: &Variable,
     body_variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    body_variable_value_types: &BTreeMap<Variable, ValueType>,
+    body_variable_value_types: &BTreeMap<Variable, ExpressionValueType>,
 ) -> FunctionParameterAnnotation {
     if let Some(arced_types) = body_variable_annotations.get(variable) {
         let types: &BTreeSet<Type> = &arced_types;
         FunctionParameterAnnotation::Concept(types.clone())
-    } else if let Some(value_type) = body_variable_value_types.get(variable) {
-        FunctionParameterAnnotation::Value(value_type.clone())
+    } else if let Some(expression_value_type) = body_variable_value_types.get(variable) {
+        FunctionParameterAnnotation::Value(expression_value_type.value_type().clone())
     } else {
         unreachable!()
     }

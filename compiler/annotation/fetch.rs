@@ -22,6 +22,7 @@ use ir::{
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
+    expression::compiled_expression::ExpressionValueType,
     function::{
         annotate_anonymous_function, AnnotatedAnonymousFunction, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions,
     },
@@ -32,7 +33,7 @@ use crate::annotation::{
 #[derive(Debug, Clone)]
 pub struct AnnotatedFetch {
     input_type_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    input_value_annotations: BTreeMap<Variable, ValueType>,
+    input_value_annotations: BTreeMap<Variable, ExpressionValueType>,
 
     object: AnnotatedFetchObject,
 }
@@ -70,7 +71,7 @@ pub struct AnnotatedFetchListSubFetch {
 pub(crate) fn annotate_fetch(
     fetch: FetchObject,
     input_type_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    input_value_annotations: BTreeMap<Variable, ValueType>,
+    input_value_annotations: BTreeMap<Variable, ExpressionValueType>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     indexed_annotated_functions: &IndexedAnnotatedFunctions,

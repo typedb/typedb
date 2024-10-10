@@ -11,7 +11,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type as TypeAnnotation};
+use answer::{variable::Variable, Type as TypeAnnotation, Type};
 use concept::{
     error::ConceptReadError,
     type_::{object_type::ObjectType, type_manager::TypeManager, OwnerAPI, PlayerAPI, TypeAPI},
@@ -540,6 +540,41 @@ pub(crate) fn get_type_annotation_from_label<Snapshot: ReadableSnapshot>(
     } else {
         Ok(None)
     }
+}
+
+pub(crate) fn get_type_annotation_and_subtypes_from_label<Snapshot: ReadableSnapshot>(
+    snapshot: &Snapshot,
+    type_manager: &TypeManager,
+    label_value: &encoding::value::label::Label<'static>,
+) -> Result<BTreeSet<TypeAnnotation>, TypeInferenceError> {
+    let type_opt = get_type_annotation_from_label(snapshot, type_manager, label_value)
+        .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+    let Some(type_) = type_opt else {
+        return Err(TypeInferenceError::LabelNotResolved { name: label_value.scoped_name().to_string() });
+    };
+    let mut types: BTreeSet<Type> = match &type_ {
+        TypeAnnotation::Entity(type_) => type_
+            .get_subtypes_transitive(snapshot, type_manager)
+            .map_err(|source| TypeInferenceError::ConceptRead { source })?
+            .iter()
+            .map(|t| TypeAnnotation::Entity(t.clone()))
+            .collect(),
+        TypeAnnotation::Relation(type_) => type_
+            .get_subtypes_transitive(snapshot, type_manager)
+            .map_err(|source| TypeInferenceError::ConceptRead { source })?
+            .iter()
+            .map(|t| TypeAnnotation::Relation(t.clone()))
+            .collect(),
+        TypeAnnotation::Attribute(type_) => type_
+            .get_subtypes_transitive(snapshot, type_manager)
+            .map_err(|source| TypeInferenceError::ConceptRead { source })?
+            .iter()
+            .map(|t| TypeAnnotation::Attribute(t.clone()))
+            .collect(),
+        TypeAnnotation::RoleType(_) => unreachable!(),
+    };
+    types.insert(type_);
+    Ok(types)
 }
 
 impl UnaryConstraint for Kind<Variable> {

@@ -5,8 +5,7 @@
  */
 
 use answer::variable::Variable;
-use typeql::schema::definable::function::SingleSelector;
-use typeql::TypeRefAny;
+use typeql::{schema::definable::function::SingleSelector, TypeRefAny};
 
 use crate::{
     pipeline::reduce::Reducer,
@@ -23,7 +22,12 @@ pub struct Function {
 }
 
 impl Function {
-    pub fn new(name: &str, context: TranslationContext, arguments: Vec<(Variable, TypeRefAny)>, function_body: FunctionBody) -> Self {
+    pub fn new(
+        name: &str,
+        context: TranslationContext,
+        arguments: Vec<(Variable, TypeRefAny)>,
+        function_body: FunctionBody,
+    ) -> Self {
         Self { name: name.to_string(), context, function_body, arguments }
     }
 

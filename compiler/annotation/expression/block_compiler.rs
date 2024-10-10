@@ -4,10 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use answer::variable::Variable;
 use concept::type_::type_manager::TypeManager;
+use encoding::value::value_type::ValueType;
 use ir::{
     pattern::{
         conjunction::Conjunction,
@@ -52,6 +53,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     variable_registry: &'block mut VariableRegistry,
     parameters: &'block ParameterRegistry,
     type_annotations: &'block TypeAnnotations,
+    input_value_variable_types: &mut BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<HashMap<Variable, ExecutableExpression>, ExpressionCompileError> {
     let mut expression_index = HashMap::new();
     index_expressions(block.conjunction(), &mut expression_index)?;
@@ -63,7 +65,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
         snapshot,
         type_manager,
         type_annotations,
-        variable_value_types: HashMap::new(),
+        variable_value_types: input_value_variable_types.iter().map(|(k, v)| (k.clone(), v.clone())).collect(),
         visited_expressions: HashSet::new(),
         compiled_expressions: HashMap::new(),
     };
@@ -149,6 +151,7 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
     if expression_assignments.contains_key(&variable) {
         if !context.compiled_expressions.contains_key(&variable) {
             if context.visited_expressions.contains(&variable) {
+                // TODO: Do we catch double assignments?
                 Err(ExpressionCompileError::CircularDependencyInExpressions { assign_variable: variable })
             } else {
                 compile_expressions_recursive(context, variable, expression_assignments)?;
@@ -160,6 +163,8 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
         } else {
             Ok(())
         }
+    } else if context.variable_value_types.contains_key(&variable) {
+        Ok(())
     } else if let Some(types) = context.type_annotations.vertex_annotations_of(&Vertex::Variable(variable)) {
         // resolve_value_types will error if the type_annotations aren't all attribute(list) types
         let value_types = resolve_value_types(types, context.snapshot, context.type_manager).map_err(|source| {
