@@ -75,10 +75,8 @@ impl StepExecutor {
             ExecutionStep::Check(CheckStep { check_instructions }) => {
                 Ok(Self::Check(CheckExecutor::new(check_instructions.clone())))
             }
-            ExecutionStep::Disjunction(DisjunctionStep { disjunction: _disjunction_plans, .. }) => {
-                // let executors = plans.into_iter().map(|pattern_plan| PatternExecutor::new(pattern_plan, )).collect();
-                // Self::Disjunction(DisjunctionExecutor::new(executors, variable_positions))
-                todo!()
+            ExecutionStep::Disjunction(DisjunctionStep { branches, .. }) => {
+                Ok(Self::Disjunction(DisjunctionExecutor::new(branches.clone(), row_width)))
             }
             ExecutionStep::Negation(NegationStep { negation: negation_plan, .. }) => {
                 // TODO: add limit 1, filters if they aren't there already?
@@ -112,11 +110,12 @@ impl StepExecutor {
     pub(super) fn batch_continue(
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         match self {
             StepExecutor::SortedJoin(sorted) => sorted.batch_continue(context),
             StepExecutor::UnsortedJoin(_unsorted) => todo!(), // unsorted.batch_continue(snapshot, thing_manager),
-            StepExecutor::Disjunction(_disjunction) => todo!(),
+            StepExecutor::Disjunction(disjunction) => disjunction.batch_continue(context, interrupt),
             StepExecutor::Optional(_optional) => todo!(),
             StepExecutor::Assignment(_) | StepExecutor::Check(_) | StepExecutor::Negation(_) => Ok(None),
         }
@@ -630,7 +629,7 @@ impl CheckExecutor {
 }
 
 pub(super) struct DisjunctionExecutor {
-    executables: Vec<MatchExecutable>,
+    branches: Vec<MatchExecutable>,
 
     current_branch: Option<(usize, MatchExecutor)>,
     current_input_row: Option<MaybeOwnedRow<'static>>,
@@ -642,15 +641,8 @@ pub(super) struct DisjunctionExecutor {
 }
 
 impl DisjunctionExecutor {
-    fn new(executors: Vec<MatchExecutable>, output_width: u32) -> DisjunctionExecutor {
-        Self {
-            executables: executors,
-            current_branch: None,
-            current_input_row: None,
-            input: None,
-            output: None,
-            output_width,
-        }
+    fn new(branches: Vec<MatchExecutable>, output_width: u32) -> DisjunctionExecutor {
+        Self { branches, current_branch: None, current_input_row: None, input: None, output: None, output_width }
     }
 
     fn batch_from(
@@ -694,7 +686,7 @@ impl DisjunctionExecutor {
                 break;
             } else {
                 let next_branch = index + 1;
-                if next_branch < self.executables.len() {
+                if next_branch < self.branches.len() {
                     self.initialize_branch_executor(next_branch, context)?;
                 } else {
                     self.initialize_executor_for_next_input_row(context)?;
@@ -713,7 +705,7 @@ impl DisjunctionExecutor {
             self.current_branch = Some((
                 next_branch,
                 MatchExecutor::new(
-                    &self.executables[next_branch],
+                    &self.branches[next_branch],
                     context.snapshot(),
                     context.thing_manager(),
                     input_row.clone(),

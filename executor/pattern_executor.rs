@@ -103,7 +103,7 @@ impl MatchExecutor {
                 }
 
                 Direction::Backward => {
-                    let batch = self.step_executors[current_step].batch_continue(context)?;
+                    let batch = self.step_executors[current_step].batch_continue(context, interrupt)?;
                     match batch {
                         None => {
                             if current_step == 0 {

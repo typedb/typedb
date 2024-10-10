@@ -19,7 +19,9 @@ use crate::{
     executable::match_::{
         instructions::{CheckInstruction, ConstraintInstruction},
         planner::{
-            match_executable::{CheckStep, ExecutionStep, IntersectionStep, MatchExecutable},
+            match_executable::{
+                CheckStep, DisjunctionStep, ExecutionStep, IntersectionStep, MatchExecutable, NegationStep,
+            },
             plan::plan_conjunction,
         },
     },
@@ -73,10 +75,23 @@ struct NegationBuilder {
 }
 
 #[derive(Debug)]
+struct DisjunctionBuilder {
+    branches: Vec<MatchExecutable>,
+    output_width: Option<u32>,
+}
+
+impl DisjunctionBuilder {
+    fn new(branches: Vec<MatchExecutable>) -> Self {
+        Self { branches, output_width: None }
+    }
+}
+
+#[derive(Debug)]
 enum StepBuilder {
     Intersection(IntersectionBuilder),
     Check(CheckBuilder),
     Negation(NegationBuilder),
+    Disjunction(DisjunctionBuilder),
 }
 
 impl StepBuilder {
@@ -87,7 +102,7 @@ impl StepBuilder {
     ) -> ExecutionStep {
         match self {
             Self::Intersection(IntersectionBuilder { sort_variable, instructions, output_width }) => {
-                let sort_variable = sort_variable.map(|var| index.get(&var).unwrap()).unwrap().clone();
+                let sort_variable = sort_variable.map(|var| index[&var]).unwrap();
                 ExecutionStep::Intersection(IntersectionStep::new(
                     sort_variable,
                     instructions,
@@ -97,8 +112,9 @@ impl StepBuilder {
                 ))
             }
             Self::Check(CheckBuilder { instructions }) => ExecutionStep::Check(CheckStep::new(instructions)),
-            Self::Negation(NegationBuilder { negation }) => {
-                ExecutionStep::Negation(match_executable::NegationStep { negation })
+            Self::Negation(NegationBuilder { negation }) => ExecutionStep::Negation(NegationStep { negation }),
+            Self::Disjunction(DisjunctionBuilder { branches, output_width }) => {
+                ExecutionStep::Disjunction(DisjunctionStep { branches, output_width: output_width.unwrap() })
             }
         }
     }
@@ -135,7 +151,8 @@ impl StepBuilder {
 
     fn set_output_width(&mut self, position: u32) {
         match self {
-            StepBuilder::Intersection(IntersectionBuilder { output_width, .. }) => *output_width = Some(position),
+            | StepBuilder::Intersection(IntersectionBuilder { output_width, .. })
+            | StepBuilder::Disjunction(DisjunctionBuilder { output_width, .. }) => *output_width = Some(position),
             StepBuilder::Check(_) => (),
             StepBuilder::Negation(_) => (),
         }
@@ -210,7 +227,7 @@ impl MatchExecutableBuilder {
         };
     }
 
-    fn push_step(&mut self, variable_positions: &HashMap<Variable, VariablePosition>, step: StepBuilder) {
+    fn push_step(&mut self, variable_positions: &HashMap<Variable, VariablePosition>, mut step: StepBuilder) {
         if self.current.is_some() {
             self.finish_one();
         }
@@ -221,6 +238,7 @@ impl MatchExecutableBuilder {
                 self.next_output.position += 1;
             }
         }
+        step.set_output_width(self.next_output.position);
         self.steps.push(step);
     }
 
