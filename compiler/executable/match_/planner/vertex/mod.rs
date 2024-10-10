@@ -87,14 +87,6 @@ impl PlannerVertex<'_> {
         }
     }
 
-    /// Returns `true` if the planner vertex is [`Value`].
-    ///
-    /// [`Value`]: PlannerVertex::Value
-    #[must_use]
-    pub(crate) fn is_value(&self) -> bool {
-        self.as_variable().is_some_and(VariableVertex::is_value)
-    }
-
     /// Returns `true` if the planner vertex is [`Input`].
     ///
     /// [`Input`]: PlannerVertex::Input
@@ -117,13 +109,6 @@ impl PlannerVertex<'_> {
     pub(super) fn as_variable_mut(&mut self) -> Option<&mut VariableVertex> {
         match self {
             Self::Variable(v) => Some(v),
-            _ => None,
-        }
-    }
-
-    pub(super) fn as_constraint(&self) -> Option<&ConstraintVertex<'_>> {
-        match self {
-            Self::Constraint(v) => Some(v),
             _ => None,
         }
     }
