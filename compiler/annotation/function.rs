@@ -8,6 +8,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     sync::Arc,
 };
+use typeql::TypeRefAny;
 
 use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
@@ -190,7 +191,7 @@ pub fn annotate_anonymous_function(
 }
 
 fn annotate_arguments(
-    function_arguments: &mut Vec<Variable>,
+    function_arguments: &mut Vec<(Variable, TypeRefAny)>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
 ) -> Result<(BTreeMap<Variable, Arc<BTreeSet<Type>>>, BTreeMap<Variable, ValueType>), FunctionTypeInferenceError> {

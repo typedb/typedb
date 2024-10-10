@@ -6,6 +6,7 @@
 
 use answer::variable::Variable;
 use typeql::schema::definable::function::SingleSelector;
+use typeql::TypeRefAny;
 
 use crate::{
     pipeline::reduce::Reducer,
@@ -18,11 +19,11 @@ pub struct Function {
     pub name: String,
     pub function_body: FunctionBody,
     // Variable categories for args & return can be read from the block's context.
-    pub arguments: Vec<Variable>,
+    pub arguments: Vec<(Variable, TypeRefAny)>,
 }
 
 impl Function {
-    pub fn new(name: &str, context: TranslationContext, arguments: Vec<Variable>, function_body: FunctionBody) -> Self {
+    pub fn new(name: &str, context: TranslationContext, arguments: Vec<(Variable, TypeRefAny)>, function_body: FunctionBody) -> Self {
         Self { name: name.to_string(), context, function_body, arguments }
     }
 
@@ -30,7 +31,7 @@ impl Function {
         &self.name
     }
 
-    pub fn arguments(&self) -> &[Variable] {
+    pub fn arguments(&self) -> &[(Variable, TypeRefAny)] {
         &self.arguments
     }
 
