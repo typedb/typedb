@@ -9,20 +9,21 @@ use std::collections::HashMap;
 use answer::variable::Variable;
 
 use crate::{
-    pattern::ParameterID,
-    pipeline::function::AnonymousFunction,
+    pattern::ParameterID
+    ,
     translation::{pipeline::TranslatedStage, TranslationContext},
 };
+use crate::pipeline::function::Function;
 
 #[derive(Debug, Clone)]
 pub enum FetchSome {
     SingleVar(FetchSingleVar),
     SingleAttribute(FetchSingleAttribute),
-    SingleFunction(AnonymousFunction),
+    SingleFunction(Function),
 
     Object(Box<FetchObject>),
 
-    ListFunction(AnonymousFunction),
+    ListFunction(Function),
     ListSubFetch(FetchListSubFetch),
     ListAttributesAsList(FetchListAttributeAsList),
     ListAttributesFromList(FetchListAttributeFromList),

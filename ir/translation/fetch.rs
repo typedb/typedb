@@ -33,7 +33,7 @@ use crate::{
             FetchListAttributeFromList, FetchObject, FetchObjectAttributes, FetchObjectEntries, FetchSingleAttribute,
             FetchSingleVar, FetchSome,
         },
-        function::{AnonymousFunction, FunctionBody, ReturnOperation},
+        function::{FunctionBody, ReturnOperation},
         function_signature::FunctionSignatureIndex,
         FunctionReadError,
     },
@@ -49,6 +49,7 @@ use crate::{
     },
     RepresentationError,
 };
+use crate::pipeline::function::Function;
 
 pub(super) fn translate_fetch(
     snapshot: &impl ReadableSnapshot,
@@ -240,13 +241,13 @@ fn translate_fetch_single(
         FetchSingle::FunctionBlock(block) => {
             // clone context, since we don't want the inline function to affect the parent context
             let mut local_context = parent_context.clone();
-            let translated = translate_function_block(snapshot, function_index, &mut local_context, &block)
+            let body = translate_function_block(snapshot, function_index, &mut local_context, &block)
                 .map_err(|err| FetchRepresentationError::FunctionRepresentation { declaration: block.clone() })?;
-            if translated.return_operation().is_stream() {
+            let args = find_function_body_arguments(&parent_context, &body);
+            if body.return_operation().is_stream() {
                 Err(FetchRepresentationError::ExpectedSingleInlineFunction { declaration: block.clone() })
             } else {
-                let inline_function = AnonymousFunction::new(local_context, translated);
-                Ok(FetchSome::SingleFunction(inline_function))
+                Ok(FetchSome::SingleFunction(create_anonymous_function(local_context, args, body)))
             }
         }
     }
@@ -270,7 +271,9 @@ fn translate_inline_expression(
     let assign_var = add_expression(function_index, &mut builder, &expression)?;
     let block = TranslatedStage::Match { block: builder.finish() };
     let return_ = ReturnOperation::Single(SingleSelector::First, vec![assign_var]);
-    Ok(FetchSome::SingleFunction(AnonymousFunction::new(local_context, FunctionBody::new(vec![block], return_))))
+    let body = FunctionBody::new(vec![block], return_);
+    let args = find_function_body_arguments(&context, &body);
+    Ok(FetchSome::SingleFunction(create_anonymous_function(local_context, args, body)))
 }
 
 fn translate_inline_user_function_call(
@@ -317,10 +320,14 @@ fn translate_inline_user_function_call(
     let stage = TranslatedStage::Match { block: builder.finish() };
     if signature.return_is_stream {
         let return_ = ReturnOperation::Stream(assign_vars);
-        Ok(FetchSome::ListFunction(AnonymousFunction::new(local_context, FunctionBody::new(vec![stage], return_))))
+        let body = FunctionBody::new(vec![stage], return_);
+        let args = find_function_body_arguments(context, &body);
+        Ok(FetchSome::ListFunction(create_anonymous_function(local_context, args, body)))
     } else {
         let return_ = ReturnOperation::Single(SingleSelector::First, assign_vars);
-        Ok(FetchSome::SingleFunction(AnonymousFunction::new(local_context, FunctionBody::new(vec![stage], return_))))
+        let body = FunctionBody::new(vec![stage], return_);
+        let args = find_function_body_arguments(context, &body);
+        Ok(FetchSome::SingleFunction(create_anonymous_function(local_context, args, body)))
     }
 }
 
@@ -340,6 +347,26 @@ fn add_expression(
         .add_assignment(assign_var.clone(), expression)
         .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: Box::new(err) })?;
     Ok(assign_var)
+}
+
+fn create_anonymous_function(context: TranslationContext, args: Vec<Variable>, body: FunctionBody) -> Function {
+    Function::new("_anon", context, args, body)
+}
+
+// Given a function body, and the _parent_ translation context, we can reconstruct which are arguments
+fn find_function_body_arguments(
+    parent_context: &TranslationContext,
+    function_body: &FunctionBody,
+) -> Vec<Variable> {
+    let mut arguments = Vec::new();
+    for stage in function_body.stages() {
+        for var in stage.variables() {
+            if parent_context.variable_registry.has_variable_as_named(&var) {
+                arguments.push(var)
+            }
+        }
+    }
+    arguments
 }
 
 fn try_get_variable(

@@ -23,11 +23,12 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
     function::{
-        annotate_anonymous_function, AnnotatedAnonymousFunction, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions,
+        AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions,
     },
     pipeline::AnnotatedStage,
     AnnotationError,
 };
+use crate::annotation::function::{annotate_function, AnnotatedFunction};
 
 #[derive(Debug, Clone)]
 pub struct AnnotatedFetch {
@@ -41,11 +42,11 @@ pub struct AnnotatedFetch {
 pub enum AnnotatedFetchSome {
     SingleVar(FetchSingleVar),
     SingleAttribute(FetchSingleAttribute),
-    SingleFunction(AnnotatedAnonymousFunction),
+    SingleFunction(AnnotatedFunction),
 
     Object(Box<AnnotatedFetchObject>),
 
-    ListFunction(AnnotatedAnonymousFunction),
+    ListFunction(AnnotatedFunction),
     ListSubFetch(AnnotatedFetchListSubFetch),
     ListAttributesAsList(FetchListAttributeAsList),
     ListAttributesFromList(FetchListAttributeFromList),
@@ -129,7 +130,7 @@ fn annotate_some(
         FetchSome::SingleVar(var) => Ok(AnnotatedFetchSome::SingleVar(var)),
         FetchSome::SingleAttribute(attr) => Ok(AnnotatedFetchSome::SingleAttribute(attr)),
         FetchSome::SingleFunction(function) => {
-            let annotated_function = annotate_anonymous_function(
+            let annotated_function = annotate_function(
                 &function,
                 snapshot,
                 type_manager,
@@ -145,7 +146,7 @@ fn annotate_some(
             Ok(AnnotatedFetchSome::Object(Box::new(object)))
         }
         FetchSome::ListFunction(function) => {
-            let annotated_function = annotate_anonymous_function(
+            let annotated_function = annotate_function(
                 &function,
                 snapshot,
                 type_manager,

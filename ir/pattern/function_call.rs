@@ -17,14 +17,14 @@ use crate::{
 pub struct FunctionCall<ID> {
     function_id: FunctionID,
     // map call variable to index of argument
-    call_variable_mapping: BTreeMap<Vertex<ID>, usize>,
+    call_variable_mapping: BTreeMap<ID, usize>,
 }
 
 impl<ID: IrID> FunctionCall<ID> {
     pub fn new(function_id: FunctionID, call_variable_mapping: BTreeMap<ID, usize>) -> Self {
         Self {
             function_id,
-            call_variable_mapping: call_variable_mapping.into_iter().map(|(k, v)| (Vertex::Variable(k), v)).collect(),
+            call_variable_mapping,
         }
     }
 
@@ -32,16 +32,12 @@ impl<ID: IrID> FunctionCall<ID> {
         self.function_id.clone()
     }
 
-    pub fn call_id_mapping(&self) -> &BTreeMap<Vertex<ID>, usize> {
+    pub fn call_id_mapping(&self) -> &BTreeMap<ID, usize> {
         &self.call_variable_mapping
     }
 
     pub fn argument_ids(&self) -> impl Iterator<Item = ID> + '_ {
-        self.call_variable_mapping.keys().filter_map(Vertex::as_variable)
-    }
-
-    pub fn argument_vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + '_ {
-        self.call_variable_mapping.keys()
+        self.call_variable_mapping.keys().cloned()
     }
 }
 
