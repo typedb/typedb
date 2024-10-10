@@ -4,12 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    sync::Arc,
-};
-
-use answer::{variable::Variable, Type};
+use answer::{variable::Variable};
 use typeql::schema::definable::function::SingleSelector;
 
 use crate::{

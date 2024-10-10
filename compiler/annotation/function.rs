@@ -34,18 +34,9 @@ pub enum FunctionParameterAnnotation {
 
 #[derive(Debug, Clone)]
 pub struct AnnotatedFunction {
-    stages: Vec<AnnotatedStage>,
-    return_annotations: Vec<FunctionParameterAnnotation>,
-}
-
-impl AnnotatedFunction {
-    pub fn pipeline_annotations(&self) -> &Vec<AnnotatedStage> {
-        &self.stages
-    }
-
-    pub fn return_annotations(&self) -> &Vec<FunctionParameterAnnotation> {
-        &self.return_annotations
-    }
+    pub stages: Vec<AnnotatedStage>,
+    pub return_operation: ReturnOperation,
+    pub return_annotations: Vec<FunctionParameterAnnotation>,
 }
 
 #[derive(Debug, Clone)]
@@ -107,6 +98,10 @@ impl AnnotatedUnindexedFunctions {
 
     pub fn iter_functions(&self) -> impl Iterator<Item = &AnnotatedFunction> {
         self.unindexed_functions.iter()
+    }
+
+    pub fn into_iter_functions(self) -> impl Iterator<Item = AnnotatedFunction> {
+        self.unindexed_functions.into_iter()
     }
 }
 
@@ -180,7 +175,7 @@ pub fn annotate_function(
     })?;
     let return_annotations =
         extract_return_type_annotations(return_operation, &running_variable_types, &running_value_types);
-    Ok(AnnotatedFunction { return_annotations, stages })
+    Ok(AnnotatedFunction { stages, return_annotations, return_operation: return_operation.clone() })
 }
 
 pub fn extract_return_type_annotations(
