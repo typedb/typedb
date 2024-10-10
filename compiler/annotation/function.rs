@@ -160,6 +160,9 @@ pub fn annotate_function(
 ) -> Result<AnnotatedFunction, FunctionTypeInferenceError> {
     let Function { name, context, function_body: FunctionBody { stages, return_operation }, arguments } = function;
     // TODO: Work the argument in.
+    let (argument_concept_variable_types, argument_value_variable_types) =
+        annotate_arguments(arguments, snapshot, type_manager)?;
+
     let (stages, running_variable_types, running_value_types) = annotate_pipeline_stages(
         snapshot,
         type_manager,
@@ -168,6 +171,8 @@ pub fn annotate_function(
         &context.parameters,
         local_functions,
         stages.clone(),
+        argument_concept_variable_types,
+        argument_value_variable_types,
     )
     .map_err(|err| FunctionTypeInferenceError::TypeInference {
         name: name.to_string(),
@@ -176,6 +181,15 @@ pub fn annotate_function(
     let return_annotations =
         extract_return_type_annotations(return_operation, &running_variable_types, &running_value_types);
     Ok(AnnotatedFunction { stages, return_annotations, return_operation: return_operation.clone() })
+}
+
+fn annotate_arguments(
+    function_arguments: &mut Vec<Variable>,
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+) -> Result<(BTreeMap<Variable, Arc<BTreeSet<Type>>>, BTreeMap<Variable, ValueType>), FunctionTypeInferenceError> {
+    // TODO
+    Ok((BTreeMap::new(), BTreeMap::new()))
 }
 
 pub fn extract_return_type_annotations(

@@ -96,6 +96,8 @@ pub fn annotate_pipeline(
         parameters,
         Some(&annotated_preamble),
         translated_stages,
+        BTreeMap::new(),
+        BTreeMap::new(),
     )?;
     let annotated_fetch = match translated_fetch {
         None => None,
@@ -123,12 +125,14 @@ pub(crate) fn annotate_pipeline_stages(
     parameters: &ParameterRegistry,
     annotated_preamble: Option<&AnnotatedUnindexedFunctions>,
     translated_stages: Vec<TranslatedStage>,
+    input_variable_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    input_value_variable_types: BTreeMap<Variable, ValueType>,
 ) -> Result<
     (Vec<AnnotatedStage>, BTreeMap<Variable, Arc<BTreeSet<Type>>>, BTreeMap<Variable, ValueType>),
     AnnotationError,
 > {
-    let mut running_variable_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>> = BTreeMap::new();
-    let mut running_value_variable_types: BTreeMap<Variable, ValueType> = BTreeMap::new();
+    let mut running_variable_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>> = input_variable_annotations;
+    let mut running_value_variable_types: BTreeMap<Variable, ValueType> = input_value_variable_types;
     let mut annotated_stages = Vec::with_capacity(translated_stages.len());
 
     let empty_constraint_annotations = HashMap::new();
