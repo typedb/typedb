@@ -19,7 +19,7 @@ use crate::{
     },
 };
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) enum ConstraintVertex<'a> {
     TypeList(TypeListPlanner<'a>),
 
@@ -84,14 +84,14 @@ impl Costed for ConstraintVertex<'_> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) enum TypeListConstraint<'a> {
     Label(&'a Label<Variable>),
     RoleName(&'a RoleName<Variable>),
     Kind(&'a Kind<Variable>),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct TypeListPlanner<'a> {
     constraint: TypeListConstraint<'a>,
     var: VariableVertexId,
@@ -153,7 +153,7 @@ impl Costed for TypeListPlanner<'_> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct IsaPlanner<'a> {
     isa: &'a Isa<Variable>,
     thing: VariableVertexId,
@@ -188,7 +188,7 @@ impl Costed for IsaPlanner<'_> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct HasPlanner<'a> {
     has: &'a Has<Variable>,
     pub owner: VariableVertexId,
@@ -282,7 +282,7 @@ impl Costed for HasPlanner<'_> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct LinksPlanner<'a> {
     links: &'a Links<Variable>,
     pub relation: VariableVertexId,
@@ -410,7 +410,7 @@ impl Costed for LinksPlanner<'_> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct SubPlanner<'a> {
     sub: &'a Sub<Variable>,
     type_: Input,
@@ -449,7 +449,7 @@ impl Costed for SubPlanner<'_> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct OwnsPlanner<'a> {
     owns: &'a Owns<Variable>,
     owner: Input,
@@ -484,7 +484,7 @@ impl Costed for OwnsPlanner<'_> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct RelatesPlanner<'a> {
     relates: &'a Relates<Variable>,
     relation: Input,
@@ -519,7 +519,7 @@ impl Costed for RelatesPlanner<'_> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct PlaysPlanner<'a> {
     plays: &'a Plays<Variable>,
     player: Input,

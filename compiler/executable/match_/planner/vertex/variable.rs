@@ -21,7 +21,7 @@ use crate::{
     },
 };
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) enum VariableVertex {
     Input(InputPlanner),
     Shared(SharedPlanner),
@@ -110,6 +110,16 @@ impl VariableVertex {
     pub(crate) fn is_value(&self) -> bool {
         matches!(self, Self::Value(..))
     }
+
+    pub(crate) fn variable(&self) -> Variable {
+        match self {
+            VariableVertex::Input(var) => var.variable,
+            VariableVertex::Shared(var) => var.variable,
+            VariableVertex::Type(var) => var.variable,
+            VariableVertex::Thing(var) => var.variable,
+            VariableVertex::Value(var) => var.variable,
+        }
+    }
 }
 
 impl Costed for VariableVertex {
@@ -125,12 +135,14 @@ impl Costed for VariableVertex {
     }
 }
 
-#[derive(Debug)]
-pub(crate) struct InputPlanner;
+#[derive(Clone, Debug)]
+pub(crate) struct InputPlanner {
+    variable: Variable,
+}
 
 impl InputPlanner {
-    pub(crate) fn from_variable(_: Variable, _: &TypeAnnotations) -> Self {
-        Self
+    pub(crate) fn from_variable(variable: Variable) -> Self {
+        Self { variable }
     }
 }
 
@@ -140,8 +152,10 @@ impl Costed for InputPlanner {
     }
 }
 
-#[derive(Debug)]
-pub(crate) struct SharedPlanner;
+#[derive(Clone, Debug)]
+pub(crate) struct SharedPlanner {
+    variable: Variable,
+}
 
 impl SharedPlanner {
     pub(crate) fn from_variable(_: Variable, _: &TypeAnnotations) -> Self {
@@ -155,15 +169,16 @@ impl Costed for SharedPlanner {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct TypePlanner {
+    variable: Variable,
     expected_size: f64,
 }
 
 impl TypePlanner {
     pub(crate) fn from_variable(variable: Variable, type_annotations: &TypeAnnotations) -> Self {
         let num_types = type_annotations.vertex_annotations_of(&Vertex::Variable(variable)).unwrap().len();
-        Self { expected_size: num_types as f64 }
+        Self { variable, expected_size: num_types as f64 }
     }
 }
 
@@ -173,8 +188,9 @@ impl Costed for TypePlanner {
     }
 }
 
-#[derive(Default)]
+#[derive(Clone)]
 pub(crate) struct ThingPlanner {
+    variable: Variable,
     expected_size: f64,
 
     bound_exact: HashSet<VariableVertexId>, // IID or exact Type + Value
@@ -209,7 +225,14 @@ impl ThingPlanner {
                 }
             })
             .sum::<u64>() as f64;
-        Self { expected_size, ..Default::default() }
+        Self {
+            variable,
+            expected_size,
+            bound_exact: HashSet::new(),
+            bound_value_equal: HashSet::new(),
+            bound_value_below: HashSet::new(),
+            bound_value_above: HashSet::new(),
+        }
     }
 
     pub(crate) fn add_is(&mut self, other: VariableVertexId) {
@@ -310,12 +333,14 @@ impl Costed for ThingPlanner {
     }
 }
 
-#[derive(Debug)]
-pub(crate) struct ValuePlanner;
+#[derive(Clone, Debug)]
+pub(crate) struct ValuePlanner {
+    variable: Variable,
+}
 
 impl ValuePlanner {
-    pub(crate) fn from_variable(_: Variable) -> Self {
-        Self
+    pub(crate) fn from_variable(variable: Variable) -> Self {
+        Self { variable }
     }
 
     fn expected_size(&self, _inputs: &[VertexId]) -> f64 {
