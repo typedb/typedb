@@ -54,24 +54,37 @@ pub mod tests {
 
     use answer::{variable::Variable, Type};
     use concept::type_::{entity_type::EntityType, relation_type::RelationType, role_type::RoleType};
-    use encoding::graph::type_::vertex::{PrefixedTypeVertexEncoding, TypeID};
+    use encoding::{
+        graph::{
+            definition::definition_key::{DefinitionID, DefinitionKey},
+            type_::vertex::{PrefixedTypeVertexEncoding, TypeID},
+        },
+        layout::prefix::Prefix,
+    };
     use ir::{
         pattern::{
             constraint::{Constraint, IsaKind, Links, SubKind},
+            variable_category::{VariableCategory, VariableOptionality},
             Vertex,
         },
-        pipeline::block::Block,
-        translation::TranslationContext,
+        pipeline::{
+            block::Block,
+            function::{Function, FunctionBody, ReturnOperation},
+            function_signature::{FunctionID, FunctionSignature},
+            VariableRegistry,
+        },
+        translation::{pipeline::TranslatedStage, TranslationContext},
     };
     use itertools::Itertools;
     use test_utils::assert_matches;
 
     use crate::annotation::{
-        function::IndexedAnnotatedFunctions,
+        function::{annotate_function, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         match_inference::{
-            compute_type_inference_graph, NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
-            VertexAnnotations,
+            compute_type_inference_graph, infer_types, NestedTypeInferenceGraphDisjunction, TypeInferenceEdge,
+            TypeInferenceGraph, VertexAnnotations,
         },
+        pipeline::AnnotatedStage,
         tests::{
             managers,
             schema_consts::{
@@ -206,168 +219,178 @@ pub mod tests {
     //
     #[test]
     fn test_functions() {
-        todo!()
-        //     let (_tmp_dir, storage) = setup_storage();
-        //     let (type_manager, thing_manager) = managers();
-        //
-        //     let ((type_animal, type_cat, type_dog), (type_name, type_catname, _), (type_fears, _, _)) =
-        //         setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
-        //     let object_types = [type_animal.clone(), type_cat.clone(), type_dog.clone(), type_fears.clone()];
-        //
-        //     let (with_no_cache, with_local_cache, with_schema_cache) = [
-        //         FunctionID::Preamble(0),
-        //         FunctionID::Preamble(0),
-        //         FunctionID::Schema(DefinitionKey::build(Prefix::DefinitionFunction, DefinitionID::build(0))),
-        //     ]
-        //     .iter()
-        //     .map(|function_id| {
-        //         let mut function_context = TranslationContext::new();
-        //         let mut builder = Block::builder(function_context.new_block_builder_context());
-        //         let mut f_conjunction = builder.conjunction_mut();
-        //         let f_var_animal = f_conjunction.get_or_declare_variable("called_animal").unwrap();
-        //         let f_var_animal_type = f_conjunction.get_or_declare_variable("called_animal_type").unwrap();
-        //         let f_var_name = f_conjunction.get_or_declare_variable("called_name").unwrap();
-        //         f_conjunction.constraints_mut().add_label(f_var_animal_type, LABEL_CAT.scoped_name().as_str()).unwrap();
-        //         f_conjunction.constraints_mut().add_isa(IsaKind::Subtype, f_var_animal, f_var_animal_type.into()).unwrap();
-        //         f_conjunction.constraints_mut().add_has(f_var_animal, f_var_name).unwrap();
-        //         let function_block = builder.finish();
-        //         let f_ir = Function::new(
-        //             "fn_test",
-        //             function_context,
-        //             vec![],
-        //             FunctionBody::new(
-        //                 vec![TranslatedStage::Match { block: function_block }],
-        //                 ReturnOperation::Stream(vec![f_var_animal]),
-        //             )
-        //         );
-        //
-        //         let mut entry_context = TranslationContext::new();
-        //         let mut builder = Block::builder(entry_context.new_block_builder_context());
-        //         let mut conjunction = builder.conjunction_mut();
-        //         let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
-        //
-        //         let callee_signature = FunctionSignature::new(
-        //             function_id.clone(),
-        //             vec![],
-        //             vec![(VariableCategory::Object, VariableOptionality::Required)],
-        //             true,
-        //         );
-        //         conjunction
-        //             .constraints_mut()
-        //             .add_function_binding(vec![var_animal], &callee_signature, vec![], "test_fn")
-        //             .unwrap();
-        //         let entry = builder.finish();
-        //         (entry, entry_context, f_ir)
-        //     })
-        //     .collect_tuple()
-        //     .unwrap();
-        //
-        //     let snapshot = storage.open_snapshot_read();
-        //
-        //     {
-        //         // Local inference only
-        //         let (entry, entry_context, _) = with_no_cache;
-        //         let var_animal = var_from_registry(&entry_context.variable_registry, "animal").unwrap();
-        //         let annotations_without_schema_cache = infer_types(
-        //             &snapshot,
-        //             &entry,
-        //             &entry_context.variable_registry,
-        //             &type_manager,
-        //             &BTreeMap::new(),
-        //             &IndexedAnnotatedFunctions::empty(),
-        //             None,
-        //         ).unwrap();
-        //         assert_eq!(
-        //             *annotations_without_schema_cache.vertex_annotations(),
-        //             BTreeMap::from([(var_animal.into(), Arc::new(BTreeSet::from(object_types.clone())))])
-        //         );
-        //     }
-        //
-        //     {
-        //         // With schema cache
-        //         let (entry, entry_context, f_ir) = with_local_cache;
-        //
-        //         let f_annotations =
-        //             infer_types_for_function(&f_ir, &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
-        //                 .unwrap();
-        //         let f_var_animal = var_from_registry(&f_ir.translation_context().variable_registry, "called_animal").unwrap();
-        //         let f_var_animal_type = var_from_registry(&f_ir.translation_context().variable_registry, "called_animal_type").unwrap();
-        //         let f_var_name = var_from_registry(&f_ir.translation_context().variable_registry, "called_name").unwrap();
-        //
-        //         assert_eq!(
-        //             *f_annotations.block_annotations.vertex_annotations(),
-        //             BTreeMap::from([
-        //                 (f_var_animal.into(), Arc::new(BTreeSet::from([type_cat.clone()]))),
-        //                 (f_var_animal_type.into(), Arc::new(BTreeSet::from([type_cat.clone()]))),
-        //                 (f_var_name.into(), Arc::new(BTreeSet::from([type_catname.clone(), type_name.clone()])))
-        //             ])
-        //         );
-        //
-        //         let var_animal = var_from_registry(&entry_context.variable_registry, "animal").unwrap();
-        //         let local_cache = AnnotatedUnindexedFunctions::new(Box::new([f_ir]), Box::new([f_annotations]));
-        //         let variable_registry = &entry_context.variable_registry;
-        //         let previous_stage_variable_annotations = &BTreeMap::new();
-        //         let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
-        //         let entry_annotations = infer_types(
-        //             &snapshot,
-        //             &entry,
-        //             variable_registry,
-        //             &type_manager,
-        //             previous_stage_variable_annotations,
-        //             annotated_schema_functions,
-        //             Some(&local_cache),
-        //         )
-        //         .unwrap();
-        //         assert_eq!(
-        //             entry_annotations.vertex_annotations(),
-        //             &BTreeMap::from([(var_animal.into(), Arc::new(BTreeSet::from([type_cat.clone()])))]),
-        //         );
-        //     }
-        //
-        //     {
-        //         // With schema cache
-        //         let (entry, entry_context, f_ir) = with_schema_cache;
-        //
-        //         let f_annotations =
-        //             infer_types_for_function(&f_ir, &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
-        //                 .unwrap();
-        //         let f_var_animal = var_from_registry(&f_ir.translation_context().variable_registry, "called_animal").unwrap();
-        //         let f_var_animal_type = var_from_registry(&f_ir.translation_context().variable_registry, "called_animal_type").unwrap();
-        //         let f_var_name = var_from_registry(&f_ir.translation_context().variable_registry, "called_name").unwrap();
-        //
-        //         assert_eq!(
-        //             *f_annotations.block_annotations.vertex_annotations(),
-        //             BTreeMap::from([
-        //                 (f_var_animal.into(), Arc::new(BTreeSet::from([type_cat.clone()]))),
-        //                 (f_var_animal_type.into(), Arc::new(BTreeSet::from([type_cat.clone()]))),
-        //                 (f_var_name.into(), Arc::new(BTreeSet::from([type_catname.clone(), type_name.clone()])))
-        //             ])
-        //         );
-        //
-        //         let var_animal = var_from_registry(&entry_context.variable_registry, "animal").unwrap();
-        //         let schema_cache = IndexedAnnotatedFunctions::new(Box::new([Some(f_ir)]), Box::new([Some(f_annotations)]));
-        //         let variable_registry = &entry_context.variable_registry;
-        //         let previous_stage_variable_annotations = &BTreeMap::new();
-        //         let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
-        //         let entry_annotations = infer_types(
-        //             &snapshot,
-        //             &entry,
-        //             variable_registry,
-        //             &type_manager,
-        //             previous_stage_variable_annotations,
-        //             &schema_cache,
-        //             Some(annotated_preamble_functions),
-        //         )
-        //         .unwrap();
-        //         assert_eq!(
-        //             *entry_annotations.vertex_annotations(),
-        //             BTreeMap::from([(var_animal.into(), Arc::new(BTreeSet::from([type_cat.clone()])))]),
-        //         );
-        //     }
-        //
-        //     fn var_from_registry(registry: &VariableRegistry, name: &str) -> Option<Variable> {
-        //         registry.variable_names().iter().find(|(_, n)| n.as_str() == name).map(|(v, _)| *v)
-        //     }
+        // todo!()
+        let (_tmp_dir, storage) = setup_storage();
+        let (type_manager, thing_manager) = managers();
+
+        let ((type_animal, type_cat, type_dog), (type_name, type_catname, _), (type_fears, _, _)) =
+            setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
+        let object_types = [type_animal.clone(), type_cat.clone(), type_dog.clone(), type_fears.clone()];
+
+        let (mut with_no_cache, mut with_local_cache, mut with_schema_cache) = [
+            FunctionID::Preamble(0),
+            FunctionID::Preamble(0),
+            FunctionID::Schema(DefinitionKey::build(Prefix::DefinitionFunction, DefinitionID::build(0))),
+        ]
+        .iter()
+        .map(|function_id| {
+            let mut function_context = TranslationContext::new();
+            let mut builder = Block::builder(function_context.new_block_builder_context());
+            let mut f_conjunction = builder.conjunction_mut();
+            let f_var_animal = f_conjunction.get_or_declare_variable("called_animal").unwrap();
+            let f_var_animal_type = f_conjunction.get_or_declare_variable("called_animal_type").unwrap();
+            let f_var_name = f_conjunction.get_or_declare_variable("called_name").unwrap();
+            f_conjunction.constraints_mut().add_label(f_var_animal_type, LABEL_CAT.scoped_name().as_str()).unwrap();
+            f_conjunction.constraints_mut().add_isa(IsaKind::Subtype, f_var_animal, f_var_animal_type.into()).unwrap();
+            f_conjunction.constraints_mut().add_has(f_var_animal, f_var_name).unwrap();
+            let function_block = builder.finish();
+            let f_ir = Function::new(
+                "fn_test",
+                function_context,
+                vec![],
+                FunctionBody::new(
+                    vec![TranslatedStage::Match { block: function_block }],
+                    ReturnOperation::Stream(vec![f_var_animal]),
+                ),
+            );
+
+            let mut entry_context = TranslationContext::new();
+            let mut builder = Block::builder(entry_context.new_block_builder_context());
+            let mut conjunction = builder.conjunction_mut();
+            let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
+
+            let callee_signature = FunctionSignature::new(
+                function_id.clone(),
+                vec![],
+                vec![(VariableCategory::Object, VariableOptionality::Required)],
+                true,
+            );
+            conjunction
+                .constraints_mut()
+                .add_function_binding(vec![var_animal], &callee_signature, vec![], "test_fn")
+                .unwrap();
+            let entry = builder.finish();
+            (entry, entry_context, f_ir)
+        })
+        .collect_tuple()
+        .unwrap();
+
+        let snapshot = storage.open_snapshot_read();
+
+        {
+            // Local inference only
+            let (entry, entry_context, _) = with_no_cache;
+            let var_animal = var_from_registry(&entry_context.variable_registry, "animal").unwrap();
+            let annotations_without_schema_cache = infer_types(
+                &snapshot,
+                &entry,
+                &entry_context.variable_registry,
+                &type_manager,
+                &BTreeMap::new(),
+                &IndexedAnnotatedFunctions::empty(),
+                None,
+            )
+            .unwrap();
+            assert_eq!(
+                *annotations_without_schema_cache.vertex_annotations(),
+                BTreeMap::from([(var_animal.into(), Arc::new(BTreeSet::from(object_types.clone())))])
+            );
+        }
+
+        {
+            // With schema cache
+            let (entry, entry_context, mut f_ir) = with_local_cache;
+
+            let f_annotations =
+                annotate_function(&mut f_ir, &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
+                    .unwrap();
+            let f_var_animal =
+                var_from_registry(&f_ir.translation_context().variable_registry, "called_animal").unwrap();
+            let f_var_animal_type =
+                var_from_registry(&f_ir.translation_context().variable_registry, "called_animal_type").unwrap();
+            let f_var_name = var_from_registry(&f_ir.translation_context().variable_registry, "called_name").unwrap();
+            let AnnotatedStage::Match { block_annotations, .. } = &f_annotations.pipeline_annotations()[0] else {
+                unreachable!()
+            };
+            assert_eq!(
+                block_annotations.vertex_annotations(),
+                &BTreeMap::from([
+                    (f_var_animal.into(), Arc::new(BTreeSet::from([type_cat.clone()]))),
+                    (f_var_animal_type.into(), Arc::new(BTreeSet::from([type_cat.clone()]))),
+                    (f_var_name.into(), Arc::new(BTreeSet::from([type_catname.clone(), type_name.clone()])))
+                ])
+            );
+
+            let var_animal = var_from_registry(&entry_context.variable_registry, "animal").unwrap();
+            let local_cache = AnnotatedUnindexedFunctions::new(vec![f_annotations]);
+            let variable_registry = &entry_context.variable_registry;
+            let previous_stage_variable_annotations = &BTreeMap::new();
+            let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+            let entry_annotations = infer_types(
+                &snapshot,
+                &entry,
+                variable_registry,
+                &type_manager,
+                previous_stage_variable_annotations,
+                annotated_schema_functions,
+                Some(&local_cache),
+            )
+            .unwrap();
+            assert_eq!(
+                entry_annotations.vertex_annotations(),
+                &BTreeMap::from([(var_animal.into(), Arc::new(BTreeSet::from([type_cat.clone()])))]),
+            );
+        }
+
+        {
+            // With schema cache
+            let (entry, entry_context, mut f_ir) = with_schema_cache;
+
+            let f_annotations =
+                annotate_function(&mut f_ir, &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
+                    .unwrap();
+            let f_var_animal =
+                var_from_registry(&f_ir.translation_context().variable_registry, "called_animal").unwrap();
+            let f_var_animal_type =
+                var_from_registry(&f_ir.translation_context().variable_registry, "called_animal_type").unwrap();
+            let f_var_name = var_from_registry(&f_ir.translation_context().variable_registry, "called_name").unwrap();
+
+            let AnnotatedStage::Match { block_annotations, .. } = &f_annotations.pipeline_annotations()[0] else {
+                unreachable!()
+            };
+            assert_eq!(
+                block_annotations.vertex_annotations(),
+                &BTreeMap::from([
+                    (f_var_animal.into(), Arc::new(BTreeSet::from([type_cat.clone()]))),
+                    (f_var_animal_type.into(), Arc::new(BTreeSet::from([type_cat.clone()]))),
+                    (f_var_name.into(), Arc::new(BTreeSet::from([type_catname.clone(), type_name.clone()])))
+                ])
+            );
+
+            let var_animal = var_from_registry(&entry_context.variable_registry, "animal").unwrap();
+            let schema_cache = IndexedAnnotatedFunctions::new(vec![f_annotations]);
+            let variable_registry = &entry_context.variable_registry;
+            let previous_stage_variable_annotations = &BTreeMap::new();
+            let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
+            let entry_annotations = infer_types(
+                &snapshot,
+                &entry,
+                variable_registry,
+                &type_manager,
+                previous_stage_variable_annotations,
+                &schema_cache,
+                Some(annotated_preamble_functions),
+            )
+            .unwrap();
+            assert_eq!(
+                *entry_annotations.vertex_annotations(),
+                BTreeMap::from([(var_animal.into(), Arc::new(BTreeSet::from([type_cat.clone()])))]),
+            );
+        }
+
+        fn var_from_registry(registry: &VariableRegistry, name: &str) -> Option<Variable> {
+            registry.variable_names().iter().find(|(_, n)| n.as_str() == name).map(|(v, _)| *v)
+        }
     }
 
     pub(crate) fn expected_edge(

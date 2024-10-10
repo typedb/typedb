@@ -7,6 +7,7 @@
 use std::{
     borrow::Cow,
     collections::{BTreeMap, BTreeSet},
+    iter::zip,
     sync::Arc,
 };
 
@@ -34,7 +35,10 @@ use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
-    function::{AnnotatedFunction, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+    function::{
+        AnnotatedFunction, AnnotatedFunctions, AnnotatedUnindexedFunctions, FunctionParameterAnnotation,
+        IndexedAnnotatedFunctions,
+    },
     match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations},
     TypeInferenceError,
 };
@@ -61,13 +65,14 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     fn get_annotated_function(&self, function_id: FunctionID) -> Option<&AnnotatedFunction> {
         match function_id {
             FunctionID::Schema(definition_key) => {
-                // debug_assert!(self.schema_functions.get_annotations(definition_key.clone()).is_some());
-                // self.schema_functions.get_annotations(definition_key.clone())
-                todo!()
+                debug_assert!(self.schema_functions.get_function(definition_key.clone()).is_some());
+                self.schema_functions.get_function(definition_key.clone())
             }
             FunctionID::Preamble(index) => {
-                // self.local_functions?.get_annotations(index)
-                todo!()
+                debug_assert!(
+                    self.local_functions.is_none() || self.local_functions.unwrap().get_function(index).is_some()
+                );
+                self.local_functions?.get_function(index)
             }
         }
     }
@@ -630,20 +635,12 @@ impl UnaryConstraint for FunctionCallBinding<Variable> {
         graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
         if let Some(annotated_function) = seeder.get_annotated_function(self.function_call().function_id()) {
-            todo!();
-            // for (assigned_variable, return_annotation) in zip(self.assigned(), &annotated_function.return_annotations) {
-            //     graph_vertices.add_or_intersect(assigned_variable, Cow::Borrowed(return_annotation));
-            // }
-
-            todo!()
-            // let ir = seeder.get_function_ir(self.function_call().function_id()).unwrap();
-            // for (caller_variable, &arg_index) in self.function_call().call_id_mapping() {
-            //     let arg_annotations = annotated_function
-            //         .block_annotations
-            //         .vertex_annotations_of(&Vertex::Variable(ir.arguments()[arg_index]))
-            //         .unwrap();
-            //     graph_vertices.add_or_intersect(caller_variable, Cow::Owned(arg_annotations.iter().cloned().collect()));
-            // }
+            for (assigned_variable, return_annotation) in zip(self.assigned(), annotated_function.return_annotations())
+            {
+                if let FunctionParameterAnnotation::Concept(types) = return_annotation {
+                    graph_vertices.add_or_intersect(assigned_variable, Cow::Borrowed(types));
+                }
+            }
         }
         Ok(())
     }

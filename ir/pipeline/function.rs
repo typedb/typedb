@@ -39,6 +39,10 @@ impl Function {
         &self.arguments
     }
 
+    pub fn translation_context(&self) -> &TranslationContext {
+        &self.context
+    }
+
     pub fn translation_context_mut(&mut self) -> &mut TranslationContext {
         &mut self.context
     }

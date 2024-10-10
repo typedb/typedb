@@ -38,6 +38,16 @@ pub struct AnnotatedFunction {
     return_annotations: Vec<FunctionParameterAnnotation>,
 }
 
+impl AnnotatedFunction {
+    pub fn pipeline_annotations(&self) -> &Vec<AnnotatedStage> {
+        &self.stages
+    }
+
+    pub fn return_annotations(&self) -> &Vec<FunctionParameterAnnotation> {
+        &self.return_annotations
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct AnnotatedAnonymousFunction {
     stages: Vec<AnnotatedStage>,
