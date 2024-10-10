@@ -4,19 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{HashMap, HashSet},
-    iter,
-};
+use std::{collections::HashMap, iter};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::pattern::{constraint::Comparison, Vertex};
 use itertools::chain;
 
+use super::plan::{ConjunctionPlan, Graph, VariableVertexId, VertexId};
 use crate::{
     annotation::type_annotations::TypeAnnotations,
-    match_::planner::{
+    executable::match_::planner::{
         plan::PlanBuilder,
         vertex::{constraint::ConstraintVertex, variable::VariableVertex},
     },
@@ -34,37 +32,35 @@ const _CONTAINS_EXPECTED_CHECKS_PER_MATCH: f64 = 2.0;
 // FIXME name
 #[derive(Debug)]
 pub(super) enum PlannerVertex<'a> {
-    Fixed(FixedVertex),
     Variable(VariableVertex),
-    Constraint(ConstraintVertex),
+    Constraint(ConstraintVertex<'a>),
 
-    Comparison(ComparisonPlanner),
+    Comparison(ComparisonPlanner<'a>),
     Expression(()),
 
     FunctionCall(FunctionCallPlanner),
-    Negation(NegationPlanner),
+    Negation(NegationPlanner<'a>),
     Disjunction(DisjunctionPlanner<'a>),
 }
 
 impl PlannerVertex<'_> {
-    pub(super) fn is_valid(&self, index: usize, ordered: &[usize], adjacency: &HashMap<usize, HashSet<usize>>) -> bool {
+    pub(super) fn is_valid(&self, index: VertexId, ordered: &[VertexId], graph: &Graph<'_>) -> bool {
         match self {
-            Self::Fixed(_) => true, // always valid: comes from query
-            Self::Variable(inner) => inner.is_valid(index, ordered, adjacency),
-            Self::Constraint(inner) => inner.is_valid(index, ordered, adjacency),
+            Self::Variable(inner) => inner.is_valid(index, ordered, graph),
+            Self::Constraint(inner) => inner.is_valid(index, ordered, graph),
 
             Self::FunctionCall(FunctionCallPlanner { arguments, .. }) => {
                 arguments.iter().all(|arg| ordered.contains(arg))
             }
 
-            Self::Comparison(ComparisonPlanner { lhs, rhs }) => {
-                if let Input::Variable(lhs) = lhs {
-                    if !ordered.contains(lhs) {
+            Self::Comparison(ComparisonPlanner { lhs, rhs, .. }) => {
+                if let &Input::Variable(lhs) = lhs {
+                    if !ordered.contains(&VertexId::Variable(lhs)) {
                         return false;
                     }
                 }
-                if let Input::Variable(rhs) = rhs {
-                    if !ordered.contains(rhs) {
+                if let &Input::Variable(rhs) = rhs {
+                    if !ordered.contains(&VertexId::Variable(rhs)) {
                         return false;
                     }
                 }
@@ -74,14 +70,13 @@ impl PlannerVertex<'_> {
             Self::Expression(_) => todo!("validate expression"), // may be invalid: inputs must be bound
 
             Self::FunctionCall(_) => todo!(),
-            Self::Negation(inner) => inner.is_valid(index, ordered, adjacency),
-            Self::Disjunction(inner) => inner.is_valid(index, ordered, adjacency),
+            Self::Negation(inner) => inner.is_valid(index, ordered, graph),
+            Self::Disjunction(inner) => inner.is_valid(index, ordered, graph),
         }
     }
 
-    pub(crate) fn variables(&self) -> Box<dyn Iterator<Item = usize> + '_> {
+    pub(super) fn variables(&self) -> Box<dyn Iterator<Item = VariableVertexId> + '_> {
         match self {
-            Self::Fixed(inner) => inner.variables(),
             Self::Variable(_) => Box::new(iter::empty()),
             Self::Constraint(inner) => inner.variables(),
             Self::FunctionCall(inner) => Box::new(inner.variables()),
@@ -126,7 +121,7 @@ impl PlannerVertex<'_> {
         }
     }
 
-    pub(super) fn as_constraint(&self) -> Option<&ConstraintVertex> {
+    pub(super) fn as_constraint(&self) -> Option<&ConstraintVertex<'_>> {
         match self {
             Self::Constraint(v) => Some(v),
             _ => None,
@@ -162,22 +157,21 @@ impl Default for ElementCost {
 }
 
 pub(super) trait Costed {
-    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex<'_>]) -> ElementCost;
+    fn cost(&self, inputs: &[VertexId], graph: &Graph<'_>) -> ElementCost;
 }
 
 impl Costed for PlannerVertex<'_> {
-    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex<'_>]) -> ElementCost {
+    fn cost(&self, inputs: &[VertexId], graph: &Graph<'_>) -> ElementCost {
         match self {
-            Self::Fixed(inner) => inner.cost(inputs, elements),
-            Self::Variable(inner) => inner.cost(inputs, elements),
-            Self::Constraint(inner) => inner.cost(inputs, elements),
+            Self::Variable(inner) => inner.cost(inputs, graph),
+            Self::Constraint(inner) => inner.cost(inputs, graph),
 
-            Self::FunctionCall(inner) => inner.cost(inputs, elements),
-            Self::Comparison(inner) => inner.cost(inputs, elements),
+            Self::FunctionCall(inner) => inner.cost(inputs, graph),
+            Self::Comparison(inner) => inner.cost(inputs, graph),
             Self::Expression(_) => todo!("expression cost"),
 
-            Self::Negation(inner) => inner.cost(inputs, elements),
-            Self::Disjunction(inner) => inner.cost(inputs, elements),
+            Self::Negation(inner) => inner.cost(inputs, graph),
+            Self::Disjunction(inner) => inner.cost(inputs, graph),
         }
     }
 }
@@ -188,94 +182,24 @@ pub enum Direction {
     Reverse,
 }
 
-#[derive(Debug)]
-pub(super) enum FixedVertex {
-    Constant,
-    TypeList(TypeListPlanner),
-}
-
-impl FixedVertex {
-    fn variables(&self) -> Box<dyn Iterator<Item = usize>> {
-        match self {
-            FixedVertex::Constant => Box::new(iter::empty()),
-            FixedVertex::TypeList(inner) => Box::new(inner.variables()),
-        }
-    }
-}
-
-impl Costed for FixedVertex {
-    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex<'_>]) -> ElementCost {
-        match self {
-            FixedVertex::Constant => ElementCost::default(),
-            FixedVertex::TypeList(inner) => inner.cost(inputs, elements),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub(super) struct TypeListPlanner {
-    var: usize,
-    num_types: f64,
-}
-
-impl TypeListPlanner {
-    fn variables(&self) -> impl Iterator<Item = usize> {
-        iter::once(self.var)
-    }
-
-    pub(crate) fn from_label_constraint(
-        label: &ir::pattern::constraint::Label<Variable>,
-        variable_index: &HashMap<Variable, usize>,
-        type_annotations: &TypeAnnotations,
-    ) -> TypeListPlanner {
-        let num_types = type_annotations.vertex_annotations_of(label.type_()).map(|annos| annos.len()).unwrap_or(0);
-        Self { var: variable_index[&label.type_().as_variable().unwrap()], num_types: num_types as f64 }
-    }
-
-    pub(crate) fn from_role_name_constraint(
-        role_name: &ir::pattern::constraint::RoleName<Variable>,
-        variable_index: &HashMap<Variable, usize>,
-        type_annotations: &TypeAnnotations,
-    ) -> TypeListPlanner {
-        let num_types = type_annotations.vertex_annotations_of(role_name.type_()).map(|annos| annos.len()).unwrap_or(0);
-        Self { var: variable_index[&role_name.type_().as_variable().unwrap()], num_types: num_types as f64 }
-    }
-
-    pub(crate) fn from_kind_constraint(
-        kind: &ir::pattern::constraint::Kind<Variable>,
-        variable_index: &HashMap<Variable, usize>,
-        type_annotations: &TypeAnnotations,
-    ) -> TypeListPlanner {
-        let num_types = type_annotations.vertex_annotations_of(kind.type_()).map(|annos| annos.len()).unwrap_or(0);
-        Self { var: variable_index[&kind.type_().as_variable().unwrap()], num_types: num_types as f64 }
-    }
-}
-
-impl Costed for TypeListPlanner {
-    fn cost(&self, _: &[usize], _: &[PlannerVertex<'_>]) -> ElementCost {
-        ElementCost::free_with_branching(self.num_types)
-    }
-}
-
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub(crate) enum Input {
     Fixed,
-    Variable(usize),
+    Variable(VariableVertexId),
 }
 
 impl Input {
-    pub(crate) fn from_vertex(vertex: &Vertex<Variable>, variable_index: &HashMap<Variable, usize>) -> Self {
+    pub(super) fn from_vertex(vertex: &Vertex<Variable>, variable_index: &HashMap<Variable, VariableVertexId>) -> Self {
         match vertex {
             Vertex::Variable(var) => Input::Variable(variable_index[var]),
             Vertex::Label(_) | Vertex::Parameter(_) => Input::Fixed,
         }
     }
 
-    pub(crate) fn as_variable(self) -> Option<usize> {
-        if let Self::Variable(v) = self {
-            Some(v)
-        } else {
-            None
+    pub(super) fn as_variable(self) -> Option<VariableVertexId> {
+        match self {
+            Self::Variable(v) => Some(v),
+            _ => None,
         }
     }
 }
@@ -304,66 +228,74 @@ impl Costed for FunctionCallPlanner {
 }
 
 #[derive(Debug)]
-pub(crate) struct ComparisonPlanner {
+pub(crate) struct ComparisonPlanner<'a> {
+    comparison: &'a Comparison<Variable>,
     pub lhs: Input,
     pub rhs: Input,
 }
 
-impl ComparisonPlanner {
+impl<'a> ComparisonPlanner<'a> {
     pub(crate) fn from_constraint(
-        constraint: &Comparison<Variable>,
-        variable_index: &HashMap<Variable, usize>,
+        comparison: &'a Comparison<Variable>,
+        variable_index: &HashMap<Variable, VariableVertexId>,
         _type_annotations: &TypeAnnotations,
         _statistics: &Statistics,
     ) -> Self {
         Self {
-            lhs: Input::from_vertex(constraint.lhs(), variable_index),
-            rhs: Input::from_vertex(constraint.rhs(), variable_index),
+            comparison,
+            lhs: Input::from_vertex(comparison.lhs(), variable_index),
+            rhs: Input::from_vertex(comparison.rhs(), variable_index),
         }
     }
 
-    fn variables(&self) -> impl Iterator<Item = usize> {
+    pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
         [self.lhs.as_variable(), self.rhs.as_variable()].into_iter().flatten()
+    }
+
+    pub(super) fn comparison(&self) -> &Comparison<Variable> {
+        self.comparison
     }
 }
 
-impl Costed for ComparisonPlanner {
-    fn cost(&self, _: &[usize], _: &[PlannerVertex<'_>]) -> ElementCost {
+impl Costed for ComparisonPlanner<'_> {
+    fn cost(&self, _: &[VertexId], _: &Graph<'_>) -> ElementCost {
         ElementCost::default()
     }
 }
 
 #[derive(Debug)]
-pub(super) struct NegationPlanner {
-    variables: Vec<usize>,
-    cost: ElementCost,
+pub(super) struct NegationPlanner<'a> {
+    plan: ConjunctionPlan<'a>,
 }
 
-impl NegationPlanner {
-    pub(super) fn new(variables: Vec<usize>, cost: ElementCost) -> Self {
-        Self { variables, cost }
+impl<'a> NegationPlanner<'a> {
+    pub(super) fn new(plan: ConjunctionPlan<'a>) -> Self {
+        Self { plan }
     }
 
-    fn is_valid(&self, _index: usize, ordered: &[usize], _adjacency: &HashMap<usize, HashSet<usize>>) -> bool {
-        self.variables().all(|var| ordered.contains(&var))
+    fn is_valid(&self, _index: VertexId, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+        self.variables().all(|var| ordered.contains(&VertexId::Variable(var)))
     }
 
-    fn variables(&self) -> impl Iterator<Item = usize> + '_ {
-        self.variables.iter().copied()
+    pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
+        self.plan.shared_variables().iter().copied()
+    }
+
+    pub(super) fn plan(&self) -> &ConjunctionPlan<'a> {
+        &self.plan
     }
 }
 
-impl Costed for NegationPlanner {
-    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex<'_>]) -> ElementCost {
-        // TODO cost can be adjusted for disjunctions
-        self.cost
+impl Costed for NegationPlanner<'_> {
+    fn cost(&self, _inputs: &[VertexId], _: &Graph<'_>) -> ElementCost {
+        self.plan.cost()
     }
 }
 
 #[derive(Debug)]
 pub(super) struct DisjunctionPlanner<'a> {
-    input_variables: Vec<usize>,
-    shared_variables: Vec<usize>,
+    input_variables: Vec<VariableVertexId>,
+    shared_variables: Vec<VariableVertexId>,
     branch_builders: Vec<PlanBuilder<'a>>,
 }
 
@@ -372,17 +304,17 @@ impl<'a> DisjunctionPlanner<'a> {
         Self { input_variables: Vec::new(), shared_variables: Vec::new(), branch_builders }
     }
 
-    fn is_valid(&self, _index: usize, ordered: &[usize], _adjacency: &HashMap<usize, HashSet<usize>>) -> bool {
-        self.variables().all(|var| ordered.contains(&var))
+    fn is_valid(&self, _index: VertexId, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+        self.input_variables.iter().all(|&var| ordered.contains(&VertexId::Variable(var)))
     }
 
-    fn variables(&self) -> impl Iterator<Item = usize> + '_ {
+    pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
         chain!(&self.input_variables, &self.shared_variables).copied()
     }
 }
 
 impl Costed for DisjunctionPlanner<'_> {
-    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex<'_>]) -> ElementCost {
+    fn cost(&self, _inputs: &[VertexId], _: &Graph<'_>) -> ElementCost {
         todo!()
     }
 }

@@ -4,40 +4,43 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::{collections::HashMap, iter};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use ir::pattern::constraint::{Has, Links, SubKind};
+use ir::pattern::constraint::{Has, Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, Sub, SubKind};
 use itertools::Itertools;
 
-use crate::match_::{
-    inference::type_annotations::TypeAnnotations,
-    planner::vertex::{
-        Costed, Direction, ElementCost, Input, PlannerVertex, ADVANCE_ITERATOR_RELATIVE_COST,
-        OPEN_ITERATOR_RELATIVE_COST,
+use crate::{
+    annotation::type_annotations::TypeAnnotations,
+    executable::match_::planner::{
+        plan::{Graph, VariableVertexId, VertexId},
+        vertex::{Costed, Direction, ElementCost, Input, ADVANCE_ITERATOR_RELATIVE_COST, OPEN_ITERATOR_RELATIVE_COST},
     },
 };
 
 #[derive(Debug)]
-pub(crate) enum ConstraintVertex {
-    Isa(IsaPlanner),
-    Has(HasPlanner),
-    Links(LinksPlanner),
+pub(crate) enum ConstraintVertex<'a> {
+    TypeList(TypeListPlanner<'a>),
 
-    Sub(SubPlanner),
-    Owns(OwnsPlanner),
-    Relates(RelatesPlanner),
-    Plays(PlaysPlanner),
+    Isa(IsaPlanner<'a>),
+    Has(HasPlanner<'a>),
+    Links(LinksPlanner<'a>),
+
+    Sub(SubPlanner<'a>),
+    Owns(OwnsPlanner<'a>),
+    Relates(RelatesPlanner<'a>),
+    Plays(PlaysPlanner<'a>),
 }
 
-impl ConstraintVertex {
-    pub(crate) fn is_valid(&self, _: usize, _: &[usize], _: &HashMap<usize, HashSet<usize>>) -> bool {
-        true // always valid: iterators
+impl ConstraintVertex<'_> {
+    pub(super) fn is_valid(&self, _: VertexId, _: &[VertexId], _: &Graph<'_>) -> bool {
+        true // always valid
     }
 
     pub(crate) fn unbound_direction(&self) -> Direction {
         match self {
+            Self::TypeList(_) => Direction::Canonical,
             Self::Isa(inner) => inner.unbound_direction,
             Self::Has(inner) => inner.unbound_direction,
             Self::Links(inner) => inner.unbound_direction,
@@ -48,8 +51,10 @@ impl ConstraintVertex {
         }
     }
 
-    pub(crate) fn variables(&self) -> Box<dyn Iterator<Item = usize> + '_> {
+    pub(crate) fn variables(&self) -> Box<dyn Iterator<Item = VariableVertexId> + '_> {
         match self {
+            Self::TypeList(inner) => Box::new(inner.variables()),
+
             Self::Isa(inner) => Box::new(inner.variables()),
             Self::Has(inner) => Box::new(inner.variables()),
             Self::Links(inner) => Box::new(inner.variables()),
@@ -62,69 +67,146 @@ impl ConstraintVertex {
     }
 }
 
-impl Costed for ConstraintVertex {
-    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex<'_>]) -> ElementCost {
+impl Costed for ConstraintVertex<'_> {
+    fn cost(&self, inputs: &[VertexId], graph: &Graph<'_>) -> ElementCost {
         match self {
-            Self::Isa(inner) => inner.cost(inputs, elements),
-            Self::Has(inner) => inner.cost(inputs, elements),
-            Self::Links(inner) => inner.cost(inputs, elements),
+            Self::TypeList(inner) => inner.cost(inputs, graph),
 
-            Self::Sub(inner) => inner.cost(inputs, elements),
-            Self::Owns(inner) => inner.cost(inputs, elements),
-            Self::Relates(inner) => inner.cost(inputs, elements),
-            Self::Plays(inner) => inner.cost(inputs, elements),
+            Self::Isa(inner) => inner.cost(inputs, graph),
+            Self::Has(inner) => inner.cost(inputs, graph),
+            Self::Links(inner) => inner.cost(inputs, graph),
+
+            Self::Sub(inner) => inner.cost(inputs, graph),
+            Self::Owns(inner) => inner.cost(inputs, graph),
+            Self::Relates(inner) => inner.cost(inputs, graph),
+            Self::Plays(inner) => inner.cost(inputs, graph),
         }
     }
 }
 
 #[derive(Debug)]
-pub(crate) struct IsaPlanner {
-    thing: usize,
+pub(crate) enum TypeListConstraint<'a> {
+    Label(&'a Label<Variable>),
+    RoleName(&'a RoleName<Variable>),
+    Kind(&'a Kind<Variable>),
+}
+
+#[derive(Debug)]
+pub(crate) struct TypeListPlanner<'a> {
+    constraint: TypeListConstraint<'a>,
+    var: VariableVertexId,
+    num_types: f64,
+}
+
+impl<'a> TypeListPlanner<'a> {
+    fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
+        iter::once(self.var)
+    }
+
+    pub(crate) fn from_label_constraint(
+        label: &'a Label<Variable>,
+        variable_index: &HashMap<Variable, VariableVertexId>,
+        type_annotations: &TypeAnnotations,
+    ) -> Self {
+        let num_types = type_annotations.vertex_annotations_of(label.type_()).map(|annos| annos.len()).unwrap_or(0);
+        Self {
+            constraint: TypeListConstraint::Label(label),
+            var: variable_index[&label.type_().as_variable().unwrap()],
+            num_types: num_types as f64,
+        }
+    }
+
+    pub(crate) fn from_role_name_constraint(
+        role_name: &'a RoleName<Variable>,
+        variable_index: &HashMap<Variable, VariableVertexId>,
+        type_annotations: &TypeAnnotations,
+    ) -> Self {
+        let num_types = type_annotations.vertex_annotations_of(role_name.type_()).map(|annos| annos.len()).unwrap_or(0);
+        Self {
+            constraint: TypeListConstraint::RoleName(role_name),
+            var: variable_index[&role_name.type_().as_variable().unwrap()],
+            num_types: num_types as f64,
+        }
+    }
+
+    pub(crate) fn from_kind_constraint(
+        kind: &'a Kind<Variable>,
+        variable_index: &HashMap<Variable, VariableVertexId>,
+        type_annotations: &TypeAnnotations,
+    ) -> Self {
+        let num_types = type_annotations.vertex_annotations_of(kind.type_()).map(|annos| annos.len()).unwrap_or(0);
+        Self {
+            constraint: TypeListConstraint::Kind(kind),
+            var: variable_index[&kind.type_().as_variable().unwrap()],
+            num_types: num_types as f64,
+        }
+    }
+
+    pub(crate) fn constraint(&self) -> &TypeListConstraint<'a> {
+        &self.constraint
+    }
+}
+
+impl Costed for TypeListPlanner<'_> {
+    fn cost(&self, _: &[VertexId], _: &Graph<'_>) -> ElementCost {
+        ElementCost::free_with_branching(self.num_types)
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct IsaPlanner<'a> {
+    isa: &'a Isa<Variable>,
+    thing: VariableVertexId,
     type_: Input,
     unbound_direction: Direction,
 }
 
-impl IsaPlanner {
+impl<'a> IsaPlanner<'a> {
     pub(crate) fn from_constraint(
-        isa: &ir::pattern::constraint::Isa<Variable>,
-        variable_index: &HashMap<Variable, usize>,
+        isa: &'a Isa<Variable>,
+        variable_index: &HashMap<Variable, VariableVertexId>,
         _type_annotations: &TypeAnnotations,
         _statistics: &Statistics,
     ) -> Self {
         let thing = variable_index[&isa.thing().as_variable().unwrap()];
         let type_ = Input::from_vertex(isa.type_(), variable_index);
-        Self { thing, type_, unbound_direction: Direction::Reverse }
+        Self { isa, thing, type_, unbound_direction: Direction::Reverse }
     }
 
-    fn variables(&self) -> impl Iterator<Item = usize> {
+    fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
         [Some(self.thing), self.type_.as_variable()].into_iter().flatten()
+    }
+
+    pub(crate) fn isa(&self) -> &Isa<Variable> {
+        self.isa
     }
 }
 
-impl Costed for IsaPlanner {
-    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex<'_>]) -> ElementCost {
-        elements[self.thing].cost(inputs, elements)
+impl Costed for IsaPlanner<'_> {
+    fn cost(&self, inputs: &[VertexId], graph: &Graph<'_>) -> ElementCost {
+        graph.elements()[&VertexId::Variable(self.thing)].cost(inputs, graph)
     }
 }
 
 #[derive(Debug)]
-pub(crate) struct HasPlanner {
-    pub owner: usize,
-    pub attribute: usize,
+pub(crate) struct HasPlanner<'a> {
+    has: &'a Has<Variable>,
+    pub owner: VariableVertexId,
+    pub attribute: VariableVertexId,
     expected_size: f64,
     expected_unbound_size: f64,
     unbound_direction: Direction,
 }
 
-impl HasPlanner {
+impl<'a> HasPlanner<'a> {
     pub(crate) fn from_constraint(
-        constraint: &Has<Variable>,
-        variable_index: &HashMap<Variable, usize>,
+        has: &'a Has<Variable>,
+        variable_index: &HashMap<Variable, VariableVertexId>,
         type_annotations: &TypeAnnotations,
         statistics: &Statistics,
     ) -> Self {
-        let owner = constraint.owner();
-        let attribute = constraint.attribute();
+        let owner = has.owner();
+        let attribute = has.attribute();
 
         let owner_types = &**type_annotations.vertex_annotations_of(owner).unwrap();
         let attribute_types = &**type_annotations.vertex_annotations_of(attribute).unwrap();
@@ -152,6 +234,7 @@ impl HasPlanner {
             if unbound_forward_size <= unbound_backward_size { Direction::Canonical } else { Direction::Reverse };
 
         Self {
+            has,
             owner: variable_index[&owner.as_variable().unwrap()],
             attribute: variable_index[&attribute.as_variable().unwrap()],
             expected_size,
@@ -160,15 +243,22 @@ impl HasPlanner {
         }
     }
 
-    fn variables(&self) -> impl Iterator<Item = usize> {
+    fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
         [self.owner, self.attribute].into_iter()
+    }
+
+    pub(crate) fn has(&self) -> &Has<Variable> {
+        self.has
     }
 }
 
-impl Costed for HasPlanner {
-    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex<'_>]) -> ElementCost {
-        let is_owner_bound = inputs.contains(&self.owner);
-        let is_attribute_bound = inputs.contains(&self.attribute);
+impl Costed for HasPlanner<'_> {
+    fn cost(&self, inputs: &[VertexId], graph: &Graph<'_>) -> ElementCost {
+        let owner_id = VertexId::Variable(self.owner);
+        let attribute_id = VertexId::Variable(self.attribute);
+
+        let is_owner_bound = inputs.contains(&owner_id);
+        let is_attribute_bound = inputs.contains(&attribute_id);
 
         let per_input = OPEN_ITERATOR_RELATIVE_COST;
 
@@ -178,8 +268,8 @@ impl Costed for HasPlanner {
             (true, false) | (false, true) => ADVANCE_ITERATOR_RELATIVE_COST,
         };
 
-        let owner_size = elements[self.owner].as_variable().unwrap().expected_size();
-        let attribute_size = elements[self.attribute].as_variable().unwrap().expected_size();
+        let owner_size = graph.elements()[&owner_id].as_variable().unwrap().expected_size();
+        let attribute_size = graph.elements()[&attribute_id].as_variable().unwrap().expected_size();
 
         let branching_factor = match (is_owner_bound, is_attribute_bound) {
             (true, true) => self.expected_size / owner_size / attribute_size,
@@ -193,19 +283,20 @@ impl Costed for HasPlanner {
 }
 
 #[derive(Debug)]
-pub(crate) struct LinksPlanner {
-    pub relation: usize,
-    pub player: usize,
-    pub role: usize,
+pub(crate) struct LinksPlanner<'a> {
+    links: &'a Links<Variable>,
+    pub relation: VariableVertexId,
+    pub player: VariableVertexId,
+    pub role: VariableVertexId,
     expected_size: f64,
     expected_unbound_size: f64,
     unbound_direction: Direction,
 }
 
-impl LinksPlanner {
+impl<'a> LinksPlanner<'a> {
     pub(crate) fn from_constraint(
-        links: &Links<Variable>,
-        variable_index: &HashMap<Variable, usize>,
+        links: &'a Links<Variable>,
+        variable_index: &HashMap<Variable, VariableVertexId>,
         type_annotations: &TypeAnnotations,
         statistics: &Statistics,
     ) -> Self {
@@ -266,6 +357,7 @@ impl LinksPlanner {
         let role = role.as_variable().unwrap();
 
         Self {
+            links,
             relation: variable_index[&relation],
             player: variable_index[&player],
             role: variable_index[&role],
@@ -275,15 +367,26 @@ impl LinksPlanner {
         }
     }
 
-    fn variables(&self) -> impl Iterator<Item = usize> {
+    fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
         [self.relation, self.player, self.role].into_iter()
+    }
+
+    pub(crate) fn links(&self) -> &Links<Variable> {
+        self.links
+    }
+
+    pub(crate) fn unbound_direction(&self) -> Direction {
+        self.unbound_direction
     }
 }
 
-impl Costed for LinksPlanner {
-    fn cost(&self, inputs: &[usize], elements: &[PlannerVertex<'_>]) -> ElementCost {
-        let is_relation_bound = inputs.contains(&self.relation);
-        let is_player_bound = inputs.contains(&self.player);
+impl Costed for LinksPlanner<'_> {
+    fn cost(&self, inputs: &[VertexId], graph: &Graph<'_>) -> ElementCost {
+        let relation_id = VertexId::Variable(self.relation);
+        let player_id = VertexId::Variable(self.player);
+
+        let is_relation_bound = inputs.contains(&relation_id);
+        let is_player_bound = inputs.contains(&player_id);
 
         let per_input = OPEN_ITERATOR_RELATIVE_COST;
 
@@ -293,8 +396,8 @@ impl Costed for LinksPlanner {
             (true, false) | (false, true) => ADVANCE_ITERATOR_RELATIVE_COST,
         };
 
-        let relation_size = elements[self.relation].as_variable().unwrap().expected_size();
-        let player_size = elements[self.player].as_variable().unwrap().expected_size();
+        let relation_size = graph.elements()[&relation_id].as_variable().unwrap().expected_size();
+        let player_size = graph.elements()[&player_id].as_variable().unwrap().expected_size();
 
         let branching_factor = match (is_relation_bound, is_player_bound) {
             (true, true) => self.expected_size / relation_size / player_size,
@@ -308,20 +411,22 @@ impl Costed for LinksPlanner {
 }
 
 #[derive(Debug)]
-pub(crate) struct SubPlanner {
+pub(crate) struct SubPlanner<'a> {
+    sub: &'a Sub<Variable>,
     type_: Input,
     supertype: Input,
     kind: SubKind,
     unbound_direction: Direction,
 }
 
-impl SubPlanner {
+impl<'a> SubPlanner<'a> {
     pub(crate) fn from_constraint(
-        sub: &ir::pattern::constraint::Sub<Variable>,
-        variable_index: &HashMap<Variable, usize>,
+        sub: &'a Sub<Variable>,
+        variable_index: &HashMap<Variable, VariableVertexId>,
         _type_annotations: &TypeAnnotations,
     ) -> Self {
         Self {
+            sub,
             type_: Input::from_vertex(sub.subtype(), variable_index),
             supertype: Input::from_vertex(sub.supertype(), variable_index),
             kind: sub.sub_kind(),
@@ -329,103 +434,122 @@ impl SubPlanner {
         }
     }
 
-    fn variables(&self) -> impl Iterator<Item = usize> {
+    fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
         [self.type_.as_variable(), self.supertype.as_variable()].into_iter().flatten()
+    }
+
+    pub(crate) fn sub(&self) -> &Sub<Variable> {
+        self.sub
     }
 }
 
-impl Costed for SubPlanner {
-    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex<'_>]) -> ElementCost {
-        ElementCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+impl Costed for SubPlanner<'_> {
+    fn cost(&self, _: &[VertexId], _: &Graph<'_>) -> ElementCost {
+        ElementCost::free_with_branching(1.0) // TODO branching
     }
 }
 
 #[derive(Debug)]
-pub(crate) struct OwnsPlanner {
+pub(crate) struct OwnsPlanner<'a> {
+    owns: &'a Owns<Variable>,
     owner: Input,
     attribute: Input,
     unbound_direction: Direction,
 }
 
-impl OwnsPlanner {
+impl<'a> OwnsPlanner<'a> {
     pub(crate) fn from_constraint(
-        owns: &ir::pattern::constraint::Owns<Variable>,
-        variable_index: &HashMap<Variable, usize>,
+        owns: &'a Owns<Variable>,
+        variable_index: &HashMap<Variable, VariableVertexId>,
         _type_annotations: &TypeAnnotations,
         _statistics: &Statistics,
-    ) -> OwnsPlanner {
+    ) -> Self {
         let owner = Input::from_vertex(owns.owner(), variable_index);
         let attribute = Input::from_vertex(owns.attribute(), variable_index);
-        Self { owner, attribute, unbound_direction: Direction::Canonical }
+        Self { owns, owner, attribute, unbound_direction: Direction::Canonical }
     }
 
-    fn variables(&self) -> impl Iterator<Item = usize> {
+    fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
         [self.owner.as_variable(), self.attribute.as_variable()].into_iter().flatten()
+    }
+
+    pub(crate) fn owns(&self) -> &Owns<Variable> {
+        self.owns
     }
 }
 
-impl Costed for OwnsPlanner {
-    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex<'_>]) -> ElementCost {
-        ElementCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+impl Costed for OwnsPlanner<'_> {
+    fn cost(&self, _: &[VertexId], _: &Graph<'_>) -> ElementCost {
+        ElementCost::free_with_branching(1.0) // TODO branching
     }
 }
 
 #[derive(Debug)]
-pub(crate) struct RelatesPlanner {
+pub(crate) struct RelatesPlanner<'a> {
+    relates: &'a Relates<Variable>,
     relation: Input,
     role_type: Input,
     unbound_direction: Direction,
 }
 
-impl RelatesPlanner {
+impl<'a> RelatesPlanner<'a> {
     pub(crate) fn from_constraint(
-        relates: &ir::pattern::constraint::Relates<Variable>,
-        variable_index: &HashMap<Variable, usize>,
+        relates: &'a Relates<Variable>,
+        variable_index: &HashMap<Variable, VariableVertexId>,
         _type_annotations: &TypeAnnotations,
         _statistics: &Statistics,
-    ) -> RelatesPlanner {
+    ) -> Self {
         let relation = Input::from_vertex(relates.relation(), variable_index);
         let role_type = Input::from_vertex(relates.role_type(), variable_index);
-        Self { relation, role_type, unbound_direction: Direction::Canonical }
+        Self { relates, relation, role_type, unbound_direction: Direction::Canonical }
     }
 
-    fn variables(&self) -> impl Iterator<Item = usize> {
+    fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
         [self.relation.as_variable(), self.role_type.as_variable()].into_iter().flatten()
+    }
+
+    pub(crate) fn relates(&self) -> &Relates<Variable> {
+        self.relates
     }
 }
 
-impl Costed for RelatesPlanner {
-    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex<'_>]) -> ElementCost {
-        ElementCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+impl Costed for RelatesPlanner<'_> {
+    fn cost(&self, _: &[VertexId], _: &Graph<'_>) -> ElementCost {
+        ElementCost::free_with_branching(1.0) // TODO branching
     }
 }
 
 #[derive(Debug)]
-pub(crate) struct PlaysPlanner {
+pub(crate) struct PlaysPlanner<'a> {
+    plays: &'a Plays<Variable>,
     player: Input,
     role_type: Input,
     unbound_direction: Direction,
 }
 
-impl PlaysPlanner {
+impl<'a> PlaysPlanner<'a> {
     pub(crate) fn from_constraint(
-        plays: &ir::pattern::constraint::Plays<Variable>,
-        variable_index: &HashMap<Variable, usize>,
+        plays: &'a Plays<Variable>,
+        variable_index: &HashMap<Variable, VariableVertexId>,
         _type_annotations: &TypeAnnotations,
         _statistics: &Statistics,
-    ) -> PlaysPlanner {
+    ) -> Self {
         let player = Input::from_vertex(plays.player(), variable_index);
         let role_type = Input::from_vertex(plays.role_type(), variable_index);
-        Self { player, role_type, unbound_direction: Direction::Canonical }
+        Self { plays, player, role_type, unbound_direction: Direction::Canonical }
     }
 
-    fn variables(&self) -> impl Iterator<Item = usize> {
+    fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
         [self.player.as_variable(), self.role_type.as_variable()].into_iter().flatten()
+    }
+
+    pub(crate) fn plays(&self) -> &Plays<Variable> {
+        self.plays
     }
 }
 
-impl Costed for PlaysPlanner {
-    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex<'_>]) -> ElementCost {
-        ElementCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+impl Costed for PlaysPlanner<'_> {
+    fn cost(&self, _: &[VertexId], _: &Graph<'_>) -> ElementCost {
+        ElementCost::free_with_branching(1.0) // TODO branching
     }
 }

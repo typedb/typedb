@@ -270,7 +270,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
         match self {
-            Self::TypeList(_) => unreachable!("free-standing type variable can't have checks"),
+            Self::TypeList(_) => unreachable!("free-standing type variable can't have checks"), // TODO this is untrue
             Self::Sub(inner) => inner.add_check(check),
             Self::SubReverse(inner) => inner.add_check(check),
             Self::Owns(inner) => inner.add_check(check),
