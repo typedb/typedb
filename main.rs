@@ -9,6 +9,7 @@
 
 use logger::initialise_logging_global;
 use server::parameters::config::Config;
+use resource::constants::server::ASCII_LOGO;
 
 #[tokio::main]
 async fn main() {
