@@ -12,17 +12,14 @@ use std::{
 use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
 use encoding::{graph::definition::definition_key::DefinitionKey, value::value_type::ValueType};
-use ir::{
-    pattern::Vertex,
-    pipeline::{
-        function::{AnonymousFunction, Function, FunctionBody, ReturnOperation},
-        function_signature::FunctionIDAPI,
-    },
+use ir::pipeline::{
+    function::{AnonymousFunction, Function, FunctionBody, ReturnOperation},
+    function_signature::FunctionIDAPI,
 };
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
-    pipeline::{annotate_pipeline, annotate_pipeline_stages, AnnotatedStage},
+    pipeline::{annotate_pipeline_stages, AnnotatedStage},
     FunctionTypeInferenceError,
 };
 
@@ -151,7 +148,7 @@ pub fn annotate_functions(
     Ok(AnnotatedUnindexedFunctions::new(annotated_functions))
 }
 
-pub fn annotate_function(
+pub(crate) fn annotate_function(
     function: &mut Function,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
@@ -159,7 +156,6 @@ pub fn annotate_function(
     local_functions: Option<&AnnotatedUnindexedFunctions>,
 ) -> Result<AnnotatedFunction, FunctionTypeInferenceError> {
     let Function { name, context, function_body: FunctionBody { stages, return_operation }, arguments } = function;
-    // TODO: Work the argument in.
     let (argument_concept_variable_types, argument_value_variable_types) =
         annotate_arguments(arguments, snapshot, type_manager)?;
 
@@ -183,6 +179,16 @@ pub fn annotate_function(
     Ok(AnnotatedFunction { stages, return_annotations, return_operation: return_operation.clone() })
 }
 
+pub fn annotate_anonymous_function(
+    function: &AnonymousFunction,
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    indexed_annotated_functions: &IndexedAnnotatedFunctions,
+    local_functions: Option<&AnnotatedUnindexedFunctions>,
+) -> Result<AnnotatedAnonymousFunction, FunctionTypeInferenceError> {
+    todo!("Delete me when anonymous functions disappear")
+}
+
 fn annotate_arguments(
     function_arguments: &mut Vec<Variable>,
     snapshot: &impl ReadableSnapshot,
@@ -192,7 +198,7 @@ fn annotate_arguments(
     Ok((BTreeMap::new(), BTreeMap::new()))
 }
 
-pub fn extract_return_type_annotations(
+fn extract_return_type_annotations(
     return_operation: &ReturnOperation,
     body_variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     body_variable_value_types: &BTreeMap<Variable, ValueType>,
@@ -234,30 +240,4 @@ fn get_function_parameter(
     } else {
         unreachable!()
     }
-}
-
-pub fn annotate_anonymous_function(
-    function: &AnonymousFunction,
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    indexed_annotated_functions: &IndexedAnnotatedFunctions,
-    local_functions: Option<&AnnotatedUnindexedFunctions>,
-) -> Result<AnnotatedAnonymousFunction, FunctionTypeInferenceError> {
-    // let root_graph = infer_types(
-    //     snapshot,
-    //     function.block(),
-    //     function.variable_registry(),
-    //     type_manager,
-    //     &BTreeMap::new(),
-    //     indexed_annotated_functions,
-    //     local_functions,
-    // )
-    // .map_err(|err| FunctionTypeInferenceError::TypeInference {
-    //     name: function.name().to_string(),
-    //     typedb_source: err,
-    // })?;
-    // let body_annotations = TypeAnnotations::build(root_graph);
-    // let return_types = function.return_operation().return_types(body_annotations.vertex_annotations());
-    // Ok(FunctionAnnotations { return_annotations: return_types, block_annotations: body_annotations })
-    todo!("We need to allow a function to contain an entire pipeline, instead of just a match block")
 }
