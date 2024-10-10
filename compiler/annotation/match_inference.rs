@@ -144,7 +144,12 @@ pub(crate) fn compute_type_inference_graph<'graph>(
         TypeGraphSeedingContext::new(snapshot, type_manager, schema_functions, local_function_cache, variable_registry)
             .create_graph(block.scope_context(), previous_stage_variable_annotations, block.conjunction())?;
     prune_types(&mut graph);
-    Ok(graph)
+    // TODO: Throw error when any set becomes empty happens, rather than waiting for the it to propagate
+    if graph.vertices.iter().any(|(_, types)| types.is_empty()) {
+        Err(TypeInferenceError::DetectedUnsatisfiablePattern {})
+    } else {
+        Ok(graph)
+    }
 }
 
 pub(crate) fn prune_types(graph: &mut TypeInferenceGraph<'_>) {
