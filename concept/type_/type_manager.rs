@@ -19,7 +19,6 @@ use encoding::{
     },
     value::{label::Label, value_type::ValueType},
 };
-use itertools::Itertools;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::encoding::StructFieldIDUInt;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
