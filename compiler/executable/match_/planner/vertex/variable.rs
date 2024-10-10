@@ -148,7 +148,7 @@ impl InputPlanner {
 
 impl Costed for InputPlanner {
     fn cost(&self, _: &[VertexId], _: &Graph<'_>) -> ElementCost {
-        ElementCost::default()
+        ElementCost::FREE
     }
 }
 
@@ -165,7 +165,7 @@ impl SharedPlanner {
 
 impl Costed for SharedPlanner {
     fn cost(&self, _: &[VertexId], _: &Graph<'_>) -> ElementCost {
-        ElementCost::default()
+        ElementCost::FREE
     }
 }
 
@@ -258,12 +258,12 @@ impl Costed for ThingPlanner {
         for &i in inputs {
             let VertexId::Variable(i) = i else { continue };
             if !bounds.contains(&&Input::Variable(i)) {
-                return ElementCost::default();
+                return ElementCost::FREE;
             }
         }
 
         if self.bound_exact.iter().any(|&bound| inputs.contains(&VertexId::Variable(bound))) {
-            return ElementCost::default();
+            return ElementCost::FREE;
         }
 
         let per_input = OPEN_ITERATOR_RELATIVE_COST;

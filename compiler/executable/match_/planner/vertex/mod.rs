@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, iter, ops::Add};
+use std::{collections::HashMap, iter};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -122,6 +122,9 @@ pub(crate) struct ElementCost {
 }
 
 impl ElementCost {
+    pub const EMPTY: Self = Self { per_input: 0.0, per_output: 0.0, branching_factor: 0.0 };
+    pub const FREE: Self = Self { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 };
+
     fn free_with_branching(branching_factor: f64) -> Self {
         Self { per_input: 0.0, per_output: 0.0, branching_factor }
     }
@@ -133,26 +136,19 @@ impl ElementCost {
             branching_factor: self.branching_factor * other.branching_factor,
         }
     }
-}
 
-impl Add for ElementCost {
-    type Output = Self;
-
-    fn add(self, rhs: Self) -> Self::Output {
+    fn combine_parallel(self, other: Self) -> Self {
         fn weighted_mean((lhs_value, lhs_weight): (f64, f64), (rhs_value, rhs_weight): (f64, f64)) -> f64 {
             (lhs_value * lhs_weight + rhs_value * rhs_weight) / (lhs_weight + rhs_weight)
         }
         Self {
-            per_input: self.per_input + rhs.per_input,
-            per_output: weighted_mean((self.per_output, self.branching_factor), (rhs.per_output, rhs.branching_factor)),
-            branching_factor: self.branching_factor + rhs.branching_factor,
+            per_input: self.per_input + other.per_input,
+            per_output: weighted_mean(
+                (self.per_output, self.branching_factor),
+                (other.per_output, other.branching_factor),
+            ),
+            branching_factor: self.branching_factor + other.branching_factor,
         }
-    }
-}
-
-impl Default for ElementCost {
-    fn default() -> Self {
-        Self { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
     }
 }
 
@@ -259,7 +255,7 @@ impl<'a> ComparisonPlanner<'a> {
 
 impl Costed for ComparisonPlanner<'_> {
     fn cost(&self, _: &[VertexId], _: &Graph<'_>) -> ElementCost {
-        ElementCost::default()
+        ElementCost::FREE
     }
 }
 
@@ -325,6 +321,6 @@ impl Costed for DisjunctionPlanner<'_> {
         self.branch_builders
             .iter()
             .map(|branch| branch.clone().with_inputs(input_variables.clone()).plan().cost())
-            .fold(ElementCost { per_input: 0.0, per_output: 0.0, branching_factor: 0.0 }, ElementCost::add)
+            .fold(ElementCost::EMPTY, ElementCost::combine_parallel)
     }
 }

@@ -486,7 +486,7 @@ impl<'a> PlanBuilder<'a> {
             .iter()
             .enumerate()
             .map(|(i, idx)| self.graph.elements[idx].cost(&ordering[..i], &self.graph))
-            .fold(ElementCost::default(), |acc, e| acc.chain(e));
+            .fold(ElementCost::FREE, |acc, e| acc.chain(e));
 
         let Self { shared_variables, graph, type_annotations, statistics: _ } = self;
 
