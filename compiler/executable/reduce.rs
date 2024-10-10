@@ -7,7 +7,6 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use encoding::value::value_type::ValueTypeCategory;
 use ir::pattern::IrID;
 
 use crate::VariablePosition;
@@ -37,22 +36,22 @@ pub enum ReduceInstruction<ID: IrID> {
 }
 
 impl<ID: IrID> ReduceInstruction<ID> {
-    pub fn output_type(&self) -> ValueTypeCategory {
+    pub fn output_type(&self) -> ValueType {
         match self {
-            Self::Count => ValueTypeCategory::Long,
-            Self::CountVar(_) => ValueTypeCategory::Long,
-            Self::SumLong(_) => ValueTypeCategory::Long,
-            Self::SumDouble(_) => ValueTypeCategory::Double,
-            Self::MaxLong(_) => ValueTypeCategory::Long,
-            Self::MaxDouble(_) => ValueTypeCategory::Double,
-            Self::MinLong(_) => ValueTypeCategory::Long,
-            Self::MinDouble(_) => ValueTypeCategory::Double,
-            Self::MeanLong(_) => ValueTypeCategory::Double,
-            Self::MeanDouble(_) => ValueTypeCategory::Double,
-            Self::MedianLong(_) => ValueTypeCategory::Double,
-            Self::MedianDouble(_) => ValueTypeCategory::Double,
-            Self::StdLong(_) => ValueTypeCategory::Double,
-            Self::StdDouble(_) => ValueTypeCategory::Double,
+            Self::Count => ValueType::Long,
+            Self::CountVar(_) => ValueType::Long,
+            Self::SumLong(_) => ValueType::Long,
+            Self::SumDouble(_) => ValueType::Double,
+            Self::MaxLong(_) => ValueType::Long,
+            Self::MaxDouble(_) => ValueType::Double,
+            Self::MinLong(_) => ValueType::Long,
+            Self::MinDouble(_) => ValueType::Double,
+            Self::MeanLong(_) => ValueType::Double,
+            Self::MeanDouble(_) => ValueType::Double,
+            Self::MedianLong(_) => ValueType::Double,
+            Self::MedianDouble(_) => ValueType::Double,
+            Self::StdLong(_) => ValueType::Double,
+            Self::StdDouble(_) => ValueType::Double,
         }
     }
 }

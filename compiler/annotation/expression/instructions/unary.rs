@@ -50,11 +50,11 @@ where
     }
 
     fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompileError> {
-        let a1 = builder.pop_type_single()?;
+        let a1 = builder.pop_type_single()?.category();
         if a1 != T1::VALUE_TYPE_CATEGORY {
             Err(ExpressionCompileError::InternalUnexpectedValueType)?;
         }
-        builder.push_type_single(R::VALUE_TYPE_CATEGORY);
+        builder.push_type_single(R::VALUE_TYPE_CATEGORY.try_into_value_type().unwrap());
         builder.append_instruction(Self::OP_CODE);
         Ok(())
     }

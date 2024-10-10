@@ -47,7 +47,7 @@ pub enum FetchObject {
 
 #[derive(Debug, Clone)]
 pub struct FetchObjectEntries {
-    pub(crate) entries: HashMap<ParameterID, FetchSome>,
+    pub entries: HashMap<ParameterID, FetchSome>,
 }
 
 #[derive(Debug, Clone)]

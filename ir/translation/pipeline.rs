@@ -4,11 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use typeql::query::stage::{Operator as TypeQLOperator, Stage as TypeQLStage, Stage};
-
 use answer::variable::Variable;
 use primitive::either::Either;
 use storage::snapshot::ReadableSnapshot;
+use typeql::query::stage::{Operator as TypeQLOperator, Stage as TypeQLStage, Stage};
 
 use crate::{
     pipeline::{
@@ -17,19 +16,19 @@ use crate::{
         function::Function,
         function_signature::FunctionSignatureIndex,
         modifier::{Limit, Offset, Require, Select, Sort},
-        ParameterRegistry,
-        reduce::Reduce, VariableRegistry,
+        reduce::Reduce,
+        ParameterRegistry, VariableRegistry,
     },
-    RepresentationError,
     translation::{
         fetch::translate_fetch,
         function::translate_function,
         match_::translate_match,
         modifiers::{translate_limit, translate_offset, translate_require, translate_select, translate_sort},
         reduce::translate_reduce,
-        TranslationContext,
         writes::{translate_delete, translate_insert},
+        TranslationContext,
     },
+    RepresentationError,
 };
 
 #[derive(Debug, Clone)]
@@ -140,29 +139,20 @@ fn translate_stage(
             .map(|translated| Either::Second(translated))
             .map_err(|err| RepresentationError::FetchRepresentation { typedb_source: err }),
         TypeQLStage::Operator(modifier) => match modifier {
-            TypeQLOperator::Select(select) => {
-                translate_select(translation_context, select)
-                    .map(|filter| Either::First(TranslatedStage::Select(filter)))
-            }
+            TypeQLOperator::Select(select) => translate_select(translation_context, select)
+                .map(|filter| Either::First(TranslatedStage::Select(filter))),
             TypeQLOperator::Sort(sort) => {
                 translate_sort(translation_context, sort).map(|sort| Either::First(TranslatedStage::Sort(sort)))
             }
-            TypeQLOperator::Offset(offset) => {
-                translate_offset(translation_context, offset)
-                    .map(|offset| Either::First(TranslatedStage::Offset(offset)))
-            }
+            TypeQLOperator::Offset(offset) => translate_offset(translation_context, offset)
+                .map(|offset| Either::First(TranslatedStage::Offset(offset))),
             TypeQLOperator::Limit(limit) => {
-                translate_limit(translation_context, limit)
-                    .map(|limit| Either::First(TranslatedStage::Limit(limit)))
+                translate_limit(translation_context, limit).map(|limit| Either::First(TranslatedStage::Limit(limit)))
             }
-            TypeQLOperator::Reduce(reduce) => {
-                translate_reduce(translation_context, reduce)
-                    .map(|reduce| Either::First(TranslatedStage::Reduce(reduce)))
-            }
-            TypeQLOperator::Require(require) => {
-                translate_require(translation_context, require)
-                    .map(|require| Either::First(TranslatedStage::Require(require)))
-            }
+            TypeQLOperator::Reduce(reduce) => translate_reduce(translation_context, reduce)
+                .map(|reduce| Either::First(TranslatedStage::Reduce(reduce))),
+            TypeQLOperator::Require(require) => translate_require(translation_context, require)
+                .map(|require| Either::First(TranslatedStage::Require(require))),
         },
         _ => Err(RepresentationError::UnrecognisedClause { declaration: typeql_stage.clone() }),
     }

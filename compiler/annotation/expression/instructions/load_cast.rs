@@ -64,11 +64,11 @@ impl<From: NativeValueConvertible, To: ImplicitCast<From>> CompilableExpression 
     }
 
     fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompileError> {
-        let value_before = builder.pop_type_single()?;
+        let value_before = builder.pop_type_single()?.category();
         if value_before != From::VALUE_TYPE_CATEGORY {
             Err(ExpressionCompileError::InternalUnexpectedValueType)?;
         }
-        builder.push_type_single(To::VALUE_TYPE_CATEGORY);
+        builder.push_type_single(To::VALUE_TYPE_CATEGORY.try_into_value_type().unwrap());
 
         builder.append_instruction(Self::OP_CODE);
         Ok(())
@@ -86,11 +86,11 @@ impl<From: NativeValueConvertible, To: ImplicitCast<From>> CompilableExpression 
 
     fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompileError> {
         let right = builder.pop_type_single()?;
-        let left_before = builder.pop_type_single()?;
+        let left_before = builder.pop_type_single()?.category();
         if left_before != From::VALUE_TYPE_CATEGORY {
             Err(ExpressionCompileError::InternalUnexpectedValueType)?;
         }
-        builder.push_type_single(To::VALUE_TYPE_CATEGORY);
+        builder.push_type_single(To::VALUE_TYPE_CATEGORY.try_into_value_type().unwrap());
         builder.push_type_single(right);
 
         builder.append_instruction(Self::OP_CODE);
@@ -108,11 +108,11 @@ impl<From: NativeValueConvertible, To: ImplicitCast<From>> CompilableExpression 
     }
 
     fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompileError> {
-        let right_before = builder.pop_type_single()?;
+        let right_before = builder.pop_type_single()?.category();
         if right_before != From::VALUE_TYPE_CATEGORY {
             Err(ExpressionCompileError::InternalUnexpectedValueType)?;
         }
-        builder.push_type_single(To::VALUE_TYPE_CATEGORY);
+        builder.push_type_single(To::VALUE_TYPE_CATEGORY.try_into_value_type().unwrap());
 
         builder.append_instruction(Self::OP_CODE);
         Ok(())

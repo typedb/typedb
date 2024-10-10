@@ -23,6 +23,7 @@ typedb_error!(
         TypeInference(0, "Type inference error while compiling query annotations.", ( typedb_source : TypeInferenceError )),
         PreambleTypeInference(1, "Type inference error while compiling query premable functions.", ( typedb_source : FunctionTypeInferenceError )),
         ExpressionCompilation(2, "Error inferring correct expression types.", ( source : ExpressionCompileError )),
+        FetchBlockFunctionInferenceError(3, "Error during type inference for fetch sub-query.", (typedb_source : FunctionTypeInferenceError )),
         CouldNotDetermineValueTypeForReducerInput(10, "The value-type for the reducer input variable '{variable}' could not be determined.", variable: String),
         ReducerInputVariableDidNotHaveSingleValueType(11, "The reducer input variable '{variable}' had multiple value-types.", variable: String),
         UnsupportedValueTypeForReducer(12, "The input variable to the reducer'{reducer}({variable})' reducer had an unsupported value-type: '{value_type}'", reducer: String, variable: String, value_type: ValueTypeCategory),

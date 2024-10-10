@@ -85,6 +85,11 @@ typedb_error!(
             declaration: ReturnReduction,
             ( typedb_source : Box<RepresentationError>)
         ),
+        IllegalFetch(
+            6,
+            "Fetch clauses cannot be used inside of functions or function blocks that terminate in a 'return' statement.\nSource:\n{declaration}",
+            declaration: FunctionBlock
+        ),
     }
 );
 

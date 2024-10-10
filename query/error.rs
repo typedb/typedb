@@ -6,7 +6,7 @@
 
 use compiler::{
     annotation::{expression::ExpressionCompileError, AnnotationError},
-    executable::insert::WriteCompilationError,
+    executable::{insert::WriteCompilationError, ExecutableCompilationError},
 };
 use error::typedb_error;
 use executor::pipeline::PipelineExecutionError;
@@ -25,7 +25,8 @@ typedb_error!(
         FunctionDefinition(5, "Error in provided function. ", ( typedb_source: FunctionRepresentationError )),
         FunctionRetrieval(6, "Failed to retrieve function. ",  ( typedb_source: FunctionError )),
         Representation(7, "Error in provided query. ", ( typedb_source: RepresentationError )),
-        Annotation(8, "Error in provided query. ", ( typedb_source: AnnotationError )),
+        Annotation(8, "Error analysing query. ", ( typedb_source: AnnotationError )),
+        ExecutableCompilation(9, "Error compiling query. ", ( typedb_source: ExecutableCompilationError )),
         WriteCompilation(10, "Error while compiling write query.", ( source: WriteCompilationError )),
         ExpressionCompilation(11, "Error while compiling expression.", ( source: ExpressionCompileError )),
         WritePipelineExecutionError(12, "Error while execution write pipeline.", ( typedb_source: PipelineExecutionError )),

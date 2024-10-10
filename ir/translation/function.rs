@@ -52,13 +52,15 @@ pub(crate) fn translate_function_block(
     context: &mut TranslationContext,
     function_block: &FunctionBlock,
 ) -> Result<FunctionBody, FunctionRepresentationError> {
-    let stages =
-        translate_pipeline_stages(snapshot, function_index, context, &function_block.stages).map_err(|err| {
-            FunctionRepresentationError::BlockDefinition {
-                declaration: function_block.clone(),
-                typedb_source: Box::new(err),
-            }
+    let (stages, fetch) = translate_pipeline_stages(snapshot, function_index, context, &function_block.stages)
+        .map_err(|err| FunctionRepresentationError::BlockDefinition {
+            declaration: function_block.clone(),
+            typedb_source: Box::new(err),
         })?;
+
+    if fetch.is_some() {
+        return Err(FunctionRepresentationError::IllegalFetch { declaration: function_block.clone() });
+    }
 
     let return_operation = match &function_block.return_stmt {
         ReturnStatement::Stream(stream) => build_return_stream(&context, stream),

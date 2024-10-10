@@ -12,13 +12,14 @@ use std::{
 use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
 use encoding::value::value_type::{
-    ValueTypeCategory,
+    ValueType, ValueTypeCategory,
     ValueTypeCategory::{Double, Long},
 };
 use ir::{
     pattern::constraint::Constraint,
     pipeline::{
         block::Block,
+        fetch::FetchObject,
         function::Function,
         modifier::{Limit, Offset, Require, Select, Sort},
         reduce::{Reduce, Reducer},
@@ -26,13 +27,12 @@ use ir::{
     },
     translation::pipeline::TranslatedStage,
 };
-use ir::pipeline::fetch::FetchObject;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     annotation::{
         expression::{block_compiler::compile_expressions, compiled_expression::ExecutableExpression},
-        fetch::AnnotatedFetch,
+        fetch::{annotate_fetch, AnnotatedFetch},
         function::{annotate_functions, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         match_inference::infer_types,
         type_annotations::{ConstraintTypeAnnotations, TypeAnnotations},
@@ -81,15 +81,15 @@ pub fn annotate_pipeline(
     variable_registry: &mut VariableRegistry,
     parameters: &ParameterRegistry,
     translated_preamble: Vec<Function>,
-    translated_fetch: Option<FetchObject>,
     translated_stages: Vec<TranslatedStage>,
+    translated_fetch: Option<FetchObject>,
 ) -> Result<AnnotatedPipeline, AnnotationError> {
     let annotated_preamble =
         annotate_functions(translated_preamble, snapshot, type_manager, schema_function_annotations)
             .map_err(|typedb_source| AnnotationError::PreambleTypeInference { typedb_source })?;
 
     let mut running_variable_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>> = BTreeMap::new();
-    let mut running_value_variable_types: BTreeMap<Variable, ValueTypeCategory> = BTreeMap::new();
+    let mut running_value_variable_types: BTreeMap<Variable, ValueType> = BTreeMap::new();
     let mut annotated_stages = Vec::with_capacity(translated_stages.len());
 
     let empty_constraint_annotations = HashMap::new();
@@ -120,13 +120,27 @@ pub fn annotate_pipeline(
         }
         annotated_stages.push(annotated_stage);
     }
-    let annotated_fetch = translated_fetch.map(|fetch| annotate_fetch(fetch));
+    let annotated_fetch = match translated_fetch {
+        None => None,
+        Some(fetch) => {
+            let annotated = annotate_fetch(
+                fetch,
+                running_variable_annotations,
+                running_value_variable_types,
+                snapshot,
+                type_manager,
+                schema_function_annotations,
+                Some(&annotated_preamble),
+            );
+            Some(annotated?)
+        }
+    };
     Ok(AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble })
 }
 
 fn annotate_stage(
     running_variable_annotations: &mut BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    running_value_variable_assigned_types: &mut BTreeMap<Variable, ValueTypeCategory>,
+    running_value_variable_assigned_types: &mut BTreeMap<Variable, ValueType>,
     variable_registry: &mut VariableRegistry,
     parameters: &ParameterRegistry,
     snapshot: &impl ReadableSnapshot,
@@ -157,7 +171,7 @@ fn annotate_stage(
                 compile_expressions(snapshot, type_manager, &block, variable_registry, parameters, &block_annotations)
                     .map_err(|source| AnnotationError::ExpressionCompilation { source })?;
             compiled_expressions.iter().for_each(|(&variable, expr)| {
-                running_value_variable_assigned_types.insert(variable, expr.return_type().value_type());
+                running_value_variable_assigned_types.insert(variable, expr.return_type().value_type().clone());
             });
             Ok(AnnotatedStage::Match { block, block_annotations, executable_expressions: compiled_expressions })
         }
@@ -248,7 +262,7 @@ fn annotate_stage(
                     type_manager,
                     variable_registry,
                 )?;
-                running_value_variable_assigned_types.insert(assigned.clone(), typed_reduce.output_type());
+                running_value_variable_assigned_types.insert(assigned.clone(), typed_reduce.output_type().clone());
                 reduce_instructions.push(typed_reduce);
             }
             Ok(AnnotatedStage::Reduce(reduce, reduce_instructions))
@@ -256,14 +270,10 @@ fn annotate_stage(
     }
 }
 
-fn annotate_fetch(fetch: FetchObject) -> AnnotatedFetch {
-    todo!()
-}
-
 pub fn validate_sort_variables_comparable(
     sort: &Sort,
     variable_annotations: &mut BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    assigned_value_types: &mut BTreeMap<Variable, ValueTypeCategory>,
+    assigned_value_types: &mut BTreeMap<Variable, ValueType>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
@@ -301,7 +311,7 @@ pub fn validate_sort_variables_comparable(
 pub fn resolve_reducer_by_value_type(
     reducer: &Reducer,
     variable_annotations: &mut BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    assigned_value_types: &mut BTreeMap<Variable, ValueTypeCategory>,
+    assigned_value_types: &mut BTreeMap<Variable, ValueType>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
@@ -331,11 +341,11 @@ pub fn resolve_reducer_by_value_type(
 fn determine_value_type_for_reducer(
     variable: &Variable,
     variable_annotations: &mut BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    assigned_value_types: &mut BTreeMap<Variable, ValueTypeCategory>,
+    assigned_value_types: &mut BTreeMap<Variable, ValueType>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
-) -> Result<ValueTypeCategory, AnnotationError> {
+) -> Result<ValueType, AnnotationError> {
     if let Some(assigned_type) = assigned_value_types.get(variable) {
         Ok(assigned_type.clone())
     } else if let Some(types) = variable_annotations.get(variable) {
@@ -345,7 +355,7 @@ fn determine_value_type_for_reducer(
             let variable_name = variable_registry.variable_names().get(variable).unwrap().clone();
             Err(AnnotationError::ReducerInputVariableDidNotHaveSingleValueType { variable: variable_name })
         } else {
-            Ok(value_types.iter().find(|_| true).unwrap().category())
+            Ok(value_types.iter().find(|_| true).unwrap().clone())
         }
     } else {
         let variable_name = variable_registry.variable_names().get(variable).unwrap().clone();
@@ -355,13 +365,13 @@ fn determine_value_type_for_reducer(
 
 pub fn resolve_reduce_instruction_by_value_type(
     reducer: &Reducer,
-    value_type: ValueTypeCategory,
+    value_type: ValueType,
     variable_registry: &VariableRegistry,
 ) -> Result<ReduceInstruction<Variable>, AnnotationError> {
     use encoding::value::value_type::ValueTypeCategory::{Double, Long};
     // Will have been handled earlier since it doesn't need a value type.
     debug_assert!(!matches!(reducer, Reducer::Count) && !matches!(reducer, Reducer::CountVar(_)));
-    match value_type {
+    match value_type.category() {
         Long => match reducer {
             Reducer::Count => Ok(ReduceInstruction::Count),
             Reducer::CountVar(var) => Ok(ReduceInstruction::CountVar(var.clone())),
@@ -398,7 +408,7 @@ pub fn resolve_reduce_instruction_by_value_type(
             Err(AnnotationError::UnsupportedValueTypeForReducer {
                 reducer: reducer_name,
                 variable: variable_name,
-                value_type,
+                value_type: value_type.category(),
             })
         }
     }

@@ -13,8 +13,9 @@ use typeql::{
     expression::{FunctionCall, FunctionName},
     query::stage::{
         fetch::{
-            FetchList as TypeQLFetchList, FetchObject as TypeQLFetchObject, FetchObjectBody as TypeQLFetchObjectBody,
-            FetchSingle as TypeQLFetchSingle, FetchSingle, FetchSome as TypeQLFetchSome,
+            FetchAttribute, FetchList as TypeQLFetchList, FetchObject as TypeQLFetchObject,
+            FetchObjectBody as TypeQLFetchObjectBody, FetchSingle as TypeQLFetchSingle, FetchSingle,
+            FetchSome as TypeQLFetchSome, FetchStream,
         },
         Fetch as TypeQLFetch,
     },
@@ -98,12 +99,72 @@ fn translate_fetch_some(
 }
 
 fn translate_fetch_list(
-    _snapshot: &impl ReadableSnapshot,
-    _parent_context: &mut TranslationContext,
-    _function_index: &impl FunctionSignatureIndex,
-    _list: &TypeQLFetchList,
+    snapshot: &impl ReadableSnapshot,
+    parent_context: &mut TranslationContext,
+    function_index: &impl FunctionSignatureIndex,
+    list: &TypeQLFetchList,
 ) -> Result<FetchSome, FetchRepresentationError> {
-    return Err(FetchRepresentationError::Unimplemented {});
+    match &list.stream {
+        FetchStream::Attribute(FetchAttribute { owner, attribute, .. }) => {
+            let variable = try_get_variable(parent_context, owner)?;
+            let attribute_label = match attribute {
+                TypeRefAny::Type(type_ref) => {
+                    // TODO: we can reuse all this from FetchSingle!
+
+                    match type_ref {
+                        TypeRef::Named(identifier) => {
+                            match identifier {
+                                NamedType::Label(_) => {}
+                                NamedType::Role(_) => {
+                                    // TODO...
+                                }
+                                NamedType::BuiltinValueType(_) => {
+                                    // TODO error: is not an ownable attribute
+                                }
+                            }
+                        }
+                        TypeRef::Variable(_) => {
+                            // TODO error: variables cannot be used as attribute fetches
+                        }
+                    }
+                }
+                TypeRefAny::Optional(_) => {
+                    // TODO error: optional should not be used in attribute retrievals
+                }
+                TypeRefAny::List(_) => {
+                    // TODO error: list attribute types $x.attr[] should not be wrapped in [ $x.attr[] ]
+                }
+            };
+            todo!()
+            // Ok(FetchSome::ListAttributesAsList(FetchListAttributeAsList {
+            //     variable,
+            //     attribute: attribute_label,
+            // }))
+        }
+        FetchStream::Function(call) => {
+            match &call.name {
+                FunctionName::Builtin(_) => {
+                    // TODO: create inline stream function call, and validate it returns stream... what about `"key": [ max(10, 11) ]?
+                    // --> technically we can turn anything into a single-element or more stream
+                    todo!()
+                }
+                FunctionName::Identifier(name) => {
+                    let some =
+                        translate_inline_user_function_call(parent_context, function_index, &call, name.as_str());
+                    // TODO: we should error if this is NOT a stream-return function
+                    todo!()
+                }
+            }
+        }
+        FetchStream::SubQueryFetch(stages) => {
+            // TODO: clone context, create new translated pipeline
+            todo!()
+        }
+        FetchStream::SubQueryFunctionBlock(block) => {
+            // TODO: translate anonymous function block and validate returns stream
+            todo!()
+        }
+    }
 }
 
 // Note: TypeQL fetch-single can turn either into a List or a Single IR
@@ -157,13 +218,15 @@ fn translate_fetch_single(
                 }
                 // function expressions may return Single or List, depending on signature invoked
                 Expression::Function(call) => {
-                    let function_name = match &call.name {
+                    match &call.name {
                         FunctionName::Builtin(_) => {
                             return translate_inline_expression(parent_context, function_index, &expression);
                         }
-                        FunctionName::Identifier(name) => name.as_str(),
-                    };
-                    translate_inline_user_function_call(parent_context, function_index, &call, function_name)
+                        FunctionName::Identifier(name) => {
+                            translate_inline_user_function_call(parent_context, function_index, &call, name.as_str())
+                            // TODO: we should error if this is NOT a single-return function
+                        }
+                    }
                 }
                 // list expressions should be mapped to FetchList
                 Expression::List(_) => {

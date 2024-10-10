@@ -111,8 +111,8 @@ fn test_basic() {
         let (vars, expr, params) = compile_expression_via_match(
             "$a + $b",
             HashMap::from([
-                ("a", ExpressionValueType::Single(ValueTypeCategory::Long)),
-                ("b", ExpressionValueType::Single(ValueTypeCategory::Long)),
+                ("a", ExpressionValueType::Single(ValueTypeCategory::Long.try_into_value_type().unwrap())),
+                ("b", ExpressionValueType::Single(ValueTypeCategory::Long.try_into_value_type().unwrap())),
             ]),
         )
         .unwrap();
@@ -262,7 +262,7 @@ fn list_ops() {
     {
         let (vars, expr, params) = compile_expression_via_match(
             "$y[1]",
-            HashMap::from([("y", ExpressionValueType::List(ValueTypeCategory::Long))]),
+            HashMap::from([("y", ExpressionValueType::List(ValueTypeCategory::Long.try_into_value_type().unwrap()))]),
         )
         .unwrap();
         let y = ["y"].into_iter().map(|name| *vars.get(name).unwrap()).exactly_one().unwrap();
@@ -276,7 +276,7 @@ fn list_ops() {
     {
         let (vars, expr, params) = compile_expression_via_match(
             "$y[1..3]",
-            HashMap::from([("y", ExpressionValueType::List(ValueTypeCategory::Long))]),
+            HashMap::from([("y", ExpressionValueType::List(ValueTypeCategory::Long.try_into_value_type().unwrap()))]),
         )
         .unwrap();
         let y = ["y"].into_iter().map(|name| *vars.get(name).unwrap()).exactly_one().unwrap();

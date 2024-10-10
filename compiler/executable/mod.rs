@@ -5,20 +5,20 @@
  */
 
 use error::typedb_error;
+
 use crate::executable::insert::WriteCompilationError;
 
 pub mod delete;
 pub mod fetch;
+pub mod function;
 pub mod insert;
 pub mod match_;
 pub mod modifiers;
-pub mod reduce;
 pub mod pipeline;
-pub mod function;
-
+pub mod reduce;
 
 typedb_error!(
-    pub ExecutableError(component = "Query executable", prefix = "QEE") {
+    pub ExecutableCompilationError(component = "Query executable", prefix = "QEE") {
         InsertExecutableCompilation(1, "Error compiling insert stage into executable.", (source : WriteCompilationError)),
         DeleteExecutableCompilation(2, "Error compiling delete stage into executable.", (source : WriteCompilationError)),
     }

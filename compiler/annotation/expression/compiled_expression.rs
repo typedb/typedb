@@ -5,7 +5,7 @@
  */
 
 use answer::variable::Variable;
-use encoding::value::value_type::ValueTypeCategory;
+use encoding::value::value_type::{ValueType, ValueTypeCategory};
 use ir::pattern::ParameterID;
 
 use crate::annotation::expression::instructions::op_codes::ExpressionOpCode;
@@ -31,24 +31,24 @@ impl ExecutableExpression {
         self.constants.as_slice()
     }
 
-    pub fn return_type(&self) -> ExpressionValueType {
-        self.return_type
+    pub fn return_type(&self) -> &ExpressionValueType {
+        &self.return_type
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub enum ExpressionValueType {
     // TODO: we haven't implemented ConceptList, only ValueList right now.
     // TODO: this should hold an actual ValueType, not a Category!
-    Single(ValueTypeCategory),
-    List(ValueTypeCategory),
+    Single(ValueType),
+    List(ValueType),
 }
 
 impl ExpressionValueType {
-    pub fn value_type(&self) -> ValueTypeCategory {
+    pub fn value_type(&self) -> &ValueType {
         match self {
-            ExpressionValueType::Single(category) => *category,
-            ExpressionValueType::List(category) => *category,
+            ExpressionValueType::Single(value_type) => value_type,
+            ExpressionValueType::List(value_type) => value_type,
         }
     }
 }

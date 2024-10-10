@@ -8,6 +8,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use compiler::{
     annotation::pipeline::{annotate_pipeline, AnnotatedPipeline},
+    executable::pipeline::{compile_pipeline, ExecutablePipeline, ExecutableStage},
     VariablePosition,
 };
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
@@ -29,13 +30,8 @@ use ir::{
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
-use compiler::executable::pipeline::{compile_pipeline, ExecutablePipeline, ExecutableStage};
 
-use crate::{
-    define,
-    error::QueryError,
-    redefine, undefine,
-};
+use crate::{define, error::QueryError, redefine, undefine};
 
 pub struct QueryManager {}
 
@@ -71,15 +67,20 @@ impl QueryManager {
         query: &typeql::query::Pipeline,
     ) -> Result<(ReadPipelineStage<Snapshot>, HashMap<String, VariablePosition>), QueryError> {
         // 1: Translate
-        let TranslatedPipeline { translated_preamble, translated_stages, mut variable_registry, value_parameters } =
-            self.translate_pipeline(snapshot.as_ref(), function_manager, query)?;
+        let TranslatedPipeline {
+            translated_preamble,
+            translated_stages,
+            translated_fetch,
+            mut variable_registry,
+            value_parameters,
+        } = self.translate_pipeline(snapshot.as_ref(), function_manager, query)?;
 
         // 2: Annotate
         let annotated_functions = function_manager
             .get_annotated_functions(snapshot.as_ref(), &type_manager)
             .map_err(|err| QueryError::FunctionRetrieval { typedb_source: err })?;
 
-        let AnnotatedPipeline { annotated_preamble, annotated_stages } = annotate_pipeline(
+        let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = annotate_pipeline(
             snapshot.as_ref(),
             type_manager,
             &annotated_functions,
@@ -87,22 +88,26 @@ impl QueryManager {
             &value_parameters,
             translated_preamble,
             translated_stages,
+            translated_fetch,
         )
         .map_err(|err| QueryError::Annotation { typedb_source: err })?;
 
         // 3: Compile
         let variable_registry = Arc::new(variable_registry);
-        let ExecutablePipeline { executable_functions: compiled_functions, executable_stages: compiled_stages, stages_variable_positions: output_variable_positions } = compile_pipeline(
-            thing_manager.statistics(),
-            variable_registry.clone(),
-            annotated_preamble,
-            annotated_stages,
-        )?;
+        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch, stages_variable_positions } =
+            compile_pipeline(
+                thing_manager.statistics(),
+                variable_registry.clone(),
+                annotated_preamble,
+                annotated_stages,
+                annotated_fetch,
+            )
+            .map_err(|err| QueryError::ExecutableCompilation { typedb_source: err })?;
 
         let context = ExecutionContext::new(snapshot, thing_manager, Arc::new(value_parameters));
         let mut last_stage = ReadPipelineStage::Initial(InitialStage::new(context));
-        for compiled_stage in compiled_stages {
-            match compiled_stage {
+        for executable_stage in executable_stages {
+            match executable_stage {
                 ExecutableStage::Match(match_executable) => {
                     // TODO: Pass expressions & functions
                     let match_stage = MatchStageExecutor::new(match_executable, last_stage);
@@ -141,7 +146,7 @@ impl QueryManager {
             }
         }
 
-        let named_outputs = output_variable_positions
+        let named_outputs = stages_variable_positions
             .iter()
             .filter_map(|(variable, &position)| {
                 variable_registry.variable_names().get(variable).map(|name| (name.clone(), position))
@@ -160,11 +165,16 @@ impl QueryManager {
         query: &typeql::query::Pipeline,
     ) -> Result<(WritePipelineStage<Snapshot>, HashMap<String, VariablePosition>), (Snapshot, QueryError)> {
         // 1: Translate
-        let TranslatedPipeline { translated_preamble, translated_stages, mut variable_registry, value_parameters } =
-            match self.translate_pipeline(&snapshot, function_manager, query) {
-                Ok(translated) => translated,
-                Err(err) => return Err((snapshot, err)),
-            };
+        let TranslatedPipeline {
+            translated_preamble,
+            translated_stages,
+            translated_fetch,
+            mut variable_registry,
+            value_parameters,
+        } = match self.translate_pipeline(&snapshot, function_manager, query) {
+            Ok(translated) => translated,
+            Err(err) => return Err((snapshot, err)),
+        };
 
         // 2: Annotate
         let annotated_functions = match function_manager.get_annotated_functions(&snapshot, type_manager) {
@@ -182,9 +192,10 @@ impl QueryManager {
             &value_parameters,
             translated_preamble,
             translated_stages,
+            translated_fetch,
         );
 
-        let AnnotatedPipeline { annotated_preamble, annotated_stages } = match annotated_pipeline {
+        let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = match annotated_pipeline {
             Ok(annotated_pipeline) => annotated_pipeline,
             Err(err) => return Err((snapshot, QueryError::Annotation { typedb_source: err })),
         };
@@ -196,12 +207,17 @@ impl QueryManager {
             variable_registry.clone(),
             annotated_preamble,
             annotated_stages,
+            annotated_fetch,
         );
-        let ExecutablePipeline { executable_functions, executable_stages, stages_variable_positions: output_variable_positions } =
-            match executable_pipeline {
-                Ok(executable) => executable,
-                Err(err) => return Err((snapshot, err)),
-            };
+        let ExecutablePipeline {
+            executable_functions,
+            executable_stages,
+            executable_fetch,
+            stages_variable_positions: output_variable_positions,
+        } = match executable_pipeline {
+            Ok(executable) => executable,
+            Err(err) => return Err((snapshot, QueryError::ExecutableCompilation { typedb_source: err })),
+        };
 
         let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::new(value_parameters));
         let mut previous_stage = WritePipelineStage::Initial(InitialStage::new(context));

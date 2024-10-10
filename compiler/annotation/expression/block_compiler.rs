@@ -136,7 +136,7 @@ fn compile_expressions_recursive<'a, Snapshot: ReadableSnapshot>(
     }
     let compiled =
         ExpressionCompilationContext::compile(expression, &context.variable_value_types, &context.parameters)?;
-    context.variable_value_types.insert(assigned_variable, compiled.return_type);
+    context.variable_value_types.insert(assigned_variable, compiled.return_type.clone());
     context.compiled_expressions.insert(assigned_variable, compiled);
     Ok(())
 }
@@ -154,7 +154,7 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
                 compile_expressions_recursive(context, variable, expression_assignments)?;
                 context
                     .variable_value_types
-                    .insert(variable, context.compiled_expressions.get(&variable).unwrap().return_type);
+                    .insert(variable, context.compiled_expressions.get(&variable).unwrap().return_type.clone());
                 Ok(())
             }
         } else {
@@ -173,12 +173,12 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
             match variable_category {
                 VariableCategory::Attribute | VariableCategory::Thing => {
                     debug_assert!(types.iter().all(|t| matches!(t, answer::Type::Attribute(_))));
-                    context.variable_value_types.insert(variable, ExpressionValueType::Single(value_type.category()));
+                    context.variable_value_types.insert(variable, ExpressionValueType::Single(value_type.clone()));
                     Ok(())
                 }
                 VariableCategory::AttributeList | VariableCategory::ThingList => {
                     debug_assert!(types.iter().all(|t| matches!(t, answer::Type::Attribute(_))));
-                    context.variable_value_types.insert(variable, ExpressionValueType::List(value_type.category()));
+                    context.variable_value_types.insert(variable, ExpressionValueType::List(value_type.clone()));
                     Ok(())
                 }
                 _ => Err(ExpressionCompileError::VariableMustBeValueOrAttribute {

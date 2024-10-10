@@ -4,16 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::{collections::HashMap, sync::Arc};
 
-use std::collections::HashMap;
-use std::sync::Arc;
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::pipeline::VariableRegistry;
-use crate::annotation::function::AnnotatedFunction;
-use crate::executable::ExecutableError;
-use crate::executable::pipeline::ExecutablePipeline;
-use crate::VariablePosition;
+
+use crate::{
+    annotation::function::AnnotatedFunction,
+    executable::{pipeline::ExecutablePipeline, ExecutableCompilationError},
+    VariablePosition,
+};
 
 pub struct ExecutableFunction {
     executable: ExecutablePipeline,
@@ -24,6 +25,6 @@ pub(crate) fn compile_function(
     statistics: &Statistics,
     variable_registry: Arc<VariableRegistry>,
     function: &AnnotatedFunction,
-) -> Result<ExecutableFunction, ExecutableError> {
+) -> Result<ExecutableFunction, ExecutableCompilationError> {
     todo!()
 }

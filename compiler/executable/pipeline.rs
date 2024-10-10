@@ -13,18 +13,21 @@ use std::{
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::pipeline::VariableRegistry;
-use crate::annotation::fetch::AnnotatedFetch;
-use crate::annotation::function::{AnnotatedFunction, AnnotatedUnindexedFunctions};
-use crate::annotation::pipeline::AnnotatedStage;
-use crate::executable::delete::executable::DeleteExecutable;
-use crate::executable::ExecutableError;
-use crate::executable::fetch::executable::FetchExecutable;
-use crate::executable::function::{compile_function, ExecutableFunction};
-use crate::executable::insert::executable::InsertExecutable;
-use crate::executable::match_::planner::match_executable::MatchExecutable;
-use crate::executable::modifiers::{LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable};
-use crate::executable::reduce::{ReduceExecutable, ReduceInstruction};
-use crate::VariablePosition;
+
+use crate::{
+    annotation::{fetch::AnnotatedFetch, function::AnnotatedUnindexedFunctions, pipeline::AnnotatedStage},
+    executable::{
+        delete::executable::DeleteExecutable,
+        fetch::executable::FetchExecutable,
+        function::{compile_function, ExecutableFunction},
+        insert::executable::InsertExecutable,
+        match_::planner::match_executable::MatchExecutable,
+        modifiers::{LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable},
+        reduce::{ReduceExecutable, ReduceInstruction},
+        ExecutableCompilationError,
+    },
+    VariablePosition,
+};
 
 pub struct ExecutablePipeline {
     pub executable_functions: Vec<ExecutableFunction>,
@@ -79,7 +82,7 @@ pub fn compile_pipeline(
     annotated_functions: AnnotatedUnindexedFunctions,
     annotated_stages: Vec<AnnotatedStage>,
     annotated_fetch: Option<AnnotatedFetch>,
-) -> Result<ExecutablePipeline, ExecutableError> {
+) -> Result<ExecutablePipeline, ExecutableCompilationError> {
     let executable_functions = annotated_functions
         .iter_functions()
         .map(|function| compile_function(statistics, variable_registry.clone(), function))
@@ -87,8 +90,10 @@ pub fn compile_pipeline(
 
     let mut executable_stages = Vec::with_capacity(annotated_stages.len());
     for stage in annotated_stages {
-        let input_variable_positions =
-            executable_stages.last().map(|stage: &ExecutableStage| stage.output_row_mapping()).unwrap_or(HashMap::new());
+        let input_variable_positions = executable_stages
+            .last()
+            .map(|stage: &ExecutableStage| stage.output_row_mapping())
+            .unwrap_or(HashMap::new());
 
         let executable_stage = compile_stage(statistics, variable_registry.clone(), &input_variable_positions, stage)?;
         executable_stages.push(executable_stage);
@@ -105,7 +110,7 @@ fn compile_stage(
     variable_registry: Arc<VariableRegistry>,
     input_variables: &HashMap<Variable, VariablePosition>,
     annotated_stage: AnnotatedStage,
-) -> Result<ExecutableStage, ExecutableError> {
+) -> Result<ExecutableStage, ExecutableCompilationError> {
     match &annotated_stage {
         AnnotatedStage::Match { block, block_annotations, executable_expressions } => {
             let plan = crate::executable::match_::planner::compile(
@@ -125,7 +130,7 @@ fn compile_stage(
                 input_variables,
                 annotations,
             )
-            .map_err(|source| ExecutableError::InsertExecutableCompilation { source })?;
+            .map_err(|source| ExecutableCompilationError::InsertExecutableCompilation { source })?;
             Ok(ExecutableStage::Insert(plan))
         }
         AnnotatedStage::Delete { block, deleted_variables, annotations } => {
@@ -135,7 +140,7 @@ fn compile_stage(
                 block.conjunction().constraints(),
                 deleted_variables,
             )
-            .map_err(|source| ExecutableError::DeleteExecutableCompilation { source })?;
+            .map_err(|source| ExecutableCompilationError::DeleteExecutableCompilation { source })?;
             Ok(ExecutableStage::Delete(plan))
         }
         AnnotatedStage::Select(select) => {
