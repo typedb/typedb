@@ -9,7 +9,10 @@ use std::collections::BTreeSet;
 use answer::Type;
 use concept::type_::type_manager::TypeManager;
 use encoding::{graph::definition::definition_key::DefinitionKey, value::value_type::ValueType};
-use ir::pipeline::{function::Function, function_signature::FunctionIDAPI};
+use ir::pipeline::{
+    function::{AnonymousFunction, Function},
+    function_signature::FunctionIDAPI,
+};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{pipeline::AnnotatedStage, FunctionTypeInferenceError};
@@ -147,6 +150,32 @@ pub fn annotate_function(
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
     local_functions: Option<&AnnotatedUnindexedFunctions>,
 ) -> Result<AnnotatedFunction, FunctionTypeInferenceError> {
+    // let root_graph = infer_types(
+    //     snapshot,
+    //     function.block(),
+    //     function.variable_registry(),
+    //     type_manager,
+    //     &BTreeMap::new(),
+    //     indexed_annotated_functions,
+    //     local_functions,
+    // )
+    // .map_err(|err| FunctionTypeInferenceError::TypeInference {
+    //     name: function.name().to_string(),
+    //     typedb_source: err,
+    // })?;
+    // let body_annotations = TypeAnnotations::build(root_graph);
+    // let return_types = function.return_operation().return_types(body_annotations.vertex_annotations());
+    // Ok(FunctionAnnotations { return_annotations: return_types, block_annotations: body_annotations })
+    todo!("We need to allow a function to contain an entire pipeline, instead of just a match block")
+}
+
+pub fn annotate_anonymous_function(
+    function: &AnonymousFunction,
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    indexed_annotated_functions: &IndexedAnnotatedFunctions,
+    local_functions: Option<&AnnotatedUnindexedFunctions>,
+) -> Result<AnnotatedAnonymousFunction, FunctionTypeInferenceError> {
     // let root_graph = infer_types(
     //     snapshot,
     //     function.block(),

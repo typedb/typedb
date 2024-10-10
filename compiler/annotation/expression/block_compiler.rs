@@ -23,7 +23,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
     expression::{
-        compiled_expression::{CompiledExpression, ExpressionValueType},
+        compiled_expression::{ExecutableExpression, ExpressionValueType},
         expression_compiler::ExpressionCompilationContext,
         ExpressionCompileError,
     },
@@ -40,7 +40,7 @@ struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
     type_manager: &'block TypeManager,
     type_annotations: &'block TypeAnnotations,
 
-    compiled_expressions: HashMap<Variable, CompiledExpression>,
+    compiled_expressions: HashMap<Variable, ExecutableExpression>,
     variable_value_types: HashMap<Variable, ExpressionValueType>,
     visited_expressions: HashSet<Variable>,
 }
@@ -52,7 +52,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     variable_registry: &'block mut VariableRegistry,
     parameters: &'block ParameterRegistry,
     type_annotations: &'block TypeAnnotations,
-) -> Result<HashMap<Variable, CompiledExpression>, ExpressionCompileError> {
+) -> Result<HashMap<Variable, ExecutableExpression>, ExpressionCompileError> {
     let mut expression_index = HashMap::new();
     index_expressions(block.conjunction(), &mut expression_index)?;
     let assigned_variables = expression_index.keys().cloned().collect_vec();
@@ -136,7 +136,7 @@ fn compile_expressions_recursive<'a, Snapshot: ReadableSnapshot>(
     }
     let compiled =
         ExpressionCompilationContext::compile(expression, &context.variable_value_types, &context.parameters)?;
-    context.variable_value_types.insert(assigned_variable, compiled.return_type);
+    context.variable_value_types.insert(assigned_variable, compiled.return_type.clone());
     context.compiled_expressions.insert(assigned_variable, compiled);
     Ok(())
 }
@@ -154,7 +154,7 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
                 compile_expressions_recursive(context, variable, expression_assignments)?;
                 context
                     .variable_value_types
-                    .insert(variable, context.compiled_expressions.get(&variable).unwrap().return_type);
+                    .insert(variable, context.compiled_expressions.get(&variable).unwrap().return_type.clone());
                 Ok(())
             }
         } else {
@@ -173,12 +173,12 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
             match variable_category {
                 VariableCategory::Attribute | VariableCategory::Thing => {
                     debug_assert!(types.iter().all(|t| matches!(t, answer::Type::Attribute(_))));
-                    context.variable_value_types.insert(variable, ExpressionValueType::Single(value_type.category()));
+                    context.variable_value_types.insert(variable, ExpressionValueType::Single(value_type.clone()));
                     Ok(())
                 }
                 VariableCategory::AttributeList | VariableCategory::ThingList => {
                     debug_assert!(types.iter().all(|t| matches!(t, answer::Type::Attribute(_))));
-                    context.variable_value_types.insert(variable, ExpressionValueType::List(value_type.category()));
+                    context.variable_value_types.insert(variable, ExpressionValueType::List(value_type.clone()));
                     Ok(())
                 }
                 _ => Err(ExpressionCompileError::VariableMustBeValueOrAttribute {

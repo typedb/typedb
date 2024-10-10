@@ -8,6 +8,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use compiler::{
     annotation::pipeline::{annotate_pipeline, AnnotatedPipeline},
+    executable::pipeline::{compile_pipeline, ExecutablePipeline, ExecutableStage},
     VariablePosition,
 };
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
@@ -30,12 +31,7 @@ use ir::{
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
 
-use crate::{
-    compilation::{compile_pipeline, CompiledPipeline, CompiledStage},
-    define,
-    error::QueryError,
-    redefine, undefine,
-};
+use crate::{define, error::QueryError, redefine, undefine};
 
 pub struct QueryManager {}
 
@@ -71,15 +67,20 @@ impl QueryManager {
         query: &typeql::query::Pipeline,
     ) -> Result<(ReadPipelineStage<Snapshot>, HashMap<String, VariablePosition>), QueryError> {
         // 1: Translate
-        let TranslatedPipeline { translated_preamble, translated_stages, mut variable_registry, value_parameters } =
-            self.translate_pipeline(snapshot.as_ref(), function_manager, query)?;
+        let TranslatedPipeline {
+            translated_preamble,
+            translated_stages,
+            translated_fetch,
+            mut variable_registry,
+            value_parameters,
+        } = self.translate_pipeline(snapshot.as_ref(), function_manager, query)?;
 
         // 2: Annotate
         let annotated_functions = function_manager
             .get_annotated_functions(snapshot.as_ref(), &type_manager)
             .map_err(|err| QueryError::FunctionRetrieval { typedb_source: err })?;
 
-        let AnnotatedPipeline { annotated_preamble, annotated_stages } = annotate_pipeline(
+        let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = annotate_pipeline(
             snapshot.as_ref(),
             type_manager,
             &annotated_functions,
@@ -87,61 +88,65 @@ impl QueryManager {
             &value_parameters,
             translated_preamble,
             translated_stages,
+            translated_fetch,
         )
         .map_err(|err| QueryError::Annotation { typedb_source: err })?;
 
         // 3: Compile
         let variable_registry = Arc::new(variable_registry);
-        let CompiledPipeline { compiled_functions, compiled_stages, output_variable_positions } = compile_pipeline(
-            thing_manager.statistics(),
-            variable_registry.clone(),
-            annotated_preamble,
-            annotated_stages,
-        )?;
+        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch, stages_variable_positions } =
+            compile_pipeline(
+                thing_manager.statistics(),
+                variable_registry.clone(),
+                annotated_preamble,
+                annotated_stages,
+                annotated_fetch,
+            )
+            .map_err(|err| QueryError::ExecutableCompilation { typedb_source: err })?;
 
         let context = ExecutionContext::new(snapshot, thing_manager, Arc::new(value_parameters));
         let mut last_stage = ReadPipelineStage::Initial(InitialStage::new(context));
-        for compiled_stage in compiled_stages {
-            match compiled_stage {
-                CompiledStage::Match(match_executable) => {
+        for executable_stage in executable_stages {
+            match executable_stage {
+                ExecutableStage::Match(match_executable) => {
                     // TODO: Pass expressions & functions
                     let match_stage = MatchStageExecutor::new(match_executable, last_stage);
                     last_stage = ReadPipelineStage::Match(Box::new(match_stage));
                 }
-                CompiledStage::Insert(_) => {
+                ExecutableStage::Insert(_) => {
                     unreachable!("Insert clause cannot exist in a read pipeline.")
                 }
-                CompiledStage::Delete(_) => {
+                ExecutableStage::Delete(_) => {
                     unreachable!("Delete clause cannot exist in a read pipeline.")
                 }
-                CompiledStage::Select(select_executable) => {
+                ExecutableStage::Select(select_executable) => {
                     let select_stage = SelectStageExecutor::new(select_executable, last_stage);
                     last_stage = ReadPipelineStage::Select(Box::new(select_stage));
                 }
-                CompiledStage::Sort(sort_executable) => {
+                ExecutableStage::Sort(sort_executable) => {
                     let sort_stage = SortStageExecutor::new(sort_executable, last_stage);
                     last_stage = ReadPipelineStage::Sort(Box::new(sort_stage));
                 }
-                CompiledStage::Offset(offset_executable) => {
+                ExecutableStage::Offset(offset_executable) => {
                     let offset_stage = OffsetStageExecutor::new(offset_executable, last_stage);
                     last_stage = ReadPipelineStage::Offset(Box::new(offset_stage));
                 }
-                CompiledStage::Limit(limit_executable) => {
+                ExecutableStage::Limit(limit_executable) => {
                     let limit_stage = LimitStageExecutor::new(limit_executable, last_stage);
                     last_stage = ReadPipelineStage::Limit(Box::new(limit_stage));
                 }
-                CompiledStage::Require(require_executable) => {
+                ExecutableStage::Require(require_executable) => {
                     let require_stage = RequireStageExecutor::new(require_executable, last_stage);
                     last_stage = ReadPipelineStage::Require(Box::new(require_stage));
                 }
-                CompiledStage::Reduce(reduce_executable) => {
+                ExecutableStage::Reduce(reduce_executable) => {
                     let reduce_stage = ReduceStageExecutor::new(reduce_executable, last_stage);
                     last_stage = ReadPipelineStage::Reduce(Box::new(reduce_stage));
                 }
             }
         }
 
-        let named_outputs = output_variable_positions
+        let named_outputs = stages_variable_positions
             .iter()
             .filter_map(|(variable, &position)| {
                 variable_registry.variable_names().get(variable).map(|name| (name.clone(), position))
@@ -160,11 +165,16 @@ impl QueryManager {
         query: &typeql::query::Pipeline,
     ) -> Result<(WritePipelineStage<Snapshot>, HashMap<String, VariablePosition>), (Snapshot, QueryError)> {
         // 1: Translate
-        let TranslatedPipeline { translated_preamble, translated_stages, mut variable_registry, value_parameters } =
-            match self.translate_pipeline(&snapshot, function_manager, query) {
-                Ok(translated) => translated,
-                Err(err) => return Err((snapshot, err)),
-            };
+        let TranslatedPipeline {
+            translated_preamble,
+            translated_stages,
+            translated_fetch,
+            mut variable_registry,
+            value_parameters,
+        } = match self.translate_pipeline(&snapshot, function_manager, query) {
+            Ok(translated) => translated,
+            Err(err) => return Err((snapshot, err)),
+        };
 
         // 2: Annotate
         let annotated_functions = match function_manager.get_annotated_functions(&snapshot, type_manager) {
@@ -182,65 +192,71 @@ impl QueryManager {
             &value_parameters,
             translated_preamble,
             translated_stages,
+            translated_fetch,
         );
 
-        let AnnotatedPipeline { annotated_preamble, annotated_stages } = match annotated_pipeline {
+        let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = match annotated_pipeline {
             Ok(annotated_pipeline) => annotated_pipeline,
             Err(err) => return Err((snapshot, QueryError::Annotation { typedb_source: err })),
         };
 
         // // 3: Compile
         let variable_registry = Arc::new(variable_registry);
-        let compiled_pipeline = compile_pipeline(
+        let executable_pipeline = compile_pipeline(
             thing_manager.statistics(),
             variable_registry.clone(),
             annotated_preamble,
             annotated_stages,
+            annotated_fetch,
         );
-        let CompiledPipeline { compiled_functions, compiled_stages, output_variable_positions } =
-            match compiled_pipeline {
-                Ok(compiled_pipeline) => compiled_pipeline,
-                Err(err) => return Err((snapshot, err)),
-            };
+        let ExecutablePipeline {
+            executable_functions,
+            executable_stages,
+            executable_fetch,
+            stages_variable_positions: output_variable_positions,
+        } = match executable_pipeline {
+            Ok(executable) => executable,
+            Err(err) => return Err((snapshot, QueryError::ExecutableCompilation { typedb_source: err })),
+        };
 
         let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::new(value_parameters));
         let mut previous_stage = WritePipelineStage::Initial(InitialStage::new(context));
-        for compiled_stage in compiled_stages {
-            match compiled_stage {
-                CompiledStage::Match(match_executable) => {
+        for executable_stage in executable_stages {
+            match executable_stage {
+                ExecutableStage::Match(match_executable) => {
                     // TODO: Pass expressions & functions
                     let match_stage = MatchStageExecutor::new(match_executable, previous_stage);
                     previous_stage = WritePipelineStage::Match(Box::new(match_stage));
                 }
-                CompiledStage::Insert(insert_executable) => {
+                ExecutableStage::Insert(insert_executable) => {
                     let insert_stage = InsertStageExecutor::new(insert_executable, previous_stage);
                     previous_stage = WritePipelineStage::Insert(Box::new(insert_stage));
                 }
-                CompiledStage::Delete(delete_executable) => {
+                ExecutableStage::Delete(delete_executable) => {
                     let delete_stage = DeleteStageExecutor::new(delete_executable, previous_stage);
                     previous_stage = WritePipelineStage::Delete(Box::new(delete_stage));
                 }
-                CompiledStage::Select(select_executable) => {
+                ExecutableStage::Select(select_executable) => {
                     let select_stage = SelectStageExecutor::new(select_executable, previous_stage);
                     previous_stage = WritePipelineStage::Select(Box::new(select_stage));
                 }
-                CompiledStage::Sort(sort_executable) => {
+                ExecutableStage::Sort(sort_executable) => {
                     let sort_stage = SortStageExecutor::new(sort_executable, previous_stage);
                     previous_stage = WritePipelineStage::Sort(Box::new(sort_stage));
                 }
-                CompiledStage::Offset(offset_executable) => {
+                ExecutableStage::Offset(offset_executable) => {
                     let offset_stage = OffsetStageExecutor::new(offset_executable, previous_stage);
                     previous_stage = WritePipelineStage::Offset(Box::new(offset_stage));
                 }
-                CompiledStage::Limit(limit_executable) => {
+                ExecutableStage::Limit(limit_executable) => {
                     let limit_stage = LimitStageExecutor::new(limit_executable, previous_stage);
                     previous_stage = WritePipelineStage::Limit(Box::new(limit_stage));
                 }
-                CompiledStage::Require(require_executable) => {
+                ExecutableStage::Require(require_executable) => {
                     let require_stage = RequireStageExecutor::new(require_executable, previous_stage);
                     previous_stage = WritePipelineStage::Require(Box::new(require_stage));
                 }
-                CompiledStage::Reduce(reduce_executable) => {
+                ExecutableStage::Reduce(reduce_executable) => {
                     let reduce_stage = ReduceStageExecutor::new(reduce_executable, previous_stage);
                     previous_stage = WritePipelineStage::Reduce(Box::new(reduce_stage));
                 }

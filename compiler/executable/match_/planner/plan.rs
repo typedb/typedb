@@ -26,7 +26,7 @@ use ir::{
 use itertools::Itertools;
 
 use crate::{
-    annotation::{expression::compiled_expression::CompiledExpression, type_annotations::TypeAnnotations},
+    annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
     executable::match_::{
         instructions::{
             thing::{
@@ -58,7 +58,7 @@ pub(crate) fn plan_conjunction<'a>(
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &'a TypeAnnotations,
     variable_registry: &VariableRegistry,
-    _expressions: &HashMap<Variable, CompiledExpression>,
+    _expressions: &HashMap<Variable, ExecutableExpression>,
     statistics: &'a Statistics,
 ) -> ConjunctionPlan<'a> {
     let subplans = conjunction

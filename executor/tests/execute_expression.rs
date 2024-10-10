@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 use answer::variable::Variable;
 use compiler::annotation::expression::{
-    compiled_expression::{CompiledExpression, ExpressionValueType},
+    compiled_expression::{ExecutableExpression, ExpressionValueType},
     expression_compiler::ExpressionCompilationContext,
     ExpressionCompileError,
 };
@@ -44,7 +44,7 @@ impl From<ExpressionCompileError> for PatternDefitionOrExpressionCompileError {
 fn compile_expression_via_match(
     s: &str,
     variable_types: HashMap<&str, ExpressionValueType>,
-) -> Result<(HashMap<String, Variable>, CompiledExpression, ParameterRegistry), PatternDefitionOrExpressionCompileError>
+) -> Result<(HashMap<String, Variable>, ExecutableExpression, ParameterRegistry), PatternDefitionOrExpressionCompileError>
 {
     let query = format!("match $x = {}; select $x;", s);
     let mut translation_context = TranslationContext::new();
@@ -111,8 +111,8 @@ fn test_basic() {
         let (vars, expr, params) = compile_expression_via_match(
             "$a + $b",
             HashMap::from([
-                ("a", ExpressionValueType::Single(ValueTypeCategory::Long)),
-                ("b", ExpressionValueType::Single(ValueTypeCategory::Long)),
+                ("a", ExpressionValueType::Single(ValueTypeCategory::Long.try_into_value_type().unwrap())),
+                ("b", ExpressionValueType::Single(ValueTypeCategory::Long.try_into_value_type().unwrap())),
             ]),
         )
         .unwrap();
@@ -262,7 +262,7 @@ fn list_ops() {
     {
         let (vars, expr, params) = compile_expression_via_match(
             "$y[1]",
-            HashMap::from([("y", ExpressionValueType::List(ValueTypeCategory::Long))]),
+            HashMap::from([("y", ExpressionValueType::List(ValueTypeCategory::Long.try_into_value_type().unwrap()))]),
         )
         .unwrap();
         let y = ["y"].into_iter().map(|name| *vars.get(name).unwrap()).exactly_one().unwrap();
@@ -276,7 +276,7 @@ fn list_ops() {
     {
         let (vars, expr, params) = compile_expression_via_match(
             "$y[1..3]",
-            HashMap::from([("y", ExpressionValueType::List(ValueTypeCategory::Long))]),
+            HashMap::from([("y", ExpressionValueType::List(ValueTypeCategory::Long.try_into_value_type().unwrap()))]),
         )
         .unwrap();
         let y = ["y"].into_iter().map(|name| *vars.get(name).unwrap()).exactly_one().unwrap();
