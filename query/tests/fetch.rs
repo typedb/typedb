@@ -111,7 +111,7 @@ fetch {
     "list higher-card attributes": [ $x.name ],
     "list attributes": $x.name[],
     "all attributes": { $x.* }
-}"#,
+};"#,
     )
     .unwrap();
 

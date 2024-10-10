@@ -80,7 +80,7 @@ impl TranslatedStage {
             TranslatedStage::Match { block }
             | TranslatedStage::Insert { block }
             | TranslatedStage::Delete { block, .. } => {
-                Box::new(block.block_variables())
+                Box::new(block.variables())
             }
             TranslatedStage::Select(select) => Box::new(select.variables.iter().cloned()),
             TranslatedStage::Sort(sort) => Box::new(sort.variables.iter().map(|sort_var| sort_var.variable())),

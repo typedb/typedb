@@ -157,9 +157,9 @@ fn translate_fetch_list(
                 .map_err(|err| FetchRepresentationError::FunctionRepresentation { declaration: block.clone() })?;
             let args = find_function_body_arguments(&parent_context, &body);
             if !body.return_operation().is_stream() {
-                Ok(FetchSome::SingleFunction(create_anonymous_function(local_context, args, body)))
-            } else {
                 Err(FetchRepresentationError::ExpectedStreamInlineFunction { declaration: block.clone() })
+            } else {
+                Ok(FetchSome::SingleFunction(create_anonymous_function(local_context, args, body)))
             }
         }
     }
@@ -459,7 +459,7 @@ typedb_error!(
         ),
         ExpectedStreamInlineFunction(
             12,
-            "The match-return function returns a single value, which should not be be wrapped in `[]`.\nSource:\n{declaration}",
+            "The match-return returns a single value, which should not be be wrapped in `[]`.\nSource:\n{declaration}",
             declaration: FunctionBlock
         ),
         ExpectedStreamUserFunctionInList(
