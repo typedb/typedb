@@ -43,11 +43,9 @@ checkstyle_test(
     name = "checkstyle",
     include = glob([
         "*",
-        "match_/**/*.rs",
-        "insert/**/*.rs",
-        "delete/**/*.rs",
-        "expression/**/*.rs",
-        "fetch/*.rs",
+        "annotation/**/*.rs",
+        "executable/**/*.rs",
+        "optimisation/**/*.rs",
     ]),
     exclude = glob([
         "Cargo.*",
