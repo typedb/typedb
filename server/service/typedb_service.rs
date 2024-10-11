@@ -121,8 +121,10 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         request: Request<typedb_protocol::database_manager::create::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::create::Res>, Status> {
         let message = request.into_inner();
-        self.database_manager.create_database(message.name.clone());
-        Ok(Response::new(database_create_res(message.name, &self.address)))
+        self.database_manager
+            .create_database(message.name.clone())
+            .map(|_| Response::new(database_create_res(message.name, &self.address)))
+            .map_err(|err| err.into_error_message().into_status())
     }
 
     async fn database_schema(

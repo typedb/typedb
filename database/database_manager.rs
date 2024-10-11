@@ -14,7 +14,7 @@ use std::{
 use itertools::Itertools;
 use storage::durability_client::WALClient;
 
-use crate::{Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError};
+use crate::{database::DatabaseCreateError, Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError};
 
 #[derive(Debug)]
 pub struct DatabaseManager {
@@ -42,13 +42,18 @@ impl DatabaseManager {
         Ok(Self { data_directory: data_directory.to_owned(), databases: RwLock::new(databases) })
     }
 
-    pub fn create_database(&self, name: impl AsRef<str>) {
+    pub fn create_database(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError> {
         let name = name.as_ref();
+        if !typeql::common::identifier::is_valid_identifier(name) {
+            return Err(DatabaseCreateError::InvalidName { name: name.to_owned() });
+        }
+
         self.databases
             .write()
             .unwrap()
             .entry(name.to_owned())
             .or_insert_with(|| Arc::new(Database::<WALClient>::open(&self.data_directory.join(name)).unwrap()));
+        Ok(())
     }
 
     pub fn delete_database(&self, name: impl AsRef<str>) -> Result<(), DatabaseDeleteError> {
@@ -72,7 +77,7 @@ impl DatabaseManager {
         Ok(())
     }
 
-    pub fn reset_else_recreate_database(&self, name: impl AsRef<str>) -> Result<(), DatabaseDeleteError> {
+    pub fn reset_else_recreate_database(&self, name: impl AsRef<str>) -> Result<(), DatabaseResetError> {
         // TODO: this is a partial implementation, only single threaded and without cooperative transaction shutdown
         // remove from map to make DB unavailable
         let mut databases = self.databases.write().unwrap();
@@ -92,7 +97,7 @@ impl DatabaseManager {
             }
         } else {
             drop(databases);
-            self.create_database(name);
+            self.create_database(name).map_err(|typedb_source| DatabaseResetError::DatabaseCreate { typedb_source })?;
             return Ok(());
         };
 
@@ -100,8 +105,10 @@ impl DatabaseManager {
         match result {
             Ok(_) => (),
             Err(_) => {
-                self.delete_database(name.as_ref())?;
+                self.delete_database(name.as_ref())
+                    .map_err(|typedb_source| DatabaseResetError::DatabaseDelete { typedb_source })?;
                 self.create_database(name)
+                    .map_err(|typedb_source| DatabaseResetError::DatabaseCreate { typedb_source })?
             }
         };
         Ok(())
