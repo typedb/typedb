@@ -36,7 +36,7 @@ use crate::annotation::pipeline::annotate_stages_and_fetch;
 #[derive(Debug, Clone)]
 pub struct AnnotatedFetch {
     input_type_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    input_value_annotations: BTreeMap<Variable, ExpressionValueType>,
+    input_value_type_annotations: BTreeMap<Variable, ExpressionValueType>,
 
     object: AnnotatedFetchObject,
 }
@@ -74,15 +74,23 @@ pub struct AnnotatedFetchListSubFetch {
 
 pub(crate) fn annotate_fetch(
     fetch: FetchObject,
-    input_type_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    input_value_annotations: BTreeMap<Variable, ExpressionValueType>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
     local_functions: Option<&AnnotatedUnindexedFunctions>,
+    input_type_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    input_value_type_annotations: BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<AnnotatedFetch, AnnotationError> {
-    let object = annotate_object(fetch, snapshot, type_manager, indexed_annotated_functions, local_functions)?;
-    Ok(AnnotatedFetch { input_type_annotations, input_value_annotations, object })
+    let object = annotate_object(
+        fetch,
+        snapshot,
+        type_manager,
+        indexed_annotated_functions,
+        local_functions,
+        &input_type_annotations,
+        &input_value_type_annotations,
+    )?;
+    Ok(AnnotatedFetch { input_type_annotations, input_value_type_annotations, object })
 }
 
 fn annotate_object(
@@ -91,6 +99,8 @@ fn annotate_object(
     type_manager: &TypeManager,
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
     local_functions: Option<&AnnotatedUnindexedFunctions>,
+    input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<AnnotatedFetchObject, AnnotationError> {
     match object {
         FetchObject::Entries(entries) => {
@@ -100,6 +110,8 @@ fn annotate_object(
                 type_manager,
                 indexed_annotated_functions,
                 local_functions,
+                input_type_annotations,
+                input_value_type_annotations,
             )?;
             Ok(AnnotatedFetchObject::Entries(annotated_entries))
         }
@@ -113,11 +125,20 @@ fn annotated_object_entries(
     type_manager: &TypeManager,
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
     local_functions: Option<&AnnotatedUnindexedFunctions>,
+    input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<AnnotatedFetchObjectEntries, AnnotationError> {
     let mut annotated_entries = HashMap::new();
     for (key, value) in entries.entries.into_iter() {
-        let annotated_value =
-            annotate_some(value, snapshot, type_manager, indexed_annotated_functions, local_functions)?;
+        let annotated_value = annotate_some(
+            value,
+            snapshot,
+            type_manager,
+            indexed_annotated_functions,
+            local_functions,
+            input_type_annotations,
+            input_value_type_annotations,
+        )?;
         annotated_entries.insert(key, annotated_value);
     }
     Ok(AnnotatedFetchObjectEntries { entries: annotated_entries })
@@ -129,6 +150,8 @@ fn annotate_some(
     type_manager: &TypeManager,
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
     local_functions: Option<&AnnotatedUnindexedFunctions>,
+    input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<AnnotatedFetchSome, AnnotationError> {
     match some {
         FetchSome::SingleVar(var) => Ok(AnnotatedFetchSome::SingleVar(var)),
@@ -145,8 +168,15 @@ fn annotate_some(
             Ok(AnnotatedFetchSome::SingleFunction(annotated_function))
         }
         FetchSome::Object(object) => {
-            let object =
-                annotate_object(*object, snapshot, type_manager, indexed_annotated_functions, local_functions)?;
+            let object = annotate_object(
+                *object,
+                snapshot,
+                type_manager,
+                indexed_annotated_functions,
+                local_functions,
+                input_type_annotations,
+                input_value_type_annotations,
+            )?;
             Ok(AnnotatedFetchSome::Object(Box::new(object)))
         }
         FetchSome::ListFunction(mut function) => {
@@ -166,7 +196,9 @@ fn annotate_some(
                 type_manager,
                 indexed_annotated_functions,
                 local_functions,
-                sub_fetch
+                sub_fetch,
+                input_type_annotations,
+                input_value_type_annotations,
             );
             Ok(AnnotatedFetchSome::ListSubFetch(annotated_sub_fetch?))
         },
@@ -180,7 +212,9 @@ fn annotate_sub_fetch(
     type_manager: &TypeManager,
     schema_function_annotations: &IndexedAnnotatedFunctions,
     annotated_preamble: Option<&AnnotatedUnindexedFunctions>,
-    sub_fetch: FetchListSubFetch
+    sub_fetch: FetchListSubFetch,
+    input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<AnnotatedFetchListSubFetch, AnnotationError> {
     let FetchListSubFetch { context, stages, fetch } = sub_fetch;
     let TranslationContext { mut variable_registry, parameters, .. } = context;
@@ -192,7 +226,9 @@ fn annotate_sub_fetch(
         &parameters,
         annotated_preamble,
         stages,
-        Some(fetch)
+        Some(fetch),
+        input_type_annotations.clone(),
+        input_value_type_annotations.clone(),
     )?;
     Ok(AnnotatedFetchListSubFetch { stages: annotated_stages, fetch: annotated_fetch.unwrap()})
 }

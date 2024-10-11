@@ -53,7 +53,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     variable_registry: &'block mut VariableRegistry,
     parameters: &'block ParameterRegistry,
     type_annotations: &'block TypeAnnotations,
-    input_value_variable_types: &mut BTreeMap<Variable, ExpressionValueType>,
+    input_value_type_annotations: &mut BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<HashMap<Variable, ExecutableExpression>, ExpressionCompileError> {
     let mut context = BlockExpressionsCompilationContext {
         block,
@@ -62,7 +62,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
         snapshot,
         type_manager,
         type_annotations,
-        variable_value_types: input_value_variable_types.iter().map(|(k, v)| (k.clone(), v.clone())).collect(),
+        variable_value_types: input_value_type_annotations.iter().map(|(k, v)| (k.clone(), v.clone())).collect(),
         visited_expressions: HashSet::new(),
         compiled_expressions: HashMap::new(),
     };

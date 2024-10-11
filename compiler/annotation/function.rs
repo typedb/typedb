@@ -9,7 +9,9 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
+use typeql::{type_::NamedType, TypeRef, TypeRefAny};
+
+use answer::{Type, variable::Variable};
 use concept::type_::{type_manager::TypeManager, TypeAPI};
 use encoding::{
     graph::definition::definition_key::DefinitionKey,
@@ -22,14 +24,12 @@ use ir::{
     },
     translation::tokens::translate_value_type,
 };
-use ir::pipeline::function::{FunctionBody, ReturnOperation};
 use storage::snapshot::ReadableSnapshot;
-use typeql::{type_::NamedType, TypeRef, TypeRefAny};
 
 use crate::annotation::{
     expression::compiled_expression::ExpressionValueType,
-    pipeline::{annotate_pipeline_stages, AnnotatedStage},
-    type_seeder, FunctionTypeInferenceError, TypeInferenceError,
+    FunctionTypeInferenceError,
+    pipeline::{annotate_pipeline_stages, AnnotatedStage}, type_seeder,
 };
 
 #[derive(Debug, Clone)]
@@ -164,9 +164,9 @@ pub(crate) fn annotate_function(
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
     local_functions: Option<&AnnotatedUnindexedFunctions>,
 ) -> Result<AnnotatedFunction, FunctionTypeInferenceError> {
-    let Function { name, context, function_body: FunctionBody { stages, return_operation }, arguments } = function;
+    let Function { name, context, function_body: FunctionBody { stages, return_operation }, arguments, argument_labels } = function;
     let (argument_concept_variable_types, argument_value_variable_types) =
-        annotate_arguments(arguments, snapshot, type_manager)?;
+        annotate_arguments(&arguments, argument_labels.as_ref().unwrap(), snapshot, type_manager)?;
 
     let (stages, running_variable_types, running_value_types) = annotate_pipeline_stages(
         snapshot,
@@ -188,18 +188,9 @@ pub(crate) fn annotate_function(
     Ok(AnnotatedFunction { stages, return_annotations, return_operation: return_operation.clone() })
 }
 
-pub fn annotate_anonymous_function(
-    function: &AnonymousFunction,
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    indexed_annotated_functions: &IndexedAnnotatedFunctions,
-    local_functions: Option<&AnnotatedUnindexedFunctions>,
-) -> Result<AnnotatedAnonymousFunction, FunctionTypeInferenceError> {
-    todo!("Delete me when anonymous functions disappear")
-}
-
 fn annotate_arguments(
-    function_arguments: &mut Vec<(Variable, TypeRefAny)>,
+    arguments: &[Variable],
+    argument_labels: &[TypeRefAny],
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
 ) -> Result<
@@ -209,8 +200,9 @@ fn annotate_arguments(
     // TODO
     let mut variable_types = BTreeMap::new();
     let mut value_types = BTreeMap::new();
-    for (idx, (var, typeql_type)) in function_arguments.iter().enumerate() {
-        let TypeRef::Named(inner_type) = (match typeql_type {
+    for (idx, var) in arguments.iter().enumerate() {
+        let typeql_label = &argument_labels[idx];
+        let TypeRef::Named(inner_type) = (match typeql_label {
             TypeRefAny::Type(inner) => inner,
             TypeRefAny::Optional(typeql::type_::Optional { inner: _inner, .. }) => todo!(),
             TypeRefAny::List(typeql::type_::List { inner: _inner, .. }) => todo!(),
@@ -257,7 +249,7 @@ fn extract_return_type_annotations(
             .map(|var| get_function_parameter(var, body_variable_annotations, body_variable_value_types))
             .collect(),
         ReturnOperation::ReduceReducer(reducers) => {
-
+            todo!()
         }
         ReturnOperation::ReduceCheck() => {
             // aggregates return value types?

@@ -100,6 +100,8 @@ pub fn annotate_pipeline(
         Some(&annotated_preamble),
         translated_stages,
         translated_fetch,
+        BTreeMap::new(),
+        BTreeMap::new(),
     )?;
     Ok(AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble })
 }
@@ -113,6 +115,8 @@ pub(crate) fn annotate_stages_and_fetch(
     annotated_preamble: Option<&AnnotatedUnindexedFunctions>,
     translated_stages: Vec<TranslatedStage>,
     translated_fetch: Option<FetchObject>,
+    input_type_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    input_value_type_annotations: BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<(Vec<AnnotatedStage>, Option<AnnotatedFetch>), AnnotationError> {
     let (annotated_stages, running_variable_annotations, running_value_variable_types) = annotate_pipeline_stages(
         snapshot,
@@ -122,18 +126,20 @@ pub(crate) fn annotate_stages_and_fetch(
         parameters,
         annotated_preamble,
         translated_stages,
+        input_type_annotations,
+        input_value_type_annotations,
     )?;
     let annotated_fetch = match translated_fetch {
         None => None,
         Some(fetch) => {
             let annotated = annotate_fetch(
                 fetch,
-                running_variable_annotations,
-                running_value_variable_types,
                 snapshot,
                 type_manager,
                 schema_function_annotations,
                 annotated_preamble,
+                running_variable_annotations,
+                running_value_variable_types,
             );
             Some(annotated?)
         }
@@ -149,14 +155,14 @@ pub(crate) fn annotate_pipeline_stages(
     parameters: &ParameterRegistry,
     annotated_preamble: Option<&AnnotatedUnindexedFunctions>,
     translated_stages: Vec<TranslatedStage>,
-    input_variable_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    input_value_variable_types: BTreeMap<Variable, ExpressionValueType>,
+    input_type_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    input_value_type_annotations: BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<
     (Vec<AnnotatedStage>, BTreeMap<Variable, Arc<BTreeSet<Type>>>, BTreeMap<Variable, ExpressionValueType>),
     AnnotationError,
 > {
-    let mut running_variable_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>> = input_variable_annotations;
-    let mut running_value_variable_types: BTreeMap<Variable, ExpressionValueType> = input_value_variable_types;
+    let mut running_variable_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>> = input_type_annotations;
+    let mut running_value_variable_types: BTreeMap<Variable, ExpressionValueType> = input_value_type_annotations;
     let mut annotated_stages = Vec::with_capacity(translated_stages.len());
 
     let empty_constraint_annotations = HashMap::new();

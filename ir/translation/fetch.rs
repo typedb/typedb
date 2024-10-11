@@ -357,7 +357,7 @@ fn add_expression(
 }
 
 fn create_anonymous_function(context: TranslationContext, args: Vec<Variable>, body: FunctionBody) -> Function {
-    Function::new("_anon", context, args, body)
+    Function::new("_anon", context, args, None, body)
 }
 
 // Given a function body, and the _parent_ translation context, we can reconstruct which are arguments

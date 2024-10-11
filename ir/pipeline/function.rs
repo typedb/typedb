@@ -18,25 +18,23 @@ pub struct Function {
     pub name: String,
     pub function_body: FunctionBody,
     // Variable categories for args & return can be read from the block's context.
-    pub arguments: Vec<(Variable, TypeRefAny)>,
+    pub arguments: Vec<Variable>,
+    pub argument_labels: Option<Vec<TypeRefAny>>,
 }
 
 impl Function {
     pub fn new(
         name: &str,
         context: TranslationContext,
-        arguments: Vec<(Variable, TypeRefAny)>,
+        arguments: Vec<Variable>,
+        argument_labels: Option<Vec<TypeRefAny>>,
         function_body: FunctionBody,
     ) -> Self {
-        Self { name: name.to_string(), context, function_body, arguments }
+        Self { name: name.to_string(), context, function_body, arguments, argument_labels }
     }
 
     pub fn name(&self) -> &str {
         &self.name
-    }
-
-    pub fn arguments(&self) -> &[(Variable, TypeRefAny)] {
-        &self.arguments
     }
 
     pub fn translation_context(&self) -> &TranslationContext {

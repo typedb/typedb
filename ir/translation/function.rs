@@ -10,6 +10,7 @@ use typeql::{
     },
     TypeRefAny,
 };
+use typeql::schema::definable::function::Argument;
 
 use answer::variable::Variable;
 use storage::snapshot::ReadableSnapshot;
@@ -33,7 +34,7 @@ pub fn translate_typeql_function(
         snapshot,
         function_index,
         function.signature.ident.as_str(),
-        function.signature.args.iter().map(|arg| arg.var.name().unwrap()),
+        &function.signature.args,
         &function.block,
         Some(function),
     )
@@ -43,27 +44,33 @@ pub fn translate_function_from<'a>(
     snapshot: &impl ReadableSnapshot,
     function_index: &impl FunctionSignatureIndex,
     name: &str,
-    args: impl Iterator<Item=&'a str> + 'a,
+    args: &[Argument],
     block: &FunctionBlock,
     declaration: Option<&typeql::Function>,
 ) -> Result<Function, FunctionRepresentationError> {
     let mut context = TranslationContext::new();
     let body = translate_function_block(snapshot, function_index, &mut context, block)?;
-    let arguments: Vec<Variable> = translate_function_arguments(&mut context, declaration, args)?;
-    Ok(Function::new(name, context, arguments, body))
+    let (arguments, argument_labels) = translate_function_arguments(&mut context, declaration, args)?;
+    Ok(Function::new(name, context, arguments, Some(argument_labels), body))
 }
 
 pub(crate) fn translate_function_arguments<'a>(
     context: &mut TranslationContext,
     declaration: Option<&typeql::Function>,
-    args: impl Iterator<Item=&'a str> + 'a,
-) -> Result<Vec<Variable>, FunctionRepresentationError> {
-    args.map(|arg| context.get_variable(arg).ok_or_else(|| {
-        FunctionRepresentationError::FunctionArgumentUnused {
-            argument_variable: arg.to_owned(),
-            declaration: declaration.unwrap().clone(),
-        }
-    })).collect::<Result<Vec<_>, _>>()
+    args: &[Argument],
+) -> Result<(Vec<Variable>, Vec<TypeRefAny>), FunctionRepresentationError> {
+    let mut argument_variables = Vec::with_capacity(args.len());
+    let mut argument_labels = Vec::with_capacity(args.len());
+    for arg in args {
+        let var = context.get_variable(arg.var.name().unwrap()).ok_or_else(|| {
+            FunctionRepresentationError::FunctionArgumentUnused {
+                argument_variable: arg.var.name().unwrap().to_owned(),
+                declaration: declaration.unwrap().clone(),
+            }})?;
+        argument_variables.push(var);
+        argument_labels.push(arg.type_.clone());
+    }
+    Ok((argument_variables, argument_labels))
 }
 
 pub(crate) fn translate_function_block(
