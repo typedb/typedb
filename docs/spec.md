@@ -1364,16 +1364,19 @@ _Going forward, we always work with valid patterns_
 
 * _Anon vars_: anon vars start with `$_`. They behave like normal variables, but leave the variables name implicit and are automatically discarded and results of the pattern they appear in are deduplicated. In other words:
 ```
-...                   // incoming stream with var $a, $b, $c
+[input]               // incoming stream with variables $a, $b, $c
 match <PATT>          // binds $x, $y, $z, $_1
 ```
 is equivalent to 
 ```
-...                   // incoming stream with variables $a, $b, $c
-match <PATT>          // binds $x, $y, $z, $anon_var_1
-deselect $anon_var_1; // equivalent to "select $a, $b, $c, $x, $y, $z;"
-distinct $x, $y, $z;  // note: variables $a, $b, $c are not deduplicated!
+for each (a,b,c) in [input] {
+  match [set $a=a, $b=b, $c=c, $_1=$var1 in <PATT>]
+  deselect $var1;     // equivalent to "select $x, $y, $z"
+  distinct;           // deduplicate new results
+  return { $a=a, $b=b, $c=c, $x, $y, $z };  // incorporate in parent stream
+}
 ```
+(note that this is very much pseudo code, not actual TypeQL)
 
 * _Remark_: Anon vars can be both **tvar**s and **evar**s
 
