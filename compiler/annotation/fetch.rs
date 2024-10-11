@@ -163,6 +163,8 @@ fn annotate_some(
                 type_manager,
                 indexed_annotated_functions,
                 local_functions,
+                Some(input_type_annotations),
+                Some(input_value_type_annotations),
             )
             .map_err(|err| AnnotationError::FetchBlockFunctionInferenceError { typedb_source: err })?;
             Ok(AnnotatedFetchSome::SingleFunction(annotated_function))
@@ -186,6 +188,8 @@ fn annotate_some(
                 type_manager,
                 indexed_annotated_functions,
                 local_functions,
+                Some(input_type_annotations),
+                Some(input_value_type_annotations),
             )
             .map_err(|err| AnnotationError::FetchBlockFunctionInferenceError { typedb_source: err })?;
             Ok(AnnotatedFetchSome::ListFunction(annotated_function))

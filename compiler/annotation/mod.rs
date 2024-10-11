@@ -8,6 +8,7 @@ use concept::error::ConceptReadError;
 use encoding::value::value_type::ValueTypeCategory;
 use error::typedb_error;
 use expression::ExpressionCompileError;
+use crate::annotation::expression::compiled_expression::ExpressionValueType;
 
 pub mod expression;
 pub mod fetch;
@@ -40,6 +41,27 @@ typedb_error!(
             "An error occurred when trying to resolve the type of the argument at index: {index}.",
             index: usize,
             source: TypeInferenceError
+        ),
+        CallerSignatureTypeMismatch(
+            2,
+            "Function '{name}' argument at position '{index}' is only invoked with types that not compatible with the argument type '{arg_type}'.",
+            name: String,
+            index: usize,
+            arg_type: String
+        ),
+        CallerSignatureValueTypeMismatch(
+            3,
+            "Function '{name}' argument at position '{index}' expects value type '{expected}' but is only invoked with '{actual}'.",
+            name: String,
+            index: usize,
+            expected: ExpressionValueType,
+            actual: ExpressionValueType
+        ),
+        CouldNotDetermineArgumentType(
+            4,
+            "Failed to infer any argument type for function '{name}' argument at position '{index}'.",
+            name: String,
+            index: usize
         ),
     }
 );
