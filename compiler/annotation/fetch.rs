@@ -9,17 +9,22 @@ use std::{
     sync::Arc,
 };
 
+
 use answer::{Type, variable::Variable};
+use concept::type_::{Capability, OwnerAPI, TypeAPI};
+use concept::type_::attribute_type::AttributeType;
+use concept::type_::constraint::{Constraint, ConstraintDescription};
 use concept::type_::type_manager::TypeManager;
-use encoding::value::value_type::ValueType;
+use encoding::value::label::Label;
 use ir::{
     pattern::ParameterID,
     pipeline::fetch::{
         FetchListAttributeAsList, FetchListAttributeFromList, FetchListSubFetch, FetchObject, FetchObjectAttributes,
-        FetchObjectEntries, FetchSingleAttribute, FetchSingleVar, FetchSome,
+        FetchObjectEntries, FetchSingleVar, FetchSome,
     },
 };
-use ir::pipeline::ParameterRegistry;
+use ir::pipeline::{ParameterRegistry, VariableRegistry};
+use ir::pipeline::fetch::FetchSingleAttribute;
 use ir::translation::TranslationContext;
 use storage::snapshot::ReadableSnapshot;
 
@@ -45,15 +50,15 @@ pub struct AnnotatedFetch {
 #[derive(Debug, Clone)]
 pub enum AnnotatedFetchSome {
     SingleVar(FetchSingleVar),
-    SingleAttribute(FetchSingleAttribute),
+    SingleAttribute(Variable, AttributeType<'static>),
     SingleFunction(AnnotatedFunction),
 
     Object(Box<AnnotatedFetchObject>),
 
     ListFunction(AnnotatedFunction),
     ListSubFetch(AnnotatedFetchListSubFetch),
-    ListAttributesAsList(FetchListAttributeAsList),
-    ListAttributesFromList(FetchListAttributeFromList),
+    ListAttributesAsList(Variable, AttributeType<'static>),
+    ListAttributesFromList(Variable, AttributeType<'static>),
 }
 
 #[derive(Debug, Clone)]
@@ -77,6 +82,7 @@ pub(crate) fn annotate_fetch(
     fetch: FetchObject,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
+    variable_registry: &VariableRegistry,
     parameters: &ParameterRegistry,
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
     local_functions: Option<&AnnotatedUnindexedFunctions>,
@@ -87,6 +93,7 @@ pub(crate) fn annotate_fetch(
         fetch,
         snapshot,
         type_manager,
+        variable_registry,
         parameters,
         indexed_annotated_functions,
         local_functions,
@@ -100,6 +107,7 @@ fn annotate_object(
     object: FetchObject,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
+    variable_registry: &VariableRegistry,
     parameters: &ParameterRegistry,
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
     local_functions: Option<&AnnotatedUnindexedFunctions>,
@@ -112,6 +120,7 @@ fn annotate_object(
                 entries,
                 snapshot,
                 type_manager,
+                variable_registry,
                 parameters,
                 indexed_annotated_functions,
                 local_functions,
@@ -128,6 +137,7 @@ fn annotated_object_entries(
     entries: FetchObjectEntries,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
+    variable_registry: &VariableRegistry,
     parameters: &ParameterRegistry,
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
     local_functions: Option<&AnnotatedUnindexedFunctions>,
@@ -140,6 +150,7 @@ fn annotated_object_entries(
             value,
             snapshot,
             type_manager,
+            variable_registry,
             parameters,
             indexed_annotated_functions,
             local_functions,
@@ -159,6 +170,7 @@ fn annotate_some(
     some: FetchSome,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
+    variable_registry: &VariableRegistry,
     parameters: &ParameterRegistry,
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
     local_functions: Option<&AnnotatedUnindexedFunctions>,
@@ -167,7 +179,17 @@ fn annotate_some(
 ) -> Result<AnnotatedFetchSome, AnnotationError> {
     match some {
         FetchSome::SingleVar(var) => Ok(AnnotatedFetchSome::SingleVar(var)),
-        FetchSome::SingleAttribute(attr) => Ok(AnnotatedFetchSome::SingleAttribute(attr)),
+        FetchSome::SingleAttribute(FetchSingleAttribute { variable, attribute }) => {
+            let variable_name = variable_registry.get_variable_name(&variable).unwrap();
+            let attribute_type = type_manager.get_attribute_type(snapshot, &Label::build(&attribute))
+                .map_err(|err| AnnotationError::ConceptRead { source: err })?
+                .ok_or_else(|| {
+                    AnnotationError::FetchAttributeNotFound { var: variable_name.clone(), name: attribute }
+                })?;
+            let owner_types = input_type_annotations.get(&variable).unwrap();
+            validate_attribute_is_single(snapshot, type_manager, variable_name, owner_types, attribute_type.clone())?;
+            Ok(AnnotatedFetchSome::SingleAttribute(variable, attribute_type))
+        },
         FetchSome::SingleFunction(mut function) => {
             let annotated_function = annotate_function(
                 &mut function,
@@ -186,6 +208,7 @@ fn annotate_some(
                 *object,
                 snapshot,
                 type_manager,
+                variable_registry,
                 parameters,
                 indexed_annotated_functions,
                 local_functions,
@@ -219,9 +242,77 @@ fn annotate_some(
             );
             Ok(AnnotatedFetchSome::ListSubFetch(annotated_sub_fetch?))
         },
-        FetchSome::ListAttributesAsList(fetch) => Ok(AnnotatedFetchSome::ListAttributesAsList(fetch)),
-        FetchSome::ListAttributesFromList(fetch) => Ok(AnnotatedFetchSome::ListAttributesFromList(fetch)),
+        FetchSome::ListAttributesAsList(FetchListAttributeAsList { variable, attribute }) => {
+            let variable_name = variable_registry.get_variable_name(&variable).unwrap();
+            let attribute_type = type_manager.get_attribute_type(snapshot, &Label::build(&attribute))
+                .map_err(|err| AnnotationError::ConceptRead { source: err })?
+                .ok_or_else(|| {
+                    AnnotationError::FetchAttributeNotFound { var: variable_name.clone(), name: attribute }
+                })?;
+            for owner_type in input_type_annotations.get(&variable).unwrap().iter() {
+                validate_attribute_is_streamable(snapshot, type_manager, variable_name, owner_type, attribute_type.clone())?;
+            }
+            Ok(AnnotatedFetchSome::ListAttributesAsList(variable, attribute_type))
+        },
+        FetchSome::ListAttributesFromList(FetchListAttributeFromList { variable, attribute }) => {
+            Err(AnnotationError::Unimplemented { description: "Fetching a list attribute is not yet supported.".to_owned() })
+            // // TODO: validate attribute type cardinality matches the syntax
+            // Ok(AnnotatedFetchSome::ListAttributesFromList(fetch))
+        },
     }
+}
+
+fn validate_attribute_is_single(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    owner: &str,
+    owner_types: &BTreeSet<Type>,
+    attribute_type: AttributeType<'static>
+) -> Result<(), AnnotationError> {
+    for owner_type in owner_types {
+        let owns = owner_type.as_object_type().get_owns_attribute(snapshot, type_manager, attribute_type.clone())
+            .map_err(|err| AnnotationError::ConceptRead { source: err })?
+            .ok_or_else(|| AnnotationError::FetchSingleAttributeNotOwned {
+                var: owner.to_owned(),
+                owner: owner_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
+                attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned()
+            })?;
+
+        let max_card = owns.get_cardinality_constraints(snapshot, type_manager)
+            .map_err(|err| AnnotationError::ConceptRead { source: err })?
+            .iter()
+            .filter_map(|card| if let ConstraintDescription::Cardinality(card) = card.description() {
+                card.end()
+            } else {
+                unreachable!()
+            })
+            .max();
+        if max_card.is_some_and(|max| max > 1) {
+            return Err(AnnotationError::AttributeFetchCardTooHigh {
+                var: owner.to_owned(),
+                owner: owner_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
+                attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned()
+            });
+        }
+    }
+    Ok(())
+}
+
+fn validate_attribute_is_streamable(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    owner: &str,
+    owner_type: &Type,
+    attribute_type: AttributeType<'static>
+) -> Result<(), AnnotationError> {
+    let _ = owner_type.as_object_type().get_owns_attribute(snapshot, type_manager, attribute_type.clone())
+        .map_err(|err| AnnotationError::ConceptRead { source: err })?
+        .ok_or_else(|| AnnotationError::FetchAttributesNotOwned {
+            var: owner.to_owned(),
+            owner: owner_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
+            attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned()
+        })?;
+    Ok(())
 }
 
 fn annotate_sub_fetch(

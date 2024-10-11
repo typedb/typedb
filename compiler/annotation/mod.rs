@@ -21,16 +21,22 @@ mod type_seeder;
 
 typedb_error!(
     pub AnnotationError(component = "Query annotation", prefix = "QUA") {
-        TypeInference(0, "Type inference error while compiling query annotations.", ( typedb_source : TypeInferenceError )),
-        PreambleTypeInference(1, "Type inference error while compiling query premable functions.", ( typedb_source : FunctionAnnotationError )),
-        ExpressionCompilation(2, "Error inferring correct expression types.", ( source : ExpressionCompileError )),
-        FetchEntry(3, "Error during type inference for fetch operation for key '{key}'.", key: String, (typedb_source : Box<AnnotationError> )),
-        FetchBlockFunctionInferenceError(4, "Error during type inference for fetch sub-query.", (typedb_source : FunctionAnnotationError )),
-        CouldNotDetermineValueTypeForReducerInput(10, "The value-type for the reducer input variable '{variable}' could not be determined.", variable: String),
-        ReducerInputVariableDidNotHaveSingleValueType(11, "The reducer input variable '{variable}' had multiple value-types.", variable: String),
-        UnsupportedValueTypeForReducer(12, "The input variable to the reducer'{reducer}({variable})' reducer had an unsupported value-type: '{value_type}'", reducer: String, variable: String, value_type: ValueTypeCategory),
-        UncomparableValueTypesForSortVariable(13, "The sort variable '{variable}' could return incomparable value-types '{category1}' & '{category2}'.", variable: String, category1: ValueTypeCategory, category2: ValueTypeCategory),
-        ReducerInputVariableIsList(14, "The input variable '{variable}' to the reducer '{reducer}' was a list.", reducer: String, variable: String),
+        Unimplemented(0, "Unimplemented: {description}", description: String),
+        TypeInference(1, "Type inference error while compiling query annotations.", ( typedb_source : TypeInferenceError )),
+        PreambleTypeInference(2, "Type inference error while compiling query premable functions.", ( typedb_source : FunctionAnnotationError )),
+        ExpressionCompilation(3, "Error inferring correct expression types.", ( source : ExpressionCompileError )),
+        FetchEntry(4, "Error during type inference for fetch operation for key '{key}'.", key: String, (typedb_source : Box<AnnotationError> )),
+        FetchBlockFunctionInferenceError(5, "Error during type inference for fetch sub-query.", (typedb_source : FunctionAnnotationError )),
+        ConceptRead(6, "Error while retrieving concept.", (source: ConceptReadError )),
+        FetchAttributeNotFound(7, "Fetching '${var}.{name}' failed since the attribute type is not defined.", var: String, name: String),
+        FetchSingleAttributeNotOwned(8, "Type checking '${var}.{attribute}' failed, since attribute '{attribute}' cannot be when '${var}' has type '{owner}'.", var: String, owner: String, attribute: String),
+        FetchAttributesNotOwned(9, "Type checking '[${var}.{attribute}]' failed, since attribute '{attribute}' cannot be when '${var}' has type '{owner}'.", var: String, owner: String, attribute: String),
+        AttributeFetchCardTooHigh(10, "Fetch attribute '${var}.{attribute}' must be wrapped in '[]', since this attribute can be owned more than 0 or 1 times when '$var' has type '{owner}', according to the schema's cardinality constraints.", var: String, owner: String, attribute: String),
+        CouldNotDetermineValueTypeForReducerInput(11, "The value-type for the reducer input variable '{variable}' could not be determined.", variable: String),
+        ReducerInputVariableDidNotHaveSingleValueType(12, "The reducer input variable '{variable}' had multiple value-types.", variable: String),
+        UnsupportedValueTypeForReducer(13, "The input variable to the reducer'{reducer}({variable})' reducer had an unsupported value-type: '{value_type}'", reducer: String, variable: String, value_type: ValueTypeCategory),
+        UncomparableValueTypesForSortVariable(14, "The sort variable '{variable}' could return incomparable value-types '{category1}' & '{category2}'.", variable: String, category1: ValueTypeCategory, category2: ValueTypeCategory),
+        ReducerInputVariableIsList(15, "The input variable '{variable}' to the reducer '{reducer}' was a list.", reducer: String, variable: String),
     }
 );
 

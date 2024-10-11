@@ -36,8 +36,8 @@ pub struct FetchSingleVar {
 
 #[derive(Debug, Clone)]
 pub struct FetchSingleAttribute {
-    pub(crate) variable: Variable,
-    pub(crate) attribute: String,
+    pub variable: Variable,
+    pub attribute: String,
 }
 
 #[derive(Debug, Clone)]
@@ -65,12 +65,12 @@ pub struct FetchListSubFetch {
 
 #[derive(Debug, Clone)]
 pub struct FetchListAttributeAsList {
-    pub(crate) variable: Variable,
-    pub(crate) attribute: String,
+    pub variable: Variable,
+    pub attribute: String,
 }
 
 #[derive(Debug, Clone)]
 pub struct FetchListAttributeFromList {
-    pub(crate) variable: Variable,
-    pub(crate) attribute: String,
+    pub variable: Variable,
+    pub attribute: String,
 }

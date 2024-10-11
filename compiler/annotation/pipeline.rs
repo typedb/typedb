@@ -136,6 +136,7 @@ pub(crate) fn annotate_stages_and_fetch(
                 fetch,
                 snapshot,
                 type_manager,
+                variable_registry,
                 parameters,
                 schema_function_annotations,
                 annotated_preamble,
