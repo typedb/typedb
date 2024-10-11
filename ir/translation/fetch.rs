@@ -52,6 +52,7 @@ use crate::{
 };
 use crate::pipeline::fetch::{FetchListAttributeAsList, FetchListSubFetch};
 use crate::pipeline::function::Function;
+use crate::translation::literal::FromTypeQLLiteral;
 use crate::translation::pipeline::translate_pipeline_stages;
 
 pub(super) fn translate_fetch(
@@ -390,7 +391,7 @@ fn try_get_variable(
 }
 
 fn register_key(context: &mut TranslationContext, key: &StringLiteral) -> ParameterID {
-    context.parameters.register_fetch_key(key.value.to_owned())
+    context.parameters.register_fetch_key(String::from_typeql_literal(key).unwrap())
 }
 
 typedb_error!(

@@ -19,6 +19,7 @@ use ir::{
         FetchObjectEntries, FetchSingleAttribute, FetchSingleVar, FetchSome,
     },
 };
+use ir::pipeline::ParameterRegistry;
 use ir::translation::TranslationContext;
 use storage::snapshot::ReadableSnapshot;
 
@@ -76,6 +77,7 @@ pub(crate) fn annotate_fetch(
     fetch: FetchObject,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
+    parameters: &ParameterRegistry,
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
     local_functions: Option<&AnnotatedUnindexedFunctions>,
     input_type_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
@@ -85,6 +87,7 @@ pub(crate) fn annotate_fetch(
         fetch,
         snapshot,
         type_manager,
+        parameters,
         indexed_annotated_functions,
         local_functions,
         &input_type_annotations,
@@ -97,6 +100,7 @@ fn annotate_object(
     object: FetchObject,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
+    parameters: &ParameterRegistry,
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
     local_functions: Option<&AnnotatedUnindexedFunctions>,
     input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
@@ -108,6 +112,7 @@ fn annotate_object(
                 entries,
                 snapshot,
                 type_manager,
+                parameters,
                 indexed_annotated_functions,
                 local_functions,
                 input_type_annotations,
@@ -123,6 +128,7 @@ fn annotated_object_entries(
     entries: FetchObjectEntries,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
+    parameters: &ParameterRegistry,
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
     local_functions: Option<&AnnotatedUnindexedFunctions>,
     input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
@@ -134,11 +140,16 @@ fn annotated_object_entries(
             value,
             snapshot,
             type_manager,
+            parameters,
             indexed_annotated_functions,
             local_functions,
             input_type_annotations,
             input_value_type_annotations,
-        )?;
+        )
+            .map_err(|err| AnnotationError::FetchEntry {
+                key: parameters.fetch_key(key).unwrap().clone(),
+                typedb_source: Box::new(err)
+            })?;
         annotated_entries.insert(key, annotated_value);
     }
     Ok(AnnotatedFetchObjectEntries { entries: annotated_entries })
@@ -148,6 +159,7 @@ fn annotate_some(
     some: FetchSome,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
+    parameters: &ParameterRegistry,
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
     local_functions: Option<&AnnotatedUnindexedFunctions>,
     input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
@@ -174,6 +186,7 @@ fn annotate_some(
                 *object,
                 snapshot,
                 type_manager,
+                parameters,
                 indexed_annotated_functions,
                 local_functions,
                 input_type_annotations,

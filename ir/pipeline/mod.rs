@@ -280,4 +280,8 @@ impl ParameterRegistry {
     pub fn value_unchecked(&self, id: ParameterID) -> &Value<'static> {
         self.value_registry.get(&id).unwrap()
     }
+
+    pub fn fetch_key(&self, id: ParameterID) -> Option<&String> {
+        self.fetch_key_registry.get(&id)
+    }
 }
