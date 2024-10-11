@@ -320,12 +320,12 @@ fn annotate_stage(
             let mut reduce_instructions = Vec::with_capacity(reduce.assigned_reductions.len());
             for (assigned, reducer) in &reduce.assigned_reductions {
                 let typed_reduce = resolve_reducer_by_value_type(
-                    reducer,
-                    running_variable_annotations,
-                    running_value_variable_assigned_types,
                     snapshot,
                     type_manager,
                     variable_registry,
+                    reducer,
+                    running_variable_annotations,
+                    running_value_variable_assigned_types,
                 )?;
                 running_value_variable_assigned_types
                     .insert(assigned.clone(), ExpressionValueType::Single(typed_reduce.output_type().clone()));
@@ -375,12 +375,12 @@ pub fn validate_sort_variables_comparable(
 }
 
 pub fn resolve_reducer_by_value_type(
-    reducer: &Reducer,
-    variable_annotations: &mut BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    assigned_value_types: &mut BTreeMap<Variable, ExpressionValueType>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
+    reducer: &Reducer,
+    variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    assigned_value_types: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<ReduceInstruction<Variable>, AnnotationError> {
     match reducer {
         Reducer::Count => Ok(ReduceInstruction::Count),
@@ -408,8 +408,8 @@ pub fn resolve_reducer_by_value_type(
 fn determine_value_type_for_reducer(
     reducer: &Reducer,
     variable: &Variable,
-    variable_annotations: &mut BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    assigned_value_types: &mut BTreeMap<Variable, ExpressionValueType>,
+    variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    assigned_value_types: &BTreeMap<Variable, ExpressionValueType>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,

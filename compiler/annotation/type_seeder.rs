@@ -675,7 +675,7 @@ impl UnaryConstraint for FunctionCallBinding<Variable> {
         graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
         if let Some(annotated_function) = seeder.get_annotated_function(self.function_call().function_id()) {
-            for (assigned_variable, return_annotation) in zip(self.assigned(), &annotated_function.return_annotations) {
+            for (assigned_variable, return_annotation) in zip(self.assigned(), annotated_function.return_.annotations().into_iter()) {
                 if let FunctionParameterAnnotation::Concept(types) = return_annotation {
                     graph_vertices.add_or_intersect(assigned_variable, Cow::Borrowed(types));
                 }
