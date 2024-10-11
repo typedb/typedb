@@ -1362,8 +1362,20 @@ _Going forward, we always work with valid patterns_
 
 #### **Anonymous variables**
 
-* _Anon vars_: anon vars start with `$_`. They behave like normal variables, but leave the variables name implicit and are automatically discarded (see "Deselect") at the end of the pipeline stage.
-  * _Remark_: Anon vars can be both **tvar**s and **evar**s
+* _Anon vars_: anon vars start with `$_`. They behave like normal variables, but leave the variables name implicit and are automatically discarded and results of the pattern they appear in are deduplicated. In other words:
+```
+...                   // incoming stream with var $a, $b, $c
+match <PATT>          // binds $x, $y, $z, $_1
+```
+is equivalent to 
+```
+...                   // incoming stream with variables $a, $b, $c
+match <PATT>          // binds $x, $y, $z, $anon_var_1
+deselect $anon_var_1; // equivalent to "select $a, $b, $c, $x, $y, $z;"
+distinct $x, $y, $z;  // note: variables $a, $b, $c are not deduplicated!
+```
+
+* _Remark_: Anon vars can be both **tvar**s and **evar**s
 
 
 ### (Theory) Typed concept rows
