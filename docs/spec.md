@@ -1945,7 +1945,7 @@ _System property_
 
 * _Output crows_: For each `r`: 
   * replace all patterns in `PATT` with concepts from `r`. 
-  * Compute the stream of answer `{ r' }`. 
+  * Compute the **set** of answers `{ r' }`. 
   * The final output stream will be `{ (r,r') }`.
 
 
