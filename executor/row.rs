@@ -10,7 +10,7 @@ use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
 use lending_iterator::higher_order::Hkt;
 
-#[derive(Debug)]
+#[derive(Debug, Hash, PartialEq, Eq)]
 pub struct Row<'a> {
     row: &'a mut [VariableValue<'static>],
     multiplicity: &'a mut u64,
@@ -76,7 +76,7 @@ impl<'a> fmt::Display for Row<'a> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct MaybeOwnedRow<'a> {
     row: Cow<'a, [VariableValue<'static>]>,
     multiplicity: Cow<'a, u64>,
@@ -105,16 +105,12 @@ impl<'a> MaybeOwnedRow<'a> {
         Self { row: Cow::Owned(row), multiplicity: Cow::Owned(multiplicity) }
     }
 
-    pub fn len(&self) -> usize {
-        self.row.len()
-    }
-
     pub fn get(&self, position: VariablePosition) -> &VariableValue<'_> {
         &self.row[position.as_usize()]
     }
 
     pub fn multiplicity(&self) -> u64 {
-        *self.multiplicity.as_ref()
+        *self.multiplicity
     }
 
     pub fn row(&self) -> &[VariableValue<'static>] {
@@ -132,16 +128,6 @@ impl<'a> MaybeOwnedRow<'a> {
 
     pub fn into_owned_parts(self) -> (Vec<VariableValue<'static>>, u64) {
         (self.row.into_owned(), self.multiplicity.into_owned())
-    }
-
-    pub fn as_mut_ref(&mut self) -> Row<'_> {
-        match &mut self.row {
-            Cow::Borrowed(_) => panic!("Cannot get mutable access to Borrowed row."),
-            Cow::Owned(row) => match &mut self.multiplicity {
-                Cow::Borrowed(_) => unreachable!("Row and multiplicity should always have the same ownership."),
-                Cow::Owned(multiplicity) => Row::new(row.as_mut_slice(), multiplicity),
-            },
-        }
     }
 }
 
