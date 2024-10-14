@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use typeql::{
     expression::{FunctionCall, FunctionName},
@@ -31,8 +31,7 @@ use crate::{
     pipeline::{
         block::{Block, BlockBuilder, BlockBuilderContext},
         fetch::{
-            FetchListAttributeFromList, FetchObject, FetchObjectAttributes, FetchObjectEntries, FetchSingleAttribute,
-            FetchSingleVar, FetchSome,
+            FetchListAttributeFromList, FetchObject, FetchSingleAttribute, FetchSome,
         },
         function::{FunctionBody, ReturnOperation},
         function_signature::FunctionSignatureIndex,
@@ -80,11 +79,11 @@ fn translate_fetch_object(
                 let key_id = register_key(parent_context, key);
                 object.insert(key_id, translate_fetch_some(snapshot, parent_context, function_index, value)?);
             }
-            Ok(FetchObject::Entries(FetchObjectEntries { entries: object }))
+            Ok(FetchObject::Entries(object))
         }
         TypeQLFetchObjectBody::AttributesAll(variable) => {
             let var = try_get_variable(parent_context, &variable)?;
-            Ok(FetchObject::Attributes(FetchObjectAttributes { variable: var }))
+            Ok(FetchObject::Attributes(var))
         }
     }
 }
@@ -145,8 +144,10 @@ fn translate_fetch_list(
             let mut local_context = parent_context.clone();
             let (translated_stages, subfetch) = translate_pipeline_stages(snapshot, function_index, &mut local_context, &stages)
                 .map_err(|err| FetchRepresentationError::SubFetchRepresentation { typedb_source: Box::new(err) })?;
+            let input_variables = find_sub_fetch_inputs(parent_context, &translated_stages, subfetch.as_ref());
             Ok(FetchSome::ListSubFetch(FetchListSubFetch {
                 context: local_context,
+                input_variables,
                 stages: translated_stages,
                 fetch: subfetch.unwrap(),
             }))
@@ -193,7 +194,7 @@ fn translate_fetch_single(
             match &expression {
                 Expression::Variable(variable) => {
                     let var = try_get_variable(parent_context, variable)?;
-                    Ok(FetchSome::SingleVar(FetchSingleVar { variable: var }))
+                    Ok(FetchSome::SingleVar(var))
                 }
                 Expression::ListIndex(_) | Expression::Value(_) | Expression::Operation(_) | Expression::Paren(_) => {
                     translate_inline_expression_single(parent_context, function_index, &expression)
@@ -366,12 +367,44 @@ fn find_function_body_arguments(
     parent_context: &TranslationContext,
     function_body: &FunctionBody,
 ) -> Vec<Variable> {
-    let mut arguments = Vec::new();
+    let mut arguments = HashSet::new();
+    // Note: we rely on the fact that named variables that are "the same" become the same Variable, and the logic of
+    //       selecting variables in/out is handled by the translation of the stages
     for stage in function_body.stages() {
         for var in stage.variables() {
             if parent_context.variable_registry.has_variable_as_named(&var) {
-                arguments.push(var)
+                arguments.insert(var);
             }
+        }
+    }
+    for var in function_body.return_operation.variables().iter() {
+        if parent_context.variable_registry.has_variable_as_named(var) {
+            arguments.insert(*var);
+        }
+    }
+    Vec::from_iter(arguments.into_iter())
+}
+
+fn find_sub_fetch_inputs(
+    parent_context: &TranslationContext,
+    stages: &[TranslatedStage],
+    fetch: Option<&FetchObject>,
+) -> HashSet<Variable> {
+    let mut arguments = HashSet::new();
+    // Note: we rely on the fact that named variables that are "the same" become the same Variable, and the logic of
+    //       selecting variables in/out is handled by the translation of the stages
+    for stage in stages {
+        for var in stage.variables() {
+            if parent_context.variable_registry.has_variable_as_named(&var) {
+                arguments.insert(var);
+            }
+        }
+    }
+    let mut fetch_vars = HashSet::new();
+    fetch.map(|clause| clause.record_variables_recursive(&mut fetch_vars));
+    for var in fetch_vars {
+        if parent_context.variable_registry.has_variable_as_named(&var) {
+            arguments.insert(var);
         }
     }
     arguments

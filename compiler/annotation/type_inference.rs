@@ -1175,7 +1175,7 @@ pub mod tests {
                 None,
                 &translation_context.variable_registry,
             )
-            .create_graph(block.scope_context(), &BTreeMap::new(), block.conjunction())
+            .create_graph(block.block_context(), &BTreeMap::new(), block.conjunction())
             .unwrap();
             crate::annotation::match_inference::prune_types(&mut graph);
 

@@ -5,6 +5,7 @@
  */
 
 use std::{collections::HashMap, sync::Arc};
+use std::collections::HashSet;
 
 use concept::thing::statistics::Statistics;
 use ir::pipeline::VariableRegistry;
@@ -27,11 +28,11 @@ pub struct ExecutableFunction {
 
 pub(crate) fn compile_function(
     statistics: &Statistics,
-    variable_registry: Arc<VariableRegistry>,
     function: AnnotatedFunction,
 ) -> Result<ExecutableFunction, ExecutableCompilationError> {
-    let AnnotatedFunction { stages, return_ } = function;
-    let mut executable_stages = compile_pipeline_stages(statistics, variable_registry.clone(), stages)?;
+    let AnnotatedFunction { variable_registry, arguments, stages, return_ } = function;
+    let arguments_set = HashSet::from_iter(arguments.into_iter());
+    let mut executable_stages = compile_pipeline_stages(statistics, Arc::new(variable_registry), stages, arguments_set)?;
     let returns = compile_return_operation(&mut executable_stages, return_)?;
     Ok(ExecutableFunction { executable_stages, returns })
 }

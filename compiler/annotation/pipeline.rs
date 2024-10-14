@@ -140,8 +140,8 @@ pub(crate) fn annotate_stages_and_fetch(
                 parameters,
                 schema_function_annotations,
                 annotated_preamble,
-                running_variable_annotations,
-                running_value_variable_types,
+                &running_variable_annotations,
+                &running_value_variable_types,
             );
             Some(annotated?)
         }

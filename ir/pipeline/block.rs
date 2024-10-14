@@ -34,7 +34,7 @@ impl Block {
         &self.conjunction
     }
 
-    pub fn scope_context(&self) -> &BlockContext {
+    pub fn block_context(&self) -> &BlockContext {
         &self.block_context
     }
 
@@ -137,7 +137,7 @@ impl BlockContext {
         }
     }
 
-    fn get_scope(&self, var: &Variable) -> Option<ScopeId> {
+    pub fn get_scope(&self, var: &Variable) -> Option<ScopeId> {
         self.variable_declaration.get(var).cloned()
     }
 
@@ -166,7 +166,9 @@ impl BlockContext {
     }
 
     pub fn is_parent_scope(&self, scope: ScopeId, child: ScopeId) -> bool {
-        self.scope_parents.get(&child).is_some_and(|&parent| scope == parent || self.is_parent_scope(scope, parent))
+        self.scope_parents.get(&child).is_some_and(|&parent| {
+            scope == parent || self.is_parent_scope(scope, parent)
+        })
     }
 
     pub fn is_visible_child(&self, child: ScopeId, candidate: ScopeId) -> bool {
@@ -201,11 +203,11 @@ pub struct BlockBuilderContext<'a> {
 impl<'a> BlockBuilderContext<'a> {
     pub(crate) fn new(
         variable_registry: &'a mut VariableRegistry,
-        input_variable_names: &'a mut HashMap<String, Variable>,
+        available_input_names: &'a mut HashMap<String, Variable>,
         parameters: &'a mut ParameterRegistry,
     ) -> BlockBuilderContext<'a> {
         let mut block_context = BlockContext::new();
-        input_variable_names.values().for_each(|v| {
+        available_input_names.values().for_each(|v| {
             block_context.add_input_declaration(*v);
         });
         block_context.set_scope_parent(ScopeId::ROOT, ScopeId::INPUT);
@@ -213,7 +215,7 @@ impl<'a> BlockBuilderContext<'a> {
         block_context.set_scope_transparency(ScopeId::INPUT, ScopeTransparency::Transparent);
         Self {
             variable_registry,
-            variable_names_index: input_variable_names,
+            variable_names_index: available_input_names,
             parameters,
             scope_id_allocator: 2, // `0`, `1` are reserved for INPUT, ROOT respectively.
             block_context,

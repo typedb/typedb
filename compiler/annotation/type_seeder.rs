@@ -1506,7 +1506,7 @@ pub mod tests {
             None,
             &translation_context.variable_registry,
         );
-        let graph = seeder.create_graph(block.scope_context(), &BTreeMap::new(), conjunction).unwrap();
+        let graph = seeder.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
         assert_eq!(expected_graph, graph);
     }
 
@@ -1566,7 +1566,7 @@ pub mod tests {
             None,
             &translation_context.variable_registry,
         );
-        let graph = seeder.create_graph(block.scope_context(), &BTreeMap::new(), conjunction).unwrap();
+        let graph = seeder.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
         if expected_graph != graph {
             // We need this because of non-determinism
             expected_graph.vertices.get_mut(&var_animal.into()).unwrap().insert(type_fears.clone());
@@ -1640,7 +1640,7 @@ pub mod tests {
                 None,
                 &translation_context.variable_registry,
             );
-            let graph = seeder.create_graph(block.scope_context(), &BTreeMap::new(), conjunction).unwrap();
+            let graph = seeder.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
             assert_eq!(expected_graph.vertices, graph.vertices);
             assert_eq!(expected_graph, graph);
         }

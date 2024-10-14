@@ -8,7 +8,7 @@ use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     sync::Arc,
 };
-
+use std::collections::HashSet;
 
 use answer::{Type, variable::Variable};
 use concept::type_::{Capability, OwnerAPI, TypeAPI};
@@ -19,8 +19,8 @@ use encoding::value::label::Label;
 use ir::{
     pattern::ParameterID,
     pipeline::fetch::{
-        FetchListAttributeAsList, FetchListAttributeFromList, FetchListSubFetch, FetchObject, FetchObjectAttributes,
-        FetchObjectEntries, FetchSingleVar, FetchSome,
+        FetchListAttributeAsList, FetchListAttributeFromList, FetchListSubFetch, FetchObject,
+        FetchSome,
     },
 };
 use ir::pipeline::{ParameterRegistry, VariableRegistry};
@@ -41,15 +41,12 @@ use crate::annotation::pipeline::annotate_stages_and_fetch;
 
 #[derive(Debug, Clone)]
 pub struct AnnotatedFetch {
-    input_type_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    input_value_type_annotations: BTreeMap<Variable, ExpressionValueType>,
-
-    object: AnnotatedFetchObject,
+    pub object: AnnotatedFetchObject,
 }
 
 #[derive(Debug, Clone)]
 pub enum AnnotatedFetchSome {
-    SingleVar(FetchSingleVar),
+    SingleVar(Variable),
     SingleAttribute(Variable, AttributeType<'static>),
     SingleFunction(AnnotatedFunction),
 
@@ -63,19 +60,16 @@ pub enum AnnotatedFetchSome {
 
 #[derive(Debug, Clone)]
 pub enum AnnotatedFetchObject {
-    Entries(AnnotatedFetchObjectEntries),
-    Attributes(FetchObjectAttributes),
-}
-
-#[derive(Debug, Clone)]
-pub struct AnnotatedFetchObjectEntries {
-    pub(crate) entries: HashMap<ParameterID, AnnotatedFetchSome>,
+    Entries(HashMap<ParameterID, AnnotatedFetchSome>),
+    Attributes(Variable),
 }
 
 #[derive(Debug, Clone)]
 pub struct AnnotatedFetchListSubFetch {
-    stages: Vec<AnnotatedStage>,
-    fetch: AnnotatedFetch,
+    pub variable_registry: VariableRegistry,
+    pub input_variables: HashSet<Variable>,
+    pub stages: Vec<AnnotatedStage>,
+    pub fetch: AnnotatedFetch,
 }
 
 pub(crate) fn annotate_fetch(
@@ -86,8 +80,8 @@ pub(crate) fn annotate_fetch(
     parameters: &ParameterRegistry,
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
     local_functions: Option<&AnnotatedUnindexedFunctions>,
-    input_type_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    input_value_type_annotations: BTreeMap<Variable, ExpressionValueType>,
+    input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<AnnotatedFetch, AnnotationError> {
     let object = annotate_object(
         fetch,
@@ -97,10 +91,10 @@ pub(crate) fn annotate_fetch(
         parameters,
         indexed_annotated_functions,
         local_functions,
-        &input_type_annotations,
-        &input_value_type_annotations,
+        input_type_annotations,
+        input_value_type_annotations,
     )?;
-    Ok(AnnotatedFetch { input_type_annotations, input_value_type_annotations, object })
+    Ok(AnnotatedFetch { object })
 }
 
 fn annotate_object(
@@ -134,7 +128,7 @@ fn annotate_object(
 }
 
 fn annotated_object_entries(
-    entries: FetchObjectEntries,
+    entries: HashMap<ParameterID, FetchSome>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
@@ -143,9 +137,9 @@ fn annotated_object_entries(
     local_functions: Option<&AnnotatedUnindexedFunctions>,
     input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
-) -> Result<AnnotatedFetchObjectEntries, AnnotationError> {
+) -> Result<HashMap<ParameterID, AnnotatedFetchSome>, AnnotationError> {
     let mut annotated_entries = HashMap::new();
-    for (key, value) in entries.entries.into_iter() {
+    for (key, value) in entries.into_iter() {
         let annotated_value = annotate_some(
             value,
             snapshot,
@@ -163,7 +157,7 @@ fn annotated_object_entries(
             })?;
         annotated_entries.insert(key, annotated_value);
     }
-    Ok(AnnotatedFetchObjectEntries { entries: annotated_entries })
+    Ok(annotated_entries)
 }
 
 fn annotate_some(
@@ -324,7 +318,7 @@ fn annotate_sub_fetch(
     input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<AnnotatedFetchListSubFetch, AnnotationError> {
-    let FetchListSubFetch { context, stages, fetch } = sub_fetch;
+    let FetchListSubFetch { context, input_variables, stages, fetch } = sub_fetch;
     let TranslationContext { mut variable_registry, parameters, .. } = context;
     let (annotated_stages, annotated_fetch) = annotate_stages_and_fetch(
         snapshot,
@@ -338,5 +332,5 @@ fn annotate_sub_fetch(
         input_type_annotations.clone(),
         input_value_type_annotations.clone(),
     )?;
-    Ok(AnnotatedFetchListSubFetch { stages: annotated_stages, fetch: annotated_fetch.unwrap()})
+    Ok(AnnotatedFetchListSubFetch { variable_registry, input_variables, stages: annotated_stages, fetch: annotated_fetch.unwrap()})
 }

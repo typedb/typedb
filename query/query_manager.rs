@@ -5,6 +5,7 @@
  */
 
 use std::{collections::HashMap, sync::Arc};
+use std::collections::HashSet;
 
 use compiler::{
     annotation::pipeline::{annotate_pipeline, AnnotatedPipeline},
@@ -94,15 +95,17 @@ impl QueryManager {
 
         // 3: Compile
         let variable_registry = Arc::new(variable_registry);
-        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch, stages_variable_positions } =
+        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch } =
             compile_pipeline(
                 thing_manager.statistics(),
                 variable_registry.clone(),
                 annotated_preamble,
                 annotated_stages,
                 annotated_fetch,
+                HashSet::with_capacity(0)
             )
             .map_err(|err| QueryError::ExecutableCompilation { typedb_source: err })?;
+        let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
 
         let context = ExecutionContext::new(snapshot, thing_manager, Arc::new(value_parameters));
         let mut last_stage = ReadPipelineStage::Initial(InitialStage::new(context));
@@ -146,7 +149,7 @@ impl QueryManager {
             }
         }
 
-        let named_outputs = stages_variable_positions
+        let named_outputs = output_variable_positions
             .iter()
             .filter_map(|(variable, &position)| {
                 variable_registry.variable_names().get(variable).map(|name| (name.clone(), position))
@@ -200,7 +203,7 @@ impl QueryManager {
             Err(err) => return Err((snapshot, QueryError::Annotation { typedb_source: err })),
         };
 
-        // // 3: Compile
+        // 3: Compile
         let variable_registry = Arc::new(variable_registry);
         let executable_pipeline = compile_pipeline(
             thing_manager.statistics(),
@@ -208,16 +211,17 @@ impl QueryManager {
             annotated_preamble,
             annotated_stages,
             annotated_fetch,
+            HashSet::with_capacity(0)
         );
         let ExecutablePipeline {
             executable_functions,
             executable_stages,
             executable_fetch,
-            stages_variable_positions: output_variable_positions,
         } = match executable_pipeline {
             Ok(executable) => executable,
             Err(err) => return Err((snapshot, QueryError::ExecutableCompilation { typedb_source: err })),
         };
+        let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
 
         let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::new(value_parameters));
         let mut previous_stage = WritePipelineStage::Initial(InitialStage::new(context));

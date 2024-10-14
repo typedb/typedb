@@ -34,14 +34,27 @@ pub enum Reducer {
 impl Reducer {
     pub fn name(&self) -> String {
         match self {
-            Reducer::Count => typeql::token::ReduceOperator::Count.to_string(),
-            Reducer::CountVar(_) => typeql::token::ReduceOperator::Count.to_string(),
-            Reducer::Sum(_) => typeql::token::ReduceOperator::Sum.to_string(),
-            Reducer::Max(_) => typeql::token::ReduceOperator::Max.to_string(),
-            Reducer::Mean(_) => typeql::token::ReduceOperator::Mean.to_string(),
-            Reducer::Median(_) => typeql::token::ReduceOperator::Median.to_string(),
-            Reducer::Min(_) => typeql::token::ReduceOperator::Min.to_string(),
-            Reducer::Std(_) => typeql::token::ReduceOperator::Std.to_string(),
+            Self::Count => typeql::token::ReduceOperator::Count.to_string(),
+            Self::CountVar(_) => typeql::token::ReduceOperator::Count.to_string(),
+            Self::Sum(_) => typeql::token::ReduceOperator::Sum.to_string(),
+            Self::Max(_) => typeql::token::ReduceOperator::Max.to_string(),
+            Self::Mean(_) => typeql::token::ReduceOperator::Mean.to_string(),
+            Self::Median(_) => typeql::token::ReduceOperator::Median.to_string(),
+            Self::Min(_) => typeql::token::ReduceOperator::Min.to_string(),
+            Self::Std(_) => typeql::token::ReduceOperator::Std.to_string(),
+        }
+    }
+
+    pub fn variable(&self) -> Option<Variable> {
+        match self {
+            Self::Count => None,
+            Self::CountVar(var)
+            | Self::Sum(var)
+            | Self::Max(var)
+            | Self::Mean(var)
+            | Self::Median(var)
+            | Self::Min(var)
+            | Self::Std(var) => Some(*var),
         }
     }
 }

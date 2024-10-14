@@ -125,7 +125,7 @@ pub fn infer_types<'graph>(
     graph.collect_type_annotations(&mut vertex_annotations, &mut constraint_annotations);
     let type_annotations = TypeAnnotations::new(vertex_annotations, constraint_annotations);
     debug_assert!(block
-        .scope_context()
+        .block_context()
         .referenced_variables() // FIXME vertices?
         .all(|var| type_annotations.vertex_annotations_of(&Vertex::Variable(var)).is_some()));
     Ok(type_annotations)
@@ -142,7 +142,7 @@ pub(crate) fn compute_type_inference_graph<'graph>(
 ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
     let mut graph =
         TypeGraphSeedingContext::new(snapshot, type_manager, schema_functions, local_function_cache, variable_registry)
-            .create_graph(block.scope_context(), previous_stage_variable_annotations, block.conjunction())?;
+            .create_graph(block.block_context(), previous_stage_variable_annotations, block.conjunction())?;
     prune_types(&mut graph);
     // TODO: Throw error when any set becomes empty happens, rather than waiting for the it to propagate
     if graph.vertices.iter().any(|(_, types)| types.is_empty()) {

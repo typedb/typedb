@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::borrow::Cow;
 use answer::variable::Variable;
 use typeql::{schema::definable::function::SingleSelector, TypeRefAny};
 
@@ -79,6 +80,18 @@ impl ReturnOperation {
         match self {
             Self::Stream(_) => true,
             Self::ReduceReducer(_) | Self::Single(_, _) | Self::ReduceCheck() => false,
+        }
+    }
+
+    pub(crate) fn variables<'a>(&'a self) -> Cow<'a, [Variable]> {
+        match self {
+            ReturnOperation::Stream(vars) => Cow::Borrowed(vars),
+            ReturnOperation::Single(_, vars) => Cow::Borrowed(vars),
+            ReturnOperation::ReduceCheck() => Cow::Owned(vec![]),
+            ReturnOperation::ReduceReducer(reducers) => {
+                let vars: Vec<_> = reducers.iter().map(|reducer| reducer.variable()).flatten().collect();
+                Cow::Owned(vars)
+            }
         }
     }
 }

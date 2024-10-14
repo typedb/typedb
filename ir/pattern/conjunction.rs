@@ -44,9 +44,11 @@ impl Conjunction {
     pub fn captured_variables<'a>(&self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
         let self_scope = self.scope_id;
         block_context
-            .get_variable_scopes()
-            .filter(move |&(_, scope)| block_context.is_parent_scope(scope, self_scope))
-            .map(|(var, _)| var)
+            .referenced_variables()
+            .filter(move |var| block_context.is_parent_scope(block_context.get_scope(var).unwrap() , self_scope))
+            .map(|var| {
+                var
+            })
     }
 
     pub fn declared_variables<'a>(&self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {

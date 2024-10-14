@@ -43,6 +43,8 @@ pub enum FunctionParameterAnnotation {
 
 #[derive(Debug, Clone)]
 pub struct AnnotatedFunction {
+    pub variable_registry: VariableRegistry,
+    pub arguments: Vec<Variable>,
     pub stages: Vec<AnnotatedStage>,
     pub return_: AnnotatedFunctionReturn,
 }
@@ -225,7 +227,7 @@ pub(crate) fn annotate_function(
         &running_variable_types,
         &running_value_types
     )?;
-    Ok(AnnotatedFunction { stages, return_ })
+    Ok(AnnotatedFunction { variable_registry: context.variable_registry.clone(),  arguments: arguments.clone(), stages, return_ })
 }
 
 fn annotate_arguments(
