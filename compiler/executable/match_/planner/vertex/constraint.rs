@@ -13,9 +13,14 @@ use itertools::Itertools;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
-    executable::match_::planner::{
-        plan::{Graph, VariableVertexId, VertexId},
-        vertex::{Costed, Direction, ElementCost, Input, ADVANCE_ITERATOR_RELATIVE_COST, OPEN_ITERATOR_RELATIVE_COST},
+    executable::match_::{
+        instructions::{type_::TypeListInstruction, ConstraintInstruction},
+        planner::{
+            plan::{Graph, VariableVertexId, VertexId},
+            vertex::{
+                Costed, Direction, ElementCost, Input, ADVANCE_ITERATOR_RELATIVE_COST, OPEN_ITERATOR_RELATIVE_COST,
+            },
+        },
     },
 };
 
@@ -84,11 +89,23 @@ impl Costed for ConstraintVertex<'_> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub(crate) enum TypeListConstraint<'a> {
     Label(&'a Label<Variable>),
     RoleName(&'a RoleName<Variable>),
     Kind(&'a Kind<Variable>),
+}
+
+impl<'a> TypeListConstraint<'a> {
+    pub(crate) fn var(self) -> Variable {
+        match self {
+            TypeListConstraint::Label(label) => label.type_(),
+            TypeListConstraint::RoleName(role_name) => role_name.type_(),
+            TypeListConstraint::Kind(kind) => kind.type_(),
+        }
+        .as_variable()
+        .unwrap()
+    }
 }
 
 #[derive(Clone)]
@@ -150,6 +167,11 @@ impl<'a> TypeListPlanner<'a> {
 
     pub(crate) fn constraint(&self) -> &TypeListConstraint<'a> {
         &self.constraint
+    }
+
+    pub(crate) fn lower(&self, type_annotations: &TypeAnnotations) -> ConstraintInstruction<Variable> {
+        let var = self.constraint.var();
+        ConstraintInstruction::TypeList(TypeListInstruction::new(var, type_annotations))
     }
 }
 
