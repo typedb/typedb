@@ -269,11 +269,11 @@ impl MatchExecutableBuilder {
         let named_variables = self
             .index
             .iter()
-            .filter_map(|(var, pos)| variable_registry.variable_names().get(var).map(|_| pos.clone()))
+            .filter_map(|(var, &pos)| variable_registry.variable_names().get(var).and(Some(pos)))
             .collect();
         let steps = self.steps.into_iter().map(|builder| builder.finish(&self.index, &named_variables)).collect();
         let variable_positions_index =
             self.outputs.iter().sorted_by_key(|(k, _)| k.as_usize()).map(|(_, &v)| v).collect();
-        MatchExecutable::new(steps, variable_registry, self.index.clone(), variable_positions_index)
+        MatchExecutable::new(steps, self.index.clone(), variable_positions_index)
     }
 }
