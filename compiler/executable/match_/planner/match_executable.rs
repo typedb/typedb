@@ -4,18 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
+use std::collections::{HashMap, HashSet};
 
 use answer::variable::Variable;
-use ir::{
-    pattern::{
-        constraint::{Constraint, ExpressionBinding},
-        IrID,
-    },
-    pipeline::VariableRegistry,
+use ir::pattern::{
+    constraint::{Constraint, ExpressionBinding},
+    IrID,
 };
 
 use crate::{
@@ -74,7 +68,7 @@ impl ExecutionStep {
             ExecutionStep::UnsortedJoin(step) => &step.selected_variables,
             ExecutionStep::Assignment(_) => todo!(),
             ExecutionStep::Check(_) => &[],
-            ExecutionStep::Disjunction(_) => todo!(),
+            ExecutionStep::Disjunction(step) => &step.selected_variables,
             ExecutionStep::Negation(_) => &[],
             ExecutionStep::Optional(_) => todo!(),
         }
@@ -97,9 +91,9 @@ impl ExecutionStep {
             ExecutionStep::Intersection(step) => step.output_width(),
             ExecutionStep::UnsortedJoin(step) => step.output_width(),
             ExecutionStep::Assignment(step) => step.output_width(),
-            ExecutionStep::Check(_) => 0, // FIXME is this correct?
+            ExecutionStep::Check(step) => step.output_width(),
             ExecutionStep::Disjunction(step) => step.output_width(),
-            ExecutionStep::Negation(_) => 0,
+            ExecutionStep::Negation(step) => step.output_width(),
             ExecutionStep::Optional(_) => todo!(),
         }
     }
@@ -230,17 +224,23 @@ impl AssignmentStep {
 #[derive(Clone, Debug)]
 pub struct CheckStep {
     pub check_instructions: Vec<CheckInstruction<VariablePosition>>,
+    pub output_width: u32,
 }
 
 impl CheckStep {
-    pub fn new(check_instructions: Vec<CheckInstruction<VariablePosition>>) -> Self {
-        Self { check_instructions }
+    pub fn new(check_instructions: Vec<CheckInstruction<VariablePosition>>, output_width: u32) -> Self {
+        Self { check_instructions, output_width }
+    }
+
+    pub fn output_width(&self) -> u32 {
+        self.output_width
     }
 }
 
 #[derive(Clone, Debug)]
 pub struct DisjunctionStep {
     pub branches: Vec<MatchExecutable>,
+    pub selected_variables: Vec<VariablePosition>,
     pub output_width: u32,
 }
 
@@ -253,6 +253,17 @@ impl DisjunctionStep {
 #[derive(Clone, Debug)]
 pub struct NegationStep {
     pub negation: MatchExecutable,
+    pub output_width: u32,
+}
+
+impl NegationStep {
+    pub fn new(negation: MatchExecutable, output_width: u32) -> Self {
+        Self { negation, output_width }
+    }
+
+    pub fn output_width(&self) -> u32 {
+        self.output_width
+    }
 }
 
 #[derive(Clone, Debug)]

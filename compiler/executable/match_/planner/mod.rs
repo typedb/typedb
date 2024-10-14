@@ -11,7 +11,10 @@ use std::{
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use ir::pipeline::{block::Block, VariableRegistry};
+use ir::{
+    pattern::ScopeId,
+    pipeline::{block::Block, VariableRegistry},
+};
 use itertools::Itertools;
 
 use crate::{
@@ -53,35 +56,55 @@ pub fn compile(
         expressions,
         statistics,
     )
-    .lower(input_variables.keys().copied(), input_variables, variable_registry)
+    .lower(
+        &block.scope_context().get_variable_scopes().map(|(var, _)| var).collect_vec(),
+        input_variables,
+        variable_registry,
+    )
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct IntersectionBuilder {
     sort_variable: Option<Variable>,
     instructions: Vec<ConstraintInstruction<VariablePosition>>,
+    selected_variables: Vec<Variable>,
     output_width: Option<u32>,
+}
+
+impl IntersectionBuilder {
+    fn new(selected_variables: Vec<Variable>) -> Self {
+        Self { sort_variable: None, instructions: Vec::new(), selected_variables, output_width: None }
+    }
 }
 
 #[derive(Debug, Default)]
 struct CheckBuilder {
     instructions: Vec<CheckInstruction<VariablePosition>>,
+    output_width: Option<u32>,
 }
 
 #[derive(Debug)]
 struct NegationBuilder {
     negation: MatchExecutable,
+    output_width: Option<u32>,
+}
+
+impl NegationBuilder {
+    fn new(negation: MatchExecutable) -> Self {
+        Self { negation, output_width: None }
+    }
 }
 
 #[derive(Debug)]
 struct DisjunctionBuilder {
     branches: Vec<MatchExecutable>,
+    selected_variables: Vec<Variable>,
     output_width: Option<u32>,
 }
 
 impl DisjunctionBuilder {
-    fn new(branches: Vec<MatchExecutable>) -> Self {
-        Self { branches, output_width: None }
+    fn new(branches: Vec<MatchExecutable>, selected_variables: Vec<Variable>) -> Self {
+        Self { branches, selected_variables, output_width: None }
     }
 }
 
@@ -100,21 +123,41 @@ impl StepBuilder {
         named_variables: &HashSet<VariablePosition>,
     ) -> ExecutionStep {
         match self {
-            Self::Intersection(IntersectionBuilder { sort_variable, instructions, output_width }) => {
+            Self::Intersection(IntersectionBuilder {
+                sort_variable,
+                selected_variables,
+                instructions,
+                output_width,
+            }) => {
                 let sort_variable = sort_variable.map(|var| index[&var]).unwrap();
                 ExecutionStep::Intersection(IntersectionStep::new(
                     sort_variable,
                     instructions,
-                    &(0..output_width.unwrap()).map(VariablePosition::new).collect_vec(),
+                    &selected_variables.into_iter().map(|var| index[&var]).collect_vec(),
                     named_variables,
                     output_width.unwrap(),
                 ))
             }
-            Self::Check(CheckBuilder { instructions }) => ExecutionStep::Check(CheckStep::new(instructions)),
-            Self::Negation(NegationBuilder { negation }) => ExecutionStep::Negation(NegationStep { negation }),
-            Self::Disjunction(DisjunctionBuilder { branches, output_width }) => {
-                ExecutionStep::Disjunction(DisjunctionStep { branches, output_width: output_width.unwrap() })
+            Self::Check(CheckBuilder { instructions, output_width }) => {
+                ExecutionStep::Check(CheckStep::new(instructions, output_width.unwrap()))
             }
+            Self::Negation(NegationBuilder { negation, output_width }) => {
+                ExecutionStep::Negation(NegationStep::new(negation, output_width.unwrap()))
+            }
+            Self::Disjunction(DisjunctionBuilder { branches, selected_variables, output_width }) => {
+                ExecutionStep::Disjunction(DisjunctionStep {
+                    branches,
+                    selected_variables: selected_variables.into_iter().map(|var| index[&var]).collect(),
+                    output_width: output_width.unwrap(),
+                })
+            }
+        }
+    }
+
+    fn as_intersection(&self) -> Option<&IntersectionBuilder> {
+        match self {
+            Self::Intersection(v) => Some(v),
+            _ => None,
         }
     }
 
@@ -151,9 +194,9 @@ impl StepBuilder {
     fn set_output_width(&mut self, position: u32) {
         match self {
             | StepBuilder::Intersection(IntersectionBuilder { output_width, .. })
-            | StepBuilder::Disjunction(DisjunctionBuilder { output_width, .. }) => *output_width = Some(position),
-            StepBuilder::Check(_) => (),
-            StepBuilder::Negation(_) => (),
+            | StepBuilder::Disjunction(DisjunctionBuilder { output_width, .. })
+            | StepBuilder::Check(CheckBuilder { output_width, .. })
+            | StepBuilder::Negation(NegationBuilder { output_width, .. }) => *output_width = Some(position),
         }
     }
 }
@@ -162,17 +205,27 @@ struct MatchExecutableBuilder {
     steps: Vec<StepBuilder>,
     current: Option<StepBuilder>,
     outputs: HashMap<VariablePosition, Variable>,
+    producers: HashMap<Variable, (usize, usize)>,
+    selected_variables: Vec<Variable>,
     index: HashMap<Variable, VariablePosition>,
     next_output: VariablePosition,
 }
 
 impl MatchExecutableBuilder {
-    fn with_assigned_positions(input_variables: &HashMap<Variable, VariablePosition>) -> Self {
+    fn new(input_variables: &HashMap<Variable, VariablePosition>, selected_variables: Vec<Variable>) -> Self {
         let index = input_variables.clone();
         let outputs = index.iter().map(|(&var, &pos)| (pos, var)).collect();
         let next_position = input_variables.values().max().map(|&pos| pos.position + 1).unwrap_or_default();
         let next_output = VariablePosition::new(next_position);
-        Self { steps: Vec::new(), current: None, outputs, index, next_output }
+        Self {
+            steps: Vec::new(),
+            current: None,
+            outputs,
+            producers: HashMap::new(),
+            selected_variables,
+            index,
+            next_output,
+        }
     }
 
     fn get_step_mut(&mut self, step: usize) -> Option<&mut StepBuilder> {
@@ -184,7 +237,7 @@ impl MatchExecutableBuilder {
         sort_variable: Variable,
         instruction: ConstraintInstruction<Variable>,
         outputs: impl IntoIterator<Item = Variable>,
-    ) -> (usize, usize) {
+    ) {
         if let Some(StepBuilder::Intersection(intersection_builder)) = &self.current {
             if let Some(current_sort) = intersection_builder.sort_variable {
                 if current_sort != sort_variable || instruction.is_input_variable(current_sort) {
@@ -195,19 +248,26 @@ impl MatchExecutableBuilder {
         if self.current.as_ref().is_some_and(|builder| !builder.is_intersection()) {
             self.finish_one();
         }
+
+        if self.current.is_none() {
+            self.current = Some(StepBuilder::Intersection(IntersectionBuilder::new(self.selected_variables.clone())))
+        }
+
+        let current = self.current.as_ref().unwrap().as_intersection().unwrap();
+
+        let producer_index = (self.steps.len(), current.instructions.len());
         for var in outputs {
             self.register_output(var);
+            self.producers.entry(var).or_insert(producer_index);
         }
-        if self.current.is_none() {
-            self.current = Some(StepBuilder::Intersection(IntersectionBuilder::default()))
-        }
+
         let current = self.current.as_mut().unwrap().as_intersection_mut().unwrap();
         current.sort_variable = Some(sort_variable);
         current.instructions.push(instruction.map(&self.index));
-        (self.steps.len(), current.instructions.len() - 1)
     }
 
-    fn push_check(&mut self, producer: Option<&(usize, usize)>, check: CheckInstruction<VariablePosition>) {
+    fn push_check(&mut self, variables: &[Variable], check: CheckInstruction<VariablePosition>) {
+        let producer = variables.iter().map(|var| self.producers.get(var)).max().unwrap_or(None);
         if let Some(&(program, instruction)) = producer {
             let Some(intersection) = self.get_step_mut(program).and_then(|step| step.as_intersection_mut()) else {
                 todo!("expected an intersection to be the producer")

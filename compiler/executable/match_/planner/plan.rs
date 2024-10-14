@@ -37,7 +37,7 @@ use crate::{
             },
             type_::{
                 OwnsInstruction, OwnsReverseInstruction, PlaysInstruction, PlaysReverseInstruction, RelatesInstruction,
-                RelatesReverseInstruction, SubInstruction, SubReverseInstruction, TypeListInstruction,
+                RelatesReverseInstruction, SubInstruction, SubReverseInstruction,
             },
             CheckInstruction, CheckVertex, ConstraintInstruction, Inputs,
         },
@@ -46,7 +46,7 @@ use crate::{
             vertex::{
                 constraint::{
                     ConstraintVertex, HasPlanner, IsaPlanner, LinksPlanner, OwnsPlanner, PlaysPlanner, RelatesPlanner,
-                    SubPlanner, TypeListConstraint, TypeListPlanner,
+                    SubPlanner, TypeListPlanner,
                 },
                 variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
                 ComparisonPlanner, Costed, Direction, DisjunctionPlanner, ElementCost, FunctionCallPlanner, Input,
@@ -560,7 +560,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
         let Self { shared_variables, graph, type_annotations, statistics: _ } = self;
 
-        ConjunctionPlan { shared_variables, graph, type_annotations, ordering, cost }
+        ConjunctionPlan { shared_variables, graph, type_annotations, ordering, element_to_order, cost }
     }
 }
 
@@ -570,151 +570,173 @@ pub(super) struct ConjunctionPlan<'a> {
     graph: Graph<'a>,
     type_annotations: &'a TypeAnnotations,
     ordering: Vec<VertexId>,
+    element_to_order: HashMap<VertexId, usize>,
     cost: ElementCost,
 }
 
 impl ConjunctionPlan<'_> {
     pub(crate) fn lower(
         &self,
-        input_variables: impl IntoIterator<Item = Variable> + Clone,
+        selected_variables: &[Variable],
         assigned_positions: &HashMap<Variable, VariablePosition>,
         variable_registry: Arc<VariableRegistry>,
     ) -> MatchExecutable {
-        let index_to_variable: HashMap<_, _> =
-            self.graph.variable_index.iter().map(|(&variable, &index)| (index, variable)).collect();
-
-        let mut match_builder = MatchExecutableBuilder::with_assigned_positions(assigned_positions);
-
-        let mut producers = HashMap::with_capacity(self.graph.variable_index.len());
-
-        let element_to_order: HashMap<_, _> =
-            self.ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
-
-        let inputs_of = |x| {
-            let order = element_to_order[&VertexId::Pattern(x)];
-            let adjacent = match self.graph.pattern_to_variable.get(&x) {
-                Some(adj) => adj,
-                None => &HashSet::new(),
-            };
-            adjacent
-                .iter()
-                .copied()
-                .filter(|&adj| self.ordering[..order].contains(&VertexId::Variable(adj)))
-                .collect::<HashSet<_>>()
-        };
-
-        let var_inputs_of = |x| {
-            let order = element_to_order[&VertexId::Variable(x)];
-            let adjacent = match self.graph.variable_to_pattern.get(&x) {
-                Some(adj) => adj,
-                None => &HashSet::new(),
-            };
-            adjacent
-                .iter()
-                .copied()
-                .filter(|&adj| self.ordering[..order].contains(&VertexId::Pattern(adj)))
-                .collect::<HashSet<_>>()
-        };
-
-        let outputs_of = |x| {
-            let order = element_to_order[&VertexId::Pattern(x)];
-            let adjacent = match self.graph.pattern_to_variable.get(&x) {
-                Some(adj) => adj,
-                None => &HashSet::new(),
-            };
-            adjacent
-                .iter()
-                .copied()
-                .filter(|&adj| self.ordering[order..].contains(&VertexId::Variable(adj)))
-                .collect::<HashSet<_>>()
-        };
+        let mut match_builder = MatchExecutableBuilder::new(assigned_positions, selected_variables.to_vec());
 
         for &index in &self.ordering {
-            let planner = self.graph.elements.get(&index).unwrap();
-            let VertexId::Pattern(index) = index else { continue };
-            let inputs = inputs_of(index).into_iter().map(|var| index_to_variable[&var]).collect_vec();
-
-            if let PlannerVertex::Constraint(constraint) = planner {
-                let sort_variable = outputs_of(index)
-                    .into_iter()
-                    .filter(|&var| var_inputs_of(var).len() > 1)
-                    .exactly_one()
-                    .map(|var| index_to_variable[&var])
-                    .ok();
-
-                self.lower_constraint(&mut match_builder, &mut producers, constraint, inputs, sort_variable)
-            } else if let PlannerVertex::Negation(negation) = planner {
-                assert!(outputs_of(index).is_empty());
-                let negation = negation.plan().lower(
-                    match_builder.position_mapping().keys().copied(),
-                    match_builder.position_mapping(),
-                    variable_registry.clone(),
-                );
-                let variable_positions = negation.variable_positions().clone(); // FIXME needless clone
-                match_builder.push_step(&variable_positions, StepBuilder::Negation(NegationBuilder { negation }));
-            } else if let PlannerVertex::Disjunction(disjunction) = planner {
-                let step_builder = disjunction
-                    .builder()
-                    .clone() // FIXME
-                    .plan(match_builder.position_mapping().keys().copied())
-                    .lower(
-                        match_builder.position_mapping().keys().copied(),
-                        match_builder.position_mapping(),
+            match index {
+                VertexId::Variable(var) => {
+                    self.may_make_variable_producing_step(
+                        &mut match_builder,
+                        var,
+                        selected_variables,
                         variable_registry.clone(),
                     );
-                let variable_positions =
-                    step_builder.branches.iter().flat_map(|x| x.variable_positions().clone()).collect();
-                match_builder.push_step(&variable_positions, StepBuilder::Disjunction(step_builder));
-            } else if let PlannerVertex::Comparison(compare) = planner {
-                let compare = compare.comparison();
-                let lhs = compare.lhs();
-                let rhs = compare.rhs();
-                let comparator = compare.comparator();
-
-                let lhs_var = lhs.as_variable();
-                let rhs_var = rhs.as_variable();
-                let num_input_variables = [lhs_var, rhs_var].into_iter().filter(|x| x.is_some()).count();
-                assert!(num_input_variables > 0);
-                if inputs.len() == num_input_variables {
-                    let lhs_producer = lhs_var
-                        .filter(|lhs| {
-                            !self.graph.elements[&VertexId::Variable(self.graph.variable_index[lhs])].is_input()
-                        })
-                        .map(|lhs| producers.get(&lhs).expect("bound lhs must have been produced"));
-                    let rhs_producer = rhs_var
-                        .filter(|rhs| {
-                            !self.graph.elements[&VertexId::Variable(self.graph.variable_index[rhs])].is_input()
-                        })
-                        .map(|rhs| producers.get(&rhs).expect("bound rhs must have been produced"));
-
-                    let lhs_pos = lhs.clone().map(match_builder.position_mapping());
-                    let rhs_pos = rhs.clone().map(match_builder.position_mapping());
-
-                    let check = CheckInstruction::Comparison {
-                        lhs: CheckVertex::resolve(lhs_pos, self.type_annotations),
-                        rhs: CheckVertex::resolve(rhs_pos, self.type_annotations),
-                        comparator,
-                    };
-
-                    match_builder.push_check(Ord::max(lhs_producer, rhs_producer), check);
-                    continue;
                 }
-                todo!()
-            } else {
-                unreachable!()
+                VertexId::Pattern(pattern) => {
+                    let order = self.element_to_order[&VertexId::Pattern(pattern)];
+                    let outputs = self.graph.pattern_to_variable[&pattern]
+                        .iter()
+                        .copied()
+                        .filter(move |&adj| self.ordering[order..].contains(&VertexId::Variable(adj)))
+                        .map(|var| self.graph.index_to_variable[&var]);
+                    if outputs.count() > 0 {
+                        continue;
+                    }
+                    self.may_make_check_step(
+                        &mut match_builder,
+                        pattern,
+                        selected_variables,
+                        variable_registry.clone(),
+                    );
+                }
             }
         }
 
         match_builder.finish(variable_registry)
     }
 
+    fn may_make_variable_producing_step(
+        &self,
+        match_builder: &mut MatchExecutableBuilder,
+        var: VariableVertexId,
+        selected_variables: &[Variable],
+        variable_registry: Arc<VariableRegistry>,
+    ) {
+        let variable = self.graph.index_to_variable[&var];
+        if match_builder.producers.contains_key(&variable) {
+            return;
+        }
+
+        let order = self.element_to_order[&VertexId::Variable(var)];
+        let producers = self.graph.variable_to_pattern[&var]
+            .iter()
+            .copied()
+            .filter(move |&adj| self.ordering[..order].contains(&VertexId::Pattern(adj)));
+
+        for producer in producers {
+            match &self.graph.elements()[&VertexId::Pattern(producer)] {
+                PlannerVertex::Variable(_) => unreachable!("encountered variable @ pattern id {producer:?}"),
+                PlannerVertex::Negation(_) => unreachable!("encountered negation registered as producing variable"),
+                PlannerVertex::Comparison(_) => unreachable!("encountered comparison registered as producing variable"),
+                PlannerVertex::Constraint(constraint) => {
+                    let order = self.element_to_order[&VertexId::Pattern(producer)];
+                    let inputs = self.graph.pattern_to_variable[&producer]
+                        .iter()
+                        .copied()
+                        .filter(move |&adj| self.ordering[..order].contains(&VertexId::Variable(adj)))
+                        .map(|var| self.graph.index_to_variable[&var])
+                        .collect_vec();
+                    self.lower_constraint(match_builder, constraint, inputs, variable)
+                }
+                PlannerVertex::Expression(_) => todo!(),
+                PlannerVertex::Disjunction(disjunction) => {
+                    let step_builder = disjunction
+                        .builder()
+                        .clone() // FIXME
+                        .plan(match_builder.position_mapping().keys().copied())
+                        .lower(selected_variables, match_builder.position_mapping(), variable_registry.clone());
+                    let variable_positions =
+                        step_builder.branches.iter().flat_map(|x| x.variable_positions().clone()).collect();
+                    match_builder.push_step(&variable_positions, StepBuilder::Disjunction(step_builder));
+                }
+            }
+        }
+    }
+
+    fn may_make_check_step(
+        &self,
+        match_builder: &mut MatchExecutableBuilder,
+        pattern: PatternVertexId,
+        selected_variables: &[Variable],
+        variable_registry: Arc<VariableRegistry>,
+    ) {
+        match &self.graph.elements()[&VertexId::Pattern(pattern)] {
+            PlannerVertex::Variable(_) => unreachable!("encountered variable @ pattern id {pattern:?}"),
+            PlannerVertex::Negation(negation) => {
+                let negation = negation.plan().lower(
+                    selected_variables,
+                    match_builder.position_mapping(),
+                    variable_registry.clone(),
+                );
+                let variable_positions = negation.variable_positions().clone(); // FIXME needless clone
+                match_builder.push_step(&variable_positions, StepBuilder::Negation(NegationBuilder::new(negation)));
+            }
+            PlannerVertex::Comparison(comparison) => {
+                let comparison = comparison.comparison();
+                let lhs = comparison.lhs();
+                let rhs = comparison.rhs();
+                let comparator = comparison.comparator();
+
+                let lhs_var = lhs.as_variable();
+                let rhs_var = rhs.as_variable();
+                let num_input_variables = [lhs_var, rhs_var].into_iter().filter(|x| x.is_some()).count();
+                assert!(num_input_variables > 0);
+
+                let order = self.element_to_order[&VertexId::Pattern(pattern)];
+                let inputs = self.graph.pattern_to_variable[&pattern]
+                    .iter()
+                    .copied()
+                    .filter(move |&adj| self.ordering[..order].contains(&VertexId::Variable(adj)))
+                    .map(|var| self.graph.index_to_variable[&var]);
+
+                assert_eq!(inputs.count(), num_input_variables);
+
+                let lhs_pos = lhs.clone().map(match_builder.position_mapping());
+                let rhs_pos = rhs.clone().map(match_builder.position_mapping());
+
+                let check = CheckInstruction::Comparison {
+                    lhs: CheckVertex::resolve(lhs_pos, self.type_annotations),
+                    rhs: CheckVertex::resolve(rhs_pos, self.type_annotations),
+                    comparator,
+                };
+
+                let vars = [lhs_var, rhs_var].into_iter().flatten().collect_vec();
+                match_builder.push_check(&vars, check);
+            }
+            PlannerVertex::Constraint(constraint) => {
+                self.lower_constraint_check(match_builder, constraint);
+            }
+            PlannerVertex::Expression(_) => todo!(),
+            PlannerVertex::Disjunction(disjunction) => {
+                let step_builder = disjunction
+                    .builder()
+                    .clone() // FIXME
+                    .plan(match_builder.position_mapping().keys().copied())
+                    .lower(selected_variables, match_builder.position_mapping(), variable_registry.clone());
+                let variable_positions =
+                    step_builder.branches.iter().flat_map(|x| x.variable_positions().clone()).collect();
+                match_builder.push_step(&variable_positions, StepBuilder::Disjunction(step_builder));
+            }
+        }
+    }
+
     fn lower_constraint(
         &self,
         match_builder: &mut MatchExecutableBuilder,
-        producers: &mut HashMap<Variable, (usize, usize)>,
         constraint: &ConstraintVertex<'_>,
         inputs: Vec<Variable>,
-        sort_variable: Option<Variable>,
+        sort_variable: Variable,
     ) {
         if let Some(StepBuilder::Intersection(IntersectionBuilder { sort_variable: Some(sort_variable), .. })) =
             &match_builder.current
@@ -736,87 +758,36 @@ impl ConjunctionPlan<'_> {
 
                 assert!(num_input_variables > 0);
 
-                if inputs.len() == num_input_variables {
-                    let lhs_producer = lhs_var
-                        .filter(|lhs| !self.graph.elements[&VertexId::Variable(self.graph.variable_index[lhs])].is_input())
-                        .map(|lhs| producers.get(&lhs).expect("bound lhs must have been produced"));
-                    let rhs_producer = rhs_var
-                        .filter(|rhs| !self.graph.elements[&VertexId::Variable(self.graph.variable_index[rhs])].is_input())
-                        .map(|rhs| producers.get(&rhs).expect("bound rhs must have been produced"));
-
-                    let lhs_pos = lhs.clone().map(match_builder.position_mapping());
-                    let rhs_pos = rhs.clone().map(match_builder.position_mapping());
-                    let check = CheckInstruction::$fw {
-                        $lhs: CheckVertex::resolve(lhs_pos, self.type_annotations),
-                        $rhs: CheckVertex::resolve(rhs_pos, self.type_annotations),
-                        $($with: $con.$with(),)?
-                    };
-
-                    match_builder.push_check(Ord::max(lhs_producer, rhs_producer), check);
-                    return;
-                }
-
-                let sort_variable = if let Some(sort_variable) = sort_variable {
-                    sort_variable
-                } else {
-                    match (lhs_var, rhs_var) {
-                        (Some(lhs), Some(rhs)) if !inputs.is_empty() => {
-                            if inputs.contains(&rhs) {
-                                lhs
-                            } else {
-                                rhs
-                            }
-                        }
-                        (Some(lhs), Some(rhs)) => {
-                            if constraint.unbound_direction() == Direction::Canonical {
-                                lhs
-                            } else {
-                                rhs
-                            }
-                        }
-                        (Some(lhs), None) => lhs,
-                        (None, Some(rhs)) => rhs,
-                        (None, None) => unreachable!("no variables in constraint?"),
-                    }
-                };
+                assert_ne!(inputs.len(), num_input_variables);
 
                 let con = $con.clone();
                 let instruction = if lhs_var.is_some_and(|lhs| inputs.contains(&lhs)) {
-                    ConstraintInstruction::$fw($fwi::new(con, Inputs::Single([lhs_var.unwrap()]), self.type_annotations))
+                    ConstraintInstruction::$fw($fwi::new(
+                        con,
+                        Inputs::Single([lhs_var.unwrap()]),
+                        self.type_annotations,
+                    ))
                 } else if rhs_var.is_some_and(|rhs| inputs.contains(&rhs)) {
-                    ConstraintInstruction::$bw($bwi::new(con, Inputs::Single([rhs_var.unwrap()]), self.type_annotations))
+                    ConstraintInstruction::$bw($bwi::new(
+                        con,
+                        Inputs::Single([rhs_var.unwrap()]),
+                        self.type_annotations,
+                    ))
                 } else if constraint.unbound_direction() == Direction::Canonical {
                     ConstraintInstruction::$fw($fwi::new(con, Inputs::None([]), self.type_annotations))
                 } else {
                     ConstraintInstruction::$bw($bwi::new(con, Inputs::None([]), self.type_annotations))
                 };
 
-                let producer_index = match_builder.push_instruction(
-                    sort_variable,
-                    instruction,
-                    [lhs_var, rhs_var].into_iter().flatten(),
-                );
-
-                for var in [lhs_var, rhs_var].into_iter().flatten() {
-                    if !inputs.contains(&var) {
-                        producers.insert(var, producer_index);
-                    }
-                }
+                match_builder.push_instruction(sort_variable, instruction, [lhs_var, rhs_var].into_iter().flatten());
             }};
         }
 
         match constraint {
             ConstraintVertex::TypeList(tl) => {
-                let var = match tl.constraint() {
-                    TypeListConstraint::Label(label) => label.type_(),
-                    TypeListConstraint::RoleName(role_name) => role_name.type_(),
-                    TypeListConstraint::Kind(kind) => kind.type_(),
-                }
-                .as_variable()
-                .unwrap();
-                let instruction = ConstraintInstruction::TypeList(TypeListInstruction::new(var, self.type_annotations));
-                let producer_index = match_builder.push_instruction(var, instruction, [var]);
-                producers.insert(var, producer_index);
+                let var = tl.constraint().var();
+                let instruction = tl.lower(self.type_annotations);
+                match_builder.push_instruction(var, instruction, [var]);
             }
 
             ConstraintVertex::Sub(planner) => {
@@ -851,48 +822,7 @@ impl ConjunctionPlan<'_> {
                 let player = links.player().as_variable().unwrap();
                 let role = links.role_type().as_variable().unwrap();
 
-                if inputs.len() == 3 {
-                    let relation_producer = Some(relation)
-                        .filter(|relation| {
-                            !self.graph.elements[&VertexId::Variable(self.graph.variable_index[relation])].is_input()
-                        })
-                        .map(|relation| producers.get(&relation).expect("bound relation must have been produced"));
-                    let player_producer = Some(player)
-                        .filter(|player| {
-                            !self.graph.elements[&VertexId::Variable(self.graph.variable_index[player])].is_input()
-                        })
-                        .map(|player| producers.get(&player).expect("bound player must have been produced"));
-                    let role_producer = Some(role)
-                        .filter(|role| {
-                            !self.graph.elements[&VertexId::Variable(self.graph.variable_index[role])].is_input()
-                        })
-                        .map(|role| producers.get(&role).expect("bound role must have been produced"));
-
-                    let relation_pos = match_builder.position(relation).into();
-                    let player_pos = match_builder.position(player).into();
-                    let role_pos = match_builder.position(role).into();
-
-                    let check = CheckInstruction::Links {
-                        relation: CheckVertex::resolve(relation_pos, self.type_annotations),
-                        player: CheckVertex::resolve(player_pos, self.type_annotations),
-                        role: CheckVertex::resolve(role_pos, self.type_annotations),
-                    };
-
-                    match_builder.push_check(relation_producer.max(player_producer).max(role_producer), check);
-                    return;
-                }
-
-                let sort_variable = if let Some(sort_variable) = sort_variable {
-                    sort_variable
-                } else if inputs.contains(&player) {
-                    relation
-                } else if inputs.contains(&relation) {
-                    player
-                } else if planner.unbound_direction() == Direction::Canonical {
-                    relation
-                } else {
-                    player
-                };
+                assert_ne!(inputs.len(), 3);
 
                 let links = links.clone();
                 let instruction = if inputs.contains(&relation) && inputs.contains(&player) {
@@ -931,14 +861,87 @@ impl ConjunctionPlan<'_> {
                     ))
                 };
 
-                let producer_index =
-                    match_builder.push_instruction(sort_variable, instruction, [relation, player, role]);
+                match_builder.push_instruction(sort_variable, instruction, [relation, player, role]);
+            }
+        }
+    }
 
-                for &var in &[relation, player, role] {
-                    if !inputs.contains(&var) {
-                        producers.insert(var, producer_index);
-                    }
-                }
+    fn lower_constraint_check(&self, match_builder: &mut MatchExecutableBuilder, constraint: &ConstraintVertex<'_>) {
+        match_builder.finish_one();
+
+        macro_rules! binary {
+            ($((with $with:ident))? $lhs:ident $con:ident $rhs:ident, $fw:ident($fwi:ident), $bw:ident($bwi:ident)) => {{
+                let lhs = $con.$lhs();
+                let rhs = $con.$rhs();
+
+                let lhs_var = lhs.as_variable();
+                let rhs_var = rhs.as_variable();
+
+                let num_input_variables = [lhs_var, rhs_var].into_iter().filter(|x| x.is_some()).count();
+
+                assert!(num_input_variables > 0);
+
+                let lhs_pos = lhs.clone().map(match_builder.position_mapping());
+                let rhs_pos = rhs.clone().map(match_builder.position_mapping());
+                let check = CheckInstruction::$fw {
+                    $lhs: CheckVertex::resolve(lhs_pos, self.type_annotations),
+                    $rhs: CheckVertex::resolve(rhs_pos, self.type_annotations),
+                    $($with: $con.$with(),)?
+                };
+
+                let vars = [lhs_var, rhs_var].into_iter().flatten().collect_vec();
+                match_builder.push_check(&vars, check);
+            }};
+        }
+
+        match constraint {
+            ConstraintVertex::TypeList(_) => {
+                todo!()
+            }
+
+            ConstraintVertex::Sub(planner) => {
+                let sub = planner.sub();
+                binary!((with sub_kind) subtype sub supertype, Sub(SubInstruction), SubReverse(SubReverseInstruction))
+            }
+            ConstraintVertex::Owns(planner) => {
+                let owns = planner.owns();
+                binary!(owner owns attribute, Owns(OwnsInstruction), OwnsReverse(OwnsReverseInstruction))
+            }
+            ConstraintVertex::Relates(planner) => {
+                let relates = planner.relates();
+                binary!(relation relates role_type, Relates(RelatesInstruction), RelatesReverse(RelatesReverseInstruction))
+            }
+            ConstraintVertex::Plays(planner) => {
+                let plays = planner.plays();
+                binary!(player plays role_type, Plays(PlaysInstruction), PlaysReverse(PlaysReverseInstruction))
+            }
+
+            ConstraintVertex::Isa(planner) => {
+                let isa = planner.isa();
+                binary!((with isa_kind) thing isa type_, Isa(IsaInstruction), IsaReverse(IsaReverseInstruction))
+            }
+            ConstraintVertex::Has(planner) => {
+                let has = planner.has();
+                binary!(owner has attribute, Has(HasInstruction), HasReverse(HasReverseInstruction))
+            }
+            ConstraintVertex::Links(planner) => {
+                let links = planner.links();
+
+                let relation = links.relation().as_variable().unwrap();
+                let player = links.player().as_variable().unwrap();
+                let role = links.role_type().as_variable().unwrap();
+
+                let relation_pos = match_builder.position(relation).into();
+                let player_pos = match_builder.position(player).into();
+                let role_pos = match_builder.position(role).into();
+
+                let check = CheckInstruction::Links {
+                    relation: CheckVertex::resolve(relation_pos, self.type_annotations),
+                    player: CheckVertex::resolve(player_pos, self.type_annotations),
+                    role: CheckVertex::resolve(role_pos, self.type_annotations),
+                };
+
+                match_builder.push_check(&[relation, player, role], check);
             }
         }
     }
@@ -983,7 +986,7 @@ pub(super) struct DisjunctionPlan<'a> {
 impl<'a> DisjunctionPlan<'a> {
     fn lower(
         &self,
-        input_variables: impl IntoIterator<Item = Variable> + Clone,
+        selected_variables: &[Variable],
         assigned_positions: &HashMap<Variable, VariablePosition>,
         variable_registry: Arc<VariableRegistry>,
     ) -> DisjunctionBuilder {
@@ -993,10 +996,10 @@ impl<'a> DisjunctionPlan<'a> {
                 Some(branch) => branch.variable_positions(),
                 None => assigned_positions,
             };
-            let lowered_branch = branch.lower(input_variables.clone(), assigned_positions, variable_registry.clone());
+            let lowered_branch = branch.lower(selected_variables, assigned_positions, variable_registry.clone());
             branches.push(lowered_branch);
         }
-        DisjunctionBuilder::new(branches)
+        DisjunctionBuilder::new(branches, selected_variables.to_vec())
     }
 }
 
@@ -1008,6 +1011,7 @@ pub(super) struct Graph<'a> {
     elements: HashMap<VertexId, PlannerVertex<'a>>,
 
     variable_index: HashMap<Variable, VariableVertexId>,
+    index_to_variable: HashMap<VariableVertexId, Variable>,
 
     next_variable_id: VariableVertexId,
     next_pattern_id: PatternVertexId,
@@ -1030,6 +1034,7 @@ impl<'a> Graph<'a> {
 
         self.elements.insert(VertexId::Variable(index), PlannerVertex::Variable(vertex));
         self.variable_index.insert(variable, index);
+        self.index_to_variable.insert(index, variable);
         index
     }
 
