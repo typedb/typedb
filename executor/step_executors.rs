@@ -4,7 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, collections::HashMap, sync::Arc};
+use std::{
+    cmp::Ordering,
+    collections::{hash_set, HashMap, HashSet},
+    sync::Arc,
+};
 
 use answer::variable_value::VariableValue;
 use compiler::{
@@ -72,7 +76,7 @@ impl StepExecutor {
             ExecutionStep::Assignment(AssignmentStep { .. }) => {
                 todo!()
             }
-            ExecutionStep::Check(CheckStep { check_instructions }) => {
+            ExecutionStep::Check(CheckStep { check_instructions, output_width }) => {
                 Ok(Self::Check(CheckExecutor::new(check_instructions.clone())))
             }
             ExecutionStep::Disjunction(DisjunctionStep { branches, .. }) => {
@@ -631,8 +635,7 @@ impl CheckExecutor {
 pub(super) struct DisjunctionExecutor {
     branches: Vec<MatchExecutable>,
 
-    current_branch: Option<(usize, MatchExecutor)>,
-    current_input_row: Option<MaybeOwnedRow<'static>>,
+    current_iterator: Option<hash_set::IntoIter<MaybeOwnedRow<'static>>>,
 
     input: Option<Peekable<FixedBatchRowIterator>>,
     output: Option<FixedBatch>,
@@ -642,7 +645,8 @@ pub(super) struct DisjunctionExecutor {
 
 impl DisjunctionExecutor {
     fn new(branches: Vec<MatchExecutable>, output_width: u32) -> DisjunctionExecutor {
-        Self { branches, current_branch: None, current_input_row: None, input: None, output: None, output_width }
+        assert!(branches.iter().all(|executable| executable.outputs().len() == output_width as usize));
+        Self { branches, current_iterator: None, input: None, output: None, output_width }
     }
 
     fn batch_from(
@@ -653,7 +657,7 @@ impl DisjunctionExecutor {
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         debug_assert!(
             self.output.is_none()
-                && self.current_branch.is_none()
+                && self.current_iterator.is_none()
                 && !self.input.as_mut().is_some_and(|it| it.peek().is_some())
         );
         self.input = Some(Peekable::new(FixedBatchRowIterator::new(Ok(input_batch))));
@@ -676,42 +680,22 @@ impl DisjunctionExecutor {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
     ) -> Result<(), ReadExecutionError> {
-        if self.current_branch.is_none() {
-            self.initialize_executor_for_next_input_row(context)?;
-        }
-        while let Some((index, mut executor)) = self.current_branch.take() {
-            if let Some(batch) = executor.compute_next_batch(context, interrupt)? {
-                self.output = Some(batch);
-                self.current_branch = Some((index, executor));
-                break;
+        let mut batch = FixedBatch::new(self.output_width);
+        while !batch.is_full() {
+            if let Some(iterator) = &mut self.current_iterator {
+                let next = iterator.next();
+                match next {
+                    Some(output_row) => {
+                        batch.append(|mut row| row.copy_from(output_row.row(), output_row.multiplicity()))
+                    }
+                    None => self.current_iterator = None,
+                }
             } else {
-                let next_branch = index + 1;
-                if next_branch < self.branches.len() {
-                    self.initialize_branch_executor(next_branch, context)?;
-                } else {
-                    self.initialize_executor_for_next_input_row(context)?;
+                self.current_iterator = self.initialize_executor_for_next_input_row(context, interrupt)?;
+                if self.current_iterator.is_none() {
+                    break;
                 }
             }
-        }
-        Ok(())
-    }
-
-    fn initialize_branch_executor(
-        &mut self,
-        next_branch: usize,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
-    ) -> Result<(), ReadExecutionError> {
-        if let Some(input_row) = &self.current_input_row {
-            self.current_branch = Some((
-                next_branch,
-                MatchExecutor::new(
-                    &self.branches[next_branch],
-                    context.snapshot(),
-                    context.thing_manager(),
-                    input_row.clone(),
-                )
-                .map_err(|err| ReadExecutionError::ConceptRead { source: err })?,
-            ));
         }
         Ok(())
     }
@@ -719,12 +703,36 @@ impl DisjunctionExecutor {
     fn initialize_executor_for_next_input_row(
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
-    ) -> Result<(), ReadExecutionError> {
-        if let Some(input_row) = self.input.as_mut().unwrap().next().transpose().map_err(|err| err.clone())? {
-            self.current_input_row = Some(input_row.into_owned());
-            self.initialize_branch_executor(0, context)?;
-        }
-        Ok(())
+        interrupt: &mut ExecutionInterrupt,
+    ) -> Result<Option<hash_set::IntoIter<MaybeOwnedRow<'static>>>, ReadExecutionError> {
+        let Some(input_row) = self.input.as_mut().unwrap().next().transpose().map_err(|err| err.clone())? else {
+            return Ok(None);
+        };
+
+        let branch_iters: Vec<_> = self
+            .branches
+            .iter()
+            .map(|branch| {
+                MatchExecutor::new(branch, context.snapshot(), context.thing_manager(), input_row.clone())
+                    .map_err(|err| ReadExecutionError::ConceptRead { source: err })
+            })
+            .try_collect()?;
+
+        #[allow(clippy::mutable_key_type, reason = "VariableValue may contain Attribute, which has a value cache")]
+        let rows: HashSet<_> = branch_iters
+            .into_iter()
+            .flat_map(|branch_iter| {
+                branch_iter
+                    .into_iterator(context.clone(), interrupt.clone())
+                    .map_static(|row| match row {
+                        Ok(row) => Ok(row.into_owned()),
+                        Err(err) => Err(err.clone()),
+                    })
+                    .into_iter()
+            })
+            .try_collect()?;
+
+        Ok(Some(rows.into_iter()))
     }
 }
 
