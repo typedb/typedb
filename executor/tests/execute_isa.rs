@@ -86,7 +86,7 @@ fn traverse_isa_unbounded_sorted_thing() {
 
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type.into()).unwrap().clone();
-    conjunction.constraints_mut().add_label(var_dog_type.into(), DOG_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.scoped_name().as_str()).unwrap();
     let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
@@ -122,8 +122,7 @@ fn traverse_isa_unbounded_sorted_thing() {
         2,
     ))];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -196,8 +195,7 @@ fn traverse_isa_unbounded_sorted_type() {
         2,
     ))];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -286,8 +284,7 @@ fn traverse_isa_bounded_thing() {
         )),
     ];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -364,8 +361,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
         2,
     ))];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -438,8 +434,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
         2,
     ))];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -527,8 +522,7 @@ fn traverse_isa_reverse_bounded_type_exact() {
         )),
     ];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -620,8 +614,7 @@ fn traverse_isa_reverse_bounded_type_subtype() {
         )),
     ];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -698,8 +691,7 @@ fn traverse_isa_reverse_fixed_type_exact() {
         1,
     ))];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -762,7 +754,7 @@ fn traverse_isa_reverse_fixed_type_subtype() {
     let vars = vec![var_thing];
     let variable_positions =
         HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let named_variables = variable_positions.values().map(|p| p.clone()).collect();
+    let named_variables = variable_positions.values().copied().collect();
 
     // Plan
     let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
@@ -775,8 +767,7 @@ fn traverse_isa_reverse_fixed_type_subtype() {
         1,
     ))];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());

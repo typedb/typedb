@@ -135,8 +135,7 @@ fn attribute_equality() {
         )),
     ];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
