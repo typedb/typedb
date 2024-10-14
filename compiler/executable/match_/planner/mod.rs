@@ -53,7 +53,7 @@ pub fn compile(
         expressions,
         statistics,
     )
-    .lower(input_variables, variable_registry)
+    .lower(input_variables.keys().copied(), input_variables, variable_registry)
 }
 
 #[derive(Debug, Default)]
@@ -167,7 +167,7 @@ struct MatchExecutableBuilder {
 }
 
 impl MatchExecutableBuilder {
-    fn with_inputs(input_variables: &HashMap<Variable, VariablePosition>) -> Self {
+    fn with_assigned_positions(input_variables: &HashMap<Variable, VariablePosition>) -> Self {
         let index = input_variables.clone();
         let outputs = index.iter().map(|(&var, &pos)| (pos, var)).collect();
         let next_position = input_variables.values().max().map(|&pos| pos.position + 1).unwrap_or_default();

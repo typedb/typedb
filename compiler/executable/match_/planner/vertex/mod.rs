@@ -11,13 +11,10 @@ use concept::thing::statistics::Statistics;
 use ir::pattern::{constraint::Comparison, Vertex};
 use itertools::chain;
 
-use super::plan::{ConjunctionPlan, Graph, VariableVertexId, VertexId};
+use super::plan::{ConjunctionPlan, DisjunctionPlanBuilder, Graph, VariableVertexId, VertexId};
 use crate::{
     annotation::type_annotations::TypeAnnotations,
-    executable::match_::planner::{
-        plan::PlanBuilder,
-        vertex::{constraint::ConstraintVertex, variable::VariableVertex},
-    },
+    executable::match_::planner::vertex::{constraint::ConstraintVertex, variable::VariableVertex},
 };
 
 pub(super) mod constraint;
@@ -137,7 +134,7 @@ impl ElementCost {
         }
     }
 
-    fn combine_parallel(self, other: Self) -> Self {
+    pub(crate) fn combine_parallel(self, other: Self) -> Self {
         fn weighted_mean((lhs_value, lhs_weight): (f64, f64), (rhs_value, rhs_weight): (f64, f64)) -> f64 {
             (lhs_value * lhs_weight + rhs_value * rhs_weight) / (lhs_weight + rhs_weight)
         }
@@ -292,13 +289,13 @@ impl Costed for NegationPlanner<'_> {
 pub(super) struct DisjunctionPlanner<'a> {
     input_variables: Vec<VariableVertexId>,
     shared_variables: Vec<VariableVertexId>,
-    branch_builders: Vec<PlanBuilder<'a>>,
+    builder: DisjunctionPlanBuilder<'a>,
 }
 
 impl<'a> DisjunctionPlanner<'a> {
-    pub(super) fn from_builders(branch_builders: Vec<PlanBuilder<'a>>) -> Self {
-        let shared_variables = branch_builders.iter().flat_map(|pb| pb.shared_variables().to_owned()).collect();
-        Self { input_variables: Vec::new(), shared_variables, branch_builders }
+    pub(super) fn from_builder(builder: DisjunctionPlanBuilder<'a>) -> Self {
+        let shared_variables = builder.branches().iter().flat_map(|pb| pb.shared_variables().to_owned()).collect();
+        Self { input_variables: Vec::new(), shared_variables, builder }
     }
 
     fn is_valid(&self, _index: VertexId, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
@@ -309,8 +306,8 @@ impl<'a> DisjunctionPlanner<'a> {
         chain!(&self.input_variables, &self.shared_variables).copied()
     }
 
-    pub(super) fn branch_builders(&self) -> &[PlanBuilder<'a>] {
-        &self.branch_builders
+    pub(super) fn builder(&self) -> &DisjunctionPlanBuilder<'a> {
+        &self.builder
     }
 }
 
@@ -318,7 +315,8 @@ impl Costed for DisjunctionPlanner<'_> {
     fn cost(&self, inputs: &[VertexId], graph: &Graph<'_>) -> ElementCost {
         let input_variables =
             inputs.iter().filter_map(|id| graph.elements()[id].as_variable()).map(|var| var.variable());
-        self.branch_builders
+        self.builder()
+            .branches()
             .iter()
             .map(|branch| branch.clone().with_inputs(input_variables.clone()).plan().cost())
             .fold(ElementCost::EMPTY, ElementCost::combine_parallel)
