@@ -80,14 +80,16 @@ impl SortStageIterator {
             let y_row_as_row = unsorted.get_row(*y);
             let x_row = x_row_as_row.row();
             let y_row = y_row_as_row.row();
-            for (idx, asc) in &sort_by {
-                let ord = x_row[*idx]
-                    .partial_cmp(&y_row[*idx])
+            for &(idx, asc) in &sort_by {
+                let ord = x_row[idx]
+                    .partial_cmp(&y_row[idx])
                     .expect("Sort on variable with uncomparable values should have been caught at query-compile time");
-                match (asc, ord) {
-                    (true, Ordering::Less) | (false, Ordering::Greater) => return Ordering::Less,
-                    (true, Ordering::Greater) | (false, Ordering::Less) => return Ordering::Greater,
-                    (true, Ordering::Equal) | (false, Ordering::Equal) => {}
+                if ord != Ordering::Equal {
+                    if asc {
+                        return ord;
+                    } else {
+                        return ord.reverse();
+                    }
                 };
             }
             Ordering::Equal
