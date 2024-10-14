@@ -540,3 +540,85 @@ fn test_disjunction_planning_traversal() {
 
     assert_eq!(rows.len(), 3);
 }
+
+#[test]
+fn test_disjunction_planning_nested_negations() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let schema = "define
+        attribute age value long;
+        attribute name value string;
+        entity person owns age @card(0..), owns name @card(0..);
+    ";
+    let data = "insert
+        $_ isa person, has age 12, has name 'John';
+        $_ isa person, has age 14;
+        $_ isa person, has name 'Leila';
+        $_ isa person;
+    ";
+
+    let statistics = setup(&storage, type_manager, thing_manager, schema, data);
+
+    let query = "match
+        $person isa person;
+        {
+            $person has name $_;
+            not { $person has age $_; };
+        } or {
+            $person has age $_;
+            not { $person has name $_; };
+        };
+    ";
+    let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+
+    // IR
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
+    let mut translation_context = TranslationContext::new();
+    let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
+    let block = builder.finish();
+
+    // Executor
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let entry_annotations = infer_types(
+        &*snapshot,
+        &block,
+        &translation_context.variable_registry,
+        &type_manager,
+        &BTreeMap::new(),
+        &IndexedAnnotatedFunctions::empty(),
+        Some(&AnnotatedUnindexedFunctions::empty()),
+    )
+    .unwrap();
+
+    let match_executable = compiler::executable::match_::planner::compile(
+        &block,
+        &HashMap::new(),
+        &entry_annotations,
+        Arc::new(translation_context.variable_registry),
+        &HashMap::new(),
+        &statistics,
+    );
+    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+
+    let rows = iterator
+        .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
+        .into_iter()
+        .try_collect::<_, Vec<_>, _>()
+        .unwrap();
+
+    for row in &rows {
+        for value in row {
+            print!("{}, ", value);
+        }
+        println!()
+    }
+
+    assert_eq!(rows.len(), 2);
+}
