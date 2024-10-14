@@ -24,7 +24,6 @@ use crate::{
 #[derive(Clone, Debug)]
 pub(crate) enum VariableVertex {
     Input(InputPlanner),
-    Shared(SharedPlanner),
 
     Type(TypePlanner),
     Thing(ThingPlanner),
@@ -36,7 +35,6 @@ impl VariableVertex {
         let VertexId::Variable(index) = index else { unreachable!("variable with incompatible index: {index:?}") };
         match self {
             Self::Input(_) => true, // always valid: comes from the enclosing scope
-            Self::Shared(_) => todo!(),
 
             Self::Type(_) | Self::Thing(_) | Self::Value(_) => {
                 let adjacent = graph.variable_to_pattern().get(&index).unwrap();
@@ -48,7 +46,6 @@ impl VariableVertex {
     pub(crate) fn expected_size(&self) -> f64 {
         match self {
             Self::Input(_) => 1.0,
-            Self::Shared(_) => todo!(),
             Self::Type(inner) => inner.expected_size,
             Self::Thing(inner) => inner.expected_size,
             Self::Value(_) => 1.0,
@@ -58,7 +55,6 @@ impl VariableVertex {
     pub(crate) fn add_is(&mut self, other: VariableVertexId) {
         match self {
             Self::Input(_inner) => todo!(),
-            Self::Shared(_) => todo!(),
             Self::Type(_inner) => todo!(),
             Self::Thing(inner) => inner.add_is(other),
             Self::Value(_inner) => todo!(),
@@ -68,7 +64,6 @@ impl VariableVertex {
     pub(crate) fn add_equal(&mut self, other: Input) {
         match self {
             Self::Input(_) => (),
-            Self::Shared(_) => todo!(),
             Self::Value(_) => todo!(),
             Self::Thing(inner) => inner.add_equal(other),
             Self::Type(_) => unreachable!(),
@@ -78,7 +73,6 @@ impl VariableVertex {
     pub(crate) fn add_lower_bound(&mut self, other: Input) {
         match self {
             Self::Input(_) => (),
-            Self::Shared(_) => todo!(),
             Self::Value(_inner) => todo!(),
             Self::Thing(inner) => inner.add_lower_bound(other),
             Self::Type(_) => unreachable!(),
@@ -88,7 +82,6 @@ impl VariableVertex {
     pub(crate) fn add_upper_bound(&mut self, other: Input) {
         match self {
             Self::Input(_) => (),
-            Self::Shared(_) => todo!(),
             Self::Value(_inner) => todo!(),
             Self::Thing(inner) => inner.add_upper_bound(other),
             Self::Type(_) => unreachable!(),
@@ -114,7 +107,6 @@ impl VariableVertex {
     pub(crate) fn variable(&self) -> Variable {
         match self {
             VariableVertex::Input(var) => var.variable,
-            VariableVertex::Shared(var) => var.variable,
             VariableVertex::Type(var) => var.variable,
             VariableVertex::Thing(var) => var.variable,
             VariableVertex::Value(var) => var.variable,
@@ -126,8 +118,6 @@ impl Costed for VariableVertex {
     fn cost(&self, inputs: &[VertexId], graph: &Graph<'_>) -> ElementCost {
         match self {
             Self::Input(inner) => inner.cost(inputs, graph),
-            Self::Shared(inner) => inner.cost(inputs, graph),
-
             Self::Type(inner) => inner.cost(inputs, graph),
             Self::Thing(inner) => inner.cost(inputs, graph),
             Self::Value(inner) => inner.cost(inputs, graph),
@@ -135,9 +125,15 @@ impl Costed for VariableVertex {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub(crate) struct InputPlanner {
     variable: Variable,
+}
+
+impl fmt::Debug for InputPlanner {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("InputPlanner").field("variable", &self.variable).finish()
+    }
 }
 
 impl InputPlanner {
@@ -152,27 +148,16 @@ impl Costed for InputPlanner {
     }
 }
 
-#[derive(Clone, Debug)]
-pub(crate) struct SharedPlanner {
-    variable: Variable,
-}
-
-impl SharedPlanner {
-    pub(crate) fn from_variable(_: Variable, _: &TypeAnnotations) -> Self {
-        todo!()
-    }
-}
-
-impl Costed for SharedPlanner {
-    fn cost(&self, _: &[VertexId], _: &Graph<'_>) -> ElementCost {
-        ElementCost::FREE
-    }
-}
-
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub(crate) struct TypePlanner {
     variable: Variable,
     expected_size: f64,
+}
+
+impl fmt::Debug for TypePlanner {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("TypePlanner").field("variable", &self.variable).finish()
+    }
 }
 
 impl TypePlanner {
@@ -202,7 +187,7 @@ pub(crate) struct ThingPlanner {
 
 impl fmt::Debug for ThingPlanner {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("ThingPlanner").finish()
+        f.debug_struct("ThingPlanner").field("variable", &self.variable).finish()
     }
 }
 
@@ -266,9 +251,7 @@ impl Costed for ThingPlanner {
             return ElementCost::FREE;
         }
 
-        let per_input = OPEN_ITERATOR_RELATIVE_COST;
-        let per_output = ADVANCE_ITERATOR_RELATIVE_COST;
-        let mut branching_factor = self.expected_size;
+        let mut branching_factor = 1.0;
 
         for bound in &self.bound_value_equal {
             if bound == &Input::Fixed {
@@ -297,8 +280,6 @@ impl Costed for ThingPlanner {
                 } else {
                     // comes from a previous step, must be in the DB?
                     // TODO verify this assumption
-                    per_input = 0.0;
-                    per_output = 0.0;
                     branching_factor /= self.expected_size;
                 }
             }
@@ -329,13 +310,19 @@ impl Costed for ThingPlanner {
         }
         */
 
-        ElementCost { per_input, per_output, branching_factor }
+        ElementCost { per_input: 0.0, per_output: 0.0, branching_factor }
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub(crate) struct ValuePlanner {
     variable: Variable,
+}
+
+impl fmt::Debug for ValuePlanner {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ValuePlanner").field("variable", &self.variable).finish()
+    }
 }
 
 impl ValuePlanner {

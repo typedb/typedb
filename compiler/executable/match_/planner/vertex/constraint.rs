@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, iter};
+use std::{collections::HashMap, fmt, iter};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -91,11 +91,17 @@ pub(crate) enum TypeListConstraint<'a> {
     Kind(&'a Kind<Variable>),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub(crate) struct TypeListPlanner<'a> {
     constraint: TypeListConstraint<'a>,
     var: VariableVertexId,
     num_types: f64,
+}
+
+impl<'a> fmt::Debug for TypeListPlanner<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("TypeListPlanner").field("constraint", &self.constraint).finish()
+    }
 }
 
 impl<'a> TypeListPlanner<'a> {
@@ -153,12 +159,18 @@ impl Costed for TypeListPlanner<'_> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub(crate) struct IsaPlanner<'a> {
     isa: &'a Isa<Variable>,
     thing: VariableVertexId,
     type_: Input,
     unbound_direction: Direction,
+}
+
+impl<'a> fmt::Debug for IsaPlanner<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("IsaPlanner").field("isa", self.isa).finish()
+    }
 }
 
 impl<'a> IsaPlanner<'a> {
@@ -188,7 +200,7 @@ impl Costed for IsaPlanner<'_> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub(crate) struct HasPlanner<'a> {
     has: &'a Has<Variable>,
     pub owner: VariableVertexId,
@@ -196,6 +208,12 @@ pub(crate) struct HasPlanner<'a> {
     expected_size: f64,
     expected_unbound_size: f64,
     unbound_direction: Direction,
+}
+
+impl<'a> fmt::Debug for HasPlanner<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("HasPlanner").field("has", &self.has).finish()
+    }
 }
 
 impl<'a> HasPlanner<'a> {
@@ -282,7 +300,7 @@ impl Costed for HasPlanner<'_> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub(crate) struct LinksPlanner<'a> {
     links: &'a Links<Variable>,
     pub relation: VariableVertexId,
@@ -291,6 +309,12 @@ pub(crate) struct LinksPlanner<'a> {
     expected_size: f64,
     expected_unbound_size: f64,
     unbound_direction: Direction,
+}
+
+impl<'a> fmt::Debug for LinksPlanner<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LinksPlanner").field("links", &self.links).finish()
+    }
 }
 
 impl<'a> LinksPlanner<'a> {
