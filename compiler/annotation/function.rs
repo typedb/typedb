@@ -228,7 +228,7 @@ fn annotate_named_function(
     local_functions: Option<&AnnotatedUnindexedFunctions>,
 ) -> Result<AnnotatedFunction, FunctionAnnotationError> {
     let Function { arguments, argument_labels, .. } = function;
-
+    debug_assert!(argument_labels.is_some());
     let mut argument_concept_variable_types = BTreeMap::new();
     let mut argument_value_variable_types = BTreeMap::new();
     for (arg_index, (var, label)) in zip(arguments, argument_labels.as_ref().unwrap()).enumerate() {
