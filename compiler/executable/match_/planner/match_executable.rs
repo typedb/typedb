@@ -67,9 +67,9 @@ impl ExecutionStep {
             ExecutionStep::Intersection(step) => &step.selected_variables,
             ExecutionStep::UnsortedJoin(step) => &step.selected_variables,
             ExecutionStep::Assignment(_) => todo!(),
-            ExecutionStep::Check(_) => &[],
+            ExecutionStep::Check(step) => &step.selected_variables,
             ExecutionStep::Disjunction(step) => &step.selected_variables,
-            ExecutionStep::Negation(_) => &[],
+            ExecutionStep::Negation(step) => &step.selected_variables,
             ExecutionStep::Optional(_) => todo!(),
         }
     }
@@ -113,7 +113,7 @@ impl IntersectionStep {
     pub fn new(
         sort_variable: VariablePosition,
         instructions: Vec<ConstraintInstruction<VariablePosition>>,
-        selected_variables: &[VariablePosition],
+        selected_variables: Vec<VariablePosition>,
         named_variables: &HashSet<VariablePosition>,
         output_width: u32,
     ) -> Self {
@@ -135,11 +135,10 @@ impl IntersectionStep {
         let instructions = instructions
             .into_iter()
             .map(|instruction| {
-                let variable_modes = VariableModes::new_for(&instruction, selected_variables, named_variables);
+                let variable_modes = VariableModes::new_for(&instruction, &selected_variables, named_variables);
                 (instruction, variable_modes)
             })
             .collect();
-        let selected_variables = selected_variables.to_owned();
         Self { sort_variable, instructions, new_variables, output_width, input_variables, selected_variables }
     }
 
@@ -224,12 +223,17 @@ impl AssignmentStep {
 #[derive(Clone, Debug)]
 pub struct CheckStep {
     pub check_instructions: Vec<CheckInstruction<VariablePosition>>,
+    pub selected_variables: Vec<VariablePosition>,
     pub output_width: u32,
 }
 
 impl CheckStep {
-    pub fn new(check_instructions: Vec<CheckInstruction<VariablePosition>>, output_width: u32) -> Self {
-        Self { check_instructions, output_width }
+    pub fn new(
+        check_instructions: Vec<CheckInstruction<VariablePosition>>,
+        selected_variables: Vec<VariablePosition>,
+        output_width: u32,
+    ) -> Self {
+        Self { check_instructions, selected_variables, output_width }
     }
 
     pub fn output_width(&self) -> u32 {
@@ -253,12 +257,13 @@ impl DisjunctionStep {
 #[derive(Clone, Debug)]
 pub struct NegationStep {
     pub negation: MatchExecutable,
+    pub selected_variables: Vec<VariablePosition>,
     pub output_width: u32,
 }
 
 impl NegationStep {
-    pub fn new(negation: MatchExecutable, output_width: u32) -> Self {
-        Self { negation, output_width }
+    pub fn new(negation: MatchExecutable, selected_variables: Vec<VariablePosition>, output_width: u32) -> Self {
+        Self { negation, selected_variables, output_width }
     }
 
     pub fn output_width(&self) -> u32 {
