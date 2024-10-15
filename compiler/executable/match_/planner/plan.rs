@@ -24,6 +24,7 @@ use ir::{
     pipeline::{block::BlockContext, VariableRegistry},
 };
 use itertools::Itertools;
+use ir::pattern::Vertex;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -51,6 +52,7 @@ use crate::{
     },
     VariablePosition,
 };
+use crate::executable::match_::planner::vertex::FunctionCallPlanner;
 
 pub(crate) fn plan_conjunction<'a>(
     conjunction: &'a Conjunction,
@@ -213,10 +215,8 @@ impl<'a> PlanBuilder<'a> {
                 Constraint::Has(has) => self.register_has(has),
                 Constraint::Links(links) => self.register_links(links),
 
-                Constraint::FunctionCallBinding(function_call) => {
-                    self.register_function_call(function_call);
-                    todo!("function call")
-                }
+                Constraint::FunctionCallBinding(call) => self.register_function_call_binding(call),
+
                 Constraint::Comparison(comparison) => self.register_comparison(comparison),
 
                 Constraint::ExpressionBinding(expression) => {
@@ -314,7 +314,19 @@ impl<'a> PlanBuilder<'a> {
         // self.elements.push(PlannerVertex::Expression());
     }
 
-    fn register_function_call(&mut self, function_call: &FunctionCallBinding<Variable>) {}
+    fn register_function_call_binding(&mut self, call_binding: &FunctionCallBinding<Variable>) {
+        // TODO: This is just a mock
+        let arguments = call_binding.function_call().argument_ids().map(|variable| {
+            self.variable_index[&variable]
+        }).collect();
+        let return_vars = call_binding.assigned().iter().map(|vertex| {
+            let Vertex::Variable(variable) = vertex else { todo!("Unreachable?") };
+            self.variable_index[variable]
+        }).collect();
+        let element_cost = ElementCost { per_input: 1.0, per_output: 1.0, branching_factor: 1.0 };
+        self.elements.push(PlannerVertex::FunctionCall(FunctionCallPlanner::new(arguments, return_vars, element_cost)));
+        todo!("register_function_call");
+    }
 
     fn register_comparison(&mut self, comparison: &Comparison<Variable>) {
         let lhs = Input::from_vertex(comparison.lhs(), &self.variable_index);

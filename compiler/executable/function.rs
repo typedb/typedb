@@ -36,6 +36,7 @@ pub enum ExecutableReturn {
     Reduce(Vec<ReduceInstruction<VariablePosition>>),
 }
 
+// TODO: Don't bother maintaining this function. It'll have to disappear into the planner.
 pub(crate) fn compile_function(
     statistics: &Statistics,
     schema_functions: &ExecutableFunctionRegistry, // Can't have preamble in them when you're compiling functions

@@ -767,7 +767,7 @@ impl Costed for LinksPlanner {
 }
 
 #[derive(Debug)]
-struct FunctionCallPlanner {
+pub(crate) struct FunctionCallPlanner {
     arguments: Vec<usize>,
     assigned: Vec<usize>,
     cost: ElementCost,
