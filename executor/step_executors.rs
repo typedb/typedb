@@ -76,8 +76,8 @@ impl StepExecutor {
             ExecutionStep::Assignment(AssignmentStep { .. }) => {
                 todo!()
             }
-            ExecutionStep::Check(CheckStep { check_instructions, output_width }) => {
-                Ok(Self::Check(CheckExecutor::new(check_instructions.clone())))
+            ExecutionStep::Check(CheckStep { check_instructions, selected_variables, output_width: _ }) => {
+                Ok(Self::Check(CheckExecutor::new(check_instructions.clone(), selected_variables.clone())))
             }
             ExecutionStep::Disjunction(DisjunctionStep { branches, .. }) => {
                 Ok(Self::Disjunction(DisjunctionExecutor::new(branches.clone(), row_width)))
@@ -599,12 +599,13 @@ impl AssignExecutor {
 
 pub(super) struct CheckExecutor {
     checker: Checker<()>,
+    selected_variables: Vec<VariablePosition>,
 }
 
 impl CheckExecutor {
-    fn new(checks: Vec<CheckInstruction<VariablePosition>>) -> Self {
+    fn new(checks: Vec<CheckInstruction<VariablePosition>>, selected_variables: Vec<VariablePosition>) -> Self {
         let checker = Checker::new(checks, HashMap::new());
-        Self { checker }
+        Self { checker, selected_variables }
     }
 
     fn batch_from(

@@ -11,10 +11,7 @@ use std::{
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use ir::{
-    pattern::ScopeId,
-    pipeline::{block::Block, VariableRegistry},
-};
+use ir::pipeline::{block::Block, VariableRegistry};
 use itertools::Itertools;
 
 use crate::{
@@ -80,18 +77,20 @@ impl IntersectionBuilder {
 #[derive(Debug, Default)]
 struct CheckBuilder {
     instructions: Vec<CheckInstruction<VariablePosition>>,
+    selected_variables: Vec<Variable>,
     output_width: Option<u32>,
 }
 
 #[derive(Debug)]
 struct NegationBuilder {
     negation: MatchExecutable,
+    selected_variables: Vec<Variable>,
     output_width: Option<u32>,
 }
 
 impl NegationBuilder {
-    fn new(negation: MatchExecutable) -> Self {
-        Self { negation, output_width: None }
+    fn new(negation: MatchExecutable, selected_variables: Vec<Variable>) -> Self {
+        Self { negation, selected_variables, output_width: None }
     }
 }
 
@@ -133,16 +132,24 @@ impl StepBuilder {
                 ExecutionStep::Intersection(IntersectionStep::new(
                     sort_variable,
                     instructions,
-                    &selected_variables.into_iter().map(|var| index[&var]).collect_vec(),
+                    selected_variables.into_iter().map(|var| index[&var]).collect(),
                     named_variables,
                     output_width.unwrap(),
                 ))
             }
-            Self::Check(CheckBuilder { instructions, output_width }) => {
-                ExecutionStep::Check(CheckStep::new(instructions, output_width.unwrap()))
+            Self::Check(CheckBuilder { instructions, selected_variables, output_width }) => {
+                ExecutionStep::Check(CheckStep::new(
+                    instructions,
+                    selected_variables.into_iter().map(|var| index[&var]).collect(),
+                    output_width.unwrap(),
+                ))
             }
-            Self::Negation(NegationBuilder { negation, output_width }) => {
-                ExecutionStep::Negation(NegationStep::new(negation, output_width.unwrap()))
+            Self::Negation(NegationBuilder { negation, selected_variables, output_width }) => {
+                ExecutionStep::Negation(NegationStep::new(
+                    negation,
+                    selected_variables.into_iter().map(|var| index[&var]).collect(),
+                    output_width.unwrap(),
+                ))
             }
             Self::Disjunction(DisjunctionBuilder { branches, selected_variables, output_width }) => {
                 ExecutionStep::Disjunction(DisjunctionStep {

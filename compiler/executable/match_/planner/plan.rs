@@ -70,7 +70,7 @@ pub(crate) fn plan_conjunction<'a>(
     let plan_builder = make_builder(
         conjunction,
         block_context,
-        input_variables,
+        variable_positions,
         type_annotations,
         variable_registry,
         _expressions,
@@ -83,7 +83,7 @@ pub(crate) fn plan_conjunction<'a>(
 fn make_builder<'a>(
     conjunction: &'a Conjunction,
     block_context: &BlockContext,
-    input_variables: &HashMap<Variable, VariablePosition>,
+    variable_positions: &HashMap<Variable, VariablePosition>,
     type_annotations: &'a TypeAnnotations,
     variable_registry: &VariableRegistry,
     _expressions: &HashMap<Variable, ExecutableExpression>,
@@ -110,15 +110,19 @@ fn make_builder<'a>(
                     })
                     .collect_vec(),
             )),
-            NestedPattern::Negation(negation) => negation_subplans.push(plan_conjunction(
-                negation.conjunction(),
-                block_context,
-                variable_positions,
-                type_annotations,
-                variable_registry,
-                _expressions,
-                statistics,
-            )),
+            NestedPattern::Negation(negation) => negation_subplans.push(
+                make_builder(
+                    negation.conjunction(),
+                    block_context,
+                    variable_positions,
+                    type_annotations,
+                    variable_registry,
+                    _expressions,
+                    statistics,
+                )
+                .with_inputs(negation.conjunction().captured_variables(block_context))
+                .plan(),
+            ),
             NestedPattern::Optional(_) => todo!(),
         }
     }
@@ -552,6 +556,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     pub(super) fn plan(self) -> ConjunctionPlan<'a> {
         let ordering = self.initialise_greedy_ordering();
 
+        let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
+
         let cost = ordering
             .iter()
             .enumerate()
@@ -680,7 +686,10 @@ impl ConjunctionPlan<'_> {
                     variable_registry.clone(),
                 );
                 let variable_positions = negation.variable_positions().clone(); // FIXME needless clone
-                match_builder.push_step(&variable_positions, StepBuilder::Negation(NegationBuilder::new(negation)));
+                match_builder.push_step(
+                    &variable_positions,
+                    StepBuilder::Negation(NegationBuilder::new(negation, match_builder.selected_variables.clone())),
+                );
             }
             PlannerVertex::Comparison(comparison) => {
                 let comparison = comparison.comparison();
