@@ -66,7 +66,7 @@ fn test_insert() {
     let snapshot = context.storage.clone().open_snapshot_write();
     let query_str = "insert $p isa person, has age 10;";
     let query = typeql::parse_query(query_str).unwrap().into_pipeline();
-    let (pipeline, _named_outputs) = context
+    let pipeline = context
         .query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -78,7 +78,7 @@ fn test_insert() {
         .unwrap();
 
     let (mut iterator, ExecutionContext { snapshot, .. }) =
-        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+        pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     assert_matches!(iterator.next(), Some(Ok(_)));
     assert_matches!(iterator.next(), None);
     let snapshot = Arc::into_inner(snapshot).unwrap();
@@ -104,7 +104,7 @@ fn test_insert_insert() {
         (group: $org, member: $p) isa membership;
     "#;
     let query = typeql::parse_query(query_str).unwrap().into_pipeline();
-    let (pipeline, _) = context
+    let pipeline = context
         .query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -116,7 +116,7 @@ fn test_insert_insert() {
         .unwrap();
 
     let (mut iterator, ExecutionContext { snapshot, .. }) =
-        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+        pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     while iterator.next().is_some() {}
     let snapshot = Arc::into_inner(snapshot).unwrap();
     snapshot.commit().unwrap();
@@ -138,7 +138,7 @@ fn test_match() {
        $r isa person, has age 30, has name 'Harry';
    "#;
     let query = typeql::parse_query(query_str).unwrap().into_pipeline();
-    let (pipeline, _named_outputs) = context
+    let pipeline = context
         .query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -149,7 +149,7 @@ fn test_match() {
         )
         .unwrap();
     let (iterator, ExecutionContext { snapshot, .. }) =
-        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+        pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let _ = iterator.count();
     // must consume iterator to ensure operation completed
     let snapshot = Arc::into_inner(snapshot).unwrap();
@@ -158,7 +158,7 @@ fn test_match() {
     let snapshot = Arc::new(context.storage.open_snapshot_read());
     let query = "match $p isa person;";
     let match_ = typeql::parse_query(query).unwrap().into_pipeline();
-    let (pipeline, _named_outputs) = context
+    let pipeline = context
         .query_manager
         .prepare_read_pipeline(
             snapshot,
@@ -169,13 +169,13 @@ fn test_match() {
         )
         .unwrap();
     let (iterator, ExecutionContext { snapshot, .. }) =
-        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+        pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let batch = iterator.collect_owned().unwrap();
     assert_eq!(batch.len(), 3);
 
     let query = "match $person isa person, has name 'John', has age $age;";
     let match_ = typeql::parse_query(query).unwrap().into_pipeline();
-    let (pipeline, _named_outputs) = context
+    let pipeline = context
         .query_manager
         .prepare_read_pipeline(
             snapshot,
@@ -186,7 +186,7 @@ fn test_match() {
         )
         .unwrap();
     let (iterator, ExecutionContext { .. }) =
-        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+        pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let batch = iterator.collect_owned().unwrap();
     assert_eq!(batch.len(), 1);
 }
@@ -202,7 +202,7 @@ fn test_match_match() {
        $r isa person, has age 30, has name 'Harry';
    "#;
     let query = typeql::parse_query(query_str).unwrap().into_pipeline();
-    let (pipeline, _named_outputs) = context
+    let pipeline = context
         .query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -213,7 +213,7 @@ fn test_match_match() {
         )
         .unwrap();
     let (iterator, ExecutionContext { snapshot, .. }) =
-        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+        pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let _ = iterator.count();
     // must consume iterator to ensure operation completed
     let snapshot = Arc::into_inner(snapshot).unwrap();
@@ -225,7 +225,7 @@ fn test_match_match() {
         match $p has age $a;
     ";
     let match_ = typeql::parse_query(query).unwrap().into_pipeline();
-    let (pipeline, _named_outputs) = context
+    let pipeline = context
         .query_manager
         .prepare_read_pipeline(
             snapshot,
@@ -236,13 +236,13 @@ fn test_match_match() {
         )
         .unwrap();
     let (iterator, ExecutionContext { snapshot, .. }) =
-        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+        pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let batch = iterator.collect_owned().unwrap();
     assert_eq!(batch.len(), 3);
 
     let query = "match $person isa person, has name 'John', has age $age;";
     let match_ = typeql::parse_query(query).unwrap().into_pipeline();
-    let (pipeline, _named_outputs) = context
+    let pipeline = context
         .query_manager
         .prepare_read_pipeline(
             snapshot,
@@ -253,7 +253,7 @@ fn test_match_match() {
         )
         .unwrap();
     let (iterator, ExecutionContext { .. }) =
-        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+        pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let batch = iterator.collect_owned().unwrap();
     assert_eq!(batch.len(), 1);
 }
@@ -264,7 +264,7 @@ fn test_match_delete_has() {
     let snapshot = context.storage.clone().open_snapshot_write();
     let insert_query_str = "insert $p isa person, has age 10;";
     let insert_query = typeql::parse_query(insert_query_str).unwrap().into_pipeline();
-    let (insert_pipeline, _named_outputs) = context
+    let pipeline = context
         .query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -275,7 +275,7 @@ fn test_match_delete_has() {
         )
         .unwrap();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
-        insert_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+        pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
     assert_matches!(iterator.next(), Some(Ok(_)));
     assert_matches!(iterator.next(), None);
@@ -298,7 +298,7 @@ fn test_match_delete_has() {
     "#;
 
     let delete_query = typeql::parse_query(delete_query_str).unwrap().into_pipeline();
-    let (delete_pipeline, _named_outputs) = context
+    let pipeline = context
         .query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -310,7 +310,7 @@ fn test_match_delete_has() {
         .unwrap();
 
     let (mut iterator, ExecutionContext { snapshot, .. }) =
-        delete_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+        pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     assert_matches!(iterator.next(), Some(Ok(_)));
     assert_matches!(iterator.next(), None);
     let snapshot = Arc::into_inner(snapshot).unwrap();
@@ -337,7 +337,7 @@ fn test_insert_match_insert() {
        $r isa person, has age 30, has name 'Harry';
    "#;
     let query = typeql::parse_query(query_str).unwrap().into_pipeline();
-    let (pipeline, _named_outputs) = context
+    let pipeline = context
         .query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -348,7 +348,7 @@ fn test_insert_match_insert() {
         )
         .unwrap();
     let (iterator, ExecutionContext { snapshot, .. }) =
-        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+        pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let _ = iterator.count();
     // must consume iterator to ensure operation completed
     let snapshot = Arc::into_inner(snapshot).unwrap();
@@ -365,7 +365,7 @@ fn test_insert_match_insert() {
     "#;
 
     let query = typeql::parse_query(query_str).unwrap().into_pipeline();
-    let (pipeline, _) = context
+    let pipeline = context
         .query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -377,7 +377,7 @@ fn test_insert_match_insert() {
         .unwrap();
 
     let (mut iterator, ExecutionContext { snapshot, .. }) =
-        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+        pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     while iterator.next().is_some() {}
     let snapshot = Arc::into_inner(snapshot).unwrap();
     snapshot.commit().unwrap();
@@ -394,7 +394,7 @@ fn test_match_sort() {
     let snapshot = context.storage.clone().open_snapshot_write();
     let insert_query_str = "insert $p isa person, has age 1, has age 2, has age 3, has age 4;";
     let insert_query = typeql::parse_query(insert_query_str).unwrap().into_pipeline();
-    let (insert_pipeline, _named_outputs) = context
+    let pipeline = context
         .query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -405,7 +405,7 @@ fn test_match_sort() {
         )
         .unwrap();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
-        insert_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+        pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
     assert_matches!(iterator.next(), Some(Ok(_)));
     assert_matches!(iterator.next(), None);
@@ -415,7 +415,7 @@ fn test_match_sort() {
     let snapshot = Arc::new(context.storage.open_snapshot_read());
     let query = "match $age isa age; sort $age desc;";
     let match_ = typeql::parse_query(query).unwrap().into_pipeline();
-    let (pipeline, named_outputs) = context
+    let pipeline = context
         .query_manager
         .prepare_read_pipeline(
             snapshot,
@@ -425,8 +425,9 @@ fn test_match_sort() {
             &match_,
         )
         .unwrap();
+    let named_outputs = pipeline.rows_positions().unwrap();
     let (iterator, ExecutionContext { snapshot, .. }) =
-        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+        pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
     let batch = iterator.collect_owned().unwrap();
     assert_eq!(batch.len(), 4);
@@ -454,7 +455,7 @@ fn test_select() {
         $p1 isa person, has name "Alice", has age 1;
         $p2 isa person, has name "Bob", has age 2;"#;
     let insert_query = typeql::parse_query(insert_query_str).unwrap().into_pipeline();
-    let (insert_pipeline, _named_outputs) = context
+    let pipeline = context
         .query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -465,7 +466,7 @@ fn test_select() {
         )
         .unwrap();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
-        insert_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+        pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
     assert_matches!(iterator.next(), Some(Ok(_)));
     assert_matches!(iterator.next(), None);
@@ -476,7 +477,7 @@ fn test_select() {
         let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
         let query = "match $p isa person, has name \"Alice\", has age $age;";
         let match_ = typeql::parse_query(query).unwrap().into_pipeline();
-        let (_, named_outputs) = context
+        let pipeline = context
             .query_manager
             .prepare_read_pipeline(
                 snapshot,
@@ -486,6 +487,7 @@ fn test_select() {
                 &match_,
             )
             .unwrap();
+        let named_outputs = pipeline.rows_positions().unwrap();
         assert!(named_outputs.contains_key("age"));
         assert!(named_outputs.contains_key("p"));
     }
@@ -493,7 +495,7 @@ fn test_select() {
         let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
         let query = "match $p isa person, has name \"Alice\", has age $age; select $age;";
         let match_ = typeql::parse_query(query).unwrap().into_pipeline();
-        let (_, named_outputs) = context
+        let pipeline = context
             .query_manager
             .prepare_read_pipeline(
                 snapshot,
@@ -503,6 +505,7 @@ fn test_select() {
                 &match_,
             )
             .unwrap();
+        let named_outputs = pipeline.rows_positions().unwrap();
         assert!(named_outputs.contains_key("age"));
         assert!(!named_outputs.contains_key("p"));
     }
@@ -516,7 +519,7 @@ fn test_require() {
         $p1 isa person, has name "Alice", has age 1;
         $p2 isa person, has name "Bob", has age 2;"#;
     let insert_query = typeql::parse_query(insert_query_str).unwrap().into_pipeline();
-    let (insert_pipeline, _named_outputs) = context
+    let pipeline = context
         .query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -527,7 +530,7 @@ fn test_require() {
         )
         .unwrap();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
-        insert_pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+        pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
     assert_matches!(iterator.next(), Some(Ok(_)));
     assert_matches!(iterator.next(), None);
@@ -538,7 +541,7 @@ fn test_require() {
         let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
         let query = "match $p isa person, has name \"Alice\", has age $age; require $age;";
         let match_ = typeql::parse_query(query).unwrap().into_pipeline();
-        let (_, named_outputs) = context
+        let pipeline = context
             .query_manager
             .prepare_read_pipeline(
                 snapshot,
@@ -548,6 +551,7 @@ fn test_require() {
                 &match_,
             )
             .unwrap();
+        let named_outputs = pipeline.rows_positions().unwrap();
         assert!(named_outputs.contains_key("age"));
         assert!(named_outputs.contains_key("p"));
     }

@@ -55,14 +55,15 @@ fn execute_read_query(
     query: typeql::Query,
 ) -> Result<Vec<HashMap<String, VariableValue<'static>>>, QueryError> {
     with_read_tx!(context, |tx| {
-        let (final_stage, named_outputs) = QueryManager {}.prepare_read_pipeline(
+        let pipeline = QueryManager {}.prepare_read_pipeline(
             tx.snapshot.clone(),
             &tx.type_manager,
             tx.thing_manager.clone(),
             &tx.function_manager,
             &query.into_pipeline(),
         )?;
-        let result_as_batch = match final_stage.into_iterator(ExecutionInterrupt::new_uninterruptible()) {
+        let named_outputs = pipeline.rows_positions().unwrap().clone();
+        let result_as_batch = match pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
             Ok((iterator, _)) => iterator.collect_owned(),
             Err((err, _)) => {
                 return Err(QueryError::ReadPipelineExecutionError { typedb_source: err });
@@ -84,7 +85,7 @@ fn execute_write_query(
     }
 
     with_write_tx_deconstructed!(context, |snapshot, type_manager, thing_manager, function_manager, _db, _opts| {
-        let (final_stage, named_outputs) = QueryManager {}
+        let pipeline = QueryManager {}
             .prepare_write_pipeline(
                 Arc::into_inner(snapshot).unwrap(),
                 &type_manager,
@@ -93,6 +94,7 @@ fn execute_write_query(
                 &query.into_pipeline(),
             )
             .unwrap();
+        let named_outputs = pipeline.rows_positions().unwrap().clone();
 
         let (result_as_batch, snapshot) = match final_stage.into_iterator(ExecutionInterrupt::new_uninterruptible()) {
             Ok((iterator, ExecutionContext { snapshot, .. })) => (iterator.collect_owned(), snapshot),

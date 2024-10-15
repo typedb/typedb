@@ -7,20 +7,16 @@
 use std::marker::PhantomData;
 
 use answer::Concept;
+use compiler::executable::fetch::executable::ExecutableFetch;
 use storage::snapshot::ReadableSnapshot;
 
 pub struct FetchStageExecutor<Snapshot: ReadableSnapshot> {
     ph: PhantomData<Snapshot>,
 }
 
-enum ConceptMapValue {
-    Single(Concept<'static>),
-    List(ConceptList),
-    Map(ConceptMap),
-}
-
-struct ConceptMap {}
-
-struct ConceptList {
-    list: Vec<ConceptMapValue>,
+impl<Snapshot: ReadableSnapshot> FetchStageExecutor<Snapshot> {
+    
+    pub(crate) fn new(executable: ExecutableFetch) -> Self {
+        todo!()
+    }
 }
