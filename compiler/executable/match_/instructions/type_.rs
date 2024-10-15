@@ -24,16 +24,21 @@ use crate::{
 pub struct TypeListInstruction<ID> {
     pub type_var: ID,
     types: Arc<BTreeSet<Type>>,
+    pub checks: Vec<CheckInstruction<ID>>,
 }
 
 impl TypeListInstruction<Variable> {
     pub(crate) fn new(type_var: Variable, type_annotations: &TypeAnnotations) -> Self {
         let types = type_annotations.vertex_annotations_of(&Vertex::Variable(type_var)).unwrap().clone();
-        Self { type_var, types }
+        Self { type_var, types, checks: Vec::new() }
     }
 }
 
 impl<ID> TypeListInstruction<ID> {
+    pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
+        self.checks.push(check)
+    }
+
     pub fn types(&self) -> &BTreeSet<Type> {
         &self.types
     }
@@ -41,8 +46,12 @@ impl<ID> TypeListInstruction<ID> {
 
 impl<ID: IrID> TypeListInstruction<ID> {
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> TypeListInstruction<T> {
-        let Self { type_var, types } = self;
-        TypeListInstruction { type_var: mapping[&type_var], types }
+        let Self { type_var, types, checks } = self;
+        TypeListInstruction {
+            type_var: mapping[&type_var],
+            types,
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
+        }
     }
 }
 
