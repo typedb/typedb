@@ -54,7 +54,7 @@ pub fn compile(
         statistics,
     )
     .lower(
-        &block.scope_context().get_variable_scopes().map(|(var, _)| var).collect_vec(),
+        &block.block_context().get_variable_scopes().map(|(var, _)| var).collect_vec(),
         input_variables,
         variable_registry,
     )

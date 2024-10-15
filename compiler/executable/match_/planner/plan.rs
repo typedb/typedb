@@ -102,7 +102,7 @@ fn make_builder<'a>(
                         make_builder(
                             conj,
                             block_context,
-                            input_variables,
+                            variable_positions,
                             type_annotations,
                             variable_registry,
                             _expressions,
@@ -130,7 +130,7 @@ fn make_builder<'a>(
 
     let mut plan_builder = ConjunctionPlanBuilder::new(type_annotations, statistics);
     plan_builder.register_variables(
-        input_variables.keys().copied(),
+        variable_positions.keys().copied(),
         conjunction.captured_variables(block_context),
         conjunction.declared_variables(block_context),
         variable_registry,
@@ -1044,7 +1044,10 @@ pub(super) struct Graph<'a> {
 
 impl fmt::Debug for Graph<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Graph").field("variable_index", &self.variable_index).field("elements", &self.elements).finish()
+        f.debug_struct(type_name_of_val(self))
+            .field("variable_index", &self.variable_index)
+            .field("elements", &self.elements)
+            .finish()
     }
 }
 
