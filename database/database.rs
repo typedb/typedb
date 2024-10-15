@@ -408,6 +408,12 @@ typedb_error!(
 );
 
 typedb_error!(
+    pub DatabaseCreateError(component = "Database create", prefix = "DBC") {
+        InvalidName(1, "Cannot create database since '{name}' is not a valid database name.", name: String),
+    }
+);
+
+typedb_error!(
     pub DatabaseDeleteError(component = "Database delete", prefix = "DBD") {
         DoesNotExist(1, "Cannot delete database since it does not exist."),
         InUse(2, "Cannot delete database since it is in use."),
@@ -418,23 +424,25 @@ typedb_error!(
 
 typedb_error!(
     pub DatabaseResetError(component = "Database reset", prefix = "DBR") {
-        InUse(1, "Database cannot be reset since it is in use."),
-        StorageInUse(2, "Database cannot be reset since the storage is in use."),
+        DatabaseDelete(1, "Cannot delete database.", ( typedb_source: DatabaseDeleteError )),
+        DatabaseCreate(2, "Cannot create database.", ( typedb_source: DatabaseCreateError )),
+        InUse(3, "Database cannot be reset since it is in use."),
+        StorageInUse(4, "Database cannot be reset since the storage is in use."),
         CorruptionPartialResetStorageInUse(
-            3,
+            5,
             "Corruption warning: database reset failed partway because the storage is still in use.",
             ( typedb_source: StorageResetError )
         ),
         CorruptionPartialResetKeyGeneratorInUse(
-            4,
+            6,
             "Corruption warning: Database reset failed partway because the schema key generator is still in use."
         ),
         CorruptionPartialResetTypeVertexGeneratorInUse(
-            5,
+            7,
             "Corruption warning: Database reset failed partway because the type key generator is still in use."
         ),
         CorruptionPartialResetThingVertexGeneratorInUse(
-            6,
+            8,
             "Corruption warning: Dataaase reset failed partway because the instance key generator is still in use."
         ),
     }

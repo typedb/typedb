@@ -21,6 +21,7 @@ rust_library(
         "//storage",
         "//durability",
 
+        "@vaticle_typeql//rust:typeql",
         "@crates//:itertools",
         "@crates//:rocksdb",
         "@crates//:tracing",

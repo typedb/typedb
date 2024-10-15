@@ -13,8 +13,8 @@ use server::{typedb, typedb::Server};
 
 use crate::{generic_step, params, util, Context};
 
-async fn server_create_database(server: &'_ Server, name: String) {
-    server.database_manager().create_database(&name);
+async fn server_create_database(server: &'_ Server, name: String, may_error: params::MayError) {
+    may_error.check(server.database_manager().create_database(&name));
 }
 
 async fn server_delete_database(server: &'_ Server, name: String, may_error: params::MayError) {
@@ -22,11 +22,17 @@ async fn server_delete_database(server: &'_ Server, name: String, may_error: par
 }
 
 #[apply(generic_step)]
-#[step(expr = "connection create database: {word}")]
-pub async fn connection_create_database(context: &mut Context, name: String) {
+#[step(expr = "connection create database: {word}{may_error}")]
+pub async fn connection_create_database(context: &mut Context, name: String, may_error: params::MayError) {
     let server = context.server().unwrap().lock().unwrap();
-    server_create_database(&server, name).await;
+    server_create_database(&server, name, may_error).await;
     drop(server)
+}
+
+#[apply(generic_step)]
+#[step(expr = "connection create database with empty name{may_error}")]
+pub async fn connection_create_database_with_an_empty_name(context: &mut Context, may_error: params::MayError) {
+    connection_create_database(context, "".to_string(), may_error).await
 }
 
 #[apply(generic_step)]
@@ -34,7 +40,7 @@ pub async fn connection_create_database(context: &mut Context, name: String) {
 pub async fn connection_create_databases(context: &mut Context, step: &Step) {
     let server = context.server().unwrap().lock().unwrap();
     for name in util::iter_table(step) {
-        server_create_database(&server, name.into()).await;
+        server_create_database(&server, name.into(), params::MayError::False).await;
     }
     drop(server)
 }
@@ -43,7 +49,8 @@ pub async fn connection_create_databases(context: &mut Context, step: &Step) {
 #[step(expr = "connection create database(s) in parallel:")]
 pub async fn connection_create_databases_in_parallel(context: &mut Context, step: &Step) {
     let server = context.server().unwrap().lock().unwrap();
-    join_all(util::iter_table(step).map(|name| server_create_database(&server, name.into()))).await;
+    join_all(util::iter_table(step).map(|name| server_create_database(&server, name.into(), params::MayError::False)))
+        .await;
     drop(server)
 }
 
