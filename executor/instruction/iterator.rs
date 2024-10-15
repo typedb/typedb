@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, iter::Iterator, ops::RangeInclusive};
+use std::{cmp::Ordering, iter::Iterator, ops::Range};
 
 use answer::variable_value::VariableValue;
 use compiler::{
@@ -206,14 +206,40 @@ pub(crate) struct SortedTupleIterator<Iterator: for<'a> LendingIterator<Item<'a>
     tuple_length: usize,
     first_unbound: TupleIndex,
     last_enumerated: Option<TupleIndex>,
-    last_enumerated_or_counted: TupleIndex,
+    last_enumerated_or_counted: Option<TupleIndex>,
 }
 
 impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleIterator<Iterator> {
     pub(crate) fn new(iterator: Iterator, tuple_positions: TuplePositions, variable_modes: &VariableModes) -> Self {
+        // assumption: items in tuple are ordered as:
+        //      inputs, outputs, counted, checked
+        #[cfg(debug_assertions)]
+        {
+            let mut expected_mode = VariableMode::Input;
+            for pos in tuple_positions.positions() {
+                let &Some(pos) = pos else { continue };
+                match variable_modes.get(pos) {
+                    Some(VariableMode::Input) => debug_assert_eq!(expected_mode, VariableMode::Input),
+                    Some(VariableMode::Output) => {
+                        debug_assert!(matches!(expected_mode, VariableMode::Input | VariableMode::Output));
+                        expected_mode = VariableMode::Output;
+                    }
+                    Some(VariableMode::Count) => {
+                        debug_assert!(matches!(
+                            expected_mode,
+                            VariableMode::Input | VariableMode::Output | VariableMode::Count
+                        ));
+                        expected_mode = VariableMode::Count;
+                    }
+                    Some(VariableMode::Check) => expected_mode = VariableMode::Check,
+                    None => (),
+                }
+            }
+        }
+
         let first_unbound = first_unbound(variable_modes, &tuple_positions);
         let last_enumerated = last_enumerated(variable_modes, &tuple_positions);
-        let last_enumerated_or_counted = last_enumerated_or_counted(variable_modes, &tuple_positions).unwrap();
+        let last_enumerated_or_counted = last_enumerated_or_counted(variable_modes, &tuple_positions);
         Self {
             iterator: Peekable::new(iterator),
             tuple_length: tuple_positions.len(),
@@ -224,29 +250,29 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleI
         }
     }
 
-    fn count_until_changes(&mut self, range: RangeInclusive<usize>) -> Result<usize, ConceptReadError> {
-        debug_assert!(self.peek().is_some() && !range.is_empty());
+    fn first_unbound_index(&self) -> TupleIndex {
+        self.first_unbound
+    }
 
-        if range.end() == &self.tuple_length {
-            self.advance_single()?;
-            return Ok(1);
-        }
-
-        let current = self.peek().unwrap().clone()?.into_owned();
-        let current_range = &current.values()[range.clone()];
-        self.iterator.next().unwrap()?;
+    fn count_until_enumerated_changes(&mut self) -> Result<usize, ConceptReadError> {
+        let Some(last_enumerated) = self.last_enumerated else {
+            unreachable!("this should only be called if the tuple contains enumerated variables")
+        };
+        let past_enumerated_or_counted_index = self.last_enumerated_or_counted.map_or(0, |i| i as usize + 1);
         let mut count = 1;
+        let current = self.peek().unwrap().clone()?.into_owned();
+        let enumerated = &current.values()[0..=last_enumerated as usize];
         loop {
-            let peek = self.iterator.peek();
-            match peek {
+            // TODO: this feels inefficient since each skip() call does a copy of the current tuple
+            self.skip_until_changes(0..past_enumerated_or_counted_index)?;
+            match self.iterator.peek() {
                 None => return Ok(count),
                 Some(Ok(tuple)) => {
-                    let values = &tuple.values()[range.clone()];
-                    if values != current_range {
+                    let tuple_range = &tuple.values()[0..=last_enumerated as usize];
+                    if tuple_range != enumerated {
                         return Ok(count);
                     } else {
                         count += 1;
-                        self.iterator.next().unwrap()?;
                     }
                 }
                 Some(Err(err)) => return Err(err.clone()),
@@ -254,14 +280,33 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleI
         }
     }
 
-    fn first_unbound_index(&self) -> TupleIndex {
-        self.first_unbound
-    }
-
-    fn skip_until_changes(&mut self, range: RangeInclusive<usize>) -> Result<(), ConceptReadError> {
+    fn skip_until_changes(&mut self, range: Range<usize>) -> Result<(), ConceptReadError> {
         // TODO: this should be optimisable with seek(to peek[index].increment())
-        self.count_until_changes(range)?;
-        Ok(())
+        debug_assert!(self.peek().is_some());
+
+        if range.end == self.tuple_length {
+            self.advance_single()?;
+            return Ok(());
+        }
+
+        let current = self.peek().unwrap().clone()?.into_owned();
+        let current_range = &current.values()[range.clone()];
+        self.iterator.next().unwrap()?;
+        loop {
+            let peek = self.iterator.peek();
+            match peek {
+                None => return Ok(()),
+                Some(Ok(tuple)) => {
+                    let values = &tuple.values()[range.clone()];
+                    if values != current_range {
+                        return Ok(());
+                    } else {
+                        self.iterator.next().unwrap()?;
+                    }
+                }
+                Some(Err(err)) => return Err(err.clone()),
+            }
+        }
     }
 
     fn skip_until_value(
@@ -294,6 +339,22 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleI
     fn peek_current_value_at(&mut self, index: TupleIndex) -> Option<Result<&VariableValue<'_>, ConceptReadError>> {
         self.peek()
             .map(|result| result.as_ref().map(|tuple| &tuple.values()[index as usize]).map_err(|err| err.clone()))
+    }
+
+    fn all_counted(&mut self) -> bool {
+        self.last_enumerated_or_counted == Some(self.tuple_length as u16)
+    }
+
+    fn all_checked(&mut self) -> bool {
+        self.last_enumerated_or_counted.is_none()
+    }
+
+    fn any_enumerated(&mut self) -> bool {
+        self.last_enumerated.is_some()
+    }
+
+    fn no_counted(&mut self) -> bool {
+        self.last_enumerated == self.last_enumerated_or_counted
     }
 }
 
@@ -343,40 +404,24 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> TupleIterato
     fn advance_past(&mut self) -> Result<usize, ConceptReadError> {
         debug_assert!(self.peek().is_some());
 
-        if self.last_enumerated == Some(self.last_enumerated_or_counted) {
-            let last = self.last_enumerated_or_counted as usize;
-            self.skip_until_changes(0..=last)?;
+        let past_enumerated_or_counted_index = self.last_enumerated_or_counted.map_or(0, |i| i as usize + 1);
+
+        if self.no_counted() {
+            self.skip_until_changes(0..past_enumerated_or_counted_index)?;
             Ok(1)
-        } else if let Some(last_enumerated) = self.last_enumerated {
-            let mut count = 1;
-            let current = self.peek().unwrap().clone()?.into_owned();
-            let enumerated = &current.values()[0..=last_enumerated as usize];
-            loop {
-                // TODO: this feels inefficient since each skip() call does a copy of the current tuple
-                self.skip_until_changes(0..=self.last_enumerated_or_counted as usize)?;
-                match self.iterator.peek() {
-                    None => return Ok(count),
-                    Some(Ok(tuple)) => {
-                        let tuple_range = &tuple.values()[0..=last_enumerated as usize];
-                        if tuple_range != enumerated {
-                            return Ok(count);
-                        } else {
-                            count += 1;
-                        }
-                    }
-                    Some(Err(err)) => return Err(err.clone()),
-                }
-            }
-        } else if self.last_enumerated_or_counted as usize == self.tuple_length {
-            return Ok(self.iterator.count_as_ref());
+        } else if self.any_enumerated() {
+            self.count_until_enumerated_changes()
+        } else if self.all_counted() {
+            Ok(self.iterator.count_as_ref())
         } else {
+            debug_assert!(self.all_checked());
             let mut count = 1;
             // TODO: this feels inefficient since each skip() call does a copy of the current tuple
             while self.peek().is_some() {
-                self.skip_until_changes(0..=self.last_enumerated_or_counted as usize)?;
+                self.skip_until_changes(0..past_enumerated_or_counted_index)?;
                 count += 1;
             }
-            return Ok(count);
+            Ok(count)
         }
     }
 

@@ -6,6 +6,7 @@
 
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
+#![allow(clippy::result_large_err)]
 
 use std::{
     fmt::{Display, Formatter},

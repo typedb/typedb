@@ -263,8 +263,7 @@ fn traverse_links_unbounded_sorted_from() {
         8,
     ))];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -355,8 +354,7 @@ fn traverse_links_unbounded_sorted_to() {
         5,
     ))];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -464,8 +462,7 @@ fn traverse_links_bounded_relation() {
         )),
     ];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -587,8 +584,7 @@ fn traverse_links_bounded_relation_player() {
         )),
     ];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -680,8 +676,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
         5,
     ))];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -774,8 +769,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
         5,
     ))];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -879,8 +873,7 @@ fn traverse_links_reverse_bounded_player() {
         )),
     ];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -1002,8 +995,7 @@ fn traverse_links_reverse_bounded_player_relation() {
         )),
     ];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());

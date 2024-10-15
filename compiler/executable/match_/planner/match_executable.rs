@@ -4,18 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
+use std::collections::{HashMap, HashSet};
 
 use answer::variable::Variable;
-use ir::{
-    pattern::{
-        constraint::{Constraint, ExpressionBinding},
-        IrID,
-    },
-    pipeline::VariableRegistry,
+use ir::pattern::{
+    constraint::{Constraint, ExpressionBinding},
+    IrID,
 };
 
 use crate::{
@@ -26,8 +20,6 @@ use crate::{
 #[derive(Clone, Debug)]
 pub struct MatchExecutable {
     pub(crate) steps: Vec<ExecutionStep>,
-    pub(crate) variable_registry: Arc<VariableRegistry>, // TODO: Maybe we never need this?
-
     variable_positions: HashMap<Variable, VariablePosition>,
     variable_positions_index: Vec<Variable>,
 }
@@ -35,11 +27,10 @@ pub struct MatchExecutable {
 impl MatchExecutable {
     pub fn new(
         steps: Vec<ExecutionStep>,
-        variable_registry: Arc<VariableRegistry>,
         variable_positions: HashMap<Variable, VariablePosition>,
         variable_positions_index: Vec<Variable>,
     ) -> Self {
-        Self { steps, variable_registry, variable_positions, variable_positions_index }
+        Self { steps, variable_positions, variable_positions_index }
     }
 
     pub fn steps(&self) -> &[ExecutionStep] {
@@ -48,10 +39,6 @@ impl MatchExecutable {
 
     pub fn outputs(&self) -> &[VariablePosition] {
         self.steps.last().unwrap().selected_variables()
-    }
-
-    pub fn variable_registry(&self) -> &VariableRegistry {
-        &self.variable_registry
     }
 
     pub fn variable_positions(&self) -> &HashMap<Variable, VariablePosition> {
@@ -80,9 +67,9 @@ impl ExecutionStep {
             ExecutionStep::Intersection(step) => &step.selected_variables,
             ExecutionStep::UnsortedJoin(step) => &step.selected_variables,
             ExecutionStep::Assignment(_) => todo!(),
-            ExecutionStep::Check(_) => &[],
-            ExecutionStep::Disjunction(_) => todo!(),
-            ExecutionStep::Negation(_) => &[],
+            ExecutionStep::Check(step) => &step.selected_variables,
+            ExecutionStep::Disjunction(step) => &step.selected_variables,
+            ExecutionStep::Negation(step) => &step.selected_variables,
             ExecutionStep::Optional(_) => todo!(),
         }
     }
@@ -104,9 +91,9 @@ impl ExecutionStep {
             ExecutionStep::Intersection(step) => step.output_width(),
             ExecutionStep::UnsortedJoin(step) => step.output_width(),
             ExecutionStep::Assignment(step) => step.output_width(),
-            ExecutionStep::Check(_) => 0, // FIXME is this correct?
-            ExecutionStep::Disjunction(_) => todo!(),
-            ExecutionStep::Negation(_) => 0,
+            ExecutionStep::Check(step) => step.output_width(),
+            ExecutionStep::Disjunction(step) => step.output_width(),
+            ExecutionStep::Negation(step) => step.output_width(),
             ExecutionStep::Optional(_) => todo!(),
         }
     }
@@ -126,7 +113,7 @@ impl IntersectionStep {
     pub fn new(
         sort_variable: VariablePosition,
         instructions: Vec<ConstraintInstruction<VariablePosition>>,
-        selected_variables: &[VariablePosition],
+        selected_variables: Vec<VariablePosition>,
         named_variables: &HashSet<VariablePosition>,
         output_width: u32,
     ) -> Self {
@@ -148,11 +135,10 @@ impl IntersectionStep {
         let instructions = instructions
             .into_iter()
             .map(|instruction| {
-                let variable_modes = VariableModes::new_for(&instruction, selected_variables, named_variables);
+                let variable_modes = VariableModes::new_for(&instruction, &selected_variables, named_variables);
                 (instruction, variable_modes)
             })
             .collect();
-        let selected_variables = selected_variables.to_owned();
         Self { sort_variable, instructions, new_variables, output_width, input_variables, selected_variables }
     }
 
@@ -237,22 +223,52 @@ impl AssignmentStep {
 #[derive(Clone, Debug)]
 pub struct CheckStep {
     pub check_instructions: Vec<CheckInstruction<VariablePosition>>,
+    pub selected_variables: Vec<VariablePosition>,
+    pub output_width: u32,
 }
 
 impl CheckStep {
-    pub fn new(check_instructions: Vec<CheckInstruction<VariablePosition>>) -> Self {
-        Self { check_instructions }
+    pub fn new(
+        check_instructions: Vec<CheckInstruction<VariablePosition>>,
+        selected_variables: Vec<VariablePosition>,
+        output_width: u32,
+    ) -> Self {
+        Self { check_instructions, selected_variables, output_width }
+    }
+
+    pub fn output_width(&self) -> u32 {
+        self.output_width
     }
 }
 
 #[derive(Clone, Debug)]
 pub struct DisjunctionStep {
-    pub disjunction: Vec<MatchExecutable>,
+    pub branches: Vec<MatchExecutable>,
+    pub selected_variables: Vec<VariablePosition>,
+    pub output_width: u32,
+}
+
+impl DisjunctionStep {
+    pub fn output_width(&self) -> u32 {
+        self.output_width
+    }
 }
 
 #[derive(Clone, Debug)]
 pub struct NegationStep {
     pub negation: MatchExecutable,
+    pub selected_variables: Vec<VariablePosition>,
+    pub output_width: u32,
+}
+
+impl NegationStep {
+    pub fn new(negation: MatchExecutable, selected_variables: Vec<VariablePosition>, output_width: u32) -> Self {
+        Self { negation, selected_variables, output_width }
+    }
+
+    pub fn output_width(&self) -> u32 {
+        self.output_width
+    }
 }
 
 #[derive(Clone, Debug)]

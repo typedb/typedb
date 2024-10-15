@@ -167,8 +167,7 @@ fn traverse_has_unbounded_sorted_from() {
         &HashSet::from([variable_positions[&var_person].clone(), variable_positions[&var_age].clone()]),
         4,
     ))];
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(snapshot);
@@ -271,8 +270,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
             5,
         )),
     ];
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(snapshot);
@@ -363,8 +361,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
         &named_variables,
         3,
     ))];
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(snapshot);
@@ -438,12 +435,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
         &named_variables,
         2,
     ))];
-    let executable = MatchExecutable::new(
-        steps,
-        Arc::new(translation_context.variable_registry.clone()),
-        variable_positions.clone(),
-        vars,
-    );
+    let executable = MatchExecutable::new(steps, variable_positions.clone(), vars);
 
     // Executor
     let snapshot = Arc::new(snapshot);
@@ -538,8 +530,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
         &named_variables,
         2,
     ))];
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(snapshot);

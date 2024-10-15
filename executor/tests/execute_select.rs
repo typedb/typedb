@@ -199,8 +199,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
         &named_variables,
         4,
     ))];
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -290,8 +289,7 @@ fn unselected_named_vars_counted() {
         2,
     ))];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
@@ -401,8 +399,7 @@ fn cartesian_named_counted_checked() {
         4,
     ))];
 
-    let match_executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let match_executable = MatchExecutable::new(steps, variable_positions, vars);
 
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
