@@ -32,7 +32,9 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
     expression::compiled_expression::ExpressionValueType,
-    function::{annotate_function, AnnotatedFunction, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+    function::{
+        annotate_anonymous_function, AnnotatedFunction, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions,
+    },
     pipeline::{annotate_stages_and_fetch, AnnotatedStage},
     AnnotationError,
 };
@@ -185,14 +187,14 @@ fn annotate_some(
             Ok(AnnotatedFetchSome::SingleAttribute(variable, attribute_type))
         }
         FetchSome::SingleFunction(mut function) => {
-            let annotated_function = annotate_function(
+            let annotated_function = annotate_anonymous_function(
                 &mut function,
                 snapshot,
                 type_manager,
                 indexed_annotated_functions,
                 local_functions,
-                Some(input_type_annotations),
-                Some(input_value_type_annotations),
+                input_type_annotations,
+                input_value_type_annotations,
             )
             .map_err(|err| AnnotationError::FetchBlockFunctionInferenceError { typedb_source: err })?;
             Ok(AnnotatedFetchSome::SingleFunction(annotated_function))
@@ -212,14 +214,14 @@ fn annotate_some(
             Ok(AnnotatedFetchSome::Object(Box::new(object)))
         }
         FetchSome::ListFunction(mut function) => {
-            let annotated_function = annotate_function(
+            let annotated_function = annotate_anonymous_function(
                 &mut function,
                 snapshot,
                 type_manager,
                 indexed_annotated_functions,
                 local_functions,
-                Some(input_type_annotations),
-                Some(input_value_type_annotations),
+                input_type_annotations,
+                input_value_type_annotations,
             )
             .map_err(|err| AnnotationError::FetchBlockFunctionInferenceError { typedb_source: err })?;
             Ok(AnnotatedFetchSome::ListFunction(annotated_function))

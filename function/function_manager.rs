@@ -63,10 +63,7 @@ impl FunctionManager {
         type_manager: &TypeManager,
     ) -> Result<Arc<IndexedAnnotatedFunctions>, FunctionError> {
         match self.function_cache.as_ref() {
-            None => {
-                let (_, _, index) = FunctionCache::build_indexed_annotated_schema_functions(snapshot, type_manager)?;
-                Ok(Arc::new(index))
-            }
+            None => FunctionCache::build_cache(snapshot, type_manager).map(|cache| cache.get_annotated_functions()),
             Some(cache) => Ok(cache.get_annotated_functions()),
         }
     }
@@ -246,8 +243,9 @@ impl<'snapshot, Snapshot: ReadableSnapshot> FunctionSignatureIndex
 
 #[cfg(test)]
 pub mod tests {
-    use std::sync::Arc;
+    use std::{collections::BTreeSet, sync::Arc};
 
+    use compiler::annotation::pipeline::AnnotatedStage;
     use concept::{
         thing::{statistics::Statistics, thing_manager::ThingManager},
         type_::type_manager::TypeManager,
@@ -266,32 +264,36 @@ pub mod tests {
         EncodingKeyspace,
     };
     use ir::{
-        pattern::variable_category::{VariableCategory, VariableOptionality},
+        pattern::{
+            variable_category::{VariableCategory, VariableOptionality},
+            Vertex,
+        },
         pipeline::function_signature::{
             FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex,
         },
     };
     use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
-    use test_utils::{create_tmp_dir, init_logging};
+    use test_utils::{create_tmp_dir, init_logging, TempDir};
 
     use crate::{
         function_cache::FunctionCache,
         function_manager::{tests::test_schema::setup_types, FunctionManager, ReadThroughFunctionSignatureIndex},
     };
 
-    fn setup_storage() -> Arc<MVCCStorage<WALClient>> {
+    fn setup_storage() -> (TempDir, Arc<MVCCStorage<WALClient>>) {
         init_logging();
         let storage_path = create_tmp_dir();
         let wal = WAL::create(&storage_path).unwrap();
-        Arc::new(
+        let storage = Arc::new(
             MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
                 .unwrap(),
-        )
+        );
+        (storage_path, storage)
     }
 
     #[test]
     fn test_define_functions() {
-        let storage = setup_storage();
+        let (_tmp_dir, storage) = setup_storage();
         let type_manager = Arc::new(TypeManager::new(
             Arc::new(DefinitionKeyGenerator::new()),
             Arc::new(TypeVertexGenerator::new()),
@@ -376,12 +378,15 @@ pub mod tests {
             let looked_up = index.get_function_signature("cat_names").unwrap().unwrap();
             assert_eq!(expected_signature.function_id(), looked_up.function_id());
 
-            todo!("the following lines no longer compile")
-            // let function_annotations = cache.get_function_annotations(expected_function_id.clone()).unwrap();
-            // let function_ir = cache.get_function_ir(expected_function_id.clone()).unwrap();
-            // let var_c = *function_ir.block().context().get_variable_named("c", function_ir.block().scope_id()).unwrap();
-            // let var_c_annotations = function_annotations.body_annotations().variable_annotations_of(var_c).unwrap();
-            // assert_eq!(&Arc::new(HashSet::from([type_cat.clone()])), var_c_annotations);
+            let function_annotations = cache.get_annotated_function(expected_function_id.clone()).unwrap();
+            let AnnotatedStage::Match { block, block_annotations: body_annotations, .. } =
+                function_annotations.stages.first().as_ref().unwrap()
+            else {
+                unreachable!()
+            };
+            let var_c = function_annotations.arguments[0].clone();
+            let var_c_annotations = body_annotations.vertex_annotations_of(&Vertex::Variable(var_c)).unwrap();
+            assert_eq!(&Arc::new(BTreeSet::from([type_cat.clone()])), var_c_annotations);
         }
     }
 

@@ -4,17 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, iter::zip, sync::Arc};
 
 use compiler::annotation::function::{
     annotate_functions, AnnotatedFunction, AnnotatedFunctions, IndexedAnnotatedFunctions,
 };
 use concept::type_::type_manager::TypeManager;
 use encoding::graph::definition::definition_key::DefinitionKey;
-use ir::pipeline::{
-    function::Function,
-    function_signature::{FunctionIDAPI, FunctionSignature, HashMapFunctionSignatureIndex},
-};
+use ir::pipeline::function_signature::{FunctionSignatureIndex, HashMapFunctionSignatureIndex};
 use storage::{sequence_number::SequenceNumber, snapshot::ReadableSnapshot, MVCCStorage};
 
 use crate::{
@@ -25,9 +22,9 @@ use crate::{
 
 #[derive(Debug)]
 pub struct FunctionCache {
-    indexed_schema_functions: Box<[Option<SchemaFunction>]>,
-    indexed_annotated_functions: Arc<IndexedAnnotatedFunctions>,
-    index: HashMap<String, FunctionSignature>,
+    parsed_functions: HashMap<DefinitionKey<'static>, SchemaFunction>,
+    annotated_functions: Arc<IndexedAnnotatedFunctions>,
+    index: HashMapFunctionSignatureIndex,
 }
 
 impl FunctionCache {
@@ -37,22 +34,15 @@ impl FunctionCache {
         open_sequence_number: SequenceNumber,
     ) -> Result<Self, FunctionError> {
         let snapshot = storage.open_snapshot_read_at(open_sequence_number);
-
-        let (function_index, indexed_schema_functions, indexed_annotated_functions) =
-            Self::build_indexed_annotated_schema_functions(&snapshot, type_manager)?;
-
-        Ok(Self {
-            indexed_schema_functions,
-            indexed_annotated_functions: Arc::new(indexed_annotated_functions),
-            index: function_index.into_map(),
-        })
+        let cache = Self::build_cache(&snapshot, type_manager);
+        snapshot.close_resources();
+        cache
     }
 
-    pub(crate) fn build_indexed_annotated_schema_functions(
+    pub(crate) fn build_cache(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<(HashMapFunctionSignatureIndex, Box<[Option<SchemaFunction>]>, IndexedAnnotatedFunctions), FunctionError>
-    {
+    ) -> Result<FunctionCache, FunctionError> {
         let schema_functions = FunctionReader::get_functions_all(snapshot)
             .map_err(|source| FunctionError::FunctionRetrieval { source })?;
         // Prepare ir
@@ -67,46 +57,36 @@ impl FunctionCache {
                 .map_err(|source| FunctionError::CommittedFunctionsTypeCheck { typedb_source: source })?;
 
         // Convert them to our cache
-        let required_cache_count =
-            schema_functions.iter().map(|function| function.function_id.as_usize() + 1).max().unwrap_or(0);
-        let mut schema_functions_index =
-            (0..required_cache_count).map(|_| None).collect::<Box<[Option<SchemaFunction>]>>();
-        let mut translated_schema_functions_index =
-            (0..required_cache_count).map(|_| None).collect::<Box<[Option<Function>]>>();
-        // let mut annotated_schema_functions_index =
-        //     (0..required_cache_count).map(|_| None).collect::<Box<[Option<FunctionAnnotations>]>>();
-        //
-        // let (boxed_translated, boxed_annotations) = unindexed_cache.into_parts();
-        // let zipped = zip(schema_functions, zip(boxed_translated.into_vec(), boxed_annotations.into_vec()));
-        // for (schema_function, (translated_function, annotations)) in zipped {
-        //     let cache_index = schema_function.function_id.as_usize();
-        //     schema_functions_index[cache_index] = Some(schema_function);
-        //     translated_schema_functions_index[cache_index] = Some(translated_function);
-        //     annotated_schema_functions_index[cache_index] = Some(annotations);
-        // }
-        // Ok((
-        //     function_index,
-        //     schema_functions_index,
-        //     IndexedAnnotatedFunctions::new(translated_schema_functions_index, annotated_schema_functions_index),
-        // ))
+        let mut parsed_functions = HashMap::new();
+        let mut annotated_functions = HashMap::new();
+        for (parsed, annotated) in zip(schema_functions.into_iter(), unindexed_cache.into_iter_functions()) {
+            annotated_functions.insert(parsed.function_id.clone(), annotated);
+            parsed_functions.insert(parsed.function_id.clone(), parsed);
+        }
 
-        // TODO
-        Ok((function_index, schema_functions_index, IndexedAnnotatedFunctions::empty()))
+        Ok(FunctionCache {
+            index: function_index,
+            parsed_functions,
+            annotated_functions: Arc::new(IndexedAnnotatedFunctions::new(annotated_functions)),
+        })
     }
 
     pub(crate) fn get_function_key(&self, name: &str) -> Option<DefinitionKey<'static>> {
-        self.index.get(name).map(|signature| signature.function_id().as_definition_key().unwrap().clone())
+        self.index
+            .get_function_signature(name)
+            .unwrap()
+            .map(|signature| signature.function_id().as_definition_key().unwrap().clone())
     }
 
     pub(crate) fn get_function(&self, definition_key: DefinitionKey<'static>) -> Option<&SchemaFunction> {
-        self.indexed_schema_functions[definition_key.as_usize()].as_ref()
+        self.parsed_functions.get(&definition_key)
     }
 
     pub(crate) fn get_annotated_functions(&self) -> Arc<IndexedAnnotatedFunctions> {
-        self.indexed_annotated_functions.clone()
+        self.annotated_functions.clone()
     }
 
     pub(crate) fn get_annotated_function(&self, definition_key: DefinitionKey<'static>) -> Option<&AnnotatedFunction> {
-        self.indexed_annotated_functions.get_function(definition_key)
+        self.annotated_functions.get_function(definition_key)
     }
 }

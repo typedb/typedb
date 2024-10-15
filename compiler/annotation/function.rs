@@ -6,7 +6,8 @@
 
 use std::{
     borrow::Cow,
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
+    iter::zip,
     sync::Arc,
 };
 
@@ -19,7 +20,6 @@ use encoding::{
 use ir::{
     pipeline::{
         function::{Function, FunctionBody, ReturnOperation},
-        function_signature::FunctionIDAPI,
         VariableRegistry,
     },
     translation::tokens::translate_value_type,
@@ -80,16 +80,19 @@ impl AnnotatedFunctionReturn {
 /// Indexed by Function ID
 #[derive(Debug)]
 pub struct IndexedAnnotatedFunctions {
-    functions: Vec<AnnotatedFunction>,
+    functions: HashMap<DefinitionKey<'static>, AnnotatedFunction>,
 }
 
 impl IndexedAnnotatedFunctions {
-    pub fn new(functions: Vec<AnnotatedFunction>) -> Self {
+    pub fn new(functions: HashMap<DefinitionKey<'static>, AnnotatedFunction>) -> Self {
         Self { functions }
     }
 
     pub fn empty() -> Self {
-        Self { functions: Vec::new() }
+        Self { functions: HashMap::new() }
+    }
+    pub fn iter_functions(&self) -> impl Iterator<Item = (&'_ DefinitionKey<'static>, &'_ AnnotatedFunction)> {
+        self.functions.iter()
     }
 }
 
@@ -105,7 +108,7 @@ impl AnnotatedFunctions for IndexedAnnotatedFunctions {
     type ID = DefinitionKey<'static>;
 
     fn get_function(&self, id: Self::ID) -> Option<&AnnotatedFunction> {
-        self.functions.get(id.as_usize())
+        self.functions.get(&id)
     }
 
     fn is_empty(&self) -> bool {
@@ -158,9 +161,7 @@ pub fn annotate_functions(
     // In the preliminary annotations, functions are annotated based only on the variable categories of the called function.
     let preliminary_annotated_functions = functions
         .iter_mut()
-        .map(|function| {
-            annotate_function(function, snapshot, type_manager, indexed_annotated_functions, None, None, None)
-        })
+        .map(|function| annotate_named_function(function, snapshot, type_manager, indexed_annotated_functions, None))
         .collect::<Result<Vec<AnnotatedFunction>, FunctionAnnotationError>>()?;
     let preliminary_annotations = AnnotatedUnindexedFunctions::new(preliminary_annotated_functions);
 
@@ -168,14 +169,12 @@ pub fn annotate_functions(
     let annotated_functions = functions
         .iter_mut()
         .map(|function| {
-            annotate_function(
+            annotate_named_function(
                 function,
                 snapshot,
                 type_manager,
                 indexed_annotated_functions,
                 Some(&preliminary_annotations),
-                None,
-                None,
             )
         })
         .collect::<Result<Vec<AnnotatedFunction>, FunctionAnnotationError>>()?;
@@ -187,31 +186,82 @@ pub fn annotate_functions(
     Ok(AnnotatedUnindexedFunctions::new(annotated_functions))
 }
 
-pub(crate) fn annotate_function(
+pub(crate) fn annotate_anonymous_function(
     function: &mut Function,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
     local_functions: Option<&AnnotatedUnindexedFunctions>,
-    caller_type_annotations: Option<&BTreeMap<Variable, Arc<BTreeSet<Type>>>>,
-    caller_value_type_annotations: Option<&BTreeMap<Variable, ExpressionValueType>>,
+    caller_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    caller_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<AnnotatedFunction, FunctionAnnotationError> {
-    let Function {
-        name,
-        context,
-        function_body: FunctionBody { stages, return_operation },
-        arguments,
-        argument_labels,
-    } = function;
-    let (argument_concept_variable_types, argument_value_variable_types) = annotate_arguments(
+    let Function { arguments, argument_labels, .. } = function;
+    debug_assert!(argument_labels.is_none());
+    let mut argument_concept_variable_types = BTreeMap::new();
+    let mut argument_value_variable_types = BTreeMap::new();
+    for var in arguments {
+        if let Some(concept_annotation) = caller_type_annotations.get(var) {
+            argument_concept_variable_types.insert(var.clone(), concept_annotation.clone());
+        } else if let Some(value_annotation) = caller_value_type_annotations.get(var) {
+            argument_value_variable_types.insert(var.clone(), value_annotation.clone());
+        } else {
+            todo!("Throw error")
+        }
+    }
+
+    annotate_function_impl(
+        function,
         snapshot,
         type_manager,
-        name,
-        &arguments,
-        argument_labels.as_ref(),
-        caller_type_annotations,
-        caller_value_type_annotations,
-    )?;
+        indexed_annotated_functions,
+        local_functions,
+        argument_concept_variable_types,
+        argument_value_variable_types,
+    )
+}
+
+pub(super) fn annotate_named_function(
+    function: &mut Function,
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    indexed_annotated_functions: &IndexedAnnotatedFunctions,
+    local_functions: Option<&AnnotatedUnindexedFunctions>,
+) -> Result<AnnotatedFunction, FunctionAnnotationError> {
+    let Function { arguments, argument_labels, .. } = function;
+    debug_assert!(argument_labels.is_some());
+    let mut argument_concept_variable_types = BTreeMap::new();
+    let mut argument_value_variable_types = BTreeMap::new();
+    for (arg_index, (var, label)) in zip(arguments, argument_labels.as_ref().unwrap()).enumerate() {
+        match get_argument_annotations_from_labels(snapshot, type_manager, label, arg_index)? {
+            Either::Left(concept_annotation) => {
+                argument_concept_variable_types.insert(var.clone(), concept_annotation);
+            }
+            Either::Right(value_annotation) => {
+                argument_value_variable_types.insert(var.clone(), value_annotation);
+            }
+        }
+    }
+    annotate_function_impl(
+        function,
+        snapshot,
+        type_manager,
+        indexed_annotated_functions,
+        local_functions,
+        argument_concept_variable_types,
+        argument_value_variable_types,
+    )
+}
+
+fn annotate_function_impl(
+    function: &mut Function,
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    indexed_annotated_functions: &IndexedAnnotatedFunctions,
+    local_functions: Option<&AnnotatedUnindexedFunctions>,
+    argument_concept_variable_types: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    argument_value_variable_types: BTreeMap<Variable, ExpressionValueType>,
+) -> Result<AnnotatedFunction, FunctionAnnotationError> {
+    let Function { name, context, function_body: FunctionBody { stages, return_operation }, arguments, .. } = function;
 
     let (stages, running_variable_types, running_value_types) = annotate_pipeline_stages(
         snapshot,
@@ -242,30 +292,18 @@ pub(crate) fn annotate_function(
     })
 }
 
-fn annotate_arguments(
+fn annotate_arguments_from_labels(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    function_name: &str,
     arguments: &[Variable],
-    argument_labels: Option<&Vec<TypeRefAny>>,
-    caller_type_annotations: Option<&BTreeMap<Variable, Arc<BTreeSet<Type>>>>,
-    caller_value_type_annotations: Option<&BTreeMap<Variable, ExpressionValueType>>,
+    argument_labels: &Vec<TypeRefAny>,
 ) -> Result<(BTreeMap<Variable, Arc<BTreeSet<Type>>>, BTreeMap<Variable, ExpressionValueType>), FunctionAnnotationError>
 {
     // TODO
     let mut variable_types = BTreeMap::new();
     let mut value_types = BTreeMap::new();
     for (index, var) in arguments.iter().enumerate() {
-        match get_argument_annotations(
-            snapshot,
-            type_manager,
-            function_name,
-            index,
-            arguments,
-            argument_labels,
-            caller_type_annotations,
-            caller_value_type_annotations,
-        )? {
+        match get_argument_annotations_from_labels(snapshot, type_manager, &argument_labels[index], index)? {
             Either::Left(types) => {
                 variable_types.insert(*var, types);
             }
@@ -277,83 +315,36 @@ fn annotate_arguments(
     Ok((variable_types, value_types))
 }
 
-fn get_argument_annotations(
+fn get_argument_annotations_from_labels(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    function_name: &str,
+    typeql_label: &TypeRefAny,
     arg_index: usize,
-    arguments: &[Variable],
-    argument_labels: Option<&Vec<TypeRefAny>>,
-    caller_type_annotations: Option<&BTreeMap<Variable, Arc<BTreeSet<Type>>>>,
-    caller_value_type_annotations: Option<&BTreeMap<Variable, ExpressionValueType>>,
 ) -> Result<Either<Arc<BTreeSet<Type>>, ExpressionValueType>, FunctionAnnotationError> {
-    let arg_var = arguments[arg_index];
-    let mut types: Option<BTreeSet<Type>> = None;
-    let mut expr_value_type: Option<ExpressionValueType> = None;
-    if let Some(arg_labels) = argument_labels {
-        let typeql_label = &arg_labels[arg_index];
-        let TypeRef::Named(inner_type) = (match typeql_label {
-            TypeRefAny::Type(inner) => inner,
-            TypeRefAny::Optional(typeql::type_::Optional { inner: _inner, .. }) => todo!(),
-            TypeRefAny::List(typeql::type_::List { inner: _inner, .. }) => todo!(),
-        }) else {
-            unreachable!("Function argument labels cannot be variable.");
-        };
-        match inner_type {
-            NamedType::Label(label) => {
-                // TODO: could be a struct value type in the future!
-                types = Some(
-                    type_seeder::get_type_annotation_and_subtypes_from_label(
-                        snapshot,
-                        type_manager,
-                        &Label::build(label.ident.as_str()),
-                    )
-                    .map_err(|source| FunctionAnnotationError::CouldNotResolveArgumentType {
-                        index: arg_index,
-                        source,
-                    })?,
-                );
-            }
-            NamedType::BuiltinValueType(value_type) => {
-                expr_value_type = Some(ExpressionValueType::Single(translate_value_type(&value_type.token)));
-                // TODO: This may be list
-            }
-            NamedType::Role(_) => unreachable!("A function argument label was wrongly parsed as role-type."),
+    let TypeRef::Named(inner_type) = (match typeql_label {
+        TypeRefAny::Type(inner) => inner,
+        TypeRefAny::Optional(typeql::type_::Optional { inner: _inner, .. }) => todo!(),
+        TypeRefAny::List(typeql::type_::List { inner: _inner, .. }) => todo!(),
+    }) else {
+        unreachable!("Function argument labels cannot be variable.");
+    };
+    match inner_type {
+        NamedType::Label(label) => {
+            // TODO: could be a struct value type in the future!
+            let types = type_seeder::get_type_annotation_and_subtypes_from_label(
+                snapshot,
+                type_manager,
+                &Label::build(label.ident.as_str()),
+            )
+            .map_err(|source| FunctionAnnotationError::CouldNotResolveArgumentType { index: arg_index, source })?;
+            Ok(Either::Left(Arc::new(types)))
         }
-    }
-
-    if let Some(caller_types) = caller_type_annotations {
-        if let Some(mut types) = types {
-            types.retain(|type_| caller_types.get(&arg_var).unwrap().contains(type_));
-            if types.is_empty() {
-                Err(FunctionAnnotationError::CallerSignatureTypeMismatch {
-                    name: function_name.to_owned(),
-                    index: arg_index,
-                    arg_type: argument_labels.unwrap()[arg_index].to_string(),
-                })
-            } else {
-                Ok(Either::Left(Arc::new(types)))
-            }
-        } else {
-            Ok(Either::Left(caller_types.get(&arg_var).unwrap().clone()))
+        NamedType::BuiltinValueType(value_type) => {
+            // TODO: This may be list
+            let value = ExpressionValueType::Single(translate_value_type(&value_type.token));
+            Ok(Either::Right(value))
         }
-    } else if let Some(caller_value_types) = caller_value_type_annotations {
-        if let Some(value_type) = expr_value_type {
-            if caller_value_types.get(&arg_var).unwrap() != &value_type {
-                Err(FunctionAnnotationError::CallerSignatureValueTypeMismatch {
-                    name: function_name.to_owned(),
-                    index: arg_index,
-                    expected: value_type,
-                    actual: caller_value_types.get(&arg_var).unwrap().clone(),
-                })
-            } else {
-                Ok(Either::Right(value_type))
-            }
-        } else {
-            Ok(Either::Right(caller_value_types.get(&arg_var).unwrap().clone()))
-        }
-    } else {
-        Err(FunctionAnnotationError::CouldNotDetermineArgumentType { name: function_name.to_owned(), index: arg_index })
+        NamedType::Role(_) => unreachable!("A function argument label was wrongly parsed as role-type."),
     }
 }
 
