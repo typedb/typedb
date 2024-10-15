@@ -143,10 +143,10 @@ pub(crate) type TupleIndex = u16;
 
 pub(crate) type TupleResult<'a> = Result<Tuple<'a>, ConceptReadError>;
 
-pub(crate) type TypeToTupleFn = fn(Type) -> TupleResult<'static>;
+pub(crate) type TypeToTupleFn = fn(Result<Type, ConceptReadError>) -> TupleResult<'static>;
 
-pub(crate) fn type_to_tuple(type_: Type) -> TupleResult<'static> {
-    Ok(Tuple::Single([VariableValue::Type(type_)]))
+pub(crate) fn type_to_tuple(type_: Result<Type, ConceptReadError>) -> TupleResult<'static> {
+    Ok(Tuple::Single([VariableValue::Type(type_?)]))
 }
 
 pub(crate) type SubToTupleFn = fn(Result<(Type, Type), ConceptReadError>) -> TupleResult<'static>;
