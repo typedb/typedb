@@ -15,8 +15,8 @@ use ir::{
     pattern::{
         conjunction::Conjunction,
         constraint::{
-            Comparator, Comparison, Constraint, ExpressionBinding, Has, Isa, Kind, Label, Links, Owns, Plays, Relates,
-            RoleName, Sub,
+            Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Isa, Kind, Label, Links,
+            Owns, Plays, Relates, RoleName, Sub,
         },
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
@@ -24,7 +24,6 @@ use ir::{
     pipeline::{block::BlockContext, VariableRegistry},
 };
 use itertools::Itertools;
-use ir::pattern::constraint::FunctionCallBinding;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -217,7 +216,7 @@ impl<'a> PlanBuilder<'a> {
                 Constraint::FunctionCallBinding(function_call) => {
                     self.register_function_call(function_call);
                     todo!("function call")
-                },
+                }
                 Constraint::Comparison(comparison) => self.register_comparison(comparison),
 
                 Constraint::ExpressionBinding(expression) => {
@@ -315,9 +314,7 @@ impl<'a> PlanBuilder<'a> {
         // self.elements.push(PlannerVertex::Expression());
     }
 
-    fn register_function_call(&mut self, function_call: &FunctionCallBinding<Variable>) {
-
-    }
+    fn register_function_call(&mut self, function_call: &FunctionCallBinding<Variable>) {}
 
     fn register_comparison(&mut self, comparison: &Comparison<Variable>) {
         let lhs = Input::from_vertex(comparison.lhs(), &self.variable_index);

@@ -131,10 +131,6 @@ impl AnnotatedUnindexedFunctions {
         Self { unindexed_functions: Vec::new() }
     }
 
-    pub fn iter_functions(&self) -> impl Iterator<Item = &AnnotatedFunction> {
-        self.unindexed_functions.iter()
-    }
-
     pub fn into_iter_functions(self) -> impl Iterator<Item = AnnotatedFunction> {
         self.unindexed_functions.into_iter()
     }

@@ -13,20 +13,19 @@ use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::pipeline::{block::Block, VariableRegistry};
 use itertools::Itertools;
-use ir::pipeline::function_signature::FunctionID;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
     executable::match_::{
         instructions::{CheckInstruction, ConstraintInstruction},
         planner::{
+            function_plan::ExecutableFunctionRegistry,
             match_executable::{CheckStep, ExecutionStep, IntersectionStep, MatchExecutable},
             plan::plan_conjunction,
         },
     },
     VariablePosition,
 };
-use crate::executable::match_::planner::function_plan::{FunctionPlan, FunctionPlanRegistry};
 
 pub mod function_plan;
 pub mod match_executable;
@@ -40,7 +39,6 @@ pub fn compile(
     variable_registry: Arc<VariableRegistry>,
     expressions: &HashMap<Variable, ExecutableExpression>,
     statistics: &Statistics,
-    planned_functions: &FunctionPlanRegistry,
 ) -> MatchExecutable {
     let conjunction = block.conjunction();
     let block_context = block.block_context();

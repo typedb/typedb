@@ -774,7 +774,6 @@ struct FunctionCallPlanner {
 }
 
 impl FunctionCallPlanner {
-
     pub(crate) fn new(arguments: Vec<usize>, assigned: Vec<usize>, cost: ElementCost) -> Self {
         Self { arguments, assigned, cost }
     }

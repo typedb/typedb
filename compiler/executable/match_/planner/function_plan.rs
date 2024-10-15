@@ -4,35 +4,32 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
-use typeql::Variable;
-use ir::pipeline::function_signature::FunctionID;
-use crate::executable::function::ExecutableFunction;
-use crate::executable::match_::planner::plan::ConjunctionPlan;
-use crate::VariablePosition;
+use std::{collections::HashMap, sync::Arc};
 
-pub struct FunctionPlanRegistry {
+use encoding::graph::definition::definition_key::DefinitionKey;
+use ir::pipeline::function_signature::FunctionID;
+use typeql::Variable;
+
+use crate::{
+    executable::{function::ExecutableFunction, match_::planner::plan::ConjunctionPlan},
+    VariablePosition,
+};
+
+pub struct ExecutableFunctionRegistry {
     // Keep this abstraction in case we introduce function plan caching.
-    all_plans: HashMap<FunctionID, FunctionPlan>,
+    schema_functions: Arc<HashMap<DefinitionKey<'static>, ExecutableFunction>>,
+    preamble_functions: HashMap<usize, ExecutableFunction>,
 }
 
-impl FunctionPlanRegistry {
-
-    pub(crate) fn new(all_plans: HashMap<FunctionID, FunctionPlan>) -> Self {
-        Self { all_plans }
+impl ExecutableFunctionRegistry {
+    pub(crate) fn new(
+        schema_functions: Arc<HashMap<DefinitionKey<'static>, ExecutableFunction>>,
+        preamble_functions: HashMap<usize, ExecutableFunction>,
+    ) -> Self {
+        Self { schema_functions, preamble_functions }
     }
 
     pub(crate) fn empty() -> Self {
-        Self::new(HashMap::new())
+        Self::new(Arc::new(HashMap::new()), HashMap::new())
     }
-}
-
-pub struct PipelinePlan {
-    executable: ExecutableFunction,
-    cost: f64,
-}
-
-pub struct FunctionPlan {
-    plan: PipelinePlan,
-    is_tabled: bool,
 }
