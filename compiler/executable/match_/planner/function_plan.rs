@@ -7,12 +7,9 @@
 use std::{collections::HashMap, sync::Arc};
 
 use encoding::graph::definition::definition_key::DefinitionKey;
-use ir::pipeline::function_signature::FunctionID;
-use typeql::Variable;
 
 use crate::{
-    executable::{function::ExecutableFunction, match_::planner::plan::ConjunctionPlan},
-    VariablePosition,
+    executable::{function::ExecutableFunction},
 };
 
 pub struct ExecutableFunctionRegistry {
