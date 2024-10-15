@@ -30,7 +30,7 @@ pub async fn connection_create_database(context: &mut Context, name: String, may
 }
 
 #[apply(generic_step)]
-#[step(expr = "connection create database with empty name{may_error}")] // TODO: Maybe we can just pass ""?
+#[step(expr = "connection create database with empty name{may_error}")]
 pub async fn connection_create_database_with_an_empty_name(context: &mut Context, may_error: params::MayError) {
     connection_create_database(context, "".to_string(), may_error).await
 }
