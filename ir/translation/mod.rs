@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use answer::variable::Variable;
 
 use crate::{
-    pattern::variable_category::VariableCategory,
+    pattern::variable_category::{VariableCategory, VariableOptionality},
     pipeline::{block::BlockBuilderContext, reduce::Reducer, ParameterRegistry, VariableRegistry},
 };
 
@@ -41,6 +41,19 @@ impl TranslationContext {
         }
     }
 
+    pub fn new_with_function_arguments(input_variables: Vec<(String, VariableCategory)>) -> (Self, Vec<Variable>) {
+        let mut visible_variables = HashMap::new();
+        let mut variable_registry = VariableRegistry::new();
+        let mut variables = Vec::with_capacity(input_variables.len());
+        for (name, category) in input_variables {
+            let variable = variable_registry.register_function_argument(name.as_str(), category.clone());
+            visible_variables.insert(name.clone(), variable.clone());
+            variables.push(variable);
+        }
+        let this = Self { parameters: ParameterRegistry::new(), variable_registry, visible_variables };
+        (this, variables)
+    }
+
     pub fn new_block_builder_context(&mut self) -> BlockBuilderContext<'_> {
         let Self { variable_registry, visible_variables, parameters } = self;
         BlockBuilderContext::new(variable_registry, visible_variables, parameters)
@@ -53,7 +66,7 @@ impl TranslationContext {
         is_optional: bool,
         reducer: Reducer,
     ) -> Variable {
-        self.variable_registry.register_reduce_output_variable(name, variable_category, is_optional, reducer)
+        self.variable_registry.register_reduce_output_variable(name.to_owned(), variable_category, is_optional, reducer)
     }
 
     pub fn get_variable(&self, variable: &str) -> Option<Variable> {

@@ -214,14 +214,21 @@ impl VariableRegistry {
         self.variable_names.contains_key(variable)
     }
 
+    pub(crate) fn register_function_argument(&mut self, name: &str, category: VariableCategory) -> Variable {
+        let variable = self.register_variable_named(name.to_owned());
+        self.set_variable_category(variable.clone(), category, VariableCategorySource::Argument).unwrap(); // We just created the variable. It cannot error
+        self.set_variable_is_optional(variable.clone(), false);
+        variable
+    }
+
     pub(crate) fn register_reduce_output_variable(
         &mut self,
-        name: &str,
+        name: String,
         category: VariableCategory,
         is_optional: bool,
         reducer: Reducer,
     ) -> Variable {
-        let variable = self.register_variable_named(name.to_owned());
+        let variable = self.register_variable_named(name);
         self.set_variable_category(variable.clone(), category, VariableCategorySource::Reduce(reducer)).unwrap(); // We just created the variable. It cannot error
         self.set_variable_is_optional(variable.clone(), is_optional);
         variable
@@ -250,6 +257,7 @@ impl fmt::Display for VariableRegistry {
 pub enum VariableCategorySource {
     Constraint(Constraint<Variable>),
     Reduce(Reducer),
+    Argument,
 }
 
 #[derive(Clone, Debug, Default)]

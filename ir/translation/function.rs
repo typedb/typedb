@@ -10,7 +10,8 @@ use typeql::{
     schema::definable::function::{
         Argument, FunctionBlock, Output, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream,
     },
-    TypeRefAny,
+    type_::NamedType,
+    TypeRef, TypeRefAny,
 };
 
 use crate::{
@@ -46,19 +47,15 @@ pub fn translate_function_from<'a>(
     block: &FunctionBlock,
     declaration: Option<&typeql::Function>,
 ) -> Result<Function, FunctionRepresentationError> {
-    let mut context = TranslationContext::new();
+    let argument_labels = args.iter().map(|arg| arg.type_.clone()).collect();
+    let arg_names_and_categories = args
+        .iter()
+        .map(|arg| (arg.var.name().unwrap().to_owned(), type_any_to_category_and_optionality(&arg.type_).0))
+        .collect::<Vec<_>>();
+    let (mut context, arguments) = TranslationContext::new_with_function_arguments(arg_names_and_categories);
     let body = translate_function_block(snapshot, function_index, &mut context, block)?;
-    let (arguments, argument_labels) = translate_function_arguments(&mut context, declaration, args)?;
-    Ok(Function::new(name, context, arguments, Some(argument_labels), body))
-}
 
-pub(crate) fn translate_function_arguments<'a>(
-    context: &mut TranslationContext,
-    declaration: Option<&typeql::Function>,
-    args: &[Argument],
-) -> Result<(Vec<Variable>, Vec<TypeRefAny>), FunctionRepresentationError> {
-    let mut argument_variables = Vec::with_capacity(args.len());
-    let mut argument_labels = Vec::with_capacity(args.len());
+    // Check for unused arguments
     for arg in args {
         let var = context.get_variable(arg.var.name().unwrap()).ok_or_else(|| {
             FunctionRepresentationError::FunctionArgumentUnused {
@@ -66,10 +63,8 @@ pub(crate) fn translate_function_arguments<'a>(
                 declaration: declaration.unwrap().clone(),
             }
         })?;
-        argument_variables.push(var);
-        argument_labels.push(arg.type_.clone());
     }
-    Ok((argument_variables, argument_labels))
+    Ok(Function::new(name, context, arguments, Some(argument_labels), body))
 }
 
 pub(crate) fn translate_function_block(
@@ -116,11 +111,31 @@ pub fn build_signature(function_id: FunctionID, function: &typeql::Function) -> 
 }
 
 fn type_any_to_category_and_optionality(type_any: &TypeRefAny) -> (VariableCategory, VariableOptionality) {
-    match type_any {
-        TypeRefAny::Type(_) => (VariableCategory::Thing, VariableOptionality::Required),
-        TypeRefAny::Optional(_) => (VariableCategory::Thing, VariableOptionality::Optional),
-        TypeRefAny::List(_) => (VariableCategory::ThingList, VariableOptionality::Required),
-    }
+    let (inner, is_list, optionality) = match type_any {
+        TypeRefAny::Type(inner) => (inner, false, VariableOptionality::Required),
+        TypeRefAny::Optional(optional) => (&optional.inner, false, VariableOptionality::Optional),
+        TypeRefAny::List(list) => (&list.inner, true, VariableOptionality::Required),
+    };
+    let category = match inner {
+        TypeRef::Named(NamedType::Label(_)) => {
+            if is_list {
+                VariableCategory::ThingList
+            } else {
+                VariableCategory::Thing
+            }
+        }
+        TypeRef::Named(NamedType::BuiltinValueType(_)) => {
+            if is_list {
+                VariableCategory::ValueList
+            } else {
+                VariableCategory::Value
+            }
+        }
+        TypeRef::Named(NamedType::Role(_)) | TypeRef::Variable(_) => {
+            unreachable!("This is used for return & argument labelling")
+        }
+    };
+    (category, optionality)
 }
 
 fn build_return_stream(

@@ -20,11 +20,11 @@ use ir::{
         },
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
+        Vertex,
     },
     pipeline::{block::BlockContext, VariableRegistry},
 };
 use itertools::Itertools;
-use ir::pattern::Vertex;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -43,16 +43,15 @@ use crate::{
         planner::{
             match_executable::MatchExecutable,
             vertex::{
-                ComparisonPlanner, Costed, Direction, ElementCost, HasPlanner, Input, InputPlanner, IsaPlanner,
-                LabelPlanner, LinksPlanner, NestedPatternPlanner, OwnsPlanner, PlannerVertex, PlaysPlanner,
-                RelatesPlanner, SubPlanner, ThingPlanner, TypePlanner, ValuePlanner,
+                ComparisonPlanner, Costed, Direction, ElementCost, FunctionCallPlanner, HasPlanner, Input,
+                InputPlanner, IsaPlanner, LabelPlanner, LinksPlanner, NestedPatternPlanner, OwnsPlanner, PlannerVertex,
+                PlaysPlanner, RelatesPlanner, SubPlanner, ThingPlanner, TypePlanner, ValuePlanner,
             },
             IntersectionBuilder, MatchExecutableBuilder, NegationBuilder, StepBuilder,
         },
     },
     VariablePosition,
 };
-use crate::executable::match_::planner::vertex::FunctionCallPlanner;
 
 pub(crate) fn plan_conjunction<'a>(
     conjunction: &'a Conjunction,
@@ -316,13 +315,16 @@ impl<'a> PlanBuilder<'a> {
 
     fn register_function_call_binding(&mut self, call_binding: &FunctionCallBinding<Variable>) {
         // TODO: This is just a mock
-        let arguments = call_binding.function_call().argument_ids().map(|variable| {
-            self.variable_index[&variable]
-        }).collect();
-        let return_vars = call_binding.assigned().iter().map(|vertex| {
-            let Vertex::Variable(variable) = vertex else { todo!("Unreachable?") };
-            self.variable_index[variable]
-        }).collect();
+        let arguments =
+            call_binding.function_call().argument_ids().map(|variable| self.variable_index[&variable]).collect();
+        let return_vars = call_binding
+            .assigned()
+            .iter()
+            .map(|vertex| {
+                let Vertex::Variable(variable) = vertex else { todo!("Unreachable?") };
+                self.variable_index[variable]
+            })
+            .collect();
         let element_cost = ElementCost { per_input: 1.0, per_output: 1.0, branching_factor: 1.0 };
         self.elements.push(PlannerVertex::FunctionCall(FunctionCallPlanner::new(arguments, return_vars, element_cost)));
         todo!("register_function_call");

@@ -8,9 +8,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use encoding::graph::definition::definition_key::DefinitionKey;
 
-use crate::{
-    executable::{function::ExecutableFunction},
-};
+use crate::executable::function::ExecutableFunction;
 
 pub struct ExecutableFunctionRegistry {
     // Keep this abstraction in case we introduce function plan caching.

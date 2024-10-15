@@ -14,7 +14,7 @@ use std::{
 use answer::{variable::Variable, Type as TypeAnnotation};
 use concept::type_::type_manager::TypeManager;
 use ir::{
-    pattern::{conjunction::Conjunction, constraint::Constraint, Vertex},
+    pattern::{conjunction::Conjunction, constraint::Constraint, variable_category::VariableCategory, Vertex},
     pipeline::{block::Block, VariableRegistry},
 };
 use itertools::chain;
@@ -124,10 +124,13 @@ pub fn infer_types<'graph>(
     let mut constraint_annotations = HashMap::new();
     graph.collect_type_annotations(&mut vertex_annotations, &mut constraint_annotations);
     let type_annotations = TypeAnnotations::new(vertex_annotations, constraint_annotations);
-    debug_assert!(block
-        .block_context()
-        .referenced_variables() // FIXME vertices?
-        .all(|var| type_annotations.vertex_annotations_of(&Vertex::Variable(var)).is_some()));
+    debug_assert!(block.block_context().referenced_variables().all(|var| {
+        match variable_registry.get_variable_category(var.clone()) {
+            None => todo!("Safe to ignore. But can we know the ValueTypeCategory of an assignment at translation?"),
+            Some(VariableCategory::Value) | Some(VariableCategory::ValueList) => true,
+            Some(_) => type_annotations.vertex_annotations_of(&Vertex::Variable(var)).is_some(),
+        }
+    }));
     Ok(type_annotations)
 }
 
