@@ -5,6 +5,7 @@
  */
 
 use std::{
+    any::type_name_of_val,
     collections::{HashMap, HashSet},
     fmt,
     sync::Arc,
@@ -570,7 +571,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub(super) struct ConjunctionPlan<'a> {
     shared_variables: Vec<VariableVertexId>,
     graph: Graph<'a>,
@@ -578,6 +579,17 @@ pub(super) struct ConjunctionPlan<'a> {
     ordering: Vec<VertexId>,
     element_to_order: HashMap<VertexId, usize>,
     cost: ElementCost,
+}
+
+impl<'a> fmt::Debug for ConjunctionPlan<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct(type_name_of_val(self))
+            .field("shared_variables", &self.shared_variables)
+            .field("graph", &self.graph)
+            .field("ordering", &self.ordering)
+            .field("cost", &self.cost)
+            .finish()
+    }
 }
 
 impl ConjunctionPlan<'_> {
@@ -629,6 +641,10 @@ impl ConjunctionPlan<'_> {
         selected_variables: &[Variable],
         variable_registry: Arc<VariableRegistry>,
     ) {
+        if self.graph.elements[&VertexId::Variable(var)].as_variable().unwrap().is_input() {
+            return;
+        }
+
         let variable = self.graph.index_to_variable[&var];
         if match_builder.producers.contains_key(&variable) {
             return;
@@ -1038,9 +1054,7 @@ impl<'a> Graph<'a> {
     }
 
     fn push_variable(&mut self, variable: Variable, vertex: VariableVertex) -> VariableVertexId {
-        let index = self.next_variable_id; // FIXME
-        self.next_variable_id.0 += 1;
-
+        let index = self.next_variable_index();
         self.elements.insert(VertexId::Variable(index), PlannerVertex::Variable(vertex));
         self.variable_index.insert(variable, index);
         self.index_to_variable.insert(index, variable);
@@ -1081,6 +1095,12 @@ impl<'a> Graph<'a> {
             self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
         }
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Negation(negation));
+    }
+
+    fn next_variable_index(&mut self) -> VariableVertexId {
+        let variable_index = self.next_variable_id;
+        self.next_variable_id.0 += 1;
+        variable_index
     }
 
     fn next_pattern_index(&mut self) -> PatternVertexId {

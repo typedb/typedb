@@ -132,7 +132,7 @@ impl StepBuilder {
                 ExecutionStep::Intersection(IntersectionStep::new(
                     sort_variable,
                     instructions,
-                    selected_variables.into_iter().map(|var| index[&var]).collect(),
+                    selected_variables.into_iter().filter_map(|var| index.get(&var).copied()).collect(),
                     named_variables,
                     output_width.unwrap(),
                 ))
@@ -140,21 +140,24 @@ impl StepBuilder {
             Self::Check(CheckBuilder { instructions, selected_variables, output_width }) => {
                 ExecutionStep::Check(CheckStep::new(
                     instructions,
-                    selected_variables.into_iter().map(|var| index[&var]).collect(),
+                    selected_variables.into_iter().filter_map(|var| index.get(&var).copied()).collect(),
                     output_width.unwrap(),
                 ))
             }
             Self::Negation(NegationBuilder { negation, selected_variables, output_width }) => {
                 ExecutionStep::Negation(NegationStep::new(
                     negation,
-                    selected_variables.into_iter().map(|var| index[&var]).collect(),
+                    selected_variables.into_iter().filter_map(|var| index.get(&var).copied()).collect(),
                     output_width.unwrap(),
                 ))
             }
             Self::Disjunction(DisjunctionBuilder { branches, selected_variables, output_width }) => {
                 ExecutionStep::Disjunction(DisjunctionStep {
                     branches,
-                    selected_variables: selected_variables.into_iter().map(|var| index[&var]).collect(),
+                    selected_variables: selected_variables
+                        .into_iter()
+                        .filter_map(|var| index.get(&var).copied())
+                        .collect(),
                     output_width: output_width.unwrap(),
                 })
             }
