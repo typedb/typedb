@@ -94,6 +94,10 @@ impl IndexedAnnotatedFunctions {
     pub fn iter_functions(&self) -> impl Iterator<Item = (&'_ DefinitionKey<'static>, &'_ AnnotatedFunction)> {
         self.functions.iter()
     }
+
+    pub fn iter_functions(self) -> impl Iterator<Item = &'_ AnnotatedFunction> {
+        self.functions.iter()
+    }
 }
 
 pub trait AnnotatedFunctions {

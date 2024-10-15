@@ -13,6 +13,7 @@ use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::pipeline::{block::Block, VariableRegistry};
 use itertools::Itertools;
+use ir::pipeline::function_signature::FunctionID;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -25,6 +26,7 @@ use crate::{
     },
     VariablePosition,
 };
+use crate::executable::match_::planner::function_plan::{FunctionPlan, FunctionPlanRegistry};
 
 pub mod function_plan;
 pub mod match_executable;
@@ -38,11 +40,11 @@ pub fn compile(
     variable_registry: Arc<VariableRegistry>,
     expressions: &HashMap<Variable, ExecutableExpression>,
     statistics: &Statistics,
+    planned_functions: &FunctionPlanRegistry,
 ) -> MatchExecutable {
     let conjunction = block.conjunction();
     let block_context = block.block_context();
     debug_assert!(conjunction.captured_variables(block_context).all(|var| input_variables.contains_key(&var)));
-
     plan_conjunction(
         conjunction,
         block_context,

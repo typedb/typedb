@@ -13,6 +13,7 @@ use concept::thing::statistics::Statistics;
 use ir::pipeline::VariableRegistry;
 use typeql::schema::definable::function::SingleSelector;
 
+
 use crate::{
     annotation::function::{AnnotatedFunction, AnnotatedFunctionReturn},
     executable::{
@@ -22,9 +23,11 @@ use crate::{
     },
     VariablePosition,
 };
+use crate::executable::match_::planner::function_plan::{FunctionPlan, FunctionPlanRegistry};
 
 pub struct ExecutableFunction {
     executable_stages: Vec<ExecutableStage>,
+    arguments: HashMap<Variable, VariablePosition>,
     returns: ExecutableReturn,
 }
 
@@ -38,6 +41,7 @@ pub enum ExecutableReturn {
 pub(crate) fn compile_function(
     statistics: &Statistics,
     function: AnnotatedFunction,
+    schema_functions: &FunctionPlanRegistry, // Can't have preamble in them when you're compiling functions
 ) -> Result<ExecutableFunction, ExecutableCompilationError> {
     let AnnotatedFunction { variable_registry, arguments, stages, return_ } = function;
     let arguments_set = HashSet::from_iter(arguments.into_iter());
@@ -45,6 +49,7 @@ pub(crate) fn compile_function(
         compile_pipeline_stages(statistics, Arc::new(variable_registry), stages, arguments_set)?;
     let returns = compile_return_operation(&mut executable_stages, return_)?;
     Ok(ExecutableFunction { executable_stages, returns })
+    Ok(ExecutableFunction { executable_stages, arguments, returns })
 }
 
 fn compile_return_operation(

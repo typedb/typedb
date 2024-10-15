@@ -24,6 +24,7 @@ use ir::{
     pipeline::{block::BlockContext, VariableRegistry},
 };
 use itertools::Itertools;
+use ir::pattern::constraint::FunctionCallBinding;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -213,7 +214,10 @@ impl<'a> PlanBuilder<'a> {
                 Constraint::Has(has) => self.register_has(has),
                 Constraint::Links(links) => self.register_links(links),
 
-                Constraint::FunctionCallBinding(_) => todo!("function call"),
+                Constraint::FunctionCallBinding(function_call) => {
+                    self.register_function_call(function_call);
+                    todo!("function call")
+                },
                 Constraint::Comparison(comparison) => self.register_comparison(comparison),
 
                 Constraint::ExpressionBinding(expression) => {
@@ -309,6 +313,10 @@ impl<'a> PlanBuilder<'a> {
         self.adjacency.entry(lhs).or_default().insert(planner_index);
         todo!("expression = {expression:?}");
         // self.elements.push(PlannerVertex::Expression());
+    }
+
+    fn register_function_call(&mut self, function_call: &FunctionCallBinding<Variable>) {
+
     }
 
     fn register_comparison(&mut self, comparison: &Comparison<Variable>) {

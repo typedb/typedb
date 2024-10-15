@@ -128,7 +128,7 @@ impl QueryManager {
         };
 
         // 2: Annotate
-        let annotated_functions = match function_manager.get_annotated_functions(&snapshot, type_manager) {
+        let annotated_schema_functions = match function_manager.get_annotated_functions(&snapshot, type_manager) {
             Ok(functions) => functions,
             Err(err) => {
                 return Err((snapshot, QueryError::FunctionRetrieval { typedb_source: err }));
@@ -138,7 +138,7 @@ impl QueryManager {
         let annotated_pipeline = annotate_pipeline(
             &snapshot,
             type_manager,
-            &annotated_functions,
+            &annotated_schema_functions,
             &mut variable_registry,
             &value_parameters,
             translated_preamble,

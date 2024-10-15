@@ -54,6 +54,8 @@ pub(crate) enum PlannerVertex {
     Relates(RelatesPlanner),
     Plays(PlaysPlanner),
 
+    FunctionCall(FunctionCallPlanner),
+
     NestedPattern(NestedPatternPlanner),
 }
 
@@ -70,6 +72,9 @@ impl PlannerVertex {
             } // may be invalid: must be produced
 
             Self::Expression(_) => todo!("validate expression"), // may be invalid: inputs must be bound
+            Self::FunctionCall(FunctionCallPlanner { arguments, .. }) => {
+                arguments.iter().all(|arg| ordered.contains(arg))
+            }
             Self::Comparison(ComparisonPlanner { lhs, rhs }) => {
                 if let Input::Variable(lhs) = lhs {
                     if !ordered.contains(lhs) {
@@ -115,6 +120,7 @@ impl PlannerVertex {
             Self::Has(inner) => inner.unbound_direction,
             Self::Links(inner) => inner.unbound_direction,
             Self::Expression(_) => todo!(),
+            Self::FunctionCall(_) => todo!(),
             Self::Comparison(_) => Direction::Canonical,
             Self::Sub(inner) => inner.unbound_direction,
             Self::Owns(inner) => inner.unbound_direction,
@@ -136,6 +142,7 @@ impl PlannerVertex {
             Self::Has(inner) => Box::new(inner.variables()),
             Self::Links(inner) => Box::new(inner.variables()),
             Self::Expression(_inner) => todo!(),
+            Self::FunctionCall(inner) => Box::new(inner.variables()),
             Self::Comparison(inner) => Box::new(inner.variables()),
 
             Self::Sub(inner) => Box::new(inner.variables()),
@@ -160,6 +167,7 @@ impl PlannerVertex {
             Self::Isa(_inner) => todo!(),
             Self::Has(_inner) => todo!(),
             Self::Links(_inner) => todo!(),
+            Self::FunctionCall(_inner) => todo!(),
             Self::Expression(_inner) => todo!(),
             Self::Comparison(_inner) => todo!(),
 
@@ -266,6 +274,7 @@ impl Costed for PlannerVertex {
             Self::Has(inner) => inner.cost(inputs, elements),
             Self::Links(inner) => inner.cost(inputs, elements),
             Self::Expression(_) => todo!("expression cost"),
+            Self::FunctionCall(inner) => inner.cost(inputs, elements),
             Self::Comparison(inner) => inner.cost(inputs, elements),
 
             Self::Sub(inner) => inner.cost(inputs, elements),
@@ -754,6 +763,30 @@ impl Costed for LinksPlanner {
         };
 
         ElementCost { per_input, per_output, branching_factor }
+    }
+}
+
+#[derive(Debug)]
+struct FunctionCallPlanner {
+    arguments: Vec<usize>,
+    assigned: Vec<usize>,
+    cost: ElementCost,
+}
+
+impl FunctionCallPlanner {
+
+    pub(crate) fn new(arguments: Vec<usize>, assigned: Vec<usize>, cost: ElementCost) -> Self {
+        Self { arguments, assigned, cost }
+    }
+
+    fn variables(&self) -> impl Iterator<Item = usize> + '_ {
+        self.arguments.iter().chain(self.assigned.iter()).copied()
+    }
+}
+
+impl Costed for FunctionCallPlanner {
+    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> ElementCost {
+        self.cost
     }
 }
 

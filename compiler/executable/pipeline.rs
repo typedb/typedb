@@ -12,6 +12,7 @@ use std::{
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
+use encoding::graph::definition::definition_key::DefinitionKey;
 use ir::pipeline::VariableRegistry;
 
 use crate::{
@@ -28,6 +29,8 @@ use crate::{
     },
     VariablePosition,
 };
+use crate::annotation::function::IndexedAnnotatedFunctions;
+use crate::executable::match_::planner::function_plan::{FunctionPlan, FunctionPlanRegistry};
 
 pub struct ExecutablePipeline {
     pub executable_functions: Vec<ExecutableFunction>,
@@ -83,6 +86,7 @@ pub fn compile_pipeline(
     annotated_fetch: Option<AnnotatedFetch>,
     input_variables: HashSet<Variable>,
 ) -> Result<ExecutablePipeline, ExecutableCompilationError> {
+    // TODO: Where do the schema functions come from?
     let executable_functions = annotated_functions
         .into_iter_functions()
         .map(|function| compile_function(statistics, function))
@@ -95,6 +99,7 @@ pub fn compile_pipeline(
 pub fn compile_stages_and_fetch(
     statistics: &Statistics,
     variable_registry: Arc<VariableRegistry>,
+    annotated_schema_functions: Arc<IndexedAnnotatedFunctions>,
     annotated_stages: Vec<AnnotatedStage>,
     annotated_fetch: Option<AnnotatedFetch>,
     input_variables: HashSet<Variable>,
@@ -116,9 +121,10 @@ pub fn compile_stages_and_fetch(
 pub(crate) fn compile_pipeline_stages(
     statistics: &Statistics,
     variable_registry: Arc<VariableRegistry>,
+    functions: &FunctionPlanRegistry,
     annotated_stages: Vec<AnnotatedStage>,
     input_variables: HashSet<Variable>,
-) -> Result<Vec<ExecutableStage>, ExecutableCompilationError> {
+) -> Result<(Vec<ExecutableStage>, HashMap<Variable, VariablePosition>), ExecutableCompilationError> {
     let mut executable_stages = Vec::with_capacity(annotated_stages.len());
     for stage in annotated_stages {
         let input_variable_positions =
@@ -130,10 +136,10 @@ pub(crate) fn compile_pipeline_stages(
                     .collect()
             });
 
-        let executable_stage = compile_stage(statistics, variable_registry.clone(), &input_variable_positions, stage)?;
+        let executable_stage = compile_stage(statistics, variable_registry.clone(), &input_variable_positions, stage, functions)?;
         executable_stages.push(executable_stage);
     }
-    Ok(executable_stages)
+    Ok((executable_stages, input_variable_positions))
 }
 
 fn compile_stage(
@@ -141,6 +147,7 @@ fn compile_stage(
     variable_registry: Arc<VariableRegistry>,
     input_variables: &HashMap<Variable, VariablePosition>,
     annotated_stage: AnnotatedStage,
+    functions: &FunctionPlanRegistry,
 ) -> Result<ExecutableStage, ExecutableCompilationError> {
     match &annotated_stage {
         AnnotatedStage::Match { block, block_annotations, executable_expressions } => {
@@ -151,6 +158,7 @@ fn compile_stage(
                 variable_registry,
                 executable_expressions,
                 statistics,
+                functions,
             );
             Ok(ExecutableStage::Match(plan))
         }
