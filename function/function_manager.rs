@@ -272,26 +272,27 @@ pub mod tests {
         },
     };
     use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
-    use test_utils::{create_tmp_dir, init_logging};
+    use test_utils::{create_tmp_dir, init_logging, TempDir};
 
     use crate::{
         function_cache::FunctionCache,
         function_manager::{tests::test_schema::setup_types, FunctionManager, ReadThroughFunctionSignatureIndex},
     };
 
-    fn setup_storage() -> Arc<MVCCStorage<WALClient>> {
+    fn setup_storage() -> (TempDir, Arc<MVCCStorage<WALClient>>) {
         init_logging();
         let storage_path = create_tmp_dir();
         let wal = WAL::create(&storage_path).unwrap();
-        Arc::new(
+        let storage = Arc::new(
             MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
                 .unwrap(),
-        )
+        );
+        (storage_path, storage)
     }
 
     #[test]
     fn test_define_functions() {
-        let storage = setup_storage();
+        let (_tmp_dir, storage) = setup_storage();
         let type_manager = Arc::new(TypeManager::new(
             Arc::new(DefinitionKeyGenerator::new()),
             Arc::new(TypeVertexGenerator::new()),
