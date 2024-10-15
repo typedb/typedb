@@ -20,6 +20,7 @@ use crate::{
     },
     VariablePosition,
 };
+use crate::executable::match_::planner::function_plan::FunctionPlanRegistry;
 
 pub struct ExecutableFetch {
     object_instruction: FetchObjectInstruction,
@@ -50,15 +51,17 @@ struct ExecutableFetchListSubFetch {
 
 pub fn compile_fetch(
     statistics: &Statistics,
+    available_functions: &FunctionPlanRegistry,
     fetch: AnnotatedFetch,
     variable_positions: &HashMap<Variable, VariablePosition>,
 ) -> Result<ExecutableFetch, FetchCompilationError> {
-    let compiled = compile_object(statistics, fetch.object, variable_positions)?;
+    let compiled = compile_object(statistics, available_functions, fetch.object, variable_positions)?;
     Ok(ExecutableFetch { object_instruction: compiled })
 }
 
 fn compile_object(
     statistics: &Statistics,
+    available_functions: &FunctionPlanRegistry,
     fetch_object: AnnotatedFetchObject,
     variable_positions: &HashMap<Variable, VariablePosition>,
 ) -> Result<FetchObjectInstruction, FetchCompilationError> {
@@ -66,7 +69,7 @@ fn compile_object(
         AnnotatedFetchObject::Entries(entries) => {
             let mut compiled_entries = HashMap::with_capacity(entries.len());
             for (key, value) in entries {
-                let compiled = compile_some(statistics, value, variable_positions)?;
+                let compiled = compile_some(statistics, available_functions, value, variable_positions)?;
                 compiled_entries.insert(key, compiled);
             }
             Ok(FetchObjectInstruction::Entries(compiled_entries))
@@ -82,6 +85,7 @@ fn compile_object(
 
 fn compile_some(
     statistics: &Statistics,
+    available_functions: &FunctionPlanRegistry,
     some: AnnotatedFetchSome,
     variable_positions: &HashMap<Variable, VariablePosition>,
 ) -> Result<FetchSomeInstruction, FetchCompilationError> {
@@ -99,23 +103,23 @@ fn compile_some(
             Ok(FetchSomeInstruction::SingleAttribute(*position, attribute_type))
         }
         AnnotatedFetchSome::SingleFunction(function) => {
-            let compiled = compile_function(statistics, function)
+            let compiled = compile_function(statistics, available_functions, function)
                 .map_err(|err| FetchCompilationError::AnonymousFunctionCompilation { typedb_source: Box::new(err) })?;
             Ok(FetchSomeInstruction::SingleFunction(compiled))
         }
         AnnotatedFetchSome::Object(object) => {
-            let compiled = compile_object(statistics, *object, variable_positions)?;
+            let compiled = compile_object(statistics, available_functions, *object, variable_positions)?;
             Ok(FetchSomeInstruction::Object(Box::new(compiled)))
         }
         AnnotatedFetchSome::ListFunction(function) => {
-            let compiled = compile_function(statistics, function)
+            let compiled = compile_function(statistics, available_functions, function)
                 .map_err(|err| FetchCompilationError::AnonymousFunctionCompilation { typedb_source: Box::new(err) })?;
             Ok(FetchSomeInstruction::ListFunction(compiled))
         }
         AnnotatedFetchSome::ListSubFetch(sub_fetch) => {
             let AnnotatedFetchListSubFetch { variable_registry, input_variables, stages, fetch } = sub_fetch;
             let (compiled_stages, compiled_fetch) =
-                compile_stages_and_fetch(statistics, Arc::new(variable_registry), stages, Some(fetch), input_variables)
+                compile_stages_and_fetch(statistics, Arc::new(variable_registry), available_functions, stages, Some(fetch), input_variables)
                     .map_err(|err| FetchCompilationError::SubFetchCompilation { typedb_source: Box::new(err) })?;
 
             Ok(FetchSomeInstruction::ListSubFetch(ExecutableFetchListSubFetch {
