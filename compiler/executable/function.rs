@@ -6,6 +6,7 @@
 
 use std::{collections::HashMap, sync::Arc};
 use std::collections::HashSet;
+use typeql::schema::definable::function::SingleSelector;
 
 use concept::thing::statistics::Statistics;
 use ir::pipeline::VariableRegistry;
@@ -19,11 +20,18 @@ use crate::{
     VariablePosition,
 };
 use crate::annotation::function::AnnotatedFunctionReturn;
+use crate::executable::reduce::ReduceInstruction;
 
-pub type ExecutableReturn = Vec<VariablePosition>; // TODO: in case we need to become an enum.
 pub struct ExecutableFunction {
     executable_stages: Vec<ExecutableStage>,
     returns: ExecutableReturn,
+}
+
+pub enum ExecutableReturn {
+    Stream(Vec<VariablePosition>),
+    Single(SingleSelector, Vec<VariablePosition>),
+    Check,
+    Reduce(Vec<ReduceInstruction<VariablePosition>>)
 }
 
 pub(crate) fn compile_function(
@@ -41,16 +49,26 @@ fn compile_return_operation(
     executable_stages: &mut Vec<ExecutableStage>,
     return_: AnnotatedFunctionReturn,
 ) -> Result<ExecutableReturn, ExecutableCompilationError> {
-    let stages_variable_positions =
+    let variable_positions =
         executable_stages.last().map(|stage: &ExecutableStage| stage.output_row_mapping()).unwrap_or(HashMap::new());
     match return_ {
         AnnotatedFunctionReturn::Stream {variables, ..} => {
-            Ok(variables.iter().map(|var| stages_variable_positions.get(var).unwrap().clone()).collect())
+            Ok(ExecutableReturn::Stream(
+                variables.iter().map(|var| variable_positions.get(var).unwrap().clone()).collect()
+            ))
         }
-        AnnotatedFunctionReturn::Single {..}
-        | AnnotatedFunctionReturn::ReduceCheck {}
-        | AnnotatedFunctionReturn::ReduceReducer {..} => { 
-            todo!() 
+        AnnotatedFunctionReturn::Single { selector, variables, .. } => {
+            Ok(ExecutableReturn::Single(
+                selector, 
+                variables.iter().map(|var| variable_positions.get(var).unwrap().clone()).collect()
+            ))
+        }
+        | AnnotatedFunctionReturn::ReduceCheck {} => {
+            Ok(ExecutableReturn::Check)
+        }
+        | AnnotatedFunctionReturn::ReduceReducer { instructions } => {
+            let positional_reducers = instructions.into_iter().map(|reducer| reducer.map(&variable_positions)).collect();
+            Ok(ExecutableReturn::Reduce(positional_reducers))
         },
     }
 }

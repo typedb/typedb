@@ -224,48 +224,7 @@ fn compile_stage(
                     assigned_variable.clone(),
                     VariablePosition::new((input_group_positions.len() + reductions.len()) as u32),
                 );
-                let reducer_on_position = match &reducer_on_variable {
-                    ReduceInstruction::Count => ReduceInstruction::Count,
-                    ReduceInstruction::CountVar(variable) => {
-                        ReduceInstruction::CountVar(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::SumLong(variable) => {
-                        ReduceInstruction::SumLong(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::SumDouble(variable) => {
-                        ReduceInstruction::SumDouble(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::MaxLong(variable) => {
-                        ReduceInstruction::MaxLong(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::MaxDouble(variable) => {
-                        ReduceInstruction::MaxDouble(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::MinLong(variable) => {
-                        ReduceInstruction::MinLong(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::MinDouble(variable) => {
-                        ReduceInstruction::MinDouble(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::MeanLong(variable) => {
-                        ReduceInstruction::MeanLong(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::MeanDouble(variable) => {
-                        ReduceInstruction::MeanDouble(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::MedianLong(variable) => {
-                        ReduceInstruction::MedianLong(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::MedianDouble(variable) => {
-                        ReduceInstruction::MedianDouble(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::StdLong(variable) => {
-                        ReduceInstruction::StdLong(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::StdDouble(variable) => {
-                        ReduceInstruction::StdDouble(input_variables.get(variable).unwrap().clone())
-                    }
-                };
+                let reducer_on_position = reducer_on_variable.clone().map(input_variables);
                 reductions.push(reducer_on_position);
             }
             Ok(ExecutableStage::Reduce(ReduceExecutable {

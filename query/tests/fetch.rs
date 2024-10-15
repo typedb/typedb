@@ -84,22 +84,22 @@ fetch {
     "single attr": $a,
     "single-card attributes": $x.age,
 #    "single value expression": $a + 1,
-#    "single answer block": (
-#        match
-#        $x has name $name;
-#        return first $name;
-#    ),
-#    "reduce answer block": (
-#        match
-#        $x has name $name;
-#        return count($name);
-#    ),
-#    "list positional return block": [
-#        match
-#        $x has name $n,
-#            has age $a;
-#        return { $n, $a };
-#    ],
+    "single answer block": (
+        match
+        $x has name $name;
+        return first $name;
+    ),
+    "reduce answer block": (
+        match
+        $x has name $name;
+        return count($name);
+    ),
+    "list positional return block": [
+        match
+        $x has name $n,
+            has age $a;
+        return { $n, $a };
+    ],
     "list pipeline": [
         match
         $x has name $n,
