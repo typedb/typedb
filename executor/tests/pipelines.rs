@@ -425,7 +425,7 @@ fn test_match_sort() {
             &match_,
         )
         .unwrap();
-    let named_outputs = pipeline.rows_positions().unwrap();
+    let named_outputs = pipeline.rows_positions().unwrap().clone();
     let (iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 

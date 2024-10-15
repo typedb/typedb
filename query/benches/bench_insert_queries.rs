@@ -103,11 +103,12 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
 
     let qm = QueryManager::new();
-    let (pipeline, outputs) = qm
+    let pipeline = qm
         .prepare_write_pipeline(snapshot, type_manager, thing_manager, &function_manager, &typeql_insert)
         .map_err(|(snapshot, err)| (err, snapshot))?;
+    let outputs = pipeline.rows_positions().unwrap().clone();
     let (iter, ctx) =
-        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(typedb_source, ctx)| {
+        pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(typedb_source, ctx)| {
             (QueryError::WritePipelineExecutionError { typedb_source }, Arc::into_inner(ctx.snapshot).unwrap())
         })?;
     let mut batch = match iter.collect_owned() {

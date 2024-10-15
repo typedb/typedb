@@ -52,11 +52,11 @@ fn setup(
 
     let snapshot = storage.clone().open_snapshot_write();
     let query = typeql::parse_query(data).unwrap().into_pipeline();
-    let (pipeline, _named_outputs) = QueryManager {}
+    let pipeline = QueryManager {}
         .prepare_write_pipeline(snapshot, &type_manager, thing_manager.clone(), &FunctionManager::default(), &query)
         .unwrap();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
-        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+        pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     assert_matches!(iterator.next(), Some(Ok(_)));
     assert_matches!(iterator.next(), None);
     let snapshot = Arc::into_inner(snapshot).unwrap();

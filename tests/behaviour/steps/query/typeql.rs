@@ -97,7 +97,7 @@ fn execute_write_query(
             .unwrap();
         let named_outputs = pipeline.rows_positions().unwrap().clone();
 
-        let (result_as_batch, snapshot) = match final_stage.into_iterator(ExecutionInterrupt::new_uninterruptible()) {
+        let (result_as_batch, snapshot) = match pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
             Ok((iterator, ExecutionContext { snapshot, .. })) => (iterator.collect_owned(), snapshot),
             Err((err, ExecutionContext { .. })) => {
                 return Err(BehaviourTestExecutionError::Query(QueryError::ReadPipelineExecutionError {

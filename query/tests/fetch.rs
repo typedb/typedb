@@ -41,9 +41,9 @@ fn insert_data(
     let mut snapshot = storage.clone().open_snapshot_write();
     let query_manager = QueryManager::new();
     let query = typeql::parse_query(query_string).unwrap().into_pipeline();
-    let (pipeline, _) =
+    let pipeline =
         query_manager.prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, &query).unwrap();
-    let (iterator, context) = pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let (iterator, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let mut snapshot = Arc::into_inner(context.snapshot).unwrap();
     snapshot.commit().unwrap();
 }
