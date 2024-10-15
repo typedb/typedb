@@ -5,46 +5,70 @@
  */
 
 use std::{collections::HashMap, sync::Arc};
+use std::collections::HashSet;
+use typeql::schema::definable::function::SingleSelector;
 
 use concept::thing::statistics::Statistics;
-use ir::pipeline::{function::ReturnOperation, VariableRegistry};
+use ir::pipeline::VariableRegistry;
 
 use crate::{
     annotation::function::AnnotatedFunction,
     executable::{
-        pipeline::{compile_pipeline_stages, ExecutableStage},
         ExecutableCompilationError,
+        pipeline::{compile_pipeline_stages, ExecutableStage},
     },
     VariablePosition,
 };
+use crate::annotation::function::AnnotatedFunctionReturn;
+use crate::executable::reduce::ReduceInstruction;
 
-pub type ExecutableReturn = Vec<VariablePosition>; // TODO: in case we need to become an enum.
 pub struct ExecutableFunction {
     executable_stages: Vec<ExecutableStage>,
     returns: ExecutableReturn,
 }
 
+pub enum ExecutableReturn {
+    Stream(Vec<VariablePosition>),
+    Single(SingleSelector, Vec<VariablePosition>),
+    Check,
+    Reduce(Vec<ReduceInstruction<VariablePosition>>)
+}
+
 pub(crate) fn compile_function(
     statistics: &Statistics,
-    variable_registry: Arc<VariableRegistry>,
     function: AnnotatedFunction,
 ) -> Result<ExecutableFunction, ExecutableCompilationError> {
-    let AnnotatedFunction { stages, return_operation, .. } = function;
-    let mut executable_stages = compile_pipeline_stages(statistics, variable_registry.clone(), stages)?;
-    let returns = compile_return_operation(&mut executable_stages, return_operation)?;
+    let AnnotatedFunction { variable_registry, arguments, stages, return_ } = function;
+    let arguments_set = HashSet::from_iter(arguments.into_iter());
+    let mut executable_stages = compile_pipeline_stages(statistics, Arc::new(variable_registry), stages, arguments_set)?;
+    let returns = compile_return_operation(&mut executable_stages, return_)?;
     Ok(ExecutableFunction { executable_stages, returns })
 }
 
 fn compile_return_operation(
     executable_stages: &mut Vec<ExecutableStage>,
-    return_operation: ReturnOperation,
+    return_: AnnotatedFunctionReturn,
 ) -> Result<ExecutableReturn, ExecutableCompilationError> {
-    let stages_variable_positions =
+    let variable_positions =
         executable_stages.last().map(|stage: &ExecutableStage| stage.output_row_mapping()).unwrap_or(HashMap::new());
-    match return_operation {
-        ReturnOperation::Stream(vars) => {
-            Ok(vars.iter().map(|var| stages_variable_positions.get(var).unwrap().clone()).collect())
+    match return_ {
+        AnnotatedFunctionReturn::Stream {variables, ..} => {
+            Ok(ExecutableReturn::Stream(
+                variables.iter().map(|var| variable_positions.get(var).unwrap().clone()).collect()
+            ))
         }
-        ReturnOperation::Single(_, _) | ReturnOperation::ReduceCheck() | ReturnOperation::ReduceReducer(_) => todo!(),
+        AnnotatedFunctionReturn::Single { selector, variables, .. } => {
+            Ok(ExecutableReturn::Single(
+                selector, 
+                variables.iter().map(|var| variable_positions.get(var).unwrap().clone()).collect()
+            ))
+        }
+        | AnnotatedFunctionReturn::ReduceCheck {} => {
+            Ok(ExecutableReturn::Check)
+        }
+        | AnnotatedFunctionReturn::ReduceReducer { instructions } => {
+            let positional_reducers = instructions.into_iter().map(|reducer| reducer.map(&variable_positions)).collect();
+            Ok(ExecutableReturn::Reduce(positional_reducers))
+        },
     }
 }

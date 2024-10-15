@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::fmt::{Display, Formatter};
 use answer::variable::Variable;
 use encoding::value::value_type::{ValueType, ValueTypeCategory};
 use ir::pattern::ParameterID;
@@ -36,7 +37,7 @@ impl ExecutableExpression {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ExpressionValueType {
     // TODO: we haven't implemented ConceptList, only ValueList right now.
     // TODO: this should hold an actual ValueType, not a Category!
@@ -49,6 +50,15 @@ impl ExpressionValueType {
         match self {
             ExpressionValueType::Single(value_type) => value_type,
             ExpressionValueType::List(value_type) => value_type,
+        }
+    }
+}
+
+impl Display for ExpressionValueType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ExpressionValueType::Single(single) => write!(f, "{}", single),
+            ExpressionValueType::List(list) => write!(f, "{}[]", list)
         }
     }
 }

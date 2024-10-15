@@ -32,22 +32,22 @@ pub enum ExpressionCompileError {
         right_category: ValueTypeCategory,
     },
     MultipleAssignmentsForSingleVariable {
-        assign_variable: Variable,
+        assign_variable: Option<String>,
     },
     CircularDependencyInExpressions {
-        assign_variable: Variable,
+        assign_variable: Option<String>,
     },
     CouldNotDetermineValueTypeForVariable {
-        variable: Variable,
+        variable: Option<String>,
     },
     VariableDidNotHaveSingleValueType {
-        variable: Variable,
+        variable: Option<String>,
     },
     VariableHasNoValueType {
-        variable: Variable,
+        variable: Option<String>,
     },
     VariableMustBeValueOrAttribute {
-        variable: Variable,
+        variable: Option<String>,
         actual_category: VariableCategory,
     },
     UnsupportedArgumentsForBuiltin,

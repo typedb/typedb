@@ -55,10 +55,11 @@ use typedb_protocol::{
 };
 use typeql::{
     parse_query,
-    query::{stage::Stage, Pipeline, SchemaQuery},
+    query::{stage::Stage, SchemaQuery},
     Query,
 };
 use uuid::Uuid;
+use executor::pipeline::pipeline::Pipeline;
 
 use crate::service::{
     answer::encode_row,
@@ -105,7 +106,7 @@ pub(crate) struct TransactionService {
 
     is_open: bool,
     transaction: Option<Transaction>,
-    request_queue: VecDeque<(Uuid, Pipeline)>,
+    request_queue: VecDeque<(Uuid, typeql::query::Pipeline)>,
     responders: HashMap<Uuid, (JoinHandle<()>, QueryStreamTransmitter)>,
     running_write_query:
         Option<(Uuid, JoinHandle<(Transaction, Result<(StreamQueryOutputDescriptor, Batch), QueryError>)>)>,
@@ -725,7 +726,7 @@ impl TransactionService {
         }
     }
 
-    async fn run_write_query(&mut self, req_id: Uuid, pipeline: Pipeline) {
+    async fn run_write_query(&mut self, req_id: Uuid, pipeline: typeql::query::Pipeline,) {
         debug_assert!(self.running_write_query.is_none());
         self.interrupt_and_close_responders(InterruptType::WriteQueryExecution).await;
         let handle = match self.spawn_blocking_execute_write_query(pipeline) {
@@ -762,7 +763,7 @@ impl TransactionService {
         self.responders.insert(req_id, (batch_reader, stream_transmitter));
     }
 
-    fn run_and_activate_read_transmitter(&mut self, req_id: Uuid, pipeline: Pipeline) {
+    fn run_and_activate_read_transmitter(&mut self, req_id: Uuid, pipeline: typeql::query::Pipeline,) {
         let (sender, receiver) = channel(self.prefetch_size.unwrap() as usize);
         let worker_handle = self.blocking_read_query_worker(pipeline, sender);
         let stream_transmitter = QueryStreamTransmitter::start_new(
@@ -777,7 +778,7 @@ impl TransactionService {
 
     fn spawn_blocking_execute_write_query(
         &mut self,
-        pipeline: Pipeline,
+        pipeline: typeql::query::Pipeline,
     ) -> Result<
         JoinHandle<(Transaction, Result<(StreamQueryOutputDescriptor, Batch), QueryError>)>,
         TransactionServiceError,
@@ -857,7 +858,7 @@ impl TransactionService {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
-        pipeline: &Pipeline,
+        pipeline: &typeql::query::Pipeline,
         interrupt: ExecutionInterrupt,
     ) -> (Snapshot, Result<(StreamQueryOutputDescriptor, Batch), QueryError>) {
         let result = QueryManager::new().prepare_write_pipeline(
@@ -868,14 +869,15 @@ impl TransactionService {
             pipeline,
         );
         let (query_output_descriptor, pipeline) = match result {
-            Ok((executor, named_outputs)) => {
-                let named_outputs: StreamQueryOutputDescriptor = named_outputs.into_iter().sorted().collect();
-                (named_outputs, executor)
+            Ok(pipeline) => {
+                let named_outputs = pipeline.rows_positions().unwrap();
+                let named_outputs: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
+                (named_outputs, pipeline)
             }
             Err((snapshot, err)) => return (snapshot, Err(err)),
         };
 
-        let (iterator, snapshot) = match pipeline.into_iterator(interrupt) {
+        let (iterator, snapshot) = match pipeline.into_rows_iterator(interrupt) {
             Ok((iterator, ExecutionContext { snapshot, .. })) => (iterator, snapshot),
             Err((err, ExecutionContext { snapshot, .. })) => {
                 return (
@@ -941,7 +943,7 @@ impl TransactionService {
         })
     }
 
-    fn blocking_read_query_worker(&self, pipeline: Pipeline, sender: Sender<StreamQueryResponse>) -> JoinHandle<()> {
+    fn blocking_read_query_worker(&self, pipeline: typeql::query::Pipeline, sender: Sender<StreamQueryResponse>) -> JoinHandle<()> {
         debug_assert!(
             self.request_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some()
         );
@@ -952,7 +954,7 @@ impl TransactionService {
             let thing_manager = transaction.thing_manager.clone();
             let function_manager = transaction.function_manager.clone();
             spawn_blocking(move || {
-                let prepare_result = Self::prepare_read_query_in(
+                let pipeline = Self::prepare_read_query_in(
                     snapshot.clone(),
                     &type_manager,
                     thing_manager.clone(),
@@ -960,18 +962,17 @@ impl TransactionService {
                     &pipeline,
                 );
 
-                let (read_pipeline_stage_executor, named_outputs) =
-                    unwrap_or_execute_and_return!(prepare_result, |err| {
+                let pipeline =
+                    unwrap_or_execute_and_return!(pipeline, |err| {
                         Self::submit_response_sync(&sender, StreamQueryResponse::done_err(err));
                     });
-
-                let descriptor: StreamQueryOutputDescriptor =
-                    named_outputs.into_iter().map(|(name, position)| (name, position)).sorted().collect();
+                let named_outputs = pipeline.rows_positions().unwrap();
+                let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
                 let initial_response = StreamQueryResponse::init_ok(&descriptor, Read);
                 Self::submit_response_sync(&sender, initial_response);
 
                 let (mut iterator, _) = unwrap_or_execute_and_return!(
-                    read_pipeline_stage_executor.into_iterator(interrupt.clone()),
+                    pipeline.into_rows_iterator(interrupt.clone()),
                     |(err, _)| {
                         Self::submit_response_sync(
                             &sender,
@@ -1019,8 +1020,8 @@ impl TransactionService {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
-        pipeline: &Pipeline,
-    ) -> Result<(ReadPipelineStage<Snapshot>, HashMap<String, VariablePosition>), QueryError> {
+        pipeline: &typeql::query::Pipeline,
+    ) -> Result<Pipeline<Snapshot, ReadPipelineStage<Snapshot>>, QueryError> {
         QueryManager::new().prepare_read_pipeline(snapshot, type_manager, thing_manager, function_manager, pipeline)
     }
 
@@ -1054,7 +1055,7 @@ impl TransactionService {
         }
     }
 
-    fn is_write_pipeline(pipeline: &Pipeline) -> bool {
+    fn is_write_pipeline(pipeline: &typeql::query::Pipeline) -> bool {
         for stage in &pipeline.stages {
             match stage {
                 Stage::Insert(_) | Stage::Put(_) | Stage::Delete(_) | Stage::Update(_) => return true,

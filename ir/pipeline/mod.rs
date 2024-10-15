@@ -6,18 +6,19 @@
 
 use std::{collections::HashMap, error::Error, fmt, sync::Arc};
 
+use itertools::Itertools;
+use typeql::schema::definable::function::{Function, FunctionBlock, ReturnReduction, ReturnSingle, ReturnStream};
+
 use answer::variable::Variable;
 use encoding::value::value::Value;
 use error::typedb_error;
-use itertools::Itertools;
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
-use typeql::schema::definable::function::{Function, FunctionBlock, ReturnReduction, ReturnSingle, ReturnStream};
 
 use crate::{
     pattern::{
         constraint::Constraint,
-        variable_category::{VariableCategory, VariableOptionality},
         ParameterID,
+        variable_category::{VariableCategory, VariableOptionality},
     },
     pipeline::{function_signature::FunctionID, reduce::Reducer},
     RepresentationError,
@@ -191,6 +192,10 @@ impl VariableRegistry {
         &self.variable_names
     }
 
+    pub fn get_variable_name(&self, variable: &Variable) -> Option<&String> {
+        self.variable_names.get(variable)
+    }
+
     pub fn get_variable_category(&self, variable: Variable) -> Option<VariableCategory> {
         self.variable_categories.get(&variable).map(|(category, _constraint)| *category)
     }
@@ -204,6 +209,10 @@ impl VariableRegistry {
             VariableOptionality::Required => false,
             VariableOptionality::Optional => true,
         }
+    }
+
+    pub fn has_variable_as_named(&self, variable: &Variable) -> bool {
+        self.variable_names.contains_key(variable)
     }
 
     pub(crate) fn register_reduce_output_variable(
@@ -275,5 +284,9 @@ impl ParameterRegistry {
 
     pub fn value_unchecked(&self, id: ParameterID) -> &Value<'static> {
         self.value_registry.get(&id).unwrap()
+    }
+
+    pub fn fetch_key(&self, id: ParameterID) -> Option<&String> {
+        self.fetch_key_registry.get(&id)
     }
 }

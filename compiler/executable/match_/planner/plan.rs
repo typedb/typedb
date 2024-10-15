@@ -55,7 +55,7 @@ use crate::{
 pub(crate) fn plan_conjunction<'a>(
     conjunction: &'a Conjunction,
     block_context: &BlockContext,
-    input_variables: &HashMap<Variable, VariablePosition>,
+    variable_positions: &HashMap<Variable, VariablePosition>,
     type_annotations: &'a TypeAnnotations,
     variable_registry: &VariableRegistry,
     _expressions: &HashMap<Variable, ExecutableExpression>,
@@ -69,7 +69,7 @@ pub(crate) fn plan_conjunction<'a>(
             NestedPattern::Negation(negation) => plan_conjunction(
                 negation.conjunction(),
                 block_context,
-                input_variables,
+                variable_positions,
                 type_annotations,
                 variable_registry,
                 _expressions,
@@ -81,7 +81,7 @@ pub(crate) fn plan_conjunction<'a>(
 
     let mut plan_builder = PlanBuilder::new(type_annotations, statistics);
     plan_builder.register_variables(
-        conjunction.captured_variables(block_context).chain(input_variables.keys().copied()),
+        conjunction.captured_variables(block_context),
         conjunction.declared_variables(block_context),
         variable_registry,
     );

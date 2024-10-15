@@ -4,14 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use answer::variable::Variable;
-use storage::snapshot::ReadableSnapshot;
 use typeql::{
     schema::definable::function::{
         FunctionBlock, Output, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream,
     },
     TypeRefAny,
 };
+use typeql::schema::definable::function::Argument;
+
+use answer::variable::Variable;
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     pattern::variable_category::{VariableCategory, VariableOptionality},
@@ -23,28 +25,52 @@ use crate::{
     translation::{pipeline::translate_pipeline_stages, reduce::build_reducer, TranslationContext},
 };
 
-pub fn translate_function(
+pub fn translate_typeql_function(
     snapshot: &impl ReadableSnapshot,
     function_index: &impl FunctionSignatureIndex,
     function: &typeql::Function,
 ) -> Result<Function, FunctionRepresentationError> {
+    translate_function_from(
+        snapshot,
+        function_index,
+        function.signature.ident.as_str(),
+        &function.signature.args,
+        &function.block,
+        Some(function),
+    )
+}
+
+pub fn translate_function_from<'a>(
+    snapshot: &impl ReadableSnapshot,
+    function_index: &impl FunctionSignatureIndex,
+    name: &str,
+    args: &[Argument],
+    block: &FunctionBlock,
+    declaration: Option<&typeql::Function>,
+) -> Result<Function, FunctionRepresentationError> {
     let mut context = TranslationContext::new();
-    let body = translate_function_block(snapshot, function_index, &mut context, &function.block)?;
-    let arguments = function
-        .signature
-        .args
-        .iter()
-        .map(|typeql_arg| {
-            let var = context.get_variable(typeql_arg.var.name().unwrap()).ok_or_else(|| {
-                FunctionRepresentationError::FunctionArgumentUnused {
-                    argument_variable: typeql_arg.var.name().unwrap().to_string(),
-                    declaration: function.clone(),
-                }
-            })?;
-            Ok((var, typeql_arg.type_.clone()))
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    Ok(Function::new(function.signature.ident.as_str(), context, arguments, body))
+    let body = translate_function_block(snapshot, function_index, &mut context, block)?;
+    let (arguments, argument_labels) = translate_function_arguments(&mut context, declaration, args)?;
+    Ok(Function::new(name, context, arguments, Some(argument_labels), body))
+}
+
+pub(crate) fn translate_function_arguments<'a>(
+    context: &mut TranslationContext,
+    declaration: Option<&typeql::Function>,
+    args: &[Argument],
+) -> Result<(Vec<Variable>, Vec<TypeRefAny>), FunctionRepresentationError> {
+    let mut argument_variables = Vec::with_capacity(args.len());
+    let mut argument_labels = Vec::with_capacity(args.len());
+    for arg in args {
+        let var = context.get_variable(arg.var.name().unwrap()).ok_or_else(|| {
+            FunctionRepresentationError::FunctionArgumentUnused {
+                argument_variable: arg.var.name().unwrap().to_owned(),
+                declaration: declaration.unwrap().clone(),
+            }})?;
+        argument_variables.push(var);
+        argument_labels.push(arg.type_.clone());
+    }
+    Ok((argument_variables, argument_labels))
 }
 
 pub(crate) fn translate_function_block(
@@ -84,9 +110,9 @@ pub fn build_signature(function_id: FunctionID, function: &typeql::Function) -> 
         Output::Stream(stream) => &stream.types,
         Output::Single(single) => &single.types,
     }
-    .iter()
-    .map(type_any_to_category_and_optionality)
-    .collect::<Vec<_>>();
+        .iter()
+        .map(type_any_to_category_and_optionality)
+        .collect::<Vec<_>>();
     FunctionSignature::new(function_id.clone(), args, returns, return_is_stream)
 }
 

@@ -247,6 +247,7 @@ pub mod tests {
                 "fn_test",
                 function_context,
                 vec![],
+                Some(vec![]),
                 FunctionBody::new(
                     vec![TranslatedStage::Match { block: function_block }],
                     ReturnOperation::Stream(vec![f_var_animal]),
@@ -301,7 +302,7 @@ pub mod tests {
             let (entry, entry_context, mut f_ir) = with_local_cache;
 
             let f_annotations =
-                annotate_function(&mut f_ir, &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
+                annotate_function(&mut f_ir, &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty(), None, None, None)
                     .unwrap();
             let f_var_animal =
                 var_from_registry(&f_ir.translation_context().variable_registry, "called_animal").unwrap();
@@ -344,7 +345,7 @@ pub mod tests {
             let (entry, entry_context, mut f_ir) = with_schema_cache;
 
             let f_annotations =
-                annotate_function(&mut f_ir, &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
+                annotate_function(&mut f_ir, &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty(), None, None, None)
                     .unwrap();
             let f_var_animal =
                 var_from_registry(&f_ir.translation_context().variable_registry, "called_animal").unwrap();
@@ -1174,7 +1175,7 @@ pub mod tests {
                 None,
                 &translation_context.variable_registry,
             )
-            .create_graph(block.scope_context(), &BTreeMap::new(), block.conjunction())
+            .create_graph(block.block_context(), &BTreeMap::new(), block.conjunction())
             .unwrap();
             crate::annotation::match_inference::prune_types(&mut graph);
 

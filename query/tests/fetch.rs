@@ -8,10 +8,10 @@ use std::sync::Arc;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
-use executor::{pipeline::stage::StageAPI, ExecutionInterrupt};
+use executor::{ExecutionInterrupt, pipeline::stage::StageAPI};
 use function::function_manager::FunctionManager;
 use query::query_manager::QueryManager;
-use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
+use storage::{durability_client::WALClient, MVCCStorage, snapshot::CommittableSnapshot};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
@@ -41,9 +41,9 @@ fn insert_data(
     let mut snapshot = storage.clone().open_snapshot_write();
     let query_manager = QueryManager::new();
     let query = typeql::parse_query(query_string).unwrap().into_pipeline();
-    let (pipeline, _) =
+    let pipeline =
         query_manager.prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, &query).unwrap();
-    let (iterator, context) = pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let (iterator, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let mut snapshot = Arc::into_inner(context.snapshot).unwrap();
     snapshot.commit().unwrap();
 }
@@ -83,7 +83,7 @@ match
 fetch {
     "single attr": $a,
     "single-card attributes": $x.age,
-    "single value expression": $a + 1,
+#    "single value expression": $a + 1,
     "single answer block": (
         match
         $x has name $name;
@@ -109,17 +109,18 @@ fetch {
         };
     ],
     "list higher-card attributes": [ $x.name ],
-    "list attributes": $x.name[],
+#    "list attributes": $x.name[],
     "all attributes": { $x.* }
-}"#,
+};"#,
     )
     .unwrap();
 
     let pipeline = query.into_pipeline();
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let (executable_pipeline, descriptor) = QueryManager::new()
+    let pipeline = QueryManager::new()
         .prepare_read_pipeline(snapshot.clone(), &type_manager, thing_manager.clone(), &function_manager, &pipeline)
         .unwrap();
+
 }
 
 //

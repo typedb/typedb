@@ -18,22 +18,22 @@ use crate::{
     annotation::{fetch::AnnotatedFetch, function::AnnotatedUnindexedFunctions, pipeline::AnnotatedStage},
     executable::{
         delete::executable::DeleteExecutable,
-        fetch::executable::FetchExecutable,
+        ExecutableCompilationError,
+        fetch::executable::ExecutableFetch,
         function::{compile_function, ExecutableFunction},
         insert::executable::InsertExecutable,
         match_::planner::match_executable::MatchExecutable,
         modifiers::{LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable},
         reduce::{ReduceExecutable, ReduceInstruction},
-        ExecutableCompilationError,
     },
     VariablePosition,
 };
+use crate::executable::fetch::executable::compile_fetch;
 
 pub struct ExecutablePipeline {
     pub executable_functions: Vec<ExecutableFunction>,
     pub executable_stages: Vec<ExecutableStage>,
-    pub stages_variable_positions: HashMap<Variable, VariablePosition>,
-    pub executable_fetch: Option<FetchExecutable>,
+    pub executable_fetch: Option<ExecutableFetch>,
 }
 
 pub enum ExecutableStage {
@@ -50,7 +50,7 @@ pub enum ExecutableStage {
 }
 
 impl ExecutableStage {
-    pub(crate) fn output_row_mapping(&self) -> HashMap<Variable, VariablePosition> {
+    pub fn output_row_mapping(&self) -> HashMap<Variable, VariablePosition> {
         match self {
             ExecutableStage::Match(executable) => executable.variable_positions().to_owned(),
             ExecutableStage::Insert(executable) => executable
@@ -82,30 +82,54 @@ pub fn compile_pipeline(
     annotated_functions: AnnotatedUnindexedFunctions,
     annotated_stages: Vec<AnnotatedStage>,
     annotated_fetch: Option<AnnotatedFetch>,
+    input_variables: HashSet<Variable>,
 ) -> Result<ExecutablePipeline, ExecutableCompilationError> {
     let executable_functions = annotated_functions
         .into_iter_functions()
-        .map(|function| compile_function(statistics, variable_registry.clone(), function))
+        .map(|function| compile_function(statistics, function))
         .collect::<Result<Vec<_>, _>>()?;
-    let executable_stages = compile_pipeline_stages(statistics, variable_registry, annotated_stages)?;
+    let (executable_stages, executable_fetch) = compile_stages_and_fetch(
+        statistics,
+        variable_registry,
+        annotated_stages,
+        annotated_fetch,
+        input_variables
+    )?;
+    Ok(ExecutablePipeline { executable_functions, executable_stages, executable_fetch })
+}
+
+pub fn compile_stages_and_fetch(
+    statistics: &Statistics,
+    variable_registry: Arc<VariableRegistry>,
+    annotated_stages: Vec<AnnotatedStage>,
+    annotated_fetch: Option<AnnotatedFetch>,
+    input_variables: HashSet<Variable>,
+) -> Result<(Vec<ExecutableStage>, Option<ExecutableFetch>), ExecutableCompilationError> {
+    let executable_stages = compile_pipeline_stages(statistics, variable_registry.clone(), annotated_stages, input_variables)?;
     let stages_variable_positions =
         executable_stages.last().map(|stage: &ExecutableStage| stage.output_row_mapping()).unwrap_or(HashMap::new());
 
-    let executable_fetch = annotated_fetch.map(|fetch| compile_fetch(fetch));
-    Ok(ExecutablePipeline { executable_functions, executable_stages, stages_variable_positions, executable_fetch })
+    let executable_fetch = annotated_fetch
+        .map(|fetch| compile_fetch(statistics, fetch, &stages_variable_positions)
+            .map_err(|err| ExecutableCompilationError::FetchCompliation { typedb_source: err })
+        ).transpose()?;
+    Ok((executable_stages, executable_fetch))
 }
 
 pub(crate) fn compile_pipeline_stages(
     statistics: &Statistics,
     variable_registry: Arc<VariableRegistry>,
     annotated_stages: Vec<AnnotatedStage>,
+    input_variables: HashSet<Variable>,
 ) -> Result<Vec<ExecutableStage>, ExecutableCompilationError> {
     let mut executable_stages = Vec::with_capacity(annotated_stages.len());
     for stage in annotated_stages {
         let input_variable_positions = executable_stages
             .last()
             .map(|stage: &ExecutableStage| stage.output_row_mapping())
-            .unwrap_or(HashMap::new());
+            .unwrap_or_else(|| {
+                input_variables.iter().enumerate().map(|(i, var)| (*var, VariablePosition { position: i as u32 })).collect()
+            });
 
         let executable_stage = compile_stage(statistics, variable_registry.clone(), &input_variable_positions, stage)?;
         executable_stages.push(executable_stage);
@@ -200,48 +224,7 @@ fn compile_stage(
                     assigned_variable.clone(),
                     VariablePosition::new((input_group_positions.len() + reductions.len()) as u32),
                 );
-                let reducer_on_position = match &reducer_on_variable {
-                    ReduceInstruction::Count => ReduceInstruction::Count,
-                    ReduceInstruction::CountVar(variable) => {
-                        ReduceInstruction::CountVar(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::SumLong(variable) => {
-                        ReduceInstruction::SumLong(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::SumDouble(variable) => {
-                        ReduceInstruction::SumDouble(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::MaxLong(variable) => {
-                        ReduceInstruction::MaxLong(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::MaxDouble(variable) => {
-                        ReduceInstruction::MaxDouble(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::MinLong(variable) => {
-                        ReduceInstruction::MinLong(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::MinDouble(variable) => {
-                        ReduceInstruction::MinDouble(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::MeanLong(variable) => {
-                        ReduceInstruction::MeanLong(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::MeanDouble(variable) => {
-                        ReduceInstruction::MeanDouble(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::MedianLong(variable) => {
-                        ReduceInstruction::MedianLong(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::MedianDouble(variable) => {
-                        ReduceInstruction::MedianDouble(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::StdLong(variable) => {
-                        ReduceInstruction::StdLong(input_variables.get(variable).unwrap().clone())
-                    }
-                    ReduceInstruction::StdDouble(variable) => {
-                        ReduceInstruction::StdDouble(input_variables.get(variable).unwrap().clone())
-                    }
-                };
+                let reducer_on_position = reducer_on_variable.clone().map(input_variables);
                 reductions.push(reducer_on_position);
             }
             Ok(ExecutableStage::Reduce(ReduceExecutable {
@@ -251,8 +234,4 @@ fn compile_stage(
             }))
         }
     }
-}
-
-fn compile_fetch(fetch: AnnotatedFetch) -> FetchExecutable {
-    todo!()
 }

@@ -8,6 +8,7 @@ use concept::error::ConceptReadError;
 use encoding::value::value_type::ValueTypeCategory;
 use error::typedb_error;
 use expression::ExpressionCompileError;
+use crate::annotation::expression::compiled_expression::ExpressionValueType;
 
 pub mod expression;
 pub mod fetch;
@@ -20,26 +21,59 @@ mod type_seeder;
 
 typedb_error!(
     pub AnnotationError(component = "Query annotation", prefix = "QUA") {
-        TypeInference(0, "Type inference error while compiling query annotations.", ( typedb_source : TypeInferenceError )),
-        PreambleTypeInference(1, "Type inference error while compiling query premable functions.", ( typedb_source : FunctionTypeInferenceError )),
-        ExpressionCompilation(2, "Error inferring correct expression types.", ( source : ExpressionCompileError )),
-        FetchBlockFunctionInferenceError(3, "Error during type inference for fetch sub-query.", (typedb_source : FunctionTypeInferenceError )),
-        CouldNotDetermineValueTypeForReducerInput(10, "The value-type for the reducer input variable '{variable}' could not be determined.", variable: String),
-        ReducerInputVariableDidNotHaveSingleValueType(11, "The reducer input variable '{variable}' had multiple value-types.", variable: String),
-        UnsupportedValueTypeForReducer(12, "The input variable to the reducer'{reducer}({variable})' reducer had an unsupported value-type: '{value_type}'", reducer: String, variable: String, value_type: ValueTypeCategory),
-        UncomparableValueTypesForSortVariable(13, "The sort variable '{variable}' could return incomparable value-types '{category1}' & '{category2}'.", variable: String, category1: ValueTypeCategory, category2: ValueTypeCategory),
-        ReducerInputVariableIsList(14, "The input variable '{variable}' to the reducer '{reducer}' was a list.", reducer: String, variable: String),
+        Unimplemented(0, "Unimplemented: {description}", description: String),
+        TypeInference(1, "Type inference error while compiling query annotations.", ( typedb_source : TypeInferenceError )),
+        PreambleTypeInference(2, "Type inference error while compiling query premable functions.", ( typedb_source : FunctionAnnotationError )),
+        ExpressionCompilation(3, "Error inferring correct expression types.", ( source : ExpressionCompileError )),
+        FetchEntry(4, "Error during type inference for fetch operation for key '{key}'.", key: String, (typedb_source : Box<AnnotationError> )),
+        FetchBlockFunctionInferenceError(5, "Error during type inference for fetch sub-query.", (typedb_source : FunctionAnnotationError )),
+        ConceptRead(6, "Error while retrieving concept.", (source: ConceptReadError )),
+        FetchAttributeNotFound(7, "Fetching '${var}.{name}' failed since the attribute type is not defined.", var: String, name: String),
+        FetchSingleAttributeNotOwned(8, "Type checking '${var}.{attribute}' failed, since attribute '{attribute}' cannot be when '${var}' has type '{owner}'.", var: String, owner: String, attribute: String),
+        FetchAttributesNotOwned(9, "Type checking '[${var}.{attribute}]' failed, since attribute '{attribute}' cannot be when '${var}' has type '{owner}'.", var: String, owner: String, attribute: String),
+        AttributeFetchCardTooHigh(10, "Fetch attribute '${var}.{attribute}' must be wrapped in '[]', since this attribute can be owned more than 0 or 1 times when '$var' has type '{owner}', according to the schema's cardinality constraints.", var: String, owner: String, attribute: String),
+        CouldNotDetermineValueTypeForReducerInput(11, "The value-type for the reducer input variable '{variable}' could not be determined.", variable: String),
+        ReducerInputVariableDidNotHaveSingleValueType(12, "The reducer input variable '{variable}' had multiple value-types.", variable: String),
+        UnsupportedValueTypeForReducer(13, "The input variable to the reducer'{reducer}({variable})' reducer had an unsupported value-type: '{value_type}'", reducer: String, variable: String, value_type: ValueTypeCategory),
+        UncomparableValueTypesForSortVariable(14, "The sort variable '{variable}' could return incomparable value-types '{category1}' & '{category2}'.", variable: String, category1: ValueTypeCategory, category2: ValueTypeCategory),
+        ReducerInputVariableIsList(15, "The input variable '{variable}' to the reducer '{reducer}' was a list.", reducer: String, variable: String),
     }
 );
 
 typedb_error!(
-    pub FunctionTypeInferenceError(component = "Function type inference", prefix = "FIN") {
+    pub FunctionAnnotationError(component = "Function type inference", prefix = "FIN") {
         TypeInference(0, "Type inference error while type checking function '{name}'.", name: String, ( typedb_source : Box<AnnotationError> )),
         CouldNotResolveArgumentType(
             1,
             "An error occurred when trying to resolve the type of the argument at index: {index}.",
             index: usize,
             source: TypeInferenceError
+        ),
+        CallerSignatureTypeMismatch(
+            2,
+            "Function '{name}' argument at position '{index}' is only invoked with types that not compatible with the argument type '{arg_type}'.",
+            name: String,
+            index: usize,
+            arg_type: String
+        ),
+        CallerSignatureValueTypeMismatch(
+            3,
+            "Function '{name}' argument at position '{index}' expects value type '{expected}' but is only invoked with '{actual}'.",
+            name: String,
+            index: usize,
+            expected: ExpressionValueType,
+            actual: ExpressionValueType
+        ),
+        CouldNotDetermineArgumentType(
+            4,
+            "Failed to infer any argument type for function '{name}' argument at position '{index}'.",
+            name: String,
+            index: usize
+        ),
+        ReturnReduce(
+            5,
+            "Error analysing return reduction.",
+            ( typedb_source : Box<AnnotationError> )
         ),
     }
 );

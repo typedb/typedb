@@ -44,6 +44,7 @@ use crate::{
     },
     executable::{insert::type_check::check_annotations, reduce::ReduceInstruction},
 };
+use crate::annotation::function::AnnotatedFunction;
 
 pub struct AnnotatedPipeline {
     pub annotated_preamble: AnnotatedUnindexedFunctions,
@@ -90,8 +91,7 @@ pub fn annotate_pipeline(
     let annotated_preamble =
         annotate_functions(translated_preamble, snapshot, type_manager, schema_function_annotations)
             .map_err(|typedb_source| AnnotationError::PreambleTypeInference { typedb_source })?;
-
-    let (annotated_stages, running_variable_annotations, running_value_variable_types) = annotate_pipeline_stages(
+    let (annotated_stages, annotated_fetch) = annotate_stages_and_fetch(
         snapshot,
         type_manager,
         schema_function_annotations,
@@ -99,25 +99,54 @@ pub fn annotate_pipeline(
         parameters,
         Some(&annotated_preamble),
         translated_stages,
+        translated_fetch,
         BTreeMap::new(),
         BTreeMap::new(),
+    )?;
+    Ok(AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble })
+}
+
+pub(crate) fn annotate_stages_and_fetch(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    schema_function_annotations: &IndexedAnnotatedFunctions,
+    variable_registry: &mut VariableRegistry,
+    parameters: &ParameterRegistry,
+    annotated_preamble: Option<&AnnotatedUnindexedFunctions>,
+    translated_stages: Vec<TranslatedStage>,
+    translated_fetch: Option<FetchObject>,
+    input_type_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    input_value_type_annotations: BTreeMap<Variable, ExpressionValueType>,
+) -> Result<(Vec<AnnotatedStage>, Option<AnnotatedFetch>), AnnotationError> {
+    let (annotated_stages, running_variable_annotations, running_value_variable_types) = annotate_pipeline_stages(
+        snapshot,
+        type_manager,
+        schema_function_annotations,
+        variable_registry,
+        parameters,
+        annotated_preamble,
+        translated_stages,
+        input_type_annotations,
+        input_value_type_annotations,
     )?;
     let annotated_fetch = match translated_fetch {
         None => None,
         Some(fetch) => {
             let annotated = annotate_fetch(
                 fetch,
-                running_variable_annotations,
-                running_value_variable_types,
                 snapshot,
                 type_manager,
+                variable_registry,
+                parameters,
                 schema_function_annotations,
-                Some(&annotated_preamble),
+                annotated_preamble,
+                &running_variable_annotations,
+                &running_value_variable_types,
             );
             Some(annotated?)
         }
     };
-    Ok(AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble })
+    Ok((annotated_stages, annotated_fetch))
 }
 
 pub(crate) fn annotate_pipeline_stages(
@@ -128,14 +157,14 @@ pub(crate) fn annotate_pipeline_stages(
     parameters: &ParameterRegistry,
     annotated_preamble: Option<&AnnotatedUnindexedFunctions>,
     translated_stages: Vec<TranslatedStage>,
-    input_variable_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    input_value_variable_types: BTreeMap<Variable, ExpressionValueType>,
+    input_type_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    input_value_type_annotations: BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<
     (Vec<AnnotatedStage>, BTreeMap<Variable, Arc<BTreeSet<Type>>>, BTreeMap<Variable, ExpressionValueType>),
     AnnotationError,
 > {
-    let mut running_variable_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>> = input_variable_annotations;
-    let mut running_value_variable_types: BTreeMap<Variable, ExpressionValueType> = input_value_variable_types;
+    let mut running_variable_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>> = input_type_annotations;
+    let mut running_value_variable_types: BTreeMap<Variable, ExpressionValueType> = input_value_type_annotations;
     let mut annotated_stages = Vec::with_capacity(translated_stages.len());
 
     let empty_constraint_annotations = HashMap::new();
@@ -293,12 +322,12 @@ fn annotate_stage(
             let mut reduce_instructions = Vec::with_capacity(reduce.assigned_reductions.len());
             for (assigned, reducer) in &reduce.assigned_reductions {
                 let typed_reduce = resolve_reducer_by_value_type(
-                    reducer,
-                    running_variable_annotations,
-                    running_value_variable_assigned_types,
                     snapshot,
                     type_manager,
                     variable_registry,
+                    reducer,
+                    running_variable_annotations,
+                    running_value_variable_assigned_types,
                 )?;
                 running_value_variable_assigned_types
                     .insert(assigned.clone(), ExpressionValueType::Single(typed_reduce.output_type().clone()));
@@ -348,12 +377,12 @@ pub fn validate_sort_variables_comparable(
 }
 
 pub fn resolve_reducer_by_value_type(
-    reducer: &Reducer,
-    variable_annotations: &mut BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    assigned_value_types: &mut BTreeMap<Variable, ExpressionValueType>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
+    reducer: &Reducer,
+    variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    assigned_value_types: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<ReduceInstruction<Variable>, AnnotationError> {
     match reducer {
         Reducer::Count => Ok(ReduceInstruction::Count),
@@ -381,8 +410,8 @@ pub fn resolve_reducer_by_value_type(
 fn determine_value_type_for_reducer(
     reducer: &Reducer,
     variable: &Variable,
-    variable_annotations: &mut BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    assigned_value_types: &mut BTreeMap<Variable, ExpressionValueType>,
+    variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    assigned_value_types: &BTreeMap<Variable, ExpressionValueType>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,

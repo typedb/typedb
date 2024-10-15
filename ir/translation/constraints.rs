@@ -4,17 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use answer::variable::Variable;
-use encoding::value::label::Label;
 use typeql::{
     expression::{FunctionCall, FunctionName},
+    ScopedLabel,
     statement::{
-        comparison::ComparisonStatement, thing::AttributeComparisonStatement, Assignment, AssignmentPattern, InIterable,
+        Assignment, AssignmentPattern, comparison::ComparisonStatement, InIterable, thing::AttributeComparisonStatement,
     },
     token::Kind,
-    type_::NamedType,
-    ScopedLabel, TypeRef, TypeRefAny,
+    type_::NamedType, TypeRef, TypeRefAny,
 };
+
+use answer::variable::Variable;
+use encoding::value::label::Label;
 
 use crate::{
     pattern::{
@@ -23,11 +24,11 @@ use crate::{
         Vertex,
     },
     pipeline::function_signature::FunctionSignatureIndex,
+    RepresentationError,
     translation::{
         expression::{add_typeql_expression, add_user_defined_function_call, build_expression},
         literal::translate_literal,
     },
-    RepresentationError,
 };
 
 pub(super) fn add_statement(

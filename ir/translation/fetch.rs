@@ -4,13 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
-use answer::variable::Variable;
-use error::typedb_error;
-use storage::snapshot::ReadableSnapshot;
 use typeql::{
     expression::{FunctionCall, FunctionName},
+    Expression,
     query::stage::{
         fetch::{
             FetchAttribute, FetchList as TypeQLFetchList, FetchObject as TypeQLFetchObject,
@@ -21,22 +19,25 @@ use typeql::{
     },
     schema::definable::function::{FunctionBlock, SingleSelector},
     type_::NamedType,
-    value::StringLiteral,
-    Expression, TypeRef, TypeRefAny, Variable as TypeQLVariable,
+    TypeRef, TypeRefAny, value::StringLiteral, Variable as TypeQLVariable,
 };
+
+use answer::variable::Variable;
+use error::typedb_error;
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     pattern::ParameterID,
     pipeline::{
         block::{Block, BlockBuilder, BlockBuilderContext},
         fetch::{
-            FetchListAttributeFromList, FetchObject, FetchObjectAttributes, FetchObjectEntries, FetchSingleAttribute,
-            FetchSingleVar, FetchSome,
+            FetchListAttributeFromList, FetchObject, FetchSingleAttribute, FetchSome,
         },
-        function::{AnonymousFunction, FunctionBody, ReturnOperation},
+        function::{FunctionBody, ReturnOperation},
         function_signature::FunctionSignatureIndex,
         FunctionReadError,
     },
+    RepresentationError,
     translation::{
         expression::build_expression,
         fetch::FetchRepresentationError::{
@@ -47,8 +48,11 @@ use crate::{
         pipeline::TranslatedStage,
         TranslationContext,
     },
-    RepresentationError,
 };
+use crate::pipeline::fetch::{FetchListAttributeAsList, FetchListSubFetch};
+use crate::pipeline::function::Function;
+use crate::translation::literal::FromTypeQLLiteral;
+use crate::translation::pipeline::translate_pipeline_stages;
 
 pub(super) fn translate_fetch(
     snapshot: &impl ReadableSnapshot,
@@ -75,11 +79,11 @@ fn translate_fetch_object(
                 let key_id = register_key(parent_context, key);
                 object.insert(key_id, translate_fetch_some(snapshot, parent_context, function_index, value)?);
             }
-            Ok(FetchObject::Entries(FetchObjectEntries { entries: object }))
+            Ok(FetchObject::Entries(object))
         }
         TypeQLFetchObjectBody::AttributesAll(variable) => {
             let var = try_get_variable(parent_context, &variable)?;
-            Ok(FetchObject::Attributes(FetchObjectAttributes { variable: var }))
+            Ok(FetchObject::Attributes(var))
         }
     }
 }
@@ -105,64 +109,60 @@ fn translate_fetch_list(
     list: &TypeQLFetchList,
 ) -> Result<FetchSome, FetchRepresentationError> {
     match &list.stream {
-        FetchStream::Attribute(FetchAttribute { owner, attribute, .. }) => {
-            let variable = try_get_variable(parent_context, owner)?;
-            let attribute_label = match attribute {
-                TypeRefAny::Type(type_ref) => {
-                    // TODO: we can reuse all this from FetchSingle!
-
-                    match type_ref {
-                        TypeRef::Named(identifier) => {
-                            match identifier {
-                                NamedType::Label(_) => {}
-                                NamedType::Role(_) => {
-                                    // TODO...
-                                }
-                                NamedType::BuiltinValueType(_) => {
-                                    // TODO error: is not an ownable attribute
-                                }
-                            }
-                        }
-                        TypeRef::Variable(_) => {
-                            // TODO error: variables cannot be used as attribute fetches
-                        }
-                    }
-                }
-                TypeRefAny::Optional(_) => {
-                    // TODO error: optional should not be used in attribute retrievals
-                }
-                TypeRefAny::List(_) => {
-                    // TODO error: list attribute types $x.attr[] should not be wrapped in [ $x.attr[] ]
-                }
-            };
-            todo!()
-            // Ok(FetchSome::ListAttributesAsList(FetchListAttributeAsList {
-            //     variable,
-            //     attribute: attribute_label,
-            // }))
+        FetchStream::Attribute(fetch_attribute) => {
+            let owner = try_get_variable(parent_context, &fetch_attribute.owner)?;
+            let (is_list, attribute) = extract_fetch_attribute(fetch_attribute)?;
+            if is_list {
+                Err(FetchRepresentationError::AttributeListInList { declaration: fetch_attribute.clone() })
+            } else {
+                Ok(FetchSome::ListAttributesAsList(FetchListAttributeAsList {
+                    variable: owner,
+                    attribute: attribute.to_owned(),
+                }))
+            }
         }
         FetchStream::Function(call) => {
             match &call.name {
-                FunctionName::Builtin(_) => {
-                    // TODO: create inline stream function call, and validate it returns stream... what about `"key": [ max(10, 11) ]?
-                    // --> technically we can turn anything into a single-element or more stream
-                    todo!()
+                FunctionName::Builtin(name) => {
+                    // built-in functions always return single values, so should not be wrapped in a list
+                    Err(FetchRepresentationError::BuiltinFunctionInList { declaration: call.clone() })
                 }
                 FunctionName::Identifier(name) => {
-                    let some =
-                        translate_inline_user_function_call(parent_context, function_index, &call, name.as_str());
-                    // TODO: we should error if this is NOT a stream-return function
-                    todo!()
+                    let some = translate_inline_user_function_call(parent_context, function_index, &call, name.as_str())?;
+                    match some {
+                        FetchSome::SingleFunction(_) => {
+                            Err(FetchRepresentationError::ExpectedStreamUserFunctionInList { name: name.as_str().to_owned(), declaration: call.clone() })
+                        }
+                        FetchSome::ListFunction(_) => Ok(some),
+                        _ => unreachable!("User function call was not translated into a single or list function call representation."),
+                    }
                 }
             }
         }
         FetchStream::SubQueryFetch(stages) => {
-            // TODO: clone context, create new translated pipeline
-            todo!()
+            // clone context, since we don't want the inline function to affect the parent context
+            let mut local_context = parent_context.clone();
+            let (translated_stages, subfetch) = translate_pipeline_stages(snapshot, function_index, &mut local_context, &stages)
+                .map_err(|err| FetchRepresentationError::SubFetchRepresentation { typedb_source: Box::new(err) })?;
+            let input_variables = find_sub_fetch_inputs(parent_context, &translated_stages, subfetch.as_ref());
+            Ok(FetchSome::ListSubFetch(FetchListSubFetch {
+                context: local_context,
+                input_variables,
+                stages: translated_stages,
+                fetch: subfetch.unwrap(),
+            }))
         }
         FetchStream::SubQueryFunctionBlock(block) => {
-            // TODO: translate anonymous function block and validate returns stream
-            todo!()
+            // clone context, since we don't want the inline function to affect the parent context
+            let mut local_context = parent_context.clone();
+            let body = translate_function_block(snapshot, function_index, &mut local_context, &block)
+                .map_err(|err| FetchRepresentationError::FunctionRepresentation { declaration: block.clone() })?;
+            let args = find_function_body_arguments(&parent_context, &body);
+            if !body.return_operation().is_stream() {
+                Err(FetchRepresentationError::ExpectedStreamInlineFunction { declaration: block.clone() })
+            } else {
+                Ok(FetchSome::SingleFunction(create_anonymous_function(local_context, args, body)))
+            }
         }
     }
 }
@@ -177,50 +177,33 @@ fn translate_fetch_single(
     match single {
         FetchSingle::Attribute(fetch_attribute) => {
             let owner = try_get_variable(parent_context, &fetch_attribute.owner)?;
-            match &fetch_attribute.attribute {
-                TypeRefAny::Type(type_ref) => match &type_ref {
-                    TypeRef::Named(type_) => match type_ {
-                        NamedType::Label(label) => Ok(FetchSome::SingleAttribute(FetchSingleAttribute {
-                            variable: owner,
-                            attribute: label.ident.as_str().to_owned(),
-                        })),
-                        NamedType::Role(_) | NamedType::BuiltinValueType(_) => {
-                            Err(InvalidAttributeLabelEncountered { declaration: type_ref.clone() })
-                        }
-                    },
-                    TypeRef::Variable(_) => Err(NamedVariableEncountered { declaration: type_ref.clone() }),
-                },
-                TypeRefAny::List(list) => match &list.inner {
-                    TypeRef::Named(named_type) => match named_type {
-                        NamedType::Label(label) => Ok(FetchSome::ListAttributesFromList(FetchListAttributeFromList {
-                            variable: owner,
-                            attribute: label.ident.as_str().to_owned(),
-                        })),
-                        NamedType::Role(_) | NamedType::BuiltinValueType(_) => {
-                            Err(InvalidAttributeLabelEncountered { declaration: list.inner.clone() })
-                        }
-                    },
-                    TypeRef::Variable(_) => Err(NamedVariableEncountered { declaration: list.inner.clone() }),
-                },
-                TypeRefAny::Optional(_) => {
-                    Err(OptionalVariableEncountered { declaration: fetch_attribute.attribute.clone() })
-                }
+            let (is_list, attribute) = extract_fetch_attribute(fetch_attribute)?;
+            if is_list {
+                Ok(FetchSome::ListAttributesFromList(FetchListAttributeFromList {
+                    variable: owner,
+                    attribute: attribute.to_owned(),
+                }))
+            } else {
+                Ok(FetchSome::SingleAttribute(FetchSingleAttribute {
+                    variable: owner,
+                    attribute: attribute.to_owned(),
+                }))
             }
         }
         FetchSingle::Expression(expression) => {
             match &expression {
                 Expression::Variable(variable) => {
                     let var = try_get_variable(parent_context, variable)?;
-                    Ok(FetchSome::SingleVar(FetchSingleVar { variable: var }))
+                    Ok(FetchSome::SingleVar(var))
                 }
                 Expression::ListIndex(_) | Expression::Value(_) | Expression::Operation(_) | Expression::Paren(_) => {
-                    translate_inline_expression(parent_context, function_index, &expression)
+                    translate_inline_expression_single(parent_context, function_index, &expression)
                 }
                 // function expressions may return Single or List, depending on signature invoked
                 Expression::Function(call) => {
                     match &call.name {
                         FunctionName::Builtin(_) => {
-                            return translate_inline_expression(parent_context, function_index, &expression);
+                            return translate_inline_expression_single(parent_context, function_index, &expression);
                         }
                         FunctionName::Identifier(name) => {
                             translate_inline_user_function_call(parent_context, function_index, &call, name.as_str())
@@ -240,19 +223,46 @@ fn translate_fetch_single(
         FetchSingle::FunctionBlock(block) => {
             // clone context, since we don't want the inline function to affect the parent context
             let mut local_context = parent_context.clone();
-            let translated = translate_function_block(snapshot, function_index, &mut local_context, &block)
+            let body = translate_function_block(snapshot, function_index, &mut local_context, &block)
                 .map_err(|err| FetchRepresentationError::FunctionRepresentation { declaration: block.clone() })?;
-            if translated.return_operation().is_stream() {
+            let args = find_function_body_arguments(&parent_context, &body);
+            if body.return_operation().is_stream() {
                 Err(FetchRepresentationError::ExpectedSingleInlineFunction { declaration: block.clone() })
             } else {
-                let inline_function = AnonymousFunction::new(local_context, translated);
-                Ok(FetchSome::SingleFunction(inline_function))
+                Ok(FetchSome::SingleFunction(create_anonymous_function(local_context, args, body)))
             }
         }
     }
 }
 
-fn translate_inline_expression(
+fn extract_fetch_attribute(fetch_attribute: &FetchAttribute) -> Result<(bool, &str), FetchRepresentationError> {
+    match &fetch_attribute.attribute {
+        TypeRefAny::Type(type_ref) => match &type_ref {
+            TypeRef::Named(type_) => match type_ {
+                NamedType::Label(label) => Ok((false, label.ident.as_str())),
+                NamedType::Role(_) | NamedType::BuiltinValueType(_) => {
+                    Err(InvalidAttributeLabelEncountered { declaration: type_ref.clone() })
+                }
+            },
+            TypeRef::Variable(_) => Err(NamedVariableEncountered { declaration: type_ref.clone() }),
+        },
+        TypeRefAny::List(list) => match &list.inner {
+            TypeRef::Named(named_type) => match named_type {
+                NamedType::Label(label) => Ok((true, label.ident.as_str())),
+                NamedType::Role(_) | NamedType::BuiltinValueType(_) => {
+                    Err(InvalidAttributeLabelEncountered { declaration: list.inner.clone() })
+                }
+            },
+            TypeRef::Variable(_) => Err(NamedVariableEncountered { declaration: list.inner.clone() }),
+        },
+        TypeRefAny::Optional(_) => {
+            Err(OptionalVariableEncountered { declaration: fetch_attribute.attribute.clone() })
+        }
+    }
+}
+
+// translate an expression that produces a single output (not a stream)
+fn translate_inline_expression_single(
     context: &mut TranslationContext,
     function_index: &impl FunctionSignatureIndex,
     expression: &Expression,
@@ -270,7 +280,9 @@ fn translate_inline_expression(
     let assign_var = add_expression(function_index, &mut builder, &expression)?;
     let block = TranslatedStage::Match { block: builder.finish() };
     let return_ = ReturnOperation::Single(SingleSelector::First, vec![assign_var]);
-    Ok(FetchSome::SingleFunction(AnonymousFunction::new(local_context, FunctionBody::new(vec![block], return_))))
+    let body = FunctionBody::new(vec![block], return_);
+    let args = find_function_body_arguments(&context, &body);
+    Ok(FetchSome::SingleFunction(create_anonymous_function(local_context, args, body)))
 }
 
 fn translate_inline_user_function_call(
@@ -317,10 +329,14 @@ fn translate_inline_user_function_call(
     let stage = TranslatedStage::Match { block: builder.finish() };
     if signature.return_is_stream {
         let return_ = ReturnOperation::Stream(assign_vars);
-        Ok(FetchSome::ListFunction(AnonymousFunction::new(local_context, FunctionBody::new(vec![stage], return_))))
+        let body = FunctionBody::new(vec![stage], return_);
+        let args = find_function_body_arguments(context, &body);
+        Ok(FetchSome::ListFunction(create_anonymous_function(local_context, args, body)))
     } else {
         let return_ = ReturnOperation::Single(SingleSelector::First, assign_vars);
-        Ok(FetchSome::SingleFunction(AnonymousFunction::new(local_context, FunctionBody::new(vec![stage], return_))))
+        let body = FunctionBody::new(vec![stage], return_);
+        let args = find_function_body_arguments(context, &body);
+        Ok(FetchSome::SingleFunction(create_anonymous_function(local_context, args, body)))
     }
 }
 
@@ -342,6 +358,58 @@ fn add_expression(
     Ok(assign_var)
 }
 
+fn create_anonymous_function(context: TranslationContext, args: Vec<Variable>, body: FunctionBody) -> Function {
+    Function::new("_generated_fetch_inline_function_", context, args, None, body)
+}
+
+// Given a function body, and the _parent_ translation context, we can reconstruct which are arguments
+fn find_function_body_arguments(
+    parent_context: &TranslationContext,
+    function_body: &FunctionBody,
+) -> Vec<Variable> {
+    let mut arguments = HashSet::new();
+    // Note: we rely on the fact that named variables that are "the same" become the same Variable, and the logic of
+    //       selecting variables in/out is handled by the translation of the stages
+    for stage in function_body.stages() {
+        for var in stage.variables() {
+            if parent_context.variable_registry.has_variable_as_named(&var) {
+                arguments.insert(var);
+            }
+        }
+    }
+    for var in function_body.return_operation.variables().iter() {
+        if parent_context.variable_registry.has_variable_as_named(var) {
+            arguments.insert(*var);
+        }
+    }
+    Vec::from_iter(arguments.into_iter())
+}
+
+fn find_sub_fetch_inputs(
+    parent_context: &TranslationContext,
+    stages: &[TranslatedStage],
+    fetch: Option<&FetchObject>,
+) -> HashSet<Variable> {
+    let mut arguments = HashSet::new();
+    // Note: we rely on the fact that named variables that are "the same" become the same Variable, and the logic of
+    //       selecting variables in/out is handled by the translation of the stages
+    for stage in stages {
+        for var in stage.variables() {
+            if parent_context.variable_registry.has_variable_as_named(&var) {
+                arguments.insert(var);
+            }
+        }
+    }
+    let mut fetch_vars = HashSet::new();
+    fetch.map(|clause| clause.record_variables_recursive(&mut fetch_vars));
+    for var in fetch_vars {
+        if parent_context.variable_registry.has_variable_as_named(&var) {
+            arguments.insert(var);
+        }
+    }
+    arguments
+}
+
 fn try_get_variable(
     context: &TranslationContext,
     variable: &TypeQLVariable,
@@ -356,7 +424,7 @@ fn try_get_variable(
 }
 
 fn register_key(context: &mut TranslationContext, key: &StringLiteral) -> ParameterID {
-    context.parameters.register_fetch_key(key.value.to_owned())
+    context.parameters.register_fetch_key(String::from_typeql_literal(key).unwrap())
 }
 
 typedb_error!(
@@ -420,8 +488,34 @@ typedb_error!(
         ),
         ExpectedSingleInlineFunction(
             11,
-            "The inline match-return function declaration returns a stream, which must be wrapped in `[]` to collect into a list.\nSource:\n{declaration}",
+            "The match-return returns a stream, which must be wrapped in `[]` to collect into a list.\nSource:\n{declaration}",
             declaration: FunctionBlock
+        ),
+        ExpectedStreamInlineFunction(
+            12,
+            "The match-return returns a single value, which should not be be wrapped in `[]`.\nSource:\n{declaration}",
+            declaration: FunctionBlock
+        ),
+        ExpectedStreamUserFunctionInList(
+            13,
+            "Illegal call to non-streaming function '{name}' inside a list '[]'. Use '()' or no bracketing to invoke functions that do not return streams.\nSource:\n{declaration}",
+            name: String,
+            declaration: FunctionCall
+        ),
+        BuiltinFunctionInList(
+            14,
+            "Built-in functions returning a single value should not be wrapped in '[]'. User-defined functions that return streams can be wrapped in '[]'.\nSource:\n{declaration}",
+            declaration: FunctionCall
+        ),
+        AttributeListInList(
+            15,
+            "Fetching attributes as list should not be wrapped in another list, please remove the outer [].\nSource:\n{declaration}",
+            declaration: FetchAttribute
+        ),
+        SubFetchRepresentation(
+            16,
+            "Error building representation of fetch sub-query.",
+            (typedb_source : Box<RepresentationError>)
         ),
     }
 );

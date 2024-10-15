@@ -4,16 +4,17 @@
 * file, You can obtain one at https://mozilla.org/MPL/2.0/.
 */
 
-use answer::variable::Variable;
 use typeql::query::stage::delete::DeletableKind;
+
+use answer::variable::Variable;
 
 use crate::{
     pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex},
+    RepresentationError,
     translation::{
         constraints::{add_statement, add_typeql_relation, register_typeql_var},
         TranslationContext,
     },
-    RepresentationError,
 };
 
 pub fn translate_insert(
@@ -52,9 +53,6 @@ pub fn translate_delete(
                 deleted_concepts.push(translated_variable);
             }
         }
-    }
-    for var in &deleted_concepts {
-        builder.context_mut().record_variable_reference(var.clone());
     }
     Ok((builder.finish(), deleted_concepts))
 }

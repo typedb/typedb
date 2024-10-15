@@ -4,8 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use answer::variable::Variable;
+use std::borrow::Cow;
+
 use typeql::{schema::definable::function::SingleSelector, TypeRefAny};
+
+use answer::variable::Variable;
 
 use crate::{
     pipeline::reduce::Reducer,
@@ -18,25 +21,23 @@ pub struct Function {
     pub name: String,
     pub function_body: FunctionBody,
     // Variable categories for args & return can be read from the block's context.
-    pub arguments: Vec<(Variable, TypeRefAny)>,
+    pub arguments: Vec<Variable>,
+    pub argument_labels: Option<Vec<TypeRefAny>>,
 }
 
 impl Function {
     pub fn new(
         name: &str,
         context: TranslationContext,
-        arguments: Vec<(Variable, TypeRefAny)>,
+        arguments: Vec<Variable>,
+        argument_labels: Option<Vec<TypeRefAny>>,
         function_body: FunctionBody,
     ) -> Self {
-        Self { name: name.to_string(), context, function_body, arguments }
+        Self { name: name.to_string(), context, function_body, arguments, argument_labels }
     }
 
     pub fn name(&self) -> &str {
         &self.name
-    }
-
-    pub fn arguments(&self) -> &[(Variable, TypeRefAny)] {
-        &self.arguments
     }
 
     pub fn translation_context(&self) -> &TranslationContext {
@@ -45,18 +46,6 @@ impl Function {
 
     pub fn body(&self) -> &FunctionBody {
         &self.function_body
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct AnonymousFunction {
-    translation_context: TranslationContext,
-    body: FunctionBody,
-}
-
-impl AnonymousFunction {
-    pub(crate) fn new(context: TranslationContext, body: FunctionBody) -> Self {
-        Self { translation_context: context, body }
     }
 }
 
@@ -93,6 +82,18 @@ impl ReturnOperation {
         match self {
             Self::Stream(_) => true,
             Self::ReduceReducer(_) | Self::Single(_, _) | Self::ReduceCheck() => false,
+        }
+    }
+
+    pub(crate) fn variables<'a>(&'a self) -> Cow<'a, [Variable]> {
+        match self {
+            ReturnOperation::Stream(vars) => Cow::Borrowed(vars),
+            ReturnOperation::Single(_, vars) => Cow::Borrowed(vars),
+            ReturnOperation::ReduceCheck() => Cow::Owned(vec![]),
+            ReturnOperation::ReduceReducer(reducers) => {
+                let vars: Vec<_> = reducers.iter().map(|reducer| reducer.variable()).flatten().collect();
+                Cow::Owned(vars)
+            }
         }
     }
 }

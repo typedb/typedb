@@ -12,8 +12,8 @@ use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
         constraint::Constraint,
-        variable_category::VariableCategory,
-        Scope, ScopeId,
+        Scope,
+        ScopeId, variable_category::VariableCategory,
     },
     pipeline::{ParameterRegistry, VariableCategorySource, VariableRegistry},
     RepresentationError,
@@ -34,7 +34,7 @@ impl Block {
         &self.conjunction
     }
 
-    pub fn scope_context(&self) -> &BlockContext {
+    pub fn block_context(&self) -> &BlockContext {
         &self.block_context
     }
 
@@ -42,8 +42,12 @@ impl Block {
         Scope::scope_id(self)
     }
 
-    pub fn variable_scopes(&self) -> impl Iterator<Item = (&Variable, &ScopeId)> + '_ {
+    fn variable_scopes(&self) -> impl Iterator<Item = (&Variable, &ScopeId)> + '_ {
         self.block_context.variable_declaration.iter()
+    }
+
+    pub fn variables(&self) -> impl Iterator<Item=Variable> + '_ {
+        self.block_context.referenced_variables.iter().cloned()
     }
 
     pub fn block_variables(&self) -> impl Iterator<Item = Variable> + '_ {
@@ -105,6 +109,7 @@ impl BlockContext {
 
     fn add_variable_declaration(&mut self, var: Variable, scope: ScopeId) {
         self.variable_declaration.insert(var, scope);
+        self.add_referenced_variable(var);
     }
 
     fn set_scope_parent(&mut self, scope_id: ScopeId, parent_scope_id: ScopeId) {
@@ -118,6 +123,7 @@ impl BlockContext {
         scope: ScopeId,
     ) -> Result<(), RepresentationError> {
         debug_assert!(self.variable_declaration.contains_key(&var));
+        self.add_referenced_variable(var);
         let existing_scope = self.variable_declaration.get_mut(&var).unwrap();
         if is_equal_or_parent_scope(&self.scope_parents, scope, *existing_scope) {
             // Parent defines same name: ok, reuse the variable
@@ -131,7 +137,7 @@ impl BlockContext {
         }
     }
 
-    fn get_scope(&self, var: &Variable) -> Option<ScopeId> {
+    pub fn get_scope(&self, var: &Variable) -> Option<ScopeId> {
         self.variable_declaration.get(var).cloned()
     }
 
@@ -160,7 +166,9 @@ impl BlockContext {
     }
 
     pub fn is_parent_scope(&self, scope: ScopeId, child: ScopeId) -> bool {
-        self.scope_parents.get(&child).is_some_and(|&parent| scope == parent || self.is_parent_scope(scope, parent))
+        self.scope_parents.get(&child).is_some_and(|&parent| {
+            scope == parent || self.is_parent_scope(scope, parent)
+        })
     }
 
     pub fn is_visible_child(&self, child: ScopeId, candidate: ScopeId) -> bool {
@@ -195,11 +203,11 @@ pub struct BlockBuilderContext<'a> {
 impl<'a> BlockBuilderContext<'a> {
     pub(crate) fn new(
         variable_registry: &'a mut VariableRegistry,
-        input_variable_names: &'a mut HashMap<String, Variable>,
+        available_input_names: &'a mut HashMap<String, Variable>,
         parameters: &'a mut ParameterRegistry,
     ) -> BlockBuilderContext<'a> {
         let mut block_context = BlockContext::new();
-        input_variable_names.values().for_each(|v| {
+        available_input_names.values().for_each(|v| {
             block_context.add_input_declaration(*v);
         });
         block_context.set_scope_parent(ScopeId::ROOT, ScopeId::INPUT);
@@ -207,7 +215,7 @@ impl<'a> BlockBuilderContext<'a> {
         block_context.set_scope_transparency(ScopeId::INPUT, ScopeTransparency::Transparent);
         Self {
             variable_registry,
-            variable_names_index: input_variable_names,
+            variable_names_index: available_input_names,
             parameters,
             scope_id_allocator: 2, // `0`, `1` are reserved for INPUT, ROOT respectively.
             block_context,
@@ -266,12 +274,7 @@ impl<'a> BlockBuilderContext<'a> {
         category: VariableCategory,
         source: Constraint<Variable>,
     ) -> Result<(), RepresentationError> {
-        self.record_variable_reference(variable);
         self.variable_registry.set_variable_category(variable, category, VariableCategorySource::Constraint(source))
-    }
-
-    pub(crate) fn record_variable_reference(&mut self, variable: Variable) {
-        self.block_context.add_referenced_variable(variable.clone());
     }
 
     pub(crate) fn set_variable_is_optional(&mut self, variable: Variable, optional: bool) {

@@ -6,32 +6,33 @@
 
 use std::{collections::HashMap, str::FromStr, sync::Arc};
 
-use answer::{variable_value::VariableValue, Thing};
+use cucumber::gherkin::Step;
+use futures::TryFutureExt;
+use itertools::Itertools;
+use macro_rules_attribute::apply;
+
+use answer::{Thing, variable_value::VariableValue};
 use compiler::VariablePosition;
 use concept::{thing::object::ObjectAPI, type_::TypeAPI};
-use cucumber::gherkin::Step;
 use encoding::value::{label::Label, value_type::ValueType, ValueEncodable};
 use executor::{
     batch::Batch,
-    pipeline::stage::{ExecutionContext, StageAPI, StageIterator},
     ExecutionInterrupt,
+    pipeline::stage::{ExecutionContext, StageAPI, StageIterator},
 };
-use futures::TryFutureExt;
-use itertools::Itertools;
 use lending_iterator::LendingIterator;
-use macro_rules_attribute::apply;
 use query::{error::QueryError, query_manager::QueryManager};
 use test_utils::assert_matches;
 
 use crate::{
-    connection::BehaviourConnectionTestExecutionError,
-    generic_step, params,
+    BehaviourTestExecutionError,
+    connection::BehaviourConnectionTestExecutionError, Context,
+    generic_step,
+    params,
     transaction_context::{
-        with_read_tx, with_schema_tx, with_write_tx_deconstructed,
-        ActiveTransaction::{Read, Schema},
-    },
-    util::iter_table_map,
-    BehaviourTestExecutionError, Context,
+        ActiveTransaction::{Read, Schema}, with_read_tx, with_schema_tx,
+        with_write_tx_deconstructed,
+    }, util::iter_table_map,
 };
 
 fn batch_result_to_answer(
@@ -55,14 +56,15 @@ fn execute_read_query(
     query: typeql::Query,
 ) -> Result<Vec<HashMap<String, VariableValue<'static>>>, QueryError> {
     with_read_tx!(context, |tx| {
-        let (final_stage, named_outputs) = QueryManager {}.prepare_read_pipeline(
+        let pipeline = QueryManager {}.prepare_read_pipeline(
             tx.snapshot.clone(),
             &tx.type_manager,
             tx.thing_manager.clone(),
             &tx.function_manager,
             &query.into_pipeline(),
         )?;
-        let result_as_batch = match final_stage.into_iterator(ExecutionInterrupt::new_uninterruptible()) {
+        let named_outputs = pipeline.rows_positions().unwrap().clone();
+        let result_as_batch = match pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
             Ok((iterator, _)) => iterator.collect_owned(),
             Err((err, _)) => {
                 return Err(QueryError::ReadPipelineExecutionError { typedb_source: err });
@@ -84,7 +86,7 @@ fn execute_write_query(
     }
 
     with_write_tx_deconstructed!(context, |snapshot, type_manager, thing_manager, function_manager, _db, _opts| {
-        let (final_stage, named_outputs) = QueryManager {}
+        let pipeline = QueryManager {}
             .prepare_write_pipeline(
                 Arc::into_inner(snapshot).unwrap(),
                 &type_manager,
@@ -93,8 +95,9 @@ fn execute_write_query(
                 &query.into_pipeline(),
             )
             .unwrap();
+        let named_outputs = pipeline.rows_positions().unwrap().clone();
 
-        let (result_as_batch, snapshot) = match final_stage.into_iterator(ExecutionInterrupt::new_uninterruptible()) {
+        let (result_as_batch, snapshot) = match pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
             Ok((iterator, ExecutionContext { snapshot, .. })) => (iterator.collect_owned(), snapshot),
             Err((err, ExecutionContext { .. })) => {
                 return Err(BehaviourTestExecutionError::Query(QueryError::ReadPipelineExecutionError {

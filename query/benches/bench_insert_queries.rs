@@ -14,28 +14,29 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
+use criterion::{Criterion, criterion_group, criterion_main, profiler::Profiler, SamplingMode};
+use pprof::ProfilerGuard;
+
 use answer::variable_value::VariableValue;
 use concept::{
     thing::thing_manager::ThingManager,
-    type_::{type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
+    type_::{Ordering, OwnerAPI, PlayerAPI, type_manager::TypeManager},
 };
-use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
 use encoding::{
     graph::definition::definition_key_generator::DefinitionKeyGenerator,
     value::{label::Label, value_type::ValueType},
 };
 use executor::{
-    pipeline::stage::{StageAPI, StageIterator},
     ExecutionInterrupt,
+    pipeline::stage::{StageAPI, StageIterator},
 };
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
-use pprof::ProfilerGuard;
 use query::{error::QueryError, query_manager::QueryManager};
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, WritableSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, WritableSnapshot},
 };
 use test_utils::init_logging;
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -102,11 +103,12 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
 
     let qm = QueryManager::new();
-    let (pipeline, outputs) = qm
+    let pipeline = qm
         .prepare_write_pipeline(snapshot, type_manager, thing_manager, &function_manager, &typeql_insert)
         .map_err(|(snapshot, err)| (err, snapshot))?;
+    let outputs = pipeline.rows_positions().unwrap().clone();
     let (iter, ctx) =
-        pipeline.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(typedb_source, ctx)| {
+        pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(typedb_source, ctx)| {
             (QueryError::WritePipelineExecutionError { typedb_source }, Arc::into_inner(ctx.snapshot).unwrap())
         })?;
     let mut batch = match iter.collect_owned() {

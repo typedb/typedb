@@ -675,7 +675,7 @@ impl UnaryConstraint for FunctionCallBinding<Variable> {
         graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
         if let Some(annotated_function) = seeder.get_annotated_function(self.function_call().function_id()) {
-            for (assigned_variable, return_annotation) in zip(self.assigned(), &annotated_function.return_annotations) {
+            for (assigned_variable, return_annotation) in zip(self.assigned(), annotated_function.return_.annotations().into_iter()) {
                 if let FunctionParameterAnnotation::Concept(types) = return_annotation {
                     graph_vertices.add_or_intersect(assigned_variable, Cow::Borrowed(types));
                 }
@@ -1506,7 +1506,7 @@ pub mod tests {
             None,
             &translation_context.variable_registry,
         );
-        let graph = seeder.create_graph(block.scope_context(), &BTreeMap::new(), conjunction).unwrap();
+        let graph = seeder.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
         assert_eq!(expected_graph, graph);
     }
 
@@ -1566,7 +1566,7 @@ pub mod tests {
             None,
             &translation_context.variable_registry,
         );
-        let graph = seeder.create_graph(block.scope_context(), &BTreeMap::new(), conjunction).unwrap();
+        let graph = seeder.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
         if expected_graph != graph {
             // We need this because of non-determinism
             expected_graph.vertices.get_mut(&var_animal.into()).unwrap().insert(type_fears.clone());
@@ -1640,7 +1640,7 @@ pub mod tests {
                 None,
                 &translation_context.variable_registry,
             );
-            let graph = seeder.create_graph(block.scope_context(), &BTreeMap::new(), conjunction).unwrap();
+            let graph = seeder.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
             assert_eq!(expected_graph.vertices, graph.vertices);
             assert_eq!(expected_graph, graph);
         }

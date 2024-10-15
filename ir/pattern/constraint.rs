@@ -6,15 +6,16 @@
 
 use std::{collections::HashMap, fmt};
 
-use answer::variable::Variable;
 use itertools::Itertools;
+
+use answer::variable::Variable;
 
 use crate::{
     pattern::{
         expression::{ExpressionDefinitionError, ExpressionTree},
         function_call::FunctionCall,
-        variable_category::VariableCategory,
-        IrID, ScopeId, Vertex,
+        IrID,
+        ScopeId, variable_category::VariableCategory, Vertex,
     },
     pipeline::{block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry},
     RepresentationError,
@@ -243,7 +244,6 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
             self.context.set_variable_category(var, callee_signature.returns[index].0, binding.clone().into())?;
         }
         for (caller_var, callee_arg_index) in binding.function_call.call_id_mapping() {
-            let Vertex::Variable(caller_var) = caller_var else { unreachable!() };
             self.context.set_variable_category(
                 *caller_var,
                 callee_signature.arguments[*callee_arg_index],
@@ -1139,10 +1139,6 @@ impl<ID: IrID> FunctionCallBinding<ID> {
 
     pub fn ids(&self) -> impl Iterator<Item = ID> + '_ {
         self.ids_assigned().chain(self.function_call.argument_ids())
-    }
-
-    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + '_ {
-        self.assigned.iter().chain(self.function_call.argument_vertices())
     }
 
     pub fn ids_assigned(&self) -> impl Iterator<Item = ID> + '_ {

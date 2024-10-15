@@ -6,9 +6,9 @@
 
 #![allow(unexpected_cfgs)]
 
-use tracing::{self, dispatcher::DefaultGuard, metadata::LevelFilter, Level};
+use tracing::{self, dispatcher::DefaultGuard, Level, metadata::LevelFilter};
 pub use tracing::{error, info, trace};
-use tracing_subscriber::{fmt::SubscriberBuilder, EnvFilter};
+use tracing_subscriber::{EnvFilter, fmt::SubscriberBuilder};
 
 pub mod result;
 

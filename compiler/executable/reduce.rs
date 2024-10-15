@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 use answer::variable::Variable;
 use encoding::value::value_type::ValueType;
-use ir::pattern::IrID;
+use ir::pattern::{IrID, Vertex};
 
 use crate::VariablePosition;
 
@@ -55,4 +55,23 @@ impl<ID: IrID> ReduceInstruction<ID> {
             Self::StdDouble(_) => ValueType::Double,
         }
     }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> ReduceInstruction<T> {
+        match self {
+            ReduceInstruction::Count => ReduceInstruction::Count,
+            ReduceInstruction::CountVar(id) => ReduceInstruction::CountVar(mapping[&id]),
+            ReduceInstruction::SumLong(id) => ReduceInstruction::SumLong(mapping[&id]),
+            ReduceInstruction::SumDouble(id) => ReduceInstruction::SumDouble(mapping[&id]),
+            ReduceInstruction::MaxLong(id) => ReduceInstruction::MaxLong(mapping[&id]),
+            ReduceInstruction::MaxDouble(id) => ReduceInstruction::MaxDouble(mapping[&id]),
+            ReduceInstruction::MinLong(id) => ReduceInstruction::MinLong(mapping[&id]),
+            ReduceInstruction::MinDouble(id) => ReduceInstruction::MinDouble(mapping[&id]),
+            ReduceInstruction::MeanLong(id) => ReduceInstruction::MeanLong(mapping[&id]),
+            ReduceInstruction::MeanDouble(id) => ReduceInstruction::MeanDouble(mapping[&id]),
+            ReduceInstruction::MedianLong(id) => ReduceInstruction::MedianLong(mapping[&id]),
+            ReduceInstruction::MedianDouble(id) => ReduceInstruction::MedianDouble(mapping[&id]),
+            ReduceInstruction::StdLong(id) => ReduceInstruction::StdLong(mapping[&id]),
+            ReduceInstruction::StdDouble(id) => ReduceInstruction::StdDouble(mapping[&id]),
+        }
+    } 
 }

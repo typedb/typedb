@@ -40,12 +40,12 @@ pub fn compile(
     statistics: &Statistics,
 ) -> MatchExecutable {
     let conjunction = block.conjunction();
-    let scope_context = block.scope_context();
-    debug_assert!(conjunction.captured_variables(scope_context).all(|var| input_variables.contains_key(&var)));
+    let block_context = block.block_context();
+    debug_assert!(conjunction.captured_variables(block_context).all(|var| input_variables.contains_key(&var)));
 
     plan_conjunction(
         conjunction,
-        scope_context,
+        block_context,
         input_variables,
         type_annotations,
         &variable_registry,
