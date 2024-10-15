@@ -301,9 +301,16 @@ pub mod tests {
             // With schema cache
             let (entry, entry_context, mut f_ir) = with_local_cache;
 
-            let f_annotations =
-                annotate_function(&mut f_ir, &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty(), None, None, None)
-                    .unwrap();
+            let f_annotations = annotate_function(
+                &mut f_ir,
+                &snapshot,
+                &type_manager,
+                &IndexedAnnotatedFunctions::empty(),
+                None,
+                None,
+                None,
+            )
+            .unwrap();
             let f_var_animal =
                 var_from_registry(&f_ir.translation_context().variable_registry, "called_animal").unwrap();
             let f_var_animal_type =
@@ -344,9 +351,16 @@ pub mod tests {
             // With schema cache
             let (entry, entry_context, mut f_ir) = with_schema_cache;
 
-            let f_annotations =
-                annotate_function(&mut f_ir, &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty(), None, None, None)
-                    .unwrap();
+            let f_annotations = annotate_function(
+                &mut f_ir,
+                &snapshot,
+                &type_manager,
+                &IndexedAnnotatedFunctions::empty(),
+                None,
+                None,
+                None,
+            )
+            .unwrap();
             let f_var_animal =
                 var_from_registry(&f_ir.translation_context().variable_registry, "called_animal").unwrap();
             let f_var_animal_type =

@@ -8,6 +8,7 @@ use concept::error::ConceptReadError;
 use encoding::value::value_type::ValueTypeCategory;
 use error::typedb_error;
 use expression::ExpressionCompileError;
+
 use crate::annotation::expression::compiled_expression::ExpressionValueType;
 
 pub mod expression;

@@ -11,11 +11,10 @@ use std::{
 };
 
 use macro_rules_attribute::apply;
-
 use server::{parameters::config::Config, typedb};
 use test_utils::{create_tmp_dir, TempDir};
 
-use crate::{Context, generic_step};
+use crate::{generic_step, Context};
 
 mod database;
 mod transaction;

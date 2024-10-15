@@ -9,11 +9,10 @@ use std::collections::{HashMap, HashSet};
 use answer::variable::Variable;
 
 use crate::{
-    pattern::ParameterID
-    ,
+    pattern::ParameterID,
+    pipeline::function::Function,
     translation::{pipeline::TranslatedStage, TranslationContext},
 };
-use crate::pipeline::function::Function;
 
 #[derive(Debug, Clone)]
 pub enum FetchSome {
@@ -32,8 +31,12 @@ pub enum FetchSome {
 impl FetchSome {
     pub(crate) fn record_variables_recursive(&self, vars: &mut HashSet<Variable>) {
         match self {
-            Self::SingleVar(variable) => { vars.insert(*variable); }
-            Self::SingleAttribute(FetchSingleAttribute { variable, ..}) => { vars.insert(*variable); }
+            Self::SingleVar(variable) => {
+                vars.insert(*variable);
+            }
+            Self::SingleAttribute(FetchSingleAttribute { variable, .. }) => {
+                vars.insert(*variable);
+            }
             Self::SingleFunction(function) | Self::ListFunction(function) => {
                 vars.extend(function.arguments.iter().cloned());
             }
@@ -44,8 +47,12 @@ impl FetchSome {
                 stages.iter().for_each(|stage| vars.extend(stage.variables()));
                 fetch.record_variables_recursive(vars);
             }
-            Self::ListAttributesAsList(FetchListAttributeAsList { variable, .. }) => { vars.insert(*variable); }
-            Self::ListAttributesFromList(FetchListAttributeFromList { variable, .. }) => { vars.insert(*variable); }
+            Self::ListAttributesAsList(FetchListAttributeAsList { variable, .. }) => {
+                vars.insert(*variable);
+            }
+            Self::ListAttributesFromList(FetchListAttributeFromList { variable, .. }) => {
+                vars.insert(*variable);
+            }
         };
     }
 }
@@ -63,16 +70,16 @@ pub enum FetchObject {
 }
 
 impl FetchObject {
-   pub(crate) fn record_variables_recursive(&self, vars: &mut HashSet<Variable>) {
-       match self {
-           FetchObject::Entries(entries) => {
-               entries.iter().for_each(|(_, some)| some.record_variables_recursive(vars));
-           }
-           FetchObject::Attributes(var) => {
-               vars.insert(*var);
-           },
-       }
-   }
+    pub(crate) fn record_variables_recursive(&self, vars: &mut HashSet<Variable>) {
+        match self {
+            FetchObject::Entries(entries) => {
+                entries.iter().for_each(|(_, some)| some.record_variables_recursive(vars));
+            }
+            FetchObject::Attributes(var) => {
+                vars.insert(*var);
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

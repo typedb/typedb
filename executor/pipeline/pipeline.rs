@@ -4,28 +4,33 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::{collections::HashMap, sync::Arc};
 
-use std::collections::HashMap;
-use std::sync::Arc;
 use answer::variable::Variable;
-
-use compiler::executable::fetch::executable::ExecutableFetch;
-use compiler::executable::pipeline::ExecutableStage;
-use compiler::VariablePosition;
+use compiler::{
+    executable::{fetch::executable::ExecutableFetch, pipeline::ExecutableStage},
+    VariablePosition,
+};
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::{ParameterRegistry, VariableRegistry};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use crate::ExecutionInterrupt;
-use crate::pipeline::delete::DeleteStageExecutor;
 
-use crate::pipeline::fetch::FetchStageExecutor;
-use crate::pipeline::initial::InitialStage;
-use crate::pipeline::insert::InsertStageExecutor;
-use crate::pipeline::match_::MatchStageExecutor;
-use crate::pipeline::modifiers::{LimitStageExecutor, OffsetStageExecutor, RequireStageExecutor, SelectStageExecutor, SortStageExecutor};
-use crate::pipeline::PipelineExecutionError;
-use crate::pipeline::reduce::ReduceStageExecutor;
-use crate::pipeline::stage::{ExecutionContext, ReadPipelineStage, StageAPI, WritePipelineStage};
+use crate::{
+    pipeline::{
+        delete::DeleteStageExecutor,
+        fetch::FetchStageExecutor,
+        initial::InitialStage,
+        insert::InsertStageExecutor,
+        match_::MatchStageExecutor,
+        modifiers::{
+            LimitStageExecutor, OffsetStageExecutor, RequireStageExecutor, SelectStageExecutor, SortStageExecutor,
+        },
+        reduce::ReduceStageExecutor,
+        stage::{ExecutionContext, ReadPipelineStage, StageAPI, WritePipelineStage},
+        PipelineExecutionError,
+    },
+    ExecutionInterrupt,
+};
 
 pub enum Pipeline<Snapshot: ReadableSnapshot, Nonterminals: StageAPI<Snapshot>> {
     Unfetched(Nonterminals, HashMap<String, VariablePosition>),
@@ -47,9 +52,7 @@ impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pip
             .collect::<HashMap<_, _>>();
 
         match executable_fetch {
-            None => {
-                Pipeline::Unfetched(last_stage, named_outputs)
-            },
+            None => Pipeline::Unfetched(last_stage, named_outputs),
             Some(executable) => {
                 let fetch = FetchStageExecutor::new(executable);
                 Pipeline::Fetched(last_stage, fetch)
@@ -193,52 +196,49 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
     }
 }
 
-
-
-    // fn new_unfetched(nonterminals: Nonterminals, variable_positions: HashMap<String, VariablePosition>) -> Self {
-    //     Self::Unfetched(nonterminals, variable_positions)
-    // }
-    //
-    // fn new_fetched(nonterminals: Nonterminals, terminal: FetchStageExecutor<Snapshot>) -> Self {
-    //     Self::Fetched(nonterminals, terminal)
-    // }
-    //
-    // pub fn rows_positions(&self) -> Option<&HashMap<String, VariablePosition>> {
-    //     match self {
-    //         Self::Unfetched(_, positions) => Some(positions),
-    //         Self::Fetched(_, _) => None,
-    //     }
-    // }
-    //
-    // pub fn into_rows_iterator(
-    //     self,
-    //     execution_interrupt: ExecutionInterrupt,
-    // ) -> Result<
-    //     (Nonterminals::OutputIterator, ExecutionContext<Snapshot>),
-    //     (PipelineExecutionError, ExecutionContext<Snapshot>),
-    // > {
-    //     match self {
-    //         Self::Unfetched(nonterminals, _) => nonterminals.into_iterator(execution_interrupt),
-    //         Self::Fetched(nonterminals, _) => {
-    //             let (_, context) = nonterminals.into_iterator(execution_interrupt)?;
-    //             Err((PipelineExecutionError::FetchUsedAsRows {}, context))
-    //         }
-    //     }
-    // }
-    //
-    // pub fn into_maps_iterator(
-    //     self,
-    //     execution_interrupt: ExecutionInterrupt,
-    // ) -> Result<((), ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)> {
-    //     match self {
-    //         Self::Unfetched(nonterminals, _) => {
-    //             let (_, context) = nonterminals.into_iterator(execution_interrupt)?;
-    //             Err((PipelineExecutionError::FetchUsedAsRows {}, context))
-    //         }
-    //         Self::Fetched(nonterminals, terminal) => {
-    //             let (rows_iterator, context) = nonterminals.into_iterator(execution_interrupt)?;
-    //             todo!()
-    //         }
-    //     }
-    // }
-
+// fn new_unfetched(nonterminals: Nonterminals, variable_positions: HashMap<String, VariablePosition>) -> Self {
+//     Self::Unfetched(nonterminals, variable_positions)
+// }
+//
+// fn new_fetched(nonterminals: Nonterminals, terminal: FetchStageExecutor<Snapshot>) -> Self {
+//     Self::Fetched(nonterminals, terminal)
+// }
+//
+// pub fn rows_positions(&self) -> Option<&HashMap<String, VariablePosition>> {
+//     match self {
+//         Self::Unfetched(_, positions) => Some(positions),
+//         Self::Fetched(_, _) => None,
+//     }
+// }
+//
+// pub fn into_rows_iterator(
+//     self,
+//     execution_interrupt: ExecutionInterrupt,
+// ) -> Result<
+//     (Nonterminals::OutputIterator, ExecutionContext<Snapshot>),
+//     (PipelineExecutionError, ExecutionContext<Snapshot>),
+// > {
+//     match self {
+//         Self::Unfetched(nonterminals, _) => nonterminals.into_iterator(execution_interrupt),
+//         Self::Fetched(nonterminals, _) => {
+//             let (_, context) = nonterminals.into_iterator(execution_interrupt)?;
+//             Err((PipelineExecutionError::FetchUsedAsRows {}, context))
+//         }
+//     }
+// }
+//
+// pub fn into_maps_iterator(
+//     self,
+//     execution_interrupt: ExecutionInterrupt,
+// ) -> Result<((), ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)> {
+//     match self {
+//         Self::Unfetched(nonterminals, _) => {
+//             let (_, context) = nonterminals.into_iterator(execution_interrupt)?;
+//             Err((PipelineExecutionError::FetchUsedAsRows {}, context))
+//         }
+//         Self::Fetched(nonterminals, terminal) => {
+//             let (rows_iterator, context) = nonterminals.into_iterator(execution_interrupt)?;
+//             todo!()
+//         }
+//     }
+// }

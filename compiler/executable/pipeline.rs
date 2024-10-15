@@ -18,17 +18,16 @@ use crate::{
     annotation::{fetch::AnnotatedFetch, function::AnnotatedUnindexedFunctions, pipeline::AnnotatedStage},
     executable::{
         delete::executable::DeleteExecutable,
-        ExecutableCompilationError,
-        fetch::executable::ExecutableFetch,
+        fetch::executable::{compile_fetch, ExecutableFetch},
         function::{compile_function, ExecutableFunction},
         insert::executable::InsertExecutable,
         match_::planner::match_executable::MatchExecutable,
         modifiers::{LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable},
         reduce::{ReduceExecutable, ReduceInstruction},
+        ExecutableCompilationError,
     },
     VariablePosition,
 };
-use crate::executable::fetch::executable::compile_fetch;
 
 pub struct ExecutablePipeline {
     pub executable_functions: Vec<ExecutableFunction>,
@@ -88,13 +87,8 @@ pub fn compile_pipeline(
         .into_iter_functions()
         .map(|function| compile_function(statistics, function))
         .collect::<Result<Vec<_>, _>>()?;
-    let (executable_stages, executable_fetch) = compile_stages_and_fetch(
-        statistics,
-        variable_registry,
-        annotated_stages,
-        annotated_fetch,
-        input_variables
-    )?;
+    let (executable_stages, executable_fetch) =
+        compile_stages_and_fetch(statistics, variable_registry, annotated_stages, annotated_fetch, input_variables)?;
     Ok(ExecutablePipeline { executable_functions, executable_stages, executable_fetch })
 }
 
@@ -105,14 +99,17 @@ pub fn compile_stages_and_fetch(
     annotated_fetch: Option<AnnotatedFetch>,
     input_variables: HashSet<Variable>,
 ) -> Result<(Vec<ExecutableStage>, Option<ExecutableFetch>), ExecutableCompilationError> {
-    let executable_stages = compile_pipeline_stages(statistics, variable_registry.clone(), annotated_stages, input_variables)?;
+    let executable_stages =
+        compile_pipeline_stages(statistics, variable_registry.clone(), annotated_stages, input_variables)?;
     let stages_variable_positions =
         executable_stages.last().map(|stage: &ExecutableStage| stage.output_row_mapping()).unwrap_or(HashMap::new());
 
     let executable_fetch = annotated_fetch
-        .map(|fetch| compile_fetch(statistics, fetch, &stages_variable_positions)
-            .map_err(|err| ExecutableCompilationError::FetchCompliation { typedb_source: err })
-        ).transpose()?;
+        .map(|fetch| {
+            compile_fetch(statistics, fetch, &stages_variable_positions)
+                .map_err(|err| ExecutableCompilationError::FetchCompliation { typedb_source: err })
+        })
+        .transpose()?;
     Ok((executable_stages, executable_fetch))
 }
 
@@ -124,11 +121,13 @@ pub(crate) fn compile_pipeline_stages(
 ) -> Result<Vec<ExecutableStage>, ExecutableCompilationError> {
     let mut executable_stages = Vec::with_capacity(annotated_stages.len());
     for stage in annotated_stages {
-        let input_variable_positions = executable_stages
-            .last()
-            .map(|stage: &ExecutableStage| stage.output_row_mapping())
-            .unwrap_or_else(|| {
-                input_variables.iter().enumerate().map(|(i, var)| (*var, VariablePosition { position: i as u32 })).collect()
+        let input_variable_positions =
+            executable_stages.last().map(|stage: &ExecutableStage| stage.output_row_mapping()).unwrap_or_else(|| {
+                input_variables
+                    .iter()
+                    .enumerate()
+                    .map(|(i, var)| (*var, VariablePosition { position: i as u32 }))
+                    .collect()
             });
 
         let executable_stage = compile_stage(statistics, variable_registry.clone(), &input_variable_positions, stage)?;

@@ -24,6 +24,7 @@ use error::typedb_error;
 use executor::{
     batch::Batch,
     pipeline::{
+        pipeline::Pipeline,
         stage::{ExecutionContext, ReadPipelineStage, StageAPI, StageIterator},
         PipelineExecutionError,
     },
@@ -59,7 +60,6 @@ use typeql::{
     Query,
 };
 use uuid::Uuid;
-use executor::pipeline::pipeline::Pipeline;
 
 use crate::service::{
     answer::encode_row,
@@ -726,7 +726,7 @@ impl TransactionService {
         }
     }
 
-    async fn run_write_query(&mut self, req_id: Uuid, pipeline: typeql::query::Pipeline,) {
+    async fn run_write_query(&mut self, req_id: Uuid, pipeline: typeql::query::Pipeline) {
         debug_assert!(self.running_write_query.is_none());
         self.interrupt_and_close_responders(InterruptType::WriteQueryExecution).await;
         let handle = match self.spawn_blocking_execute_write_query(pipeline) {
@@ -763,7 +763,7 @@ impl TransactionService {
         self.responders.insert(req_id, (batch_reader, stream_transmitter));
     }
 
-    fn run_and_activate_read_transmitter(&mut self, req_id: Uuid, pipeline: typeql::query::Pipeline,) {
+    fn run_and_activate_read_transmitter(&mut self, req_id: Uuid, pipeline: typeql::query::Pipeline) {
         let (sender, receiver) = channel(self.prefetch_size.unwrap() as usize);
         let worker_handle = self.blocking_read_query_worker(pipeline, sender);
         let stream_transmitter = QueryStreamTransmitter::start_new(
@@ -943,7 +943,11 @@ impl TransactionService {
         })
     }
 
-    fn blocking_read_query_worker(&self, pipeline: typeql::query::Pipeline, sender: Sender<StreamQueryResponse>) -> JoinHandle<()> {
+    fn blocking_read_query_worker(
+        &self,
+        pipeline: typeql::query::Pipeline,
+        sender: Sender<StreamQueryResponse>,
+    ) -> JoinHandle<()> {
         debug_assert!(
             self.request_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some()
         );
@@ -962,26 +966,23 @@ impl TransactionService {
                     &pipeline,
                 );
 
-                let pipeline =
-                    unwrap_or_execute_and_return!(pipeline, |err| {
-                        Self::submit_response_sync(&sender, StreamQueryResponse::done_err(err));
-                    });
+                let pipeline = unwrap_or_execute_and_return!(pipeline, |err| {
+                    Self::submit_response_sync(&sender, StreamQueryResponse::done_err(err));
+                });
                 let named_outputs = pipeline.rows_positions().unwrap();
                 let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
                 let initial_response = StreamQueryResponse::init_ok(&descriptor, Read);
                 Self::submit_response_sync(&sender, initial_response);
 
-                let (mut iterator, _) = unwrap_or_execute_and_return!(
-                    pipeline.into_rows_iterator(interrupt.clone()),
-                    |(err, _)| {
+                let (mut iterator, _) =
+                    unwrap_or_execute_and_return!(pipeline.into_rows_iterator(interrupt.clone()), |(err, _)| {
                         Self::submit_response_sync(
                             &sender,
                             StreamQueryResponse::done_err(QueryError::ReadPipelineExecutionError {
                                 typedb_source: err,
                             }),
                         );
-                    }
-                );
+                    });
 
                 while let Some(next) = iterator.next() {
                     if let Some(interrupt) = interrupt.check() {

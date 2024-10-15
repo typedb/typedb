@@ -9,10 +9,9 @@ use std::sync::Mutex;
 use cucumber::gherkin::Step;
 use futures::future::join_all;
 use macro_rules_attribute::apply;
-
 use server::{typedb, typedb::Server};
 
-use crate::{Context, generic_step, params, util};
+use crate::{generic_step, params, util, Context};
 
 async fn server_create_database(server: &'_ Server, name: String) {
     server.database_manager().create_database(&name);

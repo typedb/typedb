@@ -36,7 +36,7 @@ use crate::{
             compiled_expression::{ExecutableExpression, ExpressionValueType},
         },
         fetch::{annotate_fetch, AnnotatedFetch},
-        function::{annotate_functions, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+        function::{annotate_functions, AnnotatedFunction, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         match_inference::infer_types,
         type_annotations::{ConstraintTypeAnnotations, TypeAnnotations},
         type_inference::resolve_value_types,
@@ -44,7 +44,6 @@ use crate::{
     },
     executable::{insert::type_check::check_annotations, reduce::ReduceInstruction},
 };
-use crate::annotation::function::AnnotatedFunction;
 
 pub struct AnnotatedPipeline {
     pub annotated_preamble: AnnotatedUnindexedFunctions,

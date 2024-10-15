@@ -105,7 +105,7 @@ fn index_expressions<'a, 'block, Snapshot: ReadableSnapshot>(
             let &Vertex::Variable(left) = expression_binding.left() else { unreachable!() };
             if index.contains_key(&left) {
                 Err(ExpressionCompileError::MultipleAssignmentsForSingleVariable {
-                    assign_variable: context.variable_registry.variable_names().get(&left).cloned()
+                    assign_variable: context.variable_registry.variable_names().get(&left).cloned(),
                 })?;
             }
             index.insert(left, expression_binding);
@@ -156,7 +156,7 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
             if context.visited_expressions.contains(&variable) {
                 // TODO: Do we catch double assignments?
                 Err(ExpressionCompileError::CircularDependencyInExpressions {
-                    assign_variable: context.variable_registry.variable_names().get(&variable).cloned()
+                    assign_variable: context.variable_registry.variable_names().get(&variable).cloned(),
                 })
             } else {
                 compile_expressions_recursive(context, variable, expression_assignments)?;
@@ -174,12 +174,12 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
         // resolve_value_types will error if the type_annotations aren't all attribute(list) types
         let value_types = resolve_value_types(types, context.snapshot, context.type_manager).map_err(|source| {
             ExpressionCompileError::CouldNotDetermineValueTypeForVariable {
-                variable: context.variable_registry.variable_names().get(&variable).cloned()
+                variable: context.variable_registry.variable_names().get(&variable).cloned(),
             }
         })?;
         if value_types.len() != 1 {
             Err(ExpressionCompileError::VariableDidNotHaveSingleValueType {
-                variable: context.variable_registry.variable_names().get(&variable).cloned()
+                variable: context.variable_registry.variable_names().get(&variable).cloned(),
             })
         } else {
             let value_type = value_types.iter().find(|_| true).unwrap();
@@ -203,7 +203,7 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
         }
     } else {
         Err(ExpressionCompileError::CouldNotDetermineValueTypeForVariable {
-            variable: context.variable_registry.variable_names().get(&variable).cloned()
+            variable: context.variable_registry.variable_names().get(&variable).cloned(),
         })
     }
 }

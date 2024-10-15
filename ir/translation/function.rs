@@ -4,16 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use answer::variable::Variable;
+use storage::snapshot::ReadableSnapshot;
 use typeql::{
     schema::definable::function::{
-        FunctionBlock, Output, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream,
+        Argument, FunctionBlock, Output, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream,
     },
     TypeRefAny,
 };
-use typeql::schema::definable::function::Argument;
-
-use answer::variable::Variable;
-use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     pattern::variable_category::{VariableCategory, VariableOptionality},
@@ -66,7 +64,8 @@ pub(crate) fn translate_function_arguments<'a>(
             FunctionRepresentationError::FunctionArgumentUnused {
                 argument_variable: arg.var.name().unwrap().to_owned(),
                 declaration: declaration.unwrap().clone(),
-            }})?;
+            }
+        })?;
         argument_variables.push(var);
         argument_labels.push(arg.type_.clone());
     }
@@ -110,9 +109,9 @@ pub fn build_signature(function_id: FunctionID, function: &typeql::Function) -> 
         Output::Stream(stream) => &stream.types,
         Output::Single(single) => &single.types,
     }
-        .iter()
-        .map(type_any_to_category_and_optionality)
-        .collect::<Vec<_>>();
+    .iter()
+    .map(type_any_to_category_and_optionality)
+    .collect::<Vec<_>>();
     FunctionSignature::new(function_id.clone(), args, returns, return_is_stream)
 }
 

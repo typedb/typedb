@@ -6,19 +6,17 @@
 
 use std::sync::Arc;
 
+use concept::type_::{annotation, constraint::Constraint, plays::PlaysAnnotation, Capability, PlayerAPI, TypeAPI};
 use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
 
-use concept::type_::{annotation, Capability, constraint::Constraint, PlayerAPI, plays::PlaysAnnotation, TypeAPI};
-
-use crate::{
-    Context, generic_step,
-    params,
-    transaction_context::{with_read_tx, with_schema_tx}, util,
-};
-
 use super::thing_type::get_as_object_type;
+use crate::{
+    generic_step, params,
+    transaction_context::{with_read_tx, with_schema_tx},
+    util, Context,
+};
 
 #[apply(generic_step)]
 #[step(expr = "{kind}\\({type_label}\\) set plays: {type_label}{may_error}")]

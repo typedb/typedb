@@ -30,9 +30,9 @@ pub mod initial;
 pub mod insert;
 pub mod match_;
 pub mod modifiers;
+pub mod pipeline;
 pub mod reduce;
 pub mod stage;
-pub mod pipeline;
 
 // Can be used as normal lending iterator, or optimally collect into owned using `collect_owned()`
 pub struct WrittenRowsIterator {

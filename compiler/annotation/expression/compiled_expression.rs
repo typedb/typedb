@@ -5,6 +5,7 @@
  */
 
 use std::fmt::{Display, Formatter};
+
 use answer::variable::Variable;
 use encoding::value::value_type::{ValueType, ValueTypeCategory};
 use ir::pattern::ParameterID;
@@ -58,7 +59,7 @@ impl Display for ExpressionValueType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             ExpressionValueType::Single(single) => write!(f, "{}", single),
-            ExpressionValueType::List(list) => write!(f, "{}[]", list)
+            ExpressionValueType::List(list) => write!(f, "{}[]", list),
         }
     }
 }

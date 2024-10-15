@@ -11,30 +11,30 @@ use std::{
     collections::HashMap,
     sync::{Arc, OnceLock, RwLock},
     thread,
-    thread::{JoinHandle, sleep},
+    thread::{sleep, JoinHandle},
     time::{Duration, Instant},
 };
 
 use answer::variable_value::VariableValue;
 use concept::{
     thing::thing_manager::ThingManager,
-    type_::{Ordering, OwnerAPI, PlayerAPI, type_manager::TypeManager},
+    type_::{type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
 };
 use encoding::{
     graph::definition::definition_key_generator::DefinitionKeyGenerator,
     value::{label::Label, value_type::ValueType},
 };
 use executor::{
-    ExecutionInterrupt,
     pipeline::stage::{StageAPI, StageIterator},
+    ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use query::{error::QueryError, query_manager::QueryManager};
 use storage::{
     durability_client::WALClient,
-    MVCCStorage,
     snapshot::{CommittableSnapshot, WritableSnapshot},
+    MVCCStorage,
 };
 use test_utils::init_logging;
 use test_utils_concept::{load_managers, setup_concept_storage};

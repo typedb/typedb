@@ -11,10 +11,10 @@ use macro_rules_attribute::apply;
 
 use crate::{
     concept::type_::BehaviourConceptTestExecutionError,
-    Context,
     generic_step,
     params::{self, check_boolean},
-    transaction_context::{with_read_tx, with_schema_tx}, util,
+    transaction_context::{with_read_tx, with_schema_tx},
+    util, Context,
 };
 
 #[apply(generic_step)]

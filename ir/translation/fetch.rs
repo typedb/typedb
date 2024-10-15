@@ -6,9 +6,11 @@
 
 use std::collections::{HashMap, HashSet};
 
+use answer::variable::Variable;
+use error::typedb_error;
+use storage::snapshot::ReadableSnapshot;
 use typeql::{
     expression::{FunctionCall, FunctionName},
-    Expression,
     query::stage::{
         fetch::{
             FetchAttribute, FetchList as TypeQLFetchList, FetchObject as TypeQLFetchObject,
@@ -19,25 +21,22 @@ use typeql::{
     },
     schema::definable::function::{FunctionBlock, SingleSelector},
     type_::NamedType,
-    TypeRef, TypeRefAny, value::StringLiteral, Variable as TypeQLVariable,
+    value::StringLiteral,
+    Expression, TypeRef, TypeRefAny, Variable as TypeQLVariable,
 };
-
-use answer::variable::Variable;
-use error::typedb_error;
-use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     pattern::ParameterID,
     pipeline::{
         block::{Block, BlockBuilder, BlockBuilderContext},
         fetch::{
-            FetchListAttributeFromList, FetchObject, FetchSingleAttribute, FetchSome,
+            FetchListAttributeAsList, FetchListAttributeFromList, FetchListSubFetch, FetchObject, FetchSingleAttribute,
+            FetchSome,
         },
-        function::{FunctionBody, ReturnOperation},
+        function::{Function, FunctionBody, ReturnOperation},
         function_signature::FunctionSignatureIndex,
         FunctionReadError,
     },
-    RepresentationError,
     translation::{
         expression::build_expression,
         fetch::FetchRepresentationError::{
@@ -45,14 +44,12 @@ use crate::{
             OptionalVariableEncountered, VariableNotAvailable,
         },
         function::translate_function_block,
-        pipeline::TranslatedStage,
+        literal::FromTypeQLLiteral,
+        pipeline::{translate_pipeline_stages, TranslatedStage},
         TranslationContext,
     },
+    RepresentationError,
 };
-use crate::pipeline::fetch::{FetchListAttributeAsList, FetchListSubFetch};
-use crate::pipeline::function::Function;
-use crate::translation::literal::FromTypeQLLiteral;
-use crate::translation::pipeline::translate_pipeline_stages;
 
 pub(super) fn translate_fetch(
     snapshot: &impl ReadableSnapshot,
@@ -128,13 +125,19 @@ fn translate_fetch_list(
                     Err(FetchRepresentationError::BuiltinFunctionInList { declaration: call.clone() })
                 }
                 FunctionName::Identifier(name) => {
-                    let some = translate_inline_user_function_call(parent_context, function_index, &call, name.as_str())?;
+                    let some =
+                        translate_inline_user_function_call(parent_context, function_index, &call, name.as_str())?;
                     match some {
                         FetchSome::SingleFunction(_) => {
-                            Err(FetchRepresentationError::ExpectedStreamUserFunctionInList { name: name.as_str().to_owned(), declaration: call.clone() })
+                            Err(FetchRepresentationError::ExpectedStreamUserFunctionInList {
+                                name: name.as_str().to_owned(),
+                                declaration: call.clone(),
+                            })
                         }
                         FetchSome::ListFunction(_) => Ok(some),
-                        _ => unreachable!("User function call was not translated into a single or list function call representation."),
+                        _ => unreachable!(
+                            "User function call was not translated into a single or list function call representation."
+                        ),
                     }
                 }
             }
@@ -142,8 +145,9 @@ fn translate_fetch_list(
         FetchStream::SubQueryFetch(stages) => {
             // clone context, since we don't want the inline function to affect the parent context
             let mut local_context = parent_context.clone();
-            let (translated_stages, subfetch) = translate_pipeline_stages(snapshot, function_index, &mut local_context, &stages)
-                .map_err(|err| FetchRepresentationError::SubFetchRepresentation { typedb_source: Box::new(err) })?;
+            let (translated_stages, subfetch) =
+                translate_pipeline_stages(snapshot, function_index, &mut local_context, &stages)
+                    .map_err(|err| FetchRepresentationError::SubFetchRepresentation { typedb_source: Box::new(err) })?;
             let input_variables = find_sub_fetch_inputs(parent_context, &translated_stages, subfetch.as_ref());
             Ok(FetchSome::ListSubFetch(FetchListSubFetch {
                 context: local_context,
@@ -255,9 +259,7 @@ fn extract_fetch_attribute(fetch_attribute: &FetchAttribute) -> Result<(bool, &s
             },
             TypeRef::Variable(_) => Err(NamedVariableEncountered { declaration: list.inner.clone() }),
         },
-        TypeRefAny::Optional(_) => {
-            Err(OptionalVariableEncountered { declaration: fetch_attribute.attribute.clone() })
-        }
+        TypeRefAny::Optional(_) => Err(OptionalVariableEncountered { declaration: fetch_attribute.attribute.clone() }),
     }
 }
 
@@ -363,10 +365,7 @@ fn create_anonymous_function(context: TranslationContext, args: Vec<Variable>, b
 }
 
 // Given a function body, and the _parent_ translation context, we can reconstruct which are arguments
-fn find_function_body_arguments(
-    parent_context: &TranslationContext,
-    function_body: &FunctionBody,
-) -> Vec<Variable> {
+fn find_function_body_arguments(parent_context: &TranslationContext, function_body: &FunctionBody) -> Vec<Variable> {
     let mut arguments = HashSet::new();
     // Note: we rely on the fact that named variables that are "the same" become the same Variable, and the logic of
     //       selecting variables in/out is handled by the translation of the stages

@@ -8,10 +8,10 @@ use std::sync::Arc;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
-use executor::{ExecutionInterrupt, pipeline::stage::StageAPI};
+use executor::{pipeline::stage::StageAPI, ExecutionInterrupt};
 use function::function_manager::FunctionManager;
 use query::query_manager::QueryManager;
-use storage::{durability_client::WALClient, MVCCStorage, snapshot::CommittableSnapshot};
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
@@ -120,7 +120,6 @@ fetch {
     let pipeline = QueryManager::new()
         .prepare_read_pipeline(snapshot.clone(), &type_manager, thing_manager.clone(), &function_manager, &pipeline)
         .unwrap();
-
 }
 
 //

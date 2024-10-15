@@ -7,23 +7,22 @@
 use std::sync::{Arc, Mutex};
 
 use cucumber::{codegen::anyhow::Error, gherkin::Step};
+use database::{
+    transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
+    Database,
+};
 use futures::future::join_all;
 use macro_rules_attribute::apply;
-
-use database::{
-    Database,
-    transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
-};
 use options::TransactionOptions;
 use server::{typedb, typedb::Server};
 use storage::durability_client::WALClient;
 use test_utils::assert_matches;
 
 use crate::{
-    ActiveTransaction,
     connection::BehaviourConnectionTestExecutionError,
-    Context,
-    generic_step, params::{self, check_boolean}, util,
+    generic_step,
+    params::{self, check_boolean},
+    util, ActiveTransaction, Context,
 };
 
 async fn server_open_transaction_for_database(

@@ -6,11 +6,10 @@
 
 use std::iter::empty;
 
-use typeql::query::stage::{Operator as TypeQLOperator, Stage as TypeQLStage, Stage};
-
 use answer::variable::Variable;
 use primitive::either::Either;
 use storage::snapshot::ReadableSnapshot;
+use typeql::query::stage::{Operator as TypeQLOperator, Stage as TypeQLStage, Stage};
 
 use crate::{
     pipeline::{
@@ -19,19 +18,19 @@ use crate::{
         function::Function,
         function_signature::FunctionSignatureIndex,
         modifier::{Limit, Offset, Require, Select, Sort},
-        ParameterRegistry,
-        reduce::Reduce, VariableRegistry,
+        reduce::Reduce,
+        ParameterRegistry, VariableRegistry,
     },
-    RepresentationError,
     translation::{
         fetch::translate_fetch,
         function::translate_typeql_function,
         match_::translate_match,
         modifiers::{translate_limit, translate_offset, translate_require, translate_select, translate_sort},
         reduce::translate_reduce,
-        TranslationContext,
         writes::{translate_delete, translate_insert},
+        TranslationContext,
     },
+    RepresentationError,
 };
 
 #[derive(Debug, Clone)]
@@ -76,13 +75,11 @@ pub enum TranslatedStage {
 }
 
 impl TranslatedStage {
-    pub fn variables(&self) -> Box<dyn Iterator<Item=Variable> + '_>  {
+    pub fn variables(&self) -> Box<dyn Iterator<Item = Variable> + '_> {
         match self {
             TranslatedStage::Match { block }
             | TranslatedStage::Insert { block }
-            | TranslatedStage::Delete { block, .. } => {
-                Box::new(block.variables())
-            }
+            | TranslatedStage::Delete { block, .. } => Box::new(block.variables()),
             TranslatedStage::Select(select) => Box::new(select.variables.iter().cloned()),
             TranslatedStage::Sort(sort) => Box::new(sort.variables.iter().map(|sort_var| sort_var.variable())),
             TranslatedStage::Offset(_) => Box::new(empty()),

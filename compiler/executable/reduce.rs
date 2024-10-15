@@ -73,5 +73,5 @@ impl<ID: IrID> ReduceInstruction<ID> {
             ReduceInstruction::StdLong(id) => ReduceInstruction::StdLong(mapping[&id]),
             ReduceInstruction::StdDouble(id) => ReduceInstruction::StdDouble(mapping[&id]),
         }
-    } 
+    }
 }

@@ -8,10 +8,7 @@ use std::{collections::BTreeMap, fmt, hash::Hash};
 
 use itertools::Itertools;
 
-use crate::{
-    pattern::IrID,
-    pipeline::function_signature::FunctionID,
-};
+use crate::{pattern::IrID, pipeline::function_signature::FunctionID};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FunctionCall<ID> {
@@ -22,10 +19,7 @@ pub struct FunctionCall<ID> {
 
 impl<ID: IrID> FunctionCall<ID> {
     pub fn new(function_id: FunctionID, call_variable_mapping: BTreeMap<ID, usize>) -> Self {
-        Self {
-            function_id,
-            call_variable_mapping,
-        }
+        Self { function_id, call_variable_mapping }
     }
 
     pub fn function_id(&self) -> FunctionID {

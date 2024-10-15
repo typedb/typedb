@@ -4,20 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use typeql::{
-    Definable,
-    query::schema::Define,
-    schema::definable::{
-        function::Function,
-        Struct,
-        struct_::Field,
-        Type, type_::{
-            capability::{Owns as TypeQLOwns, Plays as TypeQLPlays, Relates as TypeQLRelates},
-            Capability as TypeQLCapability, CapabilityBase,
-        },
-    }, token,
-};
-
 use answer::Type as TypeEnum;
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
@@ -25,11 +11,11 @@ use concept::{
     type_::{
         annotation::{Annotation, AnnotationError},
         attribute_type::AttributeType,
-        Capability,
-        KindAPI,
-        Ordering,
-        OwnerAPI,
-        owns::Owns, PlayerAPI, plays::Plays, relates::Relates, type_manager::TypeManager, TypeAPI,
+        owns::Owns,
+        plays::Plays,
+        relates::Relates,
+        type_manager::TypeManager,
+        Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 use encoding::{
@@ -37,20 +23,33 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use error::typedb_error;
-use ir::{LiteralParseError, translation::tokens::translate_annotation};
+use ir::{translation::tokens::translate_annotation, LiteralParseError};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use typeql::{
+    query::schema::Define,
+    schema::definable::{
+        function::Function,
+        struct_::Field,
+        type_::{
+            capability::{Owns as TypeQLOwns, Plays as TypeQLPlays, Relates as TypeQLRelates},
+            Capability as TypeQLCapability, CapabilityBase,
+        },
+        Struct, Type,
+    },
+    token, Definable,
+};
 
 use crate::{
     definable_resolution::{
         filter_variants, get_struct_field_value_type_optionality, resolve_attribute_type, resolve_relates,
         resolve_relates_declared, resolve_role_type, resolve_struct_definition_key, resolve_typeql_type,
-        resolve_value_type, SymbolResolutionError, try_resolve_typeql_type, try_unwrap, type_ref_to_label_and_ordering,
-        type_to_object_type,
+        resolve_value_type, try_resolve_typeql_type, try_unwrap, type_ref_to_label_and_ordering, type_to_object_type,
+        SymbolResolutionError,
     },
     definable_status::{
-        DefinableStatus, get_capability_annotation_status, get_owns_status, get_plays_status,
-        get_relates_status, get_struct_field_status, get_struct_status, get_sub_status, get_type_annotation_status,
-        get_value_type_status,
+        get_capability_annotation_status, get_owns_status, get_plays_status, get_relates_status,
+        get_struct_field_status, get_struct_status, get_sub_status, get_type_annotation_status, get_value_type_status,
+        DefinableStatus,
     },
 };
 

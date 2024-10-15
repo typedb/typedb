@@ -4,25 +4,24 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashSet;
-use std::sync::Arc;
-
-use typeql::query::SchemaQuery;
+use std::{collections::HashSet, sync::Arc};
 
 use compiler::{
     annotation::pipeline::{annotate_pipeline, AnnotatedPipeline},
-    executable::pipeline::{compile_pipeline, ExecutablePipeline}
-    ,
+    executable::pipeline::{compile_pipeline, ExecutablePipeline},
 };
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use executor::pipeline::pipeline::Pipeline;
-use executor::pipeline::stage::{ReadPipelineStage, WritePipelineStage};
+use executor::pipeline::{
+    pipeline::Pipeline,
+    stage::{ReadPipelineStage, WritePipelineStage},
+};
 use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex};
 use ir::{
     pipeline::function_signature::{FunctionID, HashMapFunctionSignatureIndex},
     translation::pipeline::{translate_pipeline, TranslatedPipeline},
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use typeql::query::SchemaQuery;
 
 use crate::{define, error::QueryError, redefine, undefine};
 
@@ -87,16 +86,15 @@ impl QueryManager {
 
         // 3: Compile
         let variable_registry = Arc::new(variable_registry);
-        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch } =
-            compile_pipeline(
-                thing_manager.statistics(),
-                variable_registry.clone(),
-                annotated_preamble,
-                annotated_stages,
-                annotated_fetch,
-                HashSet::with_capacity(0)
-            )
-            .map_err(|err| QueryError::ExecutableCompilation { typedb_source: err })?;
+        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch } = compile_pipeline(
+            thing_manager.statistics(),
+            variable_registry.clone(),
+            annotated_preamble,
+            annotated_stages,
+            annotated_fetch,
+            HashSet::with_capacity(0),
+        )
+        .map_err(|err| QueryError::ExecutableCompilation { typedb_source: err })?;
 
         // 4: Executor
         Ok(Pipeline::build_read_pipeline(
@@ -161,13 +159,10 @@ impl QueryManager {
             annotated_preamble,
             annotated_stages,
             annotated_fetch,
-            HashSet::with_capacity(0)
+            HashSet::with_capacity(0),
         );
-        let ExecutablePipeline {
-            executable_functions,
-            executable_stages,
-            executable_fetch,
-        } = match executable_pipeline {
+        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch } = match executable_pipeline
+        {
             Ok(executable) => executable,
             Err(err) => return Err((snapshot, QueryError::ExecutableCompilation { typedb_source: err })),
         };

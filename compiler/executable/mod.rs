@@ -5,9 +5,8 @@
  */
 
 use error::typedb_error;
-use crate::executable::fetch::executable::FetchCompilationError;
 
-use crate::executable::insert::WriteCompilationError;
+use crate::executable::{fetch::executable::FetchCompilationError, insert::WriteCompilationError};
 
 pub mod delete;
 pub mod fetch;

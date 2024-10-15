@@ -5,16 +5,12 @@
  */
 
 use std::{
+    borrow::Cow,
     collections::{BTreeMap, BTreeSet},
     sync::Arc,
 };
-use std::borrow::Cow;
 
-use itertools::Either;
-use typeql::{type_::NamedType, TypeRef, TypeRefAny};
-use typeql::schema::definable::function::SingleSelector;
-
-use answer::{Type, variable::Variable};
+use answer::{variable::Variable, Type};
 use concept::type_::{type_manager::TypeManager, TypeAPI};
 use encoding::{
     graph::definition::definition_key::DefinitionKey,
@@ -24,15 +20,22 @@ use ir::{
     pipeline::{
         function::{Function, FunctionBody, ReturnOperation},
         function_signature::FunctionIDAPI,
+        VariableRegistry,
     },
     translation::tokens::translate_value_type,
 };
-use ir::pipeline::VariableRegistry;
+use itertools::Either;
 use storage::snapshot::ReadableSnapshot;
+use typeql::{schema::definable::function::SingleSelector, type_::NamedType, TypeRef, TypeRefAny};
 
-use crate::annotation::{expression::compiled_expression::ExpressionValueType, FunctionAnnotationError, pipeline::{annotate_pipeline_stages, AnnotatedStage}, type_seeder};
-use crate::annotation::pipeline::resolve_reducer_by_value_type;
-use crate::executable::reduce::ReduceInstruction;
+use crate::{
+    annotation::{
+        expression::compiled_expression::ExpressionValueType,
+        pipeline::{annotate_pipeline_stages, resolve_reducer_by_value_type, AnnotatedStage},
+        type_seeder, FunctionAnnotationError,
+    },
+    executable::reduce::ReduceInstruction,
+};
 
 #[derive(Debug, Clone)]
 pub enum FunctionParameterAnnotation {
@@ -50,26 +53,26 @@ pub struct AnnotatedFunction {
 
 #[derive(Debug, Clone)]
 pub enum AnnotatedFunctionReturn {
-    Stream{ variables: Vec<Variable>, annotations: Vec<FunctionParameterAnnotation>},
-    Single{ selector: SingleSelector, variables: Vec<Variable>, annotations: Vec<FunctionParameterAnnotation>},
-    ReduceCheck{},
-    ReduceReducer{ instructions: Vec<ReduceInstruction<Variable>> },
+    Stream { variables: Vec<Variable>, annotations: Vec<FunctionParameterAnnotation> },
+    Single { selector: SingleSelector, variables: Vec<Variable>, annotations: Vec<FunctionParameterAnnotation> },
+    ReduceCheck {},
+    ReduceReducer { instructions: Vec<ReduceInstruction<Variable>> },
 }
 
 impl AnnotatedFunctionReturn {
     pub fn annotations(&self) -> Cow<'_, [FunctionParameterAnnotation]> {
         match self {
             AnnotatedFunctionReturn::Stream { annotations, .. } => Cow::Borrowed(annotations),
-            AnnotatedFunctionReturn::Single { annotations,.. } =>  Cow::Borrowed(annotations),
-            AnnotatedFunctionReturn::ReduceCheck { .. } => Cow::Borrowed(&[FunctionParameterAnnotation::Value(ValueType::Boolean)]),
-            AnnotatedFunctionReturn::ReduceReducer { instructions } => {
-                Cow::Owned(
-                    instructions
-                        .iter()
-                        .map(|instruction| FunctionParameterAnnotation::Value(instruction.output_type()))
-                        .collect()
-                )
+            AnnotatedFunctionReturn::Single { annotations, .. } => Cow::Borrowed(annotations),
+            AnnotatedFunctionReturn::ReduceCheck { .. } => {
+                Cow::Borrowed(&[FunctionParameterAnnotation::Value(ValueType::Boolean)])
             }
+            AnnotatedFunctionReturn::ReduceReducer { instructions } => Cow::Owned(
+                instructions
+                    .iter()
+                    .map(|instruction| FunctionParameterAnnotation::Value(instruction.output_type()))
+                    .collect(),
+            ),
         }
     }
 }
@@ -155,7 +158,9 @@ pub fn annotate_functions(
     // In the preliminary annotations, functions are annotated based only on the variable categories of the called function.
     let preliminary_annotated_functions = functions
         .iter_mut()
-        .map(|function| annotate_function(function, snapshot, type_manager, indexed_annotated_functions, None, None, None))
+        .map(|function| {
+            annotate_function(function, snapshot, type_manager, indexed_annotated_functions, None, None, None)
+        })
         .collect::<Result<Vec<AnnotatedFunction>, FunctionAnnotationError>>()?;
     let preliminary_annotations = AnnotatedUnindexedFunctions::new(preliminary_annotated_functions);
 
@@ -191,7 +196,13 @@ pub(crate) fn annotate_function(
     caller_type_annotations: Option<&BTreeMap<Variable, Arc<BTreeSet<Type>>>>,
     caller_value_type_annotations: Option<&BTreeMap<Variable, ExpressionValueType>>,
 ) -> Result<AnnotatedFunction, FunctionAnnotationError> {
-    let Function { name, context, function_body: FunctionBody { stages, return_operation }, arguments, argument_labels } = function;
+    let Function {
+        name,
+        context,
+        function_body: FunctionBody { stages, return_operation },
+        arguments,
+        argument_labels,
+    } = function;
     let (argument_concept_variable_types, argument_value_variable_types) = annotate_arguments(
         snapshot,
         type_manager,
@@ -199,7 +210,7 @@ pub(crate) fn annotate_function(
         &arguments,
         argument_labels.as_ref(),
         caller_type_annotations,
-        caller_value_type_annotations
+        caller_value_type_annotations,
     )?;
 
     let (stages, running_variable_types, running_value_types) = annotate_pipeline_stages(
@@ -213,10 +224,7 @@ pub(crate) fn annotate_function(
         argument_concept_variable_types,
         argument_value_variable_types,
     )
-    .map_err(|err| FunctionAnnotationError::TypeInference {
-        name: name.to_string(),
-        typedb_source: Box::new(err),
-    })?;
+    .map_err(|err| FunctionAnnotationError::TypeInference { name: name.to_string(), typedb_source: Box::new(err) })?;
 
     let return_ = annotate_return(
         snapshot,
@@ -224,9 +232,14 @@ pub(crate) fn annotate_function(
         &context.variable_registry,
         return_operation,
         &running_variable_types,
-        &running_value_types
+        &running_value_types,
     )?;
-    Ok(AnnotatedFunction { variable_registry: context.variable_registry.clone(),  arguments: arguments.clone(), stages, return_ })
+    Ok(AnnotatedFunction {
+        variable_registry: context.variable_registry.clone(),
+        arguments: arguments.clone(),
+        stages,
+        return_,
+    })
 }
 
 fn annotate_arguments(
@@ -237,10 +250,8 @@ fn annotate_arguments(
     argument_labels: Option<&Vec<TypeRefAny>>,
     caller_type_annotations: Option<&BTreeMap<Variable, Arc<BTreeSet<Type>>>>,
     caller_value_type_annotations: Option<&BTreeMap<Variable, ExpressionValueType>>,
-) -> Result<
-    (BTreeMap<Variable, Arc<BTreeSet<Type>>>, BTreeMap<Variable, ExpressionValueType>),
-    FunctionAnnotationError,
-> {
+) -> Result<(BTreeMap<Variable, Arc<BTreeSet<Type>>>, BTreeMap<Variable, ExpressionValueType>), FunctionAnnotationError>
+{
     // TODO
     let mut variable_types = BTreeMap::new();
     let mut value_types = BTreeMap::new();
@@ -253,14 +264,14 @@ fn annotate_arguments(
             arguments,
             argument_labels,
             caller_type_annotations,
-            caller_value_type_annotations
+            caller_value_type_annotations,
         )? {
             Either::Left(types) => {
                 variable_types.insert(*var, types);
-            },
+            }
             Either::Right(value_type) => {
                 value_types.insert(*var, value_type);
-            },
+            }
         }
     }
     Ok((variable_types, value_types))
@@ -291,13 +302,17 @@ fn get_argument_annotations(
         match inner_type {
             NamedType::Label(label) => {
                 // TODO: could be a struct value type in the future!
-                types = Some(type_seeder::get_type_annotation_and_subtypes_from_label(
-                    snapshot,
-                    type_manager,
-                    &Label::build(label.ident.as_str()),
-                )
-                    .map_err(|source| FunctionAnnotationError::CouldNotResolveArgumentType { index: arg_index, source })?);
-
+                types = Some(
+                    type_seeder::get_type_annotation_and_subtypes_from_label(
+                        snapshot,
+                        type_manager,
+                        &Label::build(label.ident.as_str()),
+                    )
+                    .map_err(|source| FunctionAnnotationError::CouldNotResolveArgumentType {
+                        index: arg_index,
+                        source,
+                    })?,
+                );
             }
             NamedType::BuiltinValueType(value_type) => {
                 expr_value_type = Some(ExpressionValueType::Single(translate_value_type(&value_type.token)));
@@ -338,10 +353,7 @@ fn get_argument_annotations(
             Ok(Either::Right(caller_value_types.get(&arg_var).unwrap().clone()))
         }
     } else {
-        Err(FunctionAnnotationError::CouldNotDetermineArgumentType {
-            name: function_name.to_owned(),
-            index: arg_index
-        })
+        Err(FunctionAnnotationError::CouldNotDetermineArgumentType { name: function_name.to_owned(), index: arg_index })
     }
 }
 
@@ -356,7 +368,8 @@ fn annotate_return(
     // TODO: We don't consider the user annotations.
     match return_operation {
         ReturnOperation::Stream(vars) => {
-            let type_annotations = vars.iter()
+            let type_annotations = vars
+                .iter()
                 .map(|var| get_function_parameter(var, input_type_annotations, input_value_type_annotations))
                 .collect();
             Ok(AnnotatedFunctionReturn::Stream { variables: vars.clone(), annotations: type_annotations })
@@ -369,7 +382,7 @@ fn annotate_return(
             Ok(AnnotatedFunctionReturn::Single {
                 selector: selector.clone(),
                 variables: vars.clone(),
-                annotations: type_annotations
+                annotations: type_annotations,
             })
         }
         ReturnOperation::ReduceReducer(reducers) => {
@@ -381,15 +394,14 @@ fn annotate_return(
                     variable_registry,
                     reducer,
                     input_type_annotations,
-                    input_value_type_annotations
-                ).map_err(|err| FunctionAnnotationError::ReturnReduce { typedb_source: Box::new(err) })?;
+                    input_value_type_annotations,
+                )
+                .map_err(|err| FunctionAnnotationError::ReturnReduce { typedb_source: Box::new(err) })?;
                 instructions.push(instruction);
             }
             Ok(AnnotatedFunctionReturn::ReduceReducer { instructions })
         }
-        ReturnOperation::ReduceCheck() => {
-            Ok(AnnotatedFunctionReturn::ReduceCheck {})
-        }
+        ReturnOperation::ReduceCheck() => Ok(AnnotatedFunctionReturn::ReduceCheck {}),
     }
 }
 

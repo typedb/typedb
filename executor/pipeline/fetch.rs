@@ -15,7 +15,6 @@ pub struct FetchStageExecutor<Snapshot: ReadableSnapshot> {
 }
 
 impl<Snapshot: ReadableSnapshot> FetchStageExecutor<Snapshot> {
-    
     pub(crate) fn new(executable: ExecutableFetch) -> Self {
         todo!()
     }

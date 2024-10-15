@@ -4,21 +4,22 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use answer::variable::Variable;
-use concept::thing::statistics::Statistics;
-use concept::type_::attribute_type::AttributeType;
+use concept::{thing::statistics::Statistics, type_::attribute_type::AttributeType};
 use error::typedb_error;
-use ir::pattern::ParameterID;
-use ir::pipeline::VariableRegistry;
+use ir::{pattern::ParameterID, pipeline::VariableRegistry};
 
-use crate::annotation::fetch::{AnnotatedFetch, AnnotatedFetchListSubFetch, AnnotatedFetchObject, AnnotatedFetchSome};
-use crate::executable::ExecutableCompilationError;
-use crate::executable::function::{compile_function, ExecutableFunction};
-use crate::executable::pipeline::{compile_pipeline, compile_stages_and_fetch, ExecutableStage};
-use crate::VariablePosition;
+use crate::{
+    annotation::fetch::{AnnotatedFetch, AnnotatedFetchListSubFetch, AnnotatedFetchObject, AnnotatedFetchSome},
+    executable::{
+        function::{compile_function, ExecutableFunction},
+        pipeline::{compile_pipeline, compile_stages_and_fetch, ExecutableStage},
+        ExecutableCompilationError,
+    },
+    VariablePosition,
+};
 
 pub struct ExecutableFetch {
     object_instruction: FetchObjectInstruction,
@@ -52,14 +53,14 @@ pub fn compile_fetch(
     fetch: AnnotatedFetch,
     variable_positions: &HashMap<Variable, VariablePosition>,
 ) -> Result<ExecutableFetch, FetchCompilationError> {
-    let compiled = compile_object(statistics,fetch.object, variable_positions)?;
+    let compiled = compile_object(statistics, fetch.object, variable_positions)?;
     Ok(ExecutableFetch { object_instruction: compiled })
 }
 
 fn compile_object(
     statistics: &Statistics,
     fetch_object: AnnotatedFetchObject,
-    variable_positions: &HashMap<Variable, VariablePosition>
+    variable_positions: &HashMap<Variable, VariablePosition>,
 ) -> Result<FetchObjectInstruction, FetchCompilationError> {
     match fetch_object {
         AnnotatedFetchObject::Entries(entries) => {
@@ -90,7 +91,7 @@ fn compile_some(
                 return Err(FetchCompilationError::FetchVariableNotFound { var });
             };
             Ok(FetchSomeInstruction::SingleVar(*position))
-        },
+        }
         AnnotatedFetchSome::SingleAttribute(var, attribute_type) => {
             let Some(position) = variable_positions.get(&var) else {
                 return Err(FetchCompilationError::FetchVariableNotFound { var });
@@ -113,18 +114,13 @@ fn compile_some(
         }
         AnnotatedFetchSome::ListSubFetch(sub_fetch) => {
             let AnnotatedFetchListSubFetch { variable_registry, input_variables, stages, fetch } = sub_fetch;
-            let (compiled_stages, compiled_fetch) = compile_stages_and_fetch(
-                statistics,
-                Arc::new(variable_registry),
-                stages,
-                Some(fetch),
-                input_variables,
-            )
-                .map_err(|err| FetchCompilationError::SubFetchCompilation { typedb_source: Box::new(err) })?;
+            let (compiled_stages, compiled_fetch) =
+                compile_stages_and_fetch(statistics, Arc::new(variable_registry), stages, Some(fetch), input_variables)
+                    .map_err(|err| FetchCompilationError::SubFetchCompilation { typedb_source: Box::new(err) })?;
 
             Ok(FetchSomeInstruction::ListSubFetch(ExecutableFetchListSubFetch {
                 stages: compiled_stages,
-                fetch: compiled_fetch.unwrap()
+                fetch: compiled_fetch.unwrap(),
             }))
         }
         AnnotatedFetchSome::ListAttributesAsList(var, attribute_type) => {
@@ -141,7 +137,6 @@ fn compile_some(
         }
     }
 }
-
 
 typedb_error!(
     pub FetchCompilationError(component = "Fetch compilation", prefix = "FEC") {
