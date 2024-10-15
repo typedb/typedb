@@ -7,6 +7,7 @@
 use std::{
     collections::{HashMap, HashSet},
     fmt::{Display, Formatter},
+    sync::Arc,
 };
 
 use encoding::{
@@ -112,6 +113,14 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
         type_manager.get_role_type_label(snapshot, self.clone().into_owned())
+    }
+
+    fn get_label_arc<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<Arc<Label<'static>>, ConceptReadError> {
+        type_manager.get_role_type_label_arc(snapshot, self.clone().into_owned())
     }
 
     fn get_supertype(

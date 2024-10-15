@@ -9,6 +9,7 @@ use std::{
     fmt::{Display, Formatter},
     hash::Hash,
     iter,
+    sync::Arc,
 };
 
 use bytes::{byte_reference::ByteReference, Bytes};
@@ -114,6 +115,12 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError>;
+
+    fn get_label_arc<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<Arc<Label<'static>>, ConceptReadError>;
 
     fn get_supertype(
         &self,

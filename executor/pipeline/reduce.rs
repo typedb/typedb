@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::sync::Arc;
+
 use compiler::executable::reduce::ReduceExecutable;
 use storage::snapshot::ReadableSnapshot;
 
@@ -18,12 +20,12 @@ use crate::{
 };
 
 pub struct ReduceStageExecutor<PreviousStage> {
-    executable: ReduceExecutable,
+    executable: Arc<ReduceExecutable>,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> ReduceStageExecutor<PreviousStage> {
-    pub fn new(executable: ReduceExecutable, previous: PreviousStage) -> Self {
+    pub fn new(executable: Arc<ReduceExecutable>, previous: PreviousStage) -> Self {
         Self { executable, previous }
     }
 }
@@ -52,7 +54,7 @@ where
 
 fn reduce_iterator<Snapshot: ReadableSnapshot>(
     context: &ExecutionContext<Snapshot>,
-    executable: ReduceExecutable,
+    executable: Arc<ReduceExecutable>,
     iterator: impl StageIterator,
 ) -> Result<Batch, PipelineExecutionError> {
     let mut iterator = iterator;

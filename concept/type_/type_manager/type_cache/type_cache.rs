@@ -55,10 +55,10 @@ pub struct TypeCache {
 
     struct_definitions: Box<[Option<StructDefinitionCache>]>,
 
-    entity_types_index_label: HashMap<Label<'static>, EntityType<'static>>,
-    relation_types_index_label: HashMap<Label<'static>, RelationType<'static>>,
-    role_types_index_label: HashMap<Label<'static>, RoleType<'static>>,
-    attribute_types_index_label: HashMap<Label<'static>, AttributeType<'static>>,
+    entity_types_index_label: HashMap<Arc<Label<'static>>, EntityType<'static>>,
+    relation_types_index_label: HashMap<Arc<Label<'static>>, RelationType<'static>>,
+    role_types_index_label: HashMap<Arc<Label<'static>>, RoleType<'static>>,
+    attribute_types_index_label: HashMap<Arc<Label<'static>>, AttributeType<'static>>,
     struct_definition_index_by_name: HashMap<String, DefinitionKey<'static>>,
 
     role_types_by_name: HashMap<String, Vec<RoleType<'static>>>,
@@ -154,7 +154,7 @@ impl TypeCache {
 
     fn build_label_to_type_index<T: KindAPI<'static>, Cache: HasCommonTypeCache<T>>(
         type_cache_array: &[Option<Cache>],
-    ) -> HashMap<Label<'static>, T> {
+    ) -> HashMap<Arc<Label<'static>>, T> {
         type_cache_array
             .iter()
             .flatten()
@@ -257,6 +257,14 @@ impl TypeCache {
         CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
     {
         &T::get_cache(self, type_).common_type_cache().label
+    }
+
+    pub(crate) fn get_label_owned<'a, 'this, T, CACHE>(&'this self, type_: T) -> Arc<Label<'static>>
+    where
+        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
+    {
+        T::get_cache(self, type_).common_type_cache().label.clone()
     }
 
     pub(crate) fn get_annotations_declared<'a, 'this, T, CACHE>(

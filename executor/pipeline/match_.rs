@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::sync::Arc;
+
 use compiler::executable::match_::planner::match_executable::MatchExecutable;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
@@ -19,12 +21,12 @@ use crate::{
 };
 
 pub struct MatchStageExecutor<PreviousStage> {
-    executable: MatchExecutable,
+    executable: Arc<MatchExecutable>,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> MatchStageExecutor<PreviousStage> {
-    pub fn new(executable: MatchExecutable, previous: PreviousStage) -> Self {
+    pub fn new(executable: Arc<MatchExecutable>, previous: PreviousStage) -> Self {
         Self { executable, previous }
     }
 }
@@ -50,7 +52,7 @@ where
 
 pub struct MatchStageIterator<Snapshot: ReadableSnapshot + 'static, Iterator> {
     context: ExecutionContext<Snapshot>,
-    executable: MatchExecutable,
+    executable: Arc<MatchExecutable>,
     source_iterator: Iterator,
     current_iterator: Option<Peekable<PatternIterator<Snapshot>>>,
     interrupt: ExecutionInterrupt,
@@ -59,7 +61,7 @@ pub struct MatchStageIterator<Snapshot: ReadableSnapshot + 'static, Iterator> {
 impl<Snapshot: ReadableSnapshot + 'static, Iterator> MatchStageIterator<Snapshot, Iterator> {
     fn new(
         iterator: Iterator,
-        executable: MatchExecutable,
+        executable: Arc<MatchExecutable>,
         context: ExecutionContext<Snapshot>,
         interrupt: ExecutionInterrupt,
     ) -> Self {

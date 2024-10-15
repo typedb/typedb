@@ -27,12 +27,12 @@ use crate::{
 };
 
 pub struct InsertStageExecutor<PreviousStage> {
-    executable: InsertExecutable,
+    executable: Arc<InsertExecutable>,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> InsertStageExecutor<PreviousStage> {
-    pub fn new(executable: InsertExecutable, previous: PreviousStage) -> Self {
+    pub fn new(executable: Arc<InsertExecutable>, previous: PreviousStage) -> Self {
         Self { executable, previous }
     }
 

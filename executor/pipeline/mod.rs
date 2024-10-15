@@ -16,7 +16,7 @@ use crate::{
     batch::Batch,
     error::ReadExecutionError,
     pipeline::{
-        fetch::FetchStageExecutor,
+        fetch::{FetchExecutionError, FetchStageExecutor},
         stage::{ExecutionContext, StageAPI, StageIterator},
     },
     row::MaybeOwnedRow,
@@ -77,5 +77,6 @@ typedb_error!(
         InitialisingMatchIterator(5, "Error initialising Match clause iterator.", ( source: ConceptReadError )),
         WriteError(6, "Error executing write operation.", ( typedb_source: WriteError )),
         ReadPatternExecution(7, "Error executing a read pattern.", ( typedb_source : ReadExecutionError )),
+        FetchError(8, "Error executing fetch operation.", ( typedb_source: FetchExecutionError )),
     }
 );

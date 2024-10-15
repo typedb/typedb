@@ -22,12 +22,12 @@ use crate::{
 };
 
 pub struct DeleteStageExecutor<PreviousStage> {
-    executable: DeleteExecutable,
+    executable: Arc<DeleteExecutable>,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> DeleteStageExecutor<PreviousStage> {
-    pub fn new(executable: DeleteExecutable, previous: PreviousStage) -> Self {
+    pub fn new(executable: Arc<DeleteExecutable>, previous: PreviousStage) -> Self {
         Self { executable, previous }
     }
 }

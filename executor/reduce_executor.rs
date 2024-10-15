@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use answer::{variable_value::VariableValue, Thing};
 use compiler::{
@@ -21,7 +21,7 @@ use crate::{
 };
 
 pub(crate) struct GroupedReducer {
-    input_group_positions: Vec<VariablePosition>,
+    executable: Arc<ReduceExecutable>, // for accessing input group positions
     grouped_reductions: HashMap<Vec<VariableValue<'static>>, Vec<ReducerExecutor>>,
     reused_group: Vec<VariableValue<'static>>,
     // Clone for efficient instantiation of reducers for a new group
@@ -29,7 +29,7 @@ pub(crate) struct GroupedReducer {
 }
 
 impl GroupedReducer {
-    pub(crate) fn new(executable: ReduceExecutable) -> Self {
+    pub(crate) fn new(executable: Arc<ReduceExecutable>) -> Self {
         let reducers: Vec<ReducerExecutor> = executable.reductions.iter().map(ReducerExecutor::build).collect();
         let reused_group = Vec::with_capacity(executable.input_group_positions.len());
         let mut grouped_reductions = HashMap::new();
@@ -37,12 +37,7 @@ impl GroupedReducer {
         if executable.input_group_positions.is_empty() {
             grouped_reductions.insert(Vec::new(), reducers.clone());
         }
-        Self {
-            input_group_positions: executable.input_group_positions,
-            grouped_reductions,
-            reused_group,
-            uninitialised_reducer_executors: reducers,
-        }
+        Self { executable, grouped_reductions, reused_group, uninitialised_reducer_executors: reducers }
     }
 
     pub(crate) fn accept<Snapshot: ReadableSnapshot>(
@@ -51,7 +46,7 @@ impl GroupedReducer {
         context: &ExecutionContext<Snapshot>,
     ) -> Result<(), PipelineExecutionError> {
         self.reused_group.clear();
-        for &pos in &self.input_group_positions {
+        for &pos in &self.executable.input_group_positions {
             self.reused_group.push(row.get(pos).to_owned());
         }
         if !self.grouped_reductions.contains_key(&self.reused_group) {
@@ -65,12 +60,12 @@ impl GroupedReducer {
     }
 
     pub(crate) fn finalise(self) -> Batch {
-        let Self {
-            input_group_positions, uninitialised_reducer_executors: sample_reducers, grouped_reductions, ..
-        } = self;
-        let mut batch =
-            Batch::new((input_group_positions.len() + sample_reducers.len()) as u32, grouped_reductions.len());
-        let mut reused_row = Vec::with_capacity(input_group_positions.len() + sample_reducers.len());
+        let Self { executable, uninitialised_reducer_executors: sample_reducers, grouped_reductions, .. } = self;
+        let mut batch = Batch::new(
+            (executable.input_group_positions.len() + sample_reducers.len()) as u32,
+            grouped_reductions.len(),
+        );
+        let mut reused_row = Vec::with_capacity(executable.input_group_positions.len() + sample_reducers.len());
         let reused_multiplicity = 1;
         for (group, reducers) in grouped_reductions.into_iter() {
             reused_row.clear();

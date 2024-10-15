@@ -7,6 +7,7 @@
 use lending_iterator::{LendingIterator, Once};
 
 use crate::{
+    batch::{FixedBatch, FixedBatchRowIterator},
     pipeline::{
         stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator,
@@ -17,11 +18,17 @@ use crate::{
 
 pub struct InitialStage<Snapshot> {
     context: ExecutionContext<Snapshot>,
+    initial_batch: FixedBatch,
 }
 
 impl<Snapshot> InitialStage<Snapshot> {
-    pub fn new(context: ExecutionContext<Snapshot>) -> Self {
-        Self { context }
+    pub fn new_empty(context: ExecutionContext<Snapshot>) -> Self {
+        Self { context, initial_batch: FixedBatch::SINGLE_EMPTY_ROW }
+    }
+
+    pub fn new_with(context: ExecutionContext<Snapshot>, initial_row: MaybeOwnedRow<'_>) -> Self {
+        let batch = FixedBatch::from(initial_row);
+        Self { context, initial_batch: batch }
     }
 }
 
@@ -33,17 +40,18 @@ impl<Snapshot> StageAPI<Snapshot> for InitialStage<Snapshot> {
         interrupt: ExecutionInterrupt,
     ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
     {
-        Ok((InitialIterator::new(), self.context))
+        Ok((InitialIterator::new(self.initial_batch), self.context))
     }
 }
 
 pub struct InitialIterator {
-    single_iterator: Once<Result<MaybeOwnedRow<'static>, PipelineExecutionError>>,
+    iterator: FixedBatchRowIterator,
+    index: u32,
 }
 
 impl InitialIterator {
-    fn new() -> Self {
-        Self { single_iterator: lending_iterator::once(Ok(MaybeOwnedRow::empty())) }
+    fn new(batch: FixedBatch) -> Self {
+        Self { iterator: batch.into_iterator(), index: 0 }
     }
 }
 
@@ -51,7 +59,9 @@ impl LendingIterator for InitialIterator {
     type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        self.single_iterator.next()
+        self.iterator.next().map(|result| {
+            result.map_err(|err| PipelineExecutionError::ReadPatternExecution { typedb_source: err.clone() })
+        })
     }
 }
 

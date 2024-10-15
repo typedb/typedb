@@ -199,6 +199,24 @@ macro_rules! get_type_label_methods {
     }
 }
 
+macro_rules! get_type_label_arc_methods {
+    ($(
+        fn $method_name:ident() -> $type_:ident = $cache_method:ident;
+    )*) => {
+        $(
+            pub(crate) fn $method_name(
+                &self, snapshot: &impl ReadableSnapshot, type_: $type_<'static>
+            ) -> Result<Arc<Label<'static>>, ConceptReadError> {
+                if let Some(cache) = &self.type_cache {
+                    Ok(cache.$cache_method(type_))
+                } else {
+                    Ok(Arc::new(TypeReader::get_label(snapshot, type_)?.ok_or(ConceptReadError::CorruptMissingLabelOfType)?))
+                }
+            }
+        )*
+    }
+}
+
 macro_rules! get_annotations_declared_methods {
     ($(
         fn $method_name:ident($type_:ident) -> $annotation_type:ident = $reader_method:ident | $cache_method:ident;
@@ -487,6 +505,13 @@ impl TypeManager {
         fn get_relation_type_label() -> RelationType = get_label;
         fn get_role_type_label() -> RoleType = get_label;
         fn get_attribute_type_label() -> AttributeType = get_label;
+    }
+
+    get_type_label_arc_methods! {
+        fn get_entity_type_label_arc() -> EntityType = get_label_owned;
+        fn get_relation_type_label_arc() -> RelationType = get_label_owned;
+        fn get_role_type_label_arc() -> RoleType = get_label_owned;
+        fn get_attribute_type_label_arc() -> AttributeType = get_label_owned;
     }
 
     pub fn get_roles_by_name(

@@ -85,8 +85,8 @@ impl FixedBatch {
     }
 }
 
-impl From<MaybeOwnedRow<'static>> for FixedBatch {
-    fn from(row: MaybeOwnedRow<'static>) -> Self {
+impl<'a> From<MaybeOwnedRow<'a>> for FixedBatch {
+    fn from(row: MaybeOwnedRow<'a>) -> Self {
         let width = row.len() as u32;
         let mut multiplicities = FixedBatch::INIT_MULTIPLICITIES;
         multiplicities[0] = row.multiplicity();

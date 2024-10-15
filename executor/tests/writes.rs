@@ -188,7 +188,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
         input_rows,
         ExecutionContext { snapshot, thing_manager, parameters: Arc::new(translation_context.parameters) },
     );
-    let insert_executor = InsertStageExecutor::new(insert_plan, initial);
+    let insert_executor = InsertStageExecutor::new(Arc::new(insert_plan), initial);
     let (output_iter, context) =
         insert_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match err {
             PipelineExecutionError::WriteError { typedb_source } => typedb_source,
@@ -268,7 +268,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
         input_rows,
         ExecutionContext { snapshot, thing_manager, parameters: Arc::new(translation_context.parameters) },
     );
-    let delete_executor = DeleteStageExecutor::new(delete_plan, initial);
+    let delete_executor = DeleteStageExecutor::new(Arc::new(delete_plan), initial);
     let (output_iter, context) =
         delete_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match err {
             PipelineExecutionError::WriteError { typedb_source } => typedb_source,

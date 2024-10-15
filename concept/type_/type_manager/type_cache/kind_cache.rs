@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use bytes::Bytes;
 use encoding::{
@@ -93,7 +96,7 @@ pub(crate) struct RelatesCache {
 #[derive(Debug)]
 pub(crate) struct CommonTypeCache<T: KindAPI<'static>> {
     pub(super) type_: T,
-    pub(super) label: Label<'static>,
+    pub(super) label: Arc<Label<'static>>,
     pub(super) annotations_declared: HashSet<T::AnnotationType>,
     pub(super) constraints: HashSet<TypeConstraint<T>>,
     // TODO: Should these all be sets instead of vec?
@@ -315,7 +318,7 @@ impl<T: KindAPI<'static, SelfStatic = T>> CommonTypeCache<T> {
     where
         Snapshot: ReadableSnapshot,
     {
-        let label = TypeReader::get_label(snapshot, type_.clone()).unwrap().unwrap();
+        let label = Arc::new(TypeReader::get_label(snapshot, type_.clone()).unwrap().unwrap());
         let annotations_declared = TypeReader::get_type_annotations_declared(snapshot, type_.clone()).unwrap();
         let constraints = TypeReader::get_type_constraints(snapshot, type_.clone()).unwrap();
         let supertype = TypeReader::get_supertype(snapshot, type_.clone()).unwrap();

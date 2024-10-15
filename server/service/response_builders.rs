@@ -121,9 +121,11 @@ pub(crate) mod transaction {
         )
     }
 
-    pub(crate) fn query_res_ok_readable_concept_tree_stream() -> typedb_protocol::query::initial_res::ok::Ok {
-        typedb_protocol::query::initial_res::ok::Ok::ReadableConceptTreeStream(
-            typedb_protocol::query::initial_res::ok::ReadableConceptTreeStream {},
+    pub(crate) fn query_res_ok_concept_document_stream(
+        query_type: typedb_protocol::query::Type,
+    ) -> typedb_protocol::query::initial_res::ok::Ok {
+        typedb_protocol::query::initial_res::ok::Ok::ConceptDocumentStream(
+            typedb_protocol::query::initial_res::ok::ConceptDocumentStream { query_type: query_type.into() },
         )
     }
 
@@ -153,7 +155,17 @@ pub(crate) mod transaction {
         }
     }
 
-    pub(crate) fn query_res_part_from_concept_tree() {
+    pub(crate) fn query_res_part_from_concept_documents(
+        messages: Vec<typedb_protocol::ConceptDocument>,
+    ) -> typedb_protocol::query::ResPart {
+        typedb_protocol::query::ResPart {
+            res: Some(typedb_protocol::query::res_part::Res::DocumentsRes(
+                typedb_protocol::query::res_part::ConceptDocumentsRes { documents: messages },
+            )),
+        }
+    }
+
+    pub(crate) fn query_res_part_from_concept_document() {
         todo!()
     }
 
