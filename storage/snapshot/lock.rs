@@ -22,7 +22,7 @@ where
     let total_len = key_items.clone().map(|item| item.len()).sum();
     let mut bytes = ByteArray::zeros(total_len);
     let mut start = 0;
-    let mut end = start;
+    let mut end;
     for item in key_items {
         end = start + item.len();
         bytes.bytes_mut()[start..end].copy_from_slice(item);
