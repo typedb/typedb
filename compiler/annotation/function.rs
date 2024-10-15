@@ -220,7 +220,7 @@ pub(crate) fn annotate_anonymous_function(
     )
 }
 
-fn annotate_named_function(
+pub(super) fn annotate_named_function(
     function: &mut Function,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
