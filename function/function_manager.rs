@@ -63,9 +63,7 @@ impl FunctionManager {
         type_manager: &TypeManager,
     ) -> Result<Arc<IndexedAnnotatedFunctions>, FunctionError> {
         match self.function_cache.as_ref() {
-            None => {
-                FunctionCache::build_cache(snapshot, type_manager).map(|cache| cache.get_annotated_functions())
-            }
+            None => FunctionCache::build_cache(snapshot, type_manager).map(|cache| cache.get_annotated_functions()),
             Some(cache) => Ok(cache.get_annotated_functions()),
         }
     }
@@ -245,10 +243,9 @@ impl<'snapshot, Snapshot: ReadableSnapshot> FunctionSignatureIndex
 
 #[cfg(test)]
 pub mod tests {
-    use std::collections::{BTreeSet};
-    use std::sync::Arc;
-    use compiler::annotation::pipeline::AnnotatedStage;
+    use std::{collections::BTreeSet, sync::Arc};
 
+    use compiler::annotation::pipeline::AnnotatedStage;
     use concept::{
         thing::{statistics::Statistics, thing_manager::ThingManager},
         type_::type_manager::TypeManager,
@@ -267,12 +264,14 @@ pub mod tests {
         EncodingKeyspace,
     };
     use ir::{
-        pattern::variable_category::{VariableCategory, VariableOptionality},
+        pattern::{
+            variable_category::{VariableCategory, VariableOptionality},
+            Vertex,
+        },
         pipeline::function_signature::{
             FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex,
         },
     };
-    use ir::pattern::Vertex;
     use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
     use test_utils::{create_tmp_dir, init_logging, TempDir};
 
@@ -380,7 +379,11 @@ pub mod tests {
             assert_eq!(expected_signature.function_id(), looked_up.function_id());
 
             let function_annotations = cache.get_annotated_function(expected_function_id.clone()).unwrap();
-            let AnnotatedStage::Match { block, block_annotations: body_annotations, .. } = function_annotations.stages.first().as_ref().unwrap() else { unreachable!() };
+            let AnnotatedStage::Match { block, block_annotations: body_annotations, .. } =
+                function_annotations.stages.first().as_ref().unwrap()
+            else {
+                unreachable!()
+            };
             let var_c = function_annotations.arguments[0].clone();
             let var_c_annotations = body_annotations.vertex_annotations_of(&Vertex::Variable(var_c)).unwrap();
             assert_eq!(&Arc::new(BTreeSet::from([type_cat.clone()])), var_c_annotations);

@@ -6,11 +6,10 @@
 
 use std::{
     borrow::Cow,
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
     iter::zip,
     sync::Arc,
 };
-use std::collections::HashMap;
 
 use answer::{variable::Variable, Type};
 use concept::type_::{type_manager::TypeManager, TypeAPI};
@@ -21,7 +20,6 @@ use encoding::{
 use ir::{
     pipeline::{
         function::{Function, FunctionBody, ReturnOperation},
-        function_signature::FunctionIDAPI,
         VariableRegistry,
     },
     translation::tokens::translate_value_type,
@@ -86,7 +84,7 @@ pub struct IndexedAnnotatedFunctions {
 }
 
 impl IndexedAnnotatedFunctions {
-    pub fn new(functions: HashMap<DefinitionKey<'static>,AnnotatedFunction>) -> Self {
+    pub fn new(functions: HashMap<DefinitionKey<'static>, AnnotatedFunction>) -> Self {
         Self { functions }
     }
 
@@ -297,7 +295,6 @@ pub(crate) fn annotate_function_impl(
 fn annotate_arguments_from_labels(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    function_name: &str,
     arguments: &[Variable],
     argument_labels: &Vec<TypeRefAny>,
 ) -> Result<(BTreeMap<Variable, Arc<BTreeSet<Type>>>, BTreeMap<Variable, ExpressionValueType>), FunctionAnnotationError>

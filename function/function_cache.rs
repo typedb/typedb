@@ -4,19 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, sync::Arc};
-use std::iter::zip;
+use std::{collections::HashMap, iter::zip, sync::Arc};
 
 use compiler::annotation::function::{
     annotate_functions, AnnotatedFunction, AnnotatedFunctions, IndexedAnnotatedFunctions,
 };
 use concept::type_::type_manager::TypeManager;
 use encoding::graph::definition::definition_key::DefinitionKey;
-use ir::pipeline::{
-    function::Function,
-    function_signature::{FunctionIDAPI, FunctionSignature, HashMapFunctionSignatureIndex},
-};
-use ir::pipeline::function_signature::FunctionSignatureIndex;
+use ir::pipeline::function_signature::{FunctionSignatureIndex, HashMapFunctionSignatureIndex};
 use storage::{sequence_number::SequenceNumber, snapshot::ReadableSnapshot, MVCCStorage};
 
 use crate::{
@@ -47,8 +42,7 @@ impl FunctionCache {
     pub(crate) fn build_cache(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<FunctionCache, FunctionError>
-    {
+    ) -> Result<FunctionCache, FunctionError> {
         let schema_functions = FunctionReader::get_functions_all(snapshot)
             .map_err(|source| FunctionError::FunctionRetrieval { source })?;
         // Prepare ir
@@ -75,11 +69,13 @@ impl FunctionCache {
             parsed_functions,
             annotated_functions: Arc::new(IndexedAnnotatedFunctions::new(annotated_functions)),
         })
-
     }
 
     pub(crate) fn get_function_key(&self, name: &str) -> Option<DefinitionKey<'static>> {
-        self.index.get_function_signature(name).unwrap().map(|signature| signature.function_id().as_definition_key().unwrap().clone())
+        self.index
+            .get_function_signature(name)
+            .unwrap()
+            .map(|signature| signature.function_id().as_definition_key().unwrap().clone())
     }
 
     pub(crate) fn get_function(&self, definition_key: DefinitionKey<'static>) -> Option<&SchemaFunction> {

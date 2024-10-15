@@ -83,7 +83,7 @@ impl Display for FunctionID {
     }
 }
 
-pub trait FunctionIDAPI: Debug + Clone + Into<FunctionID> { }
+pub trait FunctionIDAPI: Debug + Clone + Into<FunctionID> {}
 impl FunctionIDAPI for DefinitionKey<'static> {}
 impl FunctionIDAPI for usize {}
 
