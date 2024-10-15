@@ -10,6 +10,7 @@ use std::{
     iter::zip,
     sync::Arc,
 };
+use std::collections::HashMap;
 
 use answer::{variable::Variable, Type};
 use concept::type_::{type_manager::TypeManager, TypeAPI};
@@ -81,16 +82,19 @@ impl AnnotatedFunctionReturn {
 /// Indexed by Function ID
 #[derive(Debug)]
 pub struct IndexedAnnotatedFunctions {
-    functions: Vec<AnnotatedFunction>,
+    functions: HashMap<DefinitionKey<'static>, AnnotatedFunction>,
 }
 
 impl IndexedAnnotatedFunctions {
-    pub fn new(functions: Vec<AnnotatedFunction>) -> Self {
+    pub fn new(functions: HashMap<DefinitionKey<'static>,AnnotatedFunction>) -> Self {
         Self { functions }
     }
 
     pub fn empty() -> Self {
-        Self { functions: Vec::new() }
+        Self { functions: HashMap::new() }
+    }
+    pub fn iter_functions(&self) -> impl Iterator<Item = (&'_ DefinitionKey<'static>, &'_ AnnotatedFunction)> {
+        self.functions.iter()
     }
 }
 
@@ -106,7 +110,7 @@ impl AnnotatedFunctions for IndexedAnnotatedFunctions {
     type ID = DefinitionKey<'static>;
 
     fn get_function(&self, id: Self::ID) -> Option<&AnnotatedFunction> {
-        self.functions.get(id.as_usize())
+        self.functions.get(&id)
     }
 
     fn is_empty(&self) -> bool {

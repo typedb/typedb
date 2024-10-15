@@ -15,7 +15,7 @@ pub type SchemaFunction = Function<DefinitionKey<'static>>;
 pub struct Function<FunctionIDType: FunctionIDAPI> {
     pub(crate) function_id: FunctionIDType,
     pub(crate) parsed: typeql::schema::definable::Function,
-    pub(crate) compiled: Option<()>, // TODO: store compiled function
+    pub(crate) compiled: Option<()>, // TODO: store compiled function - Probably in a separate cache, given we already have a separate annotation cache.
 }
 
 impl<FunctionIDType: FunctionIDAPI> Function<FunctionIDType> {

@@ -83,21 +83,9 @@ impl Display for FunctionID {
     }
 }
 
-pub trait FunctionIDAPI: Debug + Clone + Into<FunctionID> {
-    fn as_usize(&self) -> usize;
-}
-
-impl FunctionIDAPI for DefinitionKey<'static> {
-    fn as_usize(&self) -> usize {
-        self.definition_id().as_uint() as usize
-    }
-}
-
-impl FunctionIDAPI for usize {
-    fn as_usize(&self) -> usize {
-        *self
-    }
-}
+pub trait FunctionIDAPI: Debug + Clone + Into<FunctionID> { }
+impl FunctionIDAPI for DefinitionKey<'static> {}
+impl FunctionIDAPI for usize {}
 
 impl From<usize> for FunctionID {
     fn from(val: usize) -> Self {
@@ -116,6 +104,7 @@ pub trait FunctionSignatureIndex {
         -> Result<Option<MaybeOwns<'_, FunctionSignature>>, FunctionReadError>;
 }
 
+#[derive(Debug)]
 pub struct HashMapFunctionSignatureIndex {
     index: HashMap<String, FunctionSignature>,
 }
