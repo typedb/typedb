@@ -18,10 +18,7 @@ use concept::{
     type_::type_manager::TypeManager,
 };
 use executor::{
-    pattern_executor::MatchExecutor,
-    pipeline::stage::{ExecutionContext, StageAPI},
-    row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    pattern_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow, ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
 use ir::{
