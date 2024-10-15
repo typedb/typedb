@@ -459,7 +459,7 @@ impl Value {
     ];
     const DATE_FORMAT: &'static str = "%Y-%m-%d";
 
-    const FRACTIONAL_ZEROES: usize = 18;
+    const FRACTIONAL_ZEROES: usize = 19;
 
     pub fn into_typedb(self, value_type: TypeDBValueType) -> TypeDBValue<'static> {
         match value_type {
@@ -527,13 +527,14 @@ impl Value {
                 };
                 TypeDBValue::String(Cow::Owned(value.to_string()))
             }
+            // TODO: Could compare string representations like in driver
             TypeDBValueType::Struct(_) => todo!(),
         }
     }
 
     fn parse_decimal_fraction_part(value: &str) -> u64 {
         assert!(Self::FRACTIONAL_ZEROES >= value.len());
-        10_u64.pow((Self::FRACTIONAL_ZEROES - value.len() + 1) as u32) * value.trim().parse::<u64>().unwrap()
+        10_u64.pow((Self::FRACTIONAL_ZEROES - value.len()) as u32) * value.trim().parse::<u64>().unwrap()
     }
 
     fn parse_date_time_and_remainder(value: &str) -> (NaiveDateTime, &str) {
