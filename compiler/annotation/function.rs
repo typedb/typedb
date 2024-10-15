@@ -186,38 +186,6 @@ pub fn annotate_functions(
     Ok(AnnotatedUnindexedFunctions::new(annotated_functions))
 }
 
-pub(crate) fn annotate_named_function(
-    function: &mut Function,
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    indexed_annotated_functions: &IndexedAnnotatedFunctions,
-    local_functions: Option<&AnnotatedUnindexedFunctions>,
-) -> Result<AnnotatedFunction, FunctionAnnotationError> {
-    let Function { arguments, argument_labels, .. } = function;
-
-    let mut argument_concept_variable_types = BTreeMap::new();
-    let mut argument_value_variable_types = BTreeMap::new();
-    for (arg_index, (var, label)) in zip(arguments, argument_labels.as_ref().unwrap()).enumerate() {
-        match get_argument_annotations_from_labels(snapshot, type_manager, label, arg_index)? {
-            Either::Left(concept_annotation) => {
-                argument_concept_variable_types.insert(var.clone(), concept_annotation);
-            }
-            Either::Right(value_annotation) => {
-                argument_value_variable_types.insert(var.clone(), value_annotation);
-            }
-        }
-    }
-    annotate_function_impl(
-        function,
-        snapshot,
-        type_manager,
-        indexed_annotated_functions,
-        local_functions,
-        argument_concept_variable_types,
-        argument_value_variable_types,
-    )
-}
-
 pub(crate) fn annotate_anonymous_function(
     function: &mut Function,
     snapshot: &impl ReadableSnapshot,
@@ -252,7 +220,39 @@ pub(crate) fn annotate_anonymous_function(
     )
 }
 
-pub(crate) fn annotate_function_impl(
+fn annotate_named_function(
+    function: &mut Function,
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    indexed_annotated_functions: &IndexedAnnotatedFunctions,
+    local_functions: Option<&AnnotatedUnindexedFunctions>,
+) -> Result<AnnotatedFunction, FunctionAnnotationError> {
+    let Function { arguments, argument_labels, .. } = function;
+
+    let mut argument_concept_variable_types = BTreeMap::new();
+    let mut argument_value_variable_types = BTreeMap::new();
+    for (arg_index, (var, label)) in zip(arguments, argument_labels.as_ref().unwrap()).enumerate() {
+        match get_argument_annotations_from_labels(snapshot, type_manager, label, arg_index)? {
+            Either::Left(concept_annotation) => {
+                argument_concept_variable_types.insert(var.clone(), concept_annotation);
+            }
+            Either::Right(value_annotation) => {
+                argument_value_variable_types.insert(var.clone(), value_annotation);
+            }
+        }
+    }
+    annotate_function_impl(
+        function,
+        snapshot,
+        type_manager,
+        indexed_annotated_functions,
+        local_functions,
+        argument_concept_variable_types,
+        argument_value_variable_types,
+    )
+}
+
+fn annotate_function_impl(
     function: &mut Function,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
