@@ -4,34 +4,25 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, sync::Arc};
 use std::collections::HashSet;
+use std::sync::Arc;
+
+use typeql::query::SchemaQuery;
 
 use compiler::{
     annotation::pipeline::{annotate_pipeline, AnnotatedPipeline},
-    executable::pipeline::{compile_pipeline, ExecutablePipeline, ExecutableStage},
-    VariablePosition,
+    executable::pipeline::{compile_pipeline, ExecutablePipeline}
+    ,
 };
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use executor::pipeline::{
-    delete::DeleteStageExecutor,
-    initial::InitialStage,
-    insert::InsertStageExecutor,
-    match_::MatchStageExecutor,
-    modifiers::{
-        LimitStageExecutor, OffsetStageExecutor, RequireStageExecutor, SelectStageExecutor, SortStageExecutor,
-    },
-    reduce::ReduceStageExecutor,
-    stage::{ExecutionContext, ReadPipelineStage, WritePipelineStage},
-};
+use executor::pipeline::pipeline::Pipeline;
+use executor::pipeline::stage::{ReadPipelineStage, WritePipelineStage};
 use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex};
 use ir::{
     pipeline::function_signature::{FunctionID, HashMapFunctionSignatureIndex},
     translation::pipeline::{translate_pipeline, TranslatedPipeline},
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use typeql::query::SchemaQuery;
-use executor::pipeline::pipeline::Pipeline;
 
 use crate::{define, error::QueryError, redefine, undefine};
 

@@ -4,12 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashSet;
 use std::iter::empty;
+
+use typeql::query::stage::{Operator as TypeQLOperator, Stage as TypeQLStage, Stage};
+
 use answer::variable::Variable;
 use primitive::either::Either;
 use storage::snapshot::ReadableSnapshot;
-use typeql::query::stage::{Operator as TypeQLOperator, Stage as TypeQLStage, Stage};
 
 use crate::{
     pipeline::{
@@ -18,19 +19,19 @@ use crate::{
         function::Function,
         function_signature::FunctionSignatureIndex,
         modifier::{Limit, Offset, Require, Select, Sort},
-        reduce::Reduce,
-        ParameterRegistry, VariableRegistry,
+        ParameterRegistry,
+        reduce::Reduce, VariableRegistry,
     },
+    RepresentationError,
     translation::{
         fetch::translate_fetch,
         function::translate_typeql_function,
         match_::translate_match,
         modifiers::{translate_limit, translate_offset, translate_require, translate_select, translate_sort},
         reduce::translate_reduce,
-        writes::{translate_delete, translate_insert},
         TranslationContext,
+        writes::{translate_delete, translate_insert},
     },
-    RepresentationError,
 };
 
 #[derive(Debug, Clone)]

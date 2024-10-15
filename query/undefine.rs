@@ -4,10 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use typeql::query::schema::Undefine;
+
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use error::typedb_error;
 use storage::snapshot::WritableSnapshot;
-use typeql::query::schema::Undefine;
 
 pub(crate) fn execute(
     snapshot: &mut impl WritableSnapshot,

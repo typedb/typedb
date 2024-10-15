@@ -6,15 +6,16 @@
 
 use std::{collections::HashMap, fmt};
 
-use answer::variable::Variable;
 use itertools::Itertools;
+
+use answer::variable::Variable;
 
 use crate::{
     pattern::{
         expression::{ExpressionDefinitionError, ExpressionTree},
         function_call::FunctionCall,
-        variable_category::VariableCategory,
-        IrID, ScopeId, Vertex,
+        IrID,
+        ScopeId, variable_category::VariableCategory, Vertex,
     },
     pipeline::{block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry},
     RepresentationError,

@@ -12,16 +12,17 @@ use std::{
     ops::Range,
 };
 
-use primitive::prefix::Prefix;
 use serde::{
     de::{self, MapAccess, SeqAccess, Visitor},
-    ser::SerializeStruct,
-    Deserialize, Deserializer, Serialize, Serializer,
+    Deserialize,
+    Deserializer, ser::SerializeStruct, Serialize, Serializer,
 };
+
+use primitive::prefix::Prefix;
 
 use crate::{
     byte_reference::ByteReference,
-    util::{increment, BytesError, HexBytesFormatter},
+    util::{BytesError, HexBytesFormatter, increment},
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

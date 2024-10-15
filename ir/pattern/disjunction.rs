@@ -8,11 +8,12 @@ use std::fmt;
 
 use answer::variable::Variable;
 
-use super::conjunction::ConjunctionBuilder;
 use crate::{
     pattern::{conjunction::Conjunction, Scope, ScopeId},
     pipeline::block::{BlockBuilderContext, ScopeTransparency},
 };
+
+use super::conjunction::ConjunctionBuilder;
 
 #[derive(Debug, Clone)]
 pub struct Disjunction {

@@ -4,16 +4,17 @@
 * file, You can obtain one at https://mozilla.org/MPL/2.0/.
 */
 
-use answer::variable::Variable;
 use typeql::query::stage::delete::DeletableKind;
+
+use answer::variable::Variable;
 
 use crate::{
     pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex},
+    RepresentationError,
     translation::{
         constraints::{add_statement, add_typeql_relation, register_typeql_var},
         TranslationContext,
     },
-    RepresentationError,
 };
 
 pub fn translate_insert(

@@ -9,7 +9,7 @@ use std::{collections::BTreeMap, fmt, hash::Hash};
 use itertools::Itertools;
 
 use crate::{
-    pattern::{IrID, Vertex},
+    pattern::IrID,
     pipeline::function_signature::FunctionID,
 };
 

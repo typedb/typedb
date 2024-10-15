@@ -9,7 +9,7 @@ use std::{collections::HashMap, env};
 use cucumber::gherkin::Step;
 use macro_rules_attribute::apply;
 
-use crate::{generic_step, Context};
+use crate::{Context, generic_step};
 
 pub(crate) fn iter_table(step: &Step) -> impl Iterator<Item = &str> {
     step.table().unwrap().rows.iter().flatten().map(String::as_str)

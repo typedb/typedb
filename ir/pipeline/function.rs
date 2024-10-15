@@ -5,8 +5,10 @@
  */
 
 use std::borrow::Cow;
-use answer::variable::Variable;
+
 use typeql::{schema::definable::function::SingleSelector, TypeRefAny};
+
+use answer::variable::Variable;
 
 use crate::{
     pipeline::reduce::Reducer,

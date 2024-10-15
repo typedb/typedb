@@ -12,8 +12,8 @@ use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
         constraint::Constraint,
-        variable_category::VariableCategory,
-        Scope, ScopeId,
+        Scope,
+        ScopeId, variable_category::VariableCategory,
     },
     pipeline::{ParameterRegistry, VariableCategorySource, VariableRegistry},
     RepresentationError,
