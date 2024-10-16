@@ -15,13 +15,14 @@ use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
-    read::recursive_executor::RecursivePatternExecutor,
+    read::pattern_executor::{PatternExecutor, RecursivePatternExecutor},
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
 
 pub struct MatchExecutor {
-    recursive_query_executor: RecursivePatternExecutor,
+    entry: PatternExecutor,
+    input: Option<MaybeOwnedRow<'static>>,
 }
 
 impl MatchExecutor {
@@ -31,8 +32,10 @@ impl MatchExecutor {
         thing_manager: &Arc<ThingManager>,
         input: MaybeOwnedRow<'_>,
     ) -> Result<Self, ConceptReadError> {
-        RecursivePatternExecutor::new(match_executable, snapshot, thing_manager, input)
-            .map(|recursive_query_executor| Self { recursive_query_executor })
+        Ok(Self {
+            entry: PatternExecutor::build(match_executable, snapshot, thing_manager)?,
+            input: Some(input.into_owned()),
+        })
     }
 
     pub fn into_iterator<Snapshot: ReadableSnapshot + 'static>(
@@ -50,7 +53,10 @@ impl MatchExecutor {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        self.recursive_query_executor.compute_next_batch(context, interrupt)
+        if let Some(input) = self.input.take() {
+            self.entry.prepare(FixedBatch::from(input.into_owned()));
+        }
+        self.entry.compute_next_batch(context, interrupt)
     }
 }
 

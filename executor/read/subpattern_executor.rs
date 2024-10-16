@@ -10,12 +10,11 @@ use std::sync::Arc;
 
 use compiler::executable::match_::planner::match_executable::NegationStep;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::FixedBatch, error::ReadExecutionError, pipeline::stage::ExecutionContext,
-    read::recursive_executor::PatternExecutor, row::MaybeOwnedRow,
+    read::pattern_executor::PatternExecutor, row::MaybeOwnedRow,
 };
 
 pub enum SubPatternExecutor {
@@ -27,7 +26,7 @@ impl SubPatternExecutor {
     pub(crate) fn prepare_all_branches(
         &mut self,
         input: FixedBatch,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        _context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<(), ReadExecutionError> {
         // TODO: Better handling of the input. I can likely just keep the batch index into it.
         let as_rows = (0..input.len()).map(|i| input.get_row(i).into_owned()).collect();

@@ -33,7 +33,7 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, pattern_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
 use ir::{pattern::constraint::IsaKind, pipeline::block::Block, translation::TranslationContext};

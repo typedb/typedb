@@ -25,7 +25,7 @@ use executor::{
     error::ReadExecutionError, ExecutionInterrupt, pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use executor::pattern_executor::MatchExecutor;
+use executor::match_executor::MatchExecutor;
 use ir::{pattern::constraint::IsaKind, pipeline::block::Block, translation::TranslationContext};
 use lending_iterator::LendingIterator;
 use storage::{durability_client::WALClient, MVCCStorage, snapshot::CommittableSnapshot};

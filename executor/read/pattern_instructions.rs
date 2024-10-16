@@ -11,7 +11,7 @@ use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::read::{
-    recursive_executor::BranchIndex, step_executors::StepExecutor, subpattern_executor::SubPatternExecutor,
+    pattern_executor::BranchIndex, step_executors::StepExecutor, subpattern_executor::SubPatternExecutor,
 };
 
 pub(super) enum PatternInstruction {

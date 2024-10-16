@@ -26,7 +26,7 @@ use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
     instruction::{iterator::TupleIterator, Checker, InstructionExecutor},
-    pattern_executor::MatchExecutor,
+    match_executor::MatchExecutor,
     pipeline::stage::ExecutionContext,
     row::{MaybeOwnedRow, Row},
     ExecutionInterrupt, SelectedPositions,
