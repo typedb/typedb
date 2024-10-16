@@ -57,7 +57,7 @@ pub(super) fn create_executors_recursive(
                     StepExecutors::Immediate(ImmediateExecutor::new(step, snapshot, thing_manager)?)
                 }
                 ExecutionStep::Negation(negation_step) => StepExecutors::NestedPattern(
-                    // TODO: I'd like to refactor the immediates to this pattern too.
+                    // TODO: I'd like to refactor the immediate branches to this pattern too.
                     NestedPatternExecutor::new_negation(negation_step, snapshot, thing_manager)?,
                 ),
                 _ => todo!(),

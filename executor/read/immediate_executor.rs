@@ -642,39 +642,3 @@ impl CheckExecutor {
         Ok(Some(output))
     }
 }
-
-struct NegationExecutor {
-    executable: MatchExecutable,
-}
-
-impl NegationExecutor {
-    fn new(negation_plan: MatchExecutable) -> Self {
-        Self { executable: negation_plan }
-    }
-
-    fn batch_from(
-        &self,
-        input_batch: FixedBatch,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
-        interrupt: &mut ExecutionInterrupt,
-    ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        let width = input_batch.width();
-        let mut input = Peekable::new(FixedBatchRowIterator::new(Ok(input_batch)));
-        debug_assert!(input.peek().is_some());
-
-        let mut output = FixedBatch::new(width);
-
-        while let Some(row) = input.next() {
-            let input_row = row.map_err(|err| err.clone())?;
-            let executor =
-                MatchExecutor::new(&self.executable, context.snapshot(), context.thing_manager(), input_row.clone())
-                    .map_err(|error| ReadExecutionError::ConceptRead { source: error })?;
-            let mut iterator = executor.into_iterator(context.clone(), interrupt.clone());
-            if iterator.next().transpose().map_err(|err| err.clone())?.is_none() {
-                output.append(|mut row| row.copy_from(input_row.row(), input_row.multiplicity()))
-            }
-        }
-
-        Ok(Some(output))
-    }
-}
