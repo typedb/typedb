@@ -26,7 +26,7 @@ use compiler::{
 };
 use encoding::value::label::Label;
 use executor::{
-    error::ReadExecutionError, pattern_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
 use ir::{

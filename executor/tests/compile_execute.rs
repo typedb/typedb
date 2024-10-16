@@ -18,7 +18,7 @@ use concept::{
     type_::type_manager::TypeManager,
 };
 use executor::{
-    pattern_executor::MatchExecutor,
+    match_executor::MatchExecutor,
     pipeline::stage::{ExecutionContext, StageAPI},
     row::MaybeOwnedRow,
     ExecutionInterrupt,

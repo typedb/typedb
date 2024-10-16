@@ -4,8 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use compiler::executable::match_::planner::match_executable::MatchExecutable;
+use storage::snapshot::ReadableSnapshot;
 
-pub(crate) struct FunctionExecutor {
-    plan: MatchExecutable,
-}
+pub mod expression_executor;
+pub(crate) mod pattern_executor;
+mod step_executor;
+mod immediate_executor;
+mod nested_pattern_executor;

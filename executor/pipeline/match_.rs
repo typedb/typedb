@@ -11,7 +11,7 @@ use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    pattern_executor::{MatchExecutor, PatternIterator},
+    match_executor::{MatchExecutor, PatternIterator},
     pipeline::{
         stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator,
