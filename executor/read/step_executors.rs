@@ -32,19 +32,17 @@ use crate::{
     ExecutionInterrupt, SelectedPositions,
 };
 
-pub(super) enum StepExecutor {
+pub(crate) enum StepExecutor {
     SortedJoin(IntersectionExecutor),
     UnsortedJoin(UnsortedJoinExecutor),
     Assignment(AssignExecutor),
     Check(CheckExecutor),
 
-    Disjunction(DisjunctionExecutor),
     Negation(NegationExecutor),
-    Optional(OptionalExecutor),
 }
 
 impl StepExecutor {
-    pub(super) fn new(
+    pub(crate) fn new(
         step: &ExecutionStep,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
@@ -75,50 +73,40 @@ impl StepExecutor {
             ExecutionStep::Check(CheckStep { check_instructions }) => {
                 Ok(Self::Check(CheckExecutor::new(check_instructions.clone())))
             }
-            ExecutionStep::Disjunction(DisjunctionStep { disjunction: disjunction_plans, .. }) => {
-                // let executors = plans.into_iter().map(|pattern_plan| PatternExecutor::new(pattern_plan, )).collect();
-                // Self::Disjunction(DisjunctionExecutor::new(executors, variable_positions))
-                todo!()
-            }
-            ExecutionStep::Negation(NegationStep { negation: negation_plan, .. }) => {
-                // TODO: add limit 1, filters if they aren't there already?
-                Ok(Self::Negation(NegationExecutor::new(negation_plan.clone())))
-            }
-            ExecutionStep::Optional(OptionalStep { optional: optional_plan, .. }) => {
-                todo!()
+
+            ExecutionStep::Negation(_) | ExecutionStep::Disjunction(_) | ExecutionStep::Optional(_) => {
+                todo!("deprecate")
                 // let pattern_executor = PatternExecutor::new(optional_plan, snapshot, thing_manager)?;
                 // Ok(Self::Optional(OptionalExecutor::new(pattern_executor)))
             }
         }
     }
 
-    pub(super) fn batch_from(
+    pub(crate) fn prepare(
         &mut self,
         input_batch: FixedBatch,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+    ) -> Result<(), ReadExecutionError> {
+        match self {
+            StepExecutor::SortedJoin(sorted) => sorted.prepare(input_batch, context),
+            StepExecutor::UnsortedJoin(unsorted) => unsorted.prepare(input_batch, context),
+            StepExecutor::Assignment(assignment) => assignment.prepare(input_batch, context),
+            StepExecutor::Check(check) => check.prepare(input_batch, context),
+            _ => todo!("Deprecate the others"),
+        }
+    }
+
+    pub(crate) fn batch_continue(
+        &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         match self {
-            StepExecutor::SortedJoin(sorted) => sorted.batch_from(input_batch, context),
-            StepExecutor::UnsortedJoin(unsorted) => unsorted.batch_from(input_batch),
-            StepExecutor::Assignment(single) => single.batch_from(input_batch),
-            StepExecutor::Check(check) => check.batch_from(input_batch, context, interrupt),
-            StepExecutor::Disjunction(disjunction) => disjunction.batch_from(input_batch),
-            StepExecutor::Negation(negation) => negation.batch_from(input_batch, context, interrupt),
-            StepExecutor::Optional(optional) => optional.batch_from(input_batch),
-        }
-    }
-
-    pub(super) fn batch_continue(
-        &mut self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
-    ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        match self {
-            StepExecutor::SortedJoin(sorted) => sorted.batch_continue(context),
-            StepExecutor::UnsortedJoin(_unsorted) => todo!(), // unsorted.batch_continue(snapshot, thing_manager),
-            StepExecutor::Disjunction(_disjunction) => todo!(),
-            StepExecutor::Optional(_optional) => todo!(),
-            StepExecutor::Assignment(_) | StepExecutor::Check(_) | StepExecutor::Negation(_) => Ok(None),
+            StepExecutor::SortedJoin(sorted) => sorted.batch_continue(context, interrupt),
+            StepExecutor::UnsortedJoin(_unsorted) => todo!(), // unsorted.batch_continue(context, interrupt),
+            StepExecutor::Assignment(assignment) => assignment.batch_continue(context, interrupt),
+            StepExecutor::Check(check) => check.batch_continue(context, interrupt),
+            _ => todo!("deprecate"),
         }
     }
 }
@@ -171,22 +159,22 @@ impl IntersectionExecutor {
         })
     }
 
-    fn batch_from(
+    fn prepare(
         &mut self,
         input_batch: FixedBatch,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
-    ) -> Result<Option<FixedBatch>, ReadExecutionError> {
+    ) -> Result<(), ReadExecutionError> {
         debug_assert!(self.output.is_none() && (self.input.is_none() || self.input.as_mut().unwrap().peek().is_none()));
         self.input = Some(Peekable::new(FixedBatchRowIterator::new(Ok(input_batch))));
         debug_assert!(self.input.as_mut().unwrap().peek().is_some());
         self.may_create_intersection_iterators(context)?;
-        self.may_compute_next_batch(context)?;
-        Ok(self.output.take())
+        Ok(())
     }
 
     fn batch_continue(
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         debug_assert!(self.output.is_none());
         self.may_compute_next_batch(context)?;
@@ -574,42 +562,75 @@ impl UnsortedJoinExecutor {
         Self { iterate, checks, output_width: total_vars, output: None }
     }
 
-    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ReadExecutionError> {
+    fn prepare(
+        &mut self,
+        input_batch: FixedBatch,
+        context: &ExecutionContext<impl ReadableSnapshot + Sized>,
+    ) -> Result<(), ReadExecutionError> {
         todo!()
     }
 
-    fn batch_continue(&mut self) -> Option<FixedBatch> {
+    fn batch_continue(
+        &mut self,
+        context: &ExecutionContext<impl ReadableSnapshot + Sized>,
+    ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         todo!()
     }
 }
 
 struct AssignExecutor {
+    // input: FixedBatch,
     // executor: AssignInstruction,
     // checks: Vec<CheckInstruction>,
 }
 
 impl AssignExecutor {
-    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ReadExecutionError> {
+    fn prepare(
+        &mut self,
+        input_batch: FixedBatch,
+        context: &ExecutionContext<impl ReadableSnapshot + Sized>,
+    ) -> Result<(), ReadExecutionError> {
+        todo!()
+    }
+
+    fn batch_continue(
+        &mut self,
+        context: &ExecutionContext<impl ReadableSnapshot + Sized>,
+        interrupt: &mut ExecutionInterrupt,
+    ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         todo!()
     }
 }
 
 struct CheckExecutor {
     checker: Checker<()>,
+    input: Option<FixedBatch>,
 }
 
 impl CheckExecutor {
     fn new(checks: Vec<CheckInstruction<VariablePosition>>) -> Self {
         let checker = Checker::new(checks, HashMap::new());
-        Self { checker }
+        Self { checker, input: None }
     }
 
-    fn batch_from(
-        &self,
+    fn prepare(
+        &mut self,
         input_batch: FixedBatch,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+    ) -> Result<(), ReadExecutionError> {
+        self.input = Some(input_batch);
+        Ok(())
+    }
+
+    fn batch_continue(
+        &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         _interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
+        let Some(input_batch) = self.input.take() else {
+            return Ok(None);
+        };
+
         let width = input_batch.width();
         let mut input = Peekable::new(FixedBatchRowIterator::new(Ok(input_batch)));
         debug_assert!(input.peek().is_some());
@@ -626,27 +647,6 @@ impl CheckExecutor {
         }
 
         Ok(Some(output))
-    }
-}
-
-struct DisjunctionExecutor {
-    executors: Vec<MatchExecutor>,
-}
-
-impl DisjunctionExecutor {
-    fn new(
-        executors: Vec<MatchExecutor>,
-        variable_positions: &HashMap<Variable, VariablePosition>,
-    ) -> DisjunctionExecutor {
-        Self { executors }
-    }
-
-    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        todo!()
-    }
-
-    fn batch_continue(&mut self) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        todo!()
     }
 }
 
@@ -683,23 +683,5 @@ impl NegationExecutor {
         }
 
         Ok(Some(output))
-    }
-}
-
-struct OptionalExecutor {
-    executor: MatchExecutor,
-}
-
-impl OptionalExecutor {
-    fn new(executor: MatchExecutor) -> OptionalExecutor {
-        Self { executor }
-    }
-
-    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        todo!()
-    }
-
-    fn batch_continue(&mut self) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        todo!()
     }
 }
