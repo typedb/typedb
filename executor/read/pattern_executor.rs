@@ -152,7 +152,7 @@ impl PatternExecutor {
     ) -> Result<(), ReadExecutionError> {
         let InstructionIndex(index) = index;
         match &mut self.instructions[index] {
-            StepExecutors::Executable(executable) => {
+            StepExecutors::Immediate(executable) => {
                 executable.prepare(batch, context)?;
                 self.stack.push(StackInstruction::Execute(InstructionIndex(index)));
             }

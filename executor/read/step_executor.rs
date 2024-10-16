@@ -15,14 +15,14 @@ use crate::read::{
 };
 
 pub(super) enum StepExecutors {
-    Executable(ImmediateExecutor),
+    Immediate(ImmediateExecutor),
     NestedPattern(NestedPatternExecutor),
 }
 
 impl StepExecutors {
     pub(crate) fn unwrap_executable(&mut self) -> &mut ImmediateExecutor {
         match self {
-            StepExecutors::Executable(step) => step,
+            StepExecutors::Immediate(step) => step,
             _ => unreachable!(),
         }
     }
@@ -40,29 +40,29 @@ pub(super) fn create_executors_recursive(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,
 ) -> Result<Vec<StepExecutors>, ConceptReadError> {
-    let mut steps = Vec::new();
+    let mut steps = Vec::with_capacity(match_executable.steps().len());
     for step in match_executable.steps() {
         let step =
             match step {
                 ExecutionStep::Intersection(_) => {
-                    StepExecutors::Executable(ImmediateExecutor::new(step, snapshot, thing_manager)?)
+                    StepExecutors::Immediate(ImmediateExecutor::new(step, snapshot, thing_manager)?)
                 }
                 ExecutionStep::UnsortedJoin(_) => {
-                    StepExecutors::Executable(ImmediateExecutor::new(step, snapshot, thing_manager)?)
+                    StepExecutors::Immediate(ImmediateExecutor::new(step, snapshot, thing_manager)?)
                 }
                 ExecutionStep::Assignment(_) => {
-                    StepExecutors::Executable(ImmediateExecutor::new(step, snapshot, thing_manager)?)
+                    StepExecutors::Immediate(ImmediateExecutor::new(step, snapshot, thing_manager)?)
                 }
                 ExecutionStep::Check(_) => {
-                    StepExecutors::Executable(ImmediateExecutor::new(step, snapshot, thing_manager)?)
+                    StepExecutors::Immediate(ImmediateExecutor::new(step, snapshot, thing_manager)?)
                 }
                 ExecutionStep::Negation(negation_step) => StepExecutors::NestedPattern(
+                    // TODO: I'd like to refactor the immediates to this pattern too.
                     NestedPatternExecutor::new_negation(negation_step, snapshot, thing_manager)?,
                 ),
                 _ => todo!(),
             };
         steps.push(step);
     }
-    // TODO: Add a table step?
     Ok(steps)
 }

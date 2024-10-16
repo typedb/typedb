@@ -71,11 +71,8 @@ impl ImmediateExecutor {
             ExecutionStep::Check(CheckStep { check_instructions }) => {
                 Ok(Self::Check(CheckExecutor::new(check_instructions.clone())))
             }
-
             ExecutionStep::Negation(_) | ExecutionStep::Disjunction(_) | ExecutionStep::Optional(_) => {
-                todo!("deprecate")
-                // let pattern_executor = PatternExecutor::new(optional_plan, snapshot, thing_manager)?;
-                // Ok(Self::Optional(OptionalExecutor::new(pattern_executor)))
+                todo!("Refactor so this is impossible")
             }
         }
     }
