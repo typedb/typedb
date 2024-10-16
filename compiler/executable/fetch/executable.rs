@@ -16,7 +16,7 @@ use crate::{
     executable::{
         function::{compile_function, ExecutableFunction},
         match_::planner::function_plan::ExecutableFunctionRegistry,
-        pipeline::{compile_pipeline, compile_stages_and_fetch, ExecutableStage},
+        pipeline::{compile_stages_and_fetch, ExecutableStage},
         ExecutableCompilationError,
     },
     VariablePosition,
@@ -121,9 +121,15 @@ fn compile_some(
         AnnotatedFetchSome::ListSubFetch(sub_fetch) => {
             let AnnotatedFetchListSubFetch { variable_registry, input_variables, stages, fetch } = sub_fetch;
             let registry = Arc::new(variable_registry);
-            let (input_positions, compiled_stages, compiled_fetch) =
-                compile_stages_and_fetch(statistics, registry.clone(), stages, Some(fetch), &input_variables)
-                    .map_err(|err| FetchCompilationError::SubFetchCompilation { typedb_source: Box::new(err) })?;
+            let (input_positions, compiled_stages, compiled_fetch) = compile_stages_and_fetch(
+                statistics,
+                registry.clone(),
+                available_functions,
+                stages,
+                Some(fetch),
+                &input_variables,
+            )
+            .map_err(|err| FetchCompilationError::SubFetchCompilation { typedb_source: Box::new(err) })?;
             let input_position_remapping = input_variables
                 .into_iter()
                 .map(|var| {
