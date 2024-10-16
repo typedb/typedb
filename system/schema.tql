@@ -1,0 +1,19 @@
+define
+    schema-version sub attribute, value long;
+    name sub attribute, value string;
+
+    user sub entity,
+        owns name,
+        plays user:user;
+
+    credential sub entity,
+        plays credential:credential;
+
+    password sub credential,
+        owns hash,
+        owns salt,
+        owns expiry_sec;
+
+    user-credential sub relation,
+        relates user,
+        relates credential;
