@@ -4,9 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod answer;
+mod concept;
+mod document;
 mod error;
 mod response_builders;
+mod row;
 pub(crate) mod transaction_service;
 pub(crate) mod typedb_service;
 

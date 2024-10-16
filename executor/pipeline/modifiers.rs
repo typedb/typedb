@@ -3,13 +3,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{cmp::Ordering, collections::HashSet};
+use std::{cmp::Ordering, collections::HashSet, sync::Arc};
 
 use compiler::{
     executable::modifiers::{LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable},
     VariablePosition,
 };
-use ir::pipeline::modifier::SortVariable;
+use ir::pipeline::modifier::{Require, SortVariable};
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
@@ -25,12 +25,12 @@ use crate::{
 
 // Sort
 pub struct SortStageExecutor<PreviousStage> {
-    executable: SortExecutable,
+    executable: Arc<SortExecutable>,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> SortStageExecutor<PreviousStage> {
-    pub fn new(executable: SortExecutable, previous: PreviousStage) -> Self {
+    pub fn new(executable: Arc<SortExecutable>, previous: PreviousStage) -> Self {
         Self { executable, previous }
     }
 }
@@ -54,7 +54,7 @@ where
             Ok(batch) => batch,
             Err(err) => return Err((err, context)),
         };
-        Ok((SortStageIterator::from_unsorted(batch, executable), context))
+        Ok((SortStageIterator::from_unsorted(batch, &executable), context))
     }
 }
 
@@ -65,7 +65,7 @@ pub struct SortStageIterator {
 }
 
 impl SortStageIterator {
-    fn from_unsorted(unsorted: Batch, sort_executable: SortExecutable) -> Self {
+    fn from_unsorted(unsorted: Batch, sort_executable: &SortExecutable) -> Self {
         let mut indices: Vec<usize> = (0..unsorted.len()).collect();
         let sort_by: Vec<(usize, bool)> = sort_executable
             .sort_on
@@ -114,12 +114,12 @@ impl StageIterator for SortStageIterator {}
 
 // Offset
 pub struct OffsetStageExecutor<PreviousStage> {
-    offset_executable: OffsetExecutable,
+    offset_executable: Arc<OffsetExecutable>,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> OffsetStageExecutor<PreviousStage> {
-    pub fn new(offset_executable: OffsetExecutable, previous: PreviousStage) -> Self {
+    pub fn new(offset_executable: Arc<OffsetExecutable>, previous: PreviousStage) -> Self {
         Self { offset_executable, previous }
     }
 }
@@ -176,12 +176,12 @@ where
 
 // Limit
 pub struct LimitStageExecutor<PreviousStage> {
-    limit_executable: LimitExecutable,
+    limit_executable: Arc<LimitExecutable>,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> LimitStageExecutor<PreviousStage> {
-    pub fn new(limit_executable: LimitExecutable, previous: PreviousStage) -> Self {
+    pub fn new(limit_executable: Arc<LimitExecutable>, previous: PreviousStage) -> Self {
         Self { limit_executable, previous }
     }
 }
@@ -235,12 +235,12 @@ where
 
 // Select
 pub struct SelectStageExecutor<PreviousStage> {
-    select_executable: SelectExecutable,
+    select_executable: Arc<SelectExecutable>,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> SelectStageExecutor<PreviousStage> {
-    pub fn new(select_executable: SelectExecutable, previous: PreviousStage) -> Self {
+    pub fn new(select_executable: Arc<SelectExecutable>, previous: PreviousStage) -> Self {
         Self { select_executable, previous }
     }
 }
@@ -288,12 +288,12 @@ where
 
 // Require
 pub struct RequireStageExecutor<PreviousStage> {
-    require_executable: RequireExecutable,
+    require_executable: Arc<RequireExecutable>,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> RequireStageExecutor<PreviousStage> {
-    pub fn new(require_executable: RequireExecutable, previous: PreviousStage) -> Self {
+    pub fn new(require_executable: Arc<RequireExecutable>, previous: PreviousStage) -> Self {
         Self { require_executable, previous }
     }
 }
@@ -312,18 +312,18 @@ where
     {
         let Self { require_executable, previous, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
-        Ok((RequireStageIterator::new(previous_iterator, require_executable.required), context))
+        Ok((RequireStageIterator::new(previous_iterator, require_executable), context))
     }
 }
 
 pub struct RequireStageIterator<PreviousIterator: LendingIterator> {
-    required: HashSet<VariablePosition>,
+    require: Arc<RequireExecutable>,
     previous: Peekable<PreviousIterator>,
 }
 
 impl<PreviousIterator: LendingIterator> RequireStageIterator<PreviousIterator> {
-    fn new(previous: PreviousIterator, required: HashSet<VariablePosition>) -> Self {
-        Self { required, previous: Peekable::new(previous) }
+    fn new(previous: PreviousIterator, require: Arc<RequireExecutable>) -> Self {
+        Self { require, previous: Peekable::new(previous) }
     }
 }
 
@@ -341,7 +341,7 @@ where
                 None => return None,
                 Some(Err(err)) => return Some(Err(err.clone())),
                 Some(Ok(row)) => {
-                    if self.required.iter().all(|&pos| !row.get(pos).is_empty()) {
+                    if self.require.required.iter().all(|&pos| !row.get(pos).is_empty()) {
                         break;
                     }
                 }

@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -43,19 +46,19 @@ pub(crate) fn compile_function(
     function: AnnotatedFunction,
 ) -> Result<ExecutableFunction, ExecutableCompilationError> {
     let AnnotatedFunction { variable_registry, arguments, stages, return_ } = function;
-    let (mut executable_stages, mut argument_positions) = compile_pipeline_stages(
+    let (argument_positions, mut executable_stages) = compile_pipeline_stages(
         statistics,
         Arc::new(variable_registry),
         schema_functions,
         stages,
-        arguments.clone().into_iter(),
+        arguments.into_iter(),
     )?;
     let returns = compile_return_operation(&mut executable_stages, return_)?;
     Ok(ExecutableFunction { executable_stages, argument_positions, returns })
 }
 
 fn compile_return_operation(
-    executable_stages: &mut Vec<ExecutableStage>,
+    executable_stages: &[ExecutableStage],
     return_: AnnotatedFunctionReturn,
 ) -> Result<ExecutableReturn, ExecutableCompilationError> {
     let variable_positions =

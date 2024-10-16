@@ -50,10 +50,6 @@ impl MatchExecutable {
         self.steps.last().unwrap().selected_variables()
     }
 
-    pub fn variable_registry(&self) -> &VariableRegistry {
-        &self.variable_registry
-    }
-
     pub fn variable_positions(&self) -> &HashMap<Variable, VariablePosition> {
         &self.variable_positions
     }

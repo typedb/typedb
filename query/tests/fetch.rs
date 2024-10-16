@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
-use executor::{pipeline::stage::StageAPI, ExecutionInterrupt};
+use executor::ExecutionInterrupt;
 use function::function_manager::FunctionManager;
 use query::query_manager::QueryManager;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
@@ -24,7 +24,7 @@ fn define_schema(storage: Arc<MVCCStorage<WALClient>>, type_manager: &TypeManage
     attribute name value string;
     attribute age value long;
     relation friendship relates friend;
-    entity person owns name, owns age, plays friendship:friend;
+    entity person owns name @card(0..), owns age, plays friendship:friend;
     "#;
     let schema_query = typeql::parse_query(query_str).unwrap().into_schema();
     query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, schema_query).unwrap();
@@ -62,7 +62,7 @@ fn fetch() {
         &function_manager,
         r#"
         insert
-          $x isa person, has age 10, has name "Alice";
+          $x isa person, has age 10, has name "Alice", has name "Alicia", has name "Jones";
           $y isa person, has age 11, has name "Bob";
           $z isa person, has age 12, has name "Charlie";
           $p isa person, has age 13, has name "Dixie";
@@ -74,32 +74,34 @@ fn fetch() {
     "#,
     );
 
+    // TODO: uncomment the match-returns, and expression fetching when we
     let query = typeql::parse_query(
         r#"
 match
     $x isa person, has $a;
-    $a isa age;
+    $a isa! $t; $t label age;
     $a == 10;
 fetch {
+    "single type": $t,
     "single attr": $a,
     "single-card attributes": $x.age,
 #    "single value expression": $a + 1,
-    "single answer block": (
-        match
-        $x has name $name;
-        return first $name;
-    ),
-    "reduce answer block": (
-        match
-        $x has name $name;
-        return count($name);
-    ),
-    "list positional return block": [
-        match
-        $x has name $n,
-            has age $a;
-        return { $n, $a };
-    ],
+#    "single answer block": (
+#        match
+#        $x has name $name;
+#        return first $name;
+#    ),
+#    "reduce answer block": (
+#        match
+#        $x has name $name;
+#        return count($name);
+#    ),
+#    "list positional return block": [
+#        match
+#        $x has name $n,
+#            has age $a;
+#        return { $n, $a };
+#    ],
     "list pipeline": [
         match
         $x has name $n,
@@ -120,6 +122,12 @@ fetch {
     let pipeline = QueryManager::new()
         .prepare_read_pipeline(snapshot.clone(), &type_manager, thing_manager.clone(), &function_manager, &pipeline)
         .unwrap();
+
+    let (iterator, _) = pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+
+    for document in iterator {
+        println!("{}", document.unwrap());
+    }
 }
 
 //

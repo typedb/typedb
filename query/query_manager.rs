@@ -96,18 +96,19 @@ impl QueryManager {
             annotated_preamble,
             annotated_stages,
             annotated_fetch,
-            HashSet::with_capacity(0),
+            &HashSet::with_capacity(0),
         )
         .map_err(|err| QueryError::ExecutableCompilation { typedb_source: err })?;
 
         // 4: Executor
         Ok(Pipeline::build_read_pipeline(
             snapshot,
-            &variable_registry,
             thing_manager,
-            executable_stages,
+            variable_registry.as_ref(),
+            &executable_stages,
             executable_fetch,
-            parameters,
+            Arc::new(parameters),
+            None,
         ))
     }
 
@@ -164,7 +165,7 @@ impl QueryManager {
             annotated_preamble,
             annotated_stages,
             annotated_fetch,
-            HashSet::with_capacity(0),
+            &HashSet::with_capacity(0),
         );
         let ExecutablePipeline { executable_functions, executable_stages, executable_fetch } = match executable_pipeline
         {
@@ -179,7 +180,7 @@ impl QueryManager {
             thing_manager,
             executable_stages,
             executable_fetch,
-            value_parameters,
+            Arc::new(value_parameters),
         ))
     }
 

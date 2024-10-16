@@ -16,6 +16,7 @@ use compiler::VariablePosition;
 use tokio::sync::broadcast::error::TryRecvError;
 
 pub mod batch;
+pub mod document;
 pub mod error;
 pub mod expression_executor;
 mod function_executor;

@@ -16,17 +16,17 @@ use crate::{
     executable::{
         function::{compile_function, ExecutableFunction},
         match_::planner::function_plan::ExecutableFunctionRegistry,
-        pipeline::{compile_pipeline, compile_stages_and_fetch, ExecutableStage},
+        pipeline::{compile_stages_and_fetch, ExecutableStage},
         ExecutableCompilationError,
     },
     VariablePosition,
 };
 
 pub struct ExecutableFetch {
-    object_instruction: FetchObjectInstruction,
+    pub object_instruction: FetchObjectInstruction,
 }
 
-enum FetchSomeInstruction {
+pub enum FetchSomeInstruction {
     SingleVar(VariablePosition),
     SingleAttribute(VariablePosition, AttributeType<'static>),
     SingleFunction(ExecutableFunction),
@@ -39,14 +39,16 @@ enum FetchSomeInstruction {
     ListAttributesFromList(VariablePosition, AttributeType<'static>),
 }
 
-enum FetchObjectInstruction {
+pub enum FetchObjectInstruction {
     Entries(HashMap<ParameterID, FetchSomeInstruction>),
     Attributes(VariablePosition),
 }
 
-struct ExecutableFetchListSubFetch {
-    stages: Vec<ExecutableStage>,
-    fetch: ExecutableFetch,
+pub struct ExecutableFetchListSubFetch {
+    pub variable_registry: Arc<VariableRegistry>,
+    pub input_position_mapping: HashMap<VariablePosition, VariablePosition>,
+    pub stages: Vec<ExecutableStage>,
+    pub fetch: Arc<ExecutableFetch>,
 }
 
 pub fn compile_fetch(
@@ -118,17 +120,28 @@ fn compile_some(
         }
         AnnotatedFetchSome::ListSubFetch(sub_fetch) => {
             let AnnotatedFetchListSubFetch { variable_registry, input_variables, stages, fetch } = sub_fetch;
-            let (compiled_stages, compiled_fetch) = compile_stages_and_fetch(
+            let registry = Arc::new(variable_registry);
+            let (input_positions, compiled_stages, compiled_fetch) = compile_stages_and_fetch(
                 statistics,
-                Arc::new(variable_registry),
+                registry.clone(),
                 available_functions,
                 stages,
                 Some(fetch),
-                input_variables,
+                &input_variables,
             )
             .map_err(|err| FetchCompilationError::SubFetchCompilation { typedb_source: Box::new(err) })?;
+            let input_position_remapping = input_variables
+                .into_iter()
+                .map(|var| {
+                    let parent_position = variable_positions.get(&var).unwrap();
+                    let child_position = input_positions.get(&var).unwrap();
+                    (*parent_position, *child_position)
+                })
+                .collect();
 
             Ok(FetchSomeInstruction::ListSubFetch(ExecutableFetchListSubFetch {
+                variable_registry: registry,
+                input_position_mapping: input_position_remapping,
                 stages: compiled_stages,
                 fetch: compiled_fetch.unwrap(),
             }))

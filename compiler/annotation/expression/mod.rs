@@ -9,7 +9,6 @@ use std::{
     fmt::{Debug, Display, Formatter},
 };
 
-use answer::variable::Variable;
 use concept::error::ConceptReadError;
 use encoding::value::value_type::ValueTypeCategory;
 use ir::pattern::{expression::Operator, variable_category::VariableCategory};

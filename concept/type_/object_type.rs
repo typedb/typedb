@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashSet;
+use std::{collections::HashSet, sync::Arc};
 
 use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
@@ -254,6 +254,14 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
         with_object_type!(self, |object| { object.get_label(snapshot, type_manager) })
+    }
+
+    fn get_label_arc<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<Arc<Label<'static>>, ConceptReadError> {
+        with_object_type!(self, |object| { object.get_label_arc(snapshot, type_manager) })
     }
 
     fn get_supertype(

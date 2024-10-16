@@ -30,11 +30,21 @@ use storage::snapshot::ReadableSnapshot;
 pub mod variable;
 pub mod variable_value;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Concept<'a> {
     Type(Type),
     Thing(Thing<'a>),
     Value(Value<'a>),
+}
+
+impl<'a> fmt::Display for Concept<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Concept::Type(type_) => write!(f, "{}", type_),
+            Concept::Thing(thing) => write!(f, "{}", thing),
+            Concept::Value(value) => write!(f, "{}", value),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]

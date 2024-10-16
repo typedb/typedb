@@ -49,7 +49,7 @@ use tokio::{
 };
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
-use tracing::{event, Level};
+use tracing::{event, field::debug, Level};
 use typedb_protocol::{
     query::Type::{Read, Write},
     transaction::{stream_signal::Req, Server},
@@ -62,15 +62,17 @@ use typeql::{
 use uuid::Uuid;
 
 use crate::service::{
-    answer::encode_row,
+    document::encode_document,
     error::{IntoGRPCStatus, IntoProtocolErrorMessage, ProtocolError},
     response_builders::transaction::{
         query_initial_res_from_error, query_initial_res_from_query_res_ok, query_initial_res_ok_from_query_res_ok_ok,
-        query_res_ok_concept_row_stream, query_res_ok_empty, query_res_part_from_concept_rows, transaction_open_res,
+        query_res_ok_concept_document_stream, query_res_ok_concept_row_stream, query_res_ok_empty,
+        query_res_part_from_concept_documents, query_res_part_from_concept_rows, transaction_open_res,
         transaction_server_res_part_stream_signal_continue, transaction_server_res_part_stream_signal_done,
         transaction_server_res_part_stream_signal_error, transaction_server_res_parts_query_part,
         transaction_server_res_query_res,
     },
+    row::encode_row,
 };
 
 #[derive(Debug)]
@@ -156,14 +158,20 @@ enum StreamQueryResponse {
     InitErr(typedb_protocol::Error),
     // stream responses
     StreamNextRow(typedb_protocol::ConceptRow),
+    StreamNextDocument(typedb_protocol::ConceptDocument),
     StreamDoneOk(),
     StreamDoneErr(typedb_protocol::Error),
 }
 
 impl StreamQueryResponse {
-    fn init_ok(columns: &StreamQueryOutputDescriptor, query_type: typedb_protocol::query::Type) -> Self {
+    fn init_ok_rows(columns: &StreamQueryOutputDescriptor, query_type: typedb_protocol::query::Type) -> Self {
         let columns = columns.iter().map(|(name, _)| name.to_string()).collect();
         let message = query_res_ok_concept_row_stream(columns, query_type);
+        Self::InitOk(query_initial_res_ok_from_query_res_ok_ok(message))
+    }
+
+    fn init_ok_documents(query_type: typedb_protocol::query::Type) -> Self {
+        let message = query_res_ok_concept_document_stream(query_type);
         Self::InitOk(query_initial_res_ok_from_query_res_ok_ok(message))
     }
 
@@ -173,6 +181,10 @@ impl StreamQueryResponse {
 
     fn next_row(row: typedb_protocol::ConceptRow) -> Self {
         Self::StreamNextRow(row)
+    }
+
+    fn next_document(document: typedb_protocol::ConceptDocument) -> Self {
+        Self::StreamNextDocument(document)
     }
 
     fn done_ok() -> Self {
@@ -910,7 +922,8 @@ impl TransactionService {
             let thing_manager = transaction.thing_manager.clone();
             tokio::spawn(async move {
                 let mut as_lending_iter = batch.into_iterator();
-                Self::submit_response_async(&sender, StreamQueryResponse::init_ok(&output_descriptor, Write)).await;
+                Self::submit_response_async(&sender, StreamQueryResponse::init_ok_rows(&output_descriptor, Write))
+                    .await;
 
                 while let Some(row) = as_lending_iter.next() {
                     if let Some(interrupt) = interrupt.check() {
@@ -969,51 +982,101 @@ impl TransactionService {
                 let pipeline = unwrap_or_execute_and_return!(pipeline, |err| {
                     Self::submit_response_sync(&sender, StreamQueryResponse::done_err(err));
                 });
-                let named_outputs = pipeline.rows_positions().unwrap();
-                let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
-                let initial_response = StreamQueryResponse::init_ok(&descriptor, Read);
-                Self::submit_response_sync(&sender, initial_response);
+                Self::respond_read_query_sync(pipeline, interrupt, &sender, snapshot, &type_manager, thing_manager);
+            })
+        })
+    }
 
-                let (mut iterator, _) =
-                    unwrap_or_execute_and_return!(pipeline.into_rows_iterator(interrupt.clone()), |(err, _)| {
-                        Self::submit_response_sync(
-                            &sender,
-                            StreamQueryResponse::done_err(QueryError::ReadPipelineExecutionError {
-                                typedb_source: err,
-                            }),
-                        );
-                    });
+    fn respond_read_query_sync<Snapshot: ReadableSnapshot>(
+        pipeline: Pipeline<Snapshot, ReadPipelineStage<Snapshot>>,
+        mut interrupt: ExecutionInterrupt,
+        sender: &Sender<StreamQueryResponse>,
+        snapshot: Arc<Snapshot>,
+        type_manager: &TypeManager,
+        thing_manager: Arc<ThingManager>,
+    ) {
+        if pipeline.has_fetch() {
+            let initial_response = StreamQueryResponse::init_ok_documents(Read);
+            Self::submit_response_sync(sender, initial_response);
 
-                while let Some(next) = iterator.next() {
-                    if let Some(interrupt) = interrupt.check() {
+            let (mut iterator, context) =
+                unwrap_or_execute_and_return!(pipeline.into_documents_iterator(interrupt.clone()), |(err, _)| {
+                    Self::submit_response_sync(
+                        sender,
+                        StreamQueryResponse::done_err(QueryError::ReadPipelineExecutionError { typedb_source: err }),
+                    );
+                });
+
+            let parameters = context.parameters;
+            while let Some(next) = iterator.next() {
+                if let Some(interrupt) = interrupt.check() {
+                    Self::submit_response_sync(
+                        sender,
+                        StreamQueryResponse::done_err(TransactionServiceError::QueryInterrupted { interrupt }),
+                    );
+                    return;
+                }
+
+                let document = unwrap_or_execute_and_return!(next, |err| {
+                    Self::submit_response_sync(sender, StreamQueryResponse::done_err(err));
+                });
+
+                let encoded_document =
+                    encode_document(document, snapshot.as_ref(), &type_manager, &thing_manager, &parameters);
+                match encoded_document {
+                    Ok(encoded_document) => {
+                        Self::submit_response_sync(sender, StreamQueryResponse::next_document(encoded_document))
+                    }
+                    Err(err) => {
                         Self::submit_response_sync(
-                            &sender,
-                            StreamQueryResponse::done_err(TransactionServiceError::QueryInterrupted { interrupt }),
+                            sender,
+                            StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { source: err }),
                         );
                         return;
                     }
+                }
+            }
+        } else {
+            let named_outputs = pipeline.rows_positions().unwrap();
+            let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
+            let initial_response = StreamQueryResponse::init_ok_rows(&descriptor, Read);
+            Self::submit_response_sync(sender, initial_response);
 
-                    let row = unwrap_or_execute_and_return!(next, |err| {
-                        Self::submit_response_sync(&sender, StreamQueryResponse::done_err(err));
-                    });
+            let (mut iterator, _) =
+                unwrap_or_execute_and_return!(pipeline.into_rows_iterator(interrupt.clone()), |(err, _)| {
+                    Self::submit_response_sync(
+                        sender,
+                        StreamQueryResponse::done_err(QueryError::ReadPipelineExecutionError { typedb_source: err }),
+                    );
+                });
 
-                    let encoded_row = encode_row(row, &descriptor, snapshot.as_ref(), &type_manager, &thing_manager);
-                    match encoded_row {
-                        Ok(encoded_row) => {
-                            Self::submit_response_sync(&sender, StreamQueryResponse::next_row(encoded_row))
-                        }
-                        Err(err) => {
-                            Self::submit_response_sync(
-                                &sender,
-                                StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { source: err }),
-                            );
-                            return;
-                        }
+            while let Some(next) = iterator.next() {
+                if let Some(interrupt) = interrupt.check() {
+                    Self::submit_response_sync(
+                        sender,
+                        StreamQueryResponse::done_err(TransactionServiceError::QueryInterrupted { interrupt }),
+                    );
+                    return;
+                }
+
+                let row = unwrap_or_execute_and_return!(next, |err| {
+                    Self::submit_response_sync(sender, StreamQueryResponse::done_err(err));
+                });
+
+                let encoded_row = encode_row(row, &descriptor, snapshot.as_ref(), &type_manager, &thing_manager);
+                match encoded_row {
+                    Ok(encoded_row) => Self::submit_response_sync(sender, StreamQueryResponse::next_row(encoded_row)),
+                    Err(err) => {
+                        Self::submit_response_sync(
+                            sender,
+                            StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { source: err }),
+                        );
+                        return;
                     }
                 }
-                Self::submit_response_sync(&sender, StreamQueryResponse::done_ok())
-            })
-        })
+            }
+        }
+        Self::submit_response_sync(&sender, StreamQueryResponse::done_ok())
     }
 
     fn prepare_read_query_in<Snapshot: ReadableSnapshot + 'static>(
@@ -1180,6 +1243,7 @@ impl QueryStreamTransmitter {
         streaming_condition: StreamingCondition,
     ) -> ControlFlow<(), Receiver<StreamQueryResponse>> {
         let mut rows: Vec<typedb_protocol::ConceptRow> = Vec::new();
+        let mut documents: Vec<typedb_protocol::ConceptDocument> = Vec::new();
         let mut iteration = 0;
         while streaming_condition.continue_(iteration) {
             match query_response_receiver.recv().await {
@@ -1230,13 +1294,24 @@ impl QueryStreamTransmitter {
                         return Break(());
                     }
                     StreamQueryResponse::StreamNextRow(concept_row) => rows.push(concept_row),
+                    StreamQueryResponse::StreamNextDocument(concept_document) => documents.push(concept_document),
                 },
             }
             iteration += 1;
         }
-        match Self::send_rows(response_sender, req_id, rows).await {
-            Continue(_) => return Continue(query_response_receiver),
-            Break(_) => return Break(()),
+        debug_assert!(rows.is_empty() || documents.is_empty());
+        if !rows.is_empty() {
+            match Self::send_rows(response_sender, req_id, rows).await {
+                Continue(_) => return Continue(query_response_receiver),
+                Break(_) => return Break(()),
+            }
+        } else if !documents.is_empty() {
+            match Self::send_documents(response_sender, req_id, documents).await {
+                Continue(_) => return Continue(query_response_receiver),
+                Break(_) => return Break(()),
+            }
+        } else {
+            return Continue(query_response_receiver);
         }
     }
 
@@ -1245,12 +1320,24 @@ impl QueryStreamTransmitter {
         req_id: Uuid,
         rows: Vec<typedb_protocol::ConceptRow>,
     ) -> ControlFlow<(), ()> {
-        if !rows.is_empty() {
-            send_ok_message_else_return_break!(
-                response_sender,
-                transaction_server_res_parts_query_part(req_id, query_res_part_from_concept_rows(rows))
-            );
-        }
+        debug_assert!(!rows.is_empty());
+        send_ok_message_else_return_break!(
+            response_sender,
+            transaction_server_res_parts_query_part(req_id, query_res_part_from_concept_rows(rows))
+        );
+        Continue(())
+    }
+
+    async fn send_documents(
+        response_sender: &Sender<Result<typedb_protocol::transaction::Server, Status>>,
+        req_id: Uuid,
+        documents: Vec<typedb_protocol::ConceptDocument>,
+    ) -> ControlFlow<(), ()> {
+        debug_assert!(!documents.is_empty());
+        send_ok_message_else_return_break!(
+            response_sender,
+            transaction_server_res_parts_query_part(req_id, query_res_part_from_concept_documents(documents))
+        );
         Continue(())
     }
 }

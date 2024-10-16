@@ -16,6 +16,7 @@ use ir::pipeline::{ParameterRegistry, VariableRegistry};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
+    document::ConceptDocument,
     pipeline::{
         delete::DeleteStageExecutor,
         fetch::FetchStageExecutor,
@@ -29,6 +30,7 @@ use crate::{
         stage::{ExecutionContext, ReadPipelineStage, StageAPI, WritePipelineStage},
         PipelineExecutionError,
     },
+    row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
 
@@ -42,7 +44,7 @@ impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pip
         variable_registry: &VariableRegistry,
         last_stage: Nonterminals,
         last_stage_output_positions: HashMap<Variable, VariablePosition>,
-        executable_fetch: Option<ExecutableFetch>,
+        executable_fetch: Option<Arc<ExecutableFetch>>,
     ) -> Self {
         let named_outputs = last_stage_output_positions
             .iter()
@@ -58,6 +60,10 @@ impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pip
                 Pipeline::Fetched(last_stage, fetch)
             }
         }
+    }
+
+    pub fn has_fetch(&self) -> bool {
+        matches!(self, Self::Fetched(_, _))
     }
 
     pub fn rows_positions(&self) -> Option<&HashMap<String, VariablePosition>> {
@@ -82,25 +88,49 @@ impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pip
             }
         }
     }
+
+    pub fn into_documents_iterator(
+        self,
+        execution_interrupt: ExecutionInterrupt,
+    ) -> Result<
+        (impl Iterator<Item = Result<ConceptDocument, PipelineExecutionError>>, ExecutionContext<Snapshot>),
+        (PipelineExecutionError, ExecutionContext<Snapshot>),
+    > {
+        match self {
+            Self::Unfetched(nonterminals, _) => {
+                let (_, context) = nonterminals.into_iterator(execution_interrupt)?;
+                Err((PipelineExecutionError::FetchUsedAsRows {}, context))
+            }
+            Self::Fetched(nonterminals, fetch_executor) => {
+                let (rows_iterator, context) = nonterminals.into_iterator(execution_interrupt.clone())?;
+                Ok(fetch_executor.into_iterator::<Nonterminals>(rows_iterator, context, execution_interrupt))
+            }
+        }
+    }
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<Snapshot>> {
     pub fn build_read_pipeline(
         snapshot: Arc<Snapshot>,
-        variable_registry: &VariableRegistry,
         thing_manager: Arc<ThingManager>,
-        executable_stages: Vec<ExecutableStage>,
-        executable_fetch: Option<ExecutableFetch>,
-        parameters: ParameterRegistry,
+        variable_registry: &VariableRegistry,
+        executable_stages: &[ExecutableStage],
+        executable_fetch: Option<Arc<ExecutableFetch>>,
+        parameters: Arc<ParameterRegistry>,
+        input: Option<MaybeOwnedRow<'_>>,
     ) -> Self {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
-        let context = ExecutionContext::new(snapshot, thing_manager, Arc::new(parameters));
-        let mut last_stage = ReadPipelineStage::Initial(InitialStage::new(context));
+        let context = ExecutionContext::new(snapshot, thing_manager, parameters);
+        let mut last_stage = ReadPipelineStage::Initial(
+            input
+                .map(|row| InitialStage::new_with(context.clone(), row))
+                .unwrap_or_else(|| InitialStage::new_empty(context)),
+        );
         for executable_stage in executable_stages {
             match executable_stage {
                 ExecutableStage::Match(match_executable) => {
                     // TODO: Pass expressions & functions
-                    let match_stage = MatchStageExecutor::new(match_executable, last_stage);
+                    let match_stage = MatchStageExecutor::new(match_executable.clone(), last_stage);
                     last_stage = ReadPipelineStage::Match(Box::new(match_stage));
                 }
                 ExecutableStage::Insert(_) => {
@@ -110,27 +140,27 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
                     unreachable!("Delete clause cannot exist in a read pipeline.")
                 }
                 ExecutableStage::Select(select_executable) => {
-                    let select_stage = SelectStageExecutor::new(select_executable, last_stage);
+                    let select_stage = SelectStageExecutor::new(select_executable.clone(), last_stage);
                     last_stage = ReadPipelineStage::Select(Box::new(select_stage));
                 }
                 ExecutableStage::Sort(sort_executable) => {
-                    let sort_stage = SortStageExecutor::new(sort_executable, last_stage);
+                    let sort_stage = SortStageExecutor::new(sort_executable.clone(), last_stage);
                     last_stage = ReadPipelineStage::Sort(Box::new(sort_stage));
                 }
                 ExecutableStage::Offset(offset_executable) => {
-                    let offset_stage = OffsetStageExecutor::new(offset_executable, last_stage);
+                    let offset_stage = OffsetStageExecutor::new(offset_executable.clone(), last_stage);
                     last_stage = ReadPipelineStage::Offset(Box::new(offset_stage));
                 }
                 ExecutableStage::Limit(limit_executable) => {
-                    let limit_stage = LimitStageExecutor::new(limit_executable, last_stage);
+                    let limit_stage = LimitStageExecutor::new(limit_executable.clone(), last_stage);
                     last_stage = ReadPipelineStage::Limit(Box::new(limit_stage));
                 }
                 ExecutableStage::Require(require_executable) => {
-                    let require_stage = RequireStageExecutor::new(require_executable, last_stage);
+                    let require_stage = RequireStageExecutor::new(require_executable.clone(), last_stage);
                     last_stage = ReadPipelineStage::Require(Box::new(require_stage));
                 }
                 ExecutableStage::Reduce(reduce_executable) => {
-                    let reduce_stage = ReduceStageExecutor::new(reduce_executable, last_stage);
+                    let reduce_stage = ReduceStageExecutor::new(reduce_executable.clone(), last_stage);
                     last_stage = ReadPipelineStage::Reduce(Box::new(reduce_stage));
                 }
             }
@@ -145,12 +175,12 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         variable_registry: &VariableRegistry,
         thing_manager: Arc<ThingManager>,
         executable_stages: Vec<ExecutableStage>,
-        executable_fetch: Option<ExecutableFetch>,
-        parameters: ParameterRegistry,
+        executable_fetch: Option<Arc<ExecutableFetch>>,
+        parameters: Arc<ParameterRegistry>,
     ) -> Self {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
-        let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::new(parameters));
-        let mut last_stage = WritePipelineStage::Initial(InitialStage::new(context));
+        let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, parameters);
+        let mut last_stage = WritePipelineStage::Initial(InitialStage::new_empty(context));
         for executable_stage in executable_stages {
             match executable_stage {
                 ExecutableStage::Match(match_executable) => {
@@ -195,50 +225,3 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         Pipeline::build_with_fetch(variable_registry, last_stage, output_variable_positions, executable_fetch)
     }
 }
-
-// fn new_unfetched(nonterminals: Nonterminals, variable_positions: HashMap<String, VariablePosition>) -> Self {
-//     Self::Unfetched(nonterminals, variable_positions)
-// }
-//
-// fn new_fetched(nonterminals: Nonterminals, terminal: FetchStageExecutor<Snapshot>) -> Self {
-//     Self::Fetched(nonterminals, terminal)
-// }
-//
-// pub fn rows_positions(&self) -> Option<&HashMap<String, VariablePosition>> {
-//     match self {
-//         Self::Unfetched(_, positions) => Some(positions),
-//         Self::Fetched(_, _) => None,
-//     }
-// }
-//
-// pub fn into_rows_iterator(
-//     self,
-//     execution_interrupt: ExecutionInterrupt,
-// ) -> Result<
-//     (Nonterminals::OutputIterator, ExecutionContext<Snapshot>),
-//     (PipelineExecutionError, ExecutionContext<Snapshot>),
-// > {
-//     match self {
-//         Self::Unfetched(nonterminals, _) => nonterminals.into_iterator(execution_interrupt),
-//         Self::Fetched(nonterminals, _) => {
-//             let (_, context) = nonterminals.into_iterator(execution_interrupt)?;
-//             Err((PipelineExecutionError::FetchUsedAsRows {}, context))
-//         }
-//     }
-// }
-//
-// pub fn into_maps_iterator(
-//     self,
-//     execution_interrupt: ExecutionInterrupt,
-// ) -> Result<((), ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)> {
-//     match self {
-//         Self::Unfetched(nonterminals, _) => {
-//             let (_, context) = nonterminals.into_iterator(execution_interrupt)?;
-//             Err((PipelineExecutionError::FetchUsedAsRows {}, context))
-//         }
-//         Self::Fetched(nonterminals, terminal) => {
-//             let (rows_iterator, context) = nonterminals.into_iterator(execution_interrupt)?;
-//             todo!()
-//         }
-//     }
-// }
