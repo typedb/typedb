@@ -53,8 +53,19 @@ commands:
         type: string
     steps:
       - run: |
-          amazon-linux-extras install python3.8 java-openjdk11 docker -y
-          yum install -y git tar gcc gcc-c++ file lsof which procps llvm-devel clang-devel
+          amazon-linux-extras install java-openjdk11 docker -y
+          yum install bzip2-devel clang-devel file gcc gcc-c++ git libffi-devel llvm-devel lsof make openssl-devel procps tar wget which zlib-devel -y
+          
+          cd /tmp
+          wget https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz
+          tar -xvf Python-3.9.6.tgz
+          cd Python-3.9.6
+          ./configure --enable-optimizations --enable-shared
+          make altinstall
+          echo "/usr/local/lib" >> /etc/ld.so.conf.d/python3.9.conf
+          ldconfig
+          ln -s /usr/local/bin/python3.9 /usr/bin/python3
+          
           curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-<<parameters.bazel-arch>>"
           mv "bazelisk-linux-<<parameters.bazel-arch>>" /usr/local/bin/bazel
           chmod a+x /usr/local/bin/bazel
@@ -78,7 +89,7 @@ commands:
         type: string
     steps:
       - run: |
-          brew install python@3.8
+          brew install python@3.9
           curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-darwin-<<parameters.bazel-arch>>"
           sudo mv "bazelisk-darwin-<<parameters.bazel-arch>>" /usr/local/bin/bazel
           chmod a+x /usr/local/bin/bazel
