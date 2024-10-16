@@ -11,7 +11,7 @@ use std::{
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use ir::pipeline::{block::Block, VariableRegistry};
+use ir::pipeline::{block::Block, function_signature::FunctionID, VariableRegistry};
 use itertools::Itertools;
 
 use crate::{
@@ -19,7 +19,7 @@ use crate::{
     executable::match_::{
         instructions::{CheckInstruction, ConstraintInstruction},
         planner::{
-            match_executable::{CheckStep, ExecutionStep, IntersectionStep, MatchExecutable},
+            match_executable::{CheckStep, ExecutionStep, FunctionCallStep, IntersectionStep, MatchExecutable},
             plan::plan_conjunction,
         },
     },
@@ -72,10 +72,19 @@ struct NegationBuilder {
 }
 
 #[derive(Debug)]
+struct FunctionCallBuilder {
+    function_id: FunctionID,
+    arguments: Vec<VariablePosition>,
+    assigned: Vec<VariablePosition>,
+    output_width: u32,
+}
+
+#[derive(Debug)]
 enum StepBuilder {
     Intersection(IntersectionBuilder),
     Check(CheckBuilder),
     Negation(NegationBuilder),
+    FunctionCall(FunctionCallBuilder),
 }
 
 impl StepBuilder {
@@ -98,6 +107,9 @@ impl StepBuilder {
             Self::Check(CheckBuilder { instructions }) => ExecutionStep::Check(CheckStep::new(instructions)),
             Self::Negation(NegationBuilder { negation }) => {
                 ExecutionStep::Negation(match_executable::NegationStep { negation })
+            }
+            Self::FunctionCall(FunctionCallBuilder { function_id, arguments, assigned, output_width, .. }) => {
+                ExecutionStep::FunctionCall(FunctionCallStep { function_id, arguments, assigned, output_width })
             }
         }
     }
@@ -137,6 +149,7 @@ impl StepBuilder {
             StepBuilder::Intersection(IntersectionBuilder { output_width, .. }) => *output_width = Some(position),
             StepBuilder::Check(_) => (),
             StepBuilder::Negation(_) => (),
+            StepBuilder::FunctionCall(_) => unreachable!("I set it manually at creation"),
         }
     }
 }

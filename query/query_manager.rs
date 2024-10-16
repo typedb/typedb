@@ -7,10 +7,7 @@
 use std::{collections::HashSet, sync::Arc};
 
 use compiler::{
-    annotation::{
-        function::IndexedAnnotatedFunctions,
-        pipeline::{annotate_pipeline, AnnotatedPipeline},
-    },
+    annotation::pipeline::{annotate_pipeline, AnnotatedPipeline},
     executable::pipeline::{compile_pipeline, ExecutablePipeline},
 };
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
@@ -105,6 +102,7 @@ impl QueryManager {
             snapshot,
             &variable_registry,
             thing_manager,
+            Arc::new(executable_functions),
             executable_stages,
             executable_fetch,
             parameters,

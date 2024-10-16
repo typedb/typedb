@@ -47,7 +47,7 @@ use crate::{
                 InputPlanner, IsaPlanner, LabelPlanner, LinksPlanner, NestedPatternPlanner, OwnsPlanner, PlannerVertex,
                 PlaysPlanner, RelatesPlanner, SubPlanner, ThingPlanner, TypePlanner, ValuePlanner,
             },
-            IntersectionBuilder, MatchExecutableBuilder, NegationBuilder, StepBuilder,
+            FunctionCallBuilder, IntersectionBuilder, MatchExecutableBuilder, NegationBuilder, StepBuilder,
         },
     },
     VariablePosition,
@@ -327,7 +327,6 @@ impl<'a> PlanBuilder<'a> {
             .collect();
         let element_cost = ElementCost { per_input: 1.0, per_output: 1.0, branching_factor: 1.0 };
         self.elements.push(PlannerVertex::FunctionCall(FunctionCallPlanner::new(arguments, return_vars, element_cost)));
-        todo!("register_function_call");
     }
 
     fn register_comparison(&mut self, comparison: &Comparison<Variable>) {
@@ -791,7 +790,28 @@ impl ConjunctionPlan<'_> {
             }
 
             Constraint::ExpressionBinding(_) => todo!("expression binding"),
-            Constraint::FunctionCallBinding(_) => todo!("function call binding"),
+            Constraint::FunctionCallBinding(call_binding) => {
+                call_binding.assigned().iter().for_each(|variable| {
+                    match_builder.register_output(variable.as_variable().unwrap());
+                });
+                let assigned = call_binding
+                    .assigned()
+                    .iter()
+                    .map(|variable| match_builder.index.get(&variable.as_variable().unwrap()).unwrap().clone())
+                    .collect();
+                let arguments = call_binding
+                    .function_call()
+                    .argument_ids()
+                    .map(|variable| match_builder.index.get(&variable).unwrap().clone())
+                    .collect();
+                let step_builder = StepBuilder::FunctionCall(FunctionCallBuilder {
+                    function_id: call_binding.function_call().function_id(),
+                    arguments,
+                    assigned,
+                    output_width: match_builder.next_output.position,
+                });
+                match_builder.push_step(&HashMap::new(), step_builder)
+            }
             Constraint::Comparison(compare) => {
                 let lhs = compare.lhs();
                 let rhs = compare.rhs();
