@@ -6,7 +6,7 @@
 
 use storage::snapshot::ReadableSnapshot;
 
-mod expression_executor;
+pub mod expression_executor;
 pub(crate) mod pattern_executor;
 mod step_executor;
 mod immediate_executor;

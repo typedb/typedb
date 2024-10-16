@@ -20,7 +20,7 @@ pub mod error;
 pub(crate) mod instruction;
 pub mod match_executor;
 pub mod pipeline;
-pub(crate) mod read;
+pub mod read;
 pub(crate) mod reduce_executor;
 pub mod row;
 pub mod write;
