@@ -16,19 +16,18 @@ use crate::{
     pipeline::stage::ExecutionContext,
     read::{
         step_executor::{create_executors_recursive, StepExecutors},
-        subpattern_executor::{BaseNestedPatternExecutor, SubPatternController, NestedPatternExecutor},
+        nested_pattern_executor::{BaseNestedPatternExecutor, NestedPatternController, NestedPatternExecutor},
     },
     ExecutionInterrupt,
 };
 
 pub(super) struct BranchIndex(pub usize);
 pub(super) struct InstructionIndex(pub usize);
-pub(super) struct SubPatternIndex(InstructionIndex, BranchIndex);
 
 pub(super) enum StackInstruction {
     Start(Option<FixedBatch>),
     Execute(InstructionIndex),
-    SubPatternBranch(InstructionIndex, BranchIndex),
+    NestedPatternBranch(InstructionIndex, BranchIndex),
 }
 
 impl StackInstruction {
@@ -43,14 +42,14 @@ impl StackInstruction {
             StackInstruction::Execute(InstructionIndex(idx)) => {
                 pattern_instructions[*idx].unwrap_executable().batch_continue(context, interrupt)
             }
-            StackInstruction::SubPatternBranch(InstructionIndex(idx), BranchIndex(branch_index)) => {
-                match pattern_instructions[*idx].unwrap_subpattern_branch() {
+            StackInstruction::NestedPatternBranch(InstructionIndex(idx), BranchIndex(branch_index)) => {
+                match pattern_instructions[*idx].unwrap_nested_pattern_branch() {
                     NestedPatternExecutor::Negation(negation) => {
                         debug_assert!(*branch_index == 0);
-                        PatternExecutor::execute_subpattern(context, interrupt, negation)
+                        PatternExecutor::execute_nested_pattern(context, interrupt, negation)
                     }
                     NestedPatternExecutor::Disjunction(branches) => {
-                        PatternExecutor::execute_subpattern(context, interrupt, &mut branches[*branch_index])
+                        PatternExecutor::execute_nested_pattern(context, interrupt, &mut branches[*branch_index])
                     }
                 }
             }
@@ -63,7 +62,7 @@ impl StackInstruction {
         match self {
             StackInstruction::Start(_) => InstructionIndex(0),
             StackInstruction::Execute(InstructionIndex(idx)) => InstructionIndex(idx + 1),
-            StackInstruction::SubPatternBranch(InstructionIndex(idx), _) => InstructionIndex(idx + 1),
+            StackInstruction::NestedPatternBranch(InstructionIndex(idx), _) => InstructionIndex(idx + 1),
         }
     }
 }
@@ -131,10 +130,10 @@ impl PatternExecutor {
         Ok(None) // Nothing in the stack
     }
 
-    fn execute_subpattern(
+    fn execute_nested_pattern(
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
-        executor: &mut BaseNestedPatternExecutor<impl SubPatternController>,
+        executor: &mut BaseNestedPatternExecutor<impl NestedPatternController>,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         while let Some(pattern_executor) = executor.get_or_next_executing_pattern() {
             let result = pattern_executor.batch_continue(context, interrupt)?;
@@ -157,10 +156,10 @@ impl PatternExecutor {
                 executable.prepare(batch, context)?;
                 self.stack.push(StackInstruction::Execute(InstructionIndex(index)));
             }
-            StepExecutors::SubPattern(subpattern) => {
-                subpattern.prepare_all_branches(batch, context)?;
-                for i in 0..subpattern.branch_count() {
-                    self.stack.push(StackInstruction::SubPatternBranch(InstructionIndex(index), BranchIndex(i)))
+            StepExecutors::NestedPattern(nested) => {
+                nested.prepare_all_branches(batch, context)?;
+                for i in 0..nested.branch_count() {
+                    self.stack.push(StackInstruction::NestedPatternBranch(InstructionIndex(index), BranchIndex(i)))
                 }
             }
         }

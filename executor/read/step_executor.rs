@@ -11,12 +11,12 @@ use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::read::{
-    immediate_executor::ImmediateExecutor, subpattern_executor::NestedPatternExecutor,
+    immediate_executor::ImmediateExecutor, nested_pattern_executor::NestedPatternExecutor,
 };
 
 pub(super) enum StepExecutors {
     Executable(ImmediateExecutor),
-    SubPattern(NestedPatternExecutor),
+    NestedPattern(NestedPatternExecutor),
 }
 
 impl StepExecutors {
@@ -27,9 +27,9 @@ impl StepExecutors {
         }
     }
 
-    pub(crate) fn unwrap_subpattern_branch(&mut self) -> &mut NestedPatternExecutor {
+    pub(crate) fn unwrap_nested_pattern_branch(&mut self) -> &mut NestedPatternExecutor {
         match self {
-            StepExecutors::SubPattern(step) => step,
+            StepExecutors::NestedPattern(step) => step,
             _ => unreachable!(),
         }
     }
@@ -56,7 +56,7 @@ pub(super) fn create_executors_recursive(
                 ExecutionStep::Check(_) => {
                     StepExecutors::Executable(ImmediateExecutor::new(step, snapshot, thing_manager)?)
                 }
-                ExecutionStep::Negation(negation_step) => StepExecutors::SubPattern(
+                ExecutionStep::Negation(negation_step) => StepExecutors::NestedPattern(
                     NestedPatternExecutor::new_negation(negation_step, snapshot, thing_manager)?,
                 ),
                 _ => todo!(),

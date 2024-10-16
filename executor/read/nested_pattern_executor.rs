@@ -60,19 +60,19 @@ impl NestedPatternExecutor {
     }
 }
 
-pub(super) struct BaseNestedPatternExecutor<Controller: SubPatternController> {
+pub(super) struct BaseNestedPatternExecutor<Controller: NestedPatternController> {
     inputs: Vec<MaybeOwnedRow<'static>>,
     pattern_executor: PatternExecutor,
     controller: Controller,
 }
 
-impl<Controller: SubPatternController> BaseNestedPatternExecutor<Controller> {
+impl<Controller: NestedPatternController> BaseNestedPatternExecutor<Controller> {
     fn new(pattern_executor: PatternExecutor, controller: Controller) -> BaseNestedPatternExecutor<Controller> {
         Self { inputs: Vec::new(), pattern_executor, controller }
     }
 }
 
-impl<Controller: SubPatternController> BaseNestedPatternExecutor<Controller> {
+impl<Controller: NestedPatternController> BaseNestedPatternExecutor<Controller> {
     fn prepare(&mut self, inputs: Vec<MaybeOwnedRow<'static>>) {
         self.pattern_executor.reset();
         self.controller.reset();
@@ -93,8 +93,8 @@ impl<Controller: SubPatternController> BaseNestedPatternExecutor<Controller> {
 
     pub(super) fn process_result(&mut self, result: Option<FixedBatch>) -> Option<FixedBatch> {
         match self.controller.process_result(result) {
-            SubQueryControllerResult::Regular(processed) => processed,
-            SubQueryControllerResult::ShortCircuit(processed) => {
+            NestedPatternControllerResult::Regular(processed) => processed,
+            NestedPatternControllerResult::ShortCircuit(processed) => {
                 self.pattern_executor.reset(); // That should work?
                 self.controller.reset();
                 processed
@@ -104,15 +104,15 @@ impl<Controller: SubPatternController> BaseNestedPatternExecutor<Controller> {
 }
 
 // Controllers
-pub(super) trait SubPatternController {
+pub(super) trait NestedPatternController {
     fn reset(&mut self);
     fn is_active(&self) -> bool;
     fn prepare(&mut self, row: MaybeOwnedRow<'static>);
     // None will cause the pattern_executor to backtrack. You can also choose to call short-circuit on the pattern_executor
-    fn process_result(&mut self, result: Option<FixedBatch>) -> SubQueryControllerResult;
+    fn process_result(&mut self, result: Option<FixedBatch>) -> NestedPatternControllerResult;
 }
 
-enum SubQueryControllerResult {
+enum NestedPatternControllerResult {
     Regular(Option<FixedBatch>),
     ShortCircuit(Option<FixedBatch>),
 }
@@ -127,7 +127,7 @@ impl NegationController {
     }
 }
 
-impl SubPatternController for NegationController {
+impl NestedPatternController for NegationController {
     fn reset(&mut self) {
         self.input = None;
     }
@@ -140,16 +140,17 @@ impl SubPatternController for NegationController {
         self.input = Some(row);
     }
 
-    fn process_result(&mut self, result: Option<FixedBatch>) -> SubQueryControllerResult {
+    fn process_result(&mut self, result: Option<FixedBatch>) -> NestedPatternControllerResult {
         if result.is_some() {
-            SubQueryControllerResult::ShortCircuit(None)
+            NestedPatternControllerResult::ShortCircuit(None)
         } else {
             debug_assert!(self.input.is_some());
-            // Doesn't need to short-circuit because the subpattern is exhausted.
-            SubQueryControllerResult::Regular(Some(FixedBatch::from(self.input.take().unwrap())))
+            // Doesn't need to short-circuit because the nested pattern is exhausted.
+            NestedPatternControllerResult::Regular(Some(FixedBatch::from(self.input.take().unwrap())))
         }
     }
 }
+
 pub(super) struct DisjunctionController {
     input: Option<MaybeOwnedRow<'static>>,
 }
@@ -160,7 +161,7 @@ impl DisjunctionController {
     }
 }
 
-impl SubPatternController for DisjunctionController {
+impl NestedPatternController for DisjunctionController {
     fn reset(&mut self) {
         self.input = None;
     }
@@ -173,7 +174,7 @@ impl SubPatternController for DisjunctionController {
         self.input = Some(row);
     }
 
-    fn process_result(&mut self, result: Option<FixedBatch>) -> SubQueryControllerResult {
-        SubQueryControllerResult::Regular(result)
+    fn process_result(&mut self, result: Option<FixedBatch>) -> NestedPatternControllerResult {
+        NestedPatternControllerResult::Regular(result)
     }
 }
