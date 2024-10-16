@@ -4,8 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, sync::Arc};
-use std::fmt::{Debug, Formatter};
+use std::{
+    collections::HashMap,
+    fmt::{Debug, Formatter},
+    sync::Arc,
+};
 
 use encoding::graph::definition::definition_key::DefinitionKey;
 use ir::pipeline::function_signature::FunctionID;

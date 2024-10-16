@@ -7,20 +7,25 @@
 use std::sync::Arc;
 
 use compiler::{
-    executable::match_::planner::match_executable::NegationStep,
+    executable::{
+        match_::planner::{
+            function_plan::ExecutableFunctionRegistry,
+            match_executable::{FunctionCallStep, NegationStep},
+        },
+        pipeline::ExecutableStage,
+    },
     VariablePosition,
 };
-use compiler::executable::match_::planner::function_plan::ExecutableFunctionRegistry;
-use compiler::executable::match_::planner::match_executable::FunctionCallStep;
-use compiler::executable::pipeline::ExecutableStage;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    batch::FixedBatch, error::ReadExecutionError, pipeline::stage::ExecutionContext,
-    read::pattern_executor::PatternExecutor, row::MaybeOwnedRow,
+    batch::FixedBatch,
+    error::ReadExecutionError,
+    pipeline::stage::ExecutionContext,
+    read::pattern_executor::PatternExecutor,
+    row::{MaybeOwnedRow, Row},
 };
-use crate::row::Row;
 
 pub(super) enum NestedPatternExecutor {
     Disjunction(Vec<BaseNestedPatternExecutor<DisjunctionController>>),
@@ -233,9 +238,7 @@ impl NestedPatternController for InlinedFunctionController {
     }
 
     fn prepare_and_get_subpattern_input(&mut self, row: MaybeOwnedRow<'static>) -> MaybeOwnedRow<'static> {
-        let args = self.arguments.iter().map(|pos| {
-            row.get(pos.clone()).clone().into_owned()
-        }).collect();
+        let args = self.arguments.iter().map(|pos| row.get(pos.clone()).clone().into_owned()).collect();
         let callee_input = MaybeOwnedRow::new_owned(args, row.multiplicity());
         self.input = Some(row);
         callee_input
@@ -257,10 +260,7 @@ impl NestedPatternController for InlinedFunctionController {
                             output_row.set(VariablePosition::new(i as u32), element.clone());
                         }
                         for (returned_index, output_position) in assigned.iter().enumerate() {
-                            output_row.set(
-                                output_position.clone(),
-                                returned_row[returned_index].clone().into_owned(),
-                            );
+                            output_row.set(output_position.clone(), returned_row[returned_index].clone().into_owned());
                         }
                     });
                 }

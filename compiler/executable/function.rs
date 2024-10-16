@@ -51,7 +51,8 @@ pub(crate) fn compile_function(
         arguments.clone().into_iter(),
     )?;
     let returns = compile_return_operation(&mut executable_stages, return_)?;
-    Ok(ExecutableFunction { executable_stages, argument_positions, returns, is_tabled: false }) // TODO
+    Ok(ExecutableFunction { executable_stages, argument_positions, returns, is_tabled: false })
+    // TODO
 }
 
 fn compile_return_operation(

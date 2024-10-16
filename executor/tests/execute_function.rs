@@ -8,10 +8,12 @@ use std::sync::Arc;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
-use executor::{pipeline::stage::ExecutionContext, ExecutionInterrupt};
-use executor::error::ReadExecutionError;
-use executor::pipeline::PipelineExecutionError;
-use executor::row::MaybeOwnedRow;
+use executor::{
+    error::ReadExecutionError,
+    pipeline::{stage::ExecutionContext, PipelineExecutionError},
+    row::MaybeOwnedRow,
+    ExecutionInterrupt,
+};
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
@@ -105,8 +107,7 @@ fn function_compiles() {
             )
             .unwrap();
 
-        let (mut iterator, _) =
-            pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+        let (mut iterator, _) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
         let rows: Vec<Result<MaybeOwnedRow<'static>, PipelineExecutionError>> =
             iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();

@@ -11,22 +11,20 @@ use std::{
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use ir::pipeline::{block::Block, VariableRegistry};
+use ir::pipeline::{block::Block, function_signature::FunctionID, VariableRegistry};
 use itertools::Itertools;
-use ir::pipeline::function_signature::FunctionID;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
     executable::match_::{
         instructions::{CheckInstruction, ConstraintInstruction},
         planner::{
-            match_executable::{CheckStep, ExecutionStep, IntersectionStep, MatchExecutable},
+            match_executable::{CheckStep, ExecutionStep, FunctionCallStep, IntersectionStep, MatchExecutable},
             plan::plan_conjunction,
         },
     },
     VariablePosition,
 };
-use crate::executable::match_::planner::match_executable::FunctionCallStep;
 
 pub mod function_plan;
 pub mod match_executable;
@@ -111,7 +109,7 @@ impl StepBuilder {
                 ExecutionStep::Negation(match_executable::NegationStep { negation })
             }
             Self::FunctionCall(FunctionCallBuilder { function_id, arguments, assigned, output_width, .. }) => {
-                ExecutionStep::FunctionCall(FunctionCallStep { function_id, arguments , assigned, output_width })
+                ExecutionStep::FunctionCall(FunctionCallStep { function_id, arguments, assigned, output_width })
             }
         }
     }
@@ -214,10 +212,6 @@ impl MatchExecutableBuilder {
         }
         let current = self.current.as_mut().unwrap().as_check_mut().unwrap();
         current.instructions.push(instruction);
-    }
-
-    fn push_function_call_instruction() {
-        todo!()
     }
 
     fn push_step(&mut self, variable_positions: &HashMap<Variable, VariablePosition>, step: StepBuilder) {

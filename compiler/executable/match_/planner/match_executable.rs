@@ -15,9 +15,8 @@ use ir::{
         constraint::{Constraint, ExpressionBinding},
         IrID,
     },
-    pipeline::VariableRegistry,
+    pipeline::{function_signature::FunctionID, VariableRegistry},
 };
-use ir::pipeline::function_signature::FunctionID;
 
 use crate::{
     executable::match_::instructions::{CheckInstruction, ConstraintInstruction, VariableModes},
@@ -86,9 +85,7 @@ impl ExecutionStep {
             ExecutionStep::Disjunction(_) => todo!(),
             ExecutionStep::Negation(_) => &[],
             ExecutionStep::Optional(_) => todo!(),
-            ExecutionStep::FunctionCall(function_call) => {
-                function_call.assigned.as_slice()
-            },
+            ExecutionStep::FunctionCall(function_call) => function_call.assigned.as_slice(),
         }
     }
 
@@ -114,7 +111,7 @@ impl ExecutionStep {
             ExecutionStep::Disjunction(_) => todo!(),
             ExecutionStep::Negation(_) => 0,
             ExecutionStep::Optional(_) => todo!(),
-            ExecutionStep::FunctionCall(_) => todo!()
+            ExecutionStep::FunctionCall(step) => step.output_width(),
         }
     }
 }
@@ -269,6 +266,12 @@ pub struct FunctionCallStep {
     pub assigned: Vec<VariablePosition>,
     pub arguments: Vec<VariablePosition>,
     pub output_width: u32,
+}
+
+impl FunctionCallStep {
+    pub(crate) fn output_width(&self) -> u32 {
+        self.output_width
+    }
 }
 
 #[derive(Clone, Debug)]

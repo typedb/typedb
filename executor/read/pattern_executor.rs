@@ -5,9 +5,10 @@
  */
 
 use std::sync::Arc;
-use compiler::executable::match_::planner::function_plan::ExecutableFunctionRegistry;
 
-use compiler::executable::match_::planner::match_executable::MatchExecutable;
+use compiler::executable::match_::planner::{
+    function_plan::ExecutableFunctionRegistry, match_executable::MatchExecutable,
+};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use storage::snapshot::ReadableSnapshot;
 

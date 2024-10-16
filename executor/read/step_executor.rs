@@ -5,12 +5,18 @@
  */
 
 use std::sync::Arc;
-use compiler::executable::function::{ExecutableFunction, ExecutableReturn};
-use compiler::executable::match_::planner::function_plan::ExecutableFunctionRegistry;
 
-use compiler::executable::match_::planner::match_executable::{ExecutionStep, MatchExecutable};
-use compiler::executable::pipeline::ExecutableStage;
-use compiler::VariablePosition;
+use compiler::{
+    executable::{
+        function::{ExecutableFunction, ExecutableReturn},
+        match_::planner::{
+            function_plan::ExecutableFunctionRegistry,
+            match_executable::{ExecutionStep, MatchExecutable},
+        },
+        pipeline::ExecutableStage,
+    },
+    VariablePosition,
+};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use storage::snapshot::ReadableSnapshot;
 
@@ -64,11 +70,14 @@ pub(super) fn create_executors_recursive(
             ExecutionStep::FunctionCall(function_call) => {
                 let function = function_registry.get(function_call.function_id.clone());
                 if function.is_tabled {
-                   todo!()
+                    todo!()
                 } else {
-                    StepExecutors::NestedPattern(
-                        NestedPatternExecutor::new_inline_function(function_call, snapshot, thing_manager, function_registry)?
-                    )
+                    StepExecutors::NestedPattern(NestedPatternExecutor::new_inline_function(
+                        function_call,
+                        snapshot,
+                        thing_manager,
+                        function_registry,
+                    )?)
                 }
             }
             _ => todo!(),
@@ -86,7 +95,9 @@ pub(super) fn create_executors_for_function(
 ) -> Result<Vec<StepExecutors>, ConceptReadError> {
     // TODO: Support full pipelines
     debug_assert!(executable_function.executable_stages.len() == 1);
-    let ExecutableStage::Match(match_executable) = &executable_function.executable_stages[0] else { unreachable!(); };
+    let ExecutableStage::Match(match_executable) = &executable_function.executable_stages[0] else {
+        unreachable!();
+    };
     let mut steps = create_executors_recursive(match_executable, snapshot, thing_manager, function_registry)?;
 
     // TODO: Add table writing step.
@@ -94,7 +105,7 @@ pub(super) fn create_executors_for_function(
         ExecutableReturn::Stream(positions) => {
             steps.push(StepExecutors::ReshapeForReturn(positions.clone()));
         }
-        _ => todo!()
+        _ => todo!(),
     }
     Ok(steps)
 }

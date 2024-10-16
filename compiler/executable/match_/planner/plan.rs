@@ -47,12 +47,11 @@ use crate::{
                 InputPlanner, IsaPlanner, LabelPlanner, LinksPlanner, NestedPatternPlanner, OwnsPlanner, PlannerVertex,
                 PlaysPlanner, RelatesPlanner, SubPlanner, ThingPlanner, TypePlanner, ValuePlanner,
             },
-            IntersectionBuilder, MatchExecutableBuilder, NegationBuilder, StepBuilder,
+            FunctionCallBuilder, IntersectionBuilder, MatchExecutableBuilder, NegationBuilder, StepBuilder,
         },
     },
     VariablePosition,
 };
-use crate::executable::match_::planner::FunctionCallBuilder;
 
 pub(crate) fn plan_conjunction<'a>(
     conjunction: &'a Conjunction,
@@ -795,20 +794,24 @@ impl ConjunctionPlan<'_> {
                 call_binding.assigned().iter().for_each(|variable| {
                     match_builder.register_output(variable.as_variable().unwrap());
                 });
-                let assigned = call_binding.assigned().iter().map(|variable|{
-                    match_builder.index.get(&variable.as_variable().unwrap()).unwrap().clone()
-                }).collect();
-                let arguments = call_binding.function_call().argument_ids().map(|variable|{
-                    match_builder.index.get(&variable).unwrap().clone()
-                }).collect();
+                let assigned = call_binding
+                    .assigned()
+                    .iter()
+                    .map(|variable| match_builder.index.get(&variable.as_variable().unwrap()).unwrap().clone())
+                    .collect();
+                let arguments = call_binding
+                    .function_call()
+                    .argument_ids()
+                    .map(|variable| match_builder.index.get(&variable).unwrap().clone())
+                    .collect();
                 let step_builder = StepBuilder::FunctionCall(FunctionCallBuilder {
                     function_id: call_binding.function_call().function_id(),
                     arguments,
                     assigned,
-                    output_width: match_builder.next_output.position
+                    output_width: match_builder.next_output.position,
                 });
                 match_builder.push_step(&HashMap::new(), step_builder)
-            },
+            }
             Constraint::Comparison(compare) => {
                 let lhs = compare.lhs();
                 let rhs = compare.rhs();
