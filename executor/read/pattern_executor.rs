@@ -15,8 +15,8 @@ use crate::{
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
     read::{
-        step_executor::{create_executors_recursive, StepExecutors},
         nested_pattern_executor::{BaseNestedPatternExecutor, NestedPatternController, NestedPatternExecutor},
+        step_executor::{create_executors_recursive, StepExecutors},
     },
     ExecutionInterrupt,
 };

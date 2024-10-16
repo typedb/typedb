@@ -6,8 +6,10 @@
 
 use std::sync::Arc;
 
-use compiler::executable::match_::planner::match_executable::{InlinedFunctionStep, NegationStep};
-use compiler::VariablePosition;
+use compiler::{
+    executable::match_::planner::match_executable::{InlinedFunctionStep, NegationStep},
+    VariablePosition,
+};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
@@ -72,9 +74,10 @@ impl NestedPatternExecutor {
         thing_manager: &Arc<ThingManager>,
     ) -> Result<NestedPatternExecutor, ConceptReadError> {
         let inner = PatternExecutor::build(&plan.body, snapshot, thing_manager)?;
-        Ok(Self::InlinedFunction(
-            BaseNestedPatternExecutor::new(inner, InlinedFunctionController::new(plan.copy_return_mapping.clone()))
-        ))
+        Ok(Self::InlinedFunction(BaseNestedPatternExecutor::new(
+            inner,
+            InlinedFunctionController::new(plan.copy_return_mapping.clone()),
+        )))
     }
 }
 
@@ -237,7 +240,10 @@ impl NestedPatternController for InlinedFunctionController {
                             output_row.set(VariablePosition::new(i as u32), element.clone());
                         }
                         for (returned_position, output_position) in &mut *copy_return_mapping {
-                            output_row.set(output_position.clone(), returned_row[returned_position.as_usize()].clone().into_owned());
+                            output_row.set(
+                                output_position.clone(),
+                                returned_row[returned_position.as_usize()].clone().into_owned(),
+                            );
                         }
                     });
                 }

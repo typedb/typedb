@@ -11,8 +11,7 @@ use compiler::{
     executable::match_::{
         instructions::{CheckInstruction, ConstraintInstruction, VariableModes},
         planner::match_executable::{
-            AssignmentStep, CheckStep, ExecutionStep, IntersectionStep, MatchExecutable,
-            UnsortedJoinStep,
+            AssignmentStep, CheckStep, ExecutionStep, IntersectionStep, MatchExecutable, UnsortedJoinStep,
         },
     },
     VariablePosition,
