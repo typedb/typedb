@@ -6,13 +6,13 @@
 
 use std::{cmp::Ordering, collections::HashMap, sync::Arc};
 
-use answer::{variable::Variable, variable_value::VariableValue};
+use answer::variable_value::VariableValue;
 use compiler::{
     executable::match_::{
         instructions::{CheckInstruction, ConstraintInstruction, VariableModes},
         planner::match_executable::{
-            AssignmentStep, CheckStep, DisjunctionStep, ExecutionStep, IntersectionStep, MatchExecutable, NegationStep,
-            OptionalStep, UnsortedJoinStep,
+            AssignmentStep, CheckStep, ExecutionStep, IntersectionStep, MatchExecutable,
+            UnsortedJoinStep,
         },
     },
     VariablePosition,
@@ -32,16 +32,14 @@ use crate::{
     ExecutionInterrupt, SelectedPositions,
 };
 
-pub(crate) enum StepExecutor {
+pub(crate) enum ImmediateExecutor {
     SortedJoin(IntersectionExecutor),
     UnsortedJoin(UnsortedJoinExecutor),
-    Assignment(AssignExecutor),
     Check(CheckExecutor),
-
-    Negation(NegationExecutor),
+    Assignment(AssignExecutor),
 }
 
-impl StepExecutor {
+impl ImmediateExecutor {
     pub(crate) fn new(
         step: &ExecutionStep,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
@@ -88,11 +86,10 @@ impl StepExecutor {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<(), ReadExecutionError> {
         match self {
-            StepExecutor::SortedJoin(sorted) => sorted.prepare(input_batch, context),
-            StepExecutor::UnsortedJoin(unsorted) => unsorted.prepare(input_batch, context),
-            StepExecutor::Assignment(assignment) => assignment.prepare(input_batch, context),
-            StepExecutor::Check(check) => check.prepare(input_batch, context),
-            _ => todo!("Deprecate the others"),
+            ImmediateExecutor::SortedJoin(sorted) => sorted.prepare(input_batch, context),
+            ImmediateExecutor::UnsortedJoin(unsorted) => unsorted.prepare(input_batch, context),
+            ImmediateExecutor::Assignment(assignment) => assignment.prepare(input_batch, context),
+            ImmediateExecutor::Check(check) => check.prepare(input_batch, context),
         }
     }
 
@@ -102,11 +99,10 @@ impl StepExecutor {
         interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         match self {
-            StepExecutor::SortedJoin(sorted) => sorted.batch_continue(context, interrupt),
-            StepExecutor::UnsortedJoin(_unsorted) => todo!(), // unsorted.batch_continue(context, interrupt),
-            StepExecutor::Assignment(assignment) => assignment.batch_continue(context, interrupt),
-            StepExecutor::Check(check) => check.batch_continue(context, interrupt),
-            _ => todo!("deprecate"),
+            ImmediateExecutor::SortedJoin(sorted) => sorted.batch_continue(context, interrupt),
+            ImmediateExecutor::UnsortedJoin(_unsorted) => todo!(), // unsorted.batch_continue(context, interrupt),
+            ImmediateExecutor::Assignment(assignment) => assignment.batch_continue(context, interrupt),
+            ImmediateExecutor::Check(check) => check.batch_continue(context, interrupt),
         }
     }
 }

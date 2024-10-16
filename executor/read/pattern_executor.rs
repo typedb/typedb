@@ -15,8 +15,8 @@ use crate::{
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
     read::{
-        pattern_instructions::{create_executors_recursive, PatternInstruction},
-        subpattern_executor::{BaseSubPatternExecutor, SubPatternController, SubPatternExecutor},
+        pattern_instructions::{create_executors_recursive, StepExecutors},
+        subpattern_executor::{BaseNestedPatternExecutor, SubPatternController, NestedPatternExecutor},
     },
     ExecutionInterrupt,
 };
@@ -36,7 +36,7 @@ impl StackInstruction {
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
-        pattern_instructions: &mut Vec<PatternInstruction>,
+        pattern_instructions: &mut Vec<StepExecutors>,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         match self {
             StackInstruction::Start(batch_opt) => Ok(batch_opt.take()),
@@ -45,11 +45,11 @@ impl StackInstruction {
             }
             StackInstruction::SubPatternBranch(InstructionIndex(idx), BranchIndex(branch_index)) => {
                 match pattern_instructions[*idx].unwrap_subpattern_branch() {
-                    SubPatternExecutor::Negation(negation) => {
+                    NestedPatternExecutor::Negation(negation) => {
                         debug_assert!(*branch_index == 0);
                         PatternExecutor::execute_subpattern(context, interrupt, negation)
                     }
-                    SubPatternExecutor::Disjunction(branches) => {
+                    NestedPatternExecutor::Disjunction(branches) => {
                         PatternExecutor::execute_subpattern(context, interrupt, &mut branches[*branch_index])
                     }
                 }
@@ -69,7 +69,7 @@ impl StackInstruction {
 }
 
 pub(crate) struct PatternExecutor {
-    instructions: Vec<PatternInstruction>,
+    instructions: Vec<StepExecutors>,
     stack: Vec<StackInstruction>,
 }
 
@@ -134,7 +134,7 @@ impl PatternExecutor {
     fn execute_subpattern(
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
-        executor: &mut BaseSubPatternExecutor<impl SubPatternController>,
+        executor: &mut BaseNestedPatternExecutor<impl SubPatternController>,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         while let Some(pattern_executor) = executor.get_or_next_executing_pattern() {
             let result = pattern_executor.batch_continue(context, interrupt)?;
@@ -153,11 +153,11 @@ impl PatternExecutor {
     ) -> Result<(), ReadExecutionError> {
         let InstructionIndex(index) = index;
         match &mut self.instructions[index] {
-            PatternInstruction::Executable(executable) => {
+            StepExecutors::Executable(executable) => {
                 executable.prepare(batch, context)?;
                 self.stack.push(StackInstruction::Execute(InstructionIndex(index)));
             }
-            PatternInstruction::SubPattern(subpattern) => {
+            StepExecutors::SubPattern(subpattern) => {
                 subpattern.prepare_all_branches(batch, context)?;
                 for i in 0..subpattern.branch_count() {
                     self.stack.push(StackInstruction::SubPatternBranch(InstructionIndex(index), BranchIndex(i)))

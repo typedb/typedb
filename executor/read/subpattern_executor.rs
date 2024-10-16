@@ -15,12 +15,12 @@ use crate::{
     read::pattern_executor::PatternExecutor, row::MaybeOwnedRow,
 };
 
-pub(super) enum SubPatternExecutor {
-    Disjunction(Vec<BaseSubPatternExecutor<DisjunctionController>>),
-    Negation(BaseSubPatternExecutor<NegationController>),
+pub(super) enum NestedPatternExecutor {
+    Disjunction(Vec<BaseNestedPatternExecutor<DisjunctionController>>),
+    Negation(BaseNestedPatternExecutor<NegationController>),
 }
 
-impl SubPatternExecutor {
+impl NestedPatternExecutor {
     pub(crate) fn prepare_all_branches(
         &mut self,
         input: FixedBatch,
@@ -29,10 +29,10 @@ impl SubPatternExecutor {
         // TODO: Better handling of the input. I can likely just keep the batch index into it.
         let as_rows = (0..input.len()).map(|i| input.get_row(i).into_owned()).collect();
         match self {
-            SubPatternExecutor::Negation(inner) => {
+            NestedPatternExecutor::Negation(inner) => {
                 inner.prepare(as_rows);
             }
-            SubPatternExecutor::Disjunction(branches) => {
+            NestedPatternExecutor::Disjunction(branches) => {
                 for branch in branches {
                     branch.prepare(as_rows.clone());
                 }
@@ -43,36 +43,36 @@ impl SubPatternExecutor {
 
     pub(crate) fn branch_count(&self) -> usize {
         match self {
-            SubPatternExecutor::Negation(_) => 1,
-            SubPatternExecutor::Disjunction(branches) => branches.len(),
+            NestedPatternExecutor::Negation(_) => 1,
+            NestedPatternExecutor::Disjunction(branches) => branches.len(),
         }
     }
 }
 
-impl SubPatternExecutor {
+impl NestedPatternExecutor {
     pub(crate) fn new_negation(
         plan: &NegationStep,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-    ) -> Result<SubPatternExecutor, ConceptReadError> {
+    ) -> Result<NestedPatternExecutor, ConceptReadError> {
         let inner = PatternExecutor::build(&plan.negation, snapshot, thing_manager)?;
-        Ok(Self::Negation(BaseSubPatternExecutor::new(inner, NegationController::new())))
+        Ok(Self::Negation(BaseNestedPatternExecutor::new(inner, NegationController::new())))
     }
 }
 
-pub(super) struct BaseSubPatternExecutor<Controller: SubPatternController> {
+pub(super) struct BaseNestedPatternExecutor<Controller: SubPatternController> {
     inputs: Vec<MaybeOwnedRow<'static>>,
     pattern_executor: PatternExecutor,
     controller: Controller,
 }
 
-impl<Controller: SubPatternController> BaseSubPatternExecutor<Controller> {
-    fn new(pattern_executor: PatternExecutor, controller: Controller) -> BaseSubPatternExecutor<Controller> {
+impl<Controller: SubPatternController> BaseNestedPatternExecutor<Controller> {
+    fn new(pattern_executor: PatternExecutor, controller: Controller) -> BaseNestedPatternExecutor<Controller> {
         Self { inputs: Vec::new(), pattern_executor, controller }
     }
 }
 
-impl<Controller: SubPatternController> BaseSubPatternExecutor<Controller> {
+impl<Controller: SubPatternController> BaseNestedPatternExecutor<Controller> {
     fn prepare(&mut self, inputs: Vec<MaybeOwnedRow<'static>>) {
         self.pattern_executor.reset();
         self.controller.reset();

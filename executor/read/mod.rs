@@ -9,5 +9,5 @@ use storage::snapshot::ReadableSnapshot;
 mod expression_executor;
 pub(crate) mod pattern_executor;
 mod pattern_instructions;
-mod step_executors;
+mod immediate_executors;
 mod subpattern_executor;

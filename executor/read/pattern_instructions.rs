@@ -11,25 +11,25 @@ use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::read::{
-    pattern_executor::BranchIndex, step_executors::StepExecutor, subpattern_executor::SubPatternExecutor,
+    pattern_executor::BranchIndex, immediate_executors::ImmediateExecutor, subpattern_executor::NestedPatternExecutor,
 };
 
-pub(super) enum PatternInstruction {
-    Executable(StepExecutor),
-    SubPattern(SubPatternExecutor),
+pub(super) enum StepExecutors {
+    Executable(ImmediateExecutor),
+    SubPattern(NestedPatternExecutor),
 }
 
-impl PatternInstruction {
-    pub(crate) fn unwrap_executable(&mut self) -> &mut StepExecutor {
+impl StepExecutors {
+    pub(crate) fn unwrap_executable(&mut self) -> &mut ImmediateExecutor {
         match self {
-            PatternInstruction::Executable(step) => step,
+            StepExecutors::Executable(step) => step,
             _ => unreachable!(),
         }
     }
 
-    pub(crate) fn unwrap_subpattern_branch(&mut self) -> &mut SubPatternExecutor {
+    pub(crate) fn unwrap_subpattern_branch(&mut self) -> &mut NestedPatternExecutor {
         match self {
-            PatternInstruction::SubPattern(step) => step,
+            StepExecutors::SubPattern(step) => step,
             _ => unreachable!(),
         }
     }
@@ -39,25 +39,25 @@ pub(super) fn create_executors_recursive(
     match_executable: &MatchExecutable,
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,
-) -> Result<Vec<PatternInstruction>, ConceptReadError> {
+) -> Result<Vec<StepExecutors>, ConceptReadError> {
     let mut steps = Vec::new();
     for step in match_executable.steps() {
         let step =
             match step {
                 ExecutionStep::Intersection(_) => {
-                    PatternInstruction::Executable(StepExecutor::new(step, snapshot, thing_manager)?)
+                    StepExecutors::Executable(ImmediateExecutor::new(step, snapshot, thing_manager)?)
                 }
                 ExecutionStep::UnsortedJoin(_) => {
-                    PatternInstruction::Executable(StepExecutor::new(step, snapshot, thing_manager)?)
+                    StepExecutors::Executable(ImmediateExecutor::new(step, snapshot, thing_manager)?)
                 }
                 ExecutionStep::Assignment(_) => {
-                    PatternInstruction::Executable(StepExecutor::new(step, snapshot, thing_manager)?)
+                    StepExecutors::Executable(ImmediateExecutor::new(step, snapshot, thing_manager)?)
                 }
                 ExecutionStep::Check(_) => {
-                    PatternInstruction::Executable(StepExecutor::new(step, snapshot, thing_manager)?)
+                    StepExecutors::Executable(ImmediateExecutor::new(step, snapshot, thing_manager)?)
                 }
-                ExecutionStep::Negation(negation_step) => PatternInstruction::SubPattern(
-                    SubPatternExecutor::new_negation(negation_step, snapshot, thing_manager)?,
+                ExecutionStep::Negation(negation_step) => StepExecutors::SubPattern(
+                    NestedPatternExecutor::new_negation(negation_step, snapshot, thing_manager)?,
                 ),
                 _ => todo!(),
             };
