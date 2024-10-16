@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-// TODO: Hide away all types except SubPatternExecutor & BaseSubPatternExecutor
-
 use std::sync::Arc;
 
 use compiler::executable::match_::planner::match_executable::NegationStep;
@@ -17,7 +15,7 @@ use crate::{
     read::pattern_executor::PatternExecutor, row::MaybeOwnedRow,
 };
 
-pub enum SubPatternExecutor {
+pub(super) enum SubPatternExecutor {
     Disjunction(Vec<BaseSubPatternExecutor<DisjunctionController>>),
     Negation(BaseSubPatternExecutor<NegationController>),
 }
@@ -81,7 +79,7 @@ impl<Controller: SubPatternController> BaseSubPatternExecutor<Controller> {
         self.inputs = inputs;
     }
 
-    pub(super) fn get_executing_pattern(&mut self) -> Option<&mut PatternExecutor> {
+    pub(super) fn get_or_next_executing_pattern(&mut self) -> Option<&mut PatternExecutor> {
         if self.controller.is_active() && self.pattern_executor.stack_top().is_some() {
             Some(&mut self.pattern_executor)
         } else if let Some(row) = self.inputs.pop() {

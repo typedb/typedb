@@ -136,7 +136,7 @@ impl PatternExecutor {
         interrupt: &mut ExecutionInterrupt,
         executor: &mut BaseSubPatternExecutor<impl SubPatternController>,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        while let Some(pattern_executor) = executor.get_executing_pattern() {
+        while let Some(pattern_executor) = executor.get_or_next_executing_pattern() {
             let result = pattern_executor.batch_continue(context, interrupt)?;
             if let Some(batch) = executor.process_result(result) {
                 return Ok(Some(batch));

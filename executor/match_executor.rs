@@ -15,7 +15,7 @@ use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
-    read::pattern_executor::{PatternExecutor, RecursivePatternExecutor},
+    read::pattern_executor::PatternExecutor,
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
