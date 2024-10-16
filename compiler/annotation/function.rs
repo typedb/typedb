@@ -91,7 +91,7 @@ impl IndexedAnnotatedFunctions {
     pub fn empty() -> Self {
         Self { functions: HashMap::new() }
     }
-    pub fn iter_functions(&self) -> impl Iterator<Item = (&'_ DefinitionKey<'static>, &'_ AnnotatedFunction)> {
+    pub fn iter_functions(&self) -> impl Iterator<Item = (&DefinitionKey<'static>, &AnnotatedFunction)> {
         self.functions.iter()
     }
 }
@@ -129,10 +129,6 @@ impl AnnotatedUnindexedFunctions {
 
     pub fn empty() -> Self {
         Self { unindexed_functions: Vec::new() }
-    }
-
-    pub fn iter_functions(&self) -> impl Iterator<Item = &AnnotatedFunction> {
-        self.unindexed_functions.iter()
     }
 
     pub fn into_iter_functions(self) -> impl Iterator<Item = AnnotatedFunction> {

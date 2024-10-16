@@ -42,7 +42,6 @@ pub fn compile(
     let conjunction = block.conjunction();
     let block_context = block.block_context();
     debug_assert!(conjunction.captured_variables(block_context).all(|var| input_variables.contains_key(&var)));
-
     plan_conjunction(
         conjunction,
         block_context,

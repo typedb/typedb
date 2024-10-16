@@ -89,6 +89,16 @@ rust_test(
     ],
 )
 
+rust_test(
+    name = "test_functions",
+    crate_root = "execute_function.rs",
+    srcs = ["execute_function.rs"],
+    deps = deps + [
+        "//function",
+        "//query:query",
+    ],
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),

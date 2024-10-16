@@ -7,7 +7,10 @@
 use std::{collections::HashSet, sync::Arc};
 
 use compiler::{
-    annotation::pipeline::{annotate_pipeline, AnnotatedPipeline},
+    annotation::{
+        function::IndexedAnnotatedFunctions,
+        pipeline::{annotate_pipeline, AnnotatedPipeline},
+    },
     executable::pipeline::{compile_pipeline, ExecutablePipeline},
 };
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
@@ -68,14 +71,14 @@ impl QueryManager {
         } = self.translate_pipeline(snapshot.as_ref(), function_manager, query)?;
 
         // 2: Annotate
-        let annotated_functions = function_manager
+        let annotated_schema_functions = function_manager
             .get_annotated_functions(snapshot.as_ref(), &type_manager)
             .map_err(|err| QueryError::FunctionRetrieval { typedb_source: err })?;
 
         let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = annotate_pipeline(
             snapshot.as_ref(),
             type_manager,
-            &annotated_functions,
+            &annotated_schema_functions,
             &mut variable_registry,
             &parameters,
             translated_preamble,
@@ -89,6 +92,7 @@ impl QueryManager {
         let ExecutablePipeline { executable_functions, executable_stages, executable_fetch } = compile_pipeline(
             thing_manager.statistics(),
             variable_registry.clone(),
+            &annotated_schema_functions,
             annotated_preamble,
             annotated_stages,
             annotated_fetch,
@@ -128,7 +132,7 @@ impl QueryManager {
         };
 
         // 2: Annotate
-        let annotated_functions = match function_manager.get_annotated_functions(&snapshot, type_manager) {
+        let annotated_schema_functions = match function_manager.get_annotated_functions(&snapshot, type_manager) {
             Ok(functions) => functions,
             Err(err) => {
                 return Err((snapshot, QueryError::FunctionRetrieval { typedb_source: err }));
@@ -138,7 +142,7 @@ impl QueryManager {
         let annotated_pipeline = annotate_pipeline(
             &snapshot,
             type_manager,
-            &annotated_functions,
+            &annotated_schema_functions,
             &mut variable_registry,
             &value_parameters,
             translated_preamble,
@@ -156,6 +160,7 @@ impl QueryManager {
         let executable_pipeline = compile_pipeline(
             thing_manager.statistics(),
             variable_registry.clone(),
+            &annotated_schema_functions,
             annotated_preamble,
             annotated_stages,
             annotated_fetch,
