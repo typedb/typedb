@@ -8,6 +8,6 @@ use storage::snapshot::ReadableSnapshot;
 
 mod expression_executor;
 pub(crate) mod pattern_executor;
-mod pattern_instructions;
-mod immediate_executors;
+mod step_executor;
+mod immediate_executor;
 mod subpattern_executor;

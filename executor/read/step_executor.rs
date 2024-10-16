@@ -11,7 +11,7 @@ use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::read::{
-    pattern_executor::BranchIndex, immediate_executors::ImmediateExecutor, subpattern_executor::NestedPatternExecutor,
+    immediate_executor::ImmediateExecutor, subpattern_executor::NestedPatternExecutor,
 };
 
 pub(super) enum StepExecutors {
