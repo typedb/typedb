@@ -81,7 +81,7 @@ fn function_compiles() {
         let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
         let query = r#"
             with
-            fun increment($p_arg: person) -> { age }:
+            fun get_ages($p_arg: person) -> { age }:
             match
                 $p_arg has age $age_return;
             return {$age_return};
