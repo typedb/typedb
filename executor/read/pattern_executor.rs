@@ -18,7 +18,6 @@ use crate::{
         pattern_instructions::{create_executors_recursive, PatternInstruction},
         subpattern_executor::{BaseSubPatternExecutor, SubPatternController, SubPatternExecutor},
     },
-    row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
 
@@ -174,25 +173,5 @@ impl PatternExecutor {
 
     fn pop_stack(&mut self) {
         self.stack.pop(); // Just in case we need to do more here, like copy suspend points
-    }
-}
-
-// PatternStack
-pub(crate) struct RecursivePatternExecutor {
-    entry: PatternExecutor,
-    // This is probably a table query state.
-    // tabled_subquery_states: (), // Future: Map<SubqueryID, TabledSubqueryState>
-}
-
-impl RecursivePatternExecutor {
-    pub(crate) fn new(
-        match_executable: &MatchExecutable,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
-        input: MaybeOwnedRow<'_>,
-    ) -> Result<Self, ConceptReadError> {
-        let mut entry = PatternExecutor::build(match_executable, snapshot, thing_manager)?;
-        entry.prepare(FixedBatch::from(input.into_owned()));
-        Ok(Self { entry })
     }
 }
