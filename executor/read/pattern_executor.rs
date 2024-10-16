@@ -51,6 +51,10 @@ impl StackInstruction {
                     NestedPatternExecutor::Disjunction(branches) => {
                         PatternExecutor::execute_nested_pattern(context, interrupt, &mut branches[*branch_index])
                     }
+                    NestedPatternExecutor::InlinedFunction(body) => {
+                        debug_assert!(*branch_index == 0);
+                        PatternExecutor::execute_nested_pattern(context, interrupt, body)
+                    }
                 }
             }
         }

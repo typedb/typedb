@@ -72,6 +72,7 @@ pub enum ExecutionStep {
     Disjunction(DisjunctionStep),
     Negation(NegationStep),
     Optional(OptionalStep),
+    // InlinedFunction(InlinedFunctionStep),
 }
 
 impl ExecutionStep {
@@ -84,6 +85,7 @@ impl ExecutionStep {
             ExecutionStep::Disjunction(_) => todo!(),
             ExecutionStep::Negation(_) => &[],
             ExecutionStep::Optional(_) => todo!(),
+            // ExecutionStep::InlinedFunction(_) => todo!(),
         }
     }
 
@@ -96,6 +98,7 @@ impl ExecutionStep {
             ExecutionStep::Disjunction(_) => todo!(),
             ExecutionStep::Negation(_) => &[],
             ExecutionStep::Optional(_) => todo!(),
+            // ExecutionStep::InlinedFunction(_) => todo!()
         }
     }
 
@@ -108,6 +111,7 @@ impl ExecutionStep {
             ExecutionStep::Disjunction(_) => todo!(),
             ExecutionStep::Negation(_) => 0,
             ExecutionStep::Optional(_) => todo!(),
+            // ExecutionStep::InlinedFunction(_) => todo!()
         }
     }
 }
@@ -253,6 +257,12 @@ pub struct DisjunctionStep {
 #[derive(Clone, Debug)]
 pub struct NegationStep {
     pub negation: MatchExecutable,
+}
+
+#[derive(Clone, Debug)]
+pub struct InlinedFunctionStep {
+    pub body: Arc<MatchExecutable>,
+    pub copy_return_mapping: Vec<(VariablePosition, VariablePosition)>,
 }
 
 #[derive(Clone, Debug)]

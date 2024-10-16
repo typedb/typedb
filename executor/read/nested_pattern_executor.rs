@@ -6,8 +6,10 @@
 
 use std::sync::Arc;
 
-use compiler::executable::match_::planner::match_executable::NegationStep;
+use compiler::executable::match_::planner::match_executable::{InlinedFunctionStep, NegationStep};
+use compiler::VariablePosition;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -18,6 +20,7 @@ use crate::{
 pub(super) enum NestedPatternExecutor {
     Disjunction(Vec<BaseNestedPatternExecutor<DisjunctionController>>),
     Negation(BaseNestedPatternExecutor<NegationController>),
+    InlinedFunction(BaseNestedPatternExecutor<InlinedFunctionController>),
 }
 
 impl NestedPatternExecutor {
@@ -37,6 +40,9 @@ impl NestedPatternExecutor {
                     branch.prepare(as_rows.clone());
                 }
             }
+            NestedPatternExecutor::InlinedFunction(inner) => {
+                inner.prepare(as_rows);
+            }
         }
         Ok(())
     }
@@ -45,6 +51,7 @@ impl NestedPatternExecutor {
         match self {
             NestedPatternExecutor::Negation(_) => 1,
             NestedPatternExecutor::Disjunction(branches) => branches.len(),
+            NestedPatternExecutor::InlinedFunction(_) => 1,
         }
     }
 }
@@ -57,6 +64,17 @@ impl NestedPatternExecutor {
     ) -> Result<NestedPatternExecutor, ConceptReadError> {
         let inner = PatternExecutor::build(&plan.negation, snapshot, thing_manager)?;
         Ok(Self::Negation(BaseNestedPatternExecutor::new(inner, NegationController::new())))
+    }
+
+    pub(crate) fn new_inline_function(
+        plan: &InlinedFunctionStep,
+        snapshot: &Arc<impl ReadableSnapshot + 'static>,
+        thing_manager: &Arc<ThingManager>,
+    ) -> Result<NestedPatternExecutor, ConceptReadError> {
+        let inner = PatternExecutor::build(&plan.body, snapshot, thing_manager)?;
+        Ok(Self::InlinedFunction(
+            BaseNestedPatternExecutor::new(inner, InlinedFunctionController::new(plan.copy_return_mapping.clone()))
+        ))
     }
 }
 
@@ -176,5 +194,55 @@ impl NestedPatternController for DisjunctionController {
 
     fn process_result(&mut self, result: Option<FixedBatch>) -> NestedPatternControllerResult {
         NestedPatternControllerResult::Regular(result)
+    }
+}
+
+pub(super) struct InlinedFunctionController {
+    input: Option<MaybeOwnedRow<'static>>,
+    copy_return_mapping: Vec<(VariablePosition, VariablePosition)>, // returned -> input
+}
+
+impl InlinedFunctionController {
+    fn new(copy_return_mapping: Vec<(VariablePosition, VariablePosition)>) -> Self {
+        Self { input: None, copy_return_mapping }
+    }
+}
+
+impl NestedPatternController for InlinedFunctionController {
+    fn reset(&mut self) {
+        self.input = None;
+    }
+
+    fn is_active(&self) -> bool {
+        self.input.is_some()
+    }
+
+    fn prepare(&mut self, row: MaybeOwnedRow<'static>) {
+        self.input = Some(row);
+    }
+
+    fn process_result(&mut self, result: Option<FixedBatch>) -> NestedPatternControllerResult {
+        let Self { input, copy_return_mapping } = self;
+        debug_assert!(input.is_some());
+        match result {
+            None => NestedPatternControllerResult::Regular(None),
+            Some(returned_batch) => {
+                let input = input.as_ref().unwrap();
+                let mut output_batch = FixedBatch::new(input.len() as u32);
+                for return_index in 0..returned_batch.len() {
+                    // TODO: Deduplicate?
+                    let returned_row = returned_batch.get_row(return_index);
+                    output_batch.append(|mut output_row| {
+                        for (i, element) in input.iter().enumerate() {
+                            output_row.set(VariablePosition::new(i as u32), element.clone());
+                        }
+                        for (returned_position, output_position) in &mut *copy_return_mapping {
+                            output_row.set(output_position.clone(), returned_row[returned_position.as_usize()].clone().into_owned());
+                        }
+                    });
+                }
+                NestedPatternControllerResult::Regular(Some(output_batch))
+            }
+        }
     }
 }
