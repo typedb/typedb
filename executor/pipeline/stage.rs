@@ -5,6 +5,7 @@
  */
 
 use std::sync::Arc;
+use compiler::executable::match_::planner::function_plan::ExecutableFunctionRegistry;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use ir::pipeline::ParameterRegistry;
@@ -33,12 +34,13 @@ use crate::{
 pub struct ExecutionContext<Snapshot> {
     pub snapshot: Arc<Snapshot>,
     pub thing_manager: Arc<ThingManager>,
+    pub function_registry: Arc<ExecutableFunctionRegistry>,
     pub parameters: Arc<ParameterRegistry>,
 }
 
 impl<Snapshot> ExecutionContext<Snapshot> {
-    pub fn new(snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>, parameters: Arc<ParameterRegistry>) -> Self {
-        Self { snapshot, thing_manager, parameters }
+    pub fn new(snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>, function_registry: Arc<ExecutableFunctionRegistry>, parameters: Arc<ParameterRegistry>) -> Self {
+        Self { snapshot, thing_manager, function_registry, parameters }
     }
 
     pub(crate) fn snapshot(&self) -> &Arc<Snapshot> {
@@ -60,8 +62,8 @@ impl<Snapshot> ExecutionContext<Snapshot> {
 
 impl<Snapshot> Clone for ExecutionContext<Snapshot> {
     fn clone(&self) -> Self {
-        let Self { snapshot, thing_manager, parameters } = self;
-        Self { snapshot: snapshot.clone(), thing_manager: thing_manager.clone(), parameters: parameters.clone() }
+        let Self { snapshot, thing_manager, function_registry, parameters } = self;
+        Self { snapshot: snapshot.clone(), thing_manager: thing_manager.clone(), function_registry: function_registry.clone(), parameters: parameters.clone() }
     }
 }
 

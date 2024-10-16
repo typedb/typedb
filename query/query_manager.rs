@@ -105,6 +105,7 @@ impl QueryManager {
             snapshot,
             &variable_registry,
             thing_manager,
+            executable_functions,
             executable_stages,
             executable_fetch,
             parameters,

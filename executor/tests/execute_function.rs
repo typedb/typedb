@@ -9,6 +9,9 @@ use std::sync::Arc;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use executor::{pipeline::stage::ExecutionContext, ExecutionInterrupt};
+use executor::error::ReadExecutionError;
+use executor::pipeline::PipelineExecutionError;
+use executor::row::MaybeOwnedRow;
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
@@ -88,6 +91,7 @@ fn function_compiles() {
 
             match
                 $p isa person;
+                $z in get_ages($p);
         "#;
         let match_ = typeql::parse_query(query).unwrap().into_pipeline();
         let pipeline = context
@@ -100,5 +104,12 @@ fn function_compiles() {
                 &match_,
             )
             .unwrap();
+
+        let (mut iterator, _) =
+            pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+
+        let rows: Vec<Result<MaybeOwnedRow<'static>, PipelineExecutionError>> =
+            iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
+        assert_eq!(rows.len(), 2);
     }
 }

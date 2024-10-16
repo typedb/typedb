@@ -22,11 +22,11 @@ use crate::{
 };
 
 pub struct ExecutableFunction {
-    executable_stages: Vec<ExecutableStage>,
-    argument_positions: HashMap<Variable, VariablePosition>,
-    returns: ExecutableReturn,
-    // is_tabled: bool, // TODO: Essential
-    // plan_cost: f64, // TODO: Where do we fit this in?
+    pub executable_stages: Vec<ExecutableStage>,
+    pub argument_positions: HashMap<Variable, VariablePosition>,
+    pub returns: ExecutableReturn,
+    pub is_tabled: bool,
+    // pub plan_cost: f64, // TODO: Where do we fit this in?
 }
 
 pub enum ExecutableReturn {
@@ -51,7 +51,7 @@ pub(crate) fn compile_function(
         arguments.clone().into_iter(),
     )?;
     let returns = compile_return_operation(&mut executable_stages, return_)?;
-    Ok(ExecutableFunction { executable_stages, argument_positions, returns })
+    Ok(ExecutableFunction { executable_stages, argument_positions, returns, is_tabled: false }) // TODO
 }
 
 fn compile_return_operation(

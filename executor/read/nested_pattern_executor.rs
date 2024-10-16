@@ -7,17 +7,20 @@
 use std::sync::Arc;
 
 use compiler::{
-    executable::match_::planner::match_executable::{InlinedFunctionStep, NegationStep},
+    executable::match_::planner::match_executable::NegationStep,
     VariablePosition,
 };
+use compiler::executable::match_::planner::function_plan::ExecutableFunctionRegistry;
+use compiler::executable::match_::planner::match_executable::FunctionCallStep;
+use compiler::executable::pipeline::ExecutableStage;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::FixedBatch, error::ReadExecutionError, pipeline::stage::ExecutionContext,
     read::pattern_executor::PatternExecutor, row::MaybeOwnedRow,
 };
+use crate::row::Row;
 
 pub(super) enum NestedPatternExecutor {
     Disjunction(Vec<BaseNestedPatternExecutor<DisjunctionController>>),
@@ -63,20 +66,25 @@ impl NestedPatternExecutor {
         plan: &NegationStep,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
+        function_registry: &ExecutableFunctionRegistry,
     ) -> Result<NestedPatternExecutor, ConceptReadError> {
-        let inner = PatternExecutor::build(&plan.negation, snapshot, thing_manager)?;
+        let inner = PatternExecutor::build(&plan.negation, snapshot, thing_manager, function_registry)?;
         Ok(Self::Negation(BaseNestedPatternExecutor::new(inner, NegationController::new())))
     }
 
     pub(crate) fn new_inline_function(
-        plan: &InlinedFunctionStep,
+        plan: &FunctionCallStep,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
+        function_registry: &ExecutableFunctionRegistry,
     ) -> Result<NestedPatternExecutor, ConceptReadError> {
-        let inner = PatternExecutor::build(&plan.body, snapshot, thing_manager)?;
+        let function = function_registry.get(plan.function_id.clone());
+        debug_assert!(!function.is_tabled);
+        let ExecutableStage::Match(match_) = &function.executable_stages[0] else { todo!("Pipelines in functions") };
+        let inner = PatternExecutor::build(match_, snapshot, thing_manager, function_registry)?;
         Ok(Self::InlinedFunction(BaseNestedPatternExecutor::new(
             inner,
-            InlinedFunctionController::new(plan.copy_return_mapping.clone()),
+            InlinedFunctionController::new(plan.arguments.clone(), plan.assigned.clone(), plan.output_width),
         )))
     }
 }
@@ -104,8 +112,8 @@ impl<Controller: NestedPatternController> BaseNestedPatternExecutor<Controller> 
         if self.controller.is_active() && self.pattern_executor.stack_top().is_some() {
             Some(&mut self.pattern_executor)
         } else if let Some(row) = self.inputs.pop() {
+            self.controller.prepare_and_get_subpattern_input(row.clone());
             self.pattern_executor.prepare(FixedBatch::from(row.clone()));
-            self.controller.prepare(row.clone());
             Some(&mut self.pattern_executor)
         } else {
             None
@@ -128,7 +136,7 @@ impl<Controller: NestedPatternController> BaseNestedPatternExecutor<Controller> 
 pub(super) trait NestedPatternController {
     fn reset(&mut self);
     fn is_active(&self) -> bool;
-    fn prepare(&mut self, row: MaybeOwnedRow<'static>);
+    fn prepare_and_get_subpattern_input(&mut self, row: MaybeOwnedRow<'static>) -> MaybeOwnedRow<'static>;
     // None will cause the pattern_executor to backtrack. You can also choose to call short-circuit on the pattern_executor
     fn process_result(&mut self, result: Option<FixedBatch>) -> NestedPatternControllerResult;
 }
@@ -157,8 +165,9 @@ impl NestedPatternController for NegationController {
         self.input.is_some()
     }
 
-    fn prepare(&mut self, row: MaybeOwnedRow<'static>) {
-        self.input = Some(row);
+    fn prepare_and_get_subpattern_input(&mut self, row: MaybeOwnedRow<'static>) -> MaybeOwnedRow<'static> {
+        self.input = Some(row.clone());
+        row
     }
 
     fn process_result(&mut self, result: Option<FixedBatch>) -> NestedPatternControllerResult {
@@ -191,8 +200,9 @@ impl NestedPatternController for DisjunctionController {
         self.input.is_some()
     }
 
-    fn prepare(&mut self, row: MaybeOwnedRow<'static>) {
-        self.input = Some(row);
+    fn prepare_and_get_subpattern_input(&mut self, row: MaybeOwnedRow<'static>) -> MaybeOwnedRow<'static> {
+        self.input = Some(row.clone());
+        row
     }
 
     fn process_result(&mut self, result: Option<FixedBatch>) -> NestedPatternControllerResult {
@@ -202,12 +212,14 @@ impl NestedPatternController for DisjunctionController {
 
 pub(super) struct InlinedFunctionController {
     input: Option<MaybeOwnedRow<'static>>,
-    copy_return_mapping: Vec<(VariablePosition, VariablePosition)>, // returned -> input
+    arguments: Vec<VariablePosition>, // caller input -> callee input
+    assigned: Vec<VariablePosition>,  // callee return -> caller output
+    output_width: u32,
 }
 
 impl InlinedFunctionController {
-    fn new(copy_return_mapping: Vec<(VariablePosition, VariablePosition)>) -> Self {
-        Self { input: None, copy_return_mapping }
+    fn new(arguments: Vec<VariablePosition>, assigned: Vec<VariablePosition>, output_width: u32) -> Self {
+        Self { input: None, arguments, assigned, output_width }
     }
 }
 
@@ -220,18 +232,23 @@ impl NestedPatternController for InlinedFunctionController {
         self.input.is_some()
     }
 
-    fn prepare(&mut self, row: MaybeOwnedRow<'static>) {
+    fn prepare_and_get_subpattern_input(&mut self, row: MaybeOwnedRow<'static>) -> MaybeOwnedRow<'static> {
+        let args = self.arguments.iter().map(|pos| {
+            row.get(pos.clone()).clone().into_owned()
+        }).collect();
+        let callee_input = MaybeOwnedRow::new_owned(args, row.multiplicity());
         self.input = Some(row);
+        callee_input
     }
 
     fn process_result(&mut self, result: Option<FixedBatch>) -> NestedPatternControllerResult {
-        let Self { input, copy_return_mapping } = self;
+        let Self { input, assigned, output_width, .. } = self;
         debug_assert!(input.is_some());
         match result {
             None => NestedPatternControllerResult::Regular(None),
             Some(returned_batch) => {
                 let input = input.as_ref().unwrap();
-                let mut output_batch = FixedBatch::new(input.len() as u32);
+                let mut output_batch = FixedBatch::new(*output_width);
                 for return_index in 0..returned_batch.len() {
                     // TODO: Deduplicate?
                     let returned_row = returned_batch.get_row(return_index);
@@ -239,10 +256,10 @@ impl NestedPatternController for InlinedFunctionController {
                         for (i, element) in input.iter().enumerate() {
                             output_row.set(VariablePosition::new(i as u32), element.clone());
                         }
-                        for (returned_position, output_position) in &mut *copy_return_mapping {
+                        for (returned_index, output_position) in assigned.iter().enumerate() {
                             output_row.set(
                                 output_position.clone(),
-                                returned_row[returned_position.as_usize()].clone().into_owned(),
+                                returned_row[returned_index].clone().into_owned(),
                             );
                         }
                     });

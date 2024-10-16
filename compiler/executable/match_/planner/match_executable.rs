@@ -17,6 +17,7 @@ use ir::{
     },
     pipeline::VariableRegistry,
 };
+use ir::pipeline::function_signature::FunctionID;
 
 use crate::{
     executable::match_::instructions::{CheckInstruction, ConstraintInstruction, VariableModes},
@@ -72,7 +73,7 @@ pub enum ExecutionStep {
     Disjunction(DisjunctionStep),
     Negation(NegationStep),
     Optional(OptionalStep),
-    // InlinedFunction(InlinedFunctionStep),
+    FunctionCall(FunctionCallStep),
 }
 
 impl ExecutionStep {
@@ -85,7 +86,9 @@ impl ExecutionStep {
             ExecutionStep::Disjunction(_) => todo!(),
             ExecutionStep::Negation(_) => &[],
             ExecutionStep::Optional(_) => todo!(),
-            // ExecutionStep::InlinedFunction(_) => todo!(),
+            ExecutionStep::FunctionCall(function_call) => {
+                function_call.assigned.as_slice()
+            },
         }
     }
 
@@ -98,7 +101,7 @@ impl ExecutionStep {
             ExecutionStep::Disjunction(_) => todo!(),
             ExecutionStep::Negation(_) => &[],
             ExecutionStep::Optional(_) => todo!(),
-            // ExecutionStep::InlinedFunction(_) => todo!()
+            ExecutionStep::FunctionCall(function_call) => function_call.assigned.as_slice(),
         }
     }
 
@@ -111,7 +114,7 @@ impl ExecutionStep {
             ExecutionStep::Disjunction(_) => todo!(),
             ExecutionStep::Negation(_) => 0,
             ExecutionStep::Optional(_) => todo!(),
-            // ExecutionStep::InlinedFunction(_) => todo!()
+            ExecutionStep::FunctionCall(_) => todo!()
         }
     }
 }
@@ -260,9 +263,12 @@ pub struct NegationStep {
 }
 
 #[derive(Clone, Debug)]
-pub struct InlinedFunctionStep {
-    pub body: Arc<MatchExecutable>,
-    pub copy_return_mapping: Vec<(VariablePosition, VariablePosition)>,
+pub struct FunctionCallStep {
+    // TODO: Deduplication, selection counting etc.
+    pub function_id: FunctionID,
+    pub assigned: Vec<VariablePosition>,
+    pub arguments: Vec<VariablePosition>,
+    pub output_width: u32,
 }
 
 #[derive(Clone, Debug)]

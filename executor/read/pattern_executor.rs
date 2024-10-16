@@ -5,6 +5,7 @@
  */
 
 use std::sync::Arc;
+use compiler::executable::match_::planner::function_plan::ExecutableFunctionRegistry;
 
 use compiler::executable::match_::planner::match_executable::MatchExecutable;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
@@ -81,8 +82,9 @@ impl PatternExecutor {
         match_executable: &MatchExecutable,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
+        function_registry: &ExecutableFunctionRegistry,
     ) -> Result<Self, ConceptReadError> {
-        let instructions = create_executors_recursive(match_executable, snapshot, thing_manager)?;
+        let instructions = create_executors_recursive(match_executable, snapshot, thing_manager, function_registry)?;
         Ok(PatternExecutor { instructions, stack: Vec::new() })
     }
 
@@ -166,6 +168,7 @@ impl PatternExecutor {
                     self.stack.push(StackInstruction::NestedPatternBranch(InstructionIndex(index), BranchIndex(i)))
                 }
             }
+            StepExecutors::ReshapeForReturn(_) => todo!(),
         }
         Ok(())
     }

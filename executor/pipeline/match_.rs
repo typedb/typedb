@@ -83,7 +83,7 @@ where
                 Err(err) => return Some(Err(err)),
             };
 
-            let executor = MatchExecutor::new(&self.executable, snapshot, thing_manager, input_row)
+            let executor = MatchExecutor::new(&self.executable, snapshot, thing_manager, input_row, &self.context.function_registry)
                 .map_err(|err| PipelineExecutionError::InitialisingMatchIterator { source: err });
 
             match executor {

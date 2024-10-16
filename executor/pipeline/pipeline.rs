@@ -11,6 +11,7 @@ use compiler::{
     executable::{fetch::executable::ExecutableFetch, pipeline::ExecutableStage},
     VariablePosition,
 };
+use compiler::executable::match_::planner::function_plan::ExecutableFunctionRegistry;
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::{ParameterRegistry, VariableRegistry};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
@@ -89,12 +90,13 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         snapshot: Arc<Snapshot>,
         variable_registry: &VariableRegistry,
         thing_manager: Arc<ThingManager>,
+        executable_functions: ExecutableFunctionRegistry,
         executable_stages: Vec<ExecutableStage>,
         executable_fetch: Option<ExecutableFetch>,
         parameters: ParameterRegistry,
     ) -> Self {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
-        let context = ExecutionContext::new(snapshot, thing_manager, Arc::new(parameters));
+        let context = ExecutionContext::new(snapshot, thing_manager, Arc::new(executable_functions), Arc::new(parameters));
         let mut last_stage = ReadPipelineStage::Initial(InitialStage::new(context));
         for executable_stage in executable_stages {
             match executable_stage {
@@ -149,7 +151,7 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         parameters: ParameterRegistry,
     ) -> Self {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
-        let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::new(parameters));
+        let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::new(ExecutableFunctionRegistry::empty()), Arc::new(parameters));
         let mut last_stage = WritePipelineStage::Initial(InitialStage::new(context));
         for executable_stage in executable_stages {
             match executable_stage {

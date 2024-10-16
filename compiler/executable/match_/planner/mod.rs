@@ -13,6 +13,7 @@ use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::pipeline::{block::Block, VariableRegistry};
 use itertools::Itertools;
+use ir::pipeline::function_signature::FunctionID;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -25,6 +26,7 @@ use crate::{
     },
     VariablePosition,
 };
+use crate::executable::match_::planner::match_executable::FunctionCallStep;
 
 pub mod function_plan;
 pub mod match_executable;
@@ -72,10 +74,19 @@ struct NegationBuilder {
 }
 
 #[derive(Debug)]
+struct FunctionCallBuilder {
+    function_id: FunctionID,
+    arguments: Vec<VariablePosition>,
+    assigned: Vec<VariablePosition>,
+    output_width: u32,
+}
+
+#[derive(Debug)]
 enum StepBuilder {
     Intersection(IntersectionBuilder),
     Check(CheckBuilder),
     Negation(NegationBuilder),
+    FunctionCall(FunctionCallBuilder),
 }
 
 impl StepBuilder {
@@ -98,6 +109,9 @@ impl StepBuilder {
             Self::Check(CheckBuilder { instructions }) => ExecutionStep::Check(CheckStep::new(instructions)),
             Self::Negation(NegationBuilder { negation }) => {
                 ExecutionStep::Negation(match_executable::NegationStep { negation })
+            }
+            Self::FunctionCall(FunctionCallBuilder { function_id, arguments, assigned, output_width, .. }) => {
+                ExecutionStep::FunctionCall(FunctionCallStep { function_id, arguments , assigned, output_width })
             }
         }
     }
@@ -137,6 +151,7 @@ impl StepBuilder {
             StepBuilder::Intersection(IntersectionBuilder { output_width, .. }) => *output_width = Some(position),
             StepBuilder::Check(_) => (),
             StepBuilder::Negation(_) => (),
+            StepBuilder::FunctionCall(_) => unreachable!("I set it manually at creation"),
         }
     }
 }
@@ -199,6 +214,10 @@ impl MatchExecutableBuilder {
         }
         let current = self.current.as_mut().unwrap().as_check_mut().unwrap();
         current.instructions.push(instruction);
+    }
+
+    fn push_function_call_instruction() {
+        todo!()
     }
 
     fn push_step(&mut self, variable_positions: &HashMap<Variable, VariablePosition>, step: StepBuilder) {
