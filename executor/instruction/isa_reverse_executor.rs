@@ -4,10 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::BTreeSet, marker::PhantomData, sync::Arc};
+use std::{collections::BTreeSet, sync::Arc};
 
 use answer::{Thing, Type};
-use compiler::executable::match_::instructions::thing::IsaReverseInstruction;
+use compiler::{executable::match_::instructions::thing::IsaReverseInstruction, ExecutorVariable};
 use concept::error::ConceptReadError;
 use ir::pattern::constraint::{Isa, IsaKind, SubKind};
 use lending_iterator::{AsHkt, LendingIterator};
@@ -26,11 +26,10 @@ use crate::{
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
-    VariablePosition,
 };
 
 pub(crate) struct IsaReverseExecutor {
-    isa: Isa<VariablePosition>,
+    isa: Isa<ExecutorVariable>,
     iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
@@ -48,9 +47,9 @@ pub(crate) type IsaReverseUnboundedSortedThingMerged = IsaTupleIterator<Multiple
 
 impl IsaReverseExecutor {
     pub(crate) fn new(
-        isa_reverse: IsaReverseInstruction<VariablePosition>,
+        isa_reverse: IsaReverseInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
-        sort_by: Option<VariablePosition>,
+        sort_by: ExecutorVariable,
     ) -> Self {
         let thing_types = isa_reverse.thing_types().clone();
         let types = isa_reverse.types().clone();
@@ -68,14 +67,13 @@ impl IsaReverseExecutor {
             TuplePositions::Pair([type_, thing])
         };
 
-        let checker = Checker::<(Thing<'_>, Type)> {
+        let checker = Checker::<(Thing<'_>, Type)>::new(
             checks,
-            extractors: [(thing, EXTRACT_THING), (type_, EXTRACT_TYPE)]
+            [(thing, EXTRACT_THING), (type_, EXTRACT_TYPE)]
                 .into_iter()
                 .filter_map(|(var, ex)| Some((var?, ex)))
                 .collect(),
-            _phantom_data: PhantomData,
-        };
+        );
 
         Self { isa, iterate_mode, variable_modes, tuple_positions: output_tuple_positions, types, thing_types, checker }
     }

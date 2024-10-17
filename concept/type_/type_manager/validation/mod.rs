@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::error::Error;
-
 use encoding::{
     graph::type_::{CapabilityKind, Kind},
     value::{label::Label, value_type::ValueType},

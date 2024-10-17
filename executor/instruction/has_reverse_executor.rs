@@ -7,12 +7,11 @@
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet, HashMap},
-    marker::PhantomData,
     sync::Arc,
 };
 
 use answer::Type;
-use compiler::executable::match_::instructions::thing::HasReverseInstruction;
+use compiler::{executable::match_::instructions::thing::HasReverseInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
     thing::{attribute::Attribute, has::Has, object::HasReverseIterator, thing_manager::ThingManager},
@@ -31,11 +30,10 @@ use crate::{
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
-    VariablePosition,
 };
 
 pub(crate) struct HasReverseExecutor {
-    has: ir::pattern::constraint::Has<VariablePosition>,
+    has: ir::pattern::constraint::Has<ExecutorVariable>,
     iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
@@ -53,9 +51,9 @@ pub(crate) type HasReverseBoundedSortedOwner = HasTupleIterator<HasReverseIterat
 
 impl HasReverseExecutor {
     pub(crate) fn new(
-        has_reverse: HasReverseInstruction<VariablePosition>,
+        has_reverse: HasReverseInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
-        sort_by: Option<VariablePosition>,
+        sort_by: ExecutorVariable,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
@@ -81,11 +79,10 @@ impl HasReverseExecutor {
             TuplePositions::Pair([Some(attribute), Some(owner)])
         };
 
-        let checker = Checker::<(Has<'_>, _)> {
+        let checker = Checker::<(Has<'_>, _)>::new(
             checks,
-            extractors: HashMap::from([(owner, EXTRACT_OWNER), (attribute, EXTRACT_ATTRIBUTE)]),
-            _phantom_data: PhantomData,
-        };
+            HashMap::from([(owner, EXTRACT_OWNER), (attribute, EXTRACT_ATTRIBUTE)]),
+        );
 
         let attribute_cache = if iterate_mode == BinaryIterateMode::UnboundInverted {
             let mut cache = Vec::new();
@@ -191,7 +188,7 @@ impl HasReverseExecutor {
                 }
             }
             BinaryIterateMode::BoundFrom => {
-                let attribute = self.has.attribute().as_variable().unwrap();
+                let attribute = self.has.attribute().as_variable().unwrap().as_position().unwrap();
                 debug_assert!(row.len() > attribute.as_usize());
                 let attribute = row.get(attribute);
                 let (min_owner_type, max_owner_type) = min_max_types(&*self.owner_types);

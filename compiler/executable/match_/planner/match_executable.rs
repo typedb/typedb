@@ -14,7 +14,7 @@ use ir::pattern::{
 
 use crate::{
     executable::match_::instructions::{CheckInstruction, ConstraintInstruction, VariableModes},
-    VariablePosition,
+    ExecutorVariable, VariablePosition,
 };
 
 #[derive(Clone, Debug)]
@@ -101,8 +101,8 @@ impl ExecutionStep {
 
 #[derive(Clone, Debug)]
 pub struct IntersectionStep {
-    pub sort_variable: VariablePosition,
-    pub instructions: Vec<(ConstraintInstruction<VariablePosition>, VariableModes)>,
+    pub sort_variable: ExecutorVariable,
+    pub instructions: Vec<(ConstraintInstruction<ExecutorVariable>, VariableModes)>,
     new_variables: Vec<VariablePosition>,
     output_width: u32,
     input_variables: Vec<VariablePosition>,
@@ -111,21 +111,24 @@ pub struct IntersectionStep {
 
 impl IntersectionStep {
     pub fn new(
-        sort_variable: VariablePosition,
-        instructions: Vec<ConstraintInstruction<VariablePosition>>,
+        sort_variable: ExecutorVariable,
+        instructions: Vec<ConstraintInstruction<ExecutorVariable>>,
         selected_variables: Vec<VariablePosition>,
-        named_variables: &HashSet<VariablePosition>,
+        named_variables: &HashSet<ExecutorVariable>,
         output_width: u32,
     ) -> Self {
         let mut input_variables = Vec::with_capacity(instructions.len() * 2);
         let mut new_variables = Vec::with_capacity(instructions.len() * 2);
         instructions.iter().for_each(|instruction| {
             instruction.new_variables_foreach(|var| {
-                if !new_variables.contains(&var) {
-                    new_variables.push(var)
+                if let Some(var) = var.as_position() {
+                    if !new_variables.contains(&var) {
+                        new_variables.push(var)
+                    }
                 }
             });
             instruction.input_variables_foreach(|var| {
+                let var = var.as_position().unwrap();
                 if !input_variables.contains(&var) {
                     input_variables.push(var)
                 }
@@ -153,8 +156,8 @@ impl IntersectionStep {
 
 #[derive(Clone, Debug)]
 pub struct UnsortedJoinStep {
-    pub iterate_instruction: ConstraintInstruction<VariablePosition>,
-    pub check_instructions: Vec<ConstraintInstruction<VariablePosition>>,
+    pub iterate_instruction: ConstraintInstruction<ExecutorVariable>,
+    pub check_instructions: Vec<ConstraintInstruction<ExecutorVariable>>,
     new_variables: Vec<VariablePosition>,
     input_variables: Vec<VariablePosition>,
     selected_variables: Vec<VariablePosition>,
@@ -162,24 +165,28 @@ pub struct UnsortedJoinStep {
 
 impl UnsortedJoinStep {
     pub fn new(
-        iterate_instruction: ConstraintInstruction<VariablePosition>,
-        check_instructions: Vec<ConstraintInstruction<VariablePosition>>,
+        iterate_instruction: ConstraintInstruction<ExecutorVariable>,
+        check_instructions: Vec<ConstraintInstruction<ExecutorVariable>>,
         selected_variables: &[VariablePosition],
     ) -> Self {
         let mut input_variables = Vec::with_capacity(check_instructions.len() * 2);
         let mut new_variables = Vec::with_capacity(5);
         iterate_instruction.new_variables_foreach(|var| {
-            if !new_variables.contains(&var) {
-                new_variables.push(var)
+            if let Some(var) = var.as_position() {
+                if !new_variables.contains(&var) {
+                    new_variables.push(var)
+                }
             }
         });
         iterate_instruction.input_variables_foreach(|var| {
+            let var = var.as_position().unwrap();
             if !input_variables.contains(&var) {
                 input_variables.push(var)
             }
         });
         check_instructions.iter().for_each(|instruction| {
             instruction.input_variables_foreach(|var| {
+                let var = var.as_position().unwrap();
                 if !input_variables.contains(&var) {
                     input_variables.push(var)
                 }
@@ -222,14 +229,14 @@ impl AssignmentStep {
 
 #[derive(Clone, Debug)]
 pub struct CheckStep {
-    pub check_instructions: Vec<CheckInstruction<VariablePosition>>,
+    pub check_instructions: Vec<CheckInstruction<ExecutorVariable>>,
     pub selected_variables: Vec<VariablePosition>,
     pub output_width: u32,
 }
 
 impl CheckStep {
     pub fn new(
-        check_instructions: Vec<CheckInstruction<VariablePosition>>,
+        check_instructions: Vec<CheckInstruction<ExecutorVariable>>,
         selected_variables: Vec<VariablePosition>,
         output_width: u32,
     ) -> Self {
@@ -249,6 +256,10 @@ pub struct DisjunctionStep {
 }
 
 impl DisjunctionStep {
+    pub fn new(branches: Vec<MatchExecutable>, selected_variables: Vec<VariablePosition>, output_width: u32) -> Self {
+        Self { branches, selected_variables, output_width }
+    }
+
     pub fn output_width(&self) -> u32 {
         self.output_width
     }

@@ -7,13 +7,12 @@
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
     iter,
-    marker::PhantomData,
     sync::Arc,
     vec,
 };
 
 use answer::{variable_value::VariableValue, Type};
-use compiler::executable::match_::instructions::type_::RelatesInstruction;
+use compiler::{executable::match_::instructions::type_::RelatesInstruction, ExecutorVariable};
 use concept::{error::ConceptReadError, type_::relates::Relates};
 use itertools::Itertools;
 use lending_iterator::{
@@ -30,11 +29,10 @@ use crate::{
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
-    VariablePosition,
 };
 
 pub(crate) struct RelatesExecutor {
-    relates: ir::pattern::constraint::Relates<VariablePosition>,
+    relates: ir::pattern::constraint::Relates<ExecutorVariable>,
     iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
@@ -76,9 +74,9 @@ pub(super) const EXTRACT_ROLE: RelatesVariableValueExtractor =
 
 impl RelatesExecutor {
     pub(crate) fn new(
-        relates: RelatesInstruction<VariablePosition>,
+        relates: RelatesInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
-        sort_by: Option<VariablePosition>,
+        sort_by: ExecutorVariable,
     ) -> Self {
         let role_types = relates.role_types().clone();
         let relation_role_types = relates.relation_role_types().clone();
@@ -103,14 +101,13 @@ impl RelatesExecutor {
             TuplePositions::Pair([relation, role_type])
         };
 
-        let checker = Checker::<AsHkt![Relates<'_>]> {
+        let checker = Checker::<AsHkt![Relates<'_>]>::new(
             checks,
-            extractors: [(relation, EXTRACT_RELATION), (role_type, EXTRACT_ROLE)]
+            [(relation, EXTRACT_RELATION), (role_type, EXTRACT_ROLE)]
                 .into_iter()
                 .filter_map(|(var, ex)| Some((var?, ex)))
                 .collect(),
-            _phantom_data: PhantomData,
-        };
+        );
 
         Self {
             relates,

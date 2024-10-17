@@ -7,7 +7,7 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 use bytes::util::HexBytesFormatter;
-use encoding::value::{value::Value, value_type::ValueType, ValueEncodable};
+use encoding::value::{value::Value, value_type::ValueType};
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
@@ -28,7 +28,7 @@ use crate::{
     },
     type_::{
         attribute_type::AttributeType, constraint::Constraint, entity_type::EntityType, object_type::ObjectType,
-        relation_type::RelationType, role_type::RoleType, Capability, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
+        relation_type::RelationType, role_type::RoleType, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 

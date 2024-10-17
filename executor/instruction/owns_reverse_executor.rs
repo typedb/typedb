@@ -7,33 +7,30 @@
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
     iter,
-    marker::PhantomData,
     sync::Arc,
     vec,
 };
 
 use answer::Type;
-use compiler::executable::match_::instructions::type_::OwnsReverseInstruction;
+use compiler::{executable::match_::instructions::type_::OwnsReverseInstruction, ExecutorVariable};
 use concept::{error::ConceptReadError, type_::owns::Owns};
 use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
-use super::type_from_row_or_annotations;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         owns_executor::{OwnsFilterFn, OwnsTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
         tuple::{owns_to_tuple_attribute_owner, TuplePositions},
-        BinaryIterateMode, Checker, VariableModes,
+        type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
-    VariablePosition,
 };
 
 pub(crate) struct OwnsReverseExecutor {
-    owns: ir::pattern::constraint::Owns<VariablePosition>,
+    owns: ir::pattern::constraint::Owns<ExecutorVariable>,
     iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
@@ -61,9 +58,9 @@ pub(super) type OwnsReverseBoundedSortedOwner = OwnsTupleIterator<
 
 impl OwnsReverseExecutor {
     pub(crate) fn new(
-        owns: OwnsReverseInstruction<VariablePosition>,
+        owns: OwnsReverseInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
-        sort_by: Option<VariablePosition>,
+        sort_by: ExecutorVariable,
     ) -> Self {
         let owner_types = owns.owner_types().clone();
         let attribute_owner_types = owns.attribute_owner_types().clone();
@@ -88,14 +85,13 @@ impl OwnsReverseExecutor {
             TuplePositions::Pair([attribute, owner])
         };
 
-        let checker = Checker::<AsHkt![Owns<'_>]> {
+        let checker = Checker::<AsHkt![Owns<'_>]>::new(
             checks,
-            extractors: [(owner, EXTRACT_OWNER), (attribute, EXTRACT_ATTRIBUTE)]
+            [(owner, EXTRACT_OWNER), (attribute, EXTRACT_ATTRIBUTE)]
                 .into_iter()
                 .filter_map(|(var, ex)| Some((var?, ex)))
                 .collect(),
-            _phantom_data: PhantomData,
-        };
+        );
 
         Self {
             owns,

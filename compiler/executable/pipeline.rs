@@ -123,11 +123,7 @@ pub(crate) fn compile_pipeline_stages(
     for stage in annotated_stages {
         let input_variable_positions =
             executable_stages.last().map(|stage: &ExecutableStage| stage.output_row_mapping()).unwrap_or_else(|| {
-                input_variables
-                    .iter()
-                    .enumerate()
-                    .map(|(i, var)| (*var, VariablePosition { position: i as u32 }))
-                    .collect()
+                input_variables.iter().enumerate().map(|(i, var)| (*var, VariablePosition::new(i as u32))).collect()
             });
 
         let executable_stage = compile_stage(statistics, variable_registry.clone(), &input_variable_positions, stage)?;
@@ -226,11 +222,7 @@ fn compile_stage(
                 let reducer_on_position = reducer_on_variable.clone().map(input_variables);
                 reductions.push(reducer_on_position);
             }
-            Ok(ExecutableStage::Reduce(ReduceExecutable {
-                reductions: reductions,
-                input_group_positions,
-                output_row_mapping,
-            }))
+            Ok(ExecutableStage::Reduce(ReduceExecutable { reductions, input_group_positions, output_row_mapping }))
         }
     }
 }

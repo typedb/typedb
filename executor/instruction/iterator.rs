@@ -9,7 +9,7 @@ use std::{cmp::Ordering, iter::Iterator, ops::Range};
 use answer::variable_value::VariableValue;
 use compiler::{
     executable::match_::instructions::{VariableMode, VariableModes},
-    VariablePosition,
+    ExecutorVariable, VariablePosition,
 };
 use concept::error::ConceptReadError;
 use itertools::zip_eq;
@@ -212,11 +212,12 @@ pub(crate) struct SortedTupleIterator<Iterator: for<'a> LendingIterator<Item<'a>
 impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleIterator<Iterator> {
     pub(crate) fn new(iterator: Iterator, tuple_positions: TuplePositions, variable_modes: &VariableModes) -> Self {
         // assumption: items in tuple are ordered as:
-        //      inputs, outputs, counted, checked
+        //      (sort?), inputs, outputs, counted, checked
         #[cfg(debug_assertions)]
         {
             let mut expected_mode = VariableMode::Input;
-            for pos in tuple_positions.positions() {
+            // [0] may have any mode
+            for pos in &tuple_positions.positions()[1..] {
                 let &Some(pos) = pos else { continue };
                 match variable_modes.get(pos) {
                     Some(VariableMode::Input) => debug_assert_eq!(expected_mode, VariableMode::Input),
@@ -265,7 +266,8 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleI
         loop {
             // TODO: this feels inefficient since each skip() call does a copy of the current tuple
             self.skip_until_changes(0..past_enumerated_or_counted_index)?;
-            match self.iterator.peek() {
+            let peek = self.iterator.peek();
+            match peek {
                 None => return Ok(count),
                 Some(Ok(tuple)) => {
                     let tuple_range = &tuple.values()[0..=last_enumerated as usize];
@@ -365,9 +367,9 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> TupleIterato
         let tuple = self.iterator.peek().unwrap().as_ref().unwrap();
 
         fn relevant_values<'a, 'b>(
-            (&pos, value): (&Option<VariablePosition>, &'a VariableValue<'b>),
+            (&pos, value): (&Option<ExecutorVariable>, &'a VariableValue<'b>),
         ) -> Option<(VariablePosition, &'a VariableValue<'b>)> {
-            Some((pos?, value))
+            Some((pos?.as_position()?, value))
         }
 
         match tuple {
@@ -438,7 +440,7 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> TupleIterato
 fn first_unbound(variable_modes: &VariableModes, positions: &TuplePositions) -> TupleIndex {
     for (i, position) in positions.iter().enumerate() {
         if let Some(position) = position {
-            if variable_modes.get(position).unwrap() != &VariableMode::Input {
+            if variable_modes.get(position).unwrap() != VariableMode::Input {
                 return i as TupleIndex;
             }
         }

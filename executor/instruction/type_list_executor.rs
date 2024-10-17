@@ -4,10 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, iter, marker::PhantomData, vec};
+use std::{collections::HashMap, iter, vec};
 
 use answer::{variable_value::VariableValue, Type};
-use compiler::executable::match_::instructions::type_::TypeListInstruction;
+use compiler::{executable::match_::instructions::type_::TypeListInstruction, ExecutorVariable};
 use concept::error::ConceptReadError;
 use itertools::Itertools;
 use lending_iterator::{
@@ -26,7 +26,6 @@ use crate::{
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
-    VariablePosition,
 };
 
 pub(crate) struct TypeListExecutor {
@@ -50,21 +49,20 @@ pub(super) const EXTRACT_TYPE: TypeVariableValueExtractor = |ty| VariableValue::
 
 impl TypeListExecutor {
     pub(crate) fn new(
-        type_: TypeListInstruction<VariablePosition>,
+        type_: TypeListInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
-        _sort_by: Option<VariablePosition>,
+        _sort_by: ExecutorVariable,
     ) -> Self {
         debug_assert!(!variable_modes.all_inputs());
         let types = type_.types().iter().cloned().sorted().collect_vec();
         debug_assert!(!types.is_empty());
         let TypeListInstruction { type_var, checks, .. } = type_;
-        debug_assert_eq!(Some(type_var), _sort_by);
+        debug_assert_eq!(type_var, _sort_by);
         let tuple_positions = TuplePositions::Single([Some(type_var)]);
 
         let type_ = type_.type_var;
 
-        let checker =
-            Checker::<Type> { checks, extractors: HashMap::from([(type_, EXTRACT_TYPE)]), _phantom_data: PhantomData };
+        let checker = Checker::<Type>::new(checks, HashMap::from([(type_, EXTRACT_TYPE)]));
 
         Self { variable_modes, tuple_positions, types, checker }
     }

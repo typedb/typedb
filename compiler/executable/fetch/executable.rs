@@ -9,13 +9,13 @@ use std::{collections::HashMap, sync::Arc};
 use answer::variable::Variable;
 use concept::{thing::statistics::Statistics, type_::attribute_type::AttributeType};
 use error::typedb_error;
-use ir::{pattern::ParameterID, pipeline::VariableRegistry};
+use ir::pattern::ParameterID;
 
 use crate::{
     annotation::fetch::{AnnotatedFetch, AnnotatedFetchListSubFetch, AnnotatedFetchObject, AnnotatedFetchSome},
     executable::{
         function::{compile_function, ExecutableFunction},
-        pipeline::{compile_pipeline, compile_stages_and_fetch, ExecutableStage},
+        pipeline::{compile_stages_and_fetch, ExecutableStage},
         ExecutableCompilationError,
     },
     VariablePosition,

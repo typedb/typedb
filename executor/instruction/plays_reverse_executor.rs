@@ -7,13 +7,12 @@
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
     iter,
-    marker::PhantomData,
     sync::Arc,
     vec,
 };
 
 use answer::Type;
-use compiler::executable::match_::instructions::type_::PlaysReverseInstruction;
+use compiler::{executable::match_::instructions::type_::PlaysReverseInstruction, ExecutorVariable};
 use concept::{error::ConceptReadError, type_::plays::Plays};
 use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
@@ -29,11 +28,10 @@ use crate::{
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
-    VariablePosition,
 };
 
 pub(crate) struct PlaysReverseExecutor {
-    plays: ir::pattern::constraint::Plays<VariablePosition>,
+    plays: ir::pattern::constraint::Plays<ExecutorVariable>,
     iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
@@ -61,9 +59,9 @@ pub(super) type PlaysReverseBoundedSortedPlayer = PlaysTupleIterator<
 
 impl PlaysReverseExecutor {
     pub(crate) fn new(
-        plays: PlaysReverseInstruction<VariablePosition>,
+        plays: PlaysReverseInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
-        sort_by: Option<VariablePosition>,
+        sort_by: ExecutorVariable,
     ) -> Self {
         let arc = plays.player_types().clone();
         let player_types = arc;
@@ -89,14 +87,13 @@ impl PlaysReverseExecutor {
             TuplePositions::Pair([role_type, player])
         };
 
-        let checker = Checker::<AsHkt![Plays<'_>]> {
+        let checker = Checker::<AsHkt![Plays<'_>]>::new(
             checks,
-            extractors: [(player, EXTRACT_PLAYER), (role_type, EXTRACT_ROLE)]
+            [(player, EXTRACT_PLAYER), (role_type, EXTRACT_ROLE)]
                 .into_iter()
                 .filter_map(|(var, ex)| Some((var?, ex)))
                 .collect(),
-            _phantom_data: PhantomData,
-        };
+        );
 
         Self {
             plays,

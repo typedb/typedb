@@ -4,10 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::BTreeSet, iter, marker::PhantomData, sync::Arc, vec};
+use std::{collections::BTreeSet, iter, sync::Arc, vec};
 
 use answer::{variable_value::VariableValue, Thing, Type};
-use compiler::executable::match_::instructions::thing::IsaInstruction;
+use compiler::{executable::match_::instructions::thing::IsaInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
     iterator::InstanceIterator,
@@ -36,11 +36,10 @@ use crate::{
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
-    VariablePosition,
 };
 
 pub(crate) struct IsaExecutor {
-    isa: Isa<VariablePosition>,
+    isa: Isa<ExecutorVariable>,
     iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
@@ -125,9 +124,9 @@ pub(super) const EXTRACT_TYPE: IsaVariableValueExtractor = |(_, type_)| Variable
 
 impl IsaExecutor {
     pub(crate) fn new(
-        isa: IsaInstruction<VariablePosition>,
+        isa: IsaInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
-        sort_by: Option<VariablePosition>,
+        sort_by: ExecutorVariable,
     ) -> Self {
         let types = isa.types().clone();
         debug_assert!(types.len() > 0);
@@ -145,14 +144,13 @@ impl IsaExecutor {
             TuplePositions::Pair([thing, type_])
         };
 
-        let checker = Checker::<(Thing<'_>, Type)> {
+        let checker = Checker::<(Thing<'_>, Type)>::new(
             checks,
-            extractors: [(thing, EXTRACT_THING), (type_, EXTRACT_TYPE)]
+            [(thing, EXTRACT_THING), (type_, EXTRACT_TYPE)]
                 .into_iter()
                 .filter_map(|(var, ex)| Some((var?, ex)))
                 .collect(),
-            _phantom_data: PhantomData,
-        };
+        );
 
         Self { isa, iterate_mode, variable_modes, tuple_positions: output_tuple_positions, types, checker }
     }
@@ -221,7 +219,7 @@ impl IsaExecutor {
             }
 
             BinaryIterateMode::BoundFrom => {
-                let thing = self.isa.thing().as_variable().unwrap();
+                let thing = self.isa.thing().as_variable().unwrap().as_position().unwrap();
                 debug_assert!(row.len() > thing.as_usize());
                 let VariableValue::Thing(thing) = row.get(thing).to_owned() else {
                     unreachable!("Has thing must be an entity or relation.")

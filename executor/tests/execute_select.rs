@@ -6,7 +6,7 @@
 
 use std::{
     borrow::Cow,
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, HashMap, HashSet},
     sync::Arc,
 };
 
@@ -19,7 +19,7 @@ use compiler::{
         instructions::{thing::HasInstruction, ConstraintInstruction, Inputs},
         planner::match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
     },
-    VariablePosition,
+    ExecutorVariable, VariablePosition,
 };
 use concept::{
     thing::object::ObjectAPI,
@@ -181,25 +181,29 @@ fn anonymous_vars_not_enumerated_or_counted() {
         .unwrap()
     };
 
-    let vars = vec![var_attribute, var_person, var_attribute_type, var_person_type];
+    let row_vars = vec![var_person];
     let variable_positions =
-        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let named_variables = variable_positions
-        .iter()
-        .filter_map(|(v, p)| translation_context.variable_registry.variable_names().get(&v).map(|_| p.clone()))
-        .collect();
+        HashMap::from_iter(row_vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let mapping = HashMap::from([var_attribute, var_person, var_attribute_type, var_person_type].map(|var| {
+        if row_vars.contains(&var) {
+            (var, ExecutorVariable::RowPosition(variable_positions[&var]))
+        } else {
+            (var, ExecutorVariable::Internal(var))
+        }
+    }));
+    let named_variables = HashSet::from([mapping[&var_person]]);
 
     // Plan
     let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
-        variable_positions[&var_person],
+        mapping[&var_person],
         vec![ConstraintInstruction::Has(
-            HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations).map(&variable_positions),
+            HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations).map(&mapping),
         )],
-        &[variable_positions[&var_person]],
+        vec![variable_positions[&var_person]],
         &named_variables,
-        4,
+        1,
     ))];
-    let executable = MatchExecutable::new(steps, variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -216,15 +220,15 @@ fn anonymous_vars_not_enumerated_or_counted() {
     // person2, <something>
     // person3, <something>
 
-    assert_eq!(rows.len(), 3);
-    assert_eq!(rows[0].as_ref().unwrap().multiplicity(), 1);
-    assert_eq!(rows[1].as_ref().unwrap().multiplicity(), 1);
-    assert_eq!(rows[2].as_ref().unwrap().multiplicity(), 1);
-
     for row in rows.iter() {
         let r = row.as_ref().unwrap();
         print!("{}", r);
     }
+
+    assert_eq!(rows.len(), 3);
+    assert_eq!(rows[0].as_ref().unwrap().multiplicity(), 1);
+    assert_eq!(rows[1].as_ref().unwrap().multiplicity(), 1);
+    assert_eq!(rows[2].as_ref().unwrap().multiplicity(), 1);
 }
 
 #[test]
@@ -270,26 +274,30 @@ fn unselected_named_vars_counted() {
         .unwrap()
     };
 
-    let vars = vec![var_person, var_attribute, var_attribute_type, var_person_type];
+    let row_vars = vec![var_person];
     let variable_positions =
-        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let named_variables = variable_positions
-        .iter()
-        .filter_map(|(v, p)| translation_context.variable_registry.variable_names().get(&v).map(|_| p.clone()))
-        .collect();
+        HashMap::from_iter(row_vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let mapping = HashMap::from([var_attribute, var_person, var_attribute_type, var_person_type].map(|var| {
+        if row_vars.contains(&var) {
+            (var, ExecutorVariable::RowPosition(variable_positions[&var]))
+        } else {
+            (var, ExecutorVariable::Internal(var))
+        }
+    }));
+    let named_variables = mapping.values().copied().collect();
 
     // Plan
     let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
-        variable_positions[&var_person],
+        mapping[&var_person],
         vec![ConstraintInstruction::Has(
-            HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations).map(&variable_positions),
+            HasInstruction::new(has_attribute, Inputs::None([]), &entry_annotations).map(&mapping),
         )],
-        &[variable_positions[&var_person]],
+        vec![variable_positions[&var_person]],
         &named_variables,
-        2,
+        1,
     ))];
 
-    let executable = MatchExecutable::new(steps, variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
 
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
@@ -306,15 +314,15 @@ fn unselected_named_vars_counted() {
     // 3x person 2, <something>
     // 2x person 3, <something>
 
-    assert_eq!(rows.len(), 3);
-    assert_eq!(rows[0].as_ref().unwrap().multiplicity(), 7);
-    assert_eq!(rows[1].as_ref().unwrap().multiplicity(), 3);
-    assert_eq!(rows[2].as_ref().unwrap().multiplicity(), 2);
-
     for row in rows.iter() {
         let r = row.as_ref().unwrap();
         print!("{}", r);
     }
+
+    assert_eq!(rows.len(), 3);
+    assert_eq!(rows[0].as_ref().unwrap().multiplicity(), 7);
+    assert_eq!(rows[1].as_ref().unwrap().multiplicity(), 3);
+    assert_eq!(rows[2].as_ref().unwrap().multiplicity(), 2);
 }
 
 #[test]
@@ -371,35 +379,42 @@ fn cartesian_named_counted_checked() {
         .unwrap()
     };
 
-    let vars =
-        vec![var_person, var_age, var_name, var_email, var_age_type, var_person_type, var_name_type, var_email_type];
+    let row_vars = vec![var_person, var_age];
     let variable_positions =
-        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let named_variables = variable_positions
-        .iter()
-        .filter_map(|(v, p)| translation_context.variable_registry.variable_names().get(&v).map(|_| p.clone()))
-        .collect();
+        HashMap::from_iter(row_vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let mapping = HashMap::from(
+        [var_person, var_age, var_name, var_email, var_age_type, var_person_type, var_name_type, var_email_type].map(
+            |var| {
+                if row_vars.contains(&var) {
+                    (var, ExecutorVariable::RowPosition(variable_positions[&var]))
+                } else {
+                    (var, ExecutorVariable::Internal(var))
+                }
+            },
+        ),
+    );
+    let named_variables = HashSet::from([mapping[&var_person], mapping[&var_age], mapping[&var_name]]);
 
     // Plan
     let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
-        variable_positions[&var_person],
+        mapping[&var_person],
         vec![
             ConstraintInstruction::Has(
-                HasInstruction::new(has_name, Inputs::None([]), &entry_annotations).map(&variable_positions),
+                HasInstruction::new(has_name, Inputs::None([]), &entry_annotations).map(&mapping),
             ),
             ConstraintInstruction::Has(
-                HasInstruction::new(has_age, Inputs::None([]), &entry_annotations).map(&variable_positions),
+                HasInstruction::new(has_age, Inputs::None([]), &entry_annotations).map(&mapping),
             ),
             ConstraintInstruction::Has(
-                HasInstruction::new(has_email, Inputs::None([]), &entry_annotations).map(&variable_positions),
+                HasInstruction::new(has_email, Inputs::None([]), &entry_annotations).map(&mapping),
             ),
         ],
-        &[variable_positions[&var_person], variable_positions[&var_age]],
+        vec![variable_positions[&var_person], variable_positions[&var_age]],
         &named_variables,
-        4,
+        2,
     ))];
 
-    let match_executable = MatchExecutable::new(steps, variable_positions, vars);
+    let match_executable = MatchExecutable::new(steps, variable_positions, row_vars);
 
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
