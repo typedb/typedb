@@ -998,7 +998,6 @@ impl TransactionService {
         if pipeline.has_fetch() {
             let initial_response = StreamQueryResponse::init_ok_documents(Read);
             Self::submit_response_sync(sender, initial_response);
-
             let (mut iterator, context) =
                 unwrap_or_execute_and_return!(pipeline.into_documents_iterator(interrupt.clone()), |(err, _)| {
                     Self::submit_response_sync(
@@ -1274,7 +1273,7 @@ impl QueryStreamTransmitter {
                         return Break(());
                     }
                     StreamQueryResponse::StreamDoneOk() => {
-                        if let Break(()) = Self::send_rows(response_sender, req_id, rows).await {
+                        if let Break(()) = Self::send_on_stream_done(response_sender, req_id, rows, documents).await {
                             return Break(());
                         }
                         send_ok_message_else_return_break!(
@@ -1284,7 +1283,7 @@ impl QueryStreamTransmitter {
                         return Break(());
                     }
                     StreamQueryResponse::StreamDoneErr(res_error) => {
-                        if let Break(()) = Self::send_rows(response_sender, req_id, rows).await {
+                        if let Break(()) = Self::send_on_stream_done(response_sender, req_id, rows, documents).await {
                             return Break(());
                         }
                         send_ok_message_else_return_break!(
@@ -1299,19 +1298,36 @@ impl QueryStreamTransmitter {
             }
             iteration += 1;
         }
+
         debug_assert!(rows.is_empty() || documents.is_empty());
         if !rows.is_empty() {
             match Self::send_rows(response_sender, req_id, rows).await {
-                Continue(_) => return Continue(query_response_receiver),
-                Break(_) => return Break(()),
+                Continue(_) => Continue(query_response_receiver),
+                Break(_) => Break(()),
             }
         } else if !documents.is_empty() {
             match Self::send_documents(response_sender, req_id, documents).await {
-                Continue(_) => return Continue(query_response_receiver),
-                Break(_) => return Break(()),
+                Continue(_) => Continue(query_response_receiver),
+                Break(_) => Break(()),
             }
         } else {
-            return Continue(query_response_receiver);
+            Continue(query_response_receiver)
+        }
+    }
+
+    async fn send_on_stream_done(
+        response_sender: &Sender<Result<typedb_protocol::transaction::Server, Status>>,
+        req_id: Uuid,
+        rows: Vec<typedb_protocol::ConceptRow>,
+        documents: Vec<typedb_protocol::ConceptDocument>,
+    ) -> ControlFlow<(), ()> {
+        debug_assert!(rows.is_empty() || documents.is_empty());
+        if !rows.is_empty() {
+            Self::send_rows(response_sender, req_id, rows).await
+        } else if !documents.is_empty() {
+            Self::send_documents(response_sender, req_id, documents).await
+        } else {
+            Continue(())
         }
     }
 
