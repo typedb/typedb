@@ -158,10 +158,9 @@ pub(crate) fn compile_pipeline_stages(
 ) -> Result<(HashMap<Variable, VariablePosition>, Vec<ExecutableStage>), ExecutableCompilationError> {
     let mut executable_stages = Vec::with_capacity(annotated_stages.len());
     let input_variable_positions =
-        input_variables.enumerate().map(|(i, var)| (var, VariablePosition { position: i as u32 })).collect();
+        input_variables.enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))).collect();
     for stage in annotated_stages {
-        let executable_stage = match executable_stages.last().map(|stage: &ExecutableStage| stage.output_row_mapping())
-        {
+        let executable_stage = match executable_stages.last().map(|stage| stage.output_row_mapping()) {
             Some(row_mapping) => compile_stage(statistics, variable_registry.clone(), functions, &row_mapping, stage)?,
             None => compile_stage(statistics, variable_registry.clone(), functions, &input_variable_positions, stage)?,
         };
@@ -263,7 +262,7 @@ fn compile_stage(
                 reductions.push(reducer_on_position);
             }
             Ok(ExecutableStage::Reduce(Arc::new(ReduceExecutable {
-                reductions: reductions,
+                reductions,
                 input_group_positions,
                 output_row_mapping,
             })))

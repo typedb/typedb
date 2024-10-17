@@ -5,7 +5,7 @@
  */
 
 use answer::variable_value::VariableValue;
-use compiler::executable::match_::instructions::thing::ConstantInstruction;
+use compiler::{executable::match_::instructions::thing::ConstantInstruction, ExecutorVariable};
 use concept::error::ConceptReadError;
 use storage::snapshot::ReadableSnapshot;
 
@@ -17,7 +17,6 @@ use crate::{
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
-    VariablePosition,
 };
 
 pub(crate) struct ConstantExecutor {
@@ -30,9 +29,9 @@ pub(crate) type ConstantValueIterator = lending_iterator::Once<TupleResult<'stat
 
 impl ConstantExecutor {
     pub(crate) fn new(
-        constant: ConstantInstruction<VariablePosition>,
+        constant: ConstantInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
-        _sort_by: Option<VariablePosition>,
+        _sort_by: Option<ExecutorVariable>,
     ) -> Self {
         debug_assert!(!variable_modes.all_inputs());
         let ConstantInstruction { var, value, .. } = constant;

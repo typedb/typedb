@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::BTreeMap, error::Error, fmt, sync::Arc};
+use std::{collections::BTreeMap, sync::Arc};
 
 use durability::RawRecord;
 use error::typedb_error;

@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, iter};
+use std::{
+    collections::{HashMap, HashSet},
+    iter,
+};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -259,11 +262,13 @@ impl Costed for ComparisonPlanner<'_> {
 #[derive(Clone, Debug)]
 pub(super) struct NegationPlanner<'a> {
     plan: ConjunctionPlan<'a>,
+    shared_variables: Vec<VariableVertexId>,
 }
 
 impl<'a> NegationPlanner<'a> {
-    pub(super) fn new(plan: ConjunctionPlan<'a>) -> Self {
-        Self { plan }
+    pub(super) fn new(plan: ConjunctionPlan<'a>, variable_index: &HashMap<Variable, VariableVertexId>) -> Self {
+        let shared_variables = plan.shared_variables().iter().map(|v| variable_index[v]).collect();
+        Self { plan, shared_variables }
     }
 
     fn is_valid(&self, _index: VertexId, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
@@ -271,7 +276,7 @@ impl<'a> NegationPlanner<'a> {
     }
 
     pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
-        self.plan.shared_variables().iter().copied()
+        self.shared_variables.iter().copied()
     }
 
     pub(super) fn plan(&self) -> &ConjunctionPlan<'a> {
@@ -288,13 +293,17 @@ impl Costed for NegationPlanner<'_> {
 #[derive(Clone, Debug)]
 pub(super) struct DisjunctionPlanner<'a> {
     input_variables: Vec<VariableVertexId>,
-    shared_variables: Vec<VariableVertexId>,
+    shared_variables: HashSet<VariableVertexId>,
     builder: DisjunctionPlanBuilder<'a>,
 }
 
 impl<'a> DisjunctionPlanner<'a> {
-    pub(super) fn from_builder(builder: DisjunctionPlanBuilder<'a>) -> Self {
-        let shared_variables = builder.branches().iter().flat_map(|pb| pb.shared_variables().to_owned()).collect();
+    pub(super) fn from_builder(
+        builder: DisjunctionPlanBuilder<'a>,
+        variable_index: &HashMap<Variable, VariableVertexId>,
+    ) -> Self {
+        let shared_variables =
+            builder.branches().iter().flat_map(|pb| pb.shared_variables()).map(|v| variable_index[v]).collect();
         Self { input_variables: Vec::new(), shared_variables, builder }
     }
 

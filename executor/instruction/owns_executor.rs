@@ -7,13 +7,12 @@
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
     iter,
-    marker::PhantomData,
     sync::Arc,
     vec,
 };
 
 use answer::{variable_value::VariableValue, Type};
-use compiler::executable::match_::instructions::type_::OwnsInstruction;
+use compiler::{executable::match_::instructions::type_::OwnsInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
     type_::{owns::Owns, OwnerAPI},
@@ -33,11 +32,10 @@ use crate::{
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
-    VariablePosition,
 };
 
 pub(crate) struct OwnsExecutor {
-    owns: ir::pattern::constraint::Owns<VariablePosition>,
+    owns: ir::pattern::constraint::Owns<ExecutorVariable>,
     iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
@@ -76,9 +74,9 @@ pub(super) const EXTRACT_ATTRIBUTE: OwnsVariableValueExtractor =
 
 impl OwnsExecutor {
     pub(crate) fn new(
-        owns: OwnsInstruction<VariablePosition>,
+        owns: OwnsInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
-        sort_by: Option<VariablePosition>,
+        sort_by: ExecutorVariable,
     ) -> Self {
         let attribute_types = owns.attribute_types().clone();
         let owner_attribute_types = owns.owner_attribute_types().clone();
@@ -103,14 +101,13 @@ impl OwnsExecutor {
             TuplePositions::Pair([owner, attribute])
         };
 
-        let checker = Checker::<AsHkt![Owns<'_>]> {
+        let checker = Checker::<AsHkt![Owns<'_>]>::new(
             checks,
-            extractors: [(owner, EXTRACT_OWNER), (attribute, EXTRACT_ATTRIBUTE)]
+            [(owner, EXTRACT_OWNER), (attribute, EXTRACT_ATTRIBUTE)]
                 .into_iter()
                 .filter_map(|(var, ex)| Some((var?, ex)))
                 .collect(),
-            _phantom_data: PhantomData,
-        };
+        );
 
         Self {
             owns,

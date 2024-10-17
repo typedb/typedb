@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 use answer::variable::Variable;
 use encoding::value::value_type::ValueType;
-use ir::pattern::{IrID, Vertex};
+use ir::pattern::IrID;
 
 use crate::VariablePosition;
 

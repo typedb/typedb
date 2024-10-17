@@ -7,12 +7,11 @@
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet, HashMap},
-    marker::PhantomData,
     sync::Arc,
 };
 
 use answer::{variable_value::VariableValue, Thing, Type};
-use compiler::executable::match_::instructions::thing::LinksInstruction;
+use compiler::{executable::match_::instructions::thing::LinksInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -40,11 +39,10 @@ use crate::{
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
-    VariablePosition,
 };
 
 pub(crate) struct LinksExecutor {
-    links: ir::pattern::constraint::Links<VariablePosition>,
+    links: ir::pattern::constraint::Links<ExecutorVariable>,
 
     iterate_mode: TernaryIterateMode,
     variable_modes: VariableModes,
@@ -91,9 +89,9 @@ pub(crate) type LinksOrderingFn = for<'a, 'b> fn(
 
 impl LinksExecutor {
     pub(crate) fn new(
-        links: LinksInstruction<VariablePosition>,
+        links: LinksInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
-        sort_by: Option<VariablePosition>,
+        sort_by: ExecutorVariable,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
@@ -116,15 +114,10 @@ impl LinksExecutor {
             TuplePositions::Triple([Some(relation), Some(player), Some(role_type)])
         };
 
-        let checker = Checker::<(Relation<'_>, RolePlayer<'_>, _)> {
+        let checker = Checker::<(Relation<'_>, RolePlayer<'_>, _)>::new(
             checks,
-            extractors: HashMap::from([
-                (relation, EXTRACT_RELATION),
-                (player, EXTRACT_PLAYER),
-                (role_type, EXTRACT_ROLE),
-            ]),
-            _phantom_data: PhantomData,
-        };
+            HashMap::from([(relation, EXTRACT_RELATION), (player, EXTRACT_PLAYER), (role_type, EXTRACT_ROLE)]),
+        );
 
         let relation_cache = if iterate_mode == TernaryIterateMode::UnboundInverted {
             let mut cache = Vec::new();
@@ -238,7 +231,7 @@ impl LinksExecutor {
             }
 
             TernaryIterateMode::BoundFrom => {
-                let relation = self.links.relation().as_variable().unwrap();
+                let relation = self.links.relation().as_variable().unwrap().as_position().unwrap();
                 debug_assert!(row.len() > relation.as_usize());
                 let (min_player_type, max_player_type) = min_max_types(&*self.player_types);
                 let player_type_range =
@@ -264,8 +257,8 @@ impl LinksExecutor {
             }
 
             TernaryIterateMode::BoundFromBoundTo => {
-                let relation = self.links.relation().as_variable().unwrap();
-                let player = self.links.player().as_variable().unwrap();
+                let relation = self.links.relation().as_variable().unwrap().as_position().unwrap();
+                let player = self.links.player().as_variable().unwrap().as_position().unwrap();
                 debug_assert!(row.len() > relation.as_usize());
                 debug_assert!(row.len() > player.as_usize());
                 let relation = row.get(relation).as_thing().as_relation();

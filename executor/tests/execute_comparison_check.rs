@@ -16,10 +16,10 @@ use compiler::{
         match_inference::infer_types,
     },
     executable::match_::{
-        instructions::{thing::IsaInstruction, ConstraintInstruction, Inputs},
+        instructions::{thing::IsaInstruction, CheckInstruction, CheckVertex, ConstraintInstruction, Inputs},
         planner::match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
     },
-    VariablePosition,
+    ExecutorVariable, VariablePosition,
 };
 use concept::type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
@@ -27,7 +27,11 @@ use executor::{
     error::ReadExecutionError, pattern_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-use ir::{pattern::constraint::IsaKind, pipeline::block::Block, translation::TranslationContext};
+use ir::{
+    pattern::constraint::{Comparator, IsaKind},
+    pipeline::block::Block,
+    translation::TranslationContext,
+};
 use lending_iterator::LendingIterator;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -104,38 +108,45 @@ fn attribute_equality() {
     )
     .unwrap();
 
-    let vars = vec![var_age_a, var_age_type_a, var_age_b, var_age_type_b];
+    let row_vars = vec![var_age_a, var_age_b];
     let variable_positions =
-        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let named_variables = variable_positions.values().map(|p| p.clone()).collect();
+        HashMap::from_iter(row_vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let mapping = HashMap::from([var_age_a, var_age_type_a, var_age_b, var_age_type_b].map(|var| {
+        if row_vars.contains(&var) {
+            (var, ExecutorVariable::RowPosition(variable_positions[&var]))
+        } else {
+            (var, ExecutorVariable::Internal(var))
+        }
+    }));
+    let named_variables = mapping.values().copied().collect();
+
+    let mut isa_with_check = IsaInstruction::new(isa_b, Inputs::None([]), &entry_annotations);
+    isa_with_check.checks.push(CheckInstruction::Comparison {
+        lhs: CheckVertex::Variable(var_age_b),
+        rhs: CheckVertex::Variable(var_age_a),
+        comparator: Comparator::Equal,
+    });
 
     // Plan
     let steps = vec![
         ExecutionStep::Intersection(IntersectionStep::new(
-            variable_positions[&var_age_a],
+            mapping[&var_age_a],
             vec![ConstraintInstruction::Isa(IsaInstruction::new(isa_a, Inputs::None([]), &entry_annotations))
-                .map(&variable_positions)],
-            &[variable_positions[&var_age_a]],
+                .map(&mapping)],
+            vec![variable_positions[&var_age_a]],
+            &named_variables,
+            1,
+        )),
+        ExecutionStep::Intersection(IntersectionStep::new(
+            mapping[&var_age_b],
+            vec![ConstraintInstruction::Isa(isa_with_check).map(&mapping)],
+            vec![variable_positions[&var_age_a], variable_positions[&var_age_b]],
             &named_variables,
             2,
         )),
-        ExecutionStep::Intersection(IntersectionStep::new(
-            variable_positions[&var_age_b],
-            vec![ConstraintInstruction::Isa(IsaInstruction::new(
-                isa_b,
-                Inputs::None([]),
-                &entry_annotations,
-                // TODO
-                // vec![CheckInstruction::Comparison { lhs: vars[&var_age_b], rhs: vars[&var_age_a], comparator: Comparator::Equal }],
-            ))
-            .map(&variable_positions)],
-            &[variable_positions[&var_age_a], variable_positions[&var_age_b]],
-            &named_variables,
-            4,
-        )),
     ];
 
-    let executable = MatchExecutable::new(steps, variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -146,7 +157,7 @@ fn attribute_equality() {
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
-    assert_eq!(rows.len(), 25);
+    assert_eq!(rows.len(), 5);
 
     for row in rows {
         let row = row.unwrap();

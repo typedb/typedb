@@ -5,6 +5,7 @@
  */
 
 use answer::{variable_value::VariableValue, Thing, Type};
+use compiler::ExecutorVariable;
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -14,8 +15,6 @@ use concept::{
     type_::{owns::Owns, plays::Plays, relates::Relates},
 };
 use lending_iterator::higher_order::Hkt;
-
-use crate::VariablePosition;
 
 #[derive(Debug, Clone)]
 pub(crate) enum Tuple<'a> {
@@ -78,36 +77,36 @@ impl Hkt for Tuple<'static> {
 
 #[derive(Debug, Clone)]
 pub(crate) enum TuplePositions {
-    Single([Option<VariablePosition>; 1]),
-    Pair([Option<VariablePosition>; 2]),
-    Triple([Option<VariablePosition>; 3]),
-    Quintuple([Option<VariablePosition>; 5]),
+    Single([Option<ExecutorVariable>; 1]),
+    Pair([Option<ExecutorVariable>; 2]),
+    Triple([Option<ExecutorVariable>; 3]),
+    Quintuple([Option<ExecutorVariable>; 5]),
     Arbitrary(), // TODO: unknown sized tuples, for functions
 }
 
 impl TuplePositions {
-    pub(crate) fn as_single(&self) -> &[Option<VariablePosition>; 1] {
+    pub(crate) fn as_single(&self) -> &[Option<ExecutorVariable>; 1] {
         match self {
             Self::Single(positions) => positions,
             _ => unreachable!("Cannot read tuple as Single."),
         }
     }
 
-    pub(crate) fn as_pair(&self) -> &[Option<VariablePosition>; 2] {
+    pub(crate) fn as_pair(&self) -> &[Option<ExecutorVariable>; 2] {
         match self {
             Self::Pair(positions) => positions,
             _ => unreachable!("Cannot read tuple as Pair."),
         }
     }
 
-    pub(crate) fn as_triple(&self) -> &[Option<VariablePosition>; 3] {
+    pub(crate) fn as_triple(&self) -> &[Option<ExecutorVariable>; 3] {
         match self {
             Self::Triple(positions) => positions,
             _ => unreachable!("Cannot read tuple as Triple."),
         }
     }
 
-    pub(crate) fn as_quintuple(&self) -> &[Option<VariablePosition>; 5] {
+    pub(crate) fn as_quintuple(&self) -> &[Option<ExecutorVariable>; 5] {
         match self {
             Self::Quintuple(positions) => positions,
             _ => unreachable!("Cannot read tuple as Quintuple."),
@@ -118,7 +117,7 @@ impl TuplePositions {
         todo!()
     }
 
-    pub(crate) fn iter(&self) -> impl Iterator<Item = Option<VariablePosition>> + '_ {
+    pub(crate) fn iter(&self) -> impl Iterator<Item = Option<ExecutorVariable>> + '_ {
         self.positions().iter().copied()
     }
 
@@ -126,7 +125,7 @@ impl TuplePositions {
         self.positions().len()
     }
 
-    pub(crate) fn positions(&self) -> &[Option<VariablePosition>] {
+    pub(crate) fn positions(&self) -> &[Option<ExecutorVariable>] {
         match self {
             TuplePositions::Single(positions) => positions,
             TuplePositions::Pair(positions) => positions,

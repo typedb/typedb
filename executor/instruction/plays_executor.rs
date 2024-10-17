@@ -13,7 +13,7 @@ use std::{
 };
 
 use answer::{variable_value::VariableValue, Type};
-use compiler::executable::match_::instructions::type_::PlaysInstruction;
+use compiler::{executable::match_::instructions::type_::PlaysInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
     type_::{plays::Plays, PlayerAPI},
@@ -34,11 +34,10 @@ use crate::{
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
-    VariablePosition,
 };
 
 pub(crate) struct PlaysExecutor {
-    plays: ir::pattern::constraint::Plays<VariablePosition>,
+    plays: ir::pattern::constraint::Plays<ExecutorVariable>,
     iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
@@ -77,9 +76,9 @@ pub(super) const EXTRACT_ROLE: PlaysVariableValueExtractor =
 
 impl PlaysExecutor {
     pub(crate) fn new(
-        plays: PlaysInstruction<VariablePosition>,
+        plays: PlaysInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
-        sort_by: Option<VariablePosition>,
+        sort_by: ExecutorVariable,
     ) -> Self {
         let role_types = plays.role_types().clone();
         let player_role_types = plays.player_role_types().clone();
@@ -104,14 +103,13 @@ impl PlaysExecutor {
             TuplePositions::Pair([player, role_type])
         };
 
-        let checker = Checker::<AsHkt![Plays<'_>]> {
+        let checker = Checker::<AsHkt![Plays<'_>]>::new(
             checks,
-            extractors: [(player, EXTRACT_PLAYER), (role_type, EXTRACT_ROLE)]
+            [(player, EXTRACT_PLAYER), (role_type, EXTRACT_ROLE)]
                 .into_iter()
                 .filter_map(|(var, ex)| Some((var?, ex)))
                 .collect(),
-            _phantom_data: PhantomData,
-        };
+        );
 
         Self {
             plays,
