@@ -24,13 +24,13 @@ use crate::{
 pub(super) struct BranchIndex(pub usize);
 pub(super) struct InstructionIndex(pub usize);
 
-pub(super) enum StackInstruction {
+pub(super) enum ControlInstruction {
     Start(Option<FixedBatch>),
     Execute(InstructionIndex),
-    NestedPatternBranch(InstructionIndex, BranchIndex),
+    NestedBranch(InstructionIndex, BranchIndex),
 }
 
-impl StackInstruction {
+impl ControlInstruction {
     pub(crate) fn batch_continue(
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
@@ -38,12 +38,12 @@ impl StackInstruction {
         pattern_instructions: &mut Vec<StepExecutors>,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         match self {
-            StackInstruction::Start(batch_opt) => Ok(batch_opt.take()),
-            StackInstruction::Execute(InstructionIndex(idx)) => {
-                pattern_instructions[*idx].unwrap_executable().batch_continue(context, interrupt)
+            ControlInstruction::Start(batch_opt) => Ok(batch_opt.take()),
+            ControlInstruction::Execute(InstructionIndex(index)) => {
+                pattern_instructions[*index].unwrap_executable().batch_continue(context, interrupt)
             }
-            StackInstruction::NestedPatternBranch(InstructionIndex(idx), BranchIndex(branch_index)) => {
-                match pattern_instructions[*idx].unwrap_nested_pattern_branch() {
+            ControlInstruction::NestedBranch(InstructionIndex(index), BranchIndex(branch_index)) => {
+                match pattern_instructions[*index].unwrap_nested_pattern_branch() {
                     NestedPatternExecutor::Negation(negation) => {
                         debug_assert!(*branch_index == 0);
                         PatternExecutor::execute_nested_pattern(context, interrupt, negation)
@@ -57,19 +57,19 @@ impl StackInstruction {
     }
 }
 
-impl StackInstruction {
+impl ControlInstruction {
     pub(crate) fn next_index(&self) -> InstructionIndex {
         match self {
-            StackInstruction::Start(_) => InstructionIndex(0),
-            StackInstruction::Execute(InstructionIndex(idx)) => InstructionIndex(idx + 1),
-            StackInstruction::NestedPatternBranch(InstructionIndex(idx), _) => InstructionIndex(idx + 1),
+            ControlInstruction::Start(_) => InstructionIndex(0),
+            ControlInstruction::Execute(InstructionIndex(idx)) => InstructionIndex(idx + 1),
+            ControlInstruction::NestedBranch(InstructionIndex(idx), _) => InstructionIndex(idx + 1),
         }
     }
 }
 
 pub(crate) struct PatternExecutor {
-    instructions: Vec<StepExecutors>,
-    stack: Vec<StackInstruction>,
+    executors: Vec<StepExecutors>,
+    control_stack: Vec<ControlInstruction>,
 }
 
 impl PatternExecutor {
@@ -79,7 +79,7 @@ impl PatternExecutor {
         thing_manager: &Arc<ThingManager>,
     ) -> Result<Self, ConceptReadError> {
         let instructions = create_executors_recursive(match_executable, snapshot, thing_manager)?;
-        Ok(PatternExecutor { instructions, stack: Vec::new() })
+        Ok(PatternExecutor { executors: instructions, control_stack: Vec::new() })
     }
 
     pub(crate) fn compute_next_batch(
@@ -91,13 +91,13 @@ impl PatternExecutor {
     }
 
     pub(crate) fn prepare(&mut self, input_batch: FixedBatch) {
-        debug_assert!(self.stack.is_empty());
+        debug_assert!(self.control_stack.is_empty());
         self.reset();
-        self.stack.push(StackInstruction::Start(Some(input_batch)));
+        self.control_stack.push(ControlInstruction::Start(Some(input_batch)));
     }
 
     pub(super) fn reset(&mut self) {
-        self.stack.clear();
+        self.control_stack.clear();
     }
 
     pub(super) fn batch_continue(
@@ -105,9 +105,9 @@ impl PatternExecutor {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        debug_assert!(self.stack.len() > 0);
-        while self.stack.last().is_some() {
-            let Self { stack, instructions } = self;
+        debug_assert!(self.control_stack.len() > 0);
+        while self.control_stack.last().is_some() {
+            let Self { control_stack: stack, executors: instructions } = self;
             // TODO: inject interrupt into Checkers that could filter out many rows without ending as well.
             if let Some(interrupt) = interrupt.check() {
                 return Err(ReadExecutionError::Interrupted { interrupt });
@@ -151,26 +151,26 @@ impl PatternExecutor {
         batch: FixedBatch,
     ) -> Result<(), ReadExecutionError> {
         let InstructionIndex(index) = index;
-        match &mut self.instructions[index] {
+        match &mut self.executors[index] {
             StepExecutors::Immediate(executable) => {
                 executable.prepare(batch, context)?;
-                self.stack.push(StackInstruction::Execute(InstructionIndex(index)));
+                self.control_stack.push(ControlInstruction::Execute(InstructionIndex(index)));
             }
             StepExecutors::NestedPattern(nested) => {
                 nested.prepare_all_branches(batch, context)?;
                 for i in 0..nested.branch_count() {
-                    self.stack.push(StackInstruction::NestedPatternBranch(InstructionIndex(index), BranchIndex(i)))
+                    self.control_stack.push(ControlInstruction::NestedBranch(InstructionIndex(index), BranchIndex(i)))
                 }
             }
         }
         Ok(())
     }
 
-    pub(super) fn stack_top(&mut self) -> Option<&mut StackInstruction> {
-        self.stack.last_mut()
+    pub(super) fn stack_top(&mut self) -> Option<&mut ControlInstruction> {
+        self.control_stack.last_mut()
     }
 
     fn pop_stack(&mut self) {
-        self.stack.pop(); // Just in case we need to do more here, like copy suspend points
+        self.control_stack.pop(); // Just in case we need to do more here, like copy suspend points
     }
 }
