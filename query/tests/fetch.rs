@@ -21,10 +21,10 @@ fn define_schema(storage: Arc<MVCCStorage<WALClient>>, type_manager: &TypeManage
 
     let query_str = r#"
     define
-    attribute name value string;
-    attribute age value long;
-    relation friendship relates friend;
-    entity person owns name @card(0..), owns age, plays friendship:friend;
+      attribute name value string;
+      attribute age value long;
+      relation friendship relates friend @card(0..);
+      entity person owns name @card(0..), owns age, plays friendship:friend @card(0..);
     "#;
     let schema_query = typeql::parse_query(query_str).unwrap().into_schema();
     query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, schema_query).unwrap();
