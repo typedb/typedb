@@ -215,8 +215,8 @@ fn function_compiles() {
             fun get_ages($p_arg: person) -> { age }:
             match
                 $p_arg has age $age_return;
-            reduce $age_sum = sum(age);
-            return {$age_sume};
+            reduce $age_sum = sum($age_return);
+            return {$age_sum};
 
             match
                 $p isa person;

@@ -143,10 +143,12 @@ pub(super) fn create_executors_for_match(
                     )?;
                     Ok(NestedPatternBranch::new(PatternExecutor::new(executors)))
                 }).try_collect()?;
-                StepExecutors::Branch(NestedPatternExecutor::Disjunction(
+                let inner_step = StepExecutors::Branch(NestedPatternExecutor::Disjunction(
                     inner,
                     IdentityMapper,
-                ))
+                ));
+                // Hack: wrap it in a distinct
+                StepExecutors::CollectingStage(CollectingStageExecutor::new_distinct(PatternExecutor::new(vec![inner_step])))
             }
             ExecutionStep::Optional(_) => todo!()
         };

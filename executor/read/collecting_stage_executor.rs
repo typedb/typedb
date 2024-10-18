@@ -5,6 +5,7 @@
  */
 
 use std::{cmp::Ordering, iter::Peekable};
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use compiler::executable::{modifiers::SortExecutable, reduce::ReduceExecutable};
@@ -19,6 +20,7 @@ use crate::{
     read::pattern_executor::PatternExecutor,
     reduce_executor::GroupedReducer,
 };
+use crate::row::MaybeOwnedRow;
 
 pub(super) struct CollectingStageExecutor {
     pattern: PatternExecutor,
@@ -28,6 +30,7 @@ pub(super) struct CollectingStageExecutor {
 pub(super) enum CollectorEnum {
     Reduce(ReduceCollector),
     Sort(SortCollector),
+    Distinct(DistinctCollector),
 }
 
 impl CollectorEnum {
@@ -35,6 +38,7 @@ impl CollectorEnum {
         match self {
             CollectorEnum::Reduce(collector) => collector.accept(context, batch),
             CollectorEnum::Sort(collector) => collector.accept(context, batch),
+            CollectorEnum::Distinct(collector) => collector.accept(context, batch),
         }
     }
 
@@ -42,6 +46,7 @@ impl CollectorEnum {
         match self {
             CollectorEnum::Reduce(collector) => collector.into_iterator(),
             CollectorEnum::Sort(collector) => collector.into_iterator(),
+            CollectorEnum::Distinct(collector) => collector.into_iterator(),
         }
     }
 }
@@ -49,6 +54,7 @@ impl CollectorEnum {
 pub(super) enum CollectedStageIterator {
     Reduce(ReduceStageIterator),
     Sort(SortStageIterator),
+    Distinct(DistinctStageIterator),
 }
 
 impl CollectedStageIterator {
@@ -56,6 +62,7 @@ impl CollectedStageIterator {
         match self {
             CollectedStageIterator::Reduce(iterator) => iterator.batch_continue(),
             CollectedStageIterator::Sort(iterator) => iterator.batch_continue(),
+            CollectedStageIterator::Distinct(iterator) => iterator.batch_continue(),
         }
     }
 }
@@ -74,20 +81,31 @@ impl CollectingStageExecutor {
         Self { pattern: previous_stage, collector: CollectorEnum::Sort(SortCollector::new(sort_executable)) }
     }
 
+    pub(crate) fn new_distinct(pattern: PatternExecutor) -> Self {
+        Self { pattern, collector: CollectorEnum::Distinct(DistinctCollector::new()) }
+    }
+
     pub(crate) fn reset(&mut self) {
         self.pattern.reset();
         match &mut self.collector {
             CollectorEnum::Reduce(collector) => collector.reset(),
             CollectorEnum::Sort(collector) => collector.reset(),
+            CollectorEnum::Distinct(collector) => collector.reset(),
         }
     }
 
     pub(crate) fn prepare(&mut self, batch: FixedBatch) {
-        debug_assert!(batch.len() == 1);
+        debug_assert!( {
+            match &self.collector {
+                CollectorEnum::Reduce(_) => batch.len() == 1,
+                _ => true,
+            }
+        });
         self.pattern.prepare(batch);
         match &mut self.collector {
             CollectorEnum::Reduce(collector) => collector.prepare(),
             CollectorEnum::Sort(collector) => collector.prepare(),
+            CollectorEnum::Distinct(collector) => collector.prepare(),
         }
     }
 }
@@ -103,6 +121,7 @@ pub(super) trait CollectedStageIteratorTrait {
     fn batch_continue(&mut self) -> Result<Option<FixedBatch>, ReadExecutionError>;
 }
 
+// Reduce
 pub(super) struct ReduceCollector {
     reduce_executable: Arc<ReduceExecutable>,
     active_reducer: Option<GroupedReducer>,
@@ -173,6 +192,7 @@ impl CollectedStageIteratorTrait for ReduceStageIterator {
     }
 }
 
+// Sort
 pub(super) struct SortCollector {
     sort_on: Vec<(usize, bool)>,
     collector: Option<Batch>,
@@ -258,6 +278,67 @@ impl CollectedStageIteratorTrait for SortStageIterator {
             Ok(Some(next_batch))
         } else {
             return Ok(None);
+        }
+    }
+}
+
+// Distinct
+pub(super) struct DistinctCollector {
+    collector: Option<HashSet<MaybeOwnedRow<'static>>>,
+}
+
+impl DistinctCollector {
+    fn new() -> Self {
+        Self { collector: None }
+    }
+}
+
+impl CollectorTrait for DistinctCollector {
+    fn prepare(&mut self) {
+        self.collector = Some(HashSet::new());
+    }
+
+    fn reset(&mut self) {
+        self.collector = None;
+    }
+
+    fn accept(&mut self, context: &ExecutionContext<impl ReadableSnapshot>, batch: FixedBatch) {
+        let mut batch_iter = batch.into_iterator();
+        while let Some(result) = batch_iter.next() {
+            let row = result.unwrap();
+            self.collector.as_mut().unwrap().insert(row.clone().into_owned());
+        }
+    }
+
+    fn into_iterator(&mut self) -> CollectedStageIterator {
+        CollectedStageIterator::Distinct(DistinctStageIterator { iterator: self.collector.take().unwrap().into_iter().peekable() })
+    }
+}
+
+pub struct DistinctStageIterator {
+    iterator: Peekable<std::collections::hash_set::IntoIter<MaybeOwnedRow<'static>>>,
+}
+
+impl CollectedStageIteratorTrait for DistinctStageIterator {
+    fn batch_continue(&mut self) -> Result<Option<FixedBatch>, ReadExecutionError> {
+        if self.iterator.peek().is_some() {
+            let mut next_batch = FixedBatch::new(self.iterator.peek().unwrap().len() as u32);
+            while !next_batch.is_full() {
+                if let Some(row) = self.iterator.next() {
+                    next_batch.append(|mut output_row| {
+                        output_row.copy_from(row.row(), row.multiplicity());
+                    })
+                } else {
+                    break;
+                }
+            }
+            if next_batch.len() > 0 {
+                Ok(Some(next_batch))
+            } else {
+                Ok(None)
+            }
+        } else {
+            Ok(None)
         }
     }
 }
