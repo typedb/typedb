@@ -2,69 +2,68 @@
 
 **Download from TypeDB Package Repository:**
 
-[Distributions for 3.0.0-alpha-5](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.0.0-alpha-5)
+[Distributions for 3.0.0-alpha-6](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.0.0-alpha-6)
 
 **Pull the Docker image:**
 
-```docker pull vaticle/typedb:3.0.0-alpha-5```
+```docker pull vaticle/typedb:3.0.0-alpha-6```
+
 
 ## New Features
-
-- **Negation**
-
-  We add support for negations in match queries:
-  ```php
-  match $x isa person, has name $a; not { $a == "Jeff"; };
-  ```
-
-  Note: unlike in 2.x, TypeDB 3.x supports nesting negations, which leads to a form of "for all" operator:
+- **Disjunction support**
+  
+  We introduce support for disjunctions in queries:
+  
   ```php
   match
-      $super isa set;
-      $sub isa set;
-      not { # all elements of $sub are also elements of $super:
-          (item: $element, set: $sub) isa set-membership;  # there is no element in $sub...
-          not { (item: $element, set: $super) isa set-membership; }; # ... that isn't also an element of $super
-      };
+      $person isa person;
+      { $person has name $_; } or { $person has age $_; };
   ```
 
-- **Require implementation**
 
-  Implement the 'require' clause:
-  ```
-  match
-  ...
-  require $x, $y, $z;
-  ```
-  Will filter the match output stream to ensure that the variable `$x, $y,
-  $z` are all non-empty variables (if they are optional).
+- **Fetch execution**
 
-- **Let match stages accept inputs**
+  We implement fetch execution, given an executable pipeline that may contain a Fetch terminal stage.
 
-  We now support `match` stages in the middle of a pipeline, which enables queries like this:
-  ```
-  insert
-      $org isa organisation;
-  match
-      $p isa person, has age 10;
-  insert
-      (group: $org, member: $p) isa membership;
-  ```
+  Note: we have commented out `match-return` subqueries, fetching of expressions (`{ "val" : $x + 1 }`), and fetching of function outputs (`"val": mean_salary($person)`), as these require function-body evaluation under the hood - this is not yet implemented.
+
+
+
+## Bugs Fixed
+
+- **Fix document answers streaming for fetch**
+  We fix document answers streaming for fetch in order to complete the first version of `fetch` queries execution.
+
+
+## Code Refactors
+- **Function compilation preparation & trivial plan implementation**
+  Prepares higher level packages for compiling functions.
+
+
+- **Fetch annotation, compilation, and executables**
+
+  We implement Fetch annotation, compilation and executable building, rearchitecting the rest of the compiler to allow for tree-shaped nesting of queries (eg. functions or fetch sub-pipelines).
+
+- **Fetch iii**
+
+  We implement further refactoring, which pull Fetch into Annotations and Executables, without implementing any sub-methods yet.
 
 
 ## Other Improvements
-- **Add console script as assembly test**
 
-- **Add BDD test for pipeline modifiers**\
-  Add BDD test for pipeline modifiers; Fixes some bugs uncovered in the process.
+- **Add database name validation for database creation**
+  We add validation of names for created databases. Now, all database names should be valid TypeQL identifiers.
 
-- **Fix failing type-inference tests**
+- **Enable connection BDDs in CI**
+  We update some of the steps for BDDs to match the [updated definitions](https://github.com/typedb/typedb-behaviour/pull/303).
+  Additionally, we add connection BDDs to the factory CI to make sure that this piece of the system is safe and stable.
 
-- **Fetch part I**
+- **Refactor compiler**
   
-  We implement the initial architecture and refactoring required for the Fetch implementation, including new IR data structures and translation steps.
+  We refactor the compiler to standardize naming, removing the usage of 'program', and introducing 'executable' as the second stage of compilation.
   
-- **TypeDB 3 - Specification**
+- **Refactor pipeline annotations**
   
-  Added specification of the TypeDB 3.0 database system behaviour.
-
+  We implement the next step of Fetch implementation, which allows us to embed Annotated pipelines into Fetch sub-queries and into functions. We comment out the code paths related to type inference for functions, since functions are now enhanced to include pipelines.
+  
+    
