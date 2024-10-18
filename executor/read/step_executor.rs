@@ -210,16 +210,16 @@ pub(super) fn create_executors_for_pipeline_stages(
             let step = NestedPatternExecutor::Limit([inner], mapper);
             Ok(vec![StepExecutors::Branch(step)])
         }
-        _ => todo!(), // ExecutableStage::Require(_) => todo!(),
-                      // ExecutableStage::Sort(sort_executable) => {
-                      //     let step = CollectingStageExecutor::new_sort(PatternExecutor::new(previous_stage_steps), sort_executable);
-                      //     Ok(vec![StepExecutors::CollectingStage(step)])
-                      // }
-                      // ExecutableStage::Reduce(reduce_executable) => {
-                      //     let step =
-                      //         CollectingStageExecutor::new_reduce(PatternExecutor::new(previous_stage_steps), reduce_executable);
-                      //     Ok(vec![StepExecutors::CollectingStage(step)])
-                      // }
-                      // ExecutableStage::Insert(_) | ExecutableStage::Delete(_) => todo!("Or unreachable?"),
+        ExecutableStage::Require(_) => todo!(),
+        ExecutableStage::Sort(sort_executable) => {
+            let step = CollectingStageExecutor::new_sort(PatternExecutor::new(previous_stage_steps), sort_executable);
+            Ok(vec![StepExecutors::CollectingStage(step)])
+        }
+        ExecutableStage::Reduce(reduce_executable) => {
+            let step =
+              CollectingStageExecutor::new_reduce(PatternExecutor::new(previous_stage_steps), reduce_executable);
+            Ok(vec![StepExecutors::CollectingStage(step)])
+        }
+        ExecutableStage::Insert(_) | ExecutableStage::Delete(_) => todo!("Or unreachable?"),
     }
 }

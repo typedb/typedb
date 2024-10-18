@@ -4,12 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::Arc;
-
-use compiler::executable::match_::planner::{
-    function_plan::ExecutableFunctionRegistry, match_executable::MatchExecutable,
-};
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
@@ -20,6 +14,7 @@ use crate::{
     read::{nested_pattern_executor::SubQueryResult, step_executor::StepExecutors},
     ExecutionInterrupt,
 };
+use crate::read::collecting_stage_executor::CollectedStageIterator;
 
 #[derive(Clone)]
 pub(super) struct BranchIndex(pub usize);
@@ -40,7 +35,10 @@ pub(super) enum ControlInstruction {
 
     MapRowBatchToRowForSubQuery(InstructionIndex, FixedBatchRowIterator),
     ExecuteSubQuery(InstructionIndex, BranchIndex),
-    // CollectingStage(InstructionIndex), TODO
+
+    CollectingStage(InstructionIndex),
+    StreamCollected(InstructionIndex, CollectedStageIterator),
+
     Yield(FixedBatch),
 }
 
@@ -130,6 +128,25 @@ impl PatternExecutor {
                         self.prepare_instruction_and_push_to_stack(context, index.next(), batch)?;
                     }
                 }
+                ControlInstruction::CollectingStage(index) => {
+                    let (pattern, mut collector) = executors[index.0].unwrap_collecting_stage().to_parts_mut();
+                    match pattern.compute_next_batch(context, interrupt)? {
+                        Some(batch) => {
+                            collector.accept(context, batch);
+                            self.control_stack.push(ControlInstruction::CollectingStage(index))
+                        },
+                        None => {
+                            let iterator = collector.into_iterator();
+                            self.control_stack.push(ControlInstruction::StreamCollected(index.clone(), iterator))
+                        },
+                    }
+                }
+                ControlInstruction::StreamCollected(index, mut collected_iterator) => {
+                    if let Some(batch) = collected_iterator.batch_continue()? {
+                        self.control_stack.push(ControlInstruction::StreamCollected(index.clone(), collected_iterator));
+                        self.prepare_instruction_and_push_to_stack(context, index.next(), batch)?;
+                    }
+                }
                 ControlInstruction::Yield(batch) => {
                     return Ok(Some(batch));
                 }
@@ -156,9 +173,8 @@ impl PatternExecutor {
                     .control_stack
                     .push(ControlInstruction::MapRowBatchToRowForSubQuery(index, batch.into_iterator())),
                 StepExecutors::CollectingStage(collecting_stage) => {
-                    todo!()
-                    // collecting_stage.prepare(batch);
-                    // self.control_stack.push(StackInstruction::CollectingStage(InstructionIndex(index)));
+                    collecting_stage.prepare(batch);
+                    self.control_stack.push(ControlInstruction::CollectingStage(index.clone()));
                 }
                 StepExecutors::ReshapeForReturn(_) => todo!(),
             }

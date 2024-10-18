@@ -253,35 +253,3 @@ impl SubQueryResultMapper for LimitMapper {
         }
     }
 }
-
-// // The reducers & sort will need to pass through a regular Batch since there's no guarantee of it passing through a fixed batch.
-// // Maybe spawn off FixedBatch-es from a regular batch. This also means they can't be regular subpattern executors
-// struct ReducerController {
-//     input: Option<MaybeOwnedRow<'static>>,
-//     grouped_reducer: GroupedReducer,
-// }
-//
-// impl ReducerController {
-//     fn new(grouped_reducer: GroupedReducer) -> Self {
-//         Self { grouped_reducer, input: None }
-//     }
-// }
-//
-// impl CollectingStageController for ReducerController {
-//     fn reset(&mut self) {
-//         self.input = None;
-//     }
-//
-//     fn is_active(&self) -> bool {
-//         self.input.is_some()
-//     }
-//
-//     fn prepare_and_get_subpattern_input(&mut self, row: MaybeOwnedRow<'static>) -> MaybeOwnedRow<'static> {
-//         self.input = Some(row.clone());
-//         row
-//     }
-//
-//     fn process_result(&mut self, result: Option<FixedBatch>) -> NestedPatternControllerResult {
-//
-//     }
-// }
