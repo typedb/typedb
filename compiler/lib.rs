@@ -7,8 +7,9 @@
 #![deny(elided_lifetimes_in_paths)]
 #![allow(clippy::result_large_err)]
 
-use std::fmt::{Display, Formatter};
+use std::fmt;
 
+use answer::variable::Variable;
 use ir::pattern::IrID;
 
 pub mod annotation;
@@ -22,7 +23,61 @@ macro_rules! filter_variants {
 }
 pub(crate) use filter_variants;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, PartialOrd, Ord)]
+pub enum ExecutorVariable {
+    RowPosition(VariablePosition),
+    Internal(Variable),
+}
+
+impl ExecutorVariable {
+    pub fn new_position(position: u32) -> Self {
+        Self::RowPosition(VariablePosition { position })
+    }
+
+    pub fn new_internal(variable: Variable) -> Self {
+        Self::Internal(variable)
+    }
+
+    /// Returns `true` if the executor variable is [`Output`].
+    ///
+    /// [`Output`]: ExecutorVariable::Output
+    #[must_use]
+    pub fn is_output(&self) -> bool {
+        matches!(self, Self::RowPosition(..))
+    }
+
+    /// Returns `true` if the executor variable is [`Internal`].
+    ///
+    /// [`Internal`]: ExecutorVariable::Internal
+    #[must_use]
+    pub fn is_internal(&self) -> bool {
+        matches!(self, Self::Internal(..))
+    }
+
+    pub fn as_position(&self) -> Option<VariablePosition> {
+        match *self {
+            Self::RowPosition(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn as_internal(&self) -> Option<Variable> {
+        match *self {
+            Self::Internal(v) => Some(v),
+            _ => None,
+        }
+    }
+}
+
+impl fmt::Display for ExecutorVariable {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
+    }
+}
+
+impl IrID for ExecutorVariable {}
+
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct VariablePosition {
     position: u32,
 }
@@ -37,9 +92,15 @@ impl VariablePosition {
     }
 }
 
-impl Display for VariablePosition {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Debug for VariablePosition {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "P_{}", self.position)
+    }
+}
+
+impl fmt::Display for VariablePosition {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
     }
 }
 

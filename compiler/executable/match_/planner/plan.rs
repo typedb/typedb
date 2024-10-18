@@ -5,8 +5,9 @@
  */
 
 use std::{
+    any::type_name_of_val,
     collections::{HashMap, HashSet},
-    sync::Arc,
+    fmt,
 };
 
 use answer::variable::Variable;
@@ -24,7 +25,7 @@ use ir::{
     },
     pipeline::{block::BlockContext, VariableRegistry},
 };
-use itertools::Itertools;
+use itertools::{chain, Itertools};
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -36,21 +37,25 @@ use crate::{
             },
             type_::{
                 OwnsInstruction, OwnsReverseInstruction, PlaysInstruction, PlaysReverseInstruction, RelatesInstruction,
-                RelatesReverseInstruction, SubInstruction, SubReverseInstruction, TypeListInstruction,
+                RelatesReverseInstruction, SubInstruction, SubReverseInstruction,
             },
             CheckInstruction, CheckVertex, ConstraintInstruction, Inputs,
         },
         planner::{
-            match_executable::MatchExecutable,
             vertex::{
-                ComparisonPlanner, Costed, Direction, ElementCost, FunctionCallPlanner, HasPlanner, Input,
-                InputPlanner, IsaPlanner, LabelPlanner, LinksPlanner, NestedPatternPlanner, OwnsPlanner, PlannerVertex,
-                PlaysPlanner, RelatesPlanner, SubPlanner, ThingPlanner, TypePlanner, ValuePlanner,
+                constraint::{
+                    ConstraintVertex, HasPlanner, IsaPlanner, LinksPlanner, OwnsPlanner, PlaysPlanner, RelatesPlanner,
+                    SubPlanner, TypeListPlanner,
+                },
+                variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
+                ComparisonPlanner, Costed, Direction, DisjunctionPlanner, ElementCost, FunctionCallPlanner, Input,
+                NegationPlanner, PlannerVertex,
             },
-            IntersectionBuilder, MatchExecutableBuilder, NegationBuilder, StepBuilder,
+            DisjunctionBuilder, IntersectionBuilder, MatchExecutableBuilder, NegationBuilder, StepBuilder,
+            StepInstructionsBuilder,
         },
     },
-    VariablePosition,
+    ExecutorVariable, VariablePosition,
 };
 
 pub(crate) fn plan_conjunction<'a>(
@@ -62,36 +67,126 @@ pub(crate) fn plan_conjunction<'a>(
     _expressions: &HashMap<Variable, ExecutableExpression>,
     statistics: &'a Statistics,
 ) -> ConjunctionPlan<'a> {
-    let subplans = conjunction
-        .nested_patterns()
-        .iter()
-        .map(|pattern| match pattern {
-            NestedPattern::Disjunction(_) => todo!(),
-            NestedPattern::Negation(negation) => plan_conjunction(
-                negation.conjunction(),
-                block_context,
-                variable_positions,
-                type_annotations,
-                variable_registry,
-                _expressions,
-                statistics,
+    let plan_builder = make_builder(
+        conjunction,
+        block_context,
+        variable_positions,
+        type_annotations,
+        variable_registry,
+        _expressions,
+        statistics,
+    );
+
+    plan_builder.plan()
+}
+
+fn make_builder<'a>(
+    conjunction: &'a Conjunction,
+    block_context: &BlockContext,
+    variable_positions: &HashMap<Variable, VariablePosition>,
+    type_annotations: &'a TypeAnnotations,
+    variable_registry: &VariableRegistry,
+    _expressions: &HashMap<Variable, ExecutableExpression>,
+    statistics: &'a Statistics,
+) -> ConjunctionPlanBuilder<'a> {
+    let mut negation_subplans = Vec::new();
+    let mut disjunction_planners = Vec::new();
+    for pattern in conjunction.nested_patterns() {
+        match pattern {
+            NestedPattern::Disjunction(disjunction) => disjunction_planners.push(DisjunctionPlanBuilder::new(
+                disjunction
+                    .conjunctions()
+                    .iter()
+                    .map(|conj| {
+                        make_builder(
+                            conj,
+                            block_context,
+                            variable_positions,
+                            type_annotations,
+                            variable_registry,
+                            _expressions,
+                            statistics,
+                        )
+                    })
+                    .collect_vec(),
+            )),
+            NestedPattern::Negation(negation) => negation_subplans.push(
+                make_builder(
+                    negation.conjunction(),
+                    block_context,
+                    variable_positions,
+                    type_annotations,
+                    variable_registry,
+                    _expressions,
+                    statistics,
+                )
+                .with_inputs(negation.conjunction().captured_variables(block_context))
+                .plan(),
             ),
             NestedPattern::Optional(_) => todo!(),
-        })
-        .collect_vec();
+        }
+    }
 
-    let mut plan_builder = PlanBuilder::new(type_annotations, statistics);
+    let mut plan_builder = ConjunctionPlanBuilder::new(type_annotations, statistics);
     plan_builder.register_variables(
+        variable_positions.keys().copied(),
         conjunction.captured_variables(block_context),
         conjunction.declared_variables(block_context),
         variable_registry,
     );
     plan_builder.register_constraints(conjunction);
-    plan_builder.register_nested_plans(subplans);
+    plan_builder.register_negations(negation_subplans);
+    plan_builder.register_disjunctions(disjunction_planners);
+    plan_builder
+}
 
-    let ordering = plan_builder.initialise_greedy();
+#[derive(Clone, Copy, Default, Hash, PartialEq, Eq)]
+pub(super) struct VariableVertexId(usize);
 
-    plan_builder.finish()
+impl fmt::Debug for VariableVertexId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "V[{}]", self.0)
+    }
+}
+
+#[derive(Clone, Copy, Default, Hash, PartialEq, Eq)]
+pub(super) struct PatternVertexId(usize);
+
+impl fmt::Debug for PatternVertexId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "P[{}]", self.0)
+    }
+}
+
+#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+pub(super) enum VertexId {
+    Variable(VariableVertexId),
+    Pattern(PatternVertexId),
+}
+
+impl fmt::Debug for VertexId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Variable(id) => fmt::Debug::fmt(id, f),
+            Self::Pattern(id) => fmt::Debug::fmt(id, f),
+        }
+    }
+}
+
+impl VertexId {
+    pub(super) fn as_variable_id(&self) -> Option<VariableVertexId> {
+        match *self {
+            Self::Variable(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub(super) fn as_pattern_id(&self) -> Option<PatternVertexId> {
+        match *self {
+            Self::Pattern(v) => Some(v),
+            _ => None,
+        }
+    }
 }
 
 /*
@@ -107,57 +202,107 @@ pub(crate) fn plan_conjunction<'a>(
  *      instructions? Do we need to differentiate?
  */
 
-#[derive(Debug)]
-pub(crate) struct PlanBuilder<'a> {
-    shared_variables: Vec<usize>,
-    elements: Vec<PlannerVertex>,
-    variable_index: HashMap<Variable, usize>,
-    index_to_constraint: HashMap<usize, &'a Constraint<Variable>>,
-    index_to_nested_pattern: HashMap<usize, ConjunctionPlan<'a>>,
-    adjacency: HashMap<usize, HashSet<usize>>,
+#[derive(Clone)]
+pub(super) struct ConjunctionPlanBuilder<'a> {
+    shared_variables: Vec<Variable>,
+    graph: Graph<'a>,
     type_annotations: &'a TypeAnnotations,
     statistics: &'a Statistics,
 }
 
-impl<'a> PlanBuilder<'a> {
+impl<'a> fmt::Debug for ConjunctionPlanBuilder<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PlanBuilder")
+            .field("shared_variables", &self.shared_variables)
+            .field("graph", &self.graph)
+            .finish()
+    }
+}
+
+impl<'a> ConjunctionPlanBuilder<'a> {
     fn new(type_annotations: &'a TypeAnnotations, statistics: &'a Statistics) -> Self {
-        Self {
-            shared_variables: Vec::new(),
-            elements: Vec::new(),
-            variable_index: HashMap::new(),
-            index_to_constraint: HashMap::new(),
-            index_to_nested_pattern: HashMap::new(),
-            adjacency: HashMap::new(),
-            type_annotations,
-            statistics,
+        Self { shared_variables: Vec::new(), graph: Graph::default(), type_annotations, statistics }
+    }
+
+    pub(super) fn shared_variables(&self) -> &[Variable] {
+        &self.shared_variables
+    }
+
+    fn input_variables(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
+        self.graph
+            .variable_index
+            .values()
+            .copied()
+            .filter(|&v| self.graph.elements[&VertexId::Variable(v)].as_variable().is_some_and(|v| v.is_input()))
+    }
+
+    pub(super) fn with_inputs(mut self, input_variables: impl Iterator<Item = Variable>) -> Self {
+        for var in input_variables {
+            if let Some(&id) = self.graph.variable_index.get(&var) {
+                self.graph.elements.insert(
+                    VertexId::Variable(id),
+                    PlannerVertex::Variable(VariableVertex::Input(InputPlanner::from_variable(var))),
+                );
+            }
         }
+        self
     }
 
     fn register_variables(
         &mut self,
+        input_variables: impl Iterator<Item = Variable>,
         shared_variables: impl Iterator<Item = Variable>,
         local_variables: impl Iterator<Item = Variable>,
         variable_registry: &VariableRegistry,
     ) {
-        self.elements.reserve(shared_variables.size_hint().0 + local_variables.size_hint().0);
-        self.shared_variables.reserve(shared_variables.size_hint().0);
+        self.shared_variables.reserve(input_variables.size_hint().0 + shared_variables.size_hint().0);
 
-        for variable in shared_variables {
-            // FIXME shared variables aren't necessarily bound before the conjunction is entered
+        for variable in input_variables {
             self.register_input_var(variable);
         }
 
-        for variable in local_variables {
+        for variable in shared_variables {
+            if self.graph.variable_index.contains_key(&variable) {
+                continue;
+            }
+            self.shared_variables.push(variable);
             let category = variable_registry.get_variable_category(variable).unwrap();
             match category {
                 | VariableCategory::Type
                 | VariableCategory::ThingType
                 | VariableCategory::AttributeType
                 | VariableCategory::RoleType => self.register_type_var(variable),
+
+                | VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
+                    self.register_thing_var(variable)
+                }
+
+                VariableCategory::Value => self.register_value_var(variable),
+
+                | VariableCategory::ObjectList
+                | VariableCategory::ThingList
+                | VariableCategory::AttributeList
+                | VariableCategory::ValueList => todo!("list variable planning"),
+            }
+        }
+
+        for variable in local_variables {
+            if self.graph.variable_index.contains_key(&variable) {
+                continue;
+            }
+            let category = variable_registry.get_variable_category(variable).unwrap();
+            match category {
+                | VariableCategory::Type
+                | VariableCategory::ThingType
+                | VariableCategory::AttributeType
+                | VariableCategory::RoleType => self.register_type_var(variable),
+
                 VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
                     self.register_thing_var(variable)
                 }
+
                 VariableCategory::Value => self.register_value_var(variable),
+
                 | VariableCategory::ObjectList
                 | VariableCategory::ThingList
                 | VariableCategory::AttributeList
@@ -167,39 +312,28 @@ impl<'a> PlanBuilder<'a> {
     }
 
     fn register_input_var(&mut self, variable: Variable) {
-        let planner = InputPlanner::from_variable(variable, self.type_annotations);
-        let index = self.elements.len();
-        self.elements.push(PlannerVertex::Input(planner));
-        self.shared_variables.push(index);
-        self.variable_index.insert(variable, index);
+        self.shared_variables.push(variable);
+        let planner = InputPlanner::from_variable(variable);
+        self.graph.push_variable(variable, VariableVertex::Input(planner));
     }
 
     fn register_type_var(&mut self, variable: Variable) {
         let planner = TypePlanner::from_variable(variable, self.type_annotations);
-        let index = self.elements.len();
-        self.elements.push(PlannerVertex::Type(planner));
-        self.variable_index.insert(variable, index);
+        self.graph.push_variable(variable, VariableVertex::Type(planner));
     }
 
     fn register_thing_var(&mut self, variable: Variable) {
         let planner = ThingPlanner::from_variable(variable, self.type_annotations, self.statistics);
-        let index = self.elements.len();
-        self.elements.push(PlannerVertex::Thing(planner));
-        self.variable_index.insert(variable, index);
+        self.graph.push_variable(variable, VariableVertex::Thing(planner));
     }
 
     fn register_value_var(&mut self, variable: Variable) {
         let planner = ValuePlanner::from_variable(variable);
-        let index = self.elements.len();
-        self.elements.push(PlannerVertex::Value(planner));
-        self.variable_index.insert(variable, index);
+        self.graph.push_variable(variable, VariableVertex::Value(planner));
     }
 
     fn register_constraints(&mut self, conjunction: &'a Conjunction) {
         for constraint in conjunction.constraints() {
-            let planner_index = self.elements.len();
-            self.index_to_constraint.insert(planner_index, constraint);
-
             match constraint {
                 Constraint::Kind(kind) => self.register_kind(kind),
                 Constraint::RoleName(role_name) => self.register_role_name(role_name),
@@ -218,97 +352,76 @@ impl<'a> PlanBuilder<'a> {
 
                 Constraint::Comparison(comparison) => self.register_comparison(comparison),
 
-                Constraint::ExpressionBinding(expression) => {
-                    if expression.expression().is_constant() {
-                        let lhs = self.variable_index[&expression.left().as_variable().unwrap()];
-                        if self.elements[lhs].is_value() {
-                            self.elements[lhs] = PlannerVertex::Constant;
-                            self.index_to_constraint.remove(&planner_index);
-                        // unregister
-                        } else {
-                            todo!("non-value var assignment?")
-                        }
-                    } else {
-                        self.register_expression_binding(expression);
-                    }
-                }
-            }
-        }
-
-        for (planner_index, planner) in self.elements.iter().enumerate() {
-            self.adjacency.entry(planner_index).or_default().extend(planner.variables());
-            for v in planner.variables() {
-                self.adjacency.entry(v).or_default().insert(planner_index);
+                Constraint::ExpressionBinding(expression) => self.register_expression_binding(expression),
             }
         }
     }
 
-    fn register_label(&mut self, label: &Label<Variable>) {
-        let planner = PlannerVertex::Label(LabelPlanner::from_label_constraint(
-            label,
-            &self.variable_index,
+    fn register_label(&mut self, label: &'a Label<Variable>) {
+        let planner = TypeListPlanner::from_label_constraint(label, &self.graph.variable_index, self.type_annotations);
+        self.graph.push_constraint(ConstraintVertex::TypeList(planner));
+    }
+
+    fn register_role_name(&mut self, role_name: &'a RoleName<Variable>) {
+        let planner =
+            TypeListPlanner::from_role_name_constraint(role_name, &self.graph.variable_index, self.type_annotations);
+        self.graph.push_constraint(ConstraintVertex::TypeList(planner));
+    }
+
+    fn register_kind(&mut self, kind: &'a Kind<Variable>) {
+        let planner = TypeListPlanner::from_kind_constraint(kind, &self.graph.variable_index, self.type_annotations);
+        self.graph.push_constraint(ConstraintVertex::TypeList(planner));
+    }
+
+    fn register_sub(&mut self, sub: &'a Sub<Variable>) {
+        let planner = SubPlanner::from_constraint(sub, &self.graph.variable_index, self.type_annotations);
+        self.graph.push_constraint(ConstraintVertex::Sub(planner));
+    }
+
+    fn register_owns(&mut self, owns: &'a Owns<Variable>) {
+        let planner =
+            OwnsPlanner::from_constraint(owns, &self.graph.variable_index, self.type_annotations, self.statistics);
+        self.graph.push_constraint(ConstraintVertex::Owns(planner));
+    }
+
+    fn register_relates(&mut self, relates: &'a Relates<Variable>) {
+        let planner = RelatesPlanner::from_constraint(
+            relates,
+            &self.graph.variable_index,
             self.type_annotations,
-        ));
-        self.elements.push(planner);
+            self.statistics,
+        );
+        self.graph.push_constraint(ConstraintVertex::Relates(planner));
     }
 
-    fn register_role_name(&mut self, role_name: &RoleName<Variable>) {
-        let planner = PlannerVertex::Label(LabelPlanner::from_role_name_constraint(
-            role_name,
-            &self.variable_index,
-            self.type_annotations,
-        ));
-        self.elements.push(planner);
-    }
-
-    fn register_kind(&mut self, kind: &Kind<Variable>) {
+    fn register_plays(&mut self, plays: &'a Plays<Variable>) {
         let planner =
-            PlannerVertex::Label(LabelPlanner::from_kind_constraint(kind, &self.variable_index, self.type_annotations));
-        self.elements.push(planner);
+            PlaysPlanner::from_constraint(plays, &self.graph.variable_index, self.type_annotations, self.statistics);
+        self.graph.push_constraint(ConstraintVertex::Plays(planner));
     }
 
-    fn register_sub(&mut self, sub: &Sub<Variable>) {
-        let planner = SubPlanner::from_constraint(sub, &self.variable_index, self.type_annotations);
-        self.elements.push(PlannerVertex::Sub(planner));
-    }
-
-    fn register_owns(&mut self, owns: &Owns<Variable>) {
-        let planner = OwnsPlanner::from_constraint(owns, &self.variable_index, self.type_annotations, self.statistics);
-        self.elements.push(PlannerVertex::Owns(planner));
-    }
-
-    fn register_relates(&mut self, relates: &Relates<Variable>) {
+    fn register_isa(&mut self, isa: &'a Isa<Variable>) {
         let planner =
-            RelatesPlanner::from_constraint(relates, &self.variable_index, self.type_annotations, self.statistics);
-        self.elements.push(PlannerVertex::Relates(planner));
+            IsaPlanner::from_constraint(isa, &self.graph.variable_index, self.type_annotations, self.statistics);
+        self.graph.push_constraint(ConstraintVertex::Isa(planner));
     }
 
-    fn register_plays(&mut self, plays: &Plays<Variable>) {
+    fn register_has(&mut self, has: &'a Has<Variable>) {
         let planner =
-            PlaysPlanner::from_constraint(plays, &self.variable_index, self.type_annotations, self.statistics);
-        self.elements.push(PlannerVertex::Plays(planner));
+            HasPlanner::from_constraint(has, &self.graph.variable_index, self.type_annotations, self.statistics);
+        self.graph.push_constraint(ConstraintVertex::Has(planner));
     }
 
-    fn register_isa(&mut self, isa: &Isa<Variable>) {
-        let planner = IsaPlanner::from_constraint(isa, &self.variable_index, self.type_annotations, self.statistics);
-        self.elements.push(PlannerVertex::Isa(planner));
-    }
-
-    fn register_has(&mut self, has: &Has<Variable>) {
-        let planner = HasPlanner::from_constraint(has, &self.variable_index, self.type_annotations, self.statistics);
-        self.elements.push(PlannerVertex::Has(planner));
-    }
-
-    fn register_links(&mut self, links: &Links<Variable>) {
+    fn register_links(&mut self, links: &'a Links<Variable>) {
         let planner =
-            LinksPlanner::from_constraint(links, &self.variable_index, self.type_annotations, self.statistics);
-        self.elements.push(PlannerVertex::Links(planner));
+            LinksPlanner::from_constraint(links, &self.graph.variable_index, self.type_annotations, self.statistics);
+        self.graph.push_constraint(ConstraintVertex::Links(planner));
     }
 
     fn register_expression_binding(&mut self, expression: &ExpressionBinding<Variable>) {
-        let lhs = self.variable_index[&expression.left().as_variable().unwrap()];
-        let planner_index = self.elements.len();
-        self.adjacency.entry(lhs).or_default().insert(planner_index);
+        // let lhs = self.variable_index[&expression.left().as_variable().unwrap()];
+        // let planner_index = self.elements.len();
+        // self.adjacency.entry(lhs).or_default().insert(planner_index);
         todo!("expression = {expression:?}");
         // self.elements.push(PlannerVertex::Expression());
     }
@@ -316,90 +429,93 @@ impl<'a> PlanBuilder<'a> {
     fn register_function_call_binding(&mut self, call_binding: &FunctionCallBinding<Variable>) {
         // TODO: This is just a mock
         let arguments =
-            call_binding.function_call().argument_ids().map(|variable| self.variable_index[&variable]).collect();
+            call_binding.function_call().argument_ids().map(|variable| self.graph.variable_index[&variable]).collect();
         let return_vars = call_binding
             .assigned()
             .iter()
             .map(|vertex| {
                 let Vertex::Variable(variable) = vertex else { todo!("Unreachable?") };
-                self.variable_index[variable]
+                self.graph.variable_index[variable]
             })
             .collect();
         let element_cost = ElementCost { per_input: 1.0, per_output: 1.0, branching_factor: 1.0 };
-        self.elements.push(PlannerVertex::FunctionCall(FunctionCallPlanner::new(arguments, return_vars, element_cost)));
+        self.graph.push_function_call(FunctionCallPlanner::new(arguments, return_vars, element_cost));
         todo!("register_function_call");
     }
 
-    fn register_comparison(&mut self, comparison: &Comparison<Variable>) {
-        let lhs = Input::from_vertex(comparison.lhs(), &self.variable_index);
-        let rhs = Input::from_vertex(comparison.rhs(), &self.variable_index);
+    fn register_comparison(&mut self, comparison: &'a Comparison<Variable>) {
+        let lhs = Input::from_vertex(comparison.lhs(), &self.graph.variable_index);
+        let rhs = Input::from_vertex(comparison.rhs(), &self.graph.variable_index);
         if let Input::Variable(lhs) = lhs {
+            let lhs = self.graph.elements.get_mut(&VertexId::Variable(lhs)).unwrap().as_variable_mut().unwrap();
             match comparison.comparator() {
-                Comparator::Equal => self.elements[lhs].add_equal(rhs),
+                Comparator::Equal => lhs.add_equal(rhs),
                 Comparator::NotEqual => (), // no tangible impact on traversal costs
-                Comparator::Less | Comparator::LessOrEqual => self.elements[lhs].add_upper_bound(rhs),
-                Comparator::Greater | Comparator::GreaterOrEqual => self.elements[lhs].add_lower_bound(rhs),
+                Comparator::Less | Comparator::LessOrEqual => lhs.add_upper_bound(rhs),
+                Comparator::Greater | Comparator::GreaterOrEqual => lhs.add_lower_bound(rhs),
                 Comparator::Like => todo!("like operator"),
                 Comparator::Contains => todo!("contains operator"),
             }
         }
         if let Input::Variable(rhs) = rhs {
+            let rhs = self.graph.elements.get_mut(&VertexId::Variable(rhs)).unwrap().as_variable_mut().unwrap();
             match comparison.comparator() {
-                Comparator::Equal => self.elements[rhs].add_equal(lhs),
+                Comparator::Equal => rhs.add_equal(lhs),
                 Comparator::NotEqual => (), // no tangible impact on traversal costs
-                Comparator::Less | Comparator::LessOrEqual => self.elements[rhs].add_upper_bound(lhs),
-                Comparator::Greater | Comparator::GreaterOrEqual => self.elements[rhs].add_lower_bound(lhs),
+                Comparator::Less | Comparator::LessOrEqual => rhs.add_upper_bound(lhs),
+                Comparator::Greater | Comparator::GreaterOrEqual => rhs.add_lower_bound(lhs),
                 Comparator::Like => todo!("like operator"),
                 Comparator::Contains => todo!("contains operator"),
             }
         }
-        self.elements.push(PlannerVertex::Comparison(ComparisonPlanner::from_constraint(
+        self.graph.push_comparison(ComparisonPlanner::from_constraint(
             comparison,
-            &self.variable_index,
+            &self.graph.variable_index,
             self.type_annotations,
             self.statistics,
-        )));
+        ));
     }
 
-    fn register_nested_plans(&mut self, subplans: Vec<ConjunctionPlan<'a>>) {
-        for subplan in subplans {
-            let index = self.elements.len();
-            self.elements.push(PlannerVertex::NestedPattern(NestedPatternPlanner::new(
-                subplan.shared_variables.clone(),
-                subplan.cost,
-            )));
-            self.index_to_nested_pattern.insert(index, subplan);
-        }
-
-        for (planner_index, planner) in self.elements.iter().enumerate() {
-            self.adjacency.entry(planner_index).or_default().extend(planner.variables());
-            for v in planner.variables() {
-                self.adjacency.entry(v).or_default().insert(planner_index);
-            }
+    fn register_disjunctions(&mut self, disjunctions: Vec<DisjunctionPlanBuilder<'a>>) {
+        for disjunction in disjunctions {
+            self.graph.push_disjunction(DisjunctionPlanner::from_builder(disjunction, &self.graph.variable_index));
         }
     }
 
-    fn initialise_greedy(&self) -> Vec<usize> {
-        let mut open_set: HashSet<usize> = (self.shared_variables.len()..self.elements.len()).collect();
-        let mut ordering = Vec::with_capacity(self.elements.len());
-        ordering.extend_from_slice(&self.shared_variables);
+    fn register_negations(&mut self, negations: Vec<ConjunctionPlan<'a>>) {
+        for negation_plan in negations {
+            self.graph.push_negation(NegationPlanner::new(negation_plan, &self.graph.variable_index));
+        }
+    }
 
-        let mut produced_at_this_stage = HashSet::new();
-        let mut intersection_variable = None;
+    fn initialise_greedy_ordering(&self) -> Vec<VertexId> {
+        let mut open_set: HashSet<VertexId> = chain!(
+            self.graph.variable_to_pattern.keys().map(|&variable_id| VertexId::Variable(variable_id)),
+            self.graph.pattern_to_variable.keys().map(|&pattern_id| VertexId::Pattern(pattern_id))
+        )
+        .collect();
+        let mut ordering = Vec::with_capacity(self.graph.element_count());
+        for v in self.input_variables() {
+            ordering.push(VertexId::Variable(v));
+            open_set.remove(&VertexId::Variable(v));
+        }
+
+        let mut produced_at_this_stage: HashSet<VariableVertexId> = HashSet::new();
+        let mut intersection_variable: Option<VariableVertexId> = None;
 
         while !open_set.is_empty() {
             let (next, _cost) = open_set
                 .iter()
-                .filter(|&&elem| self.elements[elem].is_valid(elem, &ordering, &self.adjacency))
+                .filter(|&&elem| self.graph.elements[&elem].is_valid(elem, &ordering, &self.graph))
                 .map(|&elem| (elem, self.calculate_marginal_cost(&ordering, elem)))
                 .min_by(|(_, lhs_cost), (_, rhs_cost)| lhs_cost.total_cmp(rhs_cost))
                 .unwrap();
 
-            if intersection_variable == Some(next) {
+            if intersection_variable == next.as_variable_id() {
                 intersection_variable = None;
             }
 
-            let element = &self.elements[next];
+            let element = &self.graph.elements[&next];
 
             if !element.is_variable() {
                 match element.variables().filter(|var| produced_at_this_stage.contains(var)).exactly_one() {
@@ -407,155 +523,291 @@ impl<'a> PlanBuilder<'a> {
                         intersection_variable = Some(var);
                     }
                     _ => {
-                        let produced =
-                            produced_at_this_stage.drain().filter(|var| !ordering.contains(var)).collect_vec();
-                        ordering.extend_from_slice(&produced);
-                        for var in produced {
-                            open_set.remove(&var);
+                        for var in produced_at_this_stage.drain().map(VertexId::Variable) {
+                            if !ordering.contains(&var) {
+                                ordering.push(var);
+                                open_set.remove(&var);
+                            }
                         }
                         intersection_variable = None;
                     }
                 }
 
                 produced_at_this_stage.extend(element.variables());
-            }
 
-            ordering.push(next);
-            open_set.remove(&next);
+                ordering.push(next);
+                open_set.remove(&next);
+            } else {
+                for var in produced_at_this_stage.drain().map(VertexId::Variable) {
+                    if !ordering.contains(&var) {
+                        ordering.push(var);
+                        open_set.remove(&var);
+                    }
+                }
+                intersection_variable = None;
+            }
         }
         ordering
     }
 
-    fn calculate_marginal_cost(&self, prefix: &[usize], next: usize) -> f64 {
+    fn calculate_marginal_cost(&self, prefix: &[VertexId], next: VertexId) -> f64 {
         assert!(!prefix.contains(&next));
-        let adjacent = self.adjacency.get(&next);
-        let preceding = adjacent.into_iter().flatten().filter(|adj| prefix.contains(adj)).copied().collect_vec();
-        let planner_vertex = &self.elements[next];
-        let ElementCost { per_input, per_output, branching_factor } = planner_vertex.cost(&preceding, &self.elements);
+        let planner_vertex = &self.graph.elements[&next];
+        let ElementCost { per_input, per_output, branching_factor } = planner_vertex.cost(prefix, &self.graph);
         per_input + branching_factor * per_output
     }
 
-    fn finish(self) -> ConjunctionPlan<'a> {
-        let ordering = self.initialise_greedy();
+    pub(super) fn plan(self) -> ConjunctionPlan<'a> {
+        let ordering = self.initialise_greedy_ordering();
+
+        let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
+
         let cost = ordering
             .iter()
             .enumerate()
-            .map(|(i, &idx)| self.elements[idx].cost(&ordering[..i], &self.elements))
-            .fold(ElementCost::default(), |acc, e| acc.chain(e));
+            .map(|(i, idx)| self.graph.elements[idx].cost(&ordering[..i], &self.graph))
+            .fold(ElementCost::FREE, |acc, e| acc.chain(e));
 
-        let Self {
-            shared_variables,
-            elements,
-            variable_index,
-            index_to_constraint,
-            index_to_nested_pattern,
-            adjacency,
-            type_annotations,
-            statistics: _,
-        } = self;
+        let Self { shared_variables, graph, type_annotations, statistics: _ } = self;
 
-        ConjunctionPlan {
-            shared_variables,
-            elements,
-            variable_index,
-            index_to_constraint,
-            index_to_nested_pattern,
-            adjacency,
-            type_annotations,
-            ordering,
-            cost,
-        }
+        ConjunctionPlan { shared_variables, graph, type_annotations, ordering, element_to_order, cost }
     }
 }
 
-#[derive(Debug)]
-pub(crate) struct ConjunctionPlan<'a> {
-    shared_variables: Vec<usize>,
-    elements: Vec<PlannerVertex>,
-    variable_index: HashMap<Variable, usize>,
-    index_to_constraint: HashMap<usize, &'a Constraint<Variable>>,
-    index_to_nested_pattern: HashMap<usize, ConjunctionPlan<'a>>,
-    adjacency: HashMap<usize, HashSet<usize>>,
+#[derive(Clone)]
+pub(super) struct ConjunctionPlan<'a> {
+    shared_variables: Vec<Variable>,
+    graph: Graph<'a>,
     type_annotations: &'a TypeAnnotations,
-    ordering: Vec<usize>,
+    ordering: Vec<VertexId>,
+    element_to_order: HashMap<VertexId, usize>,
     cost: ElementCost,
+}
+
+impl<'a> fmt::Debug for ConjunctionPlan<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct(type_name_of_val(self))
+            .field("shared_variables", &self.shared_variables)
+            .field("graph", &self.graph)
+            .field("ordering", &self.ordering)
+            .field("cost", &self.cost)
+            .finish()
+    }
 }
 
 impl ConjunctionPlan<'_> {
     pub(crate) fn lower(
         &self,
-        input_variables: &HashMap<Variable, VariablePosition>,
-        variable_registry: Arc<VariableRegistry>,
-    ) -> MatchExecutable {
-        let index_to_variable: HashMap<_, _> =
-            self.variable_index.iter().map(|(&variable, &index)| (index, variable)).collect();
-
-        let mut match_builder = MatchExecutableBuilder::with_inputs(input_variables);
-
-        let mut producers = HashMap::with_capacity(self.variable_index.len());
-
-        let element_to_order: HashMap<_, _> =
-            self.ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
-
-        let inputs_of = |x| {
-            let order = element_to_order[&x];
-            let adjacent = match self.adjacency.get(&x) {
-                Some(adj) => adj,
-                None => &HashSet::new(),
-            };
-            adjacent.iter().copied().filter(|adj| self.ordering[..order].contains(adj)).collect::<HashSet<_>>()
-        };
-
-        let outputs_of = |x| {
-            let order = element_to_order[&x];
-            let adjacent = match self.adjacency.get(&x) {
-                Some(adj) => adj,
-                None => &HashSet::new(),
-            };
-            adjacent.iter().copied().filter(|adj| self.ordering[order..].contains(adj)).collect::<HashSet<_>>()
-        };
+        selected_variables: impl IntoIterator<Item = Variable> + Clone,
+        assigned_positions: &HashMap<Variable, ExecutorVariable>,
+        variable_registry: &VariableRegistry,
+    ) -> MatchExecutableBuilder {
+        let mut match_builder =
+            MatchExecutableBuilder::new(assigned_positions, selected_variables.clone().into_iter().collect());
 
         for &index in &self.ordering {
-            if index_to_variable.contains_key(&index) {
-                continue;
-            }
-
-            let inputs = inputs_of(index).into_iter().map(|var| index_to_variable[&var]).collect_vec();
-
-            if let Some(constraint) = self.index_to_constraint.get(&index) {
-                let sort_variable = outputs_of(index)
-                    .into_iter()
-                    .find(|&var| inputs_of(var).len() > 1)
-                    .map(|var| index_to_variable[&var]);
-
-                let planner = &self.elements[index];
-                self.lower_constraint(&mut match_builder, &mut producers, constraint, planner, inputs, sort_variable)
-            } else if let Some(subpattern) = self.index_to_nested_pattern.get(&index) {
-                assert!(outputs_of(index).is_empty());
-                let negation = subpattern.lower(match_builder.position_mapping(), variable_registry.clone());
-                let variable_positions = negation.variable_positions().clone(); // FIXME needless clone
-                match_builder.push_step(&variable_positions, StepBuilder::Negation(NegationBuilder { negation }));
-            } else {
-                unreachable!()
+            match index {
+                VertexId::Variable(var) => {
+                    self.may_make_variable_producing_step(&mut match_builder, var, variable_registry);
+                }
+                VertexId::Pattern(pattern) => {
+                    for input in self.inputs_of_pattern(pattern) {
+                        let order = self.element_to_order[&VertexId::Pattern(pattern)];
+                        let is_last_consumer = self
+                            .consumers_of_var(input)
+                            .all(|pat| self.element_to_order[&VertexId::Pattern(pat)] <= order);
+                        if is_last_consumer {
+                            match_builder.remove_output(self.graph.index_to_variable[&input])
+                        }
+                    }
+                    for output in self.outputs_of_pattern(pattern) {
+                        let is_selected =
+                            || match_builder.selected_variables.contains(&self.graph.index_to_variable[&output]);
+                        let has_consumers = || self.consumers_of_var(output).next().is_some();
+                        if is_selected() || has_consumers() {
+                            match_builder.register_output(self.graph.index_to_variable[&output]);
+                        } else {
+                            match_builder.register_internal(self.graph.index_to_variable[&output]);
+                        }
+                    }
+                    if self.outputs_of_pattern(pattern).next().is_none() {
+                        self.may_make_check_step(&mut match_builder, pattern, variable_registry);
+                    }
+                    match_builder.finish_one()
+                }
             }
         }
 
-        match_builder.finish(variable_registry)
+        match_builder
+    }
+
+    fn producers_of_var(&self, input: VariableVertexId) -> impl Iterator<Item = PatternVertexId> + '_ {
+        let order = self.element_to_order[&VertexId::Variable(input)];
+        self.graph.variable_to_pattern[&input]
+            .iter()
+            .copied()
+            .filter(move |&adj| self.element_to_order[&VertexId::Pattern(adj)] < order)
+    }
+
+    fn consumers_of_var(&self, input: VariableVertexId) -> impl Iterator<Item = PatternVertexId> + '_ {
+        let order = self.element_to_order[&VertexId::Variable(input)];
+        self.graph.variable_to_pattern[&input]
+            .iter()
+            .copied()
+            .filter(move |&adj| self.element_to_order[&VertexId::Pattern(adj)] > order)
+    }
+
+    fn inputs_of_pattern(&self, pattern: PatternVertexId) -> impl Iterator<Item = VariableVertexId> + '_ {
+        let order = self.element_to_order[&VertexId::Pattern(pattern)];
+        self.graph.pattern_to_variable[&pattern]
+            .iter()
+            .copied()
+            .filter(move |&adj| self.element_to_order[&VertexId::Variable(adj)] < order)
+    }
+
+    fn outputs_of_pattern(&self, pattern: PatternVertexId) -> impl Iterator<Item = VariableVertexId> + '_ {
+        let order = self.element_to_order[&VertexId::Pattern(pattern)];
+        self.graph.pattern_to_variable[&pattern]
+            .iter()
+            .copied()
+            .filter(move |&adj| self.element_to_order[&VertexId::Variable(adj)] > order)
+    }
+
+    fn may_make_variable_producing_step(
+        &self,
+        match_builder: &mut MatchExecutableBuilder,
+        var: VariableVertexId,
+        variable_registry: &VariableRegistry,
+    ) {
+        if self.graph.elements[&VertexId::Variable(var)].as_variable().unwrap().is_input() {
+            return;
+        }
+
+        let variable = self.graph.index_to_variable[&var];
+        if match_builder.produced_so_far.contains(&variable) {
+            return;
+        }
+
+        for producer in self.producers_of_var(var) {
+            match &self.graph.elements()[&VertexId::Pattern(producer)] {
+                PlannerVertex::Variable(_) => unreachable!("encountered variable @ pattern id {producer:?}"),
+                PlannerVertex::Negation(_) => unreachable!("encountered negation registered as producing variable"),
+                PlannerVertex::Comparison(_) => unreachable!("encountered comparison registered as producing variable"),
+                PlannerVertex::Constraint(constraint) => {
+                    let inputs =
+                        self.inputs_of_pattern(producer).map(|var| self.graph.index_to_variable[&var]).collect_vec();
+                    self.lower_constraint(match_builder, constraint, inputs, variable)
+                }
+                PlannerVertex::Expression(_) => todo!(),
+                PlannerVertex::Disjunction(disjunction) => {
+                    let step_builder = disjunction
+                        .builder()
+                        .clone() // FIXME
+                        .plan(match_builder.position_mapping().keys().copied())
+                        .lower(
+                            match_builder.current_outputs.iter().copied(),
+                            match_builder.position_mapping(),
+                            variable_registry,
+                        );
+                    let variable_positions = step_builder.branches.iter().flat_map(|x| x.index.clone()).collect();
+                    match_builder
+                        .push_step(&variable_positions, StepInstructionsBuilder::Disjunction(step_builder).into());
+                }
+                PlannerVertex::FunctionCall(_) => todo!(),
+            }
+        }
+        match_builder.finish_one()
+    }
+
+    fn may_make_check_step(
+        &self,
+        match_builder: &mut MatchExecutableBuilder,
+        pattern: PatternVertexId,
+        variable_registry: &VariableRegistry,
+    ) {
+        match &self.graph.elements()[&VertexId::Pattern(pattern)] {
+            PlannerVertex::Variable(_) => unreachable!("encountered variable @ pattern id {pattern:?}"),
+            PlannerVertex::FunctionCall(_) => {
+                unreachable!("variable assigned to from functions cannot be produced by other instructions")
+            }
+            PlannerVertex::Negation(negation) => {
+                let negation = negation.plan().lower(
+                    match_builder.current_outputs.iter().copied(),
+                    match_builder.position_mapping(),
+                    variable_registry,
+                );
+                let variable_positions = negation.index.clone(); // FIXME needless clone
+                match_builder.push_step(
+                    &variable_positions,
+                    StepInstructionsBuilder::Negation(NegationBuilder::new(negation)).into(),
+                );
+            }
+            PlannerVertex::Comparison(comparison) => {
+                let comparison = comparison.comparison();
+                let lhs = comparison.lhs();
+                let rhs = comparison.rhs();
+                let comparator = comparison.comparator();
+
+                let lhs_var = lhs.as_variable();
+                let rhs_var = rhs.as_variable();
+                let num_input_variables = [lhs_var, rhs_var].into_iter().filter(|x| x.is_some()).count();
+                assert!(num_input_variables > 0);
+
+                let order = self.element_to_order[&VertexId::Pattern(pattern)];
+                let inputs = self.graph.pattern_to_variable[&pattern]
+                    .iter()
+                    .copied()
+                    .filter(move |&adj| self.ordering[..order].contains(&VertexId::Variable(adj)))
+                    .map(|var| self.graph.index_to_variable[&var]);
+
+                assert_eq!(inputs.count(), num_input_variables);
+
+                let lhs_pos = lhs.clone().map(match_builder.position_mapping());
+                let rhs_pos = rhs.clone().map(match_builder.position_mapping());
+
+                let check = CheckInstruction::Comparison {
+                    lhs: CheckVertex::resolve(lhs_pos, self.type_annotations),
+                    rhs: CheckVertex::resolve(rhs_pos, self.type_annotations),
+                    comparator,
+                };
+
+                let vars = [lhs_var, rhs_var].into_iter().flatten().collect_vec();
+                match_builder.push_check(&vars, check);
+            }
+            PlannerVertex::Constraint(constraint) => {
+                self.lower_constraint_check(match_builder, constraint);
+            }
+            PlannerVertex::Expression(_) => todo!(),
+            PlannerVertex::Disjunction(disjunction) => {
+                let step_builder = disjunction
+                    .builder()
+                    .clone() // FIXME
+                    .plan(match_builder.position_mapping().keys().copied())
+                    .lower(
+                        match_builder.current_outputs.iter().copied(),
+                        match_builder.position_mapping(),
+                        &variable_registry,
+                    );
+                let variable_positions = step_builder.branches.iter().flat_map(|x| x.index.clone()).collect();
+                match_builder.push_step(&variable_positions, StepInstructionsBuilder::Disjunction(step_builder).into());
+            }
+        }
     }
 
     fn lower_constraint(
         &self,
         match_builder: &mut MatchExecutableBuilder,
-        producers: &mut HashMap<Variable, (usize, usize)>,
-        constraint: &Constraint<Variable>,
-        planner: &PlannerVertex,
+        constraint: &ConstraintVertex<'_>,
         inputs: Vec<Variable>,
-        sort_variable: Option<Variable>,
+        sort_variable: Variable,
     ) {
-        if let Some(StepBuilder::Intersection(IntersectionBuilder { sort_variable: Some(sort_variable), .. })) =
-            &match_builder.current
+        if let Some(StepBuilder {
+            builder:
+                StepInstructionsBuilder::Intersection(IntersectionBuilder { sort_variable: Some(sort_variable), .. }),
+            ..
+        }) = match_builder.current.as_deref()
         {
-            if !constraint.ids().contains(sort_variable) {
+            if !constraint.variables().contains(&self.graph.variable_index[sort_variable]) {
                 match_builder.finish_one();
             }
         }
@@ -572,176 +824,71 @@ impl ConjunctionPlan<'_> {
 
                 assert!(num_input_variables > 0);
 
-                if inputs.len() == num_input_variables {
-                    let lhs_producer = lhs_var
-                        .filter(|lhs| !self.elements[self.variable_index[lhs]].is_input())
-                        .map(|lhs| producers.get(&lhs).expect("bound lhs must have been produced"));
-                    let rhs_producer = rhs_var
-                        .filter(|rhs| !self.elements[self.variable_index[rhs]].is_input())
-                        .map(|rhs| producers.get(&rhs).expect("bound rhs must have been produced"));
-
-                    let lhs_pos = lhs.clone().map(match_builder.position_mapping());
-                    let rhs_pos = rhs.clone().map(match_builder.position_mapping());
-                    let check = CheckInstruction::$fw {
-                        $lhs: CheckVertex::resolve(lhs_pos, self.type_annotations),
-                        $rhs: CheckVertex::resolve(rhs_pos, self.type_annotations),
-                        $($with: $con.$with(),)?
-                    };
-
-                    if let Some(&(step, instruction)) = Ord::max(lhs_producer, rhs_producer) {
-                        let Some(intersection) =
-                            match_builder.get_step_mut(step).and_then(|prog| prog.as_intersection_mut())
-                        else {
-                            todo!("expected an intersection to be the producer")
-                        };
-                        intersection.instructions[instruction].add_check(check);
-                    } else {
-                        // all variables are inputs
-                        match_builder.push_check_instruction(check);
-                    };
-                    return;
-                }
-
-                let sort_variable = if let Some(sort_variable) = sort_variable {
-                    sort_variable
-                } else {
-                    match (lhs_var, rhs_var) {
-                        (Some(lhs), Some(rhs)) if !inputs.is_empty() => {
-                            if inputs.contains(&rhs) {
-                                lhs
-                            } else {
-                                rhs
-                            }
-                        }
-                        (Some(lhs), Some(rhs)) => {
-                            if planner.unbound_direction() == Direction::Canonical {
-                                lhs
-                            } else {
-                                rhs
-                            }
-                        }
-                        (Some(lhs), None) => lhs,
-                        (None, Some(rhs)) => rhs,
-                        (None, None) => unreachable!("no variables in constraint?"),
-                    }
-                };
+                assert_ne!(inputs.len(), num_input_variables);
 
                 let con = $con.clone();
                 let instruction = if lhs_var.is_some_and(|lhs| inputs.contains(&lhs)) {
-                    ConstraintInstruction::$fw($fwi::new(con, Inputs::Single([lhs_var.unwrap()]), self.type_annotations))
+                    ConstraintInstruction::$fw($fwi::new(
+                        con,
+                        Inputs::Single([lhs_var.unwrap()]),
+                        self.type_annotations,
+                    ))
                 } else if rhs_var.is_some_and(|rhs| inputs.contains(&rhs)) {
-                    ConstraintInstruction::$bw($bwi::new(con, Inputs::Single([rhs_var.unwrap()]), self.type_annotations))
-                } else if planner.unbound_direction() == Direction::Canonical {
+                    ConstraintInstruction::$bw($bwi::new(
+                        con,
+                        Inputs::Single([rhs_var.unwrap()]),
+                        self.type_annotations,
+                    ))
+                } else if constraint.unbound_direction() == Direction::Canonical {
                     ConstraintInstruction::$fw($fwi::new(con, Inputs::None([]), self.type_annotations))
                 } else {
                     ConstraintInstruction::$bw($bwi::new(con, Inputs::None([]), self.type_annotations))
                 };
 
-                let producer_index = match_builder.push_instruction(
-                    sort_variable,
-                    instruction,
-                    [lhs_var, rhs_var].into_iter().flatten(),
-                );
-
-                for var in [lhs_var, rhs_var].into_iter().flatten() {
-                    if !inputs.contains(&var) {
-                        producers.insert(var, producer_index);
-                    }
-                }
+                match_builder.push_instruction(sort_variable, instruction);
             }};
         }
 
         match constraint {
-            Constraint::Kind(kind) => {
-                let var = kind.type_().as_variable().unwrap();
-                let instruction = ConstraintInstruction::TypeList(TypeListInstruction::new(var, self.type_annotations));
-                let producer_index = match_builder.push_instruction(var, instruction, [var]);
-                producers.insert(var, producer_index);
-            }
-            Constraint::RoleName(name) => {
-                let var = name.left().as_variable().unwrap();
-                let instruction = ConstraintInstruction::TypeList(TypeListInstruction::new(var, self.type_annotations));
-                let producer_index = match_builder.push_instruction(var, instruction, [var]);
-                producers.insert(var, producer_index);
-            }
-            Constraint::Label(label) => {
-                let var = label.left().as_variable().unwrap();
-                let instruction = ConstraintInstruction::TypeList(TypeListInstruction::new(var, self.type_annotations));
-                let producer_index = match_builder.push_instruction(var, instruction, [var]);
-                producers.insert(var, producer_index);
+            ConstraintVertex::TypeList(tl) => {
+                let var = tl.constraint().var();
+                let instruction = tl.lower(self.type_annotations);
+                match_builder.push_instruction(var, instruction);
             }
 
-            Constraint::Isa(isa) => {
-                binary!((with isa_kind) thing isa type_, Isa(IsaInstruction), IsaReverse(IsaReverseInstruction))
-            }
-            Constraint::Sub(sub) => {
+            ConstraintVertex::Sub(planner) => {
+                let sub = planner.sub();
                 binary!((with sub_kind) subtype sub supertype, Sub(SubInstruction), SubReverse(SubReverseInstruction))
             }
-            Constraint::Owns(owns) => {
+            ConstraintVertex::Owns(planner) => {
+                let owns = planner.owns();
                 binary!(owner owns attribute, Owns(OwnsInstruction), OwnsReverse(OwnsReverseInstruction))
             }
-            Constraint::Relates(relates) => {
+            ConstraintVertex::Relates(planner) => {
+                let relates = planner.relates();
                 binary!(relation relates role_type, Relates(RelatesInstruction), RelatesReverse(RelatesReverseInstruction))
             }
-            Constraint::Plays(plays) => {
+            ConstraintVertex::Plays(planner) => {
+                let plays = planner.plays();
                 binary!(player plays role_type, Plays(PlaysInstruction), PlaysReverse(PlaysReverseInstruction))
             }
 
-            Constraint::Has(has) => {
+            ConstraintVertex::Isa(planner) => {
+                let isa = planner.isa();
+                binary!((with isa_kind) thing isa type_, Isa(IsaInstruction), IsaReverse(IsaReverseInstruction))
+            }
+            ConstraintVertex::Has(planner) => {
+                let has = planner.has();
                 binary!(owner has attribute, Has(HasInstruction), HasReverse(HasReverseInstruction))
             }
+            ConstraintVertex::Links(planner) => {
+                let links = planner.links();
 
-            Constraint::Links(links) => {
                 let relation = links.relation().as_variable().unwrap();
                 let player = links.player().as_variable().unwrap();
                 let role = links.role_type().as_variable().unwrap();
 
-                if inputs.len() == 3 {
-                    let relation_producer = Some(relation)
-                        .filter(|relation| !self.elements[self.variable_index[relation]].is_input())
-                        .map(|relation| producers.get(&relation).expect("bound relation must have been produced"));
-                    let player_producer = Some(player)
-                        .filter(|player| !self.elements[self.variable_index[player]].is_input())
-                        .map(|player| producers.get(&player).expect("bound player must have been produced"));
-                    let role_producer = Some(role)
-                        .filter(|role| !self.elements[self.variable_index[role]].is_input())
-                        .map(|role| producers.get(&role).expect("bound role must have been produced"));
-
-                    let relation_pos = match_builder.position(relation).into();
-                    let player_pos = match_builder.position(player).into();
-                    let role_pos = match_builder.position(role).into();
-
-                    let check = CheckInstruction::Links {
-                        relation: CheckVertex::resolve(relation_pos, self.type_annotations),
-                        player: CheckVertex::resolve(player_pos, self.type_annotations),
-                        role: CheckVertex::resolve(role_pos, self.type_annotations),
-                    };
-
-                    if let Some(&(step, instruction)) = relation_producer.max(player_producer).max(role_producer) {
-                        let Some(intersection) =
-                            match_builder.get_step_mut(step).and_then(|prog| prog.as_intersection_mut())
-                        else {
-                            todo!("expected an intersection to be the producer")
-                        };
-                        intersection.instructions[instruction].add_check(check);
-                    } else {
-                        // all variables are inputs
-                        match_builder.push_check_instruction(check);
-                    };
-                    return;
-                }
-
-                let sort_variable = if let Some(sort_variable) = sort_variable {
-                    sort_variable
-                } else if inputs.contains(&player) {
-                    relation
-                } else if inputs.contains(&relation) {
-                    player
-                } else if planner.unbound_direction() == Direction::Canonical {
-                    relation
-                } else {
-                    player
-                };
+                assert_ne!(inputs.len(), 3);
 
                 let links = links.clone();
                 let instruction = if inputs.contains(&relation) && inputs.contains(&player) {
@@ -780,59 +927,242 @@ impl ConjunctionPlan<'_> {
                     ))
                 };
 
-                let producer_index =
-                    match_builder.push_instruction(sort_variable, instruction, [relation, player, role]);
-
-                for &var in &[relation, player, role] {
-                    if !inputs.contains(&var) {
-                        producers.insert(var, producer_index);
-                    }
-                }
+                match_builder.push_instruction(sort_variable, instruction);
             }
+        }
+    }
 
-            Constraint::ExpressionBinding(_) => todo!("expression binding"),
-            Constraint::FunctionCallBinding(_) => todo!("function call binding"),
-            Constraint::Comparison(compare) => {
-                let lhs = compare.lhs();
-                let rhs = compare.rhs();
-                let comparator = compare.comparator();
+    fn lower_constraint_check(&self, match_builder: &mut MatchExecutableBuilder, constraint: &ConstraintVertex<'_>) {
+        match_builder.finish_one();
+
+        macro_rules! binary {
+            ($((with $with:ident))? $lhs:ident $con:ident $rhs:ident, $fw:ident($fwi:ident), $bw:ident($bwi:ident)) => {{
+                let lhs = $con.$lhs();
+                let rhs = $con.$rhs();
 
                 let lhs_var = lhs.as_variable();
                 let rhs_var = rhs.as_variable();
+
                 let num_input_variables = [lhs_var, rhs_var].into_iter().filter(|x| x.is_some()).count();
+
                 assert!(num_input_variables > 0);
-                if inputs.len() == num_input_variables {
-                    let lhs_producer = lhs_var
-                        .filter(|lhs| !self.elements[self.variable_index[lhs]].is_input())
-                        .map(|lhs| producers.get(&lhs).expect("bound lhs must have been produced"));
-                    let rhs_producer = rhs_var
-                        .filter(|rhs| !self.elements[self.variable_index[rhs]].is_input())
-                        .map(|rhs| producers.get(&rhs).expect("bound rhs must have been produced"));
 
-                    let lhs_pos = lhs.clone().map(match_builder.position_mapping());
-                    let rhs_pos = rhs.clone().map(match_builder.position_mapping());
+                let lhs_pos = lhs.clone().map(match_builder.position_mapping());
+                let rhs_pos = rhs.clone().map(match_builder.position_mapping());
+                let check = CheckInstruction::$fw {
+                    $lhs: CheckVertex::resolve(lhs_pos, self.type_annotations),
+                    $rhs: CheckVertex::resolve(rhs_pos, self.type_annotations),
+                    $($with: $con.$with(),)?
+                };
 
-                    let check = CheckInstruction::Comparison {
-                        lhs: CheckVertex::resolve(lhs_pos, self.type_annotations),
-                        rhs: CheckVertex::resolve(rhs_pos, self.type_annotations),
-                        comparator,
-                    };
+                let vars = [lhs_var, rhs_var].into_iter().flatten().collect_vec();
+                match_builder.push_check(&vars, check);
+            }};
+        }
 
-                    if let Some(&(step, instruction)) = Ord::max(lhs_producer, rhs_producer) {
-                        let Some(intersection) =
-                            match_builder.get_step_mut(step).and_then(|prog| prog.as_intersection_mut())
-                        else {
-                            todo!("expected an intersection to be the producer")
-                        };
-                        intersection.instructions[instruction].add_check(check);
-                    } else {
-                        // all variables are inputs
-                        match_builder.push_check_instruction(check);
-                    };
-                    return;
-                }
+        match constraint {
+            ConstraintVertex::TypeList(_) => {
                 todo!()
             }
+
+            ConstraintVertex::Sub(planner) => {
+                let sub = planner.sub();
+                binary!((with sub_kind) subtype sub supertype, Sub(SubInstruction), SubReverse(SubReverseInstruction))
+            }
+            ConstraintVertex::Owns(planner) => {
+                let owns = planner.owns();
+                binary!(owner owns attribute, Owns(OwnsInstruction), OwnsReverse(OwnsReverseInstruction))
+            }
+            ConstraintVertex::Relates(planner) => {
+                let relates = planner.relates();
+                binary!(relation relates role_type, Relates(RelatesInstruction), RelatesReverse(RelatesReverseInstruction))
+            }
+            ConstraintVertex::Plays(planner) => {
+                let plays = planner.plays();
+                binary!(player plays role_type, Plays(PlaysInstruction), PlaysReverse(PlaysReverseInstruction))
+            }
+
+            ConstraintVertex::Isa(planner) => {
+                let isa = planner.isa();
+                binary!((with isa_kind) thing isa type_, Isa(IsaInstruction), IsaReverse(IsaReverseInstruction))
+            }
+            ConstraintVertex::Has(planner) => {
+                let has = planner.has();
+                binary!(owner has attribute, Has(HasInstruction), HasReverse(HasReverseInstruction))
+            }
+            ConstraintVertex::Links(planner) => {
+                let links = planner.links();
+
+                let relation = links.relation().as_variable().unwrap();
+                let player = links.player().as_variable().unwrap();
+                let role = links.role_type().as_variable().unwrap();
+
+                let relation_pos = match_builder.position(relation).into();
+                let player_pos = match_builder.position(player).into();
+                let role_pos = match_builder.position(role).into();
+
+                let check = CheckInstruction::Links {
+                    relation: CheckVertex::resolve(relation_pos, self.type_annotations),
+                    player: CheckVertex::resolve(player_pos, self.type_annotations),
+                    role: CheckVertex::resolve(role_pos, self.type_annotations),
+                };
+
+                match_builder.push_check(&[relation, player, role], check);
+            }
         }
+    }
+
+    pub(super) fn cost(&self) -> ElementCost {
+        self.cost
+    }
+
+    pub(super) fn shared_variables(&self) -> &[Variable] {
+        &self.shared_variables
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(super) struct DisjunctionPlanBuilder<'a> {
+    branches: Vec<ConjunctionPlanBuilder<'a>>,
+}
+
+impl<'a> DisjunctionPlanBuilder<'a> {
+    pub(super) fn new(branches: Vec<ConjunctionPlanBuilder<'a>>) -> Self {
+        Self { branches }
+    }
+
+    pub(super) fn branches(&self) -> &[ConjunctionPlanBuilder<'a>] {
+        &self.branches
+    }
+
+    fn plan(self, input_variables: impl Iterator<Item = Variable> + Clone) -> DisjunctionPlan<'a> {
+        let branches =
+            self.branches.into_iter().map(|branch| branch.with_inputs(input_variables.clone()).plan()).collect_vec();
+        let cost = branches.iter().map(ConjunctionPlan::cost).fold(ElementCost::EMPTY, ElementCost::combine_parallel);
+        DisjunctionPlan { branches, cost }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(super) struct DisjunctionPlan<'a> {
+    branches: Vec<ConjunctionPlan<'a>>,
+    cost: ElementCost,
+}
+
+impl<'a> DisjunctionPlan<'a> {
+    fn lower(
+        &self,
+        selected_variables: impl IntoIterator<Item = Variable> + Clone,
+        assigned_positions: &HashMap<Variable, ExecutorVariable>,
+        variable_registry: &VariableRegistry,
+    ) -> DisjunctionBuilder {
+        let mut branches: Vec<_> = Vec::with_capacity(self.branches.len());
+        let assigned_positions = assigned_positions.clone();
+        for branch in &self.branches {
+            let lowered_branch = branch.lower(selected_variables.clone(), &assigned_positions, variable_registry); // TODO extract mapping
+            branches.push(lowered_branch);
+        }
+        DisjunctionBuilder::new(branches)
+    }
+}
+
+#[derive(Clone, Default)]
+pub(super) struct Graph<'a> {
+    variable_to_pattern: HashMap<VariableVertexId, HashSet<PatternVertexId>>,
+    pattern_to_variable: HashMap<PatternVertexId, HashSet<VariableVertexId>>,
+
+    elements: HashMap<VertexId, PlannerVertex<'a>>,
+
+    variable_index: HashMap<Variable, VariableVertexId>,
+    index_to_variable: HashMap<VariableVertexId, Variable>,
+
+    next_variable_id: VariableVertexId,
+    next_pattern_id: PatternVertexId,
+}
+
+impl fmt::Debug for Graph<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct(type_name_of_val(self))
+            .field("variable_index", &self.variable_index)
+            .field("elements", &self.elements)
+            .finish()
+    }
+}
+
+impl<'a> Graph<'a> {
+    fn element_count(&self) -> usize {
+        self.variable_to_pattern.len() + self.pattern_to_variable.len()
+    }
+
+    fn push_variable(&mut self, variable: Variable, vertex: VariableVertex) {
+        let index = self.next_variable_index();
+        self.elements.insert(VertexId::Variable(index), PlannerVertex::Variable(vertex));
+        self.variable_index.insert(variable, index);
+        self.index_to_variable.insert(index, variable);
+    }
+
+    fn push_constraint(&mut self, constraint: ConstraintVertex<'a>) {
+        let pattern_index = self.next_pattern_index();
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(constraint.variables());
+        for var in constraint.variables() {
+            self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
+        }
+        self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Constraint(constraint));
+    }
+
+    fn push_comparison(&mut self, comparison: ComparisonPlanner<'a>) {
+        let pattern_index = self.next_pattern_index();
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(comparison.variables());
+        for var in comparison.variables() {
+            self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
+        }
+        self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Comparison(comparison));
+    }
+
+    fn push_function_call(&mut self, function_call: FunctionCallPlanner) {
+        let pattern_index = self.next_pattern_index();
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(function_call.variables());
+        for var in function_call.variables() {
+            self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
+        }
+        self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::FunctionCall(function_call));
+    }
+
+    fn push_disjunction(&mut self, disjunction: DisjunctionPlanner<'a>) {
+        let pattern_index = self.next_pattern_index();
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(disjunction.variables());
+        for var in disjunction.variables() {
+            self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
+        }
+        self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Disjunction(disjunction));
+    }
+
+    fn push_negation(&mut self, negation: NegationPlanner<'a>) {
+        let pattern_index = self.next_pattern_index();
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(negation.variables());
+        for var in negation.variables() {
+            self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
+        }
+        self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Negation(negation));
+    }
+
+    fn next_variable_index(&mut self) -> VariableVertexId {
+        let variable_index = self.next_variable_id;
+        self.next_variable_id.0 += 1;
+        variable_index
+    }
+
+    fn next_pattern_index(&mut self) -> PatternVertexId {
+        let pattern_index = self.next_pattern_id;
+        self.next_pattern_id.0 += 1;
+        pattern_index
+    }
+
+    pub(super) fn variable_to_pattern(&self) -> &HashMap<VariableVertexId, HashSet<PatternVertexId>> {
+        &self.variable_to_pattern
+    }
+
+    pub(super) fn elements(&self) -> &HashMap<VertexId, PlannerVertex<'a>> {
+        &self.elements
     }
 }

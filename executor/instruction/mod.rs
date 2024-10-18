@@ -12,8 +12,11 @@ use std::{
 };
 
 use answer::{variable_value::VariableValue, Thing, Type};
-use compiler::executable::match_::instructions::{
-    CheckInstruction, CheckVertex, ConstraintInstruction, VariableMode, VariableModes,
+use compiler::{
+    executable::match_::instructions::{
+        CheckInstruction, CheckVertex, ConstraintInstruction, VariableMode, VariableModes,
+    },
+    ExecutorVariable,
 };
 use concept::{
     error::ConceptReadError,
@@ -42,7 +45,6 @@ use crate::{
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
-    VariablePosition,
 };
 
 mod constant_executor;
@@ -97,11 +99,11 @@ pub(crate) enum InstructionExecutor {
 
 impl InstructionExecutor {
     pub(crate) fn new(
-        instruction: ConstraintInstruction<VariablePosition>,
+        instruction: ConstraintInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        sort_by: Option<VariablePosition>,
+        sort_by: ExecutorVariable,
     ) -> Result<Self, ConceptReadError> {
         match instruction {
             ConstraintInstruction::TypeList(type_) => {
@@ -216,17 +218,17 @@ pub(crate) enum BinaryIterateMode {
 
 impl BinaryIterateMode {
     pub(crate) fn new(
-        from_vertex: &Vertex<VariablePosition>,
-        to_vertex: &Vertex<VariablePosition>,
+        from_vertex: &Vertex<ExecutorVariable>,
+        to_vertex: &Vertex<ExecutorVariable>,
         var_modes: &VariableModes,
-        sort_by: Option<VariablePosition>,
+        sort_by: ExecutorVariable,
     ) -> BinaryIterateMode {
         // TODO
         // debug_assert!(var_modes.len() == 2);
         debug_assert!(!var_modes.all_inputs());
 
         let is_from_bound = match from_vertex {
-            &Vertex::Variable(from_var) => var_modes.get(from_var) == Some(&VariableMode::Input),
+            &Vertex::Variable(pos) => var_modes.get(pos) == Some(VariableMode::Input),
             Vertex::Label(_) | Vertex::Parameter(_) => true,
         };
 
@@ -235,7 +237,7 @@ impl BinaryIterateMode {
 
         if is_from_bound {
             Self::BoundFrom
-        } else if sort_by.is_some_and(|sort_var| Some(sort_var) == to_vertex.as_variable()) {
+        } else if Some(sort_by) == to_vertex.as_variable() {
             Self::UnboundInverted
         } else {
             Self::Unbound
@@ -261,10 +263,10 @@ pub(crate) enum TernaryIterateMode {
 
 impl TernaryIterateMode {
     pub(crate) fn new(
-        from_vertex: &Vertex<VariablePosition>,
-        to_vertex: &Vertex<VariablePosition>,
+        from_vertex: &Vertex<ExecutorVariable>,
+        to_vertex: &Vertex<ExecutorVariable>,
         var_modes: &VariableModes,
-        sort_by: Option<VariablePosition>,
+        sort_by: ExecutorVariable,
     ) -> TernaryIterateMode {
         // TODO
         // debug_assert!(var_modes.len() == 3);
@@ -272,12 +274,12 @@ impl TernaryIterateMode {
         debug_assert!(!var_modes.all_inputs());
 
         let is_from_bound = match from_vertex {
-            &Vertex::Variable(from_var) => var_modes.get(from_var) == Some(&VariableMode::Input),
+            &Vertex::Variable(from_var) => var_modes.get(from_var) == Some(VariableMode::Input),
             Vertex::Label(_) | Vertex::Parameter(_) => true,
         };
 
         let is_to_bound = match to_vertex {
-            &Vertex::Variable(to_var) => var_modes.get(to_var) == Some(&VariableMode::Input),
+            &Vertex::Variable(to_var) => var_modes.get(to_var) == Some(VariableMode::Input),
             Vertex::Label(_) | Vertex::Parameter(_) => true,
         };
 
@@ -286,7 +288,7 @@ impl TernaryIterateMode {
             Self::BoundFromBoundTo
         } else if is_from_bound {
             Self::BoundFrom
-        } else if sort_by.is_some_and(|sort_var| Some(sort_var) == to_vertex.as_variable()) {
+        } else if Some(sort_by) == to_vertex.as_variable() {
             Self::UnboundInverted
         } else {
             Self::Unbound
@@ -295,16 +297,17 @@ impl TernaryIterateMode {
 }
 
 fn type_from_row_or_annotations<'a>(
-    vertex: &Vertex<VariablePosition>,
+    vertex: &Vertex<ExecutorVariable>,
     row: MaybeOwnedRow<'_>,
     annos: impl Iterator<Item = &'a Type> + fmt::Debug,
 ) -> Type {
     match vertex {
-        &Vertex::Variable(var) => {
+        &Vertex::Variable(ExecutorVariable::RowPosition(var)) => {
             debug_assert!(row.len() > var.as_usize());
             let VariableValue::Type(type_) = row.get(var).to_owned() else { unreachable!("Supertype must be a type") };
             type_
         }
+        &Vertex::Variable(ExecutorVariable::Internal(_)) => unreachable!("an internal variable cannot be an input"),
         Vertex::Label(_) => annos.cloned().exactly_one().expect("multiple types for fixed label?"),
         Vertex::Parameter(_) => unreachable!(),
     }
@@ -314,15 +317,15 @@ type FilterFn<T> =
     dyn for<'a, 'b> FnHktHelper<&'a Result<<T as Hkt>::HktSelf<'b>, ConceptReadError>, Result<bool, ConceptReadError>>;
 
 pub(crate) struct Checker<T: Hkt> {
-    extractors: HashMap<VariablePosition, for<'a, 'b> fn(&'a T::HktSelf<'b>) -> VariableValue<'a>>,
-    checks: Vec<CheckInstruction<VariablePosition>>,
+    extractors: HashMap<ExecutorVariable, for<'a, 'b> fn(&'a T::HktSelf<'b>) -> VariableValue<'a>>,
+    checks: Vec<CheckInstruction<ExecutorVariable>>,
     _phantom_data: PhantomData<T>,
 }
 
 impl<T: Hkt> Checker<T> {
     pub(crate) fn new(
-        checks: Vec<CheckInstruction<VariablePosition>>,
-        extractors: HashMap<VariablePosition, for<'a, 'b> fn(&'a T::HktSelf<'b>) -> VariableValue<'a>>,
+        checks: Vec<CheckInstruction<ExecutorVariable>>,
+        extractors: HashMap<ExecutorVariable, for<'a, 'b> fn(&'a T::HktSelf<'b>) -> VariableValue<'a>>,
     ) -> Self {
         Self { extractors, checks, _phantom_data: PhantomData }
     }
@@ -330,7 +333,7 @@ impl<T: Hkt> Checker<T> {
     pub(crate) fn range_for<const N: usize>(
         &self,
         row: MaybeOwnedRow<'_>,
-        target: VariablePosition,
+        target: ExecutorVariable,
     ) -> impl RangeBounds<VariableValue<'_>> {
         fn intersect<'a>(
             (a_min, a_max): (Bound<VariableValue<'a>>, Bound<VariableValue<'a>>),
@@ -593,7 +596,8 @@ impl<T: Hkt> Checker<T> {
                         None => make_const_extractor(lhs, context, row),
                     };
                     let rhs = match rhs {
-                        &CheckVertex::Variable(pos) => row.get(pos).as_reference(),
+                        &CheckVertex::Variable(ExecutorVariable::RowPosition(pos)) => row.get(pos).as_reference(),
+                        &CheckVertex::Variable(_) => unreachable!(),
                         &CheckVertex::Parameter(param) => {
                             VariableValue::Value(context.parameters().value_unchecked(param).as_reference())
                         }
@@ -652,12 +656,13 @@ impl<T: Hkt> Checker<T> {
 }
 
 fn make_const_extractor<T: Hkt>(
-    vertex: &CheckVertex<VariablePosition>,
+    vertex: &CheckVertex<ExecutorVariable>,
     context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     row: &MaybeOwnedRow<'_>,
 ) -> Box<dyn for<'a> Fn(&'a <T as Hkt>::HktSelf<'_>) -> VariableValue<'a>> {
     let value = match vertex {
-        &CheckVertex::Variable(var) => row.get(var).as_reference(),
+        &CheckVertex::Variable(ExecutorVariable::RowPosition(pos)) => row.get(pos).as_reference(),
+        &CheckVertex::Variable(ExecutorVariable::Internal(_)) => unreachable!(),
         &CheckVertex::Parameter(param) => {
             VariableValue::Value(context.parameters().value_unchecked(param).as_reference())
         }

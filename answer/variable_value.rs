@@ -28,14 +28,14 @@ impl<'a> VariableValue<'a> {
     pub fn as_type(&self) -> &Type {
         match self {
             Self::Type(type_) => type_,
-            _ => panic!("VariableValue is not a Type"),
+            _ => panic!("VariableValue is not a Type: {self:?}"),
         }
     }
 
     pub fn as_thing(&self) -> &Thing<'a> {
         match self {
             VariableValue::Thing(thing) => thing,
-            _ => panic!("VariableValue is not a Thing"),
+            _ => panic!("VariableValue is not a Thing: {self:?}"),
         }
     }
 

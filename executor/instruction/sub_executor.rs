@@ -6,13 +6,12 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet},
-    marker::PhantomData,
     sync::Arc,
     vec,
 };
 
 use answer::{variable_value::VariableValue, Type};
-use compiler::executable::match_::instructions::type_::SubInstruction;
+use compiler::{executable::match_::instructions::type_::SubInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
     type_::{type_manager::TypeManager, TypeAPI},
@@ -34,11 +33,10 @@ use crate::{
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
-    VariablePosition,
 };
 
 pub(crate) struct SubExecutor {
-    sub: ir::pattern::constraint::Sub<VariablePosition>,
+    sub: ir::pattern::constraint::Sub<ExecutorVariable>,
     iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
@@ -78,9 +76,9 @@ where
 
 impl SubExecutor {
     pub(crate) fn new(
-        sub: SubInstruction<VariablePosition>,
+        sub: SubInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
-        sort_by: Option<VariablePosition>,
+        sort_by: ExecutorVariable,
     ) -> Self {
         let supertypes = sub.supertypes().clone();
         let sub_to_supertypes = sub.sub_to_supertypes().clone();
@@ -105,14 +103,13 @@ impl SubExecutor {
             TuplePositions::Pair([subtype, supertype])
         };
 
-        let checker = Checker::<AdHocHkt<(Type, Type)>> {
+        let checker = Checker::<AdHocHkt<(Type, Type)>>::new(
             checks,
-            extractors: [(subtype, EXTRACT_SUB), (supertype, EXTRACT_SUPER)]
+            [(subtype, EXTRACT_SUB), (supertype, EXTRACT_SUPER)]
                 .into_iter()
                 .filter_map(|(var, ex)| Some((var?, ex)))
                 .collect(),
-            _phantom_data: PhantomData,
-        };
+        );
 
         Self {
             sub,

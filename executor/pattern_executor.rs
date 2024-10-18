@@ -44,7 +44,7 @@ impl MatchExecutor {
         Ok(Self {
             input: Some(input.into_owned()),
             step_executors,
-            // modifiers:
+            // modifiers: todo!(),
             output: None,
         })
     }
@@ -59,7 +59,7 @@ impl MatchExecutor {
         )
     }
 
-    fn compute_next_batch(
+    pub(super) fn compute_next_batch(
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
@@ -103,7 +103,7 @@ impl MatchExecutor {
                 }
 
                 Direction::Backward => {
-                    let batch = self.step_executors[current_step].batch_continue(context)?;
+                    let batch = self.step_executors[current_step].batch_continue(context, interrupt)?;
                     match batch {
                         None => {
                             if current_step == 0 {

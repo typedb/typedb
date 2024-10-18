@@ -4,13 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::vec;
+use std::{collections::HashMap, iter, vec};
 
-use answer::Type;
-use compiler::executable::match_::instructions::type_::TypeListInstruction;
+use answer::{variable_value::VariableValue, Type};
+use compiler::{executable::match_::instructions::type_::TypeListInstruction, ExecutorVariable};
 use concept::error::ConceptReadError;
 use itertools::Itertools;
-use lending_iterator::{adaptors::Map, higher_order::AdHocHkt, AsLendingIterator, LendingIterator};
+use lending_iterator::{
+    adaptors::{Map, TryFilter},
+    higher_order::AdHocHkt,
+    AsLendingIterator, LendingIterator,
+};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -18,46 +22,61 @@ use crate::{
         iterator::{SortedTupleIterator, TupleIterator},
         sub_executor::NarrowingTupleIterator,
         tuple::{type_to_tuple, TuplePositions, TupleResult, TypeToTupleFn},
-        VariableModes,
+        Checker, FilterFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
-    VariablePosition,
 };
 
 pub(crate) struct TypeListExecutor {
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
     types: Vec<Type>,
+    checker: Checker<Type>,
 }
 
+pub(super) type TypeFilterFn = FilterFn<Type>;
+
+pub(super) type TypeTupleIterator<I> = NarrowingTupleIterator<
+    Map<TryFilter<I, Box<TypeFilterFn>, Type, ConceptReadError>, TypeToTupleFn, AdHocHkt<TupleResult<'static>>>,
+>;
+
 pub(crate) type TypeIterator =
-    NarrowingTupleIterator<Map<AsLendingIterator<vec::IntoIter<Type>>, TypeToTupleFn, AdHocHkt<TupleResult<'static>>>>;
+    TypeTupleIterator<AsLendingIterator<iter::Map<vec::IntoIter<Type>, fn(Type) -> Result<Type, ConceptReadError>>>>;
+
+type TypeVariableValueExtractor = for<'a> fn(&'a Type) -> VariableValue<'a>;
+pub(super) const EXTRACT_TYPE: TypeVariableValueExtractor = |ty| VariableValue::Type(ty.clone());
 
 impl TypeListExecutor {
     pub(crate) fn new(
-        type_: TypeListInstruction<VariablePosition>,
+        type_: TypeListInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
-        _sort_by: Option<VariablePosition>,
+        _sort_by: ExecutorVariable,
     ) -> Self {
         debug_assert!(!variable_modes.all_inputs());
         let types = type_.types().iter().cloned().sorted().collect_vec();
         debug_assert!(!types.is_empty());
-        let TypeListInstruction { type_var, .. } = type_;
-        debug_assert_eq!(Some(type_var), _sort_by);
+        let TypeListInstruction { type_var, checks, .. } = type_;
+        debug_assert_eq!(type_var, _sort_by);
         let tuple_positions = TuplePositions::Single([Some(type_var)]);
-        Self { variable_modes, tuple_positions, types }
+
+        let type_ = type_.type_var;
+
+        let checker = Checker::<Type>::new(checks, HashMap::from([(type_, EXTRACT_TYPE)]));
+
+        Self { variable_modes, tuple_positions, types, checker }
     }
 
     pub(crate) fn get_iterator(
         &self,
-        _: &ExecutionContext<impl ReadableSnapshot + 'static>,
-        _: MaybeOwnedRow<'_>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
-        Ok(TupleIterator::Type(SortedTupleIterator::new(
-            NarrowingTupleIterator(AsLendingIterator::new(self.types.clone()).map(type_to_tuple)),
-            self.tuple_positions.clone(),
-            &self.variable_modes,
-        )))
+        let filter_for_row: Box<TypeFilterFn> = self.checker.filter_for_row(context, &row);
+        let iterator = self.types.clone().into_iter().map(Ok as _);
+        let as_tuples: TypeIterator = NarrowingTupleIterator(
+            AsLendingIterator::new(iterator).try_filter::<_, TypeFilterFn, Type, _>(filter_for_row).map(type_to_tuple),
+        );
+        Ok(TupleIterator::Type(SortedTupleIterator::new(as_tuples, self.tuple_positions.clone(), &self.variable_modes)))
     }
 }

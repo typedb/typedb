@@ -41,12 +41,6 @@ pub enum TimeZone {
     Fixed(FixedOffset),
 }
 
-impl Default for TimeZone {
-    fn default() -> Self {
-        Self::IANA(Tz::default())
-    }
-}
-
 impl TimeZone {
     pub(crate) fn encode(self) -> [u8; 4] {
         match self {

@@ -4,17 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{HashMap, HashSet, VecDeque},
-    hash::Hash,
-};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 use encoding::{
     graph::{
         definition::definition_key::DefinitionKey,
         type_::{CapabilityKind, Kind},
     },
-    value::{label::Label, value_type::ValueType, ValueEncodable},
+    value::{label::Label, value_type::ValueType},
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;

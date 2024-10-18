@@ -4,10 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use compiler::ExecutorVariable;
 use ir::pattern::constraint::FunctionCallBinding;
 
-use crate::VariablePosition;
-
 pub(crate) struct FunctionCallBindingIteratorExecutor {
-    function_call_binding: FunctionCallBinding<VariablePosition>,
+    function_call_binding: FunctionCallBinding<ExecutorVariable>,
 }

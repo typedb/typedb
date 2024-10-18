@@ -115,7 +115,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
 
         // Seed vertices in root & disjunctions
         self.seed_vertex_annotations_from_type_and_function_return(graph)?;
-        self.annotate_fixed_vertices(graph)?;
+
         let mut some_vertex_was_directly_annotated = true;
         while some_vertex_was_directly_annotated {
             let mut changed = true;
@@ -205,6 +205,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         &self,
         graph: &mut TypeInferenceGraph<'_>,
     ) -> Result<(), TypeInferenceError> {
+        self.annotate_fixed_vertices(graph)?;
         // Get vertex annotations from Type & Function returns
         let TypeInferenceGraph { vertices, .. } = graph;
         for constraint in graph.conjunction.constraints() {
@@ -633,7 +634,7 @@ impl UnaryConstraint for Label<Variable> {
         )
         .map_err(|source| TypeInferenceError::ConceptRead { source })?;
         if let Some(annotation) = annotation_opt {
-            graph_vertices.add_or_intersect(self.left(), Cow::Owned(BTreeSet::from([annotation])));
+            graph_vertices.add_or_intersect(self.type_(), Cow::Owned(BTreeSet::from([annotation])));
             Ok(())
         } else {
             Err(TypeInferenceError::LabelNotResolved { name: self.type_label().to_string() })
@@ -660,7 +661,7 @@ impl UnaryConstraint for RoleName<Variable> {
                     .map_err(|source| TypeInferenceError::ConceptRead { source })?;
                 annotations.extend(subtypes.into_iter().map(|subtype| TypeAnnotation::RoleType(subtype.clone())));
             }
-            graph_vertices.add_or_intersect(self.left(), Cow::Owned(annotations));
+            graph_vertices.add_or_intersect(self.type_(), Cow::Owned(annotations));
             Ok(())
         } else {
             Err(TypeInferenceError::RoleNameNotResolved { name: self.name().to_string() })

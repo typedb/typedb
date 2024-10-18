@@ -20,7 +20,7 @@ use itertools::Itertools;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations, executable::match_::planner::match_executable::InstructionAPI,
-    VariablePosition,
+    ExecutorVariable, VariablePosition,
 };
 
 pub mod thing;
@@ -50,7 +50,7 @@ impl VariableMode {
 
 #[derive(Clone, Debug)]
 pub struct VariableModes {
-    modes: HashMap<VariablePosition, VariableMode>,
+    modes: HashMap<ExecutorVariable, VariableMode>,
 }
 
 impl VariableModes {
@@ -59,26 +59,32 @@ impl VariableModes {
     }
 
     pub(crate) fn new_for(
-        instruction: &ConstraintInstruction<VariablePosition>,
+        instruction: &ConstraintInstruction<ExecutorVariable>,
         selected: &[VariablePosition],
-        named: &HashSet<VariablePosition>,
+        named: &HashSet<ExecutorVariable>,
     ) -> Self {
         let mut modes = Self::new();
-        instruction.ids_foreach(|id| {
-            let var_mode =
-                VariableMode::new(instruction.is_input_variable(id), selected.contains(&id), named.contains(&id));
-            modes.insert(id, var_mode)
+        instruction.ids_foreach(|var| {
+            let var_mode = match var {
+                ExecutorVariable::Internal(_) => {
+                    VariableMode::new(instruction.is_input_variable(var), false, named.contains(&var))
+                }
+                ExecutorVariable::RowPosition(pos) => {
+                    VariableMode::new(instruction.is_input_variable(var), selected.contains(&pos), named.contains(&var))
+                }
+            };
+            modes.insert(var, var_mode);
         });
         modes
     }
 
-    fn insert(&mut self, variable_position: VariablePosition, mode: VariableMode) {
+    fn insert(&mut self, variable_position: ExecutorVariable, mode: VariableMode) {
         let existing = self.modes.insert(variable_position, mode);
         debug_assert!(existing.is_none())
     }
 
-    pub fn get(&self, variable_position: VariablePosition) -> Option<&VariableMode> {
-        self.modes.get(&variable_position)
+    pub fn get(&self, variable_position: ExecutorVariable) -> Option<VariableMode> {
+        self.modes.get(&variable_position).copied()
     }
 
     pub fn all_inputs(&self) -> bool {
@@ -270,7 +276,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
         match self {
-            Self::TypeList(_) => unreachable!("free-standing type variable can't have checks"),
+            Self::TypeList(inner) => inner.add_check(check),
             Self::Sub(inner) => inner.add_check(check),
             Self::SubReverse(inner) => inner.add_check(check),
             Self::Owns(inner) => inner.add_check(check),
@@ -347,8 +353,8 @@ pub enum CheckVertex<ID> {
     Parameter(ParameterID),
 }
 
-impl CheckVertex<VariablePosition> {
-    pub(crate) fn resolve(vertex: Vertex<VariablePosition>, type_annotations: &TypeAnnotations) -> Self {
+impl CheckVertex<ExecutorVariable> {
+    pub(crate) fn resolve(vertex: Vertex<ExecutorVariable>, type_annotations: &TypeAnnotations) -> Self {
         match vertex {
             Vertex::Variable(var) => Self::Variable(var),
             Vertex::Parameter(param) => Self::Parameter(param),

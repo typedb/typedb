@@ -498,19 +498,11 @@ impl Value {
             TypeDBValueType::DateTimeTZ => {
                 let (datetime, timezone) = Self::parse_date_time_and_remainder(self.raw_value.as_str());
 
-                if timezone.is_empty() {
-                    TypeDBValue::DateTimeTZ(datetime.and_local_timezone(TimeZone::default()).unwrap())
-                } else if timezone.starts_with('+') || timezone.starts_with('-') {
-                    let hours: i32 = timezone[1..3].parse().unwrap();
-                    let minutes: i32 = timezone[3..].parse().unwrap();
-                    let total_minutes = hours * 60 + minutes;
-                    let fixed_offset = if &timezone[0..1] == "+" {
-                        FixedOffset::east_opt(total_minutes * 60)
-                    } else {
-                        FixedOffset::west_opt(total_minutes * 60)
-                    };
+                assert!(!timezone.is_empty(), "No timezone when parsing {:?}", self.raw_value);
+
+                if timezone.starts_with(['+', '-']) {
                     TypeDBValue::DateTimeTZ(
-                        datetime.and_local_timezone(TimeZone::Fixed(fixed_offset.unwrap())).unwrap(),
+                        datetime.and_local_timezone(TimeZone::Fixed(timezone.parse().unwrap())).unwrap(),
                     )
                 } else {
                     TypeDBValue::DateTimeTZ(

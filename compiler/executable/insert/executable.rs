@@ -250,18 +250,18 @@ fn collect_type_bindings(
 
     filter_variants!(Constraint::Label : constraints)
         .map(|label| {
-            let annotations = type_annotations.vertex_annotations_of(label.left()).unwrap();
+            let annotations = type_annotations.vertex_annotations_of(label.type_()).unwrap();
             #[cfg(debug_assertions)]
             debug_assert!(annotations.len() == 1);
             let type_ = annotations.first().unwrap();
 
             #[cfg(debug_assertions)]
             {
-                debug_assert!(!seen.contains(label.left()));
-                seen.insert(label.left());
+                debug_assert!(!seen.contains(label.type_()));
+                seen.insert(label.type_());
             }
 
-            Ok((label.left().clone(), type_.clone()))
+            Ok((label.type_().clone(), type_.clone()))
         })
         .chain(constraints.iter().flat_map(|con| con.vertices().filter(|v| v.is_label())).map(|label| {
             let type_ = type_annotations.vertex_annotations_of(label).unwrap().iter().exactly_one().unwrap();
@@ -279,8 +279,8 @@ pub(crate) fn collect_role_type_bindings(
 
     filter_variants!(Constraint::RoleName : constraints)
         .map(|role_name| {
-            let annotations = type_annotations.vertex_annotations_of(role_name.left()).unwrap();
-            let variable = role_name.left().as_variable().unwrap();
+            let annotations = type_annotations.vertex_annotations_of(role_name.type_()).unwrap();
+            let variable = role_name.type_().as_variable().unwrap();
             let type_ = if annotations.len() == 1 {
                 annotations.iter().find(|_| true).unwrap()
             } else {

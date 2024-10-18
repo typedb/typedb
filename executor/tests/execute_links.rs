@@ -22,7 +22,7 @@ use compiler::{
         },
         planner::match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
     },
-    VariablePosition,
+    ExecutorVariable, VariablePosition,
 };
 use concept::{
     thing::object::ObjectAPI,
@@ -231,40 +231,47 @@ fn traverse_links_unbounded_sorted_from() {
     )
     .unwrap();
 
-    let vars = vec![
-        var_membership,
-        var_group,
-        var_person,
-        var_membership_type,
-        var_group_type,
-        var_person_type,
-        var_membership_group_type,
-        var_membership_member_type,
-    ];
+    let row_vars = vec![var_membership, var_group, var_person];
     let variable_positions =
-        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let named_variables = variable_positions.values().map(|p| p.clone()).collect();
+        HashMap::from_iter(row_vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let mapping = HashMap::from(
+        [
+            var_membership,
+            var_group,
+            var_person,
+            var_membership_type,
+            var_group_type,
+            var_person_type,
+            var_membership_group_type,
+            var_membership_member_type,
+        ]
+        .map(|var| {
+            if row_vars.contains(&var) {
+                (var, ExecutorVariable::RowPosition(variable_positions[&var]))
+            } else {
+                (var, ExecutorVariable::Internal(var))
+            }
+        }),
+    );
+    let named_variables = mapping.values().copied().collect();
 
     // Plan
     let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
-        variable_positions[&var_membership],
+        mapping[&var_membership],
         vec![
             ConstraintInstruction::Links(
-                LinksInstruction::new(links_membership_person, Inputs::None([]), &entry_annotations)
-                    .map(&variable_positions),
+                LinksInstruction::new(links_membership_person, Inputs::None([]), &entry_annotations).map(&mapping),
             ),
             ConstraintInstruction::Links(
-                LinksInstruction::new(links_membership_group, Inputs::None([]), &entry_annotations)
-                    .map(&variable_positions),
+                LinksInstruction::new(links_membership_group, Inputs::None([]), &entry_annotations).map(&mapping),
             ),
         ],
-        &[variable_positions[&var_membership], variable_positions[&var_group], variable_positions[&var_person]],
+        vec![variable_positions[&var_membership], variable_positions[&var_group], variable_positions[&var_person]],
         &named_variables,
-        8,
+        3,
     ))];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -338,25 +345,32 @@ fn traverse_links_unbounded_sorted_to() {
     )
     .unwrap();
 
-    let vars = vec![var_membership, var_person, var_person_type, var_membership_type, var_membership_member_type];
+    let row_vars = vec![var_membership, var_person];
     let variable_positions =
-        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let named_variables = variable_positions.values().map(|p| p.clone()).collect();
+        HashMap::from_iter(row_vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let mapping = HashMap::from(
+        [var_membership, var_person, var_person_type, var_membership_type, var_membership_member_type].map(|var| {
+            if row_vars.contains(&var) {
+                (var, ExecutorVariable::RowPosition(variable_positions[&var]))
+            } else {
+                (var, ExecutorVariable::Internal(var))
+            }
+        }),
+    );
+    let named_variables = mapping.values().copied().collect();
 
     // Plan
     let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
-        variable_positions[&var_person],
+        mapping[&var_person],
         vec![ConstraintInstruction::Links(
-            LinksInstruction::new(links_membership_person, Inputs::None([]), &entry_annotations)
-                .map(&variable_positions),
+            LinksInstruction::new(links_membership_person, Inputs::None([]), &entry_annotations).map(&mapping),
         )],
-        &[variable_positions[&var_membership], variable_positions[&var_person]],
+        vec![variable_positions[&var_membership], variable_positions[&var_person]],
         &named_variables,
-        5,
+        2,
     ))];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -435,37 +449,44 @@ fn traverse_links_bounded_relation() {
     )
     .unwrap();
 
-    let vars = vec![var_membership, var_membership_type, var_person, var_person_type, var_membership_member_type];
+    let row_vars = vec![var_membership, var_person];
     let variable_positions =
-        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let named_variables = variable_positions.values().map(|p| p.clone()).collect();
+        HashMap::from_iter(row_vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let mapping = HashMap::from(
+        [var_membership, var_membership_type, var_person, var_person_type, var_membership_member_type].map(|var| {
+            if row_vars.contains(&var) {
+                (var, ExecutorVariable::RowPosition(variable_positions[&var]))
+            } else {
+                (var, ExecutorVariable::Internal(var))
+            }
+        }),
+    );
+    let named_variables = mapping.values().copied().collect();
 
     // Plan
     let steps = vec![
         ExecutionStep::Intersection(IntersectionStep::new(
-            variable_positions[&var_membership],
+            mapping[&var_membership],
             vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_membership, Inputs::None([]), &entry_annotations)
-                    .map(&variable_positions),
+                IsaReverseInstruction::new(isa_membership, Inputs::None([]), &entry_annotations).map(&mapping),
             )],
-            &[variable_positions[&var_membership]],
+            vec![variable_positions[&var_membership]],
+            &named_variables,
+            1,
+        )),
+        ExecutionStep::Intersection(IntersectionStep::new(
+            mapping[&var_person],
+            vec![ConstraintInstruction::Links(
+                LinksInstruction::new(links_membership_person, Inputs::Single([var_membership]), &entry_annotations)
+                    .map(&mapping),
+            )],
+            vec![variable_positions[&var_person]],
             &named_variables,
             2,
         )),
-        ExecutionStep::Intersection(IntersectionStep::new(
-            variable_positions[&var_person],
-            vec![ConstraintInstruction::Links(
-                LinksInstruction::new(links_membership_person, Inputs::Single([var_membership]), &entry_annotations)
-                    .map(&variable_positions),
-            )],
-            &[variable_positions[&var_person]],
-            &named_variables,
-            5,
-        )),
     ];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -545,50 +566,57 @@ fn traverse_links_bounded_relation_player() {
     )
     .unwrap();
 
-    let vars = vec![var_membership, var_membership_type, var_person, var_person_type, var_membership_member_type];
+    let row_vars = vec![var_membership, var_person, var_membership_member_type];
     let variable_positions =
-        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let named_variables = variable_positions.values().map(|p| p.clone()).collect();
+        HashMap::from_iter(row_vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let mapping = HashMap::from(
+        [var_membership, var_membership_type, var_person, var_person_type, var_membership_member_type].map(|var| {
+            if row_vars.contains(&var) {
+                (var, ExecutorVariable::RowPosition(variable_positions[&var]))
+            } else {
+                (var, ExecutorVariable::Internal(var))
+            }
+        }),
+    );
+    let named_variables = mapping.values().copied().collect();
 
     // Plan
     let steps = vec![
         ExecutionStep::Intersection(IntersectionStep::new(
-            variable_positions[&var_membership],
+            mapping[&var_membership],
             vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_membership, Inputs::None([]), &entry_annotations)
-                    .map(&variable_positions),
+                IsaReverseInstruction::new(isa_membership, Inputs::None([]), &entry_annotations).map(&mapping),
             )],
-            &[variable_positions[&var_membership]],
+            vec![variable_positions[&var_membership]],
+            &named_variables,
+            1,
+        )),
+        ExecutionStep::Intersection(IntersectionStep::new(
+            mapping[&var_person],
+            vec![ConstraintInstruction::IsaReverse(
+                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
+            )],
+            vec![variable_positions[&var_membership], variable_positions[&var_person]],
             &named_variables,
             2,
         )),
         ExecutionStep::Intersection(IntersectionStep::new(
-            variable_positions[&var_person],
-            vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&variable_positions),
-            )],
-            &[variable_positions[&var_membership], variable_positions[&var_person]],
-            &named_variables,
-            4,
-        )),
-        ExecutionStep::Intersection(IntersectionStep::new(
-            variable_positions[&var_membership_member_type],
+            mapping[&var_membership_member_type],
             vec![ConstraintInstruction::Links(
                 LinksInstruction::new(
                     links_membership_person,
                     Inputs::Dual([var_membership, var_person]),
                     &entry_annotations,
                 )
-                .map(&variable_positions),
+                .map(&mapping),
             )],
-            &[variable_positions[&var_membership_member_type]],
+            vec![variable_positions[&var_membership_member_type]],
             &named_variables,
-            5,
+            3,
         )),
     ];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -663,25 +691,32 @@ fn traverse_links_reverse_unbounded_sorted_from() {
     )
     .unwrap();
 
-    let vars = vec![var_membership, var_person, var_membership_type, var_person_type, var_membership_member_type];
+    let row_vars = vec![var_membership, var_person];
     let variable_positions =
-        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let named_variables = variable_positions.values().map(|p| p.clone()).collect();
+        HashMap::from_iter(row_vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let mapping = HashMap::from(
+        [var_membership, var_membership_type, var_person, var_person_type, var_membership_member_type].map(|var| {
+            if row_vars.contains(&var) {
+                (var, ExecutorVariable::RowPosition(variable_positions[&var]))
+            } else {
+                (var, ExecutorVariable::Internal(var))
+            }
+        }),
+    );
+    let named_variables = mapping.values().copied().collect();
 
     // Plan
     let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
-        variable_positions[&var_person],
+        mapping[&var_person],
         vec![ConstraintInstruction::LinksReverse(
-            LinksReverseInstruction::new(links_membership_person, Inputs::None([]), &entry_annotations)
-                .map(&variable_positions),
+            LinksReverseInstruction::new(links_membership_person, Inputs::None([]), &entry_annotations).map(&mapping),
         )],
-        &[variable_positions[&var_membership], variable_positions[&var_person]],
+        vec![variable_positions[&var_membership], variable_positions[&var_person]],
         &named_variables,
-        5,
+        2,
     ))];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -757,25 +792,32 @@ fn traverse_links_reverse_unbounded_sorted_to() {
     )
     .unwrap();
 
-    let vars = vec![var_membership, var_person, var_membership_type, var_person_type, var_membership_member_type];
+    let row_vars = vec![var_membership, var_person];
     let variable_positions =
-        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let named_variables = variable_positions.values().map(|p| p.clone()).collect();
+        HashMap::from_iter(row_vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let mapping = HashMap::from(
+        [var_membership, var_membership_type, var_person, var_person_type, var_membership_member_type].map(|var| {
+            if row_vars.contains(&var) {
+                (var, ExecutorVariable::RowPosition(variable_positions[&var]))
+            } else {
+                (var, ExecutorVariable::Internal(var))
+            }
+        }),
+    );
+    let named_variables = mapping.values().copied().collect();
 
     // Plan
     let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
-        variable_positions[&var_membership],
+        mapping[&var_membership],
         vec![ConstraintInstruction::LinksReverse(
-            LinksReverseInstruction::new(links_membership_person, Inputs::None([]), &entry_annotations)
-                .map(&variable_positions),
+            LinksReverseInstruction::new(links_membership_person, Inputs::None([]), &entry_annotations).map(&mapping),
         )],
-        &[variable_positions[&var_membership], variable_positions[&var_person]],
+        vec![variable_positions[&var_membership], variable_positions[&var_person]],
         &named_variables,
-        5,
+        2,
     ))];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -851,36 +893,44 @@ fn traverse_links_reverse_bounded_player() {
     )
     .unwrap();
 
-    let vars = vec![var_person, var_person_type, var_membership, var_membership_type, var_membership_member_type];
+    let row_vars = vec![var_person, var_membership];
     let variable_positions =
-        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let named_variables = variable_positions.values().map(|p| p.clone()).collect();
+        HashMap::from_iter(row_vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let mapping = HashMap::from(
+        [var_membership, var_membership_type, var_person, var_person_type, var_membership_member_type].map(|var| {
+            if row_vars.contains(&var) {
+                (var, ExecutorVariable::RowPosition(variable_positions[&var]))
+            } else {
+                (var, ExecutorVariable::Internal(var))
+            }
+        }),
+    );
+    let named_variables = mapping.values().copied().collect();
 
     // Plan
     let steps = vec![
         ExecutionStep::Intersection(IntersectionStep::new(
-            variable_positions[&var_person],
+            mapping[&var_person],
             vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&variable_positions),
+                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
             )],
-            &[variable_positions[&var_person]],
+            vec![variable_positions[&var_person]],
+            &named_variables,
+            1,
+        )),
+        ExecutionStep::Intersection(IntersectionStep::new(
+            mapping[&var_membership],
+            vec![ConstraintInstruction::LinksReverse(
+                LinksReverseInstruction::new(links_membership_person, Inputs::Single([var_person]), &entry_annotations)
+                    .map(&mapping),
+            )],
+            vec![variable_positions[&var_membership]],
             &named_variables,
             2,
         )),
-        ExecutionStep::Intersection(IntersectionStep::new(
-            variable_positions[&var_membership],
-            vec![ConstraintInstruction::LinksReverse(
-                LinksReverseInstruction::new(links_membership_person, Inputs::Single([var_person]), &entry_annotations)
-                    .map(&variable_positions),
-            )],
-            &[variable_positions[&var_membership]],
-            &named_variables,
-            5,
-        )),
     ];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -960,50 +1010,57 @@ fn traverse_links_reverse_bounded_player_relation() {
     )
     .unwrap();
 
-    let vars = vec![var_person, var_person_type, var_membership, var_membership_type, var_membership_member_type];
+    let row_vars = vec![var_person, var_membership];
     let variable_positions =
-        HashMap::from_iter(vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let named_variables = variable_positions.values().map(|p| p.clone()).collect();
+        HashMap::from_iter(row_vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
+    let mapping = HashMap::from(
+        [var_membership, var_membership_type, var_person, var_person_type, var_membership_member_type].map(|var| {
+            if row_vars.contains(&var) {
+                (var, ExecutorVariable::RowPosition(variable_positions[&var]))
+            } else {
+                (var, ExecutorVariable::Internal(var))
+            }
+        }),
+    );
+    let named_variables = mapping.values().copied().collect();
 
     // Plan
     let steps = vec![
         ExecutionStep::Intersection(IntersectionStep::new(
-            variable_positions[&var_person],
+            mapping[&var_person],
             vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&variable_positions),
+                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
             )],
-            &[variable_positions[&var_person]],
+            vec![variable_positions[&var_person]],
+            &named_variables,
+            1,
+        )),
+        ExecutionStep::Intersection(IntersectionStep::new(
+            mapping[&var_membership],
+            vec![ConstraintInstruction::IsaReverse(
+                IsaReverseInstruction::new(isa_membership, Inputs::None([]), &entry_annotations).map(&mapping),
+            )],
+            vec![variable_positions[&var_person], variable_positions[&var_membership]],
             &named_variables,
             2,
         )),
         ExecutionStep::Intersection(IntersectionStep::new(
-            variable_positions[&var_membership],
-            vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_membership, Inputs::None([]), &entry_annotations)
-                    .map(&variable_positions),
-            )],
-            &[variable_positions[&var_person], variable_positions[&var_membership]],
-            &named_variables,
-            4,
-        )),
-        ExecutionStep::Intersection(IntersectionStep::new(
-            variable_positions[&var_membership_member_type],
+            mapping[&var_membership_member_type],
             vec![ConstraintInstruction::LinksReverse(
                 LinksReverseInstruction::new(
                     links_membership_person,
                     Inputs::Dual([var_membership, var_person]),
                     &entry_annotations,
                 )
-                .map(&variable_positions),
+                .map(&mapping),
             )],
-            &[variable_positions[&var_person], variable_positions[&var_membership]],
+            vec![variable_positions[&var_person], variable_positions[&var_membership]],
             &named_variables,
-            5,
+            2,
         )),
     ];
 
-    let executable =
-        MatchExecutable::new(steps, Arc::new(translation_context.variable_registry.clone()), variable_positions, vars);
+    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());

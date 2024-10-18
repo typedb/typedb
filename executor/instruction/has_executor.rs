@@ -7,12 +7,11 @@
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet, HashMap},
-    marker::PhantomData,
     sync::Arc,
 };
 
 use answer::{variable_value::VariableValue, Thing, Type};
-use compiler::executable::match_::instructions::thing::HasInstruction;
+use compiler::{executable::match_::instructions::thing::HasInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -40,11 +39,10 @@ use crate::{
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
-    VariablePosition,
 };
 
 pub(crate) struct HasExecutor {
-    has: ir::pattern::constraint::Has<VariablePosition>,
+    has: ir::pattern::constraint::Has<ExecutorVariable>,
     iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
@@ -79,9 +77,9 @@ pub(crate) type HasOrderingFn = for<'a, 'b> fn(
 
 impl HasExecutor {
     pub(crate) fn new<Snapshot: ReadableSnapshot>(
-        has: HasInstruction<VariablePosition>,
+        has: HasInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
-        sort_by: Option<VariablePosition>,
+        sort_by: ExecutorVariable,
         snapshot: &Snapshot,
         thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
@@ -107,11 +105,10 @@ impl HasExecutor {
             TuplePositions::Pair([Some(owner), Some(attribute)])
         };
 
-        let checker = Checker::<(Has<'_>, _)> {
+        let checker = Checker::<(Has<'_>, _)>::new(
             checks,
-            extractors: HashMap::from([(owner, EXTRACT_OWNER), (attribute, EXTRACT_ATTRIBUTE)]),
-            _phantom_data: PhantomData,
-        };
+            HashMap::from([(owner, EXTRACT_OWNER), (attribute, EXTRACT_ATTRIBUTE)]),
+        );
 
         let owner_cache = if iterate_mode == BinaryIterateMode::UnboundInverted {
             let mut cache = Vec::new();
@@ -220,7 +217,7 @@ impl HasExecutor {
                 }
             }
             BinaryIterateMode::BoundFrom => {
-                let owner = self.has.owner().as_variable().unwrap();
+                let owner = self.has.owner().as_variable().unwrap().as_position().unwrap();
                 debug_assert!(row.len() > owner.as_usize());
                 let iterator = match row.get(owner) {
                     VariableValue::Thing(Thing::Entity(entity)) => entity.get_has_types_range_unordered(
