@@ -423,17 +423,17 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     fn register_function_call_binding(&mut self, call_binding: &FunctionCallBinding<Variable>) {
         // TODO: This is just a mock
         let arguments =
-            call_binding.function_call().argument_ids().map(|variable| self.variable_index[&variable]).collect();
+            call_binding.function_call().argument_ids().map(|variable| self.graph.variable_index[&variable]).collect();
         let return_vars = call_binding
             .assigned()
             .iter()
             .map(|vertex| {
                 let Vertex::Variable(variable) = vertex else { todo!("Unreachable?") };
-                self.variable_index[variable]
+                self.graph.variable_index[variable]
             })
             .collect();
         let element_cost = ElementCost { per_input: 1.0, per_output: 1.0, branching_factor: 1.0 };
-        self.elements.push(PlannerVertex::FunctionCall(FunctionCallPlanner::new(arguments, return_vars, element_cost)));
+        self.graph.push_function_call(FunctionCallPlanner::new(arguments, return_vars, element_cost));
         todo!("register_function_call");
     }
 
@@ -704,6 +704,7 @@ impl ConjunctionPlan<'_> {
                     match_builder
                         .push_step(&variable_positions, StepInstructionsBuilder::Disjunction(step_builder).into());
                 }
+                PlannerVertex::FunctionCall(_) => todo!(),
             }
         }
         match_builder.finish_one()
@@ -717,6 +718,9 @@ impl ConjunctionPlan<'_> {
     ) {
         match &self.graph.elements()[&VertexId::Pattern(pattern)] {
             PlannerVertex::Variable(_) => unreachable!("encountered variable @ pattern id {pattern:?}"),
+            PlannerVertex::FunctionCall(_) => {
+                unreachable!("variable assigned to from functions cannot be produced by other instructions")
+            }
             PlannerVertex::Negation(negation) => {
                 let negation = negation.plan().lower(
                     match_builder.current_outputs.iter().copied(),
@@ -1104,6 +1108,15 @@ impl<'a> Graph<'a> {
             self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
         }
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Comparison(comparison));
+    }
+
+    fn push_function_call(&mut self, function_call: FunctionCallPlanner) {
+        let pattern_index = self.next_pattern_index();
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(function_call.variables());
+        for var in function_call.variables() {
+            self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
+        }
+        self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::FunctionCall(function_call));
     }
 
     fn push_disjunction(&mut self, disjunction: DisjunctionPlanner<'a>) {

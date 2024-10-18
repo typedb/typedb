@@ -9,7 +9,7 @@ use std::{collections::HashMap, sync::Arc};
 use answer::variable::Variable;
 use concept::{thing::statistics::Statistics, type_::attribute_type::AttributeType};
 use error::typedb_error;
-use ir::pattern::ParameterID;
+use ir::{pattern::ParameterID, pipeline::VariableRegistry};
 
 use crate::{
     annotation::fetch::{AnnotatedFetch, AnnotatedFetchListSubFetch, AnnotatedFetchObject, AnnotatedFetchSome},

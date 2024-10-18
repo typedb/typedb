@@ -37,8 +37,8 @@ pub(super) enum PlannerVertex<'a> {
 
     Comparison(ComparisonPlanner<'a>),
     Expression(()),
-
     FunctionCall(FunctionCallPlanner),
+
     Negation(NegationPlanner<'a>),
     Disjunction(DisjunctionPlanner<'a>),
 }
@@ -48,10 +48,6 @@ impl PlannerVertex<'_> {
         match self {
             Self::Variable(inner) => inner.is_valid(index, ordered, graph),
             Self::Constraint(inner) => inner.is_valid(index, ordered, graph),
-
-            Self::FunctionCall(FunctionCallPlanner { arguments, .. }) => {
-                arguments.iter().all(|arg| ordered.contains(arg))
-            }
 
             Self::Comparison(ComparisonPlanner { lhs, rhs, .. }) => {
                 if let &Input::Variable(lhs) = lhs {
@@ -69,7 +65,10 @@ impl PlannerVertex<'_> {
 
             Self::Expression(_) => todo!("validate expression"), // may be invalid: inputs must be bound
 
-            Self::FunctionCall(_) => todo!(),
+            Self::FunctionCall(FunctionCallPlanner { arguments, .. }) => {
+                arguments.iter().all(|&arg| ordered.contains(&VertexId::Variable(arg)))
+            }
+
             Self::Negation(inner) => inner.is_valid(index, ordered, graph),
             Self::Disjunction(inner) => inner.is_valid(index, ordered, graph),
         }
@@ -79,9 +78,9 @@ impl PlannerVertex<'_> {
         match self {
             Self::Variable(_) => Box::new(iter::empty()),
             Self::Constraint(inner) => inner.variables(),
-            Self::FunctionCall(inner) => Box::new(inner.variables()),
             Self::Comparison(inner) => Box::new(inner.variables()),
             Self::Expression(_inner) => todo!(),
+            Self::FunctionCall(inner) => Box::new(inner.variables()),
             Self::Negation(inner) => Box::new(inner.variables()),
             Self::Disjunction(inner) => Box::new(inner.variables()),
         }
@@ -200,25 +199,25 @@ impl Input {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct FunctionCallPlanner {
-    arguments: Vec<usize>,
-    assigned: Vec<usize>,
+    arguments: Vec<VariableVertexId>,
+    assigned: Vec<VariableVertexId>,
     cost: ElementCost,
 }
 
 impl FunctionCallPlanner {
-    pub(crate) fn new(arguments: Vec<usize>, assigned: Vec<usize>, cost: ElementCost) -> Self {
+    pub(crate) fn new(arguments: Vec<VariableVertexId>, assigned: Vec<VariableVertexId>, cost: ElementCost) -> Self {
         Self { arguments, assigned, cost }
     }
 
-    fn variables(&self) -> impl Iterator<Item = usize> + '_ {
+    pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
         self.arguments.iter().chain(self.assigned.iter()).copied()
     }
 }
 
 impl Costed for FunctionCallPlanner {
-    fn cost(&self, _inputs: &[usize], _elements: &[PlannerVertex]) -> ElementCost {
+    fn cost(&self, _inputs: &[VertexId], _graph: &Graph<'_>) -> ElementCost {
         self.cost
     }
 }
