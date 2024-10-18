@@ -27,6 +27,7 @@ use ir::{
 };
 use itertools::{chain, Itertools};
 
+use super::ExpressionBuilder;
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
     executable::match_::{
@@ -64,7 +65,7 @@ pub(crate) fn plan_conjunction<'a>(
     variable_positions: &HashMap<Variable, VariablePosition>,
     type_annotations: &'a TypeAnnotations,
     variable_registry: &VariableRegistry,
-    expressions: &'a HashMap<Variable, ExecutableExpression>,
+    expressions: &'a HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &'a Statistics,
 ) -> ConjunctionPlan<'a> {
     make_builder(
@@ -85,7 +86,7 @@ fn make_builder<'a>(
     variable_positions: &HashMap<Variable, VariablePosition>,
     type_annotations: &'a TypeAnnotations,
     variable_registry: &VariableRegistry,
-    expressions: &'a HashMap<Variable, ExecutableExpression>,
+    expressions: &'a HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &'a Statistics,
 ) -> ConjunctionPlanBuilder<'a> {
     let mut negation_subplans = Vec::new();
@@ -334,7 +335,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     fn register_constraints(
         &mut self,
         conjunction: &'a Conjunction,
-        expressions: &'a HashMap<Variable, ExecutableExpression>,
+        expressions: &'a HashMap<Variable, ExecutableExpression<Variable>>,
     ) {
         for constraint in conjunction.constraints() {
             match constraint {
@@ -423,12 +424,12 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     fn register_expression_binding(
         &mut self,
         expression: &ExpressionBinding<Variable>,
-        expressions: &'a HashMap<Variable, ExecutableExpression>,
+        expressions: &'a HashMap<Variable, ExecutableExpression<Variable>>,
     ) {
         let variable = expression.left().as_variable().unwrap();
         let output = self.graph.variable_index[&variable];
         let expression = &expressions[&variable];
-        let inputs = Vec::new(); // TODO inputs from constraint
+        let inputs = expression.variables().iter().map(|&var| self.graph.variable_index[&var]).unique().collect_vec();
         self.graph.push_expression(output, ExpressionPlanner::from_expression(expression, inputs, output));
     }
 
@@ -500,6 +501,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             self.graph.pattern_to_variable.keys().map(|&pattern_id| VertexId::Pattern(pattern_id))
         )
         .collect();
+
         let mut ordering = Vec::with_capacity(self.graph.element_count());
         for v in self.input_variables() {
             ordering.push(VertexId::Variable(v));
@@ -639,7 +641,6 @@ impl ConjunctionPlan<'_> {
                     if self.outputs_of_pattern(pattern).next().is_none() {
                         self.may_make_check_step(&mut match_builder, pattern, variable_registry);
                     }
-                    match_builder.finish_one()
                 }
             }
         }
@@ -704,7 +705,22 @@ impl ConjunctionPlan<'_> {
                         self.inputs_of_pattern(producer).map(|var| self.graph.index_to_variable[&var]).collect_vec();
                     self.lower_constraint(match_builder, constraint, inputs, variable)
                 }
-                PlannerVertex::Expression(_) => todo!(),
+                PlannerVertex::Expression(expression) => {
+                    let output = match_builder.position_mapping()[&self.graph.index_to_variable[&expression.output]];
+                    let mapping = match_builder
+                        .position_mapping()
+                        .iter()
+                        .filter_map(|(&k, &v)| Some((k, v.as_position()?)))
+                        .collect();
+                    match_builder.push_step(
+                        &HashMap::new(),
+                        StepInstructionsBuilder::Expression(ExpressionBuilder {
+                            executable_expression: expression.expression.clone().map(&mapping),
+                            output,
+                        })
+                        .into(),
+                    )
+                }
                 PlannerVertex::Disjunction(disjunction) => {
                     let step_builder = disjunction
                         .builder()
@@ -939,8 +955,6 @@ impl ConjunctionPlan<'_> {
     }
 
     fn lower_constraint_check(&self, match_builder: &mut MatchExecutableBuilder, constraint: &ConstraintVertex<'_>) {
-        match_builder.finish_one();
-
         macro_rules! binary {
             ($((with $with:ident))? $lhs:ident $con:ident $rhs:ident, $fw:ident($fwi:ident), $bw:ident($bwi:ident)) => {{
                 let lhs = $con.$lhs();

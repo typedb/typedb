@@ -41,7 +41,7 @@ struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
     type_manager: &'block TypeManager,
     type_annotations: &'block TypeAnnotations,
 
-    compiled_expressions: HashMap<Variable, ExecutableExpression>,
+    compiled_expressions: HashMap<Variable, ExecutableExpression<Variable>>,
     variable_value_types: HashMap<Variable, ExpressionValueType>,
     visited_expressions: HashSet<Variable>,
 }
@@ -54,7 +54,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     parameters: &'block ParameterRegistry,
     type_annotations: &'block TypeAnnotations,
     input_value_type_annotations: &mut BTreeMap<Variable, ExpressionValueType>,
-) -> Result<HashMap<Variable, ExecutableExpression>, ExpressionCompileError> {
+) -> Result<HashMap<Variable, ExecutableExpression<Variable>>, ExpressionCompileError> {
     let mut context = BlockExpressionsCompilationContext {
         block,
         variable_registry,

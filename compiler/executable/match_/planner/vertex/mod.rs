@@ -79,7 +79,7 @@ impl PlannerVertex<'_> {
             Self::Variable(_) => Box::new(iter::empty()),
             Self::Constraint(inner) => inner.variables(),
             Self::Comparison(inner) => Box::new(inner.variables()),
-            Self::Expression(_inner) => todo!(),
+            Self::Expression(inner) => Box::new(inner.variables()),
             Self::FunctionCall(inner) => Box::new(inner.variables()),
             Self::Negation(inner) => Box::new(inner.variables()),
             Self::Disjunction(inner) => Box::new(inner.variables()),
@@ -153,9 +153,10 @@ impl Costed for PlannerVertex<'_> {
             Self::Variable(inner) => inner.cost(inputs, graph),
             Self::Constraint(inner) => inner.cost(inputs, graph),
 
-            Self::FunctionCall(inner) => inner.cost(inputs, graph),
             Self::Comparison(inner) => inner.cost(inputs, graph),
-            Self::Expression(_) => todo!("expression cost"),
+
+            Self::Expression(inner) => inner.cost(inputs, graph),
+            Self::FunctionCall(inner) => inner.cost(inputs, graph),
 
             Self::Negation(inner) => inner.cost(inputs, graph),
             Self::Disjunction(inner) => inner.cost(inputs, graph),
@@ -193,15 +194,15 @@ impl Input {
 
 #[derive(Clone, Debug)]
 pub(crate) struct ExpressionPlanner<'a> {
+    pub expression: &'a ExecutableExpression<Variable>,
     inputs: Vec<VariableVertexId>,
-    output: VariableVertexId,
+    pub output: VariableVertexId,
     cost: ElementCost,
-    pub expression: &'a ExecutableExpression,
 }
 
 impl<'a> ExpressionPlanner<'a> {
     pub(crate) fn from_expression(
-        expression: &'a ExecutableExpression,
+        expression: &'a ExecutableExpression<Variable>,
         inputs: Vec<VariableVertexId>,
         output: VariableVertexId,
     ) -> Self {

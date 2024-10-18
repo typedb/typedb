@@ -64,34 +64,34 @@ impl VariableVertex {
             Self::Input(_inner) => todo!(),
             Self::Type(_inner) => todo!(),
             Self::Thing(inner) => inner.add_is(other),
-            Self::Value(_inner) => todo!(),
+            Self::Value(_inner) => unreachable!(),
         }
     }
 
     pub(crate) fn add_equal(&mut self, other: Input) {
         match self {
             Self::Input(_) => (),
-            Self::Value(_) => todo!(),
-            Self::Thing(inner) => inner.add_equal(other),
             Self::Type(_) => unreachable!(),
+            Self::Thing(inner) => inner.add_equal(other),
+            Self::Value(inner) => inner.add_equal(other),
         }
     }
 
     pub(crate) fn add_lower_bound(&mut self, other: Input) {
         match self {
             Self::Input(_) => (),
-            Self::Value(_inner) => todo!(),
-            Self::Thing(inner) => inner.add_lower_bound(other),
             Self::Type(_) => unreachable!(),
+            Self::Thing(inner) => inner.add_lower_bound(other),
+            Self::Value(inner) => inner.add_lower_bound(other),
         }
     }
 
     pub(crate) fn add_upper_bound(&mut self, other: Input) {
         match self {
             Self::Input(_) => (),
-            Self::Value(_inner) => todo!(),
-            Self::Thing(inner) => inner.add_upper_bound(other),
             Self::Type(_) => unreachable!(),
+            Self::Thing(inner) => inner.add_upper_bound(other),
+            Self::Value(inner) => inner.add_upper_bound(other),
         }
     }
 
@@ -354,6 +354,10 @@ impl Costed for ThingPlanner {
 pub(crate) struct ValuePlanner {
     variable: Variable,
     binding: Option<PatternVertexId>,
+
+    bound_value_equal: HashSet<Input>,
+    bound_value_below: HashSet<Input>,
+    bound_value_above: HashSet<Input>,
 }
 
 impl fmt::Debug for ValuePlanner {
@@ -364,11 +368,17 @@ impl fmt::Debug for ValuePlanner {
 
 impl ValuePlanner {
     pub(crate) fn from_variable(variable: Variable) -> Self {
-        Self { variable, binding: None }
+        Self {
+            variable,
+            binding: None,
+            bound_value_equal: HashSet::new(),
+            bound_value_below: HashSet::new(),
+            bound_value_above: HashSet::new(),
+        }
     }
 
     fn expected_size(&self, _inputs: &[VertexId]) -> f64 {
-        todo!("value planner expected size")
+        1.0 // TODO
     }
 
     fn set_binding(&mut self, binding_pattern: PatternVertexId) {
@@ -382,6 +392,18 @@ impl ValuePlanner {
             let adjacent = graph.variable_to_pattern().get(&index).unwrap();
             ordered.iter().filter_map(VertexId::as_pattern_id).any(|id| adjacent.contains(&id))
         }
+    }
+
+    pub(crate) fn add_equal(&mut self, other: Input) {
+        self.bound_value_equal.insert(other);
+    }
+
+    pub(crate) fn add_lower_bound(&mut self, other: Input) {
+        self.bound_value_below.insert(other);
+    }
+
+    pub(crate) fn add_upper_bound(&mut self, other: Input) {
+        self.bound_value_above.insert(other);
     }
 }
 

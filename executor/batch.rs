@@ -69,7 +69,7 @@ impl FixedBatch {
         self.row_internal_mut(index)
     }
 
-    pub(crate) fn append<T>(&mut self, mut writer: impl FnMut(Row<'_>) -> T) -> T {
+    pub(crate) fn append<T>(&mut self, writer: impl FnOnce(Row<'_>) -> T) -> T {
         debug_assert!(!self.is_full());
         let row = self.row_internal_mut(self.entries);
         let result = writer(row);

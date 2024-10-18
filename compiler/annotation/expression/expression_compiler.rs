@@ -67,7 +67,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         expression_tree: &ExpressionTree<Variable>,
         variable_value_categories: &HashMap<Variable, ExpressionValueType>,
         parameters: &ParameterRegistry,
-    ) -> Result<ExecutableExpression, ExpressionCompileError> {
+    ) -> Result<ExecutableExpression<Variable>, ExpressionCompileError> {
         debug_assert!(expression_tree.variables().all(|var| variable_value_categories.contains_key(&var)));
         let mut builder = ExpressionCompilationContext::empty(expression_tree, variable_value_categories, parameters);
         builder.compile_recursive(expression_tree.get_root())?;
