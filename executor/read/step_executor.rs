@@ -11,16 +11,19 @@ use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::read::{
-    immediate_executor::ImmediateExecutor, nested_pattern_executor::NestedPatternExecutor,
+    immediate_executor::ImmediateExecutor,
+    nested_pattern_executor::{NestedPatternBranch, NestedPatternExecutor},
+    pattern_executor::PatternExecutor,
 };
+use crate::read::nested_pattern_executor::NegationMapper;
 
 pub(super) enum StepExecutors {
     Immediate(ImmediateExecutor),
-    NestedPattern(NestedPatternExecutor),
+    Branch(NestedPatternExecutor),
 }
 
 impl StepExecutors {
-    pub(crate) fn unwrap_executable(&mut self) -> &mut ImmediateExecutor {
+    pub(crate) fn unwrap_immediate(&mut self) -> &mut ImmediateExecutor {
         match self {
             StepExecutors::Immediate(step) => step,
             _ => unreachable!(),
@@ -29,7 +32,7 @@ impl StepExecutors {
 
     pub(crate) fn unwrap_nested_pattern_branch(&mut self) -> &mut NestedPatternExecutor {
         match self {
-            StepExecutors::NestedPattern(step) => step,
+            StepExecutors::Branch(step) => step,
             _ => unreachable!(),
         }
     }
@@ -42,26 +45,23 @@ pub(super) fn create_executors_recursive(
 ) -> Result<Vec<StepExecutors>, ConceptReadError> {
     let mut steps = Vec::with_capacity(match_executable.steps().len());
     for step in match_executable.steps() {
-        let step =
-            match step {
-                ExecutionStep::Intersection(_) => {
-                    StepExecutors::Immediate(ImmediateExecutor::new(step, snapshot, thing_manager)?)
-                }
-                ExecutionStep::UnsortedJoin(_) => {
-                    StepExecutors::Immediate(ImmediateExecutor::new(step, snapshot, thing_manager)?)
-                }
-                ExecutionStep::Assignment(_) => {
-                    StepExecutors::Immediate(ImmediateExecutor::new(step, snapshot, thing_manager)?)
-                }
-                ExecutionStep::Check(_) => {
-                    StepExecutors::Immediate(ImmediateExecutor::new(step, snapshot, thing_manager)?)
-                }
-                ExecutionStep::Negation(negation_step) => StepExecutors::NestedPattern(
-                    // TODO: I'd like to refactor the immediate branches to this pattern too.
-                    NestedPatternExecutor::new_negation(negation_step, snapshot, thing_manager)?,
-                ),
-                _ => todo!(),
-            };
+        let step = match step {
+            ExecutionStep::Intersection(_) => {
+                StepExecutors::Immediate(ImmediateExecutor::new(step, snapshot, thing_manager)?)
+            }
+            ExecutionStep::UnsortedJoin(_) => {
+                StepExecutors::Immediate(ImmediateExecutor::new(step, snapshot, thing_manager)?)
+            }
+            ExecutionStep::Assignment(_) => {
+                StepExecutors::Immediate(ImmediateExecutor::new(step, snapshot, thing_manager)?)
+            }
+            ExecutionStep::Check(_) => StepExecutors::Immediate(ImmediateExecutor::new(step, snapshot, thing_manager)?),
+            ExecutionStep::Negation(negation_step) => {
+                let inner = PatternExecutor::build(&negation_step.negation, snapshot, thing_manager)?;
+                StepExecutors::Branch(NestedPatternExecutor::Negation([NestedPatternBranch::new(inner)], NegationMapper))
+            }
+            _ => todo!(),
+        };
         steps.push(step);
     }
     Ok(steps)

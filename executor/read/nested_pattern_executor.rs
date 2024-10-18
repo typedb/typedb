@@ -4,177 +4,85 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::Arc;
-
-use compiler::executable::match_::planner::match_executable::NegationStep;
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use storage::snapshot::ReadableSnapshot;
-
 use crate::{
-    batch::FixedBatch, error::ReadExecutionError, pipeline::stage::ExecutionContext,
-    read::pattern_executor::PatternExecutor, row::MaybeOwnedRow,
+    batch::FixedBatch,
+    read::pattern_executor::PatternExecutor,
+    row::MaybeOwnedRow,
 };
 
 pub(super) enum NestedPatternExecutor {
-    Disjunction(Vec<BaseNestedPatternExecutor<DisjunctionController>>),
-    Negation(BaseNestedPatternExecutor<NegationController>),
+    Disjunction(Vec<NestedPatternBranch>, IdentityMapper),
+    Negation([NestedPatternBranch; 1], NegationMapper),
 }
 
-impl NestedPatternExecutor {
-    pub(crate) fn prepare_all_branches(
-        &mut self,
-        input: FixedBatch,
-        _context: &ExecutionContext<impl ReadableSnapshot + 'static>,
-    ) -> Result<(), ReadExecutionError> {
-        // TODO: Better handling of the input. I can likely just keep the batch index into it.
-        let as_rows = (0..input.len()).map(|i| input.get_row(i).into_owned()).collect();
-        match self {
-            NestedPatternExecutor::Negation(inner) => {
-                inner.prepare(as_rows);
-            }
-            NestedPatternExecutor::Disjunction(branches) => {
-                for branch in branches {
-                    branch.prepare(as_rows.clone());
-                }
-            }
-        }
-        Ok(())
-    }
+// Bad name because I want to refactor later
+pub(super) enum SubQueryResultMapperEnumMut<'a> {
+    Identity(&'a mut IdentityMapper),
+    Negation(&'a mut NegationMapper),
+}
 
-    pub(crate) fn branch_count(&self) -> usize {
+impl<'a> SubQueryResultMapperEnumMut<'a> {
+    pub(super) fn map_output(&mut self, input: &MaybeOwnedRow<'static>, subquery_result: Option<FixedBatch>) -> SubQueryResult {
         match self {
-            NestedPatternExecutor::Negation(_) => 1,
-            NestedPatternExecutor::Disjunction(branches) => branches.len(),
+            Self::Identity(mapper) => mapper.map(input, subquery_result),
+            Self::Negation(mapper) => mapper.map(input, subquery_result),
         }
     }
 }
 
 impl NestedPatternExecutor {
-    pub(crate) fn new_negation(
-        plan: &NegationStep,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
-    ) -> Result<NestedPatternExecutor, ConceptReadError> {
-        let inner = PatternExecutor::build(&plan.negation, snapshot, thing_manager)?;
-        Ok(Self::Negation(BaseNestedPatternExecutor::new(inner, NegationController::new())))
-    }
-}
-
-pub(super) struct BaseNestedPatternExecutor<Controller: NestedPatternController> {
-    inputs: Vec<MaybeOwnedRow<'static>>,
-    pattern_executor: PatternExecutor,
-    controller: Controller,
-}
-
-impl<Controller: NestedPatternController> BaseNestedPatternExecutor<Controller> {
-    fn new(pattern_executor: PatternExecutor, controller: Controller) -> BaseNestedPatternExecutor<Controller> {
-        Self { inputs: Vec::new(), pattern_executor, controller }
-    }
-}
-
-impl<Controller: NestedPatternController> BaseNestedPatternExecutor<Controller> {
-    fn prepare(&mut self, inputs: Vec<MaybeOwnedRow<'static>>) {
-        self.pattern_executor.reset();
-        self.controller.reset();
-        self.inputs = inputs;
-    }
-
-    pub(super) fn get_or_next_executing_pattern(&mut self) -> Option<&mut PatternExecutor> {
-        if self.controller.is_active() && self.pattern_executor.stack_top().is_some() {
-            Some(&mut self.pattern_executor)
-        } else if let Some(row) = self.inputs.pop() {
-            self.pattern_executor.prepare(FixedBatch::from(row.clone()));
-            self.controller.prepare(row.clone());
-            Some(&mut self.pattern_executor)
-        } else {
-            None
-        }
-    }
-
-    pub(super) fn process_result(&mut self, result: Option<FixedBatch>) -> Option<FixedBatch> {
-        match self.controller.process_result(result) {
-            NestedPatternControllerResult::Regular(processed) => processed,
-            NestedPatternControllerResult::ShortCircuit(processed) => {
-                self.pattern_executor.reset(); // That should work?
-                self.controller.reset();
-                processed
+    pub(super) fn to_parts_mut(&mut self) -> (&mut [NestedPatternBranch], SubQueryResultMapperEnumMut<'_>) {
+        match self {
+            NestedPatternExecutor::Disjunction(branches, mapper) => {
+                (branches.as_mut_slice(), SubQueryResultMapperEnumMut::Identity(mapper))
             }
+            NestedPatternExecutor::Negation(branch, mapper) => {
+                (branch.as_mut_slice(), SubQueryResultMapperEnumMut::Negation(mapper))
+            },
         }
     }
 }
 
-// Controllers
-pub(super) trait NestedPatternController {
-    fn reset(&mut self);
-    fn is_active(&self) -> bool;
-    fn prepare(&mut self, row: MaybeOwnedRow<'static>);
-    // None will cause the pattern_executor to backtrack. You can also choose to call short-circuit on the pattern_executor
-    fn process_result(&mut self, result: Option<FixedBatch>) -> NestedPatternControllerResult;
+pub(super) struct NestedPatternBranch {
+    pub(super) input: Option<MaybeOwnedRow<'static>>,
+    pub(super) pattern_executor: PatternExecutor,
 }
 
-enum NestedPatternControllerResult {
+impl NestedPatternBranch {
+    pub(crate) fn new(pattern_executor: PatternExecutor) -> Self {
+        Self { input: None, pattern_executor }
+    }
+
+    pub(super) fn prepare(&mut self, input: MaybeOwnedRow<'static>) {
+        self.input = Some(input.clone());
+        self.pattern_executor.prepare(FixedBatch::from(input.clone()));
+    }
+}
+
+
+pub(super) trait SubQueryResultMapper {
+    fn map(&self, input: &MaybeOwnedRow<'_>, subquery_result: Option<FixedBatch>) -> SubQueryResult;
+}
+
+pub(super) enum SubQueryResult {
     Regular(Option<FixedBatch>),
     ShortCircuit(Option<FixedBatch>),
 }
 
-pub(super) struct NegationController {
-    input: Option<MaybeOwnedRow<'static>>,
-}
+pub(super) struct NegationMapper;
+pub(super) struct IdentityMapper;
 
-impl NegationController {
-    fn new() -> Self {
-        Self { input: None }
-    }
-}
-
-impl NestedPatternController for NegationController {
-    fn reset(&mut self) {
-        self.input = None;
-    }
-
-    fn is_active(&self) -> bool {
-        self.input.is_some()
-    }
-
-    fn prepare(&mut self, row: MaybeOwnedRow<'static>) {
-        self.input = Some(row);
-    }
-
-    fn process_result(&mut self, result: Option<FixedBatch>) -> NestedPatternControllerResult {
-        if result.is_some() {
-            NestedPatternControllerResult::ShortCircuit(None)
-        } else {
-            debug_assert!(self.input.is_some());
-            // Doesn't need to short-circuit because the nested pattern is exhausted.
-            NestedPatternControllerResult::Regular(Some(FixedBatch::from(self.input.take().unwrap())))
+impl SubQueryResultMapper for NegationMapper {
+    fn map(&self, input: &MaybeOwnedRow<'_>, subquery_result: Option<FixedBatch>) -> SubQueryResult {
+        match subquery_result {
+            None => SubQueryResult::ShortCircuit(Some(FixedBatch::from(input.clone().into_owned()))),
+            Some(_) => SubQueryResult::ShortCircuit(None),
         }
     }
 }
 
-pub(super) struct DisjunctionController {
-    input: Option<MaybeOwnedRow<'static>>,
-}
-
-impl DisjunctionController {
-    fn new() -> Self {
-        Self { input: None }
-    }
-}
-
-impl NestedPatternController for DisjunctionController {
-    fn reset(&mut self) {
-        self.input = None;
-    }
-
-    fn is_active(&self) -> bool {
-        self.input.is_some()
-    }
-
-    fn prepare(&mut self, row: MaybeOwnedRow<'static>) {
-        self.input = Some(row);
-    }
-
-    fn process_result(&mut self, result: Option<FixedBatch>) -> NestedPatternControllerResult {
-        NestedPatternControllerResult::Regular(result)
+impl SubQueryResultMapper for IdentityMapper {
+    fn map(&self, _: &MaybeOwnedRow<'_>, subquery_result: Option<FixedBatch>) -> SubQueryResult {
+        SubQueryResult::Regular(subquery_result)
     }
 }
