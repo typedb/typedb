@@ -256,14 +256,14 @@ fn function_binary() {
             with
             fun same_age_check($p1: person, $p2: person) -> { age }:
             match
-                $p1 has name $name1; $p2 has name $name2;
-                $name1 != $name2;
                 $p1 has age $age1; $p2 has age $age2;
                 $age1 == $age2;
             return {$age1};
 
             match
                 $p1 isa person; $p2 isa person;
+                $p1 has name $name1; $p2 has name $name2;
+                $name1 != $name2;
                 $same_age in same_age_check($p1, $p2);
         "#;
         let rows = run_read_query(&context, query);

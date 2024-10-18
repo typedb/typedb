@@ -90,13 +90,13 @@ impl PatternExecutor {
 
             match step {
                 ControlInstruction::Start(batch) => {
-                    self.prepare_instruction_and_push_to_stack(context, InstructionIndex(0), batch)?;
+                    self.prepare_next_instruction_and_push_to_stack(context, InstructionIndex(0), batch)?;
                 }
                 ControlInstruction::ExecuteImmediate(index) => {
                     let found = executors[index.0].unwrap_immediate().batch_continue(context, interrupt)?;
                     if let Some(batch) = found {
                         control_stack.push(ControlInstruction::ExecuteImmediate(index.clone()));
-                        self.prepare_instruction_and_push_to_stack(context, index.next(), batch)?;
+                        self.prepare_next_instruction_and_push_to_stack(context, index.next(), batch)?;
                     }
                 }
                 ControlInstruction::MapRowBatchToRowForSubQuery(index, mut iter) => {
@@ -129,7 +129,7 @@ impl PatternExecutor {
                         }
                     };
                     if let Some(batch) = found {
-                        self.prepare_instruction_and_push_to_stack(context, index.next(), batch)?;
+                        self.prepare_next_instruction_and_push_to_stack(context, index.next(), batch)?;
                     }
                 }
                 ControlInstruction::CollectingStage(index) => {
@@ -148,7 +148,7 @@ impl PatternExecutor {
                 ControlInstruction::StreamCollected(index, mut collected_iterator) => {
                     if let Some(batch) = collected_iterator.batch_continue()? {
                         self.control_stack.push(ControlInstruction::StreamCollected(index.clone(), collected_iterator));
-                        self.prepare_instruction_and_push_to_stack(context, index.next(), batch)?;
+                        self.prepare_next_instruction_and_push_to_stack(context, index.next(), batch)?;
                     }
                 }
                 ControlInstruction::Yield(batch) => {
@@ -159,26 +159,26 @@ impl PatternExecutor {
         Ok(None) // Nothing in the stack
     }
 
-    fn prepare_instruction_and_push_to_stack(
+    fn prepare_next_instruction_and_push_to_stack(
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
-        index: InstructionIndex,
+        next_instruction_index: InstructionIndex,
         batch: FixedBatch,
     ) -> Result<(), ReadExecutionError> {
-        if index.0 >= self.executors.len() {
+        if next_instruction_index.0 >= self.executors.len() {
             self.control_stack.push(ControlInstruction::Yield(batch));
         } else {
-            match &mut self.executors[index.0] {
+            match &mut self.executors[next_instruction_index.0] {
                 StepExecutors::Immediate(executable) => {
                     executable.prepare(batch, context)?;
-                    self.control_stack.push(ControlInstruction::ExecuteImmediate(index));
+                    self.control_stack.push(ControlInstruction::ExecuteImmediate(next_instruction_index));
                 }
                 StepExecutors::Branch(_) => self
                     .control_stack
-                    .push(ControlInstruction::MapRowBatchToRowForSubQuery(index, batch.into_iterator())),
+                    .push(ControlInstruction::MapRowBatchToRowForSubQuery(next_instruction_index, batch.into_iterator())),
                 StepExecutors::CollectingStage(collecting_stage) => {
                     collecting_stage.prepare(batch);
-                    self.control_stack.push(ControlInstruction::CollectingStage(index.clone()));
+                    self.control_stack.push(ControlInstruction::CollectingStage(next_instruction_index.clone()));
                 }
                 StepExecutors::ReshapeForReturn(_) => todo!(),
             }
