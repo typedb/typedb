@@ -20,7 +20,8 @@ use crate::{
         instructions::{CheckInstruction, ConstraintInstruction},
         planner::{
             match_executable::{
-                CheckStep, DisjunctionStep, ExecutionStep, FunctionCallStep, IntersectionStep, MatchExecutable, NegationStep,
+                CheckStep, DisjunctionStep, ExecutionStep, FunctionCallStep, IntersectionStep, MatchExecutable,
+                NegationStep,
             },
             plan::plan_conjunction,
         },
@@ -207,10 +208,13 @@ impl StepBuilder {
                     output_width,
                 ))
             }
-            StepInstructionsBuilder::FunctionCall(FunctionCallBuilder { function_id, arguments, assigned, output_width, .. }) => {
-
-                ExecutionStep::FunctionCall(FunctionCallStep { function_id, arguments, assigned, output_width })
-            }
+            StepInstructionsBuilder::FunctionCall(FunctionCallBuilder {
+                function_id,
+                arguments,
+                assigned,
+                output_width,
+                ..
+            }) => ExecutionStep::FunctionCall(FunctionCallStep { function_id, arguments, assigned, output_width }),
         }
     }
 }

@@ -124,7 +124,7 @@ impl SubQueryResultMapper for NegationMapper {
                 } else {
                     SubQueryResult::Done(None)
                 }
-            },
+            }
         }
     }
 }

@@ -51,9 +51,8 @@ use crate::{
                 ComparisonPlanner, Costed, Direction, DisjunctionPlanner, ElementCost, FunctionCallPlanner, Input,
                 NegationPlanner, PlannerVertex,
             },
-            DisjunctionBuilder, FunctionCallBuilder, IntersectionBuilder, MatchExecutableBuilder, NegationBuilder, StepBuilder,
-            StepInstructionsBuilder,
-
+            DisjunctionBuilder, FunctionCallBuilder, IntersectionBuilder, MatchExecutableBuilder, NegationBuilder,
+            StepBuilder, StepInstructionsBuilder,
         },
     },
     ExecutorVariable, VariablePosition,
@@ -440,7 +439,12 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             })
             .collect();
         let element_cost = ElementCost { per_input: 1.0, per_output: 1.0, branching_factor: 1.0 };
-        self.graph.push_function_call(FunctionCallPlanner::from_constraint(call_binding, arguments, return_vars, element_cost));
+        self.graph.push_function_call(FunctionCallPlanner::from_constraint(
+            call_binding,
+            arguments,
+            return_vars,
+            element_cost,
+        ));
     }
 
     fn register_comparison(&mut self, comparison: &'a Comparison<Variable>) {
@@ -718,7 +722,15 @@ impl ConjunctionPlan<'_> {
                     let assigned = call_binding
                         .assigned()
                         .iter()
-                        .map(|variable| match_builder.index.get(&variable.as_variable().unwrap()).unwrap().clone().as_position().unwrap())
+                        .map(|variable| {
+                            match_builder
+                                .index
+                                .get(&variable.as_variable().unwrap())
+                                .unwrap()
+                                .clone()
+                                .as_position()
+                                .unwrap()
+                        })
                         .collect();
                     let arguments = call_binding
                         .function_call()

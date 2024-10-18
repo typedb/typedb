@@ -8,12 +8,14 @@ use std::{collections::HashMap, marker::PhantomData, sync::Arc};
 
 use answer::{variable_value::VariableValue, Concept, Thing};
 use compiler::{
-    executable::fetch::executable::{
-        ExecutableFetch, ExecutableFetchListSubFetch, FetchObjectInstruction, FetchSomeInstruction,
+    executable::{
+        fetch::executable::{
+            ExecutableFetch, ExecutableFetchListSubFetch, FetchObjectInstruction, FetchSomeInstruction,
+        },
+        match_::planner::function_plan::ExecutableFunctionRegistry,
     },
     VariablePosition,
 };
-use compiler::executable::match_::planner::function_plan::ExecutableFunctionRegistry;
 use concept::{
     error::ConceptReadError,
     thing::{object::ObjectAPI, thing_manager::ThingManager},

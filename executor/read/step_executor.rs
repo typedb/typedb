@@ -5,7 +5,6 @@
  */
 
 use std::{collections::HashSet, sync::Arc};
-use itertools::Itertools;
 
 use compiler::{
     executable::{
@@ -20,18 +19,18 @@ use compiler::{
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::pipeline::function_signature::FunctionID;
+use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::read::{
     collecting_stage_executor::CollectingStageExecutor,
-    create_executors_for_pipeline,
     immediate_executor::ImmediateExecutor,
     nested_pattern_executor::{
-        InlinedFunctionMapper, LimitMapper, NegationMapper, NestedPatternBranch, NestedPatternExecutor, OffsetMapper,
+        IdentityMapper, InlinedFunctionMapper, LimitMapper, NegationMapper, NestedPatternBranch, NestedPatternExecutor,
+        OffsetMapper,
     },
     pattern_executor::PatternExecutor,
 };
-use crate::read::nested_pattern_executor::IdentityMapper;
 
 pub(super) enum StepExecutors {
     Immediate(ImmediateExecutor),
@@ -133,24 +132,27 @@ pub(super) fn create_executors_for_match(
             }
             ExecutionStep::Disjunction(step) => {
                 // I shouldn't need to pass recursive here since it's stratified
-                let inner = step.branches.iter().map(|branch_executable| {
-                    let executors = create_executors_for_match(
-                        snapshot,
-                        thing_manager,
-                        function_registry,
-                        &branch_executable,
-                        tmp__recursion_validation,
-                    )?;
-                    Ok(NestedPatternBranch::new(PatternExecutor::new(executors)))
-                }).try_collect()?;
-                let inner_step = StepExecutors::Branch(NestedPatternExecutor::Disjunction(
-                    inner,
-                    IdentityMapper,
-                ));
+                let inner = step
+                    .branches
+                    .iter()
+                    .map(|branch_executable| {
+                        let executors = create_executors_for_match(
+                            snapshot,
+                            thing_manager,
+                            function_registry,
+                            &branch_executable,
+                            tmp__recursion_validation,
+                        )?;
+                        Ok(NestedPatternBranch::new(PatternExecutor::new(executors)))
+                    })
+                    .try_collect()?;
+                let inner_step = StepExecutors::Branch(NestedPatternExecutor::Disjunction(inner, IdentityMapper));
                 // Hack: wrap it in a distinct
-                StepExecutors::CollectingStage(CollectingStageExecutor::new_distinct(PatternExecutor::new(vec![inner_step])))
+                StepExecutors::CollectingStage(CollectingStageExecutor::new_distinct(PatternExecutor::new(vec![
+                    inner_step,
+                ])))
             }
-            ExecutionStep::Optional(_) => todo!()
+            ExecutionStep::Optional(_) => todo!(),
         };
         steps.push(step);
     }
@@ -238,8 +240,10 @@ pub(super) fn create_executors_for_pipeline_stages(
             Ok(vec![StepExecutors::CollectingStage(step)])
         }
         ExecutableStage::Reduce(reduce_executable) => {
-            let step =
-                CollectingStageExecutor::new_reduce(PatternExecutor::new(previous_stage_steps), reduce_executable.clone());
+            let step = CollectingStageExecutor::new_reduce(
+                PatternExecutor::new(previous_stage_steps),
+                reduce_executable.clone(),
+            );
             Ok(vec![StepExecutors::CollectingStage(step)])
         }
         ExecutableStage::Insert(_) | ExecutableStage::Delete(_) => todo!("Or unreachable?"),

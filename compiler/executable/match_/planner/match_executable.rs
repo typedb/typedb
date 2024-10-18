@@ -12,7 +12,7 @@ use ir::{
         constraint::{Constraint, ExpressionBinding},
         IrID,
     },
-    pipeline::{function_signature::FunctionID, VariableRegistry},
+    pipeline::function_signature::FunctionID,
 };
 
 use crate::{

@@ -11,9 +11,11 @@ use std::{
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use ir::pattern::{constraint::Comparison, Vertex};
+use ir::pattern::{
+    constraint::{Comparison, FunctionCallBinding},
+    Vertex,
+};
 use itertools::chain;
-use ir::pattern::constraint::FunctionCallBinding;
 
 use super::plan::{ConjunctionPlan, DisjunctionPlanBuilder, Graph, VariableVertexId, VertexId};
 use crate::{
@@ -209,7 +211,12 @@ pub(crate) struct FunctionCallPlanner<'a> {
 }
 
 impl<'a> FunctionCallPlanner<'a> {
-    pub(crate) fn from_constraint(call_binding: &'a FunctionCallBinding<Variable>, arguments: Vec<VariableVertexId>, assigned: Vec<VariableVertexId>, cost: ElementCost) -> Self {
+    pub(crate) fn from_constraint(
+        call_binding: &'a FunctionCallBinding<Variable>,
+        arguments: Vec<VariableVertexId>,
+        assigned: Vec<VariableVertexId>,
+        cost: ElementCost,
+    ) -> Self {
         Self { call_binding, arguments, assigned, cost }
     }
 

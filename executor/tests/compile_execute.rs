@@ -555,7 +555,14 @@ fn test_named_var_select() {
         &HashMap::new(),
         &statistics,
     );
-    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty(), &ExecutableFunctionRegistry::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &match_executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -634,7 +641,14 @@ fn test_disjunction_planning_traversal() {
         &HashMap::new(),
         &statistics,
     );
-    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty(), &ExecutableFunctionRegistry::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &match_executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -717,7 +731,14 @@ fn test_disjunction_planning_nested_negations() {
         &HashMap::new(),
         &statistics,
     );
-    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty(), &ExecutableFunctionRegistry::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &match_executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());

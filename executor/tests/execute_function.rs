@@ -9,7 +9,6 @@ use std::sync::Arc;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use executor::{
-    error::ReadExecutionError,
     pipeline::{stage::ExecutionContext, PipelineExecutionError},
     row::MaybeOwnedRow,
     ExecutionInterrupt,
@@ -55,7 +54,6 @@ fn setup_common() -> Context {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     Context { _tmp_dir, storage, type_manager, function_manager, query_manager, thing_manager }
 }
-
 
 fn run_read_query(context: &Context, query: &str) -> Vec<Result<MaybeOwnedRow<'static>, PipelineExecutionError>> {
     let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
@@ -207,7 +205,6 @@ fn function_compiles() {
         assert_eq!(rows.len(), 3);
     }
 
-
     {
         let query = r#"
             with
@@ -228,7 +225,6 @@ fn function_compiles() {
 
 #[test]
 fn function_binary() {
-
     let context = setup_common();
     let snapshot = context.storage.clone().open_snapshot_write();
     let insert_query_str = r#"insert
@@ -273,5 +269,4 @@ fn function_binary() {
         let rows = run_read_query(&context, query);
         assert_eq!(rows.len(), 2); // Symmetrically Alice & Charlie
     }
-
 }

@@ -4,19 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    cmp::Ordering,
-    collections::{hash_set, HashMap, HashSet},
-    sync::Arc,
-};
+use std::{cmp::Ordering, collections::HashMap, sync::Arc};
 
 use answer::variable_value::VariableValue;
 use compiler::{
     executable::match_::{
         instructions::{CheckInstruction, ConstraintInstruction, VariableModes},
-        planner::match_executable::{
-            AssignmentStep, CheckStep, ExecutionStep, IntersectionStep, MatchExecutable, UnsortedJoinStep,
-        },
+        planner::match_executable::{AssignmentStep, CheckStep, ExecutionStep, IntersectionStep, UnsortedJoinStep},
     },
     ExecutorVariable, VariablePosition,
 };
@@ -29,7 +23,6 @@ use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
     instruction::{iterator::TupleIterator, Checker, InstructionExecutor},
-    match_executor::MatchExecutor,
     pipeline::stage::ExecutionContext,
     row::{MaybeOwnedRow, Row},
     ExecutionInterrupt, SelectedPositions,
@@ -579,7 +572,6 @@ impl UnsortedJoinExecutor {
         Self { iterate, checks, output_width: total_vars, output: None }
     }
 
-
     fn prepare(
         &mut self,
         input_batch: FixedBatch,
@@ -595,7 +587,6 @@ impl UnsortedJoinExecutor {
         todo!()
     }
 }
-
 
 pub(super) struct AssignExecutor {
     // input: FixedBatch,
@@ -678,113 +669,3 @@ impl CheckExecutor {
         Ok(Some(output))
     }
 }
-// // TODO: Port
-// pub(super) struct DisjunctionExecutor {
-//     branches: Vec<MatchExecutable>,
-//
-//     current_iterator: Option<hash_set::IntoIter<MaybeOwnedRow<'static>>>,
-//
-//     input: Option<Peekable<FixedBatchRowIterator>>,
-//     output: Option<FixedBatch>,
-//
-//     output_width: u32, // we should at least make sure all branches have the same batch width
-// }
-//
-// impl DisjunctionExecutor {
-//     fn new(branches: Vec<MatchExecutable>, output_width: u32) -> DisjunctionExecutor {
-//         assert!(branches.iter().all(|executable| executable.outputs().len() == output_width as usize));
-//         Self { branches, current_iterator: None, input: None, output: None, output_width }
-//     }
-//
-//     fn batch_from(
-//         &mut self,
-//         input_batch: FixedBatch,
-//         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
-//         interrupt: &mut ExecutionInterrupt,
-//     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-//         debug_assert!(
-//             self.output.is_none()
-//                 && self.current_iterator.is_none()
-//                 && !self.input.as_mut().is_some_and(|it| it.peek().is_some())
-//         );
-//         self.input = Some(Peekable::new(FixedBatchRowIterator::new(Ok(input_batch))));
-//         debug_assert!(self.input.as_mut().unwrap().peek().is_some());
-//         self.batch_continue(context, interrupt)
-//     }
-//
-//     fn batch_continue(
-//         &mut self,
-//         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
-//         interrupt: &mut ExecutionInterrupt,
-//     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-//         debug_assert!(self.output.is_none());
-//         self.compute_next_batch(context, interrupt)?;
-//         Ok(self.output.take())
-//     }
-//
-//     fn compute_next_batch(
-//         &mut self,
-//         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
-//         interrupt: &mut ExecutionInterrupt,
-//     ) -> Result<(), ReadExecutionError> {
-//         let mut batch = FixedBatch::new(self.output_width);
-//         while !batch.is_full() {
-//             if let Some(iterator) = &mut self.current_iterator {
-//                 let next = iterator.next();
-//                 match next {
-//                     Some(output_row) => {
-//                         batch.append(|mut row| row.copy_from(output_row.row(), output_row.multiplicity()))
-//                     }
-//                     None => self.current_iterator = None,
-//                 }
-//             } else {
-//                 self.current_iterator = self.initialize_executor_for_next_input_row(context, interrupt)?;
-//                 if self.current_iterator.is_none() {
-//                     break;
-//                 }
-//             }
-//         }
-//         if !batch.is_empty() {
-//             self.output = Some(batch);
-//         }
-//         Ok(())
-//     }
-//
-//     fn initialize_executor_for_next_input_row(
-//         &mut self,
-//         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
-//         interrupt: &mut ExecutionInterrupt,
-//     ) -> Result<Option<hash_set::IntoIter<MaybeOwnedRow<'static>>>, ReadExecutionError> {
-//         let Some(input_row) = self.input.as_mut().unwrap().next().transpose().map_err(|err| err.clone())? else {
-//             return Ok(None);
-//         };
-//
-//         let branch_iters: Vec<_> = self
-//             .branches
-//             .iter()
-//             .map(|branch| {
-//                 MatchExecutor::new(branch, context.snapshot(), context.thing_manager(), input_row.clone())
-//                     .map_err(|err| ReadExecutionError::ConceptRead { source: err })
-//             })
-//             .try_collect()?;
-//
-//         #[allow(
-//             clippy::mutable_key_type,
-//             reason = "VariableValue may contain Attribute, which has an internally mutable value cache"
-//         )]
-//         let rows: HashSet<_> = branch_iters
-//             .into_iter()
-//             .flat_map(|branch_iter| {
-//                 branch_iter
-//                     .into_iterator(context.clone(), interrupt.clone())
-//                     .map_static(|row| match row {
-//                         Ok(row) => Ok(row.into_owned()),
-//                         Err(err) => Err(err.clone()),
-//                     })
-//                     .into_iter()
-//             })
-//             .try_collect()?;
-//
-//         Ok(Some(rows.into_iter()))
-//     }
-// }

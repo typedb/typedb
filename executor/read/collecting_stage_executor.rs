@@ -4,9 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, iter::Peekable};
-use std::collections::HashSet;
-use std::sync::Arc;
+use std::{cmp::Ordering, collections::HashSet, iter::Peekable, sync::Arc};
 
 use compiler::executable::{modifiers::SortExecutable, reduce::ReduceExecutable};
 use ir::pipeline::modifier::SortVariable;
@@ -19,8 +17,8 @@ use crate::{
     pipeline::stage::ExecutionContext,
     read::pattern_executor::PatternExecutor,
     reduce_executor::GroupedReducer,
+    row::MaybeOwnedRow,
 };
-use crate::row::MaybeOwnedRow;
 
 pub(super) struct CollectingStageExecutor {
     pattern: PatternExecutor,
@@ -44,9 +42,9 @@ impl CollectorEnum {
 
     pub(crate) fn into_iterator(&mut self) -> CollectedStageIterator {
         match self {
-            CollectorEnum::Reduce(collector) => collector.into_iterator(),
-            CollectorEnum::Sort(collector) => collector.into_iterator(),
-            CollectorEnum::Distinct(collector) => collector.into_iterator(),
+            CollectorEnum::Reduce(collector) => collector.collected_to_iterator(),
+            CollectorEnum::Sort(collector) => collector.collected_to_iterator(),
+            CollectorEnum::Distinct(collector) => collector.collected_to_iterator(),
         }
     }
 }
@@ -95,7 +93,7 @@ impl CollectingStageExecutor {
     }
 
     pub(crate) fn prepare(&mut self, batch: FixedBatch) {
-        debug_assert!( {
+        debug_assert!({
             match &self.collector {
                 CollectorEnum::Reduce(_) => batch.len() == 1,
                 _ => true,
@@ -114,7 +112,7 @@ pub(super) trait CollectorTrait {
     fn prepare(&mut self);
     fn reset(&mut self);
     fn accept(&mut self, context: &ExecutionContext<impl ReadableSnapshot>, batch: FixedBatch);
-    fn into_iterator(&mut self) -> CollectedStageIterator;
+    fn collected_to_iterator(&mut self) -> CollectedStageIterator;
 }
 
 pub(super) trait CollectedStageIteratorTrait {
@@ -153,7 +151,7 @@ impl CollectorTrait for ReduceCollector {
         }
     }
 
-    fn into_iterator(&mut self) -> CollectedStageIterator {
+    fn collected_to_iterator(&mut self) -> CollectedStageIterator {
         CollectedStageIterator::Reduce(ReduceStageIterator::new(
             self.active_reducer.take().unwrap().finalise().into_iterator(),
             self.output_width,
@@ -227,13 +225,13 @@ impl CollectorTrait for SortCollector {
         while let Some(result) = batch_iter.next() {
             let row = result.unwrap();
             if self.collector.is_none() {
-                self.collector = Some(Batch::new(row.len() as u32, 0 as usize)) // TODO: Remove this workaround once we have output_width
+                self.collector = Some(Batch::new(row.len() as u32, 0usize)) // TODO: Remove this workaround once we have output_width
             }
             self.collector.as_mut().unwrap().append(row);
         }
     }
 
-    fn into_iterator(&mut self) -> CollectedStageIterator {
+    fn collected_to_iterator(&mut self) -> CollectedStageIterator {
         let mut unsorted = self.collector.take().unwrap();
         let mut indices: Vec<usize> = (0..unsorted.len()).collect();
         indices.sort_by(|x, y| {
@@ -310,8 +308,10 @@ impl CollectorTrait for DistinctCollector {
         }
     }
 
-    fn into_iterator(&mut self) -> CollectedStageIterator {
-        CollectedStageIterator::Distinct(DistinctStageIterator { iterator: self.collector.take().unwrap().into_iter().peekable() })
+    fn collected_to_iterator(&mut self) -> CollectedStageIterator {
+        CollectedStageIterator::Distinct(DistinctStageIterator {
+            iterator: self.collector.take().unwrap().into_iter().peekable(),
+        })
     }
 }
 
