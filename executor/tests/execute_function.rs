@@ -56,8 +56,32 @@ fn setup_common() -> Context {
     Context { _tmp_dir, storage, type_manager, function_manager, query_manager, thing_manager }
 }
 
+
+fn run_read_query(context: &Context, query: &str) -> Vec<Result<MaybeOwnedRow<'static>, PipelineExecutionError>> {
+    let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
+    let match_ = typeql::parse_query(query).unwrap().into_pipeline();
+    let pipeline = context
+        .query_manager
+        .prepare_read_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            &context.function_manager,
+            &match_,
+        )
+        .unwrap();
+
+    let (mut iterator, _) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+
+    let rows: Vec<Result<MaybeOwnedRow<'static>, PipelineExecutionError>> =
+        iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
+
+    rows
+}
+
 #[test]
 fn function_compiles() {
+
     let context = setup_common();
     let snapshot = context.storage.clone().open_snapshot_write();
     let insert_query_str = r#"insert
@@ -83,34 +107,122 @@ fn function_compiles() {
     snapshot.commit().unwrap();
 
     {
-        let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
         let query = r#"
             with
             fun get_ages($p_arg: person) -> { age }:
             match
                 $p_arg has age $age_return;
+            offset 0;
             return {$age_return};
 
             match
                 $p isa person;
                 $z in get_ages($p);
         "#;
-        let match_ = typeql::parse_query(query).unwrap().into_pipeline();
-        let pipeline = context
-            .query_manager
-            .prepare_read_pipeline(
-                snapshot,
-                &context.type_manager,
-                context.thing_manager.clone(),
-                &context.function_manager,
-                &match_,
-            )
-            .unwrap();
-
-        let (mut iterator, _) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
-
-        let rows: Vec<Result<MaybeOwnedRow<'static>, PipelineExecutionError>> =
-            iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
+        let rows = run_read_query(&context, query);
         assert_eq!(rows.len(), 3);
+    }
+
+    {
+        let query = r#"
+            with
+            fun get_ages($p_arg: person) -> { age }:
+            match
+                $p_arg has age $age_return;
+                offset 1;
+            return {$age_return};
+
+            match
+                $p isa person;
+                $z in get_ages($p);
+        "#;
+        let rows = run_read_query(&context, query);
+        assert_eq!(rows.len(), 1);
+    }
+
+    {
+        let query = r#"
+            with
+            fun get_ages($p_arg: person) -> { age }:
+            match
+                $p_arg has age $age_return;
+                offset 2;
+            return {$age_return};
+
+            match
+                $p isa person;
+                $z in get_ages($p);
+        "#;
+        let rows = run_read_query(&context, query);
+        assert_eq!(rows.len(), 0);
+    }
+
+    {
+        let query = r#"
+            with
+            fun get_ages($p_arg: person) -> { age }:
+            match
+                $p_arg has age $age_return;
+                limit 0;
+            return {$age_return};
+
+            match
+                $p isa person;
+                $z in get_ages($p);
+        "#;
+        let rows = run_read_query(&context, query);
+        assert_eq!(rows.len(), 0);
+    }
+
+    {
+        let query = r#"
+            with
+            fun get_ages($p_arg: person) -> { age }:
+            match
+                $p_arg has age $age_return;
+                limit 1;
+            return {$age_return};
+
+            match
+                $p isa person;
+                $z in get_ages($p);
+        "#;
+        let rows = run_read_query(&context, query);
+        assert_eq!(rows.len(), 2);
+    }
+
+    {
+        let query = r#"
+            with
+            fun get_ages($p_arg: person) -> { age }:
+            match
+                $p_arg has age $age_return;
+                limit 2;
+            return {$age_return};
+
+            match
+                $p isa person;
+                $z in get_ages($p);
+        "#;
+        let rows = run_read_query(&context, query);
+        assert_eq!(rows.len(), 3);
+    }
+
+
+    {
+        let query = r#"
+            with
+            fun get_ages($p_arg: person) -> { age }:
+            match
+                $p_arg has age $age_return;
+            reduce $age_sum = sum(age);
+            return {$age_sume};
+
+            match
+                $p isa person;
+                $z in get_ages($p);
+        "#;
+        let rows = run_read_query(&context, query);
+        assert_eq!(rows.len(), 2);
     }
 }
