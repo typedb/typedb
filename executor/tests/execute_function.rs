@@ -8,7 +8,12 @@ use std::sync::Arc;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
-use executor::{pipeline::stage::ExecutionContext, ExecutionInterrupt};
+use executor::{
+    error::ReadExecutionError,
+    pipeline::{stage::ExecutionContext, PipelineExecutionError},
+    row::MaybeOwnedRow,
+    ExecutionInterrupt,
+};
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
@@ -56,7 +61,7 @@ fn function_compiles() {
     let context = setup_common();
     let snapshot = context.storage.clone().open_snapshot_write();
     let insert_query_str = r#"insert
-        $p1 isa person, has name "Alice", has age 1;
+        $p1 isa person, has name "Alice", has age 1, has age 5;
         $p2 isa person, has name "Bob", has age 2;"#;
     let insert_query = typeql::parse_query(insert_query_str).unwrap().into_pipeline();
     let insert_pipeline = context
@@ -88,6 +93,7 @@ fn function_compiles() {
 
             match
                 $p isa person;
+                $z in get_ages($p);
         "#;
         let match_ = typeql::parse_query(query).unwrap().into_pipeline();
         let pipeline = context
@@ -100,5 +106,11 @@ fn function_compiles() {
                 &match_,
             )
             .unwrap();
+
+        let (mut iterator, _) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+
+        let rows: Vec<Result<MaybeOwnedRow<'static>, PipelineExecutionError>> =
+            iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
+        assert_eq!(rows.len(), 3);
     }
 }

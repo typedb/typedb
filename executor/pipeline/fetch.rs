@@ -13,6 +13,7 @@ use compiler::{
     },
     VariablePosition,
 };
+use compiler::executable::match_::planner::function_plan::ExecutableFunctionRegistry;
 use concept::{
     error::ConceptReadError,
     thing::{object::ObjectAPI, thing_manager::ThingManager},
@@ -138,6 +139,7 @@ fn execute_fetch_some(
                     snapshot,
                     thing_manager,
                     &variable_registry,
+                    Arc::new(ExecutableFunctionRegistry::TODO__empty()), // TODO
                     &**stages,
                     Some(fetch.clone()),
                     parameters,
@@ -154,6 +156,7 @@ fn execute_fetch_some(
                     snapshot,
                     thing_manager,
                     &variable_registry,
+                    Arc::new(ExecutableFunctionRegistry::TODO__empty()),
                     &**stages,
                     Some(fetch.clone()),
                     parameters,
