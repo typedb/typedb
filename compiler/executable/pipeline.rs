@@ -113,7 +113,7 @@ pub fn compile_pipeline(
         &schema_and_preamble_functions,
         annotated_stages,
         annotated_fetch,
-        &input_variables,
+        input_variables,
     )?;
     Ok(ExecutablePipeline { executable_functions: schema_and_preamble_functions, executable_stages, executable_fetch })
 }
@@ -134,7 +134,7 @@ pub fn compile_stages_and_fetch(
         variable_registry.clone(),
         available_functions,
         annotated_stages,
-        input_variables.into_iter().cloned(),
+        input_variables.iter().cloned(),
     )?;
     let stages_variable_positions =
         executable_stages.last().map(|stage: &ExecutableStage| stage.output_row_mapping()).unwrap_or(HashMap::new());
@@ -145,7 +145,7 @@ pub fn compile_stages_and_fetch(
                 .map_err(|err| ExecutableCompilationError::FetchCompliation { typedb_source: err })
         })
         .transpose()?
-        .map(|fetch| Arc::new(fetch));
+        .map(Arc::new);
     Ok((input_positions, executable_stages, executable_fetch))
 }
 

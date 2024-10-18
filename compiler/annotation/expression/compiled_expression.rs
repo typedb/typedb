@@ -4,28 +4,30 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt::{Display, Formatter};
+use std::{
+    collections::HashMap,
+    fmt::{Display, Formatter},
+};
 
-use answer::variable::Variable;
-use encoding::value::value_type::{ValueType, ValueTypeCategory};
-use ir::pattern::ParameterID;
+use encoding::value::value_type::ValueType;
+use ir::pattern::{IrID, ParameterID};
 
 use crate::annotation::expression::instructions::op_codes::ExpressionOpCode;
 
 #[derive(Debug, Clone)]
-pub struct ExecutableExpression {
+pub struct ExecutableExpression<ID> {
     pub(crate) instructions: Vec<ExpressionOpCode>,
-    pub(crate) variables: Vec<Variable>,
+    pub(crate) variables: Vec<ID>,
     pub(crate) constants: Vec<ParameterID>,
     pub(crate) return_type: ExpressionValueType,
 }
 
-impl ExecutableExpression {
+impl<ID> ExecutableExpression<ID> {
     pub fn instructions(&self) -> &[ExpressionOpCode] {
         &self.instructions
     }
 
-    pub fn variables(&self) -> &[Variable] {
+    pub fn variables(&self) -> &[ID] {
         self.variables.as_slice()
     }
 
@@ -35,6 +37,18 @@ impl ExecutableExpression {
 
     pub fn return_type(&self) -> &ExpressionValueType {
         &self.return_type
+    }
+}
+
+impl<ID: IrID> ExecutableExpression<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> ExecutableExpression<T> {
+        let Self { instructions, variables, constants, return_type } = self;
+        ExecutableExpression {
+            instructions,
+            variables: variables.into_iter().map(|var| mapping[&var]).collect(),
+            constants,
+            return_type,
+        }
     }
 }
 

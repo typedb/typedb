@@ -4,15 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
-
-use answer::variable::Variable;
-use ir::pattern::{
-    constraint::{Constraint, ExpressionBinding},
-    IrID,
+use std::{
+    collections::{HashMap, HashSet},
+    slice,
 };
 
+use answer::variable::Variable;
+use ir::pattern::{constraint::Constraint, IrID};
+
 use crate::{
+    annotation::expression::compiled_expression::ExecutableExpression,
     executable::match_::instructions::{CheckInstruction, ConstraintInstruction, VariableModes},
     ExecutorVariable, VariablePosition,
 };
@@ -212,18 +213,33 @@ impl UnsortedJoinStep {
 
 #[derive(Clone, Debug)]
 pub struct AssignmentStep {
-    assign_instruction: ExpressionBinding<VariablePosition>,
-    check_instructions: Vec<ConstraintInstruction<VariablePosition>>,
-    unbound: [VariablePosition; 1],
+    pub expression: ExecutableExpression<VariablePosition>,
+    pub input_positions: Vec<VariablePosition>,
+    pub unbound: ExecutorVariable,
+    pub selected_variables: Vec<VariablePosition>,
+    pub output_width: u32,
 }
 
 impl AssignmentStep {
+    pub fn new(
+        expression: ExecutableExpression<VariablePosition>,
+        input_positions: Vec<VariablePosition>,
+        unbound: ExecutorVariable,
+        selected_variables: Vec<VariablePosition>,
+        output_width: u32,
+    ) -> Self {
+        Self { expression, input_positions, unbound, selected_variables, output_width }
+    }
+
     fn new_variables(&self) -> &[VariablePosition] {
-        &self.unbound
+        match &self.unbound {
+            ExecutorVariable::RowPosition(pos) => slice::from_ref(pos),
+            ExecutorVariable::Internal(_) => &[],
+        }
     }
 
     fn output_width(&self) -> u32 {
-        todo!()
+        self.output_width
     }
 }
 

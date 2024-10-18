@@ -4,10 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use compiler::annotation::expression::instructions::ExpressionEvaluationError;
 use concept::error::ConceptReadError;
 use error::typedb_error;
 
 use crate::InterruptType;
+
 
 typedb_error!(
     pub ReadExecutionError(component = "Read execution", prefix = "REX") {
@@ -15,5 +17,6 @@ typedb_error!(
         ConceptRead(2, "Concept read error.", ( source: ConceptReadError )),
         CreatingIterator(3, "Error creating iterator from {instruction_name} instruction.", instruction_name: String, ( source: ConceptReadError )),
         AdvancingIteratorTo(4, "Error moving iterator (by steps or seek) to target value.", ( source: ConceptReadError )),
+        ExpressionEvaluate(5, "Error evaluating expression", ( source: ExpressionEvaluationError )),
     }
 );

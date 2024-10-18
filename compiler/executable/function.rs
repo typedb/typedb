@@ -53,7 +53,7 @@ pub(crate) fn compile_function(
         stages,
         arguments.into_iter(),
     )?;
-    let returns = compile_return_operation(&mut executable_stages, return_)?;
+    let returns = compile_return_operation(&executable_stages, return_)?;
     Ok(ExecutableFunction { executable_stages, argument_positions, returns })
 }
 

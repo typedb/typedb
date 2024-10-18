@@ -57,7 +57,7 @@ pub enum AnnotatedStage {
         block: Block,
         block_annotations: TypeAnnotations,
         // expressions skip annotation and go straight to executable, breaking the abstraction a bit...
-        executable_expressions: HashMap<Variable, ExecutableExpression>,
+        executable_expressions: HashMap<Variable, ExecutableExpression<Variable>>,
     },
     Insert {
         block: Block,
