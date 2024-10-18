@@ -84,6 +84,7 @@ pub(super) fn create_executors_for_match(
             }
             ExecutionStep::Check(_) => StepExecutors::Immediate(ImmediateExecutor::new(step, snapshot, thing_manager)?),
             ExecutionStep::Negation(negation_step) => {
+                println!("Negation_Plan:\n{:?}", &negation_step.negation);
                 // I shouldn't need to pass recursive here since it's stratified
                 let inner = create_executors_for_match(
                     snapshot,

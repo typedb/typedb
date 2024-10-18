@@ -118,7 +118,13 @@ impl SubQueryResultMapper for NegationMapper {
     fn map_output(&mut self, input: &MaybeOwnedRow<'_>, subquery_result: Option<FixedBatch>) -> SubQueryResult {
         match subquery_result {
             None => SubQueryResult::Done(Some(FixedBatch::from(input.clone().into_owned()))),
-            Some(_) => SubQueryResult::Done(None),
+            Some(batch) => {
+                if batch.is_empty() {
+                    SubQueryResult::Done(Some(FixedBatch::from(input.clone().into_owned())))
+                } else {
+                    SubQueryResult::Done(None)
+                }
+            },
         }
     }
 }
