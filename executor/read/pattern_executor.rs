@@ -6,7 +6,9 @@
 
 use std::sync::Arc;
 
-use compiler::executable::match_::planner::match_executable::MatchExecutable;
+use compiler::executable::match_::planner::{
+    function_plan::ExecutableFunctionRegistry, match_executable::MatchExecutable,
+};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
@@ -15,10 +17,12 @@ use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
-    read::step_executor::{create_executors_recursive, StepExecutors},
+    read::{
+        nested_pattern_executor::SubQueryResult,
+        step_executor::{create_executors_recursive, StepExecutors},
+    },
     ExecutionInterrupt,
 };
-use crate::read::nested_pattern_executor::SubQueryResult;
 
 #[derive(Clone)]
 pub(super) struct BranchIndex(pub usize);
@@ -28,8 +32,7 @@ pub(super) struct InstructionIndex(pub usize);
 
 impl InstructionIndex {
     fn next(&self) -> InstructionIndex {
-        let InstructionIndex(index) = &self;
-        InstructionIndex(index + 1)
+        InstructionIndex(self.0 + 1)
     }
 }
 
@@ -54,9 +57,10 @@ impl PatternExecutor {
         match_executable: &MatchExecutable,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
+        function_registry: &ExecutableFunctionRegistry,
     ) -> Result<Self, ConceptReadError> {
-        let instructions = create_executors_recursive(match_executable, snapshot, thing_manager)?;
-        Ok(PatternExecutor { executors: instructions, control_stack: Vec::new() })
+        let executors = create_executors_recursive(match_executable, snapshot, thing_manager, function_registry)?;
+        Ok(PatternExecutor { executors, control_stack: Vec::new() })
     }
 
     pub(crate) fn compute_next_batch(
@@ -109,7 +113,8 @@ impl PatternExecutor {
                         let branch_executor = executors[index.0].unwrap_nested_pattern_branch();
                         for (branch_index, pattern) in branch_executor.to_parts_mut().0.iter_mut().enumerate() {
                             pattern.prepare(row.clone().into_owned());
-                            control_stack.push(ControlInstruction::ExecuteSubQuery(index.clone(), BranchIndex(branch_index)));
+                            control_stack
+                                .push(ControlInstruction::ExecuteSubQuery(index.clone(), BranchIndex(branch_index)));
                         }
                     }
                 }
@@ -155,11 +160,10 @@ impl PatternExecutor {
                     executable.prepare(batch, context)?;
                     self.control_stack.push(ControlInstruction::ExecuteImmediate(index));
                 }
-                StepExecutors::Branch(_) => {
-                    self
-                        .control_stack
-                        .push(ControlInstruction::MapRowBatchToRowForSubQuery(index, batch.into_iterator()))
-                },
+                StepExecutors::Branch(_) => self
+                    .control_stack
+                    .push(ControlInstruction::MapRowBatchToRowForSubQuery(index, batch.into_iterator())),
+                StepExecutors::ReshapeForReturn(_) => todo!(),
             }
         }
         Ok(())

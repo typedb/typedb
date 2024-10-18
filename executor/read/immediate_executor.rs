@@ -70,7 +70,10 @@ impl ImmediateExecutor {
             ExecutionStep::Check(CheckStep { check_instructions }) => {
                 Ok(Self::Check(CheckExecutor::new(check_instructions.clone())))
             }
-            ExecutionStep::Negation(_) | ExecutionStep::Disjunction(_) | ExecutionStep::Optional(_) => {
+            ExecutionStep::Negation(_)
+            | ExecutionStep::Disjunction(_)
+            | ExecutionStep::Optional(_)
+            | ExecutionStep::FunctionCall(_) => {
                 todo!("Refactor so this is impossible")
             }
         }

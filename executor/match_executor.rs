@@ -6,7 +6,9 @@
 
 use std::sync::Arc;
 
-use compiler::executable::match_::planner::match_executable::MatchExecutable;
+use compiler::executable::match_::planner::{
+    function_plan::ExecutableFunctionRegistry, match_executable::MatchExecutable,
+};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use lending_iterator::{adaptors::FlatMap, AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
@@ -31,9 +33,10 @@ impl MatchExecutor {
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
         input: MaybeOwnedRow<'_>,
+        function_registry: &ExecutableFunctionRegistry,
     ) -> Result<Self, ConceptReadError> {
         Ok(Self {
-            entry: PatternExecutor::build(match_executable, snapshot, thing_manager)?,
+            entry: PatternExecutor::build(match_executable, snapshot, thing_manager, function_registry)?,
             input: Some(input.into_owned()),
         })
     }
