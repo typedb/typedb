@@ -48,6 +48,10 @@ impl FixedBatch {
         self.entries
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        self.multiplicities[..self.entries as usize].iter().all(|&mul| mul == 0)
+    }
+
     pub(crate) fn is_full(&self) -> bool {
         (self.entries * self.width) as usize == self.data.len()
     }

@@ -728,6 +728,9 @@ impl DisjunctionExecutor {
                 }
             }
         }
+        if !batch.is_empty() {
+            self.output = Some(batch);
+        }
         Ok(())
     }
 
