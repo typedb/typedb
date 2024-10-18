@@ -62,7 +62,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
         snapshot,
         type_manager,
         type_annotations,
-        variable_value_types: input_value_type_annotations.iter().map(|(k, v)| (k.clone(), v.clone())).collect(),
+        variable_value_types: input_value_type_annotations.iter().map(|(&k, v)| (k, v.clone())).collect(),
         visited_expressions: HashSet::new(),
         compiled_expressions: HashMap::new(),
     };
@@ -75,18 +75,18 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     }
 
     let BlockExpressionsCompilationContext { compiled_expressions, variable_value_types, .. } = context;
-    for (var, compiled) in &compiled_expressions {
+    for (&var, compiled) in &compiled_expressions {
         let category = match &compiled.return_type {
             ExpressionValueType::Single(_) => VariableCategory::Value,
             ExpressionValueType::List(_) => VariableCategory::ValueList,
         };
-        let existing_category = variable_registry.get_variable_category(var.clone());
+        let existing_category = variable_registry.get_variable_category(var);
         if existing_category.is_none() {
-            let source = Constraint::ExpressionBinding((*expression_index.get(var).unwrap()).clone());
-            variable_registry.set_assigned_value_variable_category(var.clone(), category, source).unwrap();
+            let source = Constraint::ExpressionBinding((*expression_index.get(&var).unwrap()).clone());
+            variable_registry.set_assigned_value_variable_category(var, category, source).unwrap();
         } else if Some(category) != existing_category {
             Err(ExpressionCompileError::DerivedConflictingVariableCategory {
-                variable_name: variable_registry.variable_names().get(var).unwrap().clone(),
+                variable_name: variable_registry.variable_names().get(&var).unwrap().clone(),
                 derived_category: category,
                 existing_category: existing_category.unwrap(),
             })?;
@@ -95,8 +95,8 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     Ok(compiled_expressions)
 }
 
-fn index_expressions<'a, 'block, Snapshot: ReadableSnapshot>(
-    context: &BlockExpressionsCompilationContext<'a, Snapshot>,
+fn index_expressions<'block, Snapshot: ReadableSnapshot>(
+    context: &BlockExpressionsCompilationContext<'_, Snapshot>,
     conjunction: &'block Conjunction,
     index: &mut HashMap<Variable, &'block ExpressionBinding<Variable>>,
 ) -> Result<(), ExpressionCompileError> {
@@ -146,6 +146,7 @@ fn compile_expressions_recursive<'a, Snapshot: ReadableSnapshot>(
     Ok(())
 }
 
+#[allow(clippy::map_entry)]
 fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
     context: &mut BlockExpressionsCompilationContext<'a, Snapshot>,
     variable: Variable,
@@ -185,12 +186,12 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
             let value_type = value_types.iter().find(|_| true).unwrap();
             let variable_category = context.variable_registry.get_variable_category(variable).unwrap();
             match variable_category {
-                VariableCategory::Attribute | VariableCategory::Thing => {
+                VariableCategory::Value | VariableCategory::Attribute | VariableCategory::Thing => {
                     debug_assert!(types.iter().all(|t| matches!(t, answer::Type::Attribute(_))));
                     context.variable_value_types.insert(variable, ExpressionValueType::Single(value_type.clone()));
                     Ok(())
                 }
-                VariableCategory::AttributeList | VariableCategory::ThingList => {
+                VariableCategory::ValueList | VariableCategory::AttributeList | VariableCategory::ThingList => {
                     debug_assert!(types.iter().all(|t| matches!(t, answer::Type::Attribute(_))));
                     context.variable_value_types.insert(variable, ExpressionValueType::List(value_type.clone()));
                     Ok(())

@@ -48,8 +48,8 @@ use crate::{
                     SubPlanner, TypeListPlanner,
                 },
                 variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
-                ComparisonPlanner, Costed, Direction, DisjunctionPlanner, ElementCost, FunctionCallPlanner, Input,
-                NegationPlanner, PlannerVertex,
+                ComparisonPlanner, Costed, Direction, DisjunctionPlanner, ElementCost, ExpressionPlanner,
+                FunctionCallPlanner, Input, NegationPlanner, PlannerVertex,
             },
             DisjunctionBuilder, IntersectionBuilder, MatchExecutableBuilder, NegationBuilder, StepBuilder,
             StepInstructionsBuilder,
@@ -64,20 +64,19 @@ pub(crate) fn plan_conjunction<'a>(
     variable_positions: &HashMap<Variable, VariablePosition>,
     type_annotations: &'a TypeAnnotations,
     variable_registry: &VariableRegistry,
-    _expressions: &HashMap<Variable, ExecutableExpression>,
+    expressions: &'a HashMap<Variable, ExecutableExpression>,
     statistics: &'a Statistics,
 ) -> ConjunctionPlan<'a> {
-    let plan_builder = make_builder(
+    make_builder(
         conjunction,
         block_context,
         variable_positions,
         type_annotations,
         variable_registry,
-        _expressions,
+        expressions,
         statistics,
-    );
-
-    plan_builder.plan()
+    )
+    .plan()
 }
 
 fn make_builder<'a>(
@@ -86,7 +85,7 @@ fn make_builder<'a>(
     variable_positions: &HashMap<Variable, VariablePosition>,
     type_annotations: &'a TypeAnnotations,
     variable_registry: &VariableRegistry,
-    _expressions: &HashMap<Variable, ExecutableExpression>,
+    expressions: &'a HashMap<Variable, ExecutableExpression>,
     statistics: &'a Statistics,
 ) -> ConjunctionPlanBuilder<'a> {
     let mut negation_subplans = Vec::new();
@@ -104,7 +103,7 @@ fn make_builder<'a>(
                             variable_positions,
                             type_annotations,
                             variable_registry,
-                            _expressions,
+                            expressions,
                             statistics,
                         )
                     })
@@ -117,7 +116,7 @@ fn make_builder<'a>(
                     variable_positions,
                     type_annotations,
                     variable_registry,
-                    _expressions,
+                    expressions,
                     statistics,
                 )
                 .with_inputs(negation.conjunction().captured_variables(block_context))
@@ -134,7 +133,7 @@ fn make_builder<'a>(
         conjunction.declared_variables(block_context),
         variable_registry,
     );
-    plan_builder.register_constraints(conjunction);
+    plan_builder.register_constraints(conjunction, expressions);
     plan_builder.register_negations(negation_subplans);
     plan_builder.register_disjunctions(disjunction_planners);
     plan_builder
@@ -332,7 +331,11 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         self.graph.push_variable(variable, VariableVertex::Value(planner));
     }
 
-    fn register_constraints(&mut self, conjunction: &'a Conjunction) {
+    fn register_constraints(
+        &mut self,
+        conjunction: &'a Conjunction,
+        expressions: &'a HashMap<Variable, ExecutableExpression>,
+    ) {
         for constraint in conjunction.constraints() {
             match constraint {
                 Constraint::Kind(kind) => self.register_kind(kind),
@@ -348,11 +351,10 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 Constraint::Has(has) => self.register_has(has),
                 Constraint::Links(links) => self.register_links(links),
 
+                Constraint::ExpressionBinding(expression) => self.register_expression_binding(expression, expressions),
                 Constraint::FunctionCallBinding(call) => self.register_function_call_binding(call),
 
                 Constraint::Comparison(comparison) => self.register_comparison(comparison),
-
-                Constraint::ExpressionBinding(expression) => self.register_expression_binding(expression),
             }
         }
     }
@@ -418,12 +420,16 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         self.graph.push_constraint(ConstraintVertex::Links(planner));
     }
 
-    fn register_expression_binding(&mut self, expression: &ExpressionBinding<Variable>) {
-        // let lhs = self.variable_index[&expression.left().as_variable().unwrap()];
-        // let planner_index = self.elements.len();
-        // self.adjacency.entry(lhs).or_default().insert(planner_index);
-        todo!("expression = {expression:?}");
-        // self.elements.push(PlannerVertex::Expression());
+    fn register_expression_binding(
+        &mut self,
+        expression: &ExpressionBinding<Variable>,
+        expressions: &'a HashMap<Variable, ExecutableExpression>,
+    ) {
+        let variable = expression.left().as_variable().unwrap();
+        let output = self.graph.variable_index[&variable];
+        let expression = &expressions[&variable];
+        let inputs = Vec::new(); // TODO inputs from constraint
+        self.graph.push_expression(output, ExpressionPlanner::from_expression(expression, inputs, output));
     }
 
     fn register_function_call_binding(&mut self, call_binding: &FunctionCallBinding<Variable>) {
@@ -786,7 +792,7 @@ impl ConjunctionPlan<'_> {
                     .lower(
                         match_builder.current_outputs.iter().copied(),
                         match_builder.position_mapping(),
-                        &variable_registry,
+                        variable_registry,
                     );
                 let variable_positions = step_builder.branches.iter().flat_map(|x| x.index.clone()).collect();
                 match_builder.push_step(&variable_positions, StepInstructionsBuilder::Disjunction(step_builder).into());
@@ -1117,6 +1123,18 @@ impl<'a> Graph<'a> {
             self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
         }
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Comparison(comparison));
+    }
+
+    fn push_expression(&mut self, output: VariableVertexId, expression: ExpressionPlanner<'a>) {
+        let pattern_index = self.next_pattern_index();
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(expression.variables());
+        for var in expression.variables() {
+            self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
+        }
+        self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Expression(expression));
+
+        let output_planner = self.elements.get_mut(&VertexId::Variable(output)).unwrap();
+        output_planner.as_variable_mut().unwrap().set_binding(pattern_index);
     }
 
     fn push_function_call(&mut self, function_call: FunctionCallPlanner) {

@@ -7,7 +7,7 @@
 use std::fmt::{Display, Formatter};
 
 use answer::variable::Variable;
-use encoding::value::value_type::{ValueType, ValueTypeCategory};
+use encoding::value::value_type::ValueType;
 use ir::pattern::ParameterID;
 
 use crate::annotation::expression::instructions::op_codes::ExpressionOpCode;

@@ -14,10 +14,8 @@ use itertools::{chain, Itertools};
 use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::match_::planner::{
-        plan::{Graph, VariableVertexId, VertexId},
-        vertex::{
-            Costed, ElementCost, Input, PlannerVertex, ADVANCE_ITERATOR_RELATIVE_COST, OPEN_ITERATOR_RELATIVE_COST,
-        },
+        plan::{Graph, PatternVertexId, VariableVertexId, VertexId},
+        vertex::{Costed, ElementCost, Input, PlannerVertex},
     },
 };
 
@@ -36,10 +34,9 @@ impl VariableVertex {
         match self {
             Self::Input(_) => true, // always valid: comes from the enclosing scope
 
-            Self::Type(_) | Self::Thing(_) | Self::Value(_) => {
-                let adjacent = graph.variable_to_pattern().get(&index).unwrap();
-                ordered.iter().filter_map(VertexId::as_pattern_id).any(|id| adjacent.contains(&id))
-            } // may be invalid: must be produced
+            Self::Type(inner) => inner.is_valid(index, ordered, graph),
+            Self::Thing(inner) => inner.is_valid(index, ordered, graph),
+            Self::Value(inner) => inner.is_valid(index, ordered, graph),
         }
     }
 
@@ -49,6 +46,16 @@ impl VariableVertex {
             Self::Type(inner) => inner.expected_size,
             Self::Thing(inner) => inner.expected_size,
             Self::Value(_) => 1.0,
+        }
+    }
+
+    pub(crate) fn set_binding(&mut self, binding_pattern: PatternVertexId) {
+        match self {
+            Self::Input(_) => unreachable!("attempting to assign to input variable"),
+
+            Self::Type(inner) => inner.set_binding(binding_pattern),
+            Self::Thing(inner) => inner.set_binding(binding_pattern),
+            Self::Value(inner) => inner.set_binding(binding_pattern),
         }
     }
 
@@ -151,6 +158,7 @@ impl Costed for InputPlanner {
 #[derive(Clone)]
 pub(crate) struct TypePlanner {
     variable: Variable,
+    binding: Option<PatternVertexId>,
     expected_size: f64,
 }
 
@@ -163,7 +171,20 @@ impl fmt::Debug for TypePlanner {
 impl TypePlanner {
     pub(crate) fn from_variable(variable: Variable, type_annotations: &TypeAnnotations) -> Self {
         let num_types = type_annotations.vertex_annotations_of(&Vertex::Variable(variable)).unwrap().len();
-        Self { variable, expected_size: num_types as f64 }
+        Self { variable, binding: None, expected_size: num_types as f64 }
+    }
+
+    pub(crate) fn set_binding(&mut self, binding_pattern: PatternVertexId) {
+        self.binding = Some(binding_pattern);
+    }
+
+    fn is_valid(&self, index: VariableVertexId, ordered: &[VertexId], graph: &Graph<'_>) -> bool {
+        if let Some(binding) = self.binding {
+            ordered.contains(&VertexId::Pattern(binding))
+        } else {
+            let adjacent = graph.variable_to_pattern().get(&index).unwrap();
+            ordered.iter().filter_map(VertexId::as_pattern_id).any(|id| adjacent.contains(&id))
+        }
     }
 }
 
@@ -176,6 +197,7 @@ impl Costed for TypePlanner {
 #[derive(Clone)]
 pub(crate) struct ThingPlanner {
     variable: Variable,
+    binding: Option<PatternVertexId>,
     expected_size: f64,
 
     bound_exact: HashSet<VariableVertexId>, // IID or exact Type + Value
@@ -212,6 +234,7 @@ impl ThingPlanner {
             .sum::<u64>() as f64;
         Self {
             variable,
+            binding: None,
             expected_size,
             bound_exact: HashSet::new(),
             bound_value_equal: HashSet::new(),
@@ -234,6 +257,19 @@ impl ThingPlanner {
 
     pub(crate) fn add_upper_bound(&mut self, other: Input) {
         self.bound_value_above.insert(other);
+    }
+
+    fn set_binding(&mut self, binding_pattern: PatternVertexId) {
+        self.binding = Some(binding_pattern);
+    }
+
+    fn is_valid(&self, index: VariableVertexId, ordered: &[VertexId], graph: &Graph<'_>) -> bool {
+        if let Some(binding) = self.binding {
+            ordered.contains(&VertexId::Pattern(binding))
+        } else {
+            let adjacent = graph.variable_to_pattern().get(&index).unwrap();
+            ordered.iter().filter_map(VertexId::as_pattern_id).any(|id| adjacent.contains(&id))
+        }
     }
 }
 
@@ -317,6 +353,7 @@ impl Costed for ThingPlanner {
 #[derive(Clone)]
 pub(crate) struct ValuePlanner {
     variable: Variable,
+    binding: Option<PatternVertexId>,
 }
 
 impl fmt::Debug for ValuePlanner {
@@ -327,11 +364,24 @@ impl fmt::Debug for ValuePlanner {
 
 impl ValuePlanner {
     pub(crate) fn from_variable(variable: Variable) -> Self {
-        Self { variable }
+        Self { variable, binding: None }
     }
 
     fn expected_size(&self, _inputs: &[VertexId]) -> f64 {
         todo!("value planner expected size")
+    }
+
+    fn set_binding(&mut self, binding_pattern: PatternVertexId) {
+        self.binding = Some(binding_pattern);
+    }
+
+    fn is_valid(&self, index: VariableVertexId, ordered: &[VertexId], graph: &Graph<'_>) -> bool {
+        if let Some(binding) = self.binding {
+            ordered.contains(&VertexId::Pattern(binding))
+        } else {
+            let adjacent = graph.variable_to_pattern().get(&index).unwrap();
+            ordered.iter().filter_map(VertexId::as_pattern_id).any(|id| adjacent.contains(&id))
+        }
     }
 }
 
