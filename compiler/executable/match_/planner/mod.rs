@@ -11,7 +11,7 @@ use std::{
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use ir::pipeline::{block::Block, VariableRegistry};
+use ir::pipeline::{block::Block, function_signature::FunctionID, VariableRegistry};
 use itertools::Itertools;
 
 use crate::{
@@ -20,7 +20,8 @@ use crate::{
         instructions::{CheckInstruction, ConstraintInstruction},
         planner::{
             match_executable::{
-                CheckStep, DisjunctionStep, ExecutionStep, IntersectionStep, MatchExecutable, NegationStep,
+                CheckStep, DisjunctionStep, ExecutionStep, FunctionCallStep, IntersectionStep, MatchExecutable,
+                NegationStep,
             },
             plan::plan_conjunction,
         },
@@ -101,12 +102,21 @@ impl DisjunctionBuilder {
 }
 
 #[derive(Debug)]
+struct FunctionCallBuilder {
+    function_id: FunctionID,
+    arguments: Vec<VariablePosition>,
+    assigned: Vec<VariablePosition>,
+    output_width: u32,
+}
+
+#[derive(Debug)]
 // TODO rename
 enum StepInstructionsBuilder {
     Intersection(IntersectionBuilder),
     Check(CheckBuilder),
     Negation(NegationBuilder),
     Disjunction(DisjunctionBuilder),
+    FunctionCall(FunctionCallBuilder),
 }
 
 impl StepInstructionsBuilder {
@@ -198,6 +208,13 @@ impl StepBuilder {
                     output_width,
                 ))
             }
+            StepInstructionsBuilder::FunctionCall(FunctionCallBuilder {
+                function_id,
+                arguments,
+                assigned,
+                output_width,
+                ..
+            }) => ExecutionStep::FunctionCall(FunctionCallStep { function_id, arguments, assigned, output_width }),
         }
     }
 }

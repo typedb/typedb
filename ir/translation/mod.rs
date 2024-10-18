@@ -66,7 +66,14 @@ impl TranslationContext {
         is_optional: bool,
         reducer: Reducer,
     ) -> Variable {
-        self.variable_registry.register_reduce_output_variable(name.to_owned(), variable_category, is_optional, reducer)
+        let variable = self.variable_registry.register_reduce_output_variable(
+            name.to_owned(),
+            variable_category,
+            is_optional,
+            reducer,
+        );
+        self.visible_variables.insert(name.to_owned(), variable.clone());
+        variable
     }
 
     pub fn get_variable(&self, variable: &str) -> Option<Variable> {

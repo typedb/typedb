@@ -19,14 +19,12 @@ use tokio::sync::broadcast::error::TryRecvError;
 pub mod batch;
 pub mod document;
 pub mod error;
-pub mod expression_executor;
-mod function_executor;
 pub(crate) mod instruction;
-pub mod pattern_executor;
+pub mod match_executor;
 pub mod pipeline;
+pub mod read;
 pub(crate) mod reduce_executor;
 pub mod row;
-mod step_executors;
 pub mod write;
 
 // TODO: use a bit-vec, since we have a continuously allocated range of positions

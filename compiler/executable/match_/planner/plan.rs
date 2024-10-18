@@ -51,8 +51,8 @@ use crate::{
                 ComparisonPlanner, Costed, Direction, DisjunctionPlanner, ElementCost, FunctionCallPlanner, Input,
                 NegationPlanner, PlannerVertex,
             },
-            DisjunctionBuilder, IntersectionBuilder, MatchExecutableBuilder, NegationBuilder, StepBuilder,
-            StepInstructionsBuilder,
+            DisjunctionBuilder, FunctionCallBuilder, IntersectionBuilder, MatchExecutableBuilder, NegationBuilder,
+            StepBuilder, StepInstructionsBuilder,
         },
     },
     ExecutorVariable, VariablePosition,
@@ -426,7 +426,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         // self.elements.push(PlannerVertex::Expression());
     }
 
-    fn register_function_call_binding(&mut self, call_binding: &FunctionCallBinding<Variable>) {
+    fn register_function_call_binding(&mut self, call_binding: &'a FunctionCallBinding<Variable>) {
         // TODO: This is just a mock
         let arguments =
             call_binding.function_call().argument_ids().map(|variable| self.graph.variable_index[&variable]).collect();
@@ -439,8 +439,12 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             })
             .collect();
         let element_cost = ElementCost { per_input: 1.0, per_output: 1.0, branching_factor: 1.0 };
-        self.graph.push_function_call(FunctionCallPlanner::new(arguments, return_vars, element_cost));
-        todo!("register_function_call");
+        self.graph.push_function_call(FunctionCallPlanner::from_constraint(
+            call_binding,
+            arguments,
+            return_vars,
+            element_cost,
+        ));
     }
 
     fn register_comparison(&mut self, comparison: &'a Comparison<Variable>) {
@@ -713,7 +717,34 @@ impl ConjunctionPlan<'_> {
                     match_builder
                         .push_step(&variable_positions, StepInstructionsBuilder::Disjunction(step_builder).into());
                 }
-                PlannerVertex::FunctionCall(_) => todo!(),
+                PlannerVertex::FunctionCall(call_planner) => {
+                    let call_binding = call_planner.call_binding;
+                    let assigned = call_binding
+                        .assigned()
+                        .iter()
+                        .map(|variable| {
+                            match_builder
+                                .index
+                                .get(&variable.as_variable().unwrap())
+                                .unwrap()
+                                .clone()
+                                .as_position()
+                                .unwrap()
+                        })
+                        .collect();
+                    let arguments = call_binding
+                        .function_call()
+                        .argument_ids()
+                        .map(|variable| match_builder.index.get(&variable).unwrap().clone().as_position().unwrap())
+                        .collect();
+                    let step_builder = StepInstructionsBuilder::FunctionCall(FunctionCallBuilder {
+                        function_id: call_binding.function_call().function_id(),
+                        arguments,
+                        assigned,
+                        output_width: match_builder.next_output.position,
+                    });
+                    match_builder.push_step(&HashMap::new(), step_builder.into())
+                }
             }
         }
         match_builder.finish_one()
@@ -1119,7 +1150,7 @@ impl<'a> Graph<'a> {
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Comparison(comparison));
     }
 
-    fn push_function_call(&mut self, function_call: FunctionCallPlanner) {
+    fn push_function_call(&mut self, function_call: FunctionCallPlanner<'a>) {
         let pattern_index = self.next_pattern_index();
         self.pattern_to_variable.entry(pattern_index).or_default().extend(function_call.variables());
         for var in function_call.variables() {
