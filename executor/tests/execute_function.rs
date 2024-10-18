@@ -81,7 +81,6 @@ fn run_read_query(context: &Context, query: &str) -> Vec<Result<MaybeOwnedRow<'s
 
 #[test]
 fn function_compiles() {
-
     let context = setup_common();
     let snapshot = context.storage.clone().open_snapshot_write();
     let insert_query_str = r#"insert
@@ -225,4 +224,54 @@ fn function_compiles() {
         let rows = run_read_query(&context, query);
         assert_eq!(rows.len(), 2);
     }
+}
+
+#[test]
+fn function_binary() {
+
+    let context = setup_common();
+    let snapshot = context.storage.clone().open_snapshot_write();
+    let insert_query_str = r#"insert
+        $p1 isa person, has name "Alice", has age 1, has age 5;
+        $p2 isa person, has name "Bob", has age 2;
+        $p3 isa person, has name "Chris", has age 5;
+        "#;
+    let insert_query = typeql::parse_query(insert_query_str).unwrap().into_pipeline();
+    let insert_pipeline = context
+        .query_manager
+        .prepare_write_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            &context.function_manager,
+            &insert_query,
+        )
+        .unwrap();
+    let (mut iterator, ExecutionContext { snapshot, .. }) =
+        insert_pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+
+    assert_matches!(iterator.next(), Some(Ok(_)));
+    assert_matches!(iterator.next(), None);
+    let snapshot = Arc::into_inner(snapshot).unwrap();
+    snapshot.commit().unwrap();
+
+    {
+        let query = r#"
+            with
+            fun same_age_check($p1: person, $p2: person) -> { age }:
+            match
+                $p1 has name $name1; $p2 has name $name2;
+                $name1 != $name2;
+                $p1 has age $age1; $p2 has age $age2;
+                $age1 == $age2;
+            return {$age1};
+
+            match
+                $p1 isa person; $p2 isa person;
+                $same_age in same_age_check($p1, $p2);
+        "#;
+        let rows = run_read_query(&context, query);
+        assert_eq!(rows.len(), 2); // Symmetrically Alice & Charlie
+    }
+
 }
