@@ -17,7 +17,7 @@ use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
-    read::pattern_executor::PatternExecutor,
+    read::{create_executors_for_pipeline, pattern_executor::PatternExecutor, TODO_REMOVE_create_executors_for_match},
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
@@ -36,7 +36,12 @@ impl MatchExecutor {
         function_registry: &ExecutableFunctionRegistry,
     ) -> Result<Self, ConceptReadError> {
         Ok(Self {
-            entry: PatternExecutor::build(match_executable, snapshot, thing_manager, function_registry)?,
+            entry: TODO_REMOVE_create_executors_for_match(
+                snapshot,
+                thing_manager,
+                function_registry,
+                match_executable,
+            )?,
             input: Some(input.into_owned()),
         })
     }

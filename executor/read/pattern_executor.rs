@@ -17,10 +17,7 @@ use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
-    read::{
-        nested_pattern_executor::SubQueryResult,
-        step_executor::{create_executors_recursive, StepExecutors},
-    },
+    read::{nested_pattern_executor::SubQueryResult, step_executor::StepExecutors},
     ExecutionInterrupt,
 };
 
@@ -43,7 +40,7 @@ pub(super) enum ControlInstruction {
 
     MapRowBatchToRowForSubQuery(InstructionIndex, FixedBatchRowIterator),
     ExecuteSubQuery(InstructionIndex, BranchIndex),
-
+    // CollectingStage(InstructionIndex), TODO
     Yield(FixedBatch),
 }
 
@@ -53,14 +50,8 @@ pub(crate) struct PatternExecutor {
 }
 
 impl PatternExecutor {
-    pub(crate) fn build(
-        match_executable: &MatchExecutable,
-        snapshot: &Arc<impl ReadableSnapshot + 'static>,
-        thing_manager: &Arc<ThingManager>,
-        function_registry: &ExecutableFunctionRegistry,
-    ) -> Result<Self, ConceptReadError> {
-        let executors = create_executors_recursive(match_executable, snapshot, thing_manager, function_registry)?;
-        Ok(PatternExecutor { executors, control_stack: Vec::new() })
+    pub(crate) fn new(executors: Vec<StepExecutors>) -> Self {
+        PatternExecutor { executors, control_stack: Vec::new() }
     }
 
     pub(crate) fn compute_next_batch(
@@ -108,10 +99,12 @@ impl PatternExecutor {
                 }
                 ControlInstruction::MapRowBatchToRowForSubQuery(index, mut iter) => {
                     if let Some(row_result) = iter.next() {
-                        let row = row_result.unwrap().into_owned();
+                        let unmapped_input = row_result.unwrap().into_owned();
                         control_stack.push(ControlInstruction::MapRowBatchToRowForSubQuery(index.clone(), iter));
                         let branch_executor = executors[index.0].unwrap_nested_pattern_branch();
-                        for (branch_index, pattern) in branch_executor.to_parts_mut().0.iter_mut().enumerate() {
+                        let (branches, mut controller) = branch_executor.to_parts_mut();
+                        let row = controller.prepare_and_map_input(&unmapped_input);
+                        for (branch_index, pattern) in branches.iter_mut().enumerate() {
                             pattern.prepare(row.clone().into_owned());
                             control_stack
                                 .push(ControlInstruction::ExecuteSubQuery(index.clone(), BranchIndex(branch_index)));
@@ -123,19 +116,18 @@ impl PatternExecutor {
                     let (branches, controller) = &mut executors[index.0].unwrap_nested_pattern_branch().to_parts_mut();
                     let branch = &mut branches[branch_index.0];
                     let unmapped = branch.pattern_executor.batch_continue(context, interrupt)?;
-                    match controller.map_output(branch.input.as_ref().unwrap(), unmapped) {
-                        SubQueryResult::Regular(Some(batch)) => {
+                    let found = match controller.map_output(branch.input.as_ref().unwrap(), unmapped) {
+                        SubQueryResult::Retry(found) => {
                             control_stack.push(ControlInstruction::ExecuteSubQuery(index.clone(), branch_index));
-                            self.prepare_instruction_and_push_to_stack(context, index.next(), batch)?;
+                            found
                         }
-                        SubQueryResult::ShortCircuit(Some(batch)) => {
+                        SubQueryResult::Done(found) => {
                             branch.pattern_executor.reset();
-                            self.prepare_instruction_and_push_to_stack(context, index.next(), batch)?;
+                            found
                         }
-                        SubQueryResult::ShortCircuit(None) => {
-                            branch.pattern_executor.reset();
-                        }
-                        SubQueryResult::Regular(None) => {}
+                    };
+                    if let Some(batch) = found {
+                        self.prepare_instruction_and_push_to_stack(context, index.next(), batch)?;
                     }
                 }
                 ControlInstruction::Yield(batch) => {
@@ -163,6 +155,11 @@ impl PatternExecutor {
                 StepExecutors::Branch(_) => self
                     .control_stack
                     .push(ControlInstruction::MapRowBatchToRowForSubQuery(index, batch.into_iterator())),
+                StepExecutors::CollectingStage(collecting_stage) => {
+                    todo!()
+                    // collecting_stage.prepare(batch);
+                    // self.control_stack.push(StackInstruction::CollectingStage(InstructionIndex(index)));
+                }
                 StepExecutors::ReshapeForReturn(_) => todo!(),
             }
         }
