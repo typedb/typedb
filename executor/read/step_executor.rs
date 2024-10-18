@@ -5,6 +5,7 @@
  */
 
 use std::{collections::HashSet, sync::Arc};
+use itertools::Itertools;
 
 use compiler::{
     executable::{
@@ -30,6 +31,7 @@ use crate::read::{
     },
     pattern_executor::PatternExecutor,
 };
+use crate::read::nested_pattern_executor::IdentityMapper;
 
 pub(super) enum StepExecutors {
     Immediate(ImmediateExecutor),
@@ -128,7 +130,24 @@ pub(super) fn create_executors_for_match(
                     ))
                 }
             }
-            _ => todo!(),
+            ExecutionStep::Disjunction(step) => {
+                // I shouldn't need to pass recursive here since it's stratified
+                let inner = step.branches.iter().map(|branch_executable| {
+                    let executors = create_executors_for_match(
+                        snapshot,
+                        thing_manager,
+                        function_registry,
+                        &branch_executable,
+                        tmp__recursion_validation,
+                    )?;
+                    Ok(NestedPatternBranch::new(PatternExecutor::new(executors)))
+                }).try_collect()?;
+                StepExecutors::Branch(NestedPatternExecutor::Disjunction(
+                    inner,
+                    IdentityMapper,
+                ))
+            }
+            ExecutionStep::Optional(_) => todo!()
         };
         steps.push(step);
     }

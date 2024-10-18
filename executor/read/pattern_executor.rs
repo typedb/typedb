@@ -77,7 +77,9 @@ impl PatternExecutor {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        debug_assert!(self.control_stack.len() > 0);
+        if self.control_stack.len() == 0 {
+            debug_assert!(self.control_stack.len() > 0);
+        }
         while self.control_stack.last().is_some() {
             let Self { control_stack, executors } = self;
             // TODO: inject interrupt into Checkers that could filter out many rows without ending as well.

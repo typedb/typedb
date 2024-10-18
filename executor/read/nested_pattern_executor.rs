@@ -129,7 +129,11 @@ impl SubQueryResultMapper for IdentityMapper {
     }
 
     fn map_output(&mut self, _: &MaybeOwnedRow<'_>, subquery_result: Option<FixedBatch>) -> SubQueryResult {
-        SubQueryResult::Retry(subquery_result)
+        if subquery_result.is_some() {
+            SubQueryResult::Retry(subquery_result)
+        } else {
+            SubQueryResult::Done(None)
+        }
     }
 }
 
