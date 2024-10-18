@@ -76,15 +76,19 @@ impl StepExecutor {
             ExecutionStep::Assignment(AssignmentStep { .. }) => {
                 todo!()
             }
-            ExecutionStep::Check(CheckStep { check_instructions, selected_variables, output_width: _ }) => {
-                Ok(Self::Check(CheckExecutor::new(check_instructions.clone(), selected_variables.clone())))
-            }
+            ExecutionStep::Check(CheckStep { check_instructions, selected_variables, output_width }) => Ok(
+                Self::Check(CheckExecutor::new(check_instructions.clone(), selected_variables.clone(), *output_width)),
+            ),
             ExecutionStep::Disjunction(DisjunctionStep { branches, .. }) => {
                 Ok(Self::Disjunction(DisjunctionExecutor::new(branches.clone(), row_width)))
             }
-            ExecutionStep::Negation(NegationStep { negation: negation_plan, .. }) => {
+            ExecutionStep::Negation(NegationStep { negation: negation_plan, selected_variables, output_width }) => {
                 // TODO: add limit 1, filters if they aren't there already?
-                Ok(Self::Negation(NegationExecutor::new(negation_plan.clone())))
+                Ok(Self::Negation(NegationExecutor::new(
+                    negation_plan.clone(),
+                    selected_variables.clone(),
+                    *output_width,
+                )))
             }
             ExecutionStep::Optional(OptionalStep { optional: _optional_plan, .. }) => {
                 todo!()
@@ -170,7 +174,7 @@ impl IntersectionExecutor {
             cartesian_iterator: CartesianIterator::new(output_width as usize, instruction_count),
             input: None,
             intersection_value: VariableValue::Empty,
-            intersection_row: (0..output_width).map(|_| VariableValue::Empty).collect_vec(),
+            intersection_row: vec![VariableValue::Empty; output_width as usize],
             intersection_multiplicity: 1,
             output: None,
         })
@@ -617,12 +621,17 @@ impl AssignExecutor {
 pub(super) struct CheckExecutor {
     checker: Checker<()>,
     selected_variables: Vec<VariablePosition>,
+    output_width: u32,
 }
 
 impl CheckExecutor {
-    fn new(checks: Vec<CheckInstruction<ExecutorVariable>>, selected_variables: Vec<VariablePosition>) -> Self {
+    fn new(
+        checks: Vec<CheckInstruction<ExecutorVariable>>,
+        selected_variables: Vec<VariablePosition>,
+        output_width: u32,
+    ) -> Self {
         let checker = Checker::new(checks, HashMap::new());
-        Self { checker, selected_variables }
+        Self { checker, selected_variables, output_width }
     }
 
     fn batch_from(
@@ -631,18 +640,22 @@ impl CheckExecutor {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         _interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        let width = input_batch.width();
         let mut input = Peekable::new(FixedBatchRowIterator::new(Ok(input_batch)));
         debug_assert!(input.peek().is_some());
 
-        let mut output = FixedBatch::new(width);
+        let mut output = FixedBatch::new(self.output_width);
 
         while let Some(row) = input.next() {
             let input_row = row.map_err(|err| err.clone())?;
             if (self.checker.filter_for_row(context, &input_row))(&Ok(()))
                 .map_err(|err| ReadExecutionError::ConceptRead { source: err })?
             {
-                output.append(|mut row| row.copy_from(input_row.row(), input_row.multiplicity()))
+                output.append(|mut row| {
+                    row.set_multiplicity(input_row.multiplicity());
+                    for &position in &self.selected_variables {
+                        row.set(position, input_row.get(position).clone().into_owned())
+                    }
+                })
             }
         }
 
@@ -759,11 +772,13 @@ impl DisjunctionExecutor {
 
 pub(super) struct NegationExecutor {
     executable: MatchExecutable,
+    selected_variables: Vec<VariablePosition>,
+    output_width: u32,
 }
 
 impl NegationExecutor {
-    fn new(negation_plan: MatchExecutable) -> Self {
-        Self { executable: negation_plan }
+    fn new(negation_plan: MatchExecutable, selected_variables: Vec<VariablePosition>, output_width: u32) -> Self {
+        Self { executable: negation_plan, selected_variables, output_width }
     }
 
     fn batch_from(
@@ -772,11 +787,10 @@ impl NegationExecutor {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        let width = input_batch.width();
         let mut input = Peekable::new(FixedBatchRowIterator::new(Ok(input_batch)));
         debug_assert!(input.peek().is_some());
 
-        let mut output = FixedBatch::new(width);
+        let mut output = FixedBatch::new(self.output_width);
 
         while let Some(row) = input.next() {
             let input_row = row.map_err(|err| err.clone())?;
@@ -785,7 +799,12 @@ impl NegationExecutor {
                     .map_err(|error| ReadExecutionError::ConceptRead { source: error })?;
             let mut iterator = executor.into_iterator(context.clone(), interrupt.clone());
             if iterator.next().transpose().map_err(|err| err.clone())?.is_none() {
-                output.append(|mut row| row.copy_from(input_row.row(), input_row.multiplicity()))
+                output.append(|mut row| {
+                    row.set_multiplicity(input_row.multiplicity());
+                    for &position in &self.selected_variables {
+                        row.set(position, input_row.get(position).clone().into_owned())
+                    }
+                })
             }
         }
 

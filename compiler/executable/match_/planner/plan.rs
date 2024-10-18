@@ -262,6 +262,9 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         }
 
         for variable in shared_variables {
+            if self.graph.variable_index.contains_key(&variable) {
+                continue;
+            }
             self.shared_variables.push(variable);
             let category = variable_registry.get_variable_category(variable).unwrap();
             match category {
@@ -284,6 +287,9 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         }
 
         for variable in local_variables {
+            if self.graph.variable_index.contains_key(&variable) {
+                continue;
+            }
             let category = variable_registry.get_variable_category(variable).unwrap();
             match category {
                 | VariableCategory::Type
@@ -620,11 +626,14 @@ impl ConjunctionPlan<'_> {
                         let has_consumers = || self.consumers_of_var(output).next().is_some();
                         if is_selected() || has_consumers() {
                             match_builder.register_output(self.graph.index_to_variable[&output]);
+                        } else {
+                            match_builder.register_internal(self.graph.index_to_variable[&output]);
                         }
                     }
                     if self.outputs_of_pattern(pattern).next().is_none() {
-                        self.may_make_check_step(&mut match_builder, pattern, &variable_registry);
+                        self.may_make_check_step(&mut match_builder, pattern, variable_registry);
                     }
+                    match_builder.finish_one()
                 }
             }
         }

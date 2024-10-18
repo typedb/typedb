@@ -9,7 +9,7 @@
 
 use std::fmt;
 
-use answer::variable::{self, Variable};
+use answer::variable::Variable;
 use ir::pattern::IrID;
 
 pub mod annotation;

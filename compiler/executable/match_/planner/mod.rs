@@ -211,7 +211,7 @@ struct MatchExecutableBuilder {
     steps: Vec<StepBuilder>,
     current: Option<Box<StepBuilder>>,
 
-    outputs: HashMap<ExecutorVariable, Variable>,
+    reverse_index: HashMap<ExecutorVariable, Variable>,
     index: HashMap<Variable, ExecutorVariable>,
     next_output: VariablePosition,
 }
@@ -220,7 +220,7 @@ impl MatchExecutableBuilder {
     fn new(assigned_positions: &HashMap<Variable, ExecutorVariable>, selected_variables: Vec<Variable>) -> Self {
         let index = assigned_positions.clone();
         let current_outputs = index.keys().copied().collect();
-        let outputs = index.iter().map(|(&var, &pos)| (pos, var)).collect();
+        let reverse_index = index.iter().map(|(&var, &pos)| (pos, var)).collect();
         let next_position = assigned_positions
             .values()
             .filter_map(ExecutorVariable::as_position)
@@ -234,7 +234,7 @@ impl MatchExecutableBuilder {
             produced_so_far: HashSet::new(),
             steps: Vec::new(),
             current: None,
-            outputs,
+            reverse_index,
             index,
             next_output,
         }
@@ -275,7 +275,7 @@ impl MatchExecutableBuilder {
         if let Some(intersection) = self.current.as_mut().and_then(|b| b.builder.as_intersection_mut()) {
             for instruction in intersection.instructions.iter_mut().rev() {
                 let mut is_producer = false;
-                instruction.new_variables_foreach(|var| is_producer |= variables.contains(&self.outputs[&var]));
+                instruction.new_variables_foreach(|var| is_producer |= variables.contains(&self.reverse_index[&var]));
                 if is_producer {
                     instruction.add_check(check);
                     self.current.as_mut().unwrap().selected_variables = self.current_outputs.clone();
@@ -302,7 +302,7 @@ impl MatchExecutableBuilder {
         for (&var, &pos) in variable_positions {
             if !self.position_mapping().contains_key(&var) {
                 self.index.insert(var, pos);
-                self.outputs.insert(pos, var);
+                self.reverse_index.insert(pos, var);
                 self.next_output.position += 1;
             }
         }
@@ -323,9 +323,16 @@ impl MatchExecutableBuilder {
     fn register_output(&mut self, var: Variable) {
         if let hash_map::Entry::Vacant(entry) = self.index.entry(var) {
             entry.insert(ExecutorVariable::RowPosition(self.next_output));
-            self.outputs.insert(ExecutorVariable::RowPosition(self.next_output), var);
+            self.reverse_index.insert(ExecutorVariable::RowPosition(self.next_output), var);
             self.current_outputs.push(var);
             self.next_output.position += 1;
+        }
+    }
+
+    fn register_internal(&mut self, var: Variable) {
+        if let hash_map::Entry::Vacant(entry) = self.index.entry(var) {
+            entry.insert(ExecutorVariable::Internal(var));
+            self.reverse_index.insert(ExecutorVariable::Internal(var), var);
         }
     }
 
@@ -354,7 +361,7 @@ impl MatchExecutableBuilder {
             .into_iter()
             .map(|builder| builder.finish(&self.index, &named_variables, variable_registry.clone()))
             .collect();
-        let variable_positions_index = self.outputs.iter().sorted_by_key(|(&k, _)| k).map(|(_, &v)| v).collect();
+        let variable_positions_index = self.reverse_index.iter().sorted_by_key(|(&k, _)| k).map(|(_, &v)| v).collect();
         MatchExecutable::new(
             steps,
             self.index.into_iter().filter_map(|(var, id)| Some((var, id.as_position()?))).collect(),
