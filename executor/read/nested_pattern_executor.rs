@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
 
 use crate::{batch::FixedBatch, read::pattern_executor::PatternExecutor, row::MaybeOwnedRow};
@@ -106,7 +107,7 @@ pub(super) struct IdentityMapper;
 pub(super) struct InlinedFunctionMapper {
     arguments: Vec<VariablePosition>, // caller input -> callee input
     assigned: Vec<VariablePosition>,  // callee return -> caller output
-    output_width: u32,
+    output_width: u32,                // This is for the caller.
 }
 
 impl SubQueryResultMapper for NegationMapper {
@@ -140,8 +141,8 @@ impl InlinedFunctionMapper {
 
 impl SubQueryResultMapper for InlinedFunctionMapper {
     fn prepare_and_map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
-        input.clone().into_owned() // TODO: This is wrong
-                                   // todo!()
+       let args_owned : Vec<VariableValue<'static>> = self.arguments.iter().map(|arg_pos| {input.get(arg_pos.clone()).clone().into_owned()}).collect();
+        MaybeOwnedRow::new_owned(args_owned, input.multiplicity())
     }
 
     fn map_output(&mut self, input: &MaybeOwnedRow<'_>, subquery_result: Option<FixedBatch>) -> SubQueryResult {
