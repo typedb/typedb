@@ -697,7 +697,6 @@ impl ConjunctionPlan<'_> {
             return;
         }
 
-
         for producer in self.producers_of_var(var) {
             match &self.graph.elements()[&VertexId::Pattern(producer)] {
                 PlannerVertex::Variable(_) => unreachable!("encountered variable @ pattern id {producer:?}"),

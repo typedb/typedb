@@ -156,9 +156,8 @@ fn test_expression_planning_traversal() {
     let statistics = setup(&storage, type_manager, thing_manager, schema, data);
 
     let query = "match
-        $person_1 isa person, has age == $age_1;
+        $person_1 isa person, has age $age_1;
         $person_2 isa person, has age == $age_2;
-        $age_1 = 10;
         $age_2 = $age_1 + 2;
     ";
     let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
@@ -221,7 +220,7 @@ fn test_expression_planning_traversal() {
         println!()
     }
 
-    assert_eq!(rows.len(), 1);
+    assert_eq!(rows.len(), 2);
 }
 
 #[test]

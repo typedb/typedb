@@ -49,19 +49,7 @@ impl PlannerVertex<'_> {
             Self::Variable(inner) => inner.is_valid(index, ordered, graph),
             Self::Constraint(inner) => inner.is_valid(index, ordered, graph),
 
-            Self::Comparison(ComparisonPlanner { lhs, rhs, .. }) => {
-                if let &Input::Variable(lhs) = lhs {
-                    if !ordered.contains(&VertexId::Variable(lhs)) {
-                        return false;
-                    }
-                }
-                if let &Input::Variable(rhs) = rhs {
-                    if !ordered.contains(&VertexId::Variable(rhs)) {
-                        return false;
-                    }
-                }
-                true
-            }
+            Self::Comparison(inner) => inner.is_valid(index, ordered, graph),
 
             Self::Expression(inner) => inner.is_valid(index, ordered, graph),
 
@@ -267,6 +255,20 @@ impl<'a> ComparisonPlanner<'a> {
             lhs: Input::from_vertex(comparison.lhs(), variable_index),
             rhs: Input::from_vertex(comparison.rhs(), variable_index),
         }
+    }
+
+    fn is_valid(&self, _index: VertexId, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+        if let Input::Variable(lhs) = self.lhs {
+            if !ordered.contains(&VertexId::Variable(lhs)) {
+                return false;
+            }
+        }
+        if let Input::Variable(rhs) = self.rhs {
+            if !ordered.contains(&VertexId::Variable(rhs)) {
+                return false;
+            }
+        }
+        true
     }
 
     pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
