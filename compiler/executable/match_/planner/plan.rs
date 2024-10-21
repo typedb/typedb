@@ -27,7 +27,6 @@ use ir::{
 };
 use itertools::{chain, Itertools};
 
-use super::ExpressionBuilder;
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
     executable::match_::{
@@ -52,8 +51,8 @@ use crate::{
                 ComparisonPlanner, Costed, Direction, DisjunctionPlanner, ElementCost, ExpressionPlanner,
                 FunctionCallPlanner, Input, NegationPlanner, PlannerVertex,
             },
-            DisjunctionBuilder, IntersectionBuilder, MatchExecutableBuilder, NegationBuilder, StepBuilder,
-            StepInstructionsBuilder,
+            DisjunctionBuilder, ExpressionBuilder, IntersectionBuilder, MatchExecutableBuilder, NegationBuilder,
+            StepBuilder, StepInstructionsBuilder,
         },
     },
     ExecutorVariable, VariablePosition,
