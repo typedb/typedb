@@ -634,6 +634,7 @@ impl ConjunctionPlan<'_> {
                             || match_builder.selected_variables.contains(&self.graph.index_to_variable[&output]);
                         let has_consumers = || self.consumers_of_var(output).next().is_some();
                         if is_selected() || has_consumers() {
+                            match_builder.finish_one();
                             match_builder.register_output(self.graph.index_to_variable[&output]);
                         } else {
                             match_builder.register_internal(self.graph.index_to_variable[&output]);
@@ -695,6 +696,7 @@ impl ConjunctionPlan<'_> {
         if match_builder.produced_so_far.contains(&variable) {
             return;
         }
+
 
         for producer in self.producers_of_var(var) {
             match &self.graph.elements()[&VertexId::Pattern(producer)] {
