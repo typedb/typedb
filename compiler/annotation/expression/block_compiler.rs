@@ -74,7 +74,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
         compile_expressions_recursive(&mut context, variable, &expression_index)?
     }
 
-    let BlockExpressionsCompilationContext { compiled_expressions, variable_value_types, .. } = context;
+    let BlockExpressionsCompilationContext { compiled_expressions, .. } = context;
     for (&var, compiled) in &compiled_expressions {
         let category = match &compiled.return_type {
             ExpressionValueType::Single(_) => VariableCategory::Value,
@@ -140,13 +140,13 @@ fn compile_expressions_recursive<'a, Snapshot: ReadableSnapshot>(
         resolve_type_for_variable(context, variable, expression_assignments)?;
     }
     let compiled =
-        ExpressionCompilationContext::compile(expression, &context.variable_value_types, &context.parameters)?;
+        ExpressionCompilationContext::compile(expression, &context.variable_value_types, context.parameters)?;
     context.variable_value_types.insert(assigned_variable, compiled.return_type.clone());
     context.compiled_expressions.insert(assigned_variable, compiled);
     Ok(())
 }
 
-#[allow(clippy::map_entry)]
+#[allow(clippy::map_entry, reason = "false positive, this is not a trivial `contains_key()` followed by `insert()`")]
 fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
     context: &mut BlockExpressionsCompilationContext<'a, Snapshot>,
     variable: Variable,
@@ -173,7 +173,7 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
         Ok(())
     } else if let Some(types) = context.type_annotations.vertex_annotations_of(&Vertex::Variable(variable)) {
         // resolve_value_types will error if the type_annotations aren't all attribute(list) types
-        let value_types = resolve_value_types(types, context.snapshot, context.type_manager).map_err(|source| {
+        let value_types = resolve_value_types(types, context.snapshot, context.type_manager).map_err(|_source| {
             ExpressionCompileError::CouldNotDetermineValueTypeForVariable {
                 variable: context.variable_registry.variable_names().get(&variable).cloned(),
             }
