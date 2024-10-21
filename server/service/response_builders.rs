@@ -105,8 +105,12 @@ pub(crate) mod transaction {
         transaction_server_res(req_id, message)
     }
 
-    pub(crate) fn query_res_ok_empty() -> typedb_protocol::query::initial_res::ok::Ok {
-        typedb_protocol::query::initial_res::ok::Ok::Empty(typedb_protocol::query::initial_res::ok::Empty {})
+    pub(crate) fn query_res_ok_done(
+        query_type: typedb_protocol::query::Type,
+    ) -> typedb_protocol::query::initial_res::ok::Ok {
+        typedb_protocol::query::initial_res::ok::Ok::Done(typedb_protocol::query::initial_res::ok::Done {
+            query_type: query_type.into(),
+        })
     }
 
     pub(crate) fn query_res_ok_concept_row_stream(

@@ -66,7 +66,7 @@ use crate::service::{
     error::{IntoGRPCStatus, IntoProtocolErrorMessage, ProtocolError},
     response_builders::transaction::{
         query_initial_res_from_error, query_initial_res_from_query_res_ok, query_initial_res_ok_from_query_res_ok_ok,
-        query_res_ok_concept_document_stream, query_res_ok_concept_row_stream, query_res_ok_empty,
+        query_res_ok_concept_document_stream, query_res_ok_concept_row_stream, query_res_ok_done,
         query_res_part_from_concept_documents, query_res_part_from_concept_rows, transaction_open_res,
         transaction_server_res_part_stream_signal_continue, transaction_server_res_part_stream_signal_done,
         transaction_server_res_part_stream_signal_error, transaction_server_res_parts_query_part,
@@ -717,11 +717,12 @@ impl TransactionService {
             })
             .await
             .unwrap();
-            let message_ok_empty = result.map(|_| query_res_ok_empty()).map_err(|err| {
-                TransactionServiceError::TxnAbortSchemaQueryFailed { typedb_source: err }
-                    .into_error_message()
-                    .into_status()
-            })?;
+            let message_ok_done =
+                result.map(|_| query_res_ok_done(typedb_protocol::query::Type::Schema)).map_err(|err| {
+                    TransactionServiceError::TxnAbortSchemaQueryFailed { typedb_source: err }
+                        .into_error_message()
+                        .into_status()
+                })?;
 
             let transaction = TransactionSchema::from(
                 snapshot,
@@ -732,7 +733,7 @@ impl TransactionService {
                 transaction_options,
             );
             self.transaction = Some(Transaction::Schema(transaction));
-            Ok(ImmediateQueryResponse::ok(message_ok_empty))
+            Ok(ImmediateQueryResponse::ok(message_ok_done))
         } else {
             Ok(ImmediateQueryResponse::non_fatal_err(TransactionServiceError::SchemaQueryRequiresSchemaTransaction {}))
         }
