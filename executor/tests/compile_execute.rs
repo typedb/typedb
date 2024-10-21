@@ -648,7 +648,7 @@ fn test_disjunction_planning_traversal() {
 
     let query = "match
         $person isa person;
-        { $person has name $_; } or { $person has age $_; };
+        { $person has name $n; } or { $person has age $a; };
     ";
     let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
 

@@ -10,7 +10,6 @@ use error::typedb_error;
 
 use crate::InterruptType;
 
-
 typedb_error!(
     pub ReadExecutionError(component = "Read execution", prefix = "REX") {
         Interrupted(1, "Execution interrupted by to a concurrent {interrupt}.", interrupt: InterruptType),

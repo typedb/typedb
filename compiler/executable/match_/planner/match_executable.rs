@@ -105,7 +105,7 @@ pub struct IntersectionStep {
     pub sort_variable: ExecutorVariable,
     pub instructions: Vec<(ConstraintInstruction<ExecutorVariable>, VariableModes)>,
     new_variables: Vec<VariablePosition>,
-    output_width: u32,
+    pub output_width: u32,
     input_variables: Vec<VariablePosition>,
     pub selected_variables: Vec<VariablePosition>,
 }
@@ -162,6 +162,7 @@ pub struct UnsortedJoinStep {
     new_variables: Vec<VariablePosition>,
     input_variables: Vec<VariablePosition>,
     selected_variables: Vec<VariablePosition>,
+    pub output_width: u32,
 }
 
 impl UnsortedJoinStep {
@@ -169,6 +170,7 @@ impl UnsortedJoinStep {
         iterate_instruction: ConstraintInstruction<ExecutorVariable>,
         check_instructions: Vec<ConstraintInstruction<ExecutorVariable>>,
         selected_variables: &[VariablePosition],
+        output_width: u32,
     ) -> Self {
         let mut input_variables = Vec::with_capacity(check_instructions.len() * 2);
         let mut new_variables = Vec::with_capacity(5);
@@ -199,6 +201,7 @@ impl UnsortedJoinStep {
             new_variables,
             input_variables,
             selected_variables: selected_variables.to_owned(),
+            output_width,
         }
     }
 
