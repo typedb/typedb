@@ -43,6 +43,8 @@ pub(super) enum ControlInstruction {
     MapRowBatchToRowForNested(InstructionIndex, FixedBatchRowIterator),
     ExecuteNested(InstructionIndex, BranchIndex, NestedPatternResultMapper),
 
+    TabledCall(InstructionIndex),
+
     CollectingStage(InstructionIndex),
     StreamCollected(InstructionIndex, CollectedStageIterator),
 
@@ -122,6 +124,9 @@ impl PatternExecutor {
                         self.prepare_next_instruction_and_push_to_stack(context, index.next(), batch)?;
                     }
                 }
+                ControlInstruction::TabledCall(index) => {
+                    todo!()
+                }
                 ControlInstruction::CollectingStage(index) => {
                     let (pattern, mut collector) = executors[index.0].unwrap_collecting_stage().to_parts_mut();
                     match pattern.compute_next_batch(context, interrupt)? {
@@ -166,6 +171,7 @@ impl PatternExecutor {
                 StepExecutors::Nested(_) => self
                     .control_stack
                     .push(ControlInstruction::MapRowBatchToRowForNested(next_instruction_index, batch.into_iterator())),
+                StepExecutors::TabledCall(_) => self.control_stack.push(ControlInstruction::TabledCall(next_instruction_index)),
                 StepExecutors::CollectingStage(collecting_stage) => {
                     collecting_stage.prepare(batch);
                     self.control_stack.push(ControlInstruction::CollectingStage(next_instruction_index));

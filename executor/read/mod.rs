@@ -22,6 +22,7 @@ mod immediate_executor;
 mod nested_pattern_executor;
 pub(crate) mod pattern_executor;
 mod step_executor;
+pub(crate) mod tabled_functions;
 
 pub(super) fn TODO_REMOVE_create_executors_for_match(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,

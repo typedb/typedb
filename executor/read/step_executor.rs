@@ -28,11 +28,13 @@ use crate::read::{
     nested_pattern_executor::NestedPatternExecutor,
     pattern_executor::PatternExecutor,
 };
+use crate::read::tabled_functions::TabledCallExecutor;
 
 pub(super) enum StepExecutors {
     Immediate(ImmediateExecutor),
     Nested(NestedPatternExecutor),
     CollectingStage(CollectingStageExecutor),
+    TabledCall(TabledCallExecutor),
     ReshapeForReturn(Vec<VariablePosition>),
 }
 
@@ -99,7 +101,12 @@ pub(super) fn create_executors_for_match(
             ExecutionStep::FunctionCall(function_call) => {
                 let function = function_registry.get(function_call.function_id.clone());
                 if function.is_tabled {
-                    todo!()
+                    let executor = TabledCallExecutor::new(
+                        function_call.function_id.clone(),
+                        function_call.arguments.clone(),
+                        function_call.assigned.clone()
+                    );
+                    StepExecutors::TabledCall(executor)
                 } else {
                     if tmp__recursion_validation.contains(&function_call.function_id) {
                         todo!(
