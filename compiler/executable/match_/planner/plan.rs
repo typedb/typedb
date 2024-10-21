@@ -525,7 +525,15 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
             let element = &self.graph.elements[&next];
 
-            if !element.is_variable() {
+            if element.is_variable() {
+                for var in produced_at_this_stage.drain().map(VertexId::Variable) {
+                    if !ordering.contains(&var) {
+                        ordering.push(var);
+                        open_set.remove(&var);
+                    }
+                }
+                intersection_variable = None;
+            } else {
                 match element.variables().filter(|var| produced_at_this_stage.contains(var)).exactly_one() {
                     Ok(var) if intersection_variable.is_none() || intersection_variable == Some(var) => {
                         intersection_variable = Some(var);
@@ -541,18 +549,11 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                     }
                 }
 
-                produced_at_this_stage.extend(element.variables());
+                produced_at_this_stage
+                    .extend(element.variables().filter(|&var| !ordering.contains(&VertexId::Variable(var))));
 
                 ordering.push(next);
                 open_set.remove(&next);
-            } else {
-                for var in produced_at_this_stage.drain().map(VertexId::Variable) {
-                    if !ordering.contains(&var) {
-                        ordering.push(var);
-                        open_set.remove(&var);
-                    }
-                }
-                intersection_variable = None;
             }
         }
         ordering
