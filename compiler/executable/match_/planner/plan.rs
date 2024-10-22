@@ -433,7 +433,6 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     }
 
     fn register_function_call_binding(&mut self, call_binding: &'a FunctionCallBinding<Variable>) {
-        // TODO: This is just a mock
         let arguments =
             call_binding.function_call().argument_ids().map(|variable| self.graph.variable_index[&variable]).collect();
         let return_vars = call_binding
@@ -444,6 +443,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 self.graph.variable_index[variable]
             })
             .collect();
+        // TODO: This is just a mock
         let element_cost = ElementCost { per_input: 1.0, per_output: 1.0, branching_factor: 1.0 };
         self.graph.push_function_call(FunctionCallPlanner::from_constraint(
             call_binding,
@@ -515,6 +515,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let mut intersection_variable: Option<VariableVertexId> = None;
 
         while !open_set.is_empty() {
+            eprintln!("while-ordering: {:?}", ordering);
             let (next, _cost) = open_set
                 .iter()
                 .filter(|&&elem| self.graph.elements[&elem].is_valid(elem, &ordering, &self.graph))
@@ -576,8 +577,21 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     }
 
     pub(super) fn plan(self) -> ConjunctionPlan<'a> {
+        // eprintln!("[{}:{}] variables = {:?}", file!(), line!(), self.graph.variable_index);
+        //
+        // eprintln!("[{}:{}] elements = {{", file!(), line!());
+        // for (i, el) in &self.graph.elements {
+        //     eprintln!("    {:?}: {:?}", i, el);
+        // }
+        // eprintln!("}}");
+        //
+        // eprintln!("[{}:{}] adjacency = {{", file!(), line!());
+        // for (i, el) in &self.graph.pattern_to_variable {
+        //     eprintln!("    {:?}: {:?}", i, el);
+        // }
+        // eprintln!("}}");
         let ordering = self.initialise_greedy_ordering();
-
+        // eprintln!("[{}:{}] ordering = {:?}", file!(), line!(), ordering);
         let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
 
         let cost = ordering
@@ -1198,7 +1212,12 @@ impl<'a> Graph<'a> {
         for var in function_call.variables() {
             self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
         }
+        let assigned = function_call.assigned.clone();
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::FunctionCall(function_call));
+        assigned.into_iter().for_each(|vertex| {
+            let output_planner = self.elements.get_mut(&VertexId::Variable(vertex)).unwrap();
+            output_planner.as_variable_mut().unwrap().set_binding(pattern_index);
+        })
     }
 
     fn push_disjunction(&mut self, disjunction: DisjunctionPlanner<'a>) {

@@ -69,7 +69,6 @@ impl PlannerVertex<'_> {
         if !is_valid {
             return false;
         }
-
         let mut ordered = ordered.to_owned();
         ordered.push(index);
         self.variables().all(|var| {
@@ -232,8 +231,8 @@ impl Costed for ExpressionPlanner<'_> {
 #[derive(Debug, Clone)]
 pub(crate) struct FunctionCallPlanner<'a> {
     pub call_binding: &'a FunctionCallBinding<Variable>,
-    arguments: Vec<VariableVertexId>,
-    assigned: Vec<VariableVertexId>,
+    pub(super) arguments: Vec<VariableVertexId>,
+    pub(super) assigned: Vec<VariableVertexId>,
     cost: ElementCost,
 }
 

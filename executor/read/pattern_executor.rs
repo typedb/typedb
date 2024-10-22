@@ -201,10 +201,11 @@ impl PatternExecutor {
                     executable.prepare(batch, context)?;
                     self.control_stack.push(ControlInstruction::ExecuteImmediate(next_instruction_index));
                 }
-                StepExecutors::Nested(_) => self
-                    .control_stack
-                    .push(ControlInstruction::MapRowBatchToRowForNested(next_instruction_index, batch.into_iterator())),
-                StepExecutors::TabledCall(_) => {
+                StepExecutors::Nested(_) => self.control_stack.push(
+                    ControlInstruction::MapRowBatchToRowForNested(next_instruction_index, batch.into_iterator())
+                ),
+                StepExecutors::TabledCall(tabled_call_executor) => {
+                    // tabled_call_executor.prepare(batch);
                     self.control_stack.push(ControlInstruction::TabledCall(next_instruction_index))
                 }
                 StepExecutors::CollectingStage(collecting_stage) => {

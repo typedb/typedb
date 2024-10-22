@@ -309,16 +309,15 @@ fn simple_tabled() {
     snapshot.commit().unwrap();
 
     {
-        // // quadratic tabling reachability.
+        // quadratic tabling reachability.
         let query = r#"
             with
             fun reachable($from: node) -> { node }:
             match
-                $to isa node;
-                {
-                 (from: $from, to: $middle) isa edge; $to in reachable($middle); } or
-                { (from: $from, to: $to) isa edge;  }; # Do we have is yet?
-            return { $to };
+                $return-me has name $name;
+                { (from: $from, to: $middle) isa edge; $indirect in reachable($middle); $indirect has name $name; } or
+                { (from: $from, to: $direct) isa edge; $direct has name $name; }; # Do we have is yet?
+            return { $return-me };
 
             match
                 $from isa node, has name "n1";

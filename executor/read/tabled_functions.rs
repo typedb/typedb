@@ -92,6 +92,7 @@ pub(crate) struct TabledCallExecutor {
 
 pub struct TabledCallExecutorState {
     pub(crate) call_key: CallKey,
+    pub(crate) input: MaybeOwnedRow<'static>,
     pub(crate) next_index: usize,
 }
 
@@ -104,9 +105,11 @@ impl TabledCallExecutor {
         Self { function_id, argument_positions, assignment_positions, active_executor: None }
     }
 
-    pub(crate) fn prepare(&mut self, arguments: MaybeOwnedRow<'static>) {
-        let call_key = CallKey { function_id: self.function_id.clone(), arguments };
-        self.active_executor = Some(TabledCallExecutorState { call_key, next_index: 0 });
+    pub(crate) fn prepare(&mut self, input: MaybeOwnedRow<'static>) {
+        todo!()
+        // let arguments = self.argument_positions.iter().map(|pos| input.get(pos.clone())).collect();
+        // let call_key = CallKey { function_id: self.function_id.clone(), arguments };
+        // self.active_executor = Some(TabledCallExecutorState { call_key, input, next_index: 0 });
     }
 
     pub(crate) fn active_call_key(&self) -> Option<&CallKey> {
