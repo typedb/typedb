@@ -101,11 +101,51 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         }
     }
 
+    async fn users_get(
+        &self,
+        _request: Request<typedb_protocol::user_manager::get::Req>,
+    ) -> Result<Response<typedb_protocol::user_manager::get::Res>, Status> {
+        todo!()
+    }
+
+    async fn users_all(
+        &self,
+        _request: Request<typedb_protocol::user_manager::all::Req>
+    ) -> Result<Response<typedb_protocol::user_manager::all::Res>, Status> {
+        todo!()
+    }
+
+    async fn users_contains(&self,
+                      _request: Request<typedb_protocol::user_manager::contains::Req>
+    ) -> Result<Response<typedb_protocol::user_manager::contains::Res>, Status> {
+        todo!()
+    }
+
+    async fn users_create(
+        &self,
+        _request: Request<typedb_protocol::user_manager::create::Req>
+    ) -> Result<Response<typedb_protocol::user_manager::create::Res>, Status> {
+        todo!()
+    }
     async fn databases_all(
         &self,
         _request: Request<typedb_protocol::database_manager::all::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::all::Res>, Status> {
         Ok(Response::new(database_all_res(&self.address, self.database_manager.database_names())))
+    }
+
+    async fn users_update(
+        &self,
+        _request: Request<typedb_protocol::user::update::Req>
+    ) -> Result<Response<typedb_protocol::user::update::Res>, Status> {
+        todo!()
+    }
+
+    async fn users_delete(
+        &self,
+        _request: Request<typedb_protocol::user::delete::Req>
+    ) -> Result<Response<typedb_protocol::user::delete::Res>, Status> {
+        todo!()
     }
 
     async fn databases_contains(
