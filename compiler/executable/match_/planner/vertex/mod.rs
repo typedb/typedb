@@ -11,7 +11,10 @@ use std::{
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use ir::pattern::{constraint::Comparison, Vertex};
+use ir::pattern::{
+    constraint::{Comparison, FunctionCallBinding},
+    Vertex,
+};
 use itertools::chain;
 
 use super::plan::{ConjunctionPlan, DisjunctionPlanBuilder, Graph, VariableVertexId, VertexId};
@@ -36,8 +39,9 @@ pub(super) enum PlannerVertex<'a> {
     Constraint(ConstraintVertex<'a>),
 
     Comparison(ComparisonPlanner<'a>),
+
     Expression(ExpressionPlanner<'a>),
-    FunctionCall(FunctionCallPlanner),
+    FunctionCall(FunctionCallPlanner<'a>),
 
     Negation(NegationPlanner<'a>),
     Disjunction(DisjunctionPlanner<'a>),
@@ -213,16 +217,22 @@ impl Costed for ExpressionPlanner<'_> {
     }
 }
 
-#[derive(Clone, Debug)]
-pub(crate) struct FunctionCallPlanner {
+#[derive(Debug, Clone)]
+pub(crate) struct FunctionCallPlanner<'a> {
+    pub call_binding: &'a FunctionCallBinding<Variable>,
     arguments: Vec<VariableVertexId>,
     assigned: Vec<VariableVertexId>,
     cost: ElementCost,
 }
 
-impl FunctionCallPlanner {
-    pub(crate) fn new(arguments: Vec<VariableVertexId>, assigned: Vec<VariableVertexId>, cost: ElementCost) -> Self {
-        Self { arguments, assigned, cost }
+impl<'a> FunctionCallPlanner<'a> {
+    pub(crate) fn from_constraint(
+        call_binding: &'a FunctionCallBinding<Variable>,
+        arguments: Vec<VariableVertexId>,
+        assigned: Vec<VariableVertexId>,
+        cost: ElementCost,
+    ) -> Self {
+        Self { call_binding, arguments, assigned, cost }
     }
 
     pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
@@ -230,7 +240,7 @@ impl FunctionCallPlanner {
     }
 }
 
-impl Costed for FunctionCallPlanner {
+impl<'a> Costed for FunctionCallPlanner<'a> {
     fn cost(&self, _inputs: &[VertexId], _graph: &Graph<'_>) -> ElementCost {
         self.cost
     }

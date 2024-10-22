@@ -20,7 +20,10 @@ use compiler::{
             thing::{HasInstruction, HasReverseInstruction, IsaReverseInstruction},
             ConstraintInstruction, Inputs,
         },
-        planner::match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
+        planner::{
+            function_plan::ExecutableFunctionRegistry,
+            match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
+        },
     },
     ExecutorVariable, VariablePosition,
 };
@@ -30,7 +33,7 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, pattern_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
 use ir::{pattern::constraint::IsaKind, pipeline::block::Block, translation::TranslationContext};
@@ -179,7 +182,14 @@ fn traverse_has_unbounded_sorted_from() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -287,7 +297,14 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -386,7 +403,14 @@ fn traverse_has_unbounded_sorted_from_intersect() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -467,7 +491,14 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -569,7 +600,14 @@ fn traverse_has_reverse_unbounded_sorted_from() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());

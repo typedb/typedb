@@ -103,6 +103,7 @@ impl QueryManager {
             snapshot,
             thing_manager,
             variable_registry.as_ref(),
+            Arc::new(executable_functions),
             &executable_stages,
             executable_fetch,
             Arc::new(parameters),

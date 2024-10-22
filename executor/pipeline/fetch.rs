@@ -8,8 +8,11 @@ use std::{collections::HashMap, marker::PhantomData, sync::Arc};
 
 use answer::{variable_value::VariableValue, Concept, Thing};
 use compiler::{
-    executable::fetch::executable::{
-        ExecutableFetch, ExecutableFetchListSubFetch, FetchObjectInstruction, FetchSomeInstruction,
+    executable::{
+        fetch::executable::{
+            ExecutableFetch, ExecutableFetchListSubFetch, FetchObjectInstruction, FetchSomeInstruction,
+        },
+        match_::planner::function_plan::ExecutableFunctionRegistry,
     },
     VariablePosition,
 };
@@ -138,6 +141,7 @@ fn execute_fetch_some(
                     snapshot,
                     thing_manager,
                     &variable_registry,
+                    Arc::new(ExecutableFunctionRegistry::TODO__empty()), // TODO
                     &**stages,
                     Some(fetch.clone()),
                     parameters,
@@ -154,6 +158,7 @@ fn execute_fetch_some(
                     snapshot,
                     thing_manager,
                     &variable_registry,
+                    Arc::new(ExecutableFunctionRegistry::TODO__empty()),
                     &**stages,
                     Some(fetch.clone()),
                     parameters,

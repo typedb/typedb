@@ -14,12 +14,17 @@ use compiler::annotation::{
     function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
     match_inference::infer_types,
 };
+use compiler::executable::match_::planner::function_plan::ExecutableFunctionRegistry;
+
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
     type_::type_manager::TypeManager,
 };
 use executor::{
-    pattern_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow, ExecutionInterrupt,
+    match_executor::MatchExecutor,
+    pipeline::stage::{ExecutionContext, StageAPI},
+    row::MaybeOwnedRow,
+    ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
 use ir::{
@@ -116,7 +121,14 @@ fn test_has_planning_traversal() {
         &HashMap::new(),
         &statistics,
     );
-    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &match_executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -202,7 +214,7 @@ fn test_expression_planning_traversal() {
         &compiled_expressions,
         &statistics,
     );
-    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty(), &ExecutableFunctionRegistry::empty()).unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::new(translation_context.parameters.clone()));
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -276,7 +288,14 @@ fn test_links_planning_traversal() {
         &HashMap::new(),
         &statistics,
     );
-    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &match_executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -357,7 +376,14 @@ fn test_links_intersection() {
         &HashMap::new(),
         &statistics,
     );
-    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &match_executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -429,7 +455,14 @@ fn test_negation_planning_traversal() {
         &HashMap::new(),
         &statistics,
     );
-    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &match_executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -522,7 +555,14 @@ fn test_forall_planning_traversal() {
         &HashMap::new(),
         &statistics,
     );
-    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &match_executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -601,7 +641,14 @@ fn test_named_var_select() {
         &HashMap::new(),
         &statistics,
     );
-    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &match_executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -680,7 +727,14 @@ fn test_disjunction_planning_traversal() {
         &HashMap::new(),
         &statistics,
     );
-    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &match_executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -763,7 +817,14 @@ fn test_disjunction_planning_nested_negations() {
         &HashMap::new(),
         &statistics,
     );
-    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &match_executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());

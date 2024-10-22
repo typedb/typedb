@@ -20,7 +20,10 @@ use compiler::{
             thing::{IsaReverseInstruction, LinksInstruction, LinksReverseInstruction},
             ConstraintInstruction, Inputs,
         },
-        planner::match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
+        planner::{
+            function_plan::ExecutableFunctionRegistry,
+            match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
+        },
     },
     ExecutorVariable, VariablePosition,
 };
@@ -33,7 +36,7 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, pattern_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
 use ir::{pattern::constraint::IsaKind, pipeline::block::Block, translation::TranslationContext};
@@ -275,7 +278,14 @@ fn traverse_links_unbounded_sorted_from() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -374,7 +384,14 @@ fn traverse_links_unbounded_sorted_to() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -490,7 +507,14 @@ fn traverse_links_bounded_relation() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -620,7 +644,14 @@ fn traverse_links_bounded_relation_player() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -720,7 +751,14 @@ fn traverse_links_reverse_unbounded_sorted_from() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -821,7 +859,14 @@ fn traverse_links_reverse_unbounded_sorted_to() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -934,7 +979,14 @@ fn traverse_links_reverse_bounded_player() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -1064,7 +1116,14 @@ fn traverse_links_reverse_bounded_player_relation() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(&executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
