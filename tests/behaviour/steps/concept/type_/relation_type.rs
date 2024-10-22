@@ -259,17 +259,14 @@ pub async fn relation_role_exists(
     role_label: params::Label,
     exists: params::ExistsOrDoesnt,
 ) {
+    let type_label = type_label.into_typedb();
+    let role_label = role_label.into_typedb();
     with_read_tx!(context, |tx| {
-        let relation_type =
-            tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
+        let relation_type = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label).unwrap().unwrap();
         let relates_opt = relation_type
-            .get_relates_role_name_declared(
-                tx.snapshot.as_ref(),
-                &tx.type_manager,
-                role_label.into_typedb().name.as_str(),
-            )
+            .get_relates_role_name_declared(tx.snapshot.as_ref(), &tx.type_manager, role_label.name.as_str())
             .unwrap();
-        exists.check(&relates_opt, &format!("role {}:{}", type_label.into_typedb(), role_label.into_typedb()));
+        exists.check(&relates_opt, &format!("role {}:{}", type_label, role_label));
     });
 }
 
@@ -407,20 +404,17 @@ pub async fn relation_role_get_supertype_exists(
     role_label: params::Label,
     exists: params::ExistsOrDoesnt,
 ) {
+    let role_label = role_label.into_typedb();
     with_read_tx!(context, |tx| {
         let relation_type =
             tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &relation_label.into_typedb()).unwrap().unwrap();
         let role = relation_type
-            .get_relates_role_name_declared(
-                tx.snapshot.as_ref(),
-                &tx.type_manager,
-                role_label.into_typedb().name().as_str(),
-            )
+            .get_relates_role_name_declared(tx.snapshot.as_ref(), &tx.type_manager, role_label.name().as_str())
             .unwrap()
             .unwrap()
             .role();
         let superrole = role.get_supertype(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
-        exists.check(&superrole, &format!("superrole for role type {}", role_label.into_typedb()));
+        exists.check(&superrole, &format!("superrole for role type {}", role_label));
     });
 }
 
@@ -431,7 +425,6 @@ pub async fn relation_role_supertypes_is_empty(
     relation_label: params::Label,
     role_label: params::Label,
     is_empty_or_not: params::IsEmptyOrNot,
-    step: &Step,
 ) {
     with_read_tx!(context, |tx| {
         let relation_type =
@@ -668,7 +661,7 @@ pub async fn relation_get_constraints_for_related_role_contain(
             .get_related_role_type_constraints(tx.snapshot.as_ref(), &tx.type_manager, role_type)
             .unwrap()
             .into_iter()
-            .any(|constraint| &constraint.description() == &expected_constraint);
+            .any(|constraint| constraint.description() == expected_constraint);
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
@@ -727,7 +720,7 @@ pub async fn relation_role_constraints_contain(
             .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .into_iter()
-            .any(|constraint| &constraint.description() == &expected_constraint);
+            .any(|constraint| constraint.description() == expected_constraint);
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
@@ -816,7 +809,6 @@ pub async fn relation_role_declared_annotations_contain(
             .unwrap();
 
         let parsed_annotation = annotation.into_typedb(None);
-        let parsed_annotation_category = parsed_annotation.clone().category();
         let actual_contains = relates
             .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()

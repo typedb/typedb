@@ -6,6 +6,7 @@
 
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
+#![allow(clippy::result_large_err)]
 
 use std::{
     collections::HashMap,
@@ -20,7 +21,6 @@ use ::query::error::QueryError;
 use answer::variable_value::VariableValue;
 use cucumber::{gherkin::Feature, StatsWriter, World};
 use database::Database;
-use error::TypeDBError;
 use futures::{
     future::Either,
     stream::{self, StreamExt},

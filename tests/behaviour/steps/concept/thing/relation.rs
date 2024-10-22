@@ -339,7 +339,7 @@ async fn object_get_relations_of_type_with_role_contain(
             .role();
         player
             .get_relations_by_role(tx.snapshot.as_ref(), &tx.thing_manager, role_type)
-            .map_static(|res| res.map(|(relation, count)| relation.into_owned()).unwrap())
+            .map_static(|res| res.map(|(relation, _count)| relation.into_owned()).unwrap())
             .collect::<Vec<_>>()
     });
     let Object::Relation(relation) = &context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object else {
