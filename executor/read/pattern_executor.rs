@@ -18,10 +18,10 @@ use crate::{
     ExecutionInterrupt,
 };
 
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub(super) struct BranchIndex(pub usize);
 
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub(super) struct InstructionIndex(pub usize);
 
 impl InstructionIndex {
@@ -36,7 +36,7 @@ pub(super) enum ControlInstruction {
     ExecuteImmediate(InstructionIndex),
 
     MapRowBatchToRowForSubQuery(InstructionIndex, FixedBatchRowIterator),
-    ExecuteSubQuery(InstructionIndex, BranchIndex),
+    ExecuteBranch(InstructionIndex, BranchIndex),
 
     CollectingStage(InstructionIndex),
     StreamCollected(InstructionIndex, CollectedStageIterator),
@@ -77,50 +77,47 @@ impl PatternExecutor {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        if self.control_stack.len() == 0 {
-            debug_assert!(self.control_stack.len() > 0);
-        }
+        debug_assert!(self.control_stack.len() > 0);
         while self.control_stack.last().is_some() {
             let Self { control_stack, executors } = self;
             // TODO: inject interrupt into Checkers that could filter out many rows without ending as well.
             if let Some(interrupt) = interrupt.check() {
                 return Err(ReadExecutionError::Interrupted { interrupt });
             }
-            let mut step = control_stack.pop().unwrap();
 
-            match step {
+            match control_stack.pop().unwrap() {
                 ControlInstruction::Start(batch) => {
                     self.prepare_next_instruction_and_push_to_stack(context, InstructionIndex(0), batch)?;
                 }
                 ControlInstruction::ExecuteImmediate(index) => {
-                    let found = executors[index.0].unwrap_immediate().batch_continue(context, interrupt)?;
-                    if let Some(batch) = found {
-                        control_stack.push(ControlInstruction::ExecuteImmediate(index.clone()));
+                    let executor = executors[index.0].unwrap_immediate();
+                    if let Some(batch) = executor.batch_continue(context, interrupt)? {
+                        control_stack.push(ControlInstruction::ExecuteImmediate(index));
                         self.prepare_next_instruction_and_push_to_stack(context, index.next(), batch)?;
                     }
                 }
                 ControlInstruction::MapRowBatchToRowForSubQuery(index, mut iter) => {
                     if let Some(row_result) = iter.next() {
                         let unmapped_input = row_result.unwrap().into_owned();
-                        control_stack.push(ControlInstruction::MapRowBatchToRowForSubQuery(index.clone(), iter));
-                        let branch_executor = executors[index.0].unwrap_nested_pattern_branch();
+                        control_stack.push(ControlInstruction::MapRowBatchToRowForSubQuery(index, iter));
+                        let branch_executor = executors[index.0].unwrap_branch();
                         let (branches, mut controller) = branch_executor.to_parts_mut();
                         let row = controller.prepare_and_map_input(&unmapped_input);
                         for (branch_index, pattern) in branches.iter_mut().enumerate() {
                             pattern.prepare(row.clone().into_owned());
                             control_stack
-                                .push(ControlInstruction::ExecuteSubQuery(index.clone(), BranchIndex(branch_index)));
+                                .push(ControlInstruction::ExecuteBranch(index, BranchIndex(branch_index)));
                         }
                     }
                 }
-                ControlInstruction::ExecuteSubQuery(index, branch_index) => {
+                ControlInstruction::ExecuteBranch(index, branch_index) => {
                     // TODO: This bit desperately needs a cleanup.
-                    let (branches, controller) = &mut executors[index.0].unwrap_nested_pattern_branch().to_parts_mut();
+                    let (branches, controller) = &mut executors[index.0].unwrap_branch().to_parts_mut();
                     let branch = &mut branches[branch_index.0];
                     let unmapped = branch.pattern_executor.batch_continue(context, interrupt)?;
                     let found = match controller.map_output(branch.input.as_ref().unwrap(), unmapped) {
                         SubQueryResult::Retry(found) => {
-                            control_stack.push(ControlInstruction::ExecuteSubQuery(index.clone(), branch_index));
+                            control_stack.push(ControlInstruction::ExecuteBranch(index, branch_index));
                             found
                         }
                         SubQueryResult::Done(found) => {
@@ -141,13 +138,13 @@ impl PatternExecutor {
                         }
                         None => {
                             let iterator = collector.into_iterator();
-                            self.control_stack.push(ControlInstruction::StreamCollected(index.clone(), iterator))
+                            self.control_stack.push(ControlInstruction::StreamCollected(index, iterator))
                         }
                     }
                 }
                 ControlInstruction::StreamCollected(index, mut collected_iterator) => {
                     if let Some(batch) = collected_iterator.batch_continue()? {
-                        self.control_stack.push(ControlInstruction::StreamCollected(index.clone(), collected_iterator));
+                        self.control_stack.push(ControlInstruction::StreamCollected(index, collected_iterator));
                         self.prepare_next_instruction_and_push_to_stack(context, index.next(), batch)?;
                     }
                 }
@@ -178,7 +175,7 @@ impl PatternExecutor {
                     .push(ControlInstruction::MapRowBatchToRowForSubQuery(next_instruction_index, batch.into_iterator())),
                 StepExecutors::CollectingStage(collecting_stage) => {
                     collecting_stage.prepare(batch);
-                    self.control_stack.push(ControlInstruction::CollectingStage(next_instruction_index.clone()));
+                    self.control_stack.push(ControlInstruction::CollectingStage(next_instruction_index));
                 }
                 StepExecutors::ReshapeForReturn(_) => todo!(),
             }

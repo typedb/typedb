@@ -43,21 +43,21 @@ impl StepExecutors {
     pub(crate) fn unwrap_immediate(&mut self) -> &mut ImmediateExecutor {
         match self {
             StepExecutors::Immediate(step) => step,
-            _ => unreachable!(),
+            _ => panic!("bad unwrap"),
         }
     }
 
-    pub(crate) fn unwrap_nested_pattern_branch(&mut self) -> &mut NestedPatternExecutor {
+    pub(crate) fn unwrap_branch(&mut self) -> &mut NestedPatternExecutor {
         match self {
             StepExecutors::Branch(step) => step,
-            _ => unreachable!(),
+            _ => panic!("bad unwrap"),
         }
     }
 
     pub(crate) fn unwrap_collecting_stage(&mut self) -> &mut CollectingStageExecutor {
         match self {
             StepExecutors::CollectingStage(step) => step,
-            _ => unreachable!(),
+            _ => panic!("bad unwrap"),
         }
     }
 }
