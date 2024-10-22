@@ -14,7 +14,7 @@ use itertools::Itertools;
 use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::match_::{
-        instructions::{type_::TypeListInstruction, ConstraintInstruction},
+        instructions::{type_::TypeListInstruction, CheckInstruction, ConstraintInstruction},
         planner::{
             plan::{Graph, VariableVertexId, VertexId},
             vertex::{
@@ -22,6 +22,7 @@ use crate::{
             },
         },
     },
+    ExecutorVariable,
 };
 
 #[derive(Clone, Debug)]
@@ -172,6 +173,17 @@ impl<'a> TypeListPlanner<'a> {
     pub(crate) fn lower(&self, type_annotations: &TypeAnnotations) -> ConstraintInstruction<Variable> {
         let var = self.constraint.var();
         ConstraintInstruction::TypeList(TypeListInstruction::new(var, type_annotations))
+    }
+
+    pub(crate) fn lower_check(&self, type_annotations: &TypeAnnotations) -> CheckInstruction<Variable> {
+        let type_var = self.constraint.var();
+        let types = type_annotations
+            .vertex_annotations_of(&ir::pattern::Vertex::Variable(type_var))
+            .unwrap()
+            .iter()
+            .cloned()
+            .collect();
+        CheckInstruction::TypeList { type_var, types }
     }
 }
 

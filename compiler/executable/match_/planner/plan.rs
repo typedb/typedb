@@ -880,9 +880,9 @@ impl ConjunctionPlan<'_> {
         }
 
         match constraint {
-            ConstraintVertex::TypeList(tl) => {
-                let var = tl.constraint().var();
-                let instruction = tl.lower(self.type_annotations);
+            ConstraintVertex::TypeList(type_list) => {
+                let var = type_list.constraint().var();
+                let instruction = type_list.lower(self.type_annotations);
                 match_builder.push_instruction(var, instruction);
             }
 
@@ -989,8 +989,10 @@ impl ConjunctionPlan<'_> {
         }
 
         match constraint {
-            ConstraintVertex::TypeList(_) => {
-                todo!()
+            ConstraintVertex::TypeList(type_list) => {
+                let var = type_list.constraint().var();
+                let instruction = type_list.lower_check(self.type_annotations);
+                match_builder.push_check(&[var], instruction.map(match_builder.position_mapping()));
             }
 
             ConstraintVertex::Sub(planner) => {

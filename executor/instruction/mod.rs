@@ -388,6 +388,16 @@ impl<T: Hkt> Checker<T> {
 
         for check in &self.checks {
             match check {
+                &CheckInstruction::TypeList { type_var, ref types } => {
+                    let maybe_type_extractor = dbg!(&self.extractors).get(dbg!(&type_var));
+                    let type_: BoxExtractor<T> = match maybe_type_extractor {
+                        Some(&subtype) => Box::new(subtype),
+                        None => make_const_extractor(&CheckVertex::Variable(type_var), context, row),
+                    };
+                    let types = types.clone();
+                    filters.push(Box::new(move |value| Ok(types.contains(type_(value).as_type()))));
+                }
+
                 &CheckInstruction::Sub { sub_kind, ref subtype, ref supertype } => {
                     let maybe_subtype_extractor = subtype.as_variable().and_then(|var| self.extractors.get(&var));
                     let maybe_supertype_extractor = supertype.as_variable().and_then(|var| self.extractors.get(&var));

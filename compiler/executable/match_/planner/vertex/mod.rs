@@ -14,10 +14,12 @@ use concept::thing::statistics::Statistics;
 use ir::pattern::{constraint::Comparison, Vertex};
 use itertools::chain;
 
-use super::plan::{ConjunctionPlan, DisjunctionPlanBuilder, Graph, VariableVertexId, VertexId};
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
-    executable::match_::planner::vertex::{constraint::ConstraintVertex, variable::VariableVertex},
+    executable::match_::planner::{
+        plan::{ConjunctionPlan, DisjunctionPlanBuilder, Graph, VariableVertexId, VertexId},
+        vertex::{constraint::ConstraintVertex, variable::VariableVertex},
+    },
 };
 
 pub(super) mod constraint;
@@ -45,7 +47,7 @@ pub(super) enum PlannerVertex<'a> {
 
 impl PlannerVertex<'_> {
     pub(super) fn is_valid(&self, index: VertexId, ordered: &[VertexId], graph: &Graph<'_>) -> bool {
-        match self {
+        let is_valid = match self {
             Self::Variable(inner) => inner.is_valid(index, ordered, graph),
             Self::Constraint(inner) => inner.is_valid(index, ordered, graph),
 
@@ -59,7 +61,17 @@ impl PlannerVertex<'_> {
 
             Self::Negation(inner) => inner.is_valid(index, ordered, graph),
             Self::Disjunction(inner) => inner.is_valid(index, ordered, graph),
+        };
+        if !is_valid {
+            return false;
         }
+
+        let mut ordered = ordered.to_owned();
+        ordered.push(index);
+        self.variables().all(|var| {
+            ordered.contains(&VertexId::Variable(var))
+                || graph.elements()[&VertexId::Variable(var)].is_valid(VertexId::Variable(var), &ordered, graph)
+        })
     }
 
     pub(super) fn variables(&self) -> Box<dyn Iterator<Item = VariableVertexId> + '_> {
