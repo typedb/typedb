@@ -52,15 +52,16 @@ pub async fn struct_delete(context: &mut Context, type_label: params::Label, may
 #[step(expr = "struct\\({type_label}\\) {exists_or_doesnt}")]
 pub async fn struct_exists(context: &mut Context, type_label: params::Label, exists: params::ExistsOrDoesnt) {
     with_read_tx!(context, |tx| {
+        let type_label = type_label.into_typedb();
         let definition_key_opt = &tx
             .type_manager
-            .get_struct_definition_key(tx.snapshot.as_ref(), type_label.into_typedb().scoped_name().as_str())
+            .get_struct_definition_key(tx.snapshot.as_ref(), type_label.scoped_name().as_str())
             .unwrap();
-        exists.check(definition_key_opt, &format!("struct definition key for {}", type_label.into_typedb()));
+        exists.check(definition_key_opt, &format!("struct definition key for {}", type_label));
         if let Some(definition_key) = definition_key_opt {
             let struct_definition =
                 &tx.type_manager.get_struct_definition(tx.snapshot.as_ref(), definition_key.clone());
-            exists.check_result(struct_definition, &format!("struct definition for {}", type_label.into_typedb()));
+            exists.check_result(struct_definition, &format!("struct definition for {}", type_label));
         }
     });
 }

@@ -27,7 +27,7 @@ pub async fn set_plays(
     role_label: params::Label,
     may_error: params::MayError,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_schema_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
@@ -50,7 +50,7 @@ pub async fn unset_plays(
     role_label: params::Label,
     may_error: params::MayError,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_schema_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
@@ -74,7 +74,7 @@ pub async fn get_plays_contain(
     contains: params::ContainsOrDoesnt,
 ) {
     let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let actual_labels = object_type
             .get_plays(tx.snapshot.as_ref(), &tx.type_manager)
@@ -104,7 +104,7 @@ pub async fn get_declared_plays_contain(
     contains: params::ContainsOrDoesnt,
 ) {
     let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let actual_labels = object_type
             .get_plays_declared(tx.snapshot.as_ref(), &tx.type_manager)
@@ -132,7 +132,7 @@ pub async fn get_plays_is_empty(
     type_label: params::Label,
     is_empty_or_not: params::IsEmptyOrNot,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let actual_is_empty = object_type.get_plays(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
         is_empty_or_not.check(actual_is_empty);
@@ -147,7 +147,7 @@ pub async fn get_declared_plays_is_empty(
     type_label: params::Label,
     is_empty_or_not: params::IsEmptyOrNot,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let actual_is_empty =
             object_type.get_plays_declared(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
@@ -165,7 +165,7 @@ pub async fn get_plays_set_annotation(
     annotation: params::Annotation,
     may_error: params::MayError,
 ) {
-    let player_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let player_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_schema_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
@@ -192,7 +192,7 @@ pub async fn get_plays_unset_annotation(
     annotation_category: params::AnnotationCategory,
     may_error: params::MayError,
 ) {
-    let player_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let player_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_schema_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
@@ -219,7 +219,7 @@ pub async fn get_constraints_for_played_role_contains(
     contains_or_doesnt: params::ContainsOrDoesnt,
     constraint: params::Constraint,
 ) {
-    let player_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let player_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
@@ -229,7 +229,7 @@ pub async fn get_constraints_for_played_role_contains(
             .get_played_role_type_constraints(tx.snapshot.as_ref(), &tx.type_manager, role_type)
             .unwrap()
             .into_iter()
-            .any(|constraint| &constraint.description() == &expected_constraint);
+            .any(|constraint| constraint.description() == expected_constraint);
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
@@ -246,7 +246,7 @@ pub async fn get_constraint_categories_for_played_role_contains(
     contains_or_doesnt: params::ContainsOrDoesnt,
     constraint_category: params::ConstraintCategory,
 ) {
-    let player_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let player_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
@@ -273,7 +273,7 @@ pub async fn get_plays_constraints_contains(
     contains_or_doesnt: params::ContainsOrDoesnt,
     constraint: params::Constraint,
 ) {
-    let player_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let player_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
@@ -284,7 +284,7 @@ pub async fn get_plays_constraints_contains(
             .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .into_iter()
-            .any(|constraint| &constraint.description() == &expected_constraint);
+            .any(|constraint| constraint.description() == expected_constraint);
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
@@ -301,7 +301,7 @@ pub async fn get_plays_constraint_categories_contains(
     contains_or_doesnt: params::ContainsOrDoesnt,
     constraint_category: params::ConstraintCategory,
 ) {
-    let player_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let player_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
@@ -326,7 +326,7 @@ pub async fn get_owns_constraints_is_empty(
     role_label: params::Label,
     is_empty_or_not: params::IsEmptyOrNot,
 ) {
-    let player_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let player_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
@@ -348,7 +348,7 @@ pub async fn get_plays_declared_annotations_contains(
     contains_or_doesnt: params::ContainsOrDoesnt,
     annotation: params::Annotation,
 ) {
-    let player_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let player_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
@@ -373,7 +373,7 @@ pub async fn get_plays_declared_annotation_categories_contains(
     contains_or_doesnt: params::ContainsOrDoesnt,
     annotation_category: params::AnnotationCategory,
 ) {
-    let player_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let player_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
@@ -397,7 +397,7 @@ pub async fn get_owns_declared_annotations_is_empty(
     role_label: params::Label,
     is_empty_or_not: params::IsEmptyOrNot,
 ) {
-    let player_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let player_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
@@ -417,7 +417,7 @@ pub async fn get_plays_cardinality(
     role_label: params::Label,
     cardinality_annotation: params::Annotation,
 ) {
-    let player_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let player_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();

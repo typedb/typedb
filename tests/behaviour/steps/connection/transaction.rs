@@ -4,18 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::{Arc, Mutex};
-
-use cucumber::{codegen::anyhow::Error, gherkin::Step};
-use database::{
-    transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
-    Database,
-};
+use cucumber::gherkin::Step;
+use database::transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite};
 use futures::future::join_all;
 use macro_rules_attribute::apply;
 use options::TransactionOptions;
-use server::{typedb, typedb::Server};
-use storage::durability_client::WALClient;
+use server::typedb::Server;
 use test_utils::assert_matches;
 
 use crate::{
