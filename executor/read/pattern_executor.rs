@@ -112,7 +112,16 @@ impl PatternExecutor {
                     if let Some(row_result) = iter.next() {
                         let unmapped_input = row_result.unwrap().into_owned();
                         control_stack.push(ControlInstruction::MapRowBatchToRowForNested(index, iter));
-                        self.prepare_nested_pattern(index, unmapped_input);
+                        match &mut executors[index.0] {
+                            StepExecutors::Nested(branch_executor) => {
+                                self.prepare_and_push_nested_pattern(index, unmapped_input);
+                            }
+                            StepExecutors::TabledCall(tabled_call_executor) => {
+                                tabled_call_executor.prepare(unmapped_input);
+                                control_stack.push(ControlInstruction::TabledCall(index));
+                            }
+                            _ => unreachable!(),
+                        }
                     }
                 }
                 ControlInstruction::ExecuteNested(index, branch_index, mut mapper) => {
@@ -132,7 +141,7 @@ impl PatternExecutor {
                 ControlInstruction::TabledCall(index) => {
                     let step = executors[index.0].unwrap_tabled_call();
                     let call_key = step.active_call_key().unwrap();
-                    let mutex = tabled_functions.get_or_create_state_mutex(call_key);
+                    let mutex = tabled_functions.get_or_create_state_mutex(context, call_key)?;
                     let lock_result = mutex.try_lock();
                     match lock_result {
                         Ok(mut guard) => {
@@ -204,9 +213,11 @@ impl PatternExecutor {
                 StepExecutors::Nested(_) => self.control_stack.push(
                     ControlInstruction::MapRowBatchToRowForNested(next_instruction_index, batch.into_iterator())
                 ),
-                StepExecutors::TabledCall(tabled_call_executor) => {
-                    // tabled_call_executor.prepare(batch);
-                    self.control_stack.push(ControlInstruction::TabledCall(next_instruction_index))
+                StepExecutors::TabledCall(_) => {
+                    self.control_stack.push(ControlInstruction::MapRowBatchToRowForNested(
+                        next_instruction_index,
+                        batch.into_iterator(),
+                    ));
                 }
                 StepExecutors::CollectingStage(collecting_stage) => {
                     collecting_stage.prepare(batch);
@@ -217,7 +228,7 @@ impl PatternExecutor {
         }
         Ok(())
     }
-    fn prepare_nested_pattern(&mut self, index: InstructionIndex, input: MaybeOwnedRow<'_>) {
+    fn prepare_and_push_nested_pattern(&mut self, index: InstructionIndex, input: MaybeOwnedRow<'_>) {
         let executor = self.executors[index.0].unwrap_branch();
         match executor {
             NestedPatternExecutor::Disjunction { branches } => {

@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     sync::{Arc, Mutex, MutexGuard, RwLock, TryLockError, TryLockResult},
 };
 
@@ -13,9 +13,14 @@ use clap::Parser;
 use compiler::{executable::match_::planner::function_plan::ExecutableFunctionRegistry, VariablePosition};
 use ir::pipeline::function_signature::FunctionID;
 use itertools::Either;
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    batch::FixedBatch, error::ReadExecutionError, read::pattern_executor::PatternExecutor, row::MaybeOwnedRow,
+    batch::FixedBatch,
+    error::ReadExecutionError,
+    pipeline::stage::ExecutionContext,
+    read::{pattern_executor::PatternExecutor, step_executor::create_executors_for_pipeline_stages},
+    row::MaybeOwnedRow,
 };
 
 // TODO: Rearrange file
@@ -26,11 +31,29 @@ pub struct TabledFunctions {
 }
 
 impl TabledFunctions {
-    pub(crate) fn get_or_create_state_mutex(&mut self, call_key: &CallKey) -> Arc<Mutex<TabledFunctionState>> {
+    pub(crate) fn get_or_create_state_mutex(
+        &mut self,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        call_key: &CallKey,
+    ) -> Result<Arc<Mutex<TabledFunctionState>>, ReadExecutionError> {
         if !self.state.contains_key(call_key) {
-            self.state.insert(call_key.clone(), Arc::new(Mutex::new(TabledFunctionState::new())));
+            let stages = &self.function_registry.get(call_key.function_id.clone()).executable_stages;
+            let executors = create_executors_for_pipeline_stages(
+                &context.snapshot,
+                &context.thing_manager,
+                &self.function_registry,
+                stages,
+                stages.len() - 1,
+                &mut HashSet::new(),
+            )
+            .map_err(|source| ReadExecutionError::ConceptRead { source })?;
+            let pattern_executor = PatternExecutor::new(executors);
+            self.state.insert(
+                call_key.clone(),
+                Arc::new(Mutex::new(TabledFunctionState::build_and_prepare(pattern_executor, &call_key.arguments))),
+            );
         }
-        self.state.get(call_key).unwrap().clone()
+        Ok(self.state.get(call_key).unwrap().clone())
     }
 }
 
@@ -58,8 +81,9 @@ pub(crate) struct TabledFunctionState {
 }
 
 impl TabledFunctionState {
-    fn new() -> Self {
-        Self { table: AnswerTable { answers: Vec::new() }, suspend_points: Vec::new(), pattern_executor: todo!() }
+    fn build_and_prepare(mut pattern_executor: PatternExecutor, args: &MaybeOwnedRow<'_>) -> Self {
+        pattern_executor.prepare(FixedBatch::from(args.as_reference()));
+        Self { table: AnswerTable { answers: Vec::new() }, suspend_points: Vec::new(), pattern_executor }
     }
 }
 
@@ -106,10 +130,12 @@ impl TabledCallExecutor {
     }
 
     pub(crate) fn prepare(&mut self, input: MaybeOwnedRow<'static>) {
-        todo!()
-        // let arguments = self.argument_positions.iter().map(|pos| input.get(pos.clone())).collect();
-        // let call_key = CallKey { function_id: self.function_id.clone(), arguments };
-        // self.active_executor = Some(TabledCallExecutorState { call_key, input, next_index: 0 });
+        let arguments = MaybeOwnedRow::new_owned(
+            self.argument_positions.iter().map(|pos| input.get(pos.clone()).to_owned()).collect(),
+            input.multiplicity(),
+        );
+        let call_key = CallKey { function_id: self.function_id.clone(), arguments };
+        self.active_executor = Some(TabledCallExecutorState { call_key, input, next_index: 0 });
     }
 
     pub(crate) fn active_call_key(&self) -> Option<&CallKey> {

@@ -12,8 +12,7 @@ use std::{
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use ir::pipeline::function_signature::FunctionID;
-use ir::pipeline::VariableRegistry;
+use ir::pipeline::{function_signature::FunctionID, VariableRegistry};
 
 use crate::{
     annotation::{

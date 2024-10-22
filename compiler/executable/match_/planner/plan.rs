@@ -515,7 +515,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let mut intersection_variable: Option<VariableVertexId> = None;
 
         while !open_set.is_empty() {
-            eprintln!("while-ordering: {:?}", ordering);
+            // eprintln!("while-ordering: {:?}", ordering);
             let (next, _cost) = open_set
                 .iter()
                 .filter(|&&elem| self.graph.elements[&elem].is_valid(elem, &ordering, &self.graph))
