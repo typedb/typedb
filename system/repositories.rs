@@ -1,5 +1,6 @@
 use crate::concepts::User;
 
+#[derive(Debug)]
 pub struct UserRepository {}
 
 impl UserRepository {

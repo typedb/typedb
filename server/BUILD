@@ -22,6 +22,7 @@ rust_library(
         "//compiler",
         "//concept",
         "//database",
+        "//user",
         "//encoding",
         "//executor",
         "//function",

@@ -5,7 +5,7 @@
  */
 
 use std::{error::Error, fmt, fs, io, path::PathBuf};
-
+use user::user_manager::UserManager;
 use database::{database_manager::DatabaseManager, DatabaseOpenError};
 use resource::constants::server::GRPC_CONNECTION_KEEPALIVE;
 
@@ -32,10 +32,13 @@ impl Server {
 
         let database_manager = DatabaseManager::new(storage_directory)
             .map_err(|err| ServerOpenError::DatabaseOpenError { source: err })?;
+        let user_manager = UserManager::new();
+
+        let typedb_service = TypeDBService::new(
+            &config.server.address, database_manager, user_manager
+        );
+
         let data_directory = storage_directory.to_owned();
-
-        let typedb_service = TypeDBService::new(&config.server.address, database_manager);
-
         Ok(Self { data_directory, typedb_service: Some(typedb_service), config })
     }
 

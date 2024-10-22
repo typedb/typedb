@@ -1,11 +1,15 @@
 use system::concepts::User;
 use system::repositories::UserRepository;
 
-struct UserManager {
+#[derive(Debug)]
+pub struct UserManager {
     user_repository: UserRepository
 }
 
 impl UserManager {
+    pub fn new() -> Self {
+        todo!()
+    }
 
     fn all() -> Vec<User> {
         todo!()

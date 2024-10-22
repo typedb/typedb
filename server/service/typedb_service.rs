@@ -7,16 +7,13 @@
 use std::{net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
 
 use database::database_manager::DatabaseManager;
+use user::user_manager::UserManager;
 use error::typedb_error;
 use tokio::sync::mpsc::channel;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
 use tracing::{event, Level};
-use typedb_protocol::{
-    self,
-    server_manager::all::{Req, Res},
-    transaction::{Client, Server},
-};
+use typedb_protocol::{self, server_manager::all::{Req, Res}, transaction::{Client, Server}};
 use uuid::Uuid;
 
 use crate::service::{
@@ -35,12 +32,17 @@ use crate::service::{
 pub(crate) struct TypeDBService {
     address: SocketAddr,
     database_manager: Arc<DatabaseManager>,
+    user_manager: Arc<UserManager>
     // map of connection ID to ConnectionService
 }
 
 impl TypeDBService {
-    pub(crate) fn new(address: &SocketAddr, database_manager: DatabaseManager) -> Self {
-        Self { address: address.clone(), database_manager: Arc::new(database_manager) }
+    pub(crate) fn new(address: &SocketAddr, database_manager: DatabaseManager, user_manager: UserManager) -> Self {
+        Self {
+            address: address.clone(),
+            database_manager: Arc::new(database_manager),
+            user_manager: Arc::new(user_manager)
+        }
     }
 
     pub(crate) fn database_manager(&self) -> &DatabaseManager {
@@ -101,51 +103,11 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         }
     }
 
-    async fn users_get(
-        &self,
-        _request: Request<typedb_protocol::user_manager::get::Req>,
-    ) -> Result<Response<typedb_protocol::user_manager::get::Res>, Status> {
-        todo!()
-    }
-
-    async fn users_all(
-        &self,
-        _request: Request<typedb_protocol::user_manager::all::Req>
-    ) -> Result<Response<typedb_protocol::user_manager::all::Res>, Status> {
-        todo!()
-    }
-
-    async fn users_contains(&self,
-                      _request: Request<typedb_protocol::user_manager::contains::Req>
-    ) -> Result<Response<typedb_protocol::user_manager::contains::Res>, Status> {
-        todo!()
-    }
-
-    async fn users_create(
-        &self,
-        _request: Request<typedb_protocol::user_manager::create::Req>
-    ) -> Result<Response<typedb_protocol::user_manager::create::Res>, Status> {
-        todo!()
-    }
     async fn databases_all(
         &self,
         _request: Request<typedb_protocol::database_manager::all::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::all::Res>, Status> {
         Ok(Response::new(database_all_res(&self.address, self.database_manager.database_names())))
-    }
-
-    async fn users_update(
-        &self,
-        _request: Request<typedb_protocol::user::update::Req>
-    ) -> Result<Response<typedb_protocol::user::update::Res>, Status> {
-        todo!()
-    }
-
-    async fn users_delete(
-        &self,
-        _request: Request<typedb_protocol::user::delete::Req>
-    ) -> Result<Response<typedb_protocol::user::delete::Res>, Status> {
-        todo!()
     }
 
     async fn databases_contains(
@@ -194,6 +156,48 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             .delete_database(message.name)
             .map(|_| Response::new(database_delete_res()))
             .map_err(|err| err.into_error_message().into_status())
+    }
+
+    async fn users_get(
+        &self,
+        _request: Request<typedb_protocol::user_manager::get::Req>,
+    ) -> Result<Response<typedb_protocol::user_manager::get::Res>, Status> {
+        todo!()
+    }
+
+    async fn users_all(
+        &self,
+        _request: Request<typedb_protocol::user_manager::all::Req>
+    ) -> Result<Response<typedb_protocol::user_manager::all::Res>, Status> {
+        todo!()
+    }
+
+    async fn users_contains(
+        &self,
+        _request: Request<typedb_protocol::user_manager::contains::Req>
+    ) -> Result<Response<typedb_protocol::user_manager::contains::Res>, Status> {
+        todo!()
+    }
+
+    async fn users_create(
+        &self,
+        _request: Request<typedb_protocol::user_manager::create::Req>
+    ) -> Result<Response<typedb_protocol::user_manager::create::Res>, Status> {
+        todo!()
+    }
+
+    async fn users_update(
+        &self,
+        _request: Request<typedb_protocol::user::update::Req>
+    ) -> Result<Response<typedb_protocol::user::update::Res>, Status> {
+        todo!()
+    }
+
+    async fn users_delete(
+        &self,
+        _request: Request<typedb_protocol::user::delete::Req>
+    ) -> Result<Response<typedb_protocol::user::delete::Res>, Status> {
+        todo!()
     }
 
     type transactionStream = Pin<Box<ReceiverStream<Result<typedb_protocol::transaction::Server, tonic::Status>>>>;
