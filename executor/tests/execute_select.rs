@@ -216,7 +216,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -317,7 +317,7 @@ fn unselected_named_vars_counted() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -441,7 +441,7 @@ fn cartesian_named_counted_checked() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 

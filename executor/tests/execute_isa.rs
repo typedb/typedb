@@ -139,7 +139,7 @@ fn traverse_isa_unbounded_sorted_thing() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -224,7 +224,7 @@ fn traverse_isa_unbounded_sorted_type() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -325,7 +325,7 @@ fn traverse_isa_bounded_thing() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -416,7 +416,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -503,7 +503,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -604,7 +604,7 @@ fn traverse_isa_reverse_bounded_type_exact() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -709,7 +709,7 @@ fn traverse_isa_reverse_bounded_type_subtype() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -800,7 +800,7 @@ fn traverse_isa_reverse_fixed_type_exact() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -890,7 +890,7 @@ fn traverse_isa_reverse_fixed_type_subtype() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 

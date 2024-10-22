@@ -127,7 +127,7 @@ fn test_has_planning_traversal() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -301,7 +301,7 @@ fn test_links_planning_traversal() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -389,7 +389,7 @@ fn test_links_intersection() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -468,7 +468,7 @@ fn test_negation_planning_traversal() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -568,7 +568,7 @@ fn test_forall_planning_traversal() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -654,7 +654,7 @@ fn test_named_var_select() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -740,7 +740,7 @@ fn test_disjunction_planning_traversal() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -830,7 +830,7 @@ fn test_disjunction_planning_nested_negations() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 

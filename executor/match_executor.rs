@@ -21,10 +21,12 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
+use crate::read::tabled_functions::TabledFunctions;
 
 pub struct MatchExecutor {
     entry: PatternExecutor,
     input: Option<MaybeOwnedRow<'static>>,
+    tabled_functions: TabledFunctions,
 }
 
 impl MatchExecutor {
@@ -33,15 +35,16 @@ impl MatchExecutor {
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
         input: MaybeOwnedRow<'_>,
-        function_registry: &ExecutableFunctionRegistry,
+        function_registry: Arc<ExecutableFunctionRegistry>,
     ) -> Result<Self, ConceptReadError> {
         Ok(Self {
             entry: TODO_REMOVE_create_executors_for_match(
                 snapshot,
                 thing_manager,
-                function_registry,
+                &function_registry,
                 match_executable,
             )?,
+            tabled_functions: TabledFunctions::new(function_registry),
             input: Some(input.into_owned()),
         })
     }
@@ -64,7 +67,7 @@ impl MatchExecutor {
         if let Some(input) = self.input.take() {
             self.entry.prepare(FixedBatch::from(input.into_owned()));
         }
-        self.entry.compute_next_batch(context, interrupt)
+        self.entry.compute_next_batch(context, interrupt, &mut self.tabled_functions)
     }
 }
 

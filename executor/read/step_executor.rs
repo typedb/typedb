@@ -53,6 +53,13 @@ impl StepExecutors {
         }
     }
 
+    pub(crate) fn unwrap_tabled_call(&mut self) -> &mut TabledCallExecutor {
+        match self {
+            StepExecutors::TabledCall(step) => step,
+            _ => unreachable!(),
+        }
+    }
+
     pub(crate) fn unwrap_collecting_stage(&mut self) -> &mut CollectingStageExecutor {
         match self {
             StepExecutors::CollectingStage(step) => step,

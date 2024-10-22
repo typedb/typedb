@@ -4,6 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::ops::DerefMut;
+use std::sync::TryLockError;
+use itertools::Either;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
@@ -22,6 +25,7 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
+use crate::read::tabled_functions::TabledFunctions;
 
 #[derive(Copy, Clone)]
 pub(super) struct BranchIndex(pub usize);
@@ -65,8 +69,9 @@ impl PatternExecutor {
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
+        tabled_functions: &mut TabledFunctions,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        self.batch_continue(context, interrupt)
+        self.batch_continue(context, interrupt, tabled_functions)
     }
 
     pub(crate) fn prepare(&mut self, input_batch: FixedBatch) {
@@ -83,6 +88,7 @@ impl PatternExecutor {
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
+        tabled_functions: &mut TabledFunctions
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         debug_assert!(self.control_stack.len() > 0);
         while self.control_stack.last().is_some() {
@@ -125,11 +131,34 @@ impl PatternExecutor {
                     }
                 }
                 ControlInstruction::TabledCall(index) => {
-                    todo!()
+                    let step = executors[index.0].unwrap_tabled_call();
+                    let call_key = step.active_call_key().unwrap();
+                    let mutex =  tabled_functions.get_or_create_state_mutex(call_key);
+                    let lock_result = mutex.try_lock();
+                    match lock_result {
+                        Ok(mut guard) => {
+                            let found = match step.batch_continue_or_function_pattern(guard.deref_mut()) {
+                                Either::Left(batch) => Some(batch),
+                                Either::Right(pattern) => pattern.batch_continue(context, interrupt, tabled_functions)?
+                            };
+                            if let Some(batch) = found {
+                                self.control_stack.push(ControlInstruction::TabledCall(index.clone()));
+                                self.prepare_next_instruction_and_push_to_stack(context, index.next(), batch)?;
+                            } else {
+                                // TODO: This looks like the place to consider a retry?
+                            }
+                        },
+                        Err(TryLockError::WouldBlock) => {
+                            todo!("Cyclic call -> Suspend!")
+                        },
+                        Err(TryLockError::Poisoned(err)) => {
+                            return Err(ReadExecutionError::TabledFunctionLockError { function_id: call_key.function_id.clone(), arguments: call_key.arguments.clone() });
+                        }
+                    }
                 }
                 ControlInstruction::CollectingStage(index) => {
                     let (pattern, mut collector) = executors[index.0].unwrap_collecting_stage().to_parts_mut();
-                    match pattern.compute_next_batch(context, interrupt)? {
+                    match pattern.compute_next_batch(context, interrupt, tabled_functions)? {
                         Some(batch) => {
                             collector.accept(context, batch);
                             self.control_stack.push(ControlInstruction::CollectingStage(index))
