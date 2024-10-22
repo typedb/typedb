@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::ops::DerefMut;
-use std::sync::TryLockError;
+use std::{ops::DerefMut, sync::TryLockError};
+
 use itertools::Either;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
@@ -20,12 +20,11 @@ use crate::{
             IdentityMapper, InlinedFunctionMapper, LimitMapper, NegationMapper, NestedPatternExecutor,
             NestedPatternResultMapper, OffsetMapper,
         },
-        step_executor::StepExecutors,
+        step_executor::StepExecutors, tabled_functions::TabledFunctions,
     },
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-use crate::read::tabled_functions::TabledFunctions;
 
 #[derive(Copy, Clone)]
 pub(super) struct BranchIndex(pub usize);
@@ -88,7 +87,7 @@ impl PatternExecutor {
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
-        tabled_functions: &mut TabledFunctions
+        tabled_functions: &mut TabledFunctions,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         debug_assert!(self.control_stack.len() > 0);
         while self.control_stack.last().is_some() {
@@ -119,7 +118,7 @@ impl PatternExecutor {
                 ControlInstruction::ExecuteNested(index, branch_index, mut mapper) => {
                     // TODO: This bit desperately needs a cleanup.
                     let branch = &mut executors[index.0].unwrap_branch().get_branch(branch_index);
-                    let unmapped = branch.batch_continue(context, interrupt)?;
+                    let unmapped = branch.batch_continue(context, interrupt, tabled_functions)?;
                     let (must_retry, mapped) = mapper.map_output(unmapped).into_parts();
                     if must_retry {
                         control_stack.push(ControlInstruction::ExecuteNested(index, branch_index, mapper));
@@ -133,13 +132,15 @@ impl PatternExecutor {
                 ControlInstruction::TabledCall(index) => {
                     let step = executors[index.0].unwrap_tabled_call();
                     let call_key = step.active_call_key().unwrap();
-                    let mutex =  tabled_functions.get_or_create_state_mutex(call_key);
+                    let mutex = tabled_functions.get_or_create_state_mutex(call_key);
                     let lock_result = mutex.try_lock();
                     match lock_result {
                         Ok(mut guard) => {
                             let found = match step.batch_continue_or_function_pattern(guard.deref_mut()) {
                                 Either::Left(batch) => Some(batch),
-                                Either::Right(pattern) => pattern.batch_continue(context, interrupt, tabled_functions)?
+                                Either::Right(pattern) => {
+                                    pattern.batch_continue(context, interrupt, tabled_functions)?
+                                }
                             };
                             if let Some(batch) = found {
                                 self.control_stack.push(ControlInstruction::TabledCall(index.clone()));
@@ -147,12 +148,15 @@ impl PatternExecutor {
                             } else {
                                 // TODO: This looks like the place to consider a retry?
                             }
-                        },
+                        }
                         Err(TryLockError::WouldBlock) => {
                             todo!("Cyclic call -> Suspend!")
-                        },
+                        }
                         Err(TryLockError::Poisoned(err)) => {
-                            return Err(ReadExecutionError::TabledFunctionLockError { function_id: call_key.function_id.clone(), arguments: call_key.arguments.clone() });
+                            return Err(ReadExecutionError::TabledFunctionLockError {
+                                function_id: call_key.function_id.clone(),
+                                arguments: call_key.arguments.clone(),
+                            });
                         }
                     }
                 }
@@ -200,7 +204,9 @@ impl PatternExecutor {
                 StepExecutors::Nested(_) => self
                     .control_stack
                     .push(ControlInstruction::MapRowBatchToRowForNested(next_instruction_index, batch.into_iterator())),
-                StepExecutors::TabledCall(_) => self.control_stack.push(ControlInstruction::TabledCall(next_instruction_index)),
+                StepExecutors::TabledCall(_) => {
+                    self.control_stack.push(ControlInstruction::TabledCall(next_instruction_index))
+                }
                 StepExecutors::CollectingStage(collecting_stage) => {
                     collecting_stage.prepare(batch);
                     self.control_stack.push(ControlInstruction::CollectingStage(next_instruction_index));

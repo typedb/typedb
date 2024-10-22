@@ -27,8 +27,8 @@ use crate::read::{
     immediate_executor::ImmediateExecutor,
     nested_pattern_executor::NestedPatternExecutor,
     pattern_executor::PatternExecutor,
+    tabled_functions::TabledCallExecutor,
 };
-use crate::read::tabled_functions::TabledCallExecutor;
 
 pub(super) enum StepExecutors {
     Immediate(ImmediateExecutor),
@@ -111,14 +111,13 @@ pub(super) fn create_executors_for_match(
                     let executor = TabledCallExecutor::new(
                         function_call.function_id.clone(),
                         function_call.arguments.clone(),
-                        function_call.assigned.clone()
+                        function_call.assigned.clone(),
                     );
-                    StepExecutors::TabledCall(executor)
+                    steps.push(StepExecutors::TabledCall(executor))
                 } else {
                     if tmp__recursion_validation.contains(&function_call.function_id) {
-                        todo!(
-                            "Recursive functions are unsupported in this release. Continuing would overflow the stack"
-                        )
+                        // TODO: This validation can be removed once planning correctly identifies those to be tabled.
+                        unreachable!("Something that should have been tabled has not been tabled.")
                     } else {
                         tmp__recursion_validation.insert(function_call.function_id.clone());
                     }

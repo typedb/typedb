@@ -4,18 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex, MutexGuard, RwLock, TryLockError, TryLockResult};
-use itertools::Either;
-use clap::Parser;
-use compiler::executable::match_::planner::function_plan::ExecutableFunctionRegistry;
-use compiler::VariablePosition;
-use ir::pipeline::function_signature::FunctionID;
-use crate::batch::FixedBatch;
-use crate::error::ReadExecutionError;
-use crate::read::pattern_executor::PatternExecutor;
-use crate::row::MaybeOwnedRow;
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex, MutexGuard, RwLock, TryLockError, TryLockResult},
+};
 
+use clap::Parser;
+use compiler::{executable::match_::planner::function_plan::ExecutableFunctionRegistry, VariablePosition};
+use ir::pipeline::function_signature::FunctionID;
+use itertools::Either;
+
+use crate::{
+    batch::FixedBatch, error::ReadExecutionError, read::pattern_executor::PatternExecutor, row::MaybeOwnedRow,
+};
 
 // TODO: Rearrange file
 
@@ -26,7 +27,7 @@ pub struct TabledFunctions {
 
 impl TabledFunctions {
     pub(crate) fn get_or_create_state_mutex(&mut self, call_key: &CallKey) -> Arc<Mutex<TabledFunctionState>> {
-        if ! self.state.contains_key(call_key) {
+        if !self.state.contains_key(call_key) {
             self.state.insert(call_key.clone(), Arc::new(Mutex::new(TabledFunctionState::new())));
         }
         self.state.get(call_key).unwrap().clone()
@@ -63,7 +64,7 @@ impl TabledFunctionState {
 }
 
 struct AnswerTable {
-    answers: Vec<MaybeOwnedRow<'static>>
+    answers: Vec<MaybeOwnedRow<'static>>,
 }
 
 impl AnswerTable {
@@ -95,7 +96,11 @@ pub struct TabledCallExecutorState {
 }
 
 impl TabledCallExecutor {
-    pub(crate) fn new(function_id: FunctionID, argument_positions: Vec<VariablePosition>, assignment_positions: Vec<VariablePosition>) -> Self {
+    pub(crate) fn new(
+        function_id: FunctionID,
+        argument_positions: Vec<VariablePosition>,
+        assignment_positions: Vec<VariablePosition>,
+    ) -> Self {
         Self { function_id, argument_positions, assignment_positions, active_executor: None }
     }
 
@@ -108,7 +113,11 @@ impl TabledCallExecutor {
         self.active_executor.as_ref().map(|active| &active.call_key)
     }
 
-    pub(crate) fn batch_continue_or_function_pattern<'a>(&mut self, tabled_function_state: &'a mut TabledFunctionState) -> Either<FixedBatch, &'a mut PatternExecutor> { // Maybe return a batch?
+    pub(crate) fn batch_continue_or_function_pattern<'a>(
+        &mut self,
+        tabled_function_state: &'a mut TabledFunctionState,
+    ) -> Either<FixedBatch, &'a mut PatternExecutor> {
+        // Maybe return a batch?
         let executor = self.active_executor.as_mut().unwrap();
         if executor.next_index < tabled_function_state.table.answers.len() {
             let answer_vec = &tabled_function_state.table.answers;

@@ -33,10 +33,10 @@ use crate::{
         stage::{ExecutionContext, ReadPipelineStage, StageAPI, WritePipelineStage},
         PipelineExecutionError,
     },
+    read::tabled_functions::TabledFunctions,
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-use crate::read::tabled_functions::TabledFunctions;
 
 pub enum Pipeline<Snapshot: ReadableSnapshot, Nonterminals: StageAPI<Snapshot>> {
     Unfetched(Nonterminals, HashMap<String, VariablePosition>),

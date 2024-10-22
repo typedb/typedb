@@ -9,8 +9,7 @@ use concept::error::ConceptReadError;
 use error::typedb_error;
 use ir::pipeline::function_signature::FunctionID;
 
-use crate::InterruptType;
-use crate::row::MaybeOwnedRow;
+use crate::{row::MaybeOwnedRow, InterruptType};
 
 typedb_error!(
     pub ReadExecutionError(component = "Read execution", prefix = "REX") {

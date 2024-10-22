@@ -105,7 +105,7 @@ fn compile_some(
             Ok(FetchSomeInstruction::SingleAttribute(*position, attribute_type))
         }
         AnnotatedFetchSome::SingleFunction(function) => {
-            let compiled = compile_function(statistics, available_functions, function)
+            let compiled = compile_function(statistics, available_functions, function, false)
                 .map_err(|err| FetchCompilationError::AnonymousFunctionCompilation { typedb_source: Box::new(err) })?;
             Ok(FetchSomeInstruction::SingleFunction(compiled))
         }
@@ -114,7 +114,7 @@ fn compile_some(
             Ok(FetchSomeInstruction::Object(Box::new(compiled)))
         }
         AnnotatedFetchSome::ListFunction(function) => {
-            let compiled = compile_function(statistics, available_functions, function)
+            let compiled = compile_function(statistics, available_functions, function, false)
                 .map_err(|err| FetchCompilationError::AnonymousFunctionCompilation { typedb_source: Box::new(err) })?;
             Ok(FetchSomeInstruction::ListFunction(compiled))
         }

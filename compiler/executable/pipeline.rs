@@ -12,18 +12,19 @@ use std::{
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
+use ir::pipeline::function_signature::FunctionID;
 use ir::pipeline::VariableRegistry;
 
 use crate::{
     annotation::{
         fetch::AnnotatedFetch,
-        function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+        function::{AnnotatedFunctions, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         pipeline::AnnotatedStage,
     },
     executable::{
         delete::executable::DeleteExecutable,
         fetch::executable::{compile_fetch, ExecutableFetch},
-        function::compile_function,
+        function::{compile_function, determine_tabling_requirements},
         insert::executable::InsertExecutable,
         match_::planner::{function_plan::ExecutableFunctionRegistry, match_executable::MatchExecutable},
         modifiers::{LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable},
@@ -90,18 +91,34 @@ pub fn compile_pipeline(
 ) -> Result<ExecutablePipeline, ExecutableCompilationError> {
     // TODO: Cache compiled schema functions?
     let mut executable_schema_functions = HashMap::new();
+    let schema_tabling_requirements = determine_tabling_requirements(
+        &annotated_schema_functions.iter_functions().map(|(id, function)| (FunctionID::Schema(id), function)).collect(),
+    );
     for (id, function) in annotated_schema_functions.iter_functions() {
         // TODO: We could save cloning the whole function and only clone the stages.
-        let compiled = compile_function(statistics, &ExecutableFunctionRegistry::empty(), function.clone())?;
+        let compiled = compile_function(
+            statistics,
+            &ExecutableFunctionRegistry::empty(),
+            function.clone(),
+            schema_tabling_requirements[&FunctionID::Schema(id.clone())],
+        )?;
         executable_schema_functions.insert(id.clone(), compiled);
     }
     let arced_executable_schema_functions = Arc::new(executable_schema_functions);
     let schema_function_registry =
         ExecutableFunctionRegistry::new(arced_executable_schema_functions.clone(), HashMap::new());
 
+    let preamble_tabling_requirements = determine_tabling_requirements(
+        &annotated_preamble.iter_functions().map(|(id, function)| (FunctionID::Preamble(id), function)).collect(),
+    );
     let mut executable_preamble_functions = HashMap::new();
     for (id, function) in annotated_preamble.into_iter_functions().enumerate() {
-        let compiled = compile_function(statistics, &schema_function_registry, function)?;
+        let compiled = compile_function(
+            statistics,
+            &schema_function_registry,
+            function,
+            preamble_tabling_requirements[&FunctionID::Preamble(id)],
+        )?;
         executable_preamble_functions.insert(id, compiled);
     }
 

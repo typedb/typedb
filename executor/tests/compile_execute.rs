@@ -220,7 +220,7 @@ fn test_expression_planning_traversal() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 

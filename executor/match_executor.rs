@@ -17,11 +17,12 @@ use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
-    read::{create_executors_for_pipeline, pattern_executor::PatternExecutor, TODO_REMOVE_create_executors_for_match},
+    read::{
+        pattern_executor::PatternExecutor, tabled_functions::TabledFunctions, TODO_REMOVE_create_executors_for_match,
+    },
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-use crate::read::tabled_functions::TabledFunctions;
 
 pub struct MatchExecutor {
     entry: PatternExecutor,

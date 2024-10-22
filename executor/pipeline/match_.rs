@@ -94,9 +94,14 @@ where
                 Err(err) => return Some(Err(err)),
             };
 
-            let executor =
-                MatchExecutor::new(&self.executable, snapshot, thing_manager, input_row, self.function_registry.clone())
-                    .map_err(|err| PipelineExecutionError::InitialisingMatchIterator { source: err });
+            let executor = MatchExecutor::new(
+                &self.executable,
+                snapshot,
+                thing_manager,
+                input_row,
+                self.function_registry.clone(),
+            )
+            .map_err(|err| PipelineExecutionError::InitialisingMatchIterator { source: err });
 
             match executor {
                 Ok(executor) => {

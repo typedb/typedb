@@ -51,16 +51,3 @@ impl ExecutableFunctionRegistry {
         Self::empty()
     }
 }
-//
-// pub fn plan_functions(
-//     statistics: &Statistics,
-//     precompiled_functions: &ExecutableFunctionRegistry,
-//     functions: &HashMap<FunctionID, AnnotatedFunction>,
-// ) -> HashMap<FunctionID, ExecutableFunction> {
-//     let mut compiled = HashMap::new();
-//     for (function_id, function) in functions {
-//         // TODO: Actual compilation will likely plan all the functions together, as in 2.x
-//     }
-//     Ok(compiled)
-// }
-//

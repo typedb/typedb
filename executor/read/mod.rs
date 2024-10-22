@@ -24,6 +24,7 @@ pub(crate) mod pattern_executor;
 mod step_executor;
 pub(crate) mod tabled_functions;
 
+// And use the below one instead
 pub(super) fn TODO_REMOVE_create_executors_for_match(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,
