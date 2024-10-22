@@ -915,7 +915,7 @@ impl OptionalExecutor {
         Self { executor }
     }
 
-    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ReadExecutionError> {
+    fn batch_from(&mut self, _input_batch: FixedBatch) -> Result<Option<FixedBatch>, ReadExecutionError> {
         todo!()
     }
 

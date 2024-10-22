@@ -108,11 +108,10 @@ fn attribute_create() {
             )
             .unwrap();
 
-        let mut age_1 =
-            thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age_value)).unwrap();
+        let age_1 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age_value)).unwrap();
         assert_eq!(age_1.get_value(&snapshot, &thing_manager).unwrap(), Value::Long(age_value));
 
-        let mut name_1 = thing_manager
+        let name_1 = thing_manager
             .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed(name_value)))
             .unwrap();
         assert_eq!(name_1.get_value(&snapshot, &thing_manager).unwrap(), Value::String(Cow::Borrowed(name_value)));
@@ -712,7 +711,7 @@ fn attribute_string_write_read() {
             .collect();
         let attr_values: Vec<String> = attrs
             .into_iter()
-            .map(|mut attr| (*attr.get_value(&snapshot, &thing_manager).unwrap().unwrap_string()).to_owned())
+            .map(|attr| (*attr.get_value(&snapshot, &thing_manager).unwrap().unwrap_string()).to_owned())
             .collect();
         assert!(attr_values.contains(&short_string));
         assert!(attr_values.contains(&long_string));
@@ -720,12 +719,12 @@ fn attribute_string_write_read() {
     // read them back by value
     {
         let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
-        let mut read_short_string = thing_manager
+        let read_short_string = thing_manager
             .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
             .unwrap()
             .unwrap();
         assert_eq!(short_string, read_short_string.get_value(&snapshot, &thing_manager).unwrap().unwrap_string());
-        let mut read_long_string = thing_manager
+        let read_long_string = thing_manager
             .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
             .unwrap()
             .unwrap();
@@ -794,7 +793,7 @@ fn attribute_struct_write_read() {
             .unwrap()
             .map_static(|result| result.unwrap().into_owned())
             .collect();
-        let mut attr = attr_vec.first().unwrap().clone();
+        let attr = attr_vec.first().unwrap().clone();
         let value_0 = attr.get_value(&snapshot, &thing_manager).unwrap();
         match value_0 {
             Value::Struct(v) => assert_eq!(struct_value, *v),
@@ -897,7 +896,7 @@ fn read_attribute_struct_by_field() {
 fn attribute_struct_errors() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, _thing_manager) = load_managers(storage.clone(), None);
 
     let (struct_key, nested_struct_key) = {
         let mut snapshot = storage.clone().open_snapshot_write();

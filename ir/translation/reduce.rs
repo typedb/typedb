@@ -51,7 +51,7 @@ pub fn translate_reduce(
                             )),
                         })
                     },
-                    |variable| Ok(variable.clone()),
+                    |&variable| Ok(variable),
                 )
             })
             .collect::<Result<Vec<_>, _>>()?,
@@ -84,7 +84,7 @@ pub(crate) fn build_reducer(
                     variable_name: typeql_var.name().unwrap().to_owned(),
                     declaration: reduce_value.clone(),
                 }),
-                Some(var) => Ok(Reducer::CountVar(var.clone())),
+                Some(var) => Ok(Reducer::CountVar(var)),
             },
         },
         TypeQLReducer::Stat(stat) => {
@@ -95,15 +95,13 @@ pub(crate) fn build_reducer(
                 });
             };
             match &stat.reduce_operator {
-                TypeQLReduceOperator::Sum => Ok(Reducer::Sum(var.clone())),
-                TypeQLReduceOperator::Max => Ok(Reducer::Max(var.clone())),
-                TypeQLReduceOperator::Mean => Ok(Reducer::Mean(var.clone())),
-                TypeQLReduceOperator::Median => Ok(Reducer::Median(var.clone())),
-                TypeQLReduceOperator::Min => Ok(Reducer::Min(var.clone())),
-                TypeQLReduceOperator::Std => Ok(Reducer::Std(var.clone())),
-                TypeQLReduceOperator::Count | TypeQLReduceOperator::List => {
-                    unreachable!() // Not stats
-                }
+                TypeQLReduceOperator::Sum => Ok(Reducer::Sum(var)),
+                TypeQLReduceOperator::Max => Ok(Reducer::Max(var)),
+                TypeQLReduceOperator::Mean => Ok(Reducer::Mean(var)),
+                TypeQLReduceOperator::Median => Ok(Reducer::Median(var)),
+                TypeQLReduceOperator::Min => Ok(Reducer::Min(var)),
+                TypeQLReduceOperator::Std => Ok(Reducer::Std(var)),
+                TypeQLReduceOperator::Count | TypeQLReduceOperator::List => unreachable!(), // Not stats
             }
         }
     }

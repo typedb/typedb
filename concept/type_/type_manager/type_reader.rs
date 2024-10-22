@@ -23,7 +23,6 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
     Keyable,
 };
-use itertools::Itertools;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
@@ -358,10 +357,8 @@ impl TypeReader {
     ) -> Result<HashSet<CAP::ObjectType>, ConceptReadError> {
         let mut object_types = HashSet::new();
 
-        let all_subtypes = TypeAPI::chain_types(
-            capability.object(),
-            Self::get_subtypes_transitive(snapshot, capability.object())?.into_iter(),
-        );
+        let all_subtypes =
+            TypeAPI::chain_types(capability.object(), Self::get_subtypes_transitive(snapshot, capability.object())?);
         for object_type in all_subtypes {
             let object_type_capabilities = TypeReader::get_capabilities::<CAP>(snapshot, object_type.clone(), false)?;
             if object_type_capabilities.contains(&capability) {
@@ -558,7 +555,7 @@ impl TypeReader {
                 for constraint in annotation.clone().into().into_type_constraints(curr_type.clone()) {
                     match constraint.scope() {
                         ConstraintScope::SingleInstanceOfType => {
-                            if &constraint.source() != &type_ {
+                            if constraint.source() != type_ {
                                 continue;
                             }
                         }
@@ -642,10 +639,9 @@ impl TypeReader {
         for annotation in declared_annotations {
             for constraint in annotation.clone().into().into_capability_constraints(capability.clone()) {
                 debug_assert!(!constraints.contains(&constraint));
-                debug_assert!(constraints
+                debug_assert!(!constraints
                     .iter()
-                    .find(|existing_constraint| existing_constraint.category() == constraint.category())
-                    .is_none());
+                    .any(|existing_constraint| existing_constraint.category() == constraint.category()));
                 constraints.insert(constraint);
             }
         }
@@ -662,7 +658,7 @@ impl TypeReader {
         let mut all_constraints: HashSet<CapabilityConstraint<CAP>> = HashSet::new();
         let object_capability_opt = TypeReader::get_capabilities::<CAP>(snapshot, object_type.clone(), false)?
             .into_iter()
-            .find(|capability| &capability.interface() == &interface_type);
+            .find(|capability| capability.interface() == interface_type);
         let object_capability: CAP = if let Some(object_capability) = object_capability_opt {
             object_capability
         } else {
@@ -671,7 +667,7 @@ impl TypeReader {
 
         let affecting_interface_types: HashSet<CAP::InterfaceType> = CAP::InterfaceType::chain_types(
             interface_type.clone(),
-            TypeReader::get_supertypes_transitive(snapshot, interface_type)?.into_iter(),
+            TypeReader::get_supertypes_transitive(snapshot, interface_type)?,
         )
         .collect();
         let capabilities: HashSet<CAP> = TypeReader::get_capabilities(snapshot, object_type.clone(), true)?;
@@ -685,7 +681,7 @@ impl TypeReader {
                 match constraint.scope() {
                     ConstraintScope::SingleInstanceOfType => {
                         // is checked only for source, no need to carry it
-                        if &constraint.source() != &object_capability {
+                        if constraint.source() != object_capability {
                             continue;
                         }
                     }

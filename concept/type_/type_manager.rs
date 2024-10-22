@@ -237,13 +237,15 @@ macro_rules! get_annotations_declared_methods {
 
 macro_rules! get_annotation_declared_by_category_methods {
     ($(
-        fn $method_name:ident($type_:ident) -> $annotation_type:ty;
+        $(#[$meta:meta])* fn $method_name:ident($type_:ident) -> $annotation_type:ty;
     )*) => {
         $(
+            $(#[$meta])*
             pub(crate) fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_<'static>, annotation_category: AnnotationCategory,
             ) -> Result<Option<$annotation_type>, ConceptReadError> {
-                Ok(type_.get_annotations_declared(snapshot, self)?.into_iter().find(|&type_annotation| {
+                Ok(type_.get_annotations_declared(snapshot, self)?.into_iter().find(|&type_annotation|
+                {
                     Annotation::from(type_annotation.clone()).category() == annotation_category
                 }).cloned())
             }
@@ -941,6 +943,7 @@ impl TypeManager {
         fn get_entity_type_annotation_declared_by_category(EntityType) -> EntityTypeAnnotation;
         fn get_relation_type_annotation_declared_by_category(RelationType) -> RelationTypeAnnotation;
         fn get_attribute_type_annotation_declared_by_category(AttributeType) -> AttributeTypeAnnotation;
+        #[expect(unreachable_code, reason = "RoleTypeAnnotation is uninhabited")]
         fn get_role_type_annotation_declared_by_category(RoleType) -> RoleTypeAnnotation;
         fn get_owns_annotation_declared_by_category(Owns) -> OwnsAnnotation;
         fn get_plays_annotation_declared_by_category(Plays) -> PlaysAnnotation;
@@ -997,7 +1000,7 @@ impl TypeManager {
         type_: T,
     ) -> Result<Option<TypeConstraint<T>>, ConceptReadError> {
         let constraints = type_.get_constraints(snapshot, self)?;
-        Ok(get_abstract_constraint(type_.clone(), constraints.into_iter()))
+        Ok(get_abstract_constraint(type_.clone(), constraints.iter()))
     }
 
     pub(crate) fn get_capability_abstract_constraint<CAP: Capability<'static>>(
@@ -1006,7 +1009,7 @@ impl TypeManager {
         capability: CAP,
     ) -> Result<Option<CapabilityConstraint<CAP>>, ConceptReadError> {
         let constraints = capability.get_constraints(snapshot, self)?;
-        Ok(get_abstract_constraint(capability.clone(), constraints.into_iter()))
+        Ok(get_abstract_constraint(capability.clone(), constraints.iter()))
     }
 
     pub(crate) fn get_type_owns_abstract_constraint(
@@ -1018,7 +1021,7 @@ impl TypeManager {
         let owns_declared = object_type.get_owns_attribute_declared(snapshot, self, attribute_type.clone())?;
         Ok(if let Some(owns_declared) = owns_declared {
             let constraints = object_type.get_owned_attribute_type_constraints(snapshot, self, attribute_type)?;
-            get_abstract_constraint(owns_declared, constraints.into_iter())
+            get_abstract_constraint(owns_declared, constraints.iter())
         } else {
             None
         })
@@ -1033,7 +1036,7 @@ impl TypeManager {
         let plays_declared = object_type.get_plays_role_declared(snapshot, self, role_type.clone())?;
         Ok(if let Some(plays_declared) = plays_declared {
             let constraints = object_type.get_played_role_type_constraints(snapshot, self, role_type)?;
-            get_abstract_constraint(plays_declared, constraints.into_iter())
+            get_abstract_constraint(plays_declared, constraints.iter())
         } else {
             None
         })
@@ -1048,7 +1051,7 @@ impl TypeManager {
         let relates_declared = relation_type.get_relates_role_declared(snapshot, self, role_type.clone())?;
         Ok(if let Some(relates_declared) = relates_declared {
             let constraints = relation_type.get_related_role_type_constraints(snapshot, self, role_type)?;
-            get_abstract_constraint(relates_declared, constraints.into_iter())
+            get_abstract_constraint(relates_declared, constraints.iter())
         } else {
             None
         })
@@ -1059,7 +1062,7 @@ impl TypeManager {
         snapshot: &impl ReadableSnapshot,
         owns: Owns<'static>,
     ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
-        Ok(get_unique_constraint(owns.get_constraints(snapshot, self)?.into_iter()))
+        Ok(get_unique_constraint(owns.get_constraints(snapshot, self)?.iter()))
     }
 
     pub(crate) fn get_type_owns_unique_constraint(
@@ -1069,7 +1072,7 @@ impl TypeManager {
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
         Ok(get_unique_constraint(
-            object_type.get_owned_attribute_type_constraints(snapshot, self, attribute_type)?.into_iter(),
+            object_type.get_owned_attribute_type_constraints(snapshot, self, attribute_type)?.iter(),
         ))
     }
 
@@ -1078,12 +1081,11 @@ impl TypeManager {
         snapshot: &impl ReadableSnapshot,
         capability: CAP,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
-        Ok(self
-            .get_capability_cardinality_constraint(snapshot, capability)?
+        self.get_capability_cardinality_constraint(snapshot, capability)?
             .ok_or(ConceptReadError::CorruptMissingMandatoryCardinalityForNonSpecialisingCapability)?
             .description()
             .unwrap_cardinality()
-            .map_err(|source| ConceptReadError::Constraint { source })?)
+            .map_err(|source| ConceptReadError::Constraint { source })
     }
 
     pub(crate) fn get_relates_cardinality(
@@ -1106,7 +1108,7 @@ impl TypeManager {
         capability: CAP,
     ) -> Result<Option<CapabilityConstraint<CAP>>, ConceptReadError> {
         let constraints = capability.get_constraints(snapshot, self)?;
-        Ok(get_cardinality_constraint(capability.clone(), constraints.into_iter()))
+        Ok(get_cardinality_constraint(capability.clone(), constraints.iter()))
     }
 
     pub(crate) fn get_is_key(
@@ -1116,7 +1118,7 @@ impl TypeManager {
     ) -> Result<bool, ConceptReadError> {
         match owns.get_ordering(snapshot, self) {
             Ok(_) => {
-                Ok(if let Some(constraint) = get_unique_constraint(owns.get_constraints(snapshot, self)?.into_iter()) {
+                Ok(if let Some(constraint) = get_unique_constraint(owns.get_constraints(snapshot, self)?.iter()) {
                     constraint
                         .source()
                         .get_annotations_declared(snapshot, self)?
@@ -1299,7 +1301,7 @@ impl TypeManager {
 
         if let Err(relates_err) = self.set_relates(snapshot, thing_manager, relation_type, role_type.clone(), false) {
             TypeWriter::storage_unput_type_vertex_property(snapshot, role_type.clone(), Some(ordering));
-            TypeWriter::storage_unput_label(snapshot, role_type.clone(), &label);
+            TypeWriter::storage_unput_label(snapshot, role_type.clone(), label);
             TypeWriter::storage_unput_vertex(snapshot, role_type);
             Err(relates_err)
         } else {

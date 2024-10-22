@@ -19,7 +19,7 @@ use crate::{
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::{type_reader::TypeReader, validation::SchemaValidationError, TypeManager},
-        Capability, KindAPI, Ordering, OwnerAPI, TypeAPI,
+        KindAPI, Ordering, OwnerAPI, TypeAPI,
     },
 };
 
@@ -160,15 +160,12 @@ pub(crate) fn validate_sibling_owns_ordering_match_for_type(
     let existing_owns = owner_type
         .get_owns_with_specialised(snapshot, type_manager)
         .map_err(|source| SchemaValidationError::ConceptRead { source })?;
-    let filtered_existing_owns = existing_owns
-        .into_iter()
-        .filter(|owns| !new_set_owns_orderings.contains_key(*owns))
-        .map(|owns| (owns, None::<Ordering>))
-        .into_iter();
+    let filtered_existing_owns =
+        existing_owns.into_iter().filter(|owns| !new_set_owns_orderings.contains_key(*owns)).map(|owns| (owns, None));
 
     let all_updated_owns = new_set_owns_orderings
         .iter()
-        .map(|(new_owns, new_ordering)| (new_owns, Some(new_ordering.clone())))
+        .map(|(new_owns, &new_ordering)| (new_owns, Some(new_ordering)))
         .chain(filtered_existing_owns);
 
     for (owns, ordering_opt) in all_updated_owns {
@@ -194,7 +191,7 @@ pub(crate) fn validate_sibling_owns_ordering_match_for_type(
                     super_label: get_label_or_schema_err(snapshot, type_manager, owner_type)?,
                     label: get_label_or_schema_err(snapshot, type_manager, first_subtype.clone())?,
                     interface: get_label_or_schema_err(snapshot, type_manager, attribute_type)?,
-                    found: first_ordering.clone(),
+                    found: *first_ordering,
                     expected: ordering,
                 });
             }

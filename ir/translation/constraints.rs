@@ -263,7 +263,7 @@ fn add_typeql_sub(
     subtype: Vertex<Variable>,
     sub: &typeql::statement::type_::Sub,
 ) -> Result<(), RepresentationError> {
-    let kind = sub.kind.clone().into();
+    let kind = sub.kind.into();
     let type_ = register_typeql_type_any(constraints, &sub.supertype)?;
     constraints.add_sub(kind, subtype, type_)?;
     Ok(())

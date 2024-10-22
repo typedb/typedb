@@ -22,7 +22,7 @@ use storage::{
 };
 
 pub fn setup_concept_storage(storage: &mut Arc<MVCCStorage<WALClient>>) {
-    let mut storage = Arc::get_mut(storage).unwrap();
+    let storage = Arc::get_mut(storage).unwrap();
     storage.durability_mut().register_record_type::<Statistics>();
 }
 
@@ -35,11 +35,7 @@ pub fn load_managers(
     statistics.may_synchronise(storage.as_ref()).unwrap();
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
     let thing_vertex_generator = Arc::new(ThingVertexGenerator::load(storage.clone()).unwrap());
-    let cache = if let Some(sequence_number) = type_cache_at {
-        Some(Arc::new(TypeCache::new(storage, sequence_number).unwrap()))
-    } else {
-        None
-    };
+    let cache = type_cache_at.map(|sequence_number| Arc::new(TypeCache::new(storage, sequence_number).unwrap()));
     let type_manager = Arc::new(TypeManager::new(definition_key_generator, type_vertex_generator, cache));
     let thing_manager = Arc::new(ThingManager::new(
         thing_vertex_generator,

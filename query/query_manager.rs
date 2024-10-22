@@ -7,10 +7,7 @@
 use std::{collections::HashSet, sync::Arc};
 
 use compiler::{
-    annotation::{
-        function::IndexedAnnotatedFunctions,
-        pipeline::{annotate_pipeline, AnnotatedPipeline},
-    },
+    annotation::pipeline::{annotate_pipeline, AnnotatedPipeline},
     executable::pipeline::{compile_pipeline, ExecutablePipeline},
 };
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
@@ -28,12 +25,13 @@ use typeql::query::SchemaQuery;
 
 use crate::{define, error::QueryError, redefine, undefine};
 
+#[derive(Default)]
 pub struct QueryManager {}
 
 impl QueryManager {
     // TODO: clean up if QueryManager remains stateless
-    pub fn new() -> QueryManager {
-        QueryManager {}
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn execute_schema(
@@ -72,7 +70,7 @@ impl QueryManager {
 
         // 2: Annotate
         let annotated_schema_functions = function_manager
-            .get_annotated_functions(snapshot.as_ref(), &type_manager)
+            .get_annotated_functions(snapshot.as_ref(), type_manager)
             .map_err(|err| QueryError::FunctionRetrieval { typedb_source: err })?;
 
         let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = annotate_pipeline(

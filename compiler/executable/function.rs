@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -46,7 +43,7 @@ pub(crate) fn compile_function(
     function: AnnotatedFunction,
 ) -> Result<ExecutableFunction, ExecutableCompilationError> {
     let AnnotatedFunction { variable_registry, arguments, stages, return_ } = function;
-    let (argument_positions, mut executable_stages) = compile_pipeline_stages(
+    let (argument_positions, executable_stages) = compile_pipeline_stages(
         statistics,
         Arc::new(variable_registry),
         schema_functions,
@@ -62,15 +59,14 @@ fn compile_return_operation(
     return_: AnnotatedFunctionReturn,
 ) -> Result<ExecutableReturn, ExecutableCompilationError> {
     let variable_positions =
-        executable_stages.last().map(|stage: &ExecutableStage| stage.output_row_mapping()).unwrap_or(HashMap::new());
+        executable_stages.last().map(|stage: &ExecutableStage| stage.output_row_mapping()).unwrap_or_default();
     match return_ {
-        AnnotatedFunctionReturn::Stream { variables, .. } => Ok(ExecutableReturn::Stream(
-            variables.iter().map(|var| variable_positions.get(var).unwrap().clone()).collect(),
-        )),
-        AnnotatedFunctionReturn::Single { selector, variables, .. } => Ok(ExecutableReturn::Single(
-            selector,
-            variables.iter().map(|var| variable_positions.get(var).unwrap().clone()).collect(),
-        )),
+        AnnotatedFunctionReturn::Stream { variables, .. } => {
+            Ok(ExecutableReturn::Stream(variables.iter().map(|var| variable_positions[var]).collect()))
+        }
+        AnnotatedFunctionReturn::Single { selector, variables, .. } => {
+            Ok(ExecutableReturn::Single(selector, variables.iter().map(|var| variable_positions[var]).collect()))
+        }
         | AnnotatedFunctionReturn::ReduceCheck {} => Ok(ExecutableReturn::Check),
         | AnnotatedFunctionReturn::ReduceReducer { instructions } => {
             let positional_reducers =

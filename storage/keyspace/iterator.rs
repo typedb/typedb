@@ -116,19 +116,3 @@ impl Seekable<[u8]> for KeyspaceRangeIterator {
         self.iterator.compare_key(item, key)
     }
 }
-
-impl KeyspaceRangeIterator {
-    #[deprecated(note = "use `.map_static(...).collect()` instead")]
-    pub fn collect_cloned<const INLINE_KEY: usize, const INLINE_VALUE: usize>(
-        self,
-    ) -> Vec<(ByteArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)> {
-        self.iterator
-            .map_static::<(ByteArray<INLINE_KEY>, ByteArray<INLINE_VALUE>), _>(
-                |res: Result<(&[u8], &[u8]), KeyspaceError>| {
-                    let (key, value) = res.unwrap_or_log();
-                    (ByteArray::<INLINE_KEY>::copy(key), ByteArray::<INLINE_VALUE>::copy(value))
-                },
-            )
-            .collect()
-    }
-}

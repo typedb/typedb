@@ -26,7 +26,7 @@ pub fn translate_select(
                 variable_name: typeql_var.name().unwrap().to_owned(),
                 declaration: typeql::query::pipeline::stage::Stage::Operator(Operator::Select(typeql_select.clone())),
             }),
-            Some(v) => Ok(v.clone()),
+            Some(variable) => Ok(variable),
         })
         .collect::<Result<HashSet<_>, _>>()?;
     let select = Select::new(selected_variables);
@@ -50,7 +50,7 @@ pub fn translate_sort(
                         typeql::query::pipeline::stage::Operator::Sort(sort.clone()),
                     ),
                 }),
-                Some(variable) => Ok((variable.clone(), is_ascending)),
+                Some(variable) => Ok((variable, is_ascending)),
             }
         })
         .collect::<Result<Vec<_>, _>>()?;
@@ -62,7 +62,7 @@ pub fn translate_offset(
     offset: &typeql::query::stage::modifier::Offset,
 ) -> Result<Offset, RepresentationError> {
     u64::from_typeql_literal(&offset.offset)
-        .map(|offset| Offset::new(offset))
+        .map(Offset::new)
         .map_err(|source| RepresentationError::LiteralParseError { literal: offset.offset.value.clone(), source })
 }
 
@@ -71,7 +71,7 @@ pub fn translate_limit(
     limit: &typeql::query::stage::modifier::Limit,
 ) -> Result<Limit, RepresentationError> {
     u64::from_typeql_literal(&limit.limit)
-        .map(|limit| Limit::new(limit))
+        .map(Limit::new)
         .map_err(|source| RepresentationError::LiteralParseError { literal: limit.limit.value.clone(), source })
 }
 
@@ -87,7 +87,7 @@ pub fn translate_require(
                 variable_name: typeql_var.name().unwrap().to_owned(),
                 declaration: typeql::query::pipeline::stage::Stage::Operator(Operator::Require(typeql_require.clone())),
             }),
-            Some(v) => Ok(v.clone()),
+            Some(&variable) => Ok(variable),
         })
         .collect::<Result<HashSet<_>, _>>()?;
     let require = Require::new(required_variables);

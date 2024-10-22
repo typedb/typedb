@@ -112,8 +112,7 @@ impl TypeCache {
                     .constraints
                     .iter()
                     .map(|constraint| constraint.category())
-                    .find(|category| category == &ConstraintCategory::Independent)
-                    .is_some()
+                    .any(|category| category == ConstraintCategory::Independent)
                 {
                     Some(cache.common_type_cache.type_.clone())
                 } else {

@@ -79,9 +79,7 @@ pub mod tests {
     use test_utils::assert_matches;
 
     use crate::annotation::{
-        function::{
-            annotate_functions, annotate_named_function, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions,
-        },
+        function::{annotate_named_function, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         match_inference::{
             compute_type_inference_graph, infer_types, NestedTypeInferenceGraphDisjunction, TypeInferenceEdge,
             TypeInferenceGraph, VertexAnnotations,
@@ -228,7 +226,7 @@ pub mod tests {
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
         let object_types = [type_animal.clone(), type_cat.clone(), type_dog.clone(), type_fears.clone()];
 
-        let (mut with_no_cache, mut with_local_cache, mut with_schema_cache) = [
+        let (with_no_cache, with_local_cache, with_schema_cache) = [
             FunctionID::Preamble(0),
             FunctionID::Preamble(0),
             FunctionID::Schema(DefinitionKey::build(Prefix::DefinitionFunction, DefinitionID::build(0))),

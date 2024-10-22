@@ -906,7 +906,7 @@ impl ThingManager {
 
     fn create_commit_locks(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), ConceptReadError> {
         // TODO: Should not collect here (iterate_writes() already copies)
-        for (key, write) in snapshot.iterate_writes().collect_vec() {
+        for (key, _write) in snapshot.iterate_writes().collect_vec() {
             let key_reference = StorageKeyReference::from(&key);
             if ThingEdgeHas::is_has(key_reference) {
                 let has = ThingEdgeHas::new(Bytes::Reference(key_reference.byte_ref()));
@@ -967,12 +967,12 @@ impl ThingManager {
         owner: &Object<'_>,
         attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptReadError> {
-        let cardinality_constraints = get_checked_constraints(
-            owner
-                .type_()
-                .get_owned_attribute_type_constraints_cardinality(snapshot, self.type_manager(), attribute_type)?
-                .into_iter(),
-        );
+        let cardinality_constraints =
+            get_checked_constraints(owner.type_().get_owned_attribute_type_constraints_cardinality(
+                snapshot,
+                self.type_manager(),
+                attribute_type,
+            )?);
         if cardinality_constraints.is_empty() {
             return Ok(());
         }
@@ -999,10 +999,7 @@ impl ThingManager {
         role_type: RoleType<'static>,
     ) -> Result<(), ConceptReadError> {
         let cardinality_constraints = get_checked_constraints(
-            player
-                .type_()
-                .get_played_role_type_constraints_cardinality(snapshot, self.type_manager(), role_type)?
-                .into_iter(),
+            player.type_().get_played_role_type_constraints_cardinality(snapshot, self.type_manager(), role_type)?,
         );
         if cardinality_constraints.is_empty() {
             return Ok(());
@@ -1030,10 +1027,7 @@ impl ThingManager {
         role_type: RoleType<'static>,
     ) -> Result<(), ConceptReadError> {
         let cardinality_constraints = get_checked_constraints(
-            relation
-                .type_()
-                .get_related_role_type_constraints_cardinality(snapshot, self.type_manager(), role_type)?
-                .into_iter(),
+            relation.type_().get_related_role_type_constraints_cardinality(snapshot, self.type_manager(), role_type)?,
         );
         if cardinality_constraints.is_empty() {
             return Ok(());
@@ -1284,19 +1278,19 @@ impl ThingManager {
             match &object {
                 Object::Entity(_) => {}
                 Object::Relation(relation) => {
-                    let updated_role_types = out_relation_role_types.entry(relation.clone()).or_insert(HashSet::new());
+                    let updated_role_types = out_relation_role_types.entry(relation.clone()).or_default();
                     for relates in relation.type_().get_relates(snapshot, self.type_manager())?.into_iter() {
                         updated_role_types.insert(relates.role());
                     }
                 }
             }
 
-            let updated_attribute_types = out_object_attribute_types.entry(object.clone()).or_insert(HashSet::new());
+            let updated_attribute_types = out_object_attribute_types.entry(object.clone()).or_default();
             for owns in object.type_().get_owns(snapshot, self.type_manager())?.into_iter() {
                 updated_attribute_types.insert(owns.attribute());
             }
 
-            let updated_role_types = out_object_role_types.entry(object.clone()).or_insert(HashSet::new());
+            let updated_role_types = out_object_role_types.entry(object.clone()).or_default();
             for plays in object.type_().get_plays(snapshot, self.type_manager())?.into_iter() {
                 updated_role_types.insert(plays.role());
             }
@@ -1316,8 +1310,7 @@ impl ThingManager {
             let owner = Object::new(edge.from());
             let attribute = Attribute::new(edge.to());
             if self.object_exists(snapshot, &owner)? {
-                let updated_attribute_types =
-                    out_object_attribute_types.entry(owner.into_owned()).or_insert(HashSet::new());
+                let updated_attribute_types = out_object_attribute_types.entry(owner.into_owned()).or_default();
                 updated_attribute_types.insert(attribute.type_());
             }
         }
@@ -1340,12 +1333,12 @@ impl ThingManager {
             let role_type = RoleType::build_from_type_id(edge.role_id());
 
             if self.object_exists(snapshot, &relation)? {
-                let updated_role_types = out_relation_role_types.entry(relation.into_owned()).or_insert(HashSet::new());
+                let updated_role_types = out_relation_role_types.entry(relation.into_owned()).or_default();
                 updated_role_types.insert(role_type.clone());
             }
 
             if self.object_exists(snapshot, &player)? {
-                let updated_role_types = out_object_role_types.entry(player.into_owned()).or_insert(HashSet::new());
+                let updated_role_types = out_object_role_types.entry(player.into_owned()).or_default();
                 updated_role_types.insert(role_type.clone());
             }
         }

@@ -64,7 +64,7 @@ pub(crate) trait HashedID<const TOTAL_LENGTH: usize> {
         let mut next = iter.next().transpose()?;
         let mut first_unused_tail: Option<u8> = None;
 
-        let mut next_tail: u8 = 0 | Self::HASHID_DISAMBIGUATOR_BYTE_IS_HASH_FLAG; // Start with the byte set
+        let mut next_tail: u8 = Self::HASHID_DISAMBIGUATOR_BYTE_IS_HASH_FLAG; // Start with the bit set
         while let Some((key, value)) = next {
             let key_tail = key.bytes()[tail_byte_index];
             if value.bytes() == value_bytes {

@@ -46,7 +46,7 @@ macro_rules! filter_variants {
 pub(crate) use filter_variants;
 
 pub(crate) fn type_ref_to_label_and_ordering(
-    label: &Label,
+    label: &Label<'_>,
     type_ref: &TypeRefAny,
 ) -> Result<(Label<'static>, Ordering), SymbolResolutionError> {
     match type_ref {
@@ -155,7 +155,7 @@ pub(crate) fn resolve_value_type(
     }
 }
 
-pub(crate) fn resolve_struct_definition_key<'a>(
+pub(crate) fn resolve_struct_definition_key(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     name: &str,

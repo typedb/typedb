@@ -84,13 +84,13 @@ impl ReturnOperation {
         }
     }
 
-    pub(crate) fn variables<'a>(&'a self) -> Cow<'a, [Variable]> {
+    pub(crate) fn variables(&self) -> Cow<'_, [Variable]> {
         match self {
             ReturnOperation::Stream(vars) => Cow::Borrowed(vars),
             ReturnOperation::Single(_, vars) => Cow::Borrowed(vars),
             ReturnOperation::ReduceCheck() => Cow::Owned(vec![]),
             ReturnOperation::ReduceReducer(reducers) => {
-                let vars: Vec<_> = reducers.iter().map(|reducer| reducer.variable()).flatten().collect();
+                let vars = reducers.iter().filter_map(Reducer::variable).collect();
                 Cow::Owned(vars)
             }
         }

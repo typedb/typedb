@@ -9,6 +9,7 @@ use std::sync::Arc;
 use bytes::{byte_array::ByteArray, Bytes};
 use durability::wal::WAL;
 use itertools::Itertools;
+use lending_iterator::LendingIterator;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::{
     key_range::KeyRange,
@@ -133,7 +134,11 @@ fn create_reopen() {
             .iterate_keyspace_range(KeyRange::new_unbounded(StorageKey::<BUFFER_VALUE_INLINE>::Reference(
                 StorageKeyReference::from(&StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace, [0x0]))),
             )))
-            .collect_cloned::<BUFFER_VALUE_INLINE, 128>();
+            .map_static::<(ByteArray<BUFFER_VALUE_INLINE>, ByteArray<128>), _>(|res| {
+                let (key, value) = res.unwrap();
+                (ByteArray::copy(key), ByteArray::copy(value))
+            })
+            .collect::<Vec<_>>();
         let items = items.into_iter().map(|(key, _)| key).collect_vec();
         assert_eq!(items, keys.into_iter().map(StorageKeyArray::into_byte_array).collect_vec());
     }
@@ -183,7 +188,11 @@ fn get_put_iterate() {
             StorageKey::<BUFFER_VALUE_INLINE>::Reference(StorageKeyReference::from(&prefix)),
             false,
         ))
-        .collect_cloned::<BUFFER_VALUE_INLINE, 128>();
+        .map_static::<(ByteArray<BUFFER_VALUE_INLINE>, ByteArray<128>), _>(|res| {
+            let (key, value) = res.unwrap();
+            (ByteArray::copy(key), ByteArray::copy(value))
+        })
+        .collect();
     assert_eq!(
         items,
         vec![

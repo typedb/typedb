@@ -14,15 +14,16 @@ use crate::{
     pipeline::block::{BlockBuilderContext, ScopeTransparency},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, Default)]
 pub struct Disjunction {
     conjunctions: Vec<Conjunction>,
 }
 
 impl Disjunction {
     pub fn new() -> Self {
-        Self { conjunctions: Vec::new() }
+        Self::default()
     }
+
     pub(crate) fn variables(&self) -> Box<dyn Iterator<Item = Variable>> {
         todo!()
     }

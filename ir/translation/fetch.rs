@@ -79,7 +79,7 @@ fn translate_fetch_object(
             Ok(FetchObject::Entries(object))
         }
         TypeQLFetchObjectBody::AttributesAll(variable) => {
-            let var = try_get_variable(parent_context, &variable)?;
+            let var = try_get_variable(parent_context, variable)?;
             Ok(FetchObject::Attributes(var))
         }
     }
@@ -126,7 +126,7 @@ fn translate_fetch_list(
                 }
                 FunctionName::Identifier(name) => {
                     let some =
-                        translate_inline_user_function_call(parent_context, function_index, &call, name.as_str())?;
+                        translate_inline_user_function_call(parent_context, function_index, call, name.as_str())?;
                     match some {
                         FetchSome::SingleFunction(_) => {
                             Err(FetchRepresentationError::ExpectedStreamUserFunctionInList {
@@ -146,7 +146,7 @@ fn translate_fetch_list(
             // clone context, since we don't want the inline function to affect the parent context
             let mut local_context = parent_context.clone();
             let (translated_stages, subfetch) =
-                translate_pipeline_stages(snapshot, function_index, &mut local_context, &stages)
+                translate_pipeline_stages(snapshot, function_index, &mut local_context, stages)
                     .map_err(|err| FetchRepresentationError::SubFetchRepresentation { typedb_source: Box::new(err) })?;
             let input_variables = find_sub_fetch_inputs(parent_context, &translated_stages, subfetch.as_ref());
             Ok(FetchSome::ListSubFetch(FetchListSubFetch {
@@ -159,9 +159,9 @@ fn translate_fetch_list(
         FetchStream::SubQueryFunctionBlock(block) => {
             // clone context, since we don't want the inline function to affect the parent context
             let mut local_context = parent_context.clone();
-            let body = translate_function_block(snapshot, function_index, &mut local_context, &block)
+            let body = translate_function_block(snapshot, function_index, &mut local_context, block)
                 .map_err(|err| FetchRepresentationError::FunctionRepresentation { declaration: block.clone() })?;
-            let args = find_function_body_arguments(&parent_context, &body);
+            let args = find_function_body_arguments(parent_context, &body);
             if !body.return_operation().is_stream() {
                 Err(FetchRepresentationError::ExpectedStreamInlineFunction { declaration: block.clone() })
             } else {
@@ -201,35 +201,31 @@ fn translate_fetch_single(
                     Ok(FetchSome::SingleVar(var))
                 }
                 Expression::ListIndex(_) | Expression::Value(_) | Expression::Operation(_) | Expression::Paren(_) => {
-                    translate_inline_expression_single(parent_context, function_index, &expression)
+                    translate_inline_expression_single(parent_context, function_index, expression)
                 }
                 // function expressions may return Single or List, depending on signature invoked
                 Expression::Function(call) => {
                     match &call.name {
                         FunctionName::Builtin(_) => {
-                            return translate_inline_expression_single(parent_context, function_index, &expression);
+                            translate_inline_expression_single(parent_context, function_index, expression)
                         }
                         FunctionName::Identifier(name) => {
-                            translate_inline_user_function_call(parent_context, function_index, &call, name.as_str())
+                            translate_inline_user_function_call(parent_context, function_index, call, name.as_str())
                             // TODO: we should error if this is NOT a single-return function
                         }
                     }
                 }
                 // list expressions should be mapped to FetchList
-                Expression::List(_) => {
-                    return Err(FetchRepresentationError::Unimplemented {});
-                }
-                Expression::ListIndexRange(_) => {
-                    return Err(FetchRepresentationError::Unimplemented {});
-                }
+                Expression::List(_) => Err(FetchRepresentationError::Unimplemented {}),
+                Expression::ListIndexRange(_) => Err(FetchRepresentationError::Unimplemented {}),
             }
         }
         FetchSingle::FunctionBlock(block) => {
             // clone context, since we don't want the inline function to affect the parent context
             let mut local_context = parent_context.clone();
-            let body = translate_function_block(snapshot, function_index, &mut local_context, &block)
+            let body = translate_function_block(snapshot, function_index, &mut local_context, block)
                 .map_err(|err| FetchRepresentationError::FunctionRepresentation { declaration: block.clone() })?;
-            let args = find_function_body_arguments(&parent_context, &body);
+            let args = find_function_body_arguments(parent_context, &body);
             if body.return_operation().is_stream() {
                 Err(FetchRepresentationError::ExpectedSingleInlineFunction { declaration: block.clone() })
             } else {
@@ -279,11 +275,11 @@ fn translate_inline_expression_single(
         &mut local_context.parameters,
     );
     let mut builder = Block::builder(builder_context);
-    let assign_var = add_expression(function_index, &mut builder, &expression)?;
+    let assign_var = add_expression(function_index, &mut builder, expression)?;
     let block = TranslatedStage::Match { block: builder.finish() };
     let return_ = ReturnOperation::Single(SingleSelector::First, vec![assign_var]);
     let body = FunctionBody::new(vec![block], return_);
-    let args = find_function_body_arguments(&context, &body);
+    let args = find_function_body_arguments(context, &body);
     Ok(FetchSome::SingleFunction(create_anonymous_function(local_context, args, body)))
 }
 
@@ -351,11 +347,11 @@ fn add_expression(
     let assign_var = conjunction_builder
         .declare_variable_anonymous()
         .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: Box::new(err) })?;
-    let expression = build_expression(function_index, &mut conjunction_builder.constraints_mut(), &expression)
+    let expression = build_expression(function_index, &mut conjunction_builder.constraints_mut(), expression)
         .map_err(|err| FetchRepresentationError::ExpressionRepresentation { typedb_source: Box::new(err) })?;
     let _ = conjunction_builder
         .constraints_mut()
-        .add_assignment(assign_var.clone(), expression)
+        .add_assignment(assign_var, expression)
         .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: Box::new(err) })?;
     Ok(assign_var)
 }
@@ -381,7 +377,7 @@ fn find_function_body_arguments(parent_context: &TranslationContext, function_bo
             arguments.insert(*var);
         }
     }
-    Vec::from_iter(arguments.into_iter())
+    Vec::from_iter(arguments)
 }
 
 fn find_sub_fetch_inputs(
@@ -400,7 +396,9 @@ fn find_sub_fetch_inputs(
         }
     }
     let mut fetch_vars = HashSet::new();
-    fetch.map(|clause| clause.record_variables_recursive(&mut fetch_vars));
+    if let Some(clause) = fetch {
+        clause.record_variables_recursive(&mut fetch_vars);
+    }
     for var in fetch_vars {
         if parent_context.variable_registry.has_variable_as_named(&var) {
             arguments.insert(var);

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, hash::Hash, iter, sync::Arc};
+use std::{collections::HashMap, hash::Hash, sync::Arc};
 
 use answer::{variable_value::VariableValue, Thing};
 use compiler::annotation::expression::{

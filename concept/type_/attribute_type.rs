@@ -37,7 +37,7 @@ use crate::{
         object_type::ObjectType,
         owns::Owns,
         type_manager::TypeManager,
-        Capability, KindAPI, ThingTypeAPI, TypeAPI,
+        KindAPI, ThingTypeAPI, TypeAPI,
     },
     ConceptAPI,
 };
@@ -120,10 +120,10 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
         type_manager.get_attribute_type_label(snapshot, self.clone().into_owned())
     }
 
-    fn get_label_arc<'m>(
+    fn get_label_arc(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
     ) -> Result<Arc<Label<'static>>, ConceptReadError> {
         type_manager.get_attribute_type_label_arc(snapshot, self.clone().into_owned())
     }

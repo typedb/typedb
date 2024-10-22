@@ -8,7 +8,6 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use answer::variable::Variable;
 use concept::type_::type_manager::TypeManager;
-use encoding::value::value_type::ValueType;
 use ir::{
     pattern::{
         conjunction::Conjunction,

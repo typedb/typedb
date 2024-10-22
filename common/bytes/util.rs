@@ -7,7 +7,6 @@
 use std::{
     borrow::Cow,
     fmt::{self, Formatter, Write},
-    usize,
 };
 
 // TODO: this needs to be optimised using bigger strides than a single byte!

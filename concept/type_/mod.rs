@@ -116,10 +116,10 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError>;
 
-    fn get_label_arc<'m>(
+    fn get_label_arc(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
     ) -> Result<Arc<Label<'static>>, ConceptReadError>;
 
     fn get_supertype(
@@ -134,12 +134,12 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<Self>>, ConceptReadError>;
 
-    fn get_supertype_root<'m>(
+    fn get_supertype_root(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
     ) -> Result<Option<Self>, ConceptReadError> {
-        Ok(self.get_supertypes_transitive(snapshot, type_manager)?.into_iter().cloned().last())
+        Ok(self.get_supertypes_transitive(snapshot, type_manager)?.into_iter().last().cloned())
     }
 
     fn get_subtypes<'m>(
@@ -154,62 +154,62 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<Self>>, ConceptReadError>;
 
-    fn is_supertype_of<'m>(
+    fn is_supertype_of(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         other: Self,
     ) -> Result<bool, ConceptReadError> {
         Ok(other.get_supertype(snapshot, type_manager)?.eq(&Some(self.clone())))
     }
 
-    fn is_supertype_transitive_of<'m>(
+    fn is_supertype_transitive_of(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         other: Self,
     ) -> Result<bool, ConceptReadError> {
         Ok(other.get_supertypes_transitive(snapshot, type_manager)?.contains(self))
     }
 
-    fn is_supertype_transitive_of_or_same<'m>(
+    fn is_supertype_transitive_of_or_same(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         other: Self,
     ) -> Result<bool, ConceptReadError> {
         Ok(self == &other || self.is_supertype_transitive_of(snapshot, type_manager, other)?)
     }
 
-    fn is_subtype_of<'m>(
+    fn is_subtype_of(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         other: Self,
     ) -> Result<bool, ConceptReadError> {
         Ok(other.get_subtypes(snapshot, type_manager)?.contains(self))
     }
 
-    fn is_subtype_transitive_of<'m>(
+    fn is_subtype_transitive_of(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         other: Self,
     ) -> Result<bool, ConceptReadError> {
         Ok(other.get_subtypes_transitive(snapshot, type_manager)?.contains(self))
     }
 
-    fn is_subtype_transitive_of_or_same<'m>(
+    fn is_subtype_transitive_of_or_same(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         other: Self,
     ) -> Result<bool, ConceptReadError> {
         Ok(self == &other || self.is_subtype_transitive_of(snapshot, type_manager, other)?)
     }
 
     fn chain_types<C: IntoIterator<Item = Self>>(first: Self, others: C) -> impl Iterator<Item = Self> {
-        iter::once(first).chain(others.into_iter())
+        iter::once(first).chain(others)
     }
 }
 
@@ -283,70 +283,70 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         attribute_type: AttributeType<'static>,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns<'static>>>>, ConceptReadError>;
 
-    fn get_owned_attribute_type_constraint_abstract<'m>(
+    fn get_owned_attribute_type_constraint_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
 
-    fn get_owned_attribute_type_constraints_cardinality<'m>(
+    fn get_owned_attribute_type_constraints_cardinality(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
 
-    fn get_owned_attribute_type_constraints_distinct<'m>(
+    fn get_owned_attribute_type_constraints_distinct(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
 
-    fn is_owned_attribute_type_abstract<'m>(
+    fn is_owned_attribute_type_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<bool, ConceptReadError> {
         Ok(self.get_owned_attribute_type_constraint_abstract(snapshot, type_manager, attribute_type)?.is_some())
     }
 
-    fn is_owned_attribute_type_distinct<'m>(
+    fn is_owned_attribute_type_distinct(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<bool, ConceptReadError> {
         Ok(!self.get_owned_attribute_type_constraints_distinct(snapshot, type_manager, attribute_type)?.is_empty())
     }
 
-    fn get_owned_attribute_type_constraints_regex<'m>(
+    fn get_owned_attribute_type_constraints_regex(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
 
-    fn get_owned_attribute_type_constraints_range<'m>(
+    fn get_owned_attribute_type_constraints_range(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
 
-    fn get_owned_attribute_type_constraints_values<'m>(
+    fn get_owned_attribute_type_constraints_values(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
 
-    fn get_owned_attribute_type_constraint_unique<'m>(
+    fn get_owned_attribute_type_constraint_unique(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
 
@@ -453,26 +453,26 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         role_type: RoleType<'static>,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays<'static>>>>, ConceptReadError>;
 
-    fn get_played_role_type_constraint_abstract<'m>(
+    fn get_played_role_type_constraint_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         role_type: RoleType<'static>,
     ) -> Result<Option<CapabilityConstraint<Plays<'static>>>, ConceptReadError>;
 
-    fn is_played_role_type_abstract<'m>(
+    fn is_played_role_type_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         role_type: RoleType<'static>,
     ) -> Result<bool, ConceptReadError> {
         Ok(self.get_played_role_type_constraint_abstract(snapshot, type_manager, role_type)?.is_some())
     }
 
-    fn get_played_role_type_constraints_cardinality<'m>(
+    fn get_played_role_type_constraints_cardinality(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         role_type: RoleType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Plays<'static>>>, ConceptReadError>;
 
@@ -550,11 +550,12 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, Default, Eq, PartialEq, Hash)]
 pub enum Ordering {
     // ##########################################################################
     // ###### WARNING: any changes here may break backwards compatibility! ######
     // ##########################################################################
+    #[default]
     Unordered,
     Ordered,
 }
@@ -565,12 +566,6 @@ impl Display for Ordering {
             Ordering::Unordered => write!(f, ""),
             Ordering::Ordered => write!(f, "[]"),
         }
-    }
-}
-
-impl Ordering {
-    pub fn default() -> Ordering {
-        Ordering::Unordered
     }
 }
 

@@ -48,27 +48,28 @@ impl<'a, T: ?Sized + 'a, U: ?Sized + 'a> ReadGuard<'a, U> for RwLockReadGuardPro
 
 #[macro_export]
 macro_rules! read_guard_project {
-    ($guard:expr => $field:ident) => {
+    ($guard:expr => $field:ident) => {{
+        let guard = $guard;
         unsafe {
             // SAFETY: this fn takes in a ref and ensures the pointer is aligned and safe to turn back into ref
             // addr_of!() does not provide that guarantee
             fn as_ptr<T>(t: &T) -> *const T {
                 t as *const T
             }
-            let guard = $guard;
             $crate::RwLockReadGuardProject::new(
                 as_ptr(&guard.$field).as_ref().unwrap(),
                 $crate::ReadGuardWrap::into_guard(guard),
             )
         }
-    };
-    ($guard:ident => $projection:expr) => {
+    }};
+    ($guard:ident => $projection:expr) => {{
+        let ptr = std::ptr::addr_of!(*$projection);
+        let guard = $guard;
         unsafe {
-            // SAFETY: $projection is already a reference and is therefor properly aligned
-            let ptr = std::ptr::addr_of!(*$projection);
-            $crate::RwLockReadGuardProject::new(ptr.as_ref().unwrap(), $crate::ReadGuardWrap::into_guard($guard))
+            // SAFETY: $projection is already a reference and is therefore properly aligned
+            $crate::RwLockReadGuardProject::new(ptr.as_ref().unwrap(), $crate::ReadGuardWrap::into_guard(guard))
         }
-    };
+    }};
 }
 
 #[cfg(test)]
@@ -102,6 +103,7 @@ mod test {
 
     #[test]
     fn enum_projection_test() {
+        #[allow(unused)]
         enum Test {
             Foo(u8),
             Bar(u8, u16),

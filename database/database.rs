@@ -46,8 +46,8 @@ use tracing::{event, Level};
 use crate::{
     DatabaseOpenError::FunctionCacheInitialise,
     DatabaseResetError::{
-        CorruptionPartialResetKeyGeneratorInUse, CorruptionPartialResetStorageInUse,
-        CorruptionPartialResetThingVertexGeneratorInUse, CorruptionPartialResetTypeVertexGeneratorInUse,
+        CorruptionPartialResetKeyGeneratorInUse, CorruptionPartialResetThingVertexGeneratorInUse,
+        CorruptionPartialResetTypeVertexGeneratorInUse,
     },
 };
 

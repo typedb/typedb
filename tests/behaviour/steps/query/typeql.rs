@@ -13,18 +13,15 @@ use cucumber::gherkin::Step;
 use encoding::value::{label::Label, value_type::ValueType, ValueEncodable};
 use executor::{
     batch::Batch,
-    pipeline::stage::{ExecutionContext, StageAPI, StageIterator},
+    pipeline::stage::{ExecutionContext, StageIterator},
     ExecutionInterrupt,
 };
-use futures::TryFutureExt;
-use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
 use query::{error::QueryError, query_manager::QueryManager};
 use test_utils::assert_matches;
 
 use crate::{
-    connection::BehaviourConnectionTestExecutionError,
     generic_step, params,
     transaction_context::{
         with_read_tx, with_schema_tx, with_write_tx_deconstructed,
@@ -213,12 +210,7 @@ async fn uniquely_identify_answer_concepts(context: &mut Context, step: &Step) {
 
 #[apply(generic_step)]
 #[step(expr = r"result is a single row with variable '{word}': {word}")]
-async fn single_row_result_with_variable_value(
-    context: &mut Context,
-    variable_name: String,
-    spec: String,
-    step: &Step,
-) {
+async fn single_row_result_with_variable_value(context: &mut Context, variable_name: String, spec: String) {
     assert_eq!(context.answers.len(), 1, "Expected single row, received {}", context.answers.len());
     assert!(
         does_var_in_row_match_spec(context, &context.answers[0], variable_name.as_str(), spec.as_str()),
@@ -312,7 +304,7 @@ fn does_attribute_match(id: &str, var_value: &VariableValue<'_>, context: &Conte
     })
 }
 
-fn does_value_match(id: &str, var_value: &VariableValue<'_>, context: &Context) -> bool {
+fn does_value_match(id: &str, var_value: &VariableValue<'_>, _context: &Context) -> bool {
     let VariableValue::Value(value) = var_value else {
         return false;
     };
@@ -325,10 +317,10 @@ fn does_value_match(id: &str, var_value: &VariableValue<'_>, context: &Context) 
     let expected = params::Value::from_str(id_value).unwrap().into_typedb(expected_value_type);
     if expected.value_type() == ValueType::Double {
         let precision = id_value.split_once(".").map(|(_, decimal)| decimal.len()).unwrap_or(5) as i32;
-        let epsilon = 0.5 * 10.0f64.powi(-1 * precision);
-        f64::abs(expected.clone().unwrap_double() - var_value.as_value().clone().unwrap_double()) < epsilon
+        let epsilon = 0.5 * 10.0f64.powi(-precision);
+        f64::abs(expected.clone().unwrap_double() - value.clone().unwrap_double()) < epsilon
     } else {
-        &expected == var_value.as_value()
+        &expected == value
     }
 }
 

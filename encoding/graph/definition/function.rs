@@ -20,7 +20,7 @@ impl<'a> FunctionDefinition<'a> {
         Self { bytes }
     }
 
-    pub fn build_owned<'b>(definition: &str) -> FunctionDefinition<'static> {
+    pub fn build_owned(definition: &str) -> FunctionDefinition<'static> {
         FunctionDefinition { bytes: StringBytes::build_owned(definition).into_bytes() }
     }
 

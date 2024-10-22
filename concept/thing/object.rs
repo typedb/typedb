@@ -39,7 +39,7 @@ use crate::{
     },
     type_::{
         attribute_type::AttributeType, object_type::ObjectType, role_type::RoleType, type_manager::TypeManager,
-        Capability, ObjectTypeAPI, Ordering, OwnerAPI, TypeAPI,
+        ObjectTypeAPI, Ordering, OwnerAPI,
     },
     ConceptStatus,
 };

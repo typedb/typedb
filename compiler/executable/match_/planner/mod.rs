@@ -52,7 +52,7 @@ pub fn compile(
     plan_conjunction(
         conjunction,
         block_context,
-        &input_variables,
+        input_variables,
         type_annotations,
         &variable_registry,
         expressions,

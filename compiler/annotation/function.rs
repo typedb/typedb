@@ -12,7 +12,7 @@ use std::{
 };
 
 use answer::{variable::Variable, Type};
-use concept::type_::{type_manager::TypeManager, TypeAPI};
+use concept::type_::type_manager::TypeManager;
 use encoding::{
     graph::definition::definition_key::DefinitionKey,
     value::{label::Label, value_type::ValueType},
@@ -197,9 +197,9 @@ pub(crate) fn annotate_anonymous_function(
     let mut argument_value_variable_types = BTreeMap::new();
     for var in arguments {
         if let Some(concept_annotation) = caller_type_annotations.get(var) {
-            argument_concept_variable_types.insert(var.clone(), concept_annotation.clone());
+            argument_concept_variable_types.insert(*var, concept_annotation.clone());
         } else if let Some(value_annotation) = caller_value_type_annotations.get(var) {
-            argument_value_variable_types.insert(var.clone(), value_annotation.clone());
+            argument_value_variable_types.insert(*var, value_annotation.clone());
         } else {
             todo!("Throw error")
         }
@@ -230,10 +230,10 @@ pub(super) fn annotate_named_function(
     for (arg_index, (var, label)) in zip(arguments, argument_labels.as_ref().unwrap()).enumerate() {
         match get_argument_annotations_from_labels(snapshot, type_manager, label, arg_index)? {
             Either::Left(concept_annotation) => {
-                argument_concept_variable_types.insert(var.clone(), concept_annotation);
+                argument_concept_variable_types.insert(*var, concept_annotation);
             }
             Either::Right(value_annotation) => {
-                argument_value_variable_types.insert(var.clone(), value_annotation);
+                argument_value_variable_types.insert(*var, value_annotation);
             }
         }
     }
@@ -292,7 +292,7 @@ fn annotate_arguments_from_labels(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     arguments: &[Variable],
-    argument_labels: &Vec<TypeRefAny>,
+    argument_labels: &[TypeRefAny],
 ) -> Result<(BTreeMap<Variable, Arc<BTreeSet<Type>>>, BTreeMap<Variable, ExpressionValueType>), FunctionAnnotationError>
 {
     // TODO
@@ -374,7 +374,7 @@ fn annotate_return(
         }
         ReturnOperation::ReduceReducer(reducers) => {
             let mut instructions = Vec::with_capacity(reducers.len());
-            for reducer in reducers {
+            for &reducer in reducers {
                 let instruction = resolve_reducer_by_value_type(
                     snapshot,
                     type_manager,
@@ -398,7 +398,7 @@ fn get_function_parameter(
     body_variable_value_types: &BTreeMap<Variable, ExpressionValueType>,
 ) -> FunctionParameterAnnotation {
     if let Some(arced_types) = body_variable_annotations.get(variable) {
-        let types: &BTreeSet<Type> = &arced_types;
+        let types: &BTreeSet<Type> = arced_types;
         FunctionParameterAnnotation::Concept(types.clone())
     } else if let Some(expression_value_type) = body_variable_value_types.get(variable) {
         FunctionParameterAnnotation::Value(expression_value_type.value_type().clone())

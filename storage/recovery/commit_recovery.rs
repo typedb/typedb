@@ -68,7 +68,7 @@ pub fn load_commit_data_from(
                     recovered_commits.insert(commit_record_sequence_number, RecoveryCommitStatus::Rejected);
                 }
             }
-            not_storage_record => {
+            _not_storage_record => {
                 // skip, not storage record
             }
         }
