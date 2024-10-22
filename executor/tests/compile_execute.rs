@@ -10,6 +10,7 @@ use std::{
 };
 
 use compiler::annotation::{
+    expression::block_compiler::compile_expressions,
     function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
     match_inference::infer_types,
 };
@@ -134,6 +135,92 @@ fn test_has_planning_traversal() {
     }
 
     assert_eq!(rows.len(), 7);
+}
+
+#[test]
+fn test_expression_planning_traversal() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let schema = "define
+        attribute age value long;
+        entity person owns age @card(0..);
+    ";
+    let data = "insert
+        $_ isa person, has age 10;
+        $_ isa person, has age 12;
+        $_ isa person, has age 14;
+    ";
+
+    let statistics = setup(&storage, type_manager, thing_manager, schema, data);
+
+    let query = "match
+        $person_1 isa person, has age $age_1;
+        $person_2 isa person, has age == $age_2;
+        $age_2 = $age_1 + 2;
+    ";
+    let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+
+    // IR
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
+    let mut translation_context = TranslationContext::new();
+    let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
+    let block = builder.finish();
+
+    // Executor
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let entry_annotations = infer_types(
+        &*snapshot,
+        &block,
+        &translation_context.variable_registry,
+        &type_manager,
+        &BTreeMap::new(),
+        &IndexedAnnotatedFunctions::empty(),
+        Some(&AnnotatedUnindexedFunctions::empty()),
+    )
+    .unwrap();
+
+    let compiled_expressions = compile_expressions(
+        &*snapshot,
+        &type_manager,
+        &block,
+        &mut translation_context.variable_registry,
+        &translation_context.parameters,
+        &entry_annotations,
+        &mut BTreeMap::new(),
+    )
+    .unwrap();
+
+    let match_executable = compiler::executable::match_::planner::compile(
+        &block,
+        &HashMap::new(),
+        &entry_annotations,
+        Arc::new(translation_context.variable_registry),
+        &compiled_expressions,
+        &statistics,
+    );
+    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty()).unwrap();
+
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::new(translation_context.parameters.clone()));
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+
+    let rows = iterator
+        .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
+        .into_iter()
+        .try_collect::<_, Vec<_>, _>()
+        .unwrap();
+
+    for row in &rows {
+        for value in row {
+            print!("{}, ", value);
+        }
+        println!()
+    }
+
+    assert_eq!(rows.len(), 2);
 }
 
 #[test]
@@ -560,7 +647,7 @@ fn test_disjunction_planning_traversal() {
 
     let query = "match
         $person isa person;
-        { $person has name $_; } or { $person has age $_; };
+        { $person has name $n; } or { $person has age $a; };
     ";
     let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
 

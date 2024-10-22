@@ -41,7 +41,7 @@ struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
     type_manager: &'block TypeManager,
     type_annotations: &'block TypeAnnotations,
 
-    compiled_expressions: HashMap<Variable, ExecutableExpression>,
+    compiled_expressions: HashMap<Variable, ExecutableExpression<Variable>>,
     variable_value_types: HashMap<Variable, ExpressionValueType>,
     visited_expressions: HashSet<Variable>,
 }
@@ -54,7 +54,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     parameters: &'block ParameterRegistry,
     type_annotations: &'block TypeAnnotations,
     input_value_type_annotations: &mut BTreeMap<Variable, ExpressionValueType>,
-) -> Result<HashMap<Variable, ExecutableExpression>, ExpressionCompileError> {
+) -> Result<HashMap<Variable, ExecutableExpression<Variable>>, ExpressionCompileError> {
     let mut context = BlockExpressionsCompilationContext {
         block,
         variable_registry,
@@ -62,7 +62,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
         snapshot,
         type_manager,
         type_annotations,
-        variable_value_types: input_value_type_annotations.iter().map(|(k, v)| (k.clone(), v.clone())).collect(),
+        variable_value_types: input_value_type_annotations.iter().map(|(&k, v)| (k, v.clone())).collect(),
         visited_expressions: HashSet::new(),
         compiled_expressions: HashMap::new(),
     };
@@ -74,19 +74,19 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
         compile_expressions_recursive(&mut context, variable, &expression_index)?
     }
 
-    let BlockExpressionsCompilationContext { compiled_expressions, variable_value_types, .. } = context;
-    for (var, compiled) in &compiled_expressions {
+    let BlockExpressionsCompilationContext { compiled_expressions, .. } = context;
+    for (&var, compiled) in &compiled_expressions {
         let category = match &compiled.return_type {
             ExpressionValueType::Single(_) => VariableCategory::Value,
             ExpressionValueType::List(_) => VariableCategory::ValueList,
         };
-        let existing_category = variable_registry.get_variable_category(var.clone());
+        let existing_category = variable_registry.get_variable_category(var);
         if existing_category.is_none() {
-            let source = Constraint::ExpressionBinding((*expression_index.get(var).unwrap()).clone());
-            variable_registry.set_assigned_value_variable_category(var.clone(), category, source).unwrap();
+            let source = Constraint::ExpressionBinding((*expression_index.get(&var).unwrap()).clone());
+            variable_registry.set_assigned_value_variable_category(var, category, source).unwrap();
         } else if Some(category) != existing_category {
             Err(ExpressionCompileError::DerivedConflictingVariableCategory {
-                variable_name: variable_registry.variable_names().get(var).unwrap().clone(),
+                variable_name: variable_registry.variable_names().get(&var).unwrap().clone(),
                 derived_category: category,
                 existing_category: existing_category.unwrap(),
             })?;
@@ -95,8 +95,8 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     Ok(compiled_expressions)
 }
 
-fn index_expressions<'a, 'block, Snapshot: ReadableSnapshot>(
-    context: &BlockExpressionsCompilationContext<'a, Snapshot>,
+fn index_expressions<'block, Snapshot: ReadableSnapshot>(
+    context: &BlockExpressionsCompilationContext<'_, Snapshot>,
     conjunction: &'block Conjunction,
     index: &mut HashMap<Variable, &'block ExpressionBinding<Variable>>,
 ) -> Result<(), ExpressionCompileError> {
@@ -140,12 +140,13 @@ fn compile_expressions_recursive<'a, Snapshot: ReadableSnapshot>(
         resolve_type_for_variable(context, variable, expression_assignments)?;
     }
     let compiled =
-        ExpressionCompilationContext::compile(expression, &context.variable_value_types, &context.parameters)?;
+        ExpressionCompilationContext::compile(expression, &context.variable_value_types, context.parameters)?;
     context.variable_value_types.insert(assigned_variable, compiled.return_type.clone());
     context.compiled_expressions.insert(assigned_variable, compiled);
     Ok(())
 }
 
+#[allow(clippy::map_entry, reason = "false positive, this is not a trivial `contains_key()` followed by `insert()`")]
 fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
     context: &mut BlockExpressionsCompilationContext<'a, Snapshot>,
     variable: Variable,
@@ -172,7 +173,7 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
         Ok(())
     } else if let Some(types) = context.type_annotations.vertex_annotations_of(&Vertex::Variable(variable)) {
         // resolve_value_types will error if the type_annotations aren't all attribute(list) types
-        let value_types = resolve_value_types(types, context.snapshot, context.type_manager).map_err(|source| {
+        let value_types = resolve_value_types(types, context.snapshot, context.type_manager).map_err(|_source| {
             ExpressionCompileError::CouldNotDetermineValueTypeForVariable {
                 variable: context.variable_registry.variable_names().get(&variable).cloned(),
             }
@@ -185,12 +186,12 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
             let value_type = value_types.iter().find(|_| true).unwrap();
             let variable_category = context.variable_registry.get_variable_category(variable).unwrap();
             match variable_category {
-                VariableCategory::Attribute | VariableCategory::Thing => {
+                VariableCategory::Value | VariableCategory::Attribute | VariableCategory::Thing => {
                     debug_assert!(types.iter().all(|t| matches!(t, answer::Type::Attribute(_))));
                     context.variable_value_types.insert(variable, ExpressionValueType::Single(value_type.clone()));
                     Ok(())
                 }
-                VariableCategory::AttributeList | VariableCategory::ThingList => {
+                VariableCategory::ValueList | VariableCategory::AttributeList | VariableCategory::ThingList => {
                     debug_assert!(types.iter().all(|t| matches!(t, answer::Type::Attribute(_))));
                     context.variable_value_types.insert(variable, ExpressionValueType::List(value_type.clone()));
                     Ok(())

@@ -4,9 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::{collections::HashMap, hash::Hash, iter, sync::Arc};
 
-use answer::variable::Variable;
+use answer::{variable_value::VariableValue, Thing};
 use compiler::annotation::expression::{
     compiled_expression::ExecutableExpression,
     instructions::{
@@ -24,11 +24,42 @@ use compiler::annotation::expression::{
 };
 use encoding::value::value::{NativeValueConvertible, Value};
 use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
+use storage::snapshot::ReadableSnapshot;
+
+use crate::pipeline::stage::ExecutionContext;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ExpressionValue {
     Single(Value<'static>),
-    List(Vec<Value<'static>>),
+    List(Arc<[Value<'static>]>),
+}
+
+impl ExpressionValue {
+    pub(crate) fn try_from_value(
+        value: VariableValue<'static>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+    ) -> Result<Self, ExpressionEvaluationError> {
+        match value {
+            VariableValue::Value(value) => Ok(ExpressionValue::Single(value)),
+            VariableValue::ValueList(values) => Ok(ExpressionValue::List(values)),
+            VariableValue::Thing(Thing::Attribute(attr)) => Ok(ExpressionValue::Single(
+                attr.get_value(&**context.snapshot(), context.thing_manager())
+                    .map_err(|_| ExpressionEvaluationError::CastFailed)?
+                    .into_owned(),
+            )),
+            VariableValue::ThingList(_) => todo!(),
+            _ => Err(ExpressionEvaluationError::CastFailed),
+        }
+    }
+}
+
+impl From<ExpressionValue> for VariableValue<'static> {
+    fn from(value: ExpressionValue) -> Self {
+        match value {
+            ExpressionValue::Single(value) => VariableValue::Value(value),
+            ExpressionValue::List(values) => VariableValue::ValueList(values),
+        }
+    }
 }
 
 pub struct ExpressionExecutorState<'this> {
@@ -60,7 +91,7 @@ impl<'this> ExpressionExecutorState<'this> {
         self.stack.push(ExpressionValue::Single(value))
     }
 
-    fn push_list(&mut self, value_list: Vec<Value<'static>>) {
+    fn push_list(&mut self, value_list: Arc<[Value<'static>]>) {
         self.stack.push(ExpressionValue::List(value_list))
     }
 
@@ -71,7 +102,7 @@ impl<'this> ExpressionExecutorState<'this> {
         }
     }
 
-    fn pop_list(&mut self) -> Vec<Value<'static>> {
+    fn pop_list(&mut self) -> Arc<[Value<'static>]> {
         match self.stack.pop().unwrap() {
             ExpressionValue::List(value_list) => value_list,
             _ => unreachable!(),
@@ -91,25 +122,21 @@ impl<'this> ExpressionExecutorState<'this> {
     }
 }
 
-pub struct ExpressionExecutor {}
-
-impl ExpressionExecutor {
-    pub fn evaluate(
-        compiled: ExecutableExpression,
-        input: HashMap<Variable, ExpressionValue>,
-        parameters: &ParameterRegistry,
-    ) -> Result<ExpressionValue, ExpressionEvaluationError> {
-        let mut variables = Vec::new();
-        for v in compiled.variables() {
-            variables.push(input.get(v).unwrap().clone());
-        }
-
-        let mut state = ExpressionExecutorState::new(variables.into_boxed_slice(), compiled.constants(), parameters);
-        for instr in compiled.instructions() {
-            evaluate_instruction(instr, &mut state)?;
-        }
-        Ok(state.stack.pop().unwrap())
+pub fn evaluate_expression<ID: Hash + Eq>(
+    compiled: &ExecutableExpression<ID>,
+    input: HashMap<ID, ExpressionValue>,
+    parameters: &ParameterRegistry,
+) -> Result<ExpressionValue, ExpressionEvaluationError> {
+    let mut variables = Vec::new();
+    for v in compiled.variables() {
+        variables.push(input.get(v).unwrap().clone());
     }
+
+    let mut state = ExpressionExecutorState::new(variables.into_boxed_slice(), compiled.constants(), parameters);
+    for instr in compiled.instructions() {
+        evaluate_instruction(instr, &mut state)?;
+    }
+    Ok(state.stack.pop().unwrap())
 }
 
 fn evaluate_instruction(
@@ -172,10 +199,7 @@ where
 impl ExpressionEvaluation for ListConstructor {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
         let n_elements = state.pop_value().unwrap_long() as usize;
-        let mut elements: Vec<Value<'static>> = Vec::with_capacity(n_elements);
-        for _ in 0..n_elements {
-            elements.push(state.pop_value());
-        }
+        let elements: Arc<[Value<'static>]> = (0..n_elements).map(|_| state.pop_value()).collect();
         state.push_list(elements);
         Ok(())
     }
@@ -200,9 +224,7 @@ impl ExpressionEvaluation for ListIndexRange {
         let to_index = state.pop_value().unwrap_long() as usize;
         let from_index = state.pop_value().unwrap_long() as usize;
         if let Some(sub_slice) = list.get(from_index..to_index) {
-            let mut vec = Vec::with_capacity(to_index - from_index + 1);
-            vec.extend_from_slice(sub_slice);
-            state.push_list(vec); // TODO: Should we make this more efficient by storing (Vec, range) ?
+            state.push_list(sub_slice.into()); // TODO: Should we make this more efficient by storing (Vec, range) ?
             Ok(())
         } else {
             Err(ExpressionEvaluationError::ListIndexOutOfRange)

@@ -36,6 +36,7 @@ pub(crate) fn check_operation<T>(checked_operation_result: Option<T>) -> Result<
     }
 }
 
+#[derive(Clone)]
 pub enum ExpressionEvaluationError {
     CheckedOperationFailed,
     CastFailed,

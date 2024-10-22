@@ -16,7 +16,7 @@ use itertools::chain;
 
 use super::plan::{ConjunctionPlan, DisjunctionPlanBuilder, Graph, VariableVertexId, VertexId};
 use crate::{
-    annotation::type_annotations::TypeAnnotations,
+    annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
     executable::match_::planner::vertex::{constraint::ConstraintVertex, variable::VariableVertex},
 };
 
@@ -36,7 +36,7 @@ pub(super) enum PlannerVertex<'a> {
     Constraint(ConstraintVertex<'a>),
 
     Comparison(ComparisonPlanner<'a>),
-    Expression(()),
+    Expression(ExpressionPlanner<'a>),
     FunctionCall(FunctionCallPlanner),
 
     Negation(NegationPlanner<'a>),
@@ -49,21 +49,9 @@ impl PlannerVertex<'_> {
             Self::Variable(inner) => inner.is_valid(index, ordered, graph),
             Self::Constraint(inner) => inner.is_valid(index, ordered, graph),
 
-            Self::Comparison(ComparisonPlanner { lhs, rhs, .. }) => {
-                if let &Input::Variable(lhs) = lhs {
-                    if !ordered.contains(&VertexId::Variable(lhs)) {
-                        return false;
-                    }
-                }
-                if let &Input::Variable(rhs) = rhs {
-                    if !ordered.contains(&VertexId::Variable(rhs)) {
-                        return false;
-                    }
-                }
-                true
-            }
+            Self::Comparison(inner) => inner.is_valid(index, ordered, graph),
 
-            Self::Expression(_) => todo!("validate expression"), // may be invalid: inputs must be bound
+            Self::Expression(inner) => inner.is_valid(index, ordered, graph),
 
             Self::FunctionCall(FunctionCallPlanner { arguments, .. }) => {
                 arguments.iter().all(|&arg| ordered.contains(&VertexId::Variable(arg)))
@@ -79,19 +67,11 @@ impl PlannerVertex<'_> {
             Self::Variable(_) => Box::new(iter::empty()),
             Self::Constraint(inner) => inner.variables(),
             Self::Comparison(inner) => Box::new(inner.variables()),
-            Self::Expression(_inner) => todo!(),
+            Self::Expression(inner) => Box::new(inner.variables()),
             Self::FunctionCall(inner) => Box::new(inner.variables()),
             Self::Negation(inner) => Box::new(inner.variables()),
             Self::Disjunction(inner) => Box::new(inner.variables()),
         }
-    }
-
-    /// Returns `true` if the planner vertex is [`Input`].
-    ///
-    /// [`Input`]: PlannerVertex::Input
-    #[must_use]
-    pub(crate) fn is_input(&self) -> bool {
-        self.as_variable().is_some_and(VariableVertex::is_input)
     }
 
     pub(super) fn is_variable(&self) -> bool {
@@ -161,9 +141,10 @@ impl Costed for PlannerVertex<'_> {
             Self::Variable(inner) => inner.cost(inputs, graph),
             Self::Constraint(inner) => inner.cost(inputs, graph),
 
-            Self::FunctionCall(inner) => inner.cost(inputs, graph),
             Self::Comparison(inner) => inner.cost(inputs, graph),
-            Self::Expression(_) => todo!("expression cost"),
+
+            Self::Expression(inner) => inner.cost(inputs, graph),
+            Self::FunctionCall(inner) => inner.cost(inputs, graph),
 
             Self::Negation(inner) => inner.cost(inputs, graph),
             Self::Disjunction(inner) => inner.cost(inputs, graph),
@@ -196,6 +177,39 @@ impl Input {
             Self::Variable(v) => Some(v),
             _ => None,
         }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct ExpressionPlanner<'a> {
+    pub expression: &'a ExecutableExpression<Variable>,
+    inputs: Vec<VariableVertexId>,
+    pub output: VariableVertexId,
+    cost: ElementCost,
+}
+
+impl<'a> ExpressionPlanner<'a> {
+    pub(crate) fn from_expression(
+        expression: &'a ExecutableExpression<Variable>,
+        inputs: Vec<VariableVertexId>,
+        output: VariableVertexId,
+    ) -> Self {
+        let cost = ElementCost::FREE;
+        Self { inputs, output, cost, expression }
+    }
+
+    fn is_valid(&self, _index: VertexId, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+        self.inputs.iter().all(|&input| ordered.contains(&VertexId::Variable(input)))
+    }
+
+    pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
+        self.inputs.iter().chain(iter::once(&self.output)).copied()
+    }
+}
+
+impl Costed for ExpressionPlanner<'_> {
+    fn cost(&self, _inputs: &[VertexId], _graph: &Graph<'_>) -> ElementCost {
+        self.cost
     }
 }
 
@@ -241,6 +255,20 @@ impl<'a> ComparisonPlanner<'a> {
             lhs: Input::from_vertex(comparison.lhs(), variable_index),
             rhs: Input::from_vertex(comparison.rhs(), variable_index),
         }
+    }
+
+    fn is_valid(&self, _index: VertexId, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+        if let Input::Variable(lhs) = self.lhs {
+            if !ordered.contains(&VertexId::Variable(lhs)) {
+                return false;
+            }
+        }
+        if let Input::Variable(rhs) = self.rhs {
+            if !ordered.contains(&VertexId::Variable(rhs)) {
+                return false;
+            }
+        }
+        true
     }
 
     pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> {

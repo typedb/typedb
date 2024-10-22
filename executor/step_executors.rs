@@ -12,6 +12,7 @@ use std::{
 
 use answer::variable_value::VariableValue;
 use compiler::{
+    annotation::expression::compiled_expression::ExecutableExpression,
     executable::match_::{
         instructions::{CheckInstruction, ConstraintInstruction, VariableModes},
         planner::match_executable::{
@@ -29,6 +30,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
+    expression_executor::{evaluate_expression, ExpressionValue},
     instruction::{iterator::TupleIterator, Checker, InstructionExecutor},
     pattern_executor::MatchExecutor,
     pipeline::stage::ExecutionContext,
@@ -53,34 +55,56 @@ impl StepExecutor {
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
     ) -> Result<Self, ConceptReadError> {
-        let row_width = step.output_width();
         match step {
             ExecutionStep::Intersection(IntersectionStep {
-                sort_variable, instructions, selected_variables, ..
+                sort_variable,
+                instructions,
+                selected_variables,
+                output_width,
+                ..
             }) => {
                 let executor = IntersectionExecutor::new(
                     *sort_variable,
                     instructions.clone(),
-                    row_width,
+                    *output_width,
                     selected_variables.clone(),
                     snapshot,
                     thing_manager,
                 )?;
                 Ok(Self::SortedJoin(executor))
             }
-            ExecutionStep::UnsortedJoin(UnsortedJoinStep { iterate_instruction, check_instructions, .. }) => {
+            ExecutionStep::UnsortedJoin(UnsortedJoinStep {
+                iterate_instruction,
+                check_instructions,
+                output_width,
+                ..
+            }) => {
                 let executor =
-                    UnsortedJoinExecutor::new(iterate_instruction.clone(), check_instructions.clone(), row_width);
+                    UnsortedJoinExecutor::new(iterate_instruction.clone(), check_instructions.clone(), *output_width);
                 Ok(Self::UnsortedJoin(executor))
             }
-            ExecutionStep::Assignment(AssignmentStep { .. }) => {
-                todo!()
-            }
+            ExecutionStep::Assignment(AssignmentStep {
+                expression,
+                input_positions,
+                unbound,
+                selected_variables,
+                output_width,
+            }) => Ok(Self::Assignment(AssignExecutor::new(
+                expression.clone(),
+                input_positions.clone(),
+                *unbound,
+                selected_variables.clone(),
+                *output_width,
+            ))),
             ExecutionStep::Check(CheckStep { check_instructions, selected_variables, output_width }) => Ok(
                 Self::Check(CheckExecutor::new(check_instructions.clone(), selected_variables.clone(), *output_width)),
             ),
-            ExecutionStep::Disjunction(DisjunctionStep { branches, .. }) => {
-                Ok(Self::Disjunction(DisjunctionExecutor::new(branches.clone(), row_width)))
+            ExecutionStep::Disjunction(DisjunctionStep { branches, selected_variables, output_width }) => {
+                Ok(Self::Disjunction(DisjunctionExecutor::new(
+                    branches.clone(),
+                    selected_variables.clone(),
+                    *output_width,
+                )))
             }
             ExecutionStep::Negation(NegationStep { negation: negation_plan, selected_variables, output_width }) => {
                 // TODO: add limit 1, filters if they aren't there already?
@@ -107,7 +131,7 @@ impl StepExecutor {
         match self {
             StepExecutor::SortedJoin(sorted) => sorted.batch_from(input_batch, context),
             StepExecutor::UnsortedJoin(unsorted) => unsorted.batch_from(input_batch),
-            StepExecutor::Assignment(single) => single.batch_from(input_batch),
+            StepExecutor::Assignment(single) => single.batch_from(input_batch, context, interrupt),
             StepExecutor::Check(check) => check.batch_from(input_batch, context, interrupt),
             StepExecutor::Disjunction(disjunction) => disjunction.batch_from(input_batch, context, interrupt),
             StepExecutor::Negation(negation) => negation.batch_from(input_batch, context, interrupt),
@@ -608,13 +632,62 @@ impl UnsortedJoinExecutor {
 }
 
 pub(super) struct AssignExecutor {
-    // executor: AssignInstruction,
-    // checks: Vec<CheckInstruction>,
+    expression: ExecutableExpression<VariablePosition>,
+    inputs: Vec<VariablePosition>,
+    output: ExecutorVariable,
+    selected_variables: Vec<VariablePosition>,
+    output_width: u32,
 }
 
 impl AssignExecutor {
-    fn batch_from(&mut self, _input_batch: FixedBatch) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        todo!()
+    fn new(
+        expression: ExecutableExpression<VariablePosition>,
+        inputs: Vec<VariablePosition>,
+        output: ExecutorVariable,
+        selected_variables: Vec<VariablePosition>,
+        output_width: u32,
+    ) -> Self {
+        Self { expression, inputs, output, selected_variables, output_width }
+    }
+
+    fn batch_from(
+        &mut self,
+        input_batch: FixedBatch,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        _interrupt: &mut ExecutionInterrupt,
+    ) -> Result<Option<FixedBatch>, ReadExecutionError> {
+        let mut input = Peekable::new(FixedBatchRowIterator::new(Ok(input_batch)));
+        debug_assert!(input.peek().is_some());
+
+        let mut output = FixedBatch::new(self.output_width);
+
+        while let Some(row) = input.next() {
+            let input_row = row.map_err(|err| err.clone())?;
+            let input_variables = self
+                .inputs
+                .iter()
+                .map(|&pos| (pos, ExpressionValue::try_from_value(input_row.get(pos).to_owned(), context).unwrap()))
+                .collect();
+            let output_value = evaluate_expression(&self.expression, input_variables, &context.parameters)
+                .map_err(|err| ReadExecutionError::ExpressionEvaluate { source: err })?;
+            output.append(|mut row| {
+                row.set_multiplicity(input_row.multiplicity());
+                for &position in &self.selected_variables {
+                    if position.as_usize() < input_row.len() {
+                        row.set(position, input_row.get(position).clone().into_owned());
+                    }
+                }
+                if let Some(position) = self.output.as_position() {
+                    row.set(position, output_value.into());
+                }
+            })
+        }
+
+        if output.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(output))
+        }
     }
 }
 
@@ -659,7 +732,11 @@ impl CheckExecutor {
             }
         }
 
-        Ok(Some(output))
+        if output.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(output))
+        }
     }
 }
 
@@ -671,13 +748,17 @@ pub(super) struct DisjunctionExecutor {
     input: Option<Peekable<FixedBatchRowIterator>>,
     output: Option<FixedBatch>,
 
+    selected_variables: Vec<VariablePosition>,
     output_width: u32, // we should at least make sure all branches have the same batch width
 }
 
 impl DisjunctionExecutor {
-    fn new(branches: Vec<MatchExecutable>, output_width: u32) -> DisjunctionExecutor {
-        assert!(branches.iter().all(|executable| executable.outputs().len() == output_width as usize));
-        Self { branches, current_iterator: None, input: None, output: None, output_width }
+    fn new(
+        branches: Vec<MatchExecutable>,
+        selected_variables: Vec<VariablePosition>,
+        output_width: u32,
+    ) -> DisjunctionExecutor {
+        Self { branches, current_iterator: None, input: None, output: None, selected_variables, output_width }
     }
 
     fn batch_from(
@@ -717,7 +798,12 @@ impl DisjunctionExecutor {
                 let next = iterator.next();
                 match next {
                     Some(output_row) => {
-                        batch.append(|mut row| row.copy_from(output_row.row(), output_row.multiplicity()))
+                        batch.append(|mut row| {
+                            row.set_multiplicity(output_row.multiplicity());
+                            for &position in &self.selected_variables {
+                                row.set(position, output_row.get(position).clone().into_owned())
+                            }
+                        });
                     }
                     None => self.current_iterator = None,
                 }
@@ -811,7 +897,11 @@ impl NegationExecutor {
             }
         }
 
-        Ok(Some(output))
+        if output.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(output))
+        }
     }
 }
 

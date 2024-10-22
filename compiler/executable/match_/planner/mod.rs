@@ -20,7 +20,8 @@ use crate::{
         instructions::{CheckInstruction, ConstraintInstruction},
         planner::{
             match_executable::{
-                CheckStep, DisjunctionStep, ExecutionStep, IntersectionStep, MatchExecutable, NegationStep,
+                AssignmentStep, CheckStep, DisjunctionStep, ExecutionStep, IntersectionStep, MatchExecutable,
+                NegationStep,
             },
             plan::plan_conjunction,
         },
@@ -38,7 +39,7 @@ pub fn compile(
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,
     variable_registry: Arc<VariableRegistry>,
-    expressions: &HashMap<Variable, ExecutableExpression>,
+    expressions: &HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &Statistics,
 ) -> MatchExecutable {
     let conjunction = block.conjunction();
@@ -71,6 +72,12 @@ impl IntersectionBuilder {
     fn new() -> Self {
         Self { sort_variable: None, instructions: Vec::new() }
     }
+}
+
+#[derive(Debug)]
+struct ExpressionBuilder {
+    executable_expression: ExecutableExpression<VariablePosition>,
+    output: ExecutorVariable,
 }
 
 #[derive(Debug, Default)]
@@ -107,6 +114,7 @@ enum StepInstructionsBuilder {
     Check(CheckBuilder),
     Negation(NegationBuilder),
     Disjunction(DisjunctionBuilder),
+    Expression(ExpressionBuilder),
 }
 
 impl StepInstructionsBuilder {
@@ -187,6 +195,16 @@ impl StepBuilder {
             }
             StepInstructionsBuilder::Check(CheckBuilder { instructions }) => {
                 ExecutionStep::Check(CheckStep::new(instructions, selected_variables, output_width))
+            }
+            StepInstructionsBuilder::Expression(ExpressionBuilder { executable_expression, output }) => {
+                let input_positions = executable_expression.variables.iter().copied().unique().collect_vec();
+                ExecutionStep::Assignment(AssignmentStep::new(
+                    executable_expression,
+                    input_positions,
+                    output,
+                    selected_variables,
+                    output_width,
+                ))
             }
             StepInstructionsBuilder::Negation(NegationBuilder { negation }) => ExecutionStep::Negation(
                 NegationStep::new(negation.finish(variable_registry), selected_variables, output_width),
