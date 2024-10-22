@@ -14,10 +14,12 @@ use concept::thing::statistics::Statistics;
 use ir::pattern::{constraint::Comparison, Vertex};
 use itertools::chain;
 
-use super::plan::{ConjunctionPlan, DisjunctionPlanBuilder, Graph, VariableVertexId, VertexId};
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
-    executable::match_::planner::vertex::{constraint::ConstraintVertex, variable::VariableVertex},
+    executable::match_::planner::{
+        plan::{ConjunctionPlan, DisjunctionPlanBuilder, Graph, VariableVertexId, VertexId},
+        vertex::{constraint::ConstraintVertex, variable::VariableVertex},
+    },
 };
 
 pub(super) mod constraint;

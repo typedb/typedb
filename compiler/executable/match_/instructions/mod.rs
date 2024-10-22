@@ -431,6 +431,8 @@ impl<ID: IrID> CheckVertex<ID> {
 
 #[derive(Debug, Clone)]
 pub enum CheckInstruction<ID> {
+    TypeList { type_var: ID, types: Vec<Type> },
+
     Sub { sub_kind: SubKind, subtype: CheckVertex<ID>, supertype: CheckVertex<ID> },
     Owns { owner: CheckVertex<ID>, attribute: CheckVertex<ID> },
     Relates { relation: CheckVertex<ID>, role_type: CheckVertex<ID> },
@@ -446,6 +448,7 @@ pub enum CheckInstruction<ID> {
 impl<ID: IrID> CheckInstruction<ID> {
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> CheckInstruction<T> {
         match self {
+            Self::TypeList { type_var: var, types } => CheckInstruction::TypeList { type_var: mapping[&var], types },
             Self::Sub { sub_kind: kind, subtype, supertype } => CheckInstruction::Sub {
                 sub_kind: kind,
                 subtype: subtype.map(mapping),
