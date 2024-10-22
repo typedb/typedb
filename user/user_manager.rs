@@ -11,23 +11,19 @@ impl UserManager {
         todo!()
     }
 
-    fn all() -> Vec<User> {
+    pub fn all(&self) -> Vec<User> {
         todo!()
     }
 
-    fn contains(name: &str) -> bool {
+    pub fn contains(&self, name: &str) -> bool {
         todo!()
     }
 
-    fn get(name: &str) -> Option<User> {
+    pub fn get(&self, name: &str) -> Option<User> {
         todo!()
     }
 
-    fn create(name: &str) -> Result<User, i8> {
-        todo!()
-    }
-
-    fn create_admin_if_not_exists() {
+    pub fn create(&self, name: &str) -> Result<User, i8> {
         todo!()
     }
 }
