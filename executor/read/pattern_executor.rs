@@ -7,6 +7,7 @@
 use std::{ops::DerefMut, sync::TryLockError};
 
 use itertools::Either;
+use compiler::VariablePosition;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
@@ -50,6 +51,7 @@ pub(super) enum ControlInstruction {
 
     CollectingStage(InstructionIndex),
     StreamCollected(InstructionIndex, CollectedStageIterator),
+    ReshapeForReturn(InstructionIndex, FixedBatch),
 
     Yield(FixedBatch),
 }
@@ -89,7 +91,7 @@ impl PatternExecutor {
         interrupt: &mut ExecutionInterrupt,
         tabled_functions: &mut TabledFunctions,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        debug_assert!(self.control_stack.len() > 0);
+        // debug_assert!(self.control_stack.len() > 0);
         while self.control_stack.last().is_some() {
             let Self { control_stack, executors } = self;
             // TODO: inject interrupt into Checkers that could filter out many rows without ending as well.
@@ -141,6 +143,7 @@ impl PatternExecutor {
                 ControlInstruction::TabledCall(index) => {
                     let step = executors[index.0].unwrap_tabled_call();
                     let call_key = step.active_call_key().unwrap();
+                    println!("Get mutex for {:?}", call_key);
                     let mutex = tabled_functions.get_or_create_state_mutex(context, call_key)?;
                     let lock_result = mutex.try_lock();
                     match lock_result {
@@ -148,7 +151,9 @@ impl PatternExecutor {
                             let found = match step.batch_continue_or_function_pattern(guard.deref_mut()) {
                                 Either::Left(batch) => Some(batch),
                                 Either::Right(pattern) => {
-                                    pattern.batch_continue(context, interrupt, tabled_functions)?
+                                    let pattern_output = pattern.batch_continue(context, interrupt, tabled_functions)?;
+                                    // TODO: Add to table
+                                    step.map_output(pattern_output)
                                 }
                             };
                             if let Some(batch) = found {
@@ -168,10 +173,11 @@ impl PatternExecutor {
                             });
                         }
                     }
+                    println!("Drop mutex for {:?}", self.executors[index.0].unwrap_tabled_call().active_call_key());
                 }
                 ControlInstruction::CollectingStage(index) => {
                     let (pattern, mut collector) = executors[index.0].unwrap_collecting_stage().to_parts_mut();
-                    match pattern.compute_next_batch(context, interrupt, tabled_functions)? {
+                    match pattern.batch_continue(context, interrupt, tabled_functions)? {
                         Some(batch) => {
                             collector.accept(context, batch);
                             self.control_stack.push(ControlInstruction::CollectingStage(index))
@@ -187,6 +193,20 @@ impl PatternExecutor {
                         self.control_stack.push(ControlInstruction::StreamCollected(index, collected_iterator));
                         self.prepare_next_instruction_and_push_to_stack(context, index.next(), batch)?;
                     }
+                }
+                ControlInstruction::ReshapeForReturn(index, batch) => {
+                    let return_positions = executors[index.0].unwrap_reshape();
+                    let mut batch_iter = batch.into_iterator();
+                    let mut output_batch = FixedBatch::new(return_positions.len() as u32);
+                    while let Some(row_result) = batch_iter.next() {
+                        let row = row_result.unwrap();
+                        output_batch.append(|mut write_to| {
+                            return_positions.iter().enumerate().for_each(|(dst, src)| {
+                                write_to.set(VariablePosition::new(dst as u32), row.get(src.clone()).clone().to_owned())
+                            })
+                        })
+                    }
+                    self.prepare_next_instruction_and_push_to_stack(context, index.next(), output_batch)?;
                 }
                 ControlInstruction::Yield(batch) => {
                     return Ok(Some(batch));
@@ -223,7 +243,10 @@ impl PatternExecutor {
                     collecting_stage.prepare(batch);
                     self.control_stack.push(ControlInstruction::CollectingStage(next_instruction_index));
                 }
-                StepExecutors::ReshapeForReturn(_) => todo!(),
+                StepExecutors::ReshapeForReturn(_) => {
+                    self.control_stack.push(ControlInstruction::ReshapeForReturn(next_instruction_index, batch))
+
+                },
             }
         }
         Ok(())

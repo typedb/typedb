@@ -66,6 +66,13 @@ impl StepExecutors {
             _ => panic!("bad unwrap"),
         }
     }
+
+    pub(crate) fn unwrap_reshape(&self) -> &Vec<VariablePosition> {
+        match self {
+            StepExecutors::ReshapeForReturn(return_positions) => return_positions,
+            _ => panic!("bad unwrap"),
+        }
+    }
 }
 
 pub(super) fn create_executors_for_match(
@@ -112,6 +119,7 @@ pub(super) fn create_executors_for_match(
                         function_call.function_id.clone(),
                         function_call.arguments.clone(),
                         function_call.assigned.clone(),
+                        function_call.output_width,
                     );
                     steps.push(StepExecutors::TabledCall(executor))
                 } else {
@@ -121,15 +129,14 @@ pub(super) fn create_executors_for_match(
                     } else {
                         tmp__recursion_validation.insert(function_call.function_id.clone());
                     }
-                    let inner = create_executors_for_pipeline_stages(
+                    let inner_executors = create_executors_for_function(
                         snapshot,
                         thing_manager,
                         function_registry,
-                        &function.executable_stages,
-                        &function.executable_stages.len() - 1,
+                        function,
                         tmp__recursion_validation,
                     )?;
-                    let inner = PatternExecutor::new(inner);
+                    let inner = PatternExecutor::new(inner_executors);
                     tmp__recursion_validation.remove(&function_call.function_id);
                     let step = NestedPatternExecutor::new_inlined_function(inner, function_call);
                     steps.push(step.into())

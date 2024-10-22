@@ -22,6 +22,7 @@ use crate::{
     read::{pattern_executor::PatternExecutor, step_executor::create_executors_for_pipeline_stages},
     row::MaybeOwnedRow,
 };
+use crate::read::step_executor::create_executors_for_function;
 
 // TODO: Rearrange file
 
@@ -37,13 +38,12 @@ impl TabledFunctions {
         call_key: &CallKey,
     ) -> Result<Arc<Mutex<TabledFunctionState>>, ReadExecutionError> {
         if !self.state.contains_key(call_key) {
-            let stages = &self.function_registry.get(call_key.function_id.clone()).executable_stages;
-            let executors = create_executors_for_pipeline_stages(
+            let function = &self.function_registry.get(call_key.function_id.clone());
+            let executors = create_executors_for_function(
                 &context.snapshot,
                 &context.thing_manager,
                 &self.function_registry,
-                stages,
-                stages.len() - 1,
+                function,
                 &mut HashSet::new(),
             )
             .map_err(|source| ReadExecutionError::ConceptRead { source })?;
@@ -63,7 +63,7 @@ impl TabledFunctions {
     }
 }
 
-#[derive(Clone, Eq, Hash, PartialEq)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub(crate) struct CallKey {
     pub(crate) function_id: FunctionID,
     pub(crate) arguments: MaybeOwnedRow<'static>,
@@ -111,6 +111,7 @@ pub(crate) struct TabledCallExecutor {
     function_id: FunctionID,
     argument_positions: Vec<VariablePosition>,
     assignment_positions: Vec<VariablePosition>,
+    output_width: u32,
     active_executor: Option<TabledCallExecutorState>,
 }
 
@@ -125,8 +126,9 @@ impl TabledCallExecutor {
         function_id: FunctionID,
         argument_positions: Vec<VariablePosition>,
         assignment_positions: Vec<VariablePosition>,
+        output_width: u32
     ) -> Self {
-        Self { function_id, argument_positions, assignment_positions, active_executor: None }
+        Self { function_id, argument_positions, assignment_positions, output_width, active_executor: None }
     }
 
     pub(crate) fn prepare(&mut self, input: MaybeOwnedRow<'static>) {
@@ -140,6 +142,27 @@ impl TabledCallExecutor {
 
     pub(crate) fn active_call_key(&self) -> Option<&CallKey> {
         self.active_executor.as_ref().map(|active| &active.call_key)
+    }
+
+    pub(crate) fn map_output(&self, output: Option<FixedBatch>) -> Option<FixedBatch> {
+        if let Some(returned_batch) = output {
+            let mut output_batch = FixedBatch::new(self.output_width);
+            for return_index in 0..returned_batch.len() {
+                // TODO: Deduplicate?
+                let returned_row = returned_batch.get_row(return_index);
+                output_batch.append(|mut output_row| {
+                    for (i, element) in self.active_executor.as_ref().unwrap().input.iter().enumerate() {
+                        output_row.set(VariablePosition::new(i as u32), element.clone());
+                    }
+                    for (returned_index, output_position) in self.assignment_positions.iter().enumerate() {
+                        output_row.set(output_position.clone(), returned_row[returned_index].clone().into_owned());
+                    }
+                });
+            }
+            Some(output_batch)
+        } else {
+            None
+        }
     }
 
     pub(crate) fn batch_continue_or_function_pattern<'a>(
