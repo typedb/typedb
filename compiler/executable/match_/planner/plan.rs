@@ -525,26 +525,32 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             let element = &self.graph.elements[&next];
 
             if element.is_variable() {
+                if let Some(var) = intersection_variable.take().map(VertexId::Variable) {
+                    ordering.push(var);
+                    open_set.remove(&var);
+                }
                 for var in produced_at_this_stage.drain().map(VertexId::Variable) {
                     if !ordering.contains(&var) {
                         ordering.push(var);
                         open_set.remove(&var);
                     }
                 }
-                intersection_variable = None;
             } else {
                 match element.variables().filter(|var| produced_at_this_stage.contains(var)).exactly_one() {
                     Ok(var) if intersection_variable.is_none() || intersection_variable == Some(var) => {
                         intersection_variable = Some(var);
                     }
                     _ => {
+                        if let Some(var) = intersection_variable.take().map(VertexId::Variable) {
+                            ordering.push(var);
+                            open_set.remove(&var);
+                        }
                         for var in produced_at_this_stage.drain().map(VertexId::Variable) {
                             if !ordering.contains(&var) {
                                 ordering.push(var);
                                 open_set.remove(&var);
                             }
                         }
-                        intersection_variable = None;
                     }
                 }
 
@@ -625,6 +631,7 @@ impl ConjunctionPlan<'_> {
                             .consumers_of_var(input)
                             .all(|pat| self.element_to_order[&VertexId::Pattern(pat)] <= order);
                         if is_last_consumer {
+                            match_builder.finish_one();
                             match_builder.remove_output(self.graph.index_to_variable[&input])
                         }
                     }
@@ -862,7 +869,7 @@ impl ConjunctionPlan<'_> {
                         Inputs::Single([rhs_var.unwrap()]),
                         self.type_annotations,
                     ))
-                } else if constraint.unbound_direction() == Direction::Canonical {
+                } else if constraint.unbound_direction() == Direction::Canonical && Some(sort_variable) != rhs_var {
                     ConstraintInstruction::$fw($fwi::new(con, Inputs::None([]), self.type_annotations))
                 } else {
                     ConstraintInstruction::$bw($bwi::new(con, Inputs::None([]), self.type_annotations))
@@ -909,7 +916,7 @@ impl ConjunctionPlan<'_> {
 
                 let relation = links.relation().as_variable().unwrap();
                 let player = links.player().as_variable().unwrap();
-                let role = links.role_type().as_variable().unwrap();
+                let _role = links.role_type().as_variable().unwrap();
 
                 assert_ne!(inputs.len(), 3);
 
@@ -1060,14 +1067,14 @@ impl<'a> DisjunctionPlanBuilder<'a> {
         let branches =
             self.branches.into_iter().map(|branch| branch.with_inputs(input_variables.clone()).plan()).collect_vec();
         let cost = branches.iter().map(ConjunctionPlan::cost).fold(ElementCost::EMPTY, ElementCost::combine_parallel);
-        DisjunctionPlan { branches, cost }
+        DisjunctionPlan { branches, _cost: cost }
     }
 }
 
 #[derive(Clone, Debug)]
 pub(super) struct DisjunctionPlan<'a> {
     branches: Vec<ConjunctionPlan<'a>>,
-    cost: ElementCost,
+    _cost: ElementCost,
 }
 
 impl<'a> DisjunctionPlan<'a> {

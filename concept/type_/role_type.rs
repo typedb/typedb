@@ -115,10 +115,10 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         type_manager.get_role_type_label(snapshot, self.clone().into_owned())
     }
 
-    fn get_label_arc<'m>(
+    fn get_label_arc(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
     ) -> Result<Arc<Label<'static>>, ConceptReadError> {
         type_manager.get_role_type_label_arc(snapshot, self.clone().into_owned())
     }

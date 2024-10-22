@@ -99,7 +99,7 @@ fn no_wal_and_checkpoint_illegal() {
     let key_world = StorageKeyArray::<BUFFER_KEY_INLINE>::from((TestKeyspaceSet::Keyspace, b"world"));
 
     let storage_path = create_tmp_dir();
-    let (checkpoint, directory) = {
+    let (_checkpoint, directory) = {
         let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
         let mut snapshot = storage.clone().open_snapshot_write();
@@ -135,8 +135,6 @@ fn no_wal_and_no_checkpoint_and_keyspaces_illegal() {
         snapshot.put(key_hello.clone());
         snapshot.put(key_world.clone());
         snapshot.commit().unwrap();
-
-        storage.path().parent().unwrap().to_owned()
     };
 
     // delete wal
@@ -164,8 +162,6 @@ fn no_wal_and_no_checkpoint_and_no_keyspaces_illegal() {
         snapshot.put(key_hello.clone());
         snapshot.put(key_world.clone());
         snapshot.commit().unwrap();
-
-        storage.path().parent().unwrap().to_owned()
     };
 
     // delete wal

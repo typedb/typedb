@@ -379,12 +379,12 @@ pub mod tests {
             assert_eq!(expected_signature.function_id(), looked_up.function_id());
 
             let function_annotations = cache.get_annotated_function(expected_function_id.clone()).unwrap();
-            let AnnotatedStage::Match { block, block_annotations: body_annotations, .. } =
+            let AnnotatedStage::Match { block_annotations: body_annotations, .. } =
                 function_annotations.stages.first().as_ref().unwrap()
             else {
                 unreachable!()
             };
-            let var_c = function_annotations.arguments[0].clone();
+            let var_c = function_annotations.arguments[0];
             let var_c_annotations = body_annotations.vertex_annotations_of(&Vertex::Variable(var_c)).unwrap();
             assert_eq!(&Arc::new(BTreeSet::from([type_cat.clone()])), var_c_annotations);
         }
@@ -457,12 +457,9 @@ pub mod tests {
                 .unwrap();
 
             // Ownerships
-            let animal_owns =
-                animal.set_owns(&mut snapshot, type_manager, thing_manager, name.clone(), Ordering::Unordered).unwrap();
-            let cat_owns =
-                cat.set_owns(&mut snapshot, type_manager, thing_manager, catname.clone(), Ordering::Unordered).unwrap();
-            let dog_owns =
-                dog.set_owns(&mut snapshot, type_manager, thing_manager, dogname.clone(), Ordering::Unordered).unwrap();
+            animal.set_owns(&mut snapshot, type_manager, thing_manager, name.clone(), Ordering::Unordered).unwrap();
+            cat.set_owns(&mut snapshot, type_manager, thing_manager, catname.clone(), Ordering::Unordered).unwrap();
+            dog.set_owns(&mut snapshot, type_manager, thing_manager, dogname.clone(), Ordering::Unordered).unwrap();
 
             snapshot.commit().unwrap();
 

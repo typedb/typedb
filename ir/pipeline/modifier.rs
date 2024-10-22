@@ -38,16 +38,16 @@ impl Sort {
         let mut sort_variables = Vec::with_capacity(variables.len());
         for (var, is_ascending) in variables {
             if is_ascending {
-                sort_variables.push(SortVariable::Ascending(var.clone()));
+                sort_variables.push(SortVariable::Ascending(var));
             } else {
-                sort_variables.push(SortVariable::Descending(var.clone()));
+                sort_variables.push(SortVariable::Descending(var));
             }
         }
         Self { variables: sort_variables }
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum SortVariable {
     Ascending(Variable),
     Descending(Variable),
@@ -55,9 +55,9 @@ pub enum SortVariable {
 
 impl SortVariable {
     pub fn variable(&self) -> Variable {
-        match self {
-            SortVariable::Ascending(var) => var.clone(),
-            SortVariable::Descending(var) => var.clone(),
+        match *self {
+            SortVariable::Ascending(var) => var,
+            SortVariable::Descending(var) => var,
         }
     }
 }

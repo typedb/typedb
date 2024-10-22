@@ -154,7 +154,7 @@ fn translate_stage(
         TypeQLStage::Delete(delete) => translate_delete(translation_context, delete)
             .map(|(block, deleted_variables)| Either::First(TranslatedStage::Delete { block, deleted_variables })),
         TypeQLStage::Fetch(fetch) => translate_fetch(snapshot, translation_context, all_function_signatures, fetch)
-            .map(|translated| Either::Second(translated))
+            .map(Either::Second)
             .map_err(|err| RepresentationError::FetchRepresentation { typedb_source: err }),
         TypeQLStage::Operator(modifier) => match modifier {
             TypeQLOperator::Select(select) => translate_select(translation_context, select)

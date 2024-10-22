@@ -661,7 +661,8 @@ impl AssignExecutor {
 
         let mut output = FixedBatch::new(self.output_width);
 
-        while let Some(row) = input.next() {
+        while !output.is_full() {
+            let Some(row) = input.next() else { break };
             let input_row = row.map_err(|err| err.clone())?;
             let input_variables = self
                 .inputs
@@ -914,7 +915,7 @@ impl OptionalExecutor {
         Self { executor }
     }
 
-    fn batch_from(&mut self, input_batch: FixedBatch) -> Result<Option<FixedBatch>, ReadExecutionError> {
+    fn batch_from(&mut self, _input_batch: FixedBatch) -> Result<Option<FixedBatch>, ReadExecutionError> {
         todo!()
     }
 

@@ -49,7 +49,7 @@ mod non_transactional_rocks {
     pub struct NonTransactionalRocks<const N_DATABASES: usize> {
         databases: [DB; crate::N_DATABASES],
         write_options: WriteOptions,
-        path: TempDir,
+        _path: TempDir,
     }
 
     impl<const N_DATABASES: usize> NonTransactionalRocks<N_DATABASES> {
@@ -57,7 +57,7 @@ mod non_transactional_rocks {
             let path = create_tmp_dir();
             let databases = std::array::from_fn(|i| DB::open(&options, path.join(format!("db_{i}"))).unwrap());
 
-            Ok(Self { path, databases, write_options })
+            Ok(Self { _path: path, databases, write_options })
         }
     }
 

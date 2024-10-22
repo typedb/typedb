@@ -216,8 +216,8 @@ impl VariableRegistry {
 
     pub(crate) fn register_function_argument(&mut self, name: &str, category: VariableCategory) -> Variable {
         let variable = self.register_variable_named(name.to_owned());
-        self.set_variable_category(variable.clone(), category, VariableCategorySource::Argument).unwrap(); // We just created the variable. It cannot error
-        self.set_variable_is_optional(variable.clone(), false);
+        self.set_variable_category(variable, category, VariableCategorySource::Argument).unwrap(); // We just created the variable. It cannot error
+        self.set_variable_is_optional(variable, false);
         variable
     }
 
@@ -229,8 +229,8 @@ impl VariableRegistry {
         reducer: Reducer,
     ) -> Variable {
         let variable = self.register_variable_named(name);
-        self.set_variable_category(variable.clone(), category, VariableCategorySource::Reduce(reducer)).unwrap(); // We just created the variable. It cannot error
-        self.set_variable_is_optional(variable.clone(), is_optional);
+        self.set_variable_category(variable, category, VariableCategorySource::Reduce(reducer)).unwrap(); // We just created the variable. It cannot error
+        self.set_variable_is_optional(variable, is_optional);
         variable
     }
 }

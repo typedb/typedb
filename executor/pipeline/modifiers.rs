@@ -3,13 +3,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{cmp::Ordering, collections::HashSet, sync::Arc};
+use std::{cmp::Ordering, sync::Arc};
 
-use compiler::{
-    executable::modifiers::{LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable},
-    VariablePosition,
+use compiler::executable::modifiers::{
+    LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
 };
-use ir::pipeline::modifier::{Require, SortVariable};
+use ir::pipeline::modifier::SortVariable;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 

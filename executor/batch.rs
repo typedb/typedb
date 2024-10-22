@@ -53,7 +53,7 @@ impl FixedBatch {
     }
 
     pub(crate) fn is_full(&self) -> bool {
-        (self.entries * self.width) as usize == self.data.len()
+        self.entries == FIXED_BATCH_ROWS_MAX
     }
 
     pub(crate) fn get_row(&self, index: u32) -> MaybeOwnedRow<'_> {

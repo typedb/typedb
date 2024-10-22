@@ -167,7 +167,7 @@ impl<'this> ExpressionCompilationContext<'this> {
 
         let list_variable_type = self.pop_type_list()?;
         let from_index_type = self.pop_type_single()?.category();
-        if from_index_type.clone() != ValueTypeCategory::Long {
+        if from_index_type != ValueTypeCategory::Long {
             Err(ExpressionCompileError::ListIndexMustBeLong)?
         }
         let to_index_type = self.pop_type_single()?.category();

@@ -297,7 +297,7 @@ impl CommitTimeValidation {
         debug_assert!({
             let relates_root = relation_type.get_relates_root(snapshot, type_manager)?;
             relates_root.into_iter().all(|relates| {
-                relates_declared.contains(&relates)
+                relates_declared.contains(relates)
                     && !relates.is_specialising(snapshot, type_manager).unwrap()
                     && relates.role().get_label(snapshot, type_manager).unwrap().scope().unwrap()
                         == relates.relation().get_label(snapshot, type_manager).unwrap().name()
@@ -345,7 +345,7 @@ impl CommitTimeValidation {
 
             let interface_type = capability.interface();
             if let Some(supertype_capability) =
-                supertype_capabilities.iter().find(|cap| &cap.interface() == &interface_type)
+                supertype_capabilities.iter().find(|cap| cap.interface() == interface_type)
             {
                 let capability_annotations_declared = capability.get_annotations_declared(snapshot, type_manager)?;
                 let supertype_capability_annotations_declared =
@@ -427,7 +427,7 @@ impl CommitTimeValidation {
             .map(|constraint| constraint.description().clone());
 
         for constraint in constraints.into_iter() {
-            if &constraint.source() == &type_ {
+            if constraint.source() == type_ {
                 continue;
             }
             if declared_constraint_descriptions.clone().contains(&constraint.description()) {
@@ -557,7 +557,7 @@ impl CommitTimeValidation {
         validation_errors: &mut Vec<SchemaValidationError>,
     ) -> Result<(), ConceptReadError> {
         if let Some(supertype) = attribute_type.get_supertype(snapshot, type_manager)? {
-            if let Some((supertype_value_type, _)) = supertype.get_value_type(snapshot, type_manager)? {
+            if let Some((_supertype_value_type, _)) = supertype.get_value_type(snapshot, type_manager)? {
                 if let Some(declared_value_type) = attribute_type.get_value_type_declared(snapshot, type_manager)? {
                     let declared_value_type_annotations =
                         attribute_type.get_value_type_annotations_declared(snapshot, type_manager)?;

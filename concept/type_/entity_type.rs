@@ -116,10 +116,10 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
         type_manager.get_entity_type_label(snapshot, self.clone().into_owned())
     }
 
-    fn get_label_arc<'m>(
+    fn get_label_arc(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
     ) -> Result<Arc<Label<'static>>, ConceptReadError> {
         type_manager.get_entity_type_label_arc(snapshot, self.clone().into_owned())
     }
@@ -332,19 +332,19 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         )
     }
 
-    fn get_owned_attribute_type_constraint_abstract<'m>(
+    fn get_owned_attribute_type_constraint_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
         type_manager.get_type_owns_abstract_constraint(snapshot, self.clone().into_owned_object_type(), attribute_type)
     }
 
-    fn get_owned_attribute_type_constraints_cardinality<'m>(
+    fn get_owned_attribute_type_constraints_cardinality(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
         type_manager.get_type_owns_cardinality_constraints(
@@ -354,46 +354,46 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         )
     }
 
-    fn get_owned_attribute_type_constraints_distinct<'m>(
+    fn get_owned_attribute_type_constraints_distinct(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
         type_manager.get_type_owns_distinct_constraints(snapshot, self.clone().into_owned_object_type(), attribute_type)
     }
 
-    fn get_owned_attribute_type_constraints_regex<'m>(
+    fn get_owned_attribute_type_constraints_regex(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
         type_manager.get_type_owns_regex_constraints(snapshot, self.clone().into_owned_object_type(), attribute_type)
     }
 
-    fn get_owned_attribute_type_constraints_range<'m>(
+    fn get_owned_attribute_type_constraints_range(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
         type_manager.get_type_owns_range_constraints(snapshot, self.clone().into_owned_object_type(), attribute_type)
     }
 
-    fn get_owned_attribute_type_constraints_values<'m>(
+    fn get_owned_attribute_type_constraints_values(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
         type_manager.get_type_owns_values_constraints(snapshot, self.clone().into_owned_object_type(), attribute_type)
     }
 
-    fn get_owned_attribute_type_constraint_unique<'m>(
+    fn get_owned_attribute_type_constraint_unique(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
         type_manager.get_type_owns_unique_constraint(snapshot, self.clone().into_owned_object_type(), attribute_type)
@@ -454,19 +454,19 @@ impl<'a> PlayerAPI<'a> for EntityType<'a> {
         type_manager.get_entity_type_played_role_type_constraints(snapshot, self.clone().into_owned(), role_type)
     }
 
-    fn get_played_role_type_constraint_abstract<'m>(
+    fn get_played_role_type_constraint_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         role_type: RoleType<'static>,
     ) -> Result<Option<CapabilityConstraint<Plays<'static>>>, ConceptReadError> {
         type_manager.get_type_plays_abstract_constraint(snapshot, self.clone().into_owned_object_type(), role_type)
     }
 
-    fn get_played_role_type_constraints_cardinality<'m>(
+    fn get_played_role_type_constraints_cardinality(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         role_type: RoleType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Plays<'static>>>, ConceptReadError> {
         type_manager.get_type_plays_cardinality_constraints(snapshot, self.clone().into_owned_object_type(), role_type)

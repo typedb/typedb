@@ -170,15 +170,16 @@ impl CLIArgs {
             return Err(format!("Invalid keys: {invalid_keys}"));
         }
 
-        let mut args = CLIArgs::default();
-        args.database = Self::get_arg_as::<String>(&arg_map, "database", true)?.unwrap();
-        args.n_threads = Self::get_arg_as::<u16>(&arg_map, "threads", true)?.unwrap();
-        args.n_batches = Self::get_arg_as::<usize>(&arg_map, "batches", true)?.unwrap();
-        args.batch_size = Self::get_arg_as::<usize>(&arg_map, "batch_size", true)?.unwrap();
+        let args = CLIArgs {
+            database: Self::get_arg_as::<String>(&arg_map, "database", true)?.unwrap(),
+            n_threads: Self::get_arg_as::<u16>(&arg_map, "threads", true)?.unwrap(),
+            n_batches: Self::get_arg_as::<usize>(&arg_map, "batches", true)?.unwrap(),
+            batch_size: Self::get_arg_as::<usize>(&arg_map, "batch_size", true)?.unwrap(),
 
-        args.rocks_disable_wal = Self::get_arg_as::<bool>(&arg_map, "rocks_disable_wal", false)?;
-        args.rocks_set_sync = Self::get_arg_as::<bool>(&arg_map, "rocks_set_sync", false)?;
-        args.rocks_write_buffer_mb = Self::get_arg_as::<usize>(&arg_map, "rocks_write_buffer_mb", false)?;
+            rocks_disable_wal: Self::get_arg_as::<bool>(&arg_map, "rocks_disable_wal", false)?,
+            rocks_set_sync: Self::get_arg_as::<bool>(&arg_map, "rocks_set_sync", false)?,
+            rocks_write_buffer_mb: Self::get_arg_as::<usize>(&arg_map, "rocks_write_buffer_mb", false)?,
+        };
 
         Ok(args)
     }

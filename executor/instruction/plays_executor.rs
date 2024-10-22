@@ -7,7 +7,6 @@
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
     iter,
-    marker::PhantomData,
     sync::Arc,
     vec,
 };
@@ -25,12 +24,11 @@ use lending_iterator::{
 };
 use storage::snapshot::ReadableSnapshot;
 
-use super::type_from_row_or_annotations;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{plays_to_tuple_player_role, PlaysToTupleFn, TuplePositions, TupleResult},
-        BinaryIterateMode, Checker, FilterFn, VariableModes,
+        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

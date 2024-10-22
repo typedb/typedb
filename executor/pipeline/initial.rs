@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use lending_iterator::{LendingIterator, Once};
+use lending_iterator::LendingIterator;
 
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
@@ -37,7 +37,7 @@ impl<Snapshot> StageAPI<Snapshot> for InitialStage<Snapshot> {
 
     fn into_iterator(
         self,
-        interrupt: ExecutionInterrupt,
+        _interrupt: ExecutionInterrupt,
     ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
     {
         Ok((InitialIterator::new(self.initial_batch), self.context))

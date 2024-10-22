@@ -258,7 +258,7 @@ fn annotate_some(
             }
             Ok(AnnotatedFetchSome::ListAttributesAsList(variable, attribute_type))
         }
-        FetchSome::ListAttributesFromList(FetchListAttributeFromList { variable, attribute }) => {
+        FetchSome::ListAttributesFromList(FetchListAttributeFromList { .. }) => {
             Err(AnnotationError::Unimplemented {
                 description: "Fetching a list attribute is not yet supported.".to_owned(),
             })

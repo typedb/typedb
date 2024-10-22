@@ -18,6 +18,12 @@ pub struct DefinitionKeyGenerator {
     next_function: DefinitionKeyAllocator,
 }
 
+impl Default for DefinitionKeyGenerator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DefinitionKeyGenerator {
     pub fn new() -> DefinitionKeyGenerator {
         Self {
@@ -25,6 +31,7 @@ impl DefinitionKeyGenerator {
             next_function: DefinitionKeyAllocator::new(Prefix::DefinitionFunction),
         }
     }
+
     pub fn create_struct<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,

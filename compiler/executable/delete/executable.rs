@@ -105,15 +105,15 @@ pub fn compile(
 
     // To produce the output stream, we remove the deleted concepts from each map in the stream.
     let mut output_row_schema = Vec::new();
-    for (variable, position) in input_variables {
-        if deleted_concepts.contains(variable) {
+    for (&variable, position) in input_variables {
+        if deleted_concepts.contains(&variable) {
             continue;
         }
         let pos_as_usize = position.as_usize();
         if output_row_schema.len() <= pos_as_usize {
             output_row_schema.resize(pos_as_usize + 1, None);
         }
-        output_row_schema[pos_as_usize] = Some(variable.clone());
+        output_row_schema[pos_as_usize] = Some(variable);
     }
 
     Ok(DeleteExecutable {

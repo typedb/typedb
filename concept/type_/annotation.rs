@@ -11,7 +11,7 @@ use std::{
     error::Error,
     fmt,
     fmt::Formatter,
-    hash::{Hash, Hasher},
+    hash::Hash,
     iter::Sum,
     ops::Add,
 };
@@ -28,7 +28,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::type_::{
     constraint::{CapabilityConstraint, ConstraintDescription, TypeConstraint},
-    Capability, KindAPI, TypeAPI,
+    Capability, KindAPI,
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

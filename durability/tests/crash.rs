@@ -17,7 +17,7 @@ fn main() {
     let streamer = std::env::var("TEST_WAL_STREAMER").unwrap();
     let recoverer = std::env::var("TEST_WAL_RECOVERER").unwrap();
 
-    for i in 0..5 {
+    for _ in 0..5 {
         let directory = TempDir::new("wal-test").unwrap();
 
         let mut streamer_process = Command::new(&streamer).arg(directory.as_ref()).arg(message).spawn().unwrap();

@@ -14,7 +14,7 @@ use std::{
 
 use encoding::value::value::Value;
 use itertools::Itertools;
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::type_::{
     annotation::{
@@ -25,7 +25,7 @@ use crate::type_::{
     plays::Plays,
     relates::Relates,
     type_manager::TypeManager,
-    Capability, KindAPI, Ordering, TypeAPI,
+    Capability, KindAPI, Ordering,
 };
 
 macro_rules! with_constraint_description {
@@ -43,7 +43,12 @@ macro_rules! unwrap_constraint_description_methods {
     )*) => {
         $(
             pub(crate) fn $method_name(self) -> Result<$return_type, ConstraintError> {
-                with_constraint_description!(self, $target_enum, Err(ConstraintError::CannotUnwrapConstraint(stringify!($target_enum).to_string())), |constraint| Ok(constraint.clone()))
+                with_constraint_description!(
+                    self,
+                    $target_enum,
+                    Err(ConstraintError::CannotUnwrapConstraint(stringify!($target_enum).to_string())),
+                    |constraint| Ok(constraint.clone())
+                )
             }
         )*
     }
@@ -306,7 +311,7 @@ pub trait Constraint<T>: Sized + Clone + Hash + Eq {
     fn validate_distinct(count: u64) -> Result<(), ConstraintError> {
         match count > 1 {
             false => Ok(()),
-            true => Err(ConstraintError::ViolatedDistinct { count: count }),
+            true => Err(ConstraintError::ViolatedDistinct { count }),
         }
     }
 }
@@ -407,7 +412,7 @@ pub(crate) fn get_cardinality_constraint<'a, CAP: Capability<'static>>(
     constraints: impl IntoIterator<Item = &'a CapabilityConstraint<CAP>>,
 ) -> Option<CapabilityConstraint<CAP>> {
     filter_by_constraint_category!(constraints.into_iter(), Cardinality)
-        .filter_map(|constraint| match &constraint.source() == &capability {
+        .filter_map(|constraint| match constraint.source() == capability {
             true => Some(constraint.clone()),
             false => None,
         })
@@ -424,22 +429,20 @@ pub(crate) fn get_abstract_constraint<'a, C: Constraint<T> + 'a, T: Hash + Eq>(
     source: T,
     constraints: impl IntoIterator<Item = &'a C>,
 ) -> Option<C> {
-    let mut abstracts = filter_by_constraint_category!(constraints.into_iter(), Abstract).into_iter();
+    let mut abstracts = filter_by_constraint_category!(constraints.into_iter(), Abstract);
     if let Some(constraint) = abstracts.next() {
         debug_assert!(
             abstracts.next().is_none(),
             "Expected to retrieve only one abstract constraint from the type itself"
         );
-        debug_assert!(
-            &constraint.source() == &source,
-            "Unexpected different source of an abstract constraint for type"
-        );
+        debug_assert!(constraint.source() == source, "Unexpected different source of an abstract constraint for type");
         Some(constraint.clone())
     } else {
         None
     }
 }
 
+#[expect(unused)]
 pub(crate) fn get_unique_constraints<C: Constraint<T>, T: Hash + Eq>(
     constraints: impl IntoIterator<Item = C>,
 ) -> HashSet<C> {
@@ -449,7 +452,7 @@ pub(crate) fn get_unique_constraints<C: Constraint<T>, T: Hash + Eq>(
 pub(crate) fn get_unique_constraint<'a, C: Constraint<T> + 'a, T: Hash + Eq>(
     constraints: impl IntoIterator<Item = &'a C>,
 ) -> Option<C> {
-    let mut uniques = filter_by_constraint_category!(constraints.into_iter(), Unique).into_iter();
+    let mut uniques = filter_by_constraint_category!(constraints.into_iter(), Unique);
     if let Some(constraint) = uniques.next() {
         debug_assert!(uniques.next().is_none(), "Expected to inherit only one unique constraint from its root source");
         Some(constraint.clone())

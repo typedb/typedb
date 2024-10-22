@@ -6,7 +6,6 @@
 
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
-#![allow(dead_code)]
 #![allow(clippy::module_inception)]
 
 use std::{

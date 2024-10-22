@@ -4,24 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
-
-use compiler::VariablePosition;
 use concept::error::ConceptReadError;
 use error::typedb_error;
 use lending_iterator::LendingIterator;
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     batch::Batch,
     error::ReadExecutionError,
-    pipeline::{
-        fetch::{FetchExecutionError, FetchStageExecutor},
-        stage::{ExecutionContext, StageAPI, StageIterator},
-    },
+    pipeline::{fetch::FetchExecutionError, stage::StageIterator},
     row::MaybeOwnedRow,
     write::WriteError,
-    ExecutionInterrupt, InterruptType,
+    InterruptType,
 };
 
 pub mod delete;

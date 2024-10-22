@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::error::Error;
-
 use compiler::annotation::FunctionAnnotationError;
 use encoding::error::EncodingError;
 use error::typedb_error;

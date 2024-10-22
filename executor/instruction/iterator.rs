@@ -17,7 +17,6 @@ use lending_iterator::{LendingIterator, Peekable};
 
 use crate::{
     instruction::{
-        constant_executor::ConstantValueIterator,
         has_executor::{
             HasBoundedSortedAttribute, HasUnboundedSortedAttributeMerged, HasUnboundedSortedAttributeSingle,
             HasUnboundedSortedOwner,
@@ -124,8 +123,6 @@ pub(crate) enum TupleIterator {
 
     PlaysReverseUnbounded(SortedTupleIterator<PlaysReverseUnboundedSortedRole>),
     PlaysReverseBounded(SortedTupleIterator<PlaysReverseBoundedSortedPlayer>),
-
-    Constant(SortedTupleIterator<ConstantValueIterator>),
 
     IsaUnboundedSingle(SortedTupleIterator<IsaUnboundedSortedThingSingle>),
     IsaUnboundedMerged(SortedTupleIterator<IsaUnboundedSortedThingMerged>),

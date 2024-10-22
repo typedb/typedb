@@ -51,8 +51,9 @@ impl MVCCRangeIterator {
     }
 
     pub(crate) fn peek(&mut self) -> Option<&Result<(StorageKeyReference<'_>, ByteReference<'_>), MVCCReadError>> {
+        type Item<'a> = <MVCCRangeIterator as LendingIterator>::Item<'a>;
         if self.item.is_none() {
-            self.item = unsafe { std::mem::transmute(self.next()) };
+            self.item = unsafe { std::mem::transmute::<Option<Item<'_>>, Option<Item<'static>>>(self.next()) };
         }
         self.item.as_ref()
     }

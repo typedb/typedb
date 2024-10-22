@@ -144,10 +144,10 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         })
     }
 
-    fn get_owned_attribute_type_constraint_abstract<'m>(
+    fn get_owned_attribute_type_constraint_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
         with_object_type!(self, |object| {
@@ -155,10 +155,10 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         })
     }
 
-    fn get_owned_attribute_type_constraints_cardinality<'m>(
+    fn get_owned_attribute_type_constraints_cardinality(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
         with_object_type!(self, |object| {
@@ -166,10 +166,10 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         })
     }
 
-    fn get_owned_attribute_type_constraints_distinct<'m>(
+    fn get_owned_attribute_type_constraints_distinct(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
         with_object_type!(self, |object| {
@@ -177,10 +177,10 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         })
     }
 
-    fn get_owned_attribute_type_constraints_regex<'m>(
+    fn get_owned_attribute_type_constraints_regex(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
         with_object_type!(self, |object| {
@@ -188,10 +188,10 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         })
     }
 
-    fn get_owned_attribute_type_constraints_range<'m>(
+    fn get_owned_attribute_type_constraints_range(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
         with_object_type!(self, |object| {
@@ -199,10 +199,10 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         })
     }
 
-    fn get_owned_attribute_type_constraints_values<'m>(
+    fn get_owned_attribute_type_constraints_values(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
         with_object_type!(self, |object| {
@@ -210,10 +210,10 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         })
     }
 
-    fn get_owned_attribute_type_constraint_unique<'m>(
+    fn get_owned_attribute_type_constraint_unique(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
         with_object_type!(self, |object| {
@@ -256,10 +256,10 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         with_object_type!(self, |object| { object.get_label(snapshot, type_manager) })
     }
 
-    fn get_label_arc<'m>(
+    fn get_label_arc(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
     ) -> Result<Arc<Label<'static>>, ConceptReadError> {
         with_object_type!(self, |object| { object.get_label_arc(snapshot, type_manager) })
     }
@@ -381,10 +381,10 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         with_object_type!(self, |object| { object.get_played_role_type_constraints(snapshot, type_manager, role_type) })
     }
 
-    fn get_played_role_type_constraint_abstract<'m>(
+    fn get_played_role_type_constraint_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         role_type: RoleType<'static>,
     ) -> Result<Option<CapabilityConstraint<Plays<'static>>>, ConceptReadError> {
         with_object_type!(self, |object| {
@@ -392,10 +392,10 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         })
     }
 
-    fn get_played_role_type_constraints_cardinality<'m>(
+    fn get_played_role_type_constraints_cardinality(
         &self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         role_type: RoleType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Plays<'static>>>, ConceptReadError> {
         with_object_type!(self, |object| {

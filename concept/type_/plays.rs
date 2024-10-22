@@ -218,7 +218,9 @@ impl From<PlaysAnnotation> for Annotation {
 impl PartialEq<Annotation> for PlaysAnnotation {
     fn eq(&self, annotation: &Annotation) -> bool {
         match annotation {
-            Annotation::Cardinality(other_cardinality) => {
+            Annotation::Cardinality(other_cardinality) =>
+            {
+                #[allow(irrefutable_let_patterns, reason = "for consistency & extensibility")]
                 if let Self::Cardinality(cardinality) = self {
                     cardinality == other_cardinality
                 } else {

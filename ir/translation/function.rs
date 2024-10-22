@@ -39,7 +39,7 @@ pub fn translate_typeql_function(
     )
 }
 
-pub fn translate_function_from<'a>(
+pub fn translate_function_from(
     snapshot: &impl ReadableSnapshot,
     function_index: &impl FunctionSignatureIndex,
     name: &str,
@@ -84,9 +84,9 @@ pub(crate) fn translate_function_block(
     }
 
     let return_operation = match &function_block.return_stmt {
-        ReturnStatement::Stream(stream) => build_return_stream(&context, stream),
-        ReturnStatement::Single(single) => build_return_single(&context, single),
-        ReturnStatement::Reduce(reduction) => build_return_reduce(&context, reduction),
+        ReturnStatement::Stream(stream) => build_return_stream(context, stream),
+        ReturnStatement::Single(single) => build_return_single(context, single),
+        ReturnStatement::Reduce(reduction) => build_return_reduce(context, reduction),
     }?;
     Ok(FunctionBody::new(stages, return_operation))
 }

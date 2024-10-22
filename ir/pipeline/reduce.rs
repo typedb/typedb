@@ -18,7 +18,7 @@ impl Reduce {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Copy, Debug)]
 pub enum Reducer {
     Count,
     CountVar(Variable),

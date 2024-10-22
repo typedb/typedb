@@ -11,10 +11,7 @@ use std::{
 
 use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
-use encoding::value::value_type::{
-    ValueType, ValueTypeCategory,
-    ValueTypeCategory::{Double, Long},
-};
+use encoding::value::value_type::{ValueType, ValueTypeCategory};
 use ir::{
     pattern::constraint::Constraint,
     pipeline::{
@@ -36,7 +33,7 @@ use crate::{
             compiled_expression::{ExecutableExpression, ExpressionValueType},
         },
         fetch::{annotate_fetch, AnnotatedFetch},
-        function::{annotate_functions, AnnotatedFunction, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+        function::{annotate_functions, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         match_inference::infer_types,
         type_annotations::{ConstraintTypeAnnotations, TypeAnnotations},
         type_inference::resolve_value_types,
@@ -319,7 +316,7 @@ fn annotate_stage(
 
         TranslatedStage::Reduce(reduce) => {
             let mut reduce_instructions = Vec::with_capacity(reduce.assigned_reductions.len());
-            for (assigned, reducer) in &reduce.assigned_reductions {
+            for &(assigned, reducer) in &reduce.assigned_reductions {
                 let typed_reduce = resolve_reducer_by_value_type(
                     snapshot,
                     type_manager,
@@ -329,7 +326,7 @@ fn annotate_stage(
                     running_value_variable_assigned_types,
                 )?;
                 running_value_variable_assigned_types
-                    .insert(assigned.clone(), ExpressionValueType::Single(typed_reduce.output_type().clone()));
+                    .insert(assigned, ExpressionValueType::Single(typed_reduce.output_type().clone()));
                 reduce_instructions.push(typed_reduce);
             }
             Ok(AnnotatedStage::Reduce(reduce, reduce_instructions))
@@ -379,13 +376,13 @@ pub fn resolve_reducer_by_value_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
-    reducer: &Reducer,
+    reducer: Reducer,
     variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     assigned_value_types: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<ReduceInstruction<Variable>, AnnotationError> {
     match reducer {
         Reducer::Count => Ok(ReduceInstruction::Count),
-        Reducer::CountVar(variable) => Ok(ReduceInstruction::CountVar(variable.clone())),
+        Reducer::CountVar(variable) => Ok(ReduceInstruction::CountVar(variable)),
         Reducer::Sum(variable)
         | Reducer::Max(variable)
         | Reducer::Mean(variable)
@@ -407,39 +404,39 @@ pub fn resolve_reducer_by_value_type(
 }
 
 fn determine_value_type_for_reducer(
-    reducer: &Reducer,
-    variable: &Variable,
+    reducer: Reducer,
+    variable: Variable,
     variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     assigned_value_types: &BTreeMap<Variable, ExpressionValueType>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
 ) -> Result<ValueType, AnnotationError> {
-    if let Some(assigned_type) = assigned_value_types.get(variable) {
+    if let Some(assigned_type) = assigned_value_types.get(&variable) {
         match assigned_type {
             ExpressionValueType::Single(value_type) => Ok(value_type.clone()),
             ExpressionValueType::List(_) => {
-                let variable_name = variable_registry.variable_names().get(variable).unwrap().clone();
+                let variable_name = variable_registry.variable_names()[&variable].clone();
                 Err(AnnotationError::ReducerInputVariableIsList { reducer: reducer.name(), variable: variable_name })
             }
         }
-    } else if let Some(types) = variable_annotations.get(variable) {
-        let value_types = resolve_value_types(&types, snapshot, type_manager)
+    } else if let Some(types) = variable_annotations.get(&variable) {
+        let value_types = resolve_value_types(types, snapshot, type_manager)
             .map_err(|source| AnnotationError::TypeInference { typedb_source: source })?;
         if value_types.len() != 1 {
-            let variable_name = variable_registry.variable_names().get(variable).unwrap().clone();
+            let variable_name = variable_registry.variable_names()[&variable].clone();
             Err(AnnotationError::ReducerInputVariableDidNotHaveSingleValueType { variable: variable_name })
         } else {
-            Ok(value_types.iter().find(|_| true).unwrap().clone())
+            Ok(value_types.iter().next().unwrap().clone())
         }
     } else {
-        let variable_name = variable_registry.variable_names().get(variable).unwrap().clone();
+        let variable_name = variable_registry.variable_names()[&variable].clone();
         Err(AnnotationError::CouldNotDetermineValueTypeForReducerInput { variable: variable_name })
     }
 }
 
 pub fn resolve_reduce_instruction_by_value_type(
-    reducer: &Reducer,
+    reducer: Reducer,
     value_type: ValueType,
     variable_registry: &VariableRegistry,
 ) -> Result<ReduceInstruction<Variable>, AnnotationError> {
@@ -449,37 +446,37 @@ pub fn resolve_reduce_instruction_by_value_type(
     match value_type.category() {
         Long => match reducer {
             Reducer::Count => Ok(ReduceInstruction::Count),
-            Reducer::CountVar(var) => Ok(ReduceInstruction::CountVar(var.clone())),
-            Reducer::Sum(var) => Ok(ReduceInstruction::SumLong(var.clone())),
-            Reducer::Max(var) => Ok(ReduceInstruction::MaxLong(var.clone())),
-            Reducer::Min(var) => Ok(ReduceInstruction::MinLong(var.clone())),
-            Reducer::Mean(var) => Ok(ReduceInstruction::MeanLong(var.clone())),
-            Reducer::Median(var) => Ok(ReduceInstruction::MedianLong(var.clone())),
-            Reducer::Std(var) => Ok(ReduceInstruction::StdLong(var.clone())),
+            Reducer::CountVar(var) => Ok(ReduceInstruction::CountVar(var)),
+            Reducer::Sum(var) => Ok(ReduceInstruction::SumLong(var)),
+            Reducer::Max(var) => Ok(ReduceInstruction::MaxLong(var)),
+            Reducer::Min(var) => Ok(ReduceInstruction::MinLong(var)),
+            Reducer::Mean(var) => Ok(ReduceInstruction::MeanLong(var)),
+            Reducer::Median(var) => Ok(ReduceInstruction::MedianLong(var)),
+            Reducer::Std(var) => Ok(ReduceInstruction::StdLong(var)),
         },
         Double => match reducer {
             Reducer::Count => Ok(ReduceInstruction::Count),
-            Reducer::CountVar(var) => Ok(ReduceInstruction::CountVar(var.clone())),
-            Reducer::Sum(var) => Ok(ReduceInstruction::SumDouble(var.clone())),
-            Reducer::Max(var) => Ok(ReduceInstruction::MaxDouble(var.clone())),
-            Reducer::Min(var) => Ok(ReduceInstruction::MinDouble(var.clone())),
-            Reducer::Mean(var) => Ok(ReduceInstruction::MeanDouble(var.clone())),
-            Reducer::Median(var) => Ok(ReduceInstruction::MedianDouble(var.clone())),
-            Reducer::Std(var) => Ok(ReduceInstruction::StdDouble(var.clone())),
+            Reducer::CountVar(var) => Ok(ReduceInstruction::CountVar(var)),
+            Reducer::Sum(var) => Ok(ReduceInstruction::SumDouble(var)),
+            Reducer::Max(var) => Ok(ReduceInstruction::MaxDouble(var)),
+            Reducer::Min(var) => Ok(ReduceInstruction::MinDouble(var)),
+            Reducer::Mean(var) => Ok(ReduceInstruction::MeanDouble(var)),
+            Reducer::Median(var) => Ok(ReduceInstruction::MedianDouble(var)),
+            Reducer::Std(var) => Ok(ReduceInstruction::StdDouble(var)),
         },
         _ => {
             let var = match reducer {
                 Reducer::Count => unreachable!(),
-                Reducer::CountVar(v)
-                | Reducer::Sum(v)
-                | Reducer::Max(v)
-                | Reducer::Mean(v)
-                | Reducer::Median(v)
-                | Reducer::Min(v)
-                | Reducer::Std(v) => v.clone(),
+                Reducer::CountVar(var)
+                | Reducer::Sum(var)
+                | Reducer::Max(var)
+                | Reducer::Mean(var)
+                | Reducer::Median(var)
+                | Reducer::Min(var)
+                | Reducer::Std(var) => var,
             };
             let reducer_name = reducer.name();
-            let variable_name = variable_registry.variable_names().get(&var).unwrap().clone();
+            let variable_name = variable_registry.variable_names()[&var].clone();
             Err(AnnotationError::UnsupportedValueTypeForReducer {
                 reducer: reducer_name,
                 variable: variable_name,

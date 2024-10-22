@@ -74,7 +74,13 @@ macro_rules! for_type_and_subtypes_transitive {
 }
 
 macro_rules! type_or_subtype_without_declared_capability_instances_existence_validation {
-    ($func_name:ident, $capability_type:ident, $object_type:ident, $interface_type:ident, $single_type_validation_func:path) => {
+    (
+        $func_name:ident,
+        $capability_type:ident,
+        $object_type:ident,
+        $interface_type:ident,
+        $single_type_validation_func:path
+    ) => {
         fn $func_name(
             snapshot: &impl ReadableSnapshot,
             type_manager: &TypeManager,
@@ -116,7 +122,14 @@ macro_rules! type_or_subtype_without_declared_capability_instances_existence_val
 }
 
 macro_rules! cannot_unset_capability_with_existing_instances_validation {
-    ($func_name:ident, $capability_kind:path, $capability_type:ident, $object_type:ident, $interface_type:ident, $existing_instances_validation_func:path) => {
+    (
+        $func_name:ident,
+        $capability_kind:path,
+        $capability_type:ident,
+        $object_type:ident,
+        $interface_type:ident,
+        $existing_instances_validation_func:path
+    ) => {
         pub(crate) fn $func_name(
             snapshot: &impl ReadableSnapshot,
             type_manager: &TypeManager,
@@ -145,7 +158,7 @@ macro_rules! cannot_unset_capability_with_existing_instances_validation {
             )
             .map_err(|source| SchemaValidationError::ConceptRead { source })?;
 
-            if let Some(type_having_instances) = type_having_instances {
+            if type_having_instances.is_some() {
                 Err(SchemaValidationError::CannotUnsetCapabilityWithExistingInstances {
                     cap: $capability_kind,
                     label: get_label_or_schema_err(snapshot, type_manager, object_type)?,
@@ -159,7 +172,13 @@ macro_rules! cannot_unset_capability_with_existing_instances_validation {
 }
 
 macro_rules! cannot_change_supertype_as_capability_with_existing_instances_is_lost_validation {
-    ($func_name:ident, $capability_kind:path, $object_type:ident, $get_lost_capabilities_func:path, $existing_instances_validation_func:path) => {
+    (
+        $func_name:ident,
+        $capability_kind:path,
+        $object_type:ident,
+        $get_lost_capabilities_func:path,
+        $existing_instances_validation_func:path
+    ) => {
         pub(crate) fn $func_name(
             snapshot: &impl ReadableSnapshot,
             type_manager: &TypeManager,
@@ -180,7 +199,7 @@ macro_rules! cannot_change_supertype_as_capability_with_existing_instances_is_lo
                 )
                 .map_err(|source| SchemaValidationError::ConceptRead { source })?;
 
-                if let Some(type_having_instances) = type_having_instances {
+                if type_having_instances.is_some() {
                     return Err(
                         SchemaValidationError::CannotChangeSupertypeAsCapabilityIsLostWhileHavingHasInstances {
                             cap: $capability_kind,
@@ -237,9 +256,7 @@ macro_rules! new_acquired_capability_instances_validation {
                 &get_checked_constraints(default_constraints.into_iter()),
             )
             .map_err(|typedb_source| {
-                SchemaValidationError::CannotAcquireCapabilityAsExistingInstancesViolateItsConstraint {
-                    typedb_source: typedb_source,
-                }
+                SchemaValidationError::CannotAcquireCapabilityAsExistingInstancesViolateItsConstraint { typedb_source }
             })
         }
     };
@@ -304,24 +321,61 @@ macro_rules! updated_constraints_compatible_with_capability_instances_on_object_
             type_: $object_type<'static>,
             new_supertype: $object_type<'static>,
         ) -> Result<(), SchemaValidationError> {
-            let affected_object_types = TypeAPI::chain_types(type_.clone(), type_.get_subtypes_transitive(snapshot, type_manager).map_err(|source| SchemaValidationError::ConceptRead { source } )?.into_iter().cloned()).collect();
-            let type_capabilities_declared = TypeReader::get_capabilities_declared::<$capability_type<'static>>(snapshot, type_.clone()).map_err(|source| SchemaValidationError::ConceptRead { source} )?;
-            let type_capabilities = TypeReader::get_capabilities::<$capability_type<'static>>(snapshot, type_.clone(), false).map_err(|source| SchemaValidationError::ConceptRead { source} )?;
-            let new_capabilities = TypeReader::get_capabilities::<$capability_type<'static>>(snapshot, new_supertype.clone(), false).map_err(|source| SchemaValidationError::ConceptRead { source} )?;
+            let affected_object_types = TypeAPI::chain_types(
+                type_.clone(),
+                type_
+                    .get_subtypes_transitive(snapshot, type_manager)
+                    .map_err(|source| SchemaValidationError::ConceptRead { source })?
+                    .into_iter()
+                    .cloned(),
+            )
+            .collect();
+            let type_capabilities_declared =
+                TypeReader::get_capabilities_declared::<$capability_type<'static>>(snapshot, type_.clone())
+                    .map_err(|source| SchemaValidationError::ConceptRead { source })?;
+            let type_capabilities =
+                TypeReader::get_capabilities::<$capability_type<'static>>(snapshot, type_.clone(), false)
+                    .map_err(|source| SchemaValidationError::ConceptRead { source })?;
+            let new_capabilities =
+                TypeReader::get_capabilities::<$capability_type<'static>>(snapshot, new_supertype.clone(), false)
+                    .map_err(|source| SchemaValidationError::ConceptRead { source })?;
 
             for new_capability in new_capabilities.into_iter() {
-                let affected_interface_types = TypeAPI::chain_types(new_capability.interface(), new_capability.interface().get_subtypes_transitive(snapshot, type_manager).map_err(|source| SchemaValidationError::ConceptRead { source } )?.into_iter().cloned()).collect();
-                let mut constraints = get_checked_constraints(new_capability.get_constraints(snapshot, type_manager).map_err(|source| SchemaValidationError::ConceptRead { source } )?.into_iter().cloned());
+                let affected_interface_types = TypeAPI::chain_types(
+                    new_capability.interface(),
+                    new_capability
+                        .interface()
+                        .get_subtypes_transitive(snapshot, type_manager)
+                        .map_err(|source| SchemaValidationError::ConceptRead { source })?
+                        .into_iter()
+                        .cloned(),
+                )
+                .collect();
+                let mut constraints = get_checked_constraints(
+                    new_capability
+                        .get_constraints(snapshot, type_manager)
+                        .map_err(|source| SchemaValidationError::ConceptRead { source })?
+                        .into_iter()
+                        .cloned(),
+                );
 
                 // If the new_capability is not specialised by a declared capability of type_,
                 // ConstraintScope::SingleInstanceOfType constraints should affect type_'s capability
                 // As the actual capabilities for this interface
-                let single_instance_of_type_constraints: HashSet<CapabilityConstraint<$capability_type<'static>>> = filter_by_scope!(constraints.iter().cloned(), ConstraintScope::SingleInstanceOfType).collect();
+                let single_instance_of_type_constraints: HashSet<CapabilityConstraint<$capability_type<'static>>> =
+                    filter_by_scope!(constraints.iter().cloned(), ConstraintScope::SingleInstanceOfType).collect();
                 for constraint in single_instance_of_type_constraints {
                     let affected_interface_type = constraint.source().interface();
-                    if let Some(type_capability) = type_capabilities.iter().find(|capability| &capability.interface() == &affected_interface_type) {
-                        if type_capabilities_declared.iter().find(|capability_declared| &capability_declared.interface() == &affected_interface_type).is_none() {
-                            let new_constraint = CapabilityConstraint::new(constraint.description(), type_capability.clone());
+                    if let Some(type_capability) =
+                        type_capabilities.iter().find(|capability| &capability.interface() == &affected_interface_type)
+                    {
+                        if type_capabilities_declared
+                            .iter()
+                            .find(|capability_declared| &capability_declared.interface() == &affected_interface_type)
+                            .is_none()
+                        {
+                            let new_constraint =
+                                CapabilityConstraint::new(constraint.description(), type_capability.clone());
                             constraints.remove(&constraint);
                             constraints.insert(new_constraint);
                         }
@@ -337,7 +391,11 @@ macro_rules! updated_constraints_compatible_with_capability_instances_on_object_
                     &HashMap::new(), // all interface supertypes are read from storage
                     &constraints,
                 )
-                .map_err(|typedb_source| SchemaValidationError::CannotChangeSupertypeAsUpdatedCapabilityConstraintIsViolatedByExistingInstances { typedb_source })?;
+                .map_err(|typedb_source| {
+                    SchemaValidationError::CannotChangeSupertypeAsUpdatedCapabilityConstraintIsViolatedByExistingInstances {
+                        typedb_source
+                    }
+                })?;
             }
             Ok(())
         }
@@ -352,33 +410,48 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
             thing_manager: &ThingManager,
             interface_type: <$capability_type<'static> as Capability<'static>>::InterfaceType,
         ) -> Result<(), SchemaValidationError> {
-            let unset_supertype = if let Some(type_) = interface_type.get_supertype(snapshot, type_manager).map_err(|source| SchemaValidationError::ConceptRead { source } )? {
+            let unset_supertype = if let Some(type_) = interface_type
+                .get_supertype(snapshot, type_manager)
+                .map_err(|source| SchemaValidationError::ConceptRead { source })?
+            {
                 type_
             } else {
                 return Ok(());
             };
 
-            let mut objects_with_interface_supertypes_and_constraints: HashMap<<$capability_type<'static> as Capability<'static>>::ObjectType, HashSet<CapabilityConstraint<$capability_type<'static>>>> = HashMap::new();
+            let mut objects_with_interface_supertypes_and_constraints: HashMap<
+                <$capability_type<'static> as Capability<'static>>::ObjectType,
+                HashSet<CapabilityConstraint<$capability_type<'static>>>,
+            > = HashMap::new();
             collect_object_types_with_interface_type_and_supertypes_constraints(
                 snapshot,
                 type_manager,
                 unset_supertype.clone(),
                 &mut objects_with_interface_supertypes_and_constraints,
             )
-            .map_err(|source| SchemaValidationError::ConceptRead { source} )?;
+            .map_err(|source| SchemaValidationError::ConceptRead { source })?;
 
-            let mut objects_with_interface_subtypes_and_constraints: HashSet<<$capability_type<'static> as Capability<'static>>::ObjectType> = HashSet::new();
+            let mut objects_with_interface_subtypes_and_constraints: HashSet<
+                <$capability_type<'static> as Capability<'static>>::ObjectType,
+            > = HashSet::new();
             collect_object_types_with_interface_type_and_subtypes::<$capability_type<'static>>(
                 snapshot,
                 type_manager,
                 interface_type.clone(),
                 &mut objects_with_interface_subtypes_and_constraints,
             )
-            .map_err(|source| SchemaValidationError::ConceptRead { source} )?;
+            .map_err(|source| SchemaValidationError::ConceptRead { source })?;
 
-            let unset_supertype_root = unset_supertype.get_supertype_root(snapshot, type_manager).map_err(|source| SchemaValidationError::ConceptRead { source } )?.unwrap_or(unset_supertype);
-            let unset_supertype_root_subtypes = unset_supertype_root.get_subtypes_transitive(snapshot, type_manager).map_err(|source| SchemaValidationError::ConceptRead { source} )?;
-            let affected_interface_types = TypeAPI::chain_types(unset_supertype_root, unset_supertype_root_subtypes.into_iter().cloned()).collect();
+            let unset_supertype_root = unset_supertype
+                .get_supertype_root(snapshot, type_manager)
+                .map_err(|source| SchemaValidationError::ConceptRead { source })?
+                .unwrap_or(unset_supertype);
+            let unset_supertype_root_subtypes = unset_supertype_root
+                .get_subtypes_transitive(snapshot, type_manager)
+                .map_err(|source| SchemaValidationError::ConceptRead { source })?;
+            let affected_interface_types =
+                TypeAPI::chain_types(unset_supertype_root, unset_supertype_root_subtypes.into_iter().cloned())
+                    .collect();
             let updated_supertypes = HashMap::from([(interface_type, None)]);
 
             for (affected_object_type, constraints) in objects_with_interface_supertypes_and_constraints.into_iter() {
@@ -388,8 +461,7 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
 
                 let affected_constraints = filter_out_unchecked_constraints!(constraints.into_iter())
                     .filter(|constraint| match constraint.scope() {
-                        ConstraintScope::SingleInstanceOfType
-                        | ConstraintScope::SingleInstanceOfTypeOrSubtype => false,
+                        ConstraintScope::SingleInstanceOfType | ConstraintScope::SingleInstanceOfTypeOrSubtype => false,
                         ConstraintScope::AllInstancesOfSiblingTypeOrSubtypes
                         | ConstraintScope::AllInstancesOfTypeOrSubtypes => true,
                     })
@@ -404,7 +476,11 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
                     &updated_supertypes,
                     &affected_constraints,
                 )
-                .map_err(|typedb_source| SchemaValidationError::CannotUnsetInterfaceTypeSupertypeAsUpdatedCapabilityConstraintIsViolatedByExistingInstances { typedb_source })?;
+                .map_err(|typedb_source| {
+                    SchemaValidationError::CannotUnsetInterfaceTypeSupertypeAsUpdatedCapabilityConstraintIsViolatedByExistingInstances {
+                        typedb_source
+                    }
+                })?;
             }
 
             Ok(())
@@ -421,44 +497,56 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
             interface_type: <$capability_type<'static> as Capability<'static>>::InterfaceType,
             interface_supertype: <$capability_type<'static> as Capability<'static>>::InterfaceType,
         ) -> Result<(), SchemaValidationError> {
-            if let Some(old_supertype) = interface_type.get_supertype(snapshot, type_manager).map_err(|source| SchemaValidationError::ConceptRead { source } )? {
+            if let Some(old_supertype) = interface_type
+                .get_supertype(snapshot, type_manager)
+                .map_err(|source| SchemaValidationError::ConceptRead { source })?
+            {
                 if &old_supertype == &interface_supertype {
                     return Ok(());
                 }
             }
 
-            $unset_validation_func(
-                snapshot,
-                type_manager,
-                thing_manager,
-                interface_type.clone(),
-            )?;
+            $unset_validation_func(snapshot, type_manager, thing_manager, interface_type.clone())?;
 
-            let mut objects_with_interface_supertypes_and_constraints: HashMap<<$capability_type<'static> as Capability<'static>>::ObjectType, HashSet<CapabilityConstraint<$capability_type<'static>>>> = HashMap::new();
+            let mut objects_with_interface_supertypes_and_constraints: HashMap<
+                <$capability_type<'static> as Capability<'static>>::ObjectType,
+                HashSet<CapabilityConstraint<$capability_type<'static>>>,
+            > = HashMap::new();
             collect_object_types_with_interface_type_and_supertypes_constraints(
                 snapshot,
                 type_manager,
                 interface_supertype.clone(),
                 &mut objects_with_interface_supertypes_and_constraints,
             )
-            .map_err(|source| SchemaValidationError::ConceptRead { source} )?;
+            .map_err(|source| SchemaValidationError::ConceptRead { source })?;
 
-            let all_interface_supertype_subtypes = interface_supertype.get_subtypes_transitive(snapshot, type_manager).map_err(|source| SchemaValidationError::ConceptRead { source} )?;
+            let _all_interface_supertype_subtypes = interface_supertype
+                .get_subtypes_transitive(snapshot, type_manager)
+                .map_err(|source| SchemaValidationError::ConceptRead { source })?;
 
-            let mut objects_with_interface_subtypes_and_constraints: HashSet<<$capability_type<'static> as Capability<'static>>::ObjectType> = HashSet::new();
+            let mut objects_with_interface_subtypes_and_constraints: HashSet<
+                <$capability_type<'static> as Capability<'static>>::ObjectType,
+            > = HashSet::new();
             collect_object_types_with_interface_type_and_subtypes::<$capability_type<'static>>(
                 snapshot,
                 type_manager,
                 interface_type.clone(),
                 &mut objects_with_interface_subtypes_and_constraints,
             )
-            .map_err(|source| SchemaValidationError::ConceptRead { source} )?;
+            .map_err(|source| SchemaValidationError::ConceptRead { source })?;
 
-            let supertype_root = interface_supertype.get_supertype_root(snapshot, type_manager).map_err(|source| SchemaValidationError::ConceptRead { source } )?.unwrap_or(interface_supertype.clone());
-            let supertype_root_subtypes = supertype_root.get_subtypes_transitive(snapshot, type_manager).map_err(|source| SchemaValidationError::ConceptRead { source} )?;
+            let supertype_root = interface_supertype
+                .get_supertype_root(snapshot, type_manager)
+                .map_err(|source| SchemaValidationError::ConceptRead { source })?
+                .unwrap_or(interface_supertype.clone());
+            let supertype_root_subtypes = supertype_root
+                .get_subtypes_transitive(snapshot, type_manager)
+                .map_err(|source| SchemaValidationError::ConceptRead { source })?;
             let all_supertype_root_subtypes =
                 TypeAPI::chain_types(supertype_root, supertype_root_subtypes.into_iter().cloned());
-            let interface_subtypes = interface_type.get_subtypes_transitive(snapshot, type_manager).map_err(|source| SchemaValidationError::ConceptRead { source} )?;
+            let interface_subtypes = interface_type
+                .get_subtypes_transitive(snapshot, type_manager)
+                .map_err(|source| SchemaValidationError::ConceptRead { source })?;
             let all_interface_subtypes =
                 TypeAPI::chain_types(interface_type.clone(), interface_subtypes.into_iter().cloned());
 
@@ -479,7 +567,11 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
                     &updated_supertypes,
                     &get_checked_constraints(constraints.into_iter()),
                 )
-                .map_err(|typedb_source| SchemaValidationError::CannotChangeInterfaceTypeSupertypeAsUpdatedCapabilityConstraintIsViolatedByExistingInstances { typedb_source })?;
+                .map_err(|typedb_source| {
+                    SchemaValidationError::CannotChangeInterfaceTypeSupertypeAsUpdatedCapabilityConstraintIsViolatedByExistingInstances {
+                        typedb_source
+                    }
+                })?;
             }
 
             Ok(())
@@ -525,18 +617,42 @@ macro_rules! updated_constraints_compatible_with_type_and_sub_instances_on_super
             type_: $type_<'static>,
             new_supertype: $type_<'static>,
         ) -> Result<(), SchemaValidationError> {
-            let constraints = get_checked_constraints(new_supertype.get_constraints(snapshot, type_manager).map_err(|source| SchemaValidationError::ConceptRead { source } )?.into_iter().cloned());
-            debug_assert!(constraints.iter().all(|constraint| match constraint.scope() {
-                ConstraintScope::SingleInstanceOfType
-                | ConstraintScope::SingleInstanceOfTypeOrSubtype => true,
-                ConstraintScope::AllInstancesOfSiblingTypeOrSubtypes
-                | ConstraintScope::AllInstancesOfTypeOrSubtypes => false,
-            }), "It is expected that all type constraints are scoped to a single instance. If it changes, more validations could be required (e.g. on unset supertype)");
+            let constraints = get_checked_constraints(
+                new_supertype
+                    .get_constraints(snapshot, type_manager)
+                    .map_err(|source| SchemaValidationError::ConceptRead { source })?
+                    .into_iter()
+                    .cloned(),
+            );
+            debug_assert!(
+                constraints.iter().all(|constraint| match constraint.scope() {
+                    | ConstraintScope::SingleInstanceOfType | ConstraintScope::SingleInstanceOfTypeOrSubtype => true,
+                    | ConstraintScope::AllInstancesOfSiblingTypeOrSubtypes
+                    | ConstraintScope::AllInstancesOfTypeOrSubtypes => false,
+                }),
+                concat!(
+                    "It is expected that all type constraints are scoped to a single instance. ",
+                    "If it changes, more validations could be required (e.g. on unset supertype)"
+                )
+            );
 
-            let affected_types = TypeAPI::chain_types(type_.clone(), type_.get_subtypes_transitive(snapshot, type_manager).map_err(|source| SchemaValidationError::ConceptRead { source } )?.into_iter().cloned()).collect();
+            let affected_types = TypeAPI::chain_types(
+                type_.clone(),
+                type_
+                    .get_subtypes_transitive(snapshot, type_manager)
+                    .map_err(|source| SchemaValidationError::ConceptRead { source })?
+                    .into_iter()
+                    .cloned(),
+            )
+            .collect();
 
-            $validation_func(snapshot, type_manager, thing_manager, &affected_types, &constraints)
-                .map_err(|typedb_source| SchemaValidationError::CannotChangeSupertypeAsUpdatedConstraintIsViolatedByExistingInstances { typedb_source } )
+            $validation_func(snapshot, type_manager, thing_manager, &affected_types, &constraints).map_err(
+                |typedb_source| {
+                    SchemaValidationError::CannotChangeSupertypeAsUpdatedConstraintIsViolatedByExistingInstances {
+                        typedb_source,
+                    }
+                },
+            )
         }
     };
 }
@@ -574,6 +690,7 @@ fn collect_object_types_with_interface_type_and_supertypes_constraints<CAP: Capa
             TypeReader::get_object_types_with_capabilities_for_interface::<CAP>(snapshot, interface_supertype.clone())?
                 .into_keys()
         {
+            #[allow(clippy::map_entry, reason = "false positive")]
             if !out_object_types.contains_key(&object_type_with_interface_supertype) {
                 let constraints = TypeReader::get_type_capability_constraints::<CAP>(
                     snapshot,
@@ -833,7 +950,7 @@ impl OperationTimeValidation {
             Some((value_type, source)) => {
                 if source != attribute_type {
                     return Err(SchemaValidationError::CannotUnsetInheritedValueType {
-                        value_type: value_type,
+                        value_type,
                         subtype: get_label_or_schema_err(snapshot, type_manager, source)?,
                     });
                 }
@@ -908,7 +1025,7 @@ impl OperationTimeValidation {
         } else {
             Err(SchemaValidationError::ValueTypeIsNotCompatibleWithRegexAnnotation {
                 attribute: get_label_or_schema_err(snapshot, type_manager, attribute_type)?,
-                value_type: value_type,
+                value_type,
             })
         }
     }
@@ -924,7 +1041,7 @@ impl OperationTimeValidation {
         } else {
             Err(SchemaValidationError::ValueTypeIsNotCompatibleWithRangeAnnotation {
                 attribute: get_label_or_schema_err(snapshot, type_manager, attribute_type)?,
-                value_type: value_type,
+                value_type,
             })
         }
     }
@@ -940,7 +1057,7 @@ impl OperationTimeValidation {
         } else {
             Err(SchemaValidationError::ValueTypeIsNotCompatibleWithValuesAnnotation {
                 attribute: get_label_or_schema_err(snapshot, type_manager, attribute_type)?,
-                value_type: value_type,
+                value_type,
             })
         }
     }
@@ -1444,7 +1561,7 @@ impl OperationTimeValidation {
         if regex.valid() {
             Ok(())
         } else {
-            Err(SchemaValidationError::InvalidRegexArguments { regex: regex })
+            Err(SchemaValidationError::InvalidRegexArguments { regex })
         }
     }
 
@@ -1510,7 +1627,8 @@ impl OperationTimeValidation {
     ) -> Result<(), SchemaValidationError> {
         // let mut validation_errors = vec![];
         // let updated_cardinalities = HashMap::from([(capability.clone(), cardinality)]);
-        // let object_and_subtypes = once(capability.object()).chain(capability.object().get_subtypes_transitive(snapshot, type_manager)?.into_iter());
+        // let object_and_subtypes = once(capability.object())
+        //     .chain(capability.object().get_subtypes_transitive(snapshot, type_manager)?.into_iter());
         //
         // for object_type in object_and_subtypes {
         //     validate_capabilities_cardinalities_narrowing::<CAP>(
@@ -1676,33 +1794,32 @@ impl OperationTimeValidation {
                     let is_in_subtype = subtype_relates.contains(&subtype_role_supertype_relates);
                     let is_in_subtype_declared = subtype_relates_declared.contains(&subtype_role_supertype_relates);
                     let is_lost = is_in_subtype && !is_in_subtype_declared;
-                    if is_lost {
-                        if !supertype_relates
+                    if is_lost
+                        && !supertype_relates
                             .iter()
                             .any(|supertype_relates| supertype_relates == &subtype_role_supertype_relates)
-                        {
-                            return Err(
-                                SchemaValidationError::CannotChangeRelationTypeSupertypeAsRelatesSpecialiseIsLost {
-                                    relation: relation_subtype
-                                        .get_label(snapshot, type_manager)
-                                        .unwrap()
-                                        .as_reference()
-                                        .into_owned(),
-                                    // relation_supertype,
-                                    role_1: subsubtype_relates
-                                        .role()
-                                        .get_label(snapshot, type_manager)
-                                        .unwrap()
-                                        .as_reference()
-                                        .into_owned(),
-                                    role_2: subtype_role_supertype
-                                        .get_label(snapshot, type_manager)
-                                        .unwrap()
-                                        .as_reference()
-                                        .into_owned(),
-                                },
-                            );
-                        }
+                    {
+                        return Err(
+                            SchemaValidationError::CannotChangeRelationTypeSupertypeAsRelatesSpecialiseIsLost {
+                                relation: relation_subtype
+                                    .get_label(snapshot, type_manager)
+                                    .unwrap()
+                                    .as_reference()
+                                    .into_owned(),
+                                // relation_supertype,
+                                role_1: subsubtype_relates
+                                    .role()
+                                    .get_label(snapshot, type_manager)
+                                    .unwrap()
+                                    .as_reference()
+                                    .into_owned(),
+                                role_2: subtype_role_supertype
+                                    .get_label(snapshot, type_manager)
+                                    .unwrap()
+                                    .as_reference()
+                                    .into_owned(),
+                            },
+                        );
                     }
                 }
             }
@@ -1819,7 +1936,7 @@ impl OperationTimeValidation {
         } else {
             Err(SchemaValidationError::InvalidOrderingForDistinctAnnotation {
                 label: get_label_or_schema_err(snapshot, type_manager, role)?,
-                ordering: ordering,
+                ordering,
             })
         }
     }
@@ -1847,7 +1964,7 @@ impl OperationTimeValidation {
         } else {
             Err(SchemaValidationError::InvalidOrderingForDistinctAnnotation {
                 label: get_label_or_schema_err(snapshot, type_manager, attribute)?,
-                ordering: ordering,
+                ordering,
             })
         }
     }
@@ -1933,7 +2050,7 @@ impl OperationTimeValidation {
                 .get_relates(snapshot, type_manager)
                 .map_err(|source| SchemaValidationError::ConceptRead { source })?
                 .iter()
-                .any(|relates| &relates.role() == &role_type);
+                .any(|relates| relates.role() == role_type);
             if is_inherited {
                 Ok(())
             } else {
@@ -2000,7 +2117,7 @@ impl OperationTimeValidation {
                     Err(SchemaValidationError::ValueTypeNotCompatibleWithInheritedValueType {
                         label: get_label_or_schema_err(snapshot, type_manager, attribute_type)?,
                         super_label: get_label_or_schema_err(snapshot, type_manager, inherited_value_type_source)?,
-                        value_type: value_type,
+                        value_type,
                         super_value_type: inherited_value_type,
                     })
                 }
@@ -2113,35 +2230,52 @@ impl OperationTimeValidation {
     //     relation_type: RelationType<'static>,
     //     new_supertype: RelationType<'static>,
     // ) -> Result<(), SchemaValidationError> {
-    //     let old_annotation_with_source =
-    //         type_get_annotation_with_source_by_category(snapshot, type_manager, relation_type.clone(), AnnotationCategory::Cascade)
-    //             .map_err(|source| SchemaValidationError::ConceptRead { source} )?;
+    //     let old_annotation_with_source = type_get_annotation_with_source_by_category(
+    //         snapshot,
+    //         type_manager,
+    //         relation_type.clone(),
+    //         AnnotationCategory::Cascade,
+    //     )
+    //     .map_err(|source| SchemaValidationError::ConceptRead { source })?;
     //     match old_annotation_with_source {
     //         None => {
-    //             let new_supertype_annotation =
-    //                 type_get_annotation_with_source_by_category(snapshot, type_manager, new_supertype.clone(), AnnotationCategory::Cascade)
-    //                     .map_err(|source| SchemaValidationError::ConceptRead { source} )?;
+    //             let new_supertype_annotation = type_get_annotation_with_source_by_category(
+    //                 snapshot,
+    //                 type_manager,
+    //                 new_supertype.clone(),
+    //                 AnnotationCategory::Cascade,
+    //             )
+    //             .map_err(|source| SchemaValidationError::ConceptRead { source })?;
     //             match new_supertype_annotation {
     //                 None => Ok(()),
     //                 Some(_) => {
-    //                     for_type_and_subtypes_transitive!(snapshot, type_manager, relation_type, |type_: RelationType<'static>| {
-    //                         let type_annotation =
-    //                             type_get_annotation_with_source_by_category(snapshot, type_manager, type_.clone(), AnnotationCategory::Cascade)
-    //                                 .map_err(|source| SchemaValidationError::ConceptRead { source} )?;
-    //                         if type_annotation.is_none() {
-    //                             let type_has_instances =
-    //                                 Self::has_instances_of_type(snapshot, thing_manager, type_.clone())
-    //                                     .map_err(|source| SchemaValidationError::ConceptRead { source} )?;
-    //                             if type_has_instances {
-    //                                 return Err(SchemaValidationError::ChangingRelationSupertypeLeadsToImplicitCascadeAnnotationAcquisitionAndUnexpectedDataLoss(
+    //                     for_type_and_subtypes_transitive!(
+    //                         snapshot,
+    //                         type_manager,
+    //                         relation_type,
+    //                         |type_: RelationType<'static>| {
+    //                             let type_annotation = type_get_annotation_with_source_by_category(
+    //                                 snapshot,
+    //                                 type_manager,
+    //                                 type_.clone(),
+    //                                 AnnotationCategory::Cascade,
+    //                             )
+    //                             .map_err(|source| SchemaValidationError::ConceptRead { source })?;
+    //                             if type_annotation.is_none() {
+    //                                 let type_has_instances =
+    //                                     Self::has_instances_of_type(snapshot, thing_manager, type_.clone())
+    //                                         .map_err(|source| SchemaValidationError::ConceptRead { source })?;
+    //                                 if type_has_instances {
+    //                                     return Err(SchemaValidationError::ChangingRelationSupertypeLeadsToImplicitCascadeAnnotationAcquisitionAndUnexpectedDataLoss(
     //                                     get_label_or_schema_err(snapshot, type_manager, relation_type.clone())?,
     //                                     get_label_or_schema_err(snapshot, type_manager, new_supertype.clone())?,
     //                                     get_label_or_schema_err(snapshot, type_manager, type_.clone())?,
     //                                 ));
+    //                                 }
     //                             }
+    //                             Ok(())
     //                         }
-    //                         Ok(())
-    //                     });
+    //                     );
     //                     Ok(())
     //                 }
     //             }
@@ -2539,7 +2673,7 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_no_instances_to_change_value_type<'a>(
+    pub(crate) fn validate_no_instances_to_change_value_type(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
@@ -2560,7 +2694,7 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    fn validate_no_instances_to_lose_value_type<'a>(
+    fn validate_no_instances_to_lose_value_type(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
@@ -2691,7 +2825,7 @@ impl OperationTimeValidation {
         while let Some(instance) = player_iterator.next().transpose()? {
             let mut iterator = instance.get_relations_by_role(snapshot, thing_manager, role_type.clone().into_owned());
 
-            if let Some(_) = iterator.next().transpose()? {
+            if iterator.next().transpose()?.is_some() {
                 has_instances = true;
                 break;
             }
@@ -2712,7 +2846,7 @@ impl OperationTimeValidation {
         while let Some(instance) = relation_iterator.next().transpose()? {
             let mut iterator = instance.get_players_role_type(snapshot, thing_manager, role_type.clone().into_owned());
 
-            if let Some(_) = iterator.next().transpose()? {
+            if iterator.next().transpose()?.is_some() {
                 has_instances = true;
                 break;
             }
@@ -2741,9 +2875,11 @@ impl OperationTimeValidation {
 
         for entity_type in entity_types {
             let mut entity_iterator = thing_manager.get_entities_in(snapshot, entity_type.clone());
-            if let Some(_) =
-                entity_iterator.next().transpose().map_err(|source| DataValidationError::ConceptRead { source })?
-            {
+            if let Some(res) = entity_iterator.next() {
+                if let Err(source) = res {
+                    return Err(DataValidationError::ConceptRead { source });
+                };
+
                 for abstract_constraint in abstract_constraints.iter() {
                     debug_assert_eq!(
                         abstract_constraint.scope(),
@@ -2752,7 +2888,7 @@ impl OperationTimeValidation {
                     );
                     if &abstract_constraint.source() == entity_type {
                         return Err(DataValidation::create_data_validation_entity_type_abstractness_error(
-                            &abstract_constraint,
+                            abstract_constraint,
                             snapshot,
                             type_manager,
                         ));
@@ -2784,9 +2920,11 @@ impl OperationTimeValidation {
 
         for relation_type in relation_types {
             let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type.clone());
-            if let Some(_) =
-                relation_iterator.next().transpose().map_err(|source| DataValidationError::ConceptRead { source })?
-            {
+            if let Some(res) = relation_iterator.next() {
+                if let Err(source) = res {
+                    return Err(DataValidationError::ConceptRead { source });
+                };
+
                 for abstract_constraint in abstract_constraints.iter() {
                     debug_assert_eq!(
                         abstract_constraint.scope(),
@@ -2795,7 +2933,7 @@ impl OperationTimeValidation {
                     );
                     if &abstract_constraint.source() == relation_type {
                         return Err(DataValidation::create_data_validation_relation_type_abstractness_error(
-                            &abstract_constraint,
+                            abstract_constraint,
                             snapshot,
                             type_manager,
                         ));
@@ -2846,7 +2984,7 @@ impl OperationTimeValidation {
                     );
                     if &abstract_constraint.source() == attribute_type {
                         return Err(DataValidation::create_data_validation_attribute_type_abstractness_error(
-                            &abstract_constraint,
+                            abstract_constraint,
                             snapshot,
                             type_manager,
                         ));
@@ -2911,7 +3049,9 @@ impl OperationTimeValidation {
         // debug_assert!(/*insert your constraints here*/, "At least one constraint should exist otherwise we don't need to iterate");
         //
         // for role_type in role_types {
-        //     let all_relates = role_type.get_relation_types(snapshot, type_manager).map_err(|source| DataValidationError::ConceptRead { source} )?;
+        //     let all_relates = role_type.get_relation_types(snapshot, type_manager).map_err(
+        //         |source| DataValidationError::ConceptRead { source }
+        //     )?;
         //     for relation_type in all_relates.into_keys() {
         //         let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type);
         //         while let Some(relation) = relation_iterator.next().transpose()? {
@@ -2935,19 +3075,19 @@ impl OperationTimeValidation {
         interface_type: CAP::InterfaceType,
         new_interface_supertypes: &HashMap<CAP::InterfaceType, Option<CAP::InterfaceType>>,
     ) -> Result<bool, ConceptReadError> {
-        debug_assert!(&capability.interface() == &interface_type);
+        debug_assert!(capability.interface() == interface_type);
         match constraint.scope() {
             ConstraintScope::SingleInstanceOfType => {
                 return Ok(constraint.source() == capability);
             }
-            ConstraintScope::SingleInstanceOfTypeOrSubtype
+            | ConstraintScope::SingleInstanceOfTypeOrSubtype
             | ConstraintScope::AllInstancesOfSiblingTypeOrSubtypes
-            | ConstraintScope::AllInstancesOfTypeOrSubtypes => {}
+            | ConstraintScope::AllInstancesOfTypeOrSubtypes => (),
         }
 
         let source_interface_type = constraint.source().interface();
 
-        if &source_interface_type == &interface_type {
+        if source_interface_type == interface_type {
             return Ok(true);
         }
 
@@ -2965,7 +3105,7 @@ impl OperationTimeValidation {
         }
 
         // Not affected by new_interface_supertypes, can use storage
-        Ok(interface_type.is_subtype_transitive_of_or_same(snapshot, type_manager, source_interface_type.clone())?)
+        interface_type.is_subtype_transitive_of_or_same(snapshot, type_manager, source_interface_type.clone())
     }
 
     fn validate_owns_instances_against_constraints(
@@ -2994,7 +3134,7 @@ impl OperationTimeValidation {
             get_values_constraints(constraints.iter().cloned());
         let unique_constraint = {
             let mut unique_constraint: Option<CapabilityConstraint<Owns<'static>>> = None;
-            for constraint in filter_by_constraint_category!(constraints.into_iter(), Unique) {
+            for constraint in filter_by_constraint_category!(constraints.iter(), Unique) {
                 match &unique_constraint {
                     None => unique_constraint = Some(constraint.clone()),
                     Some(existing_unique_constraint) => {
@@ -3071,7 +3211,7 @@ impl OperationTimeValidation {
                         .map_err(|source| DataValidationError::ConceptRead { source })?
                         {
                             return Err(DataValidation::create_data_validation_owns_abstractness_error(
-                                &abstract_constraint,
+                                abstract_constraint,
                                 object.as_reference(),
                                 snapshot,
                                 type_manager,
@@ -3148,7 +3288,7 @@ impl OperationTimeValidation {
                                 return Err(DataValidation::create_data_validation_uniqueness_error(
                                     snapshot,
                                     type_manager,
-                                    &unique_constraint,
+                                    unique_constraint,
                                     object,
                                     attribute_type,
                                     value,
@@ -3318,7 +3458,7 @@ impl OperationTimeValidation {
                         .map_err(|source| DataValidationError::ConceptRead { source })?
                         {
                             return Err(DataValidation::create_data_validation_plays_abstractness_error(
-                                &abstract_constraint,
+                                abstract_constraint,
                                 object.as_reference(),
                                 snapshot,
                                 type_manager,
@@ -3430,7 +3570,7 @@ impl OperationTimeValidation {
                         .map_err(|source| DataValidationError::ConceptRead { source })?
                         {
                             return Err(DataValidation::create_data_validation_relates_abstractness_error(
-                                &abstract_constraint,
+                                abstract_constraint,
                                 relation.as_reference(),
                                 snapshot,
                                 type_manager,

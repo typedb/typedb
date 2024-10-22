@@ -12,7 +12,7 @@ use std::{
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use ir::pipeline::{function_signature::FunctionID, VariableRegistry};
+use ir::pipeline::VariableRegistry;
 
 use crate::{
     annotation::{
@@ -23,7 +23,7 @@ use crate::{
     executable::{
         delete::executable::DeleteExecutable,
         fetch::executable::{compile_fetch, ExecutableFetch},
-        function::{compile_function, ExecutableFunction},
+        function::compile_function,
         insert::executable::InsertExecutable,
         match_::planner::{function_plan::ExecutableFunctionRegistry, match_executable::MatchExecutable},
         modifiers::{LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable},
@@ -247,15 +247,15 @@ fn compile_stage(
             let mut output_row_mapping = HashMap::new();
             let mut input_group_positions = Vec::with_capacity(reduce.within_group.len());
             for variable in reduce.within_group.iter() {
-                output_row_mapping.insert(variable.clone(), VariablePosition::new(input_group_positions.len() as u32));
-                input_group_positions.push(input_variables.get(variable).unwrap().clone());
+                output_row_mapping.insert(*variable, VariablePosition::new(input_group_positions.len() as u32));
+                input_group_positions.push(input_variables[variable]);
             }
             let mut reductions = Vec::with_capacity(reduce.assigned_reductions.len());
-            for ((assigned_variable, _), reducer_on_variable) in
+            for (&(assigned_variable, _), reducer_on_variable) in
                 zip(reduce.assigned_reductions.iter(), typed_reducers.iter())
             {
                 output_row_mapping.insert(
-                    assigned_variable.clone(),
+                    assigned_variable,
                     VariablePosition::new((input_group_positions.len() + reductions.len()) as u32),
                 );
                 let reducer_on_position = reducer_on_variable.clone().map(input_variables);

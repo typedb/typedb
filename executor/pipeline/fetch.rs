@@ -119,7 +119,7 @@ fn execute_fetch_some(
                 VariableValue::ThingList(_) | VariableValue::ValueList(_) => Err(FetchExecutionError::FetchAttributesOfList {}),
             }
         }
-        FetchSomeInstruction::SingleFunction(function) => {
+        FetchSomeInstruction::SingleFunction(_function) => {
             Err(FetchExecutionError::Unimplemented {
                 description: "Fetch expressions and match-return subqueries are not available yet (try a match-fetch subquery instead?).".to_owned()
             })
@@ -127,7 +127,7 @@ fn execute_fetch_some(
         FetchSomeInstruction::Object(object) => {
             execute_object(object, snapshot, thing_manager, parameters, row, interrupt)
         }
-        FetchSomeInstruction::ListFunction(function) => {
+        FetchSomeInstruction::ListFunction(_function) => {
             Err(FetchExecutionError::Unimplemented {
                 description: "Fetch expressions and match-return subqueries are not available yet (try a match-fetch subquery instead?).".to_owned()
             })

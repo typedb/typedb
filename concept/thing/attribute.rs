@@ -35,7 +35,7 @@ use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{object::Object, thing_manager::ThingManager, HKInstance, ThingAPI},
-    type_::{attribute_type::AttributeType, type_manager::TypeManager, ObjectTypeAPI, TypeAPI},
+    type_::{attribute_type::AttributeType, type_manager::TypeManager, ObjectTypeAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
 

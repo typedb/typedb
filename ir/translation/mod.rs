@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use answer::variable::Variable;
 
 use crate::{
-    pattern::variable_category::{VariableCategory, VariableOptionality},
+    pattern::variable_category::VariableCategory,
     pipeline::{block::BlockBuilderContext, reduce::Reducer, ParameterRegistry, VariableRegistry},
 };
 
@@ -32,6 +32,12 @@ pub struct TranslationContext {
     pub parameters: ParameterRegistry,
 }
 
+impl Default for TranslationContext {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TranslationContext {
     pub fn new() -> Self {
         Self {
@@ -46,8 +52,8 @@ impl TranslationContext {
         let mut variable_registry = VariableRegistry::new();
         let mut variables = Vec::with_capacity(input_variables.len());
         for (name, category) in input_variables {
-            let variable = variable_registry.register_function_argument(name.as_str(), category.clone());
-            visible_variables.insert(name.clone(), variable.clone());
+            let variable = variable_registry.register_function_argument(name.as_str(), category);
+            visible_variables.insert(name.clone(), variable);
             variables.push(variable);
         }
         let this = Self { parameters: ParameterRegistry::new(), variable_registry, visible_variables };

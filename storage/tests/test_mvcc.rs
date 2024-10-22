@@ -152,8 +152,6 @@ fn test_open_snapshot_write_at() {
     snapshot_write_0.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_0));
     snapshot_write_0.commit().unwrap();
 
-    let watermark_0 = storage.read_watermark();
-
     let snapshot_read_0 = storage.clone().open_snapshot_read();
     assert_eq!(snapshot_read_0.get::<128>(key_1.as_reference()).unwrap().unwrap().bytes(), VALUE_0);
     snapshot_read_0.close_resources();

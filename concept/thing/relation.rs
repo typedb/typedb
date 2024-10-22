@@ -40,8 +40,7 @@ use crate::{
         HKInstance, ThingAPI,
     },
     type_::{
-        relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, Capability, ObjectTypeAPI,
-        Ordering, OwnerAPI, TypeAPI,
+        relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI, Ordering, OwnerAPI,
     },
     ByteReference, ConceptAPI, ConceptStatus,
 };
@@ -218,13 +217,8 @@ impl<'a> Relation<'a> {
             )
             .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
-            OperationTimeValidation::validate_plays_is_not_abstract(
-                snapshot,
-                thing_manager,
-                &player,
-                role_type.clone(),
-            )
-            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+            OperationTimeValidation::validate_plays_is_not_abstract(snapshot, thing_manager, player, role_type.clone())
+                .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
             *new_counts.entry(player).or_default() += 1;
         }
