@@ -262,7 +262,7 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleI
         let enumerated = &current.values()[0..=last_enumerated as usize];
         loop {
             // TODO: this feels inefficient since each skip() call does a copy of the current tuple
-            self.skip_until_changes(0..past_enumerated_or_counted_index)?;
+            self.skip_until_changes(past_enumerated_or_counted_index)?;
             let peek = self.iterator.peek();
             match peek {
                 None => return Ok(count),
@@ -279,24 +279,26 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleI
         }
     }
 
-    fn skip_until_changes(&mut self, range: Range<usize>) -> Result<(), ConceptReadError> {
+    fn skip_until_changes(&mut self, change_width: usize) -> Result<(), ConceptReadError> {
         // TODO: this should be optimisable with seek(to peek[index].increment())
         debug_assert!(self.peek().is_some());
 
-        if range.end == self.tuple_length {
+        if change_width == self.tuple_length {
             self.advance_single()?;
             return Ok(());
         }
 
+        let end = usize::max(1, change_width); // at least the sort variable must be checked
+
         let current = self.peek().unwrap().clone()?.into_owned();
-        let current_range = &current.values()[range.clone()];
+        let current_range = &current.values()[0..end];
         self.iterator.next().unwrap()?;
         loop {
             let peek = self.iterator.peek();
             match peek {
                 None => return Ok(()),
                 Some(Ok(tuple)) => {
-                    let values = &tuple.values()[range.clone()];
+                    let values = &tuple.values()[0..end];
                     if values != current_range {
                         return Ok(());
                     } else {
@@ -406,7 +408,7 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> TupleIterato
         let past_enumerated_or_counted_index = self.last_enumerated_or_counted.map_or(0, |i| i as usize + 1);
 
         if self.no_counted() {
-            self.skip_until_changes(0..past_enumerated_or_counted_index)?;
+            self.skip_until_changes(past_enumerated_or_counted_index)?;
             Ok(1)
         } else if self.any_enumerated() {
             self.count_until_enumerated_changes()
@@ -417,7 +419,7 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> TupleIterato
             let mut count = 1;
             // TODO: this feels inefficient since each skip() call does a copy of the current tuple
             while self.peek().is_some() {
-                self.skip_until_changes(0..past_enumerated_or_counted_index)?;
+                self.skip_until_changes(past_enumerated_or_counted_index)?;
                 count += 1;
             }
             Ok(count)
