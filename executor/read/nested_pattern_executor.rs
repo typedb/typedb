@@ -93,46 +93,45 @@ pub(super) enum NestedPatternResultMapper {
 }
 
 impl NestedPatternResultMapper {
-    pub(super) fn prepare_and_map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
+    pub(super) fn map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
         match self {
-            Self::Identity(mapper) => mapper.prepare_and_map_input(input),
-            Self::Negation(mapper) => mapper.prepare_and_map_input(input),
-            Self::InlinedFunction(mapper) => mapper.prepare_and_map_input(input),
-            Self::Offset(mapper) => mapper.prepare_and_map_input(input),
-            Self::Limit(mapper) => mapper.prepare_and_map_input(input),
+            Self::Identity(mapper) => mapper.map_input(input),
+            Self::Negation(mapper) => mapper.map_input(input),
+            Self::InlinedFunction(mapper) => mapper.map_input(input),
+            Self::Offset(mapper) => mapper.map_input(input),
+            Self::Limit(mapper) => mapper.map_input(input),
         }
     }
 
     pub(super) fn map_output(
         &mut self,
-        input: &MaybeOwnedRow<'static>,
         subquery_result: Option<FixedBatch>,
-    ) -> SubQueryResult {
+    ) -> NestedPatternResult {
         match self {
-            Self::Identity(mapper) => mapper.map_output(input, subquery_result),
-            Self::Negation(mapper) => mapper.map_output(input, subquery_result),
-            Self::InlinedFunction(mapper) => mapper.map_output(input, subquery_result),
-            Self::Offset(mapper) => mapper.map_output(input, subquery_result),
-            Self::Limit(mapper) => mapper.map_output(input, subquery_result),
+            Self::Identity(mapper) => mapper.map_output(subquery_result),
+            Self::Negation(mapper) => mapper.map_output(subquery_result),
+            Self::InlinedFunction(mapper) => mapper.map_output(subquery_result),
+            Self::Offset(mapper) => mapper.map_output(subquery_result),
+            Self::Limit(mapper) => mapper.map_output(subquery_result),
         }
     }
 }
 
-pub(super) trait SubQueryResultMapperTrait {
-    fn prepare_and_map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static>;
-    fn map_output(&mut self, input: &MaybeOwnedRow<'_>, subquery_result: Option<FixedBatch>) -> SubQueryResult;
+pub(super) trait NestedPatternResultMapperTrait {
+    fn map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static>;
+    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> NestedPatternResult;
 }
 
-pub(super) enum SubQueryResult {
+pub(super) enum NestedPatternResult {
     Retry(Option<FixedBatch>),
     Done(Option<FixedBatch>),
 }
 
-impl SubQueryResult {
+impl NestedPatternResult {
     pub(crate) fn into_parts(self) -> (bool, Option<FixedBatch>) {
         match self {
-            SubQueryResult::Retry(batch_opt) => (true, batch_opt),
-            SubQueryResult::Done(batch_opt) => (false, batch_opt),
+            NestedPatternResult::Retry(batch_opt) => (true, batch_opt),
+            NestedPatternResult::Done(batch_opt) => (false, batch_opt),
         }
     }
 }
@@ -154,35 +153,35 @@ impl NegationMapper {
     }
 }
 
-impl SubQueryResultMapperTrait for NegationMapper {
-    fn prepare_and_map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
+impl NestedPatternResultMapperTrait for NegationMapper {
+    fn map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
         input.clone().into_owned()
     }
 
-    fn map_output(&mut self, input: &MaybeOwnedRow<'_>, subquery_result: Option<FixedBatch>) -> SubQueryResult {
+    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> NestedPatternResult {
         match subquery_result {
-            None => SubQueryResult::Done(Some(FixedBatch::from(input.clone().into_owned()))),
+            None => NestedPatternResult::Done(Some(FixedBatch::from(self.input.clone().into_owned()))),
             Some(batch) => {
                 if batch.is_empty() {
-                    SubQueryResult::Retry(None)
+                    NestedPatternResult::Retry(None)
                 } else {
-                    SubQueryResult::Done(None)
+                    NestedPatternResult::Done(None)
                 }
             }
         }
     }
 }
 
-impl SubQueryResultMapperTrait for IdentityMapper {
-    fn prepare_and_map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
+impl NestedPatternResultMapperTrait for IdentityMapper {
+    fn map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
         input.clone().into_owned()
     }
 
-    fn map_output(&mut self, _: &MaybeOwnedRow<'_>, subquery_result: Option<FixedBatch>) -> SubQueryResult {
+    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> NestedPatternResult {
         if subquery_result.is_some() {
-            SubQueryResult::Retry(subquery_result)
+            NestedPatternResult::Retry(subquery_result)
         } else {
-            SubQueryResult::Done(None)
+            NestedPatternResult::Done(None)
         }
     }
 }
@@ -193,22 +192,22 @@ impl InlinedFunctionMapper {
     }
 }
 
-impl SubQueryResultMapperTrait for InlinedFunctionMapper {
-    fn prepare_and_map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
+impl NestedPatternResultMapperTrait for InlinedFunctionMapper {
+    fn map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
         let args_owned: Vec<VariableValue<'static>> =
             self.arguments.iter().map(|arg_pos| input.get(arg_pos.clone()).clone().into_owned()).collect();
         MaybeOwnedRow::new_owned(args_owned, input.multiplicity())
     }
 
-    fn map_output(&mut self, input: &MaybeOwnedRow<'_>, subquery_result: Option<FixedBatch>) -> SubQueryResult {
+    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> NestedPatternResult {
         match subquery_result {
-            None => SubQueryResult::Done(None),
+            None => NestedPatternResult::Done(None),
             Some(returned_batch) => {
                 let mut output_batch = FixedBatch::new(self.output_width);
                 for return_index in 0..returned_batch.len() {
                     let returned_row = returned_batch.get_row(return_index);
                     output_batch.append(|mut output_row| {
-                        for (i, element) in input.iter().enumerate() {
+                        for (i, element) in self.input.iter().enumerate() {
                             output_row.set(VariablePosition::new(i as u32), element.clone());
                         }
                         for (returned_index, output_position) in self.assigned.iter().enumerate() {
@@ -216,7 +215,7 @@ impl SubQueryResultMapperTrait for InlinedFunctionMapper {
                         }
                     });
                 }
-                SubQueryResult::Retry(Some(output_batch))
+                NestedPatternResult::Retry(Some(output_batch))
             }
         }
     }
@@ -234,19 +233,19 @@ impl OffsetMapper {
     }
 }
 
-impl SubQueryResultMapperTrait for OffsetMapper {
-    fn prepare_and_map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
+impl NestedPatternResultMapperTrait for OffsetMapper {
+    fn map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
         self.current = 0;
         input.clone().into_owned()
     }
 
-    fn map_output(&mut self, _input: &MaybeOwnedRow<'_>, subquery_result: Option<FixedBatch>) -> SubQueryResult {
+    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> NestedPatternResult {
         if let Some(input_batch) = subquery_result {
             if self.current >= self.required {
-                SubQueryResult::Retry(Some(input_batch))
+                NestedPatternResult::Retry(Some(input_batch))
             } else if (self.required - self.current) >= input_batch.len() as u64 {
                 self.current += input_batch.len() as u64;
-                SubQueryResult::Retry(None)
+                NestedPatternResult::Retry(None)
             } else {
                 let offset_in_batch = (self.required - self.current) as u32;
                 let mut output_batch = FixedBatch::new(input_batch.width());
@@ -257,10 +256,10 @@ impl SubQueryResultMapperTrait for OffsetMapper {
                     });
                 }
                 self.current = self.required;
-                SubQueryResult::Retry(Some(output_batch))
+                NestedPatternResult::Retry(Some(output_batch))
             }
         } else {
-            SubQueryResult::Done(None)
+            NestedPatternResult::Done(None)
         }
     }
 }
@@ -276,19 +275,19 @@ impl LimitMapper {
     }
 }
 
-impl SubQueryResultMapperTrait for LimitMapper {
-    fn prepare_and_map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
+impl NestedPatternResultMapperTrait for LimitMapper {
+    fn map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
         self.current = 0;
         input.clone().into_owned()
     }
 
-    fn map_output(&mut self, _input: &MaybeOwnedRow<'_>, subquery_result: Option<FixedBatch>) -> SubQueryResult {
+    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> NestedPatternResult {
         if let Some(input_batch) = subquery_result {
             if self.current >= self.required {
-                SubQueryResult::Done(None)
+                NestedPatternResult::Done(None)
             } else if (self.required - self.current) >= input_batch.len() as u64 {
                 self.current += input_batch.len() as u64;
-                SubQueryResult::Retry(Some(input_batch))
+                NestedPatternResult::Retry(Some(input_batch))
             } else {
                 let mut output_batch = FixedBatch::new(input_batch.width());
                 let mut i = 0;
@@ -301,10 +300,10 @@ impl SubQueryResultMapperTrait for LimitMapper {
                     self.current += 1;
                 }
                 debug_assert!(self.current == self.required);
-                SubQueryResult::Done(Some(output_batch))
+                NestedPatternResult::Done(Some(output_batch))
             }
         } else {
-            SubQueryResult::Done(None)
+            NestedPatternResult::Done(None)
         }
     }
 }

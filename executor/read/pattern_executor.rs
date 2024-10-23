@@ -41,7 +41,7 @@ pub(super) enum ControlInstruction {
     ExecuteImmediate(InstructionIndex),
 
     MapRowBatchToRowForNested(InstructionIndex, FixedBatchRowIterator),
-    ExecuteNested(InstructionIndex, BranchIndex, NestedPatternResultMapper, MaybeOwnedRow<'static>),
+    ExecuteNested(InstructionIndex, BranchIndex, NestedPatternResultMapper),
 
     CollectingStage(InstructionIndex),
     StreamCollected(InstructionIndex, CollectedStageIterator),
@@ -108,13 +108,13 @@ impl PatternExecutor {
                         self.prepare_nested_pattern(index, unmapped_input);
                     }
                 }
-                ControlInstruction::ExecuteNested(index, branch_index, mut mapper, input) => {
+                ControlInstruction::ExecuteNested(index, branch_index, mut mapper) => {
                     // TODO: This bit desperately needs a cleanup.
                     let branch = &mut executors[index.0].unwrap_branch().get_branch(branch_index);
                     let unmapped = branch.batch_continue(context, interrupt)?;
-                    let (must_retry, mapped) = mapper.map_output(&input, unmapped).into_parts();
+                    let (must_retry, mapped) = mapper.map_output(unmapped).into_parts();
                     if must_retry {
-                        control_stack.push(ControlInstruction::ExecuteNested(index, branch_index, mapper, input));
+                        control_stack.push(ControlInstruction::ExecuteNested(index, branch_index, mapper));
                     } else {
                         branch.reset();
                     }
@@ -181,25 +181,23 @@ impl PatternExecutor {
             NestedPatternExecutor::Disjunction { branches } => {
                 for (branch_index, branch) in branches.iter_mut().enumerate() {
                     let mut mapper = NestedPatternResultMapper::Identity(IdentityMapper);
-                    let mapped_input = mapper.prepare_and_map_input(&input);
+                    let mapped_input = mapper.map_input(&input);
                     branch.prepare(FixedBatch::from(mapped_input));
                     self.control_stack.push(ControlInstruction::ExecuteNested(
                         index,
                         BranchIndex(branch_index),
                         mapper,
-                        input.clone().into_owned(),
                     ))
                 }
             }
             NestedPatternExecutor::Negation { inner } => {
                 let mut mapper = NestedPatternResultMapper::Negation(NegationMapper::new(input.clone().into_owned()));
-                let mapped_input = mapper.prepare_and_map_input(&input);
+                let mapped_input = mapper.map_input(&input);
                 inner.prepare(FixedBatch::from(mapped_input));
                 self.control_stack.push(ControlInstruction::ExecuteNested(
                     index,
                     BranchIndex(0),
                     mapper,
-                    input.into_owned(),
                 ));
             }
             NestedPatternExecutor::InlinedFunction { inner, arg_mapping, return_mapping, output_width } => {
@@ -209,35 +207,32 @@ impl PatternExecutor {
                     return_mapping.clone(),
                     *output_width,
                 ));
-                let mapped_input = mapper.prepare_and_map_input(&input);
+                let mapped_input = mapper.map_input(&input);
                 inner.prepare(FixedBatch::from(mapped_input));
                 self.control_stack.push(ControlInstruction::ExecuteNested(
                     index,
                     BranchIndex(0),
-                    mapper,
-                    input.into_owned(),
+                    mapper
                 ));
             }
             NestedPatternExecutor::Offset { inner, offset } => {
                 let mut mapper = NestedPatternResultMapper::Offset(OffsetMapper::new(*offset));
-                let mapped_input = mapper.prepare_and_map_input(&input);
+                let mapped_input = mapper.map_input(&input);
                 inner.prepare(FixedBatch::from(mapped_input));
                 self.control_stack.push(ControlInstruction::ExecuteNested(
                     index,
                     BranchIndex(0),
                     mapper,
-                    input.into_owned(),
                 ));
             }
             NestedPatternExecutor::Limit { inner, limit } => {
                 let mut mapper = NestedPatternResultMapper::Limit(LimitMapper::new(*limit));
-                let mapped_input = mapper.prepare_and_map_input(&input);
+                let mapped_input = mapper.map_input(&input);
                 inner.prepare(FixedBatch::from(mapped_input));
                 self.control_stack.push(ControlInstruction::ExecuteNested(
                     index,
                     BranchIndex(0),
                     mapper,
-                    input.into_owned(),
                 ));
             }
         }
