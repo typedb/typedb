@@ -10,7 +10,10 @@ use std::{
 };
 
 use answer::variable::Variable;
-use ir::pattern::{constraint::Constraint, IrID};
+use ir::{
+    pattern::{constraint::Constraint, IrID},
+    pipeline::function_signature::FunctionID,
+};
 
 use crate::{
     annotation::expression::compiled_expression::ExecutableExpression,
@@ -60,6 +63,7 @@ pub enum ExecutionStep {
     Disjunction(DisjunctionStep),
     Negation(NegationStep),
     Optional(OptionalStep),
+    FunctionCall(FunctionCallStep),
 }
 
 impl ExecutionStep {
@@ -72,6 +76,7 @@ impl ExecutionStep {
             ExecutionStep::Disjunction(step) => &step.selected_variables,
             ExecutionStep::Negation(step) => &step.selected_variables,
             ExecutionStep::Optional(_) => todo!(),
+            ExecutionStep::FunctionCall(function_call) => function_call.assigned.as_slice(),
         }
     }
 
@@ -84,6 +89,7 @@ impl ExecutionStep {
             ExecutionStep::Disjunction(_) => todo!(),
             ExecutionStep::Negation(_) => &[],
             ExecutionStep::Optional(_) => todo!(),
+            ExecutionStep::FunctionCall(function_call) => function_call.assigned.as_slice(),
         }
     }
 
@@ -96,6 +102,7 @@ impl ExecutionStep {
             ExecutionStep::Disjunction(step) => step.output_width(),
             ExecutionStep::Negation(step) => step.output_width(),
             ExecutionStep::Optional(_) => todo!(),
+            ExecutionStep::FunctionCall(step) => step.output_width(),
         }
     }
 }
@@ -297,6 +304,21 @@ impl NegationStep {
     }
 
     pub fn output_width(&self) -> u32 {
+        self.output_width
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct FunctionCallStep {
+    // TODO: Deduplication, selection counting etc.
+    pub function_id: FunctionID,
+    pub assigned: Vec<VariablePosition>,
+    pub arguments: Vec<VariablePosition>,
+    pub output_width: u32,
+}
+
+impl FunctionCallStep {
+    pub(crate) fn output_width(&self) -> u32 {
         self.output_width
     }
 }

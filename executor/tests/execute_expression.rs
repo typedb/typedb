@@ -13,7 +13,7 @@ use compiler::annotation::expression::{
     ExpressionCompileError,
 };
 use encoding::value::{value::Value, value_type::ValueTypeCategory};
-use executor::expression_executor::{evaluate_expression, ExpressionValue};
+use executor::read::expression_executor::{evaluate_expression, ExpressionValue};
 use ir::{
     pattern::constraint::Constraint,
     pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},

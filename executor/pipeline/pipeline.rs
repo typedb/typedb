@@ -8,7 +8,10 @@ use std::{collections::HashMap, sync::Arc};
 
 use answer::variable::Variable;
 use compiler::{
-    executable::{fetch::executable::ExecutableFetch, pipeline::ExecutableStage},
+    executable::{
+        fetch::executable::ExecutableFetch, match_::planner::function_plan::ExecutableFunctionRegistry,
+        pipeline::ExecutableStage,
+    },
     VariablePosition,
 };
 use concept::thing::thing_manager::ThingManager;
@@ -114,6 +117,7 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         snapshot: Arc<Snapshot>,
         thing_manager: Arc<ThingManager>,
         variable_registry: &VariableRegistry,
+        executable_functions: Arc<ExecutableFunctionRegistry>,
         executable_stages: &[ExecutableStage],
         executable_fetch: Option<Arc<ExecutableFetch>>,
         parameters: Arc<ParameterRegistry>,
@@ -130,7 +134,8 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
             match executable_stage {
                 ExecutableStage::Match(match_executable) => {
                     // TODO: Pass expressions & functions
-                    let match_stage = MatchStageExecutor::new(match_executable.clone(), last_stage);
+                    let match_stage =
+                        MatchStageExecutor::new(match_executable.clone(), last_stage, executable_functions.clone());
                     last_stage = ReadPipelineStage::Match(Box::new(match_stage));
                 }
                 ExecutableStage::Insert(_) => {
@@ -185,7 +190,11 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
             match executable_stage {
                 ExecutableStage::Match(match_executable) => {
                     // TODO: Pass expressions & functions
-                    let match_stage = MatchStageExecutor::new(match_executable, last_stage);
+                    let match_stage = MatchStageExecutor::new(
+                        match_executable,
+                        last_stage,
+                        Arc::new(ExecutableFunctionRegistry::empty()),
+                    );
                     last_stage = WritePipelineStage::Match(Box::new(match_stage));
                 }
                 ExecutableStage::Insert(insert_executable) => {
