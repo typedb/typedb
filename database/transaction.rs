@@ -144,7 +144,12 @@ impl<D: DurabilityClient> TransactionWrite<D> {
 
     pub fn try_commit(self) -> Result<(), DataCommitError> {
         let mut snapshot = Arc::into_inner(self.snapshot).ok_or_else(|| DataCommitError::SnapshotInUse {})?;
-        self.thing_manager.finalise(&mut snapshot).map_err(|source| DataCommitError::ConceptWriteErrors { source })?;
+        self.thing_manager.finalise(&mut snapshot).map_err(|errs| {
+            // TODO: send all the errors, not just the first,
+            // when we can print the stacktraces of multiple errors, not just a single one
+            let error = errs.into_iter().next().unwrap();
+            DataCommitError::ConceptWriteErrorsFirst { typedb_source: error }
+        })?;
         drop(self.type_manager);
         snapshot.commit().map_err(|err| DataCommitError::SnapshotError { typedb_source: err })?;
         Ok(())
