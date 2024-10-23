@@ -179,8 +179,6 @@ pub(super) fn create_executors_for_function(
     executable_function: &ExecutableFunction,
     tmp__recursion_validation: &mut HashSet<FunctionID>,
 ) -> Result<Vec<StepExecutors>, ConceptReadError> {
-    // TODO: Support full pipelines
-    debug_assert!(executable_function.executable_stages.len() == 1);
     let executable_stages = &executable_function.executable_stages;
     let mut steps = create_executors_for_pipeline_stages(
         snapshot,
