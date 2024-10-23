@@ -15,7 +15,7 @@ use crate::{
         collecting_stage_executor::CollectedStageIterator,
         nested_pattern_executor::{
             IdentityMapper, InlinedFunctionMapper, LimitMapper, NegationMapper, NestedPatternExecutor,
-            NestedPatternResultMapper, OffsetMapper, SubQueryResult,
+            NestedPatternResultMapper, OffsetMapper,
         },
         step_executor::StepExecutors,
     },
@@ -192,7 +192,7 @@ impl PatternExecutor {
                 }
             }
             NestedPatternExecutor::Negation { inner } => {
-                let mut mapper = NestedPatternResultMapper::Negation(NegationMapper);
+                let mut mapper = NestedPatternResultMapper::Negation(NegationMapper::new(input.clone().into_owned()));
                 let mapped_input = mapper.prepare_and_map_input(&input);
                 inner.prepare(FixedBatch::from(mapped_input));
                 self.control_stack.push(ControlInstruction::ExecuteNested(
@@ -204,6 +204,7 @@ impl PatternExecutor {
             }
             NestedPatternExecutor::InlinedFunction { inner, arg_mapping, return_mapping, output_width } => {
                 let mut mapper = NestedPatternResultMapper::InlinedFunction(InlinedFunctionMapper::new(
+                    input.clone().into_owned(),
                     arg_mapping.clone(),
                     return_mapping.clone(),
                     *output_width,

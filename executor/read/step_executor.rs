@@ -25,9 +25,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::read::{
     collecting_stage_executor::CollectingStageExecutor,
     immediate_executor::ImmediateExecutor,
-    nested_pattern_executor::{
-        IdentityMapper, InlinedFunctionMapper, LimitMapper, NegationMapper, NestedPatternExecutor, OffsetMapper,
-    },
+    nested_pattern_executor::NestedPatternExecutor,
     pattern_executor::PatternExecutor,
 };
 
@@ -120,11 +118,6 @@ pub(super) fn create_executors_for_match(
                     )?;
                     let inner = PatternExecutor::new(inner);
                     tmp__recursion_validation.remove(&function_call.function_id);
-                    let mapper = InlinedFunctionMapper::new(
-                        function_call.arguments.clone(),
-                        function_call.assigned.clone(),
-                        function_call.output_width,
-                    );
                     let step = NestedPatternExecutor::new_inlined_function(inner, function_call);
                     steps.push(step.into())
                 }

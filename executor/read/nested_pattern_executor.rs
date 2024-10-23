@@ -137,12 +137,21 @@ impl SubQueryResult {
     }
 }
 
-pub(super) struct NegationMapper;
+pub(super) struct NegationMapper {
+    input: MaybeOwnedRow<'static>
+}
 pub(super) struct IdentityMapper;
 pub(super) struct InlinedFunctionMapper {
+    input: MaybeOwnedRow<'static>,
     arguments: Vec<VariablePosition>, // caller input -> callee input
     assigned: Vec<VariablePosition>,  // callee return -> caller output
     output_width: u32,                // This is for the caller.
+}
+
+impl NegationMapper {
+    pub(crate) fn new(input: MaybeOwnedRow<'static>) -> Self {
+        Self { input }
+    }
 }
 
 impl SubQueryResultMapperTrait for NegationMapper {
@@ -179,8 +188,8 @@ impl SubQueryResultMapperTrait for IdentityMapper {
 }
 
 impl InlinedFunctionMapper {
-    pub(crate) fn new(arguments: Vec<VariablePosition>, assigned: Vec<VariablePosition>, output_width: u32) -> Self {
-        Self { arguments, assigned, output_width }
+    pub(crate) fn new(input: MaybeOwnedRow<'static>, arguments: Vec<VariablePosition>, assigned: Vec<VariablePosition>, output_width: u32) -> Self {
+        Self { input, arguments, assigned, output_width }
     }
 }
 
