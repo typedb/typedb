@@ -389,7 +389,7 @@ impl<T: Hkt> Checker<T> {
         for check in &self.checks {
             match check {
                 &CheckInstruction::TypeList { type_var, ref types } => {
-                    let maybe_type_extractor = dbg!(&self.extractors).get(dbg!(&type_var));
+                    let maybe_type_extractor = self.extractors.get(&type_var);
                     let type_: BoxExtractor<T> = match maybe_type_extractor {
                         Some(&subtype) => Box::new(subtype),
                         None => make_const_extractor(&CheckVertex::Variable(type_var), context, row),
