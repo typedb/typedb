@@ -515,7 +515,6 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let mut intersection_variable: Option<VariableVertexId> = None;
 
         while !open_set.is_empty() {
-            // eprintln!("while-ordering: {:?}", ordering);
             let (next, _cost) = open_set
                 .iter()
                 .filter(|&&elem| self.graph.elements[&elem].is_valid(elem, &ordering, &self.graph))
@@ -1160,6 +1159,8 @@ impl fmt::Debug for Graph<'_> {
         f.debug_struct(type_name_of_val(self))
             .field("variable_index", &self.variable_index)
             .field("elements", &self.elements)
+            .field("pattern_to_variable", &self.pattern_to_variable)
+            .field("variable_to_pattern", &self.variable_to_pattern)
             .finish()
     }
 }
