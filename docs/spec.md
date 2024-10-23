@@ -1096,7 +1096,7 @@ _System property_
 _Principles._
 
 `redefine` redefines type axioms, constraints, triggers, structs, or functions. Except for few cases (`sub`), `redefine` **cannot be a no-op**, i.e. it always redefines something! We disallow redefining boolean properties:
-  * _Example 1_: a type can either exists or not. we cannot "redefine" it's existence, but only define or undefine it.
+  * _Example 1_: a type can either exists or not. we cannot "redefine" its existence, but only define or undefine it.
   * _Example 2_: a type is either abstract or not. we can only define or undefine `@abstract`.
 
 _System property_: 
@@ -1196,17 +1196,17 @@ _In each case, `redefine` redefines the triggered action._
 
 #### **Case STRUCT_REDEF**
 
-* 🔶 `redefine struct A ...` replaces the previous definition of `A` with a new on. 
+* 🔶 `redefine struct A ...` replaces the previous definition of `A` with a new one. 
 
 ### Functions defs
 
 #### **Case STREAM_RET_FUN_REDEF**
 
-* 🔶 `redefine fun F ...` replaces the previous definition of `F` with a new on. 
+* 🔶 `redefine fun F ...` replaces the previous definition of `F` with a new one. 
 
 #### **Case SINGLE_RET_FUN_REDEF**
 
-* 🔶 `redefine fun f ...` replaces the previous definition of `f` with a new on. 
+* 🔶 `redefine fun f ...` replaces the previous definition of `f` with a new one. 
 
 ## Labels and aliases
 
