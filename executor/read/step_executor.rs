@@ -34,7 +34,7 @@ use crate::read::{
 
 pub(super) enum StepExecutors {
     Immediate(ImmediateExecutor),
-    Branch(NestedPatternExecutor),
+    Nested(NestedPatternExecutor),
     CollectingStage(CollectingStageExecutor),
     ReshapeForReturn(Vec<VariablePosition>),
 }
@@ -49,7 +49,7 @@ impl StepExecutors {
 
     pub(crate) fn unwrap_branch(&mut self) -> &mut NestedPatternExecutor {
         match self {
-            StepExecutors::Branch(step) => step,
+            StepExecutors::Nested(step) => step,
             _ => panic!("bad unwrap"),
         }
     }
@@ -92,7 +92,7 @@ pub(super) fn create_executors_for_match(
                     &negation_step.negation,
                     tmp__recursion_validation,
                 )?;
-                StepExecutors::Branch(NestedPatternExecutor::Negation(
+                StepExecutors::Nested(NestedPatternExecutor::Negation(
                     [NestedPatternBranch::new(PatternExecutor::new(inner))],
                     NegationMapper,
                 ))
@@ -124,7 +124,7 @@ pub(super) fn create_executors_for_match(
                         function_call.assigned.clone(),
                         function_call.output_width,
                     );
-                    StepExecutors::Branch(NestedPatternExecutor::InlinedFunction(
+                    StepExecutors::Nested(NestedPatternExecutor::InlinedFunction(
                         [NestedPatternBranch::new(inner)],
                         mapper,
                     ))
@@ -146,7 +146,7 @@ pub(super) fn create_executors_for_match(
                         Ok(NestedPatternBranch::new(PatternExecutor::new(executors)))
                     })
                     .try_collect()?;
-                let inner_step = StepExecutors::Branch(NestedPatternExecutor::Disjunction(inner, IdentityMapper));
+                let inner_step = StepExecutors::Nested(NestedPatternExecutor::Disjunction(inner, IdentityMapper));
                 // Hack: wrap it in a distinct
                 StepExecutors::CollectingStage(CollectingStageExecutor::new_distinct(PatternExecutor::new(vec![
                     inner_step,
@@ -226,13 +226,13 @@ pub(super) fn create_executors_for_pipeline_stages(
             let inner = NestedPatternBranch::new(PatternExecutor::new(previous_stage_steps));
             let mapper = OffsetMapper::new(offset_executable.offset);
             let step = NestedPatternExecutor::Offset([inner], mapper);
-            Ok(vec![StepExecutors::Branch(step)])
+            Ok(vec![StepExecutors::Nested(step)])
         }
         ExecutableStage::Limit(limit_executable) => {
             let inner = NestedPatternBranch::new(PatternExecutor::new(previous_stage_steps));
             let mapper = LimitMapper::new(limit_executable.limit);
             let step = NestedPatternExecutor::Limit([inner], mapper);
-            Ok(vec![StepExecutors::Branch(step)])
+            Ok(vec![StepExecutors::Nested(step)])
         }
         ExecutableStage::Require(_) => todo!(),
         ExecutableStage::Sort(sort_executable) => {

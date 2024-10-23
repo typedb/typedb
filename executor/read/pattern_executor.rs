@@ -35,8 +35,8 @@ pub(super) enum ControlInstruction {
 
     ExecuteImmediate(InstructionIndex),
 
-    MapRowBatchToRowForSubQuery(InstructionIndex, FixedBatchRowIterator),
-    ExecuteBranch(InstructionIndex, BranchIndex),
+    MapRowBatchToRowForNested(InstructionIndex, FixedBatchRowIterator),
+    ExecuteNested(InstructionIndex, BranchIndex),
 
     CollectingStage(InstructionIndex),
     StreamCollected(InstructionIndex, CollectedStageIterator),
@@ -96,28 +96,28 @@ impl PatternExecutor {
                         self.prepare_next_instruction_and_push_to_stack(context, index.next(), batch)?;
                     }
                 }
-                ControlInstruction::MapRowBatchToRowForSubQuery(index, mut iter) => {
+                ControlInstruction::MapRowBatchToRowForNested(index, mut iter) => {
                     if let Some(row_result) = iter.next() {
                         let unmapped_input = row_result.unwrap().into_owned();
-                        control_stack.push(ControlInstruction::MapRowBatchToRowForSubQuery(index, iter));
-                        let branch_executor = executors[index.0].unwrap_branch();
-                        let (branches, mut controller) = branch_executor.to_parts_mut();
+                        control_stack.push(ControlInstruction::MapRowBatchToRowForNested(index, iter));
+                        let nested_executor = executors[index.0].unwrap_branch();
+                        let (branches, mut controller) = nested_executor.to_parts_mut();
                         let row = controller.prepare_and_map_input(&unmapped_input);
                         for (branch_index, pattern) in branches.iter_mut().enumerate() {
                             pattern.prepare(row.clone().into_owned());
                             control_stack
-                                .push(ControlInstruction::ExecuteBranch(index, BranchIndex(branch_index)));
+                                .push(ControlInstruction::ExecuteNested(index, BranchIndex(branch_index)));
                         }
                     }
                 }
-                ControlInstruction::ExecuteBranch(index, branch_index) => {
+                ControlInstruction::ExecuteNested(index, branch_index) => {
                     // TODO: This bit desperately needs a cleanup.
                     let (branches, controller) = &mut executors[index.0].unwrap_branch().to_parts_mut();
                     let branch = &mut branches[branch_index.0];
                     let unmapped = branch.pattern_executor.batch_continue(context, interrupt)?;
                     let found = match controller.map_output(branch.input.as_ref().unwrap(), unmapped) {
                         SubQueryResult::Retry(found) => {
-                            control_stack.push(ControlInstruction::ExecuteBranch(index, branch_index));
+                            control_stack.push(ControlInstruction::ExecuteNested(index, branch_index));
                             found
                         }
                         SubQueryResult::Done(found) => {
@@ -170,9 +170,9 @@ impl PatternExecutor {
                     executable.prepare(batch, context)?;
                     self.control_stack.push(ControlInstruction::ExecuteImmediate(next_instruction_index));
                 }
-                StepExecutors::Branch(_) => self
+                StepExecutors::Nested(_) => self
                     .control_stack
-                    .push(ControlInstruction::MapRowBatchToRowForSubQuery(next_instruction_index, batch.into_iterator())),
+                    .push(ControlInstruction::MapRowBatchToRowForNested(next_instruction_index, batch.into_iterator())),
                 StepExecutors::CollectingStage(collecting_stage) => {
                     collecting_stage.prepare(batch);
                     self.control_stack.push(ControlInstruction::CollectingStage(next_instruction_index));
