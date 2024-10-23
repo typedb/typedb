@@ -96,7 +96,7 @@ fn process_type_definitions(
     definables: &[Definable],
 ) -> Result<(), DefineError> {
     let declarations = filter_variants!(Definable::TypeDeclaration : definables);
-    declarations.clone().try_for_each(|declaration| define_types(snapshot, type_manager, declaration))?;
+    declarations.clone().try_for_each(|declaration| define_type(snapshot, type_manager, declaration))?;
     declarations.clone().try_for_each(|declaration| define_alias(snapshot, type_manager, declaration))?;
     declarations
         .clone()
@@ -126,7 +126,7 @@ fn process_function_definitions(
     definables: &[Definable],
 ) -> Result<(), DefineError> {
     filter_variants!(Definable::Function : definables)
-        .try_for_each(|function| define_functions(snapshot, type_manager, function))?;
+        .try_for_each(|function| define_function(snapshot, type_manager, function))?;
     Ok(())
 }
 
@@ -196,7 +196,7 @@ fn define_struct_fields(
     Ok(())
 }
 
-fn define_types(
+fn define_type(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     type_declaration: &Type,
@@ -807,7 +807,7 @@ fn define_plays_annotations<'a>(
     Ok(())
 }
 
-fn define_functions(
+fn define_function(
     _snapshot: &impl WritableSnapshot,
     _type_manager: &TypeManager,
     _declaration: &Function,

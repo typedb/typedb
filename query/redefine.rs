@@ -138,7 +138,7 @@ fn process_function_redefinitions(
 ) -> Result<bool, RedefineError> {
     let mut anything_redefined = false;
     filter_variants!(Definable::Function : definables)
-        .try_for_each(|function| redefine_functions(snapshot, type_manager, &mut anything_redefined, function))?;
+        .try_for_each(|function| redefine_function(snapshot, type_manager, &mut anything_redefined, function))?;
     Ok(anything_redefined)
 }
 
@@ -797,11 +797,11 @@ fn redefine_plays_annotations(
     Ok(())
 }
 
-fn redefine_functions(
-    snapshot: &impl WritableSnapshot,
-    type_manager: &TypeManager,
-    anything_redefined: &mut bool,
-    function_declaration: &Function,
+fn redefine_function(
+    _snapshot: &impl WritableSnapshot,
+    _type_manager: &TypeManager,
+    _anything_redefined: &mut bool,
+    _function_declaration: &Function,
 ) -> Result<(), RedefineError> {
     Err(RedefineError::Unimplemented { description: "Function redefinition.".to_string() })
 }
