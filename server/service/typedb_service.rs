@@ -160,30 +160,22 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
 
     async fn users_get(
         &self,
-        request: Request<typedb_protocol::user_manager::get::Req>,
+        _request: Request<typedb_protocol::user_manager::get::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::get::Res>, Status> {
-        let message = request.into_inner();
-        let user = self.user_manager.get(&message.name);
-        match user {
-            None => todo!(),
-            Some(u) => todo!()
-        }
+        todo!()
     }
 
     async fn users_all(
         &self,
         _request: Request<typedb_protocol::user_manager::all::Req>
     ) -> Result<Response<typedb_protocol::user_manager::all::Res>, Status> {
-        let users = self.user_manager.all();
         todo!()
     }
 
     async fn users_contains(
         &self,
-        request: Request<typedb_protocol::user_manager::contains::Req>
+        _request: Request<typedb_protocol::user_manager::contains::Req>
     ) -> Result<Response<typedb_protocol::user_manager::contains::Res>, Status> {
-        let message = request.into_inner();
-        self.user_manager.contains(&message.name);
         todo!()
     }
 
@@ -191,8 +183,6 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         _request: Request<typedb_protocol::user_manager::create::Req>
     ) -> Result<Response<typedb_protocol::user_manager::create::Res>, Status> {
-        let message = _request.into_inner();
-        let _ = self.user_manager.create("");
         todo!()
     }
 
