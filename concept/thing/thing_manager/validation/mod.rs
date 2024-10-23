@@ -87,7 +87,7 @@ typedb_error!(
         ),
         RelatesConstraintViolated(
             11,
-            "Instance {relation_iid} of relation type '{relation_type}' has an relates constraint violation for role type '{role_type}'.",
+            "Instance {relation_iid} of relation type '{relation_type}' has a relates constraint violation for role type '{role_type}'.",
             relation_iid: HexBytesFormatter<'static>,
             relation_type: Label<'static>,
             role_type: Label<'static>,

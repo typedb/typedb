@@ -122,12 +122,18 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
         }
         ActiveTransaction::Write(tx) => {
             if let Some(error) = may_error.check(tx.commit()) {
-                if let DataCommitError::ConceptWriteErrors { source: errors, .. } = error {
-                    for error in errors {
-                        may_error.check_concept_write_without_read_errors::<()>(&Err(error))
+                match error {
+                    DataCommitError::ConceptWriteErrors { source: errors, .. } => {
+                        for error in errors {
+                            may_error.check_concept_write_without_read_errors::<()>(&Err(error))
+                        }
                     }
-                } else {
-                    panic!("Unexpected write commit error: {:?}", error)
+                    DataCommitError::ConceptWriteErrorsFirst { typedb_source } => {
+                        may_error.check_concept_write_without_read_errors::<()>(&Err(typedb_source))
+                    }
+                    DataCommitError::SnapshotInUse { .. } | DataCommitError::SnapshotError { .. } => {
+                        panic!("Unexpected write commit error: {:?}", error)
+                    }
                 }
             }
         }
