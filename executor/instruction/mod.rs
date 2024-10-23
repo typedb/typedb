@@ -638,10 +638,13 @@ impl<T: Hkt> Checker<T> {
                             VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
                         };
                         let rhs = rhs.clone()?;
-                        if !rhs.value_type().is_trivially_castable_to(&lhs.value_type()) {
+                        if rhs.value_type().is_trivially_castable_to(&lhs.value_type()) {
+                            Ok(cmp(&lhs, &rhs.cast(&lhs.value_type()).unwrap()))
+                        } else if lhs.value_type().is_trivially_castable_to(&rhs.value_type()) {
+                            Ok(cmp(&lhs.cast(&rhs.value_type()).unwrap(), &rhs))
+                        } else {
                             return Ok(false);
                         }
-                        Ok(cmp(&lhs, &rhs.cast(&lhs.value_type()).unwrap()))
                     }));
                 }
             }
