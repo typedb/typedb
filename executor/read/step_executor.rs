@@ -246,6 +246,8 @@ pub(super) fn create_executors_for_pipeline_stages(
             );
             Ok(vec![StepExecutors::CollectingStage(step)])
         }
-        ExecutableStage::Insert(_) | ExecutableStage::Delete(_) => todo!("Or unreachable?"),
+        ExecutableStage::Insert(_) | ExecutableStage::Delete(_) => {
+            todo!("Currently unreachable. Accept flag for whether this is a write pipeline & port the write stages here.")
+        },
     }
 }
