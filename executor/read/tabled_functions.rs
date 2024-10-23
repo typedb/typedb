@@ -144,25 +144,21 @@ impl TabledCallExecutor {
         self.active_executor.as_ref().map(|active| &active.call_key)
     }
 
-    pub(crate) fn map_output(&self, output: Option<FixedBatch>) -> Option<FixedBatch> {
-        if let Some(returned_batch) = output {
-            let mut output_batch = FixedBatch::new(self.output_width);
-            for return_index in 0..returned_batch.len() {
-                // TODO: Deduplicate?
-                let returned_row = returned_batch.get_row(return_index);
-                output_batch.append(|mut output_row| {
-                    for (i, element) in self.active_executor.as_ref().unwrap().input.iter().enumerate() {
-                        output_row.set(VariablePosition::new(i as u32), element.clone());
-                    }
-                    for (returned_index, output_position) in self.assignment_positions.iter().enumerate() {
-                        output_row.set(output_position.clone(), returned_row[returned_index].clone().into_owned());
-                    }
-                });
-            }
-            Some(output_batch)
-        } else {
-            None
+    pub(crate) fn map_output(&self, returned_batch: FixedBatch) -> FixedBatch {
+        let mut output_batch = FixedBatch::new(self.output_width);
+        for return_index in 0..returned_batch.len() {
+            // TODO: Deduplicate?
+            let returned_row = returned_batch.get_row(return_index);
+            output_batch.append(|mut output_row| {
+                for (i, element) in self.active_executor.as_ref().unwrap().input.iter().enumerate() {
+                    output_row.set(VariablePosition::new(i as u32), element.clone());
+                }
+                for (returned_index, output_position) in self.assignment_positions.iter().enumerate() {
+                    output_row.set(output_position.clone(), returned_row[returned_index].clone().into_owned());
+                }
+            });
         }
+        output_batch
     }
 
     pub(crate) fn batch_continue_or_function_pattern<'a>(

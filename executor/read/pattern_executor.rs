@@ -143,7 +143,7 @@ impl PatternExecutor {
                 ControlInstruction::TabledCall(index) => {
                     let step = executors[index.0].unwrap_tabled_call();
                     let call_key = step.active_call_key().unwrap();
-                    println!("Get mutex for {:?}", call_key);
+                    // println!("Get mutex for {:?}", call_key);
                     let mutex = tabled_functions.get_or_create_state_mutex(context, call_key)?;
                     let lock_result = mutex.try_lock();
                     match lock_result {
@@ -151,14 +151,13 @@ impl PatternExecutor {
                             let found = match step.batch_continue_or_function_pattern(guard.deref_mut()) {
                                 Either::Left(batch) => Some(batch),
                                 Either::Right(pattern) => {
-                                    let pattern_output = pattern.batch_continue(context, interrupt, tabled_functions)?;
-                                    // TODO: Add to table
-                                    step.map_output(pattern_output)
+                                    pattern.batch_continue(context, interrupt, tabled_functions)?
                                 }
                             };
                             if let Some(batch) = found {
                                 self.control_stack.push(ControlInstruction::TabledCall(index.clone()));
-                                self.prepare_next_instruction_and_push_to_stack(context, index.next(), batch)?;
+                                let mapped = step.map_output(batch);
+                                self.prepare_next_instruction_and_push_to_stack(context, index.next(), mapped)?;
                             } else {
                                 // TODO: This looks like the place to consider a retry?
                             }
@@ -173,7 +172,7 @@ impl PatternExecutor {
                             });
                         }
                     }
-                    println!("Drop mutex for {:?}", self.executors[index.0].unwrap_tabled_call().active_call_key());
+                    // println!("Drop mutex for {:?}", self.executors[index.0].unwrap_tabled_call().active_call_key());
                 }
                 ControlInstruction::CollectingStage(index) => {
                     let (pattern, mut collector) = executors[index.0].unwrap_collecting_stage().to_parts_mut();
