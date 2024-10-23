@@ -13,7 +13,7 @@ use tokio::sync::mpsc::channel;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
 use tracing::{event, Level};
-use typedb_protocol::{self, server_manager::all::{Req, Res}, transaction::{Client, Server}};
+use typedb_protocol::{self, server_manager::all::{Req, Res}, transaction::{Client, Server}, Credential, credential::Password};
 use uuid::Uuid;
 
 use crate::service::{
@@ -181,9 +181,29 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
 
     async fn users_create(
         &self,
-        _request: Request<typedb_protocol::user_manager::create::Req>
+        request: Request<typedb_protocol::user_manager::create::Req>
     ) -> Result<Response<typedb_protocol::user_manager::create::Res>, Status> {
-        todo!()
+        let message = request.into_inner();
+        match message.user {
+            Some(user) => {
+                match user.credential {
+                    Some(cred) => {
+                        match cred.credential {
+                            Some(cred2) => {
+                                todo!()
+                            }
+                            None => {
+                                todo!()
+                            }
+                        }
+                    }
+                    None => todo!("credential object must be supplied")
+                }
+            }
+            None => {
+                todo!("user object must be supplied")
+            }
+        }
     }
 
     async fn users_update(
