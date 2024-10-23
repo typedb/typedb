@@ -20,8 +20,8 @@ use crate::{
         instructions::{CheckInstruction, ConstraintInstruction},
         planner::{
             match_executable::{
-                AssignmentStep, CheckStep, DisjunctionStep, ExecutionStep, FunctionCallStep, IntersectionStep, MatchExecutable,
-                NegationStep,
+                AssignmentStep, CheckStep, DisjunctionStep, ExecutionStep, FunctionCallStep, IntersectionStep,
+                MatchExecutable, NegationStep,
             },
             plan::plan_conjunction,
         },

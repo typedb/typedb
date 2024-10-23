@@ -12,9 +12,14 @@ use crate::{
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
     read::{
-        collecting_stage_executor::CollectedStageIterator, nested_pattern_executor::SubQueryResult,
+        collecting_stage_executor::CollectedStageIterator,
+        nested_pattern_executor::{
+            IdentityMapper, InlinedFunctionMapper, LimitMapper, NegationMapper, NestedPatternExecutor,
+            NestedPatternResultMapper, OffsetMapper, SubQueryResult,
+        },
         step_executor::StepExecutors,
     },
+    row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
 
@@ -36,7 +41,7 @@ pub(super) enum ControlInstruction {
     ExecuteImmediate(InstructionIndex),
 
     MapRowBatchToRowForNested(InstructionIndex, FixedBatchRowIterator),
-    ExecuteNested(InstructionIndex, BranchIndex),
+    ExecuteNested(InstructionIndex, BranchIndex, NestedPatternResultMapper, MaybeOwnedRow<'static>),
 
     CollectingStage(InstructionIndex),
     StreamCollected(InstructionIndex, CollectedStageIterator),
@@ -100,32 +105,20 @@ impl PatternExecutor {
                     if let Some(row_result) = iter.next() {
                         let unmapped_input = row_result.unwrap().into_owned();
                         control_stack.push(ControlInstruction::MapRowBatchToRowForNested(index, iter));
-                        let nested_executor = executors[index.0].unwrap_branch();
-                        let (branches, mut controller) = nested_executor.to_parts_mut();
-                        let row = controller.prepare_and_map_input(&unmapped_input);
-                        for (branch_index, pattern) in branches.iter_mut().enumerate() {
-                            pattern.prepare(row.clone().into_owned());
-                            control_stack
-                                .push(ControlInstruction::ExecuteNested(index, BranchIndex(branch_index)));
-                        }
+                        self.prepare_nested_pattern(index, unmapped_input);
                     }
                 }
-                ControlInstruction::ExecuteNested(index, branch_index) => {
+                ControlInstruction::ExecuteNested(index, branch_index, mut mapper, input) => {
                     // TODO: This bit desperately needs a cleanup.
-                    let (branches, controller) = &mut executors[index.0].unwrap_branch().to_parts_mut();
-                    let branch = &mut branches[branch_index.0];
-                    let unmapped = branch.pattern_executor.batch_continue(context, interrupt)?;
-                    let found = match controller.map_output(branch.input.as_ref().unwrap(), unmapped) {
-                        SubQueryResult::Retry(found) => {
-                            control_stack.push(ControlInstruction::ExecuteNested(index, branch_index));
-                            found
-                        }
-                        SubQueryResult::Done(found) => {
-                            branch.pattern_executor.reset();
-                            found
-                        }
-                    };
-                    if let Some(batch) = found {
+                    let branch = &mut executors[index.0].unwrap_branch().get_branch(branch_index);
+                    let unmapped = branch.batch_continue(context, interrupt)?;
+                    let (must_retry, mapped) = mapper.map_output(&input, unmapped).into_parts();
+                    if must_retry {
+                        control_stack.push(ControlInstruction::ExecuteNested(index, branch_index, mapper, input));
+                    } else {
+                        branch.reset();
+                    }
+                    if let Some(batch) = mapped {
                         self.prepare_next_instruction_and_push_to_stack(context, index.next(), batch)?;
                     }
                 }
@@ -181,5 +174,71 @@ impl PatternExecutor {
             }
         }
         Ok(())
+    }
+    fn prepare_nested_pattern(&mut self, index: InstructionIndex, input: MaybeOwnedRow<'_>) {
+        let executor = self.executors[index.0].unwrap_branch();
+        match executor {
+            NestedPatternExecutor::Disjunction { branches } => {
+                for (branch_index, branch) in branches.iter_mut().enumerate() {
+                    let mut mapper = NestedPatternResultMapper::Identity(IdentityMapper);
+                    let mapped_input = mapper.prepare_and_map_input(&input);
+                    branch.prepare(FixedBatch::from(mapped_input));
+                    self.control_stack.push(ControlInstruction::ExecuteNested(
+                        index,
+                        BranchIndex(branch_index),
+                        mapper,
+                        input.clone().into_owned(),
+                    ))
+                }
+            }
+            NestedPatternExecutor::Negation { inner } => {
+                let mut mapper = NestedPatternResultMapper::Negation(NegationMapper);
+                let mapped_input = mapper.prepare_and_map_input(&input);
+                inner.prepare(FixedBatch::from(mapped_input));
+                self.control_stack.push(ControlInstruction::ExecuteNested(
+                    index,
+                    BranchIndex(0),
+                    mapper,
+                    input.into_owned(),
+                ));
+            }
+            NestedPatternExecutor::InlinedFunction { inner, arg_mapping, return_mapping, output_width } => {
+                let mut mapper = NestedPatternResultMapper::InlinedFunction(InlinedFunctionMapper::new(
+                    arg_mapping.clone(),
+                    return_mapping.clone(),
+                    *output_width,
+                ));
+                let mapped_input = mapper.prepare_and_map_input(&input);
+                inner.prepare(FixedBatch::from(mapped_input));
+                self.control_stack.push(ControlInstruction::ExecuteNested(
+                    index,
+                    BranchIndex(0),
+                    mapper,
+                    input.into_owned(),
+                ));
+            }
+            NestedPatternExecutor::Offset { inner, offset } => {
+                let mut mapper = NestedPatternResultMapper::Offset(OffsetMapper::new(*offset));
+                let mapped_input = mapper.prepare_and_map_input(&input);
+                inner.prepare(FixedBatch::from(mapped_input));
+                self.control_stack.push(ControlInstruction::ExecuteNested(
+                    index,
+                    BranchIndex(0),
+                    mapper,
+                    input.into_owned(),
+                ));
+            }
+            NestedPatternExecutor::Limit { inner, limit } => {
+                let mut mapper = NestedPatternResultMapper::Limit(LimitMapper::new(*limit));
+                let mapped_input = mapper.prepare_and_map_input(&input);
+                inner.prepare(FixedBatch::from(mapped_input));
+                self.control_stack.push(ControlInstruction::ExecuteNested(
+                    index,
+                    BranchIndex(0),
+                    mapper,
+                    input.into_owned(),
+                ));
+            }
+        }
     }
 }

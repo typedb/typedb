@@ -4,34 +4,41 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, collections::HashMap, sync::Arc};
-use std::collections::{hash_set, HashSet};
+use std::{
+    cmp::Ordering,
+    collections::{hash_set, HashMap, HashSet},
+    sync::Arc,
+};
 
 use answer::variable_value::VariableValue;
 use compiler::{
     annotation::expression::compiled_expression::ExecutableExpression,
     executable::match_::{
         instructions::{CheckInstruction, ConstraintInstruction, VariableModes},
-        planner::match_executable::{AssignmentStep, CheckStep, ExecutionStep, IntersectionStep, UnsortedJoinStep},
+        planner::match_executable::{
+            AssignmentStep, CheckStep, ExecutionStep, IntersectionStep, MatchExecutable, UnsortedJoinStep,
+        },
     },
     ExecutorVariable, VariablePosition,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use itertools::Itertools;
-use compiler::executable::match_::planner::match_executable::MatchExecutable;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
-    read::expression_executor::{evaluate_expression, ExpressionValue},
     instruction::{iterator::TupleIterator, Checker, InstructionExecutor},
+    match_executor::MatchExecutor,
     pipeline::stage::ExecutionContext,
+    read::{
+        expression_executor::{evaluate_expression, ExpressionValue},
+        step_executor::StepExecutors,
+    },
     row::{MaybeOwnedRow, Row},
     ExecutionInterrupt, SelectedPositions,
 };
-use crate::match_executor::MatchExecutor;
 
 pub(crate) enum ImmediateExecutor {
     SortedJoin(IntersectionExecutor),
@@ -40,64 +47,52 @@ pub(crate) enum ImmediateExecutor {
     Assignment(AssignExecutor),
 }
 
+impl Into<StepExecutors> for ImmediateExecutor {
+    fn into(self) -> StepExecutors {
+        StepExecutors::Immediate(self)
+    }
+}
+
 impl ImmediateExecutor {
-    pub(crate) fn new(
-        step: &ExecutionStep,
+    pub(crate) fn new_intersection(
+        step: &IntersectionStep,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
     ) -> Result<Self, ConceptReadError> {
-        match step {
-            ExecutionStep::Intersection(IntersectionStep {
-                sort_variable,
-                instructions,
-                selected_variables,
-                output_width,
-                ..
-            }) => {
-                let executor = IntersectionExecutor::new(
-                    *sort_variable,
-                    instructions.clone(),
-                    *output_width,
-                    selected_variables.clone(),
-                    snapshot,
-                    thing_manager,
-                )?;
-                Ok(Self::SortedJoin(executor))
-            }
-            ExecutionStep::UnsortedJoin(UnsortedJoinStep {
-                iterate_instruction,
-                check_instructions,
-                output_width,
-                ..
-            }) => {
-                let executor =
-                    UnsortedJoinExecutor::new(iterate_instruction.clone(), check_instructions.clone(), *output_width);
-                Ok(Self::UnsortedJoin(executor))
-            }
-            ExecutionStep::Assignment(AssignmentStep {
-                expression,
-                input_positions,
-                unbound,
-                selected_variables,
-                output_width,
-            }) => Ok(Self::Assignment(AssignExecutor::new(
-                expression.clone(),
-                input_positions.clone(),
-                *unbound,
-                selected_variables.clone(),
-                *output_width,
-            ))),
-            ExecutionStep::Check(CheckStep { check_instructions, selected_variables, output_width }) => Ok(
-                Self::Check(CheckExecutor::new(check_instructions.clone(), selected_variables.clone(), *output_width)),
-            ),
-            ExecutionStep::Negation(_)
-            | ExecutionStep::Disjunction(_)
-            | ExecutionStep::Optional(_)
-            | ExecutionStep::FunctionCall(_) => {
-                // Ok(Self::Disjunction(DisjunctionExecutor::new(branches.clone(), row_width)))
-                todo!("Refactor so this is impossible")
-            }
-        }
+        let IntersectionStep { sort_variable, instructions, selected_variables, output_width, .. } = step;
+
+        let executor = IntersectionExecutor::new(
+            *sort_variable,
+            instructions.clone(),
+            *output_width,
+            selected_variables.clone(),
+            snapshot,
+            thing_manager,
+        )?;
+        Ok(Self::SortedJoin(executor))
+    }
+
+    pub(crate) fn new_unsorted_join(step: &UnsortedJoinStep) -> Result<Self, ConceptReadError> {
+        let UnsortedJoinStep { iterate_instruction, check_instructions, output_width, .. } = step;
+        let executor =
+            UnsortedJoinExecutor::new(iterate_instruction.clone(), check_instructions.clone(), *output_width);
+        Ok(Self::UnsortedJoin(executor))
+    }
+
+    pub(crate) fn new_assignment(step: &AssignmentStep) -> Result<Self, ConceptReadError> {
+        let AssignmentStep { expression, input_positions, unbound, selected_variables, output_width } = step;
+        Ok(Self::Assignment(AssignExecutor::new(
+            expression.clone(),
+            input_positions.clone(),
+            *unbound,
+            selected_variables.clone(),
+            *output_width,
+        )))
+    }
+
+    pub(crate) fn new_check(step: &CheckStep) -> Result<Self, ConceptReadError> {
+        let CheckStep { check_instructions, selected_variables, output_width } = step;
+        Ok(Self::Check(CheckExecutor::new(check_instructions.clone(), selected_variables.clone(), *output_width)))
     }
 
     pub(crate) fn prepare(
@@ -647,7 +642,7 @@ impl AssignExecutor {
         _interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         if self.prepared_input.is_none() {
-            return Ok(None)
+            return Ok(None);
         }
 
         let mut input = Peekable::new(FixedBatchRowIterator::new(Ok(self.prepared_input.take().unwrap())));

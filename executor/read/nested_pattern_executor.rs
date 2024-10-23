@@ -5,31 +5,95 @@
  */
 
 use answer::variable_value::VariableValue;
-use compiler::VariablePosition;
+use compiler::{executable::match_::planner::match_executable::FunctionCallStep, VariablePosition};
 
-use crate::{batch::FixedBatch, read::pattern_executor::PatternExecutor, row::MaybeOwnedRow};
+use crate::{
+    batch::FixedBatch,
+    read::{
+        pattern_executor::{BranchIndex, PatternExecutor},
+        step_executor::StepExecutors,
+    },
+    row::MaybeOwnedRow,
+};
 
 // TODO: Move Offset & Limit out of here, make the mapper stateless
 pub(super) enum NestedPatternExecutor {
-    Disjunction(Vec<NestedPatternBranch>, IdentityMapper),
-    Negation([NestedPatternBranch; 1], NegationMapper),
-    InlinedFunction([NestedPatternBranch; 1], InlinedFunctionMapper),
-    Offset([NestedPatternBranch; 1], OffsetMapper),
-    Limit([NestedPatternBranch; 1], LimitMapper),
+    Disjunction {
+        branches: Vec<PatternExecutor>,
+    },
+    Negation {
+        inner: PatternExecutor,
+    },
+    InlinedFunction {
+        inner: PatternExecutor,
+        arg_mapping: Vec<VariablePosition>,
+        return_mapping: Vec<VariablePosition>,
+        output_width: u32,
+    },
+    Offset {
+        inner: PatternExecutor,
+        offset: u64,
+    },
+    Limit {
+        inner: PatternExecutor,
+        limit: u64,
+    },
+}
+
+impl Into<StepExecutors> for NestedPatternExecutor {
+    fn into(self) -> StepExecutors {
+        StepExecutors::Nested(self)
+    }
+}
+impl NestedPatternExecutor {
+    pub(crate) fn new_negation(inner: PatternExecutor) -> Self {
+        Self::Negation { inner }
+    }
+
+    pub(crate) fn new_disjunction(branches: Vec<PatternExecutor>) -> Self {
+        Self::Disjunction { branches }
+    }
+
+    pub(crate) fn new_inlined_function(inner: PatternExecutor, function_call: &FunctionCallStep) -> Self {
+        Self::InlinedFunction {
+            inner,
+            arg_mapping: function_call.arguments.clone(),
+            return_mapping: function_call.assigned.clone(),
+            output_width: function_call.output_width,
+        }
+    }
+
+    pub(crate) fn new_offset(inner: PatternExecutor, offset: u64) -> Self {
+        Self::Offset { inner, offset }
+    }
+
+    pub(crate) fn new_limit(inner: PatternExecutor, limit: u64) -> Self {
+        Self::Limit { inner, limit }
+    }
+
+    pub(crate) fn get_branch(&mut self, branch_index: BranchIndex) -> &mut PatternExecutor {
+        debug_assert!(branch_index.0 == 0 || matches!(self, NestedPatternExecutor::Disjunction { .. }));
+        match self {
+            NestedPatternExecutor::Disjunction { branches } => &mut branches[branch_index.0],
+            NestedPatternExecutor::Negation { inner } => inner,
+            NestedPatternExecutor::InlinedFunction { inner, .. } => inner,
+            NestedPatternExecutor::Offset { inner, .. } => inner,
+            NestedPatternExecutor::Limit { inner, .. } => inner,
+        }
+    }
 }
 
 // Bad name because I want to refactor later
-pub(super) enum SubQueryResultMapperEnumMut<'a> {
-    Identity(&'a mut IdentityMapper),
-    Negation(&'a mut NegationMapper),
-    InlinedFunction(&'a mut InlinedFunctionMapper),
-    Offset(&'a mut OffsetMapper),
-    Limit(&'a mut LimitMapper),
+pub(super) enum NestedPatternResultMapper {
+    Identity(IdentityMapper),
+    Negation(NegationMapper),
+    InlinedFunction(InlinedFunctionMapper),
+    Offset(OffsetMapper),
+    Limit(LimitMapper),
 }
 
-impl<'a> SubQueryResultMapperEnumMut<'a> {
-    // TODO: use
-    pub(super) fn prepare_and_map_input(&mut self, input: &MaybeOwnedRow<'static>) -> MaybeOwnedRow<'static> {
+impl NestedPatternResultMapper {
+    pub(super) fn prepare_and_map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
         match self {
             Self::Identity(mapper) => mapper.prepare_and_map_input(input),
             Self::Negation(mapper) => mapper.prepare_and_map_input(input),
@@ -54,45 +118,7 @@ impl<'a> SubQueryResultMapperEnumMut<'a> {
     }
 }
 
-impl NestedPatternExecutor {
-    pub(super) fn to_parts_mut(&mut self) -> (&mut [NestedPatternBranch], SubQueryResultMapperEnumMut<'_>) {
-        match self {
-            NestedPatternExecutor::Disjunction(branches, mapper) => {
-                (branches.as_mut_slice(), SubQueryResultMapperEnumMut::Identity(mapper))
-            }
-            NestedPatternExecutor::Negation(branch, mapper) => {
-                (branch.as_mut_slice(), SubQueryResultMapperEnumMut::Negation(mapper))
-            }
-            NestedPatternExecutor::InlinedFunction(branch, mapper) => {
-                (branch.as_mut_slice(), SubQueryResultMapperEnumMut::InlinedFunction(mapper))
-            }
-            NestedPatternExecutor::Offset(branch, mapper) => {
-                (branch.as_mut_slice(), SubQueryResultMapperEnumMut::Offset(mapper))
-            }
-            NestedPatternExecutor::Limit(branch, mapper) => {
-                (branch.as_mut_slice(), SubQueryResultMapperEnumMut::Limit(mapper))
-            }
-        }
-    }
-}
-
-pub(super) struct NestedPatternBranch {
-    pub(super) input: Option<MaybeOwnedRow<'static>>,
-    pub(super) pattern_executor: PatternExecutor,
-}
-
-impl NestedPatternBranch {
-    pub(crate) fn new(pattern_executor: PatternExecutor) -> Self {
-        Self { input: None, pattern_executor }
-    }
-
-    pub(super) fn prepare(&mut self, input: MaybeOwnedRow<'static>) {
-        self.input = Some(input.clone());
-        self.pattern_executor.prepare(FixedBatch::from(input.clone()));
-    }
-}
-
-pub(super) trait SubQueryResultMapper {
+pub(super) trait SubQueryResultMapperTrait {
     fn prepare_and_map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static>;
     fn map_output(&mut self, input: &MaybeOwnedRow<'_>, subquery_result: Option<FixedBatch>) -> SubQueryResult;
 }
@@ -100,6 +126,15 @@ pub(super) trait SubQueryResultMapper {
 pub(super) enum SubQueryResult {
     Retry(Option<FixedBatch>),
     Done(Option<FixedBatch>),
+}
+
+impl SubQueryResult {
+    pub(crate) fn into_parts(self) -> (bool, Option<FixedBatch>) {
+        match self {
+            SubQueryResult::Retry(batch_opt) => (true, batch_opt),
+            SubQueryResult::Done(batch_opt) => (false, batch_opt),
+        }
+    }
 }
 
 pub(super) struct NegationMapper;
@@ -110,7 +145,7 @@ pub(super) struct InlinedFunctionMapper {
     output_width: u32,                // This is for the caller.
 }
 
-impl SubQueryResultMapper for NegationMapper {
+impl SubQueryResultMapperTrait for NegationMapper {
     fn prepare_and_map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
         input.clone().into_owned()
     }
@@ -129,7 +164,7 @@ impl SubQueryResultMapper for NegationMapper {
     }
 }
 
-impl SubQueryResultMapper for IdentityMapper {
+impl SubQueryResultMapperTrait for IdentityMapper {
     fn prepare_and_map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
         input.clone().into_owned()
     }
@@ -149,7 +184,7 @@ impl InlinedFunctionMapper {
     }
 }
 
-impl SubQueryResultMapper for InlinedFunctionMapper {
+impl SubQueryResultMapperTrait for InlinedFunctionMapper {
     fn prepare_and_map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
         let args_owned: Vec<VariableValue<'static>> =
             self.arguments.iter().map(|arg_pos| input.get(arg_pos.clone()).clone().into_owned()).collect();
@@ -162,7 +197,6 @@ impl SubQueryResultMapper for InlinedFunctionMapper {
             Some(returned_batch) => {
                 let mut output_batch = FixedBatch::new(self.output_width);
                 for return_index in 0..returned_batch.len() {
-                    // TODO: Deduplicate?
                     let returned_row = returned_batch.get_row(return_index);
                     output_batch.append(|mut output_row| {
                         for (i, element) in input.iter().enumerate() {
@@ -191,7 +225,7 @@ impl OffsetMapper {
     }
 }
 
-impl SubQueryResultMapper for OffsetMapper {
+impl SubQueryResultMapperTrait for OffsetMapper {
     fn prepare_and_map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
         self.current = 0;
         input.clone().into_owned()
@@ -233,7 +267,7 @@ impl LimitMapper {
     }
 }
 
-impl SubQueryResultMapper for LimitMapper {
+impl SubQueryResultMapperTrait for LimitMapper {
     fn prepare_and_map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
         self.current = 0;
         input.clone().into_owned()

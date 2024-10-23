@@ -26,8 +26,7 @@ use crate::read::{
     collecting_stage_executor::CollectingStageExecutor,
     immediate_executor::ImmediateExecutor,
     nested_pattern_executor::{
-        IdentityMapper, InlinedFunctionMapper, LimitMapper, NegationMapper, NestedPatternBranch, NestedPatternExecutor,
-        OffsetMapper,
+        IdentityMapper, InlinedFunctionMapper, LimitMapper, NegationMapper, NestedPatternExecutor, OffsetMapper,
     },
     pattern_executor::PatternExecutor,
 };
@@ -71,19 +70,24 @@ pub(super) fn create_executors_for_match(
 ) -> Result<Vec<StepExecutors>, ConceptReadError> {
     let mut steps = Vec::with_capacity(match_executable.steps().len());
     for step in match_executable.steps() {
-        let step = match step {
-            ExecutionStep::Intersection(_) => {
-                StepExecutors::Immediate(ImmediateExecutor::new(step, snapshot, thing_manager)?)
+        match step {
+            ExecutionStep::Intersection(inner) => {
+                let step = ImmediateExecutor::new_intersection(inner, snapshot, thing_manager)?;
+                steps.push(step.into());
             }
-            ExecutionStep::UnsortedJoin(_) => {
-                StepExecutors::Immediate(ImmediateExecutor::new(step, snapshot, thing_manager)?)
+            ExecutionStep::UnsortedJoin(inner) => {
+                let step = ImmediateExecutor::new_unsorted_join(inner)?;
+                steps.push(step.into());
             }
-            ExecutionStep::Assignment(_) => {
-                StepExecutors::Immediate(ImmediateExecutor::new(step, snapshot, thing_manager)?)
+            ExecutionStep::Assignment(inner) => {
+                let step = ImmediateExecutor::new_assignment(inner)?;
+                steps.push(step.into());
             }
-            ExecutionStep::Check(_) => StepExecutors::Immediate(ImmediateExecutor::new(step, snapshot, thing_manager)?),
+            ExecutionStep::Check(inner) => {
+                let step = ImmediateExecutor::new_check(inner)?;
+                steps.push(step.into());
+            }
             ExecutionStep::Negation(negation_step) => {
-                println!("Negation_Plan:\n{:?}", &negation_step.negation);
                 // I shouldn't need to pass recursive here since it's stratified
                 let inner = create_executors_for_match(
                     snapshot,
@@ -92,10 +96,7 @@ pub(super) fn create_executors_for_match(
                     &negation_step.negation,
                     tmp__recursion_validation,
                 )?;
-                StepExecutors::Nested(NestedPatternExecutor::Negation(
-                    [NestedPatternBranch::new(PatternExecutor::new(inner))],
-                    NegationMapper,
-                ))
+                steps.push(NestedPatternExecutor::new_negation(PatternExecutor::new(inner)).into())
             }
             ExecutionStep::FunctionCall(function_call) => {
                 let function = function_registry.get(function_call.function_id.clone());
@@ -109,7 +110,7 @@ pub(super) fn create_executors_for_match(
                     } else {
                         tmp__recursion_validation.insert(function_call.function_id.clone());
                     }
-                    let inner_executors = create_executors_for_pipeline_stages(
+                    let inner = create_executors_for_pipeline_stages(
                         snapshot,
                         thing_manager,
                         function_registry,
@@ -117,22 +118,20 @@ pub(super) fn create_executors_for_match(
                         &function.executable_stages.len() - 1,
                         tmp__recursion_validation,
                     )?;
-                    let inner = PatternExecutor::new(inner_executors);
+                    let inner = PatternExecutor::new(inner);
                     tmp__recursion_validation.remove(&function_call.function_id);
                     let mapper = InlinedFunctionMapper::new(
                         function_call.arguments.clone(),
                         function_call.assigned.clone(),
                         function_call.output_width,
                     );
-                    StepExecutors::Nested(NestedPatternExecutor::InlinedFunction(
-                        [NestedPatternBranch::new(inner)],
-                        mapper,
-                    ))
+                    let step = NestedPatternExecutor::new_inlined_function(inner, function_call);
+                    steps.push(step.into())
                 }
             }
             ExecutionStep::Disjunction(step) => {
                 // I shouldn't need to pass recursive here since it's stratified
-                let inner = step
+                let branches = step
                     .branches
                     .iter()
                     .map(|branch_executable| {
@@ -143,18 +142,19 @@ pub(super) fn create_executors_for_match(
                             &branch_executable,
                             tmp__recursion_validation,
                         )?;
-                        Ok(NestedPatternBranch::new(PatternExecutor::new(executors)))
+                        Ok(PatternExecutor::new(executors))
                     })
                     .try_collect()?;
-                let inner_step = StepExecutors::Nested(NestedPatternExecutor::Disjunction(inner, IdentityMapper));
+                let inner_step = NestedPatternExecutor::new_disjunction(branches).into();
                 // Hack: wrap it in a distinct
-                StepExecutors::CollectingStage(CollectingStageExecutor::new_distinct(PatternExecutor::new(vec![
-                    inner_step,
-                ])))
+                let step =
+                    StepExecutors::CollectingStage(CollectingStageExecutor::new_distinct(PatternExecutor::new(vec![
+                        inner_step,
+                    ])));
+                steps.push(step);
             }
             ExecutionStep::Optional(_) => todo!(),
         };
-        steps.push(step);
     }
     Ok(steps)
 }
@@ -223,16 +223,14 @@ pub(super) fn create_executors_for_pipeline_stages(
         }
         ExecutableStage::Select(_) => todo!(),
         ExecutableStage::Offset(offset_executable) => {
-            let inner = NestedPatternBranch::new(PatternExecutor::new(previous_stage_steps));
-            let mapper = OffsetMapper::new(offset_executable.offset);
-            let step = NestedPatternExecutor::Offset([inner], mapper);
-            Ok(vec![StepExecutors::Nested(step)])
+            let step =
+                NestedPatternExecutor::new_offset(PatternExecutor::new(previous_stage_steps), offset_executable.offset);
+            Ok(vec![step.into()])
         }
         ExecutableStage::Limit(limit_executable) => {
-            let inner = NestedPatternBranch::new(PatternExecutor::new(previous_stage_steps));
-            let mapper = LimitMapper::new(limit_executable.limit);
-            let step = NestedPatternExecutor::Limit([inner], mapper);
-            Ok(vec![StepExecutors::Nested(step)])
+            let step =
+                NestedPatternExecutor::new_limit(PatternExecutor::new(previous_stage_steps), limit_executable.limit);
+            Ok(vec![step.into()])
         }
         ExecutableStage::Require(_) => todo!(),
         ExecutableStage::Sort(sort_executable) => {
@@ -247,7 +245,9 @@ pub(super) fn create_executors_for_pipeline_stages(
             Ok(vec![StepExecutors::CollectingStage(step)])
         }
         ExecutableStage::Insert(_) | ExecutableStage::Delete(_) => {
-            todo!("Currently unreachable. Accept flag for whether this is a write pipeline & port the write stages here.")
-        },
+            todo!(
+                "Currently unreachable. Accept flag for whether this is a write pipeline & port the write stages here."
+            )
+        }
     }
 }

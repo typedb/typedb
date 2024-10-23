@@ -9,13 +9,14 @@ use std::{
     sync::Arc,
 };
 
-use compiler::annotation::{
-    expression::block_compiler::compile_expressions,
-    function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-    match_inference::infer_types,
+use compiler::{
+    annotation::{
+        expression::block_compiler::compile_expressions,
+        function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+        match_inference::infer_types,
+    },
+    executable::match_::planner::function_plan::ExecutableFunctionRegistry,
 };
-use compiler::executable::match_::planner::function_plan::ExecutableFunctionRegistry;
-
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
     type_::type_manager::TypeManager,
@@ -214,7 +215,14 @@ fn test_expression_planning_traversal() {
         &compiled_expressions,
         &statistics,
     );
-    let executor = MatchExecutor::new(&match_executable, &snapshot, &thing_manager, MaybeOwnedRow::empty(), &ExecutableFunctionRegistry::empty()).unwrap();
+    let executor = MatchExecutor::new(
+        &match_executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        &ExecutableFunctionRegistry::empty(),
+    )
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::new(translation_context.parameters.clone()));
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());

@@ -190,8 +190,11 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
             match executable_stage {
                 ExecutableStage::Match(match_executable) => {
                     // TODO: Pass expressions & functions
-                    let match_stage =
-                        MatchStageExecutor::new(match_executable, last_stage, Arc::new(ExecutableFunctionRegistry::empty()));
+                    let match_stage = MatchStageExecutor::new(
+                        match_executable,
+                        last_stage,
+                        Arc::new(ExecutableFunctionRegistry::empty()),
+                    );
                     last_stage = WritePipelineStage::Match(Box::new(match_stage));
                 }
                 ExecutableStage::Insert(insert_executable) => {
