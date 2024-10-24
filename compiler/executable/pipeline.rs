@@ -203,6 +203,7 @@ fn compile_stage(
                 statistics,
                 // functions,
             );
+            eprintln!("{:?}", plan.steps);
             Ok(ExecutableStage::Match(Arc::new(plan)))
         }
         AnnotatedStage::Insert { block, annotations } => {

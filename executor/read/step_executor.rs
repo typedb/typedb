@@ -82,8 +82,6 @@ pub(super) fn create_executors_for_match(
     match_executable: &MatchExecutable,
     tmp__recursion_validation: &mut HashSet<FunctionID>,
 ) -> Result<Vec<StepExecutors>, ConceptReadError> {
-    // eprintln!("{:?}", match_executable.steps());
-
     let mut steps = Vec::with_capacity(match_executable.steps().len());
     for step in match_executable.steps() {
         match step {

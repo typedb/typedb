@@ -5,6 +5,7 @@
  */
 
 use std::{ops::DerefMut, sync::TryLockError};
+use std::iter::zip;
 
 use itertools::Either;
 use compiler::VariablePosition;
@@ -151,19 +152,28 @@ impl PatternExecutor {
                 ControlInstruction::TabledCall(index) => {
                     let executor = executors[index.0].unwrap_tabled_call();
                     let call_key = executor.active_call_key().unwrap();
-                    let table_state = tabled_functions.get_or_create_state_mutex(context, call_key)?;
-                    let found = match executor.batch_continue_or_function_pattern(&table_state) {
-                        Either::Left(batch) => Some(batch),
+                    let mut function_state = tabled_functions.get_or_create_function_state(context, call_key)?;
+                    let found = match executor.batch_continue_or_function_pattern(&function_state) {
+                        Either::Left(batch) => {
+                            eprintln!("fn({}): Serviced from table.", executor.active_call_key().unwrap().arguments);
+                            Some(batch)
+                        },
                         Either::Right(pattern_mutex) => {
                             match pattern_mutex.try_lock() {
                                 Ok(mut executor_state) => {
+                                    eprintln!("ENTER fn({}) {{", executor.active_call_key().unwrap().arguments);
                                     let TabledFunctionPatternExecutorState { pattern_executor, suspend_points } = executor_state.deref_mut();
-                                    let batch = pattern_executor.batch_continue(context, interrupt, tabled_functions, suspend_points)?;
-                                    // TODO: Add to table
-                                    if !suspend_points.is_empty() {
-                                        suspend_point_accumulator.push(executor.create_suspend_point_for(index))
+                                    let batch_opt = pattern_executor.batch_continue(context, interrupt, tabled_functions, suspend_points)?;
+                                    eprintln!("}} EXIT fn({}) with {:?} rows.", executor.active_call_key().unwrap().arguments, batch_opt.as_ref().map(|b| b.len()));
+                                    if let Some(batch) = &batch_opt {
+                                        // eprintln!("Adding to table for: fn({})", &executor.active_call_key().unwrap().arguments);
+                                        executor.add_batch_to_table(&function_state, batch);
+                                    } else {
+                                        if !suspend_points.is_empty() {
+                                            suspend_point_accumulator.push(executor.create_suspend_point_for(index))
+                                        }
                                     }
-                                    batch
+                                    batch_opt
                                 }
                                 Err(TryLockError::WouldBlock) => {
                                     suspend_point_accumulator.push(executor.create_suspend_point_for(index));
@@ -181,6 +191,10 @@ impl PatternExecutor {
                     };
                     if let Some(batch) = found {
                         self.control_stack.push(ControlInstruction::TabledCall(index.clone()));
+                        eprintln!("fn({})  should have passed on:", executor.active_call_key().unwrap().arguments);
+                        for i in 0..batch.len() {
+                            eprintln!(" - {}", batch.get_row(i as u32));
+                        }
                         let mapped = executor.map_output(batch);
                         self.prepare_next_instruction_and_push_to_stack(context, index.next(), mapped)?;
                     } else {

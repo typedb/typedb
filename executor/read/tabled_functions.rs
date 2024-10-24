@@ -8,10 +8,12 @@ use std::{
     collections::{HashMap, HashSet},
     sync::{Arc, Mutex},
 };
+use std::sync::RwLock;
 
 use compiler::{executable::match_::planner::function_plan::ExecutableFunctionRegistry, VariablePosition};
 use ir::pipeline::function_signature::FunctionID;
 use itertools::Either;
+use logger::result::ResultExt;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -33,7 +35,7 @@ pub struct TabledFunctions {
 }
 
 impl TabledFunctions {
-    pub(crate) fn get_or_create_state_mutex(
+    pub(crate) fn get_or_create_function_state(
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         call_key: &CallKey,
@@ -75,7 +77,7 @@ pub(crate) struct TableIndex(usize);
 
 
 pub(crate) struct TabledFunctionState {
-    table: AnswerTable, // TODO: Need a structure which can de-duplicate & preserve insertion order.
+    table: RwLock<AnswerTable>, // TODO: Need a structure which can de-duplicate & preserve insertion order.
     executor_state: Mutex<TabledFunctionPatternExecutorState>,
     // can_clean: bool, // TODO: Apparently you only need to keep the table if it's a call that causes a suspend.
 }
@@ -89,12 +91,20 @@ impl TabledFunctionState {
     fn build_and_prepare(mut pattern_executor: PatternExecutor, args: &MaybeOwnedRow<'_>) -> Self {
         pattern_executor.prepare(FixedBatch::from(args.as_reference()));
         Self {
-            table: AnswerTable { answers: Vec::new() },
+            table: RwLock::new(AnswerTable { answers: Vec::new() }),
             executor_state: Mutex::new(TabledFunctionPatternExecutorState {
                 pattern_executor,
                 suspend_points: Vec::new(),
             })
         }
+    }
+
+    fn add_batch_to_table(&self, batch: &FixedBatch) -> usize {
+        let mut table = self.table.write().unwrap();
+        for i in 0..batch.len() {
+            table.may_add_row(batch.get_row(i).as_reference());
+        }
+        table.answers.len()
     }
 }
 
@@ -107,13 +117,9 @@ impl AnswerTable {
         self.answers.get(index).map(|row| row.as_reference())
     }
 
-    fn may_add_row(&mut self, row: MaybeOwnedRow<'static>) -> Option<usize> {
-        if self.answers.contains(&row) {
-            None
-        } else {
-            let ret = Some(self.answers.len() - 1);
-            self.answers.push(row);
-            ret
+    fn may_add_row(&mut self, row: MaybeOwnedRow<'_>) {
+        if !self.answers.contains(&row) {
+            self.answers.push(row.clone().into_owned());
         }
     }
 }
@@ -124,6 +130,13 @@ pub(crate) struct TabledCallExecutor {
     assignment_positions: Vec<VariablePosition>,
     output_width: u32,
     active_executor: Option<TabledCallExecutorState>,
+}
+
+impl TabledCallExecutor {
+    pub(crate) fn add_batch_to_table(&mut self, state: &TabledFunctionState, batch: &FixedBatch) {
+        let new_table_size = state.add_batch_to_table(batch);
+        self.active_executor.as_mut().unwrap().next_table_row = TableIndex(new_table_size);
+    }
 }
 
 pub struct TabledCallExecutorState {
@@ -179,17 +192,19 @@ impl TabledCallExecutor {
         // Maybe return a batch?
         let executor = self.active_executor.as_mut().unwrap();
         let read_index = &mut executor.next_table_row.0;
-        if *read_index < tabled_function_state.table.answers.len() {
-            let answer_vec = &tabled_function_state.table.answers;
-            let mut batch = FixedBatch::new(answer_vec.last().unwrap().len() as u32);
-            while !batch.is_full() && *read_index < answer_vec.len() {
+
+        let table_read = tabled_function_state.table.read().unwrap();
+        if *read_index < table_read.answers.len() {
+            let mut batch = FixedBatch::new(table_read.answers.last().unwrap().len() as u32);
+            while !batch.is_full() && *read_index < table_read.answers.len() {
                 batch.append(|mut write_to| {
-                    write_to.copy_from_row(answer_vec.get(*read_index).unwrap().as_reference());
+                    write_to.copy_from_row(table_read.answers.get(*read_index).unwrap().as_reference());
                 });
                 *read_index += 1;
             }
             Either::Left(batch)
         } else {
+            drop(table_read);
             Either::Right(&tabled_function_state.executor_state)
         }
     }

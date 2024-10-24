@@ -34,7 +34,6 @@ pub(super) fn TODO_REMOVE_create_executors_for_match(
     function_registry: &ExecutableFunctionRegistry,
     match_executable: &MatchExecutable,
 ) -> Result<PatternExecutor, ConceptReadError> {
-    eprintln!("--- Start creating executors for entry ---");
     let executors = step_executor::create_executors_for_match(
         snapshot,
         thing_manager,
@@ -42,7 +41,6 @@ pub(super) fn TODO_REMOVE_create_executors_for_match(
         match_executable,
         &mut HashSet::new(),
     )?;
-    eprintln!("--- End creating executors for entry ---");
     Ok(PatternExecutor::new(executors))
 }
 
