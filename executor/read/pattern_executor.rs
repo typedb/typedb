@@ -170,14 +170,15 @@ impl PatternExecutor {
                                     tabled_functions,
                                     suspend_points,
                                 )?;
-                                if let Some(batch) = &batch_opt {
-                                    executor.add_batch_to_table(&function_state, batch);
+                                if let Some(batch) = batch_opt {
+                                    let deduplicated_batch = executor.add_batch_to_table(&function_state, batch);
+                                    Some(deduplicated_batch)
                                 } else {
                                     if !suspend_points.is_empty() {
                                         suspend_point_accumulator.push(executor.create_suspend_point_for(index))
                                     }
+                                    None
                                 }
-                                batch_opt
                             }
                             Err(TryLockError::WouldBlock) => {
                                 suspend_point_accumulator.push(executor.create_suspend_point_for(index));

@@ -12,6 +12,7 @@ use std::{
 use compiler::{executable::match_::planner::function_plan::ExecutableFunctionRegistry, VariablePosition};
 use ir::pipeline::function_signature::FunctionID;
 use itertools::Either;
+use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -97,12 +98,23 @@ impl TabledFunctionState {
         }
     }
 
-    fn add_batch_to_table(&self, batch: &FixedBatch) -> usize {
-        let mut table = self.table.write().unwrap();
-        for i in 0..batch.len() {
-            table.may_add_row(batch.get_row(i).as_reference());
+    fn add_batch_to_table(&self, batch: FixedBatch) -> FixedBatch {
+        if !batch.is_empty() {
+            let mut deduplicated_batch = FixedBatch::new(batch.get_row(0).len() as u32);
+            let mut table = self.table.write().unwrap();
+            let mut batch_iter = batch.into_iterator();
+            while let Some(row_result) = batch_iter.next() {
+                let row = row_result.unwrap();
+                if table.try_add_row(row.as_reference()) {
+                    deduplicated_batch.append(|mut write_to| {
+                        write_to.copy_from_row(row)
+                    })
+                }
+            }
+            deduplicated_batch
+        } else {
+            batch
         }
-        table.answers.len()
     }
 }
 
@@ -115,9 +127,12 @@ impl AnswerTable {
         self.answers.get(index).map(|row| row.as_reference())
     }
 
-    fn may_add_row(&mut self, row: MaybeOwnedRow<'_>) {
+    fn try_add_row(&mut self, row: MaybeOwnedRow<'_>) -> bool {
         if !self.answers.contains(&row) {
             self.answers.push(row.clone().into_owned());
+            true
+        } else {
+            false
         }
     }
 }
@@ -131,9 +146,10 @@ pub(crate) struct TabledCallExecutor {
 }
 
 impl TabledCallExecutor {
-    pub(crate) fn add_batch_to_table(&mut self, state: &TabledFunctionState, batch: &FixedBatch) {
-        let new_table_size = state.add_batch_to_table(batch);
-        self.active_executor.as_mut().unwrap().next_table_row = TableIndex(new_table_size);
+    pub(crate) fn add_batch_to_table(&mut self, state: &TabledFunctionState, batch: FixedBatch) -> FixedBatch {
+        let deduplicated_batch = state.add_batch_to_table(batch);
+        self.active_executor.as_mut().unwrap().next_table_row.0 += deduplicated_batch.len() as usize;
+        deduplicated_batch
     }
 }
 
