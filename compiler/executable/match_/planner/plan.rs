@@ -576,21 +576,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     }
 
     pub(super) fn plan(self) -> ConjunctionPlan<'a> {
-        // eprintln!("[{}:{}] variables = {:?}", file!(), line!(), self.graph.variable_index);
-        //
-        // eprintln!("[{}:{}] elements = {{", file!(), line!());
-        // for (i, el) in &self.graph.elements {
-        //     eprintln!("    {:?}: {:?}", i, el);
-        // }
-        // eprintln!("}}");
-        //
-        // eprintln!("[{}:{}] adjacency = {{", file!(), line!());
-        // for (i, el) in &self.graph.pattern_to_variable {
-        //     eprintln!("    {:?}: {:?}", i, el);
-        // }
-        // eprintln!("}}");
         let ordering = self.initialise_greedy_ordering();
-        // eprintln!("[{}:{}] ordering = {:?}", file!(), line!(), ordering);
         let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
 
         let cost = ordering

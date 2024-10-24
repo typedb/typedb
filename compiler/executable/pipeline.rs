@@ -199,11 +199,10 @@ fn compile_stage(
                 input_variables,
                 block_annotations,
                 variable_registry,
+                functions,
                 executable_expressions,
                 statistics,
-                // functions,
             );
-            eprintln!("{:?}", plan.steps);
             Ok(ExecutableStage::Match(Arc::new(plan)))
         }
         AnnotatedStage::Insert { block, annotations } => {

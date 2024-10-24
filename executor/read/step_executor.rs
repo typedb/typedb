@@ -23,10 +23,8 @@ use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::read::{
-    collecting_stage_executor::CollectingStageExecutor,
-    immediate_executor::ImmediateExecutor,
-    nested_pattern_executor::NestedPatternExecutor,
-    pattern_executor::PatternExecutor,
+    collecting_stage_executor::CollectingStageExecutor, immediate_executor::ImmediateExecutor,
+    nested_pattern_executor::NestedPatternExecutor, pattern_executor::PatternExecutor,
     tabled_functions::TabledCallExecutor,
 };
 

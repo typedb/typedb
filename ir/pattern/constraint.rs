@@ -4,8 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt};
-use std::ops::Deref;
+use std::{collections::HashMap, fmt, ops::Deref};
 
 use answer::variable::Variable;
 use itertools::Itertools;

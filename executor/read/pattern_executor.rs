@@ -5,10 +5,9 @@
  */
 
 use std::{ops::DerefMut, sync::TryLockError};
-use std::iter::zip;
 
-use itertools::Either;
 use compiler::VariablePosition;
+use itertools::Either;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
@@ -22,13 +21,13 @@ use crate::{
             IdentityMapper, InlinedFunctionMapper, LimitMapper, NegationMapper, NestedPatternExecutor,
             NestedPatternResultMapper, OffsetMapper,
         },
-        step_executor::StepExecutors, tabled_functions::TabledFunctions,
+        step_executor::StepExecutors,
+        tabled_functions::{TabledFunctionPatternExecutorState, TabledFunctions},
+        SuspendPoint,
     },
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-use crate::read::SuspendPoint;
-use crate::read::tabled_functions::{TabledFunctionPatternExecutorState};
 
 #[derive(Debug, Copy, Clone)]
 pub(super) struct BranchIndex(pub usize);
@@ -135,13 +134,19 @@ impl PatternExecutor {
                     // TODO: This bit desperately needs a cleanup.
                     let branch = &mut executors[index.0].unwrap_branch().get_branch(branch_index);
                     let suspend_point_len_before = suspend_point_accumulator.len();
-                    let unmapped = branch.batch_continue(context, interrupt, tabled_functions, suspend_point_accumulator)?;
+                    let unmapped =
+                        branch.batch_continue(context, interrupt, tabled_functions, suspend_point_accumulator)?;
                     if suspend_point_accumulator.len() != suspend_point_len_before {
                         suspend_point_accumulator.push(SuspendPoint::new_nested(index, branch_index, input.clone()))
                     }
                     let (must_retry, mapped) = mapper.map_output(unmapped).into_parts();
                     if must_retry {
-                        control_stack.push(ControlInstruction::ExecuteNested(index, branch_index, mapper, input.clone()));
+                        control_stack.push(ControlInstruction::ExecuteNested(
+                            index,
+                            branch_index,
+                            mapper,
+                            input.clone(),
+                        ));
                     } else {
                         branch.reset();
                     }
@@ -152,55 +157,48 @@ impl PatternExecutor {
                 ControlInstruction::TabledCall(index) => {
                     let executor = executors[index.0].unwrap_tabled_call();
                     let call_key = executor.active_call_key().unwrap();
-                    let mut function_state = tabled_functions.get_or_create_function_state(context, call_key)?;
+                    let function_state = tabled_functions.get_or_create_function_state(context, call_key)?;
                     let found = match executor.batch_continue_or_function_pattern(&function_state) {
-                        Either::Left(batch) => {
-                            eprintln!("fn({}): Serviced from table.", executor.active_call_key().unwrap().arguments);
-                            Some(batch)
-                        },
-                        Either::Right(pattern_mutex) => {
-                            match pattern_mutex.try_lock() {
-                                Ok(mut executor_state) => {
-                                    eprintln!("ENTER fn({}) {{", executor.active_call_key().unwrap().arguments);
-                                    let TabledFunctionPatternExecutorState { pattern_executor, suspend_points } = executor_state.deref_mut();
-                                    let batch_opt = pattern_executor.batch_continue(context, interrupt, tabled_functions, suspend_points)?;
-                                    eprintln!("}} EXIT fn({}) with {:?} rows.", executor.active_call_key().unwrap().arguments, batch_opt.as_ref().map(|b| b.len()));
-                                    if let Some(batch) = &batch_opt {
-                                        // eprintln!("Adding to table for: fn({})", &executor.active_call_key().unwrap().arguments);
-                                        executor.add_batch_to_table(&function_state, batch);
-                                    } else {
-                                        if !suspend_points.is_empty() {
-                                            suspend_point_accumulator.push(executor.create_suspend_point_for(index))
-                                        }
+                        Either::Left(batch) => Some(batch),
+                        Either::Right(pattern_mutex) => match pattern_mutex.try_lock() {
+                            Ok(mut executor_state) => {
+                                let TabledFunctionPatternExecutorState { pattern_executor, suspend_points } =
+                                    executor_state.deref_mut();
+                                let batch_opt = pattern_executor.batch_continue(
+                                    context,
+                                    interrupt,
+                                    tabled_functions,
+                                    suspend_points,
+                                )?;
+                                if let Some(batch) = &batch_opt {
+                                    executor.add_batch_to_table(&function_state, batch);
+                                } else {
+                                    if !suspend_points.is_empty() {
+                                        suspend_point_accumulator.push(executor.create_suspend_point_for(index))
                                     }
-                                    batch_opt
                                 }
-                                Err(TryLockError::WouldBlock) => {
-                                    suspend_point_accumulator.push(executor.create_suspend_point_for(index));
-                                    None
-                                }
-                                Err(TryLockError::Poisoned(_)) => {
-                                    let call_key = executor.active_call_key().unwrap();
-                                    return Err(ReadExecutionError::TabledFunctionLockError {
-                                        function_id: call_key.function_id.clone(),
-                                        arguments: call_key.arguments.clone(),
-                                    });
-                                }
+                                batch_opt
                             }
-                        }
+                            Err(TryLockError::WouldBlock) => {
+                                suspend_point_accumulator.push(executor.create_suspend_point_for(index));
+                                None
+                            }
+                            Err(TryLockError::Poisoned(_)) => {
+                                let call_key = executor.active_call_key().unwrap();
+                                return Err(ReadExecutionError::TabledFunctionLockError {
+                                    function_id: call_key.function_id.clone(),
+                                    arguments: call_key.arguments.clone(),
+                                });
+                            }
+                        },
                     };
                     if let Some(batch) = found {
                         self.control_stack.push(ControlInstruction::TabledCall(index.clone()));
-                        eprintln!("fn({})  should have passed on:", executor.active_call_key().unwrap().arguments);
-                        for i in 0..batch.len() {
-                            eprintln!(" - {}", batch.get_row(i as u32));
-                        }
                         let mapped = executor.map_output(batch);
                         self.prepare_next_instruction_and_push_to_stack(context, index.next(), mapped)?;
                     } else {
                         // TODO: This looks like the place to consider a retry?
                     }
-
                 }
                 ControlInstruction::CollectingStage(index) => {
                     let (pattern, mut collector) = executors[index.0].unwrap_collecting_stage().to_parts_mut();
@@ -215,7 +213,6 @@ impl PatternExecutor {
                             self.control_stack.push(ControlInstruction::StreamCollected(index, iterator))
                         }
                     }
-
                 }
                 ControlInstruction::StreamCollected(index, mut collected_iterator) => {
                     if let Some(batch) = collected_iterator.batch_continue()? {
@@ -259,9 +256,9 @@ impl PatternExecutor {
                     executable.prepare(batch, context)?;
                     self.control_stack.push(ControlInstruction::ExecuteImmediate(next_instruction_index));
                 }
-                StepExecutors::Nested(_) => self.control_stack.push(
-                    ControlInstruction::MapRowBatchToRowForNested(next_instruction_index, batch.into_iterator())
-                ),
+                StepExecutors::Nested(_) => self
+                    .control_stack
+                    .push(ControlInstruction::MapRowBatchToRowForNested(next_instruction_index, batch.into_iterator())),
                 StepExecutors::TabledCall(_) => {
                     self.control_stack.push(ControlInstruction::MapRowBatchToRowForNested(
                         next_instruction_index,
@@ -274,8 +271,7 @@ impl PatternExecutor {
                 }
                 StepExecutors::ReshapeForReturn(_) => {
                     self.control_stack.push(ControlInstruction::ReshapeForReturn(next_instruction_index, batch))
-
-                },
+                }
             }
         }
         Ok(())

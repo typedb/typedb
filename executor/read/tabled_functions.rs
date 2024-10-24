@@ -6,26 +6,25 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, RwLock},
 };
-use std::sync::RwLock;
 
 use compiler::{executable::match_::planner::function_plan::ExecutableFunctionRegistry, VariablePosition};
 use ir::pipeline::function_signature::FunctionID;
 use itertools::Either;
-use logger::result::ResultExt;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::FixedBatch,
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
-    read::{pattern_executor::PatternExecutor},
+    read::{
+        pattern_executor::{InstructionIndex, PatternExecutor},
+        step_executor::create_executors_for_function,
+        SuspendPoint, TabledCallSuspension,
+    },
     row::MaybeOwnedRow,
 };
-use crate::read::pattern_executor::{BranchIndex, InstructionIndex};
-use crate::read::step_executor::create_executors_for_function;
-use crate::read::{SuspendPoint, TabledCallSuspension};
 
 // TODO: Rearrange file
 
@@ -75,7 +74,6 @@ pub(crate) struct CallKey {
 #[derive(Debug, Copy, Clone)]
 pub(crate) struct TableIndex(usize);
 
-
 pub(crate) struct TabledFunctionState {
     table: RwLock<AnswerTable>, // TODO: Need a structure which can de-duplicate & preserve insertion order.
     executor_state: Mutex<TabledFunctionPatternExecutorState>,
@@ -95,7 +93,7 @@ impl TabledFunctionState {
             executor_state: Mutex::new(TabledFunctionPatternExecutorState {
                 pattern_executor,
                 suspend_points: Vec::new(),
-            })
+            }),
         }
     }
 
@@ -150,7 +148,7 @@ impl TabledCallExecutor {
         function_id: FunctionID,
         argument_positions: Vec<VariablePosition>,
         assignment_positions: Vec<VariablePosition>,
-        output_width: u32
+        output_width: u32,
     ) -> Self {
         Self { function_id, argument_positions, assignment_positions, output_width, active_executor: None }
     }
@@ -213,7 +211,7 @@ impl TabledCallExecutor {
         SuspendPoint::TabledCall(TabledCallSuspension {
             instruction_index,
             input_row: self.active_executor.as_ref().unwrap().input.clone().into_owned(),
-            next_table_row: self.active_executor.as_ref().unwrap().next_table_row
+            next_table_row: self.active_executor.as_ref().unwrap().next_table_row,
         })
     }
 }

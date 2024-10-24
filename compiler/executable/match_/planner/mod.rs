@@ -28,6 +28,7 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
+use crate::executable::match_::planner::function_plan::ExecutableFunctionRegistry;
 
 pub mod function_plan;
 pub mod match_executable;
@@ -39,6 +40,7 @@ pub fn compile(
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,
     variable_registry: Arc<VariableRegistry>,
+    function_registry: &ExecutableFunctionRegistry, // TODO: When we have actual function costs
     expressions: &HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &Statistics,
 ) -> MatchExecutable {

@@ -18,13 +18,12 @@ use crate::{
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
     read::{
-        pattern_executor::PatternExecutor, tabled_functions::TabledFunctions, TODO_REMOVE_create_executors_for_match,
+        pattern_executor::PatternExecutor, tabled_functions::TabledFunctions, SuspendPoint,
+        TODO_REMOVE_create_executors_for_match,
     },
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-use crate::read::SuspendPoint;
-
 
 pub struct MatchExecutor {
     entry: PatternExecutor,
@@ -72,7 +71,8 @@ impl MatchExecutor {
         if let Some(input) = self.input.take() {
             self.entry.prepare(FixedBatch::from(input.into_owned()));
         }
-        let batch = self.entry.compute_next_batch(context, interrupt, &mut self.tabled_functions, &mut self.suspend_points)?;
+        let batch =
+            self.entry.compute_next_batch(context, interrupt, &mut self.tabled_functions, &mut self.suspend_points)?;
         if batch.is_none() && !self.suspend_points.is_empty() {
             self.suspend_points.clear(); // I had an infinite collection, so I don't want to risk it.
             Err(ReadExecutionError::UnimplementedCyclicFunctions {})

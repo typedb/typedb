@@ -14,10 +14,14 @@ use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::pipeline::function_signature::FunctionID;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::read::{pattern_executor::PatternExecutor, step_executor::create_executors_for_pipeline_stages};
-use crate::read::pattern_executor::{BranchIndex, InstructionIndex};
-use crate::read::tabled_functions::TableIndex;
-use crate::row::MaybeOwnedRow;
+use crate::{
+    read::{
+        pattern_executor::{BranchIndex, InstructionIndex, PatternExecutor},
+        step_executor::create_executors_for_pipeline_stages,
+        tabled_functions::TableIndex,
+    },
+    row::MaybeOwnedRow,
+};
 
 mod collecting_stage_executor;
 pub mod expression_executor;
@@ -68,12 +72,20 @@ pub(crate) enum SuspendPoint {
 }
 
 impl SuspendPoint {
-    fn new_tabled_call(instruction_index: InstructionIndex, next_table_row: TableIndex, input_row: MaybeOwnedRow<'static>) -> Self {
-        Self::TabledCall(TabledCallSuspension { instruction_index, next_table_row, input_row } )
+    fn new_tabled_call(
+        instruction_index: InstructionIndex,
+        next_table_row: TableIndex,
+        input_row: MaybeOwnedRow<'static>,
+    ) -> Self {
+        Self::TabledCall(TabledCallSuspension { instruction_index, next_table_row, input_row })
     }
 
-    fn new_nested(instruction_index: InstructionIndex, branch_index: BranchIndex, input_row: MaybeOwnedRow<'static>) -> Self {
-        Self::Nested(NestedSuspension { instruction_index, branch_index, input_row } )
+    fn new_nested(
+        instruction_index: InstructionIndex,
+        branch_index: BranchIndex,
+        input_row: MaybeOwnedRow<'static>,
+    ) -> Self {
+        Self::Nested(NestedSuspension { instruction_index, branch_index, input_row })
     }
 }
 

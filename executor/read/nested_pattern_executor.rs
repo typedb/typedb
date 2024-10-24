@@ -103,10 +103,7 @@ impl NestedPatternResultMapper {
         }
     }
 
-    pub(super) fn map_output(
-        &mut self,
-        subquery_result: Option<FixedBatch>,
-    ) -> NestedPatternResult {
+    pub(super) fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> NestedPatternResult {
         match self {
             Self::Identity(mapper) => mapper.map_output(subquery_result),
             Self::Negation(mapper) => mapper.map_output(subquery_result),
@@ -137,7 +134,7 @@ impl NestedPatternResult {
 }
 
 pub(super) struct NegationMapper {
-    input: MaybeOwnedRow<'static>
+    input: MaybeOwnedRow<'static>,
 }
 pub(super) struct IdentityMapper;
 pub(super) struct InlinedFunctionMapper {
@@ -187,7 +184,12 @@ impl NestedPatternResultMapperTrait for IdentityMapper {
 }
 
 impl InlinedFunctionMapper {
-    pub(crate) fn new(input: MaybeOwnedRow<'static>, arguments: Vec<VariablePosition>, assigned: Vec<VariablePosition>, output_width: u32) -> Self {
+    pub(crate) fn new(
+        input: MaybeOwnedRow<'static>,
+        arguments: Vec<VariablePosition>,
+        assigned: Vec<VariablePosition>,
+        output_width: u32,
+    ) -> Self {
         Self { input, arguments, assigned, output_width }
     }
 }

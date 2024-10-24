@@ -43,8 +43,7 @@ impl Conjunction {
 
     pub fn captured_variables<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
         let self_scope = self.scope_id;
-        self
-            .referenced_variables()
+        self.referenced_variables()
             .filter(move |var| block_context.is_parent_scope(block_context.get_scope(var).unwrap(), self_scope))
     }
 
@@ -57,15 +56,15 @@ impl Conjunction {
     }
 
     pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.constraints.iter().flat_map(|constraint| constraint.ids()).chain(
-            self.nested_patterns.iter().flat_map(|nested| -> Box<dyn Iterator<Item = Variable>> {
+        self.constraints.iter().flat_map(|constraint| constraint.ids()).chain(self.nested_patterns.iter().flat_map(
+            |nested| -> Box<dyn Iterator<Item = Variable>> {
                 match nested {
                     NestedPattern::Disjunction(disjunction) => Box::new(disjunction.referenced_variables()),
                     NestedPattern::Negation(negation) => Box::new(negation.referenced_variables()),
                     NestedPattern::Optional(_) => todo!(),
                 }
-            })
-        )
+            },
+        ))
     }
 }
 

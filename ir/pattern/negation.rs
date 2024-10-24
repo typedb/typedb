@@ -5,6 +5,7 @@
  */
 
 use std::fmt;
+
 use answer::variable::Variable;
 
 use crate::{
