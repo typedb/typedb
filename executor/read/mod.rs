@@ -15,6 +15,9 @@ use ir::pipeline::function_signature::FunctionID;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::read::{pattern_executor::PatternExecutor, step_executor::create_executors_for_pipeline_stages};
+use crate::read::pattern_executor::{BranchIndex, InstructionIndex};
+use crate::read::tabled_functions::TableIndex;
+use crate::row::MaybeOwnedRow;
 
 mod collecting_stage_executor;
 pub mod expression_executor;
@@ -31,6 +34,7 @@ pub(super) fn TODO_REMOVE_create_executors_for_match(
     function_registry: &ExecutableFunctionRegistry,
     match_executable: &MatchExecutable,
 ) -> Result<PatternExecutor, ConceptReadError> {
+    eprintln!("--- Start creating executors for entry ---");
     let executors = step_executor::create_executors_for_match(
         snapshot,
         thing_manager,
@@ -38,6 +42,7 @@ pub(super) fn TODO_REMOVE_create_executors_for_match(
         match_executable,
         &mut HashSet::new(),
     )?;
+    eprintln!("--- End creating executors for entry ---");
     Ok(PatternExecutor::new(executors))
 }
 
@@ -57,4 +62,33 @@ pub(super) fn create_executors_for_pipeline(
         tmp__recursion_validation,
     )?;
     Ok(PatternExecutor::new(executors))
+}
+
+pub(crate) enum SuspendPoint {
+    TabledCall(TabledCallSuspension),
+    Nested(NestedSuspension),
+}
+
+impl SuspendPoint {
+    fn new_tabled_call(instruction_index: InstructionIndex, next_table_row: TableIndex, input_row: MaybeOwnedRow<'static>) -> Self {
+        Self::TabledCall(TabledCallSuspension { instruction_index, next_table_row, input_row } )
+    }
+
+    fn new_nested(instruction_index: InstructionIndex, branch_index: BranchIndex, input_row: MaybeOwnedRow<'static>) -> Self {
+        Self::Nested(NestedSuspension { instruction_index, branch_index, input_row } )
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct TabledCallSuspension {
+    pub(crate) instruction_index: InstructionIndex,
+    pub(crate) input_row: MaybeOwnedRow<'static>,
+    pub(crate) next_table_row: TableIndex,
+}
+
+#[derive(Debug)]
+pub(super) struct NestedSuspension {
+    pub(crate) instruction_index: InstructionIndex,
+    pub(crate) branch_index: BranchIndex,
+    pub(crate) input_row: MaybeOwnedRow<'static>,
 }

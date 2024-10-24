@@ -56,7 +56,7 @@ fn setup_common(schema: &str) -> Context {
     Context { _tmp_dir, storage, type_manager, function_manager, query_manager, thing_manager }
 }
 
-fn run_read_query(context: &Context, query: &str) -> Vec<Result<MaybeOwnedRow<'static>, PipelineExecutionError>> {
+fn run_read_query(context: &Context, query: &str) -> Result<Vec<MaybeOwnedRow<'static>>, PipelineExecutionError> {
     let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
     let match_ = typeql::parse_query(query).unwrap().into_pipeline();
     let pipeline = context
@@ -72,7 +72,7 @@ fn run_read_query(context: &Context, query: &str) -> Vec<Result<MaybeOwnedRow<'s
 
     let (mut iterator, _) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, PipelineExecutionError>> =
+    let rows: Result<Vec<MaybeOwnedRow<'static>>, PipelineExecutionError> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
 
     rows
@@ -117,7 +117,7 @@ fn function_compiles() {
                 $p isa person;
                 $z in get_ages($p);
         "#;
-        let rows = run_read_query(&context, query);
+        let rows = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 3);
     }
 
@@ -134,7 +134,7 @@ fn function_compiles() {
                 $p isa person;
                 $z in get_ages($p);
         "#;
-        let rows = run_read_query(&context, query);
+        let rows = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 1);
     }
 
@@ -151,7 +151,7 @@ fn function_compiles() {
                 $p isa person;
                 $z in get_ages($p);
         "#;
-        let rows = run_read_query(&context, query);
+        let rows = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 0);
     }
 
@@ -168,7 +168,7 @@ fn function_compiles() {
                 $p isa person;
                 $z in get_ages($p);
         "#;
-        let rows = run_read_query(&context, query);
+        let rows = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 0);
     }
 
@@ -185,7 +185,7 @@ fn function_compiles() {
                 $p isa person;
                 $z in get_ages($p);
         "#;
-        let rows = run_read_query(&context, query);
+        let rows = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 2);
     }
 
@@ -202,7 +202,7 @@ fn function_compiles() {
                 $p isa person;
                 $z in get_ages($p);
         "#;
-        let rows = run_read_query(&context, query);
+        let rows = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 3);
     }
 
@@ -219,7 +219,7 @@ fn function_compiles() {
                 $p isa person;
                 $z in get_ages($p);
         "#;
-        let rows = run_read_query(&context, query);
+        let rows = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 2);
     }
 }
@@ -267,7 +267,7 @@ fn function_binary() {
                 $name1 != $name2;
                 $same_age in same_age_check($p1, $p2);
         "#;
-        let rows = run_read_query(&context, query);
+        let rows = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 2); // Symmetrically Alice & Charlie
     }
 }
@@ -323,7 +323,7 @@ fn simple_tabled() {
                 $from isa node, has name "n1";
                 $to in reachable($from);
         "#;
-        let rows = run_read_query(&context, query);
+        let rows = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 2);
     }
 }

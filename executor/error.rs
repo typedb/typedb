@@ -19,5 +19,7 @@ typedb_error!(
         AdvancingIteratorTo(4, "Error moving iterator (by steps or seek) to target value.", ( source: ConceptReadError )),
         ExpressionEvaluate(5, "Error evaluating expression", ( source: ExpressionEvaluationError )),
         TabledFunctionLockError(6, "The table function lock was poisoned", function_id: FunctionID, arguments: MaybeOwnedRow<'static>),
+
+        UnimplementedCyclicFunctions(999, "A data-cycle was detected."),
     }
 );

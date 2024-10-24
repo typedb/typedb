@@ -23,11 +23,14 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
+use crate::read::SuspendPoint;
+
 
 pub struct MatchExecutor {
     entry: PatternExecutor,
     input: Option<MaybeOwnedRow<'static>>,
     tabled_functions: TabledFunctions,
+    suspend_points: Vec<SuspendPoint>,
 }
 
 impl MatchExecutor {
@@ -47,6 +50,7 @@ impl MatchExecutor {
             )?,
             tabled_functions: TabledFunctions::new(function_registry),
             input: Some(input.into_owned()),
+            suspend_points: Vec::new(),
         })
     }
 
@@ -68,7 +72,13 @@ impl MatchExecutor {
         if let Some(input) = self.input.take() {
             self.entry.prepare(FixedBatch::from(input.into_owned()));
         }
-        self.entry.compute_next_batch(context, interrupt, &mut self.tabled_functions)
+        let batch = self.entry.compute_next_batch(context, interrupt, &mut self.tabled_functions, &mut self.suspend_points)?;
+        if batch.is_none() && !self.suspend_points.is_empty() {
+            self.suspend_points.clear(); // I had an infinite collection, so I don't want to risk it.
+            Err(ReadExecutionError::UnimplementedCyclicFunctions {})
+        } else {
+            Ok(batch)
+        }
     }
 }
 
