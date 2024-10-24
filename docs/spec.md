@@ -2360,7 +2360,7 @@ _System property_:
 1. 🔶 Require that each update happens at most once, or fail the transaction.
 
 #### **Case HAS_UP**
-* 🔶 `$x has $B: $y;` updates $`b :_! r(B)(x:O_{r(B)})`$ to $`r(y) :_! r(B)(x:O_{r(B)})`$
+* 🔶 `$x has $B $y;` updates $`b :_! r(B)(x:O_{r(B)})`$ to $`r(y) :_! r(B)(x:O_{r(B)})`$
 
 _System property_:
 
