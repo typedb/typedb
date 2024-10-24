@@ -371,29 +371,9 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> TupleIterato
             Some((pos?.as_position()?, value))
         }
 
-        match tuple {
-            Tuple::Single(values) => {
-                for (pos, value) in zip_eq(self.positions.as_single(), values).filter_map(relevant_values) {
-                    row.set(pos, value.clone().into_owned());
-                }
-            }
-            Tuple::Pair(values) => {
-                for (pos, value) in zip_eq(self.positions.as_pair(), values).filter_map(relevant_values) {
-                    row.set(pos, value.clone().into_owned());
-                }
-            }
-            Tuple::Triple(values) => {
-                for (pos, value) in zip_eq(self.positions.as_triple(), values).filter_map(relevant_values) {
-                    row.set(pos, value.clone().into_owned());
-                }
-            }
-            Tuple::Quintuple(values) => {
-                for (pos, value) in zip_eq(self.positions.as_quintuple(), values).filter_map(relevant_values) {
-                    row.set(pos, value.clone().into_owned());
-                }
-            }
-            Tuple::Arbitrary() => {
-                todo!()
+        for (pos, value) in zip_eq(self.positions.positions(), tuple.values()).filter_map(relevant_values) {
+            if pos.as_usize() < row.len() { // TODO either keep this or used selected varables
+                row.set(pos, value.clone().into_owned());
             }
         }
     }
