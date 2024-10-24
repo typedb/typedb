@@ -14,6 +14,10 @@ rust_library(
     srcs = glob([
         "*.rs",
     ]),
+    deps = [
+        "//database",
+        "//storage"
+    ]
 )
 
 checkstyle_test(

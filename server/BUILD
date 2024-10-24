@@ -29,6 +29,7 @@ rust_library(
         "//ir",
         "//query",
         "//storage",
+        "//system",
         "//resource",
 
         "@vaticle_typeql//rust:typeql",

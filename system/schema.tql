@@ -11,8 +11,7 @@ define
 
     password sub credential,
         owns hash,
-        owns salt,
-        owns expiry_sec;
+        owns salt;
 
     user-credential sub relation,
         relates user,

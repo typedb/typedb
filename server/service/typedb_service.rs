@@ -8,12 +8,13 @@ use std::{net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
 
 use database::database_manager::DatabaseManager;
 use user::user_manager::UserManager;
+use system::concepts::User;
 use error::typedb_error;
 use tokio::sync::mpsc::channel;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
 use tracing::{event, Level};
-use typedb_protocol::{self, server_manager::all::{Req, Res}, transaction::{Client, Server}, Credential, credential::Password};
+use typedb_protocol::{self, server_manager::all::{Req, Res}, transaction::{Client, Server}};
 use uuid::Uuid;
 
 use crate::service::{

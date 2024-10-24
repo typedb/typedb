@@ -1,29 +1,42 @@
-use system::concepts::User;
-use system::repositories::UserRepository;
+use system::concepts::{Credential, User, Password};
+use system::repositories::{CredentialRepository, UserRepository};
+use system::transaction_helper::{read_transaction, write_transaction};
 
 #[derive(Debug)]
 pub struct UserManager {
-    user_repository: UserRepository
+    user_repository: UserRepository,
+    credential_repository: CredentialRepository
 }
 
 impl UserManager {
     pub fn new() -> Self {
-        todo!()
+        UserManager {
+            user_repository: UserRepository::new(),
+            credential_repository: CredentialRepository::new()
+        }
     }
 
     pub fn all(&self) -> Vec<User> {
-        todo!()
+        read_transaction(|tx| {
+            self.user_repository.list(&tx)
+        })
     }
 
     pub fn contains(&self, name: &str) -> bool {
-        todo!()
+        self.get(name).is_some()
     }
 
     pub fn get(&self, name: &str) -> Option<User> {
-        todo!()
+        read_transaction(|tx| {
+            self.user_repository.get(&tx, name)
+        })
     }
 
-    pub fn create(&self, name: &str) -> Result<User, i8> {
-        todo!()
+    pub fn create(&self, user: &User, credential: &Credential) {
+        write_transaction(|tx| {
+            self.user_repository.create(&tx, &user);
+            self.credential_repository.create(&tx, &user.name, credential);
+        })
     }
 }
+

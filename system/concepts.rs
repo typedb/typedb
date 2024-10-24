@@ -1,8 +1,30 @@
 pub struct User {
-    name: String,
-    credential: Credential
+    pub name: String
+}
+
+impl User {
+    pub fn new(name: String) -> Self {
+        Self { name }
+    }
 }
 
 pub enum Credential {
-    Password { hash: Vec<u8>, salt: Vec<u8> }
+    PasswordType { password: Password }
+}
+
+impl Credential {
+    pub fn new_password_type(password: Password) -> Credential {
+        Credential::PasswordType { password }
+    }
+}
+
+pub struct Password {
+    hash: Vec<u8>,
+    salt: Vec<u8>
+}
+
+impl Password {
+    pub fn new(hash: Vec<u8>, salt: Vec<u8>) -> Self {
+        todo!()
+    }
 }
