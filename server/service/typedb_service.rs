@@ -8,7 +8,7 @@ use std::{net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
 
 use database::database_manager::DatabaseManager;
 use user::user_manager::UserManager;
-use system::concepts::User;
+use system::concepts::{Credential, User};
 use error::typedb_error;
 use tokio::sync::mpsc::channel;
 use tokio_stream::wrappers::ReceiverStream;
@@ -184,25 +184,13 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::user_manager::create::Req>
     ) -> Result<Response<typedb_protocol::user_manager::create::Res>, Status> {
-        let message = request.into_inner();
-        match message.user {
-            Some(user) => {
-                match user.credential {
-                    Some(cred) => {
-                        match cred.credential {
-                            Some(cred2) => {
-                                todo!()
-                            }
-                            None => {
-                                todo!()
-                            }
-                        }
-                    }
-                    None => todo!("credential object must be supplied")
-                }
+        match users_create_req(request) {
+            Ok((user, credential)) => {
+                self.user_manager.create(&user, &credential);
+                todo!()
             }
-            None => {
-                todo!("user object must be supplied")
+            Err(code) => {
+                todo!()
             }
         }
     }
@@ -242,3 +230,27 @@ typedb_error!(
         DatabaseDoesNotExist(2, "Database '{name}' does not exist.", name: String),
     }
 );
+
+fn users_create_req(request: Request<typedb_protocol::user_manager::create::Req>) -> Result<(User, Credential), i8> {
+    let message = request.into_inner();
+    match message.user {
+        Some(user) => {
+            match user.credential {
+                Some(cred) => {
+                    match cred.credential {
+                        Some(cred2) => {
+                            todo!()
+                        }
+                        None => {
+                            todo!()
+                        }
+                    }
+                }
+                None => todo!("credential object must be supplied")
+            }
+        }
+        None => {
+            todo!("user object must be supplied")
+        }
+    }
+}
