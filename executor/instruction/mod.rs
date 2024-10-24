@@ -389,7 +389,7 @@ impl<T: Hkt> Checker<T> {
         for check in &self.checks {
             match check {
                 &CheckInstruction::TypeList { type_var, ref types } => {
-                    let maybe_type_extractor = dbg!(&self.extractors).get(dbg!(&type_var));
+                    let maybe_type_extractor = self.extractors.get(&type_var);
                     let type_: BoxExtractor<T> = match maybe_type_extractor {
                         Some(&subtype) => Box::new(subtype),
                         None => make_const_extractor(&CheckVertex::Variable(type_var), context, row),
@@ -638,10 +638,13 @@ impl<T: Hkt> Checker<T> {
                             VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
                         };
                         let rhs = rhs.clone()?;
-                        if !rhs.value_type().is_trivially_castable_to(&lhs.value_type()) {
+                        if rhs.value_type().is_trivially_castable_to(&lhs.value_type()) {
+                            Ok(cmp(&lhs, &rhs.cast(&lhs.value_type()).unwrap()))
+                        } else if lhs.value_type().is_trivially_castable_to(&rhs.value_type()) {
+                            Ok(cmp(&lhs.cast(&rhs.value_type()).unwrap(), &rhs))
+                        } else {
                             return Ok(false);
                         }
-                        Ok(cmp(&lhs, &rhs.cast(&lhs.value_type()).unwrap()))
                     }));
                 }
             }

@@ -123,15 +123,12 @@ pub trait LendingIterator: 'static {
         TryFlatMap::new(self, mapper)
     }
 
-    fn into_iter(mut self) -> impl Iterator<Item = Self::Item<'static>>
+    fn into_iter(self) -> IntoIter<Self>
     where
         Self: Sized,
         for<'a> Self::Item<'a>: 'static,
     {
-        iter::from_fn(move || unsafe {
-            // SAFETY: `Self::Item<'a>: 'static` implies that the item is independent from the iterator.
-            transmute::<Option<Self::Item<'_>>, Option<Self::Item<'static>>>(self.next())
-        })
+        IntoIter::new(self)
     }
 
     fn collect<B>(self) -> B
@@ -172,6 +169,31 @@ pub trait LendingIterator: 'static {
             count += 1;
         }
         count
+    }
+}
+
+pub struct IntoIter<I> {
+    iter: I,
+}
+
+impl<I> IntoIter<I> {
+    fn new(iter: I) -> Self {
+        Self { iter }
+    }
+}
+
+impl<I> Iterator for IntoIter<I>
+where
+    I: LendingIterator,
+    for<'a> I::Item<'a>: 'static,
+{
+    type Item = I::Item<'static>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        unsafe {
+            // SAFETY: `Self::Item<'a>: 'static` implies that the item is independent from the iterator.
+            transmute::<Option<I::Item<'_>>, Option<I::Item<'static>>>(self.iter.next())
+        }
     }
 }
 

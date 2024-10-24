@@ -6,7 +6,7 @@
 
 use std::{borrow::Cow, convert::Infallible, fmt, str::FromStr, sync::Arc};
 
-use chrono::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use concept::{
     error::ConceptWriteError,
     type_::{
@@ -289,7 +289,7 @@ impl Default for Label {
 }
 
 impl Label {
-    pub fn into_typedb(&self) -> TypeDBLabel<'static> {
+    pub fn into_typedb(self) -> TypeDBLabel<'static> {
         match &self.label_string.split_once(":") {
             None => TypeDBLabel::build(&self.label_string),
             Some((name, scope)) => TypeDBLabel::build_scoped(scope, name),
@@ -311,7 +311,7 @@ pub(crate) struct Kind {
 }
 
 impl Kind {
-    pub fn into_typedb(&self) -> TypeDBTypeKind {
+    pub fn into_typedb(self) -> TypeDBTypeKind {
         self.kind
     }
 }
@@ -336,7 +336,7 @@ pub(crate) struct ObjectKind {
 }
 
 impl ObjectKind {
-    pub fn into_typedb(&self) -> TypeDBTypeKind {
+    pub fn into_typedb(self) -> TypeDBTypeKind {
         self.kind
     }
 
@@ -401,7 +401,7 @@ pub(crate) enum ValueType {
 }
 
 impl ValueType {
-    pub fn into_typedb(&self, type_manager: &Arc<TypeManager>, snapshot: &impl ReadableSnapshot) -> TypeDBValueType {
+    pub fn into_typedb(self, type_manager: &Arc<TypeManager>, snapshot: &impl ReadableSnapshot) -> TypeDBValueType {
         match self {
             ValueType::Boolean => TypeDBValueType::Boolean,
             ValueType::Long => TypeDBValueType::Long,
@@ -815,7 +815,7 @@ impl FromStr for Vars {
     }
 }
 
-#[derive(Debug, Parameter)]
+#[derive(Clone, Copy, Debug, Parameter)]
 #[param(name = "ordering", regex = "(unordered|ordered)")]
 pub(crate) enum Ordering {
     Unordered,
@@ -823,7 +823,7 @@ pub(crate) enum Ordering {
 }
 
 impl Ordering {
-    pub fn into_typedb(&self) -> concept::type_::Ordering {
+    pub fn into_typedb(self) -> concept::type_::Ordering {
         match self {
             Ordering::Unordered => concept::type_::Ordering::Unordered,
             Ordering::Ordered => concept::type_::Ordering::Ordered,
@@ -842,7 +842,7 @@ impl FromStr for Ordering {
     }
 }
 
-#[derive(Debug, Parameter)]
+#[derive(Clone, Copy, Debug, Parameter)]
 #[param(name = "optional", regex = "(|\\?)")]
 pub(crate) enum Optional {
     False,
@@ -850,7 +850,7 @@ pub(crate) enum Optional {
 }
 
 impl Optional {
-    pub fn into_typedb(&self) -> bool {
+    pub fn into_typedb(self) -> bool {
         match &self {
             Optional::False => false,
             Optional::True => true,

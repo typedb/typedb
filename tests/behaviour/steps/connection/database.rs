@@ -4,12 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::Mutex;
-
 use cucumber::gherkin::Step;
 use futures::future::join_all;
 use macro_rules_attribute::apply;
-use server::{typedb, typedb::Server};
+use server::typedb::Server;
 
 use crate::{generic_step, params, util, Context};
 
