@@ -360,15 +360,6 @@ fn define_sub(
         let supertype_label = Label::parse_from(sub.supertype_label.ident.as_str());
         let supertype = resolve_typeql_type(snapshot, type_manager, &supertype_label)
             .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
-        if type_.kind() != supertype.kind() {
-            return Err(err_capability_kind_mismatch(
-                &label,
-                &supertype_label,
-                capability,
-                type_.kind(),
-                supertype.kind(),
-            ));
-        }
 
         match (&type_, supertype) {
             (TypeEnum::Entity(type_), TypeEnum::Entity(supertype)) => {
@@ -399,9 +390,17 @@ fn define_sub(
                 }
             }
             (TypeEnum::RoleType(_), TypeEnum::RoleType(_)) => {
-                return Err(err_unsupported_capability(&label, Kind::Role, capability));
+                unreachable!("RoleType's sub is controlled by specialise")
+            } // Turn into an error
+            (type_, supertype) => {
+                return Err(err_capability_kind_mismatch(
+                    &label,
+                    &supertype_label,
+                    capability,
+                    type_.kind(),
+                    supertype.kind(),
+                ))
             }
-            _ => unreachable!(),
         }
 
         define_sub_annotations(capability)?;
@@ -828,13 +827,13 @@ fn check_can_and_need_define_sub<'a, T: TypeAPI<'a>>(
         DefinableStatus::DoesNotExist => Ok(true),
         DefinableStatus::ExistsSame(_) => Ok(false),
         DefinableStatus::ExistsDifferent(existing) => Err(DefineError::TypeSubAlreadyDefinedButDifferent {
-            label: label.clone().into_owned(),
-            supertype_label: new_supertype
+            type_: label.clone().into_owned(),
+            supertype: new_supertype
                 .get_label(snapshot, type_manager)
                 .map_err(|source| DefineError::UnexpectedConceptRead { source })?
                 .clone()
                 .into_owned(),
-            existing_supertype_label: existing
+            existing_supertype: existing
                 .get_label(snapshot, type_manager)
                 .map_err(|source| DefineError::UnexpectedConceptRead { source })?
                 .clone()
@@ -909,6 +908,10 @@ fn err_capability_kind_mismatch(
     }
 }
 
+fn err_unsupported_capability(label: &Label<'static>, kind: Kind, capability: &TypeQLCapability) -> DefineError {
+    DefineError::TypeCannotHaveCapability { label: label.to_owned(), kind, capability: capability.clone() }
+}
+
 typedb_error!(
     pub DefineError(component = "Define execution", prefix = "DEX") {
         Unimplemented(1, "Unimplemented define functionality: {description}", description: String),
@@ -966,10 +969,10 @@ typedb_error!(
         // TODO: add source TypeQL fragment here so we get line number, ideally!
         TypeSubAlreadyDefinedButDifferent(
             13,
-            "Defining supertype of type '{label}' to '{supertype_label}' failed since it already has supertype '{existing_supertype_label}'. Try redefine instead?",
-            label: Label<'static>,
-            supertype_label: Label<'static>,
-            existing_supertype_label: Label<'static>
+            "Defining supertype of type '{type_}' to '{supertype}' failed since it already has supertype '{existing_supertype}'. Try redefine instead?",
+            type_: Label<'static>,
+            supertype: Label<'static>,
+            existing_supertype: Label<'static>
         ),
         // TODO: need the label that is the specialising type should be provided - need all 4: <x> relates <y> as <z> failed because <q> exists
         RelatesSpecialiseAlreadyDefinedButDifferent(
@@ -1079,7 +1082,3 @@ typedb_error!(
         ),
     }
 );
-
-fn err_unsupported_capability(label: &Label<'static>, kind: Kind, capability: &TypeQLCapability) -> DefineError {
-    DefineError::TypeCannotHaveCapability { label: label.to_owned(), kind, capability: capability.clone() }
-}

@@ -353,8 +353,8 @@ fn redefine_sub(
                 })?;
             }
             (TypeEnum::RoleType(_), TypeEnum::RoleType(_)) => {
-                return Err(err_unsupported_capability(&label, Kind::Role, capability));
-            }
+                unreachable!("RoleType's sub is controlled by specialise")
+            } // Turn into an error
             _ => unreachable!(),
         }
 

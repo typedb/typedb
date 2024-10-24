@@ -5,7 +5,7 @@
  */
 
 use concept::type_::annotation::{
-    Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationDistinct,
+    Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory, AnnotationDistinct,
     AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
 };
 use encoding::{graph::type_::Kind, value::value_type::ValueType};
@@ -50,6 +50,22 @@ pub fn translate_annotation(typeql_kind: &typeql::Annotation) -> Result<Annotati
             values.values.iter().map(translate_literal).collect::<Result<Vec<_>, _>>()?,
         )),
     })
+}
+
+pub fn translate_annotation_category(annotation_category: token::Annotation) -> AnnotationCategory {
+    match annotation_category {
+        token::Annotation::Abstract => AnnotationCategory::Abstract,
+        token::Annotation::Cardinality => AnnotationCategory::Cardinality,
+        token::Annotation::Cascade => AnnotationCategory::Cascade,
+        token::Annotation::Distinct => AnnotationCategory::Distinct,
+        token::Annotation::Independent => AnnotationCategory::Independent,
+        token::Annotation::Key => AnnotationCategory::Key,
+        token::Annotation::Range => AnnotationCategory::Range,
+        token::Annotation::Regex => AnnotationCategory::Regex,
+        token::Annotation::Subkey => todo!("Subkeys are not implemented"),
+        token::Annotation::Unique => AnnotationCategory::Unique,
+        token::Annotation::Values => AnnotationCategory::Values,
+    }
 }
 
 pub fn translate_kind(typeql_kind: token::Kind) -> Kind {

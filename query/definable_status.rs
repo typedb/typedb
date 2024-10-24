@@ -162,12 +162,12 @@ pub(crate) fn get_sub_status<'a, T: TypeAPI<'a>>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     type_: T,
-    new_supertype: T,
+    supertype: T,
 ) -> Result<DefinableStatus<T>, ConceptReadError> {
     let existing_supertype_opt = type_.get_supertype(snapshot, type_manager)?;
     get_some_or_return_does_not_exist!(existing_supertype = existing_supertype_opt);
 
-    Ok(if existing_supertype == new_supertype {
+    Ok(if existing_supertype == supertype {
         DefinableStatus::ExistsSame(None)
     } else {
         DefinableStatus::ExistsDifferent(existing_supertype)
@@ -178,12 +178,12 @@ pub(crate) fn get_value_type_status(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     attribute_type: AttributeType<'_>,
-    new_value_type: ValueType,
+    value_type: ValueType,
 ) -> Result<DefinableStatus<ValueType>, ConceptReadError> {
     let existing_value_type_opt = attribute_type.get_value_type_declared(snapshot, type_manager)?;
     get_some_or_return_does_not_exist!(existing_value_type = existing_value_type_opt);
 
-    Ok(if existing_value_type == new_value_type {
+    Ok(if existing_value_type == value_type {
         DefinableStatus::ExistsSame(None)
     } else {
         DefinableStatus::ExistsDifferent(existing_value_type)
@@ -195,14 +195,14 @@ pub(crate) fn get_relates_status(
     type_manager: &TypeManager,
     relation_type: RelationType<'static>,
     role_label: &Label<'_>,
-    new_ordering: Ordering,
+    ordering: Ordering,
 ) -> Result<DefinableStatus<(Relates<'static>, Ordering)>, ConceptReadError> {
     let existing_relates_opt =
         try_resolve_relates_declared(snapshot, type_manager, relation_type, role_label.name.as_str())?;
     get_some_or_return_does_not_exist!(existing_relates = existing_relates_opt);
 
     let existing_ordering = existing_relates.role().get_ordering(snapshot, type_manager)?;
-    Ok(if existing_ordering == new_ordering {
+    Ok(if existing_ordering == ordering {
         DefinableStatus::ExistsSame(Some((existing_relates, existing_ordering)))
     } else {
         DefinableStatus::ExistsDifferent((existing_relates, existing_ordering))
@@ -214,13 +214,13 @@ pub(crate) fn get_owns_status(
     type_manager: &TypeManager,
     object_type: ObjectType<'static>,
     attribute_type: AttributeType<'static>,
-    new_ordering: Ordering,
+    ordering: Ordering,
 ) -> Result<DefinableStatus<(Owns<'static>, Ordering)>, ConceptReadError> {
     let existing_owns_opt = try_resolve_owns_declared(snapshot, type_manager, object_type, attribute_type)?;
     get_some_or_return_does_not_exist!(existing_owns = existing_owns_opt);
 
     let existing_ordering = existing_owns.get_ordering(snapshot, type_manager)?;
-    Ok(if existing_ordering == new_ordering {
+    Ok(if existing_ordering == ordering {
         DefinableStatus::ExistsSame(Some((existing_owns, existing_ordering)))
     } else {
         DefinableStatus::ExistsDifferent((existing_owns, existing_ordering))

@@ -445,12 +445,21 @@ impl AttributeTypeAnnotation {
     // ValueTypeAnnotation is not declared and is a part of AttributeTypeAnnotation,
     // because we don't want to store annotations directly on value types.
     pub fn is_value_type_annotation(&self) -> bool {
-        match self {
-            | AttributeTypeAnnotation::Regex(_)
-            | AttributeTypeAnnotation::Range(_)
-            | AttributeTypeAnnotation::Values(_) => true,
+        let annotation: Annotation = self.clone().into();
+        Self::is_value_type_annotation_category(annotation.category())
+    }
 
-            | AttributeTypeAnnotation::Abstract(_) | AttributeTypeAnnotation::Independent(_) => false,
+    pub fn is_value_type_annotation_category(annotation_category: AnnotationCategory) -> bool {
+        match annotation_category {
+            AnnotationCategory::Regex | AnnotationCategory::Range | AnnotationCategory::Values => true,
+
+            AnnotationCategory::Abstract
+            | AnnotationCategory::Distinct
+            | AnnotationCategory::Independent
+            | AnnotationCategory::Unique
+            | AnnotationCategory::Key
+            | AnnotationCategory::Cardinality
+            | AnnotationCategory::Cascade => false,
         }
     }
 }
