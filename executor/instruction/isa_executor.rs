@@ -113,7 +113,8 @@ pub(super) type IsaBoundedSortedType =
 
 pub(super) type MapToThing<I, F> = Map<I, F, Result<AsHkt![Thing<'_>], ConceptReadError>>;
 pub(super) type ObjectEraseFn = for<'a> fn(Result<Object<'a>, ConceptReadError>) -> Result<Thing<'a>, ConceptReadError>;
-pub(super) type AttributeEraseFn = for<'a> fn(Result<Attribute<'a>, ConceptReadError>) -> Result<Thing<'a>, ConceptReadError>;
+pub(super) type AttributeEraseFn =
+    for<'a> fn(Result<Attribute<'a>, ConceptReadError>) -> Result<Thing<'a>, ConceptReadError>;
 
 pub(super) type IsaFilterFn = FilterFn<(AsHkt![Thing<'_>], Type)>;
 
