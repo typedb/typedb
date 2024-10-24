@@ -4,20 +4,32 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::BTreeSet, sync::Arc};
+use std::{collections::BTreeSet, iter, option, sync::Arc, vec};
 
 use answer::{Thing, Type};
 use compiler::{executable::match_::instructions::thing::IsaReverseInstruction, ExecutorVariable};
-use concept::error::ConceptReadError;
+use concept::{
+    error::ConceptReadError,
+    iterator::InstanceIterator,
+    thing::{
+        attribute::{Attribute, AttributeIterator},
+        object::Object,
+        thing_manager::ThingManager,
+    },
+};
 use ir::pattern::constraint::{Isa, IsaKind, SubKind};
-use lending_iterator::{AsHkt, LendingIterator};
+use itertools::Itertools;
+use lending_iterator::{
+    adaptors::{Chain, Flatten, Map, Zip},
+    AsHkt, AsLendingIterator, LendingIterator,
+};
 use storage::snapshot::ReadableSnapshot;
 
+use super::isa_executor::{AttributeEraseFn, MapToThing, ObjectEraseFn};
 use crate::{
     instruction::{
         isa_executor::{
-            instances_of_all_types_chained, instances_of_single_type, IsaFilterFn, IsaTupleIterator,
-            MultipleTypeIsaIterator, SingleTypeIsaIterator, EXTRACT_THING, EXTRACT_TYPE,
+            instances_of_single_type, IsaFilterFn, IsaTupleIterator, SingleTypeIsaIterator, EXTRACT_THING, EXTRACT_TYPE,
         },
         iterator::{SortedTupleIterator, TupleIterator},
         sub_reverse_executor::get_subtypes,
@@ -44,6 +56,25 @@ pub(crate) type IsaReverseBoundedSortedThing = IsaTupleIterator<MultipleTypeIsaI
 
 pub(crate) type IsaReverseUnboundedSortedTypeMerged = IsaTupleIterator<MultipleTypeIsaIterator>;
 pub(crate) type IsaReverseUnboundedSortedThingMerged = IsaTupleIterator<MultipleTypeIsaIterator>;
+
+type MultipleTypeIsaObjectIterator = Flatten<
+    AsLendingIterator<vec::IntoIter<ThingWithType<MapToThing<InstanceIterator<AsHkt![Object<'_>]>, ObjectEraseFn>>>>,
+>;
+type MultipleTypeIsaAttributeIterator = Flatten<
+    AsLendingIterator<
+        vec::IntoIter<
+            ThingWithType<MapToThing<AttributeIterator<InstanceIterator<AsHkt![Attribute<'_>]>>, AttributeEraseFn>>,
+        >,
+    >,
+>;
+
+pub(super) type MultipleTypeIsaIterator = Chain<MultipleTypeIsaObjectIterator, MultipleTypeIsaAttributeIterator>;
+
+type ThingWithType<I> = Map<
+    Zip<I, AsLendingIterator<iter::Cycle<option::IntoIter<Type>>>>,
+    for<'a> fn((Result<Thing<'a>, ConceptReadError>, Type)) -> Result<(Thing<'a>, Type), ConceptReadError>,
+    Result<(AsHkt![Thing<'_>], Type), ConceptReadError>,
+>;
 
 impl IsaReverseExecutor {
     pub(crate) fn new(
@@ -173,4 +204,72 @@ impl IsaReverseExecutor {
             }
         }
     }
+}
+
+fn with_type<I: for<'a> LendingIterator<Item<'a> = Result<Thing<'a>, ConceptReadError>>>(
+    iter: I,
+    type_: Type,
+) -> ThingWithType<I> {
+    iter.zip(AsLendingIterator::new(Some(type_).into_iter().cycle())).map(|(thing_res, ty)| match thing_res {
+        Ok(thing) => Ok((thing, ty)),
+        Err(err) => Err(err.clone()),
+    })
+}
+
+pub(super) fn instances_of_all_types_chained<'a>(
+    snapshot: &impl ReadableSnapshot,
+    thing_manager: &ThingManager,
+    thing_types: impl IntoIterator<Item = &'a Type>,
+    isa_kind: IsaKind,
+) -> Result<MultipleTypeIsaIterator, ConceptReadError> {
+    let type_manager = thing_manager.type_manager();
+    let thing_types: Vec<_> = thing_types
+        .into_iter()
+        .cloned()
+        .map(|type_| {
+            let types = match isa_kind {
+                IsaKind::Exact => vec![type_.clone()],
+                IsaKind::Subtype => get_subtypes(snapshot, type_manager, &type_, SubKind::Subtype)?,
+            };
+            Ok((type_, types))
+        })
+        .try_collect()?;
+
+    let (attribute_types, object_types) =
+        thing_types.into_iter().partition::<Vec<_>, _>(|(type_, _)| matches!(type_, Type::Attribute(_)));
+
+    let object_iters: Vec<_> = object_types
+        .into_iter()
+        .flat_map(|(type_, types)| {
+            let type_ = type_.clone();
+            types.into_iter().map(move |subtype| {
+                Ok(with_type(
+                    thing_manager
+                        .get_objects_in(snapshot, subtype.as_object_type())
+                        .map((|res| res.map(Thing::from)) as ObjectEraseFn),
+                    type_.clone(),
+                ))
+            })
+        })
+        .try_collect()?;
+    let object_iter: MultipleTypeIsaObjectIterator = AsLendingIterator::new(object_iters).flatten();
+
+    let attribute_iters: Vec<_> = attribute_types
+        .into_iter()
+        .flat_map(|(type_, types)| {
+            let type_ = type_.clone();
+            types.into_iter().map(move |subtype| {
+                Ok(with_type(
+                    thing_manager
+                        .get_attributes_in(snapshot, subtype.as_attribute_type())?
+                        .map((|res| res.map(Thing::Attribute)) as AttributeEraseFn),
+                    type_.clone(),
+                ))
+            })
+        })
+        .try_collect()?;
+    let attribute_iter: MultipleTypeIsaAttributeIterator = AsLendingIterator::new(attribute_iters).flatten();
+
+    let thing_iter: MultipleTypeIsaIterator = object_iter.chain(attribute_iter);
+    Ok(thing_iter)
 }

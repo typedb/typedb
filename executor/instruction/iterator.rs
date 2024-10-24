@@ -372,7 +372,8 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> TupleIterato
         }
 
         for (pos, value) in zip_eq(self.positions.positions(), tuple.values()).filter_map(relevant_values) {
-            if pos.as_usize() < row.len() { // TODO either keep this or used selected varables
+            if pos.as_usize() < row.len() {
+                // TODO either keep this or used selected varables
                 row.set(pos, value.clone().into_owned());
             }
         }
