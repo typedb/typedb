@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Borrow, cmp::Ordering, iter, marker::PhantomData, mem::transmute};
+use std::{borrow::Borrow, cmp::Ordering, marker::PhantomData, mem::transmute};
 
 use crate::{
     adaptors::{Chain, Filter, FilterMap, FlatMap, Flatten, Map, RepeatEach, TakeWhile, TryFilter, TryFlatMap, Zip},

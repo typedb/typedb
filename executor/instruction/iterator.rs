@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, iter::Iterator, ops::Range};
+use std::{cmp::Ordering, iter::Iterator};
 
 use answer::variable_value::VariableValue;
 use compiler::{

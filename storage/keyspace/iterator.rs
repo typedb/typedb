@@ -11,14 +11,12 @@ use lending_iterator::{
     adaptors::{SeekableMap, TakeWhile},
     LendingIterator, Peekable, Seekable,
 };
-use logger::result::ResultExt;
 use rocksdb::DB;
 
-use super::{
-    keyspace::{Keyspace, KeyspaceError},
-    raw_iterator,
+use crate::{
+    key_range::{KeyRange, RangeEnd},
+    keyspace::{raw_iterator, Keyspace, KeyspaceError},
 };
-use crate::key_range::{KeyRange, RangeEnd};
 
 pub struct KeyspaceRangeIterator {
     iterator: Peekable<
