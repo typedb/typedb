@@ -4,11 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
+
 use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
-
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use executor::{
@@ -59,7 +58,10 @@ fn setup_common(schema: &str) -> Context {
     Context { _tmp_dir, storage, type_manager, function_manager, query_manager, thing_manager }
 }
 
-fn run_read_query(context: &Context, query: &str) -> Result<(Vec<MaybeOwnedRow<'static>>, HashMap<String, VariablePosition>), PipelineExecutionError> {
+fn run_read_query(
+    context: &Context,
+    query: &str,
+) -> Result<(Vec<MaybeOwnedRow<'static>>, HashMap<String, VariablePosition>), PipelineExecutionError> {
     let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
     let match_ = typeql::parse_query(query).unwrap().into_pipeline();
     let pipeline = context

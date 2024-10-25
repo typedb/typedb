@@ -4,8 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::ops::DerefMut;
-use std::sync::Arc;
+use std::{ops::DerefMut, sync::Arc};
 
 use compiler::VariablePosition;
 use ir::pipeline::ParameterRegistry;
@@ -162,18 +161,36 @@ impl PatternExecutor {
                     let branch = &mut executors[index.0].unwrap_branch().get_branch(branch_index);
                     let suspend_point_len_before = suspend_point_accumulator.len();
                     let nested_context = if let Some(parameters) = &parameters_override {
-                        ExecutionContext::new(context.snapshot.clone(),  context.thing_manager.clone(), parameters.clone())
+                        ExecutionContext::new(
+                            context.snapshot.clone(),
+                            context.thing_manager.clone(),
+                            parameters.clone(),
+                        )
                     } else {
-                        ExecutionContext::new(context.snapshot.clone(),  context.thing_manager.clone(), context.parameters.clone())
+                        ExecutionContext::new(
+                            context.snapshot.clone(),
+                            context.thing_manager.clone(),
+                            context.parameters.clone(),
+                        )
                     };
-                    let unmapped =
-                        branch.batch_continue(&nested_context, interrupt, tabled_functions, suspend_point_accumulator)?;
+                    let unmapped = branch.batch_continue(
+                        &nested_context,
+                        interrupt,
+                        tabled_functions,
+                        suspend_point_accumulator,
+                    )?;
                     if suspend_point_accumulator.len() != suspend_point_len_before {
                         suspend_point_accumulator.push(SuspendPoint::new_nested(index, branch_index, input.clone()))
                     }
                     let (must_retry, mapped) = mapper.map_output(unmapped).into_parts();
                     if must_retry {
-                        control_stack.push(ControlInstruction::ExecuteNested { index, branch_index, mapper, input, parameters_override });
+                        control_stack.push(ControlInstruction::ExecuteNested {
+                            index,
+                            branch_index,
+                            mapper,
+                            input,
+                            parameters_override,
+                        });
                     } else {
                         branch.reset();
                     }
@@ -194,7 +211,11 @@ impl PatternExecutor {
                         TabledCallResult::MustExecutePattern(mut pattern_state_mutex_guard) => {
                             let TabledFunctionPatternExecutorState { pattern_executor, suspend_points, parameters } =
                                 pattern_state_mutex_guard.deref_mut();
-                            let context_with_function_parameters = ExecutionContext::new(context.snapshot.clone(), context.thing_manager.clone(), parameters.clone());
+                            let context_with_function_parameters = ExecutionContext::new(
+                                context.snapshot.clone(),
+                                context.thing_manager.clone(),
+                                parameters.clone(),
+                            );
                             let batch_opt = pattern_executor.batch_continue(
                                 &context_with_function_parameters,
                                 interrupt,
@@ -327,7 +348,13 @@ impl PatternExecutor {
                     parameters_override: None,
                 });
             }
-            NestedPatternExecutor::InlinedFunction { inner, arg_mapping, return_mapping, output_width, parameter_registry } => {
+            NestedPatternExecutor::InlinedFunction {
+                inner,
+                arg_mapping,
+                return_mapping,
+                output_width,
+                parameter_registry,
+            } => {
                 let mut mapper = NestedPatternResultMapper::InlinedFunction(InlinedFunctionMapper::new(
                     input.clone().into_owned(),
                     arg_mapping.clone(),

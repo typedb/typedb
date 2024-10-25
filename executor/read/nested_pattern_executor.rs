@@ -5,6 +5,7 @@
  */
 
 use std::sync::Arc;
+
 use answer::variable_value::VariableValue;
 use compiler::{executable::match_::planner::match_executable::FunctionCallStep, VariablePosition};
 use ir::pipeline::ParameterRegistry;
@@ -63,13 +64,17 @@ impl NestedPatternExecutor {
         Self::Disjunction { branches, selected_variables, output_width }
     }
 
-    pub(crate) fn new_inlined_function(inner: PatternExecutor, function_call: &FunctionCallStep, parameter_registry: Arc<ParameterRegistry>) -> Self {
+    pub(crate) fn new_inlined_function(
+        inner: PatternExecutor,
+        function_call: &FunctionCallStep,
+        parameter_registry: Arc<ParameterRegistry>,
+    ) -> Self {
         Self::InlinedFunction {
             inner,
             arg_mapping: function_call.arguments.clone(),
             return_mapping: function_call.assigned.clone(),
             output_width: function_call.output_width,
-            parameter_registry
+            parameter_registry,
         }
     }
 

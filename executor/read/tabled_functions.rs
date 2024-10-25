@@ -10,8 +10,7 @@ use std::{
 };
 
 use compiler::executable::{function::ExecutableReturn, match_::planner::function_plan::ExecutableFunctionRegistry};
-use ir::pipeline::function_signature::FunctionID;
-use ir::pipeline::ParameterRegistry;
+use ir::pipeline::{function_signature::FunctionID, ParameterRegistry};
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
@@ -55,7 +54,12 @@ impl TabledFunctions {
             };
             self.state.insert(
                 call_key.clone(),
-                Arc::new(TabledFunctionState::build_and_prepare(pattern_executor, &call_key.arguments, width, function.parameter_registry.clone())),
+                Arc::new(TabledFunctionState::build_and_prepare(
+                    pattern_executor,
+                    &call_key.arguments,
+                    width,
+                    function.parameter_registry.clone(),
+                )),
             );
         }
         Ok(self.state.get(call_key).unwrap().clone())
@@ -75,14 +79,19 @@ pub(crate) struct TabledFunctionPatternExecutorState {
 }
 
 impl TabledFunctionState {
-    fn build_and_prepare(mut pattern_executor: PatternExecutor, args: &MaybeOwnedRow<'_>, answer_width: u32, parameters: Arc<ParameterRegistry>) -> Self {
+    fn build_and_prepare(
+        mut pattern_executor: PatternExecutor,
+        args: &MaybeOwnedRow<'_>,
+        answer_width: u32,
+        parameters: Arc<ParameterRegistry>,
+    ) -> Self {
         pattern_executor.prepare(FixedBatch::from(args.as_reference()));
         Self {
             table: RwLock::new(AnswerTable { answers: Vec::new(), width: answer_width }),
             executor_state: Mutex::new(TabledFunctionPatternExecutorState {
                 pattern_executor,
                 suspend_points: Vec::new(),
-                parameters
+                parameters,
             }),
         }
     }

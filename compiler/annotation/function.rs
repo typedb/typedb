@@ -20,14 +20,13 @@ use encoding::{
 use ir::{
     pipeline::{
         function::{Function, FunctionBody, ReturnOperation},
-        VariableRegistry,
+        ParameterRegistry, VariableRegistry,
     },
     translation::tokens::translate_value_type,
 };
 use itertools::Either;
 use storage::snapshot::ReadableSnapshot;
 use typeql::{schema::definable::function::SingleSelector, type_::NamedType, TypeRef, TypeRefAny};
-use ir::pipeline::ParameterRegistry;
 
 use crate::{
     annotation::{

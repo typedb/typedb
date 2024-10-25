@@ -13,10 +13,9 @@ use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern},
-    pipeline::function_signature::FunctionID,
+    pipeline::{function_signature::FunctionID, ParameterRegistry},
 };
 use typeql::schema::definable::function::SingleSelector;
-use ir::pipeline::ParameterRegistry;
 
 use crate::{
     annotation::{
@@ -70,7 +69,13 @@ pub(crate) fn compile_function(
     )?;
 
     let returns = compile_return_operation(&executable_stages, return_)?;
-    Ok(ExecutableFunction { executable_stages, argument_positions, returns, parameter_registry: Arc::new(parameter_registry), is_tabled })
+    Ok(ExecutableFunction {
+        executable_stages,
+        argument_positions,
+        returns,
+        parameter_registry: Arc::new(parameter_registry),
+        is_tabled,
+    })
 }
 
 fn compile_return_operation(
