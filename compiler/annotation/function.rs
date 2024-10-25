@@ -20,7 +20,7 @@ use encoding::{
 use ir::{
     pipeline::{
         function::{Function, FunctionBody, ReturnOperation},
-        VariableRegistry,
+        ParameterRegistry, VariableRegistry,
     },
     translation::tokens::translate_value_type,
 };
@@ -46,6 +46,7 @@ pub enum FunctionParameterAnnotation {
 #[derive(Debug, Clone)]
 pub struct AnnotatedFunction {
     pub variable_registry: VariableRegistry,
+    pub parameter_registry: ParameterRegistry,
     pub arguments: Vec<Variable>,
     pub stages: Vec<AnnotatedStage>,
     pub return_: AnnotatedFunctionReturn,
@@ -288,6 +289,7 @@ fn annotate_function_impl(
     )?;
     Ok(AnnotatedFunction {
         variable_registry: context.variable_registry.clone(),
+        parameter_registry: context.parameters.clone(),
         arguments: arguments.clone(),
         stages,
         return_,

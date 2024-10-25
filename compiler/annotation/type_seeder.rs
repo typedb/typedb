@@ -485,7 +485,17 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                     edges.push(self.seed_edge(constraint, &player_role, vertices)?);
                 }
                 Constraint::Has(has) => edges.push(self.seed_edge(constraint, has, vertices)?),
-                Constraint::Comparison(cmp) => edges.push(self.seed_edge(constraint, cmp, vertices)?),
+                Constraint::Comparison(cmp) => {
+                    let both_variables_annotatable = cmp.left().is_variable()
+                        && cmp.right().is_variable()
+                        && cmp.ids().all(|variable| {
+                            let category = self.variable_registry.get_variable_category(variable);
+                            category.unwrap_or(VariableCategory::Value) == VariableCategory::Attribute
+                        });
+                    if both_variables_annotatable {
+                        edges.push(self.seed_edge(constraint, cmp, vertices)?)
+                    }
+                }
                 Constraint::Owns(owns) => edges.push(self.seed_edge(constraint, owns, vertices)?),
                 Constraint::Relates(relates) => edges.push(self.seed_edge(constraint, relates, vertices)?),
                 Constraint::Plays(plays) => edges.push(self.seed_edge(constraint, plays, vertices)?),
