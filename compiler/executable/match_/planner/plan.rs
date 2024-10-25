@@ -1026,7 +1026,7 @@ impl ConjunctionPlan<'_> {
         match constraint {
             ConstraintVertex::TypeList(type_list) => {
                 let var = type_list.constraint().var();
-                let instruction = type_list.lower_check(self.type_annotations);
+                let instruction = type_list.lower_check();
                 match_builder.push_check(&[var], instruction.map(match_builder.position_mapping()));
             }
 
