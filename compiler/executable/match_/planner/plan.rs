@@ -743,7 +743,11 @@ impl ConjunctionPlan<'_> {
                         .clone() // FIXME
                         .plan(match_builder.position_mapping().keys().filter(|&&v| v != variable).copied())
                         .lower(
-                            match_builder.current_outputs.iter().copied(),
+                            match_builder
+                                .produced_so_far
+                                .iter()
+                                .filter(|&v| match_builder.current_outputs.contains(v))
+                                .copied(),
                             match_builder.position_mapping(),
                             variable_registry,
                         );

@@ -88,9 +88,7 @@ impl TabledFunctionState {
         if !batch.is_empty() {
             let mut deduplicated_batch = FixedBatch::new(batch.get_row(0).len() as u32);
             let mut table = self.table.write().unwrap();
-            let mut batch_iter = batch.into_iterator();
-            while let Some(row_result) = batch_iter.next() {
-                let row = row_result.unwrap();
+            for row in batch {
                 if table.try_add_row(row.as_reference()) {
                     deduplicated_batch.append(|mut write_to| write_to.copy_from_row(row))
                 }

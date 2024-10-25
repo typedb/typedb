@@ -156,7 +156,12 @@ pub(crate) fn create_executors_for_match(
                         Ok(PatternExecutor::new(executors))
                     })
                     .try_collect()?;
-                let inner_step = NestedPatternExecutor::new_disjunction(branches).into();
+                let inner_step = NestedPatternExecutor::new_disjunction(
+                    branches,
+                    step.selected_variables.clone(),
+                    step.output_width,
+                )
+                .into();
                 // Hack: wrap it in a distinct
                 let step =
                     StepExecutors::CollectingStage(CollectingStageExecutor::new_distinct(PatternExecutor::new(vec![
@@ -203,7 +208,7 @@ pub(super) fn create_executors_for_pipeline_stages(
     function_registry: &ExecutableFunctionRegistry,
     executable_stages: &Vec<ExecutableStage>,
     at_index: usize,
-    tmp__recursion_validation: &mut HashSet<FunctionID>,
+    tmp_recursion_validation: &mut HashSet<FunctionID>,
 ) -> Result<Vec<StepExecutors>, ConceptReadError> {
     let mut previous_stage_steps = if at_index > 0 {
         create_executors_for_pipeline_stages(
@@ -212,7 +217,7 @@ pub(super) fn create_executors_for_pipeline_stages(
             function_registry,
             executable_stages,
             at_index - 1,
-            tmp__recursion_validation,
+            tmp_recursion_validation,
         )?
     } else {
         vec![]
@@ -225,7 +230,7 @@ pub(super) fn create_executors_for_pipeline_stages(
                 thing_manager,
                 function_registry,
                 match_executable,
-                tmp__recursion_validation,
+                tmp_recursion_validation,
             )?;
             previous_stage_steps.append(&mut match_stages);
             Ok(previous_stage_steps)

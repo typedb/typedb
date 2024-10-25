@@ -17,11 +17,13 @@ use compiler::{
     },
     executable::match_::{
         instructions::{thing::IsaInstruction, CheckInstruction, CheckVertex, ConstraintInstruction, Inputs},
-        planner::match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
+        planner::{
+            function_plan::ExecutableFunctionRegistry,
+            match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
+        },
     },
     ExecutorVariable, VariablePosition,
 };
-use compiler::executable::match_::planner::function_plan::ExecutableFunctionRegistry;
 use concept::type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{

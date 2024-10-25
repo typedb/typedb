@@ -51,7 +51,7 @@ pub struct InitialIterator {
 
 impl InitialIterator {
     fn new(batch: FixedBatch) -> Self {
-        Self { iterator: batch.into_iterator(), index: 0 }
+        Self { iterator: FixedBatchRowIterator::new(Ok(batch)), index: 0 }
     }
 }
 

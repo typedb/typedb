@@ -17,8 +17,8 @@ use crate::{
     read::{
         collecting_stage_executor::CollectedStageIterator,
         nested_pattern_executor::{
-            IdentityMapper, InlinedFunctionMapper, LimitMapper, NegationMapper, NestedPatternExecutor,
-            NestedPatternResultMapper, OffsetMapper,
+            InlinedFunctionMapper, LimitMapper, NegationMapper, NestedPatternExecutor, NestedPatternResultMapper,
+            OffsetMapper, SelectMapper,
         },
         step_executor::StepExecutors,
         tabled_call_executor::TabledCallResult,
@@ -233,10 +233,8 @@ impl PatternExecutor {
                 }
                 ControlInstruction::ReshapeForReturn { index, to_reshape: batch } => {
                     let return_positions = executors[index.0].unwrap_reshape();
-                    let mut batch_iter = batch.into_iterator();
                     let mut output_batch = FixedBatch::new(return_positions.len() as u32);
-                    while let Some(row_result) = batch_iter.next() {
-                        let row = row_result.unwrap();
+                    for row in batch {
                         output_batch.append(|mut write_to| {
                             return_positions.iter().enumerate().for_each(|(dst, src)| {
                                 write_to.set(VariablePosition::new(dst as u32), row.get(src.clone()).clone().to_owned())
@@ -269,12 +267,12 @@ impl PatternExecutor {
                 }
                 StepExecutors::Nested(_) => self.control_stack.push(ControlInstruction::MapRowBatchToRowForNested {
                     index: next_executor_index,
-                    iterator: batch.into_iterator(),
+                    iterator: FixedBatchRowIterator::new(Ok(batch)),
                 }),
                 StepExecutors::TabledCall(_) => {
                     self.control_stack.push(ControlInstruction::MapRowBatchToRowForNested {
                         index: next_executor_index,
-                        iterator: batch.into_iterator(),
+                        iterator: FixedBatchRowIterator::new(Ok(batch)),
                     });
                 }
                 StepExecutors::CollectingStage(collecting_stage) => {
@@ -282,21 +280,21 @@ impl PatternExecutor {
                     self.control_stack.push(ControlInstruction::CollectingStage { index: next_executor_index });
                 }
                 StepExecutors::ReshapeForReturn(_) => {
-                    self.control_stack.push(ControlInstruction::ReshapeForReturn {
-                        index: next_executor_index,
-                        to_reshape: batch,
-                    });
+                    self.control_stack
+                        .push(ControlInstruction::ReshapeForReturn { index: next_executor_index, to_reshape: batch });
                 }
             }
         }
         Ok(())
     }
+
     fn prepare_and_push_nested_pattern(&mut self, index: ExecutorIndex, input: MaybeOwnedRow<'_>) {
         let executor = self.executors[index.0].unwrap_branch();
         match executor {
-            NestedPatternExecutor::Disjunction { branches } => {
+            NestedPatternExecutor::Disjunction { branches, selected_variables, output_width } => {
                 for (branch_index, branch) in branches.iter_mut().enumerate() {
-                    let mut mapper = NestedPatternResultMapper::Identity(IdentityMapper);
+                    let mut mapper =
+                        NestedPatternResultMapper::Select(SelectMapper::new(selected_variables.clone(), *output_width));
                     let mapped_input = mapper.map_input(&input);
                     branch.prepare(FixedBatch::from(mapped_input));
                     self.control_stack.push(ControlInstruction::ExecuteNested {
