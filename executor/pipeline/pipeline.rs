@@ -33,7 +33,6 @@ use crate::{
         stage::{ExecutionContext, ReadPipelineStage, StageAPI, WritePipelineStage},
         PipelineExecutionError,
     },
-    read::tabled_functions::TabledFunctions,
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };

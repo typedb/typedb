@@ -25,7 +25,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::read::{
     collecting_stage_executor::CollectingStageExecutor, immediate_executor::ImmediateExecutor,
     nested_pattern_executor::NestedPatternExecutor, pattern_executor::PatternExecutor,
-    tabled_functions::TabledCallExecutor,
+    tabled_call_executor::TabledCallExecutor,
 };
 
 pub(super) enum StepExecutors {
@@ -73,7 +73,7 @@ impl StepExecutors {
     }
 }
 
-pub(super) fn create_executors_for_match(
+pub(crate) fn create_executors_for_match(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
@@ -170,7 +170,7 @@ pub(super) fn create_executors_for_match(
     Ok(steps)
 }
 
-pub(super) fn create_executors_for_function(
+pub(crate) fn create_executors_for_function(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,

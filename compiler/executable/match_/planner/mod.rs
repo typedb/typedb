@@ -19,6 +19,7 @@ use crate::{
     executable::match_::{
         instructions::{CheckInstruction, ConstraintInstruction},
         planner::{
+            function_plan::ExecutableFunctionRegistry,
             match_executable::{
                 AssignmentStep, CheckStep, DisjunctionStep, ExecutionStep, FunctionCallStep, IntersectionStep,
                 MatchExecutable, NegationStep,
@@ -28,7 +29,6 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
-use crate::executable::match_::planner::function_plan::ExecutableFunctionRegistry;
 
 pub mod function_plan;
 pub mod match_executable;

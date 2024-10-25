@@ -158,7 +158,7 @@ impl PatternExecutor {
                     let executor = executors[index.0].unwrap_tabled_call();
                     let call_key = executor.active_call_key().unwrap();
                     let function_state = tabled_functions.get_or_create_function_state(context, call_key)?;
-                    let found = match executor.batch_continue_or_function_pattern(&function_state) {
+                    let found = match executor.read_table_or_get_executor(&function_state) {
                         Either::Left(batch) => Some(batch),
                         Either::Right(pattern_mutex) => match pattern_mutex.try_lock() {
                             Ok(mut executor_state) => {
