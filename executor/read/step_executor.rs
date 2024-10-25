@@ -8,7 +8,7 @@ use std::{collections::HashSet, sync::Arc};
 
 use compiler::{
     executable::{
-        function::{ExecutableFunction, ExecutableReturn},
+        function::{ExecutableFunction, ExecutableReturn, FunctionTablingType},
         match_::planner::{
             function_plan::ExecutableFunctionRegistry,
             match_executable::{ExecutionStep, MatchExecutable},
@@ -20,7 +20,6 @@ use compiler::{
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::pipeline::function_signature::FunctionID;
 use itertools::Itertools;
-use compiler::executable::function::FunctionTablingType;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::read::{

@@ -14,14 +14,13 @@ use ir::{pattern::ParameterID, pipeline::VariableRegistry};
 use crate::{
     annotation::fetch::{AnnotatedFetch, AnnotatedFetchListSubFetch, AnnotatedFetchObject, AnnotatedFetchSome},
     executable::{
-        function::{compile_function, ExecutableFunction},
+        function::{compile_function, ExecutableFunction, FunctionTablingType},
         match_::planner::function_plan::ExecutableFunctionRegistry,
         pipeline::{compile_stages_and_fetch, ExecutableStage},
         ExecutableCompilationError,
     },
     VariablePosition,
 };
-use crate::executable::function::FunctionTablingType;
 
 pub struct ExecutableFetch {
     pub object_instruction: FetchObjectInstruction,
@@ -107,7 +106,9 @@ fn compile_some(
         }
         AnnotatedFetchSome::SingleFunction(function) => {
             let compiled = compile_function(statistics, available_functions, function, FunctionTablingType::Untabled)
-                .map_err(|err| FetchCompilationError::AnonymousFunctionCompilation { typedb_source: Box::new(err) })?;
+                .map_err(|err| FetchCompilationError::AnonymousFunctionCompilation {
+                typedb_source: Box::new(err),
+            })?;
             Ok(FetchSomeInstruction::SingleFunction(compiled))
         }
         AnnotatedFetchSome::Object(object) => {
@@ -116,7 +117,9 @@ fn compile_some(
         }
         AnnotatedFetchSome::ListFunction(function) => {
             let compiled = compile_function(statistics, available_functions, function, FunctionTablingType::Untabled)
-                .map_err(|err| FetchCompilationError::AnonymousFunctionCompilation { typedb_source: Box::new(err) })?;
+                .map_err(|err| FetchCompilationError::AnonymousFunctionCompilation {
+                typedb_source: Box::new(err),
+            })?;
             Ok(FetchSomeInstruction::ListFunction(compiled))
         }
         AnnotatedFetchSome::ListSubFetch(sub_fetch) => {

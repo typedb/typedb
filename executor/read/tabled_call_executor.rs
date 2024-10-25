@@ -109,7 +109,7 @@ impl TabledCallExecutor {
             match tabled_function_state.executor_state.try_lock() {
                 Ok(executor_mutex_guard) => TabledCallResult::MustExecutePattern(executor_mutex_guard),
                 Err(TryLockError::WouldBlock) => Suspend,
-                Err(TryLockError::Poisoned(_)) => panic!("The mutex on a tabled function was poisoned")
+                Err(TryLockError::Poisoned(_)) => panic!("The mutex on a tabled function was poisoned"),
             }
         }
     }
