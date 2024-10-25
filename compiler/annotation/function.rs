@@ -27,6 +27,7 @@ use ir::{
 use itertools::Either;
 use storage::snapshot::ReadableSnapshot;
 use typeql::{schema::definable::function::SingleSelector, type_::NamedType, TypeRef, TypeRefAny};
+use ir::pipeline::ParameterRegistry;
 
 use crate::{
     annotation::{
@@ -46,6 +47,7 @@ pub enum FunctionParameterAnnotation {
 #[derive(Debug, Clone)]
 pub struct AnnotatedFunction {
     pub variable_registry: VariableRegistry,
+    pub parameter_registry: ParameterRegistry,
     pub arguments: Vec<Variable>,
     pub stages: Vec<AnnotatedStage>,
     pub return_: AnnotatedFunctionReturn,
@@ -288,6 +290,7 @@ fn annotate_function_impl(
     )?;
     Ok(AnnotatedFunction {
         variable_registry: context.variable_registry.clone(),
+        parameter_registry: context.parameters.clone(),
         arguments: arguments.clone(),
         stages,
         return_,

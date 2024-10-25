@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::HashMap;
 use std::sync::Arc;
+use answer::variable_value::VariableValue;
+use compiler::VariablePosition;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
@@ -56,7 +59,7 @@ fn setup_common(schema: &str) -> Context {
     Context { _tmp_dir, storage, type_manager, function_manager, query_manager, thing_manager }
 }
 
-fn run_read_query(context: &Context, query: &str) -> Result<Vec<MaybeOwnedRow<'static>>, PipelineExecutionError> {
+fn run_read_query(context: &Context, query: &str) -> Result<(Vec<MaybeOwnedRow<'static>>, HashMap<String, VariablePosition>), PipelineExecutionError> {
     let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
     let match_ = typeql::parse_query(query).unwrap().into_pipeline();
     let pipeline = context
@@ -69,13 +72,13 @@ fn run_read_query(context: &Context, query: &str) -> Result<Vec<MaybeOwnedRow<'s
             &match_,
         )
         .unwrap();
-
+    let rows_positions = pipeline.rows_positions().unwrap().clone();
     let (mut iterator, _) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
-    let rows: Result<Vec<MaybeOwnedRow<'static>>, PipelineExecutionError> =
+    let result: Result<Vec<MaybeOwnedRow<'static>>, PipelineExecutionError> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
 
-    rows
+    result.map(move |rows| (rows, rows_positions))
 }
 
 #[test]
@@ -117,7 +120,7 @@ fn function_compiles() {
                 $p isa person;
                 $z in get_ages($p);
         "#;
-        let rows = run_read_query(&context, query).unwrap();
+        let (rows, _) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 3);
     }
 
@@ -134,7 +137,7 @@ fn function_compiles() {
                 $p isa person;
                 $z in get_ages($p);
         "#;
-        let rows = run_read_query(&context, query).unwrap();
+        let (rows, _) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 1);
     }
 
@@ -151,7 +154,7 @@ fn function_compiles() {
                 $p isa person;
                 $z in get_ages($p);
         "#;
-        let rows = run_read_query(&context, query).unwrap();
+        let (rows, _) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 0);
     }
 
@@ -168,7 +171,7 @@ fn function_compiles() {
                 $p isa person;
                 $z in get_ages($p);
         "#;
-        let rows = run_read_query(&context, query).unwrap();
+        let (rows, _) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 0);
     }
 
@@ -185,7 +188,7 @@ fn function_compiles() {
                 $p isa person;
                 $z in get_ages($p);
         "#;
-        let rows = run_read_query(&context, query).unwrap();
+        let (rows, _) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 2);
     }
 
@@ -202,7 +205,7 @@ fn function_compiles() {
                 $p isa person;
                 $z in get_ages($p);
         "#;
-        let rows = run_read_query(&context, query).unwrap();
+        let (rows, _) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 3);
     }
 
@@ -219,7 +222,7 @@ fn function_compiles() {
                 $p isa person;
                 $z in get_ages($p);
         "#;
-        let rows = run_read_query(&context, query).unwrap();
+        let (rows, _) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 2);
     }
 }
@@ -267,7 +270,7 @@ fn function_binary() {
                 $name1 != $name2;
                 $same_age in same_age_check($p1, $p2);
         "#;
-        let rows = run_read_query(&context, query).unwrap();
+        let (rows, _) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 2); // Symmetrically Alice & Charlie
     }
 }
@@ -323,7 +326,77 @@ fn simple_tabled() {
                 $from isa node, has name "n1";
                 $to in reachable($from);
         "#;
-        let rows = run_read_query(&context, query).unwrap();
+        let (rows, _) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 2);
+    }
+}
+
+#[test]
+fn fibonacci() {
+    let custom_schema = r#"define
+        attribute number @independent, value long;
+    "#;
+    let context = setup_common(custom_schema);
+    let snapshot = context.storage.clone().open_snapshot_write();
+    let insert_query_str = r#"insert
+        $n1   1 isa number;
+        $n2   2 isa number;
+        $n3   3 isa number;
+        $n4   4 isa number;
+        $n5   5 isa number;
+        $n6   6 isa number;
+        $n7   7 isa number;
+        $n8   8 isa number;
+        $n9   9 isa number;
+        $n10 10 isa number;
+        $n11 11 isa number;
+        $n12 12 isa number;
+        $n13 13 isa number;
+        $n14 14 isa number;
+        $n15 15 isa number;
+    "#;
+    let insert_query = typeql::parse_query(insert_query_str).unwrap().into_pipeline();
+    let insert_pipeline = context
+        .query_manager
+        .prepare_write_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            &context.function_manager,
+            &insert_query,
+        )
+        .unwrap();
+    let (mut iterator, ExecutionContext { snapshot, .. }) =
+        insert_pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+
+    assert_matches!(iterator.next(), Some(Ok(_)));
+    assert_matches!(iterator.next(), None);
+    let snapshot = Arc::into_inner(snapshot).unwrap();
+    snapshot.commit().unwrap();
+
+    {
+        let query = r#"
+            with
+            fun ith_fibonacci_number($i: long) -> { long }:
+            match
+                $ret isa number;
+                { $i == 0; $ret == 1; $ret isa number; } or
+                { $i == 1; $ret == 1; $ret isa number; } or
+                { $i > 1;
+                     $i1 = $i - 1;
+                     $i2 = $i - 2;
+                     $combined = ith_fibonacci_number($i1) +  ith_fibonacci_number($i2);
+                     $ret == $combined;
+                     $ret isa number;
+                };
+            return { $ret };
+
+            match
+                $f_6 = ith_fibonacci_number(6);
+        "#;
+        let (rows, positions) = run_read_query(&context, query).unwrap();
+        assert_eq!(rows.len(), 1);
+        let f_6_position = positions.get("f_6").unwrap().clone();
+        assert_eq!(rows[0].get(f_6_position).as_value().clone().unwrap_long(), 13);
     }
 }

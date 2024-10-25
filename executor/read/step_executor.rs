@@ -136,7 +136,7 @@ pub(crate) fn create_executors_for_match(
                     )?;
                     let inner = PatternExecutor::new(inner_executors);
                     tmp__recursion_validation.remove(&function_call.function_id);
-                    let step = NestedPatternExecutor::new_inlined_function(inner, function_call);
+                    let step = NestedPatternExecutor::new_inlined_function(inner, function_call, function.parameter_registry.clone());
                     steps.push(step.into())
                 }
             }

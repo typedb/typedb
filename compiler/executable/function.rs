@@ -16,6 +16,7 @@ use ir::{
     pipeline::function_signature::FunctionID,
 };
 use typeql::schema::definable::function::SingleSelector;
+use ir::pipeline::ParameterRegistry;
 
 use crate::{
     annotation::{
@@ -36,6 +37,7 @@ pub struct ExecutableFunction {
     pub argument_positions: HashMap<Variable, VariablePosition>,
     pub returns: ExecutableReturn,
     pub is_tabled: FunctionTablingType,
+    pub parameter_registry: Arc<ParameterRegistry>,
     // pub plan_cost: f64, // TODO: Where do we fit this in?
 }
 
@@ -58,7 +60,7 @@ pub(crate) fn compile_function(
     function: AnnotatedFunction,
     is_tabled: FunctionTablingType,
 ) -> Result<ExecutableFunction, ExecutableCompilationError> {
-    let AnnotatedFunction { variable_registry, arguments, stages, return_ } = function;
+    let AnnotatedFunction { variable_registry, parameter_registry, arguments, stages, return_ } = function;
     let (argument_positions, executable_stages) = compile_pipeline_stages(
         statistics,
         Arc::new(variable_registry),
@@ -68,7 +70,7 @@ pub(crate) fn compile_function(
     )?;
 
     let returns = compile_return_operation(&executable_stages, return_)?;
-    Ok(ExecutableFunction { executable_stages, argument_positions, returns, is_tabled })
+    Ok(ExecutableFunction { executable_stages, argument_positions, returns, parameter_registry: Arc::new(parameter_registry), is_tabled })
 }
 
 fn compile_return_operation(
