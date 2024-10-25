@@ -1122,9 +1122,10 @@ impl<'a> DisjunctionPlan<'a> {
         variable_registry: &VariableRegistry,
     ) -> DisjunctionBuilder {
         let mut branches: Vec<_> = Vec::with_capacity(self.branches.len());
-        let assigned_positions = assigned_positions.clone();
+        let mut assigned_positions = assigned_positions.clone();
         for branch in &self.branches {
-            let lowered_branch = branch.lower(selected_variables.clone(), &assigned_positions, variable_registry); // TODO extract mapping
+            let lowered_branch = branch.lower(selected_variables.clone(), &assigned_positions, variable_registry);
+            assigned_positions = lowered_branch.position_mapping().clone();
             branches.push(lowered_branch);
         }
         DisjunctionBuilder::new(branches)
