@@ -119,14 +119,14 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
                 match error {
                     DataCommitError::ConceptWriteErrors { source: errors, .. } => {
                         for error in errors {
-                            may_error.check_concept_write_without_read_errors::<()>(&Err(error))
+                            may_error.check_concept_write_without_read_errors::<()>(&Err(error));
                         }
                     }
                     DataCommitError::ConceptWriteErrorsFirst { typedb_source } => {
-                        may_error.check_concept_write_without_read_errors::<()>(&Err(typedb_source))
+                        may_error.check_concept_write_without_read_errors::<()>(&Err(typedb_source));
                     }
                     DataCommitError::SnapshotInUse { .. } | DataCommitError::SnapshotError { .. } => {
-                        panic!("Unexpected write commit error: {:?}", error)
+                        panic!("Unexpected write commit error: {:?}", error);
                     }
                 }
             }
@@ -135,10 +135,10 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
             if let Some(error) = may_error.check(tx.commit()) {
                 if let SchemaCommitError::ConceptWrite { errors, .. } = error {
                     for error in errors {
-                        may_error.check_concept_write_without_read_errors::<()>(&Err(error))
+                        may_error.check_concept_write_without_read_errors::<()>(&Err(error));
                     }
                 } else {
-                    panic!("Unexpected schema commit error: {:?}", error)
+                    panic!("Unexpected schema commit error: {:?}", error);
                 }
             }
         }
