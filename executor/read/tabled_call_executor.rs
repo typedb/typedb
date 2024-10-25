@@ -14,7 +14,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     batch::FixedBatch,
     read::{
-        pattern_executor::InstructionIndex,
+        pattern_executor::ExecutorIndex,
         tabled_call_executor::TabledCallResult::Suspend,
         tabled_functions::{CallKey, TableIndex, TabledFunctionPatternExecutorState, TabledFunctionState},
         SuspendPoint, TabledCallSuspension,
@@ -82,9 +82,9 @@ impl TabledCallExecutor {
         output_batch
     }
 
-    pub(crate) fn create_suspend_point_for(&self, instruction_index: InstructionIndex) -> SuspendPoint {
+    pub(crate) fn create_suspend_point_for(&self, executor_index: ExecutorIndex) -> SuspendPoint {
         SuspendPoint::TabledCall(TabledCallSuspension {
-            instruction_index,
+            executor_index,
             input_row: self.active_executor.as_ref().unwrap().input.clone().into_owned(),
             next_table_row: self.active_executor.as_ref().unwrap().next_table_row,
         })

@@ -33,11 +33,11 @@ use crate::{
 pub(super) struct BranchIndex(pub usize);
 
 #[derive(Debug, Copy, Clone)]
-pub(super) struct InstructionIndex(pub usize);
+pub(super) struct ExecutorIndex(pub usize);
 
-impl InstructionIndex {
-    fn next(&self) -> InstructionIndex {
-        InstructionIndex(self.0 + 1)
+impl ExecutorIndex {
+    fn next(&self) -> ExecutorIndex {
+        ExecutorIndex(self.0 + 1)
     }
 }
 
@@ -47,33 +47,33 @@ pub(super) enum ControlInstruction {
     },
 
     ExecuteImmediate {
-        index: InstructionIndex,
+        index: ExecutorIndex,
     },
 
     MapRowBatchToRowForNested {
-        index: InstructionIndex,
+        index: ExecutorIndex,
         iterator: FixedBatchRowIterator,
     },
     ExecuteNested {
-        index: InstructionIndex,
+        index: ExecutorIndex,
         branch_index: BranchIndex,
         mapper: NestedPatternResultMapper,
         input: MaybeOwnedRow<'static>,
     },
 
     TabledCall {
-        index: InstructionIndex,
+        index: ExecutorIndex,
     }, // TODO: Use a FunctionMapper
 
     CollectingStage {
-        index: InstructionIndex,
+        index: ExecutorIndex,
     },
     StreamCollected {
-        index: InstructionIndex,
+        index: ExecutorIndex,
         iterator: CollectedStageIterator,
     },
     ReshapeForReturn {
-        index: InstructionIndex,
+        index: ExecutorIndex,
         to_reshape: FixedBatch,
     },
 
@@ -129,7 +129,7 @@ impl PatternExecutor {
 
             match control_stack.pop().unwrap() {
                 ControlInstruction::Start { input_batch } => {
-                    self.prepare_next_instruction_and_push_to_stack(context, InstructionIndex(0), input_batch)?;
+                    self.prepare_next_instruction_and_push_to_stack(context, ExecutorIndex(0), input_batch)?;
                 }
                 ControlInstruction::ExecuteImmediate { index } => {
                     let executor = executors[index.0].unwrap_immediate();
@@ -256,34 +256,34 @@ impl PatternExecutor {
     fn prepare_next_instruction_and_push_to_stack(
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
-        next_instruction_index: InstructionIndex,
+        next_executor_index: ExecutorIndex,
         batch: FixedBatch,
     ) -> Result<(), ReadExecutionError> {
-        if next_instruction_index.0 >= self.executors.len() {
+        if next_executor_index.0 >= self.executors.len() {
             self.control_stack.push(ControlInstruction::Yield { batch });
         } else {
-            match &mut self.executors[next_instruction_index.0] {
+            match &mut self.executors[next_executor_index.0] {
                 StepExecutors::Immediate(executable) => {
                     executable.prepare(batch, context)?;
-                    self.control_stack.push(ControlInstruction::ExecuteImmediate { index: next_instruction_index });
+                    self.control_stack.push(ControlInstruction::ExecuteImmediate { index: next_executor_index });
                 }
                 StepExecutors::Nested(_) => self.control_stack.push(ControlInstruction::MapRowBatchToRowForNested {
-                    index: next_instruction_index,
+                    index: next_executor_index,
                     iterator: batch.into_iterator(),
                 }),
                 StepExecutors::TabledCall(_) => {
                     self.control_stack.push(ControlInstruction::MapRowBatchToRowForNested {
-                        index: next_instruction_index,
+                        index: next_executor_index,
                         iterator: batch.into_iterator(),
                     });
                 }
                 StepExecutors::CollectingStage(collecting_stage) => {
                     collecting_stage.prepare(batch);
-                    self.control_stack.push(ControlInstruction::CollectingStage { index: next_instruction_index });
+                    self.control_stack.push(ControlInstruction::CollectingStage { index: next_executor_index });
                 }
                 StepExecutors::ReshapeForReturn(_) => {
                     self.control_stack.push(ControlInstruction::ReshapeForReturn {
-                        index: next_instruction_index,
+                        index: next_executor_index,
                         to_reshape: batch,
                     });
                 }
@@ -291,7 +291,7 @@ impl PatternExecutor {
         }
         Ok(())
     }
-    fn prepare_and_push_nested_pattern(&mut self, index: InstructionIndex, input: MaybeOwnedRow<'_>) {
+    fn prepare_and_push_nested_pattern(&mut self, index: ExecutorIndex, input: MaybeOwnedRow<'_>) {
         let executor = self.executors[index.0].unwrap_branch();
         match executor {
             NestedPatternExecutor::Disjunction { branches } => {

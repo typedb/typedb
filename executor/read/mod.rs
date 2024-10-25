@@ -16,7 +16,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     read::{
-        pattern_executor::{BranchIndex, InstructionIndex, PatternExecutor},
+        pattern_executor::{BranchIndex, ExecutorIndex, PatternExecutor},
         step_executor::create_executors_for_pipeline_stages,
         tabled_functions::TableIndex,
     },
@@ -74,32 +74,32 @@ pub(crate) enum SuspendPoint {
 
 impl SuspendPoint {
     fn new_tabled_call(
-        instruction_index: InstructionIndex,
+        executor_index: ExecutorIndex,
         next_table_row: TableIndex,
         input_row: MaybeOwnedRow<'static>,
     ) -> Self {
-        Self::TabledCall(TabledCallSuspension { instruction_index, next_table_row, input_row })
+        Self::TabledCall(TabledCallSuspension { executor_index, next_table_row, input_row })
     }
 
     fn new_nested(
-        instruction_index: InstructionIndex,
+        executor_index: ExecutorIndex,
         branch_index: BranchIndex,
         input_row: MaybeOwnedRow<'static>,
     ) -> Self {
-        Self::Nested(NestedSuspension { instruction_index, branch_index, input_row })
+        Self::Nested(NestedSuspension { executor_index, branch_index, input_row })
     }
 }
 
 #[derive(Debug)]
 pub(super) struct TabledCallSuspension {
-    pub(crate) instruction_index: InstructionIndex,
+    pub(crate) executor_index: ExecutorIndex,
     pub(crate) input_row: MaybeOwnedRow<'static>,
     pub(crate) next_table_row: TableIndex,
 }
 
 #[derive(Debug)]
 pub(super) struct NestedSuspension {
-    pub(crate) instruction_index: InstructionIndex,
+    pub(crate) executor_index: ExecutorIndex,
     pub(crate) branch_index: BranchIndex,
     pub(crate) input_row: MaybeOwnedRow<'static>,
 }
