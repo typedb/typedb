@@ -382,9 +382,9 @@ fn fibonacci() {
             fun ith_fibonacci_number($i: long) -> { long }:
             match
                 $ret isa number;
-                { $i == 0; $ret == 1; $ret isa number; } or
                 { $i == 1; $ret == 1; $ret isa number; } or
-                { $i > 1;
+                { $i == 2; $ret == 1; $ret isa number; } or
+                { $i > 2;
                      $i1 = $i - 1;
                      $i2 = $i - 2;
                      $combined = ith_fibonacci_number($i1) +  ith_fibonacci_number($i2);
@@ -394,11 +394,11 @@ fn fibonacci() {
             return { $ret };
 
             match
-                $f_6 = ith_fibonacci_number(6);
+                $f_7 = ith_fibonacci_number(7);
         "#;
         let (rows, positions) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 1);
-        let f_6_position = positions.get("f_6").unwrap().clone();
-        assert_eq!(rows[0].get(f_6_position).as_value().clone().unwrap_long(), 13);
+        let f_7_position = positions.get("f_7").unwrap().clone();
+        assert_eq!(rows[0].get(f_7_position).as_value().clone().unwrap_long(), 13);
     }
 }
