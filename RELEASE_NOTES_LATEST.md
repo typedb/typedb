@@ -2,68 +2,70 @@
 
 **Download from TypeDB Package Repository:**
 
-[Distributions for 3.0.0-alpha-6](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.0.0-alpha-6)
+[Distributions for 3.0.0-alpha-7](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.0.0-alpha-7)
 
 **Pull the Docker image:**
 
-```docker pull vaticle/typedb:3.0.0-alpha-6```
+```docker pull vaticle/typedb:3.0.0-alpha-7```
 
 
 ## New Features
-- **Disjunction support**
-  
-  We introduce support for disjunctions in queries:
-  
+
+- **Expression support**
+
+  We add expression execution to match queries:
+
   ```php
   match
-      $person isa person;
-      { $person has name $_; } or { $person has age $_; };
+      $person_1 isa person, has age $age_1;
+      $person_2 isa person, has age $age_2;
+      $age_2 == $age_1 + 2;
   ```
 
 
-- **Fetch execution**
+- **Basic streaming functions**
 
-  We implement fetch execution, given an executable pipeline that may contain a Fetch terminal stage.
+  Implement function execution for non-recursive stream functions which return streams **only**.
+  **Recursive functions & Non-stream functions will throw unimplemented.**
 
-  Note: we have commented out `match-return` subqueries, fetching of expressions (`{ "val" : $x + 1 }`), and fetching of function outputs (`"val": mean_salary($person)`), as these require function-body evaluation under the hood - this is not yet implemented.
+  These can currently only be used from the preamble. Sample:
+  ```php
+             with
+              fun get_ages($p_arg: person) -> { age }:
+              match
+                  $p_arg has age $age_return;
+              return {$age_return};
+  
+              match
+                  $p isa person;
+                  $z in get_ages($p);
+  ```
 
+- **Implement tabling machinery for cyclic functions**
 
+  Introduces machinery needed to support finding the fixed-point of cyclic function calls. Cyclic functions now run, and return an incomplete set of results followed by an error. It is possible that the planner chooses a plan.
 
 ## Bugs Fixed
 
-- **Fix document answers streaming for fetch**
-  We fix document answers streaming for fetch in order to complete the first version of `fetch` queries execution.
+- **Minor query planner bug fixes**
 
+  1. Fix the issue where an iterator would attempt to use a variable before assigning to it.
+  2. Let role name constraint behave as a post-check.
 
 ## Code Refactors
-- **Function compilation preparation & trivial plan implementation**
-  Prepares higher level packages for compiling functions.
-
-
-- **Fetch annotation, compilation, and executables**
-
-  We implement Fetch annotation, compilation and executable building, rearchitecting the rest of the compiler to allow for tree-shaped nesting of queries (eg. functions or fetch sub-pipelines).
-
-- **Fetch iii**
-
-  We implement further refactoring, which pull Fetch into Annotations and Executables, without implementing any sub-methods yet.
-
+- **Resolve warnings**
+  
 
 ## Other Improvements
+ 
+- **Update protocol to 3.0.0-alpha-7 release**
 
-- **Add database name validation for database creation**
-  We add validation of names for created databases. Now, all database names should be valid TypeQL identifiers.
+- **3.0 Rename Ok.Empty to Ok.Done. Add query_type to the Done response**
 
-- **Enable connection BDDs in CI**
-  We update some of the steps for BDDs to match the [updated definitions](https://github.com/typedb/typedb-behaviour/pull/303).
-  Additionally, we add connection BDDs to the factory CI to make sure that this piece of the system is safe and stable.
+  We add a `query_type` field to all the `Query.InitialRes.Ok` protobuf messages to support retrieval of this information for any `QueryAnswer` on the client side.
+  Additionally, the `Ok.Empty` message was renamed to `Ok.Done`.
 
-- **Refactor compiler**
-  
-  We refactor the compiler to standardize naming, removing the usage of 'program', and introducing 'executable' as the second stage of compilation.
-  
-- **Refactor pipeline annotations**
-  
-  We implement the next step of Fetch implementation, which allows us to embed Annotated pipelines into Fetch sub-queries and into functions. We comment out the code paths related to type inference for functions, since functions are now enhanced to include pipelines.
-  
-    
+- **Fix and add to CI concept BDD tests**
+
+  We fix data commit error collection and checks and add `concept` package BDD tests to CI.
+
