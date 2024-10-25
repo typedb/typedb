@@ -40,7 +40,6 @@ pub fn compile(
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,
     variable_registry: Arc<VariableRegistry>,
-    function_registry: &ExecutableFunctionRegistry, // TODO: When we have actual function costs
     expressions: &HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &Statistics,
 ) -> MatchExecutable {

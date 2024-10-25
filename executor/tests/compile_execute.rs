@@ -119,7 +119,6 @@ fn test_has_planning_traversal() {
         &HashMap::new(),
         &entry_annotations,
         Arc::new(translation_context.variable_registry),
-        &ExecutableFunctionRegistry::empty(),
         &HashMap::new(),
         &statistics,
     );
@@ -213,7 +212,6 @@ fn test_expression_planning_traversal() {
         &HashMap::new(),
         &entry_annotations,
         Arc::new(translation_context.variable_registry),
-        &ExecutableFunctionRegistry::empty(),
         &compiled_expressions,
         &statistics,
     );
@@ -295,7 +293,6 @@ fn test_links_planning_traversal() {
         &HashMap::new(),
         &entry_annotations,
         Arc::new(translation_context.variable_registry),
-        &ExecutableFunctionRegistry::empty(),
         &HashMap::new(),
         &statistics,
     );
@@ -384,7 +381,6 @@ fn test_links_intersection() {
         &HashMap::new(),
         &entry_annotations,
         Arc::new(translation_context.variable_registry),
-        &ExecutableFunctionRegistry::empty(),
         &HashMap::new(),
         &statistics,
     );
@@ -464,7 +460,6 @@ fn test_negation_planning_traversal() {
         &HashMap::new(),
         &entry_annotations,
         Arc::new(translation_context.variable_registry),
-        &ExecutableFunctionRegistry::empty(),
         &HashMap::new(),
         &statistics,
     );
@@ -565,7 +560,6 @@ fn test_forall_planning_traversal() {
         &HashMap::new(),
         &entry_annotations,
         Arc::new(translation_context.variable_registry),
-        &ExecutableFunctionRegistry::empty(),
         &HashMap::new(),
         &statistics,
     );
@@ -652,7 +646,6 @@ fn test_named_var_select() {
         &HashMap::new(),
         &entry_annotations,
         Arc::new(translation_context.variable_registry),
-        &ExecutableFunctionRegistry::empty(),
         &HashMap::new(),
         &statistics,
     );
@@ -739,7 +732,6 @@ fn test_disjunction_planning_traversal() {
         &HashMap::new(),
         &entry_annotations,
         Arc::new(translation_context.variable_registry),
-        &ExecutableFunctionRegistry::empty(),
         &HashMap::new(),
         &statistics,
     );
@@ -830,7 +822,6 @@ fn test_disjunction_planning_nested_negations() {
         &HashMap::new(),
         &entry_annotations,
         Arc::new(translation_context.variable_registry),
-        &ExecutableFunctionRegistry::empty(),
         &HashMap::new(),
         &statistics,
     );

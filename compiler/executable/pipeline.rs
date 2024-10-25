@@ -199,7 +199,6 @@ fn compile_stage(
                 input_variables,
                 block_annotations,
                 variable_registry,
-                functions,
                 executable_expressions,
                 statistics,
             );
