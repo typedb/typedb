@@ -4,19 +4,22 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex, MutexGuard, TryLockError};
 
 use compiler::VariablePosition;
 use ir::pipeline::function_signature::FunctionID;
 use itertools::Either;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
+use tokio::sync::RwLockReadGuard;
 
 use crate::{
     batch::FixedBatch,
+    error::ReadExecutionError,
     read::{
-        pattern_executor::InstructionIndex,
-        tabled_functions::{CallKey, TableIndex, TabledFunctionPatternExecutorState, TabledFunctionState},
+        pattern_executor::{InstructionIndex, PatternExecutor},
+        tabled_call_executor::TabledCallResult::Suspend,
+        tabled_functions::{AnswerTable, CallKey, TableIndex, TabledFunctionPatternExecutorState, TabledFunctionState},
         SuspendPoint, TabledCallSuspension,
     },
     row::MaybeOwnedRow,
@@ -30,18 +33,16 @@ pub(crate) struct TabledCallExecutor {
     active_executor: Option<TabledCallExecutorState>,
 }
 
-impl TabledCallExecutor {
-    pub(crate) fn add_batch_to_table(&mut self, state: &TabledFunctionState, batch: FixedBatch) -> FixedBatch {
-        let deduplicated_batch = state.add_batch_to_table(batch);
-        *self.active_executor.as_mut().unwrap().next_table_row += deduplicated_batch.len() as usize;
-        deduplicated_batch
-    }
-}
-
 pub struct TabledCallExecutorState {
     pub(crate) call_key: CallKey,
     pub(crate) input: MaybeOwnedRow<'static>,
     pub(crate) next_table_row: TableIndex,
+}
+
+pub(super) enum TabledCallResult<'a> {
+    RetrievedFromTable(FixedBatch),
+    MustExecutePattern(MutexGuard<'a, TabledFunctionPatternExecutorState>),
+    Suspend,
 }
 
 impl TabledCallExecutor {
@@ -84,35 +85,46 @@ impl TabledCallExecutor {
         output_batch
     }
 
-    pub(crate) fn read_table_or_get_executor<'a>(
-        &mut self,
-        tabled_function_state: &'a TabledFunctionState,
-    ) -> Either<FixedBatch, &'a Mutex<TabledFunctionPatternExecutorState>> {
-        // Maybe return a batch?
-        let executor = self.active_executor.as_mut().unwrap();
-        let read_index = &mut *executor.next_table_row;
-
-        let table_read = tabled_function_state.table.read().unwrap();
-        if *read_index < table_read.len() {
-            let mut batch = FixedBatch::new(table_read.width());
-            while !batch.is_full() && *read_index < table_read.len() {
-                batch.append(|mut write_to| {
-                    write_to.copy_from_row(table_read.get_row(*read_index).unwrap().as_reference());
-                });
-                *read_index += 1;
-            }
-            Either::Left(batch)
-        } else {
-            drop(table_read);
-            Either::Right(&tabled_function_state.executor_state)
-        }
-    }
-
     pub(crate) fn create_suspend_point_for(&self, instruction_index: InstructionIndex) -> SuspendPoint {
         SuspendPoint::TabledCall(TabledCallSuspension {
             instruction_index,
             input_row: self.active_executor.as_ref().unwrap().input.clone().into_owned(),
             next_table_row: self.active_executor.as_ref().unwrap().next_table_row,
         })
+    }
+
+    pub(crate) fn try_read_next_batch<'a>(
+        &mut self,
+        tabled_function_state: &'a TabledFunctionState,
+    ) -> Result<TabledCallResult<'a>, ReadExecutionError> {
+        // Maybe return a batch?
+        let executor = self.active_executor.as_mut().unwrap();
+        let table_read = tabled_function_state.table.read().unwrap();
+        if *executor.next_table_row < table_read.len() {
+            let batch = table_read.read_batch_starting(executor.next_table_row);
+            *executor.next_table_row += batch.len() as usize;
+            Ok(TabledCallResult::RetrievedFromTable(batch))
+        } else {
+            drop(table_read);
+            match tabled_function_state.executor_state.try_lock() {
+                Ok(mut executor_state_mutex_guard) => {
+                    Ok(TabledCallResult::MustExecutePattern(executor_state_mutex_guard))
+                }
+                Err(TryLockError::WouldBlock) => Ok(Suspend),
+                Err(TryLockError::Poisoned(_)) => {
+                    let call_key = self.active_call_key().unwrap();
+                    Err(ReadExecutionError::TabledFunctionLockError {
+                        function_id: call_key.function_id.clone(),
+                        arguments: call_key.arguments.clone(),
+                    })
+                }
+            }
+        }
+    }
+
+    pub(crate) fn add_batch_to_table(&mut self, state: &TabledFunctionState, batch: FixedBatch) -> FixedBatch {
+        let deduplicated_batch = state.add_batch_to_table(batch);
+        *self.active_executor.as_mut().unwrap().next_table_row += deduplicated_batch.len() as usize;
+        deduplicated_batch
     }
 }

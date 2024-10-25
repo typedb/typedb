@@ -22,6 +22,7 @@ use crate::{
             NestedPatternResultMapper, OffsetMapper,
         },
         step_executor::StepExecutors,
+        tabled_call_executor::TabledCallResult,
         tabled_functions::{TabledFunctionPatternExecutorState, TabledFunctions},
         SuspendPoint,
     },
@@ -158,40 +159,31 @@ impl PatternExecutor {
                     let executor = executors[index.0].unwrap_tabled_call();
                     let call_key = executor.active_call_key().unwrap();
                     let function_state = tabled_functions.get_or_create_function_state(context, call_key)?;
-                    let found = match executor.read_table_or_get_executor(&function_state) {
-                        Either::Left(batch) => Some(batch),
-                        Either::Right(pattern_mutex) => match pattern_mutex.try_lock() {
-                            Ok(mut executor_state) => {
-                                let TabledFunctionPatternExecutorState { pattern_executor, suspend_points } =
-                                    executor_state.deref_mut();
-                                let batch_opt = pattern_executor.batch_continue(
-                                    context,
-                                    interrupt,
-                                    tabled_functions,
-                                    suspend_points,
-                                )?;
-                                if let Some(batch) = batch_opt {
-                                    let deduplicated_batch = executor.add_batch_to_table(&function_state, batch);
-                                    Some(deduplicated_batch)
-                                } else {
-                                    if !suspend_points.is_empty() {
-                                        suspend_point_accumulator.push(executor.create_suspend_point_for(index))
-                                    }
-                                    None
+                    let found = match executor.try_read_next_batch(&function_state)? {
+                        TabledCallResult::RetrievedFromTable(batch) => Some(batch),
+                        TabledCallResult::Suspend => {
+                            suspend_point_accumulator.push(executor.create_suspend_point_for(index));
+                            None
+                        }
+                        TabledCallResult::MustExecutePattern(mut pattern_state_mutex_guard) => {
+                            let TabledFunctionPatternExecutorState { pattern_executor, suspend_points } =
+                                pattern_state_mutex_guard.deref_mut();
+                            let batch_opt = pattern_executor.batch_continue(
+                                context,
+                                interrupt,
+                                tabled_functions,
+                                suspend_points,
+                            )?;
+                            if let Some(batch) = batch_opt {
+                                let deduplicated_batch = executor.add_batch_to_table(&function_state, batch);
+                                Some(deduplicated_batch)
+                            } else {
+                                if !suspend_points.is_empty() {
+                                    suspend_point_accumulator.push(executor.create_suspend_point_for(index))
                                 }
-                            }
-                            Err(TryLockError::WouldBlock) => {
-                                suspend_point_accumulator.push(executor.create_suspend_point_for(index));
                                 None
                             }
-                            Err(TryLockError::Poisoned(_)) => {
-                                let call_key = executor.active_call_key().unwrap();
-                                return Err(ReadExecutionError::TabledFunctionLockError {
-                                    function_id: call_key.function_id.clone(),
-                                    arguments: call_key.arguments.clone(),
-                                });
-                            }
-                        },
+                        }
                     };
                     if let Some(batch) = found {
                         self.control_stack.push(ControlInstruction::TabledCall(index.clone()));

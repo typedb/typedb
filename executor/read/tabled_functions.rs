@@ -61,32 +61,10 @@ impl TabledFunctions {
     }
 }
 
-#[derive(Debug, Clone, Eq, Hash, PartialEq)]
-pub(crate) struct CallKey {
-    pub(crate) function_id: FunctionID,
-    pub(crate) arguments: MaybeOwnedRow<'static>,
-}
-
-#[derive(Debug, Copy, Clone)]
-pub(crate) struct TableIndex(pub(crate) usize);
-impl std::ops::Deref for TableIndex {
-    type Target = usize;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl std::ops::DerefMut for TableIndex {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
 pub(crate) struct TabledFunctionState {
-    pub(crate) table: RwLock<AnswerTable>, // TODO: Need a structure which can de-duplicate & preserve insertion order.
+    pub(crate) table: RwLock<AnswerTable>,
     pub(crate) executor_state: Mutex<TabledFunctionPatternExecutorState>,
-    // can_clean: bool, // TODO: Apparently you only need to keep the table if it's a call that causes a suspend.
+    // can_cleanup: bool, // TODO: Apparently you only need to keep the table if it's a call that causes a suspend.
 }
 
 pub(crate) struct TabledFunctionPatternExecutorState {
@@ -131,8 +109,21 @@ pub(crate) struct AnswerTable {
 }
 
 impl AnswerTable {
-    fn read_answer(&mut self, index: usize) -> Option<MaybeOwnedRow<'_>> {
-        self.answers.get(index).map(|row| row.as_reference())
+    pub(crate) fn len(&self) -> usize {
+        self.answers.len()
+    }
+
+    pub(crate) fn read_batch_starting(&self, start_index: TableIndex) -> FixedBatch {
+        let mut read_index = *start_index;
+        let mut batch = FixedBatch::new(self.width);
+        while !batch.is_full() && read_index < self.len() {
+            batch.append(|mut write_to| {
+                write_to
+                    .copy_from_row(self.answers.get(read_index).map(|row| row.as_reference()).unwrap().as_reference());
+            });
+            read_index += 1;
+        }
+        batch
     }
 
     fn try_add_row(&mut self, row: MaybeOwnedRow<'_>) -> bool {
@@ -143,16 +134,26 @@ impl AnswerTable {
             false
         }
     }
+}
 
-    pub(crate) fn width(&self) -> u32 {
-        self.width
+#[derive(Debug, Clone, Eq, Hash, PartialEq)]
+pub(crate) struct CallKey {
+    pub(crate) function_id: FunctionID,
+    pub(crate) arguments: MaybeOwnedRow<'static>,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub(crate) struct TableIndex(pub(crate) usize);
+impl std::ops::Deref for TableIndex {
+    type Target = usize;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
+}
 
-    pub(crate) fn len(&self) -> usize {
-        self.answers.len()
-    }
-
-    pub(crate) fn get_row(&self, index: usize) -> Option<MaybeOwnedRow<'_>> {
-        self.answers.get(index).map(|row| row.as_reference())
+impl std::ops::DerefMut for TableIndex {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
