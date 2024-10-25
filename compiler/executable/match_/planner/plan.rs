@@ -439,11 +439,11 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             .assigned()
             .iter()
             .map(|vertex| {
-                let Vertex::Variable(variable) = vertex else { todo!("Unreachable?") };
+                let Vertex::Variable(variable) = vertex else { unreachable!() };
                 self.graph.variable_index[variable]
             })
             .collect();
-        // TODO: This is just a mock
+        // TODO: Use the real cost when we have function planning
         let element_cost = ElementCost { per_input: 1.0, per_output: 1.0, branching_factor: 1.0 };
         self.graph.push_function_call(FunctionCallPlanner::from_constraint(
             call_binding,
