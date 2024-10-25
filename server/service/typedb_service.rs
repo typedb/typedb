@@ -16,6 +16,7 @@ use tonic::{Request, Response, Status, Streaming};
 use tracing::{event, Level};
 use typedb_protocol::{self, server_manager::all::{Req, Res}, transaction::{Client, Server}};
 use uuid::Uuid;
+use user::errors::UserCreateError;
 
 use crate::service::{
     error::{IntoGRPCStatus, IntoProtocolErrorMessage, ProtocolError},
@@ -23,6 +24,7 @@ use crate::service::{
         connection::connection_open_res,
         database::database_delete_res,
         database_manager::{database_all_res, database_contains_res, database_create_res, database_get_res},
+        user_manager::user_create_res,
         server_manager::servers_all_res,
     },
     transaction_service::TransactionService,
@@ -184,15 +186,10 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::user_manager::create::Req>
     ) -> Result<Response<typedb_protocol::user_manager::create::Res>, Status> {
-        match users_create_req(request) {
-            Ok((user, credential)) => {
-                self.user_manager.create(&user, &credential);
-                todo!()
-            }
-            Err(code) => {
-                todo!()
-            }
-        }
+        users_create_req(request)
+            .and_then(|(usr, cred)| self.user_manager.create(&usr, &cred))
+            .map(|_| Response::new(user_create_res()))
+            .map_err(|err| err.into_error_message().into_status())
     }
 
     async fn users_update(
@@ -231,7 +228,7 @@ typedb_error!(
     }
 );
 
-fn users_create_req(request: Request<typedb_protocol::user_manager::create::Req>) -> Result<(User, Credential), i8> {
+fn users_create_req(request: Request<typedb_protocol::user_manager::create::Req>) -> Result<(User, Credential), UserCreateError> {
     let message = request.into_inner();
     match message.user {
         Some(user) => {

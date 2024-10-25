@@ -270,3 +270,9 @@ pub(crate) mod transaction {
         transaction_server_res_part(req_id, transaction_res_part_res_part_stream_signal_error(error))
     }
 }
+
+pub(crate) mod user_manager {
+    pub(crate) fn user_create_res() -> typedb_protocol::user_manager::create::Res {
+        typedb_protocol::user_manager::create::Res {}
+    }
+}
