@@ -93,6 +93,10 @@ impl PlannerVertex<'_> {
         matches!(self, Self::Variable(_))
     }
 
+    pub(super) fn is_constraint(&self) -> bool {
+        matches!(self, Self::Constraint(_))
+    }
+
     pub(super) fn as_variable(&self) -> Option<&VariableVertex> {
         match self {
             Self::Variable(v) => Some(v),

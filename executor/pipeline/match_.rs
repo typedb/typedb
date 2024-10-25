@@ -4,15 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::Arc;
+use std::{iter::Peekable, sync::Arc};
 
 use compiler::executable::match_::planner::{
     function_plan::ExecutableFunctionRegistry, match_executable::MatchExecutable,
 };
-use lending_iterator::{LendingIterator, Peekable};
+use itertools::{Itertools, UniqueBy};
+use lending_iterator::{adaptors::Map, IntoIter, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
+    error::ReadExecutionError,
     match_executor::{MatchExecutor, PatternIterator},
     pipeline::{
         stage::{ExecutionContext, StageAPI},
@@ -62,7 +64,7 @@ pub struct MatchStageIterator<Snapshot: ReadableSnapshot + 'static, Iterator> {
     executable: Arc<MatchExecutable>,
     function_registry: Arc<ExecutableFunctionRegistry>,
     source_iterator: Iterator,
-    current_iterator: Option<Peekable<PatternIterator<Snapshot>>>,
+    current_iterator: Option<Peekable<UniqueRows<AsOwnedRows<PatternIterator<Snapshot>>>>>,
     interrupt: ExecutionInterrupt,
 }
 
@@ -105,8 +107,12 @@ where
 
             match executor {
                 Ok(executor) => {
-                    self.current_iterator =
-                        Some(Peekable::new(executor.into_iterator(self.context.clone(), self.interrupt.clone())));
+                    self.current_iterator = Some(
+                        unique_rows(as_owned_rows(
+                            executor.into_iterator(self.context.clone(), self.interrupt.clone()),
+                        ))
+                        .peekable(),
+                    );
                 }
                 Err(err) => return Some(Err(err)),
             };
@@ -122,4 +128,43 @@ where
     Snapshot: ReadableSnapshot + 'static,
     Iterator: StageIterator,
 {
+}
+
+type AsOwnedRows<I> = IntoIter<
+    Map<
+        I,
+        fn(Result<MaybeOwnedRow<'_>, &ReadExecutionError>) -> Result<MaybeOwnedRow<'static>, ReadExecutionError>,
+        lending_iterator::higher_order::AdHocHkt<Result<MaybeOwnedRow<'static>, ReadExecutionError>>,
+    >,
+>;
+fn as_owned_rows<I>(iter: I) -> AsOwnedRows<I>
+where
+    I: for<'a> LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, &'a ReadExecutionError>>,
+{
+    iter.map_static(
+        (|row| match row {
+            Ok(row) => Ok(row.into_owned()),
+            Err(err) => Err(err.clone()),
+        })
+            as fn(Result<MaybeOwnedRow<'_>, &ReadExecutionError>) -> Result<MaybeOwnedRow<'static>, ReadExecutionError>,
+    )
+    .into_iter()
+}
+
+type UniqueRows<I> = UniqueBy<
+    I,
+    Result<MaybeOwnedRow<'static>, ()>,
+    fn(&Result<MaybeOwnedRow<'static>, ReadExecutionError>) -> Result<MaybeOwnedRow<'static>, ()>,
+>;
+
+fn unique_rows<I>(iter: I) -> UniqueRows<I>
+where
+    I: Iterator<Item = Result<MaybeOwnedRow<'static>, ReadExecutionError>>,
+{
+    iter.unique_by(
+        (|item| match item {
+            Ok(row) => Ok(row.clone()),
+            Err(_) => Err(()),
+        }) as fn(&Result<MaybeOwnedRow<'static>, ReadExecutionError>) -> Result<MaybeOwnedRow<'static>, ()>,
+    )
 }

@@ -489,11 +489,11 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Constraint::Owns(owns) => edges.push(self.seed_edge(constraint, owns, vertices)?),
                 Constraint::Relates(relates) => edges.push(self.seed_edge(constraint, relates, vertices)?),
                 Constraint::Plays(plays) => edges.push(self.seed_edge(constraint, plays, vertices)?),
-                Constraint::ExpressionBinding(_)
-                | Constraint::FunctionCallBinding(_)
                 | Constraint::RoleName(_)
                 | Constraint::Label(_)
-                | Constraint::Kind(_) => (), // Do nothing
+                | Constraint::Kind(_)
+                | Constraint::ExpressionBinding(_)
+                | Constraint::FunctionCallBinding(_) => (), // Do nothing
             }
         }
         for disj in &mut graph.nested_disjunctions {
@@ -625,17 +625,12 @@ impl UnaryConstraint for Kind<Variable> {
 impl UnaryConstraint for Label<Variable> {
     fn apply<Snapshot: ReadableSnapshot>(
         &self,
-        seeder: &TypeGraphSeedingContext<'_, Snapshot>,
+        _seeder: &TypeGraphSeedingContext<'_, Snapshot>,
         graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
-        let annotation_opt = get_type_annotation_from_label(
-            seeder.snapshot,
-            seeder.type_manager,
-            &encoding::value::label::Label::parse_from(self.type_label()),
-        )
-        .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+        let annotation_opt = graph_vertices.get(self.type_label());
         if let Some(annotation) = annotation_opt {
-            graph_vertices.add_or_intersect(self.type_(), Cow::Owned(BTreeSet::from([annotation])));
+            graph_vertices.add_or_intersect(self.type_(), Cow::Owned(annotation.clone()));
             Ok(())
         } else {
             Err(TypeInferenceError::LabelNotResolved { name: self.type_label().to_string() })
@@ -755,9 +750,7 @@ impl BinaryConstraint for Has<Variable> {
         let owner = match left_type {
             TypeAnnotation::Entity(entity) => ObjectType::Entity(entity.clone()),
             TypeAnnotation::Relation(relation) => ObjectType::Relation(relation.clone()),
-            _ => {
-                return Ok(());
-            } // It can't be another type => Do nothing and let type-inference clean it up
+            _ => return Ok(()), // It can't be another type => Do nothing and let type-inference clean it up
         };
         collector.extend(
             (owner.get_owns(seeder.snapshot, seeder.type_manager)?.iter())
@@ -774,9 +767,7 @@ impl BinaryConstraint for Has<Variable> {
     ) -> Result<(), ConceptReadError> {
         let attribute = match right_type {
             TypeAnnotation::Attribute(attribute) => attribute,
-            _ => {
-                return Ok(());
-            } // It can't be another type => Do nothing and let type-inference clean it up
+            _ => return Ok(()), // It can't be another type => Do nothing and let type-inference clean it up
         };
         collector.extend(
             (attribute.get_owner_types(seeder.snapshot, seeder.type_manager)?.iter())

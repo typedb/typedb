@@ -644,40 +644,41 @@ pub enum ConstraintIDSide {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Label<ID> {
-    left: Vertex<ID>,
-    type_label: String,
+    type_var: Vertex<ID>,
+    type_label: Vertex<ID>,
 }
 
 impl<ID: IrID> Label<ID> {
     fn new(left: ID, type_label: String) -> Self {
-        Self { left: Vertex::Variable(left), type_label }
+        let type_label = Vertex::Label(encoding::value::label::Label::build(&type_label));
+        Self { type_var: Vertex::Variable(left), type_label }
     }
 
     pub fn type_(&self) -> &Vertex<ID> {
-        &self.left
+        &self.type_var
     }
 
-    pub fn type_label(&self) -> &str {
+    pub fn type_label(&self) -> &Vertex<ID> {
         &self.type_label
     }
 
     pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
-        self.left.as_variable().into_iter()
+        self.type_var.as_variable().into_iter()
     }
 
     pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + Sized {
-        [&self.left].into_iter()
+        [&self.type_var, &self.type_label].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
     where
         F: FnMut(ID, ConstraintIDSide),
     {
-        self.left.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
+        self.type_var.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
     }
 
     fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Label<T> {
-        Label { left: self.left.map(mapping), type_label: self.type_label }
+        Label { type_var: self.type_var.map(mapping), type_label: self.type_label.map(mapping) }
     }
 }
 
@@ -691,7 +692,7 @@ impl<ID: IrID> fmt::Display for Label<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // TODO: implement indentation without rewriting it everywhere
         // write!(f, "{: >width$} {} type {}", "", self.left, self.type_, width=f.width().unwrap_or(0))
-        write!(f, "{} label {}", self.left, self.type_label)
+        write!(f, "{} label {}", self.type_var, self.type_label)
     }
 }
 

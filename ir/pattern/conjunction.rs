@@ -56,7 +56,7 @@ impl Conjunction {
     }
 
     pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.constraints.iter().flat_map(|constraint| constraint.ids()).chain(self.nested_patterns.iter().flat_map(
+        self.constraints().iter().flat_map(|constraint| constraint.ids()).chain(self.nested_patterns.iter().flat_map(
             |nested| -> Box<dyn Iterator<Item = Variable>> {
                 match nested {
                     NestedPattern::Disjunction(disjunction) => Box::new(disjunction.referenced_variables()),

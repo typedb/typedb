@@ -4,7 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::{
+    array,
+    iter::{Map, Take, Zip},
+    vec,
+};
+
 use answer::variable_value::VariableValue;
+use itertools::{Chunk, Chunks, Itertools};
 use lending_iterator::LendingIterator;
 
 use crate::{
@@ -83,10 +90,6 @@ impl FixedBatch {
         let slice = &mut self.data[start..end];
         Row::new(slice, &mut self.multiplicities[index as usize])
     }
-
-    pub(crate) fn into_iterator(self) -> FixedBatchRowIterator {
-        FixedBatchRowIterator::new(Ok(self))
-    }
 }
 
 impl<'a> From<MaybeOwnedRow<'a>> for FixedBatch {
@@ -95,6 +98,29 @@ impl<'a> From<MaybeOwnedRow<'a>> for FixedBatch {
         let mut multiplicities = FixedBatch::INIT_MULTIPLICITIES;
         multiplicities[0] = row.multiplicity();
         FixedBatch { width, data: row.row().to_owned(), entries: 1, multiplicities }
+    }
+}
+
+impl IntoIterator for FixedBatch {
+    type IntoIter = Map<
+        Take<Zip<vec::IntoIter<Vec<VariableValue<'static>>>, array::IntoIter<u64, { FIXED_BATCH_ROWS_MAX as usize }>>>,
+        fn((Vec<VariableValue<'static>>, u64)) -> MaybeOwnedRow<'static>,
+    >;
+
+    type Item = MaybeOwnedRow<'static>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        let rows = self
+            .data
+            .into_iter()
+            .chunks(self.width as usize)
+            .into_iter()
+            .map(|chunk| chunk.collect_vec())
+            .collect_vec();
+        rows.into_iter()
+            .zip(self.multiplicities)
+            .take(self.entries as usize)
+            .map(|(row, mult)| MaybeOwnedRow::new_owned(row, mult))
     }
 }
 

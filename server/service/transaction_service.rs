@@ -25,7 +25,7 @@ use executor::{
     batch::Batch,
     pipeline::{
         pipeline::Pipeline,
-        stage::{ExecutionContext, ReadPipelineStage, StageAPI, StageIterator},
+        stage::{ExecutionContext, ReadPipelineStage, StageIterator},
         PipelineExecutionError,
     },
     ExecutionInterrupt, InterruptType,
@@ -49,7 +49,7 @@ use tokio::{
 };
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
-use tracing::{event, field::debug, Level};
+use tracing::{event, Level};
 use typedb_protocol::{
     query::Type::{Read, Write},
     transaction::{stream_signal::Req, Server},

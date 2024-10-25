@@ -81,11 +81,7 @@ impl SuspendPoint {
         Self::TabledCall(TabledCallSuspension { executor_index, next_table_row, input_row })
     }
 
-    fn new_nested(
-        executor_index: ExecutorIndex,
-        branch_index: BranchIndex,
-        input_row: MaybeOwnedRow<'static>,
-    ) -> Self {
+    fn new_nested(executor_index: ExecutorIndex, branch_index: BranchIndex, input_row: MaybeOwnedRow<'static>) -> Self {
         Self::Nested(NestedSuspension { executor_index, branch_index, input_row })
     }
 }

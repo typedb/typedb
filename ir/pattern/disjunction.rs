@@ -24,10 +24,6 @@ impl Disjunction {
         Self::default()
     }
 
-    pub(crate) fn variables(&self) -> Box<dyn Iterator<Item = Variable>> {
-        todo!()
-    }
-
     pub fn conjunctions(&self) -> &[Conjunction] {
         &self.conjunctions
     }

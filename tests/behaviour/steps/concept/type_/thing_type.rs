@@ -27,18 +27,15 @@ macro_rules! with_type {
         use encoding::graph::type_::Kind;
         match $kind.into_typedb() {
             Kind::Attribute => {
-                let $assign_to =
-                    $tx.type_manager.get_attribute_type($tx.snapshot.as_ref(), &$label.into_typedb()).unwrap().unwrap();
+                let $assign_to = $tx.type_manager.get_attribute_type($tx.snapshot.as_ref(), &$label).unwrap().unwrap();
                 $block
             }
             Kind::Entity => {
-                let $assign_to =
-                    $tx.type_manager.get_entity_type($tx.snapshot.as_ref(), &$label.into_typedb()).unwrap().unwrap();
+                let $assign_to = $tx.type_manager.get_entity_type($tx.snapshot.as_ref(), &$label).unwrap().unwrap();
                 $block
             }
             Kind::Relation => {
-                let $assign_to =
-                    $tx.type_manager.get_relation_type($tx.snapshot.as_ref(), &$label.into_typedb()).unwrap().unwrap();
+                let $assign_to = $tx.type_manager.get_relation_type($tx.snapshot.as_ref(), &$label).unwrap().unwrap();
                 $block
             }
             Kind::Role => unreachable!("Can only address roles through relation(relation_label) get role(role_name)"),
@@ -74,7 +71,7 @@ macro_rules! with_type_and_value_type {
     };
 }
 
-pub(super) fn get_as_object_type(context: &mut Context, kind: Kind, label: &params::Label) -> ObjectType<'static> {
+pub(super) fn get_as_object_type(context: &mut Context, kind: Kind, label: params::Label) -> ObjectType<'static> {
     with_read_tx!(context, |tx| {
         match kind {
             Kind::Entity => {
@@ -133,6 +130,7 @@ pub async fn type_delete(
     type_label: params::Label,
     may_error: params::MayError,
 ) {
+    let type_label = type_label.into_typedb();
     with_schema_tx!(context, |tx| {
         with_type!(tx, kind, type_label, type_, {
             let res = type_.delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager);
@@ -150,20 +148,20 @@ pub async fn type_exists(
     type_label: params::Label,
     exists: params::ExistsOrDoesnt,
 ) {
+    let type_label = type_label.into_typedb();
     with_read_tx!(context, |tx| {
         match kind.into_typedb() {
             Kind::Attribute => {
-                let type_ =
-                    tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap();
-                exists.check(&type_, &format!("type {}", type_label.into_typedb()));
+                let type_ = tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label).unwrap();
+                exists.check(&type_, &format!("type {}", type_label));
             }
             Kind::Entity => {
-                let type_ = tx.type_manager.get_entity_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap();
-                exists.check(&type_, &format!("type {}", type_label.into_typedb()));
+                let type_ = tx.type_manager.get_entity_type(tx.snapshot.as_ref(), &type_label).unwrap();
+                exists.check(&type_, &format!("type {}", type_label));
             }
             Kind::Relation => {
-                let type_ = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap();
-                exists.check(&type_, &format!("type {}", type_label.into_typedb()));
+                let type_ = tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label).unwrap();
+                exists.check(&type_, &format!("type {}", type_label));
             }
             Kind::Role => unreachable!("Can only address roles through relation(relation_label) get role(role_name)"),
         };
@@ -179,6 +177,7 @@ pub async fn type_set_label(
     to_label: params::Label,
     may_error: params::MayError,
 ) {
+    let type_label = type_label.into_typedb();
     with_schema_tx!(context, |tx| {
         with_type!(tx, kind, type_label, type_, {
             may_error.check_concept_write_without_read_errors(&type_.set_label(
@@ -198,6 +197,7 @@ pub async fn type_get_name(
     type_label: params::Label,
     expected: params::Label,
 ) {
+    let type_label = type_label.into_typedb();
     with_read_tx!(context, |tx| {
         with_type!(tx, kind, type_label, type_, {
             let actual_label = type_.get_label(tx.snapshot.as_ref(), &tx.type_manager);
@@ -214,6 +214,7 @@ pub async fn type_get_label(
     type_label: params::Label,
     expected: params::Label,
 ) {
+    let type_label = type_label.into_typedb();
     with_read_tx!(context, |tx| {
         with_type!(tx, kind, type_label, type_, {
             let actual_label = type_.get_label(tx.snapshot.as_ref(), &tx.type_manager);
@@ -253,6 +254,7 @@ pub async fn type_unset_annotation(
     annotation_category: params::AnnotationCategory,
     may_error: params::MayError,
 ) {
+    let type_label = type_label.into_typedb();
     with_write_tx!(context, |tx| {
         with_type!(tx, kind, type_label, type_, {
             let res = type_.unset_annotation(
@@ -281,7 +283,7 @@ pub async fn type_constraints_contain(
                 .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
                 .unwrap()
                 .into_iter()
-                .any(|constraint| &constraint.description() == &expected_constraint);
+                .any(|constraint| constraint.description() == expected_constraint);
             assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
         });
     });
@@ -296,6 +298,7 @@ pub async fn type_constraint_categories_contain(
     contains_or_doesnt: params::ContainsOrDoesnt,
     constraint_category: params::ConstraintCategory,
 ) {
+    let type_label = type_label.into_typedb();
     with_read_tx!(context, |tx| {
         with_type!(tx, kind, type_label, type_, {
             let expected_constraint_category = constraint_category.into_typedb();
@@ -317,6 +320,7 @@ pub async fn type_constraints_is_empty(
     type_label: params::Label,
     is_empty_or_not: params::IsEmptyOrNot,
 ) {
+    let type_label = type_label.into_typedb();
     with_read_tx!(context, |tx| {
         with_type!(tx, kind, type_label, type_, {
             let actual_is_empty = type_.get_constraints(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
@@ -416,6 +420,7 @@ pub async fn type_declared_annotations_is_empty(
     type_label: params::Label,
     is_empty_or_not: params::IsEmptyOrNot,
 ) {
+    let type_label = type_label.into_typedb();
     with_read_tx!(context, |tx| {
         with_type!(tx, kind, type_label, type_, {
             let actual_is_empty =
@@ -554,6 +559,7 @@ pub async fn type_get_supertype(
     type_label: params::Label,
     supertype_label: params::Label,
 ) {
+    let type_label = type_label.into_typedb();
     with_read_tx!(context, |tx| {
         with_type!(tx, kind, type_label, type_, {
             let supertype = type_.get_supertype(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap();
@@ -573,10 +579,11 @@ pub async fn type_get_supertype_exists(
     type_label: params::Label,
     exists: params::ExistsOrDoesnt,
 ) {
+    let type_label = type_label.into_typedb();
     with_read_tx!(context, |tx| {
         with_type!(tx, kind, type_label, type_, {
             let supertype = type_.get_supertype(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
-            exists.check(&supertype, &format!("supertype for type {}", type_label.into_typedb()));
+            exists.check(&supertype, &format!("supertype for type {}", type_label));
         });
     });
 }
@@ -590,6 +597,7 @@ pub async fn get_supertypes_transitive_contain(
     contains: params::ContainsOrDoesnt,
     step: &Step,
 ) {
+    let type_label = type_label.into_typedb();
     let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
     with_read_tx!(context, |tx| {
         with_type!(tx, kind, type_label, type_, {
@@ -619,6 +627,7 @@ pub async fn get_supertypes_transitive_is_empty(
     type_label: params::Label,
     is_empty_or_not: params::IsEmptyOrNot,
 ) {
+    let type_label = type_label.into_typedb();
     with_read_tx!(context, |tx| {
         with_type!(tx, kind, type_label, type_, {
             is_empty_or_not
@@ -636,6 +645,7 @@ pub async fn get_subtypes_contain(
     contains: params::ContainsOrDoesnt,
     step: &Step,
 ) {
+    let type_label = type_label.into_typedb();
     let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
     with_read_tx!(context, |tx| {
         with_type!(tx, kind, type_label, type_, {
@@ -660,6 +670,7 @@ pub async fn get_subtypes_is_empty(
     type_label: params::Label,
     is_empty_or_not: params::IsEmptyOrNot,
 ) {
+    let type_label = type_label.into_typedb();
     with_read_tx!(context, |tx| {
         with_type!(tx, kind, type_label, type_, {
             is_empty_or_not

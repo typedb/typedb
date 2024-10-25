@@ -514,6 +514,21 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let mut produced_at_this_stage: HashSet<VariableVertexId> = HashSet::new();
         let mut intersection_variable: Option<VariableVertexId> = None;
 
+        macro_rules! commit_variables {
+            () => {{
+                if let Some(var) = intersection_variable.take().map(VertexId::Variable) {
+                    ordering.push(var);
+                    open_set.remove(&var);
+                }
+                for var in produced_at_this_stage.drain().map(VertexId::Variable) {
+                    if !ordering.contains(&var) {
+                        ordering.push(var);
+                        open_set.remove(&var);
+                    }
+                }
+            }};
+        }
+
         while !open_set.is_empty() {
             let (next, _cost) = open_set
                 .iter()
@@ -529,33 +544,13 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             let element = &self.graph.elements[&next];
 
             if element.is_variable() {
-                if let Some(var) = intersection_variable.take().map(VertexId::Variable) {
-                    ordering.push(var);
-                    open_set.remove(&var);
-                }
-                for var in produced_at_this_stage.drain().map(VertexId::Variable) {
-                    if !ordering.contains(&var) {
-                        ordering.push(var);
-                        open_set.remove(&var);
-                    }
-                }
-            } else {
+                commit_variables!();
+            } else if element.is_constraint() {
                 match element.variables().filter(|var| produced_at_this_stage.contains(var)).exactly_one() {
-                    Ok(var) if intersection_variable.is_none() || intersection_variable == Some(var) => {
-                        intersection_variable = Some(var);
+                    Ok(var) if (intersection_variable.is_none() || intersection_variable == Some(var)) => {
+                        intersection_variable = Some(var)
                     }
-                    _ => {
-                        if let Some(var) = intersection_variable.take().map(VertexId::Variable) {
-                            ordering.push(var);
-                            open_set.remove(&var);
-                        }
-                        for var in produced_at_this_stage.drain().map(VertexId::Variable) {
-                            if !ordering.contains(&var) {
-                                ordering.push(var);
-                                open_set.remove(&var);
-                            }
-                        }
-                    }
+                    _ => commit_variables!(),
                 }
 
                 produced_at_this_stage
@@ -563,6 +558,16 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
                 ordering.push(next);
                 open_set.remove(&next);
+            } else {
+                commit_variables!();
+                ordering.push(next);
+                open_set.remove(&next);
+                for var in element.variables().map(VertexId::Variable) {
+                    if !ordering.contains(&var) {
+                        ordering.push(var);
+                        open_set.remove(&var);
+                    }
+                }
             }
         }
         ordering
@@ -736,9 +741,13 @@ impl ConjunctionPlan<'_> {
                     let step_builder = disjunction
                         .builder()
                         .clone() // FIXME
-                        .plan(match_builder.position_mapping().keys().copied())
+                        .plan(match_builder.position_mapping().keys().filter(|&&v| v != variable).copied())
                         .lower(
-                            match_builder.current_outputs.iter().copied(),
+                            match_builder
+                                .produced_so_far
+                                .iter()
+                                .filter(|&v| match_builder.current_outputs.contains(v))
+                                .copied(),
                             match_builder.position_mapping(),
                             variable_registry,
                         );
@@ -1021,7 +1030,7 @@ impl ConjunctionPlan<'_> {
         match constraint {
             ConstraintVertex::TypeList(type_list) => {
                 let var = type_list.constraint().var();
-                let instruction = type_list.lower_check(self.type_annotations);
+                let instruction = type_list.lower_check();
                 match_builder.push_check(&[var], instruction.map(match_builder.position_mapping()));
             }
 
@@ -1117,9 +1126,10 @@ impl<'a> DisjunctionPlan<'a> {
         variable_registry: &VariableRegistry,
     ) -> DisjunctionBuilder {
         let mut branches: Vec<_> = Vec::with_capacity(self.branches.len());
-        let assigned_positions = assigned_positions.clone();
+        let mut assigned_positions = assigned_positions.clone();
         for branch in &self.branches {
-            let lowered_branch = branch.lower(selected_variables.clone(), &assigned_positions, variable_registry); // TODO extract mapping
+            let lowered_branch = branch.lower(selected_variables.clone(), &assigned_positions, variable_registry);
+            assigned_positions = lowered_branch.position_mapping().clone();
             branches.push(lowered_branch);
         }
         DisjunctionBuilder::new(branches)

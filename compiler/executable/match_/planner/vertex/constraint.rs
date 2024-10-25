@@ -6,7 +6,7 @@
 
 use std::{collections::HashMap, fmt, iter};
 
-use answer::variable::Variable;
+use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
 use ir::pattern::constraint::{Has, Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, Sub, SubKind};
 use itertools::Itertools;
@@ -22,7 +22,6 @@ use crate::{
             },
         },
     },
-    ExecutorVariable,
 };
 
 #[derive(Clone, Debug)]
@@ -113,7 +112,7 @@ impl<'a> TypeListConstraint<'a> {
 pub(crate) struct TypeListPlanner<'a> {
     constraint: TypeListConstraint<'a>,
     var: VariableVertexId,
-    num_types: f64,
+    types: Vec<Type>,
 }
 
 impl<'a> fmt::Debug for TypeListPlanner<'a> {
@@ -132,11 +131,16 @@ impl<'a> TypeListPlanner<'a> {
         variable_index: &HashMap<Variable, VariableVertexId>,
         type_annotations: &TypeAnnotations,
     ) -> Self {
-        let num_types = type_annotations.vertex_annotations_of(label.type_()).map(|annos| annos.len()).unwrap_or(0);
+        let types = type_annotations
+            .vertex_annotations_of(label.type_label())
+            .into_iter()
+            .flat_map(|annos| annos.iter())
+            .cloned()
+            .collect();
         Self {
             constraint: TypeListConstraint::Label(label),
             var: variable_index[&label.type_().as_variable().unwrap()],
-            num_types: num_types as f64,
+            types,
         }
     }
 
@@ -145,11 +149,16 @@ impl<'a> TypeListPlanner<'a> {
         variable_index: &HashMap<Variable, VariableVertexId>,
         type_annotations: &TypeAnnotations,
     ) -> Self {
-        let num_types = type_annotations.vertex_annotations_of(role_name.type_()).map(|annos| annos.len()).unwrap_or(0);
+        let types = type_annotations
+            .vertex_annotations_of(role_name.type_())
+            .into_iter()
+            .flat_map(|annos| annos.iter())
+            .cloned()
+            .collect();
         Self {
             constraint: TypeListConstraint::RoleName(role_name),
             var: variable_index[&role_name.type_().as_variable().unwrap()],
-            num_types: num_types as f64,
+            types,
         }
     }
 
@@ -158,11 +167,16 @@ impl<'a> TypeListPlanner<'a> {
         variable_index: &HashMap<Variable, VariableVertexId>,
         type_annotations: &TypeAnnotations,
     ) -> Self {
-        let num_types = type_annotations.vertex_annotations_of(kind.type_()).map(|annos| annos.len()).unwrap_or(0);
+        let types = type_annotations
+            .vertex_annotations_of(kind.type_())
+            .into_iter()
+            .flat_map(|annos| annos.iter())
+            .cloned()
+            .collect();
         Self {
             constraint: TypeListConstraint::Kind(kind),
             var: variable_index[&kind.type_().as_variable().unwrap()],
-            num_types: num_types as f64,
+            types,
         }
     }
 
@@ -175,21 +189,14 @@ impl<'a> TypeListPlanner<'a> {
         ConstraintInstruction::TypeList(TypeListInstruction::new(var, type_annotations))
     }
 
-    pub(crate) fn lower_check(&self, type_annotations: &TypeAnnotations) -> CheckInstruction<Variable> {
-        let type_var = self.constraint.var();
-        let types = type_annotations
-            .vertex_annotations_of(&ir::pattern::Vertex::Variable(type_var))
-            .unwrap()
-            .iter()
-            .cloned()
-            .collect();
-        CheckInstruction::TypeList { type_var, types }
+    pub(crate) fn lower_check(&self) -> CheckInstruction<Variable> {
+        CheckInstruction::TypeList { type_var: self.constraint.var(), types: self.types.clone() }
     }
 }
 
 impl Costed for TypeListPlanner<'_> {
     fn cost(&self, _: &[VertexId], _: &Graph<'_>) -> ElementCost {
-        ElementCost::free_with_branching(self.num_types)
+        ElementCost::free_with_branching(self.types.len() as f64)
     }
 }
 

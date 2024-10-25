@@ -30,7 +30,7 @@ pub async fn set_owns_unordered(
     attribute_type_label: params::Label,
     may_error: params::MayError,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_schema_tx!(context, |tx| {
         let attr_type = tx
             .type_manager
@@ -57,7 +57,7 @@ pub async fn set_owns_ordered(
     attribute_type_label: params::Label,
     may_error: params::MayError,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_schema_tx!(context, |tx| {
         let attr_type = tx
             .type_manager
@@ -84,7 +84,7 @@ pub async fn unset_owns(
     attribute_type_label: params::Label,
     may_error: params::MayError,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_schema_tx!(context, |tx| {
         let attr_type = tx
             .type_manager
@@ -111,7 +111,7 @@ pub async fn get_owns_set_annotation(
     annotation: params::Annotation,
     may_error: params::MayError,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_schema_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -138,7 +138,7 @@ pub async fn get_owns_unset_annotation(
     annotation_category: params::AnnotationCategory,
     may_error: params::MayError,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_schema_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -165,7 +165,7 @@ pub async fn get_constraints_for_owned_attribute_contains(
     contains_or_doesnt: params::ContainsOrDoesnt,
     constraint: params::Constraint,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -176,7 +176,7 @@ pub async fn get_constraints_for_owned_attribute_contains(
             .get_owned_attribute_type_constraints(tx.snapshot.as_ref(), &tx.type_manager, attr_type)
             .unwrap()
             .into_iter()
-            .any(|constraint| &constraint.description() == &expected_constraint);
+            .any(|constraint| constraint.description() == expected_constraint);
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
@@ -193,7 +193,7 @@ pub async fn get_constraint_categories_for_owned_attribute_contains(
     contains_or_doesnt: params::ContainsOrDoesnt,
     constraint_category: params::ConstraintCategory,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -218,7 +218,7 @@ pub async fn get_owns_constraints_contains(
     contains_or_doesnt: params::ContainsOrDoesnt,
     constraint: params::Constraint,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -231,7 +231,7 @@ pub async fn get_owns_constraints_contains(
             .get_constraints(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .into_iter()
-            .any(|constraint| &constraint.description() == &expected_constraint);
+            .any(|constraint| constraint.description() == expected_constraint);
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
@@ -248,7 +248,7 @@ pub async fn get_owns_constraint_categories_contains(
     contains_or_doesnt: params::ContainsOrDoesnt,
     constraint_category: params::ConstraintCategory,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -273,7 +273,7 @@ pub async fn get_owns_constraints_is_empty(
     attr_type_label: params::Label,
     is_empty_or_not: params::IsEmptyOrNot,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -296,7 +296,7 @@ pub async fn get_owns_declared_annotations_contains(
     contains_or_doesnt: params::ContainsOrDoesnt,
     annotation: params::Annotation,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -323,7 +323,7 @@ pub async fn get_owns_declared_annotation_categories_contains(
     contains_or_doesnt: params::ContainsOrDoesnt,
     annotation_category: params::AnnotationCategory,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -349,7 +349,7 @@ pub async fn get_owns_declared_annotations_is_empty(
     attr_type_label: params::Label,
     is_empty_or_not: params::IsEmptyOrNot,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -369,12 +369,11 @@ pub async fn get_owns_cardinality(
     attr_type_label: params::Label,
     cardinality_annotation: params::Annotation,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
-        let value_type = owns.attribute().get_value_type(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         let actual_cardinality = owns.get_cardinality(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         match cardinality_annotation.into_typedb(None) {
             annotation::Annotation::Cardinality(card) => assert_eq!(actual_cardinality, card),
@@ -393,7 +392,7 @@ pub async fn get_owns_contain(
     step: &Step,
 ) {
     let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let actual_labels = object_type
             .get_owns(tx.snapshot.as_ref(), &tx.type_manager)
@@ -420,7 +419,7 @@ pub async fn get_owns_is_empty(
     type_label: params::Label,
     is_empty_or_not: params::IsEmptyOrNot,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let actual_is_empty = object_type.get_owns(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
         is_empty_or_not.check(actual_is_empty);
@@ -437,7 +436,7 @@ pub async fn get_declared_owns_contain(
     step: &Step,
 ) {
     let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let actual_labels = object_type
             .get_owns_declared(tx.snapshot.as_ref(), &tx.type_manager)
@@ -464,7 +463,7 @@ pub async fn get_declared_owns_is_empty(
     type_label: params::Label,
     is_empty_or_not: params::IsEmptyOrNot,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let actual_is_empty = object_type.get_owns_declared(tx.snapshot.as_ref(), &tx.type_manager).unwrap().is_empty();
         is_empty_or_not.check(actual_is_empty);
@@ -480,7 +479,7 @@ pub async fn get_owns_get_label(
     attr_type_label: params::Label,
     expected_label: params::Label,
 ) {
-    let owner = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let owner = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -506,7 +505,7 @@ pub async fn get_owns_set_ordering(
     ordering: params::Ordering,
     may_error: params::MayError,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_schema_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -530,7 +529,7 @@ pub async fn get_owns_get_ordering(
     attr_type_label: params::Label,
     ordering: params::Ordering,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
@@ -548,7 +547,7 @@ pub async fn get_owns_is_key(
     attr_type_label: params::Label,
     is: params::Boolean,
 ) {
-    let object_type = get_as_object_type(context, kind.into_typedb(), &type_label);
+    let object_type = get_as_object_type(context, kind.into_typedb(), type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();

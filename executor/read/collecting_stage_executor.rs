@@ -4,9 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, collections::HashSet, iter::Peekable, sync::Arc};
+use std::{
+    cmp::Ordering,
+    collections::{hash_set, HashSet},
+    iter::Peekable,
+    sync::Arc,
+};
 
-use compiler::executable::{modifiers::SortExecutable, reduce::ReduceExecutable};
+use compiler::{
+    executable::{modifiers::SortExecutable, reduce::ReduceExecutable},
+    VariablePosition,
+};
 use ir::pipeline::modifier::SortVariable;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
@@ -145,9 +153,8 @@ impl CollectorTrait for ReduceCollector {
 
     fn accept(&mut self, context: &ExecutionContext<impl ReadableSnapshot>, batch: FixedBatch) {
         let active_reducer = self.active_reducer.as_mut().unwrap();
-        let mut batch_iter = batch.into_iterator();
-        while let Some(row) = batch_iter.next() {
-            active_reducer.accept(&row.unwrap(), context).unwrap(); // TODO: potentially unsafe unwrap
+        for row in batch {
+            active_reducer.accept(&row, context).unwrap(); // TODO: potentially unsafe unwrap
         }
     }
 
@@ -182,7 +189,7 @@ impl CollectedStageIteratorTrait for ReduceStageIterator {
                 break;
             }
         }
-        if next_batch.len() > 0 {
+        if !next_batch.is_empty() {
             Ok(Some(next_batch))
         } else {
             Ok(None)
@@ -220,10 +227,8 @@ impl CollectorTrait for SortCollector {
         self.collector = None;
     }
 
-    fn accept(&mut self, context: &ExecutionContext<impl ReadableSnapshot>, batch: FixedBatch) {
-        let mut batch_iter = batch.into_iterator();
-        while let Some(result) = batch_iter.next() {
-            let row = result.unwrap();
+    fn accept(&mut self, _context: &ExecutionContext<impl ReadableSnapshot>, batch: FixedBatch) {
+        for row in batch {
             if self.collector.is_none() {
                 self.collector = Some(Batch::new(row.len() as u32, 0usize)) // TODO: Remove this workaround once we have output_width
             }
@@ -232,7 +237,7 @@ impl CollectorTrait for SortCollector {
     }
 
     fn collected_to_iterator(&mut self) -> CollectedStageIterator {
-        let mut unsorted = self.collector.take().unwrap();
+        let unsorted = self.collector.take().unwrap();
         let mut indices: Vec<usize> = (0..unsorted.len()).collect();
         indices.sort_by(|x, y| {
             let x_row_as_row = unsorted.get_row(*x);
@@ -275,7 +280,7 @@ impl CollectedStageIteratorTrait for SortStageIterator {
             }
             Ok(Some(next_batch))
         } else {
-            return Ok(None);
+            Ok(None)
         }
     }
 }
@@ -300,10 +305,8 @@ impl CollectorTrait for DistinctCollector {
         self.collector = None;
     }
 
-    fn accept(&mut self, context: &ExecutionContext<impl ReadableSnapshot>, batch: FixedBatch) {
-        let mut batch_iter = batch.into_iterator();
-        while let Some(result) = batch_iter.next() {
-            let row = result.unwrap();
+    fn accept(&mut self, _context: &ExecutionContext<impl ReadableSnapshot>, batch: FixedBatch) {
+        for row in batch {
             self.collector.as_mut().unwrap().insert(row.clone().into_owned());
         }
     }
@@ -316,7 +319,7 @@ impl CollectorTrait for DistinctCollector {
 }
 
 pub struct DistinctStageIterator {
-    iterator: Peekable<std::collections::hash_set::IntoIter<MaybeOwnedRow<'static>>>,
+    iterator: Peekable<hash_set::IntoIter<MaybeOwnedRow<'static>>>,
 }
 
 impl CollectedStageIteratorTrait for DistinctStageIterator {
@@ -332,11 +335,7 @@ impl CollectedStageIteratorTrait for DistinctStageIterator {
                     break;
                 }
             }
-            if next_batch.len() > 0 {
-                Ok(Some(next_batch))
-            } else {
-                Ok(None)
-            }
+            Ok(Some(next_batch))
         } else {
             Ok(None)
         }
