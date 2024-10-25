@@ -96,28 +96,20 @@ impl TabledCallExecutor {
     pub(crate) fn try_read_next_batch<'a>(
         &mut self,
         tabled_function_state: &'a TabledFunctionState,
-    ) -> Result<TabledCallResult<'a>, ReadExecutionError> {
+    ) -> TabledCallResult<'a> {
         // Maybe return a batch?
         let executor = self.active_executor.as_mut().unwrap();
         let table_read = tabled_function_state.table.read().unwrap();
         if *executor.next_table_row < table_read.len() {
             let batch = table_read.read_batch_starting(executor.next_table_row);
             *executor.next_table_row += batch.len() as usize;
-            Ok(TabledCallResult::RetrievedFromTable(batch))
+            TabledCallResult::RetrievedFromTable(batch)
         } else {
             drop(table_read);
             match tabled_function_state.executor_state.try_lock() {
-                Ok(mut executor_state_mutex_guard) => {
-                    Ok(TabledCallResult::MustExecutePattern(executor_state_mutex_guard))
-                }
-                Err(TryLockError::WouldBlock) => Ok(Suspend),
-                Err(TryLockError::Poisoned(_)) => {
-                    let call_key = self.active_call_key().unwrap();
-                    Err(ReadExecutionError::TabledFunctionLockError {
-                        function_id: call_key.function_id.clone(),
-                        arguments: call_key.arguments.clone(),
-                    })
-                }
+                Ok(executor_mutex_guard) => TabledCallResult::MustExecutePattern(executor_mutex_guard),
+                Err(TryLockError::WouldBlock) => Suspend,
+                Err(TryLockError::Poisoned(_)) => panic!("The mutex on a tabled function was poisoned")
             }
         }
     }
