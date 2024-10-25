@@ -35,7 +35,7 @@ pub struct ExecutableFunction {
     pub executable_stages: Vec<ExecutableStage>,
     pub argument_positions: HashMap<Variable, VariablePosition>,
     pub returns: ExecutableReturn,
-    pub is_tabled: bool,
+    pub is_tabled: FunctionTablingType,
     // pub plan_cost: f64, // TODO: Where do we fit this in?
 }
 
@@ -46,11 +46,17 @@ pub enum ExecutableReturn {
     Reduce(Vec<ReduceInstruction<VariablePosition>>),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FunctionTablingType {
+    Tabled,
+    Untabled,
+}
+
 pub(crate) fn compile_function(
     statistics: &Statistics,
     schema_functions: &ExecutableFunctionRegistry, // Can't have preamble in them when you're compiling functions
     function: AnnotatedFunction,
-    is_tabled: bool,
+    is_tabled: FunctionTablingType,
 ) -> Result<ExecutableFunction, ExecutableCompilationError> {
     let AnnotatedFunction { variable_registry, arguments, stages, return_ } = function;
     let (argument_positions, executable_stages) = compile_pipeline_stages(
@@ -89,7 +95,7 @@ fn compile_return_operation(
 
 pub fn determine_tabling_requirements(
     functions: &HashMap<FunctionID, &AnnotatedFunction>,
-) -> HashMap<FunctionID, bool> {
+) -> HashMap<FunctionID, FunctionTablingType> {
     let mut cycle_detection: HashMap<FunctionID, TablingRequirement> =
         functions.keys().map(|function_id| (function_id.clone(), TablingRequirement::Unexplored)).collect();
     for (function_id, _) in functions {
@@ -100,8 +106,8 @@ pub fn determine_tabling_requirements(
     cycle_detection
         .into_iter()
         .map(|(function_id, tabling_requirement)| match tabling_requirement {
-            TablingRequirement::KnownTabled => (function_id, true),
-            TablingRequirement::KnownUntabled => (function_id, false),
+            TablingRequirement::KnownTabled => (function_id, FunctionTablingType::Tabled),
+            TablingRequirement::KnownUntabled => (function_id, FunctionTablingType::Untabled),
             TablingRequirement::Unexplored | TablingRequirement::UnknownInStack => unreachable!(),
         })
         .collect()

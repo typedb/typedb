@@ -21,6 +21,7 @@ use crate::{
     },
     VariablePosition,
 };
+use crate::executable::function::FunctionTablingType;
 
 pub struct ExecutableFetch {
     pub object_instruction: FetchObjectInstruction,
@@ -105,7 +106,7 @@ fn compile_some(
             Ok(FetchSomeInstruction::SingleAttribute(*position, attribute_type))
         }
         AnnotatedFetchSome::SingleFunction(function) => {
-            let compiled = compile_function(statistics, available_functions, function, false)
+            let compiled = compile_function(statistics, available_functions, function, FunctionTablingType::Untabled)
                 .map_err(|err| FetchCompilationError::AnonymousFunctionCompilation { typedb_source: Box::new(err) })?;
             Ok(FetchSomeInstruction::SingleFunction(compiled))
         }
@@ -114,7 +115,7 @@ fn compile_some(
             Ok(FetchSomeInstruction::Object(Box::new(compiled)))
         }
         AnnotatedFetchSome::ListFunction(function) => {
-            let compiled = compile_function(statistics, available_functions, function, false)
+            let compiled = compile_function(statistics, available_functions, function, FunctionTablingType::Untabled)
                 .map_err(|err| FetchCompilationError::AnonymousFunctionCompilation { typedb_source: Box::new(err) })?;
             Ok(FetchSomeInstruction::ListFunction(compiled))
         }

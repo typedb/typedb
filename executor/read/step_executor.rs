@@ -20,6 +20,7 @@ use compiler::{
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::pipeline::function_signature::FunctionID;
 use itertools::Itertools;
+use compiler::executable::function::FunctionTablingType;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::read::{
@@ -112,7 +113,7 @@ pub(crate) fn create_executors_for_match(
             }
             ExecutionStep::FunctionCall(function_call) => {
                 let function = function_registry.get(function_call.function_id.clone());
-                if function.is_tabled {
+                if function.is_tabled == FunctionTablingType::Tabled {
                     let executor = TabledCallExecutor::new(
                         function_call.function_id.clone(),
                         function_call.arguments.clone(),
