@@ -7,8 +7,9 @@
 use compiler::annotation::expression::instructions::ExpressionEvaluationError;
 use concept::error::ConceptReadError;
 use error::typedb_error;
+use ir::pipeline::function_signature::FunctionID;
 
-use crate::InterruptType;
+use crate::{row::MaybeOwnedRow, InterruptType};
 
 typedb_error!(
     pub ReadExecutionError(component = "Read execution", prefix = "REX") {
@@ -17,5 +18,7 @@ typedb_error!(
         CreatingIterator(3, "Error creating iterator from {instruction_name} instruction.", instruction_name: String, ( source: ConceptReadError )),
         AdvancingIteratorTo(4, "Error moving iterator (by steps or seek) to target value.", ( source: ConceptReadError )),
         ExpressionEvaluate(5, "Error evaluating expression", ( source: ExpressionEvaluationError )),
+
+        UnimplementedCyclicFunctions(999, "A cyclic function-call was detected. The results are sound but may be incomplete. This will be fixed in a later alpha release."),
     }
 );

@@ -91,15 +91,13 @@ impl IndexedAnnotatedFunctions {
     pub fn empty() -> Self {
         Self { functions: HashMap::new() }
     }
-    pub fn iter_functions(&self) -> impl Iterator<Item = (&DefinitionKey<'static>, &AnnotatedFunction)> {
-        self.functions.iter()
-    }
 }
 
 pub trait AnnotatedFunctions {
     type ID;
 
     fn get_function(&self, id: Self::ID) -> Option<&AnnotatedFunction>;
+    fn iter_functions(&self) -> impl Iterator<Item = (Self::ID, &AnnotatedFunction)>;
 
     fn is_empty(&self) -> bool;
 }
@@ -109,6 +107,10 @@ impl AnnotatedFunctions for IndexedAnnotatedFunctions {
 
     fn get_function(&self, id: Self::ID) -> Option<&AnnotatedFunction> {
         self.functions.get(&id)
+    }
+
+    fn iter_functions(&self) -> impl Iterator<Item = (DefinitionKey<'static>, &AnnotatedFunction)> {
+        self.functions.iter().map(|(key, function)| (key.clone(), function))
     }
 
     fn is_empty(&self) -> bool {
@@ -141,6 +143,10 @@ impl AnnotatedFunctions for AnnotatedUnindexedFunctions {
 
     fn get_function(&self, id: Self::ID) -> Option<&AnnotatedFunction> {
         self.unindexed_functions.get(id)
+    }
+
+    fn iter_functions(&self) -> impl Iterator<Item = (usize, &AnnotatedFunction)> {
+        self.unindexed_functions.iter().enumerate()
     }
 
     fn is_empty(&self) -> bool {

@@ -31,6 +31,10 @@ impl Disjunction {
     pub fn conjunctions(&self) -> &[Conjunction] {
         &self.conjunctions
     }
+
+    pub(crate) fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.conjunctions().iter().flat_map(|conjunction| conjunction.referenced_variables())
+    }
 }
 
 impl Scope for Disjunction {

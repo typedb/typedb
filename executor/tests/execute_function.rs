@@ -30,14 +30,7 @@ struct Context {
     _tmp_dir: TempDir,
 }
 
-fn setup_common() -> Context {
-    let (_tmp_dir, mut storage) = create_core_storage();
-    setup_concept_storage(&mut storage);
-
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
-    let query_manager = QueryManager::new();
-    let schema = r#"
+const COMMON_SCHEMA: &str = r#"
     define
         attribute age value long;
         attribute name value string;
@@ -45,6 +38,14 @@ fn setup_common() -> Context {
         entity organisation plays membership:group;
         relation membership relates member, relates group;
     "#;
+fn setup_common(schema: &str) -> Context {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
+    let query_manager = QueryManager::new();
+
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(schema).unwrap().into_schema();
     query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, define).unwrap();
@@ -55,7 +56,7 @@ fn setup_common() -> Context {
     Context { _tmp_dir, storage, type_manager, function_manager, query_manager, thing_manager }
 }
 
-fn run_read_query(context: &Context, query: &str) -> Vec<Result<MaybeOwnedRow<'static>, PipelineExecutionError>> {
+fn run_read_query(context: &Context, query: &str) -> Result<Vec<MaybeOwnedRow<'static>>, PipelineExecutionError> {
     let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
     let match_ = typeql::parse_query(query).unwrap().into_pipeline();
     let pipeline = context
@@ -71,7 +72,7 @@ fn run_read_query(context: &Context, query: &str) -> Vec<Result<MaybeOwnedRow<'s
 
     let (mut iterator, _) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, PipelineExecutionError>> =
+    let rows: Result<Vec<MaybeOwnedRow<'static>>, PipelineExecutionError> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
 
     rows
@@ -79,7 +80,7 @@ fn run_read_query(context: &Context, query: &str) -> Vec<Result<MaybeOwnedRow<'s
 
 #[test]
 fn function_compiles() {
-    let context = setup_common();
+    let context = setup_common(COMMON_SCHEMA);
     let snapshot = context.storage.clone().open_snapshot_write();
     let insert_query_str = r#"insert
         $p1 isa person, has name "Alice", has age 1, has age 5;
@@ -116,7 +117,7 @@ fn function_compiles() {
                 $p isa person;
                 $z in get_ages($p);
         "#;
-        let rows = run_read_query(&context, query);
+        let rows = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 3);
     }
 
@@ -133,7 +134,7 @@ fn function_compiles() {
                 $p isa person;
                 $z in get_ages($p);
         "#;
-        let rows = run_read_query(&context, query);
+        let rows = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 1);
     }
 
@@ -150,7 +151,7 @@ fn function_compiles() {
                 $p isa person;
                 $z in get_ages($p);
         "#;
-        let rows = run_read_query(&context, query);
+        let rows = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 0);
     }
 
@@ -167,7 +168,7 @@ fn function_compiles() {
                 $p isa person;
                 $z in get_ages($p);
         "#;
-        let rows = run_read_query(&context, query);
+        let rows = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 0);
     }
 
@@ -184,7 +185,7 @@ fn function_compiles() {
                 $p isa person;
                 $z in get_ages($p);
         "#;
-        let rows = run_read_query(&context, query);
+        let rows = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 2);
     }
 
@@ -201,7 +202,7 @@ fn function_compiles() {
                 $p isa person;
                 $z in get_ages($p);
         "#;
-        let rows = run_read_query(&context, query);
+        let rows = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 3);
     }
 
@@ -218,14 +219,14 @@ fn function_compiles() {
                 $p isa person;
                 $z in get_ages($p);
         "#;
-        let rows = run_read_query(&context, query);
+        let rows = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 2);
     }
 }
 
 #[test]
 fn function_binary() {
-    let context = setup_common();
+    let context = setup_common(COMMON_SCHEMA);
     let snapshot = context.storage.clone().open_snapshot_write();
     let insert_query_str = r#"insert
         $p1 isa person, has name "Alice", has age 1, has age 5;
@@ -266,7 +267,63 @@ fn function_binary() {
                 $name1 != $name2;
                 $same_age in same_age_check($p1, $p2);
         "#;
-        let rows = run_read_query(&context, query);
+        let rows = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 2); // Symmetrically Alice & Charlie
+    }
+}
+
+#[test]
+fn simple_tabled() {
+    let custom_schema = r#"define
+        attribute name value string;
+        entity node, owns name @card(0..), plays edge:from, plays edge:to;
+        relation edge, relates from, relates to;
+    "#;
+    let context = setup_common(custom_schema);
+    let snapshot = context.storage.clone().open_snapshot_write();
+    let insert_query_str = r#"insert
+        $n1 isa node, has name "n1";
+        $n2 isa node, has name "n2";
+        $n3 isa node, has name "n3";
+
+        (from: $n1, to: $n2) isa edge;
+        (from: $n2, to: $n3) isa edge;
+    "#;
+    let insert_query = typeql::parse_query(insert_query_str).unwrap().into_pipeline();
+    let insert_pipeline = context
+        .query_manager
+        .prepare_write_pipeline(
+            snapshot,
+            &context.type_manager,
+            context.thing_manager.clone(),
+            &context.function_manager,
+            &insert_query,
+        )
+        .unwrap();
+    let (mut iterator, ExecutionContext { snapshot, .. }) =
+        insert_pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+
+    assert_matches!(iterator.next(), Some(Ok(_)));
+    assert_matches!(iterator.next(), None);
+    let snapshot = Arc::into_inner(snapshot).unwrap();
+    snapshot.commit().unwrap();
+
+    {
+        // quadratic tabling reachability.
+        let query = r#"
+            with
+            fun reachable($from: node) -> { node }:
+            match
+                $return-me has name $name;
+                { (from: $from, to: $middle) isa edge; $indirect in reachable($middle); $indirect has name $name; } or
+                { (from: $from, to: $direct) isa edge; $direct has name $name; }; # Do we have is yet?
+            return { $return-me };
+
+            match
+                $from isa node, has name "n1";
+                $to in reachable($from);
+        "#;
+        let rows = run_read_query(&context, query).unwrap();
+        assert_eq!(rows.len(), 2);
     }
 }

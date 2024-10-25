@@ -283,7 +283,7 @@ fn traverse_links_unbounded_sorted_from() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -389,7 +389,7 @@ fn traverse_links_unbounded_sorted_to() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -512,7 +512,7 @@ fn traverse_links_bounded_relation() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -649,7 +649,7 @@ fn traverse_links_bounded_relation_player() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -756,7 +756,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -864,7 +864,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -984,7 +984,7 @@ fn traverse_links_reverse_bounded_player() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 
@@ -1121,7 +1121,7 @@ fn traverse_links_reverse_bounded_player_relation() {
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
-        &ExecutableFunctionRegistry::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
     )
     .unwrap();
 

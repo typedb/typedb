@@ -8,7 +8,7 @@ use std::{collections::HashSet, sync::Arc};
 
 use compiler::{
     executable::{
-        function::{ExecutableFunction, ExecutableReturn},
+        function::{ExecutableFunction, ExecutableReturn, FunctionTablingType},
         match_::planner::{
             function_plan::ExecutableFunctionRegistry,
             match_executable::{ExecutionStep, MatchExecutable},
@@ -23,16 +23,16 @@ use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::read::{
-    collecting_stage_executor::CollectingStageExecutor,
-    immediate_executor::ImmediateExecutor,
-    nested_pattern_executor::NestedPatternExecutor,
-    pattern_executor::PatternExecutor,
+    collecting_stage_executor::CollectingStageExecutor, immediate_executor::ImmediateExecutor,
+    nested_pattern_executor::NestedPatternExecutor, pattern_executor::PatternExecutor,
+    tabled_call_executor::TabledCallExecutor,
 };
 
 pub(super) enum StepExecutors {
     Immediate(ImmediateExecutor),
     Nested(NestedPatternExecutor),
     CollectingStage(CollectingStageExecutor),
+    TabledCall(TabledCallExecutor),
     ReshapeForReturn(Vec<VariablePosition>),
 }
 
@@ -51,15 +51,29 @@ impl StepExecutors {
         }
     }
 
+    pub(crate) fn unwrap_tabled_call(&mut self) -> &mut TabledCallExecutor {
+        match self {
+            StepExecutors::TabledCall(step) => step,
+            _ => unreachable!(),
+        }
+    }
+
     pub(crate) fn unwrap_collecting_stage(&mut self) -> &mut CollectingStageExecutor {
         match self {
             StepExecutors::CollectingStage(step) => step,
             _ => panic!("bad unwrap"),
         }
     }
+
+    pub(crate) fn unwrap_reshape(&self) -> &Vec<VariablePosition> {
+        match self {
+            StepExecutors::ReshapeForReturn(return_positions) => return_positions,
+            _ => panic!("bad unwrap"),
+        }
+    }
 }
 
-pub(super) fn create_executors_for_match(
+pub(crate) fn create_executors_for_match(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
@@ -98,25 +112,29 @@ pub(super) fn create_executors_for_match(
             }
             ExecutionStep::FunctionCall(function_call) => {
                 let function = function_registry.get(function_call.function_id.clone());
-                if function.is_tabled {
-                    todo!()
+                if function.is_tabled == FunctionTablingType::Tabled {
+                    let executor = TabledCallExecutor::new(
+                        function_call.function_id.clone(),
+                        function_call.arguments.clone(),
+                        function_call.assigned.clone(),
+                        function_call.output_width,
+                    );
+                    steps.push(StepExecutors::TabledCall(executor))
                 } else {
                     if tmp__recursion_validation.contains(&function_call.function_id) {
-                        todo!(
-                            "Recursive functions are unsupported in this release. Continuing would overflow the stack"
-                        )
+                        // TODO: This validation can be removed once planning correctly identifies those to be tabled.
+                        unreachable!("Something that should have been tabled has not been tabled.")
                     } else {
                         tmp__recursion_validation.insert(function_call.function_id.clone());
                     }
-                    let inner = create_executors_for_pipeline_stages(
+                    let inner_executors = create_executors_for_function(
                         snapshot,
                         thing_manager,
                         function_registry,
-                        &function.executable_stages,
-                        &function.executable_stages.len() - 1,
+                        function,
                         tmp__recursion_validation,
                     )?;
-                    let inner = PatternExecutor::new(inner);
+                    let inner = PatternExecutor::new(inner_executors);
                     tmp__recursion_validation.remove(&function_call.function_id);
                     let step = NestedPatternExecutor::new_inlined_function(inner, function_call);
                     steps.push(step.into())
@@ -152,15 +170,13 @@ pub(super) fn create_executors_for_match(
     Ok(steps)
 }
 
-pub(super) fn create_executors_for_function(
+pub(crate) fn create_executors_for_function(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
     executable_function: &ExecutableFunction,
     tmp__recursion_validation: &mut HashSet<FunctionID>,
 ) -> Result<Vec<StepExecutors>, ConceptReadError> {
-    // TODO: Support full pipelines
-    debug_assert!(executable_function.executable_stages.len() == 1);
     let executable_stages = &executable_function.executable_stages;
     let mut steps = create_executors_for_pipeline_stages(
         snapshot,

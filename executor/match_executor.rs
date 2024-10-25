@@ -17,7 +17,10 @@ use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
-    read::{create_executors_for_pipeline, pattern_executor::PatternExecutor, TODO_REMOVE_create_executors_for_match},
+    read::{
+        pattern_executor::PatternExecutor, tabled_functions::TabledFunctions, SuspendPoint,
+        TODO_REMOVE_create_executors_for_match,
+    },
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
@@ -25,6 +28,8 @@ use crate::{
 pub struct MatchExecutor {
     entry: PatternExecutor,
     input: Option<MaybeOwnedRow<'static>>,
+    tabled_functions: TabledFunctions,
+    suspend_points: Vec<SuspendPoint>,
 }
 
 impl MatchExecutor {
@@ -33,16 +38,18 @@ impl MatchExecutor {
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
         input: MaybeOwnedRow<'_>,
-        function_registry: &ExecutableFunctionRegistry,
+        function_registry: Arc<ExecutableFunctionRegistry>,
     ) -> Result<Self, ConceptReadError> {
         Ok(Self {
             entry: TODO_REMOVE_create_executors_for_match(
                 snapshot,
                 thing_manager,
-                function_registry,
+                &function_registry,
                 match_executable,
             )?,
+            tabled_functions: TabledFunctions::new(function_registry),
             input: Some(input.into_owned()),
+            suspend_points: Vec::new(),
         })
     }
 
@@ -64,7 +71,14 @@ impl MatchExecutor {
         if let Some(input) = self.input.take() {
             self.entry.prepare(FixedBatch::from(input.into_owned()));
         }
-        self.entry.compute_next_batch(context, interrupt)
+        let batch =
+            self.entry.compute_next_batch(context, interrupt, &mut self.tabled_functions, &mut self.suspend_points)?;
+        if batch.is_none() && !self.suspend_points.is_empty() {
+            self.suspend_points.clear(); // I had an infinite collection, so I don't want to risk it.
+            Err(ReadExecutionError::UnimplementedCyclicFunctions {})
+        } else {
+            Ok(batch)
+        }
     }
 }
 

@@ -433,17 +433,17 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     }
 
     fn register_function_call_binding(&mut self, call_binding: &'a FunctionCallBinding<Variable>) {
-        // TODO: This is just a mock
         let arguments =
             call_binding.function_call().argument_ids().map(|variable| self.graph.variable_index[&variable]).collect();
         let return_vars = call_binding
             .assigned()
             .iter()
             .map(|vertex| {
-                let Vertex::Variable(variable) = vertex else { todo!("Unreachable?") };
+                let Vertex::Variable(variable) = vertex else { unreachable!() };
                 self.graph.variable_index[variable]
             })
             .collect();
+        // TODO: Use the real cost when we have function planning
         let element_cost = ElementCost { per_input: 1.0, per_output: 1.0, branching_factor: 1.0 };
         self.graph.push_function_call(FunctionCallPlanner::from_constraint(
             call_binding,
@@ -577,7 +577,6 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
     pub(super) fn plan(self) -> ConjunctionPlan<'a> {
         let ordering = self.initialise_greedy_ordering();
-
         let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
 
         let cost = ordering
@@ -1146,6 +1145,8 @@ impl fmt::Debug for Graph<'_> {
         f.debug_struct(type_name_of_val(self))
             .field("variable_index", &self.variable_index)
             .field("elements", &self.elements)
+            .field("pattern_to_variable", &self.pattern_to_variable)
+            .field("variable_to_pattern", &self.variable_to_pattern)
             .finish()
     }
 }
@@ -1198,7 +1199,12 @@ impl<'a> Graph<'a> {
         for var in function_call.variables() {
             self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
         }
+        let assigned = function_call.assigned.clone();
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::FunctionCall(function_call));
+        assigned.into_iter().for_each(|vertex| {
+            let output_planner = self.elements.get_mut(&VertexId::Variable(vertex)).unwrap();
+            output_planner.as_variable_mut().unwrap().set_binding(pattern_index);
+        })
     }
 
     fn push_disjunction(&mut self, disjunction: DisjunctionPlanner<'a>) {

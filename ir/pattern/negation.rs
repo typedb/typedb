@@ -6,6 +6,8 @@
 
 use std::fmt;
 
+use answer::variable::Variable;
+
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
@@ -33,6 +35,10 @@ impl Negation {
 
     pub fn conjunction(&self) -> &Conjunction {
         &self.conjunction
+    }
+
+    pub(crate) fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.conjunction().referenced_variables()
     }
 }
 

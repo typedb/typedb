@@ -19,6 +19,7 @@ use crate::{
     executable::match_::{
         instructions::{CheckInstruction, ConstraintInstruction},
         planner::{
+            function_plan::ExecutableFunctionRegistry,
             match_executable::{
                 AssignmentStep, CheckStep, DisjunctionStep, ExecutionStep, FunctionCallStep, IntersectionStep,
                 MatchExecutable, NegationStep,

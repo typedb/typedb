@@ -162,7 +162,7 @@ impl<'a> fmt::Display for MaybeOwnedRow<'a> {
         for value in &*self.row {
             write!(f, "{value}  ")?
         }
-        writeln!(f, "]")?;
+        write!(f, "]")?;
         Ok(())
     }
 }

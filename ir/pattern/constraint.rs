@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt};
+use std::{collections::HashMap, fmt, ops::Deref};
 
 use answer::variable::Variable;
 use itertools::Itertools;
@@ -29,6 +29,13 @@ pub struct Constraints {
     left_constrained_index: HashMap<Variable, Vec<Constraint<Variable>>>,
     right_constrained_index: HashMap<Variable, Vec<Constraint<Variable>>>,
     filter_constrained_index: HashMap<Variable, Vec<Constraint<Variable>>>,
+}
+
+impl Deref for Constraints {
+    type Target = [Constraint<Variable>];
+    fn deref(&self) -> &Self::Target {
+        self.constraints.as_slice()
+    }
 }
 
 impl Constraints {

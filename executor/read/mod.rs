@@ -14,15 +14,25 @@ use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::pipeline::function_signature::FunctionID;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::read::{pattern_executor::PatternExecutor, step_executor::create_executors_for_pipeline_stages};
+use crate::{
+    read::{
+        pattern_executor::{BranchIndex, ExecutorIndex, PatternExecutor},
+        step_executor::create_executors_for_pipeline_stages,
+        tabled_functions::TableIndex,
+    },
+    row::MaybeOwnedRow,
+};
 
 mod collecting_stage_executor;
 pub mod expression_executor;
 mod immediate_executor;
 mod nested_pattern_executor;
 pub(crate) mod pattern_executor;
-mod step_executor;
+pub(crate) mod step_executor;
+pub(crate) mod tabled_call_executor;
+pub mod tabled_functions;
 
+// And use the below one instead
 pub(super) fn TODO_REMOVE_create_executors_for_match(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,
@@ -55,4 +65,41 @@ pub(super) fn create_executors_for_pipeline(
         tmp__recursion_validation,
     )?;
     Ok(PatternExecutor::new(executors))
+}
+
+pub(crate) enum SuspendPoint {
+    TabledCall(TabledCallSuspension),
+    Nested(NestedSuspension),
+}
+
+impl SuspendPoint {
+    fn new_tabled_call(
+        executor_index: ExecutorIndex,
+        next_table_row: TableIndex,
+        input_row: MaybeOwnedRow<'static>,
+    ) -> Self {
+        Self::TabledCall(TabledCallSuspension { executor_index, next_table_row, input_row })
+    }
+
+    fn new_nested(
+        executor_index: ExecutorIndex,
+        branch_index: BranchIndex,
+        input_row: MaybeOwnedRow<'static>,
+    ) -> Self {
+        Self::Nested(NestedSuspension { executor_index, branch_index, input_row })
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct TabledCallSuspension {
+    pub(crate) executor_index: ExecutorIndex,
+    pub(crate) input_row: MaybeOwnedRow<'static>,
+    pub(crate) next_table_row: TableIndex,
+}
+
+#[derive(Debug)]
+pub(super) struct NestedSuspension {
+    pub(crate) executor_index: ExecutorIndex,
+    pub(crate) branch_index: BranchIndex,
+    pub(crate) input_row: MaybeOwnedRow<'static>,
 }
