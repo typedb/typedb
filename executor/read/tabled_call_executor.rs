@@ -4,22 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::{Arc, Mutex, MutexGuard, TryLockError};
+use std::sync::{MutexGuard, TryLockError};
 
 use compiler::VariablePosition;
 use ir::pipeline::function_signature::FunctionID;
-use itertools::Either;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
-use tokio::sync::RwLockReadGuard;
 
 use crate::{
     batch::FixedBatch,
-    error::ReadExecutionError,
     read::{
-        pattern_executor::{InstructionIndex, PatternExecutor},
+        pattern_executor::InstructionIndex,
         tabled_call_executor::TabledCallResult::Suspend,
-        tabled_functions::{AnswerTable, CallKey, TableIndex, TabledFunctionPatternExecutorState, TabledFunctionState},
+        tabled_functions::{CallKey, TableIndex, TabledFunctionPatternExecutorState, TabledFunctionState},
         SuspendPoint, TabledCallSuspension,
     },
     row::MaybeOwnedRow,

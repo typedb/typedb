@@ -4,10 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{ops::DerefMut, sync::TryLockError};
+use std::ops::DerefMut;
 
 use compiler::VariablePosition;
-use itertools::Either;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
