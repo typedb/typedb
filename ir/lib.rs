@@ -185,6 +185,7 @@ pub enum LiteralParseError {
     InvalidDate { year: i32, month: u32, day: u32 },
     InvalidTime { hour: u32, minute: u32, second: u32, nano: u32 },
     CannotUnescapeString { literal: StringLiteral, source: typeql::Error },
+    CannotUnescapeRegexString { literal: StringLiteral, source: typeql::Error },
     TimeZoneLookup { name: String },
     FixedOffset { value: String },
 }
@@ -203,6 +204,7 @@ impl Error for LiteralParseError {
             LiteralParseError::InvalidDate { .. } => None,
             LiteralParseError::InvalidTime { .. } => None,
             LiteralParseError::CannotUnescapeString { source, .. } => Some(source),
+            LiteralParseError::CannotUnescapeRegexString { source, .. } => Some(source),
             LiteralParseError::TimeZoneLookup { .. } => None,
             LiteralParseError::FixedOffset { .. } => None,
         }

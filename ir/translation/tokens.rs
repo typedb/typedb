@@ -39,9 +39,7 @@ pub fn translate_annotation(typeql_kind: &typeql::Annotation) -> Result<Annotati
             range.min.as_ref().map(translate_literal).transpose()?,
             range.max.as_ref().map(translate_literal).transpose()?,
         )),
-        typeql::Annotation::Regex(regex) => {
-            Annotation::Regex(AnnotationRegex::new(String::from_typeql_literal(&regex.regex)?))
-        }
+        typeql::Annotation::Regex(regex) => Annotation::Regex(AnnotationRegex::from_typeql_literal(regex)?),
         typeql::Annotation::Subkey(_) => {
             todo!()
         }
