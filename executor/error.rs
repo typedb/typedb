@@ -20,6 +20,6 @@ typedb_error!(
         ExpressionEvaluate(5, "Error evaluating expression", ( source: ExpressionEvaluationError )),
         TabledFunctionLockError(6, "The table function lock was poisoned", function_id: FunctionID, arguments: MaybeOwnedRow<'static>),
 
-        UnimplementedCyclicFunctions(999, "A data-cycle was detected."),
+        UnimplementedCyclicFunctions(999, "A cyclic function-call was detected. The results are sound but may be incomplete. This will be fixed in a later alpha release."),
     }
 );
