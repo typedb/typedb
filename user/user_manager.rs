@@ -1,6 +1,7 @@
 use system::concepts::{Credential, User, Password};
 use system::repositories::{CredentialRepository, UserRepository};
 use system::transaction_helper::{read_transaction, write_transaction};
+use crate::errors::UserCreateError;
 
 #[derive(Debug)]
 pub struct UserManager {
@@ -32,11 +33,12 @@ impl UserManager {
         })
     }
 
-    pub fn create(&self, user: &User, credential: &Credential) {
+    pub fn create(&self, user: &User, credential: &Credential) -> Result<(), UserCreateError>{
         write_transaction(|tx| {
             self.user_repository.create(&tx, &user);
             self.credential_repository.create(&tx, &user.name, credential);
-        })
+        });
+        todo!()
     }
 }
 
