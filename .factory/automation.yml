@@ -43,15 +43,15 @@ build:
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         # TODO
         bazel test //compiler:test_crate_compiler --test_output=streamed
-#        bazel test //concept/tests/... --test_output=streamed
+#        bazel test //concept:test_crate_concept --test_output=streamed
         bazel test //database:test_crate_database --test_output=streamed
-         bazel test //durability:test_crate_durability  --test_output=streamed
-         bazel test //encoding:test_crate_encoding --test_output=streamed
-#        bazel test //executor/tests/... --test_output=streamed
+        bazel test //durability:test_crate_durability  --test_output=streamed
+        bazel test //encoding:test_crate_encoding --test_output=streamed
+        bazel test //executor/tests:test_crate_executor --test_output=streamed
         bazel test //function:test_crate_function --test_output=streamed
         bazel test //ir:test_crate_ir --test_output=streamed
         bazel test //query:test_crate_query --test_output=streamed
-         bazel test //storage:test_crate_storage --test_output=streamed
+        bazel test //storage:test_crate_storage --test_output=streamed
 
     test-integration:
       image: vaticle-ubuntu-22.04
@@ -64,7 +64,7 @@ build:
         bazel test //database/tests/... --test_output=streamed
         bazel test //durability/tests/... --test_output=streamed
         bazel test //encoding/tests/... --test_output=streamed
-#        bazel test //executor/tests/... --test_output=streamed
+        bazel test //executor/tests/... --test_output=streamed
         bazel test //function/tests/... --test_output=streamed
         bazel test //ir/tests/... --test_output=streamed
         bazel test //query/tests/... --test_output=streamed
