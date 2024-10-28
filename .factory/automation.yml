@@ -46,7 +46,7 @@ build:
         bazel test //database:test_crate_database --test_output=streamed
         bazel test //durability:test_crate_durability  --test_output=streamed
         bazel test //encoding:test_crate_encoding --test_output=streamed
-        bazel test //executor/tests:test_crate_executor --test_output=streamed
+        bazel test //executor:test_crate_executor --test_output=streamed
         bazel test //function:test_crate_function --test_output=streamed
         bazel test //ir:test_crate_ir --test_output=streamed
         bazel test //query:test_crate_query --test_output=streamed
@@ -60,7 +60,7 @@ build:
         # TODO: Uncomment!
         bazel test //compiler/tests/... --test_output=streamed
         # bazel test //concept/tests/... --test_output=streamed
-        bazel test //concepts/tests/test_type --test_output=streamed 
+        bazel test //concept/tests:test_type --test_output=streamed 
         bazel test //database/tests/... --test_output=streamed
         bazel test //durability/tests/... --test_output=streamed
         bazel test //encoding/tests/... --test_output=streamed
