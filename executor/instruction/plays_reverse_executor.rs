@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     iter,
     sync::Arc,
     vec,
@@ -13,7 +13,10 @@ use std::{
 
 use answer::Type;
 use compiler::{executable::match_::instructions::type_::PlaysReverseInstruction, ExecutorVariable};
-use concept::{error::ConceptReadError, type_::plays::Plays};
+use concept::{
+    error::ConceptReadError,
+    type_::{object_type::ObjectType, plays::Plays, role_type::RoleType},
+};
 use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
@@ -22,7 +25,9 @@ use super::type_from_row_or_annotations;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        plays_executor::{PlaysFilterFn, PlaysTupleIterator, EXTRACT_PLAYER, EXTRACT_ROLE},
+        plays_executor::{
+            PlaysFilterFn, PlaysTupleIterator, PlaysVariableValueExtractor, EXTRACT_PLAYER, EXTRACT_ROLE,
+        },
         tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, TuplePositions},
         BinaryIterateMode, Checker, VariableModes,
     },
@@ -38,22 +43,29 @@ pub(crate) struct PlaysReverseExecutor {
     role_player_types: Arc<BTreeMap<Type, Vec<Type>>>,
     player_types: Arc<BTreeSet<Type>>,
     filter_fn: Arc<PlaysFilterFn>,
-    checker: Checker<AsHkt![Plays<'_>]>,
+    checker: Checker<(AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>])>,
 }
 
 pub(super) type PlaysReverseUnboundedSortedRole = PlaysTupleIterator<
     AsNarrowingIterator<
         iter::Map<
-            iter::Flatten<vec::IntoIter<HashSet<Plays<'static>>>>,
-            fn(Plays<'static>) -> Result<Plays<'static>, ConceptReadError>,
+            iter::Flatten<vec::IntoIter<HashSet<(ObjectType<'static>, RoleType<'static>)>>>,
+            fn(
+                (ObjectType<'static>, RoleType<'static>),
+            ) -> Result<(ObjectType<'static>, RoleType<'static>), ConceptReadError>,
         >,
-        Result<AsHkt![Plays<'_>], ConceptReadError>,
+        Result<(AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>]), ConceptReadError>,
     >,
 >;
 pub(super) type PlaysReverseBoundedSortedPlayer = PlaysTupleIterator<
     AsNarrowingIterator<
-        iter::Map<vec::IntoIter<Plays<'static>>, fn(Plays<'static>) -> Result<Plays<'static>, ConceptReadError>>,
-        Result<AsHkt![Plays<'_>], ConceptReadError>,
+        iter::Map<
+            vec::IntoIter<(ObjectType<'static>, RoleType<'static>)>,
+            fn(
+                (ObjectType<'static>, RoleType<'static>),
+            ) -> Result<(ObjectType<'static>, RoleType<'static>), ConceptReadError>,
+        >,
+        Result<(AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>]), ConceptReadError>,
     >,
 >;
 
@@ -86,12 +98,12 @@ impl PlaysReverseExecutor {
             _ => TuplePositions::Pair([player, role_type]),
         };
 
-        let checker = Checker::<AsHkt![Plays<'_>]>::new(
+        let checker = Checker::<(AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>])>::new(
             checks,
             [(player, EXTRACT_PLAYER), (role_type, EXTRACT_ROLE)]
                 .into_iter()
                 .filter_map(|(var, ex)| Some((var?, ex)))
-                .collect(),
+                .collect::<HashMap<ExecutorVariable, PlaysVariableValueExtractor>>(),
         );
 
         Self {
@@ -126,13 +138,17 @@ impl PlaysReverseExecutor {
                 let plays: Vec<_> = self
                     .role_player_types
                     .keys()
-                    .map(|role| role.as_role_type().get_plays(snapshot, type_manager))
-                    .map_ok(|set| set.to_owned())
+                    .map(|role| {
+                        let role_type = role.as_role_type();
+                        role_type.get_player_types(snapshot, type_manager).map(|res| {
+                            res.to_owned().keys().map(|object_type| (object_type.clone(), role_type.clone())).collect()
+                        })
+                    })
                     .try_collect()?;
                 let iterator = plays.into_iter().flatten().map(Ok as _);
                 let as_tuples: PlaysReverseUnboundedSortedRole =
-                    AsNarrowingIterator::<_, Result<Plays<'_>, _>>::new(iterator)
-                        .try_filter::<_, PlaysFilterFn, Plays<'_>, _>(filter_for_row)
+                    AsNarrowingIterator::<_, Result<(ObjectType<'_>, RoleType<'_>), _>>::new(iterator)
+                        .try_filter::<_, PlaysFilterFn, (ObjectType<'_>, RoleType<'_>), _>(filter_for_row)
                         .map(plays_to_tuple_role_player);
                 Ok(TupleIterator::PlaysReverseUnbounded(SortedTupleIterator::new(
                     as_tuples,
@@ -147,17 +163,22 @@ impl PlaysReverseExecutor {
 
             BinaryIterateMode::BoundFrom => {
                 let role_type =
-                    type_from_row_or_annotations(self.plays.role_type(), row, self.role_player_types.keys());
-                let Type::RoleType(role) = role_type else { unreachable!("Role in `plays` must be an role type") };
-
+                    type_from_row_or_annotations(self.plays.role_type(), row, self.role_player_types.keys())
+                        .as_role_type();
                 let type_manager = context.type_manager();
-                let plays = role.get_plays(snapshot, type_manager)?.to_owned();
+                let plays = role_type
+                    .get_player_types(snapshot, type_manager)?
+                    .to_owned()
+                    .into_keys()
+                    .map(|object_type| (object_type.clone(), role_type.clone()));
 
-                let iterator = plays.into_iter().sorted_by_key(|plays| plays.player()).map(Ok as _);
-                let as_tuples: PlaysReverseBoundedSortedPlayer =
-                    AsNarrowingIterator::<_, Result<Plays<'_>, _>>::new(iterator)
-                        .try_filter::<_, PlaysFilterFn, Plays<'_>, _>(filter_for_row)
-                        .map(plays_to_tuple_player_role);
+                let iterator = plays.into_iter().sorted_by_key(|(owner, player)| player.clone()).map(Ok as _);
+                let as_tuples: PlaysReverseBoundedSortedPlayer = AsNarrowingIterator::<
+                    _,
+                    Result<(ObjectType<'_>, RoleType<'_>), _>,
+                >::new(iterator)
+                .try_filter::<_, PlaysFilterFn, (AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>]), _>(filter_for_row)
+                .map(plays_to_tuple_player_role);
                 Ok(TupleIterator::PlaysReverseBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -170,8 +191,8 @@ impl PlaysReverseExecutor {
 
 fn create_plays_filter_player_role(role_player_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<PlaysFilterFn> {
     Arc::new(move |result| match result {
-        Ok(plays) => match role_player_types.get(&Type::RoleType(plays.role().into_owned())) {
-            Some(player_types) => Ok(player_types.contains(&Type::from(plays.player().into_owned()))),
+        Ok((player, role)) => match role_player_types.get(&Type::RoleType(role.clone().into_owned())) {
+            Some(player_types) => Ok(player_types.contains(&Type::from(player.clone().into_owned()))),
             None => Ok(false),
         },
         Err(err) => Err(err.clone()),
@@ -180,7 +201,7 @@ fn create_plays_filter_player_role(role_player_types: Arc<BTreeMap<Type, Vec<Typ
 
 fn create_plays_filter_role(player_types: Arc<BTreeSet<Type>>) -> Arc<PlaysFilterFn> {
     Arc::new(move |result| match result {
-        Ok(plays) => Ok(player_types.contains(&Type::from(plays.player().into_owned()))),
+        Ok((player, _)) => Ok(player_types.contains(&Type::from(player.clone().into_owned()))),
         Err(err) => Err(err.clone()),
     })
 }

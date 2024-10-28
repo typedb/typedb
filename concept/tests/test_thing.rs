@@ -18,7 +18,7 @@ use concept::{
         ThingAPI,
     },
     type_::{
-        annotation::{AnnotationCardinality, AnnotationDistinct, AnnotationIndependent},
+        annotation::{AnnotationCardinality, AnnotationDistinct, AnnotationIndependent, AnnotationUnique},
         attribute_type::AttributeTypeAnnotation,
         owns::OwnsAnnotation,
         relates::RelatesAnnotation,
@@ -26,7 +26,6 @@ use concept::{
         Ordering, OwnerAPI, PlayerAPI,
     },
 };
-use concept::type_::annotation::AnnotationUnique;
 use encoding::{
     error::EncodingError,
     graph::definition::definition_key::DefinitionKey,
@@ -779,13 +778,8 @@ fn attribute_string_write_read_delete_with_has() {
             &thing_manager,
             OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None)),
         )
-            .unwrap();
-        owns.set_annotation(
-            &mut snapshot,
-            &type_manager,
-            &thing_manager,
-            OwnsAnnotation::Unique(AnnotationUnique),
-        )
+        .unwrap();
+        owns.set_annotation(&mut snapshot, &type_manager, &thing_manager, OwnsAnnotation::Unique(AnnotationUnique))
             .unwrap();
 
         thing_manager.finalise(&mut snapshot).unwrap();

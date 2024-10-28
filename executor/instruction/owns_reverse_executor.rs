@@ -5,20 +5,22 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     iter,
     sync::Arc,
     vec,
 };
-use std::collections::HashMap;
 
 use answer::Type;
 use compiler::{executable::match_::instructions::type_::OwnsReverseInstruction, ExecutorVariable};
-use concept::error::ConceptReadError;
+use concept::{
+    error::ConceptReadError,
+    type_::{
+        attribute_type::AttributeType, object_type::ObjectType, owns::Owns, type_manager::TypeManager, Capability,
+        ObjectTypeAPI, OwnerAPI,
+    },
+};
 use itertools::Itertools;
-use concept::type_::Capability;
-use concept::type_::attribute_type::AttributeType;
-use concept::type_::object_type::ObjectType;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
@@ -48,14 +50,21 @@ pub(super) type OwnsReverseUnboundedSortedAttribute = OwnsTupleIterator<
     AsNarrowingIterator<
         iter::Map<
             iter::Flatten<vec::IntoIter<HashSet<(ObjectType<'static>, AttributeType<'static>)>>>,
-            fn((ObjectType<'static>, AttributeType<'static>)) -> Result<(ObjectType<'static>, AttributeType<'static>), ConceptReadError>,
+            fn(
+                (ObjectType<'static>, AttributeType<'static>),
+            ) -> Result<(ObjectType<'static>, AttributeType<'static>), ConceptReadError>,
         >,
         Result<(AsHkt![ObjectType<'_>], AsHkt![AttributeType<'_>]), ConceptReadError>,
     >,
 >;
 pub(super) type OwnsReverseBoundedSortedOwner = OwnsTupleIterator<
     AsNarrowingIterator<
-        iter::Map<vec::IntoIter<(ObjectType<'static>, AttributeType<'static>)>, fn((ObjectType<'static>, AttributeType<'static>)) -> Result<(ObjectType<'static>, AttributeType<'static>), ConceptReadError>>,
+        iter::Map<
+            vec::IntoIter<(ObjectType<'static>, AttributeType<'static>)>,
+            fn(
+                (ObjectType<'static>, AttributeType<'static>),
+            ) -> Result<(ObjectType<'static>, AttributeType<'static>), ConceptReadError>,
+        >,
         Result<(AsHkt![ObjectType<'_>], AsHkt![AttributeType<'_>]), ConceptReadError>,
     >,
 >;
@@ -130,8 +139,12 @@ impl OwnsReverseExecutor {
                     .keys()
                     .map(|attribute| {
                         let attribute_type = attribute.as_attribute_type();
-                        attribute_type.get_owner_types(snapshot, type_manager)
-                            .map(|res| res.to_owned().keys().map(|object_type| (object_type.clone(), attribute_type.clone())).collect())
+                        attribute_type.get_owner_types(snapshot, type_manager).map(|res| {
+                            res.to_owned()
+                                .keys()
+                                .map(|object_type| (object_type.clone(), attribute_type.clone()))
+                                .collect()
+                        })
                     })
                     .try_collect()?;
                 let iterator = owns.into_iter().flatten().map(Ok as _);
@@ -154,10 +167,12 @@ impl OwnsReverseExecutor {
                 let attribute_type =
                     type_from_row_or_annotations(self.owns.attribute(), row, self.attribute_owner_types.keys())
                         .as_attribute_type();
-
                 let type_manager = context.type_manager();
-                let owns = attribute_type.get_owner_types(snapshot, type_manager)?.to_owned().into_keys().map(
-                    |object_type| (object_type.clone(), attribute_type.clone()));
+                let owns = attribute_type
+                    .get_owner_types(snapshot, type_manager)?
+                    .to_owned()
+                    .into_keys()
+                    .map(|object_type| (object_type.clone(), attribute_type.clone()));
 
                 let iterator = owns.sorted_by_key(|(owner, _)| owner.clone()).map(Ok as _);
                 let as_tuples: OwnsReverseBoundedSortedOwner =
