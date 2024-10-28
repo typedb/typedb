@@ -208,8 +208,8 @@ pub mod tests {
         pub(crate) const LABEL_DOGNAME: Label<'_> = Label::new_static("dog-name");
 
         pub(crate) const LABEL_FEARS: Label<'_> = Label::new_static("fears");
-        pub(crate) const LABEL_HAS_FEAR: Label<'_> = Label::new_static("has-fear");
-        pub(crate) const LABEL_IS_FEARED: Label<'_> = Label::new_static("is-feared");
+        pub(crate) const LABEL_HAS_FEAR: Label<'_> = Label::new_static_scoped("has-fear", "fears", "fears:has-fear");
+        pub(crate) const LABEL_IS_FEARED: Label<'_> = Label::new_static_scoped("is-feared", "fears", "fears:is-feared");
 
         pub(crate) fn setup_types<Snapshot: WritableSnapshot + CommittableSnapshot<WALClient>>(
             snapshot_: Snapshot,
@@ -269,7 +269,7 @@ pub mod tests {
                     &mut snapshot,
                     type_manager,
                     thing_manager,
-                    LABEL_HAS_FEAR.scoped_name().as_str(),
+                    LABEL_HAS_FEAR.name().as_str(),
                     Ordering::Unordered,
                 )
                 .unwrap()
@@ -279,7 +279,7 @@ pub mod tests {
                     &mut snapshot,
                     type_manager,
                     thing_manager,
-                    LABEL_IS_FEARED.scoped_name().as_str(),
+                    LABEL_IS_FEARED.name().as_str(),
                     Ordering::Unordered,
                 )
                 .unwrap()
