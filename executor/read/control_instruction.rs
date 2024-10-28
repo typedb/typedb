@@ -1,0 +1,73 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+use std::sync::Arc;
+use ir::pipeline::ParameterRegistry;
+use crate::batch::{FixedBatch, FixedBatchRowIterator};
+use crate::read::collecting_stage_executor::CollectedStageIterator;
+use crate::read::nested_pattern_executor::NestedPatternResultMapper;
+use crate::read::pattern_executor::{BranchIndex, ExecutorIndex};
+use crate::row::MaybeOwnedRow;
+
+pub(super) struct PatternStart {
+    pub(super) input_batch: FixedBatch,
+}
+
+pub(super) struct ExecuteImmediate {
+    pub(super) index: ExecutorIndex,
+}
+
+pub(super) struct MapRowBatchToRowForNested {
+    pub(super) index: ExecutorIndex,
+    pub(super) iterator: FixedBatchRowIterator,
+}
+
+pub(super) struct ExecuteNested {
+    pub(super) index: ExecutorIndex,
+    pub(super) branch_index: BranchIndex,
+    pub(super) mapper: NestedPatternResultMapper,
+    pub(super) parameters_override: Option<Arc<ParameterRegistry>>,
+    pub(super) input: MaybeOwnedRow<'static>,
+}
+
+pub(super) struct TabledCall {
+    pub(super) index: ExecutorIndex,
+}
+
+pub(super) struct CollectingStage {
+    pub(super) index: ExecutorIndex,
+}
+
+pub(super) struct StreamCollected {
+    pub(super) index: ExecutorIndex,
+    pub(super) iterator: CollectedStageIterator,
+}
+
+pub(super) struct ReshapeForReturn {
+    pub(super) index: ExecutorIndex,
+    pub(super) to_reshape: FixedBatch,
+}
+
+pub(super) struct Yield {
+    pub(super) batch: FixedBatch,
+}
+
+pub(super) enum ControlInstruction {
+    PatternStart(PatternStart),
+
+    ExecuteImmediate(ExecuteImmediate),
+
+    MapRowBatchToRowForNested(MapRowBatchToRowForNested),
+    ExecuteNested(ExecuteNested),
+
+    TabledCall(TabledCall), // TODO: Use a FunctionMapper
+
+    CollectingStage(CollectingStage),
+    StreamCollected(StreamCollected),
+    ReshapeForReturn(ReshapeForReturn),
+
+    Yield(Yield),
+}
