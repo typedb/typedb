@@ -537,10 +537,6 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 .min_by(|(_, lhs_cost), (_, rhs_cost)| lhs_cost.total_cmp(rhs_cost))
                 .unwrap();
 
-            if intersection_variable == next.as_variable_id() {
-                intersection_variable = None;
-            }
-
             let element = &self.graph.elements[&next];
 
             if element.is_variable() {
