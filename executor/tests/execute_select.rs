@@ -162,7 +162,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
     let has_attribute = conjunction.constraints_mut().add_has(var_person, var_attribute).unwrap().clone();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type.into()).unwrap();
-    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
     let entry = builder.finish();
 
     let entry_annotations = {
@@ -262,7 +262,7 @@ fn unselected_named_vars_counted() {
     let has_attribute = conjunction.constraints_mut().add_has(var_person, var_attribute).unwrap().clone();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type.into()).unwrap();
-    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
     let entry = builder.finish();
 
     let entry_annotations = {
@@ -371,10 +371,10 @@ fn cartesian_named_counted_checked() {
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age, var_age_type.into()).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_email, var_email_type.into()).unwrap();
-    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.scoped_name().as_str()).unwrap();
-    conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.scoped_name().as_str()).unwrap();
-    conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.scoped_name().as_str()).unwrap();
-    conjunction.constraints_mut().add_label(var_email_type, EMAIL_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
+    conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.clone()).unwrap();
+    conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.clone()).unwrap();
+    conjunction.constraints_mut().add_label(var_email_type, EMAIL_LABEL.clone()).unwrap();
     let entry = builder.finish();
 
     let entry_annotations = {

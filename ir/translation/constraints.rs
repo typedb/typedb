@@ -126,9 +126,17 @@ fn add_type_statement(
                     let &Vertex::Variable(var) = &type_ else {
                         return Err(RepresentationError::LabelWithLabel { declaration: label.clone() });
                     };
-                    constraints.add_label(var, label.ident.as_str())?;
+                    constraints.add_label(var, Label::build(label.ident.as_str()))?;
                 }
-                typeql::statement::type_::LabelConstraint::Scoped(_) => todo!(),
+                typeql::statement::type_::LabelConstraint::Scoped(scoped_label) => {
+                    let &Vertex::Variable(var) = &type_ else {
+                        return Err(RepresentationError::ScopedLabelWithLabel { declaration: scoped_label.clone() });
+                    };
+                    constraints.add_label(
+                        var,
+                        Label::build_scoped(scoped_label.name.ident.as_str(), scoped_label.scope.ident.as_str()),
+                    )?;
+                }
             },
             typeql::statement::type_::ConstraintBase::ValueType(_) => todo!(),
             typeql::statement::type_::ConstraintBase::Owns(owns) => add_typeql_owns(constraints, type_.clone(), owns)?,

@@ -89,7 +89,7 @@ fn traverse_isa_unbounded_sorted_thing() {
 
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type.into()).unwrap().clone();
-    conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.clone()).unwrap();
     let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
@@ -174,7 +174,7 @@ fn traverse_isa_unbounded_sorted_type() {
 
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type.into()).unwrap().clone();
-    conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.clone()).unwrap();
     let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
@@ -364,7 +364,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
 
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type.into()).unwrap().clone();
-    conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.clone()).unwrap();
     let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
@@ -451,7 +451,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
 
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type.into()).unwrap().clone();
-    conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.clone()).unwrap();
     let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();

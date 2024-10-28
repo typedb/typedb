@@ -90,8 +90,8 @@ fn attribute_equality() {
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age_a, var_age_type_a.into()).unwrap().clone();
     let isa_b =
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age_b, var_age_type_b.into()).unwrap().clone();
-    conjunction.constraints_mut().add_label(var_age_type_a, AGE_LABEL.scoped_name().as_str()).unwrap();
-    conjunction.constraints_mut().add_label(var_age_type_b, AGE_LABEL.scoped_name().as_str()).unwrap();
+    conjunction.constraints_mut().add_label(var_age_type_a, AGE_LABEL.clone()).unwrap();
+    conjunction.constraints_mut().add_label(var_age_type_b, AGE_LABEL.clone()).unwrap();
     let entry = builder.finish();
 
     let snapshot = storage.clone().open_snapshot_read();
