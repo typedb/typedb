@@ -70,6 +70,13 @@ impl ConstraintVertex<'_> {
             Self::Plays(inner) => Box::new(inner.variables()),
         }
     }
+
+    pub(crate) fn can_sort_on(&self, var: VariableVertexId) -> bool {
+        match self {
+            Self::Links(inner) => inner.relation == var || inner.player == var,
+            _ => self.variables().contains(&var),
+        }
+    }
 }
 
 impl Costed for ConstraintVertex<'_> {
