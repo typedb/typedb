@@ -70,12 +70,12 @@ build:
       command: |
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //tests/behaviour/concept/... --test_output=errors
-#    test-behaviour-query-read:
-#      image: vaticle-ubuntu-22.04
-#      dependencies: [build]
-#      command: |
-#        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-#        bazel test //tests/behaviour/query/language:test_match --test_output=streamed
+    test-behaviour-query-read:
+      image: vaticle-ubuntu-22.04
+      dependencies: [build]
+      command: |
+        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
+        bazel test //tests/behaviour/query/language:test_match --test_output=streamed
 #        bazel test //tests/behaviour/query/language:test_expressions --test_output=streamed
 #        bazel test //tests/behaviour/query/language:test_modifiers --test_output=streamed
 #        bazel test //tests/behaviour/query/language:test_get --test_output=streamed
