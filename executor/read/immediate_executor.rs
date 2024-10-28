@@ -4,20 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    cmp::Ordering,
-    collections::{hash_set, HashMap, HashSet},
-    sync::Arc,
-};
+use std::{cmp::Ordering, collections::HashMap, sync::Arc};
 
 use answer::variable_value::VariableValue;
 use compiler::{
     annotation::expression::compiled_expression::ExecutableExpression,
     executable::match_::{
         instructions::{CheckInstruction, ConstraintInstruction, VariableModes},
-        planner::match_executable::{
-            AssignmentStep, CheckStep, ExecutionStep, IntersectionStep, MatchExecutable, UnsortedJoinStep,
-        },
+        planner::match_executable::{AssignmentStep, CheckStep, IntersectionStep, UnsortedJoinStep},
     },
     ExecutorVariable, VariablePosition,
 };
@@ -30,7 +24,6 @@ use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
     instruction::{iterator::TupleIterator, Checker, InstructionExecutor},
-    match_executor::MatchExecutor,
     pipeline::stage::ExecutionContext,
     read::{
         expression_executor::{evaluate_expression, ExpressionValue},
@@ -187,7 +180,7 @@ impl IntersectionExecutor {
     fn batch_continue(
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
-        interrupt: &mut ExecutionInterrupt,
+        _interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         debug_assert!(self.output.is_none());
         self.may_compute_next_batch(context)?;
@@ -395,7 +388,7 @@ impl IntersectionExecutor {
 
         let input_row = self.input.as_mut().unwrap().peek().unwrap().as_ref().map_err(|&err| err.clone())?;
         for &position in &self.outputs_selected {
-            if position.as_usize() < input_row.len() {
+            if position.as_usize() < input_row.len() && !input_row.get(position).is_empty() {
                 row.set(position, input_row.get(position).clone().into_owned())
             }
         }
