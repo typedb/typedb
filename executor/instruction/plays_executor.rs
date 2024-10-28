@@ -16,8 +16,8 @@ use compiler::{executable::match_::instructions::type_::PlaysInstruction, Execut
 use concept::{
     error::ConceptReadError,
     type_::{
-        attribute_type::AttributeType, object_type::ObjectType, plays::Plays, role_type::RoleType,
-        type_manager::TypeManager, ObjectTypeAPI, OwnerAPI, PlayerAPI,
+        object_type::ObjectType, role_type::RoleType,
+        type_manager::TypeManager, ObjectTypeAPI, PlayerAPI,
     },
 };
 use itertools::Itertools;

@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
     iter,
     sync::Arc,
     vec,
@@ -13,7 +13,10 @@ use std::{
 
 use answer::Type;
 use compiler::{executable::match_::instructions::type_::RelatesReverseInstruction, ExecutorVariable};
-use concept::{error::ConceptReadError, type_::relates::Relates};
+use concept::{
+    error::ConceptReadError,
+    type_::{relation_type::RelationType, role_type::RoleType},
+};
 use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
@@ -21,7 +24,9 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        relates_executor::{RelatesFilterFn, RelatesTupleIterator, EXTRACT_RELATION, EXTRACT_ROLE},
+        relates_executor::{
+            RelatesFilterFn, RelatesTupleIterator, RelatesVariableValueExtractor, EXTRACT_RELATION, EXTRACT_ROLE,
+        },
         tuple::{relates_to_tuple_relation_role, relates_to_tuple_role_relation, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
     },
@@ -37,17 +42,23 @@ pub(crate) struct RelatesReverseExecutor {
     role_relation_types: Arc<BTreeMap<Type, Vec<Type>>>,
     relation_types: Arc<BTreeSet<Type>>,
     filter_fn: Arc<RelatesFilterFn>,
-    checker: Checker<AsHkt![Relates<'_>]>,
+    checker: Checker<(AsHkt![RelationType<'_>], AsHkt![RoleType<'_>])>,
 }
 
 pub(super) type RelatesReverseUnboundedSortedRole = RelatesTupleIterator<
     AsNarrowingIterator<
-        iter::Map<vec::IntoIter<Relates<'static>>, fn(Relates<'static>) -> Result<Relates<'static>, ConceptReadError>>,
-        Result<Relates<'static>, ConceptReadError>,
+        iter::Map<
+            vec::IntoIter<(RelationType<'static>, RoleType<'static>)>,
+            fn(
+                (RelationType<'static>, RoleType<'static>),
+            ) -> Result<(RelationType<'static>, RoleType<'static>), ConceptReadError>,
+        >,
+        Result<(RelationType<'static>, RoleType<'static>), ConceptReadError>,
     >,
 >;
-pub(super) type RelatesReverseBoundedSortedRelation =
-    RelatesTupleIterator<lending_iterator::Once<Result<AsHkt![Relates<'_>], ConceptReadError>>>;
+pub(super) type RelatesReverseBoundedSortedRelation = RelatesTupleIterator<
+    lending_iterator::Once<Result<(AsHkt![RelationType<'_>], AsHkt![RoleType<'_>]), ConceptReadError>>,
+>;
 
 impl RelatesReverseExecutor {
     pub(crate) fn new(
@@ -77,12 +88,12 @@ impl RelatesReverseExecutor {
             _ => TuplePositions::Pair([relation, role_type]),
         };
 
-        let checker = Checker::<AsHkt![Relates<'_>]>::new(
+        let checker = Checker::<(AsHkt![RelationType<'_>], AsHkt![RoleType<'_>])>::new(
             checks,
             [(relation, EXTRACT_RELATION), (role_type, EXTRACT_ROLE)]
                 .into_iter()
                 .filter_map(|(var, ex)| Some((var?, ex)))
-                .collect(),
+                .collect::<HashMap<ExecutorVariable, RelatesVariableValueExtractor>>(),
         );
 
         Self {
@@ -117,12 +128,16 @@ impl RelatesReverseExecutor {
                 let relates: Vec<_> = self
                     .role_relation_types
                     .keys()
-                    .map(|role| role.as_role_type().get_relates_root(snapshot, type_manager))
+                    .map(|role| {
+                        role.as_role_type()
+                            .get_relates_root(snapshot, type_manager)
+                            .map(|relates| (relates.relation(), relates.role()))
+                    })
                     .try_collect()?;
                 let iterator = relates.into_iter().map(Ok as _);
                 let as_tuples: RelatesReverseUnboundedSortedRole =
-                    AsNarrowingIterator::<_, Result<Relates<'_>, _>>::new(iterator)
-                        .try_filter::<_, RelatesFilterFn, Relates<'_>, _>(filter_for_row)
+                    AsNarrowingIterator::<_, Result<(RelationType<'_>, RoleType<'_>), _>>::new(iterator)
+                        .try_filter::<_, RelatesFilterFn, (RelationType<'_>, RoleType<'_>), _>(filter_for_row)
                         .map(relates_to_tuple_role_relation);
                 Ok(TupleIterator::RelatesReverseUnbounded(SortedTupleIterator::new(
                     as_tuples,
@@ -136,16 +151,17 @@ impl RelatesReverseExecutor {
             }
 
             BinaryIterateMode::BoundFrom => {
-                let role_type =
-                    type_from_row_or_annotations(self.relates.role_type(), row, self.role_relation_types.keys());
-                let Type::RoleType(role) = role_type else { unreachable!("Role in `relates` must be an role type") };
-
+                let role = type_from_row_or_annotations(self.relates.role_type(), row, self.role_relation_types.keys())
+                    .as_role_type();
                 let relates = role.get_relates_root(snapshot, context.type_manager())?;
 
                 let as_tuples: RelatesReverseBoundedSortedRelation =
-                    lending_iterator::once::<Result<Relates<'_>, _>>(Ok(relates))
-                        .try_filter::<_, RelatesFilterFn, Relates<'_>, _>(filter_for_row)
-                        .map(relates_to_tuple_relation_role);
+                    lending_iterator::once::<Result<(RelationType<'_>, RoleType<'_>), _>>(Ok((
+                        relates.relation(),
+                        relates.role(),
+                    )))
+                    .try_filter::<_, RelatesFilterFn, (RelationType<'_>, RoleType<'_>), _>(filter_for_row)
+                    .map(relates_to_tuple_relation_role);
                 Ok(TupleIterator::RelatesReverseBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -158,8 +174,8 @@ impl RelatesReverseExecutor {
 
 fn create_relates_filter_relation_role(role_relation_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<RelatesFilterFn> {
     Arc::new(move |result| match result {
-        Ok(relates) => match role_relation_types.get(&Type::RoleType(relates.role().into_owned())) {
-            Some(relation_types) => Ok(relation_types.contains(&Type::from(relates.relation().into_owned()))),
+        Ok((relation, role)) => match role_relation_types.get(&Type::RoleType(role.clone().into_owned())) {
+            Some(relation_types) => Ok(relation_types.contains(&Type::from(relation.clone().into_owned()))),
             None => Ok(false),
         },
         Err(err) => Err(err.clone()),
@@ -168,7 +184,7 @@ fn create_relates_filter_relation_role(role_relation_types: Arc<BTreeMap<Type, V
 
 fn create_relates_filter_role(relation_types: Arc<BTreeSet<Type>>) -> Arc<RelatesFilterFn> {
     Arc::new(move |result| match result {
-        Ok(relates) => Ok(relation_types.contains(&Type::from(relates.relation().into_owned()))),
+        Ok((relation, _)) => Ok(relation_types.contains(&Type::from(relation.clone().into_owned()))),
         Err(err) => Err(err.clone()),
     })
 }

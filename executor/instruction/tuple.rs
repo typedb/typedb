@@ -14,7 +14,7 @@ use concept::{
     },
     type_::{
         attribute_type::AttributeType, object_type::ObjectType, owns::Owns, plays::Plays, relates::Relates,
-        role_type::RoleType,
+        relation_type::RelationType, role_type::RoleType,
     },
 };
 use lending_iterator::higher_order::Hkt;
@@ -194,22 +194,27 @@ pub(crate) fn owns_to_tuple_attribute_owner<'a>(
     }
 }
 
-pub(crate) type RelatesToTupleFn = fn(Result<Relates<'_>, ConceptReadError>) -> TupleResult<'_>;
+pub(crate) type RelatesToTupleFn =
+    for<'a> fn(Result<(RelationType<'a>, RoleType<'static>), ConceptReadError>) -> TupleResult<'a>;
 
-pub(crate) fn relates_to_tuple_relation_role(result: Result<Relates<'_>, ConceptReadError>) -> TupleResult<'_> {
+pub(crate) fn relates_to_tuple_relation_role<'a>(
+    result: Result<(RelationType<'a>, RoleType<'static>), ConceptReadError>,
+) -> TupleResult<'a> {
     match result {
-        Ok(relates) => Ok(Tuple::Pair(
-            [Type::Relation(relates.relation().into_owned()), Type::RoleType(relates.role().into_owned())]
+        Ok((relation, role)) => Ok(Tuple::Pair(
+            [Type::Relation(relation.clone().into_owned()), Type::RoleType(role.clone().into_owned())]
                 .map(VariableValue::Type),
         )),
         Err(err) => Err(err),
     }
 }
 
-pub(crate) fn relates_to_tuple_role_relation(result: Result<Relates<'_>, ConceptReadError>) -> TupleResult<'_> {
+pub(crate) fn relates_to_tuple_role_relation<'a>(
+    result: Result<(RelationType<'a>, RoleType<'static>), ConceptReadError>,
+) -> TupleResult<'a> {
     match result {
-        Ok(relates) => Ok(Tuple::Pair(
-            [Type::RoleType(relates.role().into_owned()), Type::Relation(relates.relation().into_owned())]
+        Ok((relation, role)) => Ok(Tuple::Pair(
+            [Type::RoleType(role.clone().into_owned()), Type::Relation(relation.clone().into_owned())]
                 .map(VariableValue::Type),
         )),
         Err(err) => Err(err),

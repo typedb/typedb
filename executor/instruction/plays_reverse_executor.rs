@@ -15,7 +15,7 @@ use answer::Type;
 use compiler::{executable::match_::instructions::type_::PlaysReverseInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
-    type_::{object_type::ObjectType, plays::Plays, role_type::RoleType},
+    type_::{object_type::ObjectType, role_type::RoleType},
 };
 use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
