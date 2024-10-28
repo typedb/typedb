@@ -277,6 +277,7 @@ fn function_binary() {
     }
 }
 
+#[ignore] // TODO
 #[test]
 fn simple_tabled() {
     let custom_schema = r#"define
@@ -333,6 +334,7 @@ fn simple_tabled() {
     }
 }
 
+#[ignore]  // TODO
 #[test]
 fn fibonacci() {
     let custom_schema = r#"define

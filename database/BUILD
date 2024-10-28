@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 rust_library(
@@ -27,6 +27,12 @@ rust_library(
         "@crates//:tracing",
     ],
     visibility = ["//visibility:public"],
+)
+
+rust_test(
+    name = "test_crate_database",
+    crate = ":database",
+    deps = [],
 )
 
 checkstyle_test(

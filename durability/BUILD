@@ -37,7 +37,7 @@ rust_library(
 )
 
 rust_test(
-    name = "durability_unit_tests",
+    name = "test_crate_durability",
     crate = ":durability",
     deps = ["@crates//:tempdir"],
 )

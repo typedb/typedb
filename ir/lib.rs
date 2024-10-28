@@ -149,6 +149,11 @@ typedb_error!(
             "Specifying a label constraint on a label is not allowed.\nSource:\n{declaration}",
             declaration: typeql::Label
         ),
+        ScopedLabelWithLabel(
+            31,
+            "Specifying a scoped label constraint on a label is not allowed.\nSource:\n{declaration}",
+            declaration: typeql::ScopedLabel
+        ),
         UnrecognisedClause(
             22,
             "Clause type not recognised.\nSource:\n{declaration}",

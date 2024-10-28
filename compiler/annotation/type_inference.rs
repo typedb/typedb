@@ -60,6 +60,7 @@ pub mod tests {
             type_::vertex::{PrefixedTypeVertexEncoding, TypeID},
         },
         layout::prefix::Prefix,
+        value::label::Label,
     };
     use ir::{
         pattern::{
@@ -88,7 +89,8 @@ pub mod tests {
         tests::{
             managers,
             schema_consts::{
-                setup_types, LABEL_ANIMAL, LABEL_CAT, LABEL_CATNAME, LABEL_DOG, LABEL_DOGNAME, LABEL_FEARS, LABEL_NAME,
+                setup_types, LABEL_ANIMAL, LABEL_CAT, LABEL_CATNAME, LABEL_DOG, LABEL_DOGNAME, LABEL_FEARS,
+                LABEL_HAS_FEAR, LABEL_IS_FEARED, LABEL_NAME,
             },
             setup_storage,
         },
@@ -239,7 +241,7 @@ pub mod tests {
             let f_var_animal = f_conjunction.get_or_declare_variable("called_animal").unwrap();
             let f_var_animal_type = f_conjunction.get_or_declare_variable("called_animal_type").unwrap();
             let f_var_name = f_conjunction.get_or_declare_variable("called_name").unwrap();
-            f_conjunction.constraints_mut().add_label(f_var_animal_type, LABEL_CAT.scoped_name().as_str()).unwrap();
+            f_conjunction.constraints_mut().add_label(f_var_animal_type, LABEL_CAT.clone()).unwrap();
             f_conjunction.constraints_mut().add_isa(IsaKind::Subtype, f_var_animal, f_var_animal_type.into()).unwrap();
             f_conjunction.constraints_mut().add_has(f_var_animal, f_var_name).unwrap();
             let function_block = builder.finish();
@@ -315,7 +317,8 @@ pub mod tests {
                 &BTreeMap::from([
                     (f_var_animal.into(), Arc::new(BTreeSet::from([type_cat.clone()]))),
                     (f_var_animal_type.into(), Arc::new(BTreeSet::from([type_cat.clone()]))),
-                    (f_var_name.into(), Arc::new(BTreeSet::from([type_catname.clone(), type_name.clone()])))
+                    (f_var_name.into(), Arc::new(BTreeSet::from([type_catname.clone(), type_name.clone()]))),
+                    (Vertex::Label(LABEL_CAT), Arc::new(BTreeSet::from([type_cat.clone()]))),
                 ])
             );
 
@@ -442,9 +445,9 @@ pub mod tests {
                 .unwrap();
 
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT.scoped_name().as_str()).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT.clone()).unwrap();
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_name_type, LABEL_NAME.scoped_name().as_str()).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_NAME.clone()).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
             let block = builder.finish();
@@ -467,6 +470,8 @@ pub mod tests {
                     (var_name.into(), BTreeSet::from([type_catname.clone(), type_name.clone()])),
                     (var_animal_type.into(), BTreeSet::from([type_cat.clone()])),
                     (var_name_type.into(), BTreeSet::from([type_name.clone()])),
+                    (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat.clone()])),
+                    (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name.clone()])),
                 ]),
                 edges: vec![
                     expected_edge(
@@ -509,9 +514,9 @@ pub mod tests {
                 .unwrap();
 
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_animal_type, LABEL_ANIMAL.scoped_name().as_str()).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_ANIMAL.clone()).unwrap();
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_name_type, LABEL_CATNAME.scoped_name().as_str()).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_CATNAME.clone()).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
             let block = builder.finish();
@@ -535,6 +540,8 @@ pub mod tests {
                     (var_name.into(), BTreeSet::from([type_catname.clone()])),
                     (var_animal_type.into(), BTreeSet::from([type_animal.clone()])),
                     (var_name_type.into(), BTreeSet::from([type_catname.clone()])),
+                    (Vertex::Label(LABEL_ANIMAL), BTreeSet::from([type_animal.clone()])),
+                    (Vertex::Label(LABEL_CATNAME), BTreeSet::from([type_catname.clone()])),
                 ]),
                 edges: vec![
                     expected_edge(
@@ -576,9 +583,9 @@ pub mod tests {
                 .unwrap();
 
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT.scoped_name().as_str()).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT.clone()).unwrap();
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_name_type, LABEL_DOGNAME.scoped_name().as_str()).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_DOGNAME.clone()).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
             let block = builder.finish();
@@ -611,9 +618,9 @@ pub mod tests {
                 .unwrap();
 
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_animal_type, LABEL_ANIMAL.scoped_name().as_str()).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_ANIMAL.clone()).unwrap();
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_name_type, LABEL_NAME.scoped_name().as_str()).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_NAME.clone()).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
             let block = builder.finish();
@@ -636,6 +643,8 @@ pub mod tests {
                     (var_name.into(), types_n),
                     (var_animal_type.into(), BTreeSet::from([type_animal.clone()])),
                     (var_name_type.into(), BTreeSet::from([type_name.clone()])),
+                    (Vertex::Label(LABEL_ANIMAL), BTreeSet::from([type_animal.clone()])),
+                    (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name.clone()])),
                 ]),
                 edges: vec![
                     expected_edge(
@@ -685,7 +694,7 @@ pub mod tests {
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
 
-        let ((_, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
+        let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
         let mut translation_context = TranslationContext::new();
@@ -697,8 +706,8 @@ pub mod tests {
             .collect_tuple()
             .unwrap();
 
-        // Case 1: {$a isa cat;} or {$a isa dog;} $a has animal-name $n;
-        conjunction.constraints_mut().add_label(var_name_type, "name").unwrap();
+        // Case 1: {$a isa cat;} or {$a isa dog;} $a has name $n;
+        conjunction.constraints_mut().add_label(var_name_type, Label::build("name")).unwrap();
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
         conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
@@ -707,12 +716,12 @@ pub mod tests {
         let mut branch1 = disj.add_conjunction();
         let b1_var_animal_type = branch1.get_or_declare_variable("b1_animal_type").unwrap();
         branch1.constraints_mut().add_isa(IsaKind::Subtype, var_animal, b1_var_animal_type.into()).unwrap();
-        branch1.constraints_mut().add_label(b1_var_animal_type, LABEL_CAT.scoped_name().as_str()).unwrap();
+        branch1.constraints_mut().add_label(b1_var_animal_type, LABEL_CAT.clone()).unwrap();
 
         let mut branch2 = disj.add_conjunction();
         let b2_var_animal_type = branch2.get_or_declare_variable("b2_animal_type").unwrap();
         branch2.constraints_mut().add_isa(IsaKind::Subtype, var_animal, b2_var_animal_type.into()).unwrap();
-        branch2.constraints_mut().add_label(b2_var_animal_type, LABEL_DOG.scoped_name().as_str()).unwrap();
+        branch2.constraints_mut().add_label(b2_var_animal_type, LABEL_DOG.clone()).unwrap();
 
         let (b1_var_animal_type, b2_var_animal_type) = (b1_var_animal_type, b2_var_animal_type);
 
@@ -741,6 +750,7 @@ pub mod tests {
                 vertices: VertexAnnotations::from([
                     (var_animal.into(), BTreeSet::from([type_cat.clone()])),
                     (b1_var_animal_type.into(), BTreeSet::from([type_cat.clone()])),
+                    (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat.clone()])),
                 ]),
                 edges: vec![expected_edge(
                     b1_isa,
@@ -757,6 +767,7 @@ pub mod tests {
                 vertices: VertexAnnotations::from([
                     (var_animal.into(), BTreeSet::from([type_dog.clone()])),
                     (b2_var_animal_type.into(), BTreeSet::from([type_dog.clone()])),
+                    (Vertex::Label(LABEL_DOG), BTreeSet::from([type_dog.clone()])),
                 ]),
                 edges: vec![expected_edge(
                     b2_isa,
@@ -776,6 +787,7 @@ pub mod tests {
                 (var_animal.into(), BTreeSet::from([type_cat.clone(), type_dog.clone()])),
                 (var_name.into(), BTreeSet::from([type_name.clone(), type_catname.clone(), type_dogname.clone()])),
                 (var_name_type.into(), BTreeSet::from([type_name.clone()])),
+                (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name.clone()])),
             ]),
             edges: vec![
                 expected_edge(
@@ -911,7 +923,7 @@ pub mod tests {
         .unwrap();
 
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_fears, var_fears_type.into()).unwrap();
-        conjunction.constraints_mut().add_label(var_fears_type, LABEL_FEARS.scoped_name().as_str()).unwrap();
+        conjunction.constraints_mut().add_label(var_fears_type, LABEL_FEARS.clone()).unwrap();
         conjunction.constraints_mut().add_links(var_fears, var_has_fear, var_role_has_fear).unwrap();
         conjunction.constraints_mut().add_links(var_fears, var_is_feared, var_role_is_feared).unwrap();
 
@@ -919,12 +931,12 @@ pub mod tests {
             .constraints_mut()
             .add_sub(SubKind::Subtype, var_role_has_fear.into(), var_role_has_fear_type.into())
             .unwrap();
-        conjunction.constraints_mut().add_label(var_role_has_fear_type, "fears:has-fear").unwrap();
+        conjunction.constraints_mut().add_label(var_role_has_fear_type, LABEL_HAS_FEAR.clone()).unwrap();
         conjunction
             .constraints_mut()
             .add_sub(SubKind::Subtype, var_role_is_feared.into(), var_role_is_feared_type.into())
             .unwrap();
-        conjunction.constraints_mut().add_label(var_role_is_feared_type, "fears:is-feared").unwrap();
+        conjunction.constraints_mut().add_label(var_role_is_feared_type, LABEL_IS_FEARED.clone()).unwrap();
 
         let block = builder.finish();
 
@@ -952,6 +964,9 @@ pub mod tests {
                 (var_role_is_feared.into(), BTreeSet::from([type_is_feared.clone()])),
                 (var_role_has_fear_type.into(), BTreeSet::from([type_has_fear.clone()])),
                 (var_role_is_feared_type.into(), BTreeSet::from([type_is_feared.clone()])),
+                (Vertex::Label(LABEL_FEARS), BTreeSet::from([type_fears.clone()])),
+                (Vertex::Label(LABEL_HAS_FEAR), BTreeSet::from([type_has_fear.clone()])),
+                (Vertex::Label(LABEL_IS_FEARED), BTreeSet::from([type_is_feared.clone()])),
             ]),
             edges: vec![
                 // isa
@@ -1034,7 +1049,7 @@ pub mod tests {
                     .unwrap();
 
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT.scoped_name().as_str()).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT.clone()).unwrap();
             conjunction.constraints_mut().add_isa(IsaKind::Exact, var_name, var_owned_type.into()).unwrap();
             conjunction.constraints_mut().add_owns(var_animal_type.into(), var_owned_type.into()).unwrap();
 
@@ -1058,6 +1073,7 @@ pub mod tests {
                     (var_name.into(), BTreeSet::from([type_name.clone(), type_catname.clone()])),
                     (var_animal_type.into(), BTreeSet::from([type_cat.clone()])),
                     (var_owned_type.into(), BTreeSet::from([type_name.clone(), type_catname.clone()])),
+                    (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat.clone()])),
                 ]),
                 edges: vec![
                     expected_edge(
@@ -1102,7 +1118,7 @@ pub mod tests {
 
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_owner_type.into()).unwrap();
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_name_type, LABEL_CATNAME.scoped_name().as_str()).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_CATNAME.clone()).unwrap();
             conjunction.constraints_mut().add_owns(var_owner_type.into(), var_name_type.into()).unwrap();
 
             let block = builder.finish();
@@ -1126,6 +1142,7 @@ pub mod tests {
                     (var_name.into(), BTreeSet::from([type_catname.clone()])),
                     (var_owner_type.into(), BTreeSet::from([type_cat.clone()])),
                     (var_name_type.into(), BTreeSet::from([type_catname.clone()])),
+                    (Vertex::Label(LABEL_CATNAME), BTreeSet::from([type_catname.clone()])),
                 ]),
                 edges: vec![
                     expected_edge(
@@ -1167,9 +1184,9 @@ pub mod tests {
                 .unwrap();
 
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT.scoped_name().as_str()).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT.clone()).unwrap();
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
-            conjunction.constraints_mut().add_label(var_name_type, LABEL_DOGNAME.scoped_name().as_str()).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_DOGNAME.clone()).unwrap();
             conjunction.constraints_mut().add_owns(var_animal_type.into(), var_name_type.into()).unwrap();
 
             let block = builder.finish();
@@ -1193,6 +1210,8 @@ pub mod tests {
                     (var_name.into(), BTreeSet::new()),
                     (var_animal_type.into(), BTreeSet::new()),
                     (var_name_type.into(), BTreeSet::new()),
+                    (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat.clone()])),
+                    (Vertex::Label(LABEL_DOGNAME), BTreeSet::from([type_dogname.clone()])),
                 ]),
                 edges: vec![
                     expected_edge(&constraints[0], var_animal.into(), var_animal_type.into(), Vec::new()),
