@@ -10,14 +10,19 @@ use std::{
     sync::Arc,
     vec,
 };
+use std::collections::HashMap;
 
 use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::OwnsInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
-    type_::{owns::Owns, OwnerAPI},
+    type_::OwnerAPI,
 };
 use itertools::Itertools;
+use concept::type_::{Capability, ObjectTypeAPI};
+use concept::type_::attribute_type::AttributeType;
+use concept::type_::object_type::ObjectType;
+use concept::type_::type_manager::TypeManager;
 use lending_iterator::{
     adaptors::{Map, TryFilter},
     AsHkt, AsNarrowingIterator, LendingIterator,
@@ -44,35 +49,35 @@ pub(crate) struct OwnsExecutor {
     owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>,
     attribute_types: Arc<BTreeSet<Type>>,
     filter_fn: Arc<OwnsFilterFn>,
-    checker: Checker<AsHkt![Owns<'_>]>,
+    checker: Checker<(AsHkt![ObjectType<'_>], AsHkt![AttributeType<'_>])>,
 }
 
 pub(super) type OwnsTupleIterator<I> =
-    Map<TryFilter<I, Box<OwnsFilterFn>, AsHkt![Owns<'_>], ConceptReadError>, OwnsToTupleFn, AsHkt![TupleResult<'_>]>;
+    Map<TryFilter<I, Box<OwnsFilterFn>, (AsHkt![ObjectType<'_>], AsHkt![AttributeType<'_>]), ConceptReadError>, OwnsToTupleFn, AsHkt![TupleResult<'_>]>;
 
 pub(super) type OwnsUnboundedSortedOwner = OwnsTupleIterator<
     AsNarrowingIterator<
         iter::Map<
-            iter::Flatten<vec::IntoIter<HashSet<Owns<'static>>>>,
-            fn(Owns<'static>) -> Result<Owns<'static>, ConceptReadError>,
+            iter::Flatten<vec::IntoIter<HashSet<(ObjectType<'static>, AttributeType<'static>)>>>,
+            fn((ObjectType<'static>, AttributeType<'static>)) -> Result<(ObjectType<'static>, AttributeType<'static>), ConceptReadError>,
         >,
-        Result<AsHkt![Owns<'_>], ConceptReadError>,
+        Result<(AsHkt![ObjectType<'_>], AsHkt![AttributeType<'_>]), ConceptReadError>,
     >,
 >;
 pub(super) type OwnsBoundedSortedAttribute = OwnsTupleIterator<
     AsNarrowingIterator<
-        iter::Map<vec::IntoIter<Owns<'static>>, fn(Owns<'static>) -> Result<Owns<'static>, ConceptReadError>>,
-        Result<AsHkt![Owns<'_>], ConceptReadError>,
+        iter::Map<vec::IntoIter<(ObjectType<'static>, AttributeType<'static>)>, fn((ObjectType<'static>, AttributeType<'static>)) -> Result<(ObjectType<'static>, AttributeType<'static>), ConceptReadError>>,
+        Result<(AsHkt![ObjectType<'_>], AsHkt![AttributeType<'_>]), ConceptReadError>,
     >,
 >;
 
-pub(super) type OwnsFilterFn = FilterFn<AsHkt![Owns<'_>]>;
+pub(super) type OwnsFilterFn = FilterFn<(AsHkt![ObjectType<'_>], AsHkt![AttributeType<'_>])>;
 
-type OwnsVariableValueExtractor = for<'a> fn(&'a Owns<'_>) -> VariableValue<'a>;
+pub(super) type OwnsVariableValueExtractor = for<'a> fn(&'a (ObjectType<'_>, AttributeType<'_>)) -> VariableValue<'a>;
 pub(super) const EXTRACT_OWNER: OwnsVariableValueExtractor =
-    |owns| VariableValue::Type(Type::from(owns.owner().into_owned()));
+    |(owner, _)| VariableValue::Type(Type::from(owner.clone().into_owned()));
 pub(super) const EXTRACT_ATTRIBUTE: OwnsVariableValueExtractor =
-    |owns| VariableValue::Type(Type::Attribute(owns.attribute()));
+    |(_, attribute)| VariableValue::Type(Type::Attribute(attribute.clone().into_owned()));
 
 impl OwnsExecutor {
     pub(crate) fn new(
@@ -102,12 +107,12 @@ impl OwnsExecutor {
             _ => TuplePositions::Pair([attribute, owner]),
         };
 
-        let checker = Checker::<AsHkt![Owns<'_>]>::new(
+        let checker = Checker::<(ObjectType<'_>, AttributeType<'_>)>::new(
             checks,
             [(owner, EXTRACT_OWNER), (attribute, EXTRACT_ATTRIBUTE)]
                 .into_iter()
                 .filter_map(|(var, ex)| Some((var?, ex)))
-                .collect(),
+                .collect::<HashMap<ExecutorVariable, OwnsVariableValueExtractor>>(),
         );
 
         Self {
@@ -142,16 +147,11 @@ impl OwnsExecutor {
                 let owns: Vec<_> = self
                     .owner_attribute_types
                     .keys()
-                    .map(|owner| match owner {
-                        Type::Entity(entity) => entity.get_owns(snapshot, type_manager),
-                        Type::Relation(relation) => relation.get_owns(snapshot, type_manager),
-                        _ => unreachable!("owner types must be relation or entity types"),
-                    })
-                    .map_ok(|set| set.to_owned())
+                    .map(|owner| self.get_owns_for_owner(snapshot, type_manager, owner.clone()))
                     .try_collect()?;
                 let iterator = owns.into_iter().flatten().map(Ok as _);
-                let as_tuples: OwnsUnboundedSortedOwner = AsNarrowingIterator::<_, Result<Owns<'_>, _>>::new(iterator)
-                    .try_filter::<_, OwnsFilterFn, Owns<'_>, _>(filter_for_row)
+                let as_tuples: OwnsUnboundedSortedOwner = AsNarrowingIterator::<_, Result<(ObjectType<'_>, AttributeType<'_>), _>>::new(iterator)
+                    .try_filter::<_, OwnsFilterFn, (ObjectType<'_>, AttributeType<'_>), _>(filter_for_row)
                     .map(owns_to_tuple_owner_attribute);
                 Ok(TupleIterator::OwnsUnbounded(SortedTupleIterator::new(
                     as_tuples,
@@ -167,16 +167,12 @@ impl OwnsExecutor {
             BinaryIterateMode::BoundFrom => {
                 let owner = type_from_row_or_annotations(self.owns.owner(), row, self.owner_attribute_types.keys());
                 let type_manager = context.type_manager();
-                let owns = match owner {
-                    Type::Entity(entity) => entity.get_owns(snapshot, type_manager)?,
-                    Type::Relation(relation) => relation.get_owns(snapshot, type_manager)?,
-                    _ => unreachable!("owner types must be relation or entity types"),
-                };
+                let owns = self.get_owns_for_owner(snapshot, type_manager, owner)?;
 
-                let iterator = owns.iter().cloned().sorted_by_key(|owns| (owns.attribute(), owns.owner())).map(Ok as _);
+                let iterator = owns.into_iter().sorted_by_key(|(owner, attribute)| (attribute.clone(), owner.clone())).map(Ok as _);
                 let as_tuples: OwnsBoundedSortedAttribute =
-                    AsNarrowingIterator::<_, Result<Owns<'_>, _>>::new(iterator)
-                        .try_filter::<_, OwnsFilterFn, Owns<'_>, _>(filter_for_row)
+                    AsNarrowingIterator::<_, Result<(ObjectType<'_>, AttributeType<'_>), _>>::new(iterator)
+                        .try_filter::<_, OwnsFilterFn, (ObjectType<'_>, AttributeType<'_>), _>(filter_for_row)
                         .map(owns_to_tuple_attribute_owner);
                 Ok(TupleIterator::OwnsBounded(SortedTupleIterator::new(
                     as_tuples,
@@ -186,12 +182,31 @@ impl OwnsExecutor {
             }
         }
     }
+
+    fn get_owns_for_owner(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        owner: Type,
+    ) -> Result<HashSet<(ObjectType<'static>, AttributeType<'static>)>, ConceptReadError> {
+        let object_type = match owner {
+            Type::Entity(entity) => entity.into_owned_object_type(),
+            Type::Relation(relation) => relation.into_owned_object_type(),
+            _ => unreachable!("owner types must be relation or entity types"),
+        };
+
+        Ok(object_type
+            .get_owned_attribute_types(snapshot, type_manager)?
+            .into_iter()
+            .map(|attribute_type| (object_type.clone(), attribute_type))
+            .collect())
+    }
 }
 
 fn create_owns_filter_owner_attribute(owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<OwnsFilterFn> {
     Arc::new(move |result| match result {
-        Ok(owns) => match owner_attribute_types.get(&Type::from(owns.owner().into_owned())) {
-            Some(attribute_types) => Ok(attribute_types.contains(&Type::Attribute(owns.attribute()))),
+        Ok((owner, attribute)) => match owner_attribute_types.get(&Type::from(owner.clone().into_owned())) {
+            Some(attribute_types) => Ok(attribute_types.contains(&Type::Attribute(attribute.clone().into_owned()))),
             None => Ok(false),
         },
         Err(err) => Err(err.clone()),
@@ -200,7 +215,7 @@ fn create_owns_filter_owner_attribute(owner_attribute_types: Arc<BTreeMap<Type, 
 
 fn create_owns_filter_attribute(attribute_types: Arc<BTreeSet<Type>>) -> Arc<OwnsFilterFn> {
     Arc::new(move |result| match result {
-        Ok(owns) => Ok(attribute_types.contains(&Type::Attribute(owns.attribute()))),
+        Ok((_, attribute)) => Ok(attribute_types.contains(&Type::Attribute(attribute.clone().into_owned()))),
         Err(err) => Err(err.clone()),
     })
 }

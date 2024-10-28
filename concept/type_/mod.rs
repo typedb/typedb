@@ -283,6 +283,22 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         attribute_type: AttributeType<'static>,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns<'static>>>>, ConceptReadError>;
 
+    fn get_owned_attribute_types_declared(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<HashSet<AttributeType<'static>>, ConceptReadError> {
+        Ok(self.get_owns_declared(snapshot, type_manager)?.iter().map(|owns| owns.attribute().clone()).collect())
+    }
+
+    fn get_owned_attribute_types(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<HashSet<AttributeType<'static>>, ConceptReadError> {
+        Ok(self.get_owns(snapshot, type_manager)?.iter().map(|owns| owns.attribute().clone()).collect())
+    }
+
     fn get_owned_attribute_type_constraint_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -445,6 +461,22 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError>;
+
+    fn get_played_role_types_declared(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<HashSet<RoleType<'static>>, ConceptReadError> {
+        Ok(self.get_plays_declared(snapshot, type_manager)?.iter().map(|plays| plays.role().clone()).collect())
+    }
+
+    fn get_played_role_types(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<HashSet<RoleType<'static>>, ConceptReadError> {
+        Ok(self.get_plays(snapshot, type_manager)?.iter().map(|plays| plays.role().clone()).collect())
+    }
 
     fn get_played_role_type_constraints<'m>(
         &self,

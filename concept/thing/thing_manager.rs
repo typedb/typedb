@@ -52,8 +52,8 @@ use encoding::{
 use itertools::{Itertools, MinMaxResult};
 use lending_iterator::{AsHkt, LendingIterator};
 use resource::constants::{
-    encoding::{StructFieldIDUInt, AD_HOC_BYTES_INLINE},
-    snapshot::BUFFER_KEY_INLINE,
+    encoding::StructFieldIDUInt,
+    snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
 };
 use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
@@ -997,7 +997,7 @@ impl ThingManager {
         if let Some(unique_constraint) = unique_constraint_opt {
             let attribute_key = attribute.vertex();
             let attribute_value = snapshot
-                .get_last_existing::<AD_HOC_BYTES_INLINE>(attribute_key.as_storage_key().as_reference())
+                .get_last_existing::<BUFFER_VALUE_INLINE>(attribute_key.as_storage_key().as_reference())
                 .map_err(|error| ConceptReadError::SnapshotGet { source: error })?
                 .ok_or(ConceptReadError::CorruptMissingMandatoryAttributeValue)?;
 

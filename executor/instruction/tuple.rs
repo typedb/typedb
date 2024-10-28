@@ -14,6 +14,8 @@ use concept::{
     },
     type_::{owns::Owns, plays::Plays, relates::Relates},
 };
+use concept::type_::attribute_type::AttributeType;
+use concept::type_::object_type::ObjectType;
 use lending_iterator::higher_order::Hkt;
 
 #[derive(Debug, Clone)]
@@ -164,22 +166,22 @@ pub(crate) fn sub_to_tuple_super_sub(result: Result<(Type, Type), ConceptReadErr
     }
 }
 
-pub(crate) type OwnsToTupleFn = fn(Result<Owns<'_>, ConceptReadError>) -> TupleResult<'_>;
+pub(crate) type OwnsToTupleFn = for<'a> fn(Result<(ObjectType<'a>, AttributeType<'a>), ConceptReadError>) -> TupleResult<'a>;
 
-pub(crate) fn owns_to_tuple_owner_attribute(result: Result<Owns<'_>, ConceptReadError>) -> TupleResult<'_> {
+pub(crate) fn owns_to_tuple_owner_attribute<'a>(result: Result<(ObjectType<'a>, AttributeType<'a>), ConceptReadError>) -> TupleResult<'a> {
     match result {
-        Ok(owns) => Ok(Tuple::Pair(
-            [Type::from(owns.owner().into_owned()), Type::Attribute(owns.attribute().to_owned())]
+        Ok((owner, attribute)) => Ok(Tuple::Pair(
+            [Type::from(owner.clone().into_owned()), Type::Attribute(attribute.clone().into_owned())]
                 .map(VariableValue::Type),
         )),
         Err(err) => Err(err),
     }
 }
 
-pub(crate) fn owns_to_tuple_attribute_owner(result: Result<Owns<'_>, ConceptReadError>) -> TupleResult<'_> {
+pub(crate) fn owns_to_tuple_attribute_owner<'a>(result: Result<(ObjectType<'a>, AttributeType<'a>), ConceptReadError>) -> TupleResult<'a> {
     match result {
-        Ok(owns) => Ok(Tuple::Pair(
-            [Type::Attribute(owns.attribute().to_owned()), Type::from(owns.owner().into_owned())]
+        Ok((owner, attribute)) => Ok(Tuple::Pair(
+            [Type::Attribute(attribute.clone().into_owned()), Type::from(owner.clone().into_owned())]
                 .map(VariableValue::Type),
         )),
         Err(err) => Err(err),
