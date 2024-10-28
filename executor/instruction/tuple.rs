@@ -286,3 +286,16 @@ pub(crate) fn links_to_tuple_player_relation_role<'a>(
         VariableValue::Type(role_type.into()),
     ]))
 }
+
+pub(crate) fn links_to_tuple_role_relation_player<'a>(
+    result: Result<(Relation<'a>, RolePlayer<'a>, u64), ConceptReadError>,
+) -> TupleResult<'a> {
+    let (rel, rp, _count) = result?;
+    let role_type = rp.role_type();
+    Ok(Tuple::Triple([
+        VariableValue::Type(role_type.into()),
+        VariableValue::Thing(rel.into()),
+        VariableValue::Thing(rp.into_player().into()),
+    ]))
+}
+
