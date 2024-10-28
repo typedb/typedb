@@ -15,6 +15,7 @@ use concept::{
         entity::Entity,
         object::{Object, ObjectAPI},
         relation::Relation,
+        ThingAPI,
     },
     type_::{
         annotation::{AnnotationCardinality, AnnotationDistinct, AnnotationIndependent},
@@ -25,6 +26,7 @@ use concept::{
         Ordering, OwnerAPI, PlayerAPI,
     },
 };
+use concept::type_::annotation::AnnotationUnique;
 use encoding::{
     error::EncodingError,
     graph::definition::definition_key::DefinitionKey,
@@ -665,7 +667,7 @@ fn role_player_duplicates() {
 }
 
 #[test]
-fn attribute_string_write_read() {
+fn attribute_string_write_read_delete() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -686,6 +688,7 @@ fn attribute_string_write_read() {
             )
             .unwrap();
 
+        thing_manager.finalise(&mut snapshot).unwrap();
         snapshot.commit().unwrap();
         attr_type
     };
@@ -698,6 +701,7 @@ fn attribute_string_write_read() {
         thing_manager
             .create_attribute(&mut snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
             .unwrap();
+        thing_manager.finalise(&mut snapshot).unwrap();
         snapshot.commit().unwrap();
     };
 
@@ -716,9 +720,10 @@ fn attribute_string_write_read() {
         assert!(attr_values.contains(&short_string));
         assert!(attr_values.contains(&long_string));
     }
-    // read them back by value
+
+    // read them back by value and delete
     {
-        let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let read_short_string = thing_manager
             .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
             .unwrap()
@@ -729,6 +734,128 @@ fn attribute_string_write_read() {
             .unwrap()
             .unwrap();
         assert_eq!(long_string, read_long_string.get_value(&snapshot, &thing_manager).unwrap().unwrap_string());
+
+        read_short_string.delete(&mut snapshot, &thing_manager).unwrap();
+        read_long_string.delete(&mut snapshot, &thing_manager).unwrap();
+        thing_manager.finalise(&mut snapshot).unwrap();
+        snapshot.commit().unwrap();
+    }
+
+    // read them back by value with None results
+    {
+        let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let read_short_string = thing_manager
+            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
+            .unwrap();
+        assert_eq!(None, read_short_string);
+        let read_long_string = thing_manager
+            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
+            .unwrap();
+        assert_eq!(None, read_long_string);
+    }
+}
+
+#[test]
+fn attribute_string_write_read_delete_with_has() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let owner_label = Label::build("test_owner");
+    let attr_label = Label::build("test_string_attr");
+    let short_string = "short".to_owned();
+    let long_string = "this string is 33 characters long".to_owned();
+    let (owner_type, attr_type) = {
+        let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let owner_type = type_manager.create_entity_type(&mut snapshot, &owner_label).unwrap();
+        let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label).unwrap();
+        attr_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
+        let owns = owner_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, attr_type.clone(), Ordering::Unordered)
+            .unwrap();
+        owns.set_annotation(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None)),
+        )
+            .unwrap();
+        owns.set_annotation(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            OwnsAnnotation::Unique(AnnotationUnique),
+        )
+            .unwrap();
+
+        thing_manager.finalise(&mut snapshot).unwrap();
+        snapshot.commit().unwrap();
+        (owner_type, attr_type)
+    };
+
+    {
+        let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let owner = thing_manager.create_entity(&mut snapshot, owner_type.clone()).unwrap();
+        let short_attr = thing_manager
+            .create_attribute(&mut snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
+            .unwrap();
+        let long_attr = thing_manager
+            .create_attribute(&mut snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
+            .unwrap();
+        owner.set_has_unordered(&mut snapshot, &thing_manager, short_attr).unwrap();
+        owner.set_has_unordered(&mut snapshot, &thing_manager, long_attr).unwrap();
+        thing_manager.finalise(&mut snapshot).unwrap();
+        snapshot.commit().unwrap();
+    };
+
+    // read them back by type
+    {
+        let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let attrs: Vec<Attribute<'static>> = thing_manager
+            .get_attributes_in(&snapshot, attr_type.clone())
+            .unwrap()
+            .map_static(|result| result.unwrap().into_owned())
+            .collect();
+        let attr_values: Vec<String> = attrs
+            .into_iter()
+            .map(|attr| (*attr.get_value(&snapshot, &thing_manager).unwrap().unwrap_string()).to_owned())
+            .collect();
+        assert!(attr_values.contains(&short_string));
+        assert!(attr_values.contains(&long_string));
+    }
+
+    // read them back by value and delete
+    {
+        let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let read_short_string = thing_manager
+            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
+            .unwrap()
+            .unwrap();
+        assert_eq!(short_string, read_short_string.get_value(&snapshot, &thing_manager).unwrap().unwrap_string());
+        let read_long_string = thing_manager
+            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
+            .unwrap()
+            .unwrap();
+        assert_eq!(long_string, read_long_string.get_value(&snapshot, &thing_manager).unwrap().unwrap_string());
+
+        read_short_string.delete(&mut snapshot, &thing_manager).unwrap();
+        read_long_string.delete(&mut snapshot, &thing_manager).unwrap();
+
+        thing_manager.finalise(&mut snapshot).unwrap();
+        snapshot.commit().unwrap();
+    }
+
+    // read them back by value with None results
+    {
+        let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let read_short_string = thing_manager
+            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
+            .unwrap();
+        assert_eq!(None, read_short_string);
+        let read_long_string = thing_manager
+            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
+            .unwrap();
+        assert_eq!(None, read_long_string);
     }
 }
 
@@ -762,6 +889,7 @@ fn attribute_struct_write_read() {
         attr_type
             .set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Struct(struct_key.clone()))
             .unwrap();
+        thing_manager.finalise(&mut snapshot).unwrap();
         snapshot.commit().unwrap();
         struct_key
     };
@@ -781,6 +909,7 @@ fn attribute_struct_write_read() {
         let attr_instance = thing_manager
             .create_attribute(&mut snapshot, attr_type, Value::Struct(Cow::Owned(struct_value.clone())))
             .unwrap();
+        thing_manager.finalise(&mut snapshot).unwrap();
         snapshot.commit().unwrap();
         (attr_instance, struct_value)
     };
