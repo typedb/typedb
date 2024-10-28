@@ -486,13 +486,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 }
                 Constraint::Has(has) => edges.push(self.seed_edge(constraint, has, vertices)?),
                 Constraint::Comparison(cmp) => {
-                    let both_variables_annotatable = cmp.left().is_variable()
-                        && cmp.right().is_variable()
-                        && cmp.ids().all(|variable| {
-                            let category = self.variable_registry.get_variable_category(variable);
-                            category.unwrap_or(VariableCategory::Value) == VariableCategory::Attribute
-                        });
-                    if both_variables_annotatable {
+                    if vertices.contains_key(cmp.right()) && vertices.contains_key(cmp.left()) {
                         edges.push(self.seed_edge(constraint, cmp, vertices)?)
                     }
                 }
@@ -1411,6 +1405,7 @@ impl BinaryConstraint for Relates<Variable> {
 #[cfg(test)]
 pub mod tests {
     use std::collections::{BTreeMap, BTreeSet};
+    use std::sync::Arc;
 
     use answer::Type as TypeAnnotation;
     use encoding::value::{label::Label, value_type::ValueType};
@@ -1419,6 +1414,7 @@ pub mod tests {
         pipeline::block::Block,
         translation::TranslationContext,
     };
+    use ir::pattern::Vertex;
     use storage::snapshot::CommittableSnapshot;
 
     use crate::annotation::{
@@ -1445,7 +1441,7 @@ pub mod tests {
         let ((_, type_cat, _), (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
-        // Case 1: $a isa cat, has animal-name $n;
+        // Case 1: $a isa cat, has name $n;
         let mut translation_context = TranslationContext::new();
         let mut builder = Block::builder(translation_context.new_block_builder_context());
         let mut conjunction = builder.conjunction_mut();
@@ -1472,6 +1468,8 @@ pub mod tests {
                 (var_name.into(), BTreeSet::from([type_name.clone(), type_catname.clone(), type_dogname.clone()])),
                 (var_animal_type.into(), BTreeSet::from([type_cat.clone()])),
                 (var_name_type.into(), BTreeSet::from([type_name.clone()])),
+                (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat.clone()])),
+                (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name.clone()])),
             ]),
             edges: vec![
                 expected_edge(
