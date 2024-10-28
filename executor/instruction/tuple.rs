@@ -298,4 +298,3 @@ pub(crate) fn links_to_tuple_role_relation_player<'a>(
         VariableValue::Thing(rp.into_player().into()),
     ]))
 }
-
