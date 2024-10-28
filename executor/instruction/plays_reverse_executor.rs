@@ -23,7 +23,7 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         plays_executor::{PlaysFilterFn, PlaysTupleIterator, EXTRACT_PLAYER, EXTRACT_ROLE},
-        tuple::{plays_to_tuple_role_player, TuplePositions},
+        tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, TuplePositions},
         BinaryIterateMode, Checker, VariableModes,
     },
     pipeline::stage::ExecutionContext,
@@ -81,10 +81,9 @@ impl PlaysReverseExecutor {
         let player = plays.player().as_variable();
         let role_type = plays.role_type().as_variable();
 
-        let output_tuple_positions = if iterate_mode.is_inverted() {
-            TuplePositions::Pair([player, role_type])
-        } else {
-            TuplePositions::Pair([role_type, player])
+        let output_tuple_positions = match iterate_mode {
+            BinaryIterateMode::Unbound => TuplePositions::Pair([role_type, player]),
+            _ => TuplePositions::Pair([player, role_type]),
         };
 
         let checker = Checker::<AsHkt![Plays<'_>]>::new(
@@ -158,7 +157,7 @@ impl PlaysReverseExecutor {
                 let as_tuples: PlaysReverseBoundedSortedPlayer =
                     AsNarrowingIterator::<_, Result<Plays<'_>, _>>::new(iterator)
                         .try_filter::<_, PlaysFilterFn, Plays<'_>, _>(filter_for_row)
-                        .map(plays_to_tuple_role_player);
+                        .map(plays_to_tuple_player_role);
                 Ok(TupleIterator::PlaysReverseBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),

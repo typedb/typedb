@@ -73,10 +73,9 @@ impl HasReverseExecutor {
         let owner = has.owner().as_variable().unwrap();
         let attribute = has.attribute().as_variable().unwrap();
 
-        let output_tuple_positions = if iterate_mode.is_inverted() {
-            TuplePositions::Pair([Some(owner), Some(attribute)])
-        } else {
-            TuplePositions::Pair([Some(attribute), Some(owner)])
+        let output_tuple_positions = match iterate_mode {
+            BinaryIterateMode::Unbound => TuplePositions::Pair([Some(attribute), Some(owner)]),
+            _ => TuplePositions::Pair([Some(owner), Some(attribute)]),
         };
 
         let checker = Checker::<(Has<'_>, _)>::new(
@@ -201,7 +200,7 @@ impl HasReverseExecutor {
                 );
                 let filtered = iterator.try_filter::<_, HasFilterFn, (Has<'_>, _), _>(filter_for_row);
                 let as_tuples: HasReverseBoundedSortedOwner =
-                    filtered.map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
+                    filtered.map::<Result<Tuple<'_>, _>, _>(has_to_tuple_owner_attribute);
                 Ok(TupleIterator::HasReverseBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),

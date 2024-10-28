@@ -27,7 +27,9 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{owns_to_tuple_owner_attribute, OwnsToTupleFn, TuplePositions, TupleResult},
+        tuple::{
+            owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, OwnsToTupleFn, TuplePositions, TupleResult,
+        },
         type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
@@ -95,10 +97,9 @@ impl OwnsExecutor {
         let owner = owns.owner().as_variable();
         let attribute = owns.attribute().as_variable();
 
-        let output_tuple_positions = if iterate_mode.is_inverted() {
-            TuplePositions::Pair([attribute, owner])
-        } else {
-            TuplePositions::Pair([owner, attribute])
+        let output_tuple_positions = match iterate_mode {
+            BinaryIterateMode::Unbound => TuplePositions::Pair([owner, attribute]),
+            _ => TuplePositions::Pair([attribute, owner]),
         };
 
         let checker = Checker::<AsHkt![Owns<'_>]>::new(
@@ -176,7 +177,7 @@ impl OwnsExecutor {
                 let as_tuples: OwnsBoundedSortedAttribute =
                     AsNarrowingIterator::<_, Result<Owns<'_>, _>>::new(iterator)
                         .try_filter::<_, OwnsFilterFn, Owns<'_>, _>(filter_for_row)
-                        .map(owns_to_tuple_owner_attribute);
+                        .map(owns_to_tuple_attribute_owner);
                 Ok(TupleIterator::OwnsBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),

@@ -25,7 +25,7 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         sub_executor::{NarrowingTupleIterator, SubTupleIterator, EXTRACT_SUB, EXTRACT_SUPER},
-        tuple::{sub_to_tuple_super_sub, TuplePositions},
+        tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
@@ -73,10 +73,9 @@ impl SubReverseExecutor {
         let subtype = sub.subtype().as_variable();
         let supertype = sub.supertype().as_variable();
 
-        let output_tuple_positions = if iterate_mode.is_inverted() {
-            TuplePositions::Pair([subtype, supertype])
-        } else {
-            TuplePositions::Pair([supertype, subtype])
+        let output_tuple_positions = match iterate_mode {
+            BinaryIterateMode::Unbound => TuplePositions::Pair([supertype, subtype]),
+            _ => TuplePositions::Pair([subtype, supertype]),
         };
 
         let checker = Checker::<AdHocHkt<(Type, Type)>>::new(
@@ -142,7 +141,7 @@ impl SubReverseExecutor {
                 let as_tuples: SubReverseBoundedSortedSuper = NarrowingTupleIterator(
                     AsLendingIterator::new(sub_with_super)
                         .try_filter::<_, SubFilterFn, (Type, Type), _>(filter_for_row)
-                        .map(sub_to_tuple_super_sub),
+                        .map(sub_to_tuple_sub_super),
                 );
                 Ok(TupleIterator::SubReverseBounded(SortedTupleIterator::new(
                     as_tuples,

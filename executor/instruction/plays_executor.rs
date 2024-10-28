@@ -27,7 +27,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{plays_to_tuple_player_role, PlaysToTupleFn, TuplePositions, TupleResult},
+        tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, PlaysToTupleFn, TuplePositions, TupleResult},
         type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
@@ -95,10 +95,9 @@ impl PlaysExecutor {
         let player = plays.player().as_variable();
         let role_type = plays.role_type().as_variable();
 
-        let output_tuple_positions = if iterate_mode.is_inverted() {
-            TuplePositions::Pair([role_type, player])
-        } else {
-            TuplePositions::Pair([player, role_type])
+        let output_tuple_positions = match iterate_mode {
+            BinaryIterateMode::Unbound => TuplePositions::Pair([player, role_type]),
+            _ => TuplePositions::Pair([role_type, player]),
         };
 
         let checker = Checker::<AsHkt![Plays<'_>]>::new(
@@ -176,7 +175,7 @@ impl PlaysExecutor {
                 let iterator = plays.iter().cloned().sorted_by_key(|plays| (plays.role(), plays.player())).map(Ok as _);
                 let as_tuples: PlaysBoundedSortedRole = AsNarrowingIterator::<_, Result<Plays<'_>, _>>::new(iterator)
                     .try_filter::<_, PlaysFilterFn, Plays<'_>, _>(filter_for_row)
-                    .map(plays_to_tuple_player_role);
+                    .map(plays_to_tuple_role_player);
                 Ok(TupleIterator::PlaysBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),

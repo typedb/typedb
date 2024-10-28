@@ -92,10 +92,9 @@ impl IsaReverseExecutor {
         let thing = isa.thing().as_variable();
         let type_ = isa.type_().as_variable();
 
-        let output_tuple_positions = if iterate_mode.is_inverted() {
-            TuplePositions::Pair([thing, type_])
-        } else {
-            TuplePositions::Pair([type_, thing])
+        let output_tuple_positions = match iterate_mode {
+            BinaryIterateMode::Unbound => TuplePositions::Pair([type_, thing]),
+            _ => TuplePositions::Pair([thing, type_]),
         };
 
         let checker = Checker::<(Thing<'_>, Type)>::new(
@@ -195,7 +194,7 @@ impl IsaReverseExecutor {
                             Err(err) => Err(err.clone()),
                         },
                     ))
-                    .map(isa_to_tuple_type_thing);
+                    .map(isa_to_tuple_thing_type);
                 Ok(TupleIterator::IsaReverseBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),

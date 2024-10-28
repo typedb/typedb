@@ -22,7 +22,7 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         owns_executor::{OwnsFilterFn, OwnsTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
-        tuple::{owns_to_tuple_attribute_owner, TuplePositions},
+        tuple::{owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
     },
     pipeline::stage::ExecutionContext,
@@ -79,10 +79,9 @@ impl OwnsReverseExecutor {
         let owner = owns.owner().as_variable();
         let attribute = owns.attribute().as_variable();
 
-        let output_tuple_positions = if iterate_mode.is_inverted() {
-            TuplePositions::Pair([owner, attribute])
-        } else {
-            TuplePositions::Pair([attribute, owner])
+        let output_tuple_positions = match iterate_mode {
+            BinaryIterateMode::Unbound => TuplePositions::Pair([attribute, owner]),
+            _ => TuplePositions::Pair([owner, attribute]),
         };
 
         let checker = Checker::<AsHkt![Owns<'_>]>::new(
@@ -158,7 +157,7 @@ impl OwnsReverseExecutor {
                 let as_tuples: OwnsReverseBoundedSortedOwner =
                     AsNarrowingIterator::<_, Result<Owns<'_>, _>>::new(iterator)
                         .try_filter::<_, OwnsFilterFn, AsHkt![Owns<'_>], _>(filter_for_row)
-                        .map(owns_to_tuple_attribute_owner);
+                        .map(owns_to_tuple_owner_attribute);
 
                 Ok(TupleIterator::OwnsReverseBounded(SortedTupleIterator::new(
                     as_tuples,
