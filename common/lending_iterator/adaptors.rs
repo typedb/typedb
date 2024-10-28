@@ -86,6 +86,43 @@ where
     }
 }
 
+pub struct Inspect<I, F> {
+    iter: I,
+    f: F,
+}
+
+impl<I, F> Inspect<I, F> {
+    pub fn new(iter: I, mapper: F) -> Self {
+        Self { iter, f: mapper }
+    }
+}
+
+impl<I, F> LendingIterator for Inspect<I, F>
+where
+    I: LendingIterator,
+    F: FnMut(&I::Item<'_>) + 'static,
+{
+    type Item<'a> = I::Item<'a>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        self.iter.next().inspect(&mut self.f)
+    }
+}
+
+impl<I, F, K> Seekable<K> for Inspect<I, F>
+where
+    I: LendingIterator + Seekable<K>,
+    F: FnMut(&I::Item<'_>) + 'static,
+{
+    fn seek(&mut self, key: &K) {
+        self.iter.seek(key)
+    }
+
+    fn compare_key(&self, item: &Self::Item<'_>, key: &K) -> Ordering {
+        self.iter.compare_key(item, key)
+    }
+}
+
 pub struct Map<I, F, B> {
     iter: I,
     mapper: F,

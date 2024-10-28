@@ -6,6 +6,8 @@
 
 use std::{borrow::Borrow, cmp::Ordering, marker::PhantomData, mem::transmute};
 
+use adaptors::Inspect;
+
 use crate::{
     adaptors::{Chain, Filter, FilterMap, FlatMap, Flatten, Map, RepeatEach, TakeWhile, TryFilter, TryFlatMap, Zip},
     higher_order::{AdHocHkt, FnHktHelper, FnMutHktHelper, Hkt},
@@ -68,6 +70,14 @@ pub trait LendingIterator: 'static {
         P: FnMut(&Self::Item<'_>) -> bool,
     {
         TakeWhile::new(self, pred)
+    }
+
+    fn inspect<F>(self, f: F) -> Inspect<Self, F>
+    where
+        Self: Sized,
+        F: FnMut(&Self::Item<'_>) + 'static,
+    {
+        Inspect::new(self, f)
     }
 
     fn map<B, F>(self, mapper: F) -> Map<Self, F, B>
