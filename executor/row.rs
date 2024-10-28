@@ -56,6 +56,17 @@ impl<'a> Row<'a> {
         *self.multiplicity = multiplicity;
     }
 
+    pub(crate) fn copy_mapped(
+        &mut self,
+        row: MaybeOwnedRow<'_>,
+        mapping: impl Iterator<Item = (VariablePosition, VariablePosition)>,
+    ) {
+        for (src, dst) in mapping {
+            self.set(dst, row.get(src).clone().into_owned());
+        }
+        *self.multiplicity = *row.multiplicity;
+    }
+
     pub(crate) fn get_multiplicity(&self) -> u64 {
         *self.multiplicity
     }

@@ -24,6 +24,7 @@ use crate::{
 };
 
 mod collecting_stage_executor;
+pub(super) mod control_instruction;
 pub mod expression_executor;
 mod immediate_executor;
 mod nested_pattern_executor;
@@ -31,7 +32,6 @@ pub(crate) mod pattern_executor;
 pub(crate) mod step_executor;
 pub(crate) mod tabled_call_executor;
 pub mod tabled_functions;
-pub(super) mod control_instruction;
 
 // And use the below one instead
 pub(super) fn TODO_REMOVE_create_executors_for_match(

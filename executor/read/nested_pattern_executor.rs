@@ -205,10 +205,7 @@ impl NestedPatternResultMapperTrait for SelectMapper {
             let mut uniform_batch = FixedBatch::new(self.output_width);
             for row in batch {
                 uniform_batch.append(|mut output_row| {
-                    output_row.set_multiplicity(row.multiplicity());
-                    for &position in &self.selected_variables {
-                        output_row.set(position, row.get(position).clone().into_owned())
-                    }
+                    output_row.copy_mapped(row, self.selected_variables.iter().map(|pos| (pos.clone(), pos.clone())));
                 })
             }
             NestedPatternControl::Retry(Some(uniform_batch))
@@ -244,12 +241,18 @@ impl NestedPatternResultMapperTrait for InlinedFunctionMapper {
                 for return_index in 0..returned_batch.len() {
                     let returned_row = returned_batch.get_row(return_index);
                     output_batch.append(|mut output_row| {
-                        for (i, element) in self.input.iter().enumerate() {
-                            output_row.set(VariablePosition::new(i as u32), element.clone());
-                        }
-                        for (returned_index, output_position) in self.assigned.iter().enumerate() {
-                            output_row.set(output_position.clone(), returned_row[returned_index].clone().into_owned());
-                        }
+                        output_row.copy_mapped(
+                            self.input.as_reference(),
+                            (0..self.input.len())
+                                .map(|i| (VariablePosition::new(i as u32), VariablePosition::new(i as u32))),
+                        );
+                        output_row.copy_mapped(
+                            returned_row.as_reference(),
+                            self.assigned
+                                .iter()
+                                .enumerate()
+                                .map(|(src, dst)| (VariablePosition::new(src as u32), dst.clone())),
+                        );
                     });
                 }
                 NestedPatternControl::Retry(Some(output_batch))

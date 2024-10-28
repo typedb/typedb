@@ -5,12 +5,18 @@
  */
 
 use std::sync::Arc;
+
 use ir::pipeline::ParameterRegistry;
-use crate::batch::{FixedBatch, FixedBatchRowIterator};
-use crate::read::collecting_stage_executor::CollectedStageIterator;
-use crate::read::nested_pattern_executor::NestedPatternResultMapper;
-use crate::read::pattern_executor::{BranchIndex, ExecutorIndex};
-use crate::row::MaybeOwnedRow;
+
+use crate::{
+    batch::{FixedBatch, FixedBatchRowIterator},
+    read::{
+        collecting_stage_executor::CollectedStageIterator,
+        nested_pattern_executor::NestedPatternResultMapper,
+        pattern_executor::{BranchIndex, ExecutorIndex},
+    },
+    row::MaybeOwnedRow,
+};
 
 pub(super) struct PatternStart {
     pub(super) input_batch: FixedBatch,
