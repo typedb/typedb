@@ -215,13 +215,11 @@ impl<Durability> MVCCStorage<Durability> {
             .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
 
         let sync_notifier = self.durability_client.request_sync();
-        let validated_commit = self
-            .isolation_manager
-            .validate_commit(commit_sequence_number, commit_record, &self.durability_client)
-            .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
+        let validate_result =
+            self.isolation_manager.validate_commit(commit_sequence_number, commit_record, &self.durability_client);
 
-        match validated_commit {
-            ValidatedCommit::Write(write_batches) => {
+        match validate_result {
+            Ok(ValidatedCommit::Write(write_batches)) => {
                 sync_notifier.recv().unwrap(); // Ensure WAL is persisted before inserting to the KV store
                                                // Write to the k-v store
                 self.keyspaces
@@ -238,10 +236,15 @@ impl<Durability> MVCCStorage<Durability> {
 
                 Ok(commit_sequence_number)
             }
-            ValidatedCommit::Conflict(conflict) => {
+            Ok(ValidatedCommit::Conflict(conflict)) => {
+                sync_notifier.recv().unwrap();
                 Self::persist_commit_status(false, commit_sequence_number, &self.durability_client)
                     .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
                 Err(StorageCommitError::Isolation { name: self.name.clone(), conflict })
+            }
+            Err(error) => {
+                sync_notifier.recv().unwrap();
+                Err(Durability { name: self.name.clone(), typedb_source: error })
             }
         }
     }

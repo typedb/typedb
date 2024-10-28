@@ -27,6 +27,7 @@ rust_test(
         "@crates//:criterion",
         "@crates//:pprof",
     ],
+    tags = ["manual"],  # in order for bazel test //... to not fail
     use_libtest_harness = False,
 )
 
@@ -53,6 +54,7 @@ rust_test(
         "//storage:storage",
         "//util/test:test_utils",
     ],
+    tags = ["manual"],  # in order for bazel test //... to not fail
     use_libtest_harness = False,
 )
 
