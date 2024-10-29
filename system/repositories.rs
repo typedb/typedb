@@ -7,7 +7,7 @@ pub struct UserRepository {}
 
 impl UserRepository {
     pub fn new() -> Self {
-        todo!()
+        Self {}
     }
 
     pub fn list(&self, tx: &TransactionRead<WALClient>) -> Vec<User> {
@@ -38,7 +38,7 @@ pub struct CredentialRepository {}
 
 impl CredentialRepository {
     pub fn new() -> Self {
-        todo!()
+        Self {}
     }
 
     pub fn create(
