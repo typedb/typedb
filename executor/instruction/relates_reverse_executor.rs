@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     iter,
     sync::Arc,
     vec,
@@ -48,7 +48,7 @@ pub(crate) struct RelatesReverseExecutor {
 pub(super) type RelatesReverseUnboundedSortedRole = RelatesTupleIterator<
     AsNarrowingIterator<
         iter::Map<
-            vec::IntoIter<(RelationType<'static>, RoleType<'static>)>,
+            iter::Flatten<vec::IntoIter<HashSet<(RelationType<'static>, RoleType<'static>)>>>,
             fn(
                 (RelationType<'static>, RoleType<'static>),
             ) -> Result<(RelationType<'static>, RoleType<'static>), ConceptReadError>,
@@ -57,7 +57,15 @@ pub(super) type RelatesReverseUnboundedSortedRole = RelatesTupleIterator<
     >,
 >;
 pub(super) type RelatesReverseBoundedSortedRelation = RelatesTupleIterator<
-    lending_iterator::Once<Result<(AsHkt![RelationType<'_>], AsHkt![RoleType<'_>]), ConceptReadError>>,
+    AsNarrowingIterator<
+        iter::Map<
+            vec::IntoIter<(RelationType<'static>, RoleType<'static>)>,
+            fn(
+                (RelationType<'static>, RoleType<'static>),
+            ) -> Result<(RelationType<'static>, RoleType<'static>), ConceptReadError>,
+        >,
+        Result<(AsHkt![RelationType<'_>], AsHkt![RoleType<'_>]), ConceptReadError>,
+    >,
 >;
 
 impl RelatesReverseExecutor {
@@ -129,12 +137,16 @@ impl RelatesReverseExecutor {
                     .role_relation_types
                     .keys()
                     .map(|role| {
-                        role.as_role_type()
-                            .get_relates_root(snapshot, type_manager)
-                            .map(|relates| (relates.relation(), relates.role()))
+                        let role_type = role.as_role_type();
+                        role_type.get_relation_types(snapshot, type_manager).map(|res| {
+                            res.to_owned()
+                                .keys()
+                                .map(|relation_type| (relation_type.clone(), role_type.clone()))
+                                .collect()
+                        })
                     })
                     .try_collect()?;
-                let iterator = relates.into_iter().map(Ok as _);
+                let iterator = relates.into_iter().flatten().map(Ok as _);
                 let as_tuples: RelatesReverseUnboundedSortedRole =
                     AsNarrowingIterator::<_, Result<(RelationType<'_>, RoleType<'_>), _>>::new(iterator)
                         .try_filter::<_, RelatesFilterFn, (RelationType<'_>, RoleType<'_>), _>(filter_for_row)
@@ -151,17 +163,22 @@ impl RelatesReverseExecutor {
             }
 
             BinaryIterateMode::BoundFrom => {
-                let role = type_from_row_or_annotations(self.relates.role_type(), row, self.role_relation_types.keys())
-                    .as_role_type();
-                let relates = role.get_relates_root(snapshot, context.type_manager())?;
+                let role_type =
+                    type_from_row_or_annotations(self.relates.role_type(), row, self.role_relation_types.keys())
+                        .as_role_type();
+                let relates = role_type
+                    .get_relation_types(snapshot, context.type_manager())?
+                    .to_owned()
+                    .into_keys()
+                    .map(|relation_type| (relation_type.clone(), role_type.clone()));
 
-                let as_tuples: RelatesReverseBoundedSortedRelation =
-                    lending_iterator::once::<Result<(RelationType<'_>, RoleType<'_>), _>>(Ok((
-                        relates.relation(),
-                        relates.role(),
-                    )))
-                    .try_filter::<_, RelatesFilterFn, (RelationType<'_>, RoleType<'_>), _>(filter_for_row)
-                    .map(relates_to_tuple_relation_role);
+                let iterator = relates.into_iter().sorted_by_key(|(relation, role)| relation.clone()).map(Ok as _);
+                let as_tuples: RelatesReverseBoundedSortedRelation = AsNarrowingIterator::<
+                    _,
+                    Result<(RelationType<'_>, RoleType<'_>), _>,
+                >::new(iterator)
+                .try_filter::<_, RelatesFilterFn, (AsHkt![RelationType<'_>], AsHkt![RoleType<'_>]), _>(filter_for_row)
+                .map(relates_to_tuple_relation_role);
                 Ok(TupleIterator::RelatesReverseBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
