@@ -175,31 +175,26 @@ fn undefine_specialise(
     let definition_status = get_sub_status(snapshot, type_manager, relates.role(), specialised_relates.role())
         .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
     match definition_status {
-        DefinableStatus::DoesNotExist => Ok(()),
         DefinableStatus::ExistsSame(_) => {
             relates.unset_specialise(snapshot, type_manager, thing_manager).map_err(|source| {
                 UndefineError::UnsetRelatesSpecialiseError {
-                    label: label.clone(),
-                    undefinition: specialise_undefinable.clone(),
+                    type_: label.clone(),
+                    declaration: specialise_undefinable.clone(),
                     typedb_source: source,
                 }
             })
         }
+        DefinableStatus::DoesNotExist => Ok(()),
         DefinableStatus::ExistsDifferent(existing_specialised_role) => {
             Err(UndefineError::RelatesSpecialiseDefinedButDifferent {
-                specialise: format!(
-                    "{} relates {} as {}",
-                    relates.relation().get_label(snapshot, type_manager).unwrap().name.to_string(),
-                    relates.role().get_label(snapshot, type_manager).unwrap().name.to_string(),
-                    specialised_relates.role().get_label(snapshot, type_manager).unwrap().name.to_string(),
-                ),
-                existing_specialise: format!(
-                    "as {} from {} relates {}",
-                    existing_specialised_role.get_label(snapshot, type_manager).unwrap().name.to_string(),
-                    relates.relation().get_label(snapshot, type_manager).unwrap().name.to_string(),
-                    relates.role().get_label(snapshot, type_manager).unwrap().name.to_string(),
-                ),
-                undefinition: specialise_undefinable.clone(),
+                type_: label,
+                specialising_role: relates.role().get_label(snapshot, type_manager).unwrap().to_owned(),
+                specialised_role: specialised_relates.role().get_label(snapshot, type_manager).unwrap().to_owned(),
+                existing_specialised_role: existing_specialised_role
+                    .get_label(snapshot, type_manager)
+                    .unwrap()
+                    .to_owned(),
+                declaration: specialise_undefinable.clone(),
             })
         }
     }
@@ -266,7 +261,7 @@ fn undefine_capability_annotation(
     }
     .map_err(|err| UndefineError::UnsetCapabilityAnnotationError {
         annotation_category,
-        undefinition: annotation_undefinable.clone(),
+        declaration: annotation_undefinable.clone(),
         typedb_source: err,
     })
 }
@@ -456,18 +451,13 @@ fn undefine_type_capability_owns(
         DefinableStatus::ExistsSame(_) => object_type
             .unset_owns(snapshot, type_manager, thing_manager, attribute_type)
             .map_err(|source| UndefineError::UnsetOwnsError { owns: owns.clone(), typedb_source: source }),
-        DefinableStatus::ExistsDifferent((existing_owns, existing_ordering)) => {
-            Err(UndefineError::OwnsDefinedButDifferent {
-                existing_owns: format!(
-                    "owns {} from {}",
-                    existing_owns.attribute().get_label(snapshot, type_manager).unwrap().name.to_string(),
-                    existing_owns.owner().get_label(snapshot, type_manager).unwrap().name.to_string(),
-                ),
-                existing_ordering,
-                ordering,
-                undefinition: capability_undefinable.clone(),
-            })
-        }
+        DefinableStatus::ExistsDifferent((_, existing_ordering)) => Err(UndefineError::OwnsDefinedButDifferent {
+            type_: type_label.clone(),
+            attribute: attribute_type.get_label(snapshot, type_manager).unwrap().to_owned(),
+            ordering,
+            existing_ordering,
+            declaration: capability_undefinable.clone(),
+        }),
     }
 }
 
@@ -536,18 +526,13 @@ fn undefine_type_capability_relates(
             .role()
             .delete(snapshot, type_manager, thing_manager)
             .map_err(|source| UndefineError::DeleteRoleTypeError { relates: relates.clone(), typedb_source: source }),
-        DefinableStatus::ExistsDifferent((existing_relates, existing_ordering)) => {
-            Err(UndefineError::RelatesDefinedButDifferent {
-                existing_relates: format!(
-                    "relates {} from {}",
-                    existing_relates.role().get_label(snapshot, type_manager).unwrap().scoped_name.to_string(),
-                    existing_relates.relation().get_label(snapshot, type_manager).unwrap().name.to_string(),
-                ),
-                existing_ordering,
-                ordering,
-                undefinition: capability_undefinable.clone(),
-            })
-        }
+        DefinableStatus::ExistsDifferent((_, existing_ordering)) => Err(UndefineError::RelatesDefinedButDifferent {
+            type_: type_label.clone(),
+            role: role_label.clone(),
+            ordering,
+            existing_ordering,
+            declaration: capability_undefinable.clone(),
+        }),
     }
 }
 
@@ -586,7 +571,7 @@ fn undefine_type_capability_value_type(
                 type_: type_label.clone().into_owned(),
                 value_type,
                 existing_value_type,
-                undefinition: capability_undefinable.clone(),
+                declaration: capability_undefinable.clone(),
             })
         }
     }
@@ -621,7 +606,7 @@ fn undefine_type_annotation(
         typedb_source: err,
         label,
         annotation_category,
-        undefinition: annotation_undefinable.clone(),
+        declaration: annotation_undefinable.clone(),
     })
 }
 
@@ -644,7 +629,7 @@ fn undefine_type(
     .map_err(|err| UndefineError::TypeDeleteError {
         typedb_source: err,
         label,
-        undefinition: label_undefinable.clone(),
+        declaration: label_undefinable.clone(),
     })
 }
 
@@ -661,7 +646,7 @@ fn undefine_struct(
     type_manager.delete_struct(snapshot, thing_manager, &struct_key).map_err(|err| UndefineError::StructDeleteError {
         typedb_source: err,
         struct_name: name.to_owned(),
-        undefinition: struct_undefinable.clone(),
+        declaration: struct_undefinable.clone(),
     })
 }
 
@@ -671,7 +656,7 @@ fn check_can_and_need_undefine_sub<'a, T: TypeAPI<'a>>(
     label: &Label<'a>,
     type_: T,
     supertype: T,
-    undefinition: &CapabilityType,
+    declaration: &CapabilityType,
 ) -> Result<bool, UndefineError> {
     let definition_status = get_sub_status(snapshot, type_manager, type_, supertype.clone())
         .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
@@ -690,7 +675,7 @@ fn check_can_and_need_undefine_sub<'a, T: TypeAPI<'a>>(
                 .map_err(|source| UndefineError::UnexpectedConceptRead { source })?
                 .clone()
                 .into_owned(),
-            undefinition: undefinition.clone(),
+            declaration: declaration.clone(),
         }),
     }
 }
@@ -705,14 +690,14 @@ fn err_capability_kind_mismatch(
     UndefineError::CapabilityKindMismatch {
         left: left.clone().into_owned(),
         right: right.clone().into_owned(),
-        undefinition: capability.clone(),
+        declaration: capability.clone(),
         left_kind,
         right_kind,
     }
 }
 
 fn err_unsupported_capability(label: &Label<'static>, kind: Kind, capability: &CapabilityType) -> UndefineError {
-    UndefineError::TypeCannotHaveCapability { label: label.to_owned(), kind, capability: capability.clone() }
+    UndefineError::TypeCannotHaveCapability { type_: label.to_owned(), kind, capability: capability.clone() }
 }
 
 typedb_error!(
@@ -721,19 +706,19 @@ typedb_error!(
         UnexpectedConceptRead(2, "Concept read error during undefine query execution.", ( source: ConceptReadError )),
         DefinitionResolution(3, "Could not find symbol in undefine query.", ( typedb_source: SymbolResolutionError )),
         LiteralParseError(4, "Error parsing literal in undefine query.", ( source : LiteralParseError )),
-        StructDoesNotExist(5, "Struct used in undefine query does not exist.\nSource:\n{undefinition}", undefinition: Struct),
+        StructDoesNotExist(5, "Struct used in undefine query does not exist.\nSource:\n{declaration}", declaration: Struct),
         StructDeleteError(
             6,
-            "Error removing struct type '{struct_name}'.\nSource:\n{undefinition}",
+            "Error removing struct type '{struct_name}'.\nSource:\n{declaration}",
             struct_name: String,
-            undefinition: Struct,
+            declaration: Struct,
             ( typedb_source: ConceptWriteError )
         ),
         TypeDeleteError(
             7,
-            "Error removing type '{label}'.\nSource:\n{undefinition}",
+            "Error removing type '{label}'.\nSource:\n{declaration}",
             label: Label<'static>,
-            undefinition: TypeQLLabel,
+            declaration: TypeQLLabel,
             ( typedb_source: ConceptWriteError )
         ),
         ValueTypeSymbolResolution(
@@ -774,83 +759,132 @@ typedb_error!(
         ),
         UnsetTypeAnnotationError(
             14,
-            "Undefining '{label}' to have annotation '{annotation_category}' failed.\nSource:\n{undefinition}",
+            "Undefining '{label}' to have annotation '{annotation_category}' failed.\nSource:\n{declaration}",
             label: Label<'static>,
             annotation_category: AnnotationCategory,
-            undefinition: AnnotationType,
+            declaration: AnnotationType,
             ( typedb_source: ConceptWriteError )
         ),
         UnsetCapabilityAnnotationError(
             15,
-            "Undefining '{annotation_category}' failed.\nSource:\n{undefinition}",
+            "Undefining '{annotation_category}' failed.\nSource:\n{declaration}",
             annotation_category: AnnotationCategory,
-            undefinition: AnnotationCapability,
+            declaration: AnnotationCapability,
             ( typedb_source: ConceptWriteError )
         ),
         UnsetRelatesSpecialiseError(
             16,
-            "For relation type '{label}', undefining `relates as' failed.\nSource:\n{undefinition}",
-            label: Label<'static>,
-            undefinition: Specialise,
+            "For relation type '{type_}', undefining `relates as' failed.\nSource:\n{declaration}",
+            type_: Label<'static>,
+            declaration: Specialise,
             ( typedb_source: ConceptWriteError )
         ),
         TypeCannotHaveCapability(
             17,
-            "Invalid undefine - the type '{label}' of kind '{kind}', which cannot have: '{capability}'. Maybe you wanted to undefine something else?",
-            label: Label<'static>,
+            "Invalid undefine - the type '{type_}' of kind '{kind}', which cannot have: '{capability}'. Maybe you wanted to undefine something else?",
+            type_: Label<'static>,
             kind: Kind,
             capability: CapabilityType
         ),
-        TypeSubDefinedButDifferent(
+        TypeSubIsNotDefined(
             18,
-            "Undefining failed because `{type_} sub {supertype}` is not defined, while {type_}'s defined supertype is {existing_supertype}. Maybe you meant `sub {existing_supertype} from {type_}`?\nSource:\n{undefinition}",
+            "Undefining 'sub {supertype}' for type '{type_}' failed since there is no defined '{type_} sub {supertype}'.\nSource:\n{declaration}",
+            type_: Label<'static>,
+            supertype: Label<'static>,
+            declaration: CapabilityType
+        ),
+        TypeSubDefinedButDifferent(
+            19,
+            "Undefining 'sub {supertype}' for type '{type_}' failed since there is no defined '{type_} sub {supertype}', while {type_}'s defined 'sub' is '{existing_supertype}'.\nSource:\n{declaration}",
             type_: Label<'static>,
             supertype: Label<'static>,
             existing_supertype: Label<'static>,
-            undefinition: CapabilityType
+            declaration: CapabilityType
+        ),
+        OwnsIsNotDefined(
+            20,
+            "Undefining 'owns {attribute}{ordering}' for type '{type_}' failed since there is no defined '{type_} owns {attribute}{ordering}'.\nSource:\n{declaration}",
+            type_: Label<'static>,
+            attribute: Label<'static>,
+            ordering: Ordering,
+            declaration: CapabilityType
         ),
         OwnsDefinedButDifferent(
-            19,
-            "Undefining failed because `{existing_owns}{ordering}` is defined with a different ordering. Maybe you meant `{existing_owns}{existing_ordering}`?\nSource:\n{undefinition}",
-            existing_owns: String,
-            existing_ordering: Ordering,
+            21,
+            "Undefining 'owns {attribute}{ordering}' for type '{type_}' failed since there is no defined '{type_} owns {attribute}{ordering}', while {type_}'s defined 'owns' is '{attribute}{existing_ordering}'.\nSource:\n{declaration}",
+            type_: Label<'static>,
+            attribute: Label<'static>,
             ordering: Ordering,
-            undefinition: CapabilityType
+            existing_ordering: Ordering,
+            declaration: CapabilityType
+        ),
+        RelatesIsNotDefined(
+            22,
+            "Undefining 'relates {role}{ordering}' for type '{type_}' failed since there is no defined '{type_} relates {role}{ordering}'.\nSource:\n{declaration}",
+            type_: Label<'static>,
+            role: Label<'static>,
+            ordering: Ordering,
+            declaration: CapabilityType
         ),
         RelatesDefinedButDifferent(
-            20,
-            "Undefining failed because `{existing_relates}{ordering}` is defined with a different ordering. Maybe you meant `{existing_relates}{existing_ordering}`?\nSource:\n{undefinition}",
-            existing_relates: String,
-            existing_ordering: Ordering,
+            23,
+            "Undefining 'relates {role}{ordering}' for type '{type_}' failed since there is no defined '{type_} relates {role}{ordering}', while {type_}'s defined 'relates' is '{role}{existing_ordering}'.\nSource:\n{declaration}",
+            type_: Label<'static>,
+            role: Label<'static>,
             ordering: Ordering,
-            undefinition: CapabilityType
+            existing_ordering: Ordering,
+            declaration: CapabilityType
+        ),
+        PlaysIsNotDefined(
+            24,
+            "Undefining 'plays {role}' for type '{type_}' failed since there is no defined '{type_} plays {role}'.\nSource:\n{declaration}",
+            type_: Label<'static>,
+            role: Label<'static>,
+            declaration: CapabilityType
+        ),
+        AttributeTypeValueTypeIsNotDefined(
+            25,
+            "Undefining 'value {value_type}' for type '{type_}' failed since there is no defined '{type_} value {value_type}'.\nSource:\n{declaration}",
+            type_: Label<'static>,
+            value_type: ValueType,
+            declaration: CapabilityType
         ),
         AttributeTypeValueTypeDefinedButDifferent(
-            21,
-            "Undefining failed because `{type_} value {value_type}` is not defined, while {type_}'s defined value type is {existing_value_type}. Maybe you meant `value {existing_value_type} from {type_}`?\nSource:\n{undefinition}",
+            26,
+            "Undefining 'value {value_type}' for type '{type_}' failed since there is no defined '{type_} value {value_type}', while {type_}'s defined 'value' is '{existing_value_type}'.\nSource:\n{declaration}",
             type_: Label<'static>,
             value_type: ValueType,
             existing_value_type: ValueType,
-            undefinition: CapabilityType
+            declaration: CapabilityType
+        ),
+        RelatesSpecialiseIsNotDefined(
+            27,
+            "Undefining 'as {specialised_role}' for '{type_} relates {specialising_role}' failed since there is no defined '{type_} relates {specialising_role} as {specialised_role}'.\nSource:\n{declaration}",
+            type_: Label<'static>,
+            specialising_role: Label<'static>,
+            specialised_role: Label<'static>,
+            declaration: Specialise
         ),
         RelatesSpecialiseDefinedButDifferent(
-            22,
-            "Undefining failed because specialisation `{specialise}` is defined for another specialised role type. Maybe you meant `{existing_specialise}`?\nSource:\n{undefinition}",
-            specialise: String,
-            existing_specialise: String,
-            undefinition: Specialise
+            28,
+            "Undefining 'as {specialised_role}' for '{type_} relates {specialising_role}' failed since there is no defined '{type_} relates {specialising_role} as {specialised_role}', while there is a defined specialisation '{type_} relates {specialising_role} as {existing_specialised_role}'.\nSource:\n{declaration}",
+            type_: Label<'static>,
+            specialising_role: Label<'static>,
+            specialised_role: Label<'static>,
+            existing_specialised_role: Label<'static>,
+            declaration: Specialise
         ),
         IllegalAnnotation(
-            23,
+            29,
             "Illegal annotation",
             ( source: AnnotationError )
         ),
         CapabilityKindMismatch(
-            28,
-            "Undefining failed because the left type '{left}' is of kind '{left_kind}' isn't the same kind as the right type '{right}' which has kind '{right_kind}'. Maybe you wanted to undefine something else?\nSource:\n{undefinition}",
+            30,
+            "Undefining failed because the left type '{left}' is of kind '{left_kind}' isn't the same kind as the right type '{right}' which has kind '{right_kind}'. Maybe you wanted to undefine something else?\nSource:\n{declaration}",
             left: Label<'static>,
             right: Label<'static>,
-            undefinition: CapabilityType,
+            declaration: CapabilityType,
             left_kind: Kind,
             right_kind: Kind
         ),
