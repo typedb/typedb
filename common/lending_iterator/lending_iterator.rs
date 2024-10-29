@@ -6,10 +6,10 @@
 
 use std::{borrow::Borrow, cmp::Ordering, marker::PhantomData, mem::transmute};
 
-use adaptors::Inspect;
-
 use crate::{
-    adaptors::{Chain, Filter, FilterMap, FlatMap, Flatten, Map, RepeatEach, TakeWhile, TryFilter, TryFlatMap, Zip},
+    adaptors::{
+        Chain, Filter, FilterMap, FlatMap, Flatten, Inspect, Map, RepeatEach, TakeWhile, TryFilter, TryFlatMap, Zip,
+    },
     higher_order::{AdHocHkt, FnHktHelper, FnMutHktHelper, Hkt},
 };
 
