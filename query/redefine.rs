@@ -50,6 +50,7 @@ use crate::{
     definable_status::{
         get_capability_annotation_status, get_owns_status, get_plays_status, get_relates_status,
         get_struct_field_status, get_sub_status, get_type_annotation_status, get_value_type_status, DefinableStatus,
+        DefinableStatusMode,
     },
 };
 
@@ -388,9 +389,14 @@ fn redefine_value_type(
         let value_type = resolve_value_type(snapshot, type_manager, &value_type_statement.value_type)
             .map_err(|source| RedefineError::ValueTypeSymbolResolution { typedb_source: source })?;
 
-        let definition_status =
-            get_value_type_status(snapshot, type_manager, attribute_type.clone(), value_type.clone())
-                .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
+        let definition_status = get_value_type_status(
+            snapshot,
+            type_manager,
+            attribute_type.clone(),
+            value_type.clone(),
+            DefinableStatusMode::Declared,
+        )
+        .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
         let redefine_needed = match definition_status {
             DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::AttributeTypeValueTypeIsNotDefined { label: label.to_owned(), value_type });
@@ -483,9 +489,15 @@ fn redefine_relates(
         let (role_label, ordering) = type_ref_to_label_and_ordering(&label, &typeql_relates.related)
             .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
 
-        let definition_status =
-            get_relates_status(snapshot, type_manager, relation_type.clone(), &role_label, ordering)
-                .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
+        let definition_status = get_relates_status(
+            snapshot,
+            type_manager,
+            relation_type.clone(),
+            &role_label,
+            ordering,
+            DefinableStatusMode::Declared,
+        )
+        .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
         let relates = match definition_status {
             DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::RelatesIsNotDefined {
@@ -644,9 +656,15 @@ fn redefine_owns(
         let object_type =
             type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
 
-        let definition_status =
-            get_owns_status(snapshot, type_manager, object_type.clone(), attribute_type.clone(), ordering)
-                .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
+        let definition_status = get_owns_status(
+            snapshot,
+            type_manager,
+            object_type.clone(),
+            attribute_type.clone(),
+            ordering,
+            DefinableStatusMode::Declared,
+        )
+        .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
         let owns = match definition_status {
             DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::OwnsIsNotDefined {
@@ -736,8 +754,14 @@ fn redefine_plays(
         let object_type =
             type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
 
-        let definition_status = get_plays_status(snapshot, type_manager, object_type.clone(), role_type.clone())
-            .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
+        let definition_status = get_plays_status(
+            snapshot,
+            type_manager,
+            object_type.clone(),
+            role_type.clone(),
+            DefinableStatusMode::Declared,
+        )
+        .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
         let plays = match definition_status {
             DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::PlaysIsNotDefined {

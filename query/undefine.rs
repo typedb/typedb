@@ -50,6 +50,7 @@ use crate::{
     },
     definable_status::{
         get_owns_status, get_plays_status, get_relates_status, get_sub_status, get_value_type_status, DefinableStatus,
+        DefinableStatusMode,
     },
     define::DefineError,
 };
@@ -193,10 +194,10 @@ fn undefine_specialise(
                     specialised_relates.role().get_label(snapshot, type_manager).unwrap().name.to_string(),
                 ),
                 existing_specialise: format!(
-                    "{} relates {} as {}",
+                    "as {} from {} relates {}",
+                    existing_specialised_role.get_label(snapshot, type_manager).unwrap().name.to_string(),
                     relates.relation().get_label(snapshot, type_manager).unwrap().name.to_string(),
                     relates.role().get_label(snapshot, type_manager).unwrap().name.to_string(),
-                    existing_specialised_role.get_label(snapshot, type_manager).unwrap().name.to_string(),
                 ),
                 undefinition: specialise_undefinable.clone(),
             })
@@ -441,9 +442,15 @@ fn undefine_type_capability_owns(
     let object_type = type_to_object_type(&type_)
         .map_err(|_| err_unsupported_capability(type_label, type_.kind(), capability_undefinable))?;
 
-    let definition_status =
-        get_owns_status(snapshot, type_manager, object_type.clone(), attribute_type.clone(), ordering)
-            .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+    let definition_status = get_owns_status(
+        snapshot,
+        type_manager,
+        object_type.clone(),
+        attribute_type.clone(),
+        ordering,
+        DefinableStatusMode::Transitive,
+    )
+    .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => Ok(()),
         DefinableStatus::ExistsSame(_) => object_type
@@ -452,9 +459,9 @@ fn undefine_type_capability_owns(
         DefinableStatus::ExistsDifferent((existing_owns, existing_ordering)) => {
             Err(UndefineError::OwnsDefinedButDifferent {
                 existing_owns: format!(
-                    "{} owns {}",
-                    existing_owns.owner().get_label(snapshot, type_manager).unwrap().name.to_string(),
+                    "owns {} from {}",
                     existing_owns.attribute().get_label(snapshot, type_manager).unwrap().name.to_string(),
+                    existing_owns.owner().get_label(snapshot, type_manager).unwrap().name.to_string(),
                 ),
                 existing_ordering,
                 ordering,
@@ -480,8 +487,14 @@ fn undefine_type_capability_plays(
     let object_type = type_to_object_type(&type_)
         .map_err(|_| err_unsupported_capability(&type_label, type_.kind(), capability_undefinable))?;
 
-    let definition_status = get_plays_status(snapshot, type_manager, object_type.clone(), role_type.clone())
-        .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+    let definition_status = get_plays_status(
+        snapshot,
+        type_manager,
+        object_type.clone(),
+        role_type.clone(),
+        DefinableStatusMode::Transitive,
+    )
+    .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => Ok(()),
         DefinableStatus::ExistsSame(_) => object_type
@@ -507,8 +520,15 @@ fn undefine_type_capability_relates(
         return Err(err_unsupported_capability(&type_label, type_.kind(), capability_undefinable));
     };
 
-    let definition_status = get_relates_status(snapshot, type_manager, relation_type.clone(), &role_label, ordering)
-        .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+    let definition_status = get_relates_status(
+        snapshot,
+        type_manager,
+        relation_type.clone(),
+        &role_label,
+        ordering,
+        DefinableStatusMode::Transitive,
+    )
+    .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => Ok(()),
         DefinableStatus::ExistsSame(None) => unreachable!("Expected existing relates definition"),
@@ -519,9 +539,9 @@ fn undefine_type_capability_relates(
         DefinableStatus::ExistsDifferent((existing_relates, existing_ordering)) => {
             Err(UndefineError::RelatesDefinedButDifferent {
                 existing_relates: format!(
-                    "{} relates {}",
-                    existing_relates.relation().get_label(snapshot, type_manager).unwrap().name.to_string(),
+                    "relates {} from {}",
                     existing_relates.role().get_label(snapshot, type_manager).unwrap().scoped_name.to_string(),
+                    existing_relates.relation().get_label(snapshot, type_manager).unwrap().name.to_string(),
                 ),
                 existing_ordering,
                 ordering,
@@ -546,8 +566,14 @@ fn undefine_type_capability_value_type(
     let value_type = resolve_value_type(snapshot, type_manager, &value_type.value_type)
         .map_err(|typedb_source| UndefineError::ValueTypeSymbolResolution { typedb_source })?;
 
-    let definition_status = get_value_type_status(snapshot, type_manager, attribute_type.clone(), value_type.clone())
-        .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+    let definition_status = get_value_type_status(
+        snapshot,
+        type_manager,
+        attribute_type.clone(),
+        value_type.clone(),
+        DefinableStatusMode::Transitive,
+    )
+    .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => Ok(()),
         DefinableStatus::ExistsSame(_) => {
@@ -777,7 +803,7 @@ typedb_error!(
         ),
         TypeSubDefinedButDifferent(
             18,
-            "Undefining failed because `{type_} sub {supertype}` is not defined, while {type_}'s defined supertype is {existing_supertype}. Maybe you meant `{type_} sub {existing_supertype}`?\nSource:\n{undefinition}",
+            "Undefining failed because `{type_} sub {supertype}` is not defined, while {type_}'s defined supertype is {existing_supertype}. Maybe you meant `sub {existing_supertype} from {type_}`?\nSource:\n{undefinition}",
             type_: Label<'static>,
             supertype: Label<'static>,
             existing_supertype: Label<'static>,
@@ -801,7 +827,7 @@ typedb_error!(
         ),
         AttributeTypeValueTypeDefinedButDifferent(
             21,
-            "Undefining failed because `{type_} value {value_type}` is not defined, while {type_}'s defined value type is {existing_value_type}. Maybe you meant `{type_} value {existing_value_type}`?\nSource:\n{undefinition}",
+            "Undefining failed because `{type_} value {value_type}` is not defined, while {type_}'s defined value type is {existing_value_type}. Maybe you meant `value {existing_value_type} from {type_}`?\nSource:\n{undefinition}",
             type_: Label<'static>,
             value_type: ValueType,
             existing_value_type: ValueType,

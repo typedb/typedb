@@ -90,7 +90,7 @@ fn execute_write_query(
                 &function_manager,
                 &query.into_pipeline(),
             )
-            .unwrap();
+            .map_err(|(_, error)| BehaviourTestExecutionError::Query(error))?;
         let named_outputs = pipeline.rows_positions().unwrap().clone();
 
         let (result_as_batch, snapshot) = match pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {

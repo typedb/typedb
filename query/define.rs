@@ -49,7 +49,7 @@ use crate::{
     definable_status::{
         get_capability_annotation_status, get_owns_status, get_plays_status, get_relates_status,
         get_struct_field_status, get_struct_status, get_sub_status, get_type_annotation_status, get_value_type_status,
-        DefinableStatus,
+        DefinableStatus, DefinableStatusMode,
     },
 };
 
@@ -431,9 +431,14 @@ fn define_value_type(
         let value_type = resolve_value_type(snapshot, type_manager, &value_type_statement.value_type)
             .map_err(|typedb_source| DefineError::ValueTypeSymbolResolution { typedb_source })?;
 
-        let definition_status =
-            get_value_type_status(snapshot, type_manager, attribute_type.clone(), value_type.clone())
-                .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        let definition_status = get_value_type_status(
+            snapshot,
+            type_manager,
+            attribute_type.clone(),
+            value_type.clone(),
+            DefinableStatusMode::Declared,
+        )
+        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
         let define_needed = match definition_status {
             DefinableStatus::DoesNotExist => true,
             DefinableStatus::ExistsSame(_) => false,
@@ -519,9 +524,15 @@ fn define_relates_with_annotations(
         let (role_label, ordering) = type_ref_to_label_and_ordering(&label, &relates.related)
             .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
 
-        let definition_status =
-            get_relates_status(snapshot, type_manager, relation_type.clone(), &role_label, ordering)
-                .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        let definition_status = get_relates_status(
+            snapshot,
+            type_manager,
+            relation_type.clone(),
+            &role_label,
+            ordering,
+            DefinableStatusMode::Declared,
+        )
+        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
         let defined = match definition_status {
             DefinableStatus::DoesNotExist => {
                 let relates = relation_type
@@ -678,9 +689,15 @@ fn define_owns_with_annotations(
         let object_type =
             type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
 
-        let definition_status =
-            get_owns_status(snapshot, type_manager, object_type.clone(), attribute_type.clone(), ordering)
-                .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        let definition_status = get_owns_status(
+            snapshot,
+            type_manager,
+            object_type.clone(),
+            attribute_type.clone(),
+            ordering,
+            DefinableStatusMode::Declared,
+        )
+        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
         let defined = match definition_status {
             DefinableStatus::DoesNotExist => {
                 let owns = object_type
@@ -760,8 +777,14 @@ fn define_plays_with_annotations(
         let object_type =
             type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
 
-        let definition_status = get_plays_status(snapshot, type_manager, object_type.clone(), role_type.clone())
-            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        let definition_status = get_plays_status(
+            snapshot,
+            type_manager,
+            object_type.clone(),
+            role_type.clone(),
+            DefinableStatusMode::Declared,
+        )
+        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
         let defined = match definition_status {
             DefinableStatus::DoesNotExist => object_type
                 .set_plays(snapshot, type_manager, thing_manager, role_type)

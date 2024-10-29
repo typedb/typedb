@@ -44,6 +44,7 @@ use storage::{
 use tracing::{event, Level};
 
 use crate::{
+    transaction::TransactionError,
     DatabaseOpenError::FunctionCacheInitialise,
     DatabaseResetError::{
         CorruptionPartialResetKeyGeneratorInUse, CorruptionPartialResetThingVertexGeneratorInUse,
@@ -87,35 +88,39 @@ impl<D> Database<D> {
         &self.name
     }
 
-    pub(super) fn reserve_write_transaction(&self, timeout_millis: u64) {
-        // TODO: TransactionError
+    pub(super) fn reserve_write_transaction(&self, timeout_millis: u64) -> Result<(), TransactionError> {
+        // TODO: try_lock() instead of lock()? If it's TryLockError::Poisoned (and crash) or TryLockError::WouldBlock (try again later / timeout).
         let mut guard = self.schema_write_transaction_exclusivity.lock().unwrap();
         let (has_schema_transaction, running_write_transactions, ref mut notify_queue) = *guard;
         if has_schema_transaction || !notify_queue.is_empty() {
             let (sender, receiver) = sync_channel::<()>(0);
             notify_queue.push_back(TransactionReservationRequest::Write(sender));
             drop(guard);
-            receiver.recv().unwrap();
-            // TODO: turn into TransactionError on timeout
+            receiver
+                .recv_timeout(Duration::from_millis(timeout_millis))
+                .map_err(|source| TransactionError::Timeout { source })?;
         } else {
             guard.1 = running_write_transactions + 1;
             drop(guard);
         }
+        Ok(())
     }
 
-    pub(super) fn reserve_schema_transaction(&self, timeout_millis: u64) {
+    pub(super) fn reserve_schema_transaction(&self, timeout_millis: u64) -> Result<(), TransactionError> {
         let mut guard = self.schema_write_transaction_exclusivity.lock().unwrap();
         let (has_schema_transaction, running_write_transactions, ref mut notify_queue) = *guard;
         if has_schema_transaction || running_write_transactions > 0 || !notify_queue.is_empty() {
             let (sender, receiver) = sync_channel::<()>(0);
             notify_queue.push_back(TransactionReservationRequest::Schema(sender));
             drop(guard);
-            receiver.recv().unwrap();
-            // TODO: turn into TransactionError on timeout
+            receiver
+                .recv_timeout(Duration::from_millis(timeout_millis))
+                .map_err(|source| TransactionError::Timeout { source })?;
         } else {
             guard.0 = true;
             drop(guard);
         }
+        Ok(())
     }
 
     pub(super) fn release_write_transaction(&self) {
@@ -346,7 +351,8 @@ impl Database<WALClient> {
     pub fn reset(&mut self) -> Result<(), DatabaseResetError> {
         use DatabaseResetError::CorruptionPartialResetStorageInUse;
 
-        self.reserve_schema_transaction(Duration::from_secs(60).as_millis() as u64); // exclusively lock out other write or schema transactions;
+        self.reserve_schema_transaction(Duration::from_secs(60).as_millis() as u64)
+            .map_err(|typedb_source| DatabaseResetError::Transaction { typedb_source })?; // exclusively lock out other write or schema transactions;
         let mut locked_schema = self.schema.write().unwrap();
 
         match Arc::get_mut(&mut self.storage) {
@@ -426,23 +432,24 @@ typedb_error!(
     pub DatabaseResetError(component = "Database reset", prefix = "DBR") {
         DatabaseDelete(1, "Cannot delete database.", ( typedb_source: DatabaseDeleteError )),
         DatabaseCreate(2, "Cannot create database.", ( typedb_source: DatabaseCreateError )),
-        InUse(3, "Database cannot be reset since it is in use."),
-        StorageInUse(4, "Database cannot be reset since the storage is in use."),
+        Transaction(3, "Transaction error.", ( typedb_source: TransactionError )),
+        InUse(4, "Database cannot be reset since it is in use."),
+        StorageInUse(5, "Database cannot be reset since the storage is in use."),
         CorruptionPartialResetStorageInUse(
-            5,
+            6,
             "Corruption warning: database reset failed partway because the storage is still in use.",
             ( typedb_source: StorageResetError )
         ),
         CorruptionPartialResetKeyGeneratorInUse(
-            6,
+            7,
             "Corruption warning: Database reset failed partway because the schema key generator is still in use."
         ),
         CorruptionPartialResetTypeVertexGeneratorInUse(
-            7,
+            8,
             "Corruption warning: Database reset failed partway because the type key generator is still in use."
         ),
         CorruptionPartialResetThingVertexGeneratorInUse(
-            8,
+            9,
             "Corruption warning: Dataaase reset failed partway because the instance key generator is still in use."
         ),
     }

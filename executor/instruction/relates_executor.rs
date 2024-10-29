@@ -207,7 +207,7 @@ impl RelatesExecutor {
         let relation_type = relation.as_relation_type();
 
         Ok(relation_type
-            .get_played_role_types(snapshot, type_manager)?
+            .get_related_role_types(snapshot, type_manager)?
             .into_iter()
             .map(|role_type| (relation_type.clone(), role_type))
             .collect())

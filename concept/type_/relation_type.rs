@@ -318,7 +318,7 @@ impl<'a> RelationType<'a> {
         type_manager.get_relation_type_relates_with_specialised(snapshot, self.clone().into_owned())
     }
 
-    fn get_related_role_types_declared(
+    pub fn get_related_role_types_declared(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
@@ -326,7 +326,7 @@ impl<'a> RelationType<'a> {
         Ok(self.get_relates_declared(snapshot, type_manager)?.iter().map(|relates| relates.role().clone()).collect())
     }
 
-    fn get_related_role_types(
+    pub fn get_related_role_types(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,

@@ -18,7 +18,9 @@ use compiler::VariablePosition;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
     database_manager::DatabaseManager,
-    transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
+    transaction::{
+        DataCommitError, SchemaCommitError, TransactionError, TransactionRead, TransactionSchema, TransactionWrite,
+    },
 };
 use error::typedb_error;
 use executor::{
@@ -428,14 +430,20 @@ impl TransactionService {
 
         let transaction = match transaction_type {
             typedb_protocol::transaction::Type::Read => {
-                Transaction::Read(TransactionRead::open(database, transaction_options))
+                Transaction::Read(TransactionRead::open(database, transaction_options).map_err(|typedb_source| {
+                    TransactionServiceError::TransactionError { typedb_source }.into_error_message().into_status()
+                })?)
             }
             typedb_protocol::transaction::Type::Write => {
-                Transaction::Write(TransactionWrite::open(database, transaction_options))
+                Transaction::Write(TransactionWrite::open(database, transaction_options).map_err(|typedb_source| {
+                    TransactionServiceError::TransactionError { typedb_source }.into_error_message().into_status()
+                })?)
             }
-            typedb_protocol::transaction::Type::Schema => {
-                Transaction::Schema(TransactionSchema::open(database, transaction_options))
-            }
+            typedb_protocol::transaction::Type::Schema => Transaction::Schema(
+                TransactionSchema::open(database, transaction_options).map_err(|typedb_source| {
+                    TransactionServiceError::TransactionError { typedb_source }.into_error_message().into_status()
+                })?,
+            ),
         };
         self.transaction = Some(transaction);
         self.is_open = true;
@@ -477,8 +485,8 @@ impl TransactionService {
             })
             .await
             .unwrap(),
-            Transaction::Schema(transaction) => transaction.commit().map_err(|err| {
-                TransactionServiceError::SchemaCommitFailed { source: err }.into_error_message().into_status()
+            Transaction::Schema(transaction) => transaction.commit().map_err(|typedb_source| {
+                TransactionServiceError::SchemaCommitFailed { typedb_source }.into_error_message().into_status()
             }),
         }
     }
@@ -1405,23 +1413,23 @@ typedb_error!(
         DatabaseNotFound(1, "Database '{name}' not found.", name: String),
         CannotCommitReadTransaction(2, "Read transactions cannot be committed."),
         CannotRollbackReadTransaction(3, "Read transactions cannot be rolled back, since they never contain writes."),
-        // TODO: these should be typedb_source
-        DataCommitFailed(4, "Data transaction commit failed.", ( typedb_source: DataCommitError )),
-        SchemaCommitFailed(5, "Schema transaction commit failed.", ( source : SchemaCommitError )),
-        QueryParseFailed(6, "Query parsing failed.", ( typedb_source: typeql::Error )),
-        SchemaQueryRequiresSchemaTransaction(7, "Schema modification queries require schema transactions."),
-        WriteQueryRequiresSchemaOrWriteTransaction(8, "Data modification queries require either write or schema transactions."),
-        TxnAbortSchemaQueryFailed(9, "Aborting transaction due to failed schema query.", ( typedb_source : QueryError )),
-        NoOpenTransaction(10, "Operation failed - no open transaction."),
-        QueryInterrupted(11, "Execution interrupted by to a concurrent {interrupt}.", interrupt: InterruptType),
+        TransactionError(4, "Transaction error.", ( typedb_source: TransactionError )),
+        DataCommitFailed(5, "Data transaction commit failed.", ( typedb_source: DataCommitError )),
+        SchemaCommitFailed(6, "Schema transaction commit failed.", ( typedb_source : SchemaCommitError )),
+        QueryParseFailed(7, "Query parsing failed.", ( typedb_source: typeql::Error )),
+        SchemaQueryRequiresSchemaTransaction(8, "Schema modification queries require schema transactions."),
+        WriteQueryRequiresSchemaOrWriteTransaction(9, "Data modification queries require either write or schema transactions."),
+        TxnAbortSchemaQueryFailed(10, "Aborting transaction due to failed schema query.", ( typedb_source : QueryError )),
+        NoOpenTransaction(11, "Operation failed - no open transaction."),
+        QueryInterrupted(12, "Execution interrupted by to a concurrent {interrupt}.", interrupt: InterruptType),
         QueryStreamNotFound(
-            12,
+            13,
             r#"
             Query stream with id '{query_request_id}' was not found in the transaction.
             The stream could have already finished, or the transaction could be closed, committed, rolled back (or this is a bug).
             "#,
             query_request_id: Uuid
         ),
-        ServiceClosingFailedQueueCleanup(13, "The operation failed since the service is closing."),
+        ServiceClosingFailedQueueCleanup(14, "The operation failed since the service is closing."),
     }
 );
