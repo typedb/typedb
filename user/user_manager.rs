@@ -37,8 +37,7 @@ impl UserManager {
         write_transaction(|tx| {
             self.user_repository.create(&tx, &user);
             self.credential_repository.create(&tx, &user.name, credential);
-        });
-        todo!()
+        }).map_err(|_| todo!())
     }
 }
 
