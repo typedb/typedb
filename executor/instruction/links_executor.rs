@@ -253,7 +253,7 @@ impl LinksExecutor {
                 };
                 let as_tuples: LinksBoundedRelationSortedPlayer = iterator
                     .try_filter::<_, LinksFilterFn, (Relation<'_>, RolePlayer<'_>, _), _>(filter_for_row)
-                    .map(links_to_tuple_relation_player_role);
+                    .map(links_to_tuple_player_relation_role);
                 Ok(TupleIterator::LinksBoundedRelation(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
