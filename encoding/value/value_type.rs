@@ -216,7 +216,7 @@ impl ValueTypeCategory {
             ValueTypeCategory::Decimal => "decimal",
             ValueTypeCategory::Date => "date",
             ValueTypeCategory::DateTime => "datetime",
-            ValueTypeCategory::DateTimeTZ => "datetime_tz",
+            ValueTypeCategory::DateTimeTZ => "datetime-tz",
             ValueTypeCategory::Duration => "duration",
             ValueTypeCategory::String => "string",
             ValueTypeCategory::Struct => "struct",

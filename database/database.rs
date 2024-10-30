@@ -89,7 +89,7 @@ impl<D> Database<D> {
     }
 
     pub(super) fn reserve_write_transaction(&self, timeout_millis: u64) -> Result<(), TransactionError> {
-        // TODO: try_lock() instead of lock()? If it's TryLockError::Poisoned (and crash) or TryLockError::WouldBlock (try again later / timeout).
+        // TODO: try_lock() instead of lock()? If it's TryLockError::Poisoned (and crash) or TryLockError::WouldBlock (try again later / timeout). Which timeout to use?
         let mut guard = self.schema_write_transaction_exclusivity.lock().unwrap();
         let (has_schema_transaction, running_write_transactions, ref mut notify_queue) = *guard;
         if has_schema_transaction || !notify_queue.is_empty() {

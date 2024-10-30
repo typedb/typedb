@@ -44,7 +44,7 @@ use typeql::{
 use crate::{
     definable_resolution::{
         filter_variants, get_struct_field_value_type_optionality, resolve_attribute_type, resolve_relates,
-        resolve_role_type, resolve_struct_definition_key, resolve_typeql_type, resolve_value_type, try_unwrap,
+        resolve_role_type, resolve_struct_definition_key, resolve_typeql_type, resolve_value_type,
         type_ref_to_label_and_ordering, type_to_object_type, SymbolResolutionError,
     },
     definable_status::{
@@ -52,7 +52,6 @@ use crate::{
         get_struct_field_status, get_sub_status, get_type_annotation_status, get_value_type_status, DefinableStatus,
         DefinableStatusMode,
     },
-    define::DefineError,
 };
 
 macro_rules! verify_no_annotations_for_capability {
@@ -601,36 +600,36 @@ fn redefine_relates_specialise<'a>(
             DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::RelatesSpecialiseNotDefined {
                     type_: relation_label.clone().into_owned(),
-                    specialised_role: specialised_relates
+                    specialised_role_name: specialised_relates
                         .role()
                         .get_label(snapshot, type_manager)
                         .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
-                        .clone()
-                        .into_owned(),
-                    specialising_role: relates
+                        .name()
+                        .to_string(),
+                    specialising_role_name: relates
                         .role()
                         .get_label(snapshot, type_manager)
                         .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
-                        .clone()
-                        .into_owned(),
+                        .name()
+                        .to_string(),
                     declaration: typeql_relates.clone(),
                 })
             }
             DefinableStatus::ExistsSame(_) => {
                 return Err(RedefineError::RelatesSpecialiseRemainsSame {
                     type_: relation_label.clone().into_owned(),
-                    specialised_role: specialised_relates
+                    specialised_role_name: specialised_relates
                         .role()
                         .get_label(snapshot, type_manager)
                         .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
-                        .clone()
-                        .into_owned(),
-                    specialising_role: relates
+                        .name()
+                        .to_string(),
+                    specialising_role_name: relates
                         .role()
                         .get_label(snapshot, type_manager)
                         .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
-                        .clone()
-                        .into_owned(),
+                        .name()
+                        .to_string(),
                     declaration: typeql_relates.clone(),
                 })
             }
@@ -1027,7 +1026,7 @@ typedb_error!(
         ),
         TypeSubNotDefined(
             14,
-            "Redefining 'sub' to '{new_supertype}' for type '{type_}' failed since there is no previously defined '{type_} sub' to replace. Use 'define' instead.\nSource:\n{declaration}",
+            "Redefining 'sub' to '{new_supertype}' for type '{type_}' failed since there is no previously defined '{type_} sub' to replace. Try define instead?\nSource:\n{declaration}",
             type_: Label<'static>,
             new_supertype: Label<'static>,
             declaration: Capability
@@ -1041,7 +1040,7 @@ typedb_error!(
         ),
         RelatesNotDefined(
             16,
-            "Redefining 'relates' to '{role}{ordering}' for type '{type_}' failed since there is no previously defined '{type_} relates' to replace. Use 'define' instead.\nSource:\n{declaration}",
+            "Redefining 'relates' to '{role}{ordering}' for type '{type_}' failed since there is no previously defined '{type_} relates' to replace. Try define instead?\nSource:\n{declaration}",
             type_: Label<'static>,
             role: String,
             ordering: Ordering,
@@ -1049,7 +1048,7 @@ typedb_error!(
         ),
         OwnsNotDefined(
             17,
-            "Redefining 'owns' to '{attribute}{ordering}' for type '{type_}' failed since there is no previously defined '{type_} owns' to replace. Use 'define' instead.\nSource:\n{declaration}",
+            "Redefining 'owns' to '{attribute}{ordering}' for type '{type_}' failed since there is no previously defined '{type_} owns' to replace. Try define instead?\nSource:\n{declaration}",
             type_: Label<'static>,
             attribute: Label<'static>,
             ordering: Ordering,
@@ -1057,51 +1056,51 @@ typedb_error!(
         ),
         PlaysNotDefined(
             18,
-            "Redefining 'plays' to '{role}' for type '{type_}' failed since there is no previously defined '{type_} plays' to replace. Use 'define' instead.\nSource:\n{declaration}",
+            "Redefining 'plays' to '{role}' for type '{type_}' failed since there is no previously defined '{type_} plays' to replace. Try define instead?\nSource:\n{declaration}",
             type_: Label<'static>,
             role: Label<'static>,
             declaration: Capability
         ),
         RelatesSpecialiseNotDefined(
             19,
-            "Redefining 'relates {specialising_role} as' to '{specialised_role}' for type '{type_}' failed since there is no previously defined 'relates {specialising_role} as' to replace. Use 'define' instead.\nSource:\n{declaration}",
+            "Redefining 'relates {specialising_role_name} as' to '{specialised_role_name}' for type '{type_}' failed since there is no previously defined 'relates {specialising_role_name} as' to replace. Try define instead?\nSource:\n{declaration}",
             type_: Label<'static>,
-            specialised_role: Label<'static>,
-            specialising_role: Label<'static>,
+            specialised_role_name: String,
+            specialising_role_name: String,
             declaration: TypeQLRelates
         ),
         RelatesSpecialiseRemainsSame(
             20,
-            "Redefining 'relates {specialising_role} as' to '{specialised_role}' for type '{type_}' failed since '{type_} relates {specialising_role} as {specialised_role}' is already defined.\nSource:\n{declaration}",
+            "Redefining 'relates {specialising_role_name} as' to '{specialised_role_name}' for type '{type_}' failed since '{type_} relates {specialising_role_name} as {specialised_role_name}' is already defined.\nSource:\n{declaration}",
             type_: Label<'static>,
-            specialised_role: Label<'static>,
-            specialising_role: Label<'static>,
+            specialised_role_name: String,
+            specialising_role_name: String,
             declaration: TypeQLRelates
         ),
         AttributeTypeValueTypeNotDefined(
             21,
-            "Redefining 'value' to '{value_type}' for type '{type_}' failed since there is no previously defined '{type_} value' to replace. Use 'define' instead.\nSource:\n{declaration}",
+            "Redefining 'value' to '{value_type}' for type '{type_}' failed since there is no previously defined '{type_} value' to replace. Try define instead?\nSource:\n{declaration}",
             type_: Label<'static>,
             value_type: ValueType,
             declaration: Capability
         ),
         TypeAnnotationNotDefined(
             22,
-            "Redefining annotation '{annotation}' for type '{type_}' failed since there is no previously defined annotation of this category to replace. Use 'define' instead.\nSource:\n{declaration}",
+            "Redefining annotation '{annotation}' for type '{type_}' failed since there is no previously defined annotation of this category to replace. Try define instead?\nSource:\n{declaration}",
             type_: Label<'static>,
             annotation: Annotation,
             declaration: Type
         ),
         TypeAnnotationRemainsSame(
             23,
-            "Redefining annotation '{annotation}' for type '{type_}' failed since '{type_} @{annotation}' is already defined.\nSource:\n{declaration}",
+            "Redefining annotation '{annotation}' for type '{type_}' failed since '{type_} {annotation}' is already defined.\nSource:\n{declaration}",
             type_: Label<'static>,
             annotation: Annotation,
             declaration: Type
         ),
         CapabilityAnnotationNotDefined(
             24,
-            "Redefining annotation '{annotation}' for a capability failed since there is no previously defined annotation of this category to replace. Use 'define' instead.\nSource:\n{declaration}",
+            "Redefining annotation '{annotation}' for a capability failed since there is no previously defined annotation of this category to replace. Try define instead?\nSource:\n{declaration}",
             annotation: Annotation,
             declaration: Capability
         ),

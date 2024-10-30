@@ -11,10 +11,10 @@ use concept::{
     error::{ConceptReadError, ConceptWriteError},
     thing::thing_manager::ThingManager,
     type_::{
-        annotation::{Annotation, AnnotationCategory, AnnotationError},
+        annotation::{AnnotationCategory, AnnotationError},
         attribute_type::AttributeTypeAnnotation,
         type_manager::TypeManager,
-        Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 use encoding::{
@@ -43,16 +43,16 @@ use typeql::{
 
 use crate::{
     definable_resolution::{
-        filter_variants, resolve_attribute_type, resolve_object_type, resolve_owns, resolve_owns_declared,
-        resolve_plays_declared, resolve_relates, resolve_relates_declared, resolve_relation_type, resolve_role_type,
-        resolve_struct_definition_key, resolve_typeql_type, resolve_value_type, try_resolve_typeql_type,
-        type_ref_to_label_and_ordering, type_to_object_type, SymbolResolutionError,
+        filter_variants, resolve_attribute_type, resolve_object_type, resolve_owns_declared, resolve_plays_declared,
+        resolve_relates, resolve_relates_declared, resolve_relation_type, resolve_role_type,
+        resolve_struct_definition_key, resolve_typeql_type, resolve_value_type, type_ref_to_label_and_ordering,
+        type_to_object_type, SymbolResolutionError,
     },
     definable_status::{
-        get_owns_status, get_plays_status, get_relates_status, get_sub_status, get_value_type_status, DefinableStatus,
+        get_capability_annotation_category_status, get_owns_status, get_plays_status, get_relates_status,
+        get_sub_status, get_type_annotation_category_status, get_value_type_status, DefinableStatus,
         DefinableStatusMode,
     },
-    define::DefineError,
 };
 
 pub(crate) fn execute(
@@ -186,19 +186,40 @@ fn undefine_specialise(
         }
         DefinableStatus::DoesNotExist => Err(UndefineError::RelatesSpecialiseNotDefined {
             type_: label,
-            specialising_role: relates.role().get_label(snapshot, type_manager).unwrap().to_owned(),
-            specialised_role: specialised_relates.role().get_label(snapshot, type_manager).unwrap().to_owned(),
+            specialising_role_name: relates
+                .role()
+                .get_label(snapshot, type_manager)
+                .map_err(|source| UndefineError::UnexpectedConceptRead { source })?
+                .name()
+                .to_string(),
+            specialised_role_name: specialised_relates
+                .role()
+                .get_label(snapshot, type_manager)
+                .map_err(|source| UndefineError::UnexpectedConceptRead { source })?
+                .name()
+                .to_string(),
             declaration: specialise_undefinable.clone(),
         }),
         DefinableStatus::ExistsDifferent(existing_specialised_role) => {
             Err(UndefineError::RelatesSpecialiseDefinedButDifferent {
                 type_: label,
-                specialising_role: relates.role().get_label(snapshot, type_manager).unwrap().to_owned(),
-                specialised_role: specialised_relates.role().get_label(snapshot, type_manager).unwrap().to_owned(),
-                existing_specialised_role: existing_specialised_role
+                specialising_role_name: relates
+                    .role()
                     .get_label(snapshot, type_manager)
-                    .unwrap()
-                    .to_owned(),
+                    .map_err(|source| UndefineError::UnexpectedConceptRead { source })?
+                    .name()
+                    .to_string(),
+                specialised_role_name: specialised_relates
+                    .role()
+                    .get_label(snapshot, type_manager)
+                    .map_err(|source| UndefineError::UnexpectedConceptRead { source })?
+                    .name()
+                    .to_string(),
+                existing_specialised_role_name: existing_specialised_role
+                    .get_label(snapshot, type_manager)
+                    .map_err(|source| UndefineError::UnexpectedConceptRead { source })?
+                    .name()
+                    .to_string(),
                 declaration: specialise_undefinable.clone(),
             })
         }
@@ -215,8 +236,16 @@ fn undefine_capability_annotation(
     let annotation_category = translate_annotation_category(annotation_undefinable.annotation_category);
 
     match &annotation_undefinable.capability {
-        CapabilityBase::Sub(_) => unreachable!("Sub cannot have annotations"),
-        CapabilityBase::Alias(_) => unreachable!("Alias cannot have annotations"),
+        CapabilityBase::Sub(_) => {
+            return Err(UndefineError::IllegalAnnotation {
+                source: AnnotationError::UnsupportedAnnotationForSub(annotation_category),
+            })
+        }
+        CapabilityBase::Alias(_) => {
+            return Err(UndefineError::IllegalAnnotation {
+                source: AnnotationError::UnsupportedAnnotationForAlias(annotation_category),
+            })
+        }
         CapabilityBase::Owns(typeql_owns) => {
             let object_type = resolve_object_type(snapshot, type_manager, &label)
                 .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
@@ -226,6 +255,14 @@ fn undefine_capability_annotation(
                 .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
             let owns = resolve_owns_declared(snapshot, type_manager, object_type, attribute_type)
                 .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
+
+            check_can_and_need_undefine_capability_annotation(
+                snapshot,
+                type_manager,
+                owns.clone(),
+                annotation_category,
+                annotation_undefinable,
+            )?;
 
             owns.unset_annotation(snapshot, type_manager, thing_manager, annotation_category)
         }
@@ -239,6 +276,14 @@ fn undefine_capability_annotation(
             let plays = resolve_plays_declared(snapshot, type_manager, object_type, role_type)
                 .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
 
+            check_can_and_need_undefine_capability_annotation(
+                snapshot,
+                type_manager,
+                plays.clone(),
+                annotation_category,
+                annotation_undefinable,
+            )?;
+
             plays.unset_annotation(snapshot, type_manager, thing_manager, annotation_category)
         }
         CapabilityBase::Relates(typeql_relates) => {
@@ -248,6 +293,14 @@ fn undefine_capability_annotation(
                 .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
             let relates = resolve_relates_declared(snapshot, type_manager, relation_type, role_label.name.as_str())
                 .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
+
+            check_can_and_need_undefine_capability_annotation(
+                snapshot,
+                type_manager,
+                relates.clone(),
+                annotation_category,
+                annotation_undefinable,
+            )?;
 
             relates.unset_annotation(snapshot, type_manager, thing_manager, annotation_category)
         }
@@ -260,8 +313,25 @@ fn undefine_capability_annotation(
 
             let attribute_type = resolve_attribute_type(snapshot, type_manager, &label)
                 .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
-
-            attribute_type.unset_annotation(snapshot, type_manager, annotation_category)
+            let definition_status = get_type_annotation_category_status(
+                snapshot,
+                type_manager,
+                attribute_type.clone(),
+                annotation_category,
+            )
+            .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+            match definition_status {
+                DefinableStatus::ExistsSame(_) => {
+                    attribute_type.unset_annotation(snapshot, type_manager, annotation_category)
+                }
+                DefinableStatus::ExistsDifferent(_) => unreachable!("Annotation categories cannot differ"),
+                DefinableStatus::DoesNotExist => {
+                    return Err(UndefineError::CapabilityAnnotationNotDefined {
+                        annotation: annotation_category,
+                        declaration: annotation_undefinable.clone(),
+                    })
+                }
+            }
         }
     }
     .map_err(|err| UndefineError::UnsetCapabilityAnnotationError {
@@ -398,7 +468,7 @@ fn undefine_type_capability_sub(
                     .map_err(|source| UndefineError::UnsetSupertypeError { sub: sub.clone(), typedb_source: source })?;
             }
         }
-        (TypeEnum::RoleType(_), TypeEnum::RoleType(_)) => unreachable!("RoleType's sub is controlled by specialise"), // Turn into an error
+        (TypeEnum::RoleType(_), TypeEnum::RoleType(_)) => unreachable!("RoleType's sub is controlled by specialise"),
         (type_, supertype) => {
             return Err(err_capability_kind_mismatch(
                 type_label,
@@ -584,13 +654,11 @@ fn undefine_type_capability_value_type(
                 UndefineError::UnsetValueTypeError { label: type_label.to_owned(), value_type, typedb_source: source }
             })
         }
-        DefinableStatus::DoesNotExist => {
-            Err(UndefineError::AttributeTypeValueTypeNotDefined {
-                type_: type_label.clone().into_owned(),
-                value_type,
-                declaration: capability_undefinable.clone(),
-            })
-        }
+        DefinableStatus::DoesNotExist => Err(UndefineError::AttributeTypeValueTypeNotDefined {
+            type_: type_label.clone().into_owned(),
+            value_type,
+            declaration: capability_undefinable.clone(),
+        }),
         DefinableStatus::ExistsDifferent(existing_value_type) => {
             Err(UndefineError::AttributeTypeValueTypeDefinedButDifferent {
                 type_: type_label.clone().into_owned(),
@@ -613,8 +681,26 @@ fn undefine_type_annotation(
     let annotation_category = translate_annotation_category(annotation_undefinable.annotation_category);
 
     match type_ {
-        TypeEnum::Entity(entity_type) => entity_type.unset_annotation(snapshot, type_manager, annotation_category),
+        TypeEnum::Entity(entity_type) => {
+            check_can_and_need_undefine_type_annotation(
+                snapshot,
+                type_manager,
+                &label,
+                entity_type.clone(),
+                annotation_category,
+                annotation_undefinable,
+            )?;
+            entity_type.unset_annotation(snapshot, type_manager, annotation_category)
+        }
         TypeEnum::Relation(relation_type) => {
+            check_can_and_need_undefine_type_annotation(
+                snapshot,
+                type_manager,
+                &label,
+                relation_type.clone(),
+                annotation_category,
+                annotation_undefinable,
+            )?;
             relation_type.unset_annotation(snapshot, type_manager, annotation_category)
         }
         TypeEnum::Attribute(attribute_type) => {
@@ -623,6 +709,14 @@ fn undefine_type_annotation(
                     source: AnnotationError::UnsupportedAnnotationForAttributeType(annotation_category),
                 });
             }
+            check_can_and_need_undefine_type_annotation(
+                snapshot,
+                type_manager,
+                &label,
+                attribute_type.clone(),
+                annotation_category,
+                annotation_undefinable,
+            )?;
             attribute_type.unset_annotation(snapshot, type_manager, annotation_category)
         }
         TypeEnum::RoleType(_) => unreachable!("Role annotations are syntactically on relates"),
@@ -643,7 +737,7 @@ fn undefine_type(
 ) -> Result<(), UndefineError> {
     let label = Label::parse_from(label_undefinable.ident.as_str());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
-        .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?; // TODO: Ignore and return OK?
+        .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
 
     match type_ {
         TypeEnum::Entity(entity_type) => entity_type.delete(snapshot, type_manager, thing_manager),
@@ -666,7 +760,7 @@ fn undefine_struct(
 ) -> Result<(), UndefineError> {
     let name = struct_undefinable.ident.as_str();
     let struct_key = resolve_struct_definition_key(snapshot, type_manager, name)
-        .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?; // TODO: Ignore and return OK?
+        .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
 
     type_manager.delete_struct(snapshot, thing_manager, &struct_key).map_err(|err| UndefineError::StructDeleteError {
         typedb_source: err,
@@ -708,6 +802,47 @@ fn check_can_and_need_undefine_sub<'a, T: TypeAPI<'a>>(
                 .map_err(|source| UndefineError::UnexpectedConceptRead { source })?
                 .clone()
                 .into_owned(),
+            declaration: declaration.clone(),
+        }),
+    }
+}
+
+fn check_can_and_need_undefine_type_annotation<'a, T: KindAPI<'a>>(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    label: &Label<'a>,
+    type_: T,
+    annotation_category: AnnotationCategory,
+    declaration: &AnnotationType,
+) -> Result<bool, UndefineError> {
+    let definition_status = get_type_annotation_category_status(snapshot, type_manager, type_, annotation_category)
+        .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+    match definition_status {
+        DefinableStatus::ExistsSame(_) => Ok(true),
+        DefinableStatus::ExistsDifferent(_) => unreachable!("Annotation categories cannot differ"),
+        DefinableStatus::DoesNotExist => Err(UndefineError::TypeAnnotationNotDefined {
+            type_: label.clone().into_owned(),
+            annotation: annotation_category,
+            declaration: declaration.clone(),
+        }),
+    }
+}
+
+fn check_can_and_need_undefine_capability_annotation<'a, CAP: Capability<'a>>(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    capability: CAP,
+    annotation_category: AnnotationCategory,
+    declaration: &AnnotationCapability,
+) -> Result<bool, UndefineError> {
+    let definition_status =
+        get_capability_annotation_category_status(snapshot, type_manager, &capability, annotation_category)
+            .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+    match definition_status {
+        DefinableStatus::ExistsSame(_) => Ok(true),
+        DefinableStatus::ExistsDifferent(_) => unreachable!("Annotation categories cannot differ"),
+        DefinableStatus::DoesNotExist => Err(UndefineError::CapabilityAnnotationNotDefined {
+            annotation: annotation_category,
             declaration: declaration.clone(),
         }),
     }
@@ -892,28 +1027,41 @@ typedb_error!(
         ),
         RelatesSpecialiseNotDefined(
             27,
-            "Undefining 'as {specialised_role}' for '{type_} relates {specialising_role}' failed since there is no defined '{type_} relates {specialising_role} as {specialised_role}'.\nSource:\n{declaration}",
+            "Undefining 'as {specialised_role_name}' for '{type_} relates {specialising_role_name}' failed since there is no defined '{type_} relates {specialising_role_name} as {specialised_role_name}'.\nSource:\n{declaration}",
             type_: Label<'static>,
-            specialising_role: Label<'static>,
-            specialised_role: Label<'static>,
+            specialising_role_name: String,
+            specialised_role_name: String,
             declaration: Specialise
         ),
         RelatesSpecialiseDefinedButDifferent(
             28,
-            "Undefining 'as {specialised_role}' for '{type_} relates {specialising_role}' failed since there is no defined '{type_} relates {specialising_role} as {specialised_role}', while there is a defined specialisation '{type_} relates {specialising_role} as {existing_specialised_role}'.\nSource:\n{declaration}",
+            "Undefining 'as {specialised_role_name}' for '{type_} relates {specialising_role_name}' failed since there is no defined '{type_} relates {specialising_role_name} as {specialised_role_name}', while there is a defined specialisation '{type_} relates {specialising_role_name} as {existing_specialised_role_name}'.\nSource:\n{declaration}",
             type_: Label<'static>,
-            specialising_role: Label<'static>,
-            specialised_role: Label<'static>,
-            existing_specialised_role: Label<'static>,
+            specialising_role_name: String,
+            specialised_role_name: String,
+            existing_specialised_role_name: String,
             declaration: Specialise
         ),
-        IllegalAnnotation(
+        TypeAnnotationNotDefined(
             29,
+            "Undefining annotation '{annotation}' for type '{type_}' failed since there is no defined '{type_} {annotation}'.\nSource:\n{declaration}",
+            type_: Label<'static>,
+            annotation: AnnotationCategory,
+            declaration: AnnotationType
+        ),
+        CapabilityAnnotationNotDefined(
+            30,
+            "Undefining annotation '{annotation}' for a capability failed since there is no defined annotation of this category.\nSource:\n{declaration}",
+            annotation: AnnotationCategory,
+            declaration: AnnotationCapability
+        ),
+        IllegalAnnotation(
+            31,
             "Illegal annotation",
             ( source: AnnotationError )
         ),
         CapabilityKindMismatch(
-            30,
+            32,
             "Undefining failed because the left type '{left}' is of kind '{left_kind}' isn't the same kind as the right type '{right}' which has kind '{right_kind}'. Maybe you wanted to undefine something else?\nSource:\n{declaration}",
             left: Label<'static>,
             right: Label<'static>,

@@ -43,7 +43,7 @@ use crate::{
     definable_resolution::{
         filter_variants, get_struct_field_value_type_optionality, resolve_attribute_type, resolve_relates,
         resolve_relates_declared, resolve_role_type, resolve_struct_definition_key, resolve_typeql_type,
-        resolve_value_type, try_resolve_typeql_type, try_unwrap, type_ref_to_label_and_ordering, type_to_object_type,
+        resolve_value_type, try_resolve_typeql_type, type_ref_to_label_and_ordering, type_to_object_type,
         SymbolResolutionError,
     },
     definable_status::{
@@ -51,7 +51,6 @@ use crate::{
         get_struct_field_status, get_struct_status, get_sub_status, get_type_annotation_status, get_value_type_status,
         DefinableStatus, DefinableStatusMode,
     },
-    redefine::RedefineError,
 };
 
 macro_rules! verify_empty_annotations_for_capability {
@@ -665,23 +664,23 @@ fn define_relates_specialise<'a>(
             DefinableStatus::ExistsDifferent(existing_superrole) => {
                 Err(DefineError::RelatesSpecialiseAlreadyDefinedButDifferent {
                     type_: relation_label.clone().into_owned(),
-                    specialised_role: specialised_relates
+                    specialised_role_name: specialised_relates
                         .role()
                         .get_label(snapshot, type_manager)
                         .map_err(|source| DefineError::UnexpectedConceptRead { source })?
-                        .clone()
-                        .into_owned(),
-                    specialising_role: relates
+                        .name()
+                        .to_string(),
+                    specialising_role_name: relates
                         .role()
                         .get_label(snapshot, type_manager)
                         .map_err(|source| DefineError::UnexpectedConceptRead { source })?
-                        .clone()
-                        .into_owned(),
-                    existing_specialised_role: existing_superrole
+                        .name()
+                        .to_string(),
+                    existing_specialised_role_name: existing_superrole
                         .get_label(snapshot, type_manager)
                         .map_err(|source| DefineError::UnexpectedConceptRead { source })?
-                        .clone()
-                        .into_owned(),
+                        .name()
+                        .to_string(),
                     declaration: typeql_relates.clone(),
                 })
             }
@@ -1036,7 +1035,7 @@ typedb_error!(
         ),
         TypeAnnotationAlreadyDefinedButDifferent(
             15,
-            "Defining annotation '{annotation}' for type '{type_}' failed since a different '{type_} @{existing_annotation}' is already defined. Try redefine instead?\nSource:\n{declaration}",
+            "Defining annotation '{annotation}' for type '{type_}' failed since a different '{type_} {existing_annotation}' is already defined. Try redefine instead?\nSource:\n{declaration}",
             type_: Label<'static>,
             annotation: Annotation,
             existing_annotation: Annotation,
@@ -1069,11 +1068,11 @@ typedb_error!(
         ),
         RelatesSpecialiseAlreadyDefinedButDifferent(
             19,
-            "Defining 'as {specialised_role}' for '{type_} relates {specialising_role}' failed since a different '{type_} relates {specialising_role} as {existing_specialised_role}' is already defined. Try redefine instead?\nSource:\n{declaration}",
+            "Defining 'as {specialised_role_name}' for '{type_} relates {specialising_role_name}' failed since a different '{type_} relates {specialising_role_name} as {existing_specialised_role_name}' is already defined. Try redefine instead?\nSource:\n{declaration}",
             type_: Label<'static>,
-            specialised_role: Label<'static>,
-            specialising_role: Label<'static>,
-            existing_specialised_role: Label<'static>,
+            specialised_role_name: String,
+            specialising_role_name: String,
+            existing_specialised_role_name: String,
             declaration: TypeQLRelates
         ),
         SetValueType(
