@@ -6,7 +6,6 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
@@ -75,7 +74,7 @@ fn run_read_query(
         )
         .unwrap();
     let rows_positions = pipeline.rows_positions().unwrap().clone();
-    let (mut iterator, _) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let (iterator, _) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
     let result: Result<Vec<MaybeOwnedRow<'static>>, PipelineExecutionError> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
