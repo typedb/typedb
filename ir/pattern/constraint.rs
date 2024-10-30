@@ -156,6 +156,12 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         Ok(as_ref.as_sub().unwrap())
     }
 
+    pub fn add_is(&mut self, left: Variable, right: Variable) -> Result<&Is<Variable>, RepresentationError> {
+        let is = Is::new(left, right);
+        let constraint = self.constraints.add_constraint(is);
+        Ok(constraint.as_is().unwrap())
+    }
+
     pub fn add_isa(
         &mut self,
         kind: IsaKind,
@@ -398,6 +404,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Constraint<ID: IrID> {
+    Is(Is<ID>),
     Kind(Kind<ID>),
     Label(Label<ID>),
     RoleName(RoleName<ID>),
@@ -416,6 +423,7 @@ pub enum Constraint<ID: IrID> {
 impl<ID: IrID> Constraint<ID> {
     pub fn name(&self) -> &str {
         match self {
+            Constraint::Is(_) => typeql::token::Keyword::Is.as_str(),
             Constraint::Kind(kind) => kind.kind.as_str(),
             Constraint::Label(_) => typeql::token::Keyword::Label.as_str(),
             Constraint::RoleName(_) => "role-name",
@@ -434,6 +442,7 @@ impl<ID: IrID> Constraint<ID> {
 
     pub fn ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
         match self {
+            Constraint::Is(is) => Box::new(is.ids()),
             Constraint::Kind(kind) => Box::new(kind.ids()),
             Constraint::Label(label) => Box::new(label.ids()),
             Constraint::RoleName(role_name) => Box::new(role_name.ids()),
@@ -452,6 +461,7 @@ impl<ID: IrID> Constraint<ID> {
 
     pub fn vertices(&self) -> Box<dyn Iterator<Item = &Vertex<ID>> + '_> {
         match self {
+            Constraint::Is(is) => Box::new(is.vertices()),
             Constraint::Kind(kind) => Box::new(kind.vertices()),
             Constraint::Label(label) => Box::new(label.vertices()),
             Constraint::RoleName(role_name) => Box::new(role_name.vertices()),
@@ -473,6 +483,7 @@ impl<ID: IrID> Constraint<ID> {
         F: FnMut(ID, ConstraintIDSide),
     {
         match self {
+            Self::Is(is) => is.ids_foreach(function),
             Self::Kind(kind) => kind.ids_foreach(function),
             Self::Label(label) => label.ids_foreach(function),
             Self::RoleName(role_name) => role_name.ids_foreach(function),
@@ -491,6 +502,7 @@ impl<ID: IrID> Constraint<ID> {
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Constraint<T> {
         match self {
+            Self::Is(inner) => Constraint::Is(inner.map(mapping)),
             Self::Kind(inner) => Constraint::Kind(inner.map(mapping)),
             Self::Label(inner) => Constraint::Label(inner.map(mapping)),
             Self::RoleName(inner) => Constraint::RoleName(inner.map(mapping)),
@@ -551,6 +563,13 @@ impl<ID: IrID> Constraint<ID> {
     pub(crate) fn as_sub(&self) -> Option<&Sub<ID>> {
         match self {
             Constraint::Sub(sub) => Some(sub),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn as_is(&self) -> Option<&Is<ID>> {
+        match self {
+            Constraint::Is(is) => Some(is),
             _ => None,
         }
     }
@@ -622,6 +641,7 @@ impl<ID: IrID> Constraint<ID> {
 impl<ID: IrID> fmt::Display for Constraint<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Constraint::Is(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::Kind(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::Label(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::RoleName(constraint) => fmt::Display::fmt(constraint, f),
@@ -877,6 +897,58 @@ impl<ID: IrID> From<Sub<ID>> for Constraint<ID> {
 impl<ID: IrID> fmt::Display for Sub<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} sub {}", self.subtype, self.supertype)
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Is<ID> {
+    lhs: Vertex<ID>,
+    rhs: Vertex<ID>,
+}
+
+impl<ID: IrID> Is<ID> {
+    fn new(lhs: ID, rhs: ID) -> Self {
+        Self { lhs: Vertex::Variable(lhs), rhs: Vertex::Variable(rhs) }
+    }
+
+    pub fn lhs(&self) -> &Vertex<ID> {
+        &self.lhs
+    }
+
+    pub fn rhs(&self) -> &Vertex<ID> {
+        &self.rhs
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
+        [self.lhs.as_variable(), self.rhs.as_variable()].into_iter().flatten()
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + Sized {
+        [&self.lhs, &self.rhs].into_iter()
+    }
+
+    pub fn ids_foreach<F>(&self, mut function: F)
+    where
+        F: FnMut(ID, ConstraintIDSide),
+    {
+        self.lhs.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
+        self.rhs.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
+    }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Is<T> {
+        Is { lhs: self.lhs.map(mapping), rhs: self.rhs.map(mapping) }
+    }
+}
+
+impl<ID: IrID> From<Is<ID>> for Constraint<ID> {
+    fn from(val: Is<ID>) -> Self {
+        Constraint::Is(val)
+    }
+}
+
+impl<ID: IrID> fmt::Display for Is<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} is {}", self.lhs, self.rhs)
     }
 }
 
