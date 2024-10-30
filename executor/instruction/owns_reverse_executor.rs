@@ -15,10 +15,7 @@ use answer::Type;
 use compiler::{executable::match_::instructions::type_::OwnsReverseInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
-    type_::{
-        attribute_type::AttributeType, object_type::ObjectType, owns::Owns, type_manager::TypeManager, Capability,
-        ObjectTypeAPI, OwnerAPI,
-    },
+    type_::{attribute_type::AttributeType, object_type::ObjectType, Capability},
 };
 use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
@@ -27,7 +24,9 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        owns_executor::{OwnsFilterFn, OwnsTupleIterator, OwnsVariableValueExtractor, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
+        owns_executor::{
+            OwnsFilterFn, OwnsTupleIterator, OwnsVariableValueExtractor, EXTRACT_ATTRIBUTE, EXTRACT_OWNER,
+        },
         tuple::{owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
     },
@@ -175,10 +174,12 @@ impl OwnsReverseExecutor {
                     .map(|object_type| (object_type.clone(), attribute_type.clone()));
 
                 let iterator = owns.sorted_by_key(|(owner, _)| owner.clone()).map(Ok as _);
-                let as_tuples: OwnsReverseBoundedSortedOwner =
-                    AsNarrowingIterator::<_, Result<(ObjectType<'_>, AttributeType<'_>), _>>::new(iterator)
-                        .try_filter::<_, OwnsFilterFn, (AsHkt![ObjectType<'_>], AsHkt![AttributeType<'_>]), _>(filter_for_row)
-                        .map(owns_to_tuple_owner_attribute);
+                let as_tuples: OwnsReverseBoundedSortedOwner = AsNarrowingIterator::<
+                    _,
+                    Result<(ObjectType<'_>, AttributeType<'_>), _>,
+                >::new(iterator)
+                .try_filter::<_, OwnsFilterFn, (AsHkt![ObjectType<'_>], AsHkt![AttributeType<'_>]), _>(filter_for_row)
+                .map(owns_to_tuple_owner_attribute);
 
                 Ok(TupleIterator::OwnsReverseBounded(SortedTupleIterator::new(
                     as_tuples,

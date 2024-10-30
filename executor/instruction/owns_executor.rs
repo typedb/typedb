@@ -6,28 +6,19 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap, HashSet},
-    io::Read,
     iter,
     sync::Arc,
     vec,
 };
-<<<<<<< HEAD
-use std::collections::HashMap;
-=======
->>>>>>> cfcd5afad (Fix plays executor to support subs)
 
 use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::OwnsInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
-<<<<<<< HEAD
-    type_::OwnerAPI,
-=======
     type_::{
-        attribute_type::AttributeType, object_type::ObjectType, owns::Owns, type_manager::TypeManager, Capability,
-        ObjectTypeAPI, OwnerAPI,
+        attribute_type::AttributeType, object_type::ObjectType, type_manager::TypeManager, Capability, ObjectTypeAPI,
+        OwnerAPI,
     },
->>>>>>> cfcd5afad (Fix plays executor to support subs)
 };
 use itertools::Itertools;
 use lending_iterator::{
@@ -39,14 +30,9 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-<<<<<<< HEAD
         tuple::{
             owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, OwnsToTupleFn, TuplePositions, TupleResult,
         },
-=======
-        links_executor::{EXTRACT_PLAYER, EXTRACT_RELATION, EXTRACT_ROLE},
-        tuple::{owns_to_tuple_owner_attribute, OwnsToTupleFn, TuplePositions, TupleResult},
->>>>>>> cfcd5afad (Fix plays executor to support subs)
         type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,

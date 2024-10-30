@@ -15,10 +15,7 @@ use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::PlaysInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
-    type_::{
-        object_type::ObjectType, role_type::RoleType,
-        type_manager::TypeManager, ObjectTypeAPI, PlayerAPI,
-    },
+    type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI, PlayerAPI},
 };
 use itertools::Itertools;
 use lending_iterator::{
