@@ -186,6 +186,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::user_manager::create::Req>
     ) -> Result<Response<typedb_protocol::user_manager::create::Res>, Status> {
+        println!("users_create");
         users_create_req(request)
             .and_then(|(usr, cred)| self.user_manager.create(&usr, &cred))
             .map(|_| Response::new(user_create_res()))
