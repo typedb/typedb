@@ -90,7 +90,7 @@ fn traverse_isa_unbounded_sorted_thing() {
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type.into()).unwrap().clone();
     conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.clone()).unwrap();
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -175,7 +175,7 @@ fn traverse_isa_unbounded_sorted_type() {
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type.into()).unwrap().clone();
     conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.clone()).unwrap();
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -263,7 +263,7 @@ fn traverse_isa_bounded_thing() {
         conjunction.constraints_mut().add_isa(IsaKind::Exact, var_thing, var_type_from.into()).unwrap().clone();
     let isa_to_type =
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_thing, var_type_to.into()).unwrap().clone();
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -365,7 +365,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type.into()).unwrap().clone();
     conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.clone()).unwrap();
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -452,7 +452,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type.into()).unwrap().clone();
     conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.clone()).unwrap();
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -542,7 +542,7 @@ fn traverse_isa_reverse_bounded_type_exact() {
         conjunction.constraints_mut().add_isa(IsaKind::Exact, var_thing_from, var_type.into()).unwrap().clone();
     let isa_to_thing =
         conjunction.constraints_mut().add_isa(IsaKind::Exact, var_thing_to, var_type.into()).unwrap().clone();
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -647,7 +647,7 @@ fn traverse_isa_reverse_bounded_type_subtype() {
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_thing_from, var_type.into()).unwrap().clone();
     let isa_to_thing =
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_thing_to, var_type.into()).unwrap().clone();
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -749,7 +749,7 @@ fn traverse_isa_reverse_fixed_type_exact() {
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa =
         conjunction.constraints_mut().add_isa(IsaKind::Exact, var_thing, Vertex::Label(ANIMAL_LABEL)).unwrap().clone();
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -839,7 +839,7 @@ fn traverse_isa_reverse_fixed_type_subtype() {
         .add_isa(IsaKind::Subtype, var_thing, Vertex::Label(ANIMAL_LABEL))
         .unwrap()
         .clone();
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);

@@ -92,7 +92,7 @@ fn attribute_equality() {
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age_b, var_age_type_b.into()).unwrap().clone();
     conjunction.constraints_mut().add_label(var_age_type_a, AGE_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type_b, AGE_LABEL.clone()).unwrap();
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);

@@ -22,10 +22,7 @@ use concept::{
     type_::type_manager::TypeManager,
 };
 use executor::{
-    match_executor::MatchExecutor,
-    pipeline::stage::{ExecutionContext, StageAPI},
-    row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow, ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
 use ir::{
@@ -97,7 +94,7 @@ fn test_has_planning_traversal() {
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
     let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
-    let block = builder.finish();
+    let block = builder.finish().unwrap();
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -179,7 +176,7 @@ fn test_expression_planning_traversal() {
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
     let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
-    let block = builder.finish();
+    let block = builder.finish().unwrap();
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -271,7 +268,7 @@ fn test_links_planning_traversal() {
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
     let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
-    let block = builder.finish();
+    let block = builder.finish().unwrap();
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -359,7 +356,7 @@ fn test_links_intersection() {
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
     let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
-    let block = builder.finish();
+    let block = builder.finish().unwrap();
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -438,7 +435,7 @@ fn test_negation_planning_traversal() {
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
     let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
-    let block = builder.finish();
+    let block = builder.finish().unwrap();
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -538,7 +535,7 @@ fn test_forall_planning_traversal() {
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
     let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
-    let block = builder.finish();
+    let block = builder.finish().unwrap();
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -624,7 +621,7 @@ fn test_named_var_select() {
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
     let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
-    let block = builder.finish();
+    let block = builder.finish().unwrap();
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -710,7 +707,7 @@ fn test_disjunction_planning_traversal() {
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
     let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
-    let block = builder.finish();
+    let block = builder.finish().unwrap();
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -800,7 +797,7 @@ fn test_disjunction_planning_nested_negations() {
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
     let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
-    let block = builder.finish();
+    let block = builder.finish().unwrap();
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());

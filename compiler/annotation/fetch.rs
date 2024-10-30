@@ -174,7 +174,7 @@ fn annotate_some(
     match some {
         FetchSome::SingleVar(var) => Ok(AnnotatedFetchSome::SingleVar(var)),
         FetchSome::SingleAttribute(FetchSingleAttribute { variable, attribute }) => {
-            let variable_name = variable_registry.get_variable_name(&variable).unwrap();
+            let variable_name = variable_registry.get_variable_name(variable).unwrap();
             let attribute_type = type_manager
                 .get_attribute_type(snapshot, &Label::build(&attribute))
                 .map_err(|err| AnnotationError::ConceptRead { source: err })?
@@ -239,7 +239,7 @@ fn annotate_some(
             Ok(AnnotatedFetchSome::ListSubFetch(annotated_sub_fetch?))
         }
         FetchSome::ListAttributesAsList(FetchListAttributeAsList { variable, attribute }) => {
-            let variable_name = variable_registry.get_variable_name(&variable).unwrap();
+            let variable_name = variable_registry.get_variable_name(variable).unwrap();
             let attribute_type = type_manager
                 .get_attribute_type(snapshot, &Label::build(&attribute))
                 .map_err(|err| AnnotationError::ConceptRead { source: err })?

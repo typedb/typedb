@@ -52,7 +52,7 @@ fn compile_expression_via_match(
     let mut translation_context = TranslationContext::new();
     if let Stage::Match(match_) = typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.first().unwrap() {
         let block =
-            translate_match(&mut translation_context, &HashMapFunctionSignatureIndex::empty(), match_)?.finish();
+            translate_match(&mut translation_context, &HashMapFunctionSignatureIndex::empty(), match_)?.finish()?;
         let variable_mapping = variable_types
             .keys()
             .map(|name| ((*name).to_owned(), translation_context.get_variable(*name).unwrap()))

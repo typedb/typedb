@@ -210,7 +210,7 @@ fn traverse_links_unbounded_sorted_from() {
     conjunction.constraints_mut().add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.clone()).unwrap();
 
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
@@ -328,7 +328,7 @@ fn traverse_links_unbounded_sorted_to() {
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.clone()).unwrap();
 
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
@@ -435,7 +435,7 @@ fn traverse_links_bounded_relation() {
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.clone()).unwrap();
 
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -556,7 +556,7 @@ fn traverse_links_bounded_relation_player() {
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.clone()).unwrap();
 
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -684,7 +684,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.clone()).unwrap();
 
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -789,7 +789,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.clone()).unwrap();
 
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -895,7 +895,7 @@ fn traverse_links_reverse_bounded_player() {
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.clone()).unwrap();
 
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -1016,7 +1016,7 @@ fn traverse_links_reverse_bounded_player_relation() {
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.clone()).unwrap();
 
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);

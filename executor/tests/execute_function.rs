@@ -334,7 +334,7 @@ fn simple_tabled() {
     }
 }
 
-#[ignore]  // TODO
+#[ignore] // TODO
 #[test]
 fn fibonacci() {
     let custom_schema = r#"define

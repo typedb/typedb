@@ -21,8 +21,8 @@ use ir::{
     pattern::{
         conjunction::Conjunction,
         constraint::{
-            Comparison, Constraint, FunctionCallBinding, Has, Isa, IsaKind, Kind, Label, Links, Owns, Plays, Relates,
-            RoleName, Sub, SubKind,
+            Comparison, Constraint, FunctionCallBinding, Has, Is, Isa, IsaKind, Kind, Label, Links, Owns, Plays,
+            Relates, RoleName, Sub, SubKind,
         },
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
@@ -222,6 +222,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 | Constraint::Relates(_)
                 | Constraint::Plays(_)
                 | Constraint::ExpressionBinding(_)
+                | Constraint::Is(_) => (),
                 | Constraint::Comparison(_) => (),
             }
         }
@@ -369,6 +370,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                     || self.try_propagating_vertex_annotation_impl(&player_role, vertices)?
             }
             Constraint::Has(has) => self.try_propagating_vertex_annotation_impl(has, vertices)?,
+            Constraint::Is(is) => self.try_propagating_vertex_annotation_impl(is, vertices)?,
             Constraint::Comparison(cmp) => self.try_propagating_vertex_annotation_impl(cmp, vertices)?,
             Constraint::Owns(owns) => self.try_propagating_vertex_annotation_impl(owns, vertices)?,
             Constraint::Relates(relates) => self.try_propagating_vertex_annotation_impl(relates, vertices)?,
@@ -485,6 +487,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                     edges.push(self.seed_edge(constraint, &player_role, vertices)?);
                 }
                 Constraint::Has(has) => edges.push(self.seed_edge(constraint, has, vertices)?),
+                Constraint::Is(is) => edges.push(self.seed_edge(constraint, is, vertices)?),
                 Constraint::Comparison(cmp) => {
                     if vertices.contains_key(cmp.right()) && vertices.contains_key(cmp.left()) {
                         edges.push(self.seed_edge(constraint, cmp, vertices)?)
@@ -1105,6 +1108,36 @@ impl BinaryConstraint for Sub<Variable> {
     }
 }
 
+impl BinaryConstraint for Is<Variable> {
+    fn left(&self) -> &Vertex<Variable> {
+        self.lhs()
+    }
+
+    fn right(&self) -> &Vertex<Variable> {
+        self.rhs()
+    }
+
+    fn annotate_left_to_right_for_type(
+        &self,
+        _seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+        left_type: &TypeAnnotation,
+        collector: &mut BTreeSet<TypeAnnotation>,
+    ) -> Result<(), ConceptReadError> {
+        collector.insert(left_type.clone());
+        Ok(())
+    }
+
+    fn annotate_right_to_left_for_type(
+        &self,
+        _seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+        right_type: &TypeAnnotation,
+        collector: &mut BTreeSet<TypeAnnotation>,
+    ) -> Result<(), ConceptReadError> {
+        collector.insert(right_type.clone());
+        Ok(())
+    }
+}
+
 // TODO: This is very inefficient. If needed, We can replace uses by a specialised implementation which pre-computes attributes by value-type.
 impl BinaryConstraint for Comparison<Variable> {
     fn left(&self) -> &Vertex<Variable> {
@@ -1404,17 +1437,21 @@ impl BinaryConstraint for Relates<Variable> {
 
 #[cfg(test)]
 pub mod tests {
-    use std::collections::{BTreeMap, BTreeSet};
-    use std::sync::Arc;
+    use std::{
+        collections::{BTreeMap, BTreeSet},
+        sync::Arc,
+    };
 
     use answer::Type as TypeAnnotation;
     use encoding::value::{label::Label, value_type::ValueType};
     use ir::{
-        pattern::constraint::{Comparator, IsaKind},
+        pattern::{
+            constraint::{Comparator, IsaKind},
+            Vertex,
+        },
         pipeline::block::Block,
         translation::TranslationContext,
     };
-    use ir::pattern::Vertex;
     use storage::snapshot::CommittableSnapshot;
 
     use crate::annotation::{
@@ -1457,7 +1494,7 @@ pub mod tests {
         conjunction.constraints_mut().add_label(var_name_type, LABEL_NAME.clone()).unwrap();
         conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
-        let block = builder.finish();
+        let block = builder.finish().unwrap();
         let conjunction = block.conjunction();
 
         let constraints = conjunction.constraints();
@@ -1533,7 +1570,7 @@ pub mod tests {
         // Try seeding
         conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
-        let block = builder.finish();
+        let block = builder.finish().unwrap();
         let conjunction = block.conjunction();
 
         let constraints = conjunction.constraints();
@@ -1601,7 +1638,7 @@ pub mod tests {
             // Try seeding
             conjunction.constraints_mut().add_comparison(var_a.into(), var_b.into(), Comparator::Greater).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
             let conjunction = block.conjunction();
 
             let types_a =

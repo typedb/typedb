@@ -23,7 +23,11 @@ fn build_conjunction_constraints() {
     eprintln!("{:#}\n", match_); // TODO
     eprintln!(
         "{}\n",
-        translate_match(&mut TranslationContext::new(), &empty_function_index, match_).unwrap().finish().conjunction()
+        translate_match(&mut TranslationContext::new(), &empty_function_index, match_)
+            .unwrap()
+            .finish()
+            .unwrap()
+            .conjunction()
     );
 
     let query = "match
@@ -38,7 +42,11 @@ fn build_conjunction_constraints() {
     eprintln!("{:#}\n", match_); // TODO
     eprintln!(
         "{}\n",
-        translate_match(&mut TranslationContext::new(), &empty_function_index, match_).unwrap().finish().conjunction()
+        translate_match(&mut TranslationContext::new(), &empty_function_index, match_)
+            .unwrap()
+            .finish()
+            .unwrap()
+            .conjunction()
     );
 
     let query = "match
@@ -55,7 +63,11 @@ fn build_conjunction_constraints() {
     eprintln!("{:#}\n", match_); // TODO
     eprintln!(
         "{}\n",
-        translate_match(&mut TranslationContext::new(), &empty_function_index, match_).unwrap().finish().conjunction()
+        translate_match(&mut TranslationContext::new(), &empty_function_index, match_)
+            .unwrap()
+            .finish()
+            .unwrap()
+            .conjunction()
     );
 
     // let mut block = FunctionalBlock::new();
@@ -120,7 +132,10 @@ fn variable_category_narrowing() {
     eprintln!("{}\n", match_); // TODO
     eprintln!("{:#}\n", match_); // TODO
     let mut context = TranslationContext::new();
-    eprintln!("{}\n", translate_match(&mut context, &empty_function_index, match_).unwrap().finish().conjunction());
+    eprintln!(
+        "{}\n",
+        translate_match(&mut context, &empty_function_index, match_).unwrap().finish().unwrap().conjunction()
+    );
 
     // let mut block = FunctionalBlock::new();
     // let conjunction = block.conjunction_mut();

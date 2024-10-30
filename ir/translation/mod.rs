@@ -78,7 +78,7 @@ impl TranslationContext {
             is_optional,
             reducer,
         );
-        self.visible_variables.insert(name.to_owned(), variable.clone());
+        self.visible_variables.insert(name.to_owned(), variable);
         variable
     }
 

@@ -73,7 +73,7 @@ fn build_with_functions() {
         .constraints_mut()
         .add_function_binding(vec![var_count, var_mean], &function_signature, vec![var_person], "test_fn")
         .unwrap();
-    let block = builder.finish();
+    let block = builder.finish().unwrap();
     println!("{}", block.conjunction());
 
     // TODO: incomplete, since we don't have the called function IR

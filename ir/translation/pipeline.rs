@@ -147,7 +147,7 @@ fn translate_stage(
 ) -> Result<Either<TranslatedStage, FetchObject>, RepresentationError> {
     match typeql_stage {
         TypeQLStage::Match(match_) => translate_match(translation_context, all_function_signatures, match_)
-            .map(|builder| Either::First(TranslatedStage::Match { block: builder.finish() })),
+            .and_then(|builder| Ok(Either::First(TranslatedStage::Match { block: builder.finish()? }))),
         TypeQLStage::Insert(insert) => {
             translate_insert(translation_context, insert).map(|block| Either::First(TranslatedStage::Insert { block }))
         }
