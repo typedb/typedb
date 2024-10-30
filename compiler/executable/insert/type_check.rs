@@ -61,6 +61,7 @@ pub fn check_annotations(
             | Constraint::Sub(_)
             | Constraint::ExpressionBinding(_)
             | Constraint::FunctionCallBinding(_)
+            | Constraint::Is(_)
             | Constraint::Comparison(_)
             | Constraint::Owns(_)
             | Constraint::Relates(_)

@@ -78,6 +78,7 @@ pub fn compile(
             | Constraint::Relates(_)
             | Constraint::Plays(_)
             | Constraint::ExpressionBinding(_)
+            | Constraint::Is(_)
             | Constraint::Comparison(_)
             | Constraint::Sub(_)
             | Constraint::FunctionCallBinding(_) => {
