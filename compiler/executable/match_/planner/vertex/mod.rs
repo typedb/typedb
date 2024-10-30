@@ -106,7 +106,14 @@ impl PlannerVertex<'_> {
 
     pub(super) fn as_variable_mut(&mut self) -> Option<&mut VariableVertex> {
         match self {
-            Self::Variable(v) => Some(v),
+            Self::Variable(var) => Some(var),
+            _ => None,
+        }
+    }
+
+    pub(super) fn as_constraint(&self) -> Option<&ConstraintVertex<'_>> {
+        match self {
+            Self::Constraint(constraint) => Some(constraint),
             _ => None,
         }
     }

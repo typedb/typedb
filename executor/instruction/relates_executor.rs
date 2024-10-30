@@ -24,7 +24,10 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{relates_to_tuple_relation_role, RelatesToTupleFn, TuplePositions, TupleResult},
+        tuple::{
+            relates_to_tuple_relation_role, relates_to_tuple_role_relation, RelatesToTupleFn, TuplePositions,
+            TupleResult,
+        },
         type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
@@ -95,10 +98,9 @@ impl RelatesExecutor {
         let relation = relates.relation().as_variable();
         let role_type = relates.role_type().as_variable();
 
-        let output_tuple_positions = if iterate_mode.is_inverted() {
-            TuplePositions::Pair([role_type, relation])
-        } else {
-            TuplePositions::Pair([relation, role_type])
+        let output_tuple_positions = match iterate_mode {
+            BinaryIterateMode::Unbound => TuplePositions::Pair([relation, role_type]),
+            _ => TuplePositions::Pair([role_type, relation]),
         };
 
         let checker = Checker::<AsHkt![Relates<'_>]>::new(
@@ -178,7 +180,7 @@ impl RelatesExecutor {
                 let as_tuples: RelatesBoundedSortedRole =
                     AsNarrowingIterator::<_, Result<Relates<'_>, _>>::new(iterator)
                         .try_filter::<_, RelatesFilterFn, Relates<'_>, _>(filter_for_row)
-                        .map(relates_to_tuple_relation_role);
+                        .map(relates_to_tuple_role_relation);
                 Ok(TupleIterator::RelatesBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),

@@ -99,10 +99,9 @@ impl HasExecutor {
         let owner = has.owner().as_variable().unwrap();
         let attribute = has.attribute().as_variable().unwrap();
 
-        let output_tuple_positions = if iterate_mode.is_inverted() {
-            TuplePositions::Pair([Some(attribute), Some(owner)])
-        } else {
-            TuplePositions::Pair([Some(owner), Some(attribute)])
+        let output_tuple_positions = match iterate_mode {
+            BinaryIterateMode::Unbound => TuplePositions::Pair([Some(owner), Some(attribute)]),
+            _ => TuplePositions::Pair([Some(attribute), Some(owner)]),
         };
 
         let checker = Checker::<(Has<'_>, _)>::new(
@@ -234,7 +233,7 @@ impl HasExecutor {
                 };
                 let as_tuples: HasBoundedSortedAttribute = iterator
                     .try_filter::<_, HasFilterFn, (Has<'_>, _), _>(filter_for_row)
-                    .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_owner_attribute);
+                    .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
                 Ok(TupleIterator::HasBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),

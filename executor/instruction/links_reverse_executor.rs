@@ -31,7 +31,10 @@ use crate::{
         links_executor::{
             LinksFilterFn, LinksOrderingFn, LinksTupleIterator, EXTRACT_PLAYER, EXTRACT_RELATION, EXTRACT_ROLE,
         },
-        tuple::{links_to_tuple_player_relation_role, links_to_tuple_relation_player_role, TuplePositions},
+        tuple::{
+            links_to_tuple_player_relation_role, links_to_tuple_relation_player_role,
+            links_to_tuple_role_relation_player, TuplePositions,
+        },
         Checker, TernaryIterateMode, VariableModes,
     },
     pipeline::stage::ExecutionContext,
@@ -83,10 +86,15 @@ impl LinksReverseExecutor {
         let player = links.player().as_variable().unwrap();
         let role_type = links.role_type().as_variable().unwrap();
 
-        let output_tuple_positions = if iterate_mode == TernaryIterateMode::UnboundInverted {
-            TuplePositions::Triple([Some(relation), Some(player), Some(role_type)])
-        } else {
-            TuplePositions::Triple([Some(player), Some(relation), Some(role_type)])
+        let output_tuple_positions = match iterate_mode {
+            TernaryIterateMode::Unbound => TuplePositions::Triple([Some(player), Some(relation), Some(role_type)]),
+            TernaryIterateMode::UnboundInverted => {
+                TuplePositions::Triple([Some(relation), Some(player), Some(role_type)])
+            }
+            TernaryIterateMode::BoundFrom => TuplePositions::Triple([Some(relation), Some(player), Some(role_type)]),
+            TernaryIterateMode::BoundFromBoundTo => {
+                TuplePositions::Triple([Some(role_type), Some(relation), Some(player)])
+            }
         };
 
         let checker = Checker::<(Relation<'_>, RolePlayer<'_>, _)>::new(
@@ -220,7 +228,7 @@ impl LinksReverseExecutor {
                 );
                 let as_tuples: LinksReverseBoundedPlayerSortedRelation = iterator
                     .try_filter::<_, LinksFilterFn, (Relation<'_>, RolePlayer<'_>, _), _>(filter_for_row)
-                    .map(links_to_tuple_player_relation_role);
+                    .map(links_to_tuple_relation_player_role);
                 Ok(TupleIterator::LinksReverseBoundedPlayer(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -238,7 +246,7 @@ impl LinksReverseExecutor {
                 let iterator = thing_manager.get_links_by_relation_and_player(snapshot, relation, player); // NOTE: not reverse, no difference
                 let as_tuples: LinksReverseBoundedPlayerSortedRelation = iterator
                     .try_filter::<_, LinksFilterFn, (Relation<'_>, RolePlayer<'_>, _), _>(filter_for_row)
-                    .map(links_to_tuple_player_relation_role);
+                    .map(links_to_tuple_role_relation_player);
                 Ok(TupleIterator::LinksReverseBoundedPlayerRelation(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),

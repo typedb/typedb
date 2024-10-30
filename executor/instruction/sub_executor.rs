@@ -28,7 +28,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{sub_to_tuple_sub_super, SubToTupleFn, TuplePositions, TupleResult},
+        tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, SubToTupleFn, TuplePositions, TupleResult},
         type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
@@ -97,10 +97,9 @@ impl SubExecutor {
         let subtype = sub.subtype().as_variable();
         let supertype = sub.supertype().as_variable();
 
-        let output_tuple_positions = if iterate_mode.is_inverted() {
-            TuplePositions::Pair([supertype, subtype])
-        } else {
-            TuplePositions::Pair([subtype, supertype])
+        let output_tuple_positions = match iterate_mode {
+            BinaryIterateMode::Unbound => TuplePositions::Pair([subtype, supertype]),
+            _ => TuplePositions::Pair([supertype, subtype]),
         };
 
         let checker = Checker::<AdHocHkt<(Type, Type)>>::new(
@@ -169,7 +168,7 @@ impl SubExecutor {
                 let as_tuples: SubBoundedSortedSuper = NarrowingTupleIterator(
                     AsLendingIterator::new(sub_with_super)
                         .try_filter::<_, SubFilterFn, (Type, Type), _>(filter_for_row)
-                        .map(sub_to_tuple_sub_super),
+                        .map(sub_to_tuple_super_sub),
                 );
                 Ok(TupleIterator::SubBounded(SortedTupleIterator::new(
                     as_tuples,

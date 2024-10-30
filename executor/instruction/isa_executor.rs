@@ -139,10 +139,9 @@ impl IsaExecutor {
         let thing = isa.thing().as_variable();
         let type_ = isa.type_().as_variable();
 
-        let output_tuple_positions = if iterate_mode.is_inverted() {
-            TuplePositions::Pair([type_, thing])
-        } else {
-            TuplePositions::Pair([thing, type_])
+        let output_tuple_positions = match iterate_mode {
+            BinaryIterateMode::Unbound => TuplePositions::Pair([thing, type_]),
+            _ => TuplePositions::Pair([type_, thing]),
         };
 
         let checker = Checker::<(Thing<'_>, Type)>::new(
@@ -233,7 +232,7 @@ impl IsaExecutor {
                 };
                 let as_tuples: IsaBoundedSortedType = with_types(lending_iterator::once(Ok(thing)), types)
                     .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
-                    .map(isa_to_tuple_thing_type);
+                    .map(isa_to_tuple_type_thing);
                 Ok(TupleIterator::IsaBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),

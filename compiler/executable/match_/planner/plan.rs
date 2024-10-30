@@ -537,20 +537,25 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 .min_by(|(_, lhs_cost), (_, rhs_cost)| lhs_cost.total_cmp(rhs_cost))
                 .unwrap();
 
-            if intersection_variable == next.as_variable_id() {
-                intersection_variable = None;
-            }
-
             let element = &self.graph.elements[&next];
 
             if element.is_variable() {
                 commit_variables!();
             } else if element.is_constraint() {
-                match element.variables().filter(|var| produced_at_this_stage.contains(var)).exactly_one() {
-                    Ok(var) if (intersection_variable.is_none() || intersection_variable == Some(var)) => {
-                        intersection_variable = Some(var)
+                if let Ok(var) = element.variables().filter(|var| produced_at_this_stage.contains(var)).exactly_one() {
+                    let prev = &self.graph.elements[ordering.last().unwrap()];
+                    let next_constraint = &element.as_constraint().unwrap();
+                    let prev_constraint = &prev.as_constraint().unwrap();
+                    if next_constraint.can_sort_on(var)
+                        && prev_constraint.can_sort_on(var)
+                        && (intersection_variable == Some(var) || intersection_variable.is_none())
+                    {
+                        intersection_variable = Some(var);
+                    } else {
+                        commit_variables!()
                     }
-                    _ => commit_variables!(),
+                } else {
+                    commit_variables!()
                 }
 
                 produced_at_this_stage

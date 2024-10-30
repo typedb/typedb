@@ -32,8 +32,8 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{
-            links_to_tuple_player_relation_role, links_to_tuple_relation_player_role, LinksToTupleFn, Tuple,
-            TuplePositions, TupleResult,
+            links_to_tuple_player_relation_role, links_to_tuple_relation_player_role,
+            links_to_tuple_role_relation_player, LinksToTupleFn, Tuple, TuplePositions, TupleResult,
         },
         Checker, FilterFn, TernaryIterateMode, VariableModes,
     },
@@ -108,10 +108,15 @@ impl LinksExecutor {
         let player = links.player().as_variable().unwrap();
         let role_type = links.role_type().as_variable().unwrap();
 
-        let output_tuple_positions = if iterate_mode == TernaryIterateMode::UnboundInverted {
-            TuplePositions::Triple([Some(player), Some(relation), Some(role_type)])
-        } else {
-            TuplePositions::Triple([Some(relation), Some(player), Some(role_type)])
+        let output_tuple_positions = match iterate_mode {
+            TernaryIterateMode::Unbound => TuplePositions::Triple([Some(relation), Some(player), Some(role_type)]),
+            TernaryIterateMode::UnboundInverted => {
+                TuplePositions::Triple([Some(player), Some(relation), Some(role_type)])
+            }
+            TernaryIterateMode::BoundFrom => TuplePositions::Triple([Some(player), Some(relation), Some(role_type)]),
+            TernaryIterateMode::BoundFromBoundTo => {
+                TuplePositions::Triple([Some(role_type), Some(relation), Some(player)])
+            }
         };
 
         let checker = Checker::<(Relation<'_>, RolePlayer<'_>, _)>::new(
@@ -248,7 +253,7 @@ impl LinksExecutor {
                 };
                 let as_tuples: LinksBoundedRelationSortedPlayer = iterator
                     .try_filter::<_, LinksFilterFn, (Relation<'_>, RolePlayer<'_>, _), _>(filter_for_row)
-                    .map(links_to_tuple_relation_player_role);
+                    .map(links_to_tuple_player_relation_role);
                 Ok(TupleIterator::LinksBoundedRelation(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -266,7 +271,7 @@ impl LinksExecutor {
                 let iterator = thing_manager.get_links_by_relation_and_player(snapshot, relation, player);
                 let as_tuples: LinksBoundedRelationSortedPlayer = iterator
                     .try_filter::<_, LinksFilterFn, (Relation<'_>, RolePlayer<'_>, _), _>(filter_for_row)
-                    .map(links_to_tuple_relation_player_role);
+                    .map(links_to_tuple_role_relation_player);
                 Ok(TupleIterator::LinksBoundedRelationPlayer(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
