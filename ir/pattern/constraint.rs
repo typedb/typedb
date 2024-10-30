@@ -310,8 +310,12 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let binding = ExpressionBinding::new(variable, expression);
         binding.validate(self.context).map_err(|source| RepresentationError::ExpressionDefinitionError { source })?;
-        // WARNING: we can't set a variable category here, since we don't know if the expression will produce a
-        //          Value, a ValueList, or a ThingList! We will know this at compilation time
+
+        let binding = Constraint::from(binding);
+        // WARNING: we don't know if the expression will produce a Value, a ValueList, or a ThingList! We will know this at compilation time
+        // assume Value for now
+        self.context.set_variable_category(variable, VariableCategory::Value, binding.clone())?;
+
         let as_ref = self.constraints.add_constraint(binding);
         Ok(as_ref.as_expression_binding().unwrap())
     }
