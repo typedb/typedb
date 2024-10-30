@@ -399,7 +399,7 @@ fn redefine_value_type(
         .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
         let redefine_needed = match definition_status {
             DefinableStatus::DoesNotExist => {
-                return Err(RedefineError::AttributeTypeValueTypeIsNotDefined {
+                return Err(RedefineError::AttributeTypeValueTypeNotDefined {
                     type_: label.to_owned(),
                     value_type,
                     declaration: capability.clone(),
@@ -504,7 +504,7 @@ fn redefine_relates(
         .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
         let relates = match definition_status {
             DefinableStatus::DoesNotExist => {
-                return Err(RedefineError::RelatesIsNotDefined {
+                return Err(RedefineError::RelatesNotDefined {
                     type_: label.clone(),
                     role: role_label.name.to_string(),
                     declaration: capability.to_owned(),
@@ -599,7 +599,7 @@ fn redefine_relates_specialise<'a>(
             .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
         match definition_status {
             DefinableStatus::DoesNotExist => {
-                return Err(RedefineError::RelatesSpecialiseIsNotDefined {
+                return Err(RedefineError::RelatesSpecialiseNotDefined {
                     type_: relation_label.clone().into_owned(),
                     specialised_role: specialised_relates
                         .role()
@@ -683,7 +683,7 @@ fn redefine_owns(
         .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
         let owns = match definition_status {
             DefinableStatus::DoesNotExist => {
-                return Err(RedefineError::OwnsIsNotDefined {
+                return Err(RedefineError::OwnsNotDefined {
                     type_: label.clone(),
                     attribute: attribute_type
                         .get_label(snapshot, type_manager)
@@ -780,7 +780,7 @@ fn redefine_plays(
         .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
         let plays = match definition_status {
             DefinableStatus::DoesNotExist => {
-                return Err(RedefineError::PlaysIsNotDefined {
+                return Err(RedefineError::PlaysNotDefined {
                     type_: label.clone(),
                     role: role_type
                         .get_label(snapshot, type_manager)
@@ -857,7 +857,7 @@ fn check_can_redefine_sub<'a, T: TypeAPI<'a>>(
     let definition_status = get_sub_status(snapshot, type_manager, type_, new_supertype.clone())
         .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
     match definition_status {
-        DefinableStatus::DoesNotExist => Err(RedefineError::TypeSubIsNotDefined {
+        DefinableStatus::DoesNotExist => Err(RedefineError::TypeSubNotDefined {
             type_: label.clone().into_owned(),
             new_supertype: new_supertype
                 .get_label(snapshot, type_manager)
@@ -901,7 +901,7 @@ fn type_convert_and_validate_annotation_redefinition_need<'a, T: KindAPI<'a>>(
         get_type_annotation_status(snapshot, type_manager, type_, &converted, annotation.category())
             .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
     match definition_status {
-        DefinableStatus::DoesNotExist => Err(RedefineError::TypeAnnotationIsNotDefined {
+        DefinableStatus::DoesNotExist => Err(RedefineError::TypeAnnotationNotDefined {
             type_: label.clone().into_owned(),
             annotation,
             declaration: typeql_declaration.clone(),
@@ -938,7 +938,7 @@ fn capability_convert_and_validate_annotation_redefinition_need<'a, CAP: concept
             .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => {
-            Err(RedefineError::CapabilityAnnotationIsNotDefined { declaration: typeql_capability.clone(), annotation })
+            Err(RedefineError::CapabilityAnnotationNotDefined { declaration: typeql_capability.clone(), annotation })
         }
         DefinableStatus::ExistsSame(_) => {
             Err(RedefineError::CapabilityAnnotationRemainsSame { declaration: typeql_capability.clone(), annotation })
@@ -1025,7 +1025,7 @@ typedb_error!(
             "Error resolving value type in redefine query.",
             ( typedb_source: SymbolResolutionError )
         ),
-        TypeSubIsNotDefined(
+        TypeSubNotDefined(
             14,
             "Redefining 'sub' to '{new_supertype}' for type '{type_}' failed since there is no previously defined '{type_} sub' to replace. Use 'define' instead.\nSource:\n{declaration}",
             type_: Label<'static>,
@@ -1039,7 +1039,7 @@ typedb_error!(
             supertype: Label<'static>,
             declaration: Capability
         ),
-        RelatesIsNotDefined(
+        RelatesNotDefined(
             16,
             "Redefining 'relates' to '{role}{ordering}' for type '{type_}' failed since there is no previously defined '{type_} relates' to replace. Use 'define' instead.\nSource:\n{declaration}",
             type_: Label<'static>,
@@ -1047,7 +1047,7 @@ typedb_error!(
             ordering: Ordering,
             declaration: Capability
         ),
-        OwnsIsNotDefined(
+        OwnsNotDefined(
             17,
             "Redefining 'owns' to '{attribute}{ordering}' for type '{type_}' failed since there is no previously defined '{type_} owns' to replace. Use 'define' instead.\nSource:\n{declaration}",
             type_: Label<'static>,
@@ -1055,14 +1055,14 @@ typedb_error!(
             ordering: Ordering,
             declaration: Capability
         ),
-        PlaysIsNotDefined(
+        PlaysNotDefined(
             18,
             "Redefining 'plays' to '{role}' for type '{type_}' failed since there is no previously defined '{type_} plays' to replace. Use 'define' instead.\nSource:\n{declaration}",
             type_: Label<'static>,
             role: Label<'static>,
             declaration: Capability
         ),
-        RelatesSpecialiseIsNotDefined(
+        RelatesSpecialiseNotDefined(
             19,
             "Redefining 'relates {specialising_role} as' to '{specialised_role}' for type '{type_}' failed since there is no previously defined 'relates {specialising_role} as' to replace. Use 'define' instead.\nSource:\n{declaration}",
             type_: Label<'static>,
@@ -1078,14 +1078,14 @@ typedb_error!(
             specialising_role: Label<'static>,
             declaration: TypeQLRelates
         ),
-        AttributeTypeValueTypeIsNotDefined(
+        AttributeTypeValueTypeNotDefined(
             21,
             "Redefining 'value' to '{value_type}' for type '{type_}' failed since there is no previously defined '{type_} value' to replace. Use 'define' instead.\nSource:\n{declaration}",
             type_: Label<'static>,
             value_type: ValueType,
             declaration: Capability
         ),
-        TypeAnnotationIsNotDefined(
+        TypeAnnotationNotDefined(
             22,
             "Redefining annotation '{annotation}' for type '{type_}' failed since there is no previously defined annotation of this category to replace. Use 'define' instead.\nSource:\n{declaration}",
             type_: Label<'static>,
@@ -1099,7 +1099,7 @@ typedb_error!(
             annotation: Annotation,
             declaration: Type
         ),
-        CapabilityAnnotationIsNotDefined(
+        CapabilityAnnotationNotDefined(
             24,
             "Redefining annotation '{annotation}' for a capability failed since there is no previously defined annotation of this category to replace. Use 'define' instead.\nSource:\n{declaration}",
             annotation: Annotation,

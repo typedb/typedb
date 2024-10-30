@@ -184,7 +184,12 @@ fn undefine_specialise(
                 }
             })
         }
-        DefinableStatus::DoesNotExist => Ok(()),
+        DefinableStatus::DoesNotExist => Err(UndefineError::RelatesSpecialiseNotDefined {
+            type_: label,
+            specialising_role: relates.role().get_label(snapshot, type_manager).unwrap().to_owned(),
+            specialised_role: specialised_relates.role().get_label(snapshot, type_manager).unwrap().to_owned(),
+            declaration: specialise_undefinable.clone(),
+        }),
         DefinableStatus::ExistsDifferent(existing_specialised_role) => {
             Err(UndefineError::RelatesSpecialiseDefinedButDifferent {
                 type_: label,
@@ -447,13 +452,18 @@ fn undefine_type_capability_owns(
     )
     .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
     match definition_status {
-        DefinableStatus::DoesNotExist => Ok(()),
         DefinableStatus::ExistsSame(_) => object_type
             .unset_owns(snapshot, type_manager, thing_manager, attribute_type)
             .map_err(|source| UndefineError::UnsetOwnsError { owns: owns.clone(), typedb_source: source }),
+        DefinableStatus::DoesNotExist => Err(UndefineError::OwnsNotDefined {
+            type_: type_label.clone(),
+            attribute: attr_label,
+            ordering,
+            declaration: capability_undefinable.clone(),
+        }),
         DefinableStatus::ExistsDifferent((_, existing_ordering)) => Err(UndefineError::OwnsDefinedButDifferent {
             type_: type_label.clone(),
-            attribute: attribute_type.get_label(snapshot, type_manager).unwrap().to_owned(),
+            attribute: attr_label,
             ordering,
             existing_ordering,
             declaration: capability_undefinable.clone(),
@@ -486,10 +496,14 @@ fn undefine_type_capability_plays(
     )
     .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
     match definition_status {
-        DefinableStatus::DoesNotExist => Ok(()),
         DefinableStatus::ExistsSame(_) => object_type
             .unset_plays(snapshot, type_manager, thing_manager, role_type)
             .map_err(|source| UndefineError::UnsetPlaysError { plays: plays.clone(), typedb_source: source }),
+        DefinableStatus::DoesNotExist => Err(UndefineError::PlaysNotDefined {
+            type_: type_label.clone(),
+            role: role_label.clone(),
+            declaration: capability_undefinable.clone(),
+        }),
         DefinableStatus::ExistsDifferent(_) => unreachable!("Plays cannot differ"),
     }
 }
@@ -520,12 +534,17 @@ fn undefine_type_capability_relates(
     )
     .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
     match definition_status {
-        DefinableStatus::DoesNotExist => Ok(()),
         DefinableStatus::ExistsSame(None) => unreachable!("Expected existing relates definition"),
         DefinableStatus::ExistsSame(Some((existing_relates, _))) => existing_relates
             .role()
             .delete(snapshot, type_manager, thing_manager)
             .map_err(|source| UndefineError::DeleteRoleTypeError { relates: relates.clone(), typedb_source: source }),
+        DefinableStatus::DoesNotExist => Err(UndefineError::RelatesNotDefined {
+            type_: type_label.clone(),
+            role: role_label.clone(),
+            ordering,
+            declaration: capability_undefinable.clone(),
+        }),
         DefinableStatus::ExistsDifferent((_, existing_ordering)) => Err(UndefineError::RelatesDefinedButDifferent {
             type_: type_label.clone(),
             role: role_label.clone(),
@@ -560,10 +579,16 @@ fn undefine_type_capability_value_type(
     )
     .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
     match definition_status {
-        DefinableStatus::DoesNotExist => Ok(()),
         DefinableStatus::ExistsSame(_) => {
             attribute_type.unset_value_type(snapshot, type_manager, thing_manager).map_err(|source| {
                 UndefineError::UnsetValueTypeError { label: type_label.to_owned(), value_type, typedb_source: source }
+            })
+        }
+        DefinableStatus::DoesNotExist => {
+            Err(UndefineError::AttributeTypeValueTypeNotDefined {
+                type_: type_label.clone().into_owned(),
+                value_type,
+                declaration: capability_undefinable.clone(),
             })
         }
         DefinableStatus::ExistsDifferent(existing_value_type) => {
@@ -661,8 +686,16 @@ fn check_can_and_need_undefine_sub<'a, T: TypeAPI<'a>>(
     let definition_status = get_sub_status(snapshot, type_manager, type_, supertype.clone())
         .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
     match definition_status {
-        DefinableStatus::DoesNotExist => Ok(false),
         DefinableStatus::ExistsSame(_) => Ok(true),
+        DefinableStatus::DoesNotExist => Err(UndefineError::TypeSubNotDefined {
+            type_: label.clone().into_owned(),
+            supertype: supertype
+                .get_label(snapshot, type_manager)
+                .map_err(|source| UndefineError::UnexpectedConceptRead { source })?
+                .clone()
+                .into_owned(),
+            declaration: declaration.clone(),
+        }),
         DefinableStatus::ExistsDifferent(existing) => Err(UndefineError::TypeSubDefinedButDifferent {
             type_: label.clone().into_owned(),
             supertype: supertype
@@ -786,7 +819,7 @@ typedb_error!(
             kind: Kind,
             capability: CapabilityType
         ),
-        TypeSubIsNotDefined(
+        TypeSubNotDefined(
             18,
             "Undefining 'sub {supertype}' for type '{type_}' failed since there is no defined '{type_} sub {supertype}'.\nSource:\n{declaration}",
             type_: Label<'static>,
@@ -801,7 +834,7 @@ typedb_error!(
             existing_supertype: Label<'static>,
             declaration: CapabilityType
         ),
-        OwnsIsNotDefined(
+        OwnsNotDefined(
             20,
             "Undefining 'owns {attribute}{ordering}' for type '{type_}' failed since there is no defined '{type_} owns {attribute}{ordering}'.\nSource:\n{declaration}",
             type_: Label<'static>,
@@ -818,7 +851,7 @@ typedb_error!(
             existing_ordering: Ordering,
             declaration: CapabilityType
         ),
-        RelatesIsNotDefined(
+        RelatesNotDefined(
             22,
             "Undefining 'relates {role}{ordering}' for type '{type_}' failed since there is no defined '{type_} relates {role}{ordering}'.\nSource:\n{declaration}",
             type_: Label<'static>,
@@ -835,14 +868,14 @@ typedb_error!(
             existing_ordering: Ordering,
             declaration: CapabilityType
         ),
-        PlaysIsNotDefined(
+        PlaysNotDefined(
             24,
             "Undefining 'plays {role}' for type '{type_}' failed since there is no defined '{type_} plays {role}'.\nSource:\n{declaration}",
             type_: Label<'static>,
             role: Label<'static>,
             declaration: CapabilityType
         ),
-        AttributeTypeValueTypeIsNotDefined(
+        AttributeTypeValueTypeNotDefined(
             25,
             "Undefining 'value {value_type}' for type '{type_}' failed since there is no defined '{type_} value {value_type}'.\nSource:\n{declaration}",
             type_: Label<'static>,
@@ -857,7 +890,7 @@ typedb_error!(
             existing_value_type: ValueType,
             declaration: CapabilityType
         ),
-        RelatesSpecialiseIsNotDefined(
+        RelatesSpecialiseNotDefined(
             27,
             "Undefining 'as {specialised_role}' for '{type_} relates {specialising_role}' failed since there is no defined '{type_} relates {specialising_role} as {specialised_role}'.\nSource:\n{declaration}",
             type_: Label<'static>,
