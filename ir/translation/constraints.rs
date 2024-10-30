@@ -9,7 +9,8 @@ use encoding::value::label::Label;
 use typeql::{
     expression::{FunctionCall, FunctionName},
     statement::{
-        comparison::ComparisonStatement, thing::AttributeComparisonStatement, Assignment, AssignmentPattern, InIterable,
+        comparison::ComparisonStatement, thing::AttributeComparisonStatement, Assignment, AssignmentPattern,
+        InIterable, Is,
     },
     token::Kind,
     type_::NamedType,
@@ -37,7 +38,11 @@ pub(super) fn add_statement(
 ) -> Result<(), RepresentationError> {
     let constraints = &mut conjunction.constraints_mut();
     match stmt {
-        typeql::Statement::Is(_) => todo!(),
+        typeql::Statement::Is(Is { lhs, rhs, .. }) => {
+            let lhs = register_typeql_var(constraints, lhs)?;
+            let rhs = register_typeql_var(constraints, rhs)?;
+            constraints.add_is(lhs, rhs)?;
+        }
         typeql::Statement::InIterable(InIterable { lhs, rhs, .. }) => {
             let assigned = assignment_typeql_vars_to_variables(constraints, lhs)?;
             add_typeql_iterable_binding(function_index, constraints, assigned, rhs)?
