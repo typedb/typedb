@@ -19,10 +19,11 @@ def vaticle_dependencies():
     )
 
 def vaticle_typeql():
+    # TODO: Return typedb
     git_repository(
         name = "vaticle_typeql",
-        remote = "https://github.com/typedb/typeql",
-        commit = "9441e3d1472316b3efcd195aab79b0eee6a96572",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typeql
+        remote = "https://github.com/farost/typeql",
+        commit = "f0498114515ea2f976e791bbc730a98c38307f03",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typeql
     )
 
 def vaticle_typedb_common():
@@ -40,8 +41,14 @@ def vaticle_typedb_protocol():
     )
 
 def vaticle_typedb_behaviour():
+    # TODO: Return typedb
     git_repository(
         name = "vaticle_typedb_behaviour",
+<<<<<<< HEAD
         remote = "https://github.com/typedb/typedb-behaviour",
         commit = "bcc49a3ffd8305f844922a2b36e6f705d9a437de",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_behaviour
+=======
+        remote = "https://github.com/farost/typedb-behaviour",
+        commit = "6718cd7ca4a183e8d7423e6a8cf629fbffca2b13",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_behaviour
+>>>>>>> 1fa82bb99 (Update dependencies)
     )
