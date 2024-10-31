@@ -39,6 +39,17 @@ pub(super) struct ExecuteNested {
     pub(super) input: MaybeOwnedRow<'static>,
 }
 
+pub(super) struct ExecuteNegation {
+    pub(super) index: ExecutorIndex,
+    pub(super) input: MaybeOwnedRow<'static>,
+}
+
+pub(super) struct ExecuteDisjunction {
+    pub(super) index: ExecutorIndex,
+    pub(super) branch_index: BranchIndex,
+    pub(super) input: MaybeOwnedRow<'static>, // Only needed for suspend points. We can actually use an empty one, because the nested pattern has all the info
+}
+
 pub(super) struct TabledCall {
     pub(super) index: ExecutorIndex,
 }
@@ -67,9 +78,11 @@ pub(super) enum ControlInstruction {
     ExecuteImmediate(ExecuteImmediate),
 
     MapRowBatchToRowForNested(MapRowBatchToRowForNested),
+    ExecuteNegation(ExecuteNegation),
+    ExecuteDisjunction(ExecuteDisjunction),
     ExecuteNested(ExecuteNested),
 
-    TabledCall(TabledCall), // TODO: Use a FunctionMapper
+    ExecuteTabledCall(TabledCall), // TODO: Push into nested?
 
     CollectingStage(CollectingStage),
     StreamCollected(StreamCollected),

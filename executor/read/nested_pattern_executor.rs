@@ -19,23 +19,39 @@ use crate::{
     row::MaybeOwnedRow,
 };
 
+pub(super) struct Disjunction {
+    pub branches: Vec<PatternExecutor>,
+    pub selected_variables: Vec<VariablePosition>,
+    pub output_width: u32,
+}
+
+impl Disjunction {
+    pub(crate) fn map_output(&self, unmapped: FixedBatch) -> FixedBatch {
+        let mut uniform_batch = FixedBatch::new(self.output_width);
+        unmapped.into_iter().for_each(|row| uniform_batch.append(|mut output_row| {
+            output_row.copy_mapped(row, self.selected_variables.iter().map(|pos| (pos.clone(), pos.clone())));
+        }));
+        uniform_batch
+    }
+}
+
+pub(super) struct Negation {
+    pub inner: PatternExecutor,
+}
+
+pub(super) struct InlinedFunction {
+    pub inner: PatternExecutor,
+    pub arg_mapping: Vec<VariablePosition>,
+    pub return_mapping: Vec<VariablePosition>,
+    pub output_width: u32,
+    pub parameter_registry: Arc<ParameterRegistry>,
+}
+
 // TODO: Move Offset & Limit out of here, make the mapper stateless
 pub(super) enum NestedPatternExecutor {
-    Disjunction {
-        branches: Vec<PatternExecutor>,
-        selected_variables: Vec<VariablePosition>,
-        output_width: u32,
-    },
-    Negation {
-        inner: PatternExecutor,
-    },
-    InlinedFunction {
-        inner: PatternExecutor,
-        arg_mapping: Vec<VariablePosition>,
-        return_mapping: Vec<VariablePosition>,
-        output_width: u32,
-        parameter_registry: Arc<ParameterRegistry>,
-    },
+    Disjunction(Disjunction),
+    Negation(Negation),
+    InlinedFunction(InlinedFunction),
     Offset {
         inner: PatternExecutor,
         offset: u64,
@@ -53,7 +69,7 @@ impl Into<StepExecutors> for NestedPatternExecutor {
 }
 impl NestedPatternExecutor {
     pub(crate) fn new_negation(inner: PatternExecutor) -> Self {
-        Self::Negation { inner }
+        Self::Negation(Negation { inner })
     }
 
     pub(crate) fn new_disjunction(
@@ -61,7 +77,7 @@ impl NestedPatternExecutor {
         selected_variables: Vec<VariablePosition>,
         output_width: u32,
     ) -> Self {
-        Self::Disjunction { branches, selected_variables, output_width }
+        Self::Disjunction(Disjunction { branches, selected_variables, output_width })
     }
 
     pub(crate) fn new_inlined_function(
@@ -69,13 +85,13 @@ impl NestedPatternExecutor {
         function_call: &FunctionCallStep,
         parameter_registry: Arc<ParameterRegistry>,
     ) -> Self {
-        Self::InlinedFunction {
+        Self::InlinedFunction(InlinedFunction {
             inner,
             arg_mapping: function_call.arguments.clone(),
             return_mapping: function_call.assigned.clone(),
             output_width: function_call.output_width,
             parameter_registry,
-        }
+        })
     }
 
     pub(crate) fn new_offset(inner: PatternExecutor, offset: u64) -> Self {
@@ -89,9 +105,9 @@ impl NestedPatternExecutor {
     pub(crate) fn get_branch(&mut self, branch_index: BranchIndex) -> &mut PatternExecutor {
         debug_assert!(branch_index.0 == 0 || matches!(self, NestedPatternExecutor::Disjunction { .. }));
         match self {
-            NestedPatternExecutor::Disjunction { branches, .. } => &mut branches[branch_index.0],
-            NestedPatternExecutor::Negation { inner } => inner,
-            NestedPatternExecutor::InlinedFunction { inner, .. } => inner,
+            NestedPatternExecutor::Disjunction(Disjunction { branches, .. }) => &mut branches[branch_index.0],
+            NestedPatternExecutor::Negation(Negation { inner }) => inner,
+            NestedPatternExecutor::InlinedFunction(InlinedFunction { inner, .. }) => inner,
             NestedPatternExecutor::Offset { inner, .. } => inner,
             NestedPatternExecutor::Limit { inner, .. } => inner,
         }
@@ -100,8 +116,6 @@ impl NestedPatternExecutor {
 
 // Bad name because I want to refactor later
 pub(super) enum NestedPatternResultMapper {
-    Select(SelectMapper),
-    Negation(NegationMapper),
     InlinedFunction(InlinedFunctionMapper),
     Offset(OffsetMapper),
     Limit(LimitMapper),
@@ -110,8 +124,6 @@ pub(super) enum NestedPatternResultMapper {
 impl NestedPatternResultMapper {
     pub(super) fn map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
         match self {
-            Self::Select(mapper) => mapper.map_input(input),
-            Self::Negation(mapper) => mapper.map_input(input),
             Self::InlinedFunction(mapper) => mapper.map_input(input),
             Self::Offset(mapper) => mapper.map_input(input),
             Self::Limit(mapper) => mapper.map_input(input),
@@ -120,8 +132,6 @@ impl NestedPatternResultMapper {
 
     pub(super) fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> NestedPatternControl {
         match self {
-            Self::Select(mapper) => mapper.map_output(subquery_result),
-            Self::Negation(mapper) => mapper.map_output(subquery_result),
             Self::InlinedFunction(mapper) => mapper.map_output(subquery_result),
             Self::Offset(mapper) => mapper.map_output(subquery_result),
             Self::Limit(mapper) => mapper.map_output(subquery_result),
@@ -148,71 +158,11 @@ impl NestedPatternControl {
     }
 }
 
-pub(super) struct NegationMapper {
-    input: MaybeOwnedRow<'static>,
-}
-
-pub(super) struct SelectMapper {
-    selected_variables: Vec<VariablePosition>,
-    output_width: u32,
-}
-
-impl SelectMapper {
-    pub(super) fn new(selected_variables: Vec<VariablePosition>, output_width: u32) -> Self {
-        Self { selected_variables, output_width }
-    }
-}
-
 pub(super) struct InlinedFunctionMapper {
     input: MaybeOwnedRow<'static>,
     arguments: Vec<VariablePosition>, // caller input -> callee input
     assigned: Vec<VariablePosition>,  // callee return -> caller output
     output_width: u32,                // This is for the caller.
-}
-
-impl NegationMapper {
-    pub(crate) fn new(input: MaybeOwnedRow<'static>) -> Self {
-        Self { input }
-    }
-}
-
-impl NestedPatternResultMapperTrait for NegationMapper {
-    fn map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
-        input.clone().into_owned()
-    }
-
-    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> NestedPatternControl {
-        match subquery_result {
-            None => NestedPatternControl::Done(Some(FixedBatch::from(self.input.clone().into_owned()))),
-            Some(batch) => {
-                if batch.is_empty() {
-                    NestedPatternControl::Retry(None)
-                } else {
-                    NestedPatternControl::Done(None)
-                }
-            }
-        }
-    }
-}
-
-impl NestedPatternResultMapperTrait for SelectMapper {
-    fn map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
-        input.clone().into_owned()
-    }
-
-    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> NestedPatternControl {
-        if let Some(batch) = subquery_result {
-            let mut uniform_batch = FixedBatch::new(self.output_width);
-            for row in batch {
-                uniform_batch.append(|mut output_row| {
-                    output_row.copy_mapped(row, self.selected_variables.iter().map(|pos| (pos.clone(), pos.clone())));
-                })
-            }
-            NestedPatternControl::Retry(Some(uniform_batch))
-        } else {
-            NestedPatternControl::Done(None)
-        }
-    }
 }
 
 impl InlinedFunctionMapper {
