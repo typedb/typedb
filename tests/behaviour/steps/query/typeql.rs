@@ -82,32 +82,41 @@ fn execute_write_query(
     }
 
     with_write_tx_deconstructed!(context, |snapshot, type_manager, thing_manager, function_manager, _db, _opts| {
-        let pipeline = QueryManager {}
-            .prepare_write_pipeline(
-                Arc::into_inner(snapshot).unwrap(),
-                &type_manager,
-                thing_manager.clone(),
-                &function_manager,
-                &query.into_pipeline(),
-            )
-            .map_err(|(_, error)| BehaviourTestExecutionError::Query(error))?;
-        let named_outputs = pipeline.rows_positions().unwrap().clone();
+        let snapshot = Arc::into_inner(snapshot).unwrap();
+        let pipeline_result = QueryManager {}.prepare_write_pipeline(
+            snapshot,
+            &type_manager,
+            thing_manager.clone(),
+            &function_manager,
+            &query.into_pipeline(),
+        );
 
-        let (result_as_batch, snapshot) = match pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
-            Ok((iterator, ExecutionContext { snapshot, .. })) => (iterator.collect_owned(), snapshot),
-            Err((err, ExecutionContext { .. })) => {
-                return Err(BehaviourTestExecutionError::Query(QueryError::ReadPipelineExecutionError {
-                    typedb_source: err,
-                }));
+        match pipeline_result {
+            Err((snapshot, error)) => (Err(BehaviourTestExecutionError::Query(error)), Arc::new(snapshot)),
+            Ok(pipeline) => {
+                let named_outputs = pipeline.rows_positions().unwrap().clone();
+
+                match pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
+                    Ok((iterator, ExecutionContext { snapshot, .. })) => {
+                        let result_as_batch = iterator.collect_owned();
+                        match result_as_batch {
+                            Ok(batch) => (Ok(batch_result_to_answer(batch, named_outputs)), snapshot),
+                            Err(typedb_source) => (
+                                Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecutionError {
+                                    typedb_source,
+                                })),
+                                snapshot,
+                            ),
+                        }
+                    }
+                    Err((err, ExecutionContext { snapshot, .. })) => (
+                        Err(BehaviourTestExecutionError::Query(QueryError::ReadPipelineExecutionError {
+                            typedb_source: err,
+                        })),
+                        snapshot,
+                    ),
+                }
             }
-        };
-
-        match result_as_batch {
-            Ok(batch) => (Ok(batch_result_to_answer(batch, named_outputs)), snapshot),
-            Err(typedb_source) => (
-                Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecutionError { typedb_source })),
-                snapshot,
-            ),
         }
     })
 }

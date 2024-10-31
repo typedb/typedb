@@ -253,8 +253,31 @@ fn undefine_capability_annotation(
                 .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
             let attribute_type = resolve_attribute_type(snapshot, type_manager, &attr_label)
                 .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
-            let owns = resolve_owns_declared(snapshot, type_manager, object_type, attribute_type)
+            let owns = resolve_owns_declared(snapshot, type_manager, object_type.clone(), attribute_type.clone())
                 .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
+
+            let owns_definition_status = get_owns_status(
+                snapshot,
+                type_manager,
+                object_type,
+                attribute_type,
+                ordering,
+                DefinableStatusMode::Transitive,
+            )
+            .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+            match owns_definition_status {
+                DefinableStatus::DoesNotExist | DefinableStatus::ExistsSame(_) => {}
+                DefinableStatus::ExistsDifferent((_, existing_ordering)) => {
+                    return Err(UndefineError::OwnsOfAnnotationDefinedButDifferent {
+                        type_: label.clone(),
+                        annotation: annotation_category,
+                        attribute: attr_label,
+                        ordering,
+                        existing_ordering,
+                        declaration: annotation_undefinable.clone(),
+                    })
+                }
+            }
 
             check_can_and_need_undefine_capability_annotation(
                 snapshot,
@@ -291,8 +314,32 @@ fn undefine_capability_annotation(
                 .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
             let (role_label, ordering) = type_ref_to_label_and_ordering(&label, &typeql_relates.related)
                 .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
-            let relates = resolve_relates_declared(snapshot, type_manager, relation_type, role_label.name.as_str())
-                .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
+            let relates =
+                resolve_relates_declared(snapshot, type_manager, relation_type.clone(), role_label.name.as_str())
+                    .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
+
+            let relates_definition_status = get_relates_status(
+                snapshot,
+                type_manager,
+                relation_type,
+                &role_label,
+                ordering,
+                DefinableStatusMode::Transitive,
+            )
+            .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+            match relates_definition_status {
+                DefinableStatus::DoesNotExist | DefinableStatus::ExistsSame(_) => {}
+                DefinableStatus::ExistsDifferent((_, existing_ordering)) => {
+                    return Err(UndefineError::RelatesOfAnnotationDefinedButDifferent {
+                        type_: label.clone(),
+                        annotation: annotation_category,
+                        role: role_label,
+                        ordering,
+                        existing_ordering,
+                        declaration: annotation_undefinable.clone(),
+                    })
+                }
+            }
 
             check_can_and_need_undefine_capability_annotation(
                 snapshot,
@@ -986,8 +1033,18 @@ typedb_error!(
             existing_ordering: Ordering,
             declaration: CapabilityType
         ),
-        RelatesNotDefined(
+        OwnsOfAnnotationDefinedButDifferent(
             22,
+            "Undefining annotation '{annotation}' of `owns {attribute}{ordering}` for type '{type_}' failed since there is no defined '{type_} owns {attribute}{ordering}', while {type_}'s defined 'owns' is '{attribute}{existing_ordering}'.\nSource:\n{declaration}",
+            type_: Label<'static>,
+            annotation: AnnotationCategory,
+            attribute: Label<'static>,
+            ordering: Ordering,
+            existing_ordering: Ordering,
+            declaration: AnnotationCapability
+        ),
+        RelatesNotDefined(
+            23,
             "Undefining 'relates {role}{ordering}' for type '{type_}' failed since there is no defined '{type_} relates {role}{ordering}'.\nSource:\n{declaration}",
             type_: Label<'static>,
             role: Label<'static>,
@@ -995,7 +1052,7 @@ typedb_error!(
             declaration: CapabilityType
         ),
         RelatesDefinedButDifferent(
-            23,
+            24,
             "Undefining 'relates {role}{ordering}' for type '{type_}' failed since there is no defined '{type_} relates {role}{ordering}', while {type_}'s defined 'relates' is '{role}{existing_ordering}'.\nSource:\n{declaration}",
             type_: Label<'static>,
             role: Label<'static>,
@@ -1003,22 +1060,32 @@ typedb_error!(
             existing_ordering: Ordering,
             declaration: CapabilityType
         ),
+        RelatesOfAnnotationDefinedButDifferent(
+            25,
+            "Undefining annotation '{annotation}' of `relates {role}{ordering}` for type '{type_}' failed since there is no defined '{type_} relates {role}{ordering}', while {type_}'s defined 'relates' is '{role}{existing_ordering}'.\nSource:\n{declaration}",
+            type_: Label<'static>,
+            annotation: AnnotationCategory,
+            role: Label<'static>,
+            ordering: Ordering,
+            existing_ordering: Ordering,
+            declaration: AnnotationCapability
+        ),
         PlaysNotDefined(
-            24,
+            26,
             "Undefining 'plays {role}' for type '{type_}' failed since there is no defined '{type_} plays {role}'.\nSource:\n{declaration}",
             type_: Label<'static>,
             role: Label<'static>,
             declaration: CapabilityType
         ),
         AttributeTypeValueTypeNotDefined(
-            25,
+            27,
             "Undefining 'value {value_type}' for type '{type_}' failed since there is no defined '{type_} value {value_type}'.\nSource:\n{declaration}",
             type_: Label<'static>,
             value_type: ValueType,
             declaration: CapabilityType
         ),
         AttributeTypeValueTypeDefinedButDifferent(
-            26,
+            28,
             "Undefining 'value {value_type}' for type '{type_}' failed since there is no defined '{type_} value {value_type}', while {type_}'s defined 'value' is '{existing_value_type}'.\nSource:\n{declaration}",
             type_: Label<'static>,
             value_type: ValueType,
@@ -1026,7 +1093,7 @@ typedb_error!(
             declaration: CapabilityType
         ),
         RelatesSpecialiseNotDefined(
-            27,
+            29,
             "Undefining 'as {specialised_role_name}' for '{type_} relates {specialising_role_name}' failed since there is no defined '{type_} relates {specialising_role_name} as {specialised_role_name}'.\nSource:\n{declaration}",
             type_: Label<'static>,
             specialising_role_name: String,
@@ -1034,7 +1101,7 @@ typedb_error!(
             declaration: Specialise
         ),
         RelatesSpecialiseDefinedButDifferent(
-            28,
+            30,
             "Undefining 'as {specialised_role_name}' for '{type_} relates {specialising_role_name}' failed since there is no defined '{type_} relates {specialising_role_name} as {specialised_role_name}', while there is a defined specialisation '{type_} relates {specialising_role_name} as {existing_specialised_role_name}'.\nSource:\n{declaration}",
             type_: Label<'static>,
             specialising_role_name: String,
@@ -1043,25 +1110,25 @@ typedb_error!(
             declaration: Specialise
         ),
         TypeAnnotationNotDefined(
-            29,
+            31,
             "Undefining annotation '{annotation}' for type '{type_}' failed since there is no defined '{type_} {annotation}'.\nSource:\n{declaration}",
             type_: Label<'static>,
             annotation: AnnotationCategory,
             declaration: AnnotationType
         ),
         CapabilityAnnotationNotDefined(
-            30,
+            32,
             "Undefining annotation '{annotation}' for a capability failed since there is no defined annotation of this category.\nSource:\n{declaration}",
             annotation: AnnotationCategory,
             declaration: AnnotationCapability
         ),
         IllegalAnnotation(
-            31,
+            33,
             "Illegal annotation",
             ( source: AnnotationError )
         ),
         CapabilityKindMismatch(
-            32,
+            34,
             "Undefining failed because the left type '{left}' is of kind '{left_kind}' isn't the same kind as the right type '{right}' which has kind '{right_kind}'. Maybe you wanted to undefine something else?\nSource:\n{declaration}",
             left: Label<'static>,
             right: Label<'static>,

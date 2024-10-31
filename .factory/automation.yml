@@ -116,14 +116,14 @@ build:
 #        bazel test //tests/behaviour/query/language:test_update --test_output=streamed
 #        bazel test //tests/behaviour/query/language:test_pipelines --test_output=streamed
 
-#    test-behaviour-query-definable:
-#      image: vaticle-ubuntu-22.04
-#      dependencies: [build]
-#      command: |
-#        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-#        bazel test //tests/behaviour/query/language:test_define --test_output=streamed
-#        bazel test //tests/behaviour/query/language:test_undefine --test_output=streamed
-#        bazel test //tests/behaviour/query/language:test_redefine --test_output=streamed
+    test-behaviour-query-definable:
+      image: vaticle-ubuntu-22.04
+      dependencies: [build]
+      command: |
+        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
+        bazel test //tests/behaviour/query/language:test_define --test_output=streamed
+        bazel test //tests/behaviour/query/language:test_redefine --test_output=streamed
+        bazel test //tests/behaviour/query/language:test_undefine --test_output=streamed
 
 #    test-behaviour-functions:
 #      image: vaticle-ubuntu-22.04
