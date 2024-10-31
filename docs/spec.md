@@ -1847,7 +1847,7 @@ as follows:
 
 #### Value expressions
 
-* 🔶 The _value expresssions_ `VAL_EXPR` is evaluated as follows:
+* 🔶 The _value expressions_ `VAL_EXPR` is evaluated as follows:
     * **Substitute** all vars `$x` by `r($x)`
     * If `r($x)` isa attribute instance, **replace** by `val(r($x))`
     * $`v_r(expr)`$ is the result of evaluating all operations with their **usual semantics** 
@@ -1864,7 +1864,7 @@ _Remark_. Struct values are semantically considered up to reordering their compo
 
 #### List expressions
 
-* 🔶 The _list expresssions_ `LIST_EXPR` is evaluated as follows:
+* 🔶 The _list expressions_ `LIST_EXPR` is evaluated as follows:
     * Substitute all vars `$x` by `r($x)`
     * (**Do not replace** attributes!)
     * $`v_r(expr)`$ is the result of concatenation and sublist operations with their **usual semantics**
