@@ -269,7 +269,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             // TODO: send all the errors, not just the first,
             // when we can print the stacktraces of multiple errors, not just a single one
             ConceptWriteErrorsFirst { typedb_source: errs.into_iter().next().unwrap() }
-        })?; // TODO: Use only the first one?
+        })?;
 
         self.thing_manager.finalise(&mut snapshot).map_err(|errs| {
             // TODO: send all the errors, not just the first,
