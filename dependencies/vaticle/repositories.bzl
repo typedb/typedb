@@ -44,11 +44,6 @@ def vaticle_typedb_behaviour():
     # TODO: Return typedb
     git_repository(
         name = "vaticle_typedb_behaviour",
-<<<<<<< HEAD
-        remote = "https://github.com/typedb/typedb-behaviour",
-        commit = "bcc49a3ffd8305f844922a2b36e6f705d9a437de",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_behaviour
-=======
         remote = "https://github.com/farost/typedb-behaviour",
-        commit = "6718cd7ca4a183e8d7423e6a8cf629fbffca2b13",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_behaviour
->>>>>>> 1fa82bb99 (Update dependencies)
+        commit = "66baa5dd51240380308a97c3ca4baed9de6d59a6",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_behaviour
     )

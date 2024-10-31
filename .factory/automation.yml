@@ -10,7 +10,6 @@ config:
     typedb-protocol: [build, release]
     typedb-behaviour: [build]
 
-TODO UNBREAK ME
 build:
   quality:
     filter:
