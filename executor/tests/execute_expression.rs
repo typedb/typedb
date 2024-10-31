@@ -52,10 +52,10 @@ fn compile_expression_via_match(
     let mut translation_context = TranslationContext::new();
     if let Stage::Match(match_) = typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.first().unwrap() {
         let block =
-            translate_match(&mut translation_context, &HashMapFunctionSignatureIndex::empty(), match_)?.finish();
+            translate_match(&mut translation_context, &HashMapFunctionSignatureIndex::empty(), match_)?.finish()?;
         let variable_mapping = variable_types
             .keys()
-            .map(|name| ((*name).to_owned(), translation_context.get_variable(*name).unwrap()))
+            .map(|&name| (name.to_owned(), translation_context.get_variable(name).unwrap()))
             .collect::<HashMap<_, _>>();
         let variable_types_mapped = variable_types
             .into_iter()
@@ -174,6 +174,7 @@ fn test_ops_long_double() {
             let result = evaluate_expression(&expr, HashMap::new(), &params).unwrap();
             assert_eq!(as_value!(result), Value::Double(16.0));
         }
+
         {
             let (_, expr, params) = compile_expression_via_match("12.0e0 - 4.0e0", HashMap::new()).unwrap();
             let result = evaluate_expression(&expr, HashMap::new(), &params).unwrap();

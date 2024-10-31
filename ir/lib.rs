@@ -169,6 +169,11 @@ typedb_error!(
             "Fetch clauses must be the final clause in a query pipeline.\nSource:\n{declaration}",
             declaration: typeql::query::stage::Stage
         ),
+        UnboundVariable(
+            25,
+            "Invalid query containing unbound concept variable {variable}",
+            variable: String
+        ),
     }
 );
 

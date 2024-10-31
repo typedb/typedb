@@ -12,7 +12,7 @@ use std::{
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::pattern::{
-    constraint::{Comparison, FunctionCallBinding},
+    constraint::{Comparison, FunctionCallBinding, Is},
     Vertex,
 };
 use itertools::chain;
@@ -40,6 +40,7 @@ pub(super) enum PlannerVertex<'a> {
     Variable(VariableVertex),
     Constraint(ConstraintVertex<'a>),
 
+    Is(IsPlanner<'a>),
     Comparison(ComparisonPlanner<'a>),
 
     Expression(ExpressionPlanner<'a>),
@@ -53,6 +54,7 @@ impl PlannerVertex<'_> {
     pub(super) fn is_valid(&self, index: VertexId, ordered: &[VertexId], graph: &Graph<'_>) -> bool {
         let is_valid = match self {
             Self::Variable(inner) => inner.is_valid(index, ordered, graph),
+            Self::Is(inner) => inner.is_valid(index, ordered, graph),
             Self::Constraint(inner) => inner.is_valid(index, ordered, graph),
 
             Self::Comparison(inner) => inner.is_valid(index, ordered, graph),
@@ -80,6 +82,7 @@ impl PlannerVertex<'_> {
     pub(super) fn variables(&self) -> Box<dyn Iterator<Item = VariableVertexId> + '_> {
         match self {
             Self::Variable(_) => Box::new(iter::empty()),
+            Self::Is(inner) => Box::new(inner.variables()),
             Self::Constraint(inner) => inner.variables(),
             Self::Comparison(inner) => Box::new(inner.variables()),
             Self::Expression(inner) => Box::new(inner.variables()),
@@ -167,6 +170,7 @@ impl Costed for PlannerVertex<'_> {
             Self::Variable(inner) => inner.cost(inputs, graph),
             Self::Constraint(inner) => inner.cost(inputs, graph),
 
+            Self::Is(inner) => inner.cost(inputs, graph),
             Self::Comparison(inner) => inner.cost(inputs, graph),
 
             Self::Expression(inner) => inner.cost(inputs, graph),
@@ -265,6 +269,44 @@ impl<'a> FunctionCallPlanner<'a> {
 impl<'a> Costed for FunctionCallPlanner<'a> {
     fn cost(&self, _inputs: &[VertexId], _graph: &Graph<'_>) -> ElementCost {
         self.cost
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(super) struct IsPlanner<'a> {
+    is: &'a Is<Variable>,
+    pub lhs: VariableVertexId,
+    pub rhs: VariableVertexId,
+}
+
+impl<'a> IsPlanner<'a> {
+    pub(crate) fn from_constraint(
+        is: &'a Is<Variable>,
+        variable_index: &HashMap<Variable, VariableVertexId>,
+        _type_annotations: &TypeAnnotations,
+        _statistics: &Statistics,
+    ) -> Self {
+        let lhs = is.lhs().as_variable().unwrap();
+        let rhs = is.rhs().as_variable().unwrap();
+        Self { is, lhs: variable_index[&lhs], rhs: variable_index[&rhs] }
+    }
+
+    fn is_valid(&self, _index: VertexId, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+        ordered.contains(&VertexId::Variable(self.lhs)) || ordered.contains(&VertexId::Variable(self.rhs))
+    }
+
+    pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
+        [self.lhs, self.rhs].into_iter()
+    }
+
+    pub(super) fn is(&self) -> &Is<Variable> {
+        self.is
+    }
+}
+
+impl Costed for IsPlanner<'_> {
+    fn cost(&self, _: &[VertexId], _: &Graph<'_>) -> ElementCost {
+        ElementCost::FREE
     }
 }
 

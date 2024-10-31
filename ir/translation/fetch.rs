@@ -276,9 +276,12 @@ fn translate_inline_expression_single(
     );
     let mut builder = Block::builder(builder_context);
     let assign_var = add_expression(function_index, &mut builder, expression)?;
-    let block = TranslatedStage::Match { block: builder.finish() };
+    let block = builder
+        .finish()
+        .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: Box::new(err) })?;
+    let match_stage = TranslatedStage::Match { block };
     let return_ = ReturnOperation::Single(SingleSelector::First, vec![assign_var]);
-    let body = FunctionBody::new(vec![block], return_);
+    let body = FunctionBody::new(vec![match_stage], return_);
     let args = find_function_body_arguments(context, &body);
     Ok(FetchSome::SingleFunction(create_anonymous_function(local_context, args, body)))
 }
@@ -324,7 +327,10 @@ fn translate_inline_user_function_call(
         .add_function_binding(assign_vars.clone(), &signature, arg_vars, function_name)
         .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: Box::new(err) })?;
 
-    let stage = TranslatedStage::Match { block: builder.finish() };
+    let block = builder
+        .finish()
+        .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: Box::new(err) })?;
+    let stage = TranslatedStage::Match { block };
     if signature.return_is_stream {
         let return_ = ReturnOperation::Stream(assign_vars);
         let body = FunctionBody::new(vec![stage], return_);

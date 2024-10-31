@@ -229,7 +229,8 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
             &typeql_match,
         )
         .unwrap()
-        .finish();
+        .finish()
+        .unwrap();
         let variable_registry = &translation_context.variable_registry;
         let previous_stage_variable_annotations = &BTreeMap::new();
         let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();

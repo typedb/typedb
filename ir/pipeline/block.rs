@@ -75,10 +75,10 @@ impl<'reg> BlockBuilder<'reg> {
         Self { conjunction: Conjunction::new(ScopeId::ROOT), context }
     }
 
-    pub fn finish(self) -> Block {
-        let Self { conjunction, context: block_context_builder } = self;
-        let BlockBuilderContext { block_context, .. } = block_context_builder;
-        Block { conjunction, block_context }
+    pub fn finish(self) -> Result<Block, RepresentationError> {
+        let Self { conjunction, context: BlockBuilderContext { block_context, variable_registry, .. } } = self;
+        validate_conjunction(&conjunction, variable_registry)?;
+        Ok(Block { conjunction, block_context })
     }
 
     pub fn conjunction_mut(&mut self) -> ConjunctionBuilder<'_, 'reg> {
@@ -87,6 +87,21 @@ impl<'reg> BlockBuilder<'reg> {
 
     pub fn context_mut(&mut self) -> &mut BlockBuilderContext<'reg> {
         &mut self.context
+    }
+}
+
+fn validate_conjunction(
+    conjunction: &Conjunction,
+    variable_registry: &VariableRegistry,
+) -> Result<(), RepresentationError> {
+    let unbound = conjunction
+        .referenced_variables()
+        .find(|&variable| variable_registry.get_variable_category(variable).is_none());
+    match unbound {
+        Some(variable) => Err(RepresentationError::UnboundVariable {
+            variable: variable_registry.get_variable_name(variable).cloned().unwrap_or(String::new()),
+        }),
+        None => Ok(()),
     }
 }
 

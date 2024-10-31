@@ -11,9 +11,9 @@ use std::{
     ops::Deref,
 };
 
-use answer::Type;
+use answer::{variable::Variable, Type};
 use ir::pattern::{
-    constraint::{Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, IsaKind, SubKind},
+    constraint::{Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Is, IsaKind, SubKind},
     IrID, ParameterID, Vertex,
 };
 use itertools::Itertools;
@@ -98,6 +98,8 @@ impl VariableModes {
 
 #[derive(Debug, Clone)]
 pub enum ConstraintInstruction<ID> {
+    Is(IsInstruction<ID>),
+
     TypeList(type_::TypeListInstruction<ID>),
 
     // sub -> super
@@ -159,6 +161,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub fn ids_foreach(&self, mut apply: impl FnMut(ID)) {
         match self {
+            Self::Is(IsInstruction { is, .. }) => is.ids_foreach(|var, _| apply(var)),
             &Self::TypeList(type_::TypeListInstruction { type_var, .. }) => apply(type_var),
             Self::Sub(type_::SubInstruction { sub, .. })
             | Self::SubReverse(type_::SubReverseInstruction { sub, .. }) => sub.ids_foreach(|var, _| apply(var)),
@@ -192,6 +195,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
     pub(crate) fn input_variables_foreach(&self, apply: impl FnMut(ID)) {
         match self {
             Self::TypeList(_) => (),
+            | Self::Is(IsInstruction { inputs, .. })
             | Self::Sub(type_::SubInstruction { inputs, .. })
             | Self::SubReverse(type_::SubReverseInstruction { inputs, .. })
             | Self::Owns(type_::OwnsInstruction { inputs, .. })
@@ -217,6 +221,11 @@ impl<ID: IrID> ConstraintInstruction<ID> {
     pub(crate) fn new_variables_foreach(&self, mut apply: impl FnMut(ID)) {
         match self {
             &Self::TypeList(type_::TypeListInstruction { type_var, .. }) => apply(type_var),
+            Self::Is(IsInstruction { is, inputs, .. }) => is.ids_foreach(|var, _| {
+                if !inputs.contains(var) {
+                    apply(var)
+                }
+            }),
             Self::Sub(type_::SubInstruction { sub, inputs, .. })
             | Self::SubReverse(type_::SubReverseInstruction { sub, inputs, .. }) => sub.ids_foreach(|var, _| {
                 if !inputs.contains(var) {
@@ -276,6 +285,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
         match self {
+            Self::Is(inner) => inner.add_check(check),
             Self::TypeList(inner) => inner.add_check(check),
             Self::Sub(inner) => inner.add_check(check),
             Self::SubReverse(inner) => inner.add_check(check),
@@ -299,6 +309,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> ConstraintInstruction<T> {
         match self {
+            Self::Is(inner) => ConstraintInstruction::Is(inner.map(mapping)),
             Self::TypeList(inner) => ConstraintInstruction::TypeList(inner.map(mapping)),
             Self::Sub(inner) => ConstraintInstruction::Sub(inner.map(mapping)),
             Self::SubReverse(inner) => ConstraintInstruction::SubReverse(inner.map(mapping)),
@@ -324,6 +335,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 impl<ID: IrID + Copy> InstructionAPI<ID> for ConstraintInstruction<ID> {
     fn constraint(&self) -> Constraint<ID> {
         match self {
+            Self::Is(IsInstruction { is, .. }) => is.clone().into(),
             Self::TypeList(_) => todo!(), // TODO underlying constraint?
             Self::Sub(type_::SubInstruction { sub, .. })
             | Self::SubReverse(type_::SubReverseInstruction { sub, .. }) => sub.clone().into(),
@@ -342,6 +354,36 @@ impl<ID: IrID + Copy> InstructionAPI<ID> for ConstraintInstruction<ID> {
             Self::FunctionCallBinding(call) => call.clone().into(),
             Self::ComparisonCheck(cmp) => cmp.clone().into(),
             Self::ExpressionBinding(binding) => binding.clone().into(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct IsInstruction<ID> {
+    pub is: Is<ID>,
+    pub inputs: Inputs<ID>,
+    pub checks: Vec<CheckInstruction<ID>>,
+}
+
+impl IsInstruction<Variable> {
+    pub(crate) fn new(is: Is<Variable>, inputs: Inputs<Variable>) -> Self {
+        Self { is, inputs, checks: Vec::new() }
+    }
+}
+
+impl<ID> IsInstruction<ID> {
+    pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
+        self.checks.push(check)
+    }
+}
+
+impl<ID: IrID> IsInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> IsInstruction<T> {
+        let Self { is, inputs, checks } = self;
+        IsInstruction {
+            is: is.map(mapping),
+            inputs: inputs.map(mapping),
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }
     }
 }
@@ -442,6 +484,7 @@ pub enum CheckInstruction<ID> {
     Has { owner: CheckVertex<ID>, attribute: CheckVertex<ID> },
     Links { relation: CheckVertex<ID>, player: CheckVertex<ID>, role: CheckVertex<ID> },
 
+    Is { lhs: ID, rhs: ID },
     Comparison { lhs: CheckVertex<ID>, rhs: CheckVertex<ID>, comparator: Comparator },
 }
 
@@ -474,6 +517,7 @@ impl<ID: IrID> CheckInstruction<ID> {
                 player: player.map(mapping),
                 role: role.map(mapping),
             },
+            Self::Is { lhs, rhs } => CheckInstruction::Is { lhs: mapping[&lhs], rhs: mapping[&rhs] },
             Self::Comparison { lhs, rhs, comparator } => {
                 CheckInstruction::Comparison { lhs: lhs.map(mapping), rhs: rhs.map(mapping), comparator }
             }

@@ -220,7 +220,7 @@ pub mod tests {
     fn parse_query_get_match(context: &mut TranslationContext, query_str: &str) -> Result<Block, RepresentationError> {
         let mut query = typeql::parse_query(query_str).unwrap().into_pipeline();
         let match_ = query.stages.remove(0).into_match();
-        translate_match(context, &HashMapFunctionSignatureIndex::empty(), &match_).map(|builder| builder.finish())
+        translate_match(context, &HashMapFunctionSignatureIndex::empty(), &match_).and_then(|builder| builder.finish())
     }
 
     #[test]

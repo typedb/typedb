@@ -25,7 +25,7 @@ pub fn translate_insert(
     for statement in &insert.statements {
         add_statement(&function_index, &mut builder.conjunction_mut(), statement)?;
     }
-    Ok(builder.finish())
+    builder.finish()
 }
 
 pub fn translate_delete(
@@ -53,5 +53,5 @@ pub fn translate_delete(
             }
         }
     }
-    Ok((builder.finish(), deleted_concepts))
+    Ok((builder.finish()?, deleted_concepts))
 }

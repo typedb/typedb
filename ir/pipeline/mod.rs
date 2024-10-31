@@ -191,8 +191,8 @@ impl VariableRegistry {
         &self.variable_names
     }
 
-    pub fn get_variable_name(&self, variable: &Variable) -> Option<&String> {
-        self.variable_names.get(variable)
+    pub fn get_variable_name(&self, variable: Variable) -> Option<&String> {
+        self.variable_names.get(&variable)
     }
 
     pub fn get_variable_category(&self, variable: Variable) -> Option<VariableCategory> {

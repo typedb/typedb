@@ -35,9 +35,10 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
-        has_reverse_executor::HasReverseExecutor, isa_executor::IsaExecutor, isa_reverse_executor::IsaReverseExecutor,
-        iterator::TupleIterator, links_executor::LinksExecutor, links_reverse_executor::LinksReverseExecutor,
-        owns_executor::OwnsExecutor, owns_reverse_executor::OwnsReverseExecutor, plays_executor::PlaysExecutor,
+        has_reverse_executor::HasReverseExecutor, is_executor::IsExecutor, isa_executor::IsaExecutor,
+        isa_reverse_executor::IsaReverseExecutor, iterator::TupleIterator, links_executor::LinksExecutor,
+        links_reverse_executor::LinksReverseExecutor, owns_executor::OwnsExecutor,
+        owns_reverse_executor::OwnsReverseExecutor, plays_executor::PlaysExecutor,
         plays_reverse_executor::PlaysReverseExecutor, relates_executor::RelatesExecutor,
         relates_reverse_executor::RelatesReverseExecutor, sub_executor::SubExecutor,
         sub_reverse_executor::SubReverseExecutor, type_list_executor::TypeListExecutor,
@@ -49,6 +50,7 @@ use crate::{
 mod function_call_binding_executor;
 mod has_executor;
 mod has_reverse_executor;
+mod is_executor;
 mod isa_executor;
 mod isa_reverse_executor;
 pub(crate) mod iterator;
@@ -66,6 +68,7 @@ pub(crate) mod tuple;
 mod type_list_executor;
 
 pub(crate) enum InstructionExecutor {
+    Is(IsExecutor),
     TypeList(TypeListExecutor),
 
     Sub(SubExecutor),
@@ -102,6 +105,7 @@ impl InstructionExecutor {
         sort_by: ExecutorVariable,
     ) -> Result<Self, ConceptReadError> {
         match instruction {
+            ConstraintInstruction::Is(is) => Ok(Self::Is(IsExecutor::new(is, variable_modes, sort_by))),
             ConstraintInstruction::TypeList(type_) => {
                 Ok(Self::TypeList(TypeListExecutor::new(type_, variable_modes, sort_by)))
             }
@@ -159,6 +163,7 @@ impl InstructionExecutor {
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
         match self {
+            Self::Is(executor) => executor.get_iterator(context, row),
             Self::TypeList(executor) => executor.get_iterator(context, row),
             Self::Sub(executor) => executor.get_iterator(context, row),
             Self::SubReverse(executor) => executor.get_iterator(context, row),
@@ -180,6 +185,7 @@ impl InstructionExecutor {
 
     pub(crate) const fn name(&self) -> &'static str {
         match self {
+            InstructionExecutor::Is(_) => "is",
             InstructionExecutor::Isa(_) => "isa",
             InstructionExecutor::IsaReverse(_) => "isa_reverse",
             InstructionExecutor::Has(_) => "has",
@@ -593,6 +599,27 @@ impl<T: Hkt> Checker<T> {
                     }));
                 }
 
+                &CheckInstruction::Is { lhs, rhs } => {
+                    let maybe_lhs_extractor = self.extractors.get(&lhs);
+                    let lhs: BoxExtractor<T> = match maybe_lhs_extractor {
+                        Some(&lhs) => Box::new(lhs),
+                        None => {
+                            let ExecutorVariable::RowPosition(pos) = lhs else { unreachable!() };
+                            let value = row.get(pos).as_reference().into_owned();
+                            Box::new(move |_| value.clone())
+                        }
+                    };
+                    let maybe_rhs_extractor = self.extractors.get(&rhs);
+                    let rhs: BoxExtractor<T> = match maybe_rhs_extractor {
+                        Some(&rhs) => Box::new(rhs),
+                        None => {
+                            let ExecutorVariable::RowPosition(pos) = rhs else { unreachable!() };
+                            let value = row.get(pos).as_reference().into_owned();
+                            Box::new(move |_| value.clone())
+                        }
+                    };
+                    filters.push(Box::new(move |value| Ok(lhs(value) == rhs(value))));
+                }
                 CheckInstruction::Comparison { lhs, rhs, comparator } => {
                     let maybe_lhs_extractor = lhs.as_variable().and_then(|var| self.extractors.get(&var));
                     let lhs: BoxExtractor<T> = match maybe_lhs_extractor {

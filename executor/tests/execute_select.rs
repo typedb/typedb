@@ -163,7 +163,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type.into()).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let entry_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
@@ -263,7 +263,7 @@ fn unselected_named_vars_counted() {
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type.into()).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let entry_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
@@ -375,7 +375,7 @@ fn cartesian_named_counted_checked() {
     conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_email_type, EMAIL_LABEL.clone()).unwrap();
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let entry_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();

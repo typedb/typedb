@@ -110,7 +110,7 @@ pub mod tests {
         let type_player_1 = Type::Relation(RelationType::build_from_type_id(TypeID::build(2)));
 
         let mut translation_context = TranslationContext::new();
-        let dummy = Block::builder(translation_context.new_block_builder_context()).finish();
+        let dummy = Block::builder(translation_context.new_block_builder_context()).finish().unwrap();
         let constraint1 = Constraint::Links(Links::new(var_relation, var_player, var_role_type));
         let constraint2 = Constraint::Links(Links::new(var_relation, var_player, var_role_type));
         let nested1 = TypeInferenceGraph {
@@ -218,7 +218,7 @@ pub mod tests {
         assert_eq!(expected_annotations.vertex_annotations(), type_annotations.vertex_annotations());
         assert_eq!(expected_annotations.constraint_annotations(), type_annotations.constraint_annotations());
     }
-    //
+
     #[test]
     fn test_functions() {
         let (_tmp_dir, storage) = setup_storage();
@@ -228,7 +228,7 @@ pub mod tests {
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
         let object_types = [type_animal.clone(), type_cat.clone(), type_dog.clone(), type_fears.clone()];
 
-        let (with_no_cache, with_local_cache, with_schema_cache) = [
+        let (with_no_cache, with_local_cache, _with_schema_cache) = [
             FunctionID::Preamble(0),
             FunctionID::Preamble(0),
             FunctionID::Schema(DefinitionKey::build(Prefix::DefinitionFunction, DefinitionID::build(0))),
@@ -244,7 +244,7 @@ pub mod tests {
             f_conjunction.constraints_mut().add_label(f_var_animal_type, LABEL_CAT.clone()).unwrap();
             f_conjunction.constraints_mut().add_isa(IsaKind::Subtype, f_var_animal, f_var_animal_type.into()).unwrap();
             f_conjunction.constraints_mut().add_has(f_var_animal, f_var_name).unwrap();
-            let function_block = builder.finish();
+            let function_block = builder.finish().unwrap();
             let f_ir = Function::new(
                 "fn_test",
                 function_context,
@@ -271,7 +271,7 @@ pub mod tests {
                 .constraints_mut()
                 .add_function_binding(vec![var_animal], &callee_signature, vec![], "test_fn")
                 .unwrap();
-            let entry = builder.finish();
+            let entry = builder.finish().unwrap();
             (entry, entry_context, f_ir)
         })
         .collect_tuple()
@@ -450,7 +450,7 @@ pub mod tests {
             conjunction.constraints_mut().add_label(var_name_type, LABEL_NAME.clone()).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
@@ -519,7 +519,7 @@ pub mod tests {
             conjunction.constraints_mut().add_label(var_name_type, LABEL_CATNAME.clone()).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
 
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
@@ -588,7 +588,7 @@ pub mod tests {
             conjunction.constraints_mut().add_label(var_name_type, LABEL_DOGNAME.clone()).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
             let err = compute_type_inference_graph(
                 &snapshot,
                 &block,
@@ -623,7 +623,7 @@ pub mod tests {
             conjunction.constraints_mut().add_label(var_name_type, LABEL_NAME.clone()).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
@@ -725,7 +725,7 @@ pub mod tests {
 
         let (b1_var_animal_type, b2_var_animal_type) = (b1_var_animal_type, b2_var_animal_type);
 
-        let block = builder.finish();
+        let block = builder.finish().unwrap();
 
         let snapshot = storage.clone().open_snapshot_write();
         let graph = compute_type_inference_graph(
@@ -845,7 +845,7 @@ pub mod tests {
 
         conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
-        let block = builder.finish();
+        let block = builder.finish().unwrap();
         let conjunction = block.conjunction();
         let constraints = conjunction.constraints();
         let graph = compute_type_inference_graph(
@@ -938,7 +938,7 @@ pub mod tests {
             .unwrap();
         conjunction.constraints_mut().add_label(var_role_is_feared_type, LABEL_IS_FEARED.clone()).unwrap();
 
-        let block = builder.finish();
+        let block = builder.finish().unwrap();
 
         let conjunction = block.conjunction();
 
@@ -1053,7 +1053,7 @@ pub mod tests {
             conjunction.constraints_mut().add_isa(IsaKind::Exact, var_name, var_owned_type.into()).unwrap();
             conjunction.constraints_mut().add_owns(var_animal_type.into(), var_owned_type.into()).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
@@ -1121,7 +1121,7 @@ pub mod tests {
             conjunction.constraints_mut().add_label(var_name_type, LABEL_CATNAME.clone()).unwrap();
             conjunction.constraints_mut().add_owns(var_owner_type.into(), var_name_type.into()).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
 
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
@@ -1189,7 +1189,7 @@ pub mod tests {
             conjunction.constraints_mut().add_label(var_name_type, LABEL_DOGNAME.clone()).unwrap();
             conjunction.constraints_mut().add_owns(var_animal_type.into(), var_name_type.into()).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
             // We manually compute the graph so we can confirm it decays to empty annotations everywhere
             let mut graph = TypeGraphSeedingContext::new(
@@ -1243,7 +1243,7 @@ pub mod tests {
             conjunction.constraints_mut().add_isa(IsaKind::Exact, var_name, var_name_type.into()).unwrap();
             conjunction.constraints_mut().add_owns(var_animal_type.into(), var_name_type.into()).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
@@ -1332,7 +1332,7 @@ pub mod tests {
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_NAME)).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
@@ -1396,7 +1396,7 @@ pub mod tests {
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_CATNAME)).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
 
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
@@ -1458,7 +1458,7 @@ pub mod tests {
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_DOGNAME)).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
             let err = compute_type_inference_graph(
                 &snapshot,
                 &block,
@@ -1487,7 +1487,7 @@ pub mod tests {
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_NAME)).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,

@@ -16,8 +16,8 @@ use ir::{
     pattern::{
         conjunction::Conjunction,
         constraint::{
-            Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Isa, Kind, Label, Links,
-            Owns, Plays, Relates, RoleName, Sub,
+            Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Is, Isa, Kind, Label,
+            Links, Owns, Plays, Relates, RoleName, Sub,
         },
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
@@ -39,7 +39,7 @@ use crate::{
                 OwnsInstruction, OwnsReverseInstruction, PlaysInstruction, PlaysReverseInstruction, RelatesInstruction,
                 RelatesReverseInstruction, SubInstruction, SubReverseInstruction,
             },
-            CheckInstruction, CheckVertex, ConstraintInstruction, Inputs,
+            CheckInstruction, CheckVertex, ConstraintInstruction, Inputs, IsInstruction,
         },
         planner::{
             vertex::{
@@ -49,7 +49,7 @@ use crate::{
                 },
                 variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
                 ComparisonPlanner, Costed, Direction, DisjunctionPlanner, ElementCost, ExpressionPlanner,
-                FunctionCallPlanner, Input, NegationPlanner, PlannerVertex,
+                FunctionCallPlanner, Input, IsPlanner, NegationPlanner, PlannerVertex,
             },
             DisjunctionBuilder, ExpressionBuilder, FunctionCallBuilder, IntersectionBuilder, MatchExecutableBuilder,
             NegationBuilder, StepBuilder, StepInstructionsBuilder,
@@ -354,6 +354,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 Constraint::ExpressionBinding(expression) => self.register_expression_binding(expression, expressions),
                 Constraint::FunctionCallBinding(call) => self.register_function_call_binding(call),
 
+                Constraint::Is(is) => self.register_is(is),
                 Constraint::Comparison(comparison) => self.register_comparison(comparison),
             }
         }
@@ -450,6 +451,19 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             arguments,
             return_vars,
             element_cost,
+        ));
+    }
+
+    fn register_is(&mut self, is: &'a Is<Variable>) {
+        let lhs = self.graph.variable_index[&is.lhs().as_variable().unwrap()];
+        let rhs = self.graph.variable_index[&is.rhs().as_variable().unwrap()];
+        self.graph.elements.get_mut(&VertexId::Variable(lhs)).unwrap().as_variable_mut().unwrap().add_is(rhs);
+        self.graph.elements.get_mut(&VertexId::Variable(rhs)).unwrap().as_variable_mut().unwrap().add_is(lhs);
+        self.graph.push_is(IsPlanner::from_constraint(
+            is,
+            &self.graph.variable_index,
+            self.type_annotations,
+            self.statistics,
         ));
     }
 
@@ -720,6 +734,16 @@ impl ConjunctionPlan<'_> {
             match &self.graph.elements()[&VertexId::Pattern(producer)] {
                 PlannerVertex::Variable(_) => unreachable!("encountered variable @ pattern id {producer:?}"),
                 PlannerVertex::Negation(_) => unreachable!("encountered negation registered as producing variable"),
+                PlannerVertex::Is(is) => {
+                    let input = if var == is.lhs {
+                        self.graph.index_to_variable[&is.rhs]
+                    } else {
+                        self.graph.index_to_variable[&is.lhs]
+                    };
+                    let instruction =
+                        ConstraintInstruction::Is(IsInstruction::new(is.is().clone(), Inputs::Single([input])));
+                    match_builder.push_instruction(variable, instruction);
+                }
                 PlannerVertex::Comparison(_) => unreachable!("encountered comparison registered as producing variable"),
                 PlannerVertex::Constraint(constraint) => {
                     let inputs =
@@ -815,6 +839,12 @@ impl ConjunctionPlan<'_> {
                     &variable_positions,
                     StepInstructionsBuilder::Negation(NegationBuilder::new(negation)).into(),
                 );
+            }
+            PlannerVertex::Is(is) => {
+                let lhs = is.is().lhs().as_variable().unwrap();
+                let rhs = is.is().rhs().as_variable().unwrap();
+                let check = CheckInstruction::Is { lhs, rhs }.map(match_builder.position_mapping());
+                match_builder.push_check(&[lhs, rhs], check)
             }
             PlannerVertex::Comparison(comparison) => {
                 let comparison = comparison.comparison();
@@ -1185,6 +1215,15 @@ impl<'a> Graph<'a> {
             self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
         }
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Constraint(constraint));
+    }
+
+    fn push_is(&mut self, is: IsPlanner<'a>) {
+        let pattern_index = self.next_pattern_index();
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(is.variables());
+        for var in is.variables() {
+            self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
+        }
+        self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Is(is));
     }
 
     fn push_comparison(&mut self, comparison: ComparisonPlanner<'a>) {

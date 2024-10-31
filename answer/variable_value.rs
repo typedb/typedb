@@ -11,6 +11,7 @@ use std::{
 };
 
 use encoding::value::value::Value;
+use lending_iterator::higher_order::Hkt;
 
 use crate::{Thing, Type};
 
@@ -101,7 +102,11 @@ impl<'a> VariableValue<'a> {
     }
 }
 
-impl<'a> PartialOrd for VariableValue<'a> {
+impl Hkt for VariableValue<'static> {
+    type HktSelf<'a> = VariableValue<'a>;
+}
+
+impl PartialOrd for VariableValue<'_> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {
             (Self::Type(self_type), Self::Type(other_type)) => self_type.partial_cmp(other_type),
@@ -112,7 +117,7 @@ impl<'a> PartialOrd for VariableValue<'a> {
     }
 }
 
-impl<'a> Display for VariableValue<'a> {
+impl Display for VariableValue<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             VariableValue::Empty => write!(f, "[None]"),

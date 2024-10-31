@@ -263,7 +263,8 @@ pub mod tests {
             typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.first().unwrap()
         {
             let mut context = TranslationContext::new();
-            let block = translate_match(&mut context, &HashMapFunctionSignatureIndex::empty(), match_)?.finish();
+            let block =
+                translate_match(&mut context, &HashMapFunctionSignatureIndex::empty(), match_)?.finish().unwrap();
             let x = block.conjunction().constraints()[0].as_expression_binding().unwrap().expression().get_root();
             match *x {
                 Expression::Constant(id) => Ok(context.parameters.value_unchecked(id).to_owned()),
