@@ -33,7 +33,6 @@ pub(super) struct MapRowBatchToRowForNested {
 
 pub(super) struct ExecuteNested {
     pub(super) index: ExecutorIndex,
-    pub(super) branch_index: BranchIndex,
     pub(super) mapper: NestedPatternResultMapper,
     pub(super) parameters_override: Option<Arc<ParameterRegistry>>,
     pub(super) input: MaybeOwnedRow<'static>,

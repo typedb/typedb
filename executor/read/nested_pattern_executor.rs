@@ -102,11 +102,11 @@ impl NestedPatternExecutor {
         Self::Limit { inner, limit }
     }
 
-    pub(crate) fn get_branch(&mut self, branch_index: BranchIndex) -> &mut PatternExecutor {
-        debug_assert!(branch_index.0 == 0 || matches!(self, NestedPatternExecutor::Disjunction { .. }));
+    // TODO: Deprecate
+    pub(crate) fn get_inner(&mut self) -> &mut PatternExecutor {
         match self {
-            NestedPatternExecutor::Disjunction(Disjunction { branches, .. }) => &mut branches[branch_index.0],
-            NestedPatternExecutor::Negation(Negation { inner }) => inner,
+            NestedPatternExecutor::Disjunction(Disjunction { branches, .. }) => todo!("deprecate this method"),
+            NestedPatternExecutor::Negation(Negation { inner }) => todo!("deprecate this method"),
             NestedPatternExecutor::InlinedFunction(InlinedFunction { inner, .. }) => inner,
             NestedPatternExecutor::Offset { inner, .. } => inner,
             NestedPatternExecutor::Limit { inner, .. } => inner,

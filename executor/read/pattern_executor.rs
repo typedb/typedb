@@ -125,7 +125,8 @@ impl PatternExecutor {
                     }
                 }
                 ControlInstruction::ExecuteDisjunction(ExecuteDisjunction { index, branch_index, input }) => {
-                    let branch = &mut executors[index.0].unwrap_branch().get_branch(branch_index);
+                    let NestedPatternExecutor::Disjunction(disjunction) = &mut executors[index.0].unwrap_nested() else { unreachable!(); };
+                    let branch = &mut disjunction.branches[branch_index.0];
                     let suspend_point_len_before = suspend_point_accumulator.len();
                     let batch_opt = branch.batch_continue(
                         &context,
@@ -137,22 +138,19 @@ impl PatternExecutor {
                         suspend_point_accumulator.push(SuspendPoint::new_nested(index, branch_index, input.clone()))
                     }
                     if let Some(unmapped) = batch_opt {
-                        let NestedPatternExecutor::Disjunction(disj) = &mut executors[index.0].unwrap_branch() else { unreachable!(); };
-
-                        let mapped = disj.map_output(unmapped);
+                        let mapped = disjunction.map_output(unmapped);
                         control_stack.push(ControlInstruction::ExecuteDisjunction(ExecuteDisjunction { index, branch_index, input }));
                         self.prepare_next_instruction_and_push_to_stack(context, index.next(), mapped)?;
                     }
                 }
                 ControlInstruction::ExecuteNested(ExecuteNested {
                     index,
-                    branch_index,
                     mut mapper,
                     input,
                     parameters_override,
                 }) => {
                     // TODO: This bit desperately needs a cleanup.
-                    let branch = &mut executors[index.0].unwrap_branch().get_branch(branch_index);
+                    let inner = &mut executors[index.0].unwrap_nested().get_inner();
                     let suspend_point_len_before = suspend_point_accumulator.len();
                     let nested_context = if let Some(parameters) = &parameters_override {
                         ExecutionContext::new(
@@ -167,26 +165,25 @@ impl PatternExecutor {
                             context.parameters.clone(),
                         )
                     };
-                    let unmapped = branch.batch_continue(
+                    let unmapped = inner.batch_continue(
                         &nested_context,
                         interrupt,
                         tabled_functions,
                         suspend_point_accumulator,
                     )?;
                     if suspend_point_accumulator.len() != suspend_point_len_before {
-                        suspend_point_accumulator.push(SuspendPoint::new_nested(index, branch_index, input.clone()))
+                        suspend_point_accumulator.push(SuspendPoint::new_nested(index, BranchIndex(0), input.clone()))
                     }
                     let (must_retry, mapped) = mapper.map_output(unmapped).into_parts();
                     if must_retry {
                         control_stack.push(ControlInstruction::ExecuteNested(ExecuteNested {
                             index,
-                            branch_index,
                             mapper,
                             input,
                             parameters_override,
                         }));
                     } else {
-                        branch.reset();
+                        inner.reset();
                     }
                     if let Some(batch) = mapped {
                         self.prepare_next_instruction_and_push_to_stack(context, index.next(), batch)?;
@@ -324,7 +321,6 @@ impl PatternExecutor {
                     inner.prepare(FixedBatch::from(mapped_input));
                     self.control_stack.push(ControlInstruction::ExecuteNested(ExecuteNested {
                         index,
-                        branch_index: BranchIndex(0),
                         mapper,
                         input: input.clone().into_owned(),
                         parameters_override: Some(parameter_registry.clone()),
@@ -336,7 +332,6 @@ impl PatternExecutor {
                     inner.prepare(FixedBatch::from(mapped_input));
                     self.control_stack.push(ControlInstruction::ExecuteNested(ExecuteNested {
                         index,
-                        branch_index: BranchIndex(0),
                         mapper,
                         input: input.clone().into_owned(),
                         parameters_override: None,
@@ -348,7 +343,6 @@ impl PatternExecutor {
                     inner.prepare(FixedBatch::from(mapped_input));
                     self.control_stack.push(ControlInstruction::ExecuteNested(ExecuteNested {
                         index,
-                        branch_index: BranchIndex(0),
                         mapper,
                         input: input.clone().into_owned(),
                         parameters_override: None,

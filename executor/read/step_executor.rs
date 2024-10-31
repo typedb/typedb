@@ -44,7 +44,7 @@ impl StepExecutors {
         }
     }
 
-    pub(crate) fn unwrap_branch(&mut self) -> &mut NestedPatternExecutor {
+    pub(crate) fn unwrap_nested(&mut self) -> &mut NestedPatternExecutor {
         match self {
             StepExecutors::Nested(step) => step,
             _ => panic!("bad unwrap"),
