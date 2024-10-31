@@ -31,10 +31,9 @@ pub(super) struct MapRowBatchToRowForNested {
     pub(super) iterator: FixedBatchRowIterator,
 }
 
-pub(super) struct ExecuteNested {
+pub(super) struct ExecuteStreamModifier {
     pub(super) index: ExecutorIndex,
     pub(super) mapper: NestedPatternResultMapper,
-    pub(super) parameters_override: Option<Arc<ParameterRegistry>>,
     pub(super) input: MaybeOwnedRow<'static>,
 }
 
@@ -85,7 +84,7 @@ pub(super) enum ControlInstruction {
     MapRowBatchToRowForNested(MapRowBatchToRowForNested),
     ExecuteNegation(ExecuteNegation),
     ExecuteDisjunction(ExecuteDisjunction),
-    ExecuteNested(ExecuteNested),
+    ExecuteStreamModifier(ExecuteStreamModifier),
     ExecuteInlinedFunction(ExecuteInlinedFunction),
 
     ExecuteTabledCall(TabledCall), // TODO: Push into nested?

@@ -139,10 +139,10 @@ pub(super) enum NestedPatternResultMapper {
 }
 
 impl NestedPatternResultMapper {
-    pub(super) fn map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
+    pub(super) fn prepare(&mut self) {
         match self {
-            Self::Offset(mapper) => mapper.map_input(input),
-            Self::Limit(mapper) => mapper.map_input(input),
+            Self::Offset(mapper) => mapper.prepare(),
+            Self::Limit(mapper) => mapper.prepare(),
         }
     }
 
@@ -154,8 +154,8 @@ impl NestedPatternResultMapper {
     }
 }
 
-pub(super) trait NestedPatternResultMapperTrait {
-    fn map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static>;
+pub(super) trait StreamModifierResultMapperTrait {
+    fn prepare(&mut self);
     fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> NestedPatternControl;
 }
 
@@ -185,10 +185,9 @@ impl OffsetMapper {
     }
 }
 
-impl NestedPatternResultMapperTrait for OffsetMapper {
-    fn map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
+impl StreamModifierResultMapperTrait for OffsetMapper {
+    fn prepare(&mut self) {
         self.current = 0;
-        input.clone().into_owned()
     }
 
     fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> NestedPatternControl {
@@ -227,10 +226,9 @@ impl LimitMapper {
     }
 }
 
-impl NestedPatternResultMapperTrait for LimitMapper {
-    fn map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
+impl StreamModifierResultMapperTrait for LimitMapper {
+    fn prepare(&mut self) {
         self.current = 0;
-        input.clone().into_owned()
     }
 
     fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> NestedPatternControl {

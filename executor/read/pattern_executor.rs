@@ -17,7 +17,7 @@ use crate::{
     read::{
         control_instruction::{
             CollectingStage, ControlInstruction, ExecuteDisjunction, ExecuteImmediate, ExecuteInlinedFunction,
-            ExecuteNegation, ExecuteNested, MapRowBatchToRowForNested, PatternStart, ReshapeForReturn, StreamCollected,
+            ExecuteNegation, ExecuteStreamModifier, MapRowBatchToRowForNested, PatternStart, ReshapeForReturn, StreamCollected,
             TabledCall, Yield,
         },
         nested_pattern_executor::{
@@ -195,25 +195,12 @@ impl PatternExecutor {
                         self.prepare_next_instruction_and_push_to_stack(context, index.next(), mapped)?;
                     }
                 }
-                ControlInstruction::ExecuteNested(ExecuteNested { index, mut mapper, input, parameters_override }) => {
+                ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier { index, mut mapper, input }) => {
                     // TODO: This bit desperately needs a cleanup.
                     let inner = &mut executors[index.0].unwrap_nested().get_inner();
                     let suspend_point_len_before = suspend_point_accumulator.len();
-                    let nested_context = if let Some(parameters) = &parameters_override {
-                        ExecutionContext::new(
-                            context.snapshot.clone(),
-                            context.thing_manager.clone(),
-                            parameters.clone(),
-                        )
-                    } else {
-                        ExecutionContext::new(
-                            context.snapshot.clone(),
-                            context.thing_manager.clone(),
-                            context.parameters.clone(),
-                        )
-                    };
                     let unmapped = inner.batch_continue(
-                        &nested_context,
+                        &context,
                         interrupt,
                         tabled_functions,
                         suspend_point_accumulator,
@@ -223,11 +210,10 @@ impl PatternExecutor {
                     }
                     let (must_retry, mapped) = mapper.map_output(unmapped).into_parts();
                     if must_retry {
-                        control_stack.push(ControlInstruction::ExecuteNested(ExecuteNested {
+                        control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
                             index,
                             mapper,
                             input,
-                            parameters_override,
                         }));
                     } else {
                         inner.reset();
@@ -370,24 +356,22 @@ impl PatternExecutor {
                 }
                 NestedPatternExecutor::Offset { inner, offset } => {
                     let mut mapper = NestedPatternResultMapper::Offset(OffsetMapper::new(*offset));
-                    let mapped_input = mapper.map_input(&input);
-                    inner.prepare(FixedBatch::from(mapped_input));
-                    self.control_stack.push(ControlInstruction::ExecuteNested(ExecuteNested {
+                    mapper.prepare();
+                    inner.prepare(FixedBatch::from(input.as_reference()));
+                    self.control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
                         index,
                         mapper,
                         input: input.clone().into_owned(),
-                        parameters_override: None,
                     }));
                 }
                 NestedPatternExecutor::Limit { inner, limit } => {
                     let mut mapper = NestedPatternResultMapper::Limit(LimitMapper::new(*limit));
-                    let mapped_input = mapper.map_input(&input);
-                    inner.prepare(FixedBatch::from(mapped_input));
-                    self.control_stack.push(ControlInstruction::ExecuteNested(ExecuteNested {
+                    mapper.prepare();
+                    inner.prepare(FixedBatch::from(input.as_reference()));
+                    self.control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
                         index,
                         mapper,
                         input: input.clone().into_owned(),
-                        parameters_override: None,
                     }));
                 }
             }
