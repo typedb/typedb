@@ -38,6 +38,12 @@ pub(super) struct ExecuteNested {
     pub(super) input: MaybeOwnedRow<'static>,
 }
 
+pub(super) struct ExecuteInlinedFunction {
+    pub(super) index: ExecutorIndex,
+    pub(super) parameters_override: Arc<ParameterRegistry>, // TODO: Get this straight from the executor?
+    pub(super) input: MaybeOwnedRow<'static>,
+}
+
 pub(super) struct ExecuteNegation {
     pub(super) index: ExecutorIndex,
     pub(super) input: MaybeOwnedRow<'static>,
@@ -80,6 +86,7 @@ pub(super) enum ControlInstruction {
     ExecuteNegation(ExecuteNegation),
     ExecuteDisjunction(ExecuteDisjunction),
     ExecuteNested(ExecuteNested),
+    ExecuteInlinedFunction(ExecuteInlinedFunction),
 
     ExecuteTabledCall(TabledCall), // TODO: Push into nested?
 

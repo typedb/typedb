@@ -6,14 +6,13 @@
 
 use std::sync::Arc;
 
-use answer::variable_value::VariableValue;
 use compiler::{executable::match_::planner::match_executable::FunctionCallStep, VariablePosition};
 use ir::pipeline::ParameterRegistry;
 
 use crate::{
     batch::FixedBatch,
     read::{
-        pattern_executor::{BranchIndex, PatternExecutor},
+        pattern_executor::PatternExecutor,
         step_executor::StepExecutors,
     },
     row::MaybeOwnedRow,
@@ -28,9 +27,11 @@ pub(super) struct Disjunction {
 impl Disjunction {
     pub(crate) fn map_output(&self, unmapped: FixedBatch) -> FixedBatch {
         let mut uniform_batch = FixedBatch::new(self.output_width);
-        unmapped.into_iter().for_each(|row| uniform_batch.append(|mut output_row| {
-            output_row.copy_mapped(row, self.selected_variables.iter().map(|pos| (pos.clone(), pos.clone())));
-        }));
+        unmapped.into_iter().for_each(|row| {
+            uniform_batch.append(|mut output_row| {
+                output_row.copy_mapped(row, self.selected_variables.iter().map(|pos| (pos.clone(), pos.clone())));
+            })
+        });
         uniform_batch
     }
 }
@@ -47,19 +48,36 @@ pub(super) struct InlinedFunction {
     pub parameter_registry: Arc<ParameterRegistry>,
 }
 
+impl InlinedFunction {
+    pub(crate) fn map_output(&self, input: MaybeOwnedRow<'_>, batch: FixedBatch) -> FixedBatch {
+        let mut output_batch = FixedBatch::new(self.output_width);
+        for return_index in 0..batch.len() {
+            let returned_row = batch.get_row(return_index);
+            output_batch.append(|mut output_row| {
+                output_row.copy_mapped(
+                    input.as_reference(),
+                    (0..input.len()).map(|i| (VariablePosition::new(i as u32), VariablePosition::new(i as u32))),
+                );
+                output_row.copy_mapped(
+                    returned_row.as_reference(),
+                    self.return_mapping
+                        .iter()
+                        .enumerate()
+                        .map(|(src, dst)| (VariablePosition::new(src as u32), dst.clone())),
+                );
+            });
+        }
+        output_batch
+    }
+}
+
 // TODO: Move Offset & Limit out of here, make the mapper stateless
 pub(super) enum NestedPatternExecutor {
     Disjunction(Disjunction),
     Negation(Negation),
     InlinedFunction(InlinedFunction),
-    Offset {
-        inner: PatternExecutor,
-        offset: u64,
-    },
-    Limit {
-        inner: PatternExecutor,
-        limit: u64,
-    },
+    Offset { inner: PatternExecutor, offset: u64 },
+    Limit { inner: PatternExecutor, limit: u64 },
 }
 
 impl Into<StepExecutors> for NestedPatternExecutor {
@@ -105,9 +123,9 @@ impl NestedPatternExecutor {
     // TODO: Deprecate
     pub(crate) fn get_inner(&mut self) -> &mut PatternExecutor {
         match self {
-            NestedPatternExecutor::Disjunction(Disjunction { branches, .. }) => todo!("deprecate this method"),
-            NestedPatternExecutor::Negation(Negation { inner }) => todo!("deprecate this method"),
-            NestedPatternExecutor::InlinedFunction(InlinedFunction { inner, .. }) => inner,
+            NestedPatternExecutor::Disjunction(Disjunction { .. }) => todo!("deprecate this method"),
+            NestedPatternExecutor::Negation(Negation { .. }) => todo!("deprecate this method"),
+            NestedPatternExecutor::InlinedFunction(InlinedFunction { .. }) => todo!("deprecate this method"),
             NestedPatternExecutor::Offset { inner, .. } => inner,
             NestedPatternExecutor::Limit { inner, .. } => inner,
         }
@@ -116,7 +134,6 @@ impl NestedPatternExecutor {
 
 // Bad name because I want to refactor later
 pub(super) enum NestedPatternResultMapper {
-    InlinedFunction(InlinedFunctionMapper),
     Offset(OffsetMapper),
     Limit(LimitMapper),
 }
@@ -124,7 +141,6 @@ pub(super) enum NestedPatternResultMapper {
 impl NestedPatternResultMapper {
     pub(super) fn map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
         match self {
-            Self::InlinedFunction(mapper) => mapper.map_input(input),
             Self::Offset(mapper) => mapper.map_input(input),
             Self::Limit(mapper) => mapper.map_input(input),
         }
@@ -132,7 +148,6 @@ impl NestedPatternResultMapper {
 
     pub(super) fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> NestedPatternControl {
         match self {
-            Self::InlinedFunction(mapper) => mapper.map_output(subquery_result),
             Self::Offset(mapper) => mapper.map_output(subquery_result),
             Self::Limit(mapper) => mapper.map_output(subquery_result),
         }
@@ -154,59 +169,6 @@ impl NestedPatternControl {
         match self {
             NestedPatternControl::Retry(batch_opt) => (true, batch_opt),
             NestedPatternControl::Done(batch_opt) => (false, batch_opt),
-        }
-    }
-}
-
-pub(super) struct InlinedFunctionMapper {
-    input: MaybeOwnedRow<'static>,
-    arguments: Vec<VariablePosition>, // caller input -> callee input
-    assigned: Vec<VariablePosition>,  // callee return -> caller output
-    output_width: u32,                // This is for the caller.
-}
-
-impl InlinedFunctionMapper {
-    pub(crate) fn new(
-        input: MaybeOwnedRow<'static>,
-        arguments: Vec<VariablePosition>,
-        assigned: Vec<VariablePosition>,
-        output_width: u32,
-    ) -> Self {
-        Self { input, arguments, assigned, output_width }
-    }
-}
-
-impl NestedPatternResultMapperTrait for InlinedFunctionMapper {
-    fn map_input(&mut self, input: &MaybeOwnedRow<'_>) -> MaybeOwnedRow<'static> {
-        let args_owned: Vec<VariableValue<'static>> =
-            self.arguments.iter().map(|arg_pos| input.get(arg_pos.clone()).clone().into_owned()).collect();
-        MaybeOwnedRow::new_owned(args_owned, input.multiplicity())
-    }
-
-    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> NestedPatternControl {
-        match subquery_result {
-            None => NestedPatternControl::Done(None),
-            Some(returned_batch) => {
-                let mut output_batch = FixedBatch::new(self.output_width);
-                for return_index in 0..returned_batch.len() {
-                    let returned_row = returned_batch.get_row(return_index);
-                    output_batch.append(|mut output_row| {
-                        output_row.copy_mapped(
-                            self.input.as_reference(),
-                            (0..self.input.len())
-                                .map(|i| (VariablePosition::new(i as u32), VariablePosition::new(i as u32))),
-                        );
-                        output_row.copy_mapped(
-                            returned_row.as_reference(),
-                            self.assigned
-                                .iter()
-                                .enumerate()
-                                .map(|(src, dst)| (VariablePosition::new(src as u32), dst.clone())),
-                        );
-                    });
-                }
-                NestedPatternControl::Retry(Some(output_batch))
-            }
         }
     }
 }
