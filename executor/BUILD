@@ -20,7 +20,6 @@ rust_library(
         "//common/error",
         "//common/lending_iterator",
         "//common/logger",
-        "//common/macros",
         "//compiler",
         "//concept",
         "//encoding",
