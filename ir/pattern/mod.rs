@@ -5,10 +5,10 @@
  */
 
 use std::{collections::HashMap, fmt, hash::Hash};
-use typeql::token;
 
 use answer::variable::Variable;
 use encoding::value::label::Label;
+use typeql::token;
 
 pub mod conjunction;
 pub mod constraint;
@@ -145,14 +145,14 @@ impl fmt::Display for ParameterID {
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum ValueType {
-    Builtin(encoding::value::ValueType),
+    Builtin(encoding::value::value_type::ValueType),
     Struct(String),
 }
 
 impl ValueType {
-    pub fn as_builtin(&self) -> Option<encoding::value::ValueType> {
-        if let &Self::Builtin(v) = self {
-            Some(v)
+    pub fn as_builtin(&self) -> Option<encoding::value::value_type::ValueType> {
+        if let Self::Builtin(v) = self {
+            Some(v.clone())
         } else {
             None
         }

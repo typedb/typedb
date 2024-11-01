@@ -8,7 +8,7 @@ use std::{collections::HashMap, fmt, iter};
 
 use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
-use ir::pattern::constraint::{Has, Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, Sub, SubKind};
+use ir::pattern::constraint::{Has, Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, Sub, SubKind, Value};
 use itertools::Itertools;
 
 use crate::{
@@ -102,6 +102,7 @@ pub(crate) enum TypeListConstraint<'a> {
     Label(&'a Label<Variable>),
     RoleName(&'a RoleName<Variable>),
     Kind(&'a Kind<Variable>),
+    Value(&'a Value<Variable>),
 }
 
 impl<'a> TypeListConstraint<'a> {
@@ -110,6 +111,7 @@ impl<'a> TypeListConstraint<'a> {
             TypeListConstraint::Label(label) => label.type_(),
             TypeListConstraint::RoleName(role_name) => role_name.type_(),
             TypeListConstraint::Kind(kind) => kind.type_(),
+            TypeListConstraint::Value(value) => value.attribute_type(),
         }
         .as_variable()
         .unwrap()
@@ -184,6 +186,24 @@ impl<'a> TypeListPlanner<'a> {
         Self {
             constraint: TypeListConstraint::Kind(kind),
             var: variable_index[&kind.type_().as_variable().unwrap()],
+            types,
+        }
+    }
+
+    pub(crate) fn from_value_constraint(
+        value: &'a Value<Variable>,
+        variable_index: &HashMap<Variable, VariableVertexId>,
+        type_annotations: &TypeAnnotations,
+    ) -> Self {
+        let types = type_annotations
+            .vertex_annotations_of(value.attribute_type())
+            .into_iter()
+            .flat_map(|annos| annos.iter())
+            .cloned()
+            .collect();
+        Self {
+            constraint: TypeListConstraint::Value(value),
+            var: variable_index[&value.attribute_type().as_variable().unwrap()],
             types,
         }
     }

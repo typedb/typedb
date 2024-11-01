@@ -9,31 +9,28 @@ use encoding::value::label::Label;
 use typeql::{
     expression::{FunctionCall, FunctionName},
     statement::{
-        comparison::ComparisonStatement, thing::AttributeComparisonStatement, Assignment, AssignmentPattern,
-        InIterable, Is,
+        comparison::ComparisonStatement, thing::AttributeComparisonStatement, type_::ValueType as TypeQLValueType,
+        Assignment, AssignmentPattern, InIterable, Is,
     },
     token::Kind,
-    type_::NamedType,
+    type_::{BuiltinValueType, NamedType},
     ScopedLabel, TypeRef, TypeRefAny,
 };
-use typeql::statement::type_::ValueType as TypeQLValueType;
-use typeql::type_::BuiltinValueType;
 
 use crate::{
     pattern::{
         conjunction::ConjunctionBuilder,
         constraint::{Comparator, ConstraintsBuilder, IsaKind},
-        Vertex,
+        ValueType, Vertex,
     },
     pipeline::function_signature::FunctionSignatureIndex,
     translation::{
         expression::{add_typeql_expression, add_user_defined_function_call, build_expression},
         literal::translate_literal,
+        tokens::translate_value_type,
     },
     RepresentationError,
 };
-use crate::pattern::ValueType;
-use crate::translation::tokens::translate_value_type;
 
 pub(super) fn add_statement(
     function_index: &impl FunctionSignatureIndex,
@@ -147,7 +144,9 @@ fn add_type_statement(
                     )?;
                 }
             },
-            typeql::statement::type_::ConstraintBase::ValueType(value_type) => add_typeql_value(constraints, type_.clone(), value_type)?,
+            typeql::statement::type_::ConstraintBase::ValueType(value_type) => {
+                add_typeql_value(constraints, type_.clone(), value_type)?
+            }
             typeql::statement::type_::ConstraintBase::Owns(owns) => add_typeql_owns(constraints, type_.clone(), owns)?,
             typeql::statement::type_::ConstraintBase::Relates(relates) => {
                 add_typeql_relates(constraints, type_.clone(), relates)?

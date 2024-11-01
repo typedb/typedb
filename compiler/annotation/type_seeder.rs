@@ -22,7 +22,7 @@ use ir::{
         conjunction::Conjunction,
         constraint::{
             Comparison, Constraint, FunctionCallBinding, Has, Is, Isa, IsaKind, Kind, Label, Links, Owns, Plays,
-            Relates, RoleName, Sub, SubKind, Value
+            Relates, RoleName, Sub, SubKind, Value,
         },
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
@@ -214,6 +214,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Constraint::Label(c) => c.apply(self, vertices)?,
                 Constraint::FunctionCallBinding(c) => c.apply(self, vertices)?,
                 Constraint::RoleName(c) => c.apply(self, vertices)?,
+                Constraint::Value(c) => c.apply(self, vertices)?,
                 | Constraint::Is(_)
                 | Constraint::Sub(_)
                 | Constraint::Isa(_)
@@ -222,7 +223,6 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 | Constraint::Owns(_)
                 | Constraint::Relates(_)
                 | Constraint::Plays(_)
-                | Constraint::Value(_)
                 | Constraint::ExpressionBinding(_)
                 | Constraint::Comparison(_) => (),
             }
@@ -376,12 +376,12 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             Constraint::Owns(owns) => self.try_propagating_vertex_annotation_impl(owns, vertices)?,
             Constraint::Relates(relates) => self.try_propagating_vertex_annotation_impl(relates, vertices)?,
             Constraint::Plays(plays) => self.try_propagating_vertex_annotation_impl(plays, vertices)?,
-            Constraint::Value(value) => self.try_propagating_vertex_annotation_impl(value, vertices)?,
             | Constraint::ExpressionBinding(_)
             | Constraint::FunctionCallBinding(_)
             | Constraint::RoleName(_)
             | Constraint::Label(_)
-            | Constraint::Kind(_) => false,
+            | Constraint::Kind(_)
+            | Constraint::Value(_) => false,
         };
         Ok(any_modified)
     }
@@ -501,6 +501,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 | Constraint::RoleName(_)
                 | Constraint::Label(_)
                 | Constraint::Kind(_)
+                | Constraint::Value(_)
                 | Constraint::ExpressionBinding(_)
                 | Constraint::FunctionCallBinding(_) => (), // Do nothing
             }
@@ -693,23 +694,24 @@ impl UnaryConstraint for Value<Variable> {
         }?;
 
         let mut annotations = BTreeSet::new();
-
         seeder
             .type_manager
             .get_attribute_types(seeder.snapshot)
             .map_err(|source| TypeInferenceError::ConceptRead { source })?
-            .into_iter().try_for_each(|attribute_type| {
-            let attribute_value_type_opt = attribute_type.get_value_type_without_source(seeder.snapshot, seeder.type_manager)
-                .map_err(|source| TypeInferenceError::ConceptRead { source })?;
-            if let Some(attribute_value_type) = attribute_value_type_opt {
-                if pattern_value_type == attribute_value_type {
-                    annotations.insert(TypeAnnotation::Attribute(attribute_type));
+            .into_iter()
+            .try_for_each(|attribute_type| {
+                let attribute_value_type_opt = attribute_type
+                    .get_value_type_without_source(seeder.snapshot, seeder.type_manager)
+                    .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+                if let Some(attribute_value_type) = attribute_value_type_opt {
+                    if pattern_value_type == attribute_value_type {
+                        annotations.insert(TypeAnnotation::Attribute(attribute_type));
+                    }
                 }
-            }
-            Ok(())
-        })?;
+                Ok(())
+            })?;
 
-        graph_vertices.add_or_intersect(self.type_(), Cow::Owned(annotations));
+        graph_vertices.add_or_intersect(self.attribute_type(), Cow::Owned(annotations));
         Ok(())
     }
 }

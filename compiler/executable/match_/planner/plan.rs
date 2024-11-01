@@ -17,7 +17,7 @@ use ir::{
         conjunction::Conjunction,
         constraint::{
             Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Is, Isa, Kind, Label,
-            Links, Owns, Plays, Relates, RoleName, Sub,
+            Links, Owns, Plays, Relates, RoleName, Sub, Value,
         },
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
@@ -341,6 +341,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 Constraint::Kind(kind) => self.register_kind(kind),
                 Constraint::RoleName(role_name) => self.register_role_name(role_name),
                 Constraint::Label(label) => self.register_label(label),
+                Constraint::Value(value) => self.register_value(value),
 
                 Constraint::Sub(sub) => self.register_sub(sub),
                 Constraint::Owns(owns) => self.register_owns(owns),
@@ -401,6 +402,11 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let planner =
             PlaysPlanner::from_constraint(plays, &self.graph.variable_index, self.type_annotations, self.statistics);
         self.graph.push_constraint(ConstraintVertex::Plays(planner));
+    }
+
+    fn register_value(&mut self, value: &'a Value<Variable>) {
+        let planner = TypeListPlanner::from_value_constraint(value, &self.graph.variable_index, self.type_annotations);
+        self.graph.push_constraint(ConstraintVertex::TypeList(planner));
     }
 
     fn register_isa(&mut self, isa: &'a Isa<Variable>) {

@@ -14,12 +14,11 @@ use crate::{
         expression::{ExpressionDefinitionError, ExpressionTree},
         function_call::FunctionCall,
         variable_category::VariableCategory,
-        IrID, ScopeId, Vertex,
+        IrID, ScopeId, ValueType, Vertex,
     },
     pipeline::{block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry},
     RepresentationError,
 };
-use crate::pattern::ValueType;
 
 #[derive(Debug, Clone)]
 pub struct Constraints {
@@ -394,7 +393,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         attribute_type: Vertex<Variable>,
         value_type: ValueType,
-    ) -> Result<&Relates<Variable>, RepresentationError> {
+    ) -> Result<&Value<Variable>, RepresentationError> {
         let attribute_type_var = attribute_type.as_variable();
         let value = Constraint::from(Value::new(attribute_type, value_type));
 
@@ -404,7 +403,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         };
 
         let constraint = self.constraints.add_constraint(value);
-        Ok(constraint.as_relates().unwrap())
+        Ok(constraint.as_value().unwrap())
     }
 
     pub(crate) fn create_anonymous_variable(&mut self) -> Result<Variable, RepresentationError> {
@@ -1569,19 +1568,18 @@ impl<ID: IrID> Value<ID> {
     }
 
     pub fn ids(&self) -> impl Iterator<Item = ID> {
-        [self.attribute_type.as_variable(), self.value_type.as_variable()].into_iter().flatten()
+        [self.attribute_type.as_variable()].into_iter().flatten()
     }
 
     pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> {
-        [&self.attribute_type, &self.value_type].into_iter()
+        [&self.attribute_type].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide),
+    where
+        F: FnMut(ID, ConstraintIDSide),
     {
         self.attribute_type.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
-        self.value_type.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Value<T> {
