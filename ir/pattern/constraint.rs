@@ -19,6 +19,7 @@ use crate::{
     pipeline::{block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry},
     RepresentationError,
 };
+use crate::pattern::ValueType;
 
 #[derive(Debug, Clone)]
 pub struct Constraints {
@@ -389,6 +390,23 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         Ok(constraint.as_plays().unwrap())
     }
 
+    pub fn add_value(
+        &mut self,
+        attribute_type: Vertex<Variable>,
+        value_type: ValueType,
+    ) -> Result<&Relates<Variable>, RepresentationError> {
+        let attribute_type_var = attribute_type.as_variable();
+        let value = Constraint::from(Value::new(attribute_type, value_type));
+
+        if let Some(attribute_type) = attribute_type_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, attribute_type));
+            self.context.set_variable_category(attribute_type, VariableCategory::AttributeType, value.clone())?;
+        };
+
+        let constraint = self.constraints.add_constraint(value);
+        Ok(constraint.as_relates().unwrap())
+    }
+
     pub(crate) fn create_anonymous_variable(&mut self) -> Result<Variable, RepresentationError> {
         self.context.create_anonymous_variable(self.constraints.scope)
     }
@@ -422,6 +440,7 @@ pub enum Constraint<ID: IrID> {
     Owns(Owns<ID>),
     Relates(Relates<ID>),
     Plays(Plays<ID>),
+    Value(Value<ID>),
 }
 
 impl<ID: IrID> Constraint<ID> {
@@ -441,6 +460,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Owns(_) => typeql::token::Keyword::Owns.as_str(),
             Constraint::Relates(_) => typeql::token::Keyword::Relates.as_str(),
             Constraint::Plays(_) => typeql::token::Keyword::Plays.as_str(),
+            Constraint::Value(_) => typeql::token::Keyword::Value.as_str(),
         }
     }
 
@@ -460,6 +480,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Owns(owns) => Box::new(owns.ids()),
             Constraint::Relates(relates) => Box::new(relates.ids()),
             Constraint::Plays(plays) => Box::new(plays.ids()),
+            Constraint::Value(value) => Box::new(value.ids()),
         }
     }
 
@@ -479,6 +500,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Owns(owns) => Box::new(owns.vertices()),
             Constraint::Relates(relates) => Box::new(relates.vertices()),
             Constraint::Plays(plays) => Box::new(plays.vertices()),
+            Constraint::Value(value) => Box::new(value.vertices()),
         }
     }
 
@@ -501,6 +523,7 @@ impl<ID: IrID> Constraint<ID> {
             Self::Owns(owns) => owns.ids_foreach(function),
             Self::Relates(relates) => relates.ids_foreach(function),
             Self::Plays(plays) => plays.ids_foreach(function),
+            Self::Value(value) => value.ids_foreach(function),
         }
     }
 
@@ -520,6 +543,7 @@ impl<ID: IrID> Constraint<ID> {
             Self::Owns(inner) => Constraint::Owns(inner.map(mapping)),
             Self::Relates(inner) => Constraint::Relates(inner.map(mapping)),
             Self::Plays(inner) => Constraint::Plays(inner.map(mapping)),
+            Self::Value(inner) => Constraint::Value(inner.map(mapping)),
         }
     }
 
@@ -640,6 +664,13 @@ impl<ID: IrID> Constraint<ID> {
             _ => None,
         }
     }
+
+    pub(crate) fn as_value(&self) -> Option<&Value<ID>> {
+        match self {
+            Constraint::Value(value) => Some(value),
+            _ => None,
+        }
+    }
 }
 
 impl<ID: IrID> fmt::Display for Constraint<ID> {
@@ -659,6 +690,7 @@ impl<ID: IrID> fmt::Display for Constraint<ID> {
             Constraint::Owns(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::Relates(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::Plays(constraint) => fmt::Display::fmt(constraint, f),
+            Constraint::Value(constraint) => fmt::Display::fmt(constraint, f),
         }
     }
 }
@@ -1512,6 +1544,58 @@ impl<ID: IrID> From<Plays<ID>> for Constraint<ID> {
 }
 
 impl<ID: IrID> fmt::Display for Plays<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Value<ID> {
+    attribute_type: Vertex<ID>,
+    value_type: ValueType,
+}
+
+impl<ID: IrID> Value<ID> {
+    fn new(attribute_type: Vertex<ID>, value_type: ValueType) -> Self {
+        Self { attribute_type, value_type }
+    }
+
+    pub fn attribute_type(&self) -> &Vertex<ID> {
+        &self.attribute_type
+    }
+
+    pub fn value_type(&self) -> &ValueType {
+        &self.value_type
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
+        [self.attribute_type.as_variable(), self.value_type.as_variable()].into_iter().flatten()
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> {
+        [&self.attribute_type, &self.value_type].into_iter()
+    }
+
+    pub fn ids_foreach<F>(&self, mut function: F)
+        where
+            F: FnMut(ID, ConstraintIDSide),
+    {
+        self.attribute_type.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
+        self.value_type.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
+    }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Value<T> {
+        Value::new(self.attribute_type.map(mapping), self.value_type)
+    }
+}
+
+impl<ID: IrID> From<Value<ID>> for Constraint<ID> {
+    fn from(val: Value<ID>) -> Self {
+        Constraint::Value(val)
+    }
+}
+
+impl<ID: IrID> fmt::Display for Value<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }

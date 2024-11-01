@@ -5,6 +5,7 @@
  */
 
 use std::{collections::HashMap, fmt, hash::Hash};
+use typeql::token;
 
 use answer::variable::Variable;
 use encoding::value::label::Label;
@@ -139,5 +140,54 @@ pub struct ParameterID {
 impl fmt::Display for ParameterID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Parameter[{}]", self.id)
+    }
+}
+
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+pub enum ValueType {
+    Builtin(encoding::value::ValueType),
+    Struct(String),
+}
+
+impl ValueType {
+    pub fn as_builtin(&self) -> Option<encoding::value::ValueType> {
+        if let &Self::Builtin(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_struct(&self) -> Option<&str> {
+        if let Self::Struct(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    /// Returns `true` if the value type is [`Builtin`].
+    ///
+    /// [`Builtin`]: ValueType::Builtin
+    #[must_use]
+    pub fn is_builtin(&self) -> bool {
+        matches!(self, Self::Builtin(..))
+    }
+
+    /// Returns `true` if the value type is [`Struct`].
+    ///
+    /// [`Struct`]: ValueType::Struct
+    #[must_use]
+    pub fn is_struct(&self) -> bool {
+        matches!(self, Self::Struct(..))
+    }
+}
+
+impl fmt::Display for ValueType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Builtin(var) => fmt::Display::fmt(var, f),
+            Self::Struct(name) => fmt::Display::fmt(name, f),
+        }
     }
 }

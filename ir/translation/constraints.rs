@@ -16,6 +16,8 @@ use typeql::{
     type_::NamedType,
     ScopedLabel, TypeRef, TypeRefAny,
 };
+use typeql::statement::type_::ValueType as TypeQLValueType;
+use typeql::type_::BuiltinValueType;
 
 use crate::{
     pattern::{
@@ -30,6 +32,8 @@ use crate::{
     },
     RepresentationError,
 };
+use crate::pattern::ValueType;
+use crate::translation::tokens::translate_value_type;
 
 pub(super) fn add_statement(
     function_index: &impl FunctionSignatureIndex,
@@ -143,7 +147,7 @@ fn add_type_statement(
                     )?;
                 }
             },
-            typeql::statement::type_::ConstraintBase::ValueType(_) => todo!(),
+            typeql::statement::type_::ConstraintBase::ValueType(value_type) => add_typeql_value(constraints, type_.clone(), value_type)?,
             typeql::statement::type_::ConstraintBase::Owns(owns) => add_typeql_owns(constraints, type_.clone(), owns)?,
             typeql::statement::type_::ConstraintBase::Relates(relates) => {
                 add_typeql_relates(constraints, type_.clone(), relates)?
@@ -262,6 +266,22 @@ fn register_type_role_name_var(
     Ok(variable)
 }
 
+fn register_typeql_value_type(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    value_type: &TypeQLValueType,
+) -> Result<ValueType, RepresentationError> {
+    match &value_type.value_type {
+        NamedType::Role(scoped_label) => Err(RepresentationError::ScopedValueTypeName {
+            scope: scoped_label.scope.ident.as_str().to_owned(),
+            name: scoped_label.name.ident.as_str().to_owned(),
+        }),
+        NamedType::Label(label) => Ok(ValueType::Struct(label.ident.as_str().clone().to_owned())),
+        NamedType::BuiltinValueType(BuiltinValueType { token, .. }) => {
+            Ok(ValueType::Builtin(translate_value_type(token)))
+        }
+    }
+}
+
 fn add_typeql_kind(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     type_: Variable,
@@ -309,6 +329,16 @@ fn add_typeql_plays(
 ) -> Result<(), RepresentationError> {
     let role_type = register_typeql_role_type(constraints, &plays.role)?;
     constraints.add_plays(player_type, role_type)?;
+    Ok(())
+}
+
+fn add_typeql_value(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    attribute_type: Vertex<Variable>,
+    value_type: &TypeQLValueType,
+) -> Result<(), RepresentationError> {
+    let value_type = register_typeql_value_type(constraints, value_type)?;
+    constraints.add_value(attribute_type, value_type)?;
     Ok(())
 }
 
