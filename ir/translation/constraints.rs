@@ -317,7 +317,12 @@ fn add_typeql_relates(
     relates: &typeql::statement::type_::Relates,
 ) -> Result<(), RepresentationError> {
     let role_type = register_typeql_role_type_any(constraints, &relates.related)?;
-    constraints.add_relates(relation_type, role_type)?;
+    constraints.add_relates(relation_type, role_type.clone())?;
+
+    if let Some(specialised) = &relates.specialised {
+        add_typeql_as(constraints, role_type, specialised)?;
+    }
+
     Ok(())
 }
 
@@ -328,6 +333,16 @@ fn add_typeql_plays(
 ) -> Result<(), RepresentationError> {
     let role_type = register_typeql_role_type(constraints, &plays.role)?;
     constraints.add_plays(player_type, role_type)?;
+    Ok(())
+}
+
+fn add_typeql_as(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    registered_specialising: Vertex<Variable>,
+    specialised: &typeql::TypeRef,
+) -> Result<(), RepresentationError> {
+    let registered_specialised = register_typeql_role_type(constraints, specialised)?;
+    constraints.add_as(registered_specialising, registered_specialised)?;
     Ok(())
 }
 

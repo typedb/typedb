@@ -389,6 +389,29 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         Ok(constraint.as_plays().unwrap())
     }
 
+    pub fn add_as(
+        &mut self,
+        specialising: Vertex<Variable>,
+        specialised: Vertex<Variable>,
+    ) -> Result<&As<Variable>, RepresentationError> {
+        let specialising_var = specialising.as_variable();
+        let specialised_var = specialised.as_variable();
+        let as_ = As::new(specialising, specialised);
+
+        if let Some(specialising) = specialising_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, specialising));
+            self.context.set_variable_category(specialising, VariableCategory::Type, as_.clone().into())?;
+        };
+
+        if let Some(specialised) = specialised_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, specialised));
+            self.context.set_variable_category(specialised, VariableCategory::Type, as_.clone().into())?;
+        };
+
+        let as_ref = self.constraints.add_constraint(as_);
+        Ok(as_ref.as_as().unwrap())
+    }
+
     pub fn add_value(
         &mut self,
         attribute_type: Vertex<Variable>,
@@ -666,6 +689,13 @@ impl<ID: IrID> Constraint<ID> {
     pub(crate) fn as_plays(&self) -> Option<&Plays<ID>> {
         match self {
             Constraint::Plays(plays) => Some(plays),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn as_as(&self) -> Option<&As<ID>> {
+        match self {
+            Constraint::As(as_) => Some(as_),
             _ => None,
         }
     }
