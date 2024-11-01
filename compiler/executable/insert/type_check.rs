@@ -66,6 +66,7 @@ pub fn check_annotations(
             | Constraint::Owns(_)
             | Constraint::Relates(_)
             | Constraint::Plays(_)
+            | Constraint::As(_)
             | Constraint::Value(_) => (),
         }
     }

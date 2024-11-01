@@ -21,7 +21,7 @@ use ir::{
     pattern::{
         conjunction::Conjunction,
         constraint::{
-            Comparison, Constraint, FunctionCallBinding, Has, Is, Isa, IsaKind, Kind, Label, Links, Owns, Plays,
+            As, Comparison, Constraint, FunctionCallBinding, Has, Is, Isa, IsaKind, Kind, Label, Links, Owns, Plays,
             Relates, RoleName, Sub, SubKind, Value,
         },
         disjunction::Disjunction,
@@ -223,6 +223,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 | Constraint::Owns(_)
                 | Constraint::Relates(_)
                 | Constraint::Plays(_)
+                | Constraint::As(_)
                 | Constraint::ExpressionBinding(_)
                 | Constraint::Comparison(_) => (),
             }
@@ -376,6 +377,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             Constraint::Owns(owns) => self.try_propagating_vertex_annotation_impl(owns, vertices)?,
             Constraint::Relates(relates) => self.try_propagating_vertex_annotation_impl(relates, vertices)?,
             Constraint::Plays(plays) => self.try_propagating_vertex_annotation_impl(plays, vertices)?,
+            Constraint::As(as_) => self.try_propagating_vertex_annotation_impl(as_, vertices)?,
             | Constraint::ExpressionBinding(_)
             | Constraint::FunctionCallBinding(_)
             | Constraint::RoleName(_)
@@ -498,6 +500,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Constraint::Owns(owns) => edges.push(self.seed_edge(constraint, owns, vertices)?),
                 Constraint::Relates(relates) => edges.push(self.seed_edge(constraint, relates, vertices)?),
                 Constraint::Plays(plays) => edges.push(self.seed_edge(constraint, plays, vertices)?),
+                Constraint::As(as_) => edges.push(self.seed_edge(constraint, as_, vertices)?),
                 | Constraint::RoleName(_)
                 | Constraint::Label(_)
                 | Constraint::Kind(_)
@@ -1001,7 +1004,7 @@ impl BinaryConstraint for Sub<Variable> {
                     attribute
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Attribute(subtype.clone()))
+                        .map(|supertype| TypeAnnotation::Attribute(supertype.clone()))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1010,7 +1013,7 @@ impl BinaryConstraint for Sub<Variable> {
                     entity
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Entity(subtype.clone()))
+                        .map(|supertype| TypeAnnotation::Entity(supertype.clone()))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1028,7 +1031,7 @@ impl BinaryConstraint for Sub<Variable> {
                     role_type
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::RoleType(subtype.clone()))
+                        .map(|supertype| TypeAnnotation::RoleType(supertype.clone()))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1038,23 +1041,23 @@ impl BinaryConstraint for Sub<Variable> {
         } else {
             match left_type {
                 TypeAnnotation::Attribute(attribute) => {
-                    if let Some(subtype) = attribute.get_supertype(seeder.snapshot, seeder.type_manager)? {
-                        collector.insert(TypeAnnotation::Attribute(subtype));
+                    if let Some(supertype) = attribute.get_supertype(seeder.snapshot, seeder.type_manager)? {
+                        collector.insert(TypeAnnotation::Attribute(supertype));
                     }
                 }
                 TypeAnnotation::Entity(entity) => {
-                    if let Some(subtype) = entity.get_supertype(seeder.snapshot, seeder.type_manager)? {
-                        collector.insert(TypeAnnotation::Entity(subtype));
+                    if let Some(supertype) = entity.get_supertype(seeder.snapshot, seeder.type_manager)? {
+                        collector.insert(TypeAnnotation::Entity(supertype));
                     }
                 }
                 TypeAnnotation::Relation(relation) => {
-                    if let Some(subtype) = relation.get_supertype(seeder.snapshot, seeder.type_manager)? {
-                        collector.insert(TypeAnnotation::Relation(subtype));
+                    if let Some(supertype) = relation.get_supertype(seeder.snapshot, seeder.type_manager)? {
+                        collector.insert(TypeAnnotation::Relation(supertype));
                     }
                 }
                 TypeAnnotation::RoleType(role_type) => {
-                    if let Some(subtype) = role_type.get_supertype(seeder.snapshot, seeder.type_manager)? {
-                        collector.insert(TypeAnnotation::RoleType(subtype));
+                    if let Some(supertype) = role_type.get_supertype(seeder.snapshot, seeder.type_manager)? {
+                        collector.insert(TypeAnnotation::RoleType(supertype));
                     }
                 }
             }
@@ -1387,7 +1390,7 @@ impl<'graph> BinaryConstraint for RelationRoleEdge<'graph> {
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
         let relation = match left_type {
-            TypeAnnotation::Relation(relation) => relation.clone(),
+            TypeAnnotation::Relation(relation) => relation,
             _ => {
                 return Ok(());
             } // It can't be another type => Do nothing and let type-inference clean it up
@@ -1441,7 +1444,7 @@ impl BinaryConstraint for Relates<Variable> {
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
         let relation = match left_type {
-            TypeAnnotation::Relation(relation) => relation.clone(),
+            TypeAnnotation::Relation(relation) => relation,
             _ => {
                 return Ok(());
             } // It can't be another type => Do nothing and let type-inference clean it up
@@ -1474,6 +1477,56 @@ impl BinaryConstraint for Relates<Variable> {
             .map(|relation_type| TypeAnnotation::Relation(relation_type.clone()))
             .for_each(|type_| {
                 collector.insert(type_);
+            });
+        Ok(())
+    }
+}
+
+impl BinaryConstraint for As<Variable> {
+    fn left(&self) -> &Vertex<Variable> {
+        self.specialising()
+    }
+
+    fn right(&self) -> &Vertex<Variable> {
+        self.specialised()
+    }
+
+    fn annotate_left_to_right_for_type(
+        &self,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+        left_type: &TypeAnnotation,
+        collector: &mut BTreeSet<TypeAnnotation>,
+    ) -> Result<(), ConceptReadError> {
+        let specialising = match left_type {
+            TypeAnnotation::RoleType(role_type) => role_type,
+            _ => {
+                return Ok(());
+            } // It can't be another type => Do nothing and let type-inference clean it up
+        };
+        if let Some(supertype) = specialising.get_supertype(seeder.snapshot, seeder.type_manager)? {
+            collector.insert(TypeAnnotation::RoleType(supertype));
+        }
+        Ok(())
+    }
+
+    fn annotate_right_to_left_for_type(
+        &self,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+        right_type: &TypeAnnotation,
+        collector: &mut BTreeSet<TypeAnnotation>,
+    ) -> Result<(), ConceptReadError> {
+        let specialised = match right_type {
+            TypeAnnotation::RoleType(role_type) => role_type,
+            _ => {
+                return Ok(());
+            } // It can't be another type => Do nothing and let type-inference clean it up
+        };
+        specialised
+            .get_subtypes(seeder.snapshot, seeder.type_manager)?
+            .iter()
+            .map(|subtype| TypeAnnotation::RoleType(subtype.clone()))
+            .for_each(|subtype| {
+                collector.insert(subtype);
             });
         Ok(())
     }

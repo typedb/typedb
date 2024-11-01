@@ -439,6 +439,7 @@ pub enum Constraint<ID: IrID> {
     Owns(Owns<ID>),
     Relates(Relates<ID>),
     Plays(Plays<ID>),
+    As(As<ID>),
     Value(Value<ID>),
 }
 
@@ -459,6 +460,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Owns(_) => typeql::token::Keyword::Owns.as_str(),
             Constraint::Relates(_) => typeql::token::Keyword::Relates.as_str(),
             Constraint::Plays(_) => typeql::token::Keyword::Plays.as_str(),
+            Constraint::As(_) => typeql::token::Keyword::As.as_str(),
             Constraint::Value(_) => typeql::token::Keyword::Value.as_str(),
         }
     }
@@ -479,6 +481,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Owns(owns) => Box::new(owns.ids()),
             Constraint::Relates(relates) => Box::new(relates.ids()),
             Constraint::Plays(plays) => Box::new(plays.ids()),
+            Constraint::As(as_) => Box::new(as_.ids()),
             Constraint::Value(value) => Box::new(value.ids()),
         }
     }
@@ -499,6 +502,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Owns(owns) => Box::new(owns.vertices()),
             Constraint::Relates(relates) => Box::new(relates.vertices()),
             Constraint::Plays(plays) => Box::new(plays.vertices()),
+            Constraint::As(as_) => Box::new(as_.vertices()),
             Constraint::Value(value) => Box::new(value.vertices()),
         }
     }
@@ -522,6 +526,7 @@ impl<ID: IrID> Constraint<ID> {
             Self::Owns(owns) => owns.ids_foreach(function),
             Self::Relates(relates) => relates.ids_foreach(function),
             Self::Plays(plays) => plays.ids_foreach(function),
+            Self::As(as_) => as_.ids_foreach(function),
             Self::Value(value) => value.ids_foreach(function),
         }
     }
@@ -542,6 +547,7 @@ impl<ID: IrID> Constraint<ID> {
             Self::Owns(inner) => Constraint::Owns(inner.map(mapping)),
             Self::Relates(inner) => Constraint::Relates(inner.map(mapping)),
             Self::Plays(inner) => Constraint::Plays(inner.map(mapping)),
+            Self::As(inner) => Constraint::As(inner.map(mapping)),
             Self::Value(inner) => Constraint::Value(inner.map(mapping)),
         }
     }
@@ -689,6 +695,7 @@ impl<ID: IrID> fmt::Display for Constraint<ID> {
             Constraint::Owns(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::Relates(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::Plays(constraint) => fmt::Display::fmt(constraint, f),
+            Constraint::As(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::Value(constraint) => fmt::Display::fmt(constraint, f),
         }
     }
@@ -1543,6 +1550,58 @@ impl<ID: IrID> From<Plays<ID>> for Constraint<ID> {
 }
 
 impl<ID: IrID> fmt::Display for Plays<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct As<ID> {
+    specialising: Vertex<ID>,
+    specialised: Vertex<ID>,
+}
+
+impl<ID: IrID> As<ID> {
+    fn new(specialising: Vertex<ID>, specialised: Vertex<ID>) -> Self {
+        Self { specialising, specialised }
+    }
+
+    pub fn specialising(&self) -> &Vertex<ID> {
+        &self.specialising
+    }
+
+    pub fn specialised(&self) -> &Vertex<ID> {
+        &self.specialised
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
+        [self.specialising.as_variable(), self.specialised.as_variable()].into_iter().flatten()
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> {
+        [&self.specialising, &self.specialised].into_iter()
+    }
+
+    pub fn ids_foreach<F>(&self, mut function: F)
+    where
+        F: FnMut(ID, ConstraintIDSide),
+    {
+        self.specialising.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
+        self.specialised.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
+    }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> As<T> {
+        As::new(self.specialising.map(mapping), self.specialised.map(mapping))
+    }
+}
+
+impl<ID: IrID> From<As<ID>> for Constraint<ID> {
+    fn from(val: As<ID>) -> Self {
+        Constraint::As(val)
+    }
+}
+
+impl<ID: IrID> fmt::Display for As<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }

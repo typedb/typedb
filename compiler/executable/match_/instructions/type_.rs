@@ -11,7 +11,7 @@ use std::{
 
 use answer::{variable::Variable, Type};
 use ir::pattern::{
-    constraint::{Owns, Plays, Relates, Sub},
+    constraint::{As, Owns, Plays, Relates, Sub},
     IrID, Vertex,
 };
 
@@ -414,6 +414,96 @@ impl<ID: IrID> PlaysReverseInstruction<ID> {
             inputs: inputs.map(mapping),
             role_player_types: role_type_player_types,
             player_types,
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AsInstruction<ID> {
+    pub as_: As<ID>,
+    pub inputs: Inputs<ID>,
+    specialising_to_specialised: Arc<BTreeMap<Type, Vec<Type>>>,
+    specialised: Arc<BTreeSet<Type>>,
+    pub checks: Vec<CheckInstruction<ID>>,
+}
+
+impl AsInstruction<Variable> {
+    pub fn new(as_: As<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
+        let specialised = type_annotations.vertex_annotations_of(as_.specialised()).unwrap().clone();
+        let edge_annotations = type_annotations.constraint_annotations_of(as_.clone().into()).unwrap().as_left_right();
+        let specialising_to_specialised = edge_annotations.left_to_right();
+        Self { as_, inputs, specialising_to_specialised, specialised, checks: Vec::new() }
+    }
+}
+
+impl<ID> AsInstruction<ID> {
+    pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
+        self.checks.push(check)
+    }
+
+    pub fn specialising_to_specialised(&self) -> &Arc<BTreeMap<Type, Vec<Type>>> {
+        &self.specialising_to_specialised
+    }
+
+    pub fn specialised(&self) -> &Arc<BTreeSet<Type>> {
+        &self.specialised
+    }
+}
+
+impl<ID: IrID> AsInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> AsInstruction<T> {
+        let Self { as_, inputs, specialising_to_specialised, specialised, checks } = self;
+        AsInstruction {
+            as_: as_.map(mapping),
+            inputs: inputs.map(mapping),
+            specialising_to_specialised,
+            specialised,
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AsReverseInstruction<ID> {
+    pub as_: As<ID>,
+    pub inputs: Inputs<ID>,
+    specialised_to_specialising: Arc<BTreeMap<Type, Vec<Type>>>,
+    specialising: Arc<BTreeSet<Type>>,
+    pub checks: Vec<CheckInstruction<ID>>,
+}
+
+impl AsReverseInstruction<Variable> {
+    pub fn new(as_: As<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
+        let specialising = type_annotations.vertex_annotations_of(as_.specialising()).unwrap().clone();
+        let edge_annotations = type_annotations.constraint_annotations_of(as_.clone().into()).unwrap().as_left_right();
+        let specialised_to_specialising = edge_annotations.right_to_left();
+        Self { as_, inputs, specialised_to_specialising, specialising, checks: Vec::new() }
+    }
+}
+
+impl<ID> AsReverseInstruction<ID> {
+    pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
+        self.checks.push(check)
+    }
+
+    pub fn specialised_to_specialising(&self) -> &Arc<BTreeMap<Type, Vec<Type>>> {
+        &self.specialised_to_specialising
+    }
+
+    pub fn specialising(&self) -> &Arc<BTreeSet<Type>> {
+        &self.specialising
+    }
+}
+
+impl<ID: IrID> AsReverseInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> AsReverseInstruction<T> {
+        let Self { as_, inputs, specialised_to_specialising, specialising, checks } = self;
+        AsReverseInstruction {
+            as_: as_.map(mapping),
+            inputs: inputs.map(mapping),
+            specialised_to_specialising,
+            specialising,
             checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }
     }

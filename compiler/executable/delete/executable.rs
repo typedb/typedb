@@ -81,6 +81,7 @@ pub fn compile(
             | Constraint::Is(_)
             | Constraint::Comparison(_)
             | Constraint::Sub(_)
+            | Constraint::As(_)
             | Constraint::Value(_)
             | Constraint::FunctionCallBinding(_) => {
                 unreachable!()
