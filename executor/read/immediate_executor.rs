@@ -242,6 +242,7 @@ impl IntersectionExecutor {
                     return Ok(true);
                 } else {
                     self.iterators.clear();
+                    self.cartesian_iterator.clear();
                     let _ = self.input.as_mut().unwrap().next().unwrap().map_err(|err| err.clone());
                     if self.input.as_mut().unwrap().peek().is_some() {
                         self.may_create_intersection_iterators(context)?;
@@ -453,6 +454,10 @@ impl CartesianIterator {
 
     fn is_active(&self) -> bool {
         self.is_active
+    }
+
+    fn clear(&mut self) {
+        self.iterators.iter_mut().for_each(|iter| drop(iter.take()));
     }
 
     fn activate(
