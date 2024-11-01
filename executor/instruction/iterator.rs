@@ -13,7 +13,7 @@ use compiler::{
 };
 use concept::error::ConceptReadError;
 use itertools::zip_eq;
-use lending_iterator::{LendingIterator, Peekable};
+use lending_iterator::{adaptors::Inspect, LendingIterator, Peekable};
 
 use crate::{
     instruction::{
@@ -200,7 +200,7 @@ pub(crate) trait TupleIteratorAPI {
 }
 
 pub(crate) struct SortedTupleIterator<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> {
-    iterator: Peekable<Iterator>,
+    iterator: Peekable<Inspect<Iterator, Box<dyn FnMut(&TupleResult<'_>)>>>,
     positions: TuplePositions,
     tuple_length: usize,
     first_unbound: TupleIndex,
@@ -240,6 +240,24 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleI
         let first_unbound = first_unbound(variable_modes, &tuple_positions);
         let last_enumerated = last_enumerated(variable_modes, &tuple_positions);
         let last_enumerated_or_counted = last_enumerated_or_counted(variable_modes, &tuple_positions);
+
+        let iterator = iterator.inspect({
+            let mut prev = None;
+            Box::new(move |item: &TupleResult<'_>| {
+                #[cfg(debug_assertions)]
+                if let Ok(tuple) = item {
+                    if let Some(prev) = &prev {
+                        debug_assert!(
+                            prev <= tuple,
+                            "{prev:?} <= {tuple:?}: sortedness check fail in {}",
+                            std::any::type_name::<Self>()
+                        );
+                    }
+                    prev = Some(tuple.clone().into_owned());
+                }
+            }) as _
+        });
+
         Self {
             iterator: Peekable::new(iterator),
             tuple_length: tuple_positions.len(),
