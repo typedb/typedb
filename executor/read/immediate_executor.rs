@@ -491,7 +491,7 @@ impl CartesianIterator {
                         let next_value_cmp = iter
                             .advance_until_index_is(iter.first_unbound_index(), source_intersection_value)
                             .map_err(|err| ReadExecutionError::ConceptRead { source: err })?;
-                        debug_assert!(next_value_cmp.is_some() && next_value_cmp.unwrap().is_eq());
+                        debug_assert_eq!(next_value_cmp, Some(std::cmp::Ordering::Equal));
                         iter
                     }
                 };
