@@ -48,7 +48,7 @@ pub(crate) struct RelatesReverseExecutor {
 pub(super) type RelatesReverseUnboundedSortedRole = RelatesTupleIterator<
     AsNarrowingIterator<
         iter::Map<
-            iter::Flatten<vec::IntoIter<HashSet<(RelationType<'static>, RoleType<'static>)>>>,
+            iter::Flatten<vec::IntoIter<BTreeSet<(RelationType<'static>, RoleType<'static>)>>>,
             fn(
                 (RelationType<'static>, RoleType<'static>),
             ) -> Result<(RelationType<'static>, RoleType<'static>), ConceptReadError>,
@@ -172,7 +172,7 @@ impl RelatesReverseExecutor {
                     .into_keys()
                     .map(|relation_type| (relation_type.clone(), role_type.clone()));
 
-                let iterator = relates.into_iter().sorted_by_key(|(relation, role)| relation.clone()).map(Ok as _);
+                let iterator = relates.into_iter().sorted_by_key(|(relation, _)| relation.clone()).map(Ok as _);
                 let as_tuples: RelatesReverseBoundedSortedRelation = AsNarrowingIterator::<
                     _,
                     Result<(RelationType<'_>, RoleType<'_>), _>,

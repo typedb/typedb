@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
     iter,
     sync::Arc,
     vec,
@@ -15,7 +15,7 @@ use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::RelatesInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
-    type_::{relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, PlayerAPI},
+    type_::{relation_type::RelationType, role_type::RoleType, type_manager::TypeManager},
 };
 use itertools::Itertools;
 use lending_iterator::{
@@ -57,7 +57,7 @@ pub(super) type RelatesTupleIterator<I> = Map<
 pub(super) type RelatesUnboundedSortedRelation = RelatesTupleIterator<
     AsNarrowingIterator<
         iter::Map<
-            iter::Flatten<vec::IntoIter<HashSet<(RelationType<'static>, RoleType<'static>)>>>,
+            iter::Flatten<vec::IntoIter<BTreeSet<(RelationType<'static>, RoleType<'static>)>>>,
             fn(
                 (RelationType<'static>, RoleType<'static>),
             ) -> Result<(RelationType<'static>, RoleType<'static>), ConceptReadError>,
@@ -200,7 +200,7 @@ impl RelatesExecutor {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         relation: Type,
-    ) -> Result<HashSet<(RelationType<'static>, RoleType<'static>)>, ConceptReadError> {
+    ) -> Result<BTreeSet<(RelationType<'static>, RoleType<'static>)>, ConceptReadError> {
         let relation_type = relation.as_relation_type();
 
         Ok(relation_type
