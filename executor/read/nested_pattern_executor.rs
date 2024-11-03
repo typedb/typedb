@@ -11,10 +11,7 @@ use ir::pipeline::ParameterRegistry;
 
 use crate::{
     batch::FixedBatch,
-    read::{
-        pattern_executor::PatternExecutor,
-        step_executor::StepExecutors,
-    },
+    read::{pattern_executor::PatternExecutor, step_executor::StepExecutors},
     row::MaybeOwnedRow,
 };
 
