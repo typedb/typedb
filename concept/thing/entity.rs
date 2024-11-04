@@ -140,12 +140,8 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         Ok(())
     }
 
-    fn prefix_for_type(
-        _type: Self::TypeAPI<'_>,
-        _snapshot: &impl ReadableSnapshot,
-        _type_manager: &TypeManager,
-    ) -> Result<Prefix, ConceptReadError> {
-        Ok(Prefix::VertexEntity)
+    fn prefix_for_type(_type: Self::TypeAPI<'_>) -> Prefix {
+        Prefix::VertexEntity
     }
 }
 

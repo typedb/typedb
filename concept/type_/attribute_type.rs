@@ -27,12 +27,14 @@ use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use super::annotation::{AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationValues};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{attribute::Attribute, thing_manager::ThingManager},
     type_::{
-        annotation::{Annotation, AnnotationAbstract, AnnotationError, AnnotationIndependent, DefaultFrom},
+        annotation::{
+            Annotation, AnnotationAbstract, AnnotationCategory, AnnotationError, AnnotationIndependent,
+            AnnotationRange, AnnotationRegex, AnnotationValues, DefaultFrom,
+        },
         constraint::{CapabilityConstraint, TypeConstraint},
         object_type::ObjectType,
         owns::Owns,

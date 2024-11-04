@@ -32,18 +32,7 @@ pub enum Prefix {
 
     VertexEntity,
     VertexRelation,
-
-    VertexAttributeBoolean,
-    VertexAttributeLong,
-    VertexAttributeDouble,
-    VertexAttributeDecimal,
-    VertexAttributeDate,
-    VertexAttributeDateTime,
-    VertexAttributeDateTimeTZ,
-    VertexAttributeDuration,
-    VertexAttributeString,
-    VertexAttributeStruct,
-    _VertexAttributeLast, // marker to indicate reserved range for attribute types
+    VertexAttribute,
 
     EdgeSub,
     EdgeSubReverse,
@@ -124,9 +113,6 @@ macro_rules! prefix_functions {
 }
 
 impl Prefix {
-    pub const ATTRIBUTE_MIN: Self = Prefix::VertexAttributeBoolean;
-    pub const ATTRIBUTE_MAX: Self = Prefix::_VertexAttributeLast;
-
     prefix_functions!(
            // Reserved: 0-9
            VertexEntityType => [10], true;
@@ -139,19 +125,7 @@ impl Prefix {
            // All objects are stored consecutively for iteration
            VertexEntity => [30], true;
            VertexRelation => [31], true;
-
-           // Reserve: range 50 - 99 to store attribute instances with a value type - see PrefixID::<CONSTANTS>
-           VertexAttributeBoolean => [50], true;
-           VertexAttributeLong => [51], true;
-           VertexAttributeDouble => [52], true;
-           VertexAttributeDecimal => [53], true;
-           VertexAttributeDate => [54], true;
-           VertexAttributeDateTime => [55], true;
-           VertexAttributeDateTimeTZ => [56], true;
-           VertexAttributeDuration => [57], true;
-           VertexAttributeString => [58], true;
-           VertexAttributeStruct => [90], true;
-           _VertexAttributeLast => [99], true;
+           VertexAttribute => [32], false;
 
            EdgeSub => [100], true;
            EdgeSubReverse => [101], true;

@@ -261,10 +261,8 @@ fn does_key_match(var: &str, id: &str, var_value: &VariableValue<'_>, context: &
                 .unwrap_or_else(|| panic!("expected the key type {key_label} to have a value type")),
         );
         let mut has_iter = match thing {
-            Thing::Entity(entity) => entity.get_has_type_unordered(&*tx.snapshot, &tx.thing_manager, key_type).unwrap(),
-            Thing::Relation(relation) => {
-                relation.get_has_type_unordered(&*tx.snapshot, &tx.thing_manager, key_type).unwrap()
-            }
+            Thing::Entity(entity) => entity.get_has_type_unordered(&*tx.snapshot, &tx.thing_manager, key_type),
+            Thing::Relation(relation) => relation.get_has_type_unordered(&*tx.snapshot, &tx.thing_manager, key_type),
             Thing::Attribute(_) => return false,
         };
         let (attr, count) = has_iter

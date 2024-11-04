@@ -279,7 +279,6 @@ async fn object_get_has_type(
             .unwrap();
         object
             .get_has_type_unordered(tx.snapshot.as_ref(), &tx.thing_manager, attribute_type)
-            .unwrap()
             .map_static(|res| {
                 let (attribute, _count) = res.unwrap();
                 attribute.into_owned()
@@ -315,7 +314,6 @@ async fn object_get_has_with_annotations(
             .flat_map(|attribute_type| {
                 object
                     .get_has_type_unordered(tx.snapshot.as_ref(), &tx.thing_manager, attribute_type)
-                    .unwrap()
                     .map_static(|res| {
                         let (attribute, _count) = res.unwrap();
                         attribute.into_owned()

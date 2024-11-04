@@ -62,11 +62,7 @@ pub trait ThingAPI<'a>: Sized + Clone {
         thing_manager: &ThingManager,
     ) -> Result<(), ConceptWriteError>;
 
-    fn prefix_for_type(
-        type_: Self::TypeAPI<'_>,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<Prefix, ConceptReadError>;
+    fn prefix_for_type(type_: Self::TypeAPI<'_>) -> Prefix;
 }
 
 pub trait HKInstance: for<'a> Hkt<HktSelf<'a>: ThingAPI<'a>> {}

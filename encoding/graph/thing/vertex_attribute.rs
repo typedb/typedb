@@ -50,23 +50,22 @@ pub struct AttributeVertex<'a> {
 }
 
 impl<'a> AttributeVertex<'a> {
-    pub fn build(value_type_category: ValueTypeCategory, type_id: TypeID, attribute_id: AttributeID) -> Self {
+    const PREFIX: Prefix = Prefix::VertexAttribute;
+
+    pub fn build(type_id: TypeID, attribute_id: AttributeID) -> Self {
         let mut bytes = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE + attribute_id.length());
-        bytes.bytes_mut()[Self::RANGE_PREFIX]
-            .copy_from_slice(&Self::value_type_category_to_prefix_type(value_type_category).prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         bytes.bytes_mut()[Self::range_for_attribute_id(attribute_id.length())].copy_from_slice(attribute_id.bytes());
         Self { bytes: Bytes::Array(bytes) }
     }
 
     pub(crate) fn build_prefix_type_attribute_id(
-        value_type_category: ValueTypeCategory,
         type_id: TypeID,
         attribute_id_part: &[u8],
     ) -> StorageKey<'static, BUFFER_KEY_INLINE> {
         let mut bytes = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE + attribute_id_part.len());
-        bytes.bytes_mut()[Self::RANGE_PREFIX]
-            .copy_from_slice(&Self::value_type_category_to_prefix_type(value_type_category).prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         bytes.bytes_mut()[Self::range_for_attribute_id(attribute_id_part.len())].copy_from_slice(attribute_id_part);
         StorageKey::new_owned(Self::KEYSPACE, bytes)
@@ -75,59 +74,22 @@ impl<'a> AttributeVertex<'a> {
     pub fn is_attribute_vertex(storage_key: StorageKeyReference<'_>) -> bool {
         storage_key.keyspace_id() == Self::KEYSPACE.id()
             && !storage_key.bytes().is_empty()
-            && (Prefix::ATTRIBUTE_MIN.prefix_id().bytes()[..] <= storage_key.bytes()[Self::RANGE_PREFIX]
-                && storage_key.bytes()[Self::RANGE_PREFIX] <= Prefix::ATTRIBUTE_MAX.prefix_id().bytes()[..])
-    }
-
-    pub fn value_type_category_to_prefix_type(value_type_category: ValueTypeCategory) -> Prefix {
-        match value_type_category {
-            ValueTypeCategory::Boolean => Prefix::VertexAttributeBoolean,
-            ValueTypeCategory::Long => Prefix::VertexAttributeLong,
-            ValueTypeCategory::Double => Prefix::VertexAttributeDouble,
-            ValueTypeCategory::Decimal => Prefix::VertexAttributeDecimal,
-            ValueTypeCategory::Date => Prefix::VertexAttributeDate,
-            ValueTypeCategory::DateTime => Prefix::VertexAttributeDateTime,
-            ValueTypeCategory::DateTimeTZ => Prefix::VertexAttributeDateTimeTZ,
-            ValueTypeCategory::Duration => Prefix::VertexAttributeDuration,
-            ValueTypeCategory::String => Prefix::VertexAttributeString,
-            ValueTypeCategory::Struct => Prefix::VertexAttributeStruct,
-        }
+            && storage_key.bytes()[Self::RANGE_PREFIX] == Prefix::VertexAttribute.prefix_id().bytes()
     }
 
     pub fn prefix_type_to_value_id_encoding_length(prefix: Prefix) -> usize {
         match prefix {
-            Prefix::VertexAttributeBoolean => BooleanAttributeID::LENGTH,
-            Prefix::VertexAttributeLong => LongAttributeID::LENGTH,
-            Prefix::VertexAttributeDouble => DoubleAttributeID::LENGTH,
-            Prefix::VertexAttributeDecimal => DecimalAttributeID::LENGTH,
-            Prefix::VertexAttributeDate => DateAttributeID::LENGTH,
-            Prefix::VertexAttributeDateTime => DateTimeAttributeID::LENGTH,
-            Prefix::VertexAttributeDateTimeTZ => DateTimeTZAttributeID::LENGTH,
-            Prefix::VertexAttributeDuration => DurationAttributeID::LENGTH,
-            Prefix::VertexAttributeString => StringAttributeID::LENGTH,
-            Prefix::VertexAttributeStruct => StructAttributeID::LENGTH,
+            Prefix::VertexAttribute => BooleanAttributeID::LENGTH,
             _ => unreachable!("Unrecognised attribute vertex prefix type"),
         }
     }
 
     pub fn value_type_category(&self) -> ValueTypeCategory {
-        match self.prefix() {
-            Prefix::VertexAttributeBoolean => ValueTypeCategory::Boolean,
-            Prefix::VertexAttributeLong => ValueTypeCategory::Long,
-            Prefix::VertexAttributeDouble => ValueTypeCategory::Double,
-            Prefix::VertexAttributeDecimal => ValueTypeCategory::Decimal,
-            Prefix::VertexAttributeDate => ValueTypeCategory::Date,
-            Prefix::VertexAttributeDateTime => ValueTypeCategory::DateTime,
-            Prefix::VertexAttributeDateTimeTZ => ValueTypeCategory::DateTimeTZ,
-            Prefix::VertexAttributeDuration => ValueTypeCategory::Duration,
-            Prefix::VertexAttributeString => ValueTypeCategory::String,
-            Prefix::VertexAttributeStruct => ValueTypeCategory::Struct,
-            _ => unreachable!("Unexpected prefix."),
-        }
+        todo!()
     }
 
     pub fn attribute_id(&self) -> AttributeID {
-        AttributeID::new(self.value_type_category(), &self.bytes.bytes()[self.range_of_attribute_id()])
+        AttributeID::new(&self.bytes.bytes()[self.range_of_attribute_id()])
     }
 
     fn range_of_attribute_id(&self) -> Range<usize> {
@@ -726,12 +688,11 @@ impl StringAttributeID {
         Snapshot: ReadableSnapshot,
     {
         let mut bytes: [u8; Self::LENGTH] = [0; Self::LENGTH];
-        bytes[0..{ Self::ENCODING_STRING_HASHED_PREFIX_LENGTH }]
-            .copy_from_slice(&string.bytes().bytes()[0..{ Self::ENCODING_STRING_HASHED_PREFIX_LENGTH }]);
+        bytes[0..Self::ENCODING_STRING_HASHED_PREFIX_LENGTH]
+            .copy_from_slice(&string.bytes().bytes()[0..Self::ENCODING_STRING_HASHED_PREFIX_LENGTH]);
 
         debug_assert!(!Self::is_inlineable(string.as_reference()));
         let key_without_hash = AttributeVertex::build_prefix_type_attribute_id(
-            ValueTypeCategory::String,
             type_id,
             &bytes[0..{ Self::ENCODING_STRING_HASHED_PREFIX_LENGTH }],
         )
@@ -813,7 +774,7 @@ impl StringAttributeID {
 
 impl HashedID<{ StringAttributeID::ENCODING_STRING_HASHED_HASH_LENGTH + 1 }> for StringAttributeID {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
-    const FIXED_WIDTH_KEYS: bool = Prefix::VertexAttributeString.fixed_width_keys();
+    const FIXED_WIDTH_KEYS: bool = Prefix::VertexAttribute.fixed_width_keys();
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -847,7 +808,7 @@ impl StructAttributeID {
     where
         Snapshot: ReadableSnapshot,
     {
-        let key_without_hash = AttributeVertex::build_prefix_type(Prefix::VertexAttributeStruct, type_id);
+        let key_without_hash = AttributeVertex::build_prefix_type(Prefix::VertexAttribute, type_id);
         let existing_or_new = Self::find_existing_or_next_disambiguated_hash(
             snapshot,
             hasher,
@@ -868,7 +829,7 @@ impl StructAttributeID {
     where
         Snapshot: ReadableSnapshot,
     {
-        let key_without_hash = AttributeVertex::build_prefix_type(Prefix::VertexAttributeStruct, type_id);
+        let key_without_hash = AttributeVertex::build_prefix_type(Prefix::VertexAttribute, type_id);
         let existing_or_new = Self::find_existing_or_next_disambiguated_hash(
             snapshot,
             hasher,
@@ -902,5 +863,5 @@ impl StructAttributeID {
 
 impl HashedID<{ StructAttributeID::ENCODING_HASH_LENGTH + 1 }> for StructAttributeID {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
-    const FIXED_WIDTH_KEYS: bool = Prefix::VertexAttributeStruct.fixed_width_keys();
+    const FIXED_WIDTH_KEYS: bool = Prefix::VertexAttribute.fixed_width_keys();
 }

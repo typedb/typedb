@@ -435,12 +435,8 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         Ok(())
     }
 
-    fn prefix_for_type(
-        _type: Self::TypeAPI<'_>,
-        _snapshot: &impl ReadableSnapshot,
-        _type_manager: &TypeManager,
-    ) -> Result<Prefix, ConceptReadError> {
-        Ok(Prefix::VertexRelation)
+    fn prefix_for_type(_type: Self::TypeAPI<'_>) -> Prefix {
+        Prefix::VertexRelation
     }
 }
 

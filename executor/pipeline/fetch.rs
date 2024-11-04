@@ -297,9 +297,7 @@ fn execute_attribute_single<'a>(
     snapshot: Arc<impl ReadableSnapshot>,
     thing_manager: Arc<ThingManager>,
 ) -> Result<DocumentLeaf, FetchExecutionError> {
-    let mut iter = object
-        .get_has_type_unordered(snapshot.as_ref(), thing_manager.as_ref(), attribute_type)
-        .map_err(|err| FetchExecutionError::ConceptReadError { source: err })?;
+    let mut iter = object.get_has_type_unordered(snapshot.as_ref(), thing_manager.as_ref(), attribute_type);
     let attribute = iter.next();
     match attribute {
         None => Ok(DocumentLeaf::Empty),
@@ -318,9 +316,7 @@ fn execute_attributes_list<'a>(
     thing_manager: Arc<ThingManager>,
 ) -> Result<DocumentList, FetchExecutionError> {
     let mut list = DocumentList::new();
-    let mut iter = object
-        .get_has_type_unordered(snapshot.as_ref(), thing_manager.as_ref(), attribute_type)
-        .map_err(|err| FetchExecutionError::ConceptReadError { source: err })?;
+    let mut iter = object.get_has_type_unordered(snapshot.as_ref(), thing_manager.as_ref(), attribute_type);
     while let Some(result) = iter.next() {
         match result {
             Ok((attribute, count)) => {
