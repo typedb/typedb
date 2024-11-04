@@ -1549,52 +1549,6 @@ impl<ID: IrID> fmt::Display for Plays<ID> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct As<ID> {
-    specialising: Vertex<ID>,
-    specialised: Vertex<ID>,
-}
-
-impl<ID: IrID> As<ID> {
-    fn new(specialising: Vertex<ID>, specialised: Vertex<ID>) -> Self {
-        Self { specialising, specialised }
-    }
-
-    pub fn specialising(&self) -> &Vertex<ID> {
-        &self.specialising
-    }
-
-    pub fn specialised(&self) -> &Vertex<ID> {
-        &self.specialised
-    }
-
-    pub fn ids(&self) -> impl Iterator<Item = ID> {
-        [self.specialising.as_variable(), self.specialised.as_variable()].into_iter().flatten()
-    }
-
-    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> {
-        [&self.specialising, &self.specialised].into_iter()
-    }
-
-    pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
-    {
-        self.specialising.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
-        self.specialised.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
-    }
-
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> As<T> {
-        As::new(self.specialising.map(mapping), self.specialised.map(mapping))
-    }
-}
-
-impl<ID: IrID> fmt::Display for As<ID> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Value<ID> {
     attribute_type: Vertex<ID>,
     value_type: ValueType,

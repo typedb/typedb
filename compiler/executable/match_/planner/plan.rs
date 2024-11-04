@@ -16,7 +16,7 @@ use ir::{
     pattern::{
         conjunction::Conjunction,
         constraint::{
-            As, Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Is, Isa, Kind, Label,
+            Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Is, Isa, Kind, Label,
             Links, Owns, Plays, Relates, RoleName, Sub, Value,
         },
         nested_pattern::NestedPattern,

@@ -21,7 +21,7 @@ use ir::{
     pattern::{
         conjunction::Conjunction,
         constraint::{
-            As, Comparison, Constraint, FunctionCallBinding, Has, Is, Isa, IsaKind, Kind, Label, Links, Owns, Plays,
+            Comparison, Constraint, FunctionCallBinding, Has, Is, Isa, IsaKind, Kind, Label, Links, Owns, Plays,
             Relates, RoleName, Sub, SubKind, Value,
         },
         disjunction::Disjunction,
@@ -1474,56 +1474,6 @@ impl BinaryConstraint for Relates<Variable> {
             .map(|relation_type| TypeAnnotation::Relation(relation_type.clone()))
             .for_each(|type_| {
                 collector.insert(type_);
-            });
-        Ok(())
-    }
-}
-
-impl BinaryConstraint for As<Variable> {
-    fn left(&self) -> &Vertex<Variable> {
-        self.specialising()
-    }
-
-    fn right(&self) -> &Vertex<Variable> {
-        self.specialised()
-    }
-
-    fn annotate_left_to_right_for_type(
-        &self,
-        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
-        left_type: &TypeAnnotation,
-        collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError> {
-        let specialising = match left_type {
-            TypeAnnotation::RoleType(role_type) => role_type,
-            _ => {
-                return Ok(());
-            } // It can't be another type => Do nothing and let type-inference clean it up
-        };
-        if let Some(supertype) = specialising.get_supertype(seeder.snapshot, seeder.type_manager)? {
-            collector.insert(TypeAnnotation::RoleType(supertype));
-        }
-        Ok(())
-    }
-
-    fn annotate_right_to_left_for_type(
-        &self,
-        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
-        right_type: &TypeAnnotation,
-        collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError> {
-        let specialised = match right_type {
-            TypeAnnotation::RoleType(role_type) => role_type,
-            _ => {
-                return Ok(());
-            } // It can't be another type => Do nothing and let type-inference clean it up
-        };
-        specialised
-            .get_subtypes(seeder.snapshot, seeder.type_manager)?
-            .iter()
-            .map(|subtype| TypeAnnotation::RoleType(subtype.clone()))
-            .for_each(|subtype| {
-                collector.insert(subtype);
             });
         Ok(())
     }

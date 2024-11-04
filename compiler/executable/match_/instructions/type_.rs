@@ -11,7 +11,7 @@ use std::{
 
 use answer::{variable::Variable, Type};
 use ir::pattern::{
-    constraint::{As, Owns, Plays, Relates, Sub},
+    constraint::{Owns, Plays, Relates, Sub},
     IrID, Vertex,
 };
 

@@ -8,7 +8,7 @@ use std::{collections::HashMap, fmt, iter};
 
 use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
-use ir::pattern::constraint::{As, Has, Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, Sub, SubKind, Value};
+use ir::pattern::constraint::{Has, Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, Sub, SubKind, Value};
 use itertools::Itertools;
 
 use crate::{
