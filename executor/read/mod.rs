@@ -46,7 +46,6 @@ pub(super) fn TODO_REMOVE_create_executors_for_match(
         thing_manager,
         function_registry,
         match_executable,
-        &mut HashSet::new(),
     )?;
     Ok(PatternExecutor::new(executors))
 }
@@ -55,8 +54,7 @@ pub(super) fn create_executors_for_pipeline(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
-    executable_stages: &Vec<ExecutableStage>,
-    tmp__recursion_validation: &mut HashSet<FunctionID>,
+    executable_stages: &Vec<ExecutableStage>
 ) -> Result<PatternExecutor, ConceptReadError> {
     let executors = create_executors_for_pipeline_stages(
         snapshot,
@@ -64,7 +62,6 @@ pub(super) fn create_executors_for_pipeline(
         function_registry,
         executable_stages,
         executable_stages.len() - 1,
-        tmp__recursion_validation,
     )?;
     Ok(PatternExecutor::new(executors))
 }

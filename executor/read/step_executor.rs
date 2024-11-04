@@ -78,7 +78,6 @@ pub(crate) fn create_executors_for_match(
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
     match_executable: &MatchExecutable,
-    tmp__recursion_validation: &mut HashSet<FunctionID>,
 ) -> Result<Vec<StepExecutors>, ConceptReadError> {
     let mut steps = Vec::with_capacity(match_executable.steps().len());
     for step in match_executable.steps() {
@@ -106,7 +105,6 @@ pub(crate) fn create_executors_for_match(
                     thing_manager,
                     function_registry,
                     &negation_step.negation,
-                    tmp__recursion_validation,
                 )?;
                 steps.push(NestedPatternExecutor::new_negation(PatternExecutor::new(inner)).into())
             }
@@ -121,21 +119,13 @@ pub(crate) fn create_executors_for_match(
                     );
                     steps.push(StepExecutors::TabledCall(executor))
                 } else {
-                    if tmp__recursion_validation.contains(&function_call.function_id) {
-                        // TODO: This validation can be removed once planning correctly identifies those to be tabled.
-                        unreachable!("Something that should have been tabled has not been tabled.")
-                    } else {
-                        tmp__recursion_validation.insert(function_call.function_id.clone());
-                    }
                     let inner_executors = create_executors_for_function(
                         snapshot,
                         thing_manager,
                         function_registry,
                         function,
-                        tmp__recursion_validation,
                     )?;
                     let inner = PatternExecutor::new(inner_executors);
-                    tmp__recursion_validation.remove(&function_call.function_id);
                     let step = NestedPatternExecutor::new_inlined_function(
                         inner,
                         function_call,
@@ -155,7 +145,6 @@ pub(crate) fn create_executors_for_match(
                             thing_manager,
                             function_registry,
                             &branch_executable,
-                            tmp__recursion_validation,
                         )?;
                         Ok(PatternExecutor::new(executors))
                     })
@@ -184,7 +173,6 @@ pub(crate) fn create_executors_for_function(
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
     executable_function: &ExecutableFunction,
-    tmp__recursion_validation: &mut HashSet<FunctionID>,
 ) -> Result<Vec<StepExecutors>, ConceptReadError> {
     let executable_stages = &executable_function.executable_stages;
     let mut steps = create_executors_for_pipeline_stages(
@@ -193,7 +181,6 @@ pub(crate) fn create_executors_for_function(
         function_registry,
         executable_stages,
         executable_stages.len() - 1,
-        tmp__recursion_validation,
     )?;
 
     // TODO: Add table writing step.
@@ -212,7 +199,6 @@ pub(super) fn create_executors_for_pipeline_stages(
     function_registry: &ExecutableFunctionRegistry,
     executable_stages: &Vec<ExecutableStage>,
     at_index: usize,
-    tmp_recursion_validation: &mut HashSet<FunctionID>,
 ) -> Result<Vec<StepExecutors>, ConceptReadError> {
     let mut previous_stage_steps = if at_index > 0 {
         create_executors_for_pipeline_stages(
@@ -221,7 +207,6 @@ pub(super) fn create_executors_for_pipeline_stages(
             function_registry,
             executable_stages,
             at_index - 1,
-            tmp_recursion_validation,
         )?
     } else {
         vec![]
@@ -234,7 +219,6 @@ pub(super) fn create_executors_for_pipeline_stages(
                 thing_manager,
                 function_registry,
                 match_executable,
-                tmp_recursion_validation,
             )?;
             previous_stage_steps.append(&mut match_stages);
             Ok(previous_stage_steps)

@@ -44,7 +44,6 @@ impl TabledFunctions {
                 &context.thing_manager,
                 &self.function_registry,
                 function,
-                &mut HashSet::new(),
             )
             .map_err(|source| ReadExecutionError::ConceptRead { source })?;
             let pattern_executor = PatternExecutor::new(executors);
