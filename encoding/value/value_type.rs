@@ -124,7 +124,7 @@ pub enum ValueTypeCategory {
 }
 
 impl ValueTypeCategory {
-    pub fn to_bytes(&self) -> [u8; ValueTypeBytes::CATEGORY_LENGTH] {
+    pub const fn to_bytes(&self) -> [u8; ValueTypeBytes::CATEGORY_LENGTH] {
         match self {
             Self::Boolean => [0],
             Self::Long => [1],
@@ -221,7 +221,7 @@ pub struct ValueTypeBytes {
 }
 
 impl ValueTypeBytes {
-    const CATEGORY_LENGTH: usize = 1;
+    pub const CATEGORY_LENGTH: usize = 1;
     const TAIL_LENGTH: usize = DefinitionKey::LENGTH;
     const LENGTH: usize = Self::CATEGORY_LENGTH + Self::TAIL_LENGTH;
     const RANGE_CATEGORY: Range<usize> = 0..Self::CATEGORY_LENGTH;

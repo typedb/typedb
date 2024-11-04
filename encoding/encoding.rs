@@ -22,9 +22,9 @@ pub mod layout;
 pub mod value;
 
 /*
-TODO: things we may want to allow the user to configure, per database:
-- Bytes per TypeID (max number of types per kind)
-- Bytes per Entity/Relation (ObjectID) (max number of instances per type)
+ * TODO: things we may want to allow the user to configure, per database:
+ * - Bytes per TypeID (max number of types per kind)
+ * - Bytes per Entity/Relation (ObjectID) (max number of instances per type)
  */
 
 #[derive(Clone, Copy, Debug)]

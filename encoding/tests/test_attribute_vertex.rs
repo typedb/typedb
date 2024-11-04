@@ -60,12 +60,12 @@ fn generate_string_attribute_vertex() {
         assert!(!vertex_id.is_inline());
         assert_eq!(
             vertex_id.get_hash_prefix(),
-            string_bytes.bytes().bytes()[0..StringAttributeID::ENCODING_STRING_HASHED_PREFIX_LENGTH]
+            string_bytes.bytes().bytes()[0..StringAttributeID::HASHED_PREFIX_LENGTH]
         );
         assert_eq!(
             vertex_id.get_hash_hash(),
             seahash::hash(string_bytes.bytes().bytes()).to_be_bytes()
-                [0..StringAttributeID::ENCODING_STRING_HASHED_HASH_LENGTH]
+                [0..StringAttributeID::HASHED_HASH_LENGTH]
         );
         assert_eq!(vertex_id.get_hash_disambiguator(), 0u8);
     }
@@ -85,11 +85,11 @@ fn generate_string_attribute_vertex() {
         assert!(!vertex_id.is_inline());
         assert_eq!(
             vertex_id.get_hash_prefix(),
-            string_bytes.bytes().bytes()[0..StringAttributeID::ENCODING_STRING_HASHED_PREFIX_LENGTH]
+            string_bytes.bytes().bytes()[0..StringAttributeID::HASHED_PREFIX_LENGTH]
         );
         assert_eq!(
             vertex_id.get_hash_hash(),
-            CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::ENCODING_STRING_HASHED_HASH_LENGTH]
+            CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::HASHED_HASH_LENGTH]
         );
         assert_eq!(vertex_id.get_hash_disambiguator(), 0u8);
         {
@@ -103,11 +103,11 @@ fn generate_string_attribute_vertex() {
             assert!(!collide_id.is_inline());
             assert_eq!(
                 collide_id.get_hash_prefix(),
-                string_collide_bytes.bytes().bytes()[0..StringAttributeID::ENCODING_STRING_HASHED_PREFIX_LENGTH]
+                string_collide_bytes.bytes().bytes()[0..StringAttributeID::HASHED_PREFIX_LENGTH]
             );
             assert_eq!(
                 collide_id.get_hash_hash(),
-                CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::ENCODING_STRING_HASHED_HASH_LENGTH]
+                CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::HASHED_HASH_LENGTH]
             );
             assert_eq!(collide_id.get_hash_disambiguator(), 1u8);
         }
@@ -122,11 +122,11 @@ fn generate_string_attribute_vertex() {
             assert!(!collide_id.is_inline());
             assert_eq!(
                 collide_id.get_hash_prefix(),
-                string_collide_bytes.bytes().bytes()[0..StringAttributeID::ENCODING_STRING_HASHED_PREFIX_LENGTH]
+                string_collide_bytes.bytes().bytes()[0..StringAttributeID::HASHED_PREFIX_LENGTH]
             );
             assert_eq!(
                 collide_id.get_hash_hash(),
-                CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::ENCODING_STRING_HASHED_HASH_LENGTH]
+                CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::HASHED_HASH_LENGTH]
             );
             assert_eq!(collide_id.get_hash_disambiguator(), 2u8);
         }

@@ -255,62 +255,37 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         attribute: &'a Attribute<'a>,
     ) -> Result<Value<'static>, ConceptReadError> {
-        let attribute_type = attribute.type_();
-        let value_type = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?;
-        match value_type.as_ref().unwrap() {
-            ValueType::Boolean => {
-                let attribute_id = attribute.vertex().attribute_id().unwrap_boolean();
-                Ok(Value::Boolean(BooleanBytes::new(attribute_id.bytes()).as_bool()))
-            }
-            ValueType::Long => {
-                let attribute_id = attribute.vertex().attribute_id().unwrap_long();
-                Ok(Value::Long(LongBytes::new(attribute_id.bytes()).as_i64()))
-            }
-            ValueType::Double => {
-                let attribute_id = attribute.vertex().attribute_id().unwrap_double();
-                Ok(Value::Double(DoubleBytes::new(attribute_id.bytes()).as_f64()))
-            }
-            ValueType::Decimal => {
-                let attribute_id = attribute.vertex().attribute_id().unwrap_decimal();
-                Ok(Value::Decimal(DecimalBytes::new(attribute_id.bytes()).as_decimal()))
-            }
-            ValueType::Date => {
-                let attribute_id = attribute.vertex().attribute_id().unwrap_date();
-                Ok(Value::Date(DateBytes::new(attribute_id.bytes()).as_naive_date()))
-            }
-            ValueType::DateTime => {
-                let attribute_id = attribute.vertex().attribute_id().unwrap_date_time();
-                Ok(Value::DateTime(DateTimeBytes::new(attribute_id.bytes()).as_naive_date_time()))
-            }
-            ValueType::DateTimeTZ => {
-                let attribute_id = attribute.vertex().attribute_id().unwrap_date_time_tz();
-                Ok(Value::DateTimeTZ(DateTimeTZBytes::new(attribute_id.bytes()).as_date_time()))
-            }
-            ValueType::Duration => {
-                let attribute_id = attribute.vertex().attribute_id().unwrap_duration();
-                Ok(Value::Duration(DurationBytes::new(attribute_id.bytes()).as_duration()))
-            }
-            ValueType::String => {
-                let attribute_id = attribute.vertex().attribute_id().unwrap_string();
-                if attribute_id.is_inline() {
-                    Ok(Value::String(Cow::Owned(String::from(attribute_id.get_inline_string_bytes().as_str()))))
+        match attribute.vertex().attribute_id() {
+            AttributeID::Boolean(id) => Ok(Value::Boolean(id.to_value())),
+            AttributeID::Long(id) => Ok(Value::Long(id.to_value())),
+            AttributeID::Double(id) => Ok(Value::Double(id.to_value())),
+            AttributeID::Decimal(id) => Ok(Value::Decimal(id.to_value())),
+            AttributeID::Date(id) => Ok(Value::Date(id.to_value())),
+            AttributeID::DateTime(id) => Ok(Value::DateTime(id.to_value())),
+            AttributeID::DateTimeTZ(id) => Ok(Value::DateTimeTZ(id.to_value())),
+            AttributeID::Duration(id) => Ok(Value::Duration(id.to_value())),
+            AttributeID::String(id) => {
+                let string = if id.is_inline() {
+                    String::from(id.get_inline_string_bytes().as_str())
                 } else {
-                    Ok(snapshot
+                    snapshot
                         .get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
-                            Value::String(Cow::Owned(String::from(
-                                StringBytes::new(Bytes::<1>::Reference(bytes)).as_str(),
-                            )))
+                            String::from(StringBytes::new(Bytes::<1>::Reference(bytes)).as_str())
                         })
                         .map_err(|error| ConceptReadError::SnapshotGet { source: error })?
-                        .unwrap())
-                }
+                        .unwrap()
+                };
+                Ok(Value::String(Cow::Owned(string)))
             }
-            ValueType::Struct(_) => Ok(snapshot
-                .get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
-                    Value::Struct(Cow::Owned(StructBytes::new(Bytes::<1>::Reference(bytes)).as_struct()))
-                })
-                .map_err(|error| ConceptReadError::SnapshotGet { source: error })?
-                .unwrap()),
+            AttributeID::Struct(_id) => {
+                let struct_value = snapshot
+                    .get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
+                        StructBytes::new(Bytes::<1>::Reference(bytes)).as_struct()
+                    })
+                    .map_err(|error| ConceptReadError::SnapshotGet { source: error })?
+                    .unwrap();
+                Ok(Value::Struct(Cow::Owned(struct_value)))
+            }
         }
     }
 
@@ -1116,15 +1091,12 @@ impl ThingManager {
         }
 
         for (key, _value) in snapshot
-            .iterate_writes_range(KeyRange::new_exclusive(
+            .iterate_writes_range(KeyRange::new_within(
                 StorageKey::new(
                     AttributeVertex::KEYSPACE,
                     Bytes::inline(Prefix::VertexAttribute.prefix_id().bytes(), 1),
                 ),
-                StorageKey::new(
-                    AttributeVertex::KEYSPACE,
-                    Bytes::inline(Prefix::VertexAttribute.prefix_id().bytes(), 1),
-                ),
+                Prefix::VertexAttribute.fixed_width_keys(),
             ))
             .filter_map(|(key, write)| match write {
                 Write::Put { value, .. } => Some((key, value)),

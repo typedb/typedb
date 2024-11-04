@@ -75,7 +75,7 @@ pub(crate) fn decode_attribute_ids(
     let chunk_size = AttributeID::value_type_encoding_length(value_type_category);
     let chunks_iter = bytes.chunks_exact(chunk_size);
     debug_assert!(chunks_iter.remainder().is_empty());
-    chunks_iter.map(move |chunk| AttributeID::new(value_type_category, chunk))
+    chunks_iter.map(AttributeID::new)
 }
 
 pub(crate) fn encode_attribute_ids(
