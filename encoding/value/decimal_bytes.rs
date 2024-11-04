@@ -4,11 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use super::{
-    decimal_value::Decimal,
-    primitive_encoding::{decode_i64, decode_u64, encode_i64, encode_u64},
+use crate::{
+    graph::thing::vertex_attribute::AttributeIDLength,
+    value::{
+        decimal_value::Decimal,
+        primitive_encoding::{decode_i64, decode_u64, encode_i64, encode_u64},
+    },
 };
-use crate::graph::thing::vertex_attribute::AttributeIDLength;
 
 #[derive(Debug, Copy, Clone)]
 pub struct DecimalBytes {

@@ -12,11 +12,11 @@ use logger::result::ResultExt;
 use crate::{error::EncodingError, AsBytes};
 
 /*
-Both Rust and RocksDB use lexicographical ordering for comparing byte slices.
-This is the natural representation we want, which guarantees that:
-"a" < "aa" < "b"
-So we automatically have the correct sort order for strings, where longer strings come after shorter ones
-with the same prefix.
+ * Both Rust and RocksDB use lexicographical ordering for comparing byte slices.
+ * This is the natural representation we want, which guarantees that:
+ * "a" < "aa" < "b"
+ * So we automatically have the correct sort order for strings, where longer strings come after shorter ones
+ * with the same prefix.
  */
 #[derive(Clone, Eq, Hash)]
 pub struct StringBytes<'a, const INLINE_LENGTH: usize> {

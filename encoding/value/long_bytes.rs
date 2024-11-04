@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use super::primitive_encoding::{decode_i64, encode_i64};
+use crate::value::primitive_encoding::{decode_i64, encode_i64};
 
 #[derive(Debug, Copy, Clone)]
 pub struct LongBytes {

@@ -4,11 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use super::{
-    duration_value::Duration,
-    primitive_encoding::{decode_u32, decode_u64, encode_u32, encode_u64},
+use crate::{
+    graph::thing::vertex_attribute::AttributeIDLength,
+    value::{
+        duration_value::Duration,
+        primitive_encoding::{decode_u32, decode_u64, encode_u32, encode_u64},
+    },
 };
-use crate::graph::thing::vertex_attribute::AttributeIDLength;
 
 #[derive(Debug, Copy, Clone)]
 pub struct DurationBytes {

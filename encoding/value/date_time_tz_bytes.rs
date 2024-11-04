@@ -6,8 +6,10 @@
 
 use chrono::DateTime;
 
-use super::{date_time_bytes::DateTimeBytes, timezone::TimeZone};
-use crate::graph::thing::vertex_attribute::AttributeIDLength;
+use crate::{
+    graph::thing::vertex_attribute::AttributeIDLength,
+    value::{date_time_bytes::DateTimeBytes, timezone::TimeZone},
+};
 
 #[derive(Debug, Copy, Clone)]
 pub struct DateTimeTZBytes {
