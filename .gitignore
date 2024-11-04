@@ -61,4 +61,3 @@ __pycache__
 # Cargo files
 Cargo.lock
 Cargo.toml
-/python_typedb
