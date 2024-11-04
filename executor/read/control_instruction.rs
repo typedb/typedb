@@ -12,8 +12,8 @@ use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     read::{
         collecting_stage_executor::CollectedStageIterator,
-        nested_pattern_executor::NestedPatternResultMapper,
         pattern_executor::{BranchIndex, ExecutorIndex},
+        stream_modifier::StreamModifierResultMapper,
     },
     row::MaybeOwnedRow,
 };
@@ -33,7 +33,7 @@ pub(super) struct MapRowBatchToRowForNested {
 
 pub(super) struct ExecuteStreamModifier {
     pub(super) index: ExecutorIndex,
-    pub(super) mapper: NestedPatternResultMapper,
+    pub(super) mapper: StreamModifierResultMapper,
     pub(super) input: MaybeOwnedRow<'static>,
 }
 
@@ -84,10 +84,10 @@ pub(super) enum ControlInstruction {
     MapRowBatchToRowForNested(MapRowBatchToRowForNested),
     ExecuteNegation(ExecuteNegation),
     ExecuteDisjunction(ExecuteDisjunction),
-    ExecuteStreamModifier(ExecuteStreamModifier),
     ExecuteInlinedFunction(ExecuteInlinedFunction),
+    ExecuteStreamModifier(ExecuteStreamModifier),
 
-    ExecuteTabledCall(TabledCall), // TODO: Push into nested?
+    ExecuteTabledCall(TabledCall),
 
     CollectingStage(CollectingStage),
     StreamCollected(StreamCollected),

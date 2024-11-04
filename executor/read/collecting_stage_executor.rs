@@ -36,7 +36,6 @@ pub(super) struct CollectingStageExecutor {
 pub(super) enum CollectorEnum {
     Reduce(ReduceCollector),
     Sort(SortCollector),
-    Distinct(DistinctCollector),
 }
 
 impl CollectorEnum {
@@ -44,7 +43,6 @@ impl CollectorEnum {
         match self {
             CollectorEnum::Reduce(collector) => collector.accept(context, batch),
             CollectorEnum::Sort(collector) => collector.accept(context, batch),
-            CollectorEnum::Distinct(collector) => collector.accept(context, batch),
         }
     }
 
@@ -52,7 +50,6 @@ impl CollectorEnum {
         match self {
             CollectorEnum::Reduce(collector) => collector.collected_to_iterator(),
             CollectorEnum::Sort(collector) => collector.collected_to_iterator(),
-            CollectorEnum::Distinct(collector) => collector.collected_to_iterator(),
         }
     }
 }
@@ -60,7 +57,6 @@ impl CollectorEnum {
 pub(super) enum CollectedStageIterator {
     Reduce(ReduceStageIterator),
     Sort(SortStageIterator),
-    Distinct(DistinctStageIterator),
 }
 
 impl CollectedStageIterator {
@@ -68,7 +64,6 @@ impl CollectedStageIterator {
         match self {
             CollectedStageIterator::Reduce(iterator) => iterator.batch_continue(),
             CollectedStageIterator::Sort(iterator) => iterator.batch_continue(),
-            CollectedStageIterator::Distinct(iterator) => iterator.batch_continue(),
         }
     }
 }
@@ -87,16 +82,11 @@ impl CollectingStageExecutor {
         Self { pattern: previous_stage, collector: CollectorEnum::Sort(SortCollector::new(sort_executable)) }
     }
 
-    pub(crate) fn new_distinct(pattern: PatternExecutor) -> Self {
-        Self { pattern, collector: CollectorEnum::Distinct(DistinctCollector::new()) }
-    }
-
     pub(crate) fn reset(&mut self) {
         self.pattern.reset();
         match &mut self.collector {
             CollectorEnum::Reduce(collector) => collector.reset(),
             CollectorEnum::Sort(collector) => collector.reset(),
-            CollectorEnum::Distinct(collector) => collector.reset(),
         }
     }
 
@@ -111,7 +101,6 @@ impl CollectingStageExecutor {
         match &mut self.collector {
             CollectorEnum::Reduce(collector) => collector.prepare(),
             CollectorEnum::Sort(collector) => collector.prepare(),
-            CollectorEnum::Distinct(collector) => collector.prepare(),
         }
     }
 }
@@ -182,9 +171,7 @@ impl CollectedStageIteratorTrait for ReduceStageIterator {
         let mut next_batch = FixedBatch::new(self.output_width);
         while !next_batch.is_full() {
             if let Some(row) = self.batch_row_iterator.next() {
-                next_batch.append(|mut output_row| {
-                    output_row.copy_from(row.row(), row.multiplicity());
-                })
+                next_batch.append(|mut output_row| output_row.copy_from_row(row));
             } else {
                 break;
             }
@@ -277,63 +264,6 @@ impl CollectedStageIteratorTrait for SortStageIterator {
                 next_batch.append(|mut copy_to_row| {
                     copy_to_row.copy_from_row(unsorted.get_row(index)); // TODO: Can we avoid a copy?
                 });
-            }
-            Ok(Some(next_batch))
-        } else {
-            Ok(None)
-        }
-    }
-}
-
-// Distinct
-pub(super) struct DistinctCollector {
-    collector: Option<HashSet<MaybeOwnedRow<'static>>>,
-}
-
-impl DistinctCollector {
-    fn new() -> Self {
-        Self { collector: None }
-    }
-}
-
-impl CollectorTrait for DistinctCollector {
-    fn prepare(&mut self) {
-        self.collector = Some(HashSet::new());
-    }
-
-    fn reset(&mut self) {
-        self.collector = None;
-    }
-
-    fn accept(&mut self, _context: &ExecutionContext<impl ReadableSnapshot>, batch: FixedBatch) {
-        for row in batch {
-            self.collector.as_mut().unwrap().insert(row.clone().into_owned());
-        }
-    }
-
-    fn collected_to_iterator(&mut self) -> CollectedStageIterator {
-        CollectedStageIterator::Distinct(DistinctStageIterator {
-            iterator: self.collector.take().unwrap().into_iter().peekable(),
-        })
-    }
-}
-
-pub struct DistinctStageIterator {
-    iterator: Peekable<hash_set::IntoIter<MaybeOwnedRow<'static>>>,
-}
-
-impl CollectedStageIteratorTrait for DistinctStageIterator {
-    fn batch_continue(&mut self) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        if self.iterator.peek().is_some() {
-            let mut next_batch = FixedBatch::new(self.iterator.peek().unwrap().len() as u32);
-            while !next_batch.is_full() {
-                if let Some(row) = self.iterator.next() {
-                    next_batch.append(|mut output_row| {
-                        output_row.copy_from(row.row(), row.multiplicity());
-                    })
-                } else {
-                    break;
-                }
             }
             Ok(Some(next_batch))
         } else {

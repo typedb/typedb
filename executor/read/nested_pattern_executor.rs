@@ -51,10 +51,7 @@ impl InlinedFunction {
         for return_index in 0..batch.len() {
             let returned_row = batch.get_row(return_index);
             output_batch.append(|mut output_row| {
-                output_row.copy_mapped(
-                    input.as_reference(),
-                    (0..input.len()).map(|i| (VariablePosition::new(i as u32), VariablePosition::new(i as u32))),
-                );
+                output_row.copy_from_row(input.as_reference());
                 output_row.copy_mapped(
                     returned_row.as_reference(),
                     self.return_mapping
@@ -75,6 +72,7 @@ pub(super) enum NestedPatternExecutor {
     InlinedFunction(InlinedFunction),
     Offset { inner: PatternExecutor, offset: u64 },
     Limit { inner: PatternExecutor, limit: u64 },
+    Distinct { inner: PatternExecutor, output_width: u32 },
 }
 
 impl Into<StepExecutors> for NestedPatternExecutor {
@@ -108,13 +106,17 @@ impl NestedPatternExecutor {
             parameter_registry,
         })
     }
-
+    // TODO: Move these
     pub(crate) fn new_offset(inner: PatternExecutor, offset: u64) -> Self {
         Self::Offset { inner, offset }
     }
 
     pub(crate) fn new_limit(inner: PatternExecutor, limit: u64) -> Self {
         Self::Limit { inner, limit }
+    }
+
+    pub(crate) fn new_distinct(inner: PatternExecutor, output_width: u32) -> Self {
+        Self::Distinct { inner, output_width }
     }
 
     // TODO: Deprecate
@@ -125,132 +127,7 @@ impl NestedPatternExecutor {
             NestedPatternExecutor::InlinedFunction(InlinedFunction { .. }) => todo!("deprecate this method"),
             NestedPatternExecutor::Offset { inner, .. } => inner,
             NestedPatternExecutor::Limit { inner, .. } => inner,
-        }
-    }
-}
-
-// Bad name because I want to refactor later
-pub(super) enum NestedPatternResultMapper {
-    Offset(OffsetMapper),
-    Limit(LimitMapper),
-}
-
-impl NestedPatternResultMapper {
-    pub(super) fn prepare(&mut self) {
-        match self {
-            Self::Offset(mapper) => mapper.prepare(),
-            Self::Limit(mapper) => mapper.prepare(),
-        }
-    }
-
-    pub(super) fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> NestedPatternControl {
-        match self {
-            Self::Offset(mapper) => mapper.map_output(subquery_result),
-            Self::Limit(mapper) => mapper.map_output(subquery_result),
-        }
-    }
-}
-
-pub(super) trait StreamModifierResultMapperTrait {
-    fn prepare(&mut self);
-    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> NestedPatternControl;
-}
-
-pub(super) enum NestedPatternControl {
-    Retry(Option<FixedBatch>),
-    Done(Option<FixedBatch>),
-}
-
-impl NestedPatternControl {
-    pub(crate) fn into_parts(self) -> (bool, Option<FixedBatch>) {
-        match self {
-            NestedPatternControl::Retry(batch_opt) => (true, batch_opt),
-            NestedPatternControl::Done(batch_opt) => (false, batch_opt),
-        }
-    }
-}
-
-// TODO: OffsetController & LimitController should be really easy.
-pub(super) struct OffsetMapper {
-    required: u64,
-    current: u64,
-}
-
-impl OffsetMapper {
-    pub(crate) fn new(offset: u64) -> Self {
-        Self { required: offset, current: 0 }
-    }
-}
-
-impl StreamModifierResultMapperTrait for OffsetMapper {
-    fn prepare(&mut self) {
-        self.current = 0;
-    }
-
-    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> NestedPatternControl {
-        if let Some(input_batch) = subquery_result {
-            if self.current >= self.required {
-                NestedPatternControl::Retry(Some(input_batch))
-            } else if (self.required - self.current) >= input_batch.len() as u64 {
-                self.current += input_batch.len() as u64;
-                NestedPatternControl::Retry(None)
-            } else {
-                let offset_in_batch = (self.required - self.current) as u32;
-                let mut output_batch = FixedBatch::new(input_batch.width());
-                for row_index in offset_in_batch..input_batch.len() {
-                    output_batch.append(|mut output_row| {
-                        let input_row = input_batch.get_row(row_index);
-                        output_row.copy_from(input_row.row(), input_row.multiplicity())
-                    });
-                }
-                self.current = self.required;
-                NestedPatternControl::Retry(Some(output_batch))
-            }
-        } else {
-            NestedPatternControl::Done(None)
-        }
-    }
-}
-
-pub(super) struct LimitMapper {
-    required: u64,
-    current: u64,
-}
-
-impl LimitMapper {
-    pub(crate) fn new(limit: u64) -> Self {
-        Self { required: limit, current: limit }
-    }
-}
-
-impl StreamModifierResultMapperTrait for LimitMapper {
-    fn prepare(&mut self) {
-        self.current = 0;
-    }
-
-    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> NestedPatternControl {
-        if let Some(input_batch) = subquery_result {
-            if self.current >= self.required {
-                NestedPatternControl::Done(None)
-            } else if (self.required - self.current) >= input_batch.len() as u64 {
-                self.current += input_batch.len() as u64;
-                NestedPatternControl::Retry(Some(input_batch))
-            } else {
-                let mut output_batch = FixedBatch::new(input_batch.width());
-                let mut i = 0;
-                while self.current < self.required {
-                    output_batch.append(|mut output_row| {
-                        let input_row = input_batch.get_row(i);
-                        output_row.copy_from(input_row.row(), input_row.multiplicity())
-                    });
-                    i += 1;
-                    self.current += 1;
-                }
-                debug_assert!(self.current == self.required);
-                NestedPatternControl::Done(Some(output_batch))
-            }
-        } else {
-            NestedPatternControl::Done(None)
+            NestedPatternExecutor::Distinct { inner, .. } => inner,
         }
     }
 }

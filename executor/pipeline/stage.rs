@@ -42,7 +42,7 @@ impl<Snapshot> ExecutionContext<Snapshot> {
     }
 
     pub(crate) fn clone_with_replaced_parameters(&self, parameters: Arc<ParameterRegistry>) -> Self {
-        Self { snapshot: self.snapshot.clone(), thing_manager: self.thing_manager.clone(), parameters  }
+        Self { snapshot: self.snapshot.clone(), thing_manager: self.thing_manager.clone(), parameters }
     }
 
     pub(crate) fn snapshot(&self) -> &Arc<Snapshot> {

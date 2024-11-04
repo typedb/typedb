@@ -30,6 +30,7 @@ mod immediate_executor;
 mod nested_pattern_executor;
 pub(crate) mod pattern_executor;
 pub(crate) mod step_executor;
+mod stream_modifier;
 pub(crate) mod tabled_call_executor;
 pub mod tabled_functions;
 

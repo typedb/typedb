@@ -167,10 +167,10 @@ pub(crate) fn create_executors_for_match(
                 )
                 .into();
                 // Hack: wrap it in a distinct
-                let step =
-                    StepExecutors::CollectingStage(CollectingStageExecutor::new_distinct(PatternExecutor::new(vec![
-                        inner_step,
-                    ])));
+                let step = StepExecutors::Nested(NestedPatternExecutor::new_distinct(
+                    PatternExecutor::new(vec![inner_step]),
+                    step.output_width,
+                ));
                 steps.push(step);
             }
             ExecutionStep::Optional(_) => todo!(),
