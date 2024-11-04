@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::HashSet;
+
 use answer::Type as TypeEnum;
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
@@ -96,7 +98,7 @@ fn process_type_definitions(
     definables: &[Definable],
 ) -> Result<(), DefineError> {
     let declarations = filter_variants!(Definable::TypeDeclaration : definables);
-    declarations.clone().try_for_each(|declaration| define_type(snapshot, type_manager, declaration))?;
+    define_types(snapshot, type_manager, declarations.clone())?;
     declarations.clone().try_for_each(|declaration| define_alias(snapshot, type_manager, declaration))?;
     declarations
         .clone()
@@ -127,6 +129,28 @@ fn process_function_definitions(
 ) -> Result<(), DefineError> {
     filter_variants!(Definable::Function : definables)
         .try_for_each(|function| define_function(snapshot, type_manager, function))?;
+    Ok(())
+}
+
+fn define_types<'a>(
+    snapshot: &mut impl WritableSnapshot,
+    type_manager: &TypeManager,
+    mut declarations: impl Iterator<Item = &'a Type>,
+) -> Result<(), DefineError> {
+    let mut undefined_labels: HashSet<Label<'static>> = HashSet::new();
+
+    declarations.try_for_each(|declaration| define_type(snapshot, type_manager, declaration, &mut undefined_labels))?;
+
+    for label in undefined_labels {
+        let existing =
+            try_resolve_typeql_type(snapshot, type_manager, &label).map_err(|err| DefineError::SymbolResolution {
+                typedb_source: SymbolResolutionError::UnexpectedConceptRead { source: err },
+            })?;
+        if existing.is_none() {
+            return Err(DefineError::SymbolResolution { typedb_source: SymbolResolutionError::TypeNotFound { label } });
+        }
+    }
+
     Ok(())
 }
 
@@ -201,6 +225,7 @@ fn define_type(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     type_declaration: &Type,
+    undefined_labels: &mut HashSet<Label<'static>>,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let existing = try_resolve_typeql_type(snapshot, type_manager, &label).map_err(|err| {
@@ -209,9 +234,7 @@ fn define_type(
     match type_declaration.kind {
         None => {
             if existing.is_none() {
-                return Err(DefineError::SymbolResolution {
-                    typedb_source: SymbolResolutionError::TypeNotFound { label },
-                });
+                undefined_labels.insert(label);
             }
         }
         Some(token::Kind::Role) => {
