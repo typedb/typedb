@@ -20,7 +20,7 @@ use typeql::{
 use crate::{
     pattern::{
         conjunction::ConjunctionBuilder,
-        constraint::{Comparator, ConstraintsBuilder, IsaKind},
+        constraint::{Comparator, ConstraintsBuilder, IsaKind, SubKind},
         ValueType, Vertex,
     },
     pipeline::function_signature::FunctionSignatureIndex,
@@ -341,8 +341,9 @@ fn add_typeql_as(
     registered_specialising: Vertex<Variable>,
     specialised: &typeql::TypeRef,
 ) -> Result<(), RepresentationError> {
+    let kind = SubKind::Subtype; // will read from the IR when "as!" is introduced
     let registered_specialised = register_typeql_role_type(constraints, specialised)?;
-    constraints.add_as(registered_specialising, registered_specialised)?;
+    constraints.add_sub(kind, registered_specialising, registered_specialised)?;
     Ok(())
 }
 

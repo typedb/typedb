@@ -38,7 +38,6 @@ use tracing::field::debug;
 
 use crate::{
     instruction::{
-        as_executor::AsExecutor, as_reverse_executor::AsReverseExecutor,
         function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
         has_reverse_executor::HasReverseExecutor, is_executor::IsExecutor, isa_executor::IsaExecutor,
         isa_reverse_executor::IsaReverseExecutor, iterator::TupleIterator, links_executor::LinksExecutor,
@@ -52,8 +51,6 @@ use crate::{
     row::MaybeOwnedRow,
 };
 
-mod as_executor;
-mod as_reverse_executor;
 mod function_call_binding_executor;
 mod has_executor;
 mod has_reverse_executor;
@@ -91,9 +88,6 @@ pub(crate) enum InstructionExecutor {
 
     Plays(PlaysExecutor),
     PlaysReverse(PlaysReverseExecutor),
-
-    As(AsExecutor),
-    AsReverse(AsReverseExecutor),
 
     Isa(IsaExecutor),
     IsaReverse(IsaReverseExecutor),
@@ -138,10 +132,6 @@ impl InstructionExecutor {
             ConstraintInstruction::Plays(plays) => Ok(Self::Plays(PlaysExecutor::new(plays, variable_modes, sort_by))),
             ConstraintInstruction::PlaysReverse(plays_reverse) => {
                 Ok(Self::PlaysReverse(PlaysReverseExecutor::new(plays_reverse, variable_modes, sort_by)))
-            }
-            ConstraintInstruction::As(as_) => Ok(Self::As(AsExecutor::new(as_, variable_modes, sort_by))),
-            ConstraintInstruction::AsReverse(as_reverse) => {
-                Ok(Self::AsReverse(AsReverseExecutor::new(as_reverse, variable_modes, sort_by)))
             }
             ConstraintInstruction::Isa(isa) => Ok(Self::Isa(IsaExecutor::new(isa, variable_modes, sort_by))),
             ConstraintInstruction::IsaReverse(isa_reverse) => {
@@ -189,8 +179,6 @@ impl InstructionExecutor {
             Self::RelatesReverse(executor) => executor.get_iterator(context, row),
             Self::Plays(executor) => executor.get_iterator(context, row),
             Self::PlaysReverse(executor) => executor.get_iterator(context, row),
-            Self::As(executor) => executor.get_iterator(context, row),
-            Self::AsReverse(executor) => executor.get_iterator(context, row),
             Self::Isa(executor) => executor.get_iterator(context, row),
             Self::IsaReverse(executor) => executor.get_iterator(context, row),
             Self::Has(executor) => executor.get_iterator(context, row),
@@ -220,8 +208,6 @@ impl InstructionExecutor {
             InstructionExecutor::RelatesReverse(_) => "relates_reverse",
             InstructionExecutor::Plays(_) => "plays",
             InstructionExecutor::PlaysReverse(_) => "plays_reverse",
-            InstructionExecutor::As(_) => "as",
-            InstructionExecutor::AsReverse(_) => "as_reverse",
         }
     }
 }
@@ -598,34 +584,6 @@ impl<T: Hkt> Checker<T> {
                                     role_type(value).as_type().as_role_type(),
                                 )
                                 .map(|plays| plays.is_some())
-                        }
-                    }));
-                }
-
-                &CheckInstruction::As { specialising: ref specialising, specialised: ref specialised } => {
-                    let maybe_specialising_extractor =
-                        specialising.as_variable().and_then(|var| self.extractors.get(&var));
-                    let maybe_specialised_extractor =
-                        specialised.as_variable().and_then(|var| self.extractors.get(&var));
-                    let snapshot = context.snapshot.clone();
-                    let thing_manager = context.thing_manager.clone();
-                    let specialising: BoxExtractor<T> = match maybe_specialising_extractor {
-                        Some(&specialising) => Box::new(specialising),
-                        None => make_const_extractor(specialising, context, row),
-                    };
-                    let specialised: BoxExtractor<T> = match maybe_specialised_extractor {
-                        Some(&supertype) => Box::new(supertype),
-                        None => make_const_extractor(specialised, context, row),
-                    };
-                    filters.push(Box::new({
-                        move |value| {
-                            let specialising = specialising(value);
-                            let specialised = specialised(value);
-                            specialising.as_type().is_direct_subtype_of(
-                                specialised.as_type(),
-                                &*snapshot,
-                                thing_manager.type_manager(),
-                            )
                         }
                     }));
                 }

@@ -223,7 +223,6 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 | Constraint::Owns(_)
                 | Constraint::Relates(_)
                 | Constraint::Plays(_)
-                | Constraint::As(_)
                 | Constraint::ExpressionBinding(_)
                 | Constraint::Comparison(_) => (),
             }
@@ -377,7 +376,6 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             Constraint::Owns(owns) => self.try_propagating_vertex_annotation_impl(owns, vertices)?,
             Constraint::Relates(relates) => self.try_propagating_vertex_annotation_impl(relates, vertices)?,
             Constraint::Plays(plays) => self.try_propagating_vertex_annotation_impl(plays, vertices)?,
-            Constraint::As(as_) => self.try_propagating_vertex_annotation_impl(as_, vertices)?,
             | Constraint::ExpressionBinding(_)
             | Constraint::FunctionCallBinding(_)
             | Constraint::RoleName(_)
@@ -500,7 +498,6 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Constraint::Owns(owns) => edges.push(self.seed_edge(constraint, owns, vertices)?),
                 Constraint::Relates(relates) => edges.push(self.seed_edge(constraint, relates, vertices)?),
                 Constraint::Plays(plays) => edges.push(self.seed_edge(constraint, plays, vertices)?),
-                Constraint::As(as_) => edges.push(self.seed_edge(constraint, as_, vertices)?),
                 | Constraint::RoleName(_)
                 | Constraint::Label(_)
                 | Constraint::Kind(_)

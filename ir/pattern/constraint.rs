@@ -389,29 +389,6 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         Ok(constraint.as_plays().unwrap())
     }
 
-    pub fn add_as(
-        &mut self,
-        specialising: Vertex<Variable>,
-        specialised: Vertex<Variable>,
-    ) -> Result<&As<Variable>, RepresentationError> {
-        let specialising_var = specialising.as_variable();
-        let specialised_var = specialised.as_variable();
-        let as_ = As::new(specialising, specialised);
-
-        if let Some(specialising) = specialising_var {
-            debug_assert!(self.context.is_variable_available(self.constraints.scope, specialising));
-            self.context.set_variable_category(specialising, VariableCategory::Type, as_.clone().into())?;
-        };
-
-        if let Some(specialised) = specialised_var {
-            debug_assert!(self.context.is_variable_available(self.constraints.scope, specialised));
-            self.context.set_variable_category(specialised, VariableCategory::Type, as_.clone().into())?;
-        };
-
-        let as_ref = self.constraints.add_constraint(as_);
-        Ok(as_ref.as_as().unwrap())
-    }
-
     pub fn add_value(
         &mut self,
         attribute_type: Vertex<Variable>,
@@ -462,7 +439,6 @@ pub enum Constraint<ID: IrID> {
     Owns(Owns<ID>),
     Relates(Relates<ID>),
     Plays(Plays<ID>),
-    As(As<ID>),
     Value(Value<ID>),
 }
 
@@ -483,7 +459,6 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Owns(_) => typeql::token::Keyword::Owns.as_str(),
             Constraint::Relates(_) => typeql::token::Keyword::Relates.as_str(),
             Constraint::Plays(_) => typeql::token::Keyword::Plays.as_str(),
-            Constraint::As(_) => typeql::token::Keyword::As.as_str(),
             Constraint::Value(_) => typeql::token::Keyword::Value.as_str(),
         }
     }
@@ -504,7 +479,6 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Owns(owns) => Box::new(owns.ids()),
             Constraint::Relates(relates) => Box::new(relates.ids()),
             Constraint::Plays(plays) => Box::new(plays.ids()),
-            Constraint::As(as_) => Box::new(as_.ids()),
             Constraint::Value(value) => Box::new(value.ids()),
         }
     }
@@ -525,7 +499,6 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Owns(owns) => Box::new(owns.vertices()),
             Constraint::Relates(relates) => Box::new(relates.vertices()),
             Constraint::Plays(plays) => Box::new(plays.vertices()),
-            Constraint::As(as_) => Box::new(as_.vertices()),
             Constraint::Value(value) => Box::new(value.vertices()),
         }
     }
@@ -549,7 +522,6 @@ impl<ID: IrID> Constraint<ID> {
             Self::Owns(owns) => owns.ids_foreach(function),
             Self::Relates(relates) => relates.ids_foreach(function),
             Self::Plays(plays) => plays.ids_foreach(function),
-            Self::As(as_) => as_.ids_foreach(function),
             Self::Value(value) => value.ids_foreach(function),
         }
     }
@@ -570,7 +542,6 @@ impl<ID: IrID> Constraint<ID> {
             Self::Owns(inner) => Constraint::Owns(inner.map(mapping)),
             Self::Relates(inner) => Constraint::Relates(inner.map(mapping)),
             Self::Plays(inner) => Constraint::Plays(inner.map(mapping)),
-            Self::As(inner) => Constraint::As(inner.map(mapping)),
             Self::Value(inner) => Constraint::Value(inner.map(mapping)),
         }
     }
@@ -693,13 +664,6 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub(crate) fn as_as(&self) -> Option<&As<ID>> {
-        match self {
-            Constraint::As(as_) => Some(as_),
-            _ => None,
-        }
-    }
-
     pub(crate) fn as_value(&self) -> Option<&Value<ID>> {
         match self {
             Constraint::Value(value) => Some(value),
@@ -725,7 +689,6 @@ impl<ID: IrID> fmt::Display for Constraint<ID> {
             Constraint::Owns(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::Relates(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::Plays(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::As(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::Value(constraint) => fmt::Display::fmt(constraint, f),
         }
     }
@@ -1622,12 +1585,6 @@ impl<ID: IrID> As<ID> {
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> As<T> {
         As::new(self.specialising.map(mapping), self.specialised.map(mapping))
-    }
-}
-
-impl<ID: IrID> From<As<ID>> for Constraint<ID> {
-    fn from(val: As<ID>) -> Self {
-        Constraint::As(val)
     }
 }
 

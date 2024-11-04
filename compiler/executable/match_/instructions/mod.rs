@@ -122,11 +122,6 @@ pub enum ConstraintInstruction<ID> {
     // role_type -> player
     PlaysReverse(type_::PlaysReverseInstruction<ID>),
 
-    // specialising -> specialised
-    As(type_::AsInstruction<ID>),
-    // specialised -> specialising
-    AsReverse(type_::AsReverseInstruction<ID>),
-
     // thing -> type
     Isa(thing::IsaInstruction<ID>),
     // type -> thing
@@ -190,9 +185,6 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             | Self::PlaysReverse(type_::PlaysReverseInstruction { plays, .. }) => {
                 plays.ids_foreach(|var, _| apply(var))
             }
-            Self::As(type_::AsInstruction { as_, .. }) | Self::AsReverse(type_::AsReverseInstruction { as_, .. }) => {
-                as_.ids_foreach(|var, _| apply(var))
-            }
             Self::Isa(thing::IsaInstruction { isa, .. })
             | Self::IsaReverse(thing::IsaReverseInstruction { isa, .. }) => isa.ids_foreach(|var, _| apply(var)),
             Self::Has(thing::HasInstruction { has, .. })
@@ -222,8 +214,6 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             | Self::RelatesReverse(type_::RelatesReverseInstruction { inputs, .. })
             | Self::Plays(type_::PlaysInstruction { inputs, .. })
             | Self::PlaysReverse(type_::PlaysReverseInstruction { inputs, .. })
-            | Self::As(type_::AsInstruction { inputs, .. })
-            | Self::AsReverse(type_::AsReverseInstruction { inputs, .. })
             | Self::Isa(thing::IsaInstruction { inputs, .. })
             | Self::IsaReverse(thing::IsaReverseInstruction { inputs, .. })
             | Self::Has(thing::HasInstruction { inputs, .. })
@@ -274,12 +264,6 @@ impl<ID: IrID> ConstraintInstruction<ID> {
                     }
                 })
             }
-            Self::As(type_::AsInstruction { as_, inputs, .. })
-            | Self::AsReverse(type_::AsReverseInstruction { as_, inputs, .. }) => as_.ids_foreach(|var, _| {
-                if !inputs.contains(var) {
-                    apply(var)
-                }
-            }),
             Self::Isa(thing::IsaInstruction { isa, inputs, .. })
             | Self::IsaReverse(thing::IsaReverseInstruction { isa, inputs, .. }) => isa.ids_foreach(|var, _| {
                 if !inputs.contains(var) {
@@ -321,8 +305,6 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             Self::RelatesReverse(inner) => inner.add_check(check),
             Self::Plays(inner) => inner.add_check(check),
             Self::PlaysReverse(inner) => inner.add_check(check),
-            Self::As(inner) => inner.add_check(check),
-            Self::AsReverse(inner) => inner.add_check(check),
             Self::Isa(inner) => inner.add_check(check),
             Self::IsaReverse(inner) => inner.add_check(check),
             Self::Has(inner) => inner.add_check(check),
@@ -347,8 +329,6 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             Self::RelatesReverse(inner) => ConstraintInstruction::RelatesReverse(inner.map(mapping)),
             Self::Plays(inner) => ConstraintInstruction::Plays(inner.map(mapping)),
             Self::PlaysReverse(inner) => ConstraintInstruction::PlaysReverse(inner.map(mapping)),
-            Self::As(inner) => ConstraintInstruction::As(inner.map(mapping)),
-            Self::AsReverse(inner) => ConstraintInstruction::AsReverse(inner.map(mapping)),
             Self::Isa(inner) => ConstraintInstruction::Isa(inner.map(mapping)),
             Self::IsaReverse(inner) => ConstraintInstruction::IsaReverse(inner.map(mapping)),
             Self::Has(inner) => ConstraintInstruction::Has(inner.map(mapping)),
@@ -375,9 +355,6 @@ impl<ID: IrID + Copy> InstructionAPI<ID> for ConstraintInstruction<ID> {
             | Self::RelatesReverse(type_::RelatesReverseInstruction { relates, .. }) => relates.clone().into(),
             Self::Plays(type_::PlaysInstruction { plays, .. })
             | Self::PlaysReverse(type_::PlaysReverseInstruction { plays, .. }) => plays.clone().into(),
-            Self::As(type_::AsInstruction { as_, .. }) | Self::AsReverse(type_::AsReverseInstruction { as_, .. }) => {
-                as_.clone().into()
-            }
             Self::Isa(thing::IsaInstruction { isa, .. })
             | Self::IsaReverse(thing::IsaReverseInstruction { isa, .. }) => isa.clone().into(),
             Self::Has(thing::HasInstruction { has, .. })
@@ -512,7 +489,6 @@ pub enum CheckInstruction<ID> {
     Owns { owner: CheckVertex<ID>, attribute: CheckVertex<ID> },
     Relates { relation: CheckVertex<ID>, role_type: CheckVertex<ID> },
     Plays { player: CheckVertex<ID>, role_type: CheckVertex<ID> },
-    As { specialising: CheckVertex<ID>, specialised: CheckVertex<ID> },
 
     Isa { isa_kind: IsaKind, type_: CheckVertex<ID>, thing: CheckVertex<ID> },
     Has { owner: CheckVertex<ID>, attribute: CheckVertex<ID> },
@@ -539,9 +515,6 @@ impl<ID: IrID> CheckInstruction<ID> {
             }
             Self::Plays { player, role_type } => {
                 CheckInstruction::Plays { player: player.map(mapping), role_type: role_type.map(mapping) }
-            }
-            Self::As { specialising, specialised } => {
-                CheckInstruction::As { specialising: specialising.map(mapping), specialised: specialised.map(mapping) }
             }
             Self::Isa { isa_kind: kind, type_, thing } => {
                 CheckInstruction::Isa { isa_kind: kind, type_: type_.map(mapping), thing: thing.map(mapping) }
