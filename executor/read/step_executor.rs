@@ -177,8 +177,6 @@ pub(crate) fn create_executors_for_function(
         executable_stages,
         executable_stages.len() - 1,
     )?;
-
-    // TODO: Add table writing step.
     match &executable_function.returns {
         ExecutableReturn::Stream(positions) => {
             steps.push(StepExecutors::ReshapeForReturn(positions.clone()));

@@ -678,7 +678,7 @@ pub(super) struct CheckExecutor {
     checker: Checker<()>,
     selected_variables: Vec<VariablePosition>,
     output_width: u32,
-    input: Option<FixedBatch>, // TODO: Do I need this? I added it in the rebase
+    input: Option<FixedBatch>,
 }
 
 impl CheckExecutor {

@@ -80,7 +80,6 @@ impl StreamModifierControl {
     }
 }
 
-// TODO: OffsetController & LimitController should be really easy.
 pub(super) struct OffsetMapper {
     required: u64,
     current: u64,

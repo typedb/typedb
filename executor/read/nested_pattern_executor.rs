@@ -65,7 +65,6 @@ impl InlinedFunction {
     }
 }
 
-// TODO: Move Offset & Limit out of here, make the mapper stateless
 pub(super) enum NestedPatternExecutor {
     Disjunction(Disjunction),
     Negation(Negation),

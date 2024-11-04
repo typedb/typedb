@@ -217,7 +217,7 @@ impl CollectorTrait for SortCollector {
     fn accept(&mut self, _context: &ExecutionContext<impl ReadableSnapshot>, batch: FixedBatch) {
         for row in batch {
             if self.collector.is_none() {
-                self.collector = Some(Batch::new(row.len() as u32, 0usize)) // TODO: Remove this workaround once we have output_width
+                self.collector = Some(Batch::new(row.len() as u32, 0usize))
             }
             self.collector.as_mut().unwrap().append(row);
         }
