@@ -725,12 +725,6 @@ impl TransactionService {
             })
             .await
             .unwrap();
-            let message_ok_done =
-                result.map(|_| query_res_ok_done(typedb_protocol::query::Type::Schema)).map_err(|err| {
-                    TransactionServiceError::TxnAbortSchemaQueryFailed { typedb_source: err }
-                        .into_error_message()
-                        .into_status()
-                })?;
 
             let transaction = TransactionSchema::from(
                 snapshot,
@@ -741,6 +735,14 @@ impl TransactionService {
                 transaction_options,
             );
             self.transaction = Some(Transaction::Schema(transaction));
+
+            let message_ok_done =
+                result.map(|_| query_res_ok_done(typedb_protocol::query::Type::Schema)).map_err(|err| {
+                    TransactionServiceError::TxnAbortSchemaQueryFailed { typedb_source: err }
+                        .into_error_message()
+                        .into_status()
+                })?;
+
             Ok(ImmediateQueryResponse::ok(message_ok_done))
         } else {
             Ok(ImmediateQueryResponse::non_fatal_err(TransactionServiceError::SchemaQueryRequiresSchemaTransaction {}))
