@@ -6,7 +6,45 @@
 
 use std::collections::HashSet;
 
-use crate::{batch::FixedBatch, row::MaybeOwnedRow};
+use crate::{
+    batch::FixedBatch,
+    read::{pattern_executor::PatternExecutor, step_executor::StepExecutors},
+    row::MaybeOwnedRow,
+};
+
+pub(super) enum StreamModifierExecutor {
+    Offset { inner: PatternExecutor, offset: u64 },
+    Limit { inner: PatternExecutor, limit: u64 },
+    Distinct { inner: PatternExecutor, output_width: u32 },
+}
+
+impl Into<StepExecutors> for StreamModifierExecutor {
+    fn into(self) -> StepExecutors {
+        StepExecutors::StreamModifier(self)
+    }
+}
+
+impl StreamModifierExecutor {
+    pub(crate) fn new_offset(inner: PatternExecutor, offset: u64) -> Self {
+        Self::Offset { inner, offset }
+    }
+
+    pub(crate) fn new_limit(inner: PatternExecutor, limit: u64) -> Self {
+        Self::Limit { inner, limit }
+    }
+
+    pub(crate) fn new_distinct(inner: PatternExecutor, output_width: u32) -> Self {
+        Self::Distinct { inner, output_width }
+    }
+
+    pub(crate) fn get_inner(&mut self) -> &mut PatternExecutor {
+        match self {
+            Self::Offset { inner, .. } => inner,
+            Self::Limit { inner, .. } => inner,
+            Self::Distinct { inner, .. } => inner,
+        }
+    }
+}
 
 pub(super) enum StreamModifierResultMapper {
     Offset(OffsetMapper),

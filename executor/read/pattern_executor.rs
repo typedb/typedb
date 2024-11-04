@@ -22,7 +22,9 @@ use crate::{
         },
         nested_pattern_executor::{Disjunction, InlinedFunction, Negation, NestedPatternExecutor},
         step_executor::StepExecutors,
-        stream_modifier::{DistinctMapper, LimitMapper, OffsetMapper, StreamModifierResultMapper},
+        stream_modifier::{
+            DistinctMapper, LimitMapper, OffsetMapper, StreamModifierExecutor, StreamModifierResultMapper,
+        },
         tabled_call_executor::TabledCallResult,
         tabled_functions::{TabledFunctionPatternExecutorState, TabledFunctions},
         SuspendPoint,
@@ -99,11 +101,11 @@ impl PatternExecutor {
                         self.push_next_instruction(context, index.next(), batch)?;
                     }
                 }
-                ControlInstruction::MapRowBatchToRowForNested(mut batch_mapper) => {
+                ControlInstruction::MapBatchToRowForNested(mut batch_mapper) => {
                     if let Some(row_result) = batch_mapper.iterator.next() {
                         let index = batch_mapper.index;
                         let unmapped_input = row_result.unwrap().into_owned();
-                        control_stack.push(ControlInstruction::MapRowBatchToRowForNested(batch_mapper));
+                        control_stack.push(ControlInstruction::MapBatchToRowForNested(batch_mapper));
                         self.push_nested_pattern(index, unmapped_input);
                     }
                 }
@@ -183,8 +185,7 @@ impl PatternExecutor {
                     }
                 }
                 ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier { index, mut mapper, input }) => {
-                    // TODO: This bit desperately needs a cleanup.
-                    let inner = &mut executors[index.0].unwrap_nested().get_inner();
+                    let inner = &mut executors[index.0].unwrap_stream_modifier().get_inner();
                     let suspend_point_len_before = suspend_point_accumulator.len();
                     let unmapped =
                         inner.batch_continue(&context, interrupt, tabled_functions, suspend_point_accumulator)?;
@@ -269,17 +270,11 @@ impl PatternExecutor {
                     self.control_stack
                         .push(ControlInstruction::ExecuteImmediate(ExecuteImmediate { index: next_executor_index }));
                 }
-                StepExecutors::Nested(_) => {
-                    self.control_stack.push(ControlInstruction::MapRowBatchToRowForNested(MapRowBatchToRowForNested {
+                StepExecutors::Nested(_) | StepExecutors::StreamModifier(_) | StepExecutors::TabledCall(_) => {
+                    self.control_stack.push(ControlInstruction::MapBatchToRowForNested(MapRowBatchToRowForNested {
                         index: next_executor_index,
                         iterator: FixedBatchRowIterator::new(Ok(batch)),
                     }))
-                }
-                StepExecutors::TabledCall(_) => {
-                    self.control_stack.push(ControlInstruction::MapRowBatchToRowForNested(MapRowBatchToRowForNested {
-                        index: next_executor_index,
-                        iterator: FixedBatchRowIterator::new(Ok(batch)),
-                    }));
                 }
                 StepExecutors::CollectingStage(collecting_stage) => {
                     collecting_stage.prepare(batch);
@@ -337,7 +332,10 @@ impl PatternExecutor {
                         parameters_override: parameter_registry.clone(),
                     }));
                 }
-                NestedPatternExecutor::Offset { inner, offset } => {
+            }
+        } else if let StepExecutors::StreamModifier(stream_modifier) = &mut self.executors[index.0] {
+            match stream_modifier {
+                StreamModifierExecutor::Offset { inner, offset } => {
                     let mut mapper = StreamModifierResultMapper::Offset(OffsetMapper::new(*offset));
                     inner.prepare(FixedBatch::from(input.as_reference()));
                     self.control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
@@ -346,7 +344,7 @@ impl PatternExecutor {
                         input: input.clone().into_owned(),
                     }));
                 }
-                NestedPatternExecutor::Limit { inner, limit } => {
+                StreamModifierExecutor::Limit { inner, limit } => {
                     let mut mapper = StreamModifierResultMapper::Limit(LimitMapper::new(*limit));
                     inner.prepare(FixedBatch::from(input.as_reference()));
                     self.control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
@@ -355,7 +353,7 @@ impl PatternExecutor {
                         input: input.clone().into_owned(),
                     }));
                 }
-                NestedPatternExecutor::Distinct { inner, output_width, .. } => {
+                StreamModifierExecutor::Distinct { inner, output_width, .. } => {
                     let mut mapper = StreamModifierResultMapper::Distinct(DistinctMapper::new(*output_width));
                     inner.prepare(FixedBatch::from(input.as_reference()));
                     self.control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {

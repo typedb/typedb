@@ -18,19 +18,19 @@ use compiler::{
     VariablePosition,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use ir::pipeline::function_signature::FunctionID;
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::read::{
     collecting_stage_executor::CollectingStageExecutor, immediate_executor::ImmediateExecutor,
     nested_pattern_executor::NestedPatternExecutor, pattern_executor::PatternExecutor,
-    tabled_call_executor::TabledCallExecutor,
+    stream_modifier::StreamModifierExecutor, tabled_call_executor::TabledCallExecutor,
 };
 
 pub(super) enum StepExecutors {
     Immediate(ImmediateExecutor),
     Nested(NestedPatternExecutor),
+    StreamModifier(StreamModifierExecutor),
     CollectingStage(CollectingStageExecutor),
     TabledCall(TabledCallExecutor),
     ReshapeForReturn(Vec<VariablePosition>),
@@ -55,6 +55,13 @@ impl StepExecutors {
         match self {
             StepExecutors::TabledCall(step) => step,
             _ => unreachable!(),
+        }
+    }
+
+    pub(crate) fn unwrap_stream_modifier(&mut self) -> &mut StreamModifierExecutor {
+        match self {
+            StepExecutors::StreamModifier(step) => step,
+            _ => panic!("bad unwrap"),
         }
     }
 
@@ -100,12 +107,8 @@ pub(crate) fn create_executors_for_match(
             }
             ExecutionStep::Negation(negation_step) => {
                 // I shouldn't need to pass recursive here since it's stratified
-                let inner = create_executors_for_match(
-                    snapshot,
-                    thing_manager,
-                    function_registry,
-                    &negation_step.negation,
-                )?;
+                let inner =
+                    create_executors_for_match(snapshot, thing_manager, function_registry, &negation_step.negation)?;
                 steps.push(NestedPatternExecutor::new_negation(PatternExecutor::new(inner)).into())
             }
             ExecutionStep::FunctionCall(function_call) => {
@@ -119,12 +122,8 @@ pub(crate) fn create_executors_for_match(
                     );
                     steps.push(StepExecutors::TabledCall(executor))
                 } else {
-                    let inner_executors = create_executors_for_function(
-                        snapshot,
-                        thing_manager,
-                        function_registry,
-                        function,
-                    )?;
+                    let inner_executors =
+                        create_executors_for_function(snapshot, thing_manager, function_registry, function)?;
                     let inner = PatternExecutor::new(inner_executors);
                     let step = NestedPatternExecutor::new_inlined_function(
                         inner,
@@ -140,12 +139,8 @@ pub(crate) fn create_executors_for_match(
                     .branches
                     .iter()
                     .map(|branch_executable| {
-                        let executors = create_executors_for_match(
-                            snapshot,
-                            thing_manager,
-                            function_registry,
-                            &branch_executable,
-                        )?;
+                        let executors =
+                            create_executors_for_match(snapshot, thing_manager, function_registry, &branch_executable)?;
                         Ok(PatternExecutor::new(executors))
                     })
                     .try_collect()?;
@@ -156,7 +151,7 @@ pub(crate) fn create_executors_for_match(
                 )
                 .into();
                 // Hack: wrap it in a distinct
-                let step = StepExecutors::Nested(NestedPatternExecutor::new_distinct(
+                let step = StepExecutors::StreamModifier(StreamModifierExecutor::new_distinct(
                     PatternExecutor::new(vec![inner_step]),
                     step.output_width,
                 ));
@@ -214,24 +209,22 @@ pub(super) fn create_executors_for_pipeline_stages(
 
     match &executable_stages[at_index] {
         ExecutableStage::Match(match_executable) => {
-            let mut match_stages = create_executors_for_match(
-                snapshot,
-                thing_manager,
-                function_registry,
-                match_executable,
-            )?;
+            let mut match_stages =
+                create_executors_for_match(snapshot, thing_manager, function_registry, match_executable)?;
             previous_stage_steps.append(&mut match_stages);
             Ok(previous_stage_steps)
         }
         ExecutableStage::Select(_) => todo!(),
         ExecutableStage::Offset(offset_executable) => {
-            let step =
-                NestedPatternExecutor::new_offset(PatternExecutor::new(previous_stage_steps), offset_executable.offset);
+            let step = StreamModifierExecutor::new_offset(
+                PatternExecutor::new(previous_stage_steps),
+                offset_executable.offset,
+            );
             Ok(vec![step.into()])
         }
         ExecutableStage::Limit(limit_executable) => {
             let step =
-                NestedPatternExecutor::new_limit(PatternExecutor::new(previous_stage_steps), limit_executable.limit);
+                StreamModifierExecutor::new_limit(PatternExecutor::new(previous_stage_steps), limit_executable.limit);
             Ok(vec![step.into()])
         }
         ExecutableStage::Require(_) => todo!(),

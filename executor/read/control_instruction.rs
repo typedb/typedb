@@ -81,7 +81,7 @@ pub(super) enum ControlInstruction {
 
     ExecuteImmediate(ExecuteImmediate),
 
-    MapRowBatchToRowForNested(MapRowBatchToRowForNested),
+    MapBatchToRowForNested(MapRowBatchToRowForNested),
     ExecuteNegation(ExecuteNegation),
     ExecuteDisjunction(ExecuteDisjunction),
     ExecuteInlinedFunction(ExecuteInlinedFunction),

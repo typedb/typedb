@@ -70,9 +70,6 @@ pub(super) enum NestedPatternExecutor {
     Disjunction(Disjunction),
     Negation(Negation),
     InlinedFunction(InlinedFunction),
-    Offset { inner: PatternExecutor, offset: u64 },
-    Limit { inner: PatternExecutor, limit: u64 },
-    Distinct { inner: PatternExecutor, output_width: u32 },
 }
 
 impl Into<StepExecutors> for NestedPatternExecutor {
@@ -105,29 +102,5 @@ impl NestedPatternExecutor {
             output_width: function_call.output_width,
             parameter_registry,
         })
-    }
-    // TODO: Move these
-    pub(crate) fn new_offset(inner: PatternExecutor, offset: u64) -> Self {
-        Self::Offset { inner, offset }
-    }
-
-    pub(crate) fn new_limit(inner: PatternExecutor, limit: u64) -> Self {
-        Self::Limit { inner, limit }
-    }
-
-    pub(crate) fn new_distinct(inner: PatternExecutor, output_width: u32) -> Self {
-        Self::Distinct { inner, output_width }
-    }
-
-    // TODO: Deprecate
-    pub(crate) fn get_inner(&mut self) -> &mut PatternExecutor {
-        match self {
-            NestedPatternExecutor::Disjunction(Disjunction { .. }) => todo!("deprecate this method"),
-            NestedPatternExecutor::Negation(Negation { .. }) => todo!("deprecate this method"),
-            NestedPatternExecutor::InlinedFunction(InlinedFunction { .. }) => todo!("deprecate this method"),
-            NestedPatternExecutor::Offset { inner, .. } => inner,
-            NestedPatternExecutor::Limit { inner, .. } => inner,
-            NestedPatternExecutor::Distinct { inner, .. } => inner,
-        }
     }
 }
