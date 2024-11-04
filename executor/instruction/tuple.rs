@@ -230,30 +230,6 @@ pub(crate) fn plays_to_tuple_role_player(result: Result<Plays<'_>, ConceptReadEr
     }
 }
 
-pub(crate) type AsToTupleFn = fn(Result<(Type, Type), ConceptReadError>) -> TupleResult<'static>;
-
-pub(crate) fn as_to_tuple_specialising_specialised(
-    result: Result<(Type, Type), ConceptReadError>,
-) -> TupleResult<'static> {
-    match result {
-        Ok((specialising, specialised)) => {
-            Ok(Tuple::Pair([VariableValue::Type(specialising), VariableValue::Type(specialised)]))
-        }
-        Err(err) => Err(err),
-    }
-}
-
-pub(crate) fn as_to_tuple_specialised_specialising(
-    result: Result<(Type, Type), ConceptReadError>,
-) -> TupleResult<'static> {
-    match result {
-        Ok((specialising, specialised)) => {
-            Ok(Tuple::Pair([VariableValue::Type(specialised), VariableValue::Type(specialising)]))
-        }
-        Err(err) => Err(err),
-    }
-}
-
 pub(crate) type IsaToTupleFn = for<'a> fn(Result<(Thing<'a>, Type), ConceptReadError>) -> TupleResult<'a>;
 
 pub(crate) fn isa_to_tuple_thing_type(result: Result<(Thing<'_>, Type), ConceptReadError>) -> TupleResult<'_> {
