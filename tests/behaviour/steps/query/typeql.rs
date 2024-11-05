@@ -13,9 +13,11 @@ use cucumber::gherkin::Step;
 use encoding::value::{label::Label, value_type::ValueType, ValueEncodable};
 use executor::{
     batch::Batch,
+    document::ConceptDocument,
     pipeline::stage::{ExecutionContext, StageIterator},
     ExecutionInterrupt,
 };
+use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
 use query::{error::QueryError, query_manager::QueryManager};
@@ -23,6 +25,7 @@ use test_utils::assert_matches;
 
 use crate::{
     generic_step, params,
+    query_answer_context::{with_rows_answer, QueryAnswer},
     transaction_context::{
         with_read_tx, with_schema_tx, with_write_tx_deconstructed,
         ActiveTransaction::{Read, Schema},
@@ -31,7 +34,7 @@ use crate::{
     BehaviourTestExecutionError, Context,
 };
 
-fn batch_result_to_answer(
+fn row_batch_result_to_answer(
     batch: Batch,
     selected_outputs: HashMap<String, VariablePosition>,
 ) -> Vec<HashMap<String, VariableValue<'static>>> {
@@ -47,10 +50,7 @@ fn batch_result_to_answer(
         .collect::<Vec<HashMap<String, VariableValue<'static>>>>()
 }
 
-fn execute_read_query(
-    context: &mut Context,
-    query: typeql::Query,
-) -> Result<Vec<HashMap<String, VariableValue<'static>>>, QueryError> {
+fn execute_read_query(context: &mut Context, query: typeql::Query) -> Result<QueryAnswer, QueryError> {
     with_read_tx!(context, |tx| {
         let pipeline = QueryManager {}.prepare_read_pipeline(
             tx.snapshot.clone(),
@@ -59,16 +59,30 @@ fn execute_read_query(
             &tx.function_manager,
             &query.into_pipeline(),
         )?;
-        let named_outputs = pipeline.rows_positions().expect("Unfetched result").clone();
-        let result_as_batch = match pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
-            Ok((iterator, _)) => iterator.collect_owned(),
-            Err((err, _)) => {
-                return Err(QueryError::ReadPipelineExecutionError { typedb_source: err });
+        if pipeline.has_fetch() {
+            let documents = match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {
+                Ok((iterator, _)) => iterator.map(|item| item.expect("Ok(ConceptDocument)")).collect_vec(),
+                Err((err, _)) => {
+                    return Err(QueryError::ReadPipelineExecutionError { typedb_source: err });
+                }
+            };
+            println!("DOCUMENTS: {:?}", documents);
+            for document in &documents {
+                println!("Pretty: {}", document);
             }
-        };
-        match result_as_batch {
-            Ok(batch) => Ok(batch_result_to_answer(batch, named_outputs)),
-            Err(typedb_source) => Err(QueryError::ReadPipelineExecutionError { typedb_source }),
+            Ok(QueryAnswer::ConceptDocuments(documents))
+        } else {
+            let named_outputs = pipeline.rows_positions().expect("Unfetched result").clone();
+            let result_as_batch = match pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
+                Ok((iterator, _)) => iterator.collect_owned(),
+                Err((err, _)) => {
+                    return Err(QueryError::ReadPipelineExecutionError { typedb_source: err });
+                }
+            };
+            match result_as_batch {
+                Ok(batch) => Ok(QueryAnswer::ConceptRows(row_batch_result_to_answer(batch, named_outputs))),
+                Err(typedb_source) => Err(QueryError::ReadPipelineExecutionError { typedb_source }),
+            }
         }
     })
 }
@@ -76,7 +90,7 @@ fn execute_read_query(
 fn execute_write_query(
     context: &mut Context,
     query: typeql::Query,
-) -> Result<Vec<HashMap<String, VariableValue<'static>>>, BehaviourTestExecutionError> {
+) -> Result<QueryAnswer, BehaviourTestExecutionError> {
     if matches!(context.active_transaction.as_ref().unwrap(), Read(_)) {
         return Err(BehaviourTestExecutionError::UseInvalidTransactionAsWrite);
     }
@@ -94,27 +108,43 @@ fn execute_write_query(
         match pipeline_result {
             Err((snapshot, error)) => (Err(BehaviourTestExecutionError::Query(error)), Arc::new(snapshot)),
             Ok(pipeline) => {
-                let named_outputs = pipeline.rows_positions().unwrap().clone();
-
-                match pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
-                    Ok((iterator, ExecutionContext { snapshot, .. })) => {
-                        let result_as_batch = iterator.collect_owned();
-                        match result_as_batch {
-                            Ok(batch) => (Ok(batch_result_to_answer(batch, named_outputs)), snapshot),
-                            Err(typedb_source) => (
-                                Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecutionError {
-                                    typedb_source,
-                                })),
-                                snapshot,
-                            ),
+                if pipeline.has_fetch() {
+                    match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {
+                        Ok((iterator, ExecutionContext { snapshot, .. })) => {
+                            let documents = iterator.map(|item| item.expect("Expected Ok(ConceptDocument)")).collect_vec();
+                            println!("DOCUMENTS: {:?}", documents);
+                            for document in &documents {
+                                println!("Pretty: {}", document);
+                            }
+                            (Ok(QueryAnswer::ConceptDocuments(documents)), snapshot)
                         }
+                        Err((err, ExecutionContext { snapshot, .. })) =>
+                            (Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecutionError {
+                                typedb_source: err,
+                            })), snapshot),
                     }
-                    Err((err, ExecutionContext { snapshot, .. })) => (
-                        Err(BehaviourTestExecutionError::Query(QueryError::ReadPipelineExecutionError {
-                            typedb_source: err,
-                        })),
-                        snapshot,
-                    ),
+                } else {
+                    let named_outputs = pipeline.rows_positions().expect("Expected unfetched result").clone();
+                    match pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
+                        Ok((iterator, ExecutionContext { snapshot, .. })) => {
+                            let result_as_batch = iterator.collect_owned();
+                            match result_as_batch {
+                                Ok(batch) => (Ok(QueryAnswer::ConceptRows(row_batch_result_to_answer(batch, named_outputs))), snapshot),
+                                Err(typedb_source) => (
+                                    Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecutionError {
+                                        typedb_source,
+                                    })),
+                                    snapshot,
+                                ),
+                            }
+                        }
+                        Err((err, ExecutionContext { snapshot, .. })) => (
+                            Err(BehaviourTestExecutionError::Query(QueryError::ReadPipelineExecutionError {
+                                typedb_source: err,
+                            })),
+                            snapshot,
+                        ),
+                    }
                 }
             }
         }
@@ -169,7 +199,7 @@ async fn typeql_write_query(context: &mut Context, may_error: params::TypeQLMayE
 async fn get_answers_of_typeql_write_query(context: &mut Context, step: &Step) {
     let query = typeql::parse_query(step.docstring.as_ref().unwrap().as_str()).unwrap();
     let result = execute_write_query(context, query);
-    context.answers = result.unwrap();
+    context.query_answer = Some(result.unwrap());
 }
 
 #[apply(generic_step)]
@@ -189,47 +219,56 @@ async fn typeql_read_query(context: &mut Context, may_error: params::TypeQLMayEr
 #[step(expr = r"get answers of typeql read query")]
 async fn get_answers_of_typeql_read_query(context: &mut Context, step: &Step) {
     let query = typeql::parse_query(step.docstring.as_ref().unwrap().as_str()).unwrap();
+<<<<<<< HEAD
     context.answers = match execute_read_query(context, query) {
         Ok(answers) => answers,
         Err(error) => panic!("Unexpected get answers error: {:?}", error),
     }
+=======
+    context.query_answer = Some(execute_read_query(context, query).unwrap());
+>>>>>>> fa5763dbb (Add collection of concept documents to bdds)
 }
 
 #[apply(generic_step)]
 #[step(expr = r"uniquely identify answer concepts")]
 async fn uniquely_identify_answer_concepts(context: &mut Context, step: &Step) {
     let num_specs = step.table().unwrap().rows.len() - 1;
-    let num_answers = context.answers.len();
-    assert_eq!(
-        num_specs, num_answers,
-        "expected the number of identifier entries to match the number of answers, found {} entries and {} answers",
-        num_specs, num_answers
-    );
-    for row in iter_table_map(step) {
-        let mut num_matches = 0;
-        for answer_row in &context.answers {
-            let is_a_match = row.iter().all(|(&var, &spec)| does_var_in_row_match_spec(context, answer_row, var, spec));
-            if is_a_match {
-                num_matches += 1;
-            }
-        }
+    with_rows_answer!(context, |query_answer| {
+        let num_answers = query_answer.len();
         assert_eq!(
-            num_matches, 1,
-            "each identifier row must match exactly one answer map; found {num_matches} for row {row:?}"
-        )
-    }
+            num_specs, num_answers,
+            "expected the number of identifier entries to match the number of answers, found {} entries and {} answers",
+            num_specs, num_answers
+        );
+        for row in iter_table_map(step) {
+            let mut num_matches = 0;
+            for answer_row in query_answer {
+                let is_a_match =
+                    row.iter().all(|(&var, &spec)| does_var_in_row_match_spec(context, answer_row, var, spec));
+                if is_a_match {
+                    num_matches += 1;
+                }
+            }
+            assert_eq!(
+                num_matches, 1,
+                "each identifier row must match exactly one answer map; found {num_matches} for row {row:?}"
+            )
+        }
+    });
 }
 
 #[apply(generic_step)]
 #[step(expr = r"result is a single row with variable '{word}': {word}")]
 async fn single_row_result_with_variable_value(context: &mut Context, variable_name: String, spec: String) {
-    assert_eq!(context.answers.len(), 1, "Expected single row, received {}", context.answers.len());
-    assert!(
-        does_var_in_row_match_spec(context, &context.answers[0], variable_name.as_str(), spec.as_str()),
-        "Result did not match expected: {:?} != {}",
-        &context.answers[0],
-        spec.as_str()
-    );
+    with_rows_answer!(context, |query_answer| {
+        assert_eq!(query_answer.len(), 1, "Expected single row, received {}", query_answer.len());
+        assert!(
+            does_var_in_row_match_spec(context, &query_answer[0], variable_name.as_str(), spec.as_str()),
+            "Result did not match expected: {:?} != {}",
+            &query_answer[0],
+            spec.as_str()
+        );
+    });
 }
 
 fn does_var_in_row_match_spec(
@@ -353,23 +392,25 @@ fn does_type_match(context: &Context, var_value: &VariableValue<'_>, expected: &
 #[apply(generic_step)]
 #[step(expr = r"answer size is: {int}")]
 async fn answer_size_is(context: &mut Context, answer_size: i32) {
-    assert_eq!(context.answers.len(), answer_size as usize)
+    assert_eq!(context.query_answer.as_ref().unwrap().len(), answer_size as usize)
 }
 
 #[apply(generic_step)]
 #[step(expr = r"order of answer concepts is")]
 async fn order_of_answers_is(context: &mut Context, step: &Step) {
-    let num_specs = step.table().unwrap().rows.len() - 1;
-    let num_answers = context.answers.len();
-    assert_eq!(
-        num_specs, num_answers,
-        "expected the number of identifier entries to match the number of answers, found {} entries and {} answers",
-        num_specs, num_answers
-    );
-    for (spec_row, answer_row) in iter_table_map(step).zip(&context.answers) {
-        assert!(
-            spec_row.iter().all(|(&var, &spec)| does_var_in_row_match_spec(context, answer_row, var, spec)),
-            "The answer found did not match the specified row {spec_row:?}"
+    with_rows_answer!(context, |query_answer| {
+        let num_specs = step.table().unwrap().rows.len() - 1;
+        let num_answers = query_answer.len();
+        assert_eq!(
+            num_specs, num_answers,
+            "expected the number of identifier entries to match the number of answers, found {} entries and {} answers",
+            num_specs, num_answers
         );
-    }
+        for (spec_row, answer_row) in iter_table_map(step).zip(query_answer) {
+            assert!(
+                spec_row.iter().all(|(&var, &spec)| does_var_in_row_match_spec(context, answer_row, var, spec)),
+                "The answer found did not match the specified row {spec_row:?}"
+            );
+        }
+    });
 }

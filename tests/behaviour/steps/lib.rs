@@ -30,10 +30,13 @@ use storage::durability_client::WALClient;
 use thing_util::ObjectWithKey;
 use transaction_context::ActiveTransaction;
 
+use crate::query_answer_context::QueryAnswer;
+
 mod concept;
 mod connection;
 mod params;
 mod query;
+mod query_answer_context;
 mod transaction_context;
 mod util;
 
@@ -105,7 +108,7 @@ pub struct Context {
     active_transaction: Option<ActiveTransaction>,
     active_concurrent_transactions: Vec<ActiveTransaction>,
 
-    answers: Vec<HashMap<String, VariableValue<'static>>>,
+    query_answer: Option<QueryAnswer>,
     objects: HashMap<String, Option<ObjectWithKey>>,
     object_lists: HashMap<String, Vec<Object<'static>>>,
     attributes: HashMap<String, Option<Attribute<'static>>>,
