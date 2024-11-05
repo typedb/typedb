@@ -640,11 +640,15 @@ impl ConjunctionPlan<'_> {
     pub(crate) fn lower(
         &self,
         selected_variables: impl IntoIterator<Item = Variable> + Clone,
-        assigned_positions: &HashMap<Variable, ExecutorVariable>,
+        already_assigned_positions: &HashMap<Variable, ExecutorVariable>,
+        input_variables: &Vec<Variable>,
         variable_registry: &VariableRegistry,
     ) -> MatchExecutableBuilder {
-        let mut match_builder =
-            MatchExecutableBuilder::new(assigned_positions, selected_variables.clone().into_iter().collect());
+        let mut match_builder = MatchExecutableBuilder::new(
+            already_assigned_positions,
+            selected_variables.clone().into_iter().collect(),
+            input_variables,
+        );
 
         for &index in &self.ordering {
             match index {
@@ -832,6 +836,7 @@ impl ConjunctionPlan<'_> {
                 let negation = negation.plan().lower(
                     match_builder.current_outputs.iter().copied(),
                     match_builder.position_mapping(),
+                    &match_builder.current_outputs,
                     variable_registry,
                 );
                 let variable_positions = negation.index.clone(); // FIXME needless clone
@@ -1143,7 +1148,7 @@ impl<'a> DisjunctionPlanBuilder<'a> {
         let branches =
             self.branches.into_iter().map(|branch| branch.with_inputs(input_variables.clone()).plan()).collect_vec();
         let cost = branches.iter().map(ConjunctionPlan::cost).fold(ElementCost::EMPTY, ElementCost::combine_parallel);
-        DisjunctionPlan { branches, _cost: cost }
+        dbg!(DisjunctionPlan { branches, _cost: cost })
     }
 }
 
@@ -1161,9 +1166,11 @@ impl<'a> DisjunctionPlan<'a> {
         variable_registry: &VariableRegistry,
     ) -> DisjunctionBuilder {
         let mut branches: Vec<_> = Vec::with_capacity(self.branches.len());
+        let disjunction_inputs = assigned_positions.keys().copied().collect();
         let mut assigned_positions = assigned_positions.clone();
         for branch in &self.branches {
-            let lowered_branch = branch.lower(selected_variables.clone(), &assigned_positions, variable_registry);
+            let lowered_branch =
+                branch.lower(selected_variables.clone(), &assigned_positions, &disjunction_inputs, variable_registry);
             assigned_positions = lowered_branch.position_mapping().clone();
             branches.push(lowered_branch);
         }
