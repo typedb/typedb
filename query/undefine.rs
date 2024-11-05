@@ -1138,15 +1138,3 @@ typedb_error!(
         ),
     }
 );
-
-impl fmt::Display for UndefineError {
-    fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for UndefineError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        todo!()
-    }
-}

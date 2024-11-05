@@ -185,15 +185,12 @@ impl<D> Database<D> {
         if let TransactionReservationRequest::Schema(notifier) = head {
             // fulfill exactly 1 schema request
             *has_schema_transaction = true;
-            notifier.send(()).unwrap();
-
-            // TODO: if get disconnect error, skip!
+            let _skipped_sync_error = notifier.send(()).ok();
         } else {
             // fulfill as many write requests as possible
             while let Some(TransactionReservationRequest::Write(notifier)) = notify_queue.pop_front() {
                 *running_write_transactions += 1;
-                notifier.send(()).unwrap();
-                // TODO: if get disconnect error, skip!
+                let _skipped_sync_error = notifier.send(()).ok();
             }
         }
     }

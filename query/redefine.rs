@@ -1189,15 +1189,3 @@ typedb_error!(
 fn err_unsupported_capability(label: &Label<'static>, kind: Kind, capability: &Capability) -> RedefineError {
     RedefineError::TypeCannotHaveCapability { type_: label.to_owned(), kind, declaration: capability.clone() }
 }
-
-impl fmt::Display for RedefineError {
-    fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for RedefineError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        todo!()
-    }
-}

@@ -431,17 +431,17 @@ impl TransactionService {
         let transaction = match transaction_type {
             typedb_protocol::transaction::Type::Read => {
                 Transaction::Read(TransactionRead::open(database, transaction_options).map_err(|typedb_source| {
-                    TransactionServiceError::TransactionError { typedb_source }.into_error_message().into_status()
+                    TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
                 })?)
             }
             typedb_protocol::transaction::Type::Write => {
                 Transaction::Write(TransactionWrite::open(database, transaction_options).map_err(|typedb_source| {
-                    TransactionServiceError::TransactionError { typedb_source }.into_error_message().into_status()
+                    TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
                 })?)
             }
             typedb_protocol::transaction::Type::Schema => Transaction::Schema(
                 TransactionSchema::open(database, transaction_options).map_err(|typedb_source| {
-                    TransactionServiceError::TransactionError { typedb_source }.into_error_message().into_status()
+                    TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
                 })?,
             ),
         };
@@ -1415,7 +1415,7 @@ typedb_error!(
         DatabaseNotFound(1, "Database '{name}' not found.", name: String),
         CannotCommitReadTransaction(2, "Read transactions cannot be committed."),
         CannotRollbackReadTransaction(3, "Read transactions cannot be rolled back, since they never contain writes."),
-        TransactionError(4, "Transaction error.", ( typedb_source: TransactionError )),
+        TransactionFailed(4, "Transaction failed.", ( typedb_source: TransactionError )),
         DataCommitFailed(5, "Data transaction commit failed.", ( typedb_source: DataCommitError )),
         SchemaCommitFailed(6, "Schema transaction commit failed.", ( typedb_source : SchemaCommitError )),
         QueryParseFailed(7, "Query parsing failed.", ( typedb_source: typeql::Error )),
