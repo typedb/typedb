@@ -83,13 +83,12 @@ impl<'a> ThingEdgeHas<'a> {
 
     pub fn prefix_from_object_to_type(
         from: ObjectVertex,
-        to_vertex_prefix: Prefix,
         to_type_id: TypeID,
     ) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
-        let to_prefix = AttributeVertex::build_prefix_type(to_vertex_prefix, to_type_id);
+        let to_prefix = AttributeVertex::build_prefix_type(Prefix::VertexAttribute, to_type_id);
         let to_type_range = Self::range_from().end..Self::range_from().end + to_prefix.length();
         bytes.bytes_mut()[to_type_range].copy_from_slice(to_prefix.bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
@@ -215,14 +214,14 @@ impl<'a> ThingEdgeHasReverse<'a> {
         StorageKey::new_owned(EncodingKeyspace::Data, bytes)
     }
 
-    pub fn prefix_from_type_with_category(
-        from_prefix: Prefix,
+    pub fn prefix_from_attribute_type(
         from_type_id: TypeID,
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_PREFIX_FROM_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         let from_prefix_end = Self::RANGE_PREFIX.end + PrefixID::LENGTH;
-        bytes.bytes_mut()[Self::RANGE_PREFIX.end..from_prefix_end].copy_from_slice(&from_prefix.prefix_id().bytes);
+        bytes.bytes_mut()[Self::RANGE_PREFIX.end..from_prefix_end]
+            .copy_from_slice(&Prefix::VertexAttribute.prefix_id().bytes);
         let from_type_id_end = from_prefix_end + TypeID::LENGTH;
         bytes.bytes_mut()[from_prefix_end..from_type_id_end].copy_from_slice(&from_type_id.bytes());
         StorageKey::new_owned(EncodingKeyspace::Data, bytes)
