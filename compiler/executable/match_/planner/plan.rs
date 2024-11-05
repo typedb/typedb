@@ -1148,7 +1148,7 @@ impl<'a> DisjunctionPlanBuilder<'a> {
         let branches =
             self.branches.into_iter().map(|branch| branch.with_inputs(input_variables.clone()).plan()).collect_vec();
         let cost = branches.iter().map(ConjunctionPlan::cost).fold(ElementCost::EMPTY, ElementCost::combine_parallel);
-        dbg!(DisjunctionPlan { branches, _cost: cost })
+        DisjunctionPlan { branches, _cost: cost }
     }
 }
 
