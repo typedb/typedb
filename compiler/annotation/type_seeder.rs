@@ -140,6 +140,35 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         for nested_graph in nested_optionals {
             self.seed_types(nested_graph, context, vertices)?;
         }
+
+        // Prune abstract types from type annotations of non-type variables
+        for annotated_vertex in vertices {
+            let (Vertex::Variable(id), annotations) = annotated_vertex else { continue; };
+            let variable_category = self.variable_registry.get_variable_category(*id);
+            if let Some(category) = variable_category {
+               if !(category == VariableCategory::Type)
+                   && !(category == VariableCategory::ThingType)
+                   && !(category == VariableCategory::AttributeType) {
+                   let mut to_be_removed : Vec<Type> = Vec::new();
+                   for annotated_type in annotations.iter() {
+                       let annotated_type_is_abstract = match annotated_type {
+                           Type::Entity(t) => t.is_abstract(self.snapshot, self.type_manager),
+                           Type::Relation(t) => t.is_abstract(self.snapshot, self.type_manager),
+                           Type::Attribute(t) => t.is_abstract(self.snapshot, self.type_manager),
+                           Type::RoleType(t) => t.is_abstract(self.snapshot, self.type_manager),
+                           _ => Ok(false)
+                       }.map_err(|source| { TypeInferenceError::ConceptRead { source }})?;
+                       if annotated_type_is_abstract {
+                           to_be_removed.push(annotated_type.clone());
+                       }
+                   }
+                   for annotated_type in to_be_removed.iter() {
+                       annotations.remove(annotated_type);
+                   }
+               }
+            }
+        }
+
         Ok(())
     }
 
