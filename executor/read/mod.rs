@@ -24,11 +24,13 @@ use crate::{
 };
 
 mod collecting_stage_executor;
+pub(super) mod control_instruction;
 pub mod expression_executor;
 mod immediate_executor;
 mod nested_pattern_executor;
 pub(crate) mod pattern_executor;
 pub(crate) mod step_executor;
+mod stream_modifier;
 pub(crate) mod tabled_call_executor;
 pub mod tabled_functions;
 
@@ -39,13 +41,8 @@ pub(super) fn TODO_REMOVE_create_executors_for_match(
     function_registry: &ExecutableFunctionRegistry,
     match_executable: &MatchExecutable,
 ) -> Result<PatternExecutor, ConceptReadError> {
-    let executors = step_executor::create_executors_for_match(
-        snapshot,
-        thing_manager,
-        function_registry,
-        match_executable,
-        &mut HashSet::new(),
-    )?;
+    let executors =
+        step_executor::create_executors_for_match(snapshot, thing_manager, function_registry, match_executable)?;
     Ok(PatternExecutor::new(executors))
 }
 
@@ -54,7 +51,6 @@ pub(super) fn create_executors_for_pipeline(
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
     executable_stages: &Vec<ExecutableStage>,
-    tmp__recursion_validation: &mut HashSet<FunctionID>,
 ) -> Result<PatternExecutor, ConceptReadError> {
     let executors = create_executors_for_pipeline_stages(
         snapshot,
@@ -62,7 +58,6 @@ pub(super) fn create_executors_for_pipeline(
         function_registry,
         executable_stages,
         executable_stages.len() - 1,
-        tmp__recursion_validation,
     )?;
     Ok(PatternExecutor::new(executors))
 }
