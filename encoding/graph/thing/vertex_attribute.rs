@@ -82,7 +82,7 @@ impl<'a> AttributeVertex<'a> {
     }
 
     pub fn value_type_category(&self) -> ValueTypeCategory {
-        ValueTypeCategory::from_bytes([self.bytes.bytes()[Self::RANGE_TYPE_ID.end]])
+        self.attribute_id().value_type_category()
     }
 
     pub fn attribute_id(&self) -> AttributeID {
@@ -341,6 +341,21 @@ impl AttributeID {
         match self {
             AttributeID::Struct(struct_id) => struct_id,
             _ => panic!("Cannot unwrap Struct ID from non-struct attribute ID."),
+        }
+    }
+
+    pub fn value_type_category(self) -> ValueTypeCategory {
+        match self {
+            AttributeID::Boolean(_) => ValueTypeCategory::Boolean,
+            AttributeID::Long(_) => ValueTypeCategory::Long,
+            AttributeID::Double(_) => ValueTypeCategory::Double,
+            AttributeID::Decimal(_) => ValueTypeCategory::Decimal,
+            AttributeID::Date(_) => ValueTypeCategory::Date,
+            AttributeID::DateTime(_) => ValueTypeCategory::DateTime,
+            AttributeID::DateTimeTZ(_) => ValueTypeCategory::DateTimeTZ,
+            AttributeID::Duration(_) => ValueTypeCategory::Duration,
+            AttributeID::String(_) => ValueTypeCategory::String,
+            AttributeID::Struct(_) => ValueTypeCategory::Struct,
         }
     }
 }
@@ -920,7 +935,10 @@ impl StructAttributeID {
         let existing_or_new = Self::find_existing_or_next_disambiguated_hash(
             snapshot,
             hasher,
-            Bytes::Array(ByteArray::<4>::copy_concat([key_without_hash.bytes(), &ValueTypeCategory::Struct.to_bytes()])),
+            Bytes::Array(ByteArray::<4>::copy_concat([
+                key_without_hash.bytes(),
+                &ValueTypeCategory::Struct.to_bytes(),
+            ])),
             struct_bytes.bytes().bytes(),
         )?;
 
