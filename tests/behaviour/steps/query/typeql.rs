@@ -59,7 +59,7 @@ fn execute_read_query(
             &tx.function_manager,
             &query.into_pipeline(),
         )?;
-        let named_outputs = pipeline.rows_positions().unwrap().clone();
+        let named_outputs = pipeline.rows_positions().expect("Unfetched result").clone();
         let result_as_batch = match pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
             Ok((iterator, _)) => iterator.collect_owned(),
             Err((err, _)) => {

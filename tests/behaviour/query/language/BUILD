@@ -73,6 +73,17 @@ rust_test(
 )
 
 rust_test(
+    name = "test_fetch",
+    srcs = ["fetch.rs"],
+    deps = [
+        "//tests/behaviour/steps:steps",
+        "@crates//:tokio",
+    ],
+    data = ["@vaticle_typedb_behaviour//query/language:fetch.feature"],
+    crate_features = ["bazel"],
+)
+
+rust_test(
     name = "test_modifiers",
     srcs = ["modifiers.rs"],
     deps = [
