@@ -38,7 +38,9 @@ use typeql::{
         },
         Struct, Type,
     },
-    token, Definable,
+    token,
+    token::Keyword,
+    Definable,
 };
 
 use crate::{
@@ -489,6 +491,7 @@ fn define_value_type(
             DefinableStatus::ExistsDifferent(existing_value_type) => {
                 return Err(DefineError::AttributeTypeValueTypeAlreadyDefinedButDifferent {
                     type_: label.to_owned(),
+                    key: Keyword::Value,
                     value_type,
                     existing_value_type,
                     declaration: capability.clone(),
@@ -586,16 +589,18 @@ fn define_relates_with_annotations(
                 let relates = relation_type
                     .create_relates(snapshot, type_manager, thing_manager, role_label.name.as_str(), ordering)
                     .map_err(|source| DefineError::CreateRelates {
-                        typedb_source: source,
                         relates: relates.to_owned(),
+                        key: Keyword::Relates,
+                        typedb_source: source,
                     })?;
                 relates
             }
             DefinableStatus::ExistsSame(Some((existing_relates, _))) => existing_relates,
             DefinableStatus::ExistsSame(None) => unreachable!("Existing relates concept expected"),
-            DefinableStatus::ExistsDifferent((existing_relates, existing_ordering)) => {
+            DefinableStatus::ExistsDifferent((_, existing_ordering)) => {
                 return Err(DefineError::RelatesAlreadyDefinedButDifferent {
                     type_: label.clone(),
+                    key: Keyword::Relates,
                     role: role_label.name.to_string(),
                     ordering,
                     existing_ordering,
@@ -687,6 +692,8 @@ fn define_relates_specialise<'a>(
             DefinableStatus::ExistsDifferent(existing_superrole) => {
                 Err(DefineError::RelatesSpecialiseAlreadyDefinedButDifferent {
                     type_: relation_label.clone().into_owned(),
+                    relates_key: Keyword::Relates,
+                    as_key: Keyword::As,
                     specialised_role_name: specialised_relates
                         .role()
                         .get_label(snapshot, type_manager)
@@ -752,7 +759,11 @@ fn define_owns_with_annotations(
             DefinableStatus::DoesNotExist => {
                 let owns = object_type
                     .set_owns(snapshot, type_manager, thing_manager, attribute_type, ordering)
-                    .map_err(|source| DefineError::CreateOwns { owns: owns.clone(), typedb_source: source })?;
+                    .map_err(|source| DefineError::CreateOwns {
+                        owns: owns.clone(),
+                        key: Keyword::Owns,
+                        typedb_source: source,
+                    })?;
                 owns
             }
             DefinableStatus::ExistsSame(Some((existing_owns, _))) => existing_owns,
@@ -760,6 +771,7 @@ fn define_owns_with_annotations(
             DefinableStatus::ExistsDifferent((_, existing_ordering)) => {
                 return Err(DefineError::OwnsAlreadyDefinedButDifferent {
                     type_: label.clone(),
+                    key: Keyword::Owns,
                     attribute: attr_label,
                     declaration: capability.to_owned(),
                     ordering,
@@ -832,9 +844,11 @@ fn define_plays_with_annotations(
         )
         .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
         let defined = match definition_status {
-            DefinableStatus::DoesNotExist => object_type
-                .set_plays(snapshot, type_manager, thing_manager, role_type)
-                .map_err(|source| DefineError::CreatePlays { plays: plays.clone(), typedb_source: source })?,
+            DefinableStatus::DoesNotExist => {
+                object_type.set_plays(snapshot, type_manager, thing_manager, role_type).map_err(|source| {
+                    DefineError::CreatePlays { plays: plays.clone(), key: Keyword::Plays, typedb_source: source }
+                })?
+            }
             DefinableStatus::ExistsSame(Some(existing_plays)) => existing_plays,
             DefinableStatus::ExistsSame(None) => unreachable!("Existing plays concept expected"),
             DefinableStatus::ExistsDifferent(_) => unreachable!("Plays cannot differ"),
@@ -898,6 +912,7 @@ fn check_can_and_need_define_sub<'a, T: TypeAPI<'a>>(
         DefinableStatus::ExistsSame(_) => Ok(false),
         DefinableStatus::ExistsDifferent(existing) => Err(DefineError::TypeSubAlreadyDefinedButDifferent {
             type_: label.clone().into_owned(),
+            key: Keyword::Sub,
             supertype: new_supertype
                 .get_label(snapshot, type_manager)
                 .map_err(|source| DefineError::UnexpectedConceptRead { source })?
@@ -1042,16 +1057,18 @@ typedb_error!(
         ),
         TypeSubAlreadyDefinedButDifferent(
             13,
-            "Defining 'sub {supertype}' for type '{type_}' failed since a different '{type_} sub {existing_supertype}' is already defined. Try redefine instead?\nSource:\n{declaration}",
+            "Defining '{key} {supertype}' for type '{type_}' failed since a different '{type_} {key} {existing_supertype}' is already defined. Try redefine instead?\nSource:\n{declaration}",
             type_: Label<'static>,
+            key: Keyword,
             supertype: Label<'static>,
             existing_supertype: Label<'static>,
             declaration: TypeQLCapability
         ),
         AttributeTypeValueTypeAlreadyDefinedButDifferent(
             14,
-            "Defining 'value {value_type}' for type '{type_}' failed since a different '{type_} value {existing_value_type}' is already defined. Try redefine instead?\nSource:\n{declaration}",
+            "Defining '{key} {value_type}' for type '{type_}' failed since a different '{type_} {key} {existing_value_type}' is already defined. Try redefine instead?\nSource:\n{declaration}",
             type_: Label<'static>,
+            key: Keyword,
             value_type: ValueType,
             existing_value_type: ValueType,
             declaration: TypeQLCapability
@@ -1073,8 +1090,9 @@ typedb_error!(
         ),
         RelatesAlreadyDefinedButDifferent(
             17,
-            "Defining 'relates {role}{ordering}' for type '{type_}' failed since a different '{type_} relates {role}{existing_ordering}' is already defined. Try redefine instead?\nSource:\n{declaration}",
+            "Defining '{key} {role}{ordering}' for type '{type_}' failed since a different '{type_} {key} {role}{existing_ordering}' is already defined. Try redefine instead?\nSource:\n{declaration}",
             type_: Label<'static>,
+            key: Keyword,
             role: String,
             ordering: Ordering,
             existing_ordering: Ordering,
@@ -1082,8 +1100,9 @@ typedb_error!(
         ),
         OwnsAlreadyDefinedButDifferent(
             18,
-            "Defining 'owns {attribute}{ordering}' for type '{type_}' failed since a different '{type_} owns {attribute}{existing_ordering}' is already defined. Try redefine instead?\nSource:\n{declaration}",
+            "Defining '{key} {attribute}{ordering}' for type '{type_}' failed since a different '{type_} {key} {attribute}{existing_ordering}' is already defined. Try redefine instead?\nSource:\n{declaration}",
             type_: Label<'static>,
+            key: Keyword,
             attribute: Label<'static>,
             ordering: Ordering,
             existing_ordering: Ordering,
@@ -1091,8 +1110,10 @@ typedb_error!(
         ),
         RelatesSpecialiseAlreadyDefinedButDifferent(
             19,
-            "Defining 'as {specialised_role_name}' for '{type_} relates {specialising_role_name}' failed since a different '{type_} relates {specialising_role_name} as {existing_specialised_role_name}' is already defined. Try redefine instead?\nSource:\n{declaration}",
+            "Defining '{as_key} {specialised_role_name}' for '{type_} {relates_key} {specialising_role_name}' failed since a different '{type_} {relates_key} {specialising_role_name} {as_key} {existing_specialised_role_name}' is already defined. Try redefine instead?\nSource:\n{declaration}",
             type_: Label<'static>,
+            relates_key: Keyword,
+            as_key: Keyword,
             specialised_role_name: String,
             specialising_role_name: String,
             existing_specialised_role_name: String,
@@ -1107,48 +1128,45 @@ typedb_error!(
         ),
         CreateRelates(
             21,
-            "Defining new 'relates' failed.\nSource:\n{relates}",
+            "Defining new '{key}' failed.\nSource:\n{relates}",
             relates: TypeQLRelates,
+            key: Keyword,
             ( typedb_source: ConceptWriteError )
         ),
         CreatePlays(
             22,
-            "Defining new 'plays' failed.\nSource:\n{plays}",
+            "Defining new '{key}' failed.\nSource:\n{plays}",
             plays: TypeQLPlays,
+            key: Keyword,
             ( typedb_source: ConceptWriteError )
         ),
         CreateOwns(
             23,
-            "Defining new 'owns' failed.\nSource:\n{owns}",
+            "Defining new '{key}' failed.\nSource:\n{owns}",
             owns: TypeQLOwns,
-            ( typedb_source: ConceptWriteError )
-        ),
-        SetOwnsOrdering(
-            24,
-            "Defining 'owns' ordering failed.\nSource:\n{owns}",
-            owns: TypeQLOwns,
+            key: Keyword,
             ( typedb_source: ConceptWriteError )
         ),
         IllegalAnnotation(
-            25,
+            24,
             "Illegal annotation",
             ( source: AnnotationError )
         ),
         SetAnnotation(
-            26,
+            25,
             "Defining annotation failed for type '{type_}'.\nSource:\n{annotation_declaration}",
             type_: Label<'static>,
             annotation_declaration: typeql::annotation::Annotation,
             ( typedb_source: ConceptWriteError )
         ),
         SetSpecialise(
-            27,
+            26,
             "Defining specialise failed for type '{type_}'.",
             type_: Label<'static>,
             ( typedb_source: ConceptWriteError )
         ),
         CapabilityKindMismatch(
-            28,
+            27,
             "Declaration failed because the left type '{left}' is of kind '{left_kind}' isn't the same kind as the right type '{right}' which has kind '{right_kind}'.\nSource:\n{declaration}",
             left: Label<'static>,
             right: Label<'static>,

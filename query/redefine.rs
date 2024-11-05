@@ -38,6 +38,7 @@ use typeql::{
         },
         Struct, Type,
     },
+    token::Keyword,
     Definable,
 };
 
@@ -400,6 +401,7 @@ fn redefine_value_type(
             DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::AttributeTypeValueTypeNotDefined {
                     type_: label.to_owned(),
+                    key: Keyword::Value,
                     value_type,
                     declaration: capability.clone(),
                 });
@@ -505,6 +507,7 @@ fn redefine_relates(
             DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::RelatesNotDefined {
                     type_: label.clone(),
+                    key: Keyword::Relates,
                     role: role_label.name.to_string(),
                     declaration: capability.to_owned(),
                     ordering,
@@ -517,6 +520,7 @@ fn redefine_relates(
                 existing_relates.role().set_ordering(snapshot, type_manager, thing_manager, ordering).map_err(
                     |source| RedefineError::SetRelatesOrdering {
                         type_: label.clone().into_owned(),
+                        key: Keyword::Relates,
                         declaration: typeql_relates.to_owned(),
                         typedb_source: source,
                     },
@@ -600,6 +604,8 @@ fn redefine_relates_specialise<'a>(
             DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::RelatesSpecialiseNotDefined {
                     type_: relation_label.clone().into_owned(),
+                    relates_key: Keyword::Relates,
+                    as_key: Keyword::As,
                     specialised_role_name: specialised_relates
                         .role()
                         .get_label(snapshot, type_manager)
@@ -618,6 +624,8 @@ fn redefine_relates_specialise<'a>(
             DefinableStatus::ExistsSame(_) => {
                 return Err(RedefineError::RelatesSpecialiseRemainsSame {
                     type_: relation_label.clone().into_owned(),
+                    relates_key: Keyword::Relates,
+                    as_key: Keyword::As,
                     specialised_role_name: specialised_relates
                         .role()
                         .get_label(snapshot, type_manager)
@@ -640,6 +648,8 @@ fn redefine_relates_specialise<'a>(
         relates.set_specialise(snapshot, type_manager, thing_manager, specialised_relates).map_err(|source| {
             RedefineError::SetRelatesSpecialise {
                 type_: relation_label.clone().into_owned(),
+                relates_key: Keyword::Relates,
+                as_key: Keyword::As,
                 declaration: typeql_relates.clone(),
                 typedb_source: source,
             }
@@ -684,6 +694,7 @@ fn redefine_owns(
             DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::OwnsNotDefined {
                     type_: label.clone(),
+                    key: Keyword::Owns,
                     attribute: attribute_type
                         .get_label(snapshot, type_manager)
                         .map_err(|err| RedefineError::UnexpectedConceptRead { source: err })?
@@ -700,6 +711,7 @@ fn redefine_owns(
                 existing_owns.set_ordering(snapshot, type_manager, thing_manager, ordering).map_err(|source| {
                     RedefineError::SetOwnsOrdering {
                         type_: label.clone().into_owned(),
+                        key: Keyword::Owns,
                         declaration: typeql_owns.clone(),
                         typedb_source: source,
                     }
@@ -781,6 +793,7 @@ fn redefine_plays(
             DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::PlaysNotDefined {
                     type_: label.clone(),
+                    key: Keyword::Plays,
                     role: role_type
                         .get_label(snapshot, type_manager)
                         .map_err(|err| RedefineError::UnexpectedConceptRead { source: err })?
@@ -858,6 +871,7 @@ fn check_can_redefine_sub<'a, T: TypeAPI<'a>>(
     match definition_status {
         DefinableStatus::DoesNotExist => Err(RedefineError::TypeSubNotDefined {
             type_: label.clone().into_owned(),
+            key: Keyword::Sub,
             new_supertype: new_supertype
                 .get_label(snapshot, type_manager)
                 .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
@@ -867,6 +881,7 @@ fn check_can_redefine_sub<'a, T: TypeAPI<'a>>(
         }),
         DefinableStatus::ExistsSame(_) => Err(RedefineError::TypeSubRemainsSame {
             type_: label.clone().into_owned(),
+            key: Keyword::Sub,
             supertype: new_supertype
                 .get_label(snapshot, type_manager)
                 .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
@@ -1026,61 +1041,71 @@ typedb_error!(
         ),
         TypeSubNotDefined(
             14,
-            "Redefining 'sub' to '{new_supertype}' for type '{type_}' failed since there is no previously defined '{type_} sub' to replace. Try define instead?\nSource:\n{declaration}",
+            "Redefining '{key}' to '{new_supertype}' for type '{type_}' failed since there is no previously defined '{type_} {key}' to replace. Try define instead?\nSource:\n{declaration}",
             type_: Label<'static>,
+            key: Keyword,
             new_supertype: Label<'static>,
             declaration: Capability
         ),
         TypeSubRemainsSame(
             15,
-            "Redefining 'sub' to '{supertype}' for type '{type_}' failed since '{type_} sub {supertype}' is already defined.\nSource:\n{declaration}",
+            "Redefining '{key}' to '{supertype}' for type '{type_}' failed since '{type_} {key} {supertype}' is already defined.\nSource:\n{declaration}",
             type_: Label<'static>,
+            key: Keyword,
             supertype: Label<'static>,
             declaration: Capability
         ),
         RelatesNotDefined(
             16,
-            "Redefining 'relates' to '{role}{ordering}' for type '{type_}' failed since there is no previously defined '{type_} relates' to replace. Try define instead?\nSource:\n{declaration}",
+            "Redefining '{key}' to '{role}{ordering}' for type '{type_}' failed since there is no previously defined '{type_} {key}' to replace. Try define instead?\nSource:\n{declaration}",
             type_: Label<'static>,
+            key: Keyword,
             role: String,
             ordering: Ordering,
             declaration: Capability
         ),
         OwnsNotDefined(
             17,
-            "Redefining 'owns' to '{attribute}{ordering}' for type '{type_}' failed since there is no previously defined '{type_} owns' to replace. Try define instead?\nSource:\n{declaration}",
+            "Redefining '{key}' to '{attribute}{ordering}' for type '{type_}' failed since there is no previously defined '{type_} {key}' to replace. Try define instead?\nSource:\n{declaration}",
             type_: Label<'static>,
+            key: Keyword,
             attribute: Label<'static>,
             ordering: Ordering,
             declaration: Capability
         ),
         PlaysNotDefined(
             18,
-            "Redefining 'plays' to '{role}' for type '{type_}' failed since there is no previously defined '{type_} plays' to replace. Try define instead?\nSource:\n{declaration}",
+            "Redefining '{key}' to '{role}' for type '{type_}' failed since there is no previously defined '{type_} {key}' to replace. Try define instead?\nSource:\n{declaration}",
             type_: Label<'static>,
+            key: Keyword,
             role: Label<'static>,
             declaration: Capability
         ),
         RelatesSpecialiseNotDefined(
             19,
-            "Redefining 'relates {specialising_role_name} as' to '{specialised_role_name}' for type '{type_}' failed since there is no previously defined 'relates {specialising_role_name} as' to replace. Try define instead?\nSource:\n{declaration}",
+            "Redefining '{relates_key} {specialising_role_name} {as_key}' to '{specialised_role_name}' for type '{type_}' failed since there is no previously defined '{relates_key} {specialising_role_name} {as_key}' to replace. Try define instead?\nSource:\n{declaration}",
             type_: Label<'static>,
+            relates_key: Keyword,
+            as_key: Keyword,
             specialised_role_name: String,
             specialising_role_name: String,
             declaration: TypeQLRelates
         ),
         RelatesSpecialiseRemainsSame(
             20,
-            "Redefining 'relates {specialising_role_name} as' to '{specialised_role_name}' for type '{type_}' failed since '{type_} relates {specialising_role_name} as {specialised_role_name}' is already defined.\nSource:\n{declaration}",
+            "Redefining '{relates_key} {specialising_role_name} {as_key}' to '{specialised_role_name}' for type '{type_}' failed since '{type_} {relates_key} {specialising_role_name} {as_key} {specialised_role_name}' is already defined.\nSource:\n{declaration}",
             type_: Label<'static>,
+            relates_key: Keyword,
+            as_key: Keyword,
             specialised_role_name: String,
             specialising_role_name: String,
             declaration: TypeQLRelates
         ),
         AttributeTypeValueTypeNotDefined(
             21,
-            "Redefining 'value' to '{value_type}' for type '{type_}' failed since there is no previously defined '{type_} value' to replace. Try define instead?\nSource:\n{declaration}",
+            "Redefining '{key}' to '{value_type}' for type '{type_}' failed since there is no previously defined '{type_} {key}' to replace. Try define instead?\nSource:\n{declaration}",
             type_: Label<'static>,
+            key: Keyword,
             value_type: ValueType,
             declaration: Capability
         ),
@@ -1125,15 +1150,17 @@ typedb_error!(
         ),
         SetRelatesOrdering(
             28,
-            "Redefining '{type_}' to have an updated 'relates' ordering failed.\nSource:\n{declaration}",
+            "Redefining '{type_}' to have an updated '{key}' ordering failed.\nSource:\n{declaration}",
             type_: Label<'static>,
+            key: Keyword,
             declaration: TypeQLRelates,
             ( typedb_source: ConceptWriteError )
         ),
         SetOwnsOrdering(
             29,
-            "Redefining '{type_}' to have an updated 'owns' ordering failed.\nSource:\n{declaration}",
+            "Redefining '{type_}' to have an updated '{key}' ordering failed.\nSource:\n{declaration}",
             type_: Label<'static>,
+            key: Keyword,
             declaration: TypeQLOwns,
             ( typedb_source: ConceptWriteError )
         ),
@@ -1169,8 +1196,10 @@ typedb_error!(
         ),
         SetRelatesSpecialise(
             34,
-            "For relation type '{type_}', redefining 'relates' failed.\nSource:\n{declaration}",
+            "For relation type '{type_}', redefining '{relates_key} {as_key}' failed.\nSource:\n{declaration}",
             type_: Label<'static>,
+            relates_key: Keyword,
+            as_key: Keyword,
             declaration: TypeQLRelates,
             ( typedb_source: ConceptWriteError )
         ),
