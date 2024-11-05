@@ -59,10 +59,8 @@ build:
       dependencies: [build]
       command: |
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        # TODO: Uncomment!
         bazel test //compiler/tests/... --test_output=streamed
         bazel test //concept/tests/... --test_output=streamed
-        bazel test //concept/tests:test_type --test_output=streamed
         bazel test //database/tests/... --test_output=streamed
         bazel test //durability/tests/... --test_output=streamed
         bazel test //encoding/tests/... --test_output=streamed
@@ -70,6 +68,7 @@ build:
         bazel test //function/tests/... --test_output=streamed
         bazel test //ir/tests/... --test_output=streamed
         bazel test //query/tests/... --test_output=streamed
+        # TODO: Uncomment!
         # bazel test //storage/tests/... --test_output=streamed
         bazel test //storage/tests:test_mvcc //storage/tests:test_snapshot //storage/tests:test_isolation //storage/tests:test_storage --test_output=streamed
 

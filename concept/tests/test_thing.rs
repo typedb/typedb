@@ -6,7 +6,7 @@
 
 #![deny(unused_must_use)]
 
-use std::{borrow::Cow, collections::HashMap, ops::Index};
+use std::{borrow::Cow, collections::HashMap};
 
 use concept::{
     error::ConceptReadError,
@@ -489,7 +489,7 @@ fn role_player_duplicates_unordered() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    let list_label = Label::build("list");
+    let collection_label = Label::build("collection");
     let entry_role_label = "entry";
     let owner_role_label = "owner";
     let resource_label = Label::build("resource");
@@ -498,12 +498,12 @@ fn role_player_duplicates_unordered() {
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-        let list_type = type_manager.create_relation_type(&mut snapshot, &list_label).unwrap();
-        list_type
+        let collection_type = type_manager.create_relation_type(&mut snapshot, &collection_label).unwrap();
+        collection_type
             .create_relates(&mut snapshot, &type_manager, &thing_manager, entry_role_label, Ordering::Unordered)
             .unwrap();
         let entry_relates =
-            list_type.get_relates_role_name(&snapshot, &type_manager, entry_role_label).unwrap().unwrap();
+            collection_type.get_relates_role_name(&snapshot, &type_manager, entry_role_label).unwrap().unwrap();
         entry_relates
             .set_annotation(
                 &mut snapshot,
@@ -513,12 +513,12 @@ fn role_player_duplicates_unordered() {
             )
             .unwrap();
         let entry_type = entry_relates.role();
-        list_type
+        collection_type
             .create_relates(&mut snapshot, &type_manager, &thing_manager, owner_role_label, Ordering::Unordered)
             .unwrap();
 
         let owner_type =
-            list_type.get_relates_role_name(&snapshot, &type_manager, owner_role_label).unwrap().unwrap().role();
+            collection_type.get_relates_role_name(&snapshot, &type_manager, owner_role_label).unwrap().unwrap().role();
 
         let resource_type = type_manager.create_entity_type(&mut snapshot, &resource_label).unwrap();
         let group_type = type_manager.create_entity_type(&mut snapshot, &group_label).unwrap();
@@ -528,19 +528,19 @@ fn role_player_duplicates_unordered() {
         let group_1 = thing_manager.create_entity(&mut snapshot, group_type.clone()).unwrap();
         let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type.clone()).unwrap();
 
-        let list_1 = thing_manager.create_relation(&mut snapshot, list_type.clone()).unwrap();
-        list_1
+        let collection_1 = thing_manager.create_relation(&mut snapshot, collection_type.clone()).unwrap();
+        collection_1
             .add_player(&mut snapshot, &thing_manager, owner_type.clone(), Object::Entity(group_1.as_reference()))
             .unwrap();
-        list_1
+        collection_1
             .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
             .unwrap();
-        list_1
+        collection_1
             .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
             .unwrap();
 
         let player_counts: u64 =
-            list_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
+            collection_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
         assert_eq!(player_counts, 2);
 
         let group_relations_count: u64 = group_1
@@ -605,9 +605,9 @@ fn role_player_duplicates_unordered() {
             thing_manager.get_relations(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
         assert_eq!(relations.len(), 1);
 
-        let list_1 = relations.first().unwrap();
+        let collection_1 = relations.first().unwrap();
         let player_counts: u64 =
-            list_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
+            collection_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
         assert_eq!(player_counts, 2);
 
         let group_1 = entities
@@ -665,7 +665,7 @@ fn role_player_duplicates_ordered_default_card() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    let list_label = Label::build("list");
+    let collection_label = Label::build("collection");
     let entry_role_label = "entry";
     let owner_role_label = "owner";
     let resource_label = Label::build("resource");
@@ -674,8 +674,8 @@ fn role_player_duplicates_ordered_default_card() {
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-        let list_type = type_manager.create_relation_type(&mut snapshot, &list_label).unwrap();
-        let entry_relates = list_type
+        let collection_type = type_manager.create_relation_type(&mut snapshot, &collection_label).unwrap();
+        let entry_relates = collection_type
             .create_relates(&mut snapshot, &type_manager, &thing_manager, entry_role_label, Ordering::Ordered)
             .unwrap();
         entry_relates
@@ -688,11 +688,11 @@ fn role_player_duplicates_ordered_default_card() {
             .unwrap();
         let entry_type = entry_relates.role();
         // This relates card is default!
-        list_type
+        collection_type
             .create_relates(&mut snapshot, &type_manager, &thing_manager, owner_role_label, Ordering::Ordered)
             .unwrap();
         let owner_type =
-            list_type.get_relates_role_name(&snapshot, &type_manager, owner_role_label).unwrap().unwrap().role();
+            collection_type.get_relates_role_name(&snapshot, &type_manager, owner_role_label).unwrap().unwrap().role();
 
         let resource_type = type_manager.create_entity_type(&mut snapshot, &resource_label).unwrap();
         let group_type = type_manager.create_entity_type(&mut snapshot, &group_label).unwrap();
@@ -702,19 +702,19 @@ fn role_player_duplicates_ordered_default_card() {
         let group_1 = thing_manager.create_entity(&mut snapshot, group_type.clone()).unwrap();
         let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type.clone()).unwrap();
 
-        let list_1 = thing_manager.create_relation(&mut snapshot, list_type.clone()).unwrap();
-        list_1
+        let collection_1 = thing_manager.create_relation(&mut snapshot, collection_type.clone()).unwrap();
+        collection_1
             .add_player(&mut snapshot, &thing_manager, owner_type.clone(), Object::Entity(group_1.as_reference()))
             .unwrap();
-        list_1
+        collection_1
             .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
             .unwrap();
-        list_1
+        collection_1
             .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
             .unwrap();
 
         let player_counts: u64 =
-            list_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
+            collection_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
         assert_eq!(player_counts, 3);
 
         let group_relations_count: u64 = group_1
@@ -782,9 +782,9 @@ fn role_player_duplicates_ordered_default_card() {
             thing_manager.get_relations(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
         assert_eq!(relations.len(), 1);
 
-        let list_1 = relations.first().unwrap();
+        let collection_1 = relations.first().unwrap();
         let player_counts: u64 =
-            list_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
+            collection_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
         assert_eq!(player_counts, 3);
 
         let group_1 = entities
@@ -845,7 +845,7 @@ fn role_player_duplicates_ordered_small_card() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    let list_label = Label::build("list");
+    let collection_label = Label::build("collection");
     let entry_role_label = "entry";
     let owner_role_label = "owner";
     let resource_label = Label::build("resource");
@@ -854,8 +854,8 @@ fn role_player_duplicates_ordered_small_card() {
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-        let list_type = type_manager.create_relation_type(&mut snapshot, &list_label).unwrap();
-        let entry_relates = list_type
+        let collection_type = type_manager.create_relation_type(&mut snapshot, &collection_label).unwrap();
+        let entry_relates = collection_type
             .create_relates(&mut snapshot, &type_manager, &thing_manager, entry_role_label, Ordering::Ordered)
             .unwrap();
         entry_relates
@@ -867,7 +867,7 @@ fn role_player_duplicates_ordered_small_card() {
             )
             .unwrap();
         let entry_type = entry_relates.role();
-        let owner_relates = list_type
+        let owner_relates = collection_type
             .create_relates(&mut snapshot, &type_manager, &thing_manager, owner_role_label, Ordering::Ordered)
             .unwrap();
         owner_relates
@@ -879,7 +879,7 @@ fn role_player_duplicates_ordered_small_card() {
             )
             .unwrap();
         let owner_type =
-            list_type.get_relates_role_name(&snapshot, &type_manager, owner_role_label).unwrap().unwrap().role();
+            collection_type.get_relates_role_name(&snapshot, &type_manager, owner_role_label).unwrap().unwrap().role();
 
         let resource_type = type_manager.create_entity_type(&mut snapshot, &resource_label).unwrap();
         let group_type = type_manager.create_entity_type(&mut snapshot, &group_label).unwrap();
@@ -889,19 +889,19 @@ fn role_player_duplicates_ordered_small_card() {
         let group_1 = thing_manager.create_entity(&mut snapshot, group_type.clone()).unwrap();
         let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type.clone()).unwrap();
 
-        let list_1 = thing_manager.create_relation(&mut snapshot, list_type.clone()).unwrap();
-        list_1
+        let collection_1 = thing_manager.create_relation(&mut snapshot, collection_type.clone()).unwrap();
+        collection_1
             .add_player(&mut snapshot, &thing_manager, owner_type.clone(), Object::Entity(group_1.as_reference()))
             .unwrap();
-        list_1
+        collection_1
             .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
             .unwrap();
-        list_1
+        collection_1
             .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
             .unwrap();
 
         let player_counts: u64 =
-            list_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
+            collection_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
         assert_eq!(player_counts, 3);
 
         let group_relations_count: u64 = group_1
@@ -966,9 +966,9 @@ fn role_player_duplicates_ordered_small_card() {
             thing_manager.get_relations(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
         assert_eq!(relations.len(), 1);
 
-        let list_1 = relations.first().unwrap();
+        let collection_1 = relations.first().unwrap();
         let player_counts: u64 =
-            list_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
+            collection_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
         assert_eq!(player_counts, 3);
 
         let group_1 = entities

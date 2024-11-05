@@ -350,5 +350,6 @@ typedb_error!(
 typedb_error!(
     pub TransactionError(component = "Transaction", prefix = "TXN") {
         Timeout(1, "Transaction timeout.", source: RecvTimeoutError),
+        WriteExclusivityTimeout(2, "Transaction timeout due to an exclusive write access requested by this or a concurrent transaction."),
     }
 );
