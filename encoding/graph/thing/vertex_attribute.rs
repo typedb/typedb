@@ -81,13 +81,6 @@ impl<'a> AttributeVertex<'a> {
             && storage_key.bytes()[Self::RANGE_PREFIX] == Prefix::VertexAttribute.prefix_id().bytes()
     }
 
-    pub fn prefix_type_to_value_id_encoding_length(prefix: Prefix) -> usize {
-        match prefix {
-            Prefix::VertexAttribute => BooleanAttributeID::LENGTH,
-            _ => unreachable!("Unrecognised attribute vertex prefix type"),
-        }
-    }
-
     pub fn value_type_category(&self) -> ValueTypeCategory {
         ValueTypeCategory::from_bytes([self.bytes.bytes()[Self::RANGE_TYPE_ID.end]])
     }
@@ -729,7 +722,9 @@ impl StringAttributeID {
 
     const HASHED_PREFIX_RANGE: Range<usize> = Self::PREFIX_LENGTH..Self::PREFIX_LENGTH + Self::HASHED_PREFIX_LENGTH;
     const HASHED_HASH_RANGE: Range<usize> =
-        Self::PREFIX_LENGTH + Self::HASHED_PREFIX_LENGTH..Self::PREFIX_LENGTH + Self::HASHED_ENCODING_LENGTH;
+        Self::HASHED_PREFIX_RANGE.end..Self::HASHED_PREFIX_RANGE.end + Self::HASHED_HASH_LENGTH;
+    const HASHED_DISAMBIGUATED_HASH_RANGE: Range<usize> =
+        Self::HASHED_HASH_RANGE.start..Self::HASHED_HASH_RANGE.end + 1;
     const HASHED_PREFIX_HASH_RANGE: Range<usize> =
         Self::PREFIX_LENGTH..Self::PREFIX_LENGTH + Self::HASHED_ENCODING_LENGTH;
 
@@ -799,12 +794,15 @@ impl StringAttributeID {
         Snapshot: ReadableSnapshot,
     {
         let mut bytes: [u8; Self::LENGTH] = [0; Self::LENGTH];
-        bytes[0..Self::HASHED_PREFIX_LENGTH].copy_from_slice(&string.bytes().bytes()[0..Self::HASHED_PREFIX_LENGTH]);
+        bytes[..Self::PREFIX_LENGTH].copy_from_slice(&Self::PREFIX);
+        bytes[Self::HASHED_PREFIX_RANGE].copy_from_slice(&string.bytes().bytes()[0..Self::HASHED_PREFIX_LENGTH]);
 
         debug_assert!(!Self::is_inlineable(string.as_reference()));
-        let key_without_hash =
-            AttributeVertex::build_prefix_type_attribute_id(type_id, &bytes[0..Self::HASHED_PREFIX_LENGTH])
-                .into_bytes();
+        let key_without_hash = AttributeVertex::build_prefix_type_attribute_id(
+            type_id,
+            &bytes[0..Self::PREFIX_LENGTH + Self::HASHED_PREFIX_LENGTH],
+        )
+        .into_bytes();
 
         let disambiguated_hash =
             Self::find_existing_or_next_disambiguated_hash(snapshot, hasher, key_without_hash, string.bytes().bytes())?;
@@ -814,7 +812,7 @@ impl StringAttributeID {
                     hashed_bytes[Self::HASHID_DISAMBIGUATOR_BYTE_INDEX] & Self::HASHID_DISAMBIGUATOR_BYTE_IS_HASH_FLAG
                         != 0
                 );
-                bytes[Self::HASHED_PREFIX_LENGTH..Self::LENGTH].copy_from_slice(&hashed_bytes);
+                bytes[Self::HASHED_DISAMBIGUATED_HASH_RANGE].copy_from_slice(&hashed_bytes);
                 Self { bytes }
             }
         };

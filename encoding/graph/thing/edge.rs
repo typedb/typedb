@@ -25,6 +25,7 @@ use crate::{
         Typed,
     },
     layout::prefix::{Prefix, PrefixID},
+    value::value_type::ValueTypeCategory,
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
@@ -179,9 +180,9 @@ impl<'a> ThingEdgeHasReverse<'a> {
     const PREFIX: Prefix = Prefix::EdgeHasReverse;
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
 
-    const INDEX_FROM_PREFIX: usize = PrefixID::LENGTH;
     pub const LENGTH_PREFIX_FROM_PREFIX: usize = PrefixID::LENGTH + PrefixID::LENGTH;
     pub const LENGTH_PREFIX_FROM_TYPE: usize = PrefixID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
+    const INDEX_FROM_VALUE_PREFIX: usize = Self::LENGTH_PREFIX_FROM_TYPE;
     pub const LENGTH_BOUND_PREFIX_FROM: usize =
         PrefixID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE + AttributeID::max_length();
     pub const LENGTH_BOUND_PREFIX_FROM_TO_TYPE: usize = PrefixID::LENGTH
@@ -299,10 +300,9 @@ impl<'a> ThingEdgeHasReverse<'a> {
 
     #[allow(clippy::wrong_self_convention, reason = "`from` refers to the edge's source vertex")]
     fn from_length(&self) -> usize {
-        let byte = self.bytes.bytes()[Self::INDEX_FROM_PREFIX];
-        let prefix = PrefixID::new([byte]);
+        let value_type_prefix = self.bytes.bytes()[Self::INDEX_FROM_VALUE_PREFIX];
         let id_encoding_length =
-            AttributeVertex::prefix_type_to_value_id_encoding_length(Prefix::from_prefix_id(prefix));
+            AttributeID::value_type_encoding_length(ValueTypeCategory::from_bytes([value_type_prefix]));
         THING_VERTEX_LENGTH_PREFIX_TYPE + id_encoding_length
     }
 
