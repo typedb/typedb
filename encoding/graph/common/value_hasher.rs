@@ -24,6 +24,7 @@ pub(crate) trait HashedID<const TOTAL_LENGTH: usize> {
     const HASHID_DISAMBIGUATOR_BYTE_IS_HASH_FLAG: u8 = 0b1000_0000;
     const KEYSPACE: EncodingKeyspace;
     const FIXED_WIDTH_KEYS: bool;
+
     fn find_existing_or_next_disambiguated_hash<Snapshot, const INLINE_SIZE: usize>(
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::graph::thing::vertex_attribute::AttributeIDLength;
+use crate::graph::thing::vertex_attribute::ValueEncodingLength;
 
 #[derive(Debug, Copy, Clone)]
 pub struct BooleanBytes {
@@ -12,7 +12,7 @@ pub struct BooleanBytes {
 }
 
 impl BooleanBytes {
-    pub const LENGTH: usize = AttributeIDLength::Short.length();
+    pub const LENGTH: usize = ValueEncodingLength::Short.length();
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }

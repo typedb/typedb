@@ -2802,7 +2802,7 @@ impl OperationTimeValidation {
         let mut owner_iterator = thing_manager.get_objects_in(snapshot, owner_type.clone().into_owned());
         while let Some(instance) = owner_iterator.next().transpose()? {
             let mut iterator =
-                instance.get_has_type_unordered(snapshot, thing_manager, attribute_type.clone().into_owned())?;
+                instance.get_has_type_unordered(snapshot, thing_manager, attribute_type.clone().into_owned());
 
             if iterator.next().is_some() {
                 has_instances = true;

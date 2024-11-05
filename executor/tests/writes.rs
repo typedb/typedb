@@ -474,7 +474,6 @@ fn test_has_with_input_rows() {
         .as_thing()
         .as_object()
         .get_has_type_unordered(&snapshot, &thing_manager, age_type.clone())
-        .unwrap()
         .map_static(|result| result.unwrap().0.clone().into_owned())
         .collect::<Vec<_>>();
     assert_eq!(a10.as_thing().as_attribute(), age_of_p10[0]);

@@ -11,6 +11,7 @@ use std::{
 };
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::HexBytesFormatter, Bytes};
+use chrono::{prelude::DateTime, NaiveDate, NaiveDateTime};
 use primitive::either::Either;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -33,12 +34,15 @@ use crate::{
         date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes,
         decimal_bytes::DecimalBytes,
+        decimal_value::Decimal,
         double_bytes::DoubleBytes,
         duration_bytes::DurationBytes,
+        duration_value::Duration,
         long_bytes::LongBytes,
         string_bytes::StringBytes,
         struct_bytes::StructBytes,
-        value_type::{ValueType, ValueTypeCategory},
+        timezone::TimeZone,
+        value_type::{ValueType, ValueTypeBytes, ValueTypeCategory},
         ValueEncodable,
     },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
@@ -50,23 +54,22 @@ pub struct AttributeVertex<'a> {
 }
 
 impl<'a> AttributeVertex<'a> {
-    pub fn build(value_type_category: ValueTypeCategory, type_id: TypeID, attribute_id: AttributeID) -> Self {
+    const PREFIX: Prefix = Prefix::VertexAttribute;
+
+    pub fn build(type_id: TypeID, attribute_id: AttributeID) -> Self {
         let mut bytes = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE + attribute_id.length());
-        bytes.bytes_mut()[Self::RANGE_PREFIX]
-            .copy_from_slice(&Self::value_type_category_to_prefix_type(value_type_category).prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         bytes.bytes_mut()[Self::range_for_attribute_id(attribute_id.length())].copy_from_slice(attribute_id.bytes());
         Self { bytes: Bytes::Array(bytes) }
     }
 
     pub(crate) fn build_prefix_type_attribute_id(
-        value_type_category: ValueTypeCategory,
         type_id: TypeID,
         attribute_id_part: &[u8],
     ) -> StorageKey<'static, BUFFER_KEY_INLINE> {
         let mut bytes = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE + attribute_id_part.len());
-        bytes.bytes_mut()[Self::RANGE_PREFIX]
-            .copy_from_slice(&Self::value_type_category_to_prefix_type(value_type_category).prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         bytes.bytes_mut()[Self::range_for_attribute_id(attribute_id_part.len())].copy_from_slice(attribute_id_part);
         StorageKey::new_owned(Self::KEYSPACE, bytes)
@@ -75,59 +78,15 @@ impl<'a> AttributeVertex<'a> {
     pub fn is_attribute_vertex(storage_key: StorageKeyReference<'_>) -> bool {
         storage_key.keyspace_id() == Self::KEYSPACE.id()
             && !storage_key.bytes().is_empty()
-            && (Prefix::ATTRIBUTE_MIN.prefix_id().bytes()[..] <= storage_key.bytes()[Self::RANGE_PREFIX]
-                && storage_key.bytes()[Self::RANGE_PREFIX] <= Prefix::ATTRIBUTE_MAX.prefix_id().bytes()[..])
-    }
-
-    pub fn value_type_category_to_prefix_type(value_type_category: ValueTypeCategory) -> Prefix {
-        match value_type_category {
-            ValueTypeCategory::Boolean => Prefix::VertexAttributeBoolean,
-            ValueTypeCategory::Long => Prefix::VertexAttributeLong,
-            ValueTypeCategory::Double => Prefix::VertexAttributeDouble,
-            ValueTypeCategory::Decimal => Prefix::VertexAttributeDecimal,
-            ValueTypeCategory::Date => Prefix::VertexAttributeDate,
-            ValueTypeCategory::DateTime => Prefix::VertexAttributeDateTime,
-            ValueTypeCategory::DateTimeTZ => Prefix::VertexAttributeDateTimeTZ,
-            ValueTypeCategory::Duration => Prefix::VertexAttributeDuration,
-            ValueTypeCategory::String => Prefix::VertexAttributeString,
-            ValueTypeCategory::Struct => Prefix::VertexAttributeStruct,
-        }
-    }
-
-    pub fn prefix_type_to_value_id_encoding_length(prefix: Prefix) -> usize {
-        match prefix {
-            Prefix::VertexAttributeBoolean => BooleanAttributeID::LENGTH,
-            Prefix::VertexAttributeLong => LongAttributeID::LENGTH,
-            Prefix::VertexAttributeDouble => DoubleAttributeID::LENGTH,
-            Prefix::VertexAttributeDecimal => DecimalAttributeID::LENGTH,
-            Prefix::VertexAttributeDate => DateAttributeID::LENGTH,
-            Prefix::VertexAttributeDateTime => DateTimeAttributeID::LENGTH,
-            Prefix::VertexAttributeDateTimeTZ => DateTimeTZAttributeID::LENGTH,
-            Prefix::VertexAttributeDuration => DurationAttributeID::LENGTH,
-            Prefix::VertexAttributeString => StringAttributeID::LENGTH,
-            Prefix::VertexAttributeStruct => StructAttributeID::LENGTH,
-            _ => unreachable!("Unrecognised attribute vertex prefix type"),
-        }
+            && storage_key.bytes()[Self::RANGE_PREFIX] == Prefix::VertexAttribute.prefix_id().bytes()
     }
 
     pub fn value_type_category(&self) -> ValueTypeCategory {
-        match self.prefix() {
-            Prefix::VertexAttributeBoolean => ValueTypeCategory::Boolean,
-            Prefix::VertexAttributeLong => ValueTypeCategory::Long,
-            Prefix::VertexAttributeDouble => ValueTypeCategory::Double,
-            Prefix::VertexAttributeDecimal => ValueTypeCategory::Decimal,
-            Prefix::VertexAttributeDate => ValueTypeCategory::Date,
-            Prefix::VertexAttributeDateTime => ValueTypeCategory::DateTime,
-            Prefix::VertexAttributeDateTimeTZ => ValueTypeCategory::DateTimeTZ,
-            Prefix::VertexAttributeDuration => ValueTypeCategory::Duration,
-            Prefix::VertexAttributeString => ValueTypeCategory::String,
-            Prefix::VertexAttributeStruct => ValueTypeCategory::Struct,
-            _ => unreachable!("Unexpected prefix."),
-        }
+        self.attribute_id().value_type_category()
     }
 
     pub fn attribute_id(&self) -> AttributeID {
-        AttributeID::new(self.value_type_category(), &self.bytes.bytes()[self.range_of_attribute_id()])
+        AttributeID::new(&self.bytes.bytes()[self.range_of_attribute_id()])
     }
 
     fn range_of_attribute_id(&self) -> Range<usize> {
@@ -178,19 +137,19 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {
     }
 }
 
-pub(crate) enum AttributeIDLength {
+pub(crate) enum ValueEncodingLength {
     Short,
     Long,
 }
 
-impl AttributeIDLength {
+impl ValueEncodingLength {
     const SHORT_LENGTH: usize = 8;
     const LONG_LENGTH: usize = 17;
 
     pub(crate) const fn length(&self) -> usize {
         match self {
-            AttributeIDLength::Short => Self::SHORT_LENGTH,
-            AttributeIDLength::Long => Self::LONG_LENGTH,
+            ValueEncodingLength::Short => Self::SHORT_LENGTH,
+            ValueEncodingLength::Long => Self::LONG_LENGTH,
         }
     }
 
@@ -215,8 +174,9 @@ pub enum AttributeID {
 }
 
 impl AttributeID {
-    pub fn new(value_type_category: ValueTypeCategory, bytes: &[u8]) -> Self {
-        match value_type_category {
+    pub fn new(bytes: &[u8]) -> Self {
+        let &[prefix, ..] = bytes else { unreachable!("empty value bytes") };
+        match ValueTypeCategory::from_bytes([prefix]) {
             ValueTypeCategory::Boolean => Self::Boolean(BooleanAttributeID::new(bytes.try_into().unwrap())),
             ValueTypeCategory::Long => Self::Long(LongAttributeID::new(bytes.try_into().unwrap())),
             ValueTypeCategory::Double => Self::Double(DoubleAttributeID::new(bytes.try_into().unwrap())),
@@ -242,9 +202,7 @@ impl AttributeID {
             ValueType::DateTimeTZ => Self::DateTimeTZ(DateTimeTZAttributeID::build(value.encode_date_time_tz())),
             ValueType::Duration => Self::Duration(DurationAttributeID::build(value.encode_duration())),
             ValueType::String => Self::String(StringAttributeID::build_inline_id(value.encode_string::<256>())),
-            ValueType::Struct(_) => {
-                todo!()
-            }
+            ValueType::Struct(_) => todo!(),
         }
     }
 
@@ -313,7 +271,7 @@ impl AttributeID {
     }
 
     pub(crate) const fn max_length() -> usize {
-        AttributeIDLength::max_length()
+        ValueTypeBytes::CATEGORY_LENGTH + ValueEncodingLength::max_length()
     }
 
     pub fn unwrap_boolean(self) -> BooleanAttributeID {
@@ -385,6 +343,21 @@ impl AttributeID {
             _ => panic!("Cannot unwrap Struct ID from non-struct attribute ID."),
         }
     }
+
+    pub fn value_type_category(self) -> ValueTypeCategory {
+        match self {
+            AttributeID::Boolean(_) => ValueTypeCategory::Boolean,
+            AttributeID::Long(_) => ValueTypeCategory::Long,
+            AttributeID::Double(_) => ValueTypeCategory::Double,
+            AttributeID::Decimal(_) => ValueTypeCategory::Decimal,
+            AttributeID::Date(_) => ValueTypeCategory::Date,
+            AttributeID::DateTime(_) => ValueTypeCategory::DateTime,
+            AttributeID::DateTimeTZ(_) => ValueTypeCategory::DateTimeTZ,
+            AttributeID::Duration(_) => ValueTypeCategory::Duration,
+            AttributeID::String(_) => ValueTypeCategory::String,
+            AttributeID::Struct(_) => ValueTypeCategory::Struct,
+        }
+    }
 }
 
 impl Display for AttributeID {
@@ -399,14 +372,26 @@ pub struct BooleanAttributeID {
 }
 
 impl BooleanAttributeID {
-    const LENGTH: usize = AttributeIDLength::SHORT_LENGTH;
+    const VALUE_TYPE_LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH;
+    const VALUE_LENGTH: usize = ValueEncodingLength::SHORT_LENGTH;
+    const LENGTH: usize = Self::VALUE_TYPE_LENGTH + Self::VALUE_LENGTH;
+
+    const VALUE_TYPE: ValueTypeCategory = ValueTypeCategory::Boolean;
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
     }
 
     pub(crate) fn build(value: BooleanBytes) -> Self {
-        Self { bytes: value.bytes() }
+        let mut bytes = [0; Self::LENGTH];
+        bytes[..Self::VALUE_TYPE_LENGTH].copy_from_slice(&Self::VALUE_TYPE.to_bytes());
+        bytes[Self::VALUE_TYPE_LENGTH..].copy_from_slice(&value.bytes());
+        Self { bytes }
+    }
+
+    pub fn to_value(&self) -> bool {
+        let [_prefix, value_bytes @ ..] = self.bytes;
+        BooleanBytes::new(value_bytes).as_bool()
     }
 
     pub(crate) const fn is_inlineable() -> bool {
@@ -429,14 +414,26 @@ pub struct LongAttributeID {
 }
 
 impl LongAttributeID {
-    const LENGTH: usize = AttributeIDLength::SHORT_LENGTH;
+    const VALUE_TYPE_LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH;
+    const VALUE_LENGTH: usize = ValueEncodingLength::SHORT_LENGTH;
+    const LENGTH: usize = Self::VALUE_TYPE_LENGTH + Self::VALUE_LENGTH;
+
+    const VALUE_TYPE: ValueTypeCategory = ValueTypeCategory::Long;
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
     }
 
     pub(crate) fn build(value: LongBytes) -> Self {
-        Self { bytes: value.bytes() }
+        let mut bytes = [0; Self::LENGTH];
+        bytes[..Self::VALUE_TYPE_LENGTH].copy_from_slice(&Self::VALUE_TYPE.to_bytes());
+        bytes[Self::VALUE_TYPE_LENGTH..].copy_from_slice(&value.bytes());
+        Self { bytes }
+    }
+
+    pub fn to_value(&self) -> i64 {
+        let [_prefix, value_bytes @ ..] = self.bytes;
+        LongBytes::new(value_bytes).as_i64()
     }
 
     pub(crate) const fn is_inlineable() -> bool {
@@ -458,14 +455,26 @@ pub struct DoubleAttributeID {
 }
 
 impl DoubleAttributeID {
-    const LENGTH: usize = AttributeIDLength::SHORT_LENGTH;
+    const VALUE_TYPE_LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH;
+    const VALUE_LENGTH: usize = ValueEncodingLength::SHORT_LENGTH;
+    const LENGTH: usize = Self::VALUE_TYPE_LENGTH + Self::VALUE_LENGTH;
+
+    const VALUE_TYPE: ValueTypeCategory = ValueTypeCategory::Double;
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
     }
 
     pub(crate) fn build(value: DoubleBytes) -> Self {
-        Self { bytes: value.bytes() }
+        let mut bytes = [0; Self::LENGTH];
+        bytes[..Self::VALUE_TYPE_LENGTH].copy_from_slice(&Self::VALUE_TYPE.to_bytes());
+        bytes[Self::VALUE_TYPE_LENGTH..].copy_from_slice(&value.bytes());
+        Self { bytes }
+    }
+
+    pub fn to_value(&self) -> f64 {
+        let [_prefix, value_bytes @ ..] = self.bytes;
+        DoubleBytes::new(value_bytes).as_f64()
     }
 
     pub(crate) const fn is_inlineable() -> bool {
@@ -487,14 +496,26 @@ pub struct DecimalAttributeID {
 }
 
 impl DecimalAttributeID {
-    const LENGTH: usize = AttributeIDLength::LONG_LENGTH;
+    const VALUE_TYPE_LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH;
+    const VALUE_LENGTH: usize = ValueEncodingLength::LONG_LENGTH;
+    const LENGTH: usize = Self::VALUE_TYPE_LENGTH + Self::VALUE_LENGTH;
+
+    const VALUE_TYPE: ValueTypeCategory = ValueTypeCategory::Decimal;
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
     }
 
     pub(crate) fn build(value: DecimalBytes) -> Self {
-        Self { bytes: value.bytes() }
+        let mut bytes = [0; Self::LENGTH];
+        bytes[..Self::VALUE_TYPE_LENGTH].copy_from_slice(&Self::VALUE_TYPE.to_bytes());
+        bytes[Self::VALUE_TYPE_LENGTH..].copy_from_slice(&value.bytes());
+        Self { bytes }
+    }
+
+    pub fn to_value(&self) -> Decimal {
+        let [_prefix, value_bytes @ ..] = self.bytes;
+        DecimalBytes::new(value_bytes).as_decimal()
     }
 
     pub(crate) const fn is_inlineable() -> bool {
@@ -516,14 +537,26 @@ pub struct DateAttributeID {
 }
 
 impl DateAttributeID {
-    const LENGTH: usize = AttributeIDLength::SHORT_LENGTH;
+    const VALUE_TYPE_LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH;
+    const VALUE_LENGTH: usize = ValueEncodingLength::SHORT_LENGTH;
+    const LENGTH: usize = Self::VALUE_TYPE_LENGTH + Self::VALUE_LENGTH;
+
+    const VALUE_TYPE: ValueTypeCategory = ValueTypeCategory::Date;
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
     }
 
     pub(crate) fn build(value: DateBytes) -> Self {
-        Self { bytes: value.bytes() }
+        let mut bytes = [0; Self::LENGTH];
+        bytes[..Self::VALUE_TYPE_LENGTH].copy_from_slice(&Self::VALUE_TYPE.to_bytes());
+        bytes[Self::VALUE_TYPE_LENGTH..].copy_from_slice(&value.bytes());
+        Self { bytes }
+    }
+
+    pub fn to_value(&self) -> NaiveDate {
+        let [_prefix, value_bytes @ ..] = self.bytes;
+        DateBytes::new(value_bytes).as_naive_date()
     }
 
     pub(crate) const fn is_inlineable() -> bool {
@@ -545,14 +578,26 @@ pub struct DateTimeAttributeID {
 }
 
 impl DateTimeAttributeID {
-    const LENGTH: usize = AttributeIDLength::LONG_LENGTH;
+    const VALUE_TYPE_LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH;
+    const VALUE_LENGTH: usize = ValueEncodingLength::LONG_LENGTH;
+    const LENGTH: usize = Self::VALUE_TYPE_LENGTH + Self::VALUE_LENGTH;
+
+    const VALUE_TYPE: ValueTypeCategory = ValueTypeCategory::DateTime;
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
     }
 
     pub(crate) fn build(value: DateTimeBytes) -> Self {
-        Self { bytes: value.bytes() }
+        let mut bytes = [0; Self::LENGTH];
+        bytes[..Self::VALUE_TYPE_LENGTH].copy_from_slice(&Self::VALUE_TYPE.to_bytes());
+        bytes[Self::VALUE_TYPE_LENGTH..].copy_from_slice(&value.bytes());
+        Self { bytes }
+    }
+
+    pub fn to_value(&self) -> NaiveDateTime {
+        let [_prefix, value_bytes @ ..] = self.bytes;
+        DateTimeBytes::new(value_bytes).as_naive_date_time()
     }
 
     pub(crate) const fn is_inlineable() -> bool {
@@ -574,14 +619,26 @@ pub struct DateTimeTZAttributeID {
 }
 
 impl DateTimeTZAttributeID {
-    const LENGTH: usize = AttributeIDLength::LONG_LENGTH;
+    const VALUE_TYPE_LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH;
+    const VALUE_LENGTH: usize = ValueEncodingLength::LONG_LENGTH;
+    const LENGTH: usize = Self::VALUE_TYPE_LENGTH + Self::VALUE_LENGTH;
+
+    const VALUE_TYPE: ValueTypeCategory = ValueTypeCategory::DateTimeTZ;
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
     }
 
     pub(crate) fn build(value: DateTimeTZBytes) -> Self {
-        Self { bytes: value.bytes() }
+        let mut bytes = [0; Self::LENGTH];
+        bytes[..Self::VALUE_TYPE_LENGTH].copy_from_slice(&Self::VALUE_TYPE.to_bytes());
+        bytes[Self::VALUE_TYPE_LENGTH..].copy_from_slice(&value.bytes());
+        Self { bytes }
+    }
+
+    pub fn to_value(&self) -> DateTime<TimeZone> {
+        let [_prefix, value_bytes @ ..] = self.bytes;
+        DateTimeTZBytes::new(value_bytes).as_date_time()
     }
 
     pub(crate) const fn is_inlineable() -> bool {
@@ -603,14 +660,26 @@ pub struct DurationAttributeID {
 }
 
 impl DurationAttributeID {
-    const LENGTH: usize = AttributeIDLength::LONG_LENGTH;
+    const VALUE_TYPE_LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH;
+    const VALUE_LENGTH: usize = ValueEncodingLength::LONG_LENGTH;
+    const LENGTH: usize = Self::VALUE_TYPE_LENGTH + Self::VALUE_LENGTH;
+
+    const VALUE_TYPE: ValueTypeCategory = ValueTypeCategory::Duration;
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
     }
 
     pub(crate) fn build(value: DurationBytes) -> Self {
-        Self { bytes: value.bytes() }
+        let mut bytes = [0; Self::LENGTH];
+        bytes[..Self::VALUE_TYPE_LENGTH].copy_from_slice(&Self::VALUE_TYPE.to_bytes());
+        bytes[Self::VALUE_TYPE_LENGTH..].copy_from_slice(&value.bytes());
+        Self { bytes }
+    }
+
+    pub fn to_value(&self) -> Duration {
+        let [_prefix, value_bytes @ ..] = self.bytes;
+        DurationBytes::new(value_bytes).as_duration()
     }
 
     pub(crate) const fn is_inlineable() -> bool {
@@ -626,7 +695,6 @@ impl DurationAttributeID {
     }
 }
 
-///
 /// String encoding scheme uses 17 bytes:
 ///
 ///   Case 1: string fits in 16 bytes
@@ -654,39 +722,54 @@ pub struct StringAttributeID {
 }
 
 impl StringAttributeID {
-    const LENGTH: usize = AttributeIDLength::LONG_LENGTH;
-    const ENCODING_STRING_INLINE_CAPACITY: usize = Self::LENGTH - 1;
-    pub const ENCODING_STRING_HASHED_PREFIX_LENGTH: usize =
-        { StringAttributeID::ENCODING_STRING_INLINE_CAPACITY - StringAttributeID::HASHID_HASH_LENGTH };
-    pub const ENCODING_STRING_HASHED_HASH_LENGTH: usize = 8;
-    pub const ENCODING_STRING_HASHED_PREFIX_HASH_LENGTH: usize =
-        Self::ENCODING_STRING_HASHED_PREFIX_LENGTH + Self::ENCODING_STRING_HASHED_HASH_LENGTH;
-    const ENCODING_STRING_TAIL_IS_HASH_MASK: u8 = 0b10000000;
-    const ENCODING_STRING_TAIL_INDEX: usize = { Self::LENGTH - 1 };
+    const VALUE_TYPE_LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH;
+    const VALUE_LENGTH: usize = ValueEncodingLength::LONG_LENGTH;
+    const LENGTH: usize = Self::VALUE_TYPE_LENGTH + Self::VALUE_LENGTH;
+
+    const VALUE_TYPE: ValueTypeCategory = ValueTypeCategory::String;
+
+    const INLINE_CAPACITY: usize = Self::VALUE_LENGTH - 1;
+
+    pub const HASHED_PREFIX_LENGTH: usize = Self::INLINE_CAPACITY - Self::HASHID_HASH_LENGTH;
+    pub const HASHED_HASH_LENGTH: usize = 8;
+    pub const HASHED_ENCODING_LENGTH: usize = Self::HASHED_PREFIX_LENGTH + Self::HASHED_HASH_LENGTH;
+
+    const HASHED_PREFIX_RANGE: Range<usize> =
+        Self::VALUE_TYPE_LENGTH..Self::VALUE_TYPE_LENGTH + Self::HASHED_PREFIX_LENGTH;
+    const HASHED_HASH_RANGE: Range<usize> =
+        Self::HASHED_PREFIX_RANGE.end..Self::HASHED_PREFIX_RANGE.end + Self::HASHED_HASH_LENGTH;
+    const HASHED_DISAMBIGUATED_HASH_RANGE: Range<usize> =
+        Self::HASHED_HASH_RANGE.start..Self::HASHED_HASH_RANGE.end + 1;
+    const HASHED_PREFIX_HASH_RANGE: Range<usize> =
+        Self::VALUE_TYPE_LENGTH..Self::VALUE_TYPE_LENGTH + Self::HASHED_ENCODING_LENGTH;
+
+    const TAIL_IS_HASH_MASK: u8 = 0b1000_0000;
+    const TAIL_INDEX: usize = Self::LENGTH - 1;
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
     }
 
     pub(crate) fn is_inlineable<const INLINE_LENGTH: usize>(string: StringBytes<'_, INLINE_LENGTH>) -> bool {
-        string.length() <= Self::ENCODING_STRING_INLINE_CAPACITY
+        string.length() <= Self::INLINE_CAPACITY
     }
 
     pub(crate) fn build_inline_id<const INLINE_LENGTH: usize>(string: StringBytes<'_, INLINE_LENGTH>) -> Self {
         debug_assert!(Self::is_inlineable(string.as_reference()));
         let mut bytes = [0u8; Self::LENGTH];
-        bytes[0..string.length()].copy_from_slice(string.bytes().bytes());
+        let [prefix, value_bytes @ ..] = &mut bytes;
+        std::slice::from_mut(prefix).copy_from_slice(&Self::VALUE_TYPE.to_bytes());
+        value_bytes[..string.length()].copy_from_slice(string.bytes().bytes());
         Self::set_tail_inline_length(&mut bytes, string.length() as u8);
         Self::new(bytes)
     }
 
-    ///
     /// Encode the last byte by setting 0b0[7 bits representing length of the prefix characters]
-    ///
     fn set_tail_inline_length(bytes: &mut [u8; Self::LENGTH], length: u8) {
-        assert_eq!(0, length & Self::ENCODING_STRING_TAIL_IS_HASH_MASK); // ie < 128, high bit not set
-                                                                         // because the high bit is not set, we already conform to the required mask of high bit = 0
-        bytes[Self::ENCODING_STRING_TAIL_INDEX] = length;
+        assert_eq!(0, length & Self::TAIL_IS_HASH_MASK); // ie < 128, high bit not set
+                                                         // because the high bit is not set, we already
+                                                         // conform to the required mask of high bit = 0
+        bytes[Self::TAIL_INDEX] = length;
     }
 
     pub fn is_inline(&self) -> bool {
@@ -694,26 +777,26 @@ impl StringAttributeID {
     }
 
     fn is_inline_bytes(bytes: &[u8]) -> bool {
-        bytes[Self::ENCODING_STRING_TAIL_INDEX] & Self::ENCODING_STRING_TAIL_IS_HASH_MASK == 0
+        bytes[Self::TAIL_INDEX] & Self::TAIL_IS_HASH_MASK == 0
     }
 
     pub fn get_hash_disambiguator(&self) -> u8 {
-        self.bytes[Self::ENCODING_STRING_TAIL_INDEX] & !Self::ENCODING_STRING_TAIL_IS_HASH_MASK
+        self.bytes[Self::TAIL_INDEX] & !Self::TAIL_IS_HASH_MASK
     }
 
     pub fn get_inline_string_bytes(&self) -> StringBytes<'static, 16> {
         debug_assert!(self.is_inline());
-        let mut bytes = ByteArray::zeros(Self::LENGTH);
-        let inline_string_length = self.get_inline_length();
-        bytes.bytes_mut()[0..inline_string_length as usize]
-            .copy_from_slice(&self.bytes[0..inline_string_length as usize]);
-        bytes.truncate(inline_string_length as usize);
+        let value_bytes = &self.bytes[Self::VALUE_TYPE_LENGTH..];
+        let mut bytes = ByteArray::zeros(Self::INLINE_CAPACITY);
+        let inline_string_length = self.get_inline_length() as usize;
+        bytes.bytes_mut()[..inline_string_length].copy_from_slice(&value_bytes[..inline_string_length]);
+        bytes.truncate(inline_string_length);
         StringBytes::new(Bytes::Array(bytes))
     }
 
     pub fn get_inline_length(&self) -> u8 {
         debug_assert!(self.is_inline());
-        self.bytes[Self::ENCODING_STRING_TAIL_INDEX]
+        self.bytes[Self::TAIL_INDEX]
     }
 
     fn build_or_find_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
@@ -726,29 +809,29 @@ impl StringAttributeID {
         Snapshot: ReadableSnapshot,
     {
         let mut bytes: [u8; Self::LENGTH] = [0; Self::LENGTH];
-        bytes[0..{ Self::ENCODING_STRING_HASHED_PREFIX_LENGTH }]
-            .copy_from_slice(&string.bytes().bytes()[0..{ Self::ENCODING_STRING_HASHED_PREFIX_LENGTH }]);
+        bytes[..Self::VALUE_TYPE_LENGTH].copy_from_slice(&Self::VALUE_TYPE.to_bytes());
+        bytes[Self::HASHED_PREFIX_RANGE].copy_from_slice(&string.bytes().bytes()[0..Self::HASHED_PREFIX_LENGTH]);
 
         debug_assert!(!Self::is_inlineable(string.as_reference()));
         let key_without_hash = AttributeVertex::build_prefix_type_attribute_id(
-            ValueTypeCategory::String,
             type_id,
-            &bytes[0..{ Self::ENCODING_STRING_HASHED_PREFIX_LENGTH }],
+            &bytes[0..Self::VALUE_TYPE_LENGTH + Self::HASHED_PREFIX_LENGTH],
         )
         .into_bytes();
 
         let disambiguated_hash =
             Self::find_existing_or_next_disambiguated_hash(snapshot, hasher, key_without_hash, string.bytes().bytes())?;
-        let hashed_id = match disambiguated_hash {
-            Either::First(hashed_bytes) | Either::Second(hashed_bytes) => {
-                debug_assert!(
-                    hashed_bytes[Self::HASHID_DISAMBIGUATOR_BYTE_INDEX] & Self::HASHID_DISAMBIGUATOR_BYTE_IS_HASH_FLAG
-                        != 0
-                );
-                bytes[Self::ENCODING_STRING_HASHED_PREFIX_LENGTH..Self::LENGTH].copy_from_slice(&hashed_bytes);
-                Self { bytes }
-            }
-        };
+
+        let (Either::First(hashed_bytes) | Either::Second(hashed_bytes)) = disambiguated_hash;
+
+        debug_assert!(
+            hashed_bytes[Self::HASHID_DISAMBIGUATOR_BYTE_INDEX] & Self::HASHID_DISAMBIGUATOR_BYTE_IS_HASH_FLAG != 0
+        );
+
+        bytes[Self::HASHED_DISAMBIGUATED_HASH_RANGE].copy_from_slice(&hashed_bytes);
+
+        let hashed_id = Self { bytes };
+
         match disambiguated_hash {
             Either::First(_) => Ok(Either::First(hashed_id)),
             Either::Second(_) => Ok(Either::Second(hashed_id)),
@@ -785,21 +868,19 @@ impl StringAttributeID {
         }
     }
 
-    pub fn get_hash_prefix(&self) -> [u8; Self::ENCODING_STRING_HASHED_PREFIX_LENGTH] {
+    pub fn get_hash_prefix(&self) -> [u8; Self::HASHED_PREFIX_LENGTH] {
         debug_assert!(!self.is_inline());
-        (&self.bytes[0..Self::ENCODING_STRING_HASHED_PREFIX_LENGTH]).try_into().unwrap()
+        self.bytes[Self::HASHED_PREFIX_RANGE].try_into().unwrap()
     }
 
-    pub fn get_hash_hash(&self) -> [u8; Self::ENCODING_STRING_HASHED_HASH_LENGTH] {
+    pub fn get_hash_hash(&self) -> [u8; Self::HASHED_HASH_LENGTH] {
         debug_assert!(!self.is_inline());
-        (&self.bytes[Self::ENCODING_STRING_HASHED_PREFIX_LENGTH..Self::ENCODING_STRING_HASHED_PREFIX_HASH_LENGTH])
-            .try_into()
-            .unwrap()
+        self.bytes[Self::HASHED_HASH_RANGE].try_into().unwrap()
     }
 
-    pub fn get_hash_prefix_hash(&self) -> [u8; Self::ENCODING_STRING_HASHED_PREFIX_HASH_LENGTH] {
+    pub fn get_hash_prefix_hash(&self) -> [u8; Self::HASHED_ENCODING_LENGTH] {
         debug_assert!(!self.is_inline());
-        (&self.bytes[0..Self::ENCODING_STRING_HASHED_PREFIX_HASH_LENGTH]).try_into().unwrap()
+        self.bytes[Self::HASHED_PREFIX_HASH_RANGE].try_into().unwrap()
     }
 
     pub fn bytes(&self) -> [u8; Self::LENGTH] {
@@ -811,9 +892,9 @@ impl StringAttributeID {
     }
 }
 
-impl HashedID<{ StringAttributeID::ENCODING_STRING_HASHED_HASH_LENGTH + 1 }> for StringAttributeID {
+impl HashedID<{ StringAttributeID::HASHED_HASH_LENGTH + 1 }> for StringAttributeID {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
-    const FIXED_WIDTH_KEYS: bool = Prefix::VertexAttributeString.fixed_width_keys();
+    const FIXED_WIDTH_KEYS: bool = true;
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -822,9 +903,13 @@ pub struct StructAttributeID {
 }
 
 impl StructAttributeID {
-    pub(crate) const LENGTH: usize = AttributeIDLength::SHORT_LENGTH;
-    pub const ENCODING_HASH_LENGTH: usize = { Self::LENGTH - 1 };
-    const ENCODING_STRUCT_TAIL_INDEX: usize = { Self::LENGTH - 1 };
+    const VALUE_TYPE_LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH;
+    const VALUE_LENGTH: usize = ValueEncodingLength::SHORT_LENGTH;
+    pub(crate) const LENGTH: usize = Self::VALUE_TYPE_LENGTH + Self::VALUE_LENGTH;
+    pub const HASH_LENGTH: usize = Self::VALUE_LENGTH - 1;
+    const TAIL_INDEX: usize = Self::LENGTH - 1;
+
+    const VALUE_TYPE: ValueTypeCategory = ValueTypeCategory::Struct;
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
@@ -847,16 +932,23 @@ impl StructAttributeID {
     where
         Snapshot: ReadableSnapshot,
     {
-        let key_without_hash = AttributeVertex::build_prefix_type(Prefix::VertexAttributeStruct, type_id);
+        let key_without_hash = AttributeVertex::build_prefix_type(Prefix::VertexAttribute, type_id);
         let existing_or_new = Self::find_existing_or_next_disambiguated_hash(
             snapshot,
             hasher,
-            key_without_hash.into_bytes(),
+            Bytes::Array(ByteArray::<4>::copy_concat([
+                key_without_hash.bytes(),
+                &ValueTypeCategory::Struct.to_bytes(),
+            ])),
             struct_bytes.bytes().bytes(),
         )?;
-        match existing_or_new {
-            Either::First(hashed_id) | Either::Second(hashed_id) => Ok(Self { bytes: hashed_id }),
-        }
+
+        let (Either::First(hashed_id) | Either::Second(hashed_id)) = existing_or_new;
+
+        let mut bytes = [0; Self::LENGTH];
+        bytes[..Self::VALUE_TYPE_LENGTH].copy_from_slice(&Self::VALUE_TYPE.to_bytes());
+        bytes[Self::VALUE_TYPE_LENGTH..].copy_from_slice(&hashed_id);
+        Ok(Self { bytes })
     }
 
     pub(crate) fn find_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
@@ -868,31 +960,35 @@ impl StructAttributeID {
     where
         Snapshot: ReadableSnapshot,
     {
-        let key_without_hash = AttributeVertex::build_prefix_type(Prefix::VertexAttributeStruct, type_id);
+        let key_without_hash = AttributeVertex::build_prefix_type(Prefix::VertexAttribute, type_id);
         let existing_or_new = Self::find_existing_or_next_disambiguated_hash(
             snapshot,
             hasher,
             key_without_hash.into_bytes(),
             struct_bytes.bytes().bytes(),
         )?;
+
         match existing_or_new {
             Either::First(hashed_id) => {
                 debug_assert!(
                     hashed_id[Self::HASHID_DISAMBIGUATOR_BYTE_INDEX] & Self::HASHID_DISAMBIGUATOR_BYTE_IS_HASH_FLAG
                         != 0
                 );
-                Ok(Some(Self { bytes: hashed_id }))
+                let mut bytes = [0; Self::LENGTH];
+                bytes[..Self::VALUE_TYPE_LENGTH].copy_from_slice(&Self::VALUE_TYPE.to_bytes());
+                bytes[Self::VALUE_TYPE_LENGTH..].copy_from_slice(&hashed_id);
+                Ok(Some(Self { bytes }))
             }
             Either::Second(_) => Ok(None),
         }
     }
 
-    pub fn get_hash_hash(&self) -> [u8; Self::ENCODING_HASH_LENGTH] {
-        self.bytes[0..Self::ENCODING_HASH_LENGTH].try_into().unwrap()
+    pub fn get_hash_hash(&self) -> [u8; Self::HASH_LENGTH] {
+        self.bytes[Self::VALUE_TYPE_LENGTH..][..Self::HASH_LENGTH].try_into().unwrap()
     }
 
     pub fn get_hash_disambiguator(&self) -> u8 {
-        self.bytes[Self::ENCODING_STRUCT_TAIL_INDEX] & !Self::HASHID_DISAMBIGUATOR_BYTE_IS_HASH_FLAG
+        self.bytes[Self::TAIL_INDEX] & !Self::HASHID_DISAMBIGUATOR_BYTE_IS_HASH_FLAG
     }
 
     pub(crate) const fn is_inlineable() -> bool {
@@ -900,7 +996,7 @@ impl StructAttributeID {
     }
 }
 
-impl HashedID<{ StructAttributeID::ENCODING_HASH_LENGTH + 1 }> for StructAttributeID {
+impl HashedID<{ StructAttributeID::HASH_LENGTH + 1 }> for StructAttributeID {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
-    const FIXED_WIDTH_KEYS: bool = Prefix::VertexAttributeStruct.fixed_width_keys();
+    const FIXED_WIDTH_KEYS: bool = true;
 }

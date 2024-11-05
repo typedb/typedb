@@ -35,7 +35,7 @@ use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{object::Object, thing_manager::ThingManager, HKInstance, ThingAPI},
-    type_::{attribute_type::AttributeType, type_manager::TypeManager, ObjectTypeAPI},
+    type_::{attribute_type::AttributeType, ObjectTypeAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
 
@@ -113,7 +113,7 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
     type Vertex<'b> = AttributeVertex<'b>;
     type TypeAPI<'b> = AttributeType<'b>;
     type Owned = Attribute<'static>;
-    const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::ATTRIBUTE_MIN, Prefix::ATTRIBUTE_MAX);
+    const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::VertexAttribute, Prefix::VertexAttribute);
 
     fn new(vertex: Self::Vertex<'a>) -> Self {
         Attribute { vertex, value: OnceLock::new() }
@@ -181,16 +181,8 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         Ok(())
     }
 
-    fn prefix_for_type(
-        type_: Self::TypeAPI<'_>,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<Prefix, ConceptReadError> {
-        let value_type = type_.get_value_type_without_source(snapshot, type_manager)?;
-        match value_type {
-            Some(value_type) => Ok(Self::Vertex::value_type_category_to_prefix_type(value_type.category())),
-            None => Err(ConceptReadError::CorruptMissingMandatoryValueType),
-        }
+    fn prefix_for_type(_type: Self::TypeAPI<'_>) -> Prefix {
+        Prefix::VertexAttribute
     }
 }
 

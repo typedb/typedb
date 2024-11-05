@@ -4,11 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use super::{
-    decimal_value::Decimal,
-    primitive_encoding::{decode_i64, decode_u64, encode_i64, encode_u64},
+use crate::{
+    graph::thing::vertex_attribute::ValueEncodingLength,
+    value::{
+        decimal_value::Decimal,
+        primitive_encoding::{decode_i64, decode_u64, encode_i64, encode_u64},
+    },
 };
-use crate::graph::thing::vertex_attribute::AttributeIDLength;
 
 #[derive(Debug, Copy, Clone)]
 pub struct DecimalBytes {
@@ -16,7 +18,7 @@ pub struct DecimalBytes {
 }
 
 impl DecimalBytes {
-    pub(crate) const LENGTH: usize = AttributeIDLength::Long.length();
+    pub(crate) const LENGTH: usize = ValueEncodingLength::Long.length();
 
     const INTEGER_LENGTH: usize = i64::BITS as usize / 8;
     const FRACTIONAL_LENGTH: usize = u64::BITS as usize / 8;

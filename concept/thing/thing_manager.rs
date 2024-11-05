@@ -24,7 +24,7 @@ use encoding::{
         },
         type_::{
             property::{TypeVertexProperty, TypeVertexPropertyEncoding},
-            vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertexEncoding},
+            vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
         },
         Typed,
     },
@@ -48,7 +48,7 @@ use encoding::{
     },
     AsBytes, Keyable,
 };
-use itertools::Itertools;
+use itertools::{Itertools, MinMaxResult};
 use lending_iterator::{AsHkt, LendingIterator};
 use resource::constants::{
     encoding::{StructFieldIDUInt, AD_HOC_BYTES_INLINE},
@@ -130,8 +130,7 @@ impl ThingManager {
             return InstanceIterator::empty();
         }
 
-        let prefix =
-            <T::HktSelf<'_> as ThingAPI>::prefix_for_type(thing_type.clone(), snapshot, self.type_manager()).unwrap();
+        let prefix = <T::HktSelf<'_> as ThingAPI>::prefix_for_type(thing_type.clone());
         let storage_key_prefix =
             <T::HktSelf<'_> as ThingAPI<'_>>::Vertex::build_prefix_type(prefix, thing_type.vertex().type_id_());
         let snapshot_iterator =
@@ -219,9 +218,8 @@ impl ThingManager {
         &'this self,
         snapshot: &'this Snapshot,
     ) -> Result<AttributeIterator<InstanceIterator<AsHkt![Attribute<'_>]>>, ConceptReadError> {
-        let has_reverse_start = ThingEdgeHasReverse::prefix_from_prefix(Prefix::ATTRIBUTE_MIN);
-        let has_reverse_end = ThingEdgeHasReverse::prefix_from_prefix(Prefix::ATTRIBUTE_MAX);
-        let range = KeyRange::new_inclusive(has_reverse_start, has_reverse_end);
+        let has_reverse_start = ThingEdgeHasReverse::prefix_from_prefix(Prefix::VertexAttribute);
+        let range = KeyRange::new_within(has_reverse_start, Prefix::VertexAttribute.fixed_width_keys());
         let has_reverse_iterator_buffer = snapshot.iterate_writes_range(range.clone());
         let has_reverse_iterator_storage = snapshot.iterate_storage_range(range);
         Ok(AttributeIterator::new(
@@ -237,17 +235,7 @@ impl ThingManager {
         snapshot: &'this impl ReadableSnapshot,
         attribute_type: AttributeType<'this>,
     ) -> Result<AttributeIterator<InstanceIterator<AsHkt![Attribute<'_>]>>, ConceptReadError> {
-        let attribute_value_type =
-            attribute_type.get_value_type_without_source(snapshot, self.type_manager.as_ref())?;
-        let Some(value_type) = attribute_value_type.as_ref() else {
-            return Ok(AttributeIterator::new_empty());
-        };
-
-        let attribute_value_type_prefix = AttributeVertex::value_type_category_to_prefix_type(value_type.category());
-        let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_type_with_category(
-            attribute_value_type_prefix,
-            attribute_type.vertex().type_id_(),
-        );
+        let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute_type(attribute_type.vertex().type_id_());
         let range = KeyRange::new_within(has_reverse_prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
         let has_reverse_iterator_buffer = snapshot.iterate_writes_range(range.clone());
         let has_reverse_iterator_storage = snapshot.iterate_storage_range(range);
@@ -265,62 +253,37 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         attribute: &'a Attribute<'a>,
     ) -> Result<Value<'static>, ConceptReadError> {
-        let attribute_type = attribute.type_();
-        let value_type = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?;
-        match value_type.as_ref().unwrap() {
-            ValueType::Boolean => {
-                let attribute_id = attribute.vertex().attribute_id().unwrap_boolean();
-                Ok(Value::Boolean(BooleanBytes::new(attribute_id.bytes()).as_bool()))
-            }
-            ValueType::Long => {
-                let attribute_id = attribute.vertex().attribute_id().unwrap_long();
-                Ok(Value::Long(LongBytes::new(attribute_id.bytes()).as_i64()))
-            }
-            ValueType::Double => {
-                let attribute_id = attribute.vertex().attribute_id().unwrap_double();
-                Ok(Value::Double(DoubleBytes::new(attribute_id.bytes()).as_f64()))
-            }
-            ValueType::Decimal => {
-                let attribute_id = attribute.vertex().attribute_id().unwrap_decimal();
-                Ok(Value::Decimal(DecimalBytes::new(attribute_id.bytes()).as_decimal()))
-            }
-            ValueType::Date => {
-                let attribute_id = attribute.vertex().attribute_id().unwrap_date();
-                Ok(Value::Date(DateBytes::new(attribute_id.bytes()).as_naive_date()))
-            }
-            ValueType::DateTime => {
-                let attribute_id = attribute.vertex().attribute_id().unwrap_date_time();
-                Ok(Value::DateTime(DateTimeBytes::new(attribute_id.bytes()).as_naive_date_time()))
-            }
-            ValueType::DateTimeTZ => {
-                let attribute_id = attribute.vertex().attribute_id().unwrap_date_time_tz();
-                Ok(Value::DateTimeTZ(DateTimeTZBytes::new(attribute_id.bytes()).as_date_time()))
-            }
-            ValueType::Duration => {
-                let attribute_id = attribute.vertex().attribute_id().unwrap_duration();
-                Ok(Value::Duration(DurationBytes::new(attribute_id.bytes()).as_duration()))
-            }
-            ValueType::String => {
-                let attribute_id = attribute.vertex().attribute_id().unwrap_string();
-                if attribute_id.is_inline() {
-                    Ok(Value::String(Cow::Owned(String::from(attribute_id.get_inline_string_bytes().as_str()))))
+        match attribute.vertex().attribute_id() {
+            AttributeID::Boolean(id) => Ok(Value::Boolean(id.to_value())),
+            AttributeID::Long(id) => Ok(Value::Long(id.to_value())),
+            AttributeID::Double(id) => Ok(Value::Double(id.to_value())),
+            AttributeID::Decimal(id) => Ok(Value::Decimal(id.to_value())),
+            AttributeID::Date(id) => Ok(Value::Date(id.to_value())),
+            AttributeID::DateTime(id) => Ok(Value::DateTime(id.to_value())),
+            AttributeID::DateTimeTZ(id) => Ok(Value::DateTimeTZ(id.to_value())),
+            AttributeID::Duration(id) => Ok(Value::Duration(id.to_value())),
+            AttributeID::String(id) => {
+                let string = if id.is_inline() {
+                    String::from(id.get_inline_string_bytes().as_str())
                 } else {
-                    Ok(snapshot
+                    snapshot
                         .get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
-                            Value::String(Cow::Owned(String::from(
-                                StringBytes::new(Bytes::<1>::Reference(bytes)).as_str(),
-                            )))
+                            String::from(StringBytes::new(Bytes::<1>::Reference(bytes)).as_str())
                         })
                         .map_err(|error| ConceptReadError::SnapshotGet { source: error })?
-                        .unwrap())
-                }
+                        .unwrap()
+                };
+                Ok(Value::String(Cow::Owned(string)))
             }
-            ValueType::Struct(_) => Ok(snapshot
-                .get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
-                    Value::Struct(Cow::Owned(StructBytes::new(Bytes::<1>::Reference(bytes)).as_struct()))
-                })
-                .map_err(|error| ConceptReadError::SnapshotGet { source: error })?
-                .unwrap()),
+            AttributeID::Struct(_id) => {
+                let struct_value = snapshot
+                    .get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
+                        StructBytes::new(Bytes::<1>::Reference(bytes)).as_struct()
+                    })
+                    .map_err(|error| ConceptReadError::SnapshotGet { source: error })?
+                    .unwrap();
+                Ok(Value::Struct(Cow::Owned(struct_value)))
+            }
         }
     }
 
@@ -364,7 +327,6 @@ impl ThingManager {
                         snapshot,
                     ) {
                         Ok(Some(id)) => Attribute::new(AttributeVertex::build(
-                            ValueTypeCategory::String,
                             attribute_type.vertex().type_id_(),
                             AttributeID::String(id),
                         )),
@@ -381,7 +343,6 @@ impl ThingManager {
                 ) {
                     Ok(Some(id)) => {
                         let attribute = Attribute::new(AttributeVertex::build(
-                            ValueTypeCategory::Struct,
                             attribute_type.vertex().type_id_(),
                             AttributeID::Struct(id),
                         ));
@@ -407,11 +368,7 @@ impl ThingManager {
         if attribute_value_type.is_none() || attribute_value_type.as_ref().unwrap() != &value.value_type() {
             return Ok(None);
         }
-        let vertex = AttributeVertex::build(
-            attribute_value_type.as_ref().unwrap().category(),
-            attribute_type.vertex().type_id_(),
-            AttributeID::build_inline(value),
-        );
+        let vertex = AttributeVertex::build(attribute_type.vertex().type_id_(), AttributeID::build_inline(value));
         snapshot
             .get_mapped(vertex.as_storage_key().as_reference(), |_| Attribute::new(vertex.clone()))
             .map_err(|err| ConceptReadError::SnapshotGet { source: err })
@@ -434,11 +391,7 @@ impl ThingManager {
 
         let vertex = if AttributeID::is_inlineable(value.as_reference()) {
             // don't need to do an extra lookup to get the attribute vertex - if it exists, it will have this ID
-            AttributeVertex::build(
-                value_type.category(),
-                attribute_type.vertex().type_id_(),
-                AttributeID::build_inline(value),
-            )
+            AttributeVertex::build(attribute_type.vertex().type_id_(), AttributeID::build_inline(value))
         } else {
             // non-inline attributes require an extra lookup before checking for the has edge existence
             let attribute = self.get_attribute_with_value(snapshot, attribute_type, value)?;
@@ -485,10 +438,13 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         attribute_type_range: impl Iterator<Item = AttributeType<'static>>,
     ) -> Result<HasReverseIterator, ConceptReadError> {
-        let ((min_prefix, min_type_id), (max_prefix, max_type_id)) =
-            self.attribute_instance_range_from_attribute_type_range(snapshot, attribute_type_range)?;
-        let min_edge_prefix = ThingEdgeHasReverse::prefix_from_type_with_category(min_prefix, min_type_id);
-        let max_edge_prefix = ThingEdgeHasReverse::prefix_from_type_with_category(max_prefix, max_type_id);
+        let (min_type_id, max_type_id) = match attribute_type_range.minmax() {
+            MinMaxResult::NoElements => unreachable!(),
+            MinMaxResult::OneElement(type_) => (type_.vertex().type_id_(), type_.vertex().type_id_()),
+            MinMaxResult::MinMax(min, max) => (min.vertex().type_id_(), max.vertex().type_id_()),
+        };
+        let min_edge_prefix = ThingEdgeHasReverse::prefix_from_attribute_type(min_type_id);
+        let max_edge_prefix = ThingEdgeHasReverse::prefix_from_attribute_type(max_type_id);
         let range = if min_edge_prefix != max_edge_prefix {
             KeyRange::new_inclusive(min_edge_prefix, max_edge_prefix)
         } else {
@@ -531,13 +487,7 @@ impl ThingManager {
                     .map_err(|err| ConceptReadError::SnapshotIterate { source: err })
             });
 
-        let attribute_value_type_prefix =
-            AttributeVertex::value_type_category_to_prefix_type(ValueTypeCategory::Struct);
-
-        let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_type_with_category(
-            attribute_value_type_prefix,
-            attribute_type.vertex().type_id_(),
-        );
+        let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute_type(attribute_type.vertex().type_id_());
         let range = KeyRange::new_within(has_reverse_prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
         let has_reverse_iterator_buffer = snapshot.iterate_writes_range(range.clone());
         let has_reverse_iterator_storage = snapshot.iterate_storage_range(range);
@@ -567,20 +517,11 @@ impl ThingManager {
         snapshot: &'this impl ReadableSnapshot,
         owner: &impl ObjectAPI<'a>,
         attribute_type: AttributeType<'a>,
-    ) -> Result<HasAttributeIterator, ConceptReadError> {
-        let attribute_value_type = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?;
-        let value_type = match attribute_value_type.as_ref() {
-            None => return Ok(HasAttributeIterator::new_empty()),
-            Some(value_type) => value_type,
-        };
-        let prefix = ThingEdgeHas::prefix_from_object_to_type(
-            owner.vertex(),
-            AttributeVertex::value_type_category_to_prefix_type(value_type.category()),
-            attribute_type.into_vertex().type_id_(),
-        );
-        Ok(HasAttributeIterator::new(
+    ) -> HasAttributeIterator {
+        let prefix = ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), attribute_type.into_vertex().type_id_());
+        HasAttributeIterator::new(
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING)),
-        ))
+        )
     }
 
     pub(crate) fn get_has_from_thing_to_type_ordered<'a>(
@@ -598,13 +539,7 @@ impl ThingManager {
         let attributes = snapshot
             .get_mapped(key.as_storage_key().as_reference(), |bytes| {
                 decode_attribute_ids(value_type.category(), bytes.bytes())
-                    .map(|id| {
-                        Attribute::new(AttributeVertex::build(
-                            value_type.category(),
-                            attribute_type.vertex().type_id_(),
-                            id,
-                        ))
-                    })
+                    .map(|id| Attribute::new(AttributeVertex::build(attribute_type.vertex().type_id_(), id)))
                     .collect()
             })
             .map_err(|err| ConceptReadError::SnapshotGet { source: err })?
@@ -616,51 +551,21 @@ impl ThingManager {
         &'this self,
         snapshot: &'this impl ReadableSnapshot,
         owner: &impl ObjectAPI<'a>,
-        attribute_types_defining_range: impl Iterator<Item = AttributeType<'static>>,
+        attribute_types: impl Iterator<Item = AttributeType<'static>>,
     ) -> Result<HasIterator, ConceptReadError> {
-        let ((min_prefix, min_type_id), (max_prefix, max_type_id)) =
-            self.attribute_instance_range_from_attribute_type_range(snapshot, attribute_types_defining_range)?;
-        let min_edge_prefix = ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), min_prefix, min_type_id);
-        let max_edge_prefix = ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), max_prefix, max_type_id);
+        let (min_type_id, max_type_id) = match attribute_types.minmax() {
+            MinMaxResult::NoElements => unreachable!(),
+            MinMaxResult::OneElement(type_) => (type_.vertex().type_id_(), type_.vertex().type_id_()),
+            MinMaxResult::MinMax(min, max) => (min.vertex().type_id_(), max.vertex().type_id_()),
+        };
+        let min_edge_prefix = ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), min_type_id);
+        let max_edge_prefix = ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), max_type_id);
         let range = if min_edge_prefix != max_edge_prefix {
             KeyRange::new_inclusive(min_edge_prefix, max_edge_prefix)
         } else {
             KeyRange::new_within(min_edge_prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING)
         };
         Ok(HasIterator::new(snapshot.iterate_range(range)))
-    }
-
-    fn attribute_instance_range_from_attribute_type_range(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        attribute_types: impl Iterator<Item = AttributeType<'static>>,
-    ) -> Result<((Prefix, TypeID), (Prefix, TypeID)), ConceptReadError> {
-        let mut min: Option<(Prefix, TypeID)> = None;
-        let mut max: Option<(Prefix, TypeID)> = None;
-        for attribute_type in attribute_types {
-            if let Some(value_type) = attribute_type.get_value_type_without_source(snapshot, self.type_manager())? {
-                let prefix = AttributeVertex::value_type_category_to_prefix_type(value_type.category());
-                let type_id = attribute_type.vertex().type_id_();
-                if min.is_none()
-                    || min.is_some_and(|(min_prefix, min_type_id)| {
-                        (min_prefix.prefix_id().bytes(), min_type_id.bytes())
-                            > (prefix.prefix_id().bytes(), type_id.bytes())
-                    })
-                {
-                    min = Some((prefix, type_id));
-                }
-                if max.is_none()
-                    || max.is_some_and(|(max_prefix, max_type_id)| {
-                        (max_prefix.prefix_id().bytes(), max_type_id.bytes())
-                            < (prefix.prefix_id().bytes(), type_id.bytes())
-                    })
-                {
-                    max = Some((prefix, type_id));
-                }
-            }
-        }
-        debug_assert!(min.is_some() && max.is_some());
-        Ok((min.unwrap(), max.unwrap()))
     }
 
     pub(crate) fn get_owners(
@@ -1151,9 +1056,12 @@ impl ThingManager {
         }
 
         for (key, _value) in snapshot
-            .iterate_writes_range(KeyRange::new_exclusive(
-                StorageKey::new(AttributeVertex::KEYSPACE, Bytes::inline(Prefix::ATTRIBUTE_MIN.prefix_id().bytes(), 1)),
-                StorageKey::new(AttributeVertex::KEYSPACE, Bytes::inline(Prefix::ATTRIBUTE_MAX.prefix_id().bytes(), 1)),
+            .iterate_writes_range(KeyRange::new_within(
+                StorageKey::new(
+                    AttributeVertex::KEYSPACE,
+                    Bytes::inline(Prefix::VertexAttribute.prefix_id().bytes(), 1),
+                ),
+                Prefix::VertexAttribute.fixed_width_keys(),
             ))
             .filter_map(|(key, write)| match write {
                 Write::Put { value, .. } => Some((key, value)),

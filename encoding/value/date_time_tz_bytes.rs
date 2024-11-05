@@ -6,8 +6,10 @@
 
 use chrono::DateTime;
 
-use super::{date_time_bytes::DateTimeBytes, timezone::TimeZone};
-use crate::graph::thing::vertex_attribute::AttributeIDLength;
+use crate::{
+    graph::thing::vertex_attribute::ValueEncodingLength,
+    value::{date_time_bytes::DateTimeBytes, timezone::TimeZone},
+};
 
 #[derive(Debug, Copy, Clone)]
 pub struct DateTimeTZBytes {
@@ -15,7 +17,7 @@ pub struct DateTimeTZBytes {
 }
 
 impl DateTimeTZBytes {
-    pub(crate) const LENGTH: usize = AttributeIDLength::Long.length();
+    pub(crate) const LENGTH: usize = ValueEncodingLength::Long.length();
 
     const DATE_TIME_LENGTH: usize = (i64::BITS + u32::BITS) as usize / 8;
     const TZ_LENGTH: usize = u32::BITS as usize / 8;

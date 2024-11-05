@@ -25,6 +25,7 @@ use crate::{
         Typed,
     },
     layout::prefix::{Prefix, PrefixID},
+    value::value_type::ValueTypeCategory,
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
@@ -82,13 +83,12 @@ impl<'a> ThingEdgeHas<'a> {
 
     pub fn prefix_from_object_to_type(
         from: ObjectVertex,
-        to_vertex_prefix: Prefix,
         to_type_id: TypeID,
     ) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
-        let to_prefix = AttributeVertex::build_prefix_type(to_vertex_prefix, to_type_id);
+        let to_prefix = AttributeVertex::build_prefix_type(Prefix::VertexAttribute, to_type_id);
         let to_type_range = Self::range_from().end..Self::range_from().end + to_prefix.length();
         bytes.bytes_mut()[to_type_range].copy_from_slice(to_prefix.bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
@@ -179,9 +179,9 @@ impl<'a> ThingEdgeHasReverse<'a> {
     const PREFIX: Prefix = Prefix::EdgeHasReverse;
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
 
-    const INDEX_FROM_PREFIX: usize = PrefixID::LENGTH;
     pub const LENGTH_PREFIX_FROM_PREFIX: usize = PrefixID::LENGTH + PrefixID::LENGTH;
     pub const LENGTH_PREFIX_FROM_TYPE: usize = PrefixID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
+    const INDEX_FROM_VALUE_PREFIX: usize = Self::LENGTH_PREFIX_FROM_TYPE;
     pub const LENGTH_BOUND_PREFIX_FROM: usize =
         PrefixID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE + AttributeID::max_length();
     pub const LENGTH_BOUND_PREFIX_FROM_TO_TYPE: usize = PrefixID::LENGTH
@@ -211,20 +211,20 @@ impl<'a> ThingEdgeHasReverse<'a> {
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + PrefixID::LENGTH]
             .copy_from_slice(&from_prefix.prefix_id().bytes);
-        StorageKey::new_owned(Self::keyspace_for_from_prefix(from_prefix), bytes)
+        StorageKey::new_owned(EncodingKeyspace::Data, bytes)
     }
 
-    pub fn prefix_from_type_with_category(
-        from_prefix: Prefix,
+    pub fn prefix_from_attribute_type(
         from_type_id: TypeID,
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_PREFIX_FROM_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         let from_prefix_end = Self::RANGE_PREFIX.end + PrefixID::LENGTH;
-        bytes.bytes_mut()[Self::RANGE_PREFIX.end..from_prefix_end].copy_from_slice(&from_prefix.prefix_id().bytes);
+        bytes.bytes_mut()[Self::RANGE_PREFIX.end..from_prefix_end]
+            .copy_from_slice(&Prefix::VertexAttribute.prefix_id().bytes);
         let from_type_id_end = from_prefix_end + TypeID::LENGTH;
         bytes.bytes_mut()[from_prefix_end..from_type_id_end].copy_from_slice(&from_type_id.bytes());
-        StorageKey::new_owned(Self::keyspace_for_from_prefix(from_prefix), bytes)
+        StorageKey::new_owned(EncodingKeyspace::Data, bytes)
     }
 
     // TODO cleanup
@@ -235,7 +235,7 @@ impl<'a> ThingEdgeHasReverse<'a> {
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::range_from_for_vertex(from.as_reference())].copy_from_slice(from.bytes().bytes());
         bytes.truncate(Self::range_from_for_vertex(from.as_reference()).end);
-        StorageKey::new_owned(Self::keyspace_for_from(from), bytes)
+        StorageKey::new_owned(EncodingKeyspace::Data, bytes)
     }
 
     pub fn prefix_from_attribute_to_type(
@@ -249,7 +249,7 @@ impl<'a> ThingEdgeHasReverse<'a> {
         let to_type_range = range_from.end..range_from.end + TypeVertex::LENGTH;
         bytes.bytes_mut()[to_type_range].copy_from_slice(ObjectVertex::build_prefix_from_type_vertex(to_type).bytes());
         bytes.truncate(range_from.end + TypeVertex::LENGTH);
-        StorageKey::new_owned(Self::keyspace_for_from(from), bytes)
+        StorageKey::new_owned(EncodingKeyspace::Data, bytes)
     }
 
     pub fn prefix_from_attribute_to_type_range(
@@ -299,32 +299,10 @@ impl<'a> ThingEdgeHasReverse<'a> {
 
     #[allow(clippy::wrong_self_convention, reason = "`from` refers to the edge's source vertex")]
     fn from_length(&self) -> usize {
-        let byte = self.bytes.bytes()[Self::INDEX_FROM_PREFIX];
-        let prefix = PrefixID::new([byte]);
+        let value_type_prefix = self.bytes.bytes()[Self::INDEX_FROM_VALUE_PREFIX];
         let id_encoding_length =
-            AttributeVertex::prefix_type_to_value_id_encoding_length(Prefix::from_prefix_id(prefix));
+            AttributeID::value_type_encoding_length(ValueTypeCategory::from_bytes([value_type_prefix]));
         THING_VERTEX_LENGTH_PREFIX_TYPE + id_encoding_length
-    }
-
-    fn keyspace_for_from(attribute: AttributeVertex<'_>) -> EncodingKeyspace {
-        Self::keyspace_for_from_prefix(attribute.prefix())
-    }
-
-    fn keyspace_for_from_prefix(prefix: Prefix) -> EncodingKeyspace {
-        match prefix {
-            Prefix::VertexAttributeBoolean => EncodingKeyspace::Data,
-            Prefix::VertexAttributeLong => EncodingKeyspace::Data,
-            Prefix::VertexAttributeDouble => EncodingKeyspace::Data,
-            Prefix::VertexAttributeDecimal => EncodingKeyspace::Data,
-            Prefix::VertexAttributeDate => EncodingKeyspace::Data,
-            Prefix::VertexAttributeDateTime => EncodingKeyspace::Data,
-            Prefix::VertexAttributeDateTimeTZ => EncodingKeyspace::Data,
-            Prefix::VertexAttributeDuration => EncodingKeyspace::Data,
-            Prefix::VertexAttributeString => EncodingKeyspace::Data,
-            Prefix::VertexAttributeStruct => EncodingKeyspace::Data,
-            Prefix::_VertexAttributeLast => EncodingKeyspace::Data,
-            _ => unreachable!("Unrecognised attribute prefix type."),
-        }
     }
 
     fn range_to(&self) -> Range<usize> {
@@ -354,8 +332,7 @@ impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for ThingEdgeHasReverse<'a> {}
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ThingEdgeHasReverse<'a> {
     fn keyspace(&self) -> EncodingKeyspace {
-        // TODO: may be worth caching since it's not free to compute but static within an instance
-        Self::keyspace_for_from(self.from())
+        EncodingKeyspace::Data
     }
 }
 

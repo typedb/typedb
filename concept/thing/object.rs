@@ -38,8 +38,7 @@ use crate::{
         HKInstance, ThingAPI,
     },
     type_::{
-        attribute_type::AttributeType, object_type::ObjectType, role_type::RoleType, type_manager::TypeManager,
-        ObjectTypeAPI, Ordering, OwnerAPI,
+        attribute_type::AttributeType, object_type::ObjectType, role_type::RoleType, ObjectTypeAPI, Ordering, OwnerAPI,
     },
     ConceptStatus,
 };
@@ -158,14 +157,10 @@ impl<'a> ThingAPI<'a> for Object<'a> {
         }
     }
 
-    fn prefix_for_type(
-        type_: Self::TypeAPI<'_>,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<Prefix, ConceptReadError> {
+    fn prefix_for_type(type_: Self::TypeAPI<'_>) -> Prefix {
         match type_ {
-            ObjectType::Entity(entity) => Entity::prefix_for_type(entity, snapshot, type_manager),
-            ObjectType::Relation(relation) => Relation::prefix_for_type(relation, snapshot, type_manager),
+            ObjectType::Entity(entity) => Entity::prefix_for_type(entity),
+            ObjectType::Relation(relation) => Relation::prefix_for_type(relation),
         }
     }
 }
@@ -207,7 +202,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<HasAttributeIterator, ConceptReadError> {
+    ) -> HasAttributeIterator {
         thing_manager.get_has_from_thing_to_type_unordered(snapshot, self, attribute_type)
     }
 

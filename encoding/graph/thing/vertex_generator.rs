@@ -170,8 +170,7 @@ impl ThingVertexGenerator {
         Snapshot: WritableSnapshot,
     {
         let boolean_attribute_id = self.create_attribute_id_boolean(value);
-        let vertex =
-            AttributeVertex::build(ValueTypeCategory::Boolean, type_id, AttributeID::Boolean(boolean_attribute_id));
+        let vertex = AttributeVertex::build(type_id, AttributeID::Boolean(boolean_attribute_id));
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
     }
@@ -186,7 +185,7 @@ impl ThingVertexGenerator {
         Snapshot: WritableSnapshot,
     {
         let long_attribute_id = self.create_attribute_id_long(value);
-        let vertex = AttributeVertex::build(ValueTypeCategory::Long, type_id, AttributeID::Long(long_attribute_id));
+        let vertex = AttributeVertex::build(type_id, AttributeID::Long(long_attribute_id));
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
     }
@@ -201,8 +200,7 @@ impl ThingVertexGenerator {
         Snapshot: WritableSnapshot,
     {
         let double_attribute_id = self.create_attribute_id_double(value);
-        let vertex =
-            AttributeVertex::build(ValueTypeCategory::Double, type_id, AttributeID::Double(double_attribute_id));
+        let vertex = AttributeVertex::build(type_id, AttributeID::Double(double_attribute_id));
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
     }
@@ -217,8 +215,7 @@ impl ThingVertexGenerator {
         Snapshot: WritableSnapshot,
     {
         let decimal_attribute_id = self.create_attribute_id_decimal(value);
-        let vertex =
-            AttributeVertex::build(ValueTypeCategory::Decimal, type_id, AttributeID::Decimal(decimal_attribute_id));
+        let vertex = AttributeVertex::build(type_id, AttributeID::Decimal(decimal_attribute_id));
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
     }
@@ -233,7 +230,7 @@ impl ThingVertexGenerator {
         Snapshot: WritableSnapshot,
     {
         let date_attribute_id = self.create_attribute_id_date(value);
-        let vertex = AttributeVertex::build(ValueTypeCategory::Date, type_id, AttributeID::Date(date_attribute_id));
+        let vertex = AttributeVertex::build(type_id, AttributeID::Date(date_attribute_id));
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
     }
@@ -248,8 +245,7 @@ impl ThingVertexGenerator {
         Snapshot: WritableSnapshot,
     {
         let date_time_attribute_id = self.create_attribute_id_date_time(value);
-        let vertex =
-            AttributeVertex::build(ValueTypeCategory::DateTime, type_id, AttributeID::DateTime(date_time_attribute_id));
+        let vertex = AttributeVertex::build(type_id, AttributeID::DateTime(date_time_attribute_id));
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
     }
@@ -264,11 +260,7 @@ impl ThingVertexGenerator {
         Snapshot: WritableSnapshot,
     {
         let date_time_tz_attribute_id = self.create_attribute_id_date_time_tz(value);
-        let vertex = AttributeVertex::build(
-            ValueTypeCategory::DateTimeTZ,
-            type_id,
-            AttributeID::DateTimeTZ(date_time_tz_attribute_id),
-        );
+        let vertex = AttributeVertex::build(type_id, AttributeID::DateTimeTZ(date_time_tz_attribute_id));
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
     }
@@ -283,8 +275,7 @@ impl ThingVertexGenerator {
         Snapshot: WritableSnapshot,
     {
         let duration_attribute_id = self.create_attribute_id_duration(value);
-        let vertex =
-            AttributeVertex::build(ValueTypeCategory::Duration, type_id, AttributeID::Duration(duration_attribute_id));
+        let vertex = AttributeVertex::build(type_id, AttributeID::Duration(duration_attribute_id));
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
     }
@@ -341,8 +332,7 @@ impl ThingVertexGenerator {
         Snapshot: WritableSnapshot,
     {
         let string_attribute_id = self.create_attribute_id_string(type_id, value.as_reference(), snapshot)?;
-        let vertex =
-            AttributeVertex::build(ValueTypeCategory::String, type_id, AttributeID::String(string_attribute_id));
+        let vertex = AttributeVertex::build(type_id, AttributeID::String(string_attribute_id));
         snapshot.put_val(vertex.as_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
         Ok(vertex)
     }
@@ -361,8 +351,7 @@ impl ThingVertexGenerator {
         } else {
             let id = StringAttributeID::build_hashed_id(type_id, string, snapshot, &self.large_value_hasher)?;
             let hash = id.get_hash_prefix_hash();
-            let lock =
-                ByteArray::copy_concat([&Prefix::VertexAttributeString.prefix_id().bytes(), &type_id.bytes(), &hash]);
+            let lock = ByteArray::copy_concat([&Prefix::VertexAttribute.prefix_id().bytes(), &type_id.bytes(), &hash]);
             snapshot.exclusive_lock_add(lock);
             Ok(id)
         }
@@ -391,8 +380,7 @@ impl ThingVertexGenerator {
         Snapshot: WritableSnapshot,
     {
         let struct_attribute_id = self.create_attribute_id_struct(type_id, value.as_reference(), snapshot)?;
-        let vertex =
-            AttributeVertex::build(ValueTypeCategory::Struct, type_id, AttributeID::Struct(struct_attribute_id));
+        let vertex = AttributeVertex::build(type_id, AttributeID::Struct(struct_attribute_id));
         snapshot.put_val(vertex.as_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
         Ok(vertex)
     }
@@ -409,8 +397,7 @@ impl ThingVertexGenerator {
         // We don't inline structs
         let id = StructAttributeID::build_hashed_id(type_id, struct_bytes, snapshot, &self.large_value_hasher)?;
         let hash = id.get_hash_hash();
-        let lock =
-            ByteArray::copy_concat([&Prefix::VertexAttributeStruct.prefix_id().bytes(), &type_id.bytes(), &hash]);
+        let lock = ByteArray::copy_concat([&Prefix::VertexAttribute.prefix_id().bytes(), &type_id.bytes(), &hash]);
         snapshot.exclusive_lock_add(lock);
         Ok(id)
     }

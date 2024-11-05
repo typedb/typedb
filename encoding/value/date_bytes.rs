@@ -6,8 +6,10 @@
 
 use chrono::{Datelike, NaiveDate};
 
-use super::primitive_encoding::{decode_i32, encode_i32};
-use crate::graph::thing::vertex_attribute::AttributeIDLength;
+use crate::{
+    graph::thing::vertex_attribute::ValueEncodingLength,
+    value::primitive_encoding::{decode_i32, encode_i32},
+};
 
 #[derive(Debug, Copy, Clone)]
 pub struct DateBytes {
@@ -15,7 +17,7 @@ pub struct DateBytes {
 }
 
 impl DateBytes {
-    pub(crate) const LENGTH: usize = AttributeIDLength::Short.length();
+    pub(crate) const LENGTH: usize = ValueEncodingLength::Short.length();
 
     const DAYS_LENGTH: usize = i32::BITS as usize / 8;
 
