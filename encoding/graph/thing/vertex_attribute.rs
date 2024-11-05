@@ -680,7 +680,6 @@ impl DurationAttributeID {
     }
 }
 
-///
 /// String encoding scheme uses 17 bytes:
 ///
 ///   Case 1: string fits in 16 bytes
@@ -806,16 +805,17 @@ impl StringAttributeID {
 
         let disambiguated_hash =
             Self::find_existing_or_next_disambiguated_hash(snapshot, hasher, key_without_hash, string.bytes().bytes())?;
-        let hashed_id = match disambiguated_hash {
-            Either::First(hashed_bytes) | Either::Second(hashed_bytes) => {
-                debug_assert!(
-                    hashed_bytes[Self::HASHID_DISAMBIGUATOR_BYTE_INDEX] & Self::HASHID_DISAMBIGUATOR_BYTE_IS_HASH_FLAG
-                        != 0
-                );
-                bytes[Self::HASHED_DISAMBIGUATED_HASH_RANGE].copy_from_slice(&hashed_bytes);
-                Self { bytes }
-            }
-        };
+
+        let (Either::First(hashed_bytes) | Either::Second(hashed_bytes)) = disambiguated_hash;
+
+        debug_assert!(
+            hashed_bytes[Self::HASHID_DISAMBIGUATOR_BYTE_INDEX] & Self::HASHID_DISAMBIGUATOR_BYTE_IS_HASH_FLAG != 0
+        );
+
+        bytes[Self::HASHED_DISAMBIGUATED_HASH_RANGE].copy_from_slice(&hashed_bytes);
+
+        let hashed_id = Self { bytes };
+
         match disambiguated_hash {
             Either::First(_) => Ok(Either::First(hashed_id)),
             Either::Second(_) => Ok(Either::Second(hashed_id)),
@@ -854,17 +854,17 @@ impl StringAttributeID {
 
     pub fn get_hash_prefix(&self) -> [u8; Self::HASHED_PREFIX_LENGTH] {
         debug_assert!(!self.is_inline());
-        (&self.bytes[Self::HASHED_PREFIX_RANGE]).try_into().unwrap()
+        self.bytes[Self::HASHED_PREFIX_RANGE].try_into().unwrap()
     }
 
     pub fn get_hash_hash(&self) -> [u8; Self::HASHED_HASH_LENGTH] {
         debug_assert!(!self.is_inline());
-        (&self.bytes[Self::HASHED_HASH_RANGE]).try_into().unwrap()
+        self.bytes[Self::HASHED_HASH_RANGE].try_into().unwrap()
     }
 
     pub fn get_hash_prefix_hash(&self) -> [u8; Self::HASHED_ENCODING_LENGTH] {
         debug_assert!(!self.is_inline());
-        (&self.bytes[Self::HASHED_PREFIX_HASH_RANGE]).try_into().unwrap()
+        self.bytes[Self::HASHED_PREFIX_HASH_RANGE].try_into().unwrap()
     }
 
     pub fn bytes(&self) -> [u8; Self::LENGTH] {
@@ -878,7 +878,7 @@ impl StringAttributeID {
 
 impl HashedID<{ StringAttributeID::HASHED_HASH_LENGTH + 1 }> for StringAttributeID {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
-    const FIXED_WIDTH_KEYS: bool = Prefix::VertexAttribute.fixed_width_keys();
+    const FIXED_WIDTH_KEYS: bool = true;
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -890,8 +890,8 @@ impl StructAttributeID {
     const PREFIX_LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH;
     const VALUE_LENGTH: usize = AttributeIDLength::SHORT_LENGTH;
     pub(crate) const LENGTH: usize = Self::PREFIX_LENGTH + Self::VALUE_LENGTH;
-    pub const ENCODING_HASH_LENGTH: usize = Self::VALUE_LENGTH - 1;
-    const ENCODING_STRUCT_TAIL_INDEX: usize = Self::VALUE_LENGTH - 1;
+    pub const HASH_LENGTH: usize = Self::VALUE_LENGTH - 1;
+    const TAIL_INDEX: usize = Self::LENGTH - 1;
 
     const PREFIX: [u8; Self::PREFIX_LENGTH] = ValueTypeCategory::Struct.to_bytes();
 
@@ -920,7 +920,7 @@ impl StructAttributeID {
         let existing_or_new = Self::find_existing_or_next_disambiguated_hash(
             snapshot,
             hasher,
-            key_without_hash.into_bytes(),
+            Bytes::Array(ByteArray::<4>::copy_concat([key_without_hash.bytes(), &ValueTypeCategory::Struct.to_bytes()])),
             struct_bytes.bytes().bytes(),
         )?;
 
@@ -964,12 +964,12 @@ impl StructAttributeID {
         }
     }
 
-    pub fn get_hash_hash(&self) -> [u8; Self::ENCODING_HASH_LENGTH] {
-        self.bytes[0..Self::ENCODING_HASH_LENGTH].try_into().unwrap()
+    pub fn get_hash_hash(&self) -> [u8; Self::HASH_LENGTH] {
+        self.bytes[Self::PREFIX_LENGTH..][..Self::HASH_LENGTH].try_into().unwrap()
     }
 
     pub fn get_hash_disambiguator(&self) -> u8 {
-        self.bytes[Self::ENCODING_STRUCT_TAIL_INDEX] & !Self::HASHID_DISAMBIGUATOR_BYTE_IS_HASH_FLAG
+        self.bytes[Self::TAIL_INDEX] & !Self::HASHID_DISAMBIGUATOR_BYTE_IS_HASH_FLAG
     }
 
     pub(crate) const fn is_inlineable() -> bool {
@@ -977,7 +977,7 @@ impl StructAttributeID {
     }
 }
 
-impl HashedID<{ StructAttributeID::ENCODING_HASH_LENGTH + 1 }> for StructAttributeID {
+impl HashedID<{ StructAttributeID::HASH_LENGTH + 1 }> for StructAttributeID {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
-    const FIXED_WIDTH_KEYS: bool = Prefix::VertexAttribute.fixed_width_keys();
+    const FIXED_WIDTH_KEYS: bool = true;
 }
