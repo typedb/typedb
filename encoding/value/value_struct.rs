@@ -34,7 +34,7 @@ use crate::{
             r#struct::{StructDefinition, StructDefinitionField},
         },
         thing::{
-            vertex_attribute::{AttributeID, ValueEncodingLength, AttributeVertex, StructAttributeID},
+            vertex_attribute::{AttributeID, AttributeVertex, StructAttributeID, ValueEncodingLength},
             vertex_generator::ThingVertexGenerator,
         },
         type_::vertex::{TypeID, TypeVertex},
