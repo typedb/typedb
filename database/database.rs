@@ -86,7 +86,7 @@ impl<D> fmt::Debug for Database<D> {
 }
 
 impl<D> Database<D> {
-    const TRY_LOCK_SLEEP_TIMEOUT: Duration = Duration::from_millis(10);
+    const TRY_LOCK_SLEEP_INTERVAL: Duration = Duration::from_millis(10);
 
     pub fn name(&self) -> &str {
         &self.name
@@ -159,7 +159,7 @@ impl<D> Database<D> {
                     if start_time.elapsed() >= timeout {
                         return Err(TransactionError::WriteExclusivityTimeout {});
                     }
-                    std::thread::sleep(Self::TRY_LOCK_SLEEP_TIMEOUT);
+                    std::thread::sleep(Self::TRY_LOCK_SLEEP_INTERVAL);
                 }
                 Err(TryLockError::Poisoned(err)) => panic!(
                     "Encountered a poisoned lock while trying to acquire exclusive schema write transaction access: {}",

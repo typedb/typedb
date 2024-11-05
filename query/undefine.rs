@@ -25,6 +25,7 @@ use error::typedb_error;
 use ir::{translation::tokens::translate_annotation_category, LiteralParseError};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
+    common::token::Keyword,
     query::schema::Undefine,
     schema::{
         definable::type_::{
@@ -830,6 +831,7 @@ fn check_can_and_need_undefine_sub<'a, T: TypeAPI<'a>>(
         DefinableStatus::ExistsSame(_) => Ok(true),
         DefinableStatus::DoesNotExist => Err(UndefineError::TypeSubNotDefined {
             type_: label.clone().into_owned(),
+            key: Keyword::Sub,
             supertype: supertype
                 .get_label(snapshot, type_manager)
                 .map_err(|source| UndefineError::UnexpectedConceptRead { source })?
@@ -839,6 +841,7 @@ fn check_can_and_need_undefine_sub<'a, T: TypeAPI<'a>>(
         }),
         DefinableStatus::ExistsDifferent(existing) => Err(UndefineError::TypeSubDefinedButDifferent {
             type_: label.clone().into_owned(),
+            key: Keyword::Sub,
             supertype: supertype
                 .get_label(snapshot, type_manager)
                 .map_err(|source| UndefineError::UnexpectedConceptRead { source })?
@@ -1003,15 +1006,17 @@ typedb_error!(
         ),
         TypeSubNotDefined(
             18,
-            "Undefining 'sub {supertype}' for type '{type_}' failed since there is no defined '{type_} sub {supertype}'.\nSource:\n{declaration}",
+            "Undefining '{key} {supertype}' for type '{type_}' failed since there is no defined '{type_} {key} {supertype}'.\nSource:\n{declaration}",
             type_: Label<'static>,
+            key: Keyword,
             supertype: Label<'static>,
             declaration: CapabilityType
         ),
         TypeSubDefinedButDifferent(
             19,
-            "Undefining 'sub {supertype}' for type '{type_}' failed since there is no defined '{type_} sub {supertype}', while {type_}'s defined 'sub' is '{existing_supertype}'.\nSource:\n{declaration}",
+            "Undefining '{key} {supertype}' for type '{type_}' failed since there is no defined '{type_} {key} {supertype}', while {type_}'s defined '{key}' is '{existing_supertype}'.\nSource:\n{declaration}",
             type_: Label<'static>,
+            key: Keyword,
             supertype: Label<'static>,
             existing_supertype: Label<'static>,
             declaration: CapabilityType
