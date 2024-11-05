@@ -34,7 +34,7 @@ use crate::{
             r#struct::{StructDefinition, StructDefinitionField},
         },
         thing::{
-            vertex_attribute::{AttributeID, AttributeIDLength, AttributeVertex, StructAttributeID},
+            vertex_attribute::{AttributeID, ValueEncodingLength, AttributeVertex, StructAttributeID},
             vertex_generator::ThingVertexGenerator,
         },
         type_::vertex::{TypeID, TypeVertex},
@@ -266,7 +266,7 @@ impl StructIndexEntry<'static> {
                 PrefixID::LENGTH +      // ValueTypeCategory of indexed value
                 TypeID::LENGTH +        // TypeID of Attribute being indexed
                 path_to_field.len() +   // Path to the field
-                AttributeIDLength::Long.length() + // Value for the field.
+                ValueEncodingLength::Long.length() + // Value for the field.
                 StructAttributeID::LENGTH, // ID of the attribute being indexed
         );
 

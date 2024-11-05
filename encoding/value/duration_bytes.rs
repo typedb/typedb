@@ -5,7 +5,7 @@
  */
 
 use crate::{
-    graph::thing::vertex_attribute::AttributeIDLength,
+    graph::thing::vertex_attribute::ValueEncodingLength,
     value::{
         duration_value::Duration,
         primitive_encoding::{decode_u32, decode_u64, encode_u32, encode_u64},
@@ -18,7 +18,7 @@ pub struct DurationBytes {
 }
 
 impl DurationBytes {
-    pub(crate) const LENGTH: usize = AttributeIDLength::Long.length();
+    pub(crate) const LENGTH: usize = ValueEncodingLength::Long.length();
 
     const MONTHS_LENGTH: usize = u32::BITS as usize / 8;
     const DAYS_LENGTH: usize = u32::BITS as usize / 8;

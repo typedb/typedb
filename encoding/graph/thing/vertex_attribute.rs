@@ -137,19 +137,19 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {
     }
 }
 
-pub(crate) enum AttributeIDLength {
+pub(crate) enum ValueEncodingLength {
     Short,
     Long,
 }
 
-impl AttributeIDLength {
+impl ValueEncodingLength {
     const SHORT_LENGTH: usize = 8;
     const LONG_LENGTH: usize = 17;
 
     pub(crate) const fn length(&self) -> usize {
         match self {
-            AttributeIDLength::Short => Self::SHORT_LENGTH,
-            AttributeIDLength::Long => Self::LONG_LENGTH,
+            ValueEncodingLength::Short => Self::SHORT_LENGTH,
+            ValueEncodingLength::Long => Self::LONG_LENGTH,
         }
     }
 
@@ -271,7 +271,7 @@ impl AttributeID {
     }
 
     pub(crate) const fn max_length() -> usize {
-        ValueTypeBytes::CATEGORY_LENGTH + AttributeIDLength::max_length()
+        ValueTypeBytes::CATEGORY_LENGTH + ValueEncodingLength::max_length()
     }
 
     pub fn unwrap_boolean(self) -> BooleanAttributeID {
@@ -373,7 +373,7 @@ pub struct BooleanAttributeID {
 
 impl BooleanAttributeID {
     const PREFIX_LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH;
-    const VALUE_LENGTH: usize = AttributeIDLength::SHORT_LENGTH;
+    const VALUE_LENGTH: usize = ValueEncodingLength::SHORT_LENGTH;
     const LENGTH: usize = Self::PREFIX_LENGTH + Self::VALUE_LENGTH;
 
     const PREFIX: [u8; Self::PREFIX_LENGTH] = ValueTypeCategory::Boolean.to_bytes();
@@ -415,7 +415,7 @@ pub struct LongAttributeID {
 
 impl LongAttributeID {
     const PREFIX_LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH;
-    const VALUE_LENGTH: usize = AttributeIDLength::SHORT_LENGTH;
+    const VALUE_LENGTH: usize = ValueEncodingLength::SHORT_LENGTH;
     const LENGTH: usize = Self::PREFIX_LENGTH + Self::VALUE_LENGTH;
 
     const PREFIX: [u8; Self::PREFIX_LENGTH] = ValueTypeCategory::Long.to_bytes();
@@ -456,7 +456,7 @@ pub struct DoubleAttributeID {
 
 impl DoubleAttributeID {
     const PREFIX_LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH;
-    const VALUE_LENGTH: usize = AttributeIDLength::SHORT_LENGTH;
+    const VALUE_LENGTH: usize = ValueEncodingLength::SHORT_LENGTH;
     const LENGTH: usize = Self::PREFIX_LENGTH + Self::VALUE_LENGTH;
 
     const PREFIX: [u8; Self::PREFIX_LENGTH] = ValueTypeCategory::Double.to_bytes();
@@ -497,7 +497,7 @@ pub struct DecimalAttributeID {
 
 impl DecimalAttributeID {
     const PREFIX_LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH;
-    const VALUE_LENGTH: usize = AttributeIDLength::LONG_LENGTH;
+    const VALUE_LENGTH: usize = ValueEncodingLength::LONG_LENGTH;
     const LENGTH: usize = Self::PREFIX_LENGTH + Self::VALUE_LENGTH;
 
     const PREFIX: [u8; Self::PREFIX_LENGTH] = ValueTypeCategory::Decimal.to_bytes();
@@ -538,7 +538,7 @@ pub struct DateAttributeID {
 
 impl DateAttributeID {
     const PREFIX_LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH;
-    const VALUE_LENGTH: usize = AttributeIDLength::SHORT_LENGTH;
+    const VALUE_LENGTH: usize = ValueEncodingLength::SHORT_LENGTH;
     const LENGTH: usize = Self::PREFIX_LENGTH + Self::VALUE_LENGTH;
 
     const PREFIX: [u8; Self::PREFIX_LENGTH] = ValueTypeCategory::Date.to_bytes();
@@ -579,7 +579,7 @@ pub struct DateTimeAttributeID {
 
 impl DateTimeAttributeID {
     const PREFIX_LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH;
-    const VALUE_LENGTH: usize = AttributeIDLength::LONG_LENGTH;
+    const VALUE_LENGTH: usize = ValueEncodingLength::LONG_LENGTH;
     const LENGTH: usize = Self::PREFIX_LENGTH + Self::VALUE_LENGTH;
 
     const PREFIX: [u8; Self::PREFIX_LENGTH] = ValueTypeCategory::DateTime.to_bytes();
@@ -620,7 +620,7 @@ pub struct DateTimeTZAttributeID {
 
 impl DateTimeTZAttributeID {
     const PREFIX_LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH;
-    const VALUE_LENGTH: usize = AttributeIDLength::LONG_LENGTH;
+    const VALUE_LENGTH: usize = ValueEncodingLength::LONG_LENGTH;
     const LENGTH: usize = Self::PREFIX_LENGTH + Self::VALUE_LENGTH;
 
     const PREFIX: [u8; Self::PREFIX_LENGTH] = ValueTypeCategory::DateTimeTZ.to_bytes();
@@ -661,7 +661,7 @@ pub struct DurationAttributeID {
 
 impl DurationAttributeID {
     const PREFIX_LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH;
-    const VALUE_LENGTH: usize = AttributeIDLength::LONG_LENGTH;
+    const VALUE_LENGTH: usize = ValueEncodingLength::LONG_LENGTH;
     const LENGTH: usize = Self::PREFIX_LENGTH + Self::VALUE_LENGTH;
 
     const PREFIX: [u8; Self::PREFIX_LENGTH] = ValueTypeCategory::Duration.to_bytes();
@@ -723,7 +723,7 @@ pub struct StringAttributeID {
 
 impl StringAttributeID {
     const PREFIX_LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH;
-    const VALUE_LENGTH: usize = AttributeIDLength::LONG_LENGTH;
+    const VALUE_LENGTH: usize = ValueEncodingLength::LONG_LENGTH;
     const LENGTH: usize = Self::PREFIX_LENGTH + Self::VALUE_LENGTH;
 
     const PREFIX: [u8; Self::PREFIX_LENGTH] = ValueTypeCategory::String.to_bytes();
@@ -903,7 +903,7 @@ pub struct StructAttributeID {
 
 impl StructAttributeID {
     const PREFIX_LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH;
-    const VALUE_LENGTH: usize = AttributeIDLength::SHORT_LENGTH;
+    const VALUE_LENGTH: usize = ValueEncodingLength::SHORT_LENGTH;
     pub(crate) const LENGTH: usize = Self::PREFIX_LENGTH + Self::VALUE_LENGTH;
     pub const HASH_LENGTH: usize = Self::VALUE_LENGTH - 1;
     const TAIL_INDEX: usize = Self::LENGTH - 1;

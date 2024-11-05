@@ -7,7 +7,7 @@
 use chrono::{DateTime, NaiveDateTime};
 
 use crate::{
-    graph::thing::vertex_attribute::AttributeIDLength,
+    graph::thing::vertex_attribute::ValueEncodingLength,
     value::primitive_encoding::{decode_i64, decode_u32, encode_i64, encode_u32},
 };
 
@@ -17,7 +17,7 @@ pub struct DateTimeBytes {
 }
 
 impl DateTimeBytes {
-    pub(crate) const LENGTH: usize = AttributeIDLength::Long.length();
+    pub(crate) const LENGTH: usize = ValueEncodingLength::Long.length();
 
     const TIMESTAMP_LENGTH: usize = i64::BITS as usize / 8;
     const NANOS_LENGTH: usize = u32::BITS as usize / 8;

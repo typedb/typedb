@@ -5,7 +5,7 @@
  */
 
 use crate::{
-    graph::thing::vertex_attribute::AttributeIDLength,
+    graph::thing::vertex_attribute::ValueEncodingLength,
     value::primitive_encoding::{decode_u64, encode_u64},
 };
 
@@ -15,7 +15,7 @@ pub struct DoubleBytes {
 }
 
 impl DoubleBytes {
-    pub(crate) const LENGTH: usize = AttributeIDLength::Short.length();
+    pub(crate) const LENGTH: usize = ValueEncodingLength::Short.length();
 
     const ENCODED_NEGATIVE_ZERO: u64 = i64::MAX as u64;
 
