@@ -730,12 +730,12 @@ impl StringAttributeID {
 
     const INLINE_CAPACITY: usize = Self::VALUE_LENGTH - 1;
 
-    pub const HASHED_VALUE_TYPE_LENGTH: usize = Self::INLINE_CAPACITY - Self::HASHID_HASH_LENGTH;
+    pub const HASHED_PREFIX_LENGTH: usize = Self::INLINE_CAPACITY - Self::HASHID_HASH_LENGTH;
     pub const HASHED_HASH_LENGTH: usize = 8;
-    pub const HASHED_ENCODING_LENGTH: usize = Self::HASHED_VALUE_TYPE_LENGTH + Self::HASHED_HASH_LENGTH;
+    pub const HASHED_ENCODING_LENGTH: usize = Self::HASHED_PREFIX_LENGTH + Self::HASHED_HASH_LENGTH;
 
     const HASHED_PREFIX_RANGE: Range<usize> =
-        Self::VALUE_TYPE_LENGTH..Self::VALUE_TYPE_LENGTH + Self::HASHED_VALUE_TYPE_LENGTH;
+        Self::VALUE_TYPE_LENGTH..Self::VALUE_TYPE_LENGTH + Self::HASHED_PREFIX_LENGTH;
     const HASHED_HASH_RANGE: Range<usize> =
         Self::HASHED_PREFIX_RANGE.end..Self::HASHED_PREFIX_RANGE.end + Self::HASHED_HASH_LENGTH;
     const HASHED_DISAMBIGUATED_HASH_RANGE: Range<usize> =
@@ -810,12 +810,12 @@ impl StringAttributeID {
     {
         let mut bytes: [u8; Self::LENGTH] = [0; Self::LENGTH];
         bytes[..Self::VALUE_TYPE_LENGTH].copy_from_slice(&Self::VALUE_TYPE.to_bytes());
-        bytes[Self::HASHED_PREFIX_RANGE].copy_from_slice(&string.bytes().bytes()[0..Self::HASHED_VALUE_TYPE_LENGTH]);
+        bytes[Self::HASHED_PREFIX_RANGE].copy_from_slice(&string.bytes().bytes()[0..Self::HASHED_PREFIX_LENGTH]);
 
         debug_assert!(!Self::is_inlineable(string.as_reference()));
         let key_without_hash = AttributeVertex::build_prefix_type_attribute_id(
             type_id,
-            &bytes[0..Self::VALUE_TYPE_LENGTH + Self::HASHED_VALUE_TYPE_LENGTH],
+            &bytes[0..Self::VALUE_TYPE_LENGTH + Self::HASHED_PREFIX_LENGTH],
         )
         .into_bytes();
 
@@ -868,7 +868,7 @@ impl StringAttributeID {
         }
     }
 
-    pub fn get_hash_prefix(&self) -> [u8; Self::HASHED_VALUE_TYPE_LENGTH] {
+    pub fn get_hash_prefix(&self) -> [u8; Self::HASHED_PREFIX_LENGTH] {
         debug_assert!(!self.is_inline());
         self.bytes[Self::HASHED_PREFIX_RANGE].try_into().unwrap()
     }
