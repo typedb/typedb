@@ -694,22 +694,20 @@ impl UnaryConstraint for Value<Variable> {
         }?;
 
         let mut annotations = BTreeSet::new();
-        seeder
+        let attribute_types = seeder
             .type_manager
             .get_attribute_types(seeder.snapshot)
-            .map_err(|source| TypeInferenceError::ConceptRead { source })?
-            .into_iter()
-            .try_for_each(|attribute_type| {
-                let attribute_value_type_opt = attribute_type
-                    .get_value_type_without_source(seeder.snapshot, seeder.type_manager)
-                    .map_err(|source| TypeInferenceError::ConceptRead { source })?;
-                if let Some(attribute_value_type) = attribute_value_type_opt {
-                    if pattern_value_type == attribute_value_type {
-                        annotations.insert(TypeAnnotation::Attribute(attribute_type));
-                    }
+            .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+        for attribute_type in attribute_types {
+            let attribute_value_type_opt = attribute_type
+                .get_value_type_without_source(seeder.snapshot, seeder.type_manager)
+                .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+            if let Some(attribute_value_type) = attribute_value_type_opt {
+                if pattern_value_type == attribute_value_type {
+                    annotations.insert(TypeAnnotation::Attribute(attribute_type));
                 }
-                Ok(())
-            })?;
+            }
+        }
 
         graph_vertices.add_or_intersect(self.attribute_type(), Cow::Owned(annotations));
         Ok(())
