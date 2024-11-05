@@ -11,14 +11,17 @@ impl UserRepository {
     }
 
     pub fn list(&self, tx: &TransactionRead<WALClient>) -> Vec<User> {
+        println!("listing users");
         todo!()
     }
 
     pub fn get(&self, tx: &TransactionRead<WALClient>, username: &str) -> Option<User> {
+        println!("getting user {}", username);
         todo!()
     }
 
     pub fn create(&self, tx: &TransactionWrite<WALClient>, user: &User) {
+        println!("creating user {:?}", user);
         todo!()
     }
 
@@ -29,6 +32,7 @@ impl UserRepository {
     }
 
     pub fn delete(&self, tx: &TransactionWrite<WALClient>, username: &str) {
+        println!("deleting user {}", username);
         todo!()
     }
 }
@@ -44,6 +48,7 @@ impl CredentialRepository {
     pub fn create(
         &self, tx: &TransactionWrite<WALClient>, username: &str, credential: &Credential
     ) {
+        println!("creating credential for user {}: {:?}", username, credential);
         todo!()
     }
 
@@ -53,6 +58,8 @@ impl CredentialRepository {
         todo!()
     }
 
-    pub fn get(username: &str) {
+    pub fn delete_by_user(&self, tx: &&TransactionWrite<WALClient>, username: &str) -> Vec<Credential> {
+        println!("deleting credentials for user {}", username);
+        todo!()
     }
 }

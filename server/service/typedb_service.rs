@@ -8,7 +8,7 @@ use std::{net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
 
 use database::database_manager::DatabaseManager;
 use user::user_manager::UserManager;
-use system::concepts::{Credential, User};
+use system::concepts::{Credential, Password, User};
 use error::typedb_error;
 use tokio::sync::mpsc::channel;
 use tokio_stream::wrappers::ReceiverStream;
@@ -24,7 +24,7 @@ use crate::service::{
         connection::connection_open_res,
         database::database_delete_res,
         database_manager::{database_all_res, database_contains_res, database_create_res, database_get_res},
-        user_manager::user_create_res,
+        user_manager::{users_all_res, users_get_res, users_contains_res, user_create_res, users_delete_res},
         server_manager::servers_all_res,
     },
     transaction_service::TransactionService,
@@ -41,7 +41,6 @@ pub(crate) struct TypeDBService {
 
 impl TypeDBService {
     pub(crate) fn new(address: &SocketAddr, database_manager: DatabaseManager, user_manager: UserManager) -> Self {
-        println!("typedb_service::new");
         Self {
             address: address.clone(),
             database_manager: Arc::new(database_manager),
@@ -95,6 +94,13 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         Ok(Response::new(servers_all_res(&self.address)))
     }
 
+    async fn databases_all(
+        &self,
+        _request: Request<typedb_protocol::database_manager::all::Req>,
+    ) -> Result<Response<typedb_protocol::database_manager::all::Res>, Status> {
+        Ok(Response::new(database_all_res(&self.address, self.database_manager.database_names())))
+    }
+
     async fn databases_get(
         &self,
         request: Request<typedb_protocol::database_manager::get::Req>,
@@ -105,13 +111,6 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             None => Err(ServiceError::DatabaseDoesNotExist { name: message.name }.into_error_message().into_status()),
             Some(_database) => Ok(Response::new(database_get_res(&self.address, message.name))),
         }
-    }
-
-    async fn databases_all(
-        &self,
-        _request: Request<typedb_protocol::database_manager::all::Req>,
-    ) -> Result<Response<typedb_protocol::database_manager::all::Res>, Status> {
-        Ok(Response::new(database_all_res(&self.address, self.database_manager.database_names())))
     }
 
     async fn databases_contains(
@@ -166,43 +165,35 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::user_manager::get::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::get::Res>, Status> {
-        println!("typedb_service::users_get");
         let get_req = request.into_inner();
-        match self.user_manager.get(get_req.name.as_str()) {
-            Some(user) => {
-                todo!()
-            }
-            None => {
-                todo!()
-            }
+        let user = self.user_manager.get(get_req.name.as_str());
+        match user {
+            Some(u) => Ok(Response::new(users_get_res(u))),
+            None => Err(ServiceError::UserDoesNotExist { name: get_req.name }.into_error_message().into_status())
         }
     }
 
     async fn users_all(
         &self,
-        request: Request<typedb_protocol::user_manager::all::Req>
+        _: Request<typedb_protocol::user_manager::all::Req>
     ) -> Result<Response<typedb_protocol::user_manager::all::Res>, Status> {
-        println!("typedb_service::users_all");
-        let all_req = request.into_inner();
-        let res = self.user_manager.all().iter().map(|u| todo!());
-        todo!()
+        let users = self.user_manager.all();
+        Ok(Response::new(users_all_res(users)))
     }
 
     async fn users_contains(
         &self,
         request: Request<typedb_protocol::user_manager::contains::Req>
     ) -> Result<Response<typedb_protocol::user_manager::contains::Res>, Status> {
-        println!("typedb_service::users_contains");
         let contains_req = request.into_inner();
-        let res = self.user_manager.contains(contains_req.name.as_str());
-        todo!()
+        let contains = self.user_manager.contains(contains_req.name.as_str());
+        Ok(Response::new(users_contains_res(contains)))
     }
 
     async fn users_create(
         &self,
         request: Request<typedb_protocol::user_manager::create::Req>
     ) -> Result<Response<typedb_protocol::user_manager::create::Res>, Status> {
-        println!("users_create");
         users_create_req(request)
             .and_then(|(usr, cred)| self.user_manager.create(&usr, &cred))
             .map(|_| Response::new(user_create_res()))
@@ -221,11 +212,11 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::user::delete::Req>
     ) -> Result<Response<typedb_protocol::user::delete::Res>, Status> {
-        println!("users_delete");
         let delete_req = request.into_inner();
-        match self.user_manager.get(delete_req.name.as_str()) {
-            Some(u) => { todo!() }
-            None => { todo!() }
+        let result = self.user_manager.delete(delete_req.name.as_str());
+        match result {
+            Ok(_) => Ok(Response::new(users_delete_res())),
+            Err(e) => Err(e.into_error_message().into_status())
         }
     }
 
@@ -248,6 +239,7 @@ typedb_error!(
     ServiceError(component = "Server", prefix = "SRV") {
         Unimplemented(1, "Not implemented: {description}", description: String),
         DatabaseDoesNotExist(2, "Database '{name}' does not exist.", name: String),
+        UserDoesNotExist(3, "User '{name}' does not exist.", name: String),
     }
 );
 
@@ -266,7 +258,10 @@ fn users_create_req(request: Request<typedb_protocol::user_manager::create::Req>
                         }
                     }
                 }
-                None => todo!("credential object must be supplied")
+                None => {
+                    // todo!("credential object must be supplied")
+                    Ok((User::new("test user".to_string()), Credential::new_password_type(Password::new(Vec::new(), Vec::new()))))
+                }
             }
         }
         None => {

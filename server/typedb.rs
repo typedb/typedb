@@ -8,7 +8,7 @@ use std::{error::Error, fmt, fs, io, path::PathBuf};
 use user::user_manager::UserManager;
 use database::{database_manager::DatabaseManager, DatabaseOpenError};
 use resource::constants::server::GRPC_CONNECTION_KEEPALIVE;
-
+use system::create_if_not_exists;
 use crate::{parameters::config::Config, service::typedb_service::TypeDBService};
 
 #[derive(Debug)]
@@ -20,26 +20,24 @@ pub struct Server {
 
 impl Server {
     pub fn open(config: Config) -> Result<Self, ServerOpenError> {
-        use ServerOpenError::{CouldNotCreateDataDirectory, NotADirectory};
         let storage_directory = &config.storage.data;
-
         if !storage_directory.exists() {
-            fs::create_dir_all(storage_directory)
-                .map_err(|error| CouldNotCreateDataDirectory { path: storage_directory.to_owned(), source: error })?;
+            Self::create_storage_directory(storage_directory)?;
         } else if !storage_directory.is_dir() {
-            return Err(NotADirectory { path: storage_directory.to_owned() });
+            return Err(ServerOpenError::NotADirectory { path: storage_directory.to_owned() });
         }
-
         let database_manager = DatabaseManager::new(storage_directory)
             .map_err(|err| ServerOpenError::DatabaseOpenError { source: err })?;
-        let user_manager = UserManager::new();
-
+        let system_db = create_if_not_exists(&database_manager);
+        let user_manager = UserManager::new(system_db);
         let typedb_service = TypeDBService::new(
             &config.server.address, database_manager, user_manager
         );
-
-        let data_directory = storage_directory.to_owned();
-        Ok(Self { data_directory, typedb_service: Some(typedb_service), config })
+        Ok(Self {
+            data_directory: storage_directory.to_owned(),
+            typedb_service: Some(typedb_service),
+            config
+        })
     }
 
     pub fn database_manager(&self) -> &DatabaseManager {
@@ -54,6 +52,16 @@ impl Server {
             .add_service(service)
             .serve(self.config.server.address)
             .await
+    }
+
+    fn create_storage_directory(storage_directory: &PathBuf) -> Result<(), ServerOpenError> {
+        fs::create_dir_all(storage_directory).map_err(|error|
+            ServerOpenError::CouldNotCreateDataDirectory {
+                path: storage_directory.to_owned(),
+                source: error
+            }
+        )?;
+        Ok(())
     }
 }
 

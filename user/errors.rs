@@ -5,3 +5,9 @@ typedb_error!(
         Unexpected(1, "TODO: unexpected error"),
     }
 );
+
+typedb_error!(
+    pub UserDeleteError(component = "User delete", prefix = "USC") {
+        Unexpected(1, "TODO: unexpected error"),
+    }
+);

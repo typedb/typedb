@@ -16,7 +16,9 @@ rust_library(
     ]),
     deps = [
         "//common/error",
-        "//system"
+        "//system",
+        "//storage",
+        "//database"
     ]
 )
 

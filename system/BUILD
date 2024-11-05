@@ -15,6 +15,7 @@ rust_library(
         "*.rs",
     ]),
     deps = [
+        "//common/options",
         "//database",
         "//storage"
     ]

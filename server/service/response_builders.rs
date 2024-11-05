@@ -272,7 +272,25 @@ pub(crate) mod transaction {
 }
 
 pub(crate) mod user_manager {
+    use system::concepts::User;
+
+    pub(crate) fn users_all_res(vec: Vec<User>) -> typedb_protocol::user_manager::all::Res {
+        todo!()
+    }
+
+    pub(crate) fn users_get_res(user: User) -> typedb_protocol::user_manager::get::Res {
+        todo!()
+    }
+
+    pub(crate) fn users_contains_res(contains: bool) -> typedb_protocol::user_manager::contains::Res {
+        todo!()
+    }
+
     pub(crate) fn user_create_res() -> typedb_protocol::user_manager::create::Res {
         typedb_protocol::user_manager::create::Res {}
+    }
+
+    pub(crate) fn users_delete_res() -> typedb_protocol::user::delete::Res {
+        todo!()
     }
 }

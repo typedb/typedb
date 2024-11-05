@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct User {
     pub name: String
 }
@@ -8,6 +9,7 @@ impl User {
     }
 }
 
+#[derive(Debug)]
 pub enum Credential {
     PasswordType { password: Password }
 }
@@ -18,6 +20,7 @@ impl Credential {
     }
 }
 
+#[derive(Debug)]
 pub struct Password {
     hash: Vec<u8>,
     salt: Vec<u8>
@@ -25,6 +28,6 @@ pub struct Password {
 
 impl Password {
     pub fn new(hash: Vec<u8>, salt: Vec<u8>) -> Self {
-        todo!()
+        Self { hash, salt }
     }
 }
