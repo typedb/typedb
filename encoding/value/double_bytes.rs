@@ -5,21 +5,20 @@
  */
 
 use crate::{
+    graph::thing::vertex_attribute::{InlineEncodableAttributeID},
     graph::thing::vertex_attribute::ValueEncodingLength,
     value::primitive_encoding::{decode_u64, encode_u64},
 };
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub struct DoubleBytes {
-    bytes: [u8; Self::LENGTH],
+    bytes: [u8; Self::ENCODED_LENGTH],
 }
 
 impl DoubleBytes {
-    pub(crate) const LENGTH: usize = ValueEncodingLength::Short.length();
-
     const ENCODED_NEGATIVE_ZERO: u64 = i64::MAX as u64;
 
-    pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
+    pub fn new(bytes: [u8; Self::ENCODED_LENGTH]) -> Self {
         Self { bytes }
     }
 
@@ -42,8 +41,16 @@ impl DoubleBytes {
         }
     }
 
-    pub fn bytes(&self) -> [u8; Self::LENGTH] {
+    pub fn bytes(&self) -> [u8; Self::ENCODED_LENGTH] {
         self.bytes
+    }
+}
+
+impl InlineEncodableAttributeID for DoubleBytes {
+    const ENCODED_LENGTH: usize = ValueEncodingLength::Short.length();
+
+    fn bytes_ref(&self) -> &[u8] {
+        &self.bytes
     }
 }
 

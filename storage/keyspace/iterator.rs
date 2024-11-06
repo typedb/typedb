@@ -4,34 +4,28 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::cmp::{max, Ordering};
+use std::{cmp::Ordering, io::Read};
 
 use bytes::{byte_array::ByteArray, Bytes};
-use lending_iterator::{
-    adaptors::{SeekableMap, TakeWhile},
-    LendingIterator, Peekable, Seekable,
-};
+use lending_iterator::{LendingIterator, Seekable};
 use rocksdb::DB;
 
 use crate::{
     key_range::{KeyRange, RangeEnd},
-    keyspace::{raw_iterator, Keyspace, KeyspaceError},
+    keyspace::{raw_iterator, raw_iterator::DBIterator, Keyspace, KeyspaceError},
 };
 
 pub struct KeyspaceRangeIterator {
-    iterator: Peekable<
-        SeekableMap<
-            TakeWhile<raw_iterator::DBIterator, Box<dyn FnMut(&Result<(&[u8], &[u8]), rocksdb::Error>) -> bool>>,
-            Box<
-                dyn for<'a> Fn(
-                    Result<(&'a [u8], &'a [u8]), rocksdb::Error>,
-                ) -> Result<(&'a [u8], &'a [u8]), KeyspaceError>,
-            >,
-            fn(&[u8]) -> &[u8],
-            Result<(&'static [u8], &'static [u8]), KeyspaceError>,
-            fn(&Result<(&[u8], &[u8]), KeyspaceError>, &[u8]) -> Ordering,
-        >,
-    >,
+    iterator: DBIterator,
+    continue_condition: ContinueCondition,
+    keyspace_name: &'static str,
+}
+
+enum ContinueCondition {
+    ExactPrefix(ByteArray<48>),
+    EndPrefixInclusive(ByteArray<48>),
+    EndPrefixExclusive(ByteArray<48>),
+    Always,
 }
 
 impl KeyspaceRangeIterator {
@@ -41,57 +35,82 @@ impl KeyspaceRangeIterator {
     ) -> Self {
         // TODO: if self.has_prefix_extractor_for(prefix), we can enable bloom filters
         // read_opts.set_prefix_same_as_start(true);
+
         let read_opts = keyspace.new_read_options();
         let kv_storage: &'static DB = unsafe { std::mem::transmute(&keyspace.kv_storage) };
-        let iterator =
-            raw_iterator::DBIterator::new_from(kv_storage.raw_iterator_opt(read_opts), range.start().bytes());
-        let start = range.start().to_array();
-        let range = match range.end() {
-            RangeEnd::SameAsStart => KeyRange::new_within(start, range.fixed_width()),
-            RangeEnd::Inclusive(end) => KeyRange::new_inclusive(start, end.to_array()),
-            RangeEnd::Exclusive(end) => KeyRange::new_exclusive(start, end.to_array()),
-            RangeEnd::Unbounded => KeyRange::new_unbounded(start),
+        let mut iterator = raw_iterator::DBIterator::new_from(
+            kv_storage.raw_iterator_opt(read_opts),
+            range.start().get_value().bytes(),
+        );
+        if range.start().is_exclusive() {
+            Self::may_skip_start(&mut iterator, range.start().get_value().bytes());
+        }
+
+        let continue_condition = match range.end() {
+            RangeEnd::WithinStartAsPrefix => {
+                ContinueCondition::ExactPrefix(ByteArray::from(range.start().get_value().as_reference()))
+            }
+            RangeEnd::EndPrefixInclusive(end) => {
+                ContinueCondition::EndPrefixInclusive(ByteArray::from(end.as_reference()))
+            }
+            RangeEnd::EndPrefixExclusive(end) => {
+                ContinueCondition::EndPrefixExclusive(ByteArray::from(end.as_reference()))
+            }
+            RangeEnd::Unbounded => ContinueCondition::Always,
         };
 
-        let keyspace_name = keyspace.name();
+        // .take_while(Box::new(move |res: &Result<(&[u8], &[u8]), rocksdb::Error>| match res {
+        //     Ok((key, _)) => {
+        //         let copy = if key.len() > max_required_length {
+        //             ByteArray::copy(&key[0..max_required_length])
+        //         } else {
+        //             ByteArray::copy(key)
+        //         };
+        //         range.within_end(&copy)
+        //     }
+        //     Err(_) => true,
+        // }) as Box<_>)
+        // .map(error_mapper(keyspace_name))
+        // .into_seekable(identity as _, raw_iterator::compare_key as _);
 
-        let max_required_length = range
-            .end_value()
-            .map(|bytes| max(bytes.length(), range.start().length()))
-            .unwrap_or(range.start().length());
-
-        // TODO: this Box and copy for comparison shouldn't be necessary
-        let range_iterator = iterator
-            .take_while(Box::new(move |res: &Result<(&[u8], &[u8]), rocksdb::Error>| match res {
-                Ok((key, _)) => {
-                    let copy = if key.len() > max_required_length {
-                        ByteArray::copy(&key[0..max_required_length])
-                    } else {
-                        ByteArray::copy(key)
-                    };
-                    range.within_end(&copy)
-                }
-                Err(_) => true,
-            }) as Box<_>)
-            .map(error_mapper(keyspace_name))
-            .into_seekable(identity as _, raw_iterator::compare_key as _);
-
-        KeyspaceRangeIterator { iterator: Peekable::new(range_iterator) }
+        KeyspaceRangeIterator { iterator, continue_condition, keyspace_name: keyspace.name() }
     }
 
-    pub(crate) fn peek(&mut self) -> Option<&<Self as LendingIterator>::Item<'_>> {
-        self.iterator.peek()
+    fn may_skip_start(iterator: &mut DBIterator, excluded_value: &[u8]) {
+        if iterator.peek().is_some_and(|result| result.as_ref().is_ok_and(|(key, _)| *key == excluded_value)) {
+            iterator.next();
+        }
+    }
+
+    fn accept_value(condition: &ContinueCondition, value: &<Self as LendingIterator>::Item<'_>) -> bool {
+        match value {
+            Ok((key, _)) => {
+                match condition {
+                    ContinueCondition::ExactPrefix(prefix) => key.starts_with(prefix.bytes()),
+                    ContinueCondition::EndPrefixInclusive(end_inclusive) => {
+                        // if the key is shorter than the end, and the end starts with the key, then it must be OK
+                        //  example: A will be included when searching up to and including AA
+                        // otherwise, the key is longer and we check the corresponding ranges
+                        end_inclusive.bytes().starts_with(key)
+                            || &key[0..end_inclusive.length()] <= end_inclusive.bytes()
+                    }
+                    ContinueCondition::EndPrefixExclusive(end_exclusive) => {
+                        // if the key is shorter than the end, and the end starts with the key, then it must be OK
+                        //  example: A will be included when searching up to but not including AA
+                        // otherwise, the key is longer and we check the corresponding ranges
+                        end_exclusive.bytes().starts_with(key)
+                            || &key[0..end_exclusive.length()] < end_exclusive.bytes()
+                    }
+                    ContinueCondition::Always => true,
+                }
+            }
+            Err(err) => true,
+        }
     }
 }
 
 fn identity(input: &[u8]) -> &[u8] {
     input
-}
-
-fn error_mapper(
-    keyspace_name: &'static str,
-) -> Box<dyn for<'a> Fn(Result<(&'a [u8], &'a [u8]), rocksdb::Error>) -> Result<(&'a [u8], &'a [u8]), KeyspaceError>> {
-    Box::new(move |res| res.map_err(|error| KeyspaceError::Iterate { name: keyspace_name, source: error }))
 }
 
 impl LendingIterator for KeyspaceRangeIterator {
@@ -101,7 +120,19 @@ impl LendingIterator for KeyspaceRangeIterator {
         Self: 'a;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        self.iterator.next()
+        let next = self
+            .iterator
+            .next()
+            .map(|result| result.map_err(|err| KeyspaceError::Iterate { name: self.keyspace_name, source: err }));
+
+        // validate next against the Condition
+        match next {
+            None => None,
+            Some(result) => match Self::accept_value(&self.continue_condition, &result) {
+                true => Some(result),
+                false => None,
+            },
+        }
     }
 }
 
@@ -111,6 +142,6 @@ impl Seekable<[u8]> for KeyspaceRangeIterator {
     }
 
     fn compare_key(&self, item: &Self::Item<'_>, key: &[u8]) -> Ordering {
-        self.iterator.compare_key(item, key)
+        raw_iterator::compare_key(item, key)
     }
 }

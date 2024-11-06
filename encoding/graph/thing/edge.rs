@@ -9,7 +9,7 @@ use std::ops::Range;
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
-    key_range::{KeyRange, RangeEnd},
+    key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::{StorageKey, StorageKeyReference},
     keyspace::KeyspaceSet,
 };
@@ -227,6 +227,23 @@ impl<'a> ThingEdgeHasReverse<'a> {
         StorageKey::new_owned(EncodingKeyspace::Data, bytes)
     }
 
+    pub fn prefix_from_attribute_vertex_prefix(
+        attribute_vertex_prefix: ByteReference<'_>,
+    ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }> {
+        let prefix = Prefix::from_prefix_id(PrefixID::new(
+            attribute_vertex_prefix.bytes()[AttributeVertex::RANGE_PREFIX].try_into().unwrap(),
+        ));
+        debug_assert!(
+            Prefix::ATTRIBUTE_MIN.prefix_id().bytes() <= prefix.prefix_id().bytes
+                && Prefix::ATTRIBUTE_MAX.prefix_id().bytes() >= prefix.prefix_id().bytes
+        );
+        let mut bytes = ByteArray::zeros(Self::RANGE_PREFIX.end + attribute_vertex_prefix.length());
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + attribute_vertex_prefix.length()]
+            .copy_from_slice(attribute_vertex_prefix.bytes());
+        StorageKey::new_owned(Self::keyspace_for_from_prefix(prefix), bytes)
+    }
+
     // TODO cleanup
     pub fn prefix_from_attribute(
         from: AttributeVertex<'_>,
@@ -258,7 +275,7 @@ impl<'a> ThingEdgeHasReverse<'a> {
         range_end: RangeEnd<TypeVertex<'_>>,
     ) -> KeyRange<StorageKey<'static, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM_TO_TYPE }>> {
         KeyRange::new_fixed_width(
-            Self::prefix_from_attribute_to_type(from.clone(), range_start),
+            RangeStart::Inclusive(Self::prefix_from_attribute_to_type(from.clone(), range_start)),
             range_end.map(|vertex| Self::prefix_from_attribute_to_type(from, vertex)),
         )
     }

@@ -7,28 +7,30 @@
 use chrono::{DateTime, NaiveDateTime};
 
 use crate::{
+    graph::thing::vertex_attribute::{InlineEncodableAttributeID},
+    value::date_bytes::DateBytes,
+};
+use crate::{
     graph::thing::vertex_attribute::ValueEncodingLength,
     value::primitive_encoding::{decode_i64, decode_u32, encode_i64, encode_u32},
 };
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct DateTimeBytes {
-    bytes: [u8; Self::LENGTH],
+    bytes: [u8; Self::ENCODED_LENGTH],
 }
 
 impl DateTimeBytes {
-    pub(crate) const LENGTH: usize = ValueEncodingLength::Long.length();
-
     const TIMESTAMP_LENGTH: usize = i64::BITS as usize / 8;
     const NANOS_LENGTH: usize = u32::BITS as usize / 8;
 
-    pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
+    pub fn new(bytes: [u8; Self::ENCODED_LENGTH]) -> Self {
         Self { bytes }
     }
 
     pub fn build(date_time: NaiveDateTime) -> Self {
         let date_time = date_time.and_utc();
-        let mut bytes = [0; Self::LENGTH];
+        let mut bytes = [0; Self::ENCODED_LENGTH];
         bytes[..Self::TIMESTAMP_LENGTH].copy_from_slice(&encode_i64(date_time.timestamp()));
         bytes[Self::TIMESTAMP_LENGTH..][..Self::NANOS_LENGTH]
             .copy_from_slice(&encode_u32(date_time.timestamp_subsec_nanos()));
@@ -41,7 +43,15 @@ impl DateTimeBytes {
         DateTime::from_timestamp(secs, nsecs).unwrap().naive_utc()
     }
 
-    pub fn bytes(&self) -> [u8; Self::LENGTH] {
+    pub fn bytes(&self) -> [u8; Self::ENCODED_LENGTH] {
         self.bytes
+    }
+}
+
+impl InlineEncodableAttributeID for DateTimeBytes {
+    const ENCODED_LENGTH: usize = ValueEncodingLength::Long.length();
+
+    fn bytes_ref(&self) -> &[u8] {
+        &self.bytes
     }
 }

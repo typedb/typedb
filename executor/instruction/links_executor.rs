@@ -26,7 +26,10 @@ use lending_iterator::{
     AsHkt, LendingIterator, Peekable,
 };
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
-use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
+use storage::{
+    key_range::{KeyRange, RangeEnd, RangeStart},
+    snapshot::ReadableSnapshot,
+};
 
 use crate::{
     instruction::{
@@ -171,8 +174,10 @@ impl LinksExecutor {
             TernaryIterateMode::Unbound => {
                 let first_from_type = self.relation_player_types.first_key_value().unwrap().0;
                 let last_key_from_type = self.relation_player_types.last_key_value().unwrap().0;
-                let key_range =
-                    KeyRange::new_inclusive(first_from_type.as_relation_type(), last_key_from_type.as_relation_type());
+                let key_range = KeyRange::new_variable_width(
+                    RangeStart::Inclusive(first_from_type.as_relation_type()),
+                    RangeEnd::EndPrefixInclusive(last_key_from_type.as_relation_type()),
+                );
                 // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
                 let iterator = thing_manager.get_links_by_relation_type_range(snapshot, key_range);
                 let as_tuples: LinksUnboundedSortedRelation = iterator
@@ -188,8 +193,10 @@ impl LinksExecutor {
             TernaryIterateMode::UnboundInverted => {
                 debug_assert!(self.relation_cache.is_some());
                 let (min_player_type, max_player_type) = min_max_types(&*self.player_types);
-                let player_type_range =
-                    KeyRange::new_inclusive(min_player_type.as_object_type(), max_player_type.as_object_type());
+                let player_type_range = KeyRange::new_variable_width(
+                    RangeStart::Inclusive(min_player_type.as_object_type()),
+                    RangeEnd::EndPrefixInclusive(max_player_type.as_object_type()),
+                );
 
                 if let Some([relation]) = self.relation_cache.as_deref() {
                     // no heap allocs needed if there is only 1 iterator
@@ -239,8 +246,10 @@ impl LinksExecutor {
                 let relation = self.links.relation().as_variable().unwrap().as_position().unwrap();
                 debug_assert!(row.len() > relation.as_usize());
                 let (min_player_type, max_player_type) = min_max_types(&*self.player_types);
-                let player_type_range =
-                    KeyRange::new_inclusive(min_player_type.as_object_type(), max_player_type.as_object_type());
+                let player_type_range = KeyRange::new_variable_width(
+                    RangeStart::Inclusive(min_player_type.as_object_type()),
+                    RangeEnd::EndPrefixInclusive(max_player_type.as_object_type()),
+                );
 
                 let iterator = match row.get(relation) {
                     VariableValue::Thing(Thing::Relation(relation)) => thing_manager

@@ -316,15 +316,24 @@ impl MatchExecutableBuilder {
     }
 
     fn push_check(&mut self, variables: &[Variable], check: CheckInstruction<ExecutorVariable>) {
+        // if it is a comparison or IID (TODO) we can inline the check into previous instructions
+        self.inline_as_optimisation(variables, &check);
+
+        // try to inline the check into the currently-built intersection, instead of creating a separate step
         if let Some(intersection) = self.current.as_mut().and_then(|b| b.builder.as_intersection_mut()) {
+            let mut is_added = false;
             for instruction in intersection.instructions.iter_mut().rev() {
-                let mut is_producer = false;
-                instruction.new_variables_foreach(|var| is_producer |= variables.contains(&self.reverse_index[&var]));
+                let is_producer = variables.iter().any(|var| instruction.is_new_variable(self.index[var]));
+                // let mut is_producer = false;
+                // instruction.new_variables_foreach(|var| is_producer |= variables.contains(&self.reverse_index[&var]));
                 if is_producer {
-                    instruction.add_check(check);
-                    self.current.as_mut().unwrap().selected_variables = self.current_outputs.clone();
-                    return;
+                    instruction.add_check(check.clone());
+                    is_added = true;
                 }
+            }
+            if is_added {
+                self.current.as_mut().unwrap().selected_variables = self.current_outputs.clone();
+                return;
             }
         }
         // all variables are inputs
@@ -339,6 +348,34 @@ impl MatchExecutableBuilder {
         }
         let current = self.current.as_mut().unwrap().builder.as_check_mut().unwrap();
         current.instructions.push(check);
+    }
+
+    /// inject the check as an optimisation into previously built steps
+    fn inline_as_optimisation(&mut self, variables: &[Variable], check: &CheckInstruction<ExecutorVariable>) {
+        if !matches!(check, &CheckInstruction::Comparison { .. }) {
+            // TODO: inject IID check as well
+            return;
+        }
+
+        for step in self.steps.iter_mut() {
+            // TODO: we may be able to inject into non-intersection steps as well? For now, we know intersection steps are always sorted
+            if let StepInstructionsBuilder::Intersection(intersection) = &mut step.builder {
+                for instruction in intersection.instructions.iter_mut().rev() {
+                    // if any check variable is produced and all other variables are available
+                    let any_produced = variables.iter().any(|var| instruction.is_new_variable(self.index[var]));
+                    let all_available = variables.iter().all(|var| {
+                        instruction.is_new_variable(self.index[var]) || instruction.is_input_variable(self.index[var])
+                    });
+                    // let mut any_produced = false;
+                    // instruction.new_variables_foreach(|var| any_produced |= variables.contains(&self.reverse_index[&var]));
+                    // let all_check_vars_available = variables.iter().for_each(|var| self )
+                    // variables.fo
+                    if any_produced && all_available {
+                        instruction.add_check(check.clone());
+                    }
+                }
+            }
+        }
     }
 
     fn push_step(&mut self, variable_positions: &HashMap<Variable, ExecutorVariable>, mut step: StepBuilder) {

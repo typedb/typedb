@@ -24,13 +24,17 @@ use concept::{
     type_::{OwnerAPI, PlayerAPI},
 };
 use encoding::value::{value::Value, ValueEncodable};
-use ir::pattern::{
-    constraint::{Comparator, IsaKind, SubKind},
-    Vertex,
+use ir::{
+    pattern::{
+        constraint::{Comparator, IsaKind, SubKind},
+        ParameterID, Vertex,
+    },
+    pipeline::ParameterRegistry,
 };
 use itertools::Itertools;
 use lending_iterator::higher_order::{FnHktHelper, Hkt};
 use storage::snapshot::ReadableSnapshot;
+use tracing::field::debug;
 
 use crate::{
     instruction::{
@@ -66,6 +70,8 @@ mod sub_executor;
 mod sub_reverse_executor;
 pub(crate) mod tuple;
 mod type_list_executor;
+
+pub(crate) const TYPES_EMPTY: Vec<Type> = Vec::new();
 
 pub(crate) enum InstructionExecutor {
     Is(IsExecutor),
@@ -330,15 +336,16 @@ impl<T: Hkt> Checker<T> {
         Self { extractors, checks, _phantom_data: PhantomData }
     }
 
-    pub(crate) fn range_for<const N: usize>(
+    pub(crate) fn value_range_for(
         &self,
-        _row: MaybeOwnedRow<'_>,
-        _target: ExecutorVariable,
-    ) -> impl RangeBounds<VariableValue<'_>> {
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        row: Option<MaybeOwnedRow<'_>>,
+        target_variable: ExecutorVariable,
+    ) -> Result<(Bound<Value<'_>>, Bound<Value<'_>>), ConceptReadError> {
         fn intersect<'a>(
-            (a_min, a_max): (Bound<VariableValue<'a>>, Bound<VariableValue<'a>>),
-            (b_min, b_max): (Bound<VariableValue<'a>>, Bound<VariableValue<'a>>),
-        ) -> (Bound<VariableValue<'a>>, Bound<VariableValue<'a>>) {
+            (a_min, a_max): (Bound<Value<'a>>, Bound<Value<'a>>),
+            (b_min, b_max): (Bound<Value<'a>>, Bound<Value<'a>>),
+        ) -> (Bound<Value<'a>>, Bound<Value<'a>>) {
             let select_a_min = match (&a_min, &b_min) {
                 (_, Bound::Unbounded) => true,
                 (Bound::Excluded(a), Bound::Included(b)) => a >= b,
@@ -358,29 +365,96 @@ impl<T: Hkt> Checker<T> {
             (if select_a_min { a_min } else { b_min }, if select_a_max { a_max } else { b_max })
         }
 
-        /*
         let mut range = (Bound::Unbounded, Bound::Unbounded);
-        for check in &self.checks {
-            match *check {
-                CheckInstruction::Comparison { lhs, rhs, comparator } if lhs == Vertex::Variable(target) => {
-                    let rhs = row.get(rhs).to_owned();
-                    let comp_range = match comparator {
-                        Comparator::Equal => (Bound::Included(rhs.clone()), Bound::Included(rhs)),
-                        Comparator::Less => (Bound::Unbounded, Bound::Excluded(rhs)),
-                        Comparator::LessOrEqual => (Bound::Unbounded, Bound::Included(rhs)),
-                        Comparator::Greater => (Bound::Excluded(rhs), Bound::Unbounded),
-                        Comparator::GreaterOrEqual => (Bound::Included(rhs), Bound::Unbounded),
-                        Comparator::Like => continue,
-                        Comparator::Contains => continue,
-                    };
-                    range = intersect(range, comp_range);
+        for i in 0..self.checks.len() {
+            let check = &self.checks[i];
+            match check {
+                CheckInstruction::Comparison { lhs, rhs, comparator } => {
+                    if lhs.as_variable().is_some_and(|var| var == target_variable) {
+                        let rhs_variable_value = Self::get_vertex_value(rhs, row.as_ref(), &context.parameters);
+                        let rhs_value =
+                            Self::read_value(context.snapshot.as_ref(), &context.thing_manager, &rhs_variable_value)?;
+                        // let rhs_value = Self::read_value(context.snapshot.as_ref(), &context.thing_manager, &rhs_variable_value)?;
+                        if let Some(rhs_value) = rhs_value {
+                            let comp_range = match comparator {
+                                Comparator::Equal => (Bound::Included(rhs_value.clone()), Bound::Included(rhs_value)),
+                                Comparator::Less => (Bound::Unbounded, Bound::Excluded(rhs_value)),
+                                Comparator::LessOrEqual => (Bound::Unbounded, Bound::Included(rhs_value)),
+                                Comparator::Greater => (Bound::Excluded(rhs_value), Bound::Unbounded),
+                                Comparator::GreaterOrEqual => (Bound::Included(rhs_value), Bound::Unbounded),
+                                Comparator::Like => continue,
+                                Comparator::Contains => continue,
+                                Comparator::NotEqual => continue,
+                            };
+                            range = intersect(range, comp_range);
+                        }
+                    } else {
+                        debug_assert!(
+                            rhs.as_variable().expect("RHS of comparison must be a variable") == target_variable
+                        );
+                        let lhs_variable_value = Self::get_vertex_value(lhs, row.as_ref(), &context.parameters);
+                        let lhs_value =
+                            Self::read_value(context.snapshot.as_ref(), &context.thing_manager, &lhs_variable_value)?;
+                        if let Some(lhs_value) = lhs_value {
+                            let comp_range = match comparator {
+                                Comparator::Equal => (Bound::Included(lhs_value.clone()), Bound::Included(lhs_value)),
+                                Comparator::Less => (Bound::Excluded(lhs_value), Bound::Unbounded),
+                                Comparator::LessOrEqual => (Bound::Included(lhs_value), Bound::Unbounded),
+                                Comparator::Greater => (Bound::Unbounded, Bound::Excluded(lhs_value)),
+                                Comparator::GreaterOrEqual => (Bound::Unbounded, Bound::Included(lhs_value)),
+                                Comparator::Like => continue,
+                                Comparator::Contains => continue,
+                                Comparator::NotEqual => continue,
+                            };
+                            range = intersect(range, comp_range);
+                        }
+                    }
                 }
                 _ => (),
             }
         }
-        range
-        */
-        todo!() as (Bound<VariableValue<'_>>, Bound<VariableValue<'_>>)
+        let range = (range.0.map(|value| value.into_owned()), range.1.map(|value| value.into_owned()));
+        Ok(range)
+    }
+
+    fn get_vertex_value<'b>(
+        vertex: &'b CheckVertex<ExecutorVariable>,
+        row: Option<&'b MaybeOwnedRow<'b>>,
+        parameters: &'b ParameterRegistry,
+    ) -> VariableValue<'b> {
+        match vertex {
+            CheckVertex::Variable(var) => match var {
+                ExecutorVariable::RowPosition(position) => {
+                    row.expect("CheckVertex::Variable requires a row to take from").get(*position).as_reference()
+                }
+                ExecutorVariable::Internal(_) => {
+                    unreachable!("Comparator check variables must have been recorded in the row.")
+                }
+            },
+            CheckVertex::Type(type_) => VariableValue::Type(type_.clone()),
+            CheckVertex::Parameter(parameter_id) => {
+                VariableValue::Value(parameters.value_unchecked(*parameter_id).as_reference())
+            }
+        }
+    }
+
+    fn read_value<'b, 'a>(
+        snapshot: &'a impl ReadableSnapshot,
+        thing_manager: &'a ThingManager,
+        variable_value: &'a VariableValue<'a>,
+    ) -> Result<Option<Value<'static>>, ConceptReadError> {
+        // TODO: is there a way to do this without cloning the value?
+        match variable_value {
+            VariableValue::Thing(Thing::Attribute(attribute)) => {
+                let value = attribute.get_value(snapshot, thing_manager)?;
+                Ok(Some(value.into_owned()))
+            }
+            VariableValue::Value(value) => {
+                let value = value.as_reference();
+                Ok(Some(value.into_owned()))
+            }
+            _ => Ok(None),
+        }
     }
 
     pub(crate) fn filter_for_row(

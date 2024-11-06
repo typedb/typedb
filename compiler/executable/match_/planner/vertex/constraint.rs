@@ -18,7 +18,8 @@ use crate::{
         planner::{
             plan::{Graph, VariableVertexId, VertexId},
             vertex::{
-                Costed, Direction, ElementCost, Input, ADVANCE_ITERATOR_RELATIVE_COST, OPEN_ITERATOR_RELATIVE_COST,
+                type_count, Costed, Direction, ElementCost, Input, ADVANCE_ITERATOR_RELATIVE_COST,
+                OPEN_ITERATOR_RELATIVE_COST,
             },
         },
     },
@@ -43,12 +44,12 @@ impl ConstraintVertex<'_> {
         true // always valid
     }
 
-    pub(crate) fn unbound_direction(&self) -> Direction {
+    pub(crate) fn unbound_direction(&self, graph: &Graph<'_>) -> Direction {
         match self {
             Self::TypeList(_) => Direction::Canonical,
-            Self::Isa(inner) => inner.unbound_direction,
-            Self::Has(inner) => inner.unbound_direction,
-            Self::Links(inner) => inner.unbound_direction,
+            Self::Isa(_) => Direction::Canonical,
+            Self::Has(inner) => inner.unbound_direction(graph),
+            Self::Links(inner) => inner.unbound_direction(graph),
             Self::Sub(inner) => inner.unbound_direction,
             Self::Owns(inner) => inner.unbound_direction,
             Self::Relates(inner) => inner.unbound_direction,
@@ -80,18 +81,18 @@ impl ConstraintVertex<'_> {
 }
 
 impl Costed for ConstraintVertex<'_> {
-    fn cost(&self, inputs: &[VertexId], graph: &Graph<'_>) -> ElementCost {
+    fn cost(&self, inputs: &[VertexId], intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
         match self {
-            Self::TypeList(inner) => inner.cost(inputs, graph),
+            Self::TypeList(inner) => inner.cost(inputs, intersection, graph),
 
-            Self::Isa(inner) => inner.cost(inputs, graph),
-            Self::Has(inner) => inner.cost(inputs, graph),
-            Self::Links(inner) => inner.cost(inputs, graph),
+            Self::Isa(inner) => inner.cost(inputs, intersection, graph),
+            Self::Has(inner) => inner.cost(inputs, intersection, graph),
+            Self::Links(inner) => inner.cost(inputs, intersection, graph),
 
-            Self::Sub(inner) => inner.cost(inputs, graph),
-            Self::Owns(inner) => inner.cost(inputs, graph),
-            Self::Relates(inner) => inner.cost(inputs, graph),
-            Self::Plays(inner) => inner.cost(inputs, graph),
+            Self::Sub(inner) => inner.cost(inputs, intersection, graph),
+            Self::Owns(inner) => inner.cost(inputs, intersection, graph),
+            Self::Relates(inner) => inner.cost(inputs, intersection, graph),
+            Self::Plays(inner) => inner.cost(inputs, intersection, graph),
         }
     }
 }
@@ -202,7 +203,7 @@ impl<'a> TypeListPlanner<'a> {
 }
 
 impl Costed for TypeListPlanner<'_> {
-    fn cost(&self, _: &[VertexId], _: &Graph<'_>) -> ElementCost {
+    fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
         ElementCost::free_with_branching(self.types.len() as f64)
     }
 }
@@ -212,7 +213,7 @@ pub(crate) struct IsaPlanner<'a> {
     isa: &'a Isa<Variable>,
     thing: VariableVertexId,
     type_: Input,
-    unbound_direction: Direction,
+    unrestricted_expected_size: f64,
 }
 
 impl<'a> fmt::Debug for IsaPlanner<'a> {
@@ -225,12 +226,18 @@ impl<'a> IsaPlanner<'a> {
     pub(crate) fn from_constraint(
         isa: &'a Isa<Variable>,
         variable_index: &HashMap<Variable, VariableVertexId>,
-        _type_annotations: &TypeAnnotations,
-        _statistics: &Statistics,
+        type_annotations: &TypeAnnotations,
+        statistics: &Statistics,
     ) -> Self {
         let thing = variable_index[&isa.thing().as_variable().unwrap()];
         let type_ = Input::from_vertex(isa.type_(), variable_index);
-        Self { isa, thing, type_, unbound_direction: Direction::Reverse }
+        let unrestricted_expected_size = type_annotations
+            .vertex_annotations_of(isa.thing())
+            .map(|thing_types| {
+                thing_types.iter().map(|thing_type| type_count(thing_type, statistics)).sum::<u64>() as f64
+            })
+            .unwrap_or(0.0);
+        Self { isa, thing, type_, unrestricted_expected_size }
     }
 
     fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
@@ -240,11 +247,52 @@ impl<'a> IsaPlanner<'a> {
     pub(crate) fn isa(&self) -> &Isa<Variable> {
         self.isa
     }
+
+    fn expected_output_size(&self, graph: &Graph<'_>) -> f64 {
+        let thing = graph.elements()[&VertexId::Variable(self.thing)].as_variable().unwrap();
+        self.unrestricted_expected_size * thing.selectivity()
+    }
 }
 
 impl Costed for IsaPlanner<'_> {
-    fn cost(&self, inputs: &[VertexId], graph: &Graph<'_>) -> ElementCost {
-        graph.elements()[&VertexId::Variable(self.thing)].cost(inputs, graph)
+    fn cost(&self, inputs: &[VertexId], _intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
+        let thing_id = VertexId::Variable(self.thing);
+        let is_thing_bound = inputs.contains(&thing_id);
+        let thing = graph.elements()[&thing_id].as_variable().unwrap();
+
+        let is_type_bound = match &self.type_ {
+            Input::Fixed => true,
+            Input::Variable(var) => inputs.contains(&VertexId::Variable(*var)),
+        };
+
+        let (per_input, per_output) = match (is_thing_bound, is_type_bound) {
+            (true, true) | (true, false) => (0.0, 0.0),
+            (false, true) | (false, false) => {
+                let per_input = OPEN_ITERATOR_RELATIVE_COST;
+                // when the type is bound or unbound, we may reject multiple things until we find a matching one, depending on the selectivity of the thing
+                let per_output = ADVANCE_ITERATOR_RELATIVE_COST / thing.selectivity();
+                (per_input, per_output)
+            }
+        };
+
+        let thing_size = thing.expected_output_size();
+        let type_size = match &self.type_ {
+            Input::Fixed => 1.0,
+            Input::Variable(var) => {
+                let type_id = VertexId::Variable(*var);
+                let type_ = graph.elements()[&type_id].as_variable().unwrap();
+                type_.expected_output_size()
+            }
+        };
+
+        let branching_factor = match (is_thing_bound, is_type_bound) {
+            (true, true) => self.expected_output_size(graph) / thing_size / type_size,
+            (true, false) => self.expected_output_size(graph) / thing_size,
+            (false, true) => self.expected_output_size(graph) / type_size,
+            (false, false) => self.expected_output_size(graph),
+        };
+
+        ElementCost { per_input, per_output, branching_factor }
     }
 }
 
@@ -253,9 +301,9 @@ pub(crate) struct HasPlanner<'a> {
     has: &'a Has<Variable>,
     pub owner: VariableVertexId,
     pub attribute: VariableVertexId,
-    expected_size: f64,
-    expected_unbound_size: f64,
-    unbound_direction: Direction,
+    unbound_typed_expected_size: f64,
+    unbound_typed_expected_size_canonical: f64,
+    unbound_typed_expected_size_reverse: f64,
 }
 
 impl<'a> fmt::Debug for HasPlanner<'a> {
@@ -283,6 +331,9 @@ impl<'a> HasPlanner<'a> {
             })
             .sum::<u64>() as f64;
 
+        // a better model, according to how we execute, is actually the sum(first type .. last types onwerships count)
+        //  alternatively, we could also be doing multiple seeks() and and merge-sorting.
+        //  in general, we assume the cardinality is small, so we just open 1 iterator and post-filter
         let unbound_forward_size = owner_types
             .iter()
             .filter_map(|owner| statistics.has_attribute_counts.get(&owner.as_object_type()))
@@ -295,17 +346,13 @@ impl<'a> HasPlanner<'a> {
             .flat_map(|counts| counts.values())
             .sum::<u64>() as f64;
 
-        let expected_unbound_size = f64::min(unbound_forward_size, unbound_backward_size);
-        let unbound_direction =
-            if unbound_forward_size <= unbound_backward_size { Direction::Canonical } else { Direction::Reverse };
-
         Self {
             has,
             owner: variable_index[&owner.as_variable().unwrap()],
             attribute: variable_index[&attribute.as_variable().unwrap()],
-            expected_size,
-            expected_unbound_size,
-            unbound_direction,
+            unbound_typed_expected_size: expected_size,
+            unbound_typed_expected_size_canonical: unbound_forward_size,
+            unbound_typed_expected_size_reverse: unbound_backward_size,
         }
     }
 
@@ -316,32 +363,72 @@ impl<'a> HasPlanner<'a> {
     pub(crate) fn has(&self) -> &Has<Variable> {
         self.has
     }
+
+    fn unbound_direction(&self, graph: &Graph<'_>) -> Direction {
+        if self.unbound_expected_scan_size_canonical(graph) < self.unbound_expected_scan_size_reverse(graph) {
+            Direction::Canonical
+        } else {
+            Direction::Reverse
+        }
+    }
+
+    fn unbound_expected_scan_size(&self, graph: &Graph<'_>) -> f64 {
+        f64::min(self.unbound_expected_scan_size_canonical(graph), self.unbound_expected_scan_size_reverse(graph))
+    }
+
+    fn unbound_expected_scan_size_canonical(&self, graph: &Graph<'_>) -> f64 {
+        let owner = &graph.elements()[&VertexId::Variable(self.attribute)].as_variable().unwrap();
+        self.unbound_typed_expected_size_canonical * owner.selectivity()
+    }
+
+    fn unbound_expected_scan_size_reverse(&self, graph: &Graph<'_>) -> f64 {
+        let attribute = &graph.elements()[&VertexId::Variable(self.attribute)].as_variable().unwrap();
+        self.unbound_typed_expected_size_reverse * attribute.selectivity()
+    }
+
+    fn expected_output_size(&self, graph: &Graph<'_>) -> f64 {
+        // get selectivity of attribute and multiply it by the expected size based on types
+        let attribute = &graph.elements()[&VertexId::Variable(self.attribute)].as_variable().unwrap();
+        self.unbound_typed_expected_size * attribute.selectivity()
+    }
 }
 
 impl Costed for HasPlanner<'_> {
-    fn cost(&self, inputs: &[VertexId], graph: &Graph<'_>) -> ElementCost {
+    fn cost(&self, inputs: &[VertexId], _intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
         let owner_id = VertexId::Variable(self.owner);
         let attribute_id = VertexId::Variable(self.attribute);
 
         let is_owner_bound = inputs.contains(&owner_id);
         let is_attribute_bound = inputs.contains(&attribute_id);
+        let owner = &graph.elements()[&owner_id].as_variable().unwrap();
+        let attribute = &graph.elements()[&owner_id].as_variable().unwrap();
 
         let per_input = OPEN_ITERATOR_RELATIVE_COST;
 
         let per_output = match (is_owner_bound, is_attribute_bound) {
             (true, true) => 0.0,
-            (false, false) => ADVANCE_ITERATOR_RELATIVE_COST * self.expected_unbound_size / self.expected_size,
-            (true, false) | (false, true) => ADVANCE_ITERATOR_RELATIVE_COST,
+            (true, false) => {
+                // when the owner is bound, we may reject multiple attributes until we find a matching one, depending on the selectivity of the attribute
+                ADVANCE_ITERATOR_RELATIVE_COST / attribute.selectivity()
+            }
+            (false, true) => {
+                // when the attribute is bound, we may reject multiple owners until we find a matching one, depending on the selectivity of the owner
+                ADVANCE_ITERATOR_RELATIVE_COST / owner.selectivity()
+            }
+            (false, false) => {
+                ADVANCE_ITERATOR_RELATIVE_COST * self.unbound_expected_scan_size(graph)
+                    / self.expected_output_size(graph)
+            }
         };
 
-        let owner_size = graph.elements()[&owner_id].as_variable().unwrap().expected_size();
-        let attribute_size = graph.elements()[&attribute_id].as_variable().unwrap().expected_size();
+        let owner_size = owner.expected_output_size();
+        let attribute_size = attribute.expected_output_size();
 
         let branching_factor = match (is_owner_bound, is_attribute_bound) {
-            (true, true) => self.expected_size / owner_size / attribute_size,
-            (true, false) => self.expected_size / owner_size,
-            (false, true) => self.expected_size / attribute_size,
-            (false, false) => self.expected_size,
+            (true, true) => self.expected_output_size(graph) / owner_size / attribute_size,
+            (true, false) => self.expected_output_size(graph) / owner_size,
+            (false, true) => self.expected_output_size(graph) / attribute_size,
+            (false, false) => self.expected_output_size(graph),
         };
 
         ElementCost { per_input, per_output, branching_factor }
@@ -354,9 +441,9 @@ pub(crate) struct LinksPlanner<'a> {
     pub relation: VariableVertexId,
     pub player: VariableVertexId,
     pub role: VariableVertexId,
-    expected_size: f64,
-    expected_unbound_size: f64,
-    unbound_direction: Direction,
+    unbound_typed_expected_size: f64,
+    unbound_typed_expected_size_canonical: f64,
+    unbound_typed_expected_size_reverse: f64,
 }
 
 impl<'a> fmt::Debug for LinksPlanner<'a> {
@@ -419,11 +506,6 @@ impl<'a> LinksPlanner<'a> {
             })
             .flatten()
             .sum::<u64>() as f64;
-
-        let expected_unbound_size = f64::min(unbound_forward_size, unbound_backward_size);
-        let unbound_direction =
-            if unbound_forward_size <= unbound_backward_size { Direction::Canonical } else { Direction::Reverse };
-
         let relation = relation.as_variable().unwrap();
         let player = player.as_variable().unwrap();
         let role = role.as_variable().unwrap();
@@ -433,9 +515,9 @@ impl<'a> LinksPlanner<'a> {
             relation: variable_index[&relation],
             player: variable_index[&player],
             role: variable_index[&role],
-            expected_size,
-            expected_unbound_size,
-            unbound_direction,
+            unbound_typed_expected_size: expected_size,
+            unbound_typed_expected_size_canonical: unbound_forward_size,
+            unbound_typed_expected_size_reverse: unbound_backward_size,
         }
     }
 
@@ -447,35 +529,72 @@ impl<'a> LinksPlanner<'a> {
         self.links
     }
 
-    pub(crate) fn unbound_direction(&self) -> Direction {
-        self.unbound_direction
+    pub(crate) fn unbound_direction(&self, graph: &Graph<'_>) -> Direction {
+        if self.unbound_expected_scan_size_canonical(graph) < self.unbound_expected_scan_size_reverse(graph) {
+            Direction::Canonical
+        } else {
+            Direction::Reverse
+        }
+    }
+
+    fn unbound_expected_scan_size(&self, graph: &Graph<'_>) -> f64 {
+        f64::min(self.unbound_expected_scan_size_canonical(graph), self.unbound_expected_scan_size_reverse(graph))
+    }
+
+    fn unbound_expected_scan_size_canonical(&self, graph: &Graph<'_>) -> f64 {
+        let relation = &graph.elements()[&VertexId::Variable(self.relation)].as_variable().unwrap();
+        self.unbound_typed_expected_size_canonical * relation.selectivity()
+    }
+
+    fn unbound_expected_scan_size_reverse(&self, graph: &Graph<'_>) -> f64 {
+        let player = &graph.elements()[&VertexId::Variable(self.player)].as_variable().unwrap();
+        self.unbound_typed_expected_size_reverse * player.selectivity()
+    }
+
+    fn expected_output_size(&self, graph: &Graph<'_>) -> f64 {
+        // get selectivity of attribute and multiply it by the expected size based on types
+        let player = &graph.elements()[&VertexId::Variable(self.player)].as_variable().unwrap();
+        let relation = &graph.elements()[&VertexId::Variable(self.relation)].as_variable().unwrap();
+        self.unbound_typed_expected_size * player.selectivity() * relation.selectivity()
     }
 }
 
 impl Costed for LinksPlanner<'_> {
-    fn cost(&self, inputs: &[VertexId], graph: &Graph<'_>) -> ElementCost {
+    fn cost(&self, inputs: &[VertexId], _intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
         let relation_id = VertexId::Variable(self.relation);
         let player_id = VertexId::Variable(self.player);
 
         let is_relation_bound = inputs.contains(&relation_id);
         let is_player_bound = inputs.contains(&player_id);
+        let relation = &graph.elements()[&relation_id].as_variable().unwrap();
+        let player = &graph.elements()[&player_id].as_variable().unwrap();
 
         let per_input = OPEN_ITERATOR_RELATIVE_COST;
 
         let per_output = match (is_relation_bound, is_player_bound) {
             (true, true) => 0.0,
-            (false, false) => ADVANCE_ITERATOR_RELATIVE_COST * self.expected_unbound_size / self.expected_size,
-            (true, false) | (false, true) => ADVANCE_ITERATOR_RELATIVE_COST,
+            (true, false) => {
+                // when the relation is bound, we may reject multiple players until we find a matching one, depending on the selectivity of the player
+                ADVANCE_ITERATOR_RELATIVE_COST / player.selectivity()
+            }
+            (false, true) => {
+                // when the player is bound, we may reject multiple relations until we find a matching one, depending on the selectivity of the relation
+                ADVANCE_ITERATOR_RELATIVE_COST / relation.selectivity()
+            }
+            (false, false) => {
+                ADVANCE_ITERATOR_RELATIVE_COST * self.unbound_expected_scan_size(graph)
+                    / self.expected_output_size(graph)
+            }
         };
 
-        let relation_size = graph.elements()[&relation_id].as_variable().unwrap().expected_size();
-        let player_size = graph.elements()[&player_id].as_variable().unwrap().expected_size();
+        let relation_size = relation.expected_output_size();
+        let player_size = player.expected_output_size();
 
         let branching_factor = match (is_relation_bound, is_player_bound) {
-            (true, true) => self.expected_size / relation_size / player_size,
-            (true, false) => self.expected_size / relation_size,
-            (false, true) => self.expected_size / player_size,
-            (false, false) => self.expected_size,
+            (true, true) => self.expected_output_size(graph) / relation_size / player_size,
+            (true, false) => self.expected_output_size(graph) / relation_size,
+            (false, true) => self.expected_output_size(graph) / player_size,
+            (false, false) => self.expected_output_size(graph),
         };
 
         ElementCost { per_input, per_output, branching_factor }
@@ -516,7 +635,7 @@ impl<'a> SubPlanner<'a> {
 }
 
 impl Costed for SubPlanner<'_> {
-    fn cost(&self, _: &[VertexId], _: &Graph<'_>) -> ElementCost {
+    fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
         ElementCost::free_with_branching(1.0) // TODO branching
     }
 }
@@ -551,7 +670,7 @@ impl<'a> OwnsPlanner<'a> {
 }
 
 impl Costed for OwnsPlanner<'_> {
-    fn cost(&self, _: &[VertexId], _: &Graph<'_>) -> ElementCost {
+    fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
         ElementCost::free_with_branching(1.0) // TODO branching
     }
 }
@@ -586,7 +705,7 @@ impl<'a> RelatesPlanner<'a> {
 }
 
 impl Costed for RelatesPlanner<'_> {
-    fn cost(&self, _: &[VertexId], _: &Graph<'_>) -> ElementCost {
+    fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
         ElementCost::free_with_branching(1.0) // TODO branching
     }
 }
@@ -621,7 +740,7 @@ impl<'a> PlaysPlanner<'a> {
 }
 
 impl Costed for PlaysPlanner<'_> {
-    fn cost(&self, _: &[VertexId], _: &Graph<'_>) -> ElementCost {
+    fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
         ElementCost::free_with_branching(1.0) // TODO branching
     }
 }

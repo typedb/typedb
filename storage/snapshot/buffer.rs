@@ -22,7 +22,7 @@ use serde::{
 };
 
 use crate::{
-    key_range::{KeyRange, RangeEnd},
+    key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::StorageKeyArray,
     keyspace::{KeyspaceId, KEYSPACE_MAXIMUM_COUNT},
     snapshot::{lock::LockType, write::Write},
@@ -80,7 +80,9 @@ impl OperationsBuffer {
 
     pub fn iterate_writes(&self) -> impl Iterator<Item = (StorageKeyArray<BUFFER_KEY_INLINE>, Write)> + '_ {
         self.write_buffers().flat_map(|buffer| {
-            buffer.iterate_range(KeyRange::new_unbounded(Bytes::Array(ByteArray::<BUFFER_KEY_INLINE>::empty())))
+            buffer.iterate_range(KeyRange::new_unbounded(RangeStart::Inclusive(Bytes::Array(ByteArray::<
+                BUFFER_KEY_INLINE,
+            >::empty()))))
         })
     }
 
@@ -181,7 +183,7 @@ impl WriteBuffer {
 
     pub(crate) fn iterate_range<const INLINE: usize>(&self, range: KeyRange<Bytes<'_, INLINE>>) -> BufferRangeIterator {
         let (range_start, range_end, _) = range.into_raw();
-        let exclusive_end_bytes = Self::compute_exclusive_end(range_start.as_reference(), &range_end);
+        let exclusive_end_bytes = Self::compute_exclusive_end(&range_start, &range_end);
         let end = if matches!(range_end, RangeEnd::Unbounded) {
             Bound::Unbounded
         } else {
@@ -190,7 +192,7 @@ impl WriteBuffer {
         // TODO: we shouldn't have to copy now that we use single-writer semantics
         BufferRangeIterator::new(
             self.writes
-                .range::<[u8], _>((Bound::Included(range_start.bytes()), end))
+                .range::<[u8], _>((range_start.as_bound().map(|bytes| bytes.bytes()), end))
                 .map(|(key, val)| (StorageKeyArray::new_raw(self.keyspace_id, key.clone()), val.clone()))
                 .collect::<Vec<_>>(),
         )
@@ -199,31 +201,33 @@ impl WriteBuffer {
     // TODO: if the iterate_range becomes zero-copy, then we can eliminate this method
     pub(crate) fn any_not_deleted_in_range<const INLINE: usize>(&self, range: KeyRange<Bytes<'_, INLINE>>) -> bool {
         let (range_start, range_end, _) = range.into_raw();
-        let exclusive_end_bytes = Self::compute_exclusive_end(range_start.as_reference(), &range_end);
+        let exclusive_end_bytes = Self::compute_exclusive_end(&range_start, &range_end);
         let end = if matches!(range_end, RangeEnd::Unbounded) {
             Bound::Unbounded
         } else {
             Bound::Excluded(exclusive_end_bytes.bytes())
         };
-        self.writes.range::<[u8], _>((Bound::Included(range_start.bytes()), end)).any(|(_, write)| !write.is_delete())
+        self.writes
+            .range::<[u8], _>((range_start.as_bound().map(|bytes| bytes.bytes()), end))
+            .any(|(_, write)| !write.is_delete())
     }
 
     fn compute_exclusive_end<const INLINE: usize>(
-        start: ByteReference<'_>,
+        start: &RangeStart<Bytes<'_, INLINE>>,
         end: &RangeEnd<Bytes<'_, INLINE>>,
     ) -> ByteArray<INLINE> {
         match end {
-            RangeEnd::SameAsStart => {
-                let mut start_plus_1 = ByteArray::from(start);
+            RangeEnd::WithinStartAsPrefix => {
+                let mut start_plus_1 = start.get_value().clone().into_array();
                 increment(start_plus_1.bytes_mut()).unwrap();
                 start_plus_1
             }
-            RangeEnd::Inclusive(value) => {
+            RangeEnd::EndPrefixInclusive(value) => {
                 let mut end_plus_1 = value.clone().into_array();
                 increment(end_plus_1.bytes_mut()).unwrap();
                 end_plus_1
             }
-            RangeEnd::Exclusive(value) => value.clone().into_array(),
+            RangeEnd::EndPrefixExclusive(value) => value.clone().into_array(),
             RangeEnd::Unbounded => ByteArray::empty(),
         }
     }

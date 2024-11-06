@@ -11,26 +11,28 @@ use crate::{
         primitive_encoding::{decode_u32, decode_u64, encode_u32, encode_u64},
     },
 };
+use crate::{
+    graph::thing::vertex_attribute::{InlineEncodableAttributeID},
+    value::decimal_bytes::DecimalBytes,
+};
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct DurationBytes {
-    bytes: [u8; Self::LENGTH],
+    bytes: [u8; Self::ENCODED_LENGTH],
 }
 
 impl DurationBytes {
-    pub(crate) const LENGTH: usize = ValueEncodingLength::Long.length();
-
     const MONTHS_LENGTH: usize = u32::BITS as usize / 8;
     const DAYS_LENGTH: usize = u32::BITS as usize / 8;
     const NANOS_LENGTH: usize = u64::BITS as usize / 8;
 
-    pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
+    pub fn new(bytes: [u8; Self::ENCODED_LENGTH]) -> Self {
         Self { bytes }
     }
 
     pub fn build(duration: Duration) -> Self {
         let Duration { months, days, nanos } = duration;
-        let mut bytes = [0; Self::LENGTH];
+        let mut bytes = [0; Self::ENCODED_LENGTH];
         bytes[..Self::MONTHS_LENGTH].copy_from_slice(&encode_u32(months));
         bytes[Self::MONTHS_LENGTH..][..Self::DAYS_LENGTH].copy_from_slice(&encode_u32(days));
         bytes[Self::MONTHS_LENGTH + Self::DAYS_LENGTH..][..Self::NANOS_LENGTH].copy_from_slice(&encode_u64(nanos));
@@ -45,7 +47,15 @@ impl DurationBytes {
         Duration { months, days, nanos }
     }
 
-    pub fn bytes(&self) -> [u8; Self::LENGTH] {
+    pub fn bytes(&self) -> [u8; Self::ENCODED_LENGTH] {
         self.bytes
+    }
+}
+
+impl InlineEncodableAttributeID for DurationBytes {
+    const ENCODED_LENGTH: usize = ValueEncodingLength::Long.length();
+
+    fn bytes_ref(&self) -> &[u8] {
+        &self.bytes
     }
 }

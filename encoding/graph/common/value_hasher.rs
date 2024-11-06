@@ -6,52 +6,68 @@
 
 use std::sync::Arc;
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use lending_iterator::LendingIterator;
 use primitive::either::Either;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
-    key_range::KeyRange,
+    key_range::{KeyRange, RangeStart},
     key_value::StorageKey,
     snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot},
 };
 
 use crate::EncodingKeyspace;
 
-pub(crate) trait HashedID<const TOTAL_LENGTH: usize> {
-    const HASHID_HASH_LENGTH: usize = TOTAL_LENGTH - 1;
-    const HASHID_DISAMBIGUATOR_BYTE_INDEX: usize = Self::HASHID_HASH_LENGTH;
-    const HASHID_DISAMBIGUATOR_BYTE_IS_HASH_FLAG: u8 = 0b1000_0000;
+pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
+    const HASH_LENGTH: usize = DISAMBIGUATED_HASH_LENGTH - 1;
+    const HASH_DISAMBIGUATOR_BYTE_INDEX: usize = Self::HASH_LENGTH;
+    const HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG: u8 = 0b1000_0000;
     const KEYSPACE: EncodingKeyspace;
     const FIXED_WIDTH_KEYS: bool;
 
-    fn find_existing_or_next_disambiguated_hash<Snapshot, const INLINE_SIZE: usize>(
+    // write the hash of the value to the start of the byte slice, and return the number of bytes written
+    fn write_hash(bytes: &mut [u8], hasher: &impl Fn(&[u8]) -> u64, value_bytes: &[u8]) -> usize {
+        debug_assert!(bytes.len() >= Self::HASH_LENGTH);
+        let hash_bytes = &hasher(value_bytes).to_be_bytes()[0..Self::HASH_LENGTH];
+        bytes[0..hash_bytes.len()].copy_from_slice(&hash_bytes);
+        return Self::HASH_LENGTH;
+    }
+
+    fn find_existing_or_next_disambiguated_hash<Snapshot>(
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
-        key_without_hash: Bytes<'_, INLINE_SIZE>,
+        key_without_hash: &[u8],
         value_bytes: &[u8],
-    ) -> Result<Either<[u8; TOTAL_LENGTH], [u8; TOTAL_LENGTH]>, Arc<SnapshotIteratorError>>
+    ) -> Result<Either<[u8; DISAMBIGUATED_HASH_LENGTH], [u8; DISAMBIGUATED_HASH_LENGTH]>, Arc<SnapshotIteratorError>>
     where
         Snapshot: ReadableSnapshot,
     {
-        let hash_bytes = &hasher(value_bytes).to_be_bytes()[0..Self::HASHID_HASH_LENGTH];
-        let key_without_tail_byte = ByteArray::copy_concat([key_without_hash.bytes(), hash_bytes]);
-        match Self::disambiguate(snapshot, key_without_tail_byte, value_bytes)? {
+        let mut key_without_tail_byte: ByteArray<BUFFER_KEY_INLINE> =
+            ByteArray::zeros(key_without_hash.len() + Self::HASH_LENGTH);
+        key_without_tail_byte.bytes_mut()[0..key_without_hash.len()].copy_from_slice(key_without_hash);
+        Self::write_hash(
+            &mut key_without_tail_byte.bytes_mut()[key_without_hash.len()..key_without_hash.len() + Self::HASH_LENGTH],
+            hasher,
+            value_bytes,
+        );
+        let hash_bytes = &key_without_tail_byte.bytes()[0..Self::HASH_LENGTH];
+        match Self::disambiguate(snapshot, key_without_tail_byte.as_ref(), value_bytes)? {
             Either::First(tail) => Ok(Either::First(Self::concat_hash_and_tail(hash_bytes, tail))),
             Either::Second(tail) => Ok(Either::Second(Self::concat_hash_and_tail(hash_bytes, tail))),
         }
     }
 
-    fn concat_hash_and_tail(hash_bytes: &[u8], tail: u8) -> [u8; TOTAL_LENGTH] {
-        let mut bytes: [u8; TOTAL_LENGTH] = [0; TOTAL_LENGTH];
-        bytes[0..Self::HASHID_HASH_LENGTH].copy_from_slice(hash_bytes);
-        bytes[Self::HASHID_HASH_LENGTH] = tail;
+    fn concat_hash_and_tail(hash_bytes: &[u8], tail: u8) -> [u8; DISAMBIGUATED_HASH_LENGTH] {
+        let mut bytes: [u8; DISAMBIGUATED_HASH_LENGTH] = [0; DISAMBIGUATED_HASH_LENGTH];
+        bytes[0..Self::HASH_LENGTH].copy_from_slice(hash_bytes);
+        bytes[Self::HASH_LENGTH] = tail;
         bytes
     }
 
+    /// return Either<Existing tail, newly allocated tail>
     fn disambiguate<Snapshot>(
         snapshot: &Snapshot,
-        key_without_tail_byte: ByteArray<BUFFER_KEY_INLINE>,
+        key_without_tail_byte: ByteReference,
         value_bytes: &[u8],
     ) -> Result<Either<u8, u8>, Arc<SnapshotIteratorError>>
     where
@@ -59,13 +75,16 @@ pub(crate) trait HashedID<const TOTAL_LENGTH: usize> {
     {
         let tail_byte_index = key_without_tail_byte.length();
         let mut iter = snapshot.iterate_range(KeyRange::new_within(
-            StorageKey::<BUFFER_KEY_INLINE>::new_ref(Self::KEYSPACE, key_without_tail_byte.as_ref()),
+            RangeStart::Inclusive(StorageKey::<BUFFER_KEY_INLINE>::new_ref(
+                Self::KEYSPACE,
+                key_without_tail_byte.clone(),
+            )),
             Self::FIXED_WIDTH_KEYS,
         ));
         let mut next = iter.next().transpose()?;
         let mut first_unused_tail: Option<u8> = None;
 
-        let mut next_tail: u8 = Self::HASHID_DISAMBIGUATOR_BYTE_IS_HASH_FLAG; // Start with the bit set
+        let mut next_tail: u8 = Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG; // Start with the bit set
         while let Some((key, value)) = next {
             let key_tail = key.bytes()[tail_byte_index];
             if value.bytes() == value_bytes {

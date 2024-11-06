@@ -11,6 +11,8 @@ use std::{
     str::FromStr,
 };
 
+use crate::graph::thing::vertex_attribute::InlineEncodableAttributeID;
+
 pub const FRACTIONAL_PART_DENOMINATOR_LOG10: u32 = 19;
 const FRACTIONAL_PART_DENOMINATOR: u64 = 10u64.pow(FRACTIONAL_PART_DENOMINATOR_LOG10);
 
@@ -29,9 +31,27 @@ impl Decimal {
     pub const MIN: Self = Self::new(i64::MIN, 0);
     pub const MAX: Self = Self::new(i64::MAX, FRACTIONAL_PART_DENOMINATOR - 1);
 
-    pub const fn new(integer: i64, fractional: u64) -> Self {
-        assert!(fractional < FRACTIONAL_PART_DENOMINATOR);
-        Self { integer, fractional }
+    pub const fn new(integer: i64, fractional_parts: u64) -> Self {
+        debug_assert!(fractional_parts < FRACTIONAL_PART_DENOMINATOR);
+        Self { integer, fractional: fractional_parts }
+    }
+
+    pub fn new_lower_bound_from(integer: i64, fractional_double: f64) -> Self {
+        debug_assert!(fractional_double < 1.0);
+        // the double's fractional part may have more decimal places than the Decimal type can handle
+        // we can therefor round it to 1/FRACTIONAL_PART_DENOMINATOR
+        let fractional_parts = fractional_double / FRACTIONAL_PART_DENOMINATOR as f64;
+        let fractional_parts_floor = fractional_parts.floor() as u64;
+        Self::new(integer, fractional_parts_floor)
+    }
+
+    pub fn new_upper_bound_from(integer: i64, fractional_double: f64) -> Self {
+        debug_assert!(fractional_double < 1.0);
+        // the double's fractional part may have more decimal places than the Decimal type can handle
+        // we can therefor round it to 1/FRACTIONAL_PART_DENOMINATOR
+        let fractional_parts = fractional_double / FRACTIONAL_PART_DENOMINATOR as f64;
+        let fractional_parts_ceil = fractional_parts.ceil() as u64;
+        Self::new(integer, fractional_parts_ceil)
     }
 
     pub fn integer_part(&self) -> i64 {

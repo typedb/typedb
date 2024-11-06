@@ -9,7 +9,7 @@ use std::{
     iter,
 };
 
-use answer::variable::Variable;
+use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
 use ir::pattern::{
     constraint::{Comparison, FunctionCallBinding, Is},
@@ -131,7 +131,7 @@ pub(crate) struct ElementCost {
 
 impl ElementCost {
     pub const EMPTY: Self = Self { per_input: 0.0, per_output: 0.0, branching_factor: 0.0 };
-    pub const FREE: Self = Self { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 };
+    pub const FREE_BRANCH_1: Self = Self { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 };
 
     fn free_with_branching(branching_factor: f64) -> Self {
         Self { per_input: 0.0, per_output: 0.0, branching_factor }
@@ -161,23 +161,28 @@ impl ElementCost {
 }
 
 pub(super) trait Costed {
-    fn cost(&self, inputs: &[VertexId], graph: &Graph<'_>) -> ElementCost;
+    fn cost(
+        &self,
+        inputs: &[VertexId],
+        intersection_variable: Option<VariableVertexId>,
+        graph: &Graph<'_>,
+    ) -> ElementCost;
 }
 
 impl Costed for PlannerVertex<'_> {
-    fn cost(&self, inputs: &[VertexId], graph: &Graph<'_>) -> ElementCost {
+    fn cost(&self, inputs: &[VertexId], intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
         match self {
-            Self::Variable(inner) => inner.cost(inputs, graph),
-            Self::Constraint(inner) => inner.cost(inputs, graph),
+            Self::Variable(inner) => inner.cost(inputs, intersection, graph),
+            Self::Constraint(inner) => inner.cost(inputs, intersection, graph),
 
-            Self::Is(inner) => inner.cost(inputs, graph),
-            Self::Comparison(inner) => inner.cost(inputs, graph),
+            Self::Is(inner) => inner.cost(inputs, intersection, graph),
+            Self::Comparison(inner) => inner.cost(inputs, intersection, graph),
 
-            Self::Expression(inner) => inner.cost(inputs, graph),
-            Self::FunctionCall(inner) => inner.cost(inputs, graph),
+            Self::Expression(inner) => inner.cost(inputs, intersection, graph),
+            Self::FunctionCall(inner) => inner.cost(inputs, intersection, graph),
 
-            Self::Negation(inner) => inner.cost(inputs, graph),
-            Self::Disjunction(inner) => inner.cost(inputs, graph),
+            Self::Negation(inner) => inner.cost(inputs, intersection, graph),
+            Self::Disjunction(inner) => inner.cost(inputs, intersection, graph),
         }
     }
 }
@@ -224,7 +229,7 @@ impl<'a> ExpressionPlanner<'a> {
         inputs: Vec<VariableVertexId>,
         output: VariableVertexId,
     ) -> Self {
-        let cost = ElementCost::FREE;
+        let cost = ElementCost::FREE_BRANCH_1;
         Self { inputs, output, cost, expression }
     }
 
@@ -238,7 +243,7 @@ impl<'a> ExpressionPlanner<'a> {
 }
 
 impl Costed for ExpressionPlanner<'_> {
-    fn cost(&self, _inputs: &[VertexId], _graph: &Graph<'_>) -> ElementCost {
+    fn cost(&self, _inputs: &[VertexId], _intersection: Option<VariableVertexId>, _graph: &Graph<'_>) -> ElementCost {
         self.cost
     }
 }
@@ -267,7 +272,7 @@ impl<'a> FunctionCallPlanner<'a> {
 }
 
 impl<'a> Costed for FunctionCallPlanner<'a> {
-    fn cost(&self, _inputs: &[VertexId], _graph: &Graph<'_>) -> ElementCost {
+    fn cost(&self, _inputs: &[VertexId], _intersection: Option<VariableVertexId>, _graph: &Graph<'_>) -> ElementCost {
         self.cost
     }
 }
@@ -305,7 +310,7 @@ impl<'a> IsPlanner<'a> {
 }
 
 impl Costed for IsPlanner<'_> {
-    fn cost(&self, _: &[VertexId], _: &Graph<'_>) -> ElementCost {
+    fn cost(&self, _: &[VertexId], _: Option<VariableVertexId>,  _: &Graph<'_>) -> ElementCost {
         ElementCost::FREE
     }
 }
@@ -355,8 +360,8 @@ impl<'a> ComparisonPlanner<'a> {
 }
 
 impl Costed for ComparisonPlanner<'_> {
-    fn cost(&self, _: &[VertexId], _: &Graph<'_>) -> ElementCost {
-        ElementCost::FREE
+    fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
+        ElementCost::FREE_BRANCH_1
     }
 }
 
@@ -386,7 +391,7 @@ impl<'a> NegationPlanner<'a> {
 }
 
 impl Costed for NegationPlanner<'_> {
-    fn cost(&self, _inputs: &[VertexId], _: &Graph<'_>) -> ElementCost {
+    fn cost(&self, _inputs: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
         self.plan.cost()
     }
 }
@@ -422,7 +427,7 @@ impl<'a> DisjunctionPlanner<'a> {
 }
 
 impl Costed for DisjunctionPlanner<'_> {
-    fn cost(&self, inputs: &[VertexId], graph: &Graph<'_>) -> ElementCost {
+    fn cost(&self, inputs: &[VertexId], _intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
         let input_variables =
             inputs.iter().filter_map(|id| graph.elements()[id].as_variable()).map(|var| var.variable());
         self.builder()
@@ -430,5 +435,14 @@ impl Costed for DisjunctionPlanner<'_> {
             .iter()
             .map(|branch| branch.clone().with_inputs(input_variables.clone()).plan().cost())
             .fold(ElementCost::EMPTY, ElementCost::combine_parallel)
+    }
+}
+
+pub(super) fn type_count(type_: &Type, statistics: &Statistics) -> u64 {
+    match type_ {
+        Type::Entity(entity) => *statistics.entity_counts.get(entity).unwrap_or(&0),
+        Type::Relation(relation) => *statistics.relation_counts.get(relation).unwrap_or(&0),
+        Type::Attribute(attribute) => *statistics.attribute_counts.get(attribute).unwrap_or(&0),
+        Type::RoleType(_) => 0,
     }
 }

@@ -320,7 +320,7 @@ impl<'a> StructIndexEntry<'a> {
                 match Self::find_existing_or_next_disambiguated_hash(
                     snapshot,
                     hasher,
-                    prefix_key,
+                    prefix_key.bytes(),
                     string_bytes.bytes().bytes(),
                 )? {
                     Either::First(hash) => hash,

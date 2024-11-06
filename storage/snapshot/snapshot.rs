@@ -309,7 +309,7 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
     ) -> SnapshotRangeIterator {
         let buffered_iterator = self
             .operations
-            .writes_in(range.start().keyspace_id())
+            .writes_in(range.start().get_value().keyspace_id())
             .iterate_range(range.clone().map(|k| k.into_bytes(), |fixed| fixed));
         let storage_iterator = self.storage.iterate_range(range, self.open_sequence_number);
         SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
@@ -322,7 +322,7 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
     ) -> bool {
         let buffered = self
             .operations
-            .writes_in(range.start().keyspace_id())
+            .writes_in(range.start().get_value().keyspace_id())
             .any_not_deleted_in_range(range.clone().map(|k| k.into_bytes(), |fixed| fixed));
         buffered || (!buffered_only && self.iterate_range(range).next().is_some())
     }
@@ -342,10 +342,10 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         debug_assert!(range
             .end()
             .get_value()
-            .map(|end| end.keyspace_id() == range.start().keyspace_id())
+            .map(|end| end.keyspace_id() == range.start().get_value().keyspace_id())
             .unwrap_or(true));
         self.operations()
-            .writes_in(range.start().keyspace_id())
+            .writes_in(range.start().get_value().keyspace_id())
             .iterate_range(range.map(|k| k.into_bytes(), |fixed| fixed))
     }
 
@@ -445,7 +445,7 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     ) -> SnapshotRangeIterator {
         let buffered_iterator = self
             .operations
-            .writes_in(range.start().keyspace_id())
+            .writes_in(range.start().get_value().keyspace_id())
             .iterate_range(range.clone().map(|k| k.into_bytes(), |fixed| fixed));
         let storage_iterator = self.storage.iterate_range(range, self.open_sequence_number);
         SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
@@ -458,7 +458,7 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     ) -> bool {
         let buffered = self
             .operations
-            .writes_in(range.start().keyspace_id())
+            .writes_in(range.start().get_value().keyspace_id())
             .any_not_deleted_in_range(range.clone().map(|k| k.into_bytes(), |fixed| fixed));
         buffered || (!buffered_only && self.iterate_range(range).next().is_some())
     }
@@ -478,10 +478,10 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         debug_assert!(range
             .end()
             .get_value()
-            .map(|end| end.keyspace_id() == range.start().keyspace_id())
+            .map(|end| end.keyspace_id() == range.start().get_value().keyspace_id())
             .unwrap_or(true));
         self.operations()
-            .writes_in(range.start().keyspace_id())
+            .writes_in(range.start().get_value().keyspace_id())
             .iterate_range(range.map(|k| k.into_bytes(), |fixed| fixed))
     }
 

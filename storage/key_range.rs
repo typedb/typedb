@@ -4,44 +4,36 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Borrow, cmp::Ordering, fmt::Debug};
+use std::{borrow::Borrow, collections::Bound, fmt::Debug};
 
 use primitive::prefix::Prefix;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct KeyRange<T: Prefix> {
     // inclusive
-    start: T,
+    start: RangeStart<T>,
     end: RangeEnd<T>,
     fixed_width_keys: bool,
 }
 
 impl<T: Prefix> KeyRange<T> {
-    pub fn new_variable_width(start: T, end: RangeEnd<T>) -> Self {
+    pub fn new_variable_width(start: RangeStart<T>, end: RangeEnd<T>) -> Self {
         Self { start, end, fixed_width_keys: false }
     }
 
-    pub fn new_fixed_width(start: T, end: RangeEnd<T>) -> Self {
+    pub fn new_fixed_width(start: RangeStart<T>, end: RangeEnd<T>) -> Self {
         Self { start, end, fixed_width_keys: true }
     }
 
-    pub fn new_unbounded(start: T) -> Self {
+    pub fn new_unbounded(start: RangeStart<T>) -> Self {
         Self { start, end: RangeEnd::Unbounded, fixed_width_keys: false }
     }
 
-    pub fn new_within(prefix: T, fixed_width_keys: bool) -> Self {
-        Self { start: prefix, end: RangeEnd::SameAsStart, fixed_width_keys }
+    pub fn new_within(prefix_inclusive: RangeStart<T>, fixed_width_keys: bool) -> Self {
+        Self { start: prefix_inclusive, end: RangeEnd::WithinStartAsPrefix, fixed_width_keys }
     }
 
-    pub fn new_inclusive(start: T, end_inclusive: T) -> Self {
-        Self { start, end: RangeEnd::new_inclusive(end_inclusive), fixed_width_keys: false }
-    }
-
-    pub fn new_exclusive(start: T, end_exclusive: T) -> Self {
-        Self { start, end: RangeEnd::new_exclusive(end_exclusive), fixed_width_keys: false }
-    }
-
-    pub fn start(&self) -> &T {
+    pub fn start(&self) -> &RangeStart<T> {
         &self.start
     }
 
@@ -53,7 +45,7 @@ impl<T: Prefix> KeyRange<T> {
         self.fixed_width_keys
     }
 
-    pub fn into_raw(self) -> (T, RangeEnd<T>, bool) {
+    pub fn into_raw(self) -> (RangeStart<T>, RangeEnd<T>, bool) {
         (self.start, self.end, self.fixed_width_keys)
     }
 
@@ -63,8 +55,8 @@ impl<T: Prefix> KeyRange<T> {
         fixed_width_mapper: impl Fn(bool) -> bool,
     ) -> KeyRange<V> {
         let (start, end, fixed_width) = self.into_raw();
-        let start = prefix_mapper(start);
-        let end = end.map(prefix_mapper);
+        let start = start.map(&prefix_mapper);
+        let end = end.map(&prefix_mapper);
         let fixed_width = fixed_width_mapper(fixed_width);
         match fixed_width {
             true => KeyRange::new_fixed_width(start, end),
@@ -72,29 +64,59 @@ impl<T: Prefix> KeyRange<T> {
         }
     }
 
-    pub fn within(&self, value: &T) -> bool {
-        self.within_start(value) && self.within_end(value)
+    // pub fn within_end(&self, value: &T) -> bool {
+    //     match &self.end {
+    //         RangeEnd::SameAsStart => value.starts_with(self.start()),
+    //         RangeEnd::Inclusive(e) => value.cmp(e) == Ordering::Less || value.starts_with(e),
+    //         RangeEnd::Exclusive(e) => value.cmp(e) == Ordering::Less || *value == self.start,
+    //         RangeEnd::Unbounded => true,
+    //     }
+    // }
+    //
+    // pub(crate) fn end_value(&self) -> Option<&T> {
+    //     match &self.end {
+    //         RangeEnd::SameAsStart => Some(self.start()),
+    //         RangeEnd::Inclusive(value) => Some(value),
+    //         RangeEnd::Exclusive(value) => Some(value),
+    //         RangeEnd::Unbounded => None,
+    //     }
+    // }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RangeStart<T>
+where
+    T: Ord + Debug,
+{
+    Inclusive(T),
+    Exclusive(T),
+}
+
+impl<T> RangeStart<T>
+where
+    T: Ord + Debug,
+{
+    pub(crate) fn is_exclusive(&self) -> bool {
+        matches!(self, Self::Exclusive(_))
     }
 
-    pub fn within_start(&self, value: &T) -> bool {
-        *value >= *self.start().borrow()
-    }
-
-    pub fn within_end(&self, value: &T) -> bool {
-        match &self.end {
-            RangeEnd::SameAsStart => value.starts_with(self.start()),
-            RangeEnd::Inclusive(e) => value.cmp(e) == Ordering::Less || value.starts_with(e),
-            RangeEnd::Exclusive(e) => value.cmp(e) == Ordering::Less || *value == self.start,
-            RangeEnd::Unbounded => true,
+    pub fn map<U: Ord + Debug>(self, mapper: impl FnOnce(T) -> U) -> RangeStart<U> {
+        match self {
+            Self::Inclusive(end) => RangeStart::Inclusive(mapper(end)),
+            Self::Exclusive(end) => RangeStart::Exclusive(mapper(end)),
         }
     }
 
-    pub(crate) fn end_value(&self) -> Option<&T> {
-        match &self.end {
-            RangeEnd::SameAsStart => Some(self.start()),
-            RangeEnd::Inclusive(value) => Some(value),
-            RangeEnd::Exclusive(value) => Some(value),
-            RangeEnd::Unbounded => None,
+    pub fn get_value(&self) -> &T {
+        match self {
+            Self::Inclusive(value) | Self::Exclusive(value) => value,
+        }
+    }
+
+    pub fn as_bound(&self) -> Bound<&T> {
+        match self {
+            RangeStart::Inclusive(start) => Bound::Included(start),
+            RangeStart::Exclusive(start) => Bound::Excluded(start),
         }
     }
 }
@@ -104,9 +126,9 @@ pub enum RangeEnd<T>
 where
     T: Ord + Debug,
 {
-    SameAsStart,
-    Inclusive(T),
-    Exclusive(T),
+    WithinStartAsPrefix,
+    EndPrefixInclusive(T),
+    EndPrefixExclusive(T),
     Unbounded,
 }
 
@@ -114,35 +136,19 @@ impl<T> RangeEnd<T>
 where
     T: Ord + Debug,
 {
-    pub fn new_same_as_start() -> Self {
-        RangeEnd::SameAsStart
-    }
-
-    pub fn new_exclusive(value: T) -> Self {
-        RangeEnd::Exclusive(value)
-    }
-
-    pub fn new_inclusive(value: T) -> Self {
-        RangeEnd::Inclusive(value)
-    }
-
-    fn is_inclusive(&self) -> bool {
-        !matches!(self, Self::Exclusive(_))
-    }
-
     pub fn map<U: Ord + Debug>(self, mapper: impl FnOnce(T) -> U) -> RangeEnd<U> {
         match self {
-            RangeEnd::SameAsStart => RangeEnd::SameAsStart,
-            RangeEnd::Inclusive(end) => RangeEnd::Inclusive(mapper(end)),
-            RangeEnd::Exclusive(end) => RangeEnd::Exclusive(mapper(end)),
+            RangeEnd::WithinStartAsPrefix => RangeEnd::WithinStartAsPrefix,
+            RangeEnd::EndPrefixInclusive(end) => RangeEnd::EndPrefixInclusive(mapper(end)),
+            RangeEnd::EndPrefixExclusive(end) => RangeEnd::EndPrefixExclusive(mapper(end)),
             RangeEnd::Unbounded => RangeEnd::Unbounded,
         }
     }
 
     pub fn get_value(&self) -> Option<&T> {
         match self {
-            RangeEnd::SameAsStart | RangeEnd::Unbounded => None,
-            RangeEnd::Inclusive(value) | RangeEnd::Exclusive(value) => Some(value),
+            RangeEnd::WithinStartAsPrefix | RangeEnd::Unbounded => None,
+            RangeEnd::EndPrefixInclusive(value) | RangeEnd::EndPrefixExclusive(value) => Some(value),
         }
     }
 }

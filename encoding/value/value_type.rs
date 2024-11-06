@@ -101,6 +101,21 @@ impl ValueType {
             _ => false,
         }
     }
+
+    // we can approximately cast any numerical type to any other numerical type
+    pub fn is_approximately_castable_to(&self, other: &Self) -> bool {
+        if self == other {
+            return true;
+        }
+        match self {
+            ValueType::Long => other == &ValueType::Double || other == &ValueType::Decimal,
+            ValueType::Decimal => other == &ValueType::Double || other == &ValueType::Long,
+            ValueType::Double => other == &ValueType::Decimal || other == &ValueType::Long,
+            // TODO: we will have to decide if we consider date datatypes to be approximately castable to each other
+            ValueType::Date => other == &ValueType::DateTime,
+            _ => false,
+        }
+    }
 }
 
 impl Display for ValueType {

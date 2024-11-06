@@ -15,9 +15,12 @@ use resource::constants::encoding::{StructFieldIDUInt, AD_HOC_BYTES_INLINE};
 
 use crate::{
     error::EncodingError,
-    graph::definition::{
-        definition_key::{DefinitionID, DefinitionKey},
-        r#struct::StructDefinition,
+    graph::{
+        definition::{
+            definition_key::{DefinitionID, DefinitionKey},
+            r#struct::StructDefinition,
+        },
+        thing::vertex_attribute::InlineEncodableAttributeID,
     },
     value::{
         boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
@@ -137,30 +140,33 @@ fn decode_struct_increment_offset(offset: &mut usize, buf: &[u8]) -> Result<Stru
         let value_type_category = ValueTypeCategory::from_bytes(read_bytes_increment_offset::<1>(offset, buf)?);
         let value = match value_type_category {
             ValueTypeCategory::Boolean => Value::Boolean(
-                BooleanBytes::new(read_bytes_increment_offset::<{ BooleanBytes::LENGTH }>(offset, buf)?).as_bool(),
+                BooleanBytes::new(read_bytes_increment_offset::<{ BooleanBytes::ENCODED_LENGTH }>(offset, buf)?)
+                    .as_bool(),
             ),
-            ValueTypeCategory::Long => {
-                Value::Long(LongBytes::new(read_bytes_increment_offset::<{ LongBytes::LENGTH }>(offset, buf)?).as_i64())
-            }
+            ValueTypeCategory::Long => Value::Long(
+                LongBytes::new(read_bytes_increment_offset::<{ LongBytes::ENCODED_LENGTH }>(offset, buf)?).as_i64(),
+            ),
             ValueTypeCategory::Double => Value::Double(
-                DoubleBytes::new(read_bytes_increment_offset::<{ DoubleBytes::LENGTH }>(offset, buf)?).as_f64(),
+                DoubleBytes::new(read_bytes_increment_offset::<{ DoubleBytes::ENCODED_LENGTH }>(offset, buf)?).as_f64(),
             ),
             ValueTypeCategory::Decimal => Value::Decimal(
-                DecimalBytes::new(read_bytes_increment_offset::<{ DecimalBytes::LENGTH }>(offset, buf)?).as_decimal(),
+                DecimalBytes::new(read_bytes_increment_offset::<{ DecimalBytes::ENCODED_LENGTH }>(offset, buf)?)
+                    .as_decimal(),
             ),
             ValueTypeCategory::Date => Value::Date(
-                DateBytes::new(read_bytes_increment_offset::<{ DateBytes::LENGTH }>(offset, buf)?).as_naive_date(),
+                DateBytes::new(read_bytes_increment_offset::<{ DateBytes::ENCODED_LENGTH }>(offset, buf)?)
+                    .as_naive_date(),
             ),
             ValueTypeCategory::DateTime => Value::DateTime(
-                DateTimeBytes::new(read_bytes_increment_offset::<{ DateTimeBytes::LENGTH }>(offset, buf)?)
+                DateTimeBytes::new(read_bytes_increment_offset::<{ DateTimeBytes::ENCODED_LENGTH }>(offset, buf)?)
                     .as_naive_date_time(),
             ),
             ValueTypeCategory::DateTimeTZ => Value::DateTimeTZ(
-                DateTimeTZBytes::new(read_bytes_increment_offset::<{ DateTimeTZBytes::LENGTH }>(offset, buf)?)
+                DateTimeTZBytes::new(read_bytes_increment_offset::<{ DateTimeTZBytes::ENCODED_LENGTH }>(offset, buf)?)
                     .as_date_time(),
             ),
             ValueTypeCategory::Duration => Value::Duration(
-                DurationBytes::new(read_bytes_increment_offset::<{ DurationBytes::LENGTH }>(offset, buf)?)
+                DurationBytes::new(read_bytes_increment_offset::<{ DurationBytes::ENCODED_LENGTH }>(offset, buf)?)
                     .as_duration(),
             ),
             ValueTypeCategory::String => {

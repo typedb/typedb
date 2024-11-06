@@ -24,7 +24,10 @@ use encoding::{
     Keyable,
 };
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
-use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
+use storage::{
+    key_range::{KeyRange, RangeEnd, RangeStart},
+    snapshot::ReadableSnapshot,
+};
 
 use crate::{
     error::ConceptReadError,
@@ -82,7 +85,10 @@ impl TypeReader {
         name_with_colon.push(':');
         let key = LabelToTypeVertexIndex::build(&Label::build(name_with_colon.as_str())).into_storage_key();
         let vec = snapshot
-            .iterate_range(KeyRange::new_within(key, IdentifierIndex::<TypeVertex<'static>>::FIXED_WIDTH_ENCODING))
+            .iterate_range(KeyRange::new_within(
+                RangeStart::Inclusive(key),
+                IdentifierIndex::<TypeVertex<'static>>::FIXED_WIDTH_ENCODING,
+            ))
             .collect_cloned_vec(|_key, value| match RoleType::from_bytes(Bytes::copy(value.bytes())) {
                 Err(_) => None,
                 Ok(role_type) => Some(role_type),
@@ -117,7 +123,7 @@ impl TypeReader {
     ) -> Result<HashMap<DefinitionKey<'static>, StructDefinition>, ConceptReadError> {
         snapshot
             .iterate_range(KeyRange::new_within(
-                DefinitionKey::build_prefix(StructDefinition::PREFIX),
+                RangeStart::Inclusive(DefinitionKey::build_prefix(StructDefinition::PREFIX)),
                 StructDefinition::PREFIX.fixed_width_keys(),
             ))
             .collect_cloned_hashmap(|key, value| {
@@ -180,7 +186,10 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
     ) -> Result<Vec<EntityType<'static>>, ConceptReadError> {
         snapshot
-            .iterate_range(KeyRange::new_within(EntityType::prefix_for_kind(), EntityType::PREFIX.fixed_width_keys()))
+            .iterate_range(KeyRange::new_within(
+                RangeStart::Inclusive(EntityType::prefix_for_kind()),
+                EntityType::PREFIX.fixed_width_keys(),
+            ))
             .collect_cloned_vec(|key, _| EntityType::new(TypeVertex::new(Bytes::copy(key.bytes()))))
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
@@ -190,7 +199,7 @@ impl TypeReader {
     ) -> Result<Vec<RelationType<'static>>, ConceptReadError> {
         snapshot
             .iterate_range(KeyRange::new_within(
-                RelationType::prefix_for_kind(),
+                RangeStart::Inclusive(RelationType::prefix_for_kind()),
                 RelationType::PREFIX.fixed_width_keys(),
             ))
             .collect_cloned_vec(|key, _| RelationType::new(TypeVertex::new(Bytes::copy(key.bytes()))))
@@ -201,14 +210,17 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
     ) -> Result<Vec<AttributeType<'static>>, ConceptReadError> {
         snapshot
-            .iterate_range(KeyRange::new_within(AttributeType::prefix_for_kind(), false))
+            .iterate_range(KeyRange::new_within(RangeStart::Inclusive(AttributeType::prefix_for_kind()), false))
             .collect_cloned_vec(|key, _| AttributeType::new(TypeVertex::new(Bytes::copy(key.bytes()))))
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
     pub(crate) fn get_role_types(snapshot: &impl ReadableSnapshot) -> Result<Vec<RoleType<'static>>, ConceptReadError> {
         snapshot
-            .iterate_range(KeyRange::new_within(RoleType::prefix_for_kind(), RoleType::PREFIX.fixed_width_keys()))
+            .iterate_range(KeyRange::new_within(
+                RangeStart::Inclusive(RoleType::prefix_for_kind()),
+                RoleType::PREFIX.fixed_width_keys(),
+            ))
             .collect_cloned_vec(|key, _| RoleType::new(TypeVertex::new(Bytes::copy(key.bytes()))))
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
@@ -221,7 +233,7 @@ impl TypeReader {
     {
         Ok(snapshot
             .iterate_range(KeyRange::new_within(
-                Sub::prefix_for_canonical_edges_from(subtype),
+                RangeStart::Inclusive(Sub::prefix_for_canonical_edges_from(subtype)),
                 TypeEdge::FIXED_WIDTH_ENCODING,
             ))
             .first_cloned()
@@ -252,7 +264,7 @@ impl TypeReader {
     {
         snapshot
             .iterate_range(KeyRange::new_within(
-                Sub::prefix_for_reverse_edges_from(supertype),
+                RangeStart::Inclusive(Sub::prefix_for_reverse_edges_from(supertype)),
                 TypeEdge::FIXED_WIDTH_ENCODING,
             ))
             .collect_cloned_hashset(|key, _| {
@@ -290,7 +302,7 @@ impl TypeReader {
     ) -> Result<HashSet<CAP>, ConceptReadError> {
         let owns_prefix = CAP::prefix_for_canonical_edges_from(CAP::ObjectType::new(owner.into_vertex()));
         snapshot
-            .iterate_range(KeyRange::new_within(owns_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
+            .iterate_range(KeyRange::new_within(RangeStart::Inclusive(owns_prefix), TypeEdge::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| CAP::decode_canonical_edge(Bytes::Reference(key.byte_ref()).into_owned()))
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
@@ -326,7 +338,7 @@ impl TypeReader {
     {
         let owns_prefix = CAP::prefix_for_reverse_edges_from(interface_type);
         snapshot
-            .iterate_range(KeyRange::new_within(owns_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
+            .iterate_range(KeyRange::new_within(RangeStart::Inclusive(owns_prefix), TypeEdge::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| CAP::decode_reverse_edge(Bytes::Array(key.byte_ref().into())))
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
@@ -504,9 +516,13 @@ impl TypeReader {
         type_: T,
     ) -> Result<HashSet<T::AnnotationType>, ConceptReadError> {
         snapshot
-            .iterate_range(KeyRange::new_inclusive(
-                TypeVertexProperty::build(type_.vertex(), Infix::ANNOTATION_MIN).into_storage_key(),
-                TypeVertexProperty::build(type_.vertex(), Infix::ANNOTATION_MAX).into_storage_key(),
+            .iterate_range(KeyRange::new_variable_width(
+                RangeStart::Inclusive(
+                    TypeVertexProperty::build(type_.vertex(), Infix::ANNOTATION_MIN).into_storage_key(),
+                ),
+                RangeEnd::EndPrefixInclusive(
+                    TypeVertexProperty::build(type_.vertex(), Infix::ANNOTATION_MAX).into_storage_key(),
+                ),
             ))
             .collect_cloned_hashset(|key, value| {
                 let annotation_key = TypeVertexProperty::new(Bytes::Reference(key.byte_ref()));
@@ -588,9 +604,13 @@ impl TypeReader {
     ) -> Result<HashSet<CAP::AnnotationType>, ConceptReadError> {
         let type_edge = capability.to_canonical_type_edge();
         snapshot
-            .iterate_range(KeyRange::new_inclusive(
-                TypeEdgeProperty::build(type_edge.clone(), Infix::ANNOTATION_MIN).into_storage_key(),
-                TypeEdgeProperty::build(type_edge, Infix::ANNOTATION_MAX).into_storage_key(),
+            .iterate_range(KeyRange::new_variable_width(
+                RangeStart::Inclusive(
+                    TypeEdgeProperty::build(type_edge.clone(), Infix::ANNOTATION_MIN).into_storage_key(),
+                ),
+                RangeEnd::EndPrefixInclusive(
+                    TypeEdgeProperty::build(type_edge, Infix::ANNOTATION_MAX).into_storage_key(),
+                ),
             ))
             .collect_cloned_hashset(|key, value| {
                 let annotation_key = TypeEdgeProperty::new(Bytes::Reference(key.byte_ref()));

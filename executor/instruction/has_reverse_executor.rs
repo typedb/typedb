@@ -7,7 +7,7 @@
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet, HashMap},
-    sync::Arc,
+    sync::{Arc, OnceLock},
 };
 
 use answer::Type;
@@ -19,7 +19,10 @@ use concept::{
 use itertools::{Itertools, MinMaxResult};
 use lending_iterator::{kmerge::KMergeBy, AsHkt, LendingIterator, Peekable};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
-use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
+use storage::{
+    key_range::{KeyRange, RangeEnd, RangeStart},
+    snapshot::ReadableSnapshot,
+};
 
 use crate::{
     instruction::{
@@ -40,7 +43,7 @@ pub(crate) struct HasReverseExecutor {
     attribute_owner_types: Arc<BTreeMap<Type, Vec<Type>>>,
     owner_types: Arc<BTreeSet<Type>>,
     filter_fn: Arc<HasFilterFn>,
-    attribute_cache: Option<Vec<Attribute<'static>>>,
+    attribute_cache: OnceLock<Vec<Attribute<'static>>>,
     checker: Checker<(AsHkt![Has<'_>], u64)>,
 }
 
@@ -83,21 +86,6 @@ impl HasReverseExecutor {
             HashMap::from([(owner, EXTRACT_OWNER), (attribute, EXTRACT_ATTRIBUTE)]),
         );
 
-        let attribute_cache = if iterate_mode == BinaryIterateMode::UnboundInverted {
-            let mut cache = Vec::new();
-            for type_ in attribute_owner_types.keys() {
-                let instances: Vec<Attribute<'static>> = thing_manager
-                    .get_attributes_in(snapshot, type_.as_attribute_type())?
-                    .map_static(|result| Ok(result?.clone().into_owned()))
-                    .try_collect()?;
-                cache.extend(instances);
-            }
-            debug_assert!(cache.len() < CONSTANT_CONCEPT_LIMIT);
-            Some(cache)
-        } else {
-            None
-        };
-
         Ok(Self {
             has,
             iterate_mode,
@@ -106,7 +94,7 @@ impl HasReverseExecutor {
             attribute_owner_types,
             owner_types,
             filter_fn,
-            attribute_cache,
+            attribute_cache: OnceLock::new(),
             checker,
         })
     }
@@ -116,6 +104,25 @@ impl HasReverseExecutor {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
+        if self.iterate_mode.is_inverted() && self.attribute_cache.get().is_none() {
+            // TODO: this will only work if the range is actually not dependent on the Row... needs special API
+
+            // one-off initialisation of the cache of constants
+            let value_range =
+                self.checker.value_range_for(context, None, self.has.attribute().as_variable().unwrap())?;
+            let mut cache = Vec::new();
+            for type_ in self.attribute_owner_types.keys() {
+                let instances: Vec<Attribute<'static>> = context
+                    .thing_manager
+                    .get_attributes_in_range(context.snapshot.as_ref(), type_.as_attribute_type(), &value_range)?
+                    .map_static(|result| Ok(result?.clone().into_owned()))
+                    .try_collect()?;
+                cache.extend(instances);
+            }
+            debug_assert!(cache.len() < CONSTANT_CONCEPT_LIMIT);
+            self.attribute_cache.get_or_init(|| cache);
+        }
+
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
         let filter_for_row: Box<HasFilterFn> = Box::new(move |item| match filter(item) {
@@ -141,12 +148,15 @@ impl HasReverseExecutor {
                 )))
             }
             BinaryIterateMode::UnboundInverted => {
-                debug_assert!(self.attribute_cache.is_some());
+                debug_assert!(self.attribute_cache.get().is_some());
                 let (min_owner_type, max_owner_type) = min_max_types(&*self.owner_types);
-                let owner_type_range =
-                    KeyRange::new_inclusive(min_owner_type.as_object_type(), max_owner_type.as_object_type());
+                let owner_type_range = KeyRange::new_variable_width(
+                    RangeStart::Inclusive(min_owner_type.as_object_type()),
+                    RangeEnd::EndPrefixInclusive(max_owner_type.as_object_type()),
+                );
 
-                if let Some([attr]) = self.attribute_cache.as_deref() {
+                if self.attribute_cache.get().unwrap().len() == 1 {
+                    let attr = &self.attribute_cache.get().unwrap()[0];
                     // no heap allocs needed if there is only 1 iterator
                     let iterator = thing_manager
                         .get_has_reverse_by_attribute_and_owner_type_range(
@@ -164,7 +174,7 @@ impl HasReverseExecutor {
                     )))
                 } else {
                     // // TODO: we could create a reusable space for these temporarily held iterators so we don't have allocate again before the merging iterator
-                    let attributes = self.attribute_cache.as_ref().unwrap().iter();
+                    let attributes = self.attribute_cache.get().unwrap().iter();
                     let iterators = attributes.map(|attribute| {
                         Peekable::new(thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
                             snapshot,
@@ -191,8 +201,10 @@ impl HasReverseExecutor {
                 debug_assert!(row.len() > attribute.as_usize());
                 let attribute = row.get(attribute);
                 let (min_owner_type, max_owner_type) = min_max_types(&*self.owner_types);
-                let type_range =
-                    KeyRange::new_inclusive(min_owner_type.as_object_type(), max_owner_type.as_object_type());
+                let type_range = KeyRange::new_variable_width(
+                    RangeStart::Inclusive(min_owner_type.as_object_type()),
+                    RangeEnd::EndPrefixInclusive(max_owner_type.as_object_type()),
+                );
                 let iterator = thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
                     snapshot,
                     attribute.as_thing().as_attribute(),

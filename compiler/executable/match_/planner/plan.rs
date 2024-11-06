@@ -547,7 +547,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             let (next, _cost) = open_set
                 .iter()
                 .filter(|&&elem| self.graph.elements[&elem].is_valid(elem, &ordering, &self.graph))
-                .map(|&elem| (elem, self.calculate_marginal_cost(&ordering, elem)))
+                .map(|&elem| (elem, self.calculate_marginal_cost(&ordering, elem, intersection_variable)))
                 .min_by(|(_, lhs_cost), (_, rhs_cost)| lhs_cost.total_cmp(rhs_cost))
                 .unwrap();
 
@@ -592,10 +592,16 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         ordering
     }
 
-    fn calculate_marginal_cost(&self, prefix: &[VertexId], next: VertexId) -> f64 {
+    fn calculate_marginal_cost(
+        &self,
+        prefix: &[VertexId],
+        next: VertexId,
+        intersection_variable: Option<VariableVertexId>,
+    ) -> f64 {
         assert!(!prefix.contains(&next));
         let planner_vertex = &self.graph.elements[&next];
-        let ElementCost { per_input, per_output, branching_factor } = planner_vertex.cost(prefix, &self.graph);
+        let ElementCost { per_input, per_output, branching_factor } =
+            planner_vertex.cost(prefix, intersection_variable, &self.graph);
         per_input + branching_factor * per_output
     }
 
@@ -606,8 +612,9 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let cost = ordering
             .iter()
             .enumerate()
-            .map(|(i, idx)| self.graph.elements[idx].cost(&ordering[..i], &self.graph))
-            .fold(ElementCost::FREE, |acc, e| acc.chain(e));
+            // TODO: how do we pass the intersection vars back in to recompute the full cost?
+            .map(|(i, idx)| self.graph.elements[idx].cost(&ordering[..i], None, &self.graph))
+            .fold(ElementCost::FREE_BRANCH_1, |acc, e| acc.chain(e));
 
         let Self { shared_variables, graph, type_annotations, statistics: _ } = self;
 
@@ -948,7 +955,9 @@ impl ConjunctionPlan<'_> {
                         Inputs::Single([rhs_var.unwrap()]),
                         self.type_annotations,
                     ))
-                } else if constraint.unbound_direction() == Direction::Canonical && Some(sort_variable) != rhs_var {
+                } else if constraint.unbound_direction(&self.graph) == Direction::Canonical
+                    && Some(sort_variable) != rhs_var
+                {
                     ConstraintInstruction::$fw($fwi::new(con, Inputs::None([]), self.type_annotations))
                 } else {
                     ConstraintInstruction::$bw($bwi::new(con, Inputs::None([]), self.type_annotations))
@@ -1001,7 +1010,7 @@ impl ConjunctionPlan<'_> {
 
                 let links = links.clone();
                 let instruction = if inputs.contains(&relation) && inputs.contains(&player) {
-                    if planner.unbound_direction() == Direction::Canonical {
+                    if planner.unbound_direction(&self.graph) == Direction::Canonical {
                         ConstraintInstruction::Links(LinksInstruction::new(
                             links,
                             Inputs::Dual([relation, player]),
@@ -1026,7 +1035,7 @@ impl ConjunctionPlan<'_> {
                         Inputs::Single([player]),
                         self.type_annotations,
                     ))
-                } else if planner.unbound_direction() == Direction::Canonical {
+                } else if planner.unbound_direction(&self.graph) == Direction::Canonical {
                     ConstraintInstruction::Links(LinksInstruction::new(links, Inputs::None([]), self.type_annotations))
                 } else {
                     ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(

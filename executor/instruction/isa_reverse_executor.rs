@@ -4,7 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::BTreeSet, iter, option, sync::Arc, vec};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    iter, option,
+    sync::Arc,
+    vec,
+};
 
 use answer::{Thing, Type};
 use compiler::{executable::match_::instructions::thing::IsaReverseInstruction, ExecutorVariable};
@@ -17,6 +22,11 @@ use concept::{
         thing_manager::ThingManager,
     },
 };
+use encoding::graph::{
+    thing::{vertex_attribute::AttributeVertex, ThingVertex},
+    type_::vertex::TypeVertexEncoding,
+    Typed,
+};
 use ir::pattern::constraint::{Isa, IsaKind, SubKind};
 use itertools::Itertools;
 use lending_iterator::{
@@ -28,13 +38,11 @@ use storage::snapshot::ReadableSnapshot;
 use super::isa_executor::{AttributeEraseFn, MapToThing, ObjectEraseFn};
 use crate::{
     instruction::{
-        isa_executor::{
-            instances_of_single_type, IsaFilterFn, IsaTupleIterator, SingleTypeIsaIterator, EXTRACT_THING, EXTRACT_TYPE,
-        },
+        isa_executor::{IsaFilterFn, IsaTupleIterator, SingleTypeIsaIterator, EXTRACT_THING, EXTRACT_TYPE},
         iterator::{SortedTupleIterator, TupleIterator},
         sub_reverse_executor::get_subtypes,
-        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, TuplePositions},
-        type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
+        tuple::{isa_to_tuple_type_thing, TuplePositions},
+        type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes, TYPES_EMPTY,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -45,8 +53,7 @@ pub(crate) struct IsaReverseExecutor {
     iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
-    types: Arc<BTreeSet<Type>>,
-    thing_types: Arc<BTreeSet<Type>>,
+    type_to_instance_types: Arc<BTreeMap<Type, Vec<Type>>>,
     checker: Checker<(AsHkt![Thing<'_>], Type)>,
 }
 
@@ -82,11 +89,9 @@ impl IsaReverseExecutor {
         variable_modes: VariableModes,
         sort_by: ExecutorVariable,
     ) -> Self {
-        let thing_types = isa_reverse.thing_types().clone();
-        let types = isa_reverse.types().clone();
-        debug_assert!(thing_types.len() > 0);
-        debug_assert!(!thing_types.iter().any(|type_| matches!(type_, Type::RoleType(_))));
-        let IsaReverseInstruction { isa, checks, .. } = isa_reverse;
+        let IsaReverseInstruction { isa, checks, type_to_instance_types, .. } = isa_reverse;
+        debug_assert!(type_to_instance_types.len() > 0);
+        debug_assert!(!type_to_instance_types.iter().any(|(type_, _)| matches!(type_, Type::RoleType(_))));
         let iterate_mode = BinaryIterateMode::new(isa.type_(), isa.thing(), &variable_modes, sort_by);
 
         let thing = isa.thing().as_variable();
@@ -105,7 +110,14 @@ impl IsaReverseExecutor {
                 .collect(),
         );
 
-        Self { isa, iterate_mode, variable_modes, tuple_positions: output_tuple_positions, types, thing_types, checker }
+        Self {
+            isa,
+            iterate_mode,
+            variable_modes,
+            tuple_positions: output_tuple_positions,
+            type_to_instance_types,
+            checker,
+        }
     }
 
     pub(crate) fn get_iterator(
@@ -118,74 +130,34 @@ impl IsaReverseExecutor {
         let thing_manager = context.thing_manager();
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                if self.thing_types.len() == 1 {
-                    // no heap allocs needed if there is only 1 iterator
-                    let type_ = self.thing_types.iter().next().unwrap();
-                    let iterator = instances_of_single_type(snapshot, thing_manager, type_)?;
-                    let as_tuples: IsaReverseUnboundedSortedTypeSingle = iterator
-                        .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
-                        .map(isa_to_tuple_type_thing);
-                    Ok(TupleIterator::IsaReverseUnboundedSingle(SortedTupleIterator::new(
-                        as_tuples,
-                        self.tuple_positions.clone(),
-                        &self.variable_modes,
-                    )))
-                } else {
-                    let thing_iter = instances_of_all_types_chained(
-                        snapshot,
-                        thing_manager,
-                        &*self.thing_types,
-                        self.isa.isa_kind(),
-                    )?;
-                    let as_tuples: IsaReverseUnboundedSortedTypeMerged = thing_iter
-                        .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
-                        .map(isa_to_tuple_type_thing);
-                    Ok(TupleIterator::IsaReverseUnboundedMerged(SortedTupleIterator::new(
-                        as_tuples,
-                        self.tuple_positions.clone(),
-                        &self.variable_modes,
-                    )))
-                }
+                let thing_iter = instances_of_types_chained(
+                    snapshot,
+                    thing_manager,
+                    self.type_to_instance_types.keys(),
+                    self.type_to_instance_types.as_ref(),
+                    self.isa.isa_kind(),
+                )?;
+                let as_tuples: IsaReverseUnboundedSortedTypeMerged = thing_iter
+                    .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
+                    .map(isa_to_tuple_type_thing);
+                Ok(TupleIterator::IsaReverseUnboundedMerged(SortedTupleIterator::new(
+                    as_tuples,
+                    self.tuple_positions.clone(),
+                    &self.variable_modes,
+                )))
             }
-
             BinaryIterateMode::UnboundInverted => {
-                if self.thing_types.len() == 1 {
-                    // no heap allocs needed if there is only 1 iterator
-                    let type_ = self.thing_types.iter().next().unwrap();
-                    let iterator = instances_of_single_type(snapshot, thing_manager, type_)?;
-                    let as_tuples: IsaReverseUnboundedSortedThingSingle = iterator
-                        .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
-                        .map(isa_to_tuple_thing_type);
-                    Ok(TupleIterator::IsaReverseUnboundedInvertedSingle(SortedTupleIterator::new(
-                        as_tuples,
-                        self.tuple_positions.clone(),
-                        &self.variable_modes,
-                    )))
-                } else {
-                    let thing_iter = instances_of_all_types_chained(
-                        snapshot,
-                        thing_manager,
-                        &*self.thing_types,
-                        self.isa.isa_kind(),
-                    )?;
-                    let as_tuples: IsaReverseUnboundedSortedThingMerged = thing_iter
-                        .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
-                        .map(isa_to_tuple_thing_type);
-                    Ok(TupleIterator::IsaReverseUnboundedInvertedMerged(SortedTupleIterator::new(
-                        as_tuples,
-                        self.tuple_positions.clone(),
-                        &self.variable_modes,
-                    )))
-                }
+                unreachable!()
             }
-
             BinaryIterateMode::BoundFrom => {
-                let type_ = type_from_row_or_annotations(self.isa.type_(), row, self.types.iter());
-                let types = match self.isa.isa_kind() {
-                    IsaKind::Exact => vec![type_.clone()],
-                    IsaKind::Subtype => get_subtypes(snapshot, context.type_manager(), &type_, SubKind::Subtype)?,
-                };
-                let iterator = instances_of_all_types_chained(snapshot, thing_manager, &types, self.isa.isa_kind())?;
+                let type_ = type_from_row_or_annotations(self.isa.type_(), row, self.type_to_instance_types.keys());
+                let iterator = instances_of_types_chained(
+                    snapshot,
+                    thing_manager,
+                    [&type_].into_iter(),
+                    self.type_to_instance_types.as_ref(),
+                    self.isa.isa_kind(),
+                )?;
                 let as_tuples: IsaReverseBoundedSortedThing = iterator
                     .try_filter::<Box<IsaFilterFn>, IsaFilterFn, (Thing<'_>, Type), _>(Box::new(
                         move |res: &_| match res {
@@ -215,33 +187,26 @@ fn with_type<I: for<'a> LendingIterator<Item<'a> = Result<Thing<'a>, ConceptRead
     })
 }
 
-pub(super) fn instances_of_all_types_chained<'a>(
+pub(super) fn instances_of_types_chained<'a>(
     snapshot: &impl ReadableSnapshot,
     thing_manager: &ThingManager,
-    thing_types: impl IntoIterator<Item = &'a Type>,
+    types: impl Iterator<Item = &'a Type>,
+    type_to_instance_types: &BTreeMap<Type, Vec<Type>>,
     isa_kind: IsaKind,
 ) -> Result<MultipleTypeIsaIterator, ConceptReadError> {
     let type_manager = thing_manager.type_manager();
-    let thing_types: Vec<_> = thing_types
-        .into_iter()
-        .cloned()
-        .map(|type_| {
-            let types = match isa_kind {
-                IsaKind::Exact => vec![type_.clone()],
-                IsaKind::Subtype => get_subtypes(snapshot, type_manager, &type_, SubKind::Subtype)?,
-            };
-            Ok((type_, types))
-        })
-        .try_collect()?;
-
     let (attribute_types, object_types) =
-        thing_types.into_iter().partition::<Vec<_>, _>(|(type_, _)| matches!(type_, Type::Attribute(_)));
+        types.into_iter().partition::<Vec<_>, _>(|type_| matches!(type_, Type::Attribute(_)));
 
     let object_iters: Vec<_> = object_types
         .into_iter()
-        .flat_map(|(type_, types)| {
-            let type_ = type_.clone();
-            types.into_iter().map(move |subtype| {
+        .flat_map(|type_| {
+            let returned_types = if matches!(isa_kind, IsaKind::Subtype) {
+                type_to_instance_types.get(type_).unwrap_or(&TYPES_EMPTY).clone()
+            } else {
+                vec![type_.clone()]
+            };
+            returned_types.into_iter().map(move |subtype| {
                 Ok(with_type(
                     thing_manager
                         .get_objects_in(snapshot, subtype.as_object_type())
@@ -253,14 +218,28 @@ pub(super) fn instances_of_all_types_chained<'a>(
         .try_collect()?;
     let object_iter: MultipleTypeIsaObjectIterator = AsLendingIterator::new(object_iters).flatten();
 
+    // TODO: don't unwrap inside the operators
     let attribute_iters: Vec<_> = attribute_types
         .into_iter()
-        .flat_map(|(type_, types)| {
-            let type_ = type_.clone();
-            types.into_iter().map(move |subtype| {
+        .filter(|type_| type_.as_attribute_type().get_value_type(snapshot, type_manager).unwrap().is_some())
+        .sorted_by_key(|type_| {
+            AttributeVertex::build_prefix_type(
+                AttributeVertex::value_type_category_to_prefix_type(
+                    type_.as_attribute_type().get_value_type(snapshot, type_manager).unwrap().unwrap().0.category(),
+                ),
+                type_.as_attribute_type().vertex().type_id_(),
+            )
+        })
+        .flat_map(|type_| {
+            let returned_types = if matches!(isa_kind, IsaKind::Subtype) {
+                type_to_instance_types.get(type_).unwrap_or(&TYPES_EMPTY).clone()
+            } else {
+                vec![type_.clone()]
+            };
+            returned_types.into_iter().map(move |subtype| {
                 Ok(with_type(
                     thing_manager
-                        .get_attributes_in(snapshot, subtype.as_attribute_type())?
+                        .get_attributes_in(snapshot, type_.as_attribute_type())?
                         .map((|res| res.map(Thing::Attribute)) as AttributeEraseFn),
                     type_.clone(),
                 ))
