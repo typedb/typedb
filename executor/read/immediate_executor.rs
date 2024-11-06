@@ -151,17 +151,12 @@ impl IntersectionExecutor {
             })
             .try_collect()?;
 
-        let outputs_selected = SelectedPositions::new(select_variables);
         Ok(Self {
             instruction_executors: executors,
             output_width,
+            outputs_selected: SelectedPositions::new(select_variables),
             iterators: Vec::with_capacity(instruction_count),
-            cartesian_iterator: CartesianIterator::new(
-                output_width as usize,
-                instruction_count,
-                outputs_selected.clone(),
-            ),
-            outputs_selected,
+            cartesian_iterator: CartesianIterator::new(output_width as usize, instruction_count),
             input: None,
             intersection_value: VariableValue::Empty,
             intersection_row: vec![VariableValue::Empty; output_width as usize],
@@ -210,11 +205,11 @@ impl IntersectionExecutor {
 
     fn write_next_row_into(&mut self, row: &mut Row<'_>) {
         if self.cartesian_iterator.is_active() {
-            self.cartesian_iterator.write_into(row)
+            self.cartesian_iterator.write_into(row, &self.outputs_selected);
         } else {
             row.set_multiplicity(self.intersection_multiplicity);
             for &position in &self.outputs_selected.selected {
-                row.set(position, self.intersection_row[position.as_usize()].clone())
+                row.set(position, self.intersection_row[position.as_usize()].clone());
             }
         }
     }
@@ -446,11 +441,10 @@ struct CartesianIterator {
     intersection_multiplicity: u64,
     cartesian_executor_indices: Vec<usize>,
     iterators: Vec<Option<TupleIterator>>,
-    outputs_selected: SelectedPositions,
 }
 
 impl CartesianIterator {
-    fn new(width: usize, iterator_executor_count: usize, outputs_selected: SelectedPositions) -> Self {
+    fn new(width: usize, iterator_executor_count: usize) -> Self {
         CartesianIterator {
             is_active: false,
             intersection_value: VariableValue::Empty,
@@ -458,7 +452,6 @@ impl CartesianIterator {
             intersection_multiplicity: 1,
             cartesian_executor_indices: Vec::with_capacity(iterator_executor_count),
             iterators: (0..iterator_executor_count).map(|_| Option::None).collect_vec(),
-            outputs_selected,
         }
     }
 
@@ -567,14 +560,14 @@ impl CartesianIterator {
         Ok(reopened)
     }
 
-    fn write_into(&mut self, row: &mut Row<'_>) {
+    fn write_into(&mut self, row: &mut Row<'_>, outputs_selected: &SelectedPositions) {
         for &executor_index in &self.cartesian_executor_indices {
             let iterator = self.iterators[executor_index].as_mut().unwrap();
             iterator.write_values(row);
         }
         for pos in (0..self.intersection_source.len() as u32)
             .map(VariablePosition::new)
-            .filter(|i| !self.outputs_selected.selected.contains(i))
+            .filter(|i| !outputs_selected.selected.contains(i))
         {
             row.unset(pos);
         }
