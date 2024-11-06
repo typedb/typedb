@@ -13,6 +13,7 @@ use answer::{variable::Variable, Type};
 use concept::type_::{
     attribute_type::AttributeType,
     constraint::{Constraint, ConstraintDescription},
+    owns::Owns,
     type_manager::TypeManager,
     Capability, OwnerAPI, TypeAPI,
 };
@@ -183,7 +184,13 @@ fn annotate_some(
                     name: attribute,
                 })?;
             let owner_types = input_type_annotations.get(&variable).unwrap();
-            validate_attribute_is_single(snapshot, type_manager, variable_name, owner_types, attribute_type.clone())?;
+            validate_attribute_owned_and_scalar(
+                snapshot,
+                type_manager,
+                variable_name,
+                owner_types,
+                attribute_type.clone(),
+            )?;
             Ok(AnnotatedFetchSome::SingleAttribute(variable, attribute_type))
         }
         FetchSome::SingleFunction(mut function) => {
@@ -268,7 +275,7 @@ fn annotate_some(
     }
 }
 
-fn validate_attribute_is_single(
+fn validate_attribute_owned_and_scalar(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     owner: &str,
@@ -276,29 +283,23 @@ fn validate_attribute_is_single(
     attribute_type: AttributeType<'static>,
 ) -> Result<(), AnnotationError> {
     for owner_type in owner_types {
-        let owns = owner_type
-            .as_object_type()
+        let object_type = owner_type.as_object_type();
+        if object_type
             .get_owns_attribute(snapshot, type_manager, attribute_type.clone())
             .map_err(|err| AnnotationError::ConceptRead { source: err })?
-            .ok_or_else(|| AnnotationError::FetchSingleAttributeNotOwned {
+            .is_none()
+        {
+            return Err(AnnotationError::FetchSingleAttributeNotOwned {
                 var: owner.to_owned(),
                 owner: owner_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
                 attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
-            })?;
+            });
+        }
 
-        let max_card = owns
-            .get_cardinality_constraints(snapshot, type_manager)
-            .map_err(|err| AnnotationError::ConceptRead { source: err })?
-            .iter()
-            .filter_map(|card| {
-                if let ConstraintDescription::Cardinality(card) = card.description() {
-                    card.end()
-                } else {
-                    unreachable!()
-                }
-            })
-            .max();
-        if max_card.is_some_and(|max| max > 1) {
+        let is_scalar = object_type
+            .is_owned_attribute_type_scalar(snapshot, type_manager, attribute_type.clone())
+            .map_err(|err| AnnotationError::ConceptRead { source: err })?;
+        if !is_scalar {
             return Err(AnnotationError::AttributeFetchCardTooHigh {
                 var: owner.to_owned(),
                 owner: owner_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),

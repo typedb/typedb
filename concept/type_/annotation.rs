@@ -156,6 +156,10 @@ impl AnnotationCardinality {
         self == &Self::unchecked()
     }
 
+    pub fn is_scalar(&self) -> bool {
+        self.end() == Some(1)
+    }
+
     pub fn valid(&self) -> bool {
         match self.end_inclusive {
             Some(end_inclusive) if self.start_inclusive > end_inclusive => false,

@@ -21,7 +21,6 @@ use concept::{
     thing::{object::ObjectAPI, thing_manager::ThingManager},
     type_::{
         attribute_type::AttributeType,
-        constraint::{Constraint, ConstraintDescription},
         Capability, OwnerAPI, TypeAPI,
     },
 };
@@ -252,34 +251,18 @@ fn execute_attributes_all<'a>(
     let mut iter = object.get_has_unordered(snapshot.as_ref(), &thing_manager);
     let mut map: HashMap<Arc<Label<'static>>, DocumentNode> = HashMap::new();
     while let Some(result) = iter.next() {
-        let (attribute, count) = result.map_err(|err| FetchExecutionError::ConceptReadError { source: err })?;
-        let attr_type = attribute.type_();
-        let label = attr_type
+        let (attribute, count) = result.map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
+        let attribute_type = attribute.type_();
+        let label = attribute_type
             .get_label_arc(snapshot.as_ref(), thing_manager.type_manager())
-            .map_err(|err| FetchExecutionError::ConceptReadError { source: err })?;
-        let owner_type = object.type_();
-        let ownership = owner_type
-            .get_owns_attribute(snapshot.as_ref(), thing_manager.type_manager(), attr_type)
-            .map_err(|err| FetchExecutionError::ConceptReadError { source: err })?
-            .unwrap();
-        let cardinalities = ownership
-            .get_cardinality_constraints(snapshot.as_ref(), thing_manager.type_manager())
-            .map_err(|err| FetchExecutionError::ConceptReadError { source: err })?;
-        let is_single = cardinalities
-            .into_iter()
-            .filter_map(|constraint| {
-                if let ConstraintDescription::Cardinality(cardinality) = constraint.description() {
-                    cardinality.end()
-                } else {
-                    unreachable!()
-                }
-            })
-            .max()
-            .map(|max| max > 1)
-            .unwrap_or(false);
-
+            .map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
         let leaf = DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Thing(Thing::Attribute(attribute.into_owned()))));
-        if is_single {
+
+        let is_scalar = object
+            .type_()
+            .is_owned_attribute_type_scalar(snapshot.as_ref(), thing_manager.type_manager(), attribute_type)
+            .map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
+        if is_scalar {
             map.insert(label, leaf);
         } else {
             let entry = map.entry(label).or_insert_with(|| DocumentNode::List(DocumentList::new()));
@@ -301,7 +284,7 @@ fn execute_attribute_single<'a>(
     let attribute = iter.next();
     match attribute {
         None => Ok(DocumentLeaf::Empty),
-        Some(Err(err)) => Err(FetchExecutionError::ConceptReadError { source: err }),
+        Some(Err(err)) => Err(FetchExecutionError::ConceptRead { source: err }),
         Some(Ok((attribute, count))) => {
             debug_assert!(count <= 1);
             Ok(DocumentLeaf::Concept(Concept::Thing(Thing::Attribute(attribute.into_owned()))))
@@ -326,7 +309,7 @@ fn execute_attributes_list<'a>(
                     )))));
                 }
             }
-            Err(err) => return Err(FetchExecutionError::ConceptReadError { source: err }),
+            Err(err) => return Err(FetchExecutionError::ConceptRead { source: err }),
         }
     }
     Ok(list)
@@ -383,6 +366,6 @@ typedb_error!(
 
         SubFetch(10, "Error executing sub fetch.", ( typedb_source : Box<PipelineExecutionError>)),
 
-        ConceptReadError(30, "Unexpected failed to read concept.", ( source: Box<ConceptReadError>)),
+        ConceptRead(30, "Unexpected failed to read concept.", ( source: Box<ConceptReadError>)),
     }
 );

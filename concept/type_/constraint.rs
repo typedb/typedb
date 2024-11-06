@@ -42,7 +42,7 @@ macro_rules! unwrap_constraint_description_methods {
         fn $method_name:ident() -> $return_type:ident = $target_enum:ident;
     )*) => {
         $(
-            pub(crate) fn $method_name(self) -> Result<$return_type, Box<ConstraintError>> {
+            pub fn $method_name(self) -> Result<$return_type, Box<ConstraintError>> {
                 with_constraint_description!(
                     self,
                     $target_enum,

@@ -34,7 +34,7 @@ use crate::{
     type_::{
         annotation::{Annotation, AnnotationCardinality, AnnotationError},
         attribute_type::AttributeType,
-        constraint::{CapabilityConstraint, TypeConstraint},
+        constraint::{CapabilityConstraint, Constraint, TypeConstraint},
         object_type::ObjectType,
         owns::Owns,
         plays::Plays,
@@ -313,6 +313,19 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         attribute_type: AttributeType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>>;
 
+    fn is_owned_attribute_type_scalar(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(self
+            .get_owned_attribute_type_constraints_cardinality(snapshot, type_manager, attribute_type)?
+            .into_iter()
+            .map(|constraint| constraint.description().unwrap_cardinality().expect("Only Cardinality constraints"))
+            .any(|cardinality| cardinality.is_scalar()))
+    }
+
     fn get_owned_attribute_type_constraints_distinct(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -507,6 +520,19 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Plays<'static>>>, Box<ConceptReadError>>;
+
+    fn is_played_role_type_scalar(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        role_type: RoleType<'static>,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(self
+            .get_played_role_type_constraints_cardinality(snapshot, type_manager, role_type)?
+            .into_iter()
+            .map(|constraint| constraint.description().unwrap_cardinality().expect("Only Cardinality constraints"))
+            .any(|cardinality| cardinality.is_scalar()))
+    }
 
     fn get_plays_role_declared(
         &self,
