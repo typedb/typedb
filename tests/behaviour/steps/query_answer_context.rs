@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, collections::HashMap};
+use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use answer::{variable_value::VariableValue, Concept, Thing, Type};
 use concept::{
@@ -13,12 +13,13 @@ use concept::{
 };
 use encoding::{graph::type_::Kind, value::value::Value};
 use executor::document::{ConceptDocument, DocumentLeaf, DocumentList, DocumentMap, DocumentNode};
+use ir::pipeline::ParameterRegistry;
 use storage::snapshot::ReadableSnapshot;
 
 #[derive(Debug, Clone)]
 pub enum QueryAnswer {
     ConceptRows(Vec<HashMap<String, VariableValue<'static>>>),
-    ConceptDocuments(Vec<ConceptDocument>),
+    ConceptDocuments(Vec<ConceptDocument>, Arc<ParameterRegistry>),
 }
 
 macro_rules! with_rows_answer {
@@ -43,23 +44,32 @@ impl QueryAnswer {
     pub fn as_rows(&self) -> &Vec<HashMap<String, VariableValue<'static>>> {
         match self {
             Self::ConceptRows(rows) => rows,
-            Self::ConceptDocuments(_) => panic!("Expected ConceptRows, got ConceptDocuments"),
+            Self::ConceptDocuments(..) => panic!("Expected ConceptRows, got ConceptDocuments"),
         }
     }
 
     pub fn as_documents(&self) -> &Vec<ConceptDocument> {
         match self {
-            Self::ConceptRows(_) => {
+            Self::ConceptRows(..) => {
                 panic!("Expected ConceptDocuments, got ConceptRows")
             }
-            Self::ConceptDocuments(documents) => documents,
+            Self::ConceptDocuments(documents, ..) => documents,
+        }
+    }
+
+    pub fn as_documents_parameters(&self) -> &Arc<ParameterRegistry> {
+        match self {
+            Self::ConceptRows(..) => {
+                panic!("Expected ConceptDocuments, got ConceptRows")
+            }
+            Self::ConceptDocuments(_, parameters) => parameters,
         }
     }
 
     pub fn len(&self) -> usize {
         match self {
             QueryAnswer::ConceptRows(rows) => rows.len(),
-            QueryAnswer::ConceptDocuments(documents) => documents.len(),
+            QueryAnswer::ConceptDocuments(documents, ..) => documents.len(),
         }
     }
 
@@ -70,10 +80,11 @@ impl QueryAnswer {
         thing_manager: &ThingManager,
     ) -> Vec<JSON> {
         let documents = self.as_documents();
+        let parameters = self.as_documents_parameters();
         let mut result = Vec::with_capacity(documents.len());
 
         for document in documents {
-            result.push(Self::document_node_as_json(snapshot, type_manager, thing_manager, &document.root))
+            result.push(Self::document_node_as_json(snapshot, type_manager, thing_manager, parameters, &document.root))
         }
 
         result
@@ -83,17 +94,20 @@ impl QueryAnswer {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
+        parameters: &Arc<ParameterRegistry>,
         node: &DocumentNode,
     ) -> JSON {
         match &node {
             DocumentNode::List(list) => JSON::Array(
                 list.list
                     .iter()
-                    .map(|inner_node| Self::document_node_as_json(snapshot, type_manager, thing_manager, inner_node))
+                    .map(|inner_node| {
+                        Self::document_node_as_json(snapshot, type_manager, thing_manager, parameters, inner_node)
+                    })
                     .collect(),
             ),
             DocumentNode::Map(map) => {
-                JSON::Object(Self::document_map_as_json(snapshot, type_manager, thing_manager, map))
+                JSON::Object(Self::document_map_as_json(snapshot, type_manager, thing_manager, parameters, map))
             }
             DocumentNode::Leaf(leaf) => Self::document_leaf_as_json(snapshot, type_manager, thing_manager, leaf),
         }
@@ -103,6 +117,7 @@ impl QueryAnswer {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
+        parameters: &Arc<ParameterRegistry>,
         document_map: &DocumentMap,
     ) -> HashMap<Cow<'static, str>, JSON> {
         match document_map {
@@ -111,8 +126,10 @@ impl QueryAnswer {
                 .iter()
                 .map(|(parameter_id, node)| {
                     (
-                        Cow::Owned(parameter_id.to_string()),
-                        Self::document_node_as_json(snapshot, type_manager, thing_manager, node),
+                        Cow::Owned(
+                            parameters.fetch_key(parameter_id.clone()).expect("Expected parameter string").to_string(),
+                        ),
+                        Self::document_node_as_json(snapshot, type_manager, thing_manager, parameters, node),
                     )
                 })
                 .collect(),
@@ -122,7 +139,7 @@ impl QueryAnswer {
                 .map(|(label, node)| {
                     (
                         Cow::Owned(label.scoped_name.as_str().to_string()),
-                        Self::document_node_as_json(snapshot, type_manager, thing_manager, node),
+                        Self::document_node_as_json(snapshot, type_manager, thing_manager, parameters, node),
                     )
                 })
                 .collect(),

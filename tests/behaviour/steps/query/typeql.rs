@@ -60,17 +60,13 @@ fn execute_read_query(context: &mut Context, query: typeql::Query) -> Result<Que
             &query.into_pipeline(),
         )?;
         if pipeline.has_fetch() {
-            let documents = match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {
-                Ok((iterator, _)) => iterator.map(|item| item.expect("Ok(ConceptDocument)")).collect_vec(),
-                Err((err, _)) => {
-                    return Err(QueryError::ReadPipelineExecutionError { typedb_source: err });
-                }
-            };
-            println!("DOCUMENTS: {:?}", documents);
-            for document in &documents {
-                println!("Pretty: {}", document);
+            match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {
+                Ok((iterator, ExecutionContext { parameters, .. })) => Ok(QueryAnswer::ConceptDocuments(
+                    iterator.map(|item| item.expect("Ok(ConceptDocument)")).collect_vec(),
+                    parameters,
+                )),
+                Err((err, _)) => Err(QueryError::ReadPipelineExecutionError { typedb_source: err }),
             }
-            Ok(QueryAnswer::ConceptDocuments(documents))
         } else {
             let named_outputs = pipeline.rows_positions().expect("Unfetched result").clone();
             let result_as_batch = match pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
@@ -110,13 +106,9 @@ fn execute_write_query(
             Ok(pipeline) => {
                 if pipeline.has_fetch() {
                     match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {
-                        Ok((iterator, ExecutionContext { snapshot, .. })) => {
+                        Ok((iterator, ExecutionContext { parameters, snapshot, .. })) => {
                             let documents = iterator.map(|item| item.expect("Expected Ok(ConceptDocument)")).collect_vec();
-                            println!("DOCUMENTS: {:?}", documents);
-                            for document in &documents {
-                                println!("Pretty: {}", document);
-                            }
-                            (Ok(QueryAnswer::ConceptDocuments(documents)), snapshot)
+                            (Ok(QueryAnswer::ConceptDocuments(documents, parameters)), snapshot)
                         }
                         Err((err, ExecutionContext { snapshot, .. })) =>
                             (Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecutionError {

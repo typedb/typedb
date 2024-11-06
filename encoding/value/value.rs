@@ -428,10 +428,13 @@ impl<'a> fmt::Display for Value<'a> {
             Value::Boolean(bool) => write!(f, "{bool}"),
             Value::Long(long) => write!(f, "{long}"),
             Value::Double(double) => write!(f, "{double}"),
-            Value::Decimal(decimal) => write!(f, "{decimal}[decimal]"),
+            Value::Decimal(decimal) => write!(f, "{decimal}"),
             Value::Date(date) => write!(f, "{date}"),
-            Value::DateTime(datetime) => write!(f, "{datetime}"),
-            Value::DateTimeTZ(datetime_tz) => write!(f, "{datetime_tz}"),
+            Value::DateTime(datetime) => write!(f, "{}", datetime.format("%FT%T%.9f")),
+            Value::DateTimeTZ(datetime_tz) => match datetime_tz.timezone() {
+                TimeZone::IANA(tz) => write!(f, "{} {}", datetime_tz.format("%FT%T%.9f"), tz.name()),
+                TimeZone::Fixed(_) => write!(f, "{}", datetime_tz.format("%FT%T%.9f%:z")),
+            },
             Value::Duration(duration) => write!(f, "{duration}"),
             Value::String(string) => write!(f, "\"{string}\""),
             // TODO: this string will not have field names, only field IDs!

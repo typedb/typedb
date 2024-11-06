@@ -254,10 +254,8 @@ impl fmt::Display for Decimal {
                 fractional /= 10;
             }
 
-            // count number of leading 0's that have to be represented
-            let digits = fractional.ilog10() as u64; // `fractional` cannot be a power of 10 here, so ilog10 correctly gives the number of digits
-            let leading_0s = FRACTIONAL_PART_DENOMINATOR - digits - tail_0s;
-            write!(f, "{}.{:0width$}{}", self.integer, "", digits, width = leading_0s as usize)?;
+            let fractional_width = FRACTIONAL_PART_DENOMINATOR_LOG10 - tail_0s;
+            write!(f, "{}.{:0width$}", self.integer_part(), fractional, width = fractional_width as usize)?;
         }
         Ok(())
     }
