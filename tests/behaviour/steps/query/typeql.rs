@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, str::FromStr, sync::Arc};
+use std::{collections::HashMap, slice, str::FromStr, sync::Arc};
 
 use answer::{variable_value::VariableValue, Thing};
 use compiler::VariablePosition;
@@ -25,12 +25,12 @@ use test_utils::assert_matches;
 
 use crate::{
     generic_step, params,
-    query_answer_context::{with_rows_answer, QueryAnswer},
+    query_answer_context::{with_documents_answer, with_rows_answer, QueryAnswer},
     transaction_context::{
         with_read_tx, with_schema_tx, with_write_tx_deconstructed,
         ActiveTransaction::{Read, Schema},
     },
-    util::iter_table_map,
+    util::{iter_table_map, list_contains_json, parse_json},
     BehaviourTestExecutionError, Context,
 };
 
@@ -412,5 +412,22 @@ async fn order_of_answers_is(context: &mut Context, step: &Step) {
                 "The answer found did not match the specified row {spec_row:?}"
             );
         }
+    });
+}
+
+#[apply(generic_step)]
+#[step(expr = r"answer {contains_or_doesnt} document:")]
+async fn answer_contains_document(context: &mut Context, contains_or_doesnt: params::ContainsOrDoesnt, step: &Step) {
+    let expected_document = parse_json(step.docstring().unwrap());
+    with_read_tx!(context, |tx| {
+        let documents = context.query_answer.as_ref().unwrap().as_documents_json(
+            &*tx.snapshot,
+            &tx.type_manager,
+            &tx.thing_manager,
+        );
+        contains_or_doesnt.check_bool(
+            list_contains_json(&documents, &expected_document),
+            &format!("\nConcept documents: {:?}\nGiven document: {:?}", documents, expected_document),
+        );
     });
 }

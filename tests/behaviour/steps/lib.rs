@@ -34,11 +34,12 @@ use crate::query_answer_context::QueryAnswer;
 
 mod concept;
 mod connection;
+mod json;
 mod params;
 mod query;
 mod query_answer_context;
 mod transaction_context;
-mod util;
+pub(crate) mod util;
 
 mod thing_util {
     use concept::thing::{attribute::Attribute, object::Object};

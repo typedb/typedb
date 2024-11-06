@@ -4,13 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
-use answer::{Concept, Thing, Type};
+use std::{borrow::Cow, collections::HashMap};
 
-use answer::variable_value::VariableValue;
-use concept::type_::TypeAPI;
-use encoding::graph::type_::Kind;
+use answer::{variable_value::VariableValue, Concept, Thing, Type};
+use concept::{
+    thing::thing_manager::ThingManager,
+    type_::{type_manager::TypeManager, TypeAPI},
+};
+use encoding::{graph::type_::Kind, value::value::Value};
 use executor::document::{ConceptDocument, DocumentLeaf, DocumentList, DocumentMap, DocumentNode};
+use storage::snapshot::ReadableSnapshot;
 
 #[derive(Debug, Clone)]
 pub enum QueryAnswer {
@@ -33,6 +36,8 @@ macro_rules! with_documents_answer {
     };
 }
 pub(crate) use with_documents_answer;
+
+use crate::json::JSON;
 
 impl QueryAnswer {
     pub fn as_rows(&self) -> &Vec<HashMap<String, VariableValue<'static>>> {
@@ -58,74 +63,135 @@ impl QueryAnswer {
         }
     }
 
-    pub fn as_documents_json(&self) -> Vec<String> {
+    pub fn as_documents_json(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+    ) -> Vec<JSON> {
         let documents = self.as_documents();
         let mut result = Vec::with_capacity(documents.len());
 
         for document in documents {
-            result.push(Self::document_as_json(&document.root))
+            result.push(Self::document_node_as_json(snapshot, type_manager, thing_manager, &document.root))
         }
 
         result
     }
 
-    fn document_node_as_json(node: &DocumentNode) -> String {
-        let mut result = "".to_owned();
-        result += match &node {
-            DocumentNode::List(list) => Self::document_list_as_json(list).as_str(),
-            DocumentNode::Map(map) => Self::document_map_as_json(map).as_str(),
-            DocumentNode::Leaf(leaf) => Self::document_leaf_as_json(leaf),
-        };
-        result
-    }
-
-    fn document_list_as_json(document_list: &DocumentList) -> String {
-        let mut result = "[".to_owned();
-        for document in document_list {
-            result += Self::document_node_as_json(document).as_str();
+    fn document_node_as_json(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+        node: &DocumentNode,
+    ) -> JSON {
+        match &node {
+            DocumentNode::List(list) => JSON::Array(
+                list.list
+                    .iter()
+                    .map(|inner_node| Self::document_node_as_json(snapshot, type_manager, thing_manager, inner_node))
+                    .collect(),
+            ),
+            DocumentNode::Map(map) => {
+                JSON::Object(Self::document_map_as_json(snapshot, type_manager, thing_manager, map))
+            }
+            DocumentNode::Leaf(leaf) => Self::document_leaf_as_json(snapshot, type_manager, thing_manager, leaf),
         }
-        result + "]"
     }
 
-    fn document_map_as_json(document_map: &DocumentMap) -> String {
-        todo!();
-        let mut result = "[".to_owned();
-        for document in document_map {
-            result += Self::document_node_as_json(document).as_str();
+    fn document_map_as_json(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+        document_map: &DocumentMap,
+    ) -> HashMap<Cow<'static, str>, JSON> {
+        match document_map {
+            DocumentMap::UserKeys(user_keys_map) => user_keys_map
+                .clone()
+                .iter()
+                .map(|(parameter_id, node)| {
+                    (
+                        Cow::Owned(parameter_id.to_string()),
+                        Self::document_node_as_json(snapshot, type_manager, thing_manager, node),
+                    )
+                })
+                .collect(),
+            DocumentMap::GeneratedKeys(generated_keys_map) => generated_keys_map
+                .clone()
+                .iter()
+                .map(|(label, node)| {
+                    (
+                        Cow::Owned(label.scoped_name.as_str().to_string()),
+                        Self::document_node_as_json(snapshot, type_manager, thing_manager, node),
+                    )
+                })
+                .collect(),
         }
-        result + "]"
     }
 
-    fn document_leaf_as_json(document_leaf: &DocumentLeaf) -> &'static str {
+    fn document_leaf_as_json(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+        document_leaf: &DocumentLeaf,
+    ) -> JSON {
         match document_leaf {
-            DocumentLeaf::Empty => "none",
-            DocumentLeaf::Concept(concept) => Self::concept_as_json(concept),
+            DocumentLeaf::Empty => JSON::Null,
+            DocumentLeaf::Concept(concept) => Self::concept_as_json(snapshot, type_manager, thing_manager, concept),
             DocumentLeaf::Kind(kind) => Self::kind_as_json(kind),
         }
     }
 
-    fn concept_as_json(concept: &Concept) -> &'static str {
+    fn concept_as_json(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        thing_manager: &ThingManager,
+        concept: &Concept<'_>,
+    ) -> JSON {
         match concept {
-            Concept::Type(type_) => {
+            Concept::Type(type_) => JSON::String(Cow::Owned(
                 match type_ {
                     Type::Entity(entity_type) => entity_type.get_label(snapshot, type_manager).expect("Expected label"),
-                    Type::Relation(relation_type) => relation_type.get_label(snapshot, type_manager).expect("Expected label"),
-                    Type::Attribute(attribute_type) => attribute_type.get_label(snapshot, type_manager).expect("Expected label"),
+                    Type::Relation(relation_type) => {
+                        relation_type.get_label(snapshot, type_manager).expect("Expected label")
+                    }
+                    Type::Attribute(attribute_type) => {
+                        attribute_type.get_label(snapshot, type_manager).expect("Expected label")
+                    }
                     Type::RoleType(role_type) => role_type.get_label(snapshot, type_manager).expect("Expected label"),
                 }
-            }
-            Concept::Thing(thing) => {
-                match thing {
-                    Thing::Entity(entity) => entity.type_().get_label(snapshot, type_manager).expect("Expected type label"),
-                    Thing::Relation(relation) => relation.type_().get_label(snapshot, type_manager).expect("Expected type label"),
-                    Thing::Attribute(attribute) => attribute.type_().get_label(snapshot, type_manager).expect("Expected type label"),
-                }
-            }
-            Concept::Value(value) => value.to_string().as_str(),
+                .scoped_name
+                .to_string(),
+            )),
+            Concept::Thing(thing) => match thing {
+                Thing::Entity(_) => todo!("Unexpected entity result, requires implementation"),
+                Thing::Relation(_) => todo!("Unexpected relation result, requires implementation"),
+                Thing::Attribute(attribute) => Self::value_as_json(
+                    &attribute.get_value(snapshot, thing_manager).expect("Expected attribute's value"),
+                ),
+            },
+            Concept::Value(value) => Self::value_as_json(value),
         }
     }
 
-    fn kind_as_json(kind: &Kind) -> &'static str {
-        kind.name()
+    fn value_as_json(value: &Value<'_>) -> JSON {
+        match value {
+            Value::Boolean(bool) => JSON::Boolean(*bool),
+            Value::Long(long) => JSON::Number(*long as f64),
+            Value::Double(double) => JSON::Number(*double),
+            Value::String(cow) => JSON::String(Cow::Owned(match cow {
+                Cow::Borrowed(s) => s.to_string(),
+                Cow::Owned(s) => s.clone(),
+            })),
+            Value::Decimal(_) | Value::Date(_) | Value::DateTime(_) | Value::DateTimeTZ(_) | Value::Duration(_) => {
+                JSON::String(Cow::Owned(value.to_string()))
+            }
+
+            Value::Struct(_) => todo!("Structs are not implemented in fetch tests"),
+        }
+    }
+
+    fn kind_as_json(kind: &Kind) -> JSON {
+        JSON::String(Cow::Borrowed(kind.name()))
     }
 }

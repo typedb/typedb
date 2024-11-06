@@ -264,7 +264,7 @@ impl FromStr for IsEmptyOrNot {
 }
 
 #[derive(Debug, Parameter)]
-#[param(name = "contains_or_doesnt", regex = "(contain|do not contain)")]
+#[param(name = "contains_or_doesnt", regex = "(contain|contains|do not contain|does not contain)")]
 pub(crate) enum ContainsOrDoesnt {
     Contains,
     DoesNotContain,
@@ -285,6 +285,13 @@ impl ContainsOrDoesnt {
         }
     }
 
+    pub fn check_bool(&self, contains: bool, message: &str) {
+        match self {
+            ContainsOrDoesnt::Contains => assert!(contains, "Expected to contain, not found: {message}"),
+            ContainsOrDoesnt::DoesNotContain => assert!(!contains, "Expected not to contain, but found: {message}"),
+        }
+    }
+
     pub fn expected_contains(&self) -> bool {
         match self {
             ContainsOrDoesnt::Contains => true,
@@ -297,8 +304,8 @@ impl FromStr for ContainsOrDoesnt {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
-            "contain" => Self::Contains,
-            "do not contain" => Self::DoesNotContain,
+            "contain" | "contains" => Self::Contains,
+            "do not contain" | "does not contain" => Self::DoesNotContain,
             invalid => return Err(format!("Invalid `ContainsOrDoesnt`: {invalid}")),
         })
     }
