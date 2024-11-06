@@ -34,10 +34,10 @@ use crate::{
 };
 
 #[derive(Debug, Copy, Clone)]
-pub(super) struct BranchIndex(pub usize);
+pub(crate) struct BranchIndex(pub usize);
 
 #[derive(Debug, Copy, Clone)]
-pub(super) struct ExecutorIndex(pub usize);
+pub(crate) struct ExecutorIndex(pub usize);
 
 impl ExecutorIndex {
     fn next(&self) -> ExecutorIndex {
@@ -51,7 +51,7 @@ pub(crate) struct PatternExecutor {
 }
 
 impl PatternExecutor {
-    pub(crate) fn new(executors: Vec<StepExecutors>) -> Self {
+    pub(super) fn new(executors: Vec<StepExecutors>) -> Self {
         PatternExecutor { executors, control_stack: Vec::new() }
     }
 
@@ -120,9 +120,7 @@ impl PatternExecutor {
                         None => {
                             self.push_next_instruction(context, index.next(), FixedBatch::from(input.as_reference()))?
                         }
-                        Some(_) => {
-                            inner.reset();
-                        } // fail
+                        Some(_) => inner.reset(), // fail
                     };
                     if !fresh_suspend_points.is_empty() {
                         // TODO: This goes away because we can always retry here.
@@ -141,7 +139,7 @@ impl PatternExecutor {
                     let branch = &mut disjunction.branches[branch_index.0];
                     let suspend_point_len_before = suspend_point_accumulator.len();
                     let batch_opt =
-                        branch.batch_continue(&context, interrupt, tabled_functions, suspend_point_accumulator)?;
+                        branch.batch_continue(context, interrupt, tabled_functions, suspend_point_accumulator)?;
                     if suspend_point_accumulator.len() != suspend_point_len_before {
                         suspend_point_accumulator.push(SuspendPoint::new_nested(index, branch_index, input.clone()))
                     }
@@ -188,7 +186,7 @@ impl PatternExecutor {
                     let inner = &mut executors[index.0].unwrap_stream_modifier().get_inner();
                     let suspend_point_len_before = suspend_point_accumulator.len();
                     let unmapped =
-                        inner.batch_continue(&context, interrupt, tabled_functions, suspend_point_accumulator)?;
+                        inner.batch_continue(context, interrupt, tabled_functions, suspend_point_accumulator)?;
                     if suspend_point_accumulator.len() != suspend_point_len_before {
                         suspend_point_accumulator.push(SuspendPoint::new_nested(index, BranchIndex(0), input.clone()))
                     }
@@ -210,7 +208,7 @@ impl PatternExecutor {
                     self.execute_tabled_call(context, interrupt, tabled_functions, suspend_point_accumulator, index)?;
                 }
                 ControlInstruction::CollectingStage(CollectingStage { index }) => {
-                    let (pattern, mut collector) = executors[index.0].unwrap_collecting_stage().to_parts_mut();
+                    let (pattern, collector) = executors[index.0].unwrap_collecting_stage().to_parts_mut();
                     // Distinct isn't a collecting stage. We should use fresh suspend_point_accumulators here.
                     match pattern.batch_continue(context, interrupt, tabled_functions, suspend_point_accumulator)? {
                         Some(batch) => {
@@ -241,7 +239,7 @@ impl PatternExecutor {
                                 return_positions
                                     .iter()
                                     .enumerate()
-                                    .map(|(dst, src)| (src.clone(), VariablePosition::new(dst as u32))),
+                                    .map(|(dst, &src)| (src, VariablePosition::new(dst as u32))),
                             );
                         })
                     }
@@ -322,7 +320,7 @@ impl PatternExecutor {
                     ..
                 }) => {
                     let mapped_input = MaybeOwnedRow::new_owned(
-                        arg_mapping.iter().map(|arg_pos| input.get(arg_pos.clone()).clone().into_owned()).collect(),
+                        arg_mapping.iter().map(|&arg_pos| input.get(arg_pos).clone().into_owned()).collect(),
                         input.multiplicity(),
                     );
                     inner.prepare(FixedBatch::from(mapped_input));
@@ -336,7 +334,7 @@ impl PatternExecutor {
         } else if let StepExecutors::StreamModifier(stream_modifier) = &mut self.executors[index.0] {
             match stream_modifier {
                 StreamModifierExecutor::Offset { inner, offset } => {
-                    let mut mapper = StreamModifierResultMapper::Offset(OffsetMapper::new(*offset));
+                    let mapper = StreamModifierResultMapper::Offset(OffsetMapper::new(*offset));
                     inner.prepare(FixedBatch::from(input.as_reference()));
                     self.control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
                         index,
@@ -345,7 +343,7 @@ impl PatternExecutor {
                     }));
                 }
                 StreamModifierExecutor::Limit { inner, limit } => {
-                    let mut mapper = StreamModifierResultMapper::Limit(LimitMapper::new(*limit));
+                    let mapper = StreamModifierResultMapper::Limit(LimitMapper::new(*limit));
                     inner.prepare(FixedBatch::from(input.as_reference()));
                     self.control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
                         index,
@@ -354,7 +352,7 @@ impl PatternExecutor {
                     }));
                 }
                 StreamModifierExecutor::Distinct { inner, output_width, .. } => {
-                    let mut mapper = StreamModifierResultMapper::Distinct(DistinctMapper::new(*output_width));
+                    let mapper = StreamModifierResultMapper::Distinct(DistinctMapper::new(*output_width));
                     inner.prepare(FixedBatch::from(input.as_reference()));
                     self.control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
                         index,
@@ -378,7 +376,7 @@ impl PatternExecutor {
     ) -> Result<(), ReadExecutionError> {
         let executor = self.executors[index.0].unwrap_tabled_call();
         let call_key = executor.active_call_key().unwrap();
-        let function_state = tabled_functions.get_or_create_function_state(&context, call_key)?;
+        let function_state = tabled_functions.get_or_create_function_state(context, call_key)?;
         let found = match executor.try_read_next_batch(&function_state) {
             TabledCallResult::RetrievedFromTable(batch) => Some(batch),
             TabledCallResult::Suspend => {
@@ -408,7 +406,7 @@ impl PatternExecutor {
             }
         };
         if let Some(batch) = found {
-            self.control_stack.push(ControlInstruction::ExecuteTabledCall(TabledCall { index: index.clone() }));
+            self.control_stack.push(ControlInstruction::ExecuteTabledCall(TabledCall { index }));
             let mapped = executor.map_output(batch);
             self.push_next_instruction(context, index.next(), mapped)?;
         } else {
