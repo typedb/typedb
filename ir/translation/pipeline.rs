@@ -45,6 +45,7 @@ pub struct TranslatedPipeline {
 impl TranslatedPipeline {
     pub(crate) fn new(
         translation_context: TranslationContext,
+        value_parameters: ParameterRegistry,
         translated_preamble: Vec<Function>,
         translated_fetch: Option<FetchObject>,
         translated_stages: Vec<TranslatedStage>,
@@ -54,7 +55,7 @@ impl TranslatedPipeline {
             translated_stages,
             translated_fetch,
             variable_registry: translation_context.variable_registry,
-            value_parameters: translation_context.parameters,
+            value_parameters,
         }
     }
 }
@@ -104,15 +105,21 @@ pub fn translate_pipeline(
         .map_err(|source| RepresentationError::FunctionRepresentation { typedb_source: source })?;
 
     let mut translation_context = TranslationContext::new();
-    let (translated_stages, translated_fetch) =
-        translate_pipeline_stages(snapshot, all_function_signatures, &mut translation_context, &query.stages)?;
+    let mut value_parameters = ParameterRegistry::new();
+    let (translated_stages, translated_fetch) = translate_pipeline_stages(
+        snapshot,
+        all_function_signatures,
+        &mut translation_context,
+        &mut value_parameters,
+        &query.stages,
+    )?;
 
     Ok(TranslatedPipeline {
         translated_preamble,
         translated_stages,
         translated_fetch,
         variable_registry: translation_context.variable_registry,
-        value_parameters: translation_context.parameters,
+        value_parameters: value_parameters,
     })
 }
 
@@ -120,11 +127,13 @@ pub(crate) fn translate_pipeline_stages(
     snapshot: &impl ReadableSnapshot,
     all_function_signatures: &impl FunctionSignatureIndex,
     translation_context: &mut TranslationContext,
+    value_parameters: &mut ParameterRegistry,
     stages: &[Stage],
 ) -> Result<(Vec<TranslatedStage>, Option<FetchObject>), Box<RepresentationError>> {
     let mut translated_stages: Vec<TranslatedStage> = Vec::with_capacity(stages.len());
     for (i, stage) in stages.iter().enumerate() {
-        let translated = translate_stage(snapshot, translation_context, all_function_signatures, stage)?;
+        let translated =
+            translate_stage(snapshot, translation_context, value_parameters, all_function_signatures, stage)?;
         match translated {
             Either::First(stage) => translated_stages.push(stage),
             Either::Second(fetch) => {
@@ -142,20 +151,24 @@ pub(crate) fn translate_pipeline_stages(
 fn translate_stage(
     snapshot: &impl ReadableSnapshot,
     translation_context: &mut TranslationContext,
+    value_parameters: &mut ParameterRegistry,
     all_function_signatures: &impl FunctionSignatureIndex,
     typeql_stage: &TypeQLStage,
 ) -> Result<Either<TranslatedStage, FetchObject>, Box<RepresentationError>> {
     match typeql_stage {
-        TypeQLStage::Match(match_) => translate_match(translation_context, all_function_signatures, match_)
-            .and_then(|builder| Ok(Either::First(TranslatedStage::Match { block: builder.finish()? }))),
-        TypeQLStage::Insert(insert) => {
-            translate_insert(translation_context, insert).map(|block| Either::First(TranslatedStage::Insert { block }))
+        TypeQLStage::Match(match_) => {
+            translate_match(translation_context, value_parameters, all_function_signatures, match_)
+                .and_then(|builder| Ok(Either::First(TranslatedStage::Match { block: builder.finish()? })))
         }
-        TypeQLStage::Delete(delete) => translate_delete(translation_context, delete)
+        TypeQLStage::Insert(insert) => translate_insert(translation_context, value_parameters, insert)
+            .map(|block| Either::First(TranslatedStage::Insert { block })),
+        TypeQLStage::Delete(delete) => translate_delete(translation_context, value_parameters, delete)
             .map(|(block, deleted_variables)| Either::First(TranslatedStage::Delete { block, deleted_variables })),
-        TypeQLStage::Fetch(fetch) => translate_fetch(snapshot, translation_context, all_function_signatures, fetch)
-            .map(Either::Second)
-            .map_err(|err| Box::new(RepresentationError::FetchRepresentation { typedb_source: err })),
+        TypeQLStage::Fetch(fetch) => {
+            translate_fetch(snapshot, translation_context, value_parameters, all_function_signatures, fetch)
+                .map(Either::Second)
+                .map_err(|err| Box::new(RepresentationError::FetchRepresentation { typedb_source: err }))
+        }
         TypeQLStage::Operator(modifier) => match modifier {
             TypeQLOperator::Select(select) => translate_select(translation_context, select)
                 .map(|filter| Either::First(TranslatedStage::Select(filter))),

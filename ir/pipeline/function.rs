@@ -10,13 +10,14 @@ use answer::variable::Variable;
 use typeql::{schema::definable::function::SingleSelector, TypeRefAny};
 
 use crate::{
-    pipeline::reduce::Reducer,
+    pipeline::{reduce::Reducer, ParameterRegistry},
     translation::{pipeline::TranslatedStage, TranslationContext},
 };
 
 #[derive(Debug, Clone)]
 pub struct Function {
     pub context: TranslationContext,
+    pub parameters: ParameterRegistry,
     pub name: String,
     pub function_body: FunctionBody,
     // Variable categories for args & return can be read from the block's context.
@@ -28,11 +29,12 @@ impl Function {
     pub fn new(
         name: &str,
         context: TranslationContext,
+        parameters: ParameterRegistry,
         arguments: Vec<Variable>,
         argument_labels: Option<Vec<TypeRefAny>>,
         function_body: FunctionBody,
     ) -> Self {
-        Self { name: name.to_string(), context, function_body, arguments, argument_labels }
+        Self { name: name.to_string(), context, parameters, function_body, arguments, argument_labels }
     }
 
     pub fn name(&self) -> &str {
@@ -41,6 +43,10 @@ impl Function {
 
     pub fn translation_context(&self) -> &TranslationContext {
         &self.context
+    }
+
+    pub fn parameters(&self) -> &ParameterRegistry {
+        &self.parameters
     }
 
     pub fn body(&self) -> &FunctionBody {

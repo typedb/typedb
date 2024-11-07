@@ -338,8 +338,8 @@ fn annotate_sub_fetch(
     input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<AnnotatedFetchListSubFetch, AnnotationError> {
-    let FetchListSubFetch { context, input_variables, stages, fetch } = sub_fetch;
-    let TranslationContext { mut variable_registry, parameters, .. } = context;
+    let FetchListSubFetch { context, parameters, input_variables, stages, fetch } = sub_fetch;
+    let TranslationContext { mut variable_registry, .. } = context;
     let (annotated_stages, annotated_fetch) = annotate_stages_and_fetch(
         snapshot,
         type_manager,

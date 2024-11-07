@@ -266,7 +266,7 @@ pub mod tests {
 
     use crate::{
         pattern::expression::Expression,
-        pipeline::function_signature::HashMapFunctionSignatureIndex,
+        pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
         translation::{match_::translate_match, TranslationContext},
         RepresentationError,
     };
@@ -277,11 +277,14 @@ pub mod tests {
             typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.first().unwrap()
         {
             let mut context = TranslationContext::new();
+            let mut value_parameters = ParameterRegistry::new();
             let block =
-                translate_match(&mut context, &HashMapFunctionSignatureIndex::empty(), match_)?.finish().unwrap();
+                translate_match(&mut context, &mut value_parameters, &HashMapFunctionSignatureIndex::empty(), match_)?
+                    .finish()
+                    .unwrap();
             let x = block.conjunction().constraints()[0].as_expression_binding().unwrap().expression().get_root();
             match *x {
-                Expression::Constant(id) => Ok(context.parameters.value_unchecked(id).to_owned()),
+                Expression::Constant(id) => Ok(value_parameters.value_unchecked(id).to_owned()),
                 _ => unreachable!(),
             }
         } else {

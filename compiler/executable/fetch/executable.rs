@@ -22,10 +22,12 @@ use crate::{
     VariablePosition,
 };
 
+#[derive(Debug)]
 pub struct ExecutableFetch {
     pub object_instruction: FetchObjectInstruction,
 }
 
+#[derive(Debug)]
 pub enum FetchSomeInstruction {
     SingleVar(VariablePosition),
     SingleAttribute(VariablePosition, AttributeType<'static>),
@@ -39,11 +41,13 @@ pub enum FetchSomeInstruction {
     ListAttributesFromList(VariablePosition, AttributeType<'static>),
 }
 
+#[derive(Debug)]
 pub enum FetchObjectInstruction {
     Entries(HashMap<ParameterID, FetchSomeInstruction>),
     Attributes(VariablePosition),
 }
 
+#[derive(Debug)]
 pub struct ExecutableFetchListSubFetch {
     pub variable_registry: Arc<VariableRegistry>,
     pub input_position_mapping: HashMap<VariablePosition, VariablePosition>,

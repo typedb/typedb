@@ -19,10 +19,7 @@ use compiler::{
 use concept::{
     error::ConceptReadError,
     thing::{object::ObjectAPI, thing_manager::ThingManager},
-    type_::{
-        attribute_type::AttributeType,
-        Capability, OwnerAPI, TypeAPI,
-    },
+    type_::{attribute_type::AttributeType, Capability, OwnerAPI, TypeAPI},
 };
 use encoding::value::label::Label;
 use error::typedb_error;

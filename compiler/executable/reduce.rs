@@ -12,7 +12,7 @@ use ir::pattern::IrID;
 
 use crate::VariablePosition;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ReduceExecutable {
     pub reductions: Vec<ReduceInstruction<VariablePosition>>,
     pub input_group_positions: Vec<VariablePosition>,

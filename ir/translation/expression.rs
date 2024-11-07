@@ -215,24 +215,28 @@ pub mod tests {
             expression::{Expression, Operation, Operator},
             Vertex,
         },
-        pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex},
+        pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
         translation::{match_::translate_match, TranslationContext},
         RepresentationError,
     };
 
     fn parse_query_get_match(
         context: &mut TranslationContext,
+        value_parameters: &mut ParameterRegistry,
         query_str: &str,
     ) -> Result<Block, Box<RepresentationError>> {
         let mut query = typeql::parse_query(query_str).unwrap().into_pipeline();
         let match_ = query.stages.remove(0).into_match();
-        translate_match(context, &HashMapFunctionSignatureIndex::empty(), &match_).and_then(|builder| builder.finish())
+        translate_match(context, value_parameters, &HashMapFunctionSignatureIndex::empty(), &match_)
+            .and_then(|builder| builder.finish())
     }
 
     #[test]
     fn basic() {
         let mut context = TranslationContext::new();
-        let block = parse_query_get_match(&mut context, "match $y = 5 + 9 * 6; select $y;").unwrap();
+        let mut value_parameters = ParameterRegistry::new();
+        let block =
+            parse_query_get_match(&mut context, &mut value_parameters, "match $y = 5 + 9 * 6; select $y;").unwrap();
         let var_y = get_named_variable(&context, "y");
 
         let lhs = block.conjunction().constraints()[0].as_expression_binding().unwrap().left();
@@ -247,11 +251,11 @@ pub mod tests {
 
         assert_eq!(rhs.len(), 5);
         let Expression::Constant(id) = rhs[0] else { panic!("Expected Constant, found: {:?}", rhs[0]) };
-        assert_eq!(context.parameters.value(id), Some(&Value::Long(5)));
+        assert_eq!(value_parameters.value(id), Some(&Value::Long(5)));
         let Expression::Constant(id) = rhs[1] else { panic!("Expected Constant, found: {:?}", rhs[1]) };
-        assert_eq!(context.parameters.value(id), Some(&Value::Long(9)));
+        assert_eq!(value_parameters.value(id), Some(&Value::Long(9)));
         let Expression::Constant(id) = rhs[2] else { panic!("Expected Constant, found: {:?}", rhs[2]) };
-        assert_eq!(context.parameters.value(id), Some(&Value::Long(6)));
+        assert_eq!(value_parameters.value(id), Some(&Value::Long(6)));
         assert_eq!(rhs[3], Expression::Operation(Operation::new(Operator::Multiply, 1, 2)));
         assert_eq!(rhs[4], Expression::Operation(Operation::new(Operator::Add, 0, 3)));
     }

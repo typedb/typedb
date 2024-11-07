@@ -9,6 +9,7 @@ use crate::{
     pipeline::{
         block::{Block, BlockBuilder},
         function_signature::FunctionSignatureIndex,
+        ParameterRegistry,
     },
     translation::{constraints::add_statement, TranslationContext},
     RepresentationError,
@@ -16,10 +17,11 @@ use crate::{
 
 pub fn translate_match<'a>(
     context: &'a mut TranslationContext,
+    value_parameters: &'a mut ParameterRegistry,
     function_index: &impl FunctionSignatureIndex,
     match_: &typeql::query::stage::Match,
 ) -> Result<BlockBuilder<'a>, Box<RepresentationError>> {
-    let mut builder = Block::builder(context.new_block_builder_context());
+    let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
     add_patterns(function_index, &mut builder.conjunction_mut(), &match_.patterns)?;
     Ok(builder)
 }

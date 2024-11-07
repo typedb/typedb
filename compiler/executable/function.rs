@@ -31,6 +31,7 @@ use crate::{
     VariablePosition,
 };
 
+#[derive(Debug)]
 pub struct ExecutableFunction {
     pub executable_stages: Vec<ExecutableStage>,
     pub argument_positions: HashMap<Variable, VariablePosition>,
@@ -40,6 +41,7 @@ pub struct ExecutableFunction {
     // pub plan_cost: f64, // TODO: Where do we fit this in?
 }
 
+#[derive(Debug)]
 pub enum ExecutableReturn {
     Stream(Vec<VariablePosition>),
     Single(SingleSelector, Vec<VariablePosition>),
@@ -88,9 +90,16 @@ fn compile_return_operation(
         AnnotatedFunctionReturn::Stream { variables, .. } => {
             Ok(ExecutableReturn::Stream(variables.iter().map(|var| variable_positions[var]).collect()))
         }
-        AnnotatedFunctionReturn::Single { selector, variables, .. } => {
-            Ok(ExecutableReturn::Single(selector, variables.iter().map(|var| variable_positions[var]).collect()))
-        }
+        AnnotatedFunctionReturn::Single { selector, variables, .. } => Ok(ExecutableReturn::Single(
+            selector,
+            variables
+                .iter()
+                .map(|var| {
+                    println!("Want {var:?} in {variable_positions:?}");
+                    variable_positions[var]
+                })
+                .collect(),
+        )),
         | AnnotatedFunctionReturn::ReduceCheck {} => Ok(ExecutableReturn::Check),
         | AnnotatedFunctionReturn::ReduceReducer { instructions } => {
             let positional_reducers =

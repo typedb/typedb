@@ -1530,7 +1530,7 @@ pub mod tests {
             constraint::{Comparator, IsaKind},
             Vertex,
         },
-        pipeline::block::Block,
+        pipeline::{block::Block, ParameterRegistry},
         translation::TranslationContext,
     };
     use storage::snapshot::CommittableSnapshot;
@@ -1561,7 +1561,8 @@ pub mod tests {
 
         // Case 1: $a isa cat, has name $n;
         let mut translation_context = TranslationContext::new();
-        let mut builder = Block::builder(translation_context.new_block_builder_context());
+        let mut value_parameters = ParameterRegistry::new();
+        let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
         let mut conjunction = builder.conjunction_mut();
         let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
         let var_name = conjunction.get_or_declare_variable("name").unwrap();
@@ -1639,7 +1640,8 @@ pub mod tests {
 
         // Case 1: $a has $n;
         let mut translation_context = TranslationContext::new();
-        let mut builder = Block::builder(translation_context.new_block_builder_context());
+        let mut value_parameters = ParameterRegistry::new();
+        let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
         let mut conjunction = builder.conjunction_mut();
         let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
         let var_name = conjunction.get_or_declare_variable("name").unwrap();
@@ -1702,7 +1704,8 @@ pub mod tests {
         {
             // // Case 1: $a > $b;
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let var_a = conjunction.get_or_declare_variable("a").unwrap();
             let var_b = conjunction.get_or_declare_variable("b").unwrap();

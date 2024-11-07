@@ -121,20 +121,22 @@ impl QueryAnswer {
         document_map: &DocumentMap,
     ) -> HashMap<Cow<'static, str>, JSON> {
         match document_map {
-            DocumentMap::UserKeys(user_keys_map) => user_keys_map
-                .clone()
-                .iter()
-                .map(|(parameter_id, node)| {
-                    (
-                        Cow::Owned(
-                            parameters.fetch_key(parameter_id.clone()).expect("Expected parameter string").to_string(),
-                        ),
-                        Self::document_node_as_json(snapshot, type_manager, thing_manager, parameters, node),
-                    )
-                })
-                .collect(),
+            DocumentMap::UserKeys(user_keys_map) => {
+                user_keys_map
+                    .iter()
+                    .map(|(parameter_id, node)| {
+                        let key_name = match parameters.fetch_key(parameter_id.clone()) {
+                            Some(name) => name,
+                            None => panic!("Expected parameter {parameter_id:?} string in {parameters:?}"),
+                        };
+                        let node_document =
+                            Self::document_node_as_json(snapshot, type_manager, thing_manager, parameters, node);
+
+                        (Cow::Owned(key_name.to_string()), node_document)
+                    })
+                    .collect()
+            }
             DocumentMap::GeneratedKeys(generated_keys_map) => generated_keys_map
-                .clone()
                 .iter()
                 .map(|(label, node)| {
                     (

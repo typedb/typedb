@@ -33,7 +33,11 @@ use executor::{
     error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-use ir::{pattern::constraint::IsaKind, pipeline::block::Block, translation::TranslationContext};
+use ir::{
+    pattern::constraint::IsaKind,
+    pipeline::{block::Block, ParameterRegistry},
+    translation::TranslationContext,
+};
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
@@ -153,7 +157,8 @@ fn anonymous_vars_not_enumerated_or_counted() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.new_block_builder_context());
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_attribute_type = conjunction.declare_variable_anonymous().unwrap();
@@ -254,7 +259,8 @@ fn unselected_named_vars_counted() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.new_block_builder_context());
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_attribute_type = conjunction.get_or_declare_variable("attr_type").unwrap();
@@ -356,7 +362,8 @@ fn cartesian_named_counted_checked() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.new_block_builder_context());
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_name_type = conjunction.declare_variable_anonymous().unwrap();

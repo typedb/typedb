@@ -213,7 +213,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         let right_category = self.peek_type_single()?.category();
         Err(Box::new(ExpressionCompileError::UnsupportedOperandsForOperation {
             op,
-            left_category: ValueTypeCategory::Decimal,
+            left_category: ValueTypeCategory::Boolean,
             right_category,
         }))
     }

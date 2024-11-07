@@ -39,6 +39,7 @@ pub struct ExecutablePipeline {
     pub executable_fetch: Option<Arc<ExecutableFetch>>,
 }
 
+#[derive(Debug)]
 pub enum ExecutableStage {
     Match(Arc<MatchExecutable>),
     Insert(Arc<InsertExecutable>),
