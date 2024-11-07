@@ -18,6 +18,7 @@ use storage::{
     snapshot::{CommittableSnapshot, ReadableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
     MVCCStorage, StorageCommitError,
 };
+use storage::key_range::RangeStart;
 use test_utils::{create_tmp_dir, init_logging};
 
 use self::TestKeyspaceSet::Keyspace;
@@ -69,7 +70,7 @@ fn commits_isolated() {
     assert!(get.is_none());
     let prefix: StorageKey<'_, BUFFER_KEY_INLINE> =
         StorageKey::Array(StorageKeyArray::new(Keyspace, ByteArray::copy(&[0x0_u8])));
-    let range = KeyRange::new_within(prefix, false);
+    let range = KeyRange::new_within(RangeStart::Inclusive(prefix), false);
     let retrieved_count = snapshot_2.iterate_range(range.clone()).count();
     assert_eq!(retrieved_count, 2);
 
@@ -378,7 +379,7 @@ fn g2_predicate_anti_dependency_cycles() {
     let key_4 = StorageKeyArray::new(Keyspace, ByteArray::copy(&key_4_bytes));
 
     let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0]));
-    let prefix = KeyRange::new_within(StorageKey::Array(key_prefix), false);
+    let prefix = KeyRange::new_within(RangeStart::Inclusive(StorageKey::Array(key_prefix)), false);
     let value_31 = ByteArray::inline([30], 1);
     let value_42 = ByteArray::inline([42], 1);
     let storage_path = create_tmp_dir();

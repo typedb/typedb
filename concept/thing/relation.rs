@@ -338,7 +338,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
     type Vertex<'b> = ObjectVertex<'b>;
     type TypeAPI<'b> = RelationType<'b>;
     type Owned = Relation<'static>;
-    const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::VertexRelation, Prefix::VertexRelation);
+    const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix) = (Prefix::VertexRelation, Prefix::VertexRelation);
 
     fn new(vertex: Self::Vertex<'a>) -> Self {
         debug_assert_eq!(

@@ -111,7 +111,7 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
     type Vertex<'b> = AttributeVertex<'b>;
     type TypeAPI<'b> = AttributeType<'b>;
     type Owned = Attribute<'static>;
-    const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::VertexAttribute, Prefix::VertexAttribute);
+    const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix) = (Prefix::VertexAttribute, Prefix::VertexAttribute);
 
     fn new(vertex: Self::Vertex<'a>) -> Self {
         Attribute { vertex, value: OnceLock::new() }

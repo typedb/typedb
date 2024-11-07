@@ -30,7 +30,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         debug_assert!(bytes.len() >= Self::HASH_LENGTH);
         let hash_bytes = &hasher(value_bytes).to_be_bytes()[0..Self::HASH_LENGTH];
         bytes[0..hash_bytes.len()].copy_from_slice(&hash_bytes);
-        return Self::HASH_LENGTH;
+        Self::HASH_LENGTH
     }
 
     fn find_existing_or_next_disambiguated_hash<Snapshot>(
@@ -45,12 +45,12 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         let mut key_without_tail_byte: ByteArray<BUFFER_KEY_INLINE> =
             ByteArray::zeros(key_without_hash.len() + Self::HASH_LENGTH);
         key_without_tail_byte.bytes_mut()[0..key_without_hash.len()].copy_from_slice(key_without_hash);
-        Self::write_hash(
+        let hash_bytes = Self::write_hash(
             &mut key_without_tail_byte.bytes_mut()[key_without_hash.len()..key_without_hash.len() + Self::HASH_LENGTH],
             hasher,
             value_bytes,
         );
-        let hash_bytes = &key_without_tail_byte.bytes()[0..Self::HASH_LENGTH];
+        let hash_bytes = &key_without_tail_byte.bytes()[key_without_hash.len()..key_without_hash.len() + hash_bytes]; 
         match Self::disambiguate(snapshot, key_without_tail_byte.as_ref(), value_bytes)? {
             Either::First(tail) => Ok(Either::First(Self::concat_hash_and_tail(hash_bytes, tail))),
             Either::Second(tail) => Ok(Either::Second(Self::concat_hash_and_tail(hash_bytes, tail))),

@@ -35,7 +35,7 @@ pub trait ThingAPI<'a>: Sized + Clone {
     type Vertex<'b>: ThingVertex<'b>;
     type Owned: ThingAPI<'static>;
 
-    const PREFIX_RANGE: (Prefix, Prefix);
+    const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix);
 
     fn new(vertex: Self::Vertex<'a>) -> Self;
 

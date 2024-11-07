@@ -140,12 +140,12 @@ impl ThingManager {
     }
 
     fn get_instances<T: HKInstance>(&self, snapshot: &impl ReadableSnapshot) -> InstanceIterator<T> {
-        let (prefix_start, prefix_end_exclusive) = <T::HktSelf<'_> as ThingAPI<'_>>::PREFIX_RANGE;
+        let (prefix_start, prefix_end_exclusive) = <T::HktSelf<'_> as ThingAPI<'_>>::PREFIX_RANGE_INCLUSIVE;
         let key_start = <T::HktSelf<'_> as ThingAPI<'_>>::Vertex::build_prefix_prefix(prefix_start);
         let key_end = <T::HktSelf<'_> as ThingAPI<'_>>::Vertex::build_prefix_prefix(prefix_end_exclusive);
         let snapshot_iterator = snapshot.iterate_range(KeyRange::new_variable_width(
             RangeStart::Inclusive(key_start),
-            RangeEnd::EndPrefixExclusive(key_end),
+            RangeEnd::EndPrefixInclusive(key_end),
         ));
         InstanceIterator::new(snapshot_iterator)
     }

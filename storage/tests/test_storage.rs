@@ -17,6 +17,7 @@ use storage::{
     keyspace::{KeyspaceOpenError, KeyspaceValidationError},
     StorageOpenError,
 };
+use storage::key_range::RangeStart;
 use test_utils::{create_tmp_dir, init_logging};
 
 use crate::test_common::{checkpoint_storage, create_storage, load_storage};
@@ -131,9 +132,9 @@ fn create_reopen() {
             load_storage::<TestKeyspaceSet>(&storage_path, WAL::load(&storage_path).unwrap(), Some(checkpoint))
                 .unwrap();
         let items = storage
-            .iterate_keyspace_range(KeyRange::new_unbounded(StorageKey::<BUFFER_VALUE_INLINE>::Reference(
+            .iterate_keyspace_range(KeyRange::new_unbounded(RangeStart::Inclusive(StorageKey::<BUFFER_VALUE_INLINE>::Reference(
                 StorageKeyReference::from(&StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace, [0x0]))),
-            )))
+            ))))
             .map_static::<(ByteArray<BUFFER_VALUE_INLINE>, ByteArray<128>), _>(|res| {
                 let (key, value) = res.unwrap();
                 (ByteArray::copy(key), ByteArray::copy(value))
@@ -185,7 +186,7 @@ fn get_put_iterate() {
     let prefix = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace1, [0x1]));
     let items: Vec<(ByteArray<BUFFER_VALUE_INLINE>, ByteArray<128>)> = storage
         .iterate_keyspace_range(KeyRange::new_within(
-            StorageKey::<BUFFER_VALUE_INLINE>::Reference(StorageKeyReference::from(&prefix)),
+            RangeStart::Inclusive(StorageKey::<BUFFER_VALUE_INLINE>::Reference(StorageKeyReference::from(&prefix))),
             false,
         ))
         .map_static::<(ByteArray<BUFFER_VALUE_INLINE>, ByteArray<128>), _>(|res| {

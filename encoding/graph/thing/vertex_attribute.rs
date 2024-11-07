@@ -529,11 +529,11 @@ impl StringAttributeID {
     pub const HASHED_PREFIX_LENGTH: usize = Self::INLINE_OR_PREFIXED_HASH_LENGTH - Self::HASHED_HASH_LENGTH;
     pub const HASHED_HASH_LENGTH: usize = 8;
 
-    const HASHED_PREFIX_RANGE: Range<usize> =
+    pub const HASHED_PREFIX_RANGE: Range<usize> =
         Self::VALUE_TYPE_LENGTH..Self::VALUE_TYPE_LENGTH + Self::HASHED_PREFIX_LENGTH;
-    const HASHED_HASH_RANGE: Range<usize> =
+    pub const HASHED_HASH_RANGE: Range<usize> =
         Self::HASHED_PREFIX_RANGE.end..Self::HASHED_PREFIX_RANGE.end + Self::HASHED_HASH_LENGTH;
-    const HASHED_DISAMBIGUATED_HASH_RANGE: Range<usize> =
+    pub const HASHED_DISAMBIGUATED_HASH_RANGE: Range<usize> =
         Self::HASHED_HASH_RANGE.start..Self::HASHED_HASH_RANGE.end + 1;
     // const HASHED_PREFIX_HASH_RANGE: Range<usize> =
     //     Self::VALUE_TYPE_LENGTH..Self::VALUE_TYPE_LENGTH + Self::HASHED_ENCODING_LENGTH;
@@ -622,12 +622,16 @@ impl StringAttributeID {
     {
         debug_assert!(!Self::is_inlineable(string.as_reference()));
 
+        let mut id_prefix = [0; Self::VALUE_TYPE_LENGTH + Self::HASHED_PREFIX_LENGTH];
+        id_prefix[0..Self::VALUE_TYPE_LENGTH].copy_from_slice(&ValueTypeCategory::String.to_bytes());
+        id_prefix[Self::HASHED_PREFIX_RANGE].copy_from_slice(&string.bytes().bytes()[0..{ Self::HASHED_PREFIX_LENGTH }]);
+        
         // generate full AttributeVertex that we can use to check for existing hashed values in the same type
         let mut attribute_bytes = [0; AttributeVertex::RANGE_TYPE_ID.end + Self::LENGTH];
         let prefix_length = AttributeVertex::write_prefix_type_attribute_id(
             &mut attribute_bytes,
             type_id,
-            &string.bytes().bytes()[0..{ Self::HASHED_PREFIX_LENGTH }],
+            &id_prefix
         );
         let disambiguated_hash = Self::find_existing_or_next_disambiguated_hash(
             snapshot,
@@ -786,7 +790,7 @@ impl StructAttributeID {
         let (Either::First(disambiguated_hash) | Either::Second(disambiguated_hash)) = existing_or_new;
 
         let mut bytes = [0; Self::LENGTH];
-        bytes[0..ValueTypeBytes::CATEGORY_LENGTH].copy_from_slice(&ValueTypeCategory::String.to_bytes());
+        bytes[0..ValueTypeBytes::CATEGORY_LENGTH].copy_from_slice(&ValueTypeCategory::Struct.to_bytes());
         bytes[ValueTypeBytes::CATEGORY_LENGTH..Self::LENGTH].copy_from_slice(&disambiguated_hash);
         Ok(Self { bytes })
     }
@@ -840,13 +844,11 @@ impl StructAttributeID {
     }
 
     pub fn get_hash_hash(&self) -> [u8; Self::HASH_LENGTH] {
-        self.bytes[0..Self::HASH_LENGTH].try_into().unwrap()
-        // TODO: update
-        // self.bytes[Self::VALUE_TYPE_LENGTH..][..Self::HASH_LENGTH].try_into().unwrap()
+        self.bytes[ValueTypeBytes::CATEGORY_LENGTH..ValueTypeBytes::CATEGORY_LENGTH + Self::HASH_LENGTH].try_into().unwrap()
     }
 
     pub fn get_hash_disambiguator(&self) -> u8 {
-        self.bytes[Self::HASH_DISAMBIGUATOR_BYTE_INDEX] & !Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG
+        self.bytes[Self::TAIL_INDEX] & !Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG
     }
 
     pub(crate) const fn is_inlineable() -> bool {

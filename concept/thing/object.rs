@@ -90,7 +90,7 @@ impl<'a> ThingAPI<'a> for Object<'a> {
     type TypeAPI<'b> = ObjectType<'b>;
     type Vertex<'b> = ObjectVertex<'b>;
     type Owned = Object<'static>;
-    const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::VertexEntity, Prefix::VertexRelation);
+    const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix) = (Prefix::VertexEntity, Prefix::VertexRelation);
 
     fn new(object_vertex: Self::Vertex<'a>) -> Self {
         match object_vertex.prefix() {
