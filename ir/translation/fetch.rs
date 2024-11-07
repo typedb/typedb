@@ -68,13 +68,21 @@ fn translate_fetch_object(
     parent_context: &mut TranslationContext,
     value_parameters: &mut ParameterRegistry,
     function_index: &impl FunctionSignatureIndex,
-    object: &TypeQLFetchObject,
+    typeql_object: &TypeQLFetchObject,
 ) -> Result<FetchObject, Box<FetchRepresentationError>> {
-    match &object.body {
+    match &typeql_object.body {
         TypeQLFetchObjectBody::Entries(entries) => {
             let mut object = HashMap::new();
+            let mut unique_keys: HashSet<&str> = HashSet::new();
             for entry in entries {
                 let (key, value) = (&entry.key, &entry.value);
+                if !unique_keys.insert(key.value.as_ref()) {
+                    return Err(Box::new(FetchRepresentationError::DuplicatedObjectKeyEncountered {
+                        key: key.value.clone(),
+                        declaration: typeql_object.clone(),
+                    }));
+                }
+
                 let key_id = register_key(value_parameters, key);
                 object.insert(
                     key_id,
@@ -573,6 +581,12 @@ typedb_error!(
             16,
             "Error building representation of fetch sub-query.",
             (typedb_source : Box<RepresentationError>)
+        ),
+        DuplicatedObjectKeyEncountered(
+            17,
+            "Encountered multiple mappings for one key {key} in a single object.\nSource:\n{declaration}",
+            key: String,
+            declaration: TypeQLFetchObject
         ),
     }
 );

@@ -17,7 +17,7 @@ use concept::type_::{
     type_manager::TypeManager,
     Capability, OwnerAPI, TypeAPI,
 };
-use encoding::value::label::Label;
+use encoding::{graph::type_::Kind, value::label::Label};
 use ir::{
     pattern::ParameterID,
     pipeline::{
@@ -255,7 +255,7 @@ fn annotate_some(
                     name: attribute,
                 })?;
             for owner_type in input_type_annotations.get(&variable).unwrap().iter() {
-                validate_attribute_is_streamable(
+                validate_attribute_owned_and_streamable(
                     snapshot,
                     type_manager,
                     variable_name,
@@ -283,6 +283,16 @@ fn validate_attribute_owned_and_scalar(
     attribute_type: AttributeType<'static>,
 ) -> Result<(), AnnotationError> {
     for owner_type in owner_types {
+        match owner_type.kind() {
+            Kind::Entity | Kind::Relation => {}
+            kind @ (Kind::Attribute | Kind::Role) => {
+                return Err(AnnotationError::FetchSingleAttributeCannotBeOwnedByKind {
+                    var: owner.to_owned(),
+                    kind: kind.to_string(),
+                    attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
+                })
+            }
+        }
         let object_type = owner_type.as_object_type();
         if object_type
             .get_owns_attribute(snapshot, type_manager, attribute_type.clone())
@@ -310,13 +320,24 @@ fn validate_attribute_owned_and_scalar(
     Ok(())
 }
 
-fn validate_attribute_is_streamable(
+fn validate_attribute_owned_and_streamable(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     owner: &str,
     owner_type: &Type,
     attribute_type: AttributeType<'static>,
 ) -> Result<(), AnnotationError> {
+    match owner_type.kind() {
+        Kind::Entity | Kind::Relation => {}
+        kind @ (Kind::Attribute | Kind::Role) => {
+            return Err(AnnotationError::FetchAttributesCannotBeOwnedByKind {
+                var: owner.to_owned(),
+                kind: kind.to_string(),
+                attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
+            })
+        }
+    }
+
     let _ = owner_type
         .as_object_type()
         .get_owns_attribute(snapshot, type_manager, attribute_type.clone())

@@ -32,12 +32,14 @@ typedb_error!(
         FetchAttributeNotFound(7, "Fetching '${var}.{name}' failed since the attribute type is not defined.", var: String, name: String),
         FetchSingleAttributeNotOwned(8, "Type checking '${var}.{attribute}' failed, since attribute '{attribute}' cannot be when '${var}' has type '{owner}'.", var: String, owner: String, attribute: String),
         FetchAttributesNotOwned(9, "Type checking '[${var}.{attribute}]' failed, since attribute '{attribute}' cannot be when '${var}' has type '{owner}'.", var: String, owner: String, attribute: String),
-        AttributeFetchCardTooHigh(10, "Fetch attribute '${var}.{attribute}' must be wrapped in '[]', since this attribute can be owned more than 1 time when '${var}' has type '{owner}', according to the schema's cardinality constraints.", var: String, owner: String, attribute: String),
-        CouldNotDetermineValueTypeForReducerInput(11, "The value-type for the reducer input variable '{variable}' could not be determined.", variable: String),
-        ReducerInputVariableDidNotHaveSingleValueType(12, "The reducer input variable '{variable}' had multiple value-types.", variable: String),
-        UnsupportedValueTypeForReducer(13, "The input variable to the reducer'{reducer}({variable})' reducer had an unsupported value-type: '{value_type}'", reducer: String, variable: String, value_type: ValueTypeCategory),
-        UncomparableValueTypesForSortVariable(14, "The sort variable '{variable}' could return incomparable value-types '{category1}' & '{category2}'.", variable: String, category1: ValueTypeCategory, category2: ValueTypeCategory),
-        ReducerInputVariableIsList(15, "The input variable '{variable}' to the reducer '{reducer}' was a list.", reducer: String, variable: String),
+        FetchSingleAttributeCannotBeOwnedByKind(10, "Type checking '${var}.{attribute}' failed, since attribute '{attribute}' cannot be when '${var}' has kind '{kind}'.", var: String, kind: String, attribute: String),
+        FetchAttributesCannotBeOwnedByKind(11, "Type checking '[${var}.{attribute}]' failed, since attribute '{attribute}' cannot be when '${var}' has kind '{kind}'.", var: String, kind: String, attribute: String),
+        AttributeFetchCardTooHigh(12, "Fetch attribute '${var}.{attribute}' must be wrapped in '[]', since this attribute can be owned more than 1 time when '${var}' has type '{owner}', according to the schema's cardinality constraints.", var: String, owner: String, attribute: String),
+        CouldNotDetermineValueTypeForReducerInput(13, "The value-type for the reducer input variable '{variable}' could not be determined.", variable: String),
+        ReducerInputVariableDidNotHaveSingleValueType(14, "The reducer input variable '{variable}' had multiple value-types.", variable: String),
+        UnsupportedValueTypeForReducer(15, "The input variable to the reducer'{reducer}({variable})' reducer had an unsupported value-type: '{value_type}'", reducer: String, variable: String, value_type: ValueTypeCategory),
+        UncomparableValueTypesForSortVariable(16, "The sort variable '{variable}' could return incomparable value-types '{category1}' & '{category2}'.", variable: String, category1: ValueTypeCategory, category2: ValueTypeCategory),
+        ReducerInputVariableIsList(17, "The input variable '{variable}' to the reducer '{reducer}' was a list.", reducer: String, variable: String),
     }
 );
 

@@ -96,7 +96,7 @@ fn execute_fetch_some(
 ) -> Result<DocumentNode, FetchExecutionError> {
     match fetch_some {
         FetchSomeInstruction::SingleVar(position) => {
-            Ok(variable_value_to_document(row.get(*position).as_reference()))
+            variable_value_to_document(row.get(*position).as_reference())
         }
         FetchSomeInstruction::SingleAttribute(position, attribute_type) => {
             let variable_value = row.get(*position).as_reference();
@@ -337,12 +337,16 @@ fn execute_object_entries(
     Ok(DocumentMap::UserKeys(map))
 }
 
-fn variable_value_to_document(variable_value: VariableValue<'_>) -> DocumentNode {
+fn variable_value_to_document(variable_value: VariableValue<'_>) -> Result<DocumentNode, FetchExecutionError> {
     match variable_value.into_owned() {
-        VariableValue::Empty => DocumentNode::Leaf(DocumentLeaf::Empty),
-        VariableValue::Type(type_) => DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Type(type_))),
-        VariableValue::Thing(thing) => DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Thing(thing))),
-        VariableValue::Value(value) => DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Value(value))),
+        VariableValue::Empty => Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
+        VariableValue::Type(type_) => Ok(DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Type(type_)))),
+        VariableValue::Thing(thing) => match thing {
+            Thing::Entity(_) => Err(FetchExecutionError::FetchEntities {}),
+            Thing::Relation(_) => Err(FetchExecutionError::FetchRelations {}),
+            Thing::Attribute(_) => Ok(DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Thing(thing)))),
+        },
+        VariableValue::Value(value) => Ok(DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Value(value)))),
         VariableValue::ThingList(_) => {
             todo!()
         }
@@ -360,6 +364,9 @@ typedb_error!(
         FetchAttributesOfAttribute(2, "Received unexpected Attribute instead of Entity or Relation while fetching owned attributes."),
         FetchAttributesOfValue(3, "Received unexpected Value instead of Entity or Relation while fetching owned attributes."),
         FetchAttributesOfList(4, "Received unexpected List instead of Entity or Relation while fetching owned attributes."),
+
+        FetchEntities(5, "Fetching entities is not supported, use '$var.*' or '$var.<attribute type>' to fetch attributes instead."),
+        FetchRelations(6, "Fetching relations is not supported, use '$var.*' or '$var.<attribute type>' to fetch attributes instead."),
 
         SubFetch(10, "Error executing sub fetch.", ( typedb_source : Box<PipelineExecutionError>)),
 

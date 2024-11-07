@@ -61,10 +61,18 @@ fn execute_read_query(context: &mut Context, query: typeql::Query) -> Result<Que
         )?;
         if pipeline.has_fetch() {
             match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {
-                Ok((iterator, ExecutionContext { parameters, .. })) => Ok(QueryAnswer::ConceptDocuments(
-                    iterator.map(|item| item.expect("Ok(ConceptDocument)")).collect_vec(),
-                    parameters,
-                )),
+                Ok((mut iterator, ExecutionContext { parameters, .. })) => {
+                    let mut documents = vec![];
+                    while let Some(item) = iterator.next() {
+                        match item {
+                            Ok(item) => documents.push(item),
+                            Err(err) => {
+                                return Err(QueryError::ReadPipelineExecutionError { typedb_source: err });
+                            }
+                        }
+                    }
+                    Ok(QueryAnswer::ConceptDocuments(documents, parameters))
+                }
                 Err((err, _)) => Err(QueryError::ReadPipelineExecutionError { typedb_source: err }),
             }
         } else {
@@ -106,9 +114,23 @@ fn execute_write_query(
             Ok(pipeline) => {
                 if pipeline.has_fetch() {
                     match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {
-                        Ok((iterator, ExecutionContext { parameters, snapshot, .. })) => {
-                            let documents = iterator.map(|item| item.expect("Expected Ok(ConceptDocument)")).collect_vec();
-                            (Ok(QueryAnswer::ConceptDocuments(documents, parameters)), snapshot)
+                        Ok((mut iterator, ExecutionContext { parameters, snapshot, .. })) => {
+                            let mut documents = vec![];
+                            let mut item_error: Option<BehaviourTestExecutionError> = None;
+                            while let Some(item) = iterator.next() {
+                                match item {
+                                    Ok(item) => documents.push(item),
+                                    Err(err) => {
+                                        item_error = Some(BehaviourTestExecutionError::Query(
+                                            QueryError::WritePipelineExecutionError { typedb_source: err },
+                                        ));
+                                    }
+                                }
+                            }
+                            (match item_error {
+                                None => Ok(QueryAnswer::ConceptDocuments(documents, parameters))
+                                Some(err) => Err(err)
+                            }, snapshot)
                         }
                         Err((err, ExecutionContext { snapshot, .. })) =>
                             (Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecutionError {
