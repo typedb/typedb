@@ -205,9 +205,12 @@ impl IntersectionExecutor {
 
     fn write_next_row_into(&mut self, row: &mut Row<'_>) {
         if self.cartesian_iterator.is_active() {
-            self.cartesian_iterator.write_into(row)
+            self.cartesian_iterator.write_into(row, &self.outputs_selected);
         } else {
-            row.copy_from(&self.intersection_row, self.intersection_multiplicity);
+            row.set_multiplicity(self.intersection_multiplicity);
+            for &position in &self.outputs_selected.selected {
+                row.set(position, self.intersection_row[position.as_usize()].clone());
+            }
         }
     }
 
@@ -557,10 +560,16 @@ impl CartesianIterator {
         Ok(reopened)
     }
 
-    fn write_into(&mut self, row: &mut Row<'_>) {
+    fn write_into(&mut self, row: &mut Row<'_>, outputs_selected: &SelectedPositions) {
         for &executor_index in &self.cartesian_executor_indices {
             let iterator = self.iterators[executor_index].as_mut().unwrap();
-            iterator.write_values(row)
+            iterator.write_values(row);
+        }
+        for pos in (0..self.intersection_source.len() as u32)
+            .map(VariablePosition::new)
+            .filter(|i| !outputs_selected.selected.contains(i))
+        {
+            row.unset(pos);
         }
         for (index, value) in self.intersection_source.iter().enumerate() {
             if *row.get(VariablePosition::new(index as u32)) == VariableValue::Empty {

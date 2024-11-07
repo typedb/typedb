@@ -29,6 +29,7 @@ pub mod write;
 
 // TODO: use a bit-vec, since we have a continuously allocated range of positions
 // ---> for now, using a byte vec, which is 8x wasteful and on the heap!
+#[derive(Debug)]
 pub(crate) struct SelectedPositions {
     selected: Vec<VariablePosition>,
 }
