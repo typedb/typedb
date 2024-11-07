@@ -242,7 +242,7 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleI
         let last_enumerated_or_counted = last_enumerated_or_counted(variable_modes, &tuple_positions);
 
         let iterator = iterator.inspect({
-            let mut prev = None;
+            let mut prev: Option<Tuple<'static>> = None;
             Box::new(move |item: &TupleResult<'_>| {
                 #[cfg(debug_assertions)]
                 if let Ok(tuple) = item {
