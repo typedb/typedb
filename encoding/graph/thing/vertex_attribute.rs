@@ -826,7 +826,7 @@ impl StructAttributeID {
                         != 0
                 );
                 let mut bytes = [0; Self::LENGTH];
-                bytes[0..ValueTypeBytes::CATEGORY_LENGTH].copy_from_slice(&ValueTypeCategory::String.to_bytes());
+                bytes[0..ValueTypeBytes::CATEGORY_LENGTH].copy_from_slice(&ValueTypeCategory::Struct.to_bytes());
                 bytes[ValueTypeBytes::CATEGORY_LENGTH..Self::LENGTH].copy_from_slice(&disambiguated_hash);
                 Ok(Some(Self { bytes }))
             }

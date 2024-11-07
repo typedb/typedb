@@ -27,6 +27,7 @@ use compiler::{
     },
     ExecutorVariable, VariablePosition,
 };
+use compiler::executable::match_::instructions::thing::IsaInstruction;
 use concept::{
     thing::object::ObjectAPI,
     type_::{
@@ -472,8 +473,8 @@ fn traverse_links_bounded_relation() {
     let steps = vec![
         ExecutionStep::Intersection(IntersectionStep::new(
             mapping[&var_membership],
-            vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_membership, Inputs::None([]), &entry_annotations).map(&mapping),
+            vec![ConstraintInstruction::Isa(
+                IsaInstruction::new(isa_membership, Inputs::None([]), &entry_annotations).map(&mapping),
             )],
             vec![variable_positions[&var_membership]],
             &named_variables,
@@ -593,8 +594,8 @@ fn traverse_links_bounded_relation_player() {
     let steps = vec![
         ExecutionStep::Intersection(IntersectionStep::new(
             mapping[&var_membership],
-            vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_membership, Inputs::None([]), &entry_annotations).map(&mapping),
+            vec![ConstraintInstruction::Isa(
+                IsaInstruction::new(isa_membership, Inputs::None([]), &entry_annotations).map(&mapping),
             )],
             vec![variable_positions[&var_membership]],
             &named_variables,
@@ -602,8 +603,8 @@ fn traverse_links_bounded_relation_player() {
         )),
         ExecutionStep::Intersection(IntersectionStep::new(
             mapping[&var_person],
-            vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
+            vec![ConstraintInstruction::Isa(
+                IsaInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
             )],
             vec![variable_positions[&var_membership], variable_positions[&var_person]],
             &named_variables,
@@ -932,8 +933,8 @@ fn traverse_links_reverse_bounded_player() {
     let steps = vec![
         ExecutionStep::Intersection(IntersectionStep::new(
             mapping[&var_person],
-            vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
+            vec![ConstraintInstruction::Isa(
+                IsaInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
             )],
             vec![variable_positions[&var_person]],
             &named_variables,
@@ -1053,8 +1054,8 @@ fn traverse_links_reverse_bounded_player_relation() {
     let steps = vec![
         ExecutionStep::Intersection(IntersectionStep::new(
             mapping[&var_person],
-            vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
+            vec![ConstraintInstruction::Isa(
+                IsaInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
             )],
             vec![variable_positions[&var_person]],
             &named_variables,
@@ -1062,8 +1063,8 @@ fn traverse_links_reverse_bounded_player_relation() {
         )),
         ExecutionStep::Intersection(IntersectionStep::new(
             mapping[&var_membership],
-            vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_membership, Inputs::None([]), &entry_annotations).map(&mapping),
+            vec![ConstraintInstruction::Isa(
+                IsaInstruction::new(isa_membership, Inputs::None([]), &entry_annotations).map(&mapping),
             )],
             vec![variable_positions[&var_person], variable_positions[&var_membership]],
             &named_variables,
