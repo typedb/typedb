@@ -248,9 +248,9 @@ impl<'a> IsaPlanner<'a> {
         self.isa
     }
 
-    fn expected_output_size(&self, graph: &Graph<'_>) -> f64 {
+    fn expected_output_size(&self, graph: &Graph<'_>, inputs: &[VertexId]) -> f64 {
         let thing = graph.elements()[&VertexId::Variable(self.thing)].as_variable().unwrap();
-        self.unrestricted_expected_size * thing.selectivity()
+        self.unrestricted_expected_size * thing.selectivity(inputs)
     }
 }
 
@@ -270,26 +270,26 @@ impl Costed for IsaPlanner<'_> {
             (false, true) | (false, false) => {
                 let per_input = OPEN_ITERATOR_RELATIVE_COST;
                 // when the type is bound or unbound, we may reject multiple things until we find a matching one, depending on the selectivity of the thing
-                let per_output = ADVANCE_ITERATOR_RELATIVE_COST / thing.selectivity();
+                let per_output = ADVANCE_ITERATOR_RELATIVE_COST / thing.selectivity(inputs);
                 (per_input, per_output)
             }
         };
 
-        let thing_size = thing.expected_output_size();
+        let thing_size = thing.expected_output_size(inputs);
         let type_size = match &self.type_ {
             Input::Fixed => 1.0,
             Input::Variable(var) => {
                 let type_id = VertexId::Variable(*var);
                 let type_ = graph.elements()[&type_id].as_variable().unwrap();
-                type_.expected_output_size()
+                type_.expected_output_size(inputs)
             }
         };
 
         let branching_factor = match (is_thing_bound, is_type_bound) {
-            (true, true) => self.expected_output_size(graph) / thing_size / type_size,
-            (true, false) => self.expected_output_size(graph) / thing_size,
-            (false, true) => self.expected_output_size(graph) / type_size,
-            (false, false) => self.expected_output_size(graph),
+            (true, true) => self.expected_output_size(graph, inputs) / thing_size / type_size,
+            (true, false) => self.expected_output_size(graph, inputs) / thing_size,
+            (false, true) => self.expected_output_size(graph, inputs) / type_size,
+            (false, false) => self.expected_output_size(graph, inputs),
         };
 
         ElementCost { per_input, per_output, branching_factor }
@@ -377,18 +377,18 @@ impl<'a> HasPlanner<'a> {
 
     fn unbound_expected_scan_size_canonical(&self, graph: &Graph<'_>) -> f64 {
         let owner = &graph.elements()[&VertexId::Variable(self.attribute)].as_variable().unwrap();
-        self.unbound_typed_expected_size_canonical * owner.selectivity()
+        self.unbound_typed_expected_size_canonical * owner.selectivity(&[])
     }
 
     fn unbound_expected_scan_size_reverse(&self, graph: &Graph<'_>) -> f64 {
         let attribute = &graph.elements()[&VertexId::Variable(self.attribute)].as_variable().unwrap();
-        self.unbound_typed_expected_size_reverse * attribute.selectivity()
+        self.unbound_typed_expected_size_reverse * attribute.selectivity(&[])
     }
 
-    fn expected_output_size(&self, graph: &Graph<'_>) -> f64 {
+    fn expected_output_size(&self, graph: &Graph<'_>, inputs: &[VertexId]) -> f64 {
         // get selectivity of attribute and multiply it by the expected size based on types
         let attribute = &graph.elements()[&VertexId::Variable(self.attribute)].as_variable().unwrap();
-        self.unbound_typed_expected_size * attribute.selectivity()
+        self.unbound_typed_expected_size * attribute.selectivity(inputs)
     }
 }
 
@@ -408,26 +408,26 @@ impl Costed for HasPlanner<'_> {
             (true, true) => 0.0,
             (true, false) => {
                 // when the owner is bound, we may reject multiple attributes until we find a matching one, depending on the selectivity of the attribute
-                ADVANCE_ITERATOR_RELATIVE_COST / attribute.selectivity()
+                ADVANCE_ITERATOR_RELATIVE_COST / attribute.selectivity(inputs)
             }
             (false, true) => {
                 // when the attribute is bound, we may reject multiple owners until we find a matching one, depending on the selectivity of the owner
-                ADVANCE_ITERATOR_RELATIVE_COST / owner.selectivity()
+                ADVANCE_ITERATOR_RELATIVE_COST / owner.selectivity(inputs)
             }
             (false, false) => {
                 ADVANCE_ITERATOR_RELATIVE_COST * self.unbound_expected_scan_size(graph)
-                    / self.expected_output_size(graph)
+                    / self.expected_output_size(graph, inputs)
             }
         };
 
-        let owner_size = owner.expected_output_size();
-        let attribute_size = attribute.expected_output_size();
+        let owner_size = owner.expected_output_size(inputs);
+        let attribute_size = attribute.expected_output_size(inputs);
 
         let branching_factor = match (is_owner_bound, is_attribute_bound) {
-            (true, true) => self.expected_output_size(graph) / owner_size / attribute_size,
-            (true, false) => self.expected_output_size(graph) / owner_size,
-            (false, true) => self.expected_output_size(graph) / attribute_size,
-            (false, false) => self.expected_output_size(graph),
+            (true, true) => self.expected_output_size(graph, inputs) / owner_size / attribute_size,
+            (true, false) => self.expected_output_size(graph, inputs) / owner_size,
+            (false, true) => self.expected_output_size(graph, inputs) / attribute_size,
+            (false, false) => self.expected_output_size(graph, inputs),
         };
 
         ElementCost { per_input, per_output, branching_factor }
@@ -542,19 +542,19 @@ impl<'a> LinksPlanner<'a> {
 
     fn unbound_expected_scan_size_canonical(&self, graph: &Graph<'_>) -> f64 {
         let relation = &graph.elements()[&VertexId::Variable(self.relation)].as_variable().unwrap();
-        self.unbound_typed_expected_size_canonical * relation.selectivity()
+        self.unbound_typed_expected_size_canonical * relation.selectivity(&[])
     }
 
     fn unbound_expected_scan_size_reverse(&self, graph: &Graph<'_>) -> f64 {
         let player = &graph.elements()[&VertexId::Variable(self.player)].as_variable().unwrap();
-        self.unbound_typed_expected_size_reverse * player.selectivity()
+        self.unbound_typed_expected_size_reverse * player.selectivity(&[])
     }
 
-    fn expected_output_size(&self, graph: &Graph<'_>) -> f64 {
+    fn expected_output_size(&self, graph: &Graph<'_>, inputs: &[VertexId]) -> f64 {
         // get selectivity of attribute and multiply it by the expected size based on types
         let player = &graph.elements()[&VertexId::Variable(self.player)].as_variable().unwrap();
         let relation = &graph.elements()[&VertexId::Variable(self.relation)].as_variable().unwrap();
-        self.unbound_typed_expected_size * player.selectivity() * relation.selectivity()
+        self.unbound_typed_expected_size * player.selectivity(inputs) * relation.selectivity(inputs)
     }
 }
 
@@ -574,26 +574,26 @@ impl Costed for LinksPlanner<'_> {
             (true, true) => 0.0,
             (true, false) => {
                 // when the relation is bound, we may reject multiple players until we find a matching one, depending on the selectivity of the player
-                ADVANCE_ITERATOR_RELATIVE_COST / player.selectivity()
+                ADVANCE_ITERATOR_RELATIVE_COST / player.selectivity(inputs)
             }
             (false, true) => {
                 // when the player is bound, we may reject multiple relations until we find a matching one, depending on the selectivity of the relation
-                ADVANCE_ITERATOR_RELATIVE_COST / relation.selectivity()
+                ADVANCE_ITERATOR_RELATIVE_COST / relation.selectivity(inputs)
             }
             (false, false) => {
                 ADVANCE_ITERATOR_RELATIVE_COST * self.unbound_expected_scan_size(graph)
-                    / self.expected_output_size(graph)
+                    / self.expected_output_size(graph, inputs)
             }
         };
 
-        let relation_size = relation.expected_output_size();
-        let player_size = player.expected_output_size();
+        let relation_size = relation.expected_output_size(inputs);
+        let player_size = player.expected_output_size(inputs);
 
         let branching_factor = match (is_relation_bound, is_player_bound) {
-            (true, true) => self.expected_output_size(graph) / relation_size / player_size,
-            (true, false) => self.expected_output_size(graph) / relation_size,
-            (false, true) => self.expected_output_size(graph) / player_size,
-            (false, false) => self.expected_output_size(graph),
+            (true, true) => self.expected_output_size(graph, inputs) / relation_size / player_size,
+            (true, false) => self.expected_output_size(graph, inputs) / relation_size,
+            (false, true) => self.expected_output_size(graph, inputs) / player_size,
+            (false, false) => self.expected_output_size(graph, inputs),
         };
 
         ElementCost { per_input, per_output, branching_factor }

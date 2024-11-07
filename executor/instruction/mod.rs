@@ -517,11 +517,11 @@ impl<T: Hkt> Checker<T> {
                     let thing_manager = context.thing_manager.clone();
                     let owner: BoxExtractor<T> = match maybe_owner_extractor {
                         Some(&owner) => Box::new(owner),
-                        None => make_const_extractor(owner, context, row),
+                        None => make_const_extractor(owner, row, context),
                     };
                     let attribute: BoxExtractor<T> = match maybe_attribute_extractor {
                         Some(&attribute) => Box::new(attribute),
-                        None => make_const_extractor(attribute, context, row),
+                        None => make_const_extractor(attribute, row, context),
                     };
                     filters.push(Box::new({
                         move |value| {
@@ -543,11 +543,11 @@ impl<T: Hkt> Checker<T> {
                     let thing_manager = context.thing_manager.clone();
                     let relation: BoxExtractor<T> = match maybe_relation_extractor {
                         Some(&relation) => Box::new(relation),
-                        None => make_const_extractor(relation, context, row),
+                        None => make_const_extractor(relation, row, context),
                     };
                     let role_type: BoxExtractor<T> = match maybe_role_type_extractor {
                         Some(&role_type) => Box::new(role_type),
-                        None => make_const_extractor(role_type, context, row),
+                        None => make_const_extractor(role_type, row, context),
                     };
                     filters.push(Box::new({
                         move |value| {
@@ -569,11 +569,11 @@ impl<T: Hkt> Checker<T> {
                     let thing_manager = context.thing_manager.clone();
                     let player: BoxExtractor<T> = match maybe_player_extractor {
                         Some(&player) => Box::new(player),
-                        None => make_const_extractor(player, context, row),
+                        None => make_const_extractor(player, row, context),
                     };
                     let role_type: BoxExtractor<T> = match maybe_role_type_extractor {
                         Some(&role_type) => Box::new(role_type),
-                        None => make_const_extractor(role_type, context, row),
+                        None => make_const_extractor(role_type, row, context),
                     };
                     filters.push(Box::new({
                         move |value| {
@@ -595,11 +595,11 @@ impl<T: Hkt> Checker<T> {
                     let thing_manager = context.thing_manager.clone();
                     let thing: BoxExtractor<T> = match maybe_thing_extractor {
                         Some(&thing) => Box::new(thing),
-                        None => make_const_extractor(thing, context, row),
+                        None => make_const_extractor(thing, row, context),
                     };
                     let type_: BoxExtractor<T> = match maybe_type_extractor {
                         Some(&type_) => Box::new(type_),
-                        None => make_const_extractor(type_, context, row),
+                        None => make_const_extractor(type_, row, context),
                     };
                     filters.push(Box::new({
                         move |value| {
@@ -625,11 +625,11 @@ impl<T: Hkt> Checker<T> {
                     let thing_manager = context.thing_manager.clone();
                     let owner: BoxExtractor<T> = match maybe_owner_extractor {
                         Some(&owner) => Box::new(owner),
-                        None => make_const_extractor(owner, context, row),
+                        None => make_const_extractor(owner, row, context),
                     };
                     let attribute: BoxExtractor<T> = match maybe_attribute_extractor {
                         Some(&attribute) => Box::new(attribute),
-                        None => make_const_extractor(attribute, context, row),
+                        None => make_const_extractor(attribute, row, context),
                     };
                     filters.push(Box::new({
                         move |value| {
@@ -650,15 +650,15 @@ impl<T: Hkt> Checker<T> {
                     let thing_manager = context.thing_manager.clone();
                     let relation: BoxExtractor<T> = match maybe_relation_extractor {
                         Some(&relation) => Box::new(relation),
-                        None => make_const_extractor(relation, context, row),
+                        None => make_const_extractor(relation, row, context),
                     };
                     let player: BoxExtractor<T> = match maybe_player_extractor {
                         Some(&player) => Box::new(player),
-                        None => make_const_extractor(player, context, row),
+                        None => make_const_extractor(player, row, context),
                     };
                     let role: BoxExtractor<T> = match maybe_role_extractor {
                         Some(&role) => Box::new(role),
-                        None => make_const_extractor(role, context, row),
+                        None => make_const_extractor(role, row, context),
                     };
                     filters.push(Box::new({
                         move |value| {
@@ -697,7 +697,7 @@ impl<T: Hkt> Checker<T> {
                     let maybe_lhs_extractor = lhs.as_variable().and_then(|var| self.extractors.get(&var));
                     let lhs: BoxExtractor<T> = match maybe_lhs_extractor {
                         Some(&lhs) => Box::new(lhs),
-                        None => make_const_extractor(lhs, context, row),
+                        None => make_const_extractor(lhs, row, context),
                     };
                     let rhs = match rhs {
                         &CheckVertex::Variable(ExecutorVariable::RowPosition(pos)) => row.get(pos).as_reference(),

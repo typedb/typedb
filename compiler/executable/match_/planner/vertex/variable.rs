@@ -42,23 +42,23 @@ impl VariableVertex {
         }
     }
 
-    pub(crate) fn expected_output_size(&self) -> f64 {
+    pub(crate) fn expected_output_size(&self, inputs: &[VertexId]) -> f64 {
         let unrestricted_size = match self {
             Self::Input(_) => 1.0,
             Self::Type(inner) => inner.unrestricted_expected_size,
             Self::Thing(inner) => inner.unrestricted_expected_size,
             Self::Value(_) => 1.0,
         };
-        unrestricted_size * self.selectivity()
+        unrestricted_size * self.selectivity(inputs)
     }
 
-    pub(crate) fn selectivity(&self) -> f64 {
+    pub(crate) fn selectivity(&self, inputs: &[VertexId]) -> f64 {
         // the fraction of possible actual outputs (based on type information) when restricted (for example, by comparators)
         match self {
             VariableVertex::Input(_) => Self::RESTRICTION_NONE,
-            VariableVertex::Type(inner) => inner.selectivity(),
-            VariableVertex::Thing(inner) => inner.selectivity(),
-            VariableVertex::Value(inner) => inner.selectivity(),
+            VariableVertex::Type(inner) => inner.selectivity(inputs),
+            VariableVertex::Thing(inner) => inner.selectivity(inputs),
+            VariableVertex::Value(inner) => inner.selectivity(inputs),
         }
     }
 
@@ -200,7 +200,7 @@ impl TypePlanner {
         }
     }
 
-    fn selectivity(&self) -> f64 {
+    fn selectivity(&self, _inputs: &[VertexId]) -> f64 {
         // TODO: if we incorporate, say, annotations, we could add some selectivity here
         VariableVertex::RESTRICTION_NONE
     }
@@ -309,22 +309,22 @@ impl ThingPlanner {
         }
     }
 
-    fn selectivity(&self) -> f64 {
+    fn selectivity(&self, inputs: &[VertexId]) -> f64 {
         if !self.restriction_exact.is_empty() {
             // exactly 1 of the full set is selected
             return 1.0 / self.unrestricted_expected_size;
         } else {
             // all are selected
             let mut selected = self.unrestricted_expected_size;
-            if !self.restriction_equal.is_empty() {
+            if self.restriction_equal.iter().any(|restriction| is_input_available(restriction, inputs)) {
                 // equality by value leads to one possible per attribute type
                 selected = self.unrestricted_expected_attribute_types as f64;
             }
-            if !self.restriction_from_below.is_empty() {
+            if self.restriction_from_below.iter().any(|restriction| is_input_available(restriction, inputs)) {
                 // some fraction of the selected will pass the strictest below filter
                 selected *= Self::RESTRICTION_BELOW_SELECTIVITY;
             }
-            if !self.restriction_from_above.is_empty() {
+            if self.restriction_from_above.iter().any(|restriction| is_input_available(restriction, inputs)) {
                 // some fraction of the selected will pass the strictest above filter
                 selected *= Self::RESTRICTION_ABOVE_SELECTIVITY;
             }
@@ -420,17 +420,17 @@ impl ValuePlanner {
         self.restriction_value_above.insert(other);
     }
 
-    fn selectivity(&self) -> f64 {
+    fn selectivity(&self, inputs: &[VertexId]) -> f64 {
         // since there's no "expected size" of a value variable (we will always assign exactly 1 value)
         // we arbitrarily set some thresholds for selectivity of predicates
         let mut selectivity = VariableVertex::RESTRICTION_NONE;
-        if !self.restriction_value_equal.is_empty() {
+        if self.restriction_value_equal.iter().any(|restriction| is_input_available(restriction, inputs)) {
             selectivity *= Self::RESTRICTION_EQUAL_SELECTIVITY;
         }
-        if !self.restriction_value_below.is_empty() {
+        if self.restriction_value_below.iter().any(|restriction| is_input_available(restriction, inputs)) {
             selectivity *= Self::RESTRICTION_BELOW_SELECTIVITY
         }
-        if !self.restriction_value_above.is_empty() {
+        if self.restriction_value_above.iter().any(|restriction| is_input_available(restriction, inputs)) {
             selectivity *= Self::RESTRICTION_ABOVE_SELECTIVITY
         }
         selectivity
@@ -443,6 +443,15 @@ impl Costed for ValuePlanner {
             ElementCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
         } else {
             ElementCost { per_input: f64::INFINITY, per_output: 0.0, branching_factor: f64::INFINITY }
+        }
+    }
+}
+
+fn is_input_available(input: &Input, available_inputs: &[VertexId]) -> bool {
+    match input {
+        Input::Fixed => true,
+        Input::Variable(variable_id) => {
+            available_inputs.iter().any(|available| available.as_variable_id().is_some_and(|avail| avail == *variable_id))
         }
     }
 }
