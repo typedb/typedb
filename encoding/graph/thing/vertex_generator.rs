@@ -350,7 +350,7 @@ impl ThingVertexGenerator {
             Ok(StringAttributeID::build_inline_id(string))
         } else {
             let id = StringAttributeID::build_hashed_id(type_id, string, snapshot, &self.large_value_hasher)?;
-            let hash = id.get_hash_prefix_hash();
+            let hash = id.get_hash_hash();
             let lock = ByteArray::copy_concat([&Prefix::VertexAttribute.prefix_id().bytes(), &type_id.bytes(), &hash]);
             snapshot.exclusive_lock_add(lock);
             Ok(id)

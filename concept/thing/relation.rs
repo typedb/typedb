@@ -39,9 +39,7 @@ use crate::{
         thing_manager::{validation::operation_time_validation::OperationTimeValidation, ThingManager},
         HKInstance, ThingAPI,
     },
-    type_::{
-        relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI, Ordering, OwnerAPI,
-    },
+    type_::{relation_type::RelationType, role_type::RoleType, ObjectTypeAPI, Ordering, OwnerAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
 

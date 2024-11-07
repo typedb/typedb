@@ -41,7 +41,7 @@ use crate::{
         isa_executor::{IsaFilterFn, IsaTupleIterator, SingleTypeIsaIterator, EXTRACT_THING, EXTRACT_TYPE},
         iterator::{SortedTupleIterator, TupleIterator},
         sub_reverse_executor::get_subtypes,
-        tuple::{isa_to_tuple_type_thing, TuplePositions},
+        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes, TYPES_EMPTY,
     },
     pipeline::stage::ExecutionContext,
@@ -222,14 +222,6 @@ pub(super) fn instances_of_types_chained<'a>(
     let attribute_iters: Vec<_> = attribute_types
         .into_iter()
         .filter(|type_| type_.as_attribute_type().get_value_type(snapshot, type_manager).unwrap().is_some())
-        .sorted_by_key(|type_| {
-            AttributeVertex::build_prefix_type(
-                AttributeVertex::value_type_category_to_prefix_type(
-                    type_.as_attribute_type().get_value_type(snapshot, type_manager).unwrap().unwrap().0.category(),
-                ),
-                type_.as_attribute_type().vertex().type_id_(),
-            )
-        })
         .flat_map(|type_| {
             let returned_types = if matches!(isa_kind, IsaKind::Subtype) {
                 type_to_instance_types.get(type_).unwrap_or(&TYPES_EMPTY).clone()

@@ -42,7 +42,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{isa_to_tuple_thing_type, IsaToTupleFn, TuplePositions, TupleResult},
+        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, IsaToTupleFn, TuplePositions, TupleResult},
         BinaryIterateMode, Checker, FilterFn, VariableModes, TYPES_EMPTY,
     },
     pipeline::stage::ExecutionContext,
@@ -270,15 +270,6 @@ pub(super) fn instances_of_all_types_chained<'a>(
     let attribute_iters: Vec<_> = attribute_types
         .into_iter()
         .filter(|(type_, _)| type_.as_attribute_type().get_value_type(snapshot, type_manager).unwrap().is_some())
-        .sorted_by_key(|(type_, _)| {
-            // we manually have to sort for now, since the instance-sorting does not equal the type ordering
-            AttributeVertex::build_prefix_type(
-                AttributeVertex::value_type_category_to_prefix_type(
-                    type_.as_attribute_type().get_value_type(snapshot, type_manager).unwrap().unwrap().0.category(),
-                ),
-                type_.as_attribute_type().vertex().type_id_(),
-            )
-        })
         .map(|(type_, types)| {
             let returned_types = if matches!(isa_kind, IsaKind::Subtype) { types.clone() } else { vec![type_.clone()] };
             Ok(with_types(

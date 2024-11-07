@@ -224,7 +224,8 @@ impl ThingManager {
         snapshot: &'this Snapshot,
     ) -> Result<AttributeIterator<InstanceIterator<AsHkt![Attribute<'_>]>>, ConceptReadError> {
         let has_reverse_start = ThingEdgeHasReverse::prefix_from_prefix(Prefix::VertexAttribute);
-        let range = KeyRange::new_within(RangeStart::Inclusive(has_reverse_start), Prefix::VertexAttribute.fixed_width_keys());
+        let range =
+            KeyRange::new_within(RangeStart::Inclusive(has_reverse_start), Prefix::VertexAttribute.fixed_width_keys());
         let has_reverse_iterator_buffer = snapshot.iterate_writes_range(range.clone());
         let has_reverse_iterator_storage = snapshot.iterate_storage_range(range);
         Ok(AttributeIterator::new(
@@ -247,7 +248,8 @@ impl ThingManager {
         };
 
         let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute_type(attribute_type.vertex().type_id_());
-        let range = KeyRange::new_within(RangeStart::Inclusive(has_reverse_prefix), ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
+        let range =
+            KeyRange::new_within(RangeStart::Inclusive(has_reverse_prefix), ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
         let has_reverse_iterator_buffer = snapshot.iterate_writes_range(range.clone());
         let has_reverse_iterator_storage = snapshot.iterate_storage_range(range);
 
@@ -265,17 +267,17 @@ impl ThingManager {
         attribute: &'a Attribute<'a>,
     ) -> Result<Value<'static>, ConceptReadError> {
         match attribute.vertex().attribute_id() {
-            AttributeID::Boolean(id) => Ok(Value::Boolean(id.to_value())),
-            AttributeID::Long(id) => Ok(Value::Long(id.to_value())),
-            AttributeID::Double(id) => Ok(Value::Double(id.to_value())),
-            AttributeID::Decimal(id) => Ok(Value::Decimal(id.to_value())),
-            AttributeID::Date(id) => Ok(Value::Date(id.to_value())),
-            AttributeID::DateTime(id) => Ok(Value::DateTime(id.to_value())),
-            AttributeID::DateTimeTZ(id) => Ok(Value::DateTimeTZ(id.to_value())),
-            AttributeID::Duration(id) => Ok(Value::Duration(id.to_value())),
+            AttributeID::Boolean(id) => Ok(Value::Boolean(id.read().as_bool())),
+            AttributeID::Long(id) => Ok(Value::Long(id.read().as_i64())),
+            AttributeID::Double(id) => Ok(Value::Double(id.read().as_f64())),
+            AttributeID::Decimal(id) => Ok(Value::Decimal(id.read().as_decimal())),
+            AttributeID::Date(id) => Ok(Value::Date(id.read().as_naive_date())),
+            AttributeID::DateTime(id) => Ok(Value::DateTime(id.read().as_naive_date_time())),
+            AttributeID::DateTimeTZ(id) => Ok(Value::DateTimeTZ(id.read().as_date_time())),
+            AttributeID::Duration(id) => Ok(Value::Duration(id.read().as_duration())),
             AttributeID::String(id) => {
                 let string = if id.is_inline() {
-                    String::from(id.get_inline_string_bytes().as_str())
+                    String::from(id.get_inline_id_value().as_str())
                 } else {
                     snapshot
                         .get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
@@ -391,6 +393,7 @@ impl ThingManager {
         if attribute_value_type.is_none()
             || !range_value_type.is_approximately_castable_to(attribute_value_type.as_ref().unwrap())
         {
+            // TODO: these are actually error cases
             return Ok(AttributeIterator::new_empty());
         }
         let value_type = attribute_value_type.unwrap();
@@ -423,24 +426,18 @@ impl ThingManager {
             Bound::Included(start) => RangeStart::Inclusive(start),
             Bound::Excluded(start) => RangeStart::Exclusive(start),
             Bound::Unbounded => RangeStart::Inclusive(
-                AttributeVertex::build_prefix_type(
-                    AttributeVertex::value_type_category_to_prefix_type(value_type.category()),
-                    attribute_type.vertex().type_id_(),
-                )
-                .resize_to::<BUFFER_KEY_INLINE>(),
+                AttributeVertex::build_prefix_type(AttributeVertex::PREFIX, attribute_type.vertex().type_id_())
+                    .resize_to::<BUFFER_KEY_INLINE>(),
             ),
         };
         let key_range_end = match range_end {
             Bound::Included(end) => RangeEnd::EndPrefixInclusive(end),
             Bound::Excluded(end) => RangeEnd::EndPrefixExclusive(end),
             Bound::Unbounded => {
-                let prefix = AttributeVertex::build_prefix_type(
-                    AttributeVertex::value_type_category_to_prefix_type(value_type.category()),
-                    attribute_type.vertex().type_id_(),
-                );
+                let prefix =
+                    AttributeVertex::build_prefix_type(AttributeVertex::PREFIX, attribute_type.vertex().type_id_());
                 let keyspace = prefix.keyspace_id();
-                let bytes = prefix.into_bytes();
-                let mut array = bytes.into_array();
+                let mut array = prefix.into_bytes().into_array();
                 array.increment().unwrap();
                 let prefix_key = StorageKey::Array(StorageKeyArray::new_raw(keyspace, array));
                 RangeEnd::EndPrefixExclusive(prefix_key.resize_to::<BUFFER_KEY_INLINE>())
@@ -471,7 +468,6 @@ impl ThingManager {
         let range = KeyRange::new_variable_width(key_range_start, key_range_end);
         let snapshot_iterator = snapshot.iterate_range(range);
         let attributes_iterator = InstanceIterator::new(snapshot_iterator);
-
         Ok(AttributeIterator::new(
             attributes_iterator,
             has_reverse_iterator_buffer,
@@ -617,7 +613,8 @@ impl ThingManager {
             });
 
         let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute_type(attribute_type.vertex().type_id_());
-        let range = KeyRange::new_within(RangeStart::Inclusive(has_reverse_prefix), ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
+        let range =
+            KeyRange::new_within(RangeStart::Inclusive(has_reverse_prefix), ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
         let has_reverse_iterator_buffer = snapshot.iterate_writes_range(range.clone());
         let has_reverse_iterator_storage = snapshot.iterate_storage_range(range);
 
@@ -650,7 +647,8 @@ impl ThingManager {
     ) -> HasAttributeIterator {
         let prefix = ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), attribute_type.into_vertex().type_id_());
         HasAttributeIterator::new(
-            snapshot.iterate_range(KeyRange::new_within(RangeStart::Inclusive(prefix), ThingEdgeHas::FIXED_WIDTH_ENCODING)),
+            snapshot
+                .iterate_range(KeyRange::new_within(RangeStart::Inclusive(prefix), ThingEdgeHas::FIXED_WIDTH_ENCODING)),
         )
     }
 

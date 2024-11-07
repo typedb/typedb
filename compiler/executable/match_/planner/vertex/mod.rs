@@ -310,8 +310,8 @@ impl<'a> IsPlanner<'a> {
 }
 
 impl Costed for IsPlanner<'_> {
-    fn cost(&self, _: &[VertexId], _: Option<VariableVertexId>,  _: &Graph<'_>) -> ElementCost {
-        ElementCost::FREE
+    fn cost(&self, _: &[VertexId], _: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
+        ElementCost::FREE_BRANCH_1
     }
 }
 

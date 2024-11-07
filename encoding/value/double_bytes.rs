@@ -5,9 +5,12 @@
  */
 
 use crate::{
-    graph::thing::vertex_attribute::{InlineEncodableAttributeID},
-    graph::thing::vertex_attribute::ValueEncodingLength,
-    value::primitive_encoding::{decode_u64, encode_u64},
+    graph::thing::vertex_attribute::{InlineEncodableAttributeID, ValueEncodingLength},
+    value::{
+        date_bytes::DateBytes,
+        primitive_encoding::{decode_u64, encode_u64},
+        value_type::ValueType,
+    },
 };
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
@@ -48,9 +51,15 @@ impl DoubleBytes {
 
 impl InlineEncodableAttributeID for DoubleBytes {
     const ENCODED_LENGTH: usize = ValueEncodingLength::Short.length();
+    const VALUE_TYPE: ValueType = ValueType::Double;
 
     fn bytes_ref(&self) -> &[u8] {
         &self.bytes
+    }
+
+    fn read(bytes: &[u8]) -> Self {
+        debug_assert!(bytes.len() == Self::ENCODED_LENGTH);
+        DoubleBytes::new(bytes.try_into().unwrap())
     }
 }
 

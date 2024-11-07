@@ -7,12 +7,11 @@
 use chrono::{DateTime, NaiveDateTime};
 
 use crate::{
-    graph::thing::vertex_attribute::{InlineEncodableAttributeID},
-    value::date_bytes::DateBytes,
-};
-use crate::{
-    graph::thing::vertex_attribute::ValueEncodingLength,
-    value::primitive_encoding::{decode_i64, decode_u32, encode_i64, encode_u32},
+    graph::thing::vertex_attribute::{InlineEncodableAttributeID, ValueEncodingLength},
+    value::{
+        primitive_encoding::{decode_i64, decode_u32, encode_i64, encode_u32},
+        value_type::ValueType,
+    },
 };
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -50,8 +49,14 @@ impl DateTimeBytes {
 
 impl InlineEncodableAttributeID for DateTimeBytes {
     const ENCODED_LENGTH: usize = ValueEncodingLength::Long.length();
+    const VALUE_TYPE: ValueType = ValueType::DateTime;
 
     fn bytes_ref(&self) -> &[u8] {
         &self.bytes
+    }
+
+    fn read(bytes: &[u8]) -> Self {
+        debug_assert!(bytes.len() == Self::ENCODED_LENGTH);
+        DateTimeBytes::new(bytes.try_into().unwrap())
     }
 }

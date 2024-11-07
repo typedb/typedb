@@ -58,21 +58,6 @@ impl KeyspaceRangeIterator {
             }
             RangeEnd::Unbounded => ContinueCondition::Always,
         };
-
-        // .take_while(Box::new(move |res: &Result<(&[u8], &[u8]), rocksdb::Error>| match res {
-        //     Ok((key, _)) => {
-        //         let copy = if key.len() > max_required_length {
-        //             ByteArray::copy(&key[0..max_required_length])
-        //         } else {
-        //             ByteArray::copy(key)
-        //         };
-        //         range.within_end(&copy)
-        //     }
-        //     Err(_) => true,
-        // }) as Box<_>)
-        // .map(error_mapper(keyspace_name))
-        // .into_seekable(identity as _, raw_iterator::compare_key as _);
-
         KeyspaceRangeIterator { iterator, continue_condition, keyspace_name: keyspace.name() }
     }
 

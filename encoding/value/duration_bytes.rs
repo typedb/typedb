@@ -5,15 +5,14 @@
  */
 
 use crate::{
-    graph::thing::vertex_attribute::ValueEncodingLength,
+    graph::thing::vertex_attribute::{InlineEncodableAttributeID, ValueEncodingLength},
     value::{
+        date_bytes::DateBytes,
+        decimal_bytes::DecimalBytes,
         duration_value::Duration,
         primitive_encoding::{decode_u32, decode_u64, encode_u32, encode_u64},
+        value_type::ValueType,
     },
-};
-use crate::{
-    graph::thing::vertex_attribute::{InlineEncodableAttributeID},
-    value::decimal_bytes::DecimalBytes,
 };
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -54,8 +53,14 @@ impl DurationBytes {
 
 impl InlineEncodableAttributeID for DurationBytes {
     const ENCODED_LENGTH: usize = ValueEncodingLength::Long.length();
+    const VALUE_TYPE: ValueType = ValueType::Duration;
 
     fn bytes_ref(&self) -> &[u8] {
         &self.bytes
+    }
+
+    fn read(bytes: &[u8]) -> Self {
+        debug_assert!(bytes.len() == Self::ENCODED_LENGTH);
+        DurationBytes::new(bytes.try_into().unwrap())
     }
 }

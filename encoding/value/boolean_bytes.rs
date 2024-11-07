@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::graph::thing::vertex_attribute::ValueEncodingLength;
+use crate::{
+    graph::thing::vertex_attribute::{InlineEncodableAttributeID, ValueEncodingLength},
+    value::{value::Value, value_type::ValueType},
+};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct BooleanBytes {
@@ -33,8 +36,14 @@ impl BooleanBytes {
 
 impl InlineEncodableAttributeID for BooleanBytes {
     const ENCODED_LENGTH: usize = ValueEncodingLength::Short.length();
+    const VALUE_TYPE: ValueType = ValueType::Boolean;
 
     fn bytes_ref(&self) -> &[u8] {
         &self.bytes
+    }
+
+    fn read(bytes: &[u8]) -> Self {
+        debug_assert!(bytes.len() == Self::ENCODED_LENGTH);
+        BooleanBytes::new(bytes.try_into().unwrap())
     }
 }

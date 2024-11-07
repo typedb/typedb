@@ -176,6 +176,8 @@ pub struct ThingEdgeHasReverse<'a> {
 }
 
 impl<'a> ThingEdgeHasReverse<'a> {
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
+
     const PREFIX: Prefix = Prefix::EdgeHasReverse;
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
 
@@ -230,18 +232,11 @@ impl<'a> ThingEdgeHasReverse<'a> {
     pub fn prefix_from_attribute_vertex_prefix(
         attribute_vertex_prefix: ByteReference<'_>,
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }> {
-        let prefix = Prefix::from_prefix_id(PrefixID::new(
-            attribute_vertex_prefix.bytes()[AttributeVertex::RANGE_PREFIX].try_into().unwrap(),
-        ));
-        debug_assert!(
-            Prefix::ATTRIBUTE_MIN.prefix_id().bytes() <= prefix.prefix_id().bytes
-                && Prefix::ATTRIBUTE_MAX.prefix_id().bytes() >= prefix.prefix_id().bytes
-        );
         let mut bytes = ByteArray::zeros(Self::RANGE_PREFIX.end + attribute_vertex_prefix.length());
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + attribute_vertex_prefix.length()]
             .copy_from_slice(attribute_vertex_prefix.bytes());
-        StorageKey::new_owned(Self::keyspace_for_from_prefix(prefix), bytes)
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
     // TODO cleanup
@@ -349,7 +344,7 @@ impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for ThingEdgeHasReverse<'a> {}
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ThingEdgeHasReverse<'a> {
     fn keyspace(&self) -> EncodingKeyspace {
-        EncodingKeyspace::Data
+        Self::KEYSPACE
     }
 }
 

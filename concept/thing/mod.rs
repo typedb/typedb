@@ -18,7 +18,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::thing_manager::ThingManager,
-    type_::{type_manager::TypeManager, TypeAPI},
+    type_::TypeAPI,
     ConceptStatus,
 };
 

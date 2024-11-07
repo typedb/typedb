@@ -27,7 +27,7 @@ use crate::{
         thing_manager::ThingManager,
         HKInstance, ThingAPI,
     },
-    type_::{entity_type::EntityType, type_manager::TypeManager, ObjectTypeAPI, Ordering, OwnerAPI},
+    type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
 

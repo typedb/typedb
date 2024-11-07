@@ -43,13 +43,12 @@ Feature: Debugging Space
     Given connection open schema transaction for database: typedb
 
 
-
-  Scenario: using the 'attribute' meta label, 'has' can match things that own any attribute with a specified value
+  Scenario: value comparisons can be performed between a 'double' and a 'long'
     Given typeql schema query
       """
       define
-      attribute shoe-size value long;
-      person owns shoe-size;
+      attribute house-number @independent, value long;
+      attribute length @independent, value double;
       """
     Given transaction commits
 
@@ -57,19 +56,60 @@ Feature: Debugging Space
     Given typeql write query
       """
       insert
-      $x isa person, has age 9, has ref 0;
-      $y isa person, has shoe-size 9, has ref 1;
-      $z isa person, has age 12, has shoe-size 12, has ref 2;
+      $x 1 isa house-number;
+      $y 2.0 isa length;
       """
     Given transaction commits
 
     Given connection open read transaction for database: typedb
     When get answers of typeql read query
       """
-      match $x has $_ 9;
+      match
+        $x isa house-number;
+        $x == 1.0;
       """
-    Then uniquely identify answer concepts
-      | x         |
-      | key:ref:0 |
-      | key:ref:1 |
+    Then answer size is: 1
+    When get answers of typeql read query
+      """
+      match
+        $x isa length;
+        $x == 2;
+      """
+    Then answer size is: 1
+    When get answers of typeql read query
+      """
+      match
+        $x isa house-number;
+        $x == 1.0;
+      """
+    Then answer size is: 1
+    When get answers of typeql read query
+      """
+      match
+        $x isa length;
+        $x == 2;
+      """
+    Then answer size is: 1
+    When get answers of typeql read query
+      """
+      match
+        $x isa $a;
+        $x >= 1;
+      """
+    Then answer size is: 2
+    When get answers of typeql read query
+      """
+      match
+        $x isa $a;
+        $x < 2.0;
+      """
+    Then answer size is: 1
 
+    When get answers of typeql read query
+      """
+      match
+        $x isa house-number;
+        $y isa length;
+        $x < $y;
+      """
+    Then answer size is: 1

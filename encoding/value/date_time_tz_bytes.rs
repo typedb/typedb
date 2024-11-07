@@ -6,10 +6,9 @@
 
 use chrono::DateTime;
 
-use crate::graph::thing::vertex_attribute::{InlineEncodableAttributeID};
 use crate::{
-    graph::thing::vertex_attribute::ValueEncodingLength,
-    value::{date_time_bytes::DateTimeBytes, timezone::TimeZone},
+    graph::thing::vertex_attribute::{InlineEncodableAttributeID, ValueEncodingLength},
+    value::{date_bytes::DateBytes, date_time_bytes::DateTimeBytes, timezone::TimeZone, value_type::ValueType},
 };
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -44,8 +43,14 @@ impl DateTimeTZBytes {
 
 impl InlineEncodableAttributeID for DateTimeTZBytes {
     const ENCODED_LENGTH: usize = ValueEncodingLength::Long.length();
+    const VALUE_TYPE: ValueType = ValueType::DateTimeTZ;
 
     fn bytes_ref(&self) -> &[u8] {
         &self.bytes
+    }
+
+    fn read(bytes: &[u8]) -> Self {
+        debug_assert!(bytes.len() == Self::ENCODED_LENGTH);
+        DateTimeTZBytes::new(bytes.try_into().unwrap())
     }
 }

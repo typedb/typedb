@@ -4,8 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::graph::thing::vertex_attribute::{InlineEncodableAttributeID};
-use crate::value::primitive_encoding::{decode_i64, encode_i64};
+use crate::{
+    graph::thing::vertex_attribute::{InlineEncodableAttributeID, ValueEncodingLength},
+    value::{
+        primitive_encoding::{decode_i64, encode_i64},
+        value_type::ValueType,
+    },
+};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct LongBytes {
@@ -31,10 +36,16 @@ impl LongBytes {
 }
 
 impl InlineEncodableAttributeID for LongBytes {
-    const ENCODED_LENGTH: usize = AttributeIDLength::Short.length();
+    const ENCODED_LENGTH: usize = ValueEncodingLength::Short.length();
+    const VALUE_TYPE: ValueType = ValueType::Long;
 
     fn bytes_ref(&self) -> &[u8] {
         &self.bytes
+    }
+
+    fn read(bytes: &[u8]) -> Self {
+        debug_assert!(bytes.len() == Self::ENCODED_LENGTH);
+        LongBytes::new(bytes.try_into().unwrap())
     }
 }
 
