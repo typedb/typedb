@@ -244,7 +244,7 @@ impl BinaryIterateMode {
         }
     }
 
-    pub(crate) fn is_inverted(&self) -> bool {
+    pub(crate) fn is_unbound_inverted(&self) -> bool {
         self == &Self::UnboundInverted
     }
 }

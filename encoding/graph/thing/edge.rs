@@ -228,10 +228,11 @@ impl<'a> ThingEdgeHasReverse<'a> {
         bytes.bytes_mut()[from_prefix_end..from_type_id_end].copy_from_slice(&from_type_id.bytes());
         StorageKey::new_owned(EncodingKeyspace::Data, bytes)
     }
-
+    
     pub fn prefix_from_attribute_vertex_prefix(
         attribute_vertex_prefix: ByteReference<'_>,
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }> {
+        debug_assert!(attribute_vertex_prefix.bytes()[AttributeVertex::RANGE_PREFIX] == AttributeVertex::PREFIX.prefix_id().bytes);
         let mut bytes = ByteArray::zeros(Self::RANGE_PREFIX.end + attribute_vertex_prefix.length());
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + attribute_vertex_prefix.length()]

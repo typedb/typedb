@@ -4,11 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    cmp::Ordering,
-    collections::{BTreeMap, BTreeSet, HashMap},
-    sync::{Arc, OnceLock},
-};
+use std::{cmp::Ordering, collections::{BTreeMap, BTreeSet, HashMap}, sync::{Arc, OnceLock}, vec};
+use std::collections::{Bound, btree_map};
+use std::iter::Map;
 
 use answer::Type;
 use compiler::{executable::match_::instructions::thing::HasReverseInstruction, ExecutorVariable};
@@ -17,7 +15,14 @@ use concept::{
     thing::{attribute::Attribute, has::Has, object::HasReverseIterator, thing_manager::ThingManager},
 };
 use itertools::{Itertools, MinMaxResult};
-use lending_iterator::{kmerge::KMergeBy, AsHkt, LendingIterator, Peekable};
+use tracing::warn;
+use concept::iterator::InstanceIterator;
+use concept::thing::attribute::AttributeIterator;
+use concept::type_::attribute_type::AttributeType;
+use encoding::value::value::Value;
+use ir::pattern::constraint::IsaKind;
+use lending_iterator::{kmerge::KMergeBy, AsHkt, LendingIterator, Peekable, AsLendingIterator};
+use lending_iterator::adaptors::Flatten;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
@@ -34,6 +39,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::isa_executor::{AttributeEraseFn, MapToThing};
 
 pub(crate) struct HasReverseExecutor {
     has: ir::pattern::constraint::Has<ExecutorVariable>,
@@ -47,10 +53,11 @@ pub(crate) struct HasReverseExecutor {
     checker: Checker<(AsHkt![Has<'_>], u64)>,
 }
 
-pub(crate) type HasReverseUnboundedSortedAttribute = HasTupleIterator<HasReverseIterator>;
+pub(crate) type HasReverseUnboundedSortedAttribute = HasTupleIterator<MultipleTypeHasReverseIterator>;
 pub(crate) type HasReverseUnboundedSortedOwnerMerged = HasTupleIterator<KMergeBy<HasReverseIterator, HasOrderingFn>>;
 pub(crate) type HasReverseUnboundedSortedOwnerSingle = HasTupleIterator<HasReverseIterator>;
 pub(crate) type HasReverseBoundedSortedOwner = HasTupleIterator<HasReverseIterator>;
+type MultipleTypeHasReverseIterator = Flatten<AsLendingIterator<vec::IntoIter<HasReverseIterator>>>;
 
 impl HasReverseExecutor {
     pub(crate) fn new(
@@ -104,10 +111,8 @@ impl HasReverseExecutor {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, ConceptReadError> {
-        if self.iterate_mode.is_inverted() && self.attribute_cache.get().is_none() {
-            // TODO: this will only work if the range is actually not dependent on the Row... needs special API
-
-            // one-off initialisation of the cache of constants
+        if self.iterate_mode.is_unbound_inverted() && self.attribute_cache.get().is_none() {
+            // one-off initialisation of the cache of constants as we require the Parameters
             let value_range =
                 self.checker.value_range_for(context, None, self.has.attribute().as_variable().unwrap())?;
             let mut cache = Vec::new();
@@ -135,10 +140,13 @@ impl HasReverseExecutor {
 
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let attribute_types_in_range = self.attribute_owner_types.keys().map(|type_| type_.as_attribute_type());
-                // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
-                let as_tuples: HasReverseUnboundedSortedAttribute = thing_manager
-                    .get_has_from_attribute_type_range(snapshot, attribute_types_in_range)?
+                let range = self.checker.value_range_for(context, Some(row.as_reference()), self.has.attribute().as_variable().unwrap())?;
+                let as_tuples: HasTupleIterator<MultipleTypeHasReverseIterator> = Self::all_has_reverse_chained(
+                    snapshot,
+                    thing_manager,
+                    self.attribute_owner_types.keys().map(|type_| type_.as_attribute_type()),
+                    range,
+                )?
                     .try_filter::<_, HasFilterFn, (Has<'_>, _), _>(filter_for_row)
                     .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
                 Ok(TupleIterator::HasReverseUnbounded(SortedTupleIterator::new(
@@ -220,6 +228,23 @@ impl HasReverseExecutor {
                 )))
             }
         }
+    }
+
+    fn all_has_reverse_chained<'a>(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        attribute_types: impl Iterator<Item=AttributeType<'a>>,
+        attribute_values_range: (Bound<Value<'_>>, Bound<Value<'_>>),
+    ) -> Result<MultipleTypeHasReverseIterator, ConceptReadError> {
+        let type_manager = thing_manager.type_manager();
+        let iterators: Vec<_> = attribute_types
+            // TODO: we shouldn't really filter out errors here, but presumably a ConceptReadError will crop up elsewhere too if it happens here
+            .filter(|type_| type_.get_value_type(snapshot, type_manager).is_ok_and(|vt| vt.is_some()))
+            .map(|type_| {
+                thing_manager.get_has_reverse_in_range(snapshot, type_, &attribute_values_range)
+            })
+            .try_collect()?;
+        Ok(AsLendingIterator::new(iterators).flatten())
     }
 }
 

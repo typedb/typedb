@@ -376,52 +376,24 @@ impl ThingManager {
         attribute_type: AttributeType<'this>,
         range: &impl RangeBounds<Value<'this>>,
     ) -> Result<AttributeIterator<InstanceIterator<AsHkt![Attribute<'_>]>>, ConceptReadError> {
-        fn get_value_type(bound: Bound<&Value<'_>>) -> Option<ValueType> {
-            match bound {
-                Bound::Included(value) | Bound::Excluded(value) => Some(value.value_type()),
-                Bound::Unbounded => None,
-            }
-        }
         if matches!(range.start_bound(), Bound::Unbounded) && matches!(range.end_bound(), Bound::Unbounded) {
             return self.get_attributes_in(snapshot, attribute_type);
         }
-        let start_value_type = get_value_type(range.start_bound());
-        let end_value_type = get_value_type(range.end_bound());
-        debug_assert!(start_value_type == end_value_type || start_value_type.is_none() || end_value_type.is_none());
-        let range_value_type = start_value_type.unwrap_or_else(|| end_value_type.unwrap());
-        let attribute_value_type = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?;
-        if attribute_value_type.is_none()
-            || !range_value_type.is_approximately_castable_to(attribute_value_type.as_ref().unwrap())
-        {
-            // TODO: these are actually error cases
-            return Ok(AttributeIterator::new_empty());
-        }
-        let value_type = attribute_value_type.unwrap();
+        let Some(attribute_value_type) = attribute_type.get_value_type_without_source(snapshot, self.type_manager())? else {
+            return Ok(AttributeIterator::new_empty())
+        };
 
-        let range_start = range.start_bound().map(|value| {
-            let value = if value_type != range_value_type {
-                value.as_reference().approximate_cast_lower_bound(&value_type).unwrap()
-            } else {
-                value.as_reference()
-            };
-            AttributeVertex::build_prefix_for_value(
+        let Some((range_start, range_end)) = Self::get_value_range(
+            attribute_value_type,
+            range,
+            |value| AttributeVertex::build_prefix_for_value(
                 attribute_type.vertex().type_id_(),
                 value,
                 self.vertex_generator.hasher(),
             )
-        });
-        let range_end = range.end_bound().map(|value| {
-            let value = if value_type != range_value_type {
-                value.as_reference().approximate_cast_upper_bound(&value_type).unwrap()
-            } else {
-                value.as_reference()
-            };
-            AttributeVertex::build_prefix_for_value(
-                attribute_type.vertex().type_id_(),
-                value,
-                self.vertex_generator.hasher(),
-            )
-        });
+        )? else {
+            return Ok(AttributeIterator::new_empty());
+        };
         let key_range_start = match range_start {
             Bound::Included(start) => RangeStart::Inclusive(start),
             Bound::Excluded(start) => RangeStart::Exclusive(start),
@@ -474,6 +446,58 @@ impl ThingManager {
             has_reverse_iterator_storage,
             self.type_manager().get_independent_attribute_types(snapshot)?,
         ))
+    }
+
+    fn get_value_range<'a, PrefixFn, Key>(
+        expected_value_type: ValueType,
+        range: &impl RangeBounds<Value<'a>>,
+        prefix_constructor: PrefixFn,
+    ) -> Result<Option<(Bound<Key>, Bound<Key>)>, ConceptReadError>
+        where
+        PrefixFn: for<'b> Fn(Value<'b>) -> Key,
+    {
+        fn get_value_type(bound: Bound<&Value<'_>>) -> Option<ValueType> {
+            match bound {
+                Bound::Included(value) | Bound::Excluded(value) => Some(value.value_type()),
+                Bound::Unbounded => None,
+            }
+        }
+        let start_value_type = get_value_type(range.start_bound());
+        let end_value_type = get_value_type(range.end_bound());
+        debug_assert!(start_value_type == end_value_type || start_value_type.is_none() || end_value_type.is_none());
+        let range_value_type = start_value_type.unwrap_or_else(|| end_value_type.unwrap());
+        if !range_value_type.is_approximately_castable_to(&expected_value_type) {
+            return Ok(None)
+        }
+        let value_type = expected_value_type;
+
+        let range_start = range.start_bound().map(|value| {
+            let value = if value_type != range_value_type {
+                value.as_reference().approximate_cast_lower_bound(&value_type).unwrap()
+            } else {
+                value.as_reference()
+            };
+            prefix_constructor(value)
+            // AttributeVertex::build_prefix_for_value(
+            //     attribute_type.vertex().type_id_(),
+            //     value,
+            //     self.vertex_generator.hasher(),
+            // )
+        });
+        let range_end = range.end_bound().map(|value| {
+            let value = if value_type != range_value_type {
+                value.as_reference().approximate_cast_upper_bound(&value_type).unwrap()
+            } else {
+                value.as_reference()
+            };
+            // AttributeVertex::build_prefix_for_value(
+            //     attribute_type.vertex().type_id_(),
+            //     value,
+            //     self.vertex_generator.hasher(),
+            // )
+            prefix_constructor(value)
+        });
+        Ok(Some((range_start, range_end)))
     }
 
     fn get_attribute_with_value_inline(
@@ -552,27 +576,72 @@ impl ThingManager {
         HasIterator::new(snapshot.iterate_range(range))
     }
 
-    pub fn get_has_from_attribute_type_range(
+    pub fn get_has_reverse(
         &self,
         snapshot: &impl ReadableSnapshot,
-        attribute_type_range: impl Iterator<Item = AttributeType<'static>>,
+        attribute_type: AttributeType<'_>,
     ) -> Result<HasReverseIterator, ConceptReadError> {
-        let (min_type_id, max_type_id) = match attribute_type_range.minmax() {
-            MinMaxResult::NoElements => unreachable!(),
-            MinMaxResult::OneElement(type_) => (type_.vertex().type_id_(), type_.vertex().type_id_()),
-            MinMaxResult::MinMax(min, max) => (min.vertex().type_id_(), max.vertex().type_id_()),
-        };
-        let min_edge_prefix = ThingEdgeHasReverse::prefix_from_attribute_type(min_type_id);
-        let max_edge_prefix = ThingEdgeHasReverse::prefix_from_attribute_type(max_type_id);
-        let range = if min_edge_prefix != max_edge_prefix {
-            KeyRange::new_variable_width(
-                RangeStart::Inclusive(min_edge_prefix),
-                RangeEnd::EndPrefixInclusive(max_edge_prefix),
-            )
-        } else {
-            KeyRange::new_within(RangeStart::Inclusive(min_edge_prefix), ThingEdgeHasReverse::FIXED_WIDTH_ENCODING)
-        };
+        let prefix = ThingEdgeHasReverse::prefix_from_attribute_type(attribute_type.vertex().type_id_());
+        let range = KeyRange::new_within(RangeStart::Inclusive(prefix), ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
         Ok(HasReverseIterator::new(snapshot.iterate_range(range)))
+    }
+
+    pub fn get_has_reverse_in_range<'a>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        attribute_type: AttributeType<'_>,
+        range: &impl RangeBounds<Value<'a>>,
+    ) -> Result<HasReverseIterator, ConceptReadError> {
+        if matches!(range.start_bound(), Bound::Unbounded) && matches!(range.end_bound(), Bound::Unbounded) {
+            return self.get_has_reverse(snapshot, attribute_type);
+        }
+        let Some(attribute_value_type) = attribute_type.get_value_type_without_source(snapshot, self.type_manager())? else {
+            return Ok(HasReverseIterator::new_empty())
+        };
+
+        let Some((range_start, range_end)) = Self::get_value_range(
+            attribute_value_type,
+            range,
+            |value| {
+                let attribute_vertex_prefix = AttributeVertex::build_prefix_for_value(
+                    attribute_type.vertex().type_id_(),
+                    value,
+                    self.vertex_generator.hasher(),
+                );
+                ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(
+                    attribute_vertex_prefix.as_reference().byte_ref()
+                )
+            }
+        )? else {
+            return Ok(HasReverseIterator::new_empty());
+        };
+
+        let key_range_start = match range_start {
+            Bound::Included(start) => RangeStart::Inclusive(start),
+            Bound::Excluded(start) => RangeStart::Exclusive(start),
+            Bound::Unbounded => RangeStart::Inclusive(
+                ThingEdgeHasReverse::prefix_from_attribute_type(attribute_type.vertex().type_id_())
+                    .resize_to::<{ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM}>()
+            ),
+        };
+        let key_range_end = match range_end {
+            Bound::Included(end) => RangeEnd::EndPrefixInclusive(end),
+            Bound::Excluded(end) => RangeEnd::EndPrefixExclusive(end),
+            Bound::Unbounded => {
+                let prefix = ThingEdgeHasReverse::prefix_from_attribute_type(attribute_type.vertex().type_id_());
+                let keyspace = prefix.keyspace_id();
+                let mut array = prefix.into_bytes().into_array();
+                array.increment().unwrap();
+                let prefix_key = StorageKey::Array(StorageKeyArray::new_raw(keyspace, array));
+                RangeEnd::EndPrefixExclusive(prefix_key.resize_to::<{ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM}>())
+            }
+        };
+        let key_range = if ThingEdgeHasReverse::FIXED_WIDTH_ENCODING {
+            KeyRange::new_fixed_width(key_range_start, key_range_end)
+        } else {
+            KeyRange::new_variable_width(key_range_start, key_range_end)
+        };
+        Ok(HasReverseIterator::new(snapshot.iterate_range(key_range)))
     }
 
     pub fn get_attributes_by_struct_field<'this, Snapshot: ReadableSnapshot>(
