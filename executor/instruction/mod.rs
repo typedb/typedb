@@ -371,7 +371,7 @@ impl<T: Hkt> Checker<T> {
             match check {
                 CheckInstruction::Comparison { lhs, rhs, comparator } => {
                     if lhs.as_variable() == Some(target_variable) {
-                        let rhs_variable_value = Self::get_vertex_value(rhs, row.as_ref(), &context.parameters);
+                        let rhs_variable_value = get_vertex_value(rhs, row.as_ref(), &context.parameters);
                         let rhs_value =
                             Self::read_value(context.snapshot.as_ref(), &context.thing_manager, &rhs_variable_value)?;
                         if let Some(rhs_value) = rhs_value {
@@ -391,7 +391,7 @@ impl<T: Hkt> Checker<T> {
                         debug_assert!(
                             rhs.as_variable().expect("RHS of comparison must be a variable") == target_variable
                         );
-                        let lhs_variable_value = Self::get_vertex_value(lhs, row.as_ref(), &context.parameters);
+                        let lhs_variable_value = get_vertex_value(lhs, row.as_ref(), &context.parameters);
                         let lhs_value =
                             Self::read_value(context.snapshot.as_ref(), &context.thing_manager, &lhs_variable_value)?;
                         if let Some(lhs_value) = lhs_value {
@@ -409,6 +409,25 @@ impl<T: Hkt> Checker<T> {
                         }
                     }
                 }
+                CheckInstruction::Is { lhs, rhs } => {
+                    if *lhs == target_variable {
+                        let rhs_as_vertex = CheckVertex::Variable(*rhs);
+                        let rhs_variable_value = get_vertex_value(&rhs_as_vertex, row.as_ref(), &context.parameters);
+                        let rhs_value = Self::read_value(context.snapshot.as_ref(), &context.thing_manager, &rhs_variable_value)?;
+                        if let Some(rhs_value) = rhs_value {
+                            let comp_range = (Bound::Included(rhs_value.clone()), Bound::Included(rhs_value));
+                            range = intersect(range, comp_range);
+                        }
+                    } else {
+                        let lhs_as_vertex = CheckVertex::Variable(*lhs);
+                        let lhs_variable_value = get_vertex_value(&lhs_as_vertex, row.as_ref(), &context.parameters);
+                        let lhs_value = Self::read_value(context.snapshot.as_ref(), &context.thing_manager, &lhs_variable_value)?;
+                        if let Some(lhs_value) = lhs_value {
+                            let comp_range = (Bound::Included(lhs_value.clone()), Bound::Included(lhs_value));
+                            range = intersect(range, comp_range);
+                        }
+                    }
+                },
                 _ => (),
             }
         }
@@ -416,26 +435,7 @@ impl<T: Hkt> Checker<T> {
         Ok(range)
     }
 
-    fn get_vertex_value<'a>(
-        vertex: &'a CheckVertex<ExecutorVariable>,
-        row: Option<&'a MaybeOwnedRow<'a>>,
-        parameters: &'a ParameterRegistry,
-    ) -> VariableValue<'a> {
-        match vertex {
-            CheckVertex::Variable(var) => match var {
-                ExecutorVariable::RowPosition(position) => {
-                    row.expect("CheckVertex::Variable requires a row to take from").get(*position).as_reference()
-                }
-                ExecutorVariable::Internal(_) => {
-                    unreachable!("Comparator check variables must have been recorded in the row.")
-                }
-            },
-            CheckVertex::Type(type_) => VariableValue::Type(type_.clone()),
-            CheckVertex::Parameter(parameter_id) => {
-                VariableValue::Value(parameters.value_unchecked(*parameter_id).as_reference())
-            }
-        }
-    }
+
 
     fn read_value<'a>(
         snapshot: &'a impl ReadableSnapshot,
@@ -471,7 +471,7 @@ impl<T: Hkt> Checker<T> {
                     let maybe_type_extractor = self.extractors.get(&type_var);
                     let type_: BoxExtractor<T> = match maybe_type_extractor {
                         Some(&subtype) => Box::new(subtype),
-                        None => make_const_extractor(&CheckVertex::Variable(type_var), context, row),
+                        None => make_const_extractor(&CheckVertex::Variable(type_var), row, context),
                     };
                     let types = types.clone();
                     filters.push(Box::new(move |value| Ok(types.contains(type_(value).as_type()))));
@@ -484,11 +484,11 @@ impl<T: Hkt> Checker<T> {
                     let thing_manager = context.thing_manager.clone();
                     let subtype: BoxExtractor<T> = match maybe_subtype_extractor {
                         Some(&subtype) => Box::new(subtype),
-                        None => make_const_extractor(subtype, context, row),
+                        None => make_const_extractor(subtype, row, context),
                     };
                     let supertype: BoxExtractor<T> = match maybe_supertype_extractor {
                         Some(&supertype) => Box::new(supertype),
-                        None => make_const_extractor(supertype, context, row),
+                        None => make_const_extractor(supertype, row, context),
                     };
                     filters.push(Box::new({
                         move |value| {
@@ -764,17 +764,31 @@ impl<T: Hkt> Checker<T> {
 
 fn make_const_extractor<T: Hkt>(
     vertex: &CheckVertex<ExecutorVariable>,
-    context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     row: &MaybeOwnedRow<'_>,
+    context: &ExecutionContext<impl ReadableSnapshot + 'static>,
 ) -> Box<dyn for<'a> Fn(&'a <T as Hkt>::HktSelf<'_>) -> VariableValue<'a>> {
-    let value = match vertex {
-        &CheckVertex::Variable(ExecutorVariable::RowPosition(pos)) => row.get(pos).as_reference(),
-        &CheckVertex::Variable(ExecutorVariable::Internal(_)) => unreachable!(),
-        &CheckVertex::Parameter(param) => {
-            VariableValue::Value(context.parameters().value_unchecked(param).as_reference())
-        }
-        CheckVertex::Type(type_) => VariableValue::Type(type_.clone()),
-    };
+    let value = get_vertex_value(vertex, Some(row), &context.parameters);
     let owned_value = value.into_owned();
     Box::new(move |_| owned_value.clone())
+}
+
+fn get_vertex_value<'a>(
+    vertex: &'a CheckVertex<ExecutorVariable>,
+    row: Option<&'a MaybeOwnedRow<'a>>,
+    parameters: &'a ParameterRegistry,
+) -> VariableValue<'a> {
+    match vertex {
+        CheckVertex::Variable(var) => match var {
+            ExecutorVariable::RowPosition(position) => {
+                row.expect("CheckVertex::Variable requires a row to take from").get(*position).as_reference()
+            }
+            ExecutorVariable::Internal(_) => {
+                unreachable!("Comparator check variables must have been recorded in the row.")
+            }
+        },
+        CheckVertex::Type(type_) => VariableValue::Type(type_.clone()),
+        CheckVertex::Parameter(parameter_id) => {
+            VariableValue::Value(parameters.value_unchecked(*parameter_id).as_reference())
+        }
+    }
 }

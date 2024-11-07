@@ -612,8 +612,10 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let cost = ordering
             .iter()
             .enumerate()
-            // TODO: how do we pass the intersection vars back in to recompute the full cost?
-            .map(|(i, idx)| self.graph.elements[idx].cost(&ordering[..i], None, &self.graph))
+            .map(|(i, idx)| {
+                let intersection_variable = ordering.get(i + 1).and_then(|vertex| vertex.as_variable_id());
+                self.graph.elements[idx].cost(&ordering[..i], intersection_variable, &self.graph)
+            })
             .fold(ElementCost::FREE_BRANCH_1, |acc, e| acc.chain(e));
 
         let Self { shared_variables, graph, type_annotations, statistics: _ } = self;
