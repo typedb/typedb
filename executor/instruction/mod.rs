@@ -370,11 +370,10 @@ impl<T: Hkt> Checker<T> {
             let check = &self.checks[i];
             match check {
                 CheckInstruction::Comparison { lhs, rhs, comparator } => {
-                    if lhs.as_variable().is_some_and(|var| var == target_variable) {
+                    if lhs.as_variable() == Some(target_variable) {
                         let rhs_variable_value = Self::get_vertex_value(rhs, row.as_ref(), &context.parameters);
                         let rhs_value =
                             Self::read_value(context.snapshot.as_ref(), &context.thing_manager, &rhs_variable_value)?;
-                        // let rhs_value = Self::read_value(context.snapshot.as_ref(), &context.thing_manager, &rhs_variable_value)?;
                         if let Some(rhs_value) = rhs_value {
                             let comp_range = match comparator {
                                 Comparator::Equal => (Bound::Included(rhs_value.clone()), Bound::Included(rhs_value)),
@@ -417,11 +416,11 @@ impl<T: Hkt> Checker<T> {
         Ok(range)
     }
 
-    fn get_vertex_value<'b>(
-        vertex: &'b CheckVertex<ExecutorVariable>,
-        row: Option<&'b MaybeOwnedRow<'b>>,
-        parameters: &'b ParameterRegistry,
-    ) -> VariableValue<'b> {
+    fn get_vertex_value<'a>(
+        vertex: &'a CheckVertex<ExecutorVariable>,
+        row: Option<&'a MaybeOwnedRow<'a>>,
+        parameters: &'a ParameterRegistry,
+    ) -> VariableValue<'a> {
         match vertex {
             CheckVertex::Variable(var) => match var {
                 ExecutorVariable::RowPosition(position) => {
@@ -438,10 +437,10 @@ impl<T: Hkt> Checker<T> {
         }
     }
 
-    fn read_value<'b, 'a>(
+    fn read_value<'a>(
         snapshot: &'a impl ReadableSnapshot,
         thing_manager: &'a ThingManager,
-        variable_value: &'a VariableValue<'a>,
+        variable_value: &'a VariableValue<'_>,
     ) -> Result<Option<Value<'static>>, ConceptReadError> {
         // TODO: is there a way to do this without cloning the value?
         match variable_value {

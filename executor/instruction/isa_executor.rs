@@ -211,7 +211,7 @@ impl IsaExecutor {
                     unreachable!("Has thing must be an entity or relation.")
                 };
                 let type_ = thing.type_();
-                let supertypes = self.instance_type_to_types.get(&type_).cloned().unwrap_or(TYPES_EMPTY.clone());
+                let supertypes = self.instance_type_to_types.get(&type_).cloned().unwrap_or(TYPES_EMPTY);
                 let as_tuples: IsaBoundedSortedType = with_types(lending_iterator::once(Ok(thing)), supertypes)
                     .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
                     .map(isa_to_tuple_type_thing);

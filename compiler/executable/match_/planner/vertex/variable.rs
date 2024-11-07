@@ -221,9 +221,9 @@ pub(crate) struct ThingPlanner {
 
     restriction_exact: HashSet<VariableVertexId>, // IID or exact Type + Value
 
-    restriction_value_equal: HashSet<Input>,
-    restriction_value_below: HashSet<Input>,
-    restriction_value_above: HashSet<Input>,
+    restriction_equal: HashSet<Input>,
+    restriction_from_below: HashSet<Input>,
+    restriction_from_above: HashSet<Input>,
 }
 
 impl fmt::Debug for ThingPlanner {
@@ -274,9 +274,9 @@ impl ThingPlanner {
             unrestricted_expected_size,
             unrestricted_expected_attribute_types,
             restriction_exact: HashSet::new(),
-            restriction_value_equal: HashSet::new(),
-            restriction_value_below: HashSet::new(),
-            restriction_value_above: HashSet::new(),
+            restriction_equal: HashSet::new(),
+            restriction_from_below: HashSet::new(),
+            restriction_from_above: HashSet::new(),
         }
     }
 
@@ -285,15 +285,15 @@ impl ThingPlanner {
     }
 
     pub(crate) fn add_equal(&mut self, other: Input) {
-        self.restriction_value_equal.insert(other);
+        self.restriction_equal.insert(other);
     }
 
     pub(crate) fn add_lower_bound(&mut self, other: Input) {
-        self.restriction_value_below.insert(other);
+        self.restriction_from_below.insert(other);
     }
 
     pub(crate) fn add_upper_bound(&mut self, other: Input) {
-        self.restriction_value_above.insert(other);
+        self.restriction_from_above.insert(other);
     }
 
     fn set_binding(&mut self, binding_pattern: PatternVertexId) {
@@ -316,15 +316,15 @@ impl ThingPlanner {
         } else {
             // all are selected
             let mut selected = self.unrestricted_expected_size;
-            if !self.restriction_value_equal.is_empty() {
+            if !self.restriction_equal.is_empty() {
                 // equality by value leads to one possible per attribute type
                 selected = self.unrestricted_expected_attribute_types as f64;
             }
-            if !self.restriction_value_below.is_empty() {
+            if !self.restriction_from_below.is_empty() {
                 // some fraction of the selected will pass the strictest below filter
                 selected *= Self::RESTRICTION_BELOW_SELECTIVITY;
             }
-            if !self.restriction_value_above.is_empty() {
+            if !self.restriction_from_above.is_empty() {
                 // some fraction of the selected will pass the strictest above filter
                 selected *= Self::RESTRICTION_ABOVE_SELECTIVITY;
             }

@@ -18,7 +18,7 @@ use crate::{
         planner::{
             plan::{Graph, VariableVertexId, VertexId},
             vertex::{
-                type_count, Costed, Direction, ElementCost, Input, ADVANCE_ITERATOR_RELATIVE_COST,
+                instance_count, Costed, Direction, ElementCost, Input, ADVANCE_ITERATOR_RELATIVE_COST,
                 OPEN_ITERATOR_RELATIVE_COST,
             },
         },
@@ -234,7 +234,7 @@ impl<'a> IsaPlanner<'a> {
         let unrestricted_expected_size = type_annotations
             .vertex_annotations_of(isa.thing())
             .map(|thing_types| {
-                thing_types.iter().map(|thing_type| type_count(thing_type, statistics)).sum::<u64>() as f64
+                thing_types.iter().map(|thing_type| instance_count(thing_type, statistics)).sum::<u64>() as f64
             })
             .unwrap_or(0.0);
         Self { isa, thing, type_, unrestricted_expected_size }
@@ -325,7 +325,7 @@ impl<'a> HasPlanner<'a> {
         let owner_types = &**type_annotations.vertex_annotations_of(owner).unwrap();
         let attribute_types = &**type_annotations.vertex_annotations_of(attribute).unwrap();
 
-        let expected_size = itertools::iproduct!(owner_types, attribute_types)
+        let unbound_typed_expected_size = itertools::iproduct!(owner_types, attribute_types)
             .filter_map(|(owner, attribute)| {
                 statistics.has_attribute_counts.get(&owner.as_object_type())?.get(&attribute.as_attribute_type())
             })
@@ -333,13 +333,13 @@ impl<'a> HasPlanner<'a> {
 
         //  We shold compute that we are doing multiple seeks() and and merge-sorting.
         //  in general, we assume the cardinality is small, so we just open 1 iterator and post-filter
-        let unbound_forward_size = owner_types
+        let unbound_typed_expected_size_canonical = owner_types
             .iter()
             .filter_map(|owner| statistics.has_attribute_counts.get(&owner.as_object_type()))
             .flat_map(|counts| counts.values())
             .sum::<u64>() as f64;
 
-        let unbound_backward_size = attribute_types
+        let unbound_typed_expected_size_reverse = attribute_types
             .iter()
             .filter_map(|attribute| statistics.attribute_owner_counts.get(&attribute.as_attribute_type()))
             .flat_map(|counts| counts.values())
@@ -349,9 +349,9 @@ impl<'a> HasPlanner<'a> {
             has,
             owner: variable_index[&owner.as_variable().unwrap()],
             attribute: variable_index[&attribute.as_variable().unwrap()],
-            unbound_typed_expected_size: expected_size,
-            unbound_typed_expected_size_canonical: unbound_forward_size,
-            unbound_typed_expected_size_reverse: unbound_backward_size,
+            unbound_typed_expected_size,
+            unbound_typed_expected_size_canonical,
+            unbound_typed_expected_size_reverse,
         }
     }
 
@@ -468,7 +468,7 @@ impl<'a> LinksPlanner<'a> {
         let constraint_types =
             type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_left_right_filtered();
 
-        let expected_size = constraint_types
+        let unbound_typed_expected_size = constraint_types
             .filters_on_left()
             .iter()
             .flat_map(|(relation, roles)| {
@@ -482,7 +482,7 @@ impl<'a> LinksPlanner<'a> {
             })
             .sum::<u64>() as f64;
 
-        let unbound_forward_size = relation_types
+        let unbound_typed_expected_size_canonical = relation_types
             .iter()
             .filter_map(|relation| {
                 Some(statistics.relation_role_player_counts.get(&relation.as_relation_type())?.values().flat_map(
@@ -494,7 +494,7 @@ impl<'a> LinksPlanner<'a> {
             .flatten()
             .sum::<u64>() as f64;
 
-        let unbound_backward_size = player_types
+        let unbound_typed_expected_size_reverse = player_types
             .iter()
             .filter_map(|player| {
                 Some(statistics.player_role_relation_counts.get(&player.as_object_type())?.values().flat_map(
@@ -514,9 +514,9 @@ impl<'a> LinksPlanner<'a> {
             relation: variable_index[&relation],
             player: variable_index[&player],
             role: variable_index[&role],
-            unbound_typed_expected_size: expected_size,
-            unbound_typed_expected_size_canonical: unbound_forward_size,
-            unbound_typed_expected_size_reverse: unbound_backward_size,
+            unbound_typed_expected_size,
+            unbound_typed_expected_size_canonical,
+            unbound_typed_expected_size_reverse,
         }
     }
 

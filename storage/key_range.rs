@@ -63,24 +63,6 @@ impl<T: Prefix> KeyRange<T> {
             false => KeyRange::new_variable_width(start, end),
         }
     }
-
-    // pub fn within_end(&self, value: &T) -> bool {
-    //     match &self.end {
-    //         RangeEnd::SameAsStart => value.starts_with(self.start()),
-    //         RangeEnd::Inclusive(e) => value.cmp(e) == Ordering::Less || value.starts_with(e),
-    //         RangeEnd::Exclusive(e) => value.cmp(e) == Ordering::Less || *value == self.start,
-    //         RangeEnd::Unbounded => true,
-    //     }
-    // }
-    //
-    // pub(crate) fn end_value(&self) -> Option<&T> {
-    //     match &self.end {
-    //         RangeEnd::SameAsStart => Some(self.start()),
-    //         RangeEnd::Inclusive(value) => Some(value),
-    //         RangeEnd::Exclusive(value) => Some(value),
-    //         RangeEnd::Unbounded => None,
-    //     }
-    // }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

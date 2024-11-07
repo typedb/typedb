@@ -438,11 +438,11 @@ impl Costed for DisjunctionPlanner<'_> {
     }
 }
 
-pub(super) fn type_count(type_: &Type, statistics: &Statistics) -> u64 {
+pub(super) fn instance_count(type_: &Type, statistics: &Statistics) -> u64 {
     match type_ {
         Type::Entity(entity) => *statistics.entity_counts.get(entity).unwrap_or(&0),
         Type::Relation(relation) => *statistics.relation_counts.get(relation).unwrap_or(&0),
         Type::Attribute(attribute) => *statistics.attribute_counts.get(attribute).unwrap_or(&0),
-        Type::RoleType(_) => 0,
+        Type::RoleType(_) => unreachable!("Cannot count role instances"),
     }
 }
