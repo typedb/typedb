@@ -331,8 +331,7 @@ impl<'a> HasPlanner<'a> {
             })
             .sum::<u64>() as f64;
 
-        // a better model, according to how we execute, is actually the sum(first type .. last types onwerships count)
-        //  alternatively, we could also be doing multiple seeks() and and merge-sorting.
+        //  We shold compute that we are doing multiple seeks() and and merge-sorting.
         //  in general, we assume the cardinality is small, so we just open 1 iterator and post-filter
         let unbound_forward_size = owner_types
             .iter()

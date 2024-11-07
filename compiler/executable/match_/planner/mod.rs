@@ -324,8 +324,6 @@ impl MatchExecutableBuilder {
             let mut is_added = false;
             for instruction in intersection.instructions.iter_mut().rev() {
                 let is_producer = variables.iter().any(|var| instruction.is_new_variable(self.index[var]));
-                // let mut is_producer = false;
-                // instruction.new_variables_foreach(|var| is_producer |= variables.contains(&self.reverse_index[&var]));
                 if is_producer {
                     instruction.add_check(check.clone());
                     is_added = true;
@@ -366,10 +364,6 @@ impl MatchExecutableBuilder {
                     let all_available = variables.iter().all(|var| {
                         instruction.is_new_variable(self.index[var]) || instruction.is_input_variable(self.index[var])
                     });
-                    // let mut any_produced = false;
-                    // instruction.new_variables_foreach(|var| any_produced |= variables.contains(&self.reverse_index[&var]));
-                    // let all_check_vars_available = variables.iter().for_each(|var| self )
-                    // variables.fo
                     if any_produced && all_available {
                         instruction.add_check(check.clone());
                     }

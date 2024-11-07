@@ -344,8 +344,6 @@ fn branching_for_intersections(intersection_count: usize) -> f64 {
 
 impl Costed for ThingPlanner {
     fn cost(&self, inputs: &[VertexId], intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
-        // TODO: if this variable is equal to the intersection variable, we count the number of inputs to the intersection
-        //       then compute a branching factor based on this
         match intersection {
             None => ElementCost::FREE_BRANCH_1,
             Some(variable_id) => {
@@ -363,70 +361,6 @@ impl Costed for ThingPlanner {
                 }
             }
         }
-
-        //
-        // if self.restriction_exact.iter().any(|&bound| inputs.contains(&VertexId::Variable(bound))) {
-        //     return ElementCost::FREE;
-        // }
-        //
-        // let mut branching_factor = 1.0;
-        //
-        // for restriction in &self.restriction_value_equal {
-        //     if restriction == &Input::Fixed {
-        //         branching_factor /= self.unrestricted_expected_size;
-        //     } else if let &Input::Variable(var) = restriction {
-        //         let id = VertexId::Variable(var);
-        //         if inputs.contains(&id) {
-        //             let b = match &graph.elements()[&id] {
-        //                 // PlannerVertex::Fixed(_) => 1.0, // TODO
-        //                 PlannerVertex::Variable(VariableVertex::Value(value)) => 1.0 / value.expected_size(inputs),
-        //                 PlannerVertex::Variable(VariableVertex::Thing(thing)) => 1.0 / thing.unrestricted_expected_size,
-        //                 _ => unreachable!("equality with an edge"),
-        //             };
-        //             branching_factor = f64::min(branching_factor, b);
-        //         }
-        //     }
-        // }
-
-        /* TODO
-        let mut is_bounded_below = false;
-        let mut is_bounded_above = false;
-
-        for &input in inputs {
-            if self.bound_exact.contains(&input) {
-                if matches!(elements[input], PlannerVertex::Constant) {
-                } else {
-                    // comes from a previous step, must be in the DB?
-                    // TODO verify this assumption
-                    branching_factor /= self.expected_size;
-                }
-            }
-
-            if self.bound_value_equal.contains(&input) {
-                let b = match &elements[input] {
-                    PlannerVertex::Constant => 1.0,
-                    PlannerVertex::Value(value) => 1.0 / value.expected_size(inputs),
-                    PlannerVertex::Thing(thing) => 1.0 / thing.expected_size,
-                    _ => unreachable!("equality with an edge"),
-                };
-                branching_factor = f64::min(branching_factor, b);
-            }
-
-            if self.bound_value_below.contains(&input) {
-                is_bounded_below = true;
-            }
-
-            if self.bound_value_above.contains(&input) {
-                is_bounded_above = true;
-            }
-        }
-
-        if is_bounded_below ^ is_bounded_above {
-            branching_factor /= 2.0
-        } else if is_bounded_below && is_bounded_above {
-            branching_factor /= 3.0
-        }
-        */
     }
 }
 
