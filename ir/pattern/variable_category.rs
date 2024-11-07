@@ -82,11 +82,11 @@ impl VariableCategory {
     }
 
     pub fn is_type_category(&self) -> bool {
-        matches!(self.narrowest(Self::Type), Some(Self::Type))
+        self.narrowest(Self::Type) == Some(*self)
     }
 
     pub fn is_thing_category(&self) -> bool {
-        matches!(self.narrowest(Self::Thing), Some(Self::Thing))
+        self.narrowest(Self::Thing) == Some(*self)
     }
 }
 
