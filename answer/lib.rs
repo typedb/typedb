@@ -192,6 +192,19 @@ impl Type {
             }
         }
     }
+
+    pub fn is_abstract(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<bool, ConceptReadError> {
+        match self {
+            Type::Entity(entity) => entity.is_abstract(snapshot, type_manager),
+            Type::Relation(relation) => relation.is_abstract(snapshot, type_manager),
+            Type::Attribute(attribute) => attribute.is_abstract(snapshot, type_manager),
+            Type::RoleType(role) => role.is_abstract(snapshot, type_manager),
+        }
+    }
 }
 
 impl Hkt for Type {

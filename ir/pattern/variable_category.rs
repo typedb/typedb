@@ -80,6 +80,14 @@ impl VariableCategory {
             (_, Self::ValueList) | (Self::ValueList, _) => None,
         }
     }
+
+    pub fn is_type_category(&self) -> bool {
+        matches!(self.narrowest(Self::Type), Some(Self::Type))
+    }
+
+    pub fn is_thing_category(&self) -> bool {
+        matches!(self.narrowest(Self::Thing), Some(Self::Thing))
+    }
 }
 
 impl Display for VariableCategory {

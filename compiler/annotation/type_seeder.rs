@@ -141,30 +141,23 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             self.seed_types(nested_graph, context, vertices)?;
         }
 
-        // Prune abstract types from type annotations of non-type variables
+        // Prune abstract types from type annotations of thing variables
         for annotated_vertex in vertices {
             let (Vertex::Variable(id), annotations) = annotated_vertex else { continue; };
-            let variable_category = self.variable_registry.get_variable_category(*id);
-            if let Some(category) = variable_category {
-               if !(category == VariableCategory::Type)
-                   && !(category == VariableCategory::ThingType)
-                   && !(category == VariableCategory::AttributeType) {
-                   let mut to_be_removed : Vec<Type> = Vec::new();
-                   for annotated_type in annotations.iter() {
-                       let annotated_type_is_abstract = match annotated_type {
-                           Type::Entity(t) => t.is_abstract(self.snapshot, self.type_manager),
-                           Type::Relation(t) => t.is_abstract(self.snapshot, self.type_manager),
-                           Type::Attribute(t) => t.is_abstract(self.snapshot, self.type_manager),
-                           Type::RoleType(t) => t.is_abstract(self.snapshot, self.type_manager),
-                           _ => Ok(false)
-                       }.map_err(|source| { TypeInferenceError::ConceptRead { source }})?;
-                       if annotated_type_is_abstract {
-                           to_be_removed.push(annotated_type.clone());
-                       }
+            if self.variable_registry
+                .get_variable_category(*id)
+                .map_or(false, |cat| { cat.is_thing_category() }) {
+               let mut to_be_removed : Vec<Type> = Vec::new();
+               for annotated_type in annotations.iter() {
+                   let annotated_type_is_abstract = annotated_type
+                       .is_abstract(self.snapshot, self.type_manager)
+                       .map_err(|source| { TypeInferenceError::ConceptRead { source }})?;
+                   if annotated_type_is_abstract {
+                       to_be_removed.push(annotated_type.clone());
                    }
-                   for annotated_type in to_be_removed.iter() {
-                       annotations.remove(annotated_type);
-                   }
+               }
+               for annotated_type in to_be_removed.iter() {
+                   annotations.remove(annotated_type);
                }
             }
         }
@@ -553,6 +546,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         debug_assert!(vertices.contains_key(&left) && vertices.contains_key(&right));
         let left_to_right = inner.annotate_left_to_right(self, vertices.get(&left).unwrap())?;
         let right_to_left = inner.annotate_right_to_left(self, vertices.get(&right).unwrap())?;
+
         Ok(TypeInferenceEdge::build(constraint, left, right, left_to_right, right_to_left))
     }
 }
@@ -766,6 +760,19 @@ trait BinaryConstraint {
     fn left(&self) -> &Vertex<Variable>;
     fn right(&self) -> &Vertex<Variable>;
 
+    fn check_for_thing_vars(
+        &self,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+    ) -> (bool, bool) {
+        let left_is_thing = matches!(self.left(), Vertex::Variable(var) if {
+                seeder.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_thing_category())
+            });
+        let right_is_thing = matches!(self.right(), Vertex::Variable(var) if {
+                seeder.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_thing_category())
+            });
+        (left_is_thing, right_is_thing)
+    }
+
     fn annotate_left_to_right(
         &self,
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
@@ -774,8 +781,19 @@ trait BinaryConstraint {
         let mut left_to_right = BTreeMap::new();
         for left_type in left_types {
             let mut right_annotations = BTreeSet::new();
+            let (left_is_thing, right_is_thing) = self.check_for_thing_vars(seeder);
             self.annotate_left_to_right_for_type(seeder, left_type, &mut right_annotations)?;
-            left_to_right.insert(left_type.clone(), right_annotations);
+            if !(left_is_thing && left_type.is_abstract(seeder.snapshot, seeder.type_manager)?) {
+                for right_type in right_annotations.iter() {
+                    if right_is_thing && right_type.is_abstract(seeder.snapshot, seeder.type_manager)? {
+                        continue;
+                    }
+                    left_to_right
+                        .entry(left_type.clone())
+                        .or_insert_with(BTreeSet::new)
+                        .insert(right_type.clone());
+                }
+            }
         }
         Ok(left_to_right)
     }
@@ -788,7 +806,19 @@ trait BinaryConstraint {
         let mut right_to_left = BTreeMap::new();
         for right_type in right_types {
             let mut left_annotations = BTreeSet::new();
+            let (left_is_thing, right_is_thing) = self.check_for_thing_vars(seeder);
             self.annotate_right_to_left_for_type(seeder, right_type, &mut left_annotations)?;
+            if !(right_is_thing && right_type.is_abstract(seeder.snapshot, seeder.type_manager)?) {
+                for left_type in left_annotations.iter() {
+                    if left_is_thing && left_type.is_abstract(seeder.snapshot, seeder.type_manager)? {
+                        continue;
+                    }
+                    right_to_left
+                        .entry(right_type.clone())
+                        .or_insert_with(BTreeSet::new)
+                        .insert(left_type.clone());
+                }
+            }
             right_to_left.insert(right_type.clone(), left_annotations);
         }
         Ok(right_to_left)
