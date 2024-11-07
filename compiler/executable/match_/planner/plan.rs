@@ -836,7 +836,7 @@ impl ConjunctionPlan<'_> {
                 let negation = negation.plan().lower(
                     match_builder.current_outputs.iter().copied(),
                     match_builder.position_mapping(),
-                    &match_builder.current_outputs,
+                    &match_builder.position_mapping().keys().copied().collect(),
                     variable_registry,
                 );
                 let variable_positions = negation.index.clone(); // FIXME needless clone
