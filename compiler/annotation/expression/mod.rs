@@ -12,6 +12,7 @@ use std::{
 use concept::error::ConceptReadError;
 use encoding::value::value_type::ValueTypeCategory;
 use ir::pattern::{expression::Operator, variable_category::VariableCategory};
+use ir::RepresentationError;
 
 pub mod block_compiler;
 pub mod compiled_expression;
@@ -60,6 +61,7 @@ pub enum ExpressionCompileError {
         derived_category: VariableCategory,
         existing_category: VariableCategory,
     },
+    Representation { source: RepresentationError },
 }
 
 impl Display for ExpressionCompileError {
@@ -72,6 +74,7 @@ impl Error for ExpressionCompileError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::ConceptRead { source, .. } => Some(source),
+            Self::Representation { source } =>  None,
             Self::InternalStackWasEmpty
             | Self::InternalUnexpectedValueType
             | Self::UnsupportedOperandsForOperation { .. }

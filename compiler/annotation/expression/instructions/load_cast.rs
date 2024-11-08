@@ -6,7 +6,7 @@
 use std::marker::PhantomData;
 
 use encoding::value::{value::NativeValueConvertible, value_type::ValueTypeCategory};
-
+use encoding::value::decimal_value::Decimal;
 use crate::annotation::expression::{
     expression_compiler::ExpressionCompilationContext,
     instructions::{
@@ -22,6 +22,10 @@ pub struct LoadConstant {}
 pub type CastUnaryLongToDouble = CastUnary<i64, f64>;
 pub type CastLeftLongToDouble = CastBinaryLeft<i64, f64>;
 pub type CastRightLongToDouble = CastBinaryRight<i64, f64>;
+
+pub type CastUnaryDecimalToDouble = CastUnary<Decimal, f64>;
+pub type CastLeftDecimalToDouble = CastBinaryLeft<Decimal, f64>;
+pub type CastRightDecimalToDouble = CastBinaryRight<Decimal, f64>;
 
 // Impls
 
@@ -108,6 +112,7 @@ impl<From: NativeValueConvertible, To: ImplicitCast<From>> CompilableExpression 
     }
 
     fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompileError> {
+        dbg!(&builder.type_stack);
         let right_before = builder.pop_type_single()?.category();
         if right_before != From::VALUE_TYPE_CATEGORY {
             Err(ExpressionCompileError::InternalUnexpectedValueType)?;
@@ -126,5 +131,15 @@ impl ImplicitCast<i64> for f64 {
 
     fn cast(from: i64) -> Result<Self, ExpressionEvaluationError> {
         Ok(from as f64)
+    }
+}
+
+impl ImplicitCast<Decimal> for f64 {
+    const CAST_UNARY_OPCODE: ExpressionOpCode = ExpressionOpCode::CastUnaryDecimalToDouble;
+    const CAST_LEFT_OPCODE: ExpressionOpCode = ExpressionOpCode::CastLeftDecimalToDouble;
+    const CAST_RIGHT_OPCODE: ExpressionOpCode = ExpressionOpCode::CastRightDecimalToDouble;
+
+    fn cast(from: Decimal) -> Result<Self, ExpressionEvaluationError> {
+        Ok(from.to_f64())
     }
 }
