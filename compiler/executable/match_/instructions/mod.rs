@@ -6,18 +6,22 @@
 
 #![allow(clippy::large_enum_variant)]
 
-use std::{collections::{HashMap, HashSet}, fmt, ops::Deref};
-use std::fmt::{Debug, Display, Formatter};
 use std::{
+    collections::{HashMap, HashSet},
+    fmt,
+    fmt::{Debug, Display, Formatter},
+    ops::Deref,
     sync::Arc,
 };
+use std::collections::BTreeSet;
 
-use answer::{variable::Variable, Type};
+use itertools::Itertools;
+
+use answer::{Type, variable::Variable};
 use ir::pattern::{
     constraint::{Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Is, IsaKind, SubKind},
     IrID, ParameterID, Vertex,
 };
-use itertools::Itertools;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations, executable::match_::planner::match_executable::InstructionAPI,
@@ -399,14 +403,14 @@ impl<ID: IrID> Display for ConstraintInstruction<ID> {
             ConstraintInstruction::TypeList(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::Sub(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::SubReverse(instruction) => write!(f, "{instruction}"),
-            ConstraintInstruction::Owns(instruction) =>  write!(f, "{instruction}"),
+            ConstraintInstruction::Owns(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::OwnsReverse(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::Relates(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::RelatesReverse(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::Plays(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::PlaysReverse(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::Isa(instruction) => write!(f, "{instruction}"),
-            ConstraintInstruction::IsaReverse(instruction) =>  write!(f, "{instruction}"),
+            ConstraintInstruction::IsaReverse(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::Has(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::HasReverse(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::Links(instruction) => write!(f, "{instruction}"),
@@ -607,38 +611,38 @@ impl<ID: IrID> Display for CheckInstruction<ID> {
         match self {
             Self::TypeList { type_var, types } => {
                 write!(f, "{type_var} type (")?;
-                for type_ in types {
+                for type_ in types.as_ref() {
                     write!(f, "{type_}, ")?;
                 }
                 write!(f, ")")?;
-            },
+            }
             Self::Sub { sub_kind, subtype, supertype } => {
                 write!(f, "{subtype} {}{} {supertype}", typeql::token::Keyword::Sub, sub_kind)?;
-            },
+            }
             Self::Owns { owner, attribute } => {
                 write!(f, "{owner} {} {attribute}", typeql::token::Keyword::Owns)?;
-            },
+            }
             Self::Relates { relation, role_type } => {
                 write!(f, "{relation} {} {role_type}", typeql::token::Keyword::Relates)?;
-            },
+            }
             Self::Plays { player, role_type } => {
                 write!(f, "{player} {} {role_type}", typeql::token::Keyword::Plays)?;
-            },
+            }
             Self::Isa { isa_kind, type_, thing } => {
                 write!(f, "{thing} {}{} {type_}", typeql::token::Keyword::Isa, isa_kind)?;
-            },
+            }
             Self::Has { owner, attribute } => {
                 write!(f, "{owner} {} {attribute}", typeql::token::Keyword::Has)?;
-            },
+            }
             Self::Links { relation, player, role } => {
                 write!(f, "{relation} {} ({role}:{player})", typeql::token::Keyword::Links)?;
-            },
+            }
             Self::Is { lhs, rhs } => {
                 write!(f, "{lhs} {} {rhs}", typeql::token::Keyword::Is)?;
-            },
+            }
             Self::Comparison { lhs, rhs, comparator } => {
                 write!(f, "{lhs} {comparator} {rhs}")?;
-            },
+            }
         }
         write!(f, "] ")
     }

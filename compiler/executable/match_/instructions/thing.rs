@@ -6,11 +6,11 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
+    fmt::{Display, Formatter},
     sync::Arc,
 };
-use std::fmt::{Display, Formatter};
 
-use answer::{Type, variable::Variable};
+use answer::{variable::Variable, Type};
 use ir::pattern::{
     constraint::{Has, Isa, Links},
     IrID,
@@ -18,9 +18,8 @@ use ir::pattern::{
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
-    executable::match_::instructions::{CheckInstruction, Inputs},
+    executable::match_::instructions::{CheckInstruction, DisplayVec, Inputs},
 };
-use crate::executable::match_::instructions::DisplayVec;
 
 #[derive(Debug, Clone)]
 pub struct IsaInstruction<ID> {

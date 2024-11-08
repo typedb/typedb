@@ -4,34 +4,42 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, collections::{BTreeMap, BTreeSet, HashMap}, sync::{Arc, OnceLock}, vec};
-use std::collections::{Bound, btree_map};
-use std::iter::Map;
+use std::{
+    cmp::Ordering,
+    collections::{btree_map, BTreeMap, BTreeSet, Bound, HashMap},
+    iter::Map,
+    sync::{Arc, OnceLock},
+    vec,
+};
 
 use answer::Type;
 use compiler::{executable::match_::instructions::thing::HasReverseInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
-    thing::{attribute::Attribute, has::Has, object::HasReverseIterator, thing_manager::ThingManager},
+    iterator::InstanceIterator,
+    thing::{
+        attribute::{Attribute, AttributeIterator},
+        has::Has,
+        object::HasReverseIterator,
+        thing_manager::ThingManager,
+    },
+    type_::attribute_type::AttributeType,
 };
-use itertools::{Itertools, MinMaxResult};
-use tracing::warn;
-use concept::iterator::InstanceIterator;
-use concept::thing::attribute::AttributeIterator;
-use concept::type_::attribute_type::AttributeType;
 use encoding::value::value::Value;
 use ir::pattern::constraint::IsaKind;
-use lending_iterator::{kmerge::KMergeBy, AsHkt, LendingIterator, Peekable, AsLendingIterator};
-use lending_iterator::adaptors::Flatten;
+use itertools::{Itertools, MinMaxResult};
+use lending_iterator::{adaptors::Flatten, kmerge::KMergeBy, AsHkt, AsLendingIterator, LendingIterator, Peekable};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
     snapshot::ReadableSnapshot,
 };
+use tracing::warn;
 
 use crate::{
     instruction::{
         has_executor::{HasFilterFn, HasOrderingFn, HasTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
+        isa_executor::{AttributeEraseFn, MapToThing},
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, Tuple, TuplePositions},
         BinaryIterateMode, Checker, VariableModes,
@@ -39,7 +47,6 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::isa_executor::{AttributeEraseFn, MapToThing};
 
 pub(crate) struct HasReverseExecutor {
     has: ir::pattern::constraint::Has<ExecutorVariable>,
@@ -140,15 +147,19 @@ impl HasReverseExecutor {
 
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let range = self.checker.value_range_for(context, Some(row.as_reference()), self.has.attribute().as_variable().unwrap())?;
+                let range = self.checker.value_range_for(
+                    context,
+                    Some(row.as_reference()),
+                    self.has.attribute().as_variable().unwrap(),
+                )?;
                 let as_tuples: HasTupleIterator<MultipleTypeHasReverseIterator> = Self::all_has_reverse_chained(
                     snapshot,
                     thing_manager,
                     self.attribute_owner_types.keys().map(|type_| type_.as_attribute_type()),
                     range,
                 )?
-                    .try_filter::<_, HasFilterFn, (Has<'_>, _), _>(filter_for_row)
-                    .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
+                .try_filter::<_, HasFilterFn, (Has<'_>, _), _>(filter_for_row)
+                .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
                 Ok(TupleIterator::HasReverseUnbounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -233,16 +244,14 @@ impl HasReverseExecutor {
     fn all_has_reverse_chained<'a>(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        attribute_types: impl Iterator<Item=AttributeType<'a>>,
+        attribute_types: impl Iterator<Item = AttributeType<'a>>,
         attribute_values_range: (Bound<Value<'_>>, Bound<Value<'_>>),
     ) -> Result<MultipleTypeHasReverseIterator, ConceptReadError> {
         let type_manager = thing_manager.type_manager();
         let iterators: Vec<_> = attribute_types
             // TODO: we shouldn't really filter out errors here, but presumably a ConceptReadError will crop up elsewhere too if it happens here
             .filter(|type_| type_.get_value_type(snapshot, type_manager).is_ok_and(|vt| vt.is_some()))
-            .map(|type_| {
-                thing_manager.get_has_reverse_in_range(snapshot, type_, &attribute_values_range)
-            })
+            .map(|type_| thing_manager.get_has_reverse_in_range(snapshot, type_, &attribute_values_range))
             .try_collect()?;
         Ok(AsLendingIterator::new(iterators).flatten())
     }

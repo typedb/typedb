@@ -6,22 +6,21 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
+    fmt::{Display, Formatter},
     sync::Arc,
 };
-use std::fmt::{Display, Formatter};
-use itertools::Itertools;
 
 use answer::{variable::Variable, Type};
 use ir::pattern::{
     constraint::{Owns, Plays, Relates, Sub},
     IrID,
 };
+use itertools::Itertools;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
-    executable::match_::instructions::{CheckInstruction, Inputs},
+    executable::match_::instructions::{CheckInstruction, Inputs, IsInstruction},
 };
-use crate::executable::match_::instructions::IsInstruction;
 
 #[derive(Debug, Clone)]
 pub struct TypeListInstruction<ID> {

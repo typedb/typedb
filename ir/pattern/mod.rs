@@ -4,8 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt, hash::Hash};
-use std::fmt::Formatter;
+use std::{collections::HashMap, fmt, fmt::Formatter, hash::Hash};
 
 use answer::variable::Variable;
 use encoding::value::label::Label;

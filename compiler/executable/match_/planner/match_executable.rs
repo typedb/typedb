@@ -6,9 +6,9 @@
 
 use std::{
     collections::{HashMap, HashSet},
+    fmt::{write, Display, Formatter},
     slice,
 };
-use std::fmt::{Display, Formatter, write};
 
 use answer::variable::Variable;
 use ir::{
@@ -123,12 +123,12 @@ impl Display for ExecutionStep {
         match self {
             ExecutionStep::Intersection(step) => write!(f, "Sorted, {step}"),
             ExecutionStep::UnsortedJoin(step) => write!(f, "Unsorted, {step}"),
-            ExecutionStep::Assignment(step) =>write!(f, "Assign, {step}"),
+            ExecutionStep::Assignment(step) => write!(f, "Assign, {step}"),
             ExecutionStep::Check(step) => write!(f, "Check, {step}"),
-            ExecutionStep::Disjunction(step) =>write!(f, "Disjunction, {step}"),
+            ExecutionStep::Disjunction(step) => write!(f, "Disjunction, {step}"),
             ExecutionStep::Negation(step) => write!(f, "Negation, {step}"),
             ExecutionStep::Optional(step) => write!(f, "Optional, {step}"),
-            ExecutionStep::FunctionCall(step) =>write!(f, "FunctionCall, {step}"),
+            ExecutionStep::FunctionCall(step) => write!(f, "FunctionCall, {step}"),
         }
     }
 }
@@ -190,7 +190,11 @@ impl IntersectionStep {
 
 impl Display for IntersectionStep {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "inputs={:?}, output_size={}, sort_by={}", &self.input_variables, self.output_width, self.sort_variable)?;
+        write!(
+            f,
+            "inputs={:?}, output_size={}, sort_by={}",
+            &self.input_variables, self.output_width, self.sort_variable
+        )?;
         for (instruction, modes) in &self.instructions {
             write!(f, "\n      {instruction} with ({modes})")?;
         }
@@ -423,10 +427,7 @@ impl Display for FunctionCallStep {
         write!(
             f,
             "fn_id={}, assigned={:?}, arguments={:?}, output_size={}\n",
-            self.function_id,
-            &self.assigned,
-            &self.arguments,
-            self.output_width
+            self.function_id, &self.assigned, &self.arguments, self.output_width
         )
     }
 }

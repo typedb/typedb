@@ -379,19 +379,19 @@ impl ThingManager {
         if matches!(range.start_bound(), Bound::Unbounded) && matches!(range.end_bound(), Bound::Unbounded) {
             return self.get_attributes_in(snapshot, attribute_type);
         }
-        let Some(attribute_value_type) = attribute_type.get_value_type_without_source(snapshot, self.type_manager())? else {
-            return Ok(AttributeIterator::new_empty())
+        let Some(attribute_value_type) = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?
+        else {
+            return Ok(AttributeIterator::new_empty());
         };
 
-        let Some((range_start, range_end)) = Self::get_value_range(
-            attribute_value_type,
-            range,
-            |value| AttributeVertex::build_prefix_for_value(
+        let Some((range_start, range_end)) = Self::get_value_range(attribute_value_type, range, |value| {
+            AttributeVertex::build_prefix_for_value(
                 attribute_type.vertex().type_id_(),
                 value,
                 self.vertex_generator.hasher(),
             )
-        )? else {
+        })?
+        else {
             return Ok(AttributeIterator::new_empty());
         };
         let key_range_start = match range_start {
@@ -453,7 +453,7 @@ impl ThingManager {
         range: &impl RangeBounds<Value<'a>>,
         prefix_constructor: PrefixFn,
     ) -> Result<Option<(Bound<Key>, Bound<Key>)>, ConceptReadError>
-        where
+    where
         PrefixFn: for<'b> Fn(Value<'b>) -> Key,
     {
         fn get_value_type(bound: Bound<&Value<'_>>) -> Option<ValueType> {
@@ -467,7 +467,7 @@ impl ThingManager {
         debug_assert!(start_value_type == end_value_type || start_value_type.is_none() || end_value_type.is_none());
         let range_value_type = start_value_type.unwrap_or_else(|| end_value_type.unwrap());
         if !range_value_type.is_approximately_castable_to(&expected_value_type) {
-            return Ok(None)
+            return Ok(None);
         }
         let value_type = expected_value_type;
 
@@ -478,11 +478,6 @@ impl ThingManager {
                 value.as_reference()
             };
             prefix_constructor(value)
-            // AttributeVertex::build_prefix_for_value(
-            //     attribute_type.vertex().type_id_(),
-            //     value,
-            //     self.vertex_generator.hasher(),
-            // )
         });
         let range_end = range.end_bound().map(|value| {
             let value = if value_type != range_value_type {
@@ -490,11 +485,6 @@ impl ThingManager {
             } else {
                 value.as_reference()
             };
-            // AttributeVertex::build_prefix_for_value(
-            //     attribute_type.vertex().type_id_(),
-            //     value,
-            //     self.vertex_generator.hasher(),
-            // )
             prefix_constructor(value)
         });
         Ok(Some((range_start, range_end)))
@@ -595,24 +585,20 @@ impl ThingManager {
         if matches!(range.start_bound(), Bound::Unbounded) && matches!(range.end_bound(), Bound::Unbounded) {
             return self.get_has_reverse(snapshot, attribute_type);
         }
-        let Some(attribute_value_type) = attribute_type.get_value_type_without_source(snapshot, self.type_manager())? else {
-            return Ok(HasReverseIterator::new_empty())
+        let Some(attribute_value_type) = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?
+        else {
+            return Ok(HasReverseIterator::new_empty());
         };
 
-        let Some((range_start, range_end)) = Self::get_value_range(
-            attribute_value_type,
-            range,
-            |value| {
-                let attribute_vertex_prefix = AttributeVertex::build_prefix_for_value(
-                    attribute_type.vertex().type_id_(),
-                    value,
-                    self.vertex_generator.hasher(),
-                );
-                ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(
-                    attribute_vertex_prefix.as_reference().byte_ref()
-                )
-            }
-        )? else {
+        let Some((range_start, range_end)) = Self::get_value_range(attribute_value_type, range, |value| {
+            let attribute_vertex_prefix = AttributeVertex::build_prefix_for_value(
+                attribute_type.vertex().type_id_(),
+                value,
+                self.vertex_generator.hasher(),
+            );
+            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(attribute_vertex_prefix.as_reference().byte_ref())
+        })?
+        else {
             return Ok(HasReverseIterator::new_empty());
         };
 
@@ -621,7 +607,7 @@ impl ThingManager {
             Bound::Excluded(start) => RangeStart::Exclusive(start),
             Bound::Unbounded => RangeStart::Inclusive(
                 ThingEdgeHasReverse::prefix_from_attribute_type(attribute_type.vertex().type_id_())
-                    .resize_to::<{ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM}>()
+                    .resize_to::<{ ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }>(),
             ),
         };
         let key_range_end = match range_end {
@@ -633,7 +619,9 @@ impl ThingManager {
                 let mut array = prefix.into_bytes().into_array();
                 array.increment().unwrap();
                 let prefix_key = StorageKey::Array(StorageKeyArray::new_raw(keyspace, array));
-                RangeEnd::EndPrefixExclusive(prefix_key.resize_to::<{ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM}>())
+                RangeEnd::EndPrefixExclusive(
+                    prefix_key.resize_to::<{ ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }>(),
+                )
             }
         };
         let key_range = if ThingEdgeHasReverse::FIXED_WIDTH_ENCODING {

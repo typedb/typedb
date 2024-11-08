@@ -7,8 +7,7 @@
 #![deny(elided_lifetimes_in_paths)]
 #![allow(clippy::result_large_err)]
 
-use std::fmt;
-use std::fmt::Formatter;
+use std::{fmt, fmt::Formatter};
 
 use answer::variable::Variable;
 use ir::pattern::IrID;
@@ -74,7 +73,7 @@ impl fmt::Debug for ExecutorVariable {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ExecutorVariable::RowPosition(position) => write!(f, "{position}"),
-            ExecutorVariable::Internal(var) => write!(f, "__{var}__")
+            ExecutorVariable::Internal(var) => write!(f, "__{var}__"),
         }
     }
 }
