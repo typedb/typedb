@@ -43,7 +43,7 @@ build:
       dependencies: [build]
       command: |
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //compiler:test_crate_compiler --test_output=streamed --sandbox_debug
+        bazel test //compiler:test_crate_compiler --test_output=streamed
         bazel test //concept:test_crate_concept --test_output=streamed
         bazel test //database:test_crate_database --test_output=streamed
         bazel test //durability:test_crate_durability  --test_output=streamed
