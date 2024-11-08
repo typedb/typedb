@@ -406,7 +406,7 @@ impl MatchExecutableBuilder {
     fn register_internal(&mut self, var: Variable) {
         if let hash_map::Entry::Vacant(entry) = self.index.entry(var) {
             entry.insert(ExecutorVariable::Internal(var));
-            self.reverse_index.insert(ExecutorVariable::Internal(var), var);
+            self.reverse_index.insert(ExecutorVariable::new_internal(var), var);
         }
     }
 

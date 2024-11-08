@@ -8,8 +8,9 @@ use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     sync::Arc,
 };
+use std::fmt::{Display, Formatter};
 
-use answer::{variable::Variable, variable_value::VariableValue, Type};
+use answer::{Type, variable::Variable};
 use ir::pattern::{
     constraint::{Has, Isa, Links},
     IrID,
@@ -19,36 +20,7 @@ use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::match_::instructions::{CheckInstruction, Inputs},
 };
-
-#[derive(Debug, Clone)]
-pub struct ConstantInstruction<ID> {
-    pub value: VariableValue<'static>,
-    pub var: ID,
-    pub checks: Vec<CheckInstruction<ID>>,
-}
-
-impl ConstantInstruction<Variable> {
-    pub fn new(value: VariableValue<'static>, var: Variable) -> Self {
-        Self { value, var, checks: Vec::new() }
-    }
-}
-
-impl<ID> ConstantInstruction<ID> {
-    pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
-        self.checks.push(check)
-    }
-}
-
-impl<ID: IrID> ConstantInstruction<ID> {
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> ConstantInstruction<T> {
-        let Self { value, var, checks } = self;
-        ConstantInstruction {
-            value,
-            var: mapping[&var],
-            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
-        }
-    }
-}
+use crate::executable::match_::instructions::DisplayVec;
 
 #[derive(Debug, Clone)]
 pub struct IsaInstruction<ID> {
@@ -84,6 +56,12 @@ impl<ID: IrID> IsaInstruction<ID> {
     }
 }
 
+impl<ID: IrID> Display for IsaInstruction<ID> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{}] filter {}", &self.isa, DisplayVec::new(&self.checks))
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct IsaReverseInstruction<ID> {
     pub isa: Isa<ID>,
@@ -115,6 +93,12 @@ impl<ID: IrID> IsaReverseInstruction<ID> {
             type_to_instance_types,
             checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }
+    }
+}
+
+impl<ID: IrID> Display for IsaReverseInstruction<ID> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Reverse[{}] filter {}", &self.isa, DisplayVec::new(&self.checks))
     }
 }
 
@@ -164,6 +148,12 @@ impl<ID: IrID> HasInstruction<ID> {
     }
 }
 
+impl<ID: IrID> Display for HasInstruction<ID> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{}] filter {}", &self.has, DisplayVec::new(&self.checks))
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct HasReverseInstruction<ID> {
     pub has: Has<ID>,
@@ -206,6 +196,12 @@ impl<ID: IrID> HasReverseInstruction<ID> {
             owner_types,
             checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }
+    }
+}
+
+impl<ID: IrID> Display for HasReverseInstruction<ID> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Reverse[{}] filter {}", &self.has, DisplayVec::new(&self.checks))
     }
 }
 
@@ -262,6 +258,12 @@ impl<ID: IrID> LinksInstruction<ID> {
     }
 }
 
+impl<ID: IrID> Display for LinksInstruction<ID> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{}] filter {}", &self.links, DisplayVec::new(&self.checks))
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct LinksReverseInstruction<ID> {
     pub links: Links<ID>,
@@ -312,5 +314,11 @@ impl<ID: IrID> LinksReverseInstruction<ID> {
             relation_types,
             checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }
+    }
+}
+
+impl<ID: IrID> Display for LinksReverseInstruction<ID> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Reverse[{}] filter {}", &self.links, DisplayVec::new(&self.checks))
     }
 }
