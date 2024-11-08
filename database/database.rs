@@ -210,7 +210,7 @@ impl Database<WALClient> {
         }
     }
 
-    const STATISTICS_UPDATE_INTERVAL: Duration = Duration::from_secs(60);
+    const STATISTICS_UPDATE_INTERVAL: Duration = Duration::from_secs(1);
 
     fn create(path: &Path, name: impl AsRef<str>) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::{

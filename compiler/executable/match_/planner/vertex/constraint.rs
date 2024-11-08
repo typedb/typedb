@@ -28,6 +28,7 @@ use crate::{
         },
     },
 };
+use crate::executable::match_::planner::vertex::variable::VariableVertex;
 
 #[derive(Clone, Debug)]
 pub(crate) enum ConstraintVertex<'a> {
@@ -208,7 +209,7 @@ impl<'a> TypeListPlanner<'a> {
 
 impl Costed for TypeListPlanner<'_> {
     fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
-        ElementCost::free_with_branching(self.types.len() as f64)
+        ElementCost::in_mem_complex_with_branching(self.types.len() as f64)
     }
 }
 
@@ -392,7 +393,8 @@ impl<'a> HasPlanner<'a> {
     fn expected_output_size(&self, graph: &Graph<'_>, inputs: &[VertexId]) -> f64 {
         // get selectivity of attribute and multiply it by the expected size based on types
         let attribute = &graph.elements()[&VertexId::Variable(self.attribute)].as_variable().unwrap();
-        self.unbound_typed_expected_size * attribute.selectivity(inputs)
+        let expected_size = self.unbound_typed_expected_size * attribute.selectivity(inputs);
+        f64::max(expected_size, VariableVertex::OUTPUT_SIZE_MIN)
     }
 }
 
@@ -541,7 +543,10 @@ impl<'a> LinksPlanner<'a> {
     }
 
     fn unbound_expected_scan_size(&self, graph: &Graph<'_>) -> f64 {
-        f64::min(self.unbound_expected_scan_size_canonical(graph), self.unbound_expected_scan_size_reverse(graph))
+        f64::max(
+            f64::min(self.unbound_expected_scan_size_canonical(graph), self.unbound_expected_scan_size_reverse(graph)),
+            VariableVertex::OUTPUT_SIZE_MIN
+        )
     }
 
     fn unbound_expected_scan_size_canonical(&self, graph: &Graph<'_>) -> f64 {
@@ -558,7 +563,10 @@ impl<'a> LinksPlanner<'a> {
         // get selectivity of attribute and multiply it by the expected size based on types
         let player = &graph.elements()[&VertexId::Variable(self.player)].as_variable().unwrap();
         let relation = &graph.elements()[&VertexId::Variable(self.relation)].as_variable().unwrap();
-        self.unbound_typed_expected_size * player.selectivity(inputs) * relation.selectivity(inputs)
+        f64::max(
+            self.unbound_typed_expected_size * player.selectivity(inputs) * relation.selectivity(inputs),
+            VariableVertex::OUTPUT_SIZE_MIN
+        )
     }
 }
 
@@ -639,7 +647,7 @@ impl<'a> SubPlanner<'a> {
 
 impl Costed for SubPlanner<'_> {
     fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
-        ElementCost::free_with_branching(1.0) // TODO branching
+        ElementCost::in_mem_complex_with_branching(1.0) // TODO branching
     }
 }
 
@@ -674,7 +682,7 @@ impl<'a> OwnsPlanner<'a> {
 
 impl Costed for OwnsPlanner<'_> {
     fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
-        ElementCost::free_with_branching(1.0) // TODO branching
+        ElementCost::in_mem_complex_with_branching(1.0) // TODO branching
     }
 }
 
@@ -709,7 +717,7 @@ impl<'a> RelatesPlanner<'a> {
 
 impl Costed for RelatesPlanner<'_> {
     fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
-        ElementCost::free_with_branching(1.0) // TODO branching
+        ElementCost::in_mem_complex_with_branching(1.0) // TODO branching
     }
 }
 
@@ -744,6 +752,6 @@ impl<'a> PlaysPlanner<'a> {
 
 impl Costed for PlaysPlanner<'_> {
     fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
-        ElementCost::free_with_branching(1.0) // TODO branching
+        ElementCost::in_mem_complex_with_branching(1.0) // TODO branching
     }
 }
