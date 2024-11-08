@@ -54,7 +54,7 @@ pub(super) type PlaysTupleIterator<I> = Map<
 pub(super) type PlaysUnboundedSortedPlayer = PlaysTupleIterator<
     AsNarrowingIterator<
         iter::Map<
-            iter::Flatten<vec::IntoIter<HashSet<(ObjectType<'static>, RoleType<'static>)>>>,
+            iter::Flatten<vec::IntoIter<BTreeSet<(ObjectType<'static>, RoleType<'static>)>>>,
             fn(
                 (ObjectType<'static>, RoleType<'static>),
             ) -> Result<(ObjectType<'static>, RoleType<'static>), ConceptReadError>,
@@ -193,7 +193,7 @@ impl PlaysExecutor {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         player: Type,
-    ) -> Result<HashSet<(ObjectType<'static>, RoleType<'static>)>, ConceptReadError> {
+    ) -> Result<BTreeSet<(ObjectType<'static>, RoleType<'static>)>, ConceptReadError> {
         let object_type = match player {
             Type::Entity(entity) => entity.into_owned_object_type(),
             Type::Relation(relation) => relation.into_owned_object_type(),

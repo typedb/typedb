@@ -49,7 +49,7 @@ pub(crate) struct PlaysReverseExecutor {
 pub(super) type PlaysReverseUnboundedSortedRole = PlaysTupleIterator<
     AsNarrowingIterator<
         iter::Map<
-            iter::Flatten<vec::IntoIter<HashSet<(ObjectType<'static>, RoleType<'static>)>>>,
+            iter::Flatten<vec::IntoIter<BTreeSet<(ObjectType<'static>, RoleType<'static>)>>>,
             fn(
                 (ObjectType<'static>, RoleType<'static>),
             ) -> Result<(ObjectType<'static>, RoleType<'static>), ConceptReadError>,

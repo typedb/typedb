@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
     iter,
     sync::Arc,
     vec,
@@ -48,7 +48,7 @@ pub(crate) struct OwnsReverseExecutor {
 pub(super) type OwnsReverseUnboundedSortedAttribute = OwnsTupleIterator<
     AsNarrowingIterator<
         iter::Map<
-            iter::Flatten<vec::IntoIter<HashSet<(ObjectType<'static>, AttributeType<'static>)>>>,
+            iter::Flatten<vec::IntoIter<BTreeSet<(ObjectType<'static>, AttributeType<'static>)>>>,
             fn(
                 (ObjectType<'static>, AttributeType<'static>),
             ) -> Result<(ObjectType<'static>, AttributeType<'static>), ConceptReadError>,

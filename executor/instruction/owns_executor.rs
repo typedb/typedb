@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
     iter,
     sync::Arc,
     vec,
@@ -59,7 +59,7 @@ pub(super) type OwnsTupleIterator<I> = Map<
 pub(super) type OwnsUnboundedSortedOwner = OwnsTupleIterator<
     AsNarrowingIterator<
         iter::Map<
-            iter::Flatten<vec::IntoIter<HashSet<(ObjectType<'static>, AttributeType<'static>)>>>,
+            iter::Flatten<vec::IntoIter<BTreeSet<(ObjectType<'static>, AttributeType<'static>)>>>,
             fn(
                 (ObjectType<'static>, AttributeType<'static>),
             ) -> Result<(ObjectType<'static>, AttributeType<'static>), ConceptReadError>,
@@ -200,7 +200,7 @@ impl OwnsExecutor {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         owner: Type,
-    ) -> Result<HashSet<(ObjectType<'static>, AttributeType<'static>)>, ConceptReadError> {
+    ) -> Result<BTreeSet<(ObjectType<'static>, AttributeType<'static>)>, ConceptReadError> {
         let object_type = match owner {
             Type::Entity(entity) => entity.into_owned_object_type(),
             Type::Relation(relation) => relation.into_owned_object_type(),
