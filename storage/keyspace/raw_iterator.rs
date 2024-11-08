@@ -27,7 +27,7 @@ impl DBIterator {
         Self { iterator, item }
     }
 
-    fn peek(&mut self) -> Option<&<Self as LendingIterator>::Item<'_>> {
+    pub(super) fn peek(&mut self) -> Option<&<Self as LendingIterator>::Item<'_>> {
         match self.next() {
             Some(item) => {
                 self.item = Some(unsafe {

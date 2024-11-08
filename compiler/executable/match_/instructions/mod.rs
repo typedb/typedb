@@ -64,7 +64,7 @@ impl VariableModes {
         named: &HashSet<ExecutorVariable>,
     ) -> Self {
         let mut modes = Self::new();
-        instruction.ids_foreach(|var| {
+        instruction.used_variables_foreach(|var| {
             let var_mode = match var {
                 ExecutorVariable::Internal(_) => {
                     VariableMode::new(instruction.is_input_variable(var), false, named.contains(&var))
@@ -159,7 +159,17 @@ impl<ID: IrID> ConstraintInstruction<ID> {
         found
     }
 
-    pub fn ids_foreach(&self, mut apply: impl FnMut(ID)) {
+    pub fn is_new_variable(&self, var: ID) -> bool {
+        let mut found = false;
+        self.new_variables_foreach(|v| {
+            if v == var {
+                found = true;
+            }
+        });
+        found
+    }
+
+    pub fn used_variables_foreach(&self, mut apply: impl FnMut(ID)) {
         match self {
             Self::Is(IsInstruction { is, .. }) => is.ids_foreach(|var, _| apply(var)),
             &Self::TypeList(type_::TypeListInstruction { type_var, .. }) => apply(type_var),

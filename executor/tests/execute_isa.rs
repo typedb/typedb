@@ -27,6 +27,7 @@ use compiler::{
     },
     ExecutorVariable, VariablePosition,
 };
+use compiler::executable::match_::instructions::ConstraintInstruction::IsaReverse;
 use encoding::value::label::Label;
 use executor::{
     error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
@@ -209,7 +210,7 @@ fn traverse_isa_unbounded_sorted_type() {
     // Plan
     let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
         mapping[&var_dog_type],
-        vec![ConstraintInstruction::Isa(IsaInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&mapping))],
+        vec![ConstraintInstruction::IsaReverse(IsaReverseInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&mapping))],
         vec![variable_positions[&var_dog], variable_positions[&var_dog_type]],
         &named_variables,
         2,
@@ -399,8 +400,8 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
     // Plan
     let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
         mapping[&var_dog],
-        vec![ConstraintInstruction::IsaReverse(
-            IsaReverseInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&mapping),
+        vec![ConstraintInstruction::Isa(
+            IsaInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&mapping),
         )],
         vec![variable_positions[&var_dog], variable_positions[&var_dog_type]],
         &named_variables,
@@ -783,8 +784,8 @@ fn traverse_isa_reverse_fixed_type_exact() {
     // Plan
     let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
         mapping[&var_thing],
-        vec![ConstraintInstruction::IsaReverse(
-            IsaReverseInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&mapping),
+        vec![ConstraintInstruction::Isa(
+            IsaInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&mapping),
         )],
         vec![variable_positions[&var_thing]],
         &named_variables,
@@ -873,8 +874,8 @@ fn traverse_isa_reverse_fixed_type_subtype() {
     // Plan
     let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
         mapping[&var_thing],
-        vec![ConstraintInstruction::IsaReverse(
-            IsaReverseInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&mapping),
+        vec![ConstraintInstruction::Isa(
+            IsaInstruction::new(isa, Inputs::None([]), &entry_annotations).map(&mapping),
         )],
         vec![variable_positions[&var_thing]],
         &named_variables,

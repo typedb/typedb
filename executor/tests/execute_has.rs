@@ -27,6 +27,7 @@ use compiler::{
     },
     ExecutorVariable, VariablePosition,
 };
+use compiler::executable::match_::instructions::thing::IsaInstruction;
 use concept::{
     thing::object::ObjectAPI,
     type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
@@ -271,8 +272,8 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     let steps = vec![
         ExecutionStep::Intersection(IntersectionStep::new(
             mapping[&var_person_1],
-            vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_person_1, Inputs::None([]), &entry_annotations).map(&mapping),
+            vec![ConstraintInstruction::Isa(
+                IsaInstruction::new(isa_person_1, Inputs::None([]), &entry_annotations).map(&mapping),
             )],
             vec![variable_positions[&var_person_1]],
             &named_variables,

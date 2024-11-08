@@ -26,7 +26,7 @@ impl fmt::Debug for ActiveTransaction {
 
 macro_rules! with_read_tx {
     ($context:ident, |$tx:ident| $expr:expr) => {
-        match $context.active_transaction.as_ref().unwrap() {
+        match $context.active_transaction.as_ref().expect("No active transaction found") {
             $crate::transaction_context::ActiveTransaction::Read($tx) => $expr,
             $crate::transaction_context::ActiveTransaction::Write($tx) => $expr,
             $crate::transaction_context::ActiveTransaction::Schema($tx) => $expr,

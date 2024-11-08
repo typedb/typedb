@@ -7,7 +7,7 @@
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet, HashMap},
-    sync::Arc,
+    sync::{Arc, OnceLock},
 };
 
 use answer::{variable_value::VariableValue, Thing, Type};
@@ -26,7 +26,10 @@ use lending_iterator::{
     AsHkt, LendingIterator, Peekable,
 };
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
-use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
+use storage::{
+    key_range::{KeyRange, RangeEnd, RangeStart},
+    snapshot::ReadableSnapshot,
+};
 
 use crate::{
     instruction::{
@@ -156,8 +159,10 @@ impl HasExecutor {
             BinaryIterateMode::Unbound => {
                 let first_from_type = self.owner_attribute_types.first_key_value().unwrap().0;
                 let last_key_from_type = self.owner_attribute_types.last_key_value().unwrap().0;
-                let key_range =
-                    KeyRange::new_inclusive(first_from_type.as_object_type(), last_key_from_type.as_object_type());
+                let key_range = KeyRange::new_variable_width(
+                    RangeStart::Inclusive(first_from_type.as_object_type()),
+                    RangeEnd::EndPrefixInclusive(last_key_from_type.as_object_type()),
+                );
                 // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
                 let as_tuples: HasUnboundedSortedOwner = thing_manager
                     .get_has_from_owner_type_range_unordered(snapshot, key_range)

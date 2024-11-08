@@ -39,9 +39,7 @@ use crate::{
         thing_manager::{validation::operation_time_validation::OperationTimeValidation, ThingManager},
         HKInstance, ThingAPI,
     },
-    type_::{
-        relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI, Ordering, OwnerAPI,
-    },
+    type_::{relation_type::RelationType, role_type::RoleType, ObjectTypeAPI, Ordering, OwnerAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
 
@@ -340,7 +338,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
     type Vertex<'b> = ObjectVertex<'b>;
     type TypeAPI<'b> = RelationType<'b>;
     type Owned = Relation<'static>;
-    const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::VertexRelation, Prefix::VertexRelation);
+    const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix) = (Prefix::VertexRelation, Prefix::VertexRelation);
 
     fn new(vertex: Self::Vertex<'a>) -> Self {
         debug_assert_eq!(

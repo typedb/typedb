@@ -24,13 +24,17 @@ use concept::{
     type_::{OwnerAPI, PlayerAPI},
 };
 use encoding::value::{value::Value, ValueEncodable};
-use ir::pattern::{
-    constraint::{Comparator, IsaKind, SubKind},
-    Vertex,
+use ir::{
+    pattern::{
+        constraint::{Comparator, IsaKind, SubKind},
+        ParameterID, Vertex,
+    },
+    pipeline::ParameterRegistry,
 };
 use itertools::Itertools;
 use lending_iterator::higher_order::{FnHktHelper, Hkt};
 use storage::snapshot::ReadableSnapshot;
+use tracing::field::debug;
 
 use crate::{
     instruction::{
@@ -66,6 +70,8 @@ mod sub_executor;
 mod sub_reverse_executor;
 pub(crate) mod tuple;
 mod type_list_executor;
+
+pub(crate) const TYPES_EMPTY: Vec<Type> = Vec::new();
 
 pub(crate) enum InstructionExecutor {
     Is(IsExecutor),
@@ -330,15 +336,16 @@ impl<T: Hkt> Checker<T> {
         Self { extractors, checks, _phantom_data: PhantomData }
     }
 
-    pub(crate) fn range_for<const N: usize>(
+    pub(crate) fn value_range_for(
         &self,
-        _row: MaybeOwnedRow<'_>,
-        _target: ExecutorVariable,
-    ) -> impl RangeBounds<VariableValue<'_>> {
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        row: Option<MaybeOwnedRow<'_>>,
+        target_variable: ExecutorVariable,
+    ) -> Result<(Bound<Value<'_>>, Bound<Value<'_>>), ConceptReadError> {
         fn intersect<'a>(
-            (a_min, a_max): (Bound<VariableValue<'a>>, Bound<VariableValue<'a>>),
-            (b_min, b_max): (Bound<VariableValue<'a>>, Bound<VariableValue<'a>>),
-        ) -> (Bound<VariableValue<'a>>, Bound<VariableValue<'a>>) {
+            (a_min, a_max): (Bound<Value<'a>>, Bound<Value<'a>>),
+            (b_min, b_max): (Bound<Value<'a>>, Bound<Value<'a>>),
+        ) -> (Bound<Value<'a>>, Bound<Value<'a>>) {
             let select_a_min = match (&a_min, &b_min) {
                 (_, Bound::Unbounded) => true,
                 (Bound::Excluded(a), Bound::Included(b)) => a >= b,
@@ -358,29 +365,95 @@ impl<T: Hkt> Checker<T> {
             (if select_a_min { a_min } else { b_min }, if select_a_max { a_max } else { b_max })
         }
 
-        /*
         let mut range = (Bound::Unbounded, Bound::Unbounded);
-        for check in &self.checks {
-            match *check {
-                CheckInstruction::Comparison { lhs, rhs, comparator } if lhs == Vertex::Variable(target) => {
-                    let rhs = row.get(rhs).to_owned();
-                    let comp_range = match comparator {
-                        Comparator::Equal => (Bound::Included(rhs.clone()), Bound::Included(rhs)),
-                        Comparator::Less => (Bound::Unbounded, Bound::Excluded(rhs)),
-                        Comparator::LessOrEqual => (Bound::Unbounded, Bound::Included(rhs)),
-                        Comparator::Greater => (Bound::Excluded(rhs), Bound::Unbounded),
-                        Comparator::GreaterOrEqual => (Bound::Included(rhs), Bound::Unbounded),
-                        Comparator::Like => continue,
-                        Comparator::Contains => continue,
-                    };
-                    range = intersect(range, comp_range);
+        for i in 0..self.checks.len() {
+            let check = &self.checks[i];
+            match check {
+                CheckInstruction::Comparison { lhs, rhs, comparator } => {
+                    if lhs.as_variable() == Some(target_variable) {
+                        let rhs_variable_value = get_vertex_value(rhs, row.as_ref(), &context.parameters);
+                        let rhs_value =
+                            Self::read_value(context.snapshot.as_ref(), &context.thing_manager, &rhs_variable_value)?;
+                        if let Some(rhs_value) = rhs_value {
+                            let comp_range = match comparator {
+                                Comparator::Equal => (Bound::Included(rhs_value.clone()), Bound::Included(rhs_value)),
+                                Comparator::Less => (Bound::Unbounded, Bound::Excluded(rhs_value)),
+                                Comparator::LessOrEqual => (Bound::Unbounded, Bound::Included(rhs_value)),
+                                Comparator::Greater => (Bound::Excluded(rhs_value), Bound::Unbounded),
+                                Comparator::GreaterOrEqual => (Bound::Included(rhs_value), Bound::Unbounded),
+                                Comparator::Like => continue,
+                                Comparator::Contains => continue,
+                                Comparator::NotEqual => continue,
+                            };
+                            range = intersect(range, comp_range);
+                        }
+                    } else {
+                        debug_assert!(
+                            rhs.as_variable().expect("RHS of comparison must be a variable") == target_variable
+                        );
+                        let lhs_variable_value = get_vertex_value(lhs, row.as_ref(), &context.parameters);
+                        let lhs_value =
+                            Self::read_value(context.snapshot.as_ref(), &context.thing_manager, &lhs_variable_value)?;
+                        if let Some(lhs_value) = lhs_value {
+                            let comp_range = match comparator {
+                                Comparator::Equal => (Bound::Included(lhs_value.clone()), Bound::Included(lhs_value)),
+                                Comparator::Less => (Bound::Excluded(lhs_value), Bound::Unbounded),
+                                Comparator::LessOrEqual => (Bound::Included(lhs_value), Bound::Unbounded),
+                                Comparator::Greater => (Bound::Unbounded, Bound::Excluded(lhs_value)),
+                                Comparator::GreaterOrEqual => (Bound::Unbounded, Bound::Included(lhs_value)),
+                                Comparator::Like => continue,
+                                Comparator::Contains => continue,
+                                Comparator::NotEqual => continue,
+                            };
+                            range = intersect(range, comp_range);
+                        }
+                    }
                 }
+                CheckInstruction::Is { lhs, rhs } => {
+                    if *lhs == target_variable {
+                        let rhs_as_vertex = CheckVertex::Variable(*rhs);
+                        let rhs_variable_value = get_vertex_value(&rhs_as_vertex, row.as_ref(), &context.parameters);
+                        let rhs_value = Self::read_value(context.snapshot.as_ref(), &context.thing_manager, &rhs_variable_value)?;
+                        if let Some(rhs_value) = rhs_value {
+                            let comp_range = (Bound::Included(rhs_value.clone()), Bound::Included(rhs_value));
+                            range = intersect(range, comp_range);
+                        }
+                    } else {
+                        let lhs_as_vertex = CheckVertex::Variable(*lhs);
+                        let lhs_variable_value = get_vertex_value(&lhs_as_vertex, row.as_ref(), &context.parameters);
+                        let lhs_value = Self::read_value(context.snapshot.as_ref(), &context.thing_manager, &lhs_variable_value)?;
+                        if let Some(lhs_value) = lhs_value {
+                            let comp_range = (Bound::Included(lhs_value.clone()), Bound::Included(lhs_value));
+                            range = intersect(range, comp_range);
+                        }
+                    }
+                },
                 _ => (),
             }
         }
-        range
-        */
-        todo!() as (Bound<VariableValue<'_>>, Bound<VariableValue<'_>>)
+        let range = (range.0.map(|value| value.into_owned()), range.1.map(|value| value.into_owned()));
+        Ok(range)
+    }
+
+
+
+    fn read_value<'a>(
+        snapshot: &'a impl ReadableSnapshot,
+        thing_manager: &'a ThingManager,
+        variable_value: &'a VariableValue<'_>,
+    ) -> Result<Option<Value<'static>>, ConceptReadError> {
+        // TODO: is there a way to do this without cloning the value?
+        match variable_value {
+            VariableValue::Thing(Thing::Attribute(attribute)) => {
+                let value = attribute.get_value(snapshot, thing_manager)?;
+                Ok(Some(value.into_owned()))
+            }
+            VariableValue::Value(value) => {
+                let value = value.as_reference();
+                Ok(Some(value.into_owned()))
+            }
+            _ => Ok(None),
+        }
     }
 
     pub(crate) fn filter_for_row(
@@ -398,7 +471,7 @@ impl<T: Hkt> Checker<T> {
                     let maybe_type_extractor = self.extractors.get(&type_var);
                     let type_: BoxExtractor<T> = match maybe_type_extractor {
                         Some(&subtype) => Box::new(subtype),
-                        None => make_const_extractor(&CheckVertex::Variable(type_var), context, row),
+                        None => make_const_extractor(&CheckVertex::Variable(type_var), row, context),
                     };
                     let types = types.clone();
                     filters.push(Box::new(move |value| Ok(types.contains(type_(value).as_type()))));
@@ -411,11 +484,11 @@ impl<T: Hkt> Checker<T> {
                     let thing_manager = context.thing_manager.clone();
                     let subtype: BoxExtractor<T> = match maybe_subtype_extractor {
                         Some(&subtype) => Box::new(subtype),
-                        None => make_const_extractor(subtype, context, row),
+                        None => make_const_extractor(subtype, row, context),
                     };
                     let supertype: BoxExtractor<T> = match maybe_supertype_extractor {
                         Some(&supertype) => Box::new(supertype),
-                        None => make_const_extractor(supertype, context, row),
+                        None => make_const_extractor(supertype, row, context),
                     };
                     filters.push(Box::new({
                         move |value| {
@@ -444,11 +517,11 @@ impl<T: Hkt> Checker<T> {
                     let thing_manager = context.thing_manager.clone();
                     let owner: BoxExtractor<T> = match maybe_owner_extractor {
                         Some(&owner) => Box::new(owner),
-                        None => make_const_extractor(owner, context, row),
+                        None => make_const_extractor(owner, row, context),
                     };
                     let attribute: BoxExtractor<T> = match maybe_attribute_extractor {
                         Some(&attribute) => Box::new(attribute),
-                        None => make_const_extractor(attribute, context, row),
+                        None => make_const_extractor(attribute, row, context),
                     };
                     filters.push(Box::new({
                         move |value| {
@@ -470,11 +543,11 @@ impl<T: Hkt> Checker<T> {
                     let thing_manager = context.thing_manager.clone();
                     let relation: BoxExtractor<T> = match maybe_relation_extractor {
                         Some(&relation) => Box::new(relation),
-                        None => make_const_extractor(relation, context, row),
+                        None => make_const_extractor(relation, row, context),
                     };
                     let role_type: BoxExtractor<T> = match maybe_role_type_extractor {
                         Some(&role_type) => Box::new(role_type),
-                        None => make_const_extractor(role_type, context, row),
+                        None => make_const_extractor(role_type, row, context),
                     };
                     filters.push(Box::new({
                         move |value| {
@@ -496,11 +569,11 @@ impl<T: Hkt> Checker<T> {
                     let thing_manager = context.thing_manager.clone();
                     let player: BoxExtractor<T> = match maybe_player_extractor {
                         Some(&player) => Box::new(player),
-                        None => make_const_extractor(player, context, row),
+                        None => make_const_extractor(player, row, context),
                     };
                     let role_type: BoxExtractor<T> = match maybe_role_type_extractor {
                         Some(&role_type) => Box::new(role_type),
-                        None => make_const_extractor(role_type, context, row),
+                        None => make_const_extractor(role_type, row, context),
                     };
                     filters.push(Box::new({
                         move |value| {
@@ -522,11 +595,11 @@ impl<T: Hkt> Checker<T> {
                     let thing_manager = context.thing_manager.clone();
                     let thing: BoxExtractor<T> = match maybe_thing_extractor {
                         Some(&thing) => Box::new(thing),
-                        None => make_const_extractor(thing, context, row),
+                        None => make_const_extractor(thing, row, context),
                     };
                     let type_: BoxExtractor<T> = match maybe_type_extractor {
                         Some(&type_) => Box::new(type_),
-                        None => make_const_extractor(type_, context, row),
+                        None => make_const_extractor(type_, row, context),
                     };
                     filters.push(Box::new({
                         move |value| {
@@ -552,11 +625,11 @@ impl<T: Hkt> Checker<T> {
                     let thing_manager = context.thing_manager.clone();
                     let owner: BoxExtractor<T> = match maybe_owner_extractor {
                         Some(&owner) => Box::new(owner),
-                        None => make_const_extractor(owner, context, row),
+                        None => make_const_extractor(owner, row, context),
                     };
                     let attribute: BoxExtractor<T> = match maybe_attribute_extractor {
                         Some(&attribute) => Box::new(attribute),
-                        None => make_const_extractor(attribute, context, row),
+                        None => make_const_extractor(attribute, row, context),
                     };
                     filters.push(Box::new({
                         move |value| {
@@ -577,15 +650,15 @@ impl<T: Hkt> Checker<T> {
                     let thing_manager = context.thing_manager.clone();
                     let relation: BoxExtractor<T> = match maybe_relation_extractor {
                         Some(&relation) => Box::new(relation),
-                        None => make_const_extractor(relation, context, row),
+                        None => make_const_extractor(relation, row, context),
                     };
                     let player: BoxExtractor<T> = match maybe_player_extractor {
                         Some(&player) => Box::new(player),
-                        None => make_const_extractor(player, context, row),
+                        None => make_const_extractor(player, row, context),
                     };
                     let role: BoxExtractor<T> = match maybe_role_extractor {
                         Some(&role) => Box::new(role),
-                        None => make_const_extractor(role, context, row),
+                        None => make_const_extractor(role, row, context),
                     };
                     filters.push(Box::new({
                         move |value| {
@@ -624,7 +697,7 @@ impl<T: Hkt> Checker<T> {
                     let maybe_lhs_extractor = lhs.as_variable().and_then(|var| self.extractors.get(&var));
                     let lhs: BoxExtractor<T> = match maybe_lhs_extractor {
                         Some(&lhs) => Box::new(lhs),
-                        None => make_const_extractor(lhs, context, row),
+                        None => make_const_extractor(lhs, row, context),
                     };
                     let rhs = match rhs {
                         &CheckVertex::Variable(ExecutorVariable::RowPosition(pos)) => row.get(pos).as_reference(),
@@ -691,17 +764,31 @@ impl<T: Hkt> Checker<T> {
 
 fn make_const_extractor<T: Hkt>(
     vertex: &CheckVertex<ExecutorVariable>,
-    context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     row: &MaybeOwnedRow<'_>,
+    context: &ExecutionContext<impl ReadableSnapshot + 'static>,
 ) -> Box<dyn for<'a> Fn(&'a <T as Hkt>::HktSelf<'_>) -> VariableValue<'a>> {
-    let value = match vertex {
-        &CheckVertex::Variable(ExecutorVariable::RowPosition(pos)) => row.get(pos).as_reference(),
-        &CheckVertex::Variable(ExecutorVariable::Internal(_)) => unreachable!(),
-        &CheckVertex::Parameter(param) => {
-            VariableValue::Value(context.parameters().value_unchecked(param).as_reference())
-        }
-        CheckVertex::Type(type_) => VariableValue::Type(type_.clone()),
-    };
+    let value = get_vertex_value(vertex, Some(row), &context.parameters);
     let owned_value = value.into_owned();
     Box::new(move |_| owned_value.clone())
+}
+
+fn get_vertex_value<'a>(
+    vertex: &'a CheckVertex<ExecutorVariable>,
+    row: Option<&'a MaybeOwnedRow<'a>>,
+    parameters: &'a ParameterRegistry,
+) -> VariableValue<'a> {
+    match vertex {
+        CheckVertex::Variable(var) => match var {
+            ExecutorVariable::RowPosition(position) => {
+                row.expect("CheckVertex::Variable requires a row to take from").get(*position).as_reference()
+            }
+            ExecutorVariable::Internal(_) => {
+                unreachable!("Comparator check variables must have been recorded in the row.")
+            }
+        },
+        CheckVertex::Type(type_) => VariableValue::Type(type_.clone()),
+        CheckVertex::Parameter(parameter_id) => {
+            VariableValue::Value(parameters.value_unchecked(*parameter_id).as_reference())
+        }
+    }
 }

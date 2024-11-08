@@ -46,7 +46,7 @@ fn generate_string_attribute_vertex() {
         let vertex_id = vertex.attribute_id().unwrap_string();
         assert!(vertex_id.is_inline());
         assert_eq!(vertex_id.get_inline_length() as usize, short_string_bytes.length());
-        assert_eq!(vertex_id.get_inline_string_bytes().bytes(), short_string_bytes.bytes());
+        assert_eq!(vertex_id.get_inline_id_value().bytes(), short_string_bytes.bytes());
     }
 
     // 2: vertex for long string that does not exist beforehand with default hasher
@@ -177,7 +177,7 @@ fn generate_struct_attribute_vertex() {
                 .unwrap();
 
             let collide_id = collide_vertex.attribute_id().unwrap_struct();
-            assert_eq!(collide_id.get_hash_hash(), CONSTANT_HASH.to_be_bytes()[..StructAttributeID::HASH_LENGTH]);
+            assert_eq!(collide_id.get_hash_hash(), CONSTANT_HASH.to_be_bytes()[0..StructAttributeID::HASH_LENGTH]);
             assert_eq!(collide_id.get_hash_disambiguator(), 1u8);
         }
         assert_eq!(vertex_id.get_hash_disambiguator(), 0u8);

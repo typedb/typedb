@@ -13,7 +13,7 @@ use std::{
 };
 
 use bytes::byte_array::ByteArray;
-use chrono::{DateTime, NaiveDate, NaiveDateTime};
+use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime};
 
 use crate::{
     value::{
@@ -22,7 +22,7 @@ use crate::{
         date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes,
         decimal_bytes::DecimalBytes,
-        decimal_value::Decimal,
+        decimal_value::{Decimal, FRACTIONAL_PART_DENOMINATOR_LOG10},
         double_bytes::DoubleBytes,
         duration_bytes::DurationBytes,
         duration_value::Duration,
@@ -195,8 +195,7 @@ impl<'a> Value<'a> {
     pub fn cast(self, value_type: &ValueType) -> Option<Value<'static>> {
         if &self.value_type() == value_type {
             return Some(self.into_owned());
-        }
-        if !self.value_type().is_trivially_castable_to(value_type) {
+        } else if !self.value_type().is_trivially_castable_to(value_type) {
             return None;
         }
 
@@ -213,7 +212,109 @@ impl<'a> Value<'a> {
                 debug_assert_eq!(value_type, &ValueType::Double);
                 Some(Value::Double(decimal.to_f64()))
             }
-            Value::Date(_) => todo!(),
+            Value::Date(date) => {
+                debug_assert!(matches!(value_type, &ValueType::DateTime));
+                Some(Value::DateTime(date.and_time(NaiveTime::default())))
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn approximate_cast_lower_bound(self, value_type: &ValueType) -> Option<Value<'static>> {
+        if &self.value_type() == value_type {
+            return Some(self.into_owned());
+        } else if !self.value_type().is_approximately_castable_to(value_type) {
+            return None;
+        } else if self.value_type().is_trivially_castable_to(value_type) {
+            return self.cast(value_type);
+        }
+
+        match self {
+            Value::Long(_) => unreachable!("Handled by trivial cast"),
+            Value::Decimal(decimal) => {
+                debug_assert!(matches!(value_type, &ValueType::Double | &ValueType::Long));
+                match value_type {
+                    ValueType::Long => Some(Value::Long(decimal.integer_part())),
+                    ValueType::Double => Some(Value::Double(decimal.to_f64())),
+                    _ => unreachable!(),
+                }
+            }
+            Value::Double(double) => {
+                debug_assert!(matches!(value_type, &ValueType::Decimal | &ValueType::Long));
+                match value_type {
+                    ValueType::Decimal => {
+                        let integer_part =
+                            if double.floor() > i64::MAX as f64 { i64::MAX } else { double.floor() as i64 };
+                        let fractional_part = (double - (integer_part as f64)).abs();
+                        Some(Value::Decimal(Decimal::new_lower_bound_from(integer_part, fractional_part)))
+                    }
+                    ValueType::Long => {
+                        if double.floor() > i64::MAX as f64 {
+                            Some(Value::Long(i64::MAX))
+                        } else {
+                            Some(Value::Long(double.floor() as i64))
+                        }
+                    }
+                    _ => unreachable!(),
+                }
+            }
+            Value::Date(_) => unreachable!("Handled by trivial cast"),
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn approximate_cast_upper_bound(self, value_type: &ValueType) -> Option<Value<'static>> {
+        if &self.value_type() == value_type {
+            return Some(self.into_owned());
+        } else if !self.value_type().is_approximately_castable_to(value_type) {
+            return None;
+        } else if self.value_type().is_trivially_castable_to(value_type) {
+            return self.cast(value_type);
+        }
+
+        match self {
+            Value::Long(_) => unreachable!("Handled by trivial cast"),
+            Value::Decimal(decimal) => {
+                debug_assert!(matches!(value_type, &ValueType::Double | &ValueType::Long));
+                match value_type {
+                    ValueType::Long => {
+                        let integer_part = decimal.integer_part();
+                        if decimal.fractional_part() == 0 {
+                            Some(Value::Long(integer_part))
+                        } else {
+                            Some(Value::Long(integer_part + 1))
+                        }
+                    }
+                    ValueType::Double => {
+                        // TODO: we might be able to have a tighter bound?
+                        Some(Value::Double(decimal.to_f64() + 1.0 / FRACTIONAL_PART_DENOMINATOR_LOG10 as f64))
+                    }
+                    _ => unreachable!(),
+                }
+            }
+            Value::Double(double) => {
+                debug_assert!(matches!(value_type, &ValueType::Decimal | &ValueType::Long));
+                match value_type {
+                    ValueType::Decimal => {
+                        let integer_part = if double.floor() > i64::MAX as f64 {
+                            panic!("Cannot create an upper-bounding decimal from double {}", double);
+                        } else {
+                            double.floor() as i64
+                        };
+                        let fractional_part = (double - (integer_part as f64)).abs();
+                        Some(Value::Decimal(Decimal::new_upper_bound_from(integer_part, fractional_part)))
+                    }
+                    ValueType::Long => {
+                        if double.floor() > i64::MAX as f64 {
+                            panic!("Cannot create an upper-bounding long from double {}", double);
+                        } else {
+                            Some(Value::Long(double.ceil() as i64))
+                        }
+                    }
+                    _ => unreachable!(),
+                }
+            }
+            Value::Date(_) => unreachable!("Handled by trivial cast"),
             _ => unreachable!(),
         }
     }
@@ -318,14 +419,6 @@ impl<'a> ValueEncodable for Value<'a> {
             Value::String(_) => ByteArray::copy(self.encode_string::<INLINE_LENGTH>().bytes().bytes()),
             Value::Struct(_) => ByteArray::copy(self.encode_struct::<INLINE_LENGTH>().bytes().bytes()),
         }
-    }
-}
-
-impl TryInto<f64> for Value<'static> {
-    type Error = ();
-
-    fn try_into(self) -> Result<f64, Self::Error> {
-        todo!()
     }
 }
 

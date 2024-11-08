@@ -11,7 +11,7 @@ use std::sync::{
 
 use bytes::{byte_array::ByteArray, Bytes};
 use storage::{
-    key_range::KeyRange,
+    key_range::{KeyRange, RangeStart},
     key_value::StorageKey,
     snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot, WritableSnapshot},
     MVCCKey, MVCCStorage,
@@ -83,14 +83,14 @@ impl ThingVertexGenerator {
         let read_snapshot = storage.clone().open_snapshot_read();
         let entity_types = read_snapshot
             .iterate_range(KeyRange::new_within(
-                build_type_vertex_prefix_key(Prefix::VertexEntityType),
+                RangeStart::Inclusive(build_type_vertex_prefix_key(Prefix::VertexEntityType)),
                 Prefix::VertexEntityType.fixed_width_keys(),
             ))
             .collect_cloned_vec(|k, _v| TypeVertex::new(Bytes::Reference(k.byte_ref())).type_id_().as_u16())
             .map_err(|err| EncodingError::ExistingTypesRead { source: err })?;
         let relation_types = read_snapshot
             .iterate_range(KeyRange::new_within(
-                build_type_vertex_prefix_key(Prefix::VertexRelationType),
+                RangeStart::Inclusive(build_type_vertex_prefix_key(Prefix::VertexRelationType)),
                 Prefix::VertexRelationType.fixed_width_keys(),
             ))
             .collect_cloned_vec(|k, _v| TypeVertex::new(Bytes::Reference(k.byte_ref())).type_id_().as_u16())
@@ -350,7 +350,7 @@ impl ThingVertexGenerator {
             Ok(StringAttributeID::build_inline_id(string))
         } else {
             let id = StringAttributeID::build_hashed_id(type_id, string, snapshot, &self.large_value_hasher)?;
-            let hash = id.get_hash_prefix_hash();
+            let hash = id.get_hash_hash();
             let lock = ByteArray::copy_concat([&Prefix::VertexAttribute.prefix_id().bytes(), &type_id.bytes(), &hash]);
             snapshot.exclusive_lock_add(lock);
             Ok(id)

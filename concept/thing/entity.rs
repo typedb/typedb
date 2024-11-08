@@ -27,7 +27,7 @@ use crate::{
         thing_manager::ThingManager,
         HKInstance, ThingAPI,
     },
-    type_::{entity_type::EntityType, type_manager::TypeManager, ObjectTypeAPI, Ordering, OwnerAPI},
+    type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
 
@@ -70,7 +70,7 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
     type Vertex<'b> = ObjectVertex<'b>;
     type TypeAPI<'b> = EntityType<'b>;
     type Owned = Entity<'static>;
-    const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::VertexEntity, Prefix::VertexEntity);
+    const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix) = (Prefix::VertexEntity, Prefix::VertexEntity);
 
     fn new(vertex: ObjectVertex<'a>) -> Self {
         debug_assert_eq!(vertex.prefix(), Prefix::VertexEntity);

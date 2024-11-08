@@ -6,7 +6,7 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_test")
 
 rust_test(
-    name = "debug",
+    name = "test_debug",
     srcs = ["debug.rs"],
     deps = [
         "//tests/behaviour/steps:steps",
