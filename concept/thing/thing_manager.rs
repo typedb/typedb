@@ -52,8 +52,8 @@ use encoding::{
 use itertools::{Itertools, MinMaxResult};
 use lending_iterator::{AsHkt, LendingIterator};
 use resource::constants::{
-    encoding::{StructFieldIDUInt, AD_HOC_BYTES_INLINE},
-    snapshot::BUFFER_KEY_INLINE,
+    encoding::StructFieldIDUInt,
+    snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
 };
 use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
@@ -284,7 +284,7 @@ impl ThingManager {
                             String::from(StringBytes::new(Bytes::<1>::Reference(bytes)).as_str())
                         })
                         .map_err(|error| ConceptReadError::SnapshotGet { source: error })?
-                        .unwrap()
+                        .ok_or(ConceptReadError::CorruptMissingMandatoryAttributeValue)?
                 };
                 Ok(Value::String(Cow::Owned(string)))
             }
@@ -294,7 +294,7 @@ impl ThingManager {
                         StructBytes::new(Bytes::<1>::Reference(bytes)).as_struct()
                     })
                     .map_err(|error| ConceptReadError::SnapshotGet { source: error })?
-                    .unwrap();
+                    .ok_or(ConceptReadError::CorruptMissingMandatoryAttributeValue)?;
                 Ok(Value::Struct(Cow::Owned(struct_value)))
             }
         }
@@ -966,14 +966,8 @@ impl ThingManager {
                 let object = Object::new(has.from()).into_owned();
                 let attribute = Attribute::new(has.to()).into_owned();
                 let attribute_type = attribute.type_();
-                let attribute_value = attribute.get_value(snapshot, self)?;
 
-                self.add_exclusive_lock_for_unique_constraint(
-                    snapshot,
-                    &object,
-                    attribute_value,
-                    attribute_type.clone(),
-                )?;
+                self.add_exclusive_lock_for_unique_constraint(snapshot, &object, attribute)?;
                 self.add_exclusive_lock_for_owns_cardinality_constraint(snapshot, &object, attribute_type)?;
             } else if ThingEdgeLinks::is_links(key_reference) {
                 let role_player = ThingEdgeLinks::new(Bytes::Reference(key_reference.byte_ref()));
@@ -993,17 +987,26 @@ impl ThingManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         owner: &Object<'a>,
-        value: Value<'a>,
-        attribute_type: AttributeType<'static>,
+        attribute: Attribute<'a>,
     ) -> Result<(), ConceptReadError> {
-        let unique_constraint_opt =
-            owner.type_().get_owned_attribute_type_constraint_unique(snapshot, self.type_manager(), attribute_type)?;
+        let unique_constraint_opt = owner.type_().get_owned_attribute_type_constraint_unique(
+            snapshot,
+            self.type_manager(),
+            attribute.type_(),
+        )?;
         if let Some(unique_constraint) = unique_constraint_opt {
+            let attribute_key = attribute.vertex();
+            let attribute_value = snapshot
+                .get_last_existing::<BUFFER_VALUE_INLINE>(attribute_key.as_storage_key().as_reference())
+                .map_err(|error| ConceptReadError::SnapshotGet { source: error })?
+                .ok_or(ConceptReadError::CorruptMissingMandatoryAttributeValue)?;
+
             let lock_key = create_custom_lock_key(
                 [
                     &Infix::PropertyAnnotationUnique.infix_id().bytes(),
                     unique_constraint.source().attribute().vertex().bytes().bytes(),
-                    value.encode_bytes::<AD_HOC_BYTES_INLINE>().bytes(),
+                    attribute_key.attribute_id().bytes(),
+                    attribute_value.bytes(),
                     owner.vertex().bytes().bytes(),
                     unique_constraint.source().owner().vertex().bytes().bytes(),
                 ]

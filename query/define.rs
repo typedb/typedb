@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::HashSet;
+
 use answer::Type as TypeEnum;
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
@@ -36,20 +38,22 @@ use typeql::{
         },
         Struct, Type,
     },
-    token, Definable,
+    token,
+    token::Keyword,
+    Definable,
 };
 
 use crate::{
     definable_resolution::{
         filter_variants, get_struct_field_value_type_optionality, resolve_attribute_type, resolve_relates,
         resolve_relates_declared, resolve_role_type, resolve_struct_definition_key, resolve_typeql_type,
-        resolve_value_type, try_resolve_typeql_type, try_unwrap, type_ref_to_label_and_ordering, type_to_object_type,
+        resolve_value_type, try_resolve_typeql_type, type_ref_to_label_and_ordering, type_to_object_type,
         SymbolResolutionError,
     },
     definable_status::{
         get_capability_annotation_status, get_owns_status, get_plays_status, get_relates_status,
         get_struct_field_status, get_struct_status, get_sub_status, get_type_annotation_status, get_value_type_status,
-        DefinableStatus,
+        DefinableStatus, DefinableStatusMode,
     },
 };
 
@@ -96,7 +100,7 @@ fn process_type_definitions(
     definables: &[Definable],
 ) -> Result<(), DefineError> {
     let declarations = filter_variants!(Definable::TypeDeclaration : definables);
-    declarations.clone().try_for_each(|declaration| define_types(snapshot, type_manager, declaration))?;
+    define_types(snapshot, type_manager, declarations.clone())?;
     declarations.clone().try_for_each(|declaration| define_alias(snapshot, type_manager, declaration))?;
     declarations
         .clone()
@@ -126,7 +130,29 @@ fn process_function_definitions(
     definables: &[Definable],
 ) -> Result<(), DefineError> {
     filter_variants!(Definable::Function : definables)
-        .try_for_each(|function| define_functions(snapshot, type_manager, function))?;
+        .try_for_each(|function| define_function(snapshot, type_manager, function))?;
+    Ok(())
+}
+
+fn define_types<'a>(
+    snapshot: &mut impl WritableSnapshot,
+    type_manager: &TypeManager,
+    mut declarations: impl Iterator<Item = &'a Type>,
+) -> Result<(), DefineError> {
+    let mut undefined_labels: HashSet<Label<'static>> = HashSet::new();
+
+    declarations.try_for_each(|declaration| define_type(snapshot, type_manager, declaration, &mut undefined_labels))?;
+
+    for label in undefined_labels {
+        let existing =
+            try_resolve_typeql_type(snapshot, type_manager, &label).map_err(|err| DefineError::SymbolResolution {
+                typedb_source: SymbolResolutionError::UnexpectedConceptRead { source: err },
+            })?;
+        if existing.is_none() {
+            return Err(DefineError::SymbolResolution { typedb_source: SymbolResolutionError::TypeNotFound { label } });
+        }
+    }
+
     Ok(())
 }
 
@@ -179,8 +205,9 @@ fn define_struct_fields(
             DefinableStatus::ExistsSame(_) => return Ok(()),
             DefinableStatus::ExistsDifferent(existing_field) => {
                 return Err(DefineError::StructFieldAlreadyDefinedButDifferent {
-                    field: field.to_owned(),
+                    struct_name: name.to_owned(),
                     existing_field,
+                    declaration: field.to_owned(),
                 });
             }
         }
@@ -196,10 +223,11 @@ fn define_struct_fields(
     Ok(())
 }
 
-fn define_types(
+fn define_type(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     type_declaration: &Type,
+    undefined_labels: &mut HashSet<Label<'static>>,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let existing = try_resolve_typeql_type(snapshot, type_manager, &label).map_err(|err| {
@@ -208,9 +236,7 @@ fn define_types(
     match type_declaration.kind {
         None => {
             if existing.is_none() {
-                return Err(DefineError::SymbolResolution {
-                    typedb_source: SymbolResolutionError::TypeNotFound { label },
-                });
+                undefined_labels.insert(label);
             }
         }
         Some(token::Kind::Role) => {
@@ -267,11 +293,12 @@ fn define_type_annotations(
                     &label,
                     entity.clone(),
                     annotation.clone(),
+                    type_declaration,
                 )? {
                     entity.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
                         DefineError::SetAnnotation {
                             typedb_source: source,
-                            label: label.to_owned(),
+                            type_: label.to_owned(),
                             annotation_declaration: typeql_annotation.clone(),
                         }
                     })?;
@@ -284,11 +311,12 @@ fn define_type_annotations(
                     &label,
                     relation.clone(),
                     annotation.clone(),
+                    type_declaration,
                 )? {
                     relation.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
                         DefineError::SetAnnotation {
                             typedb_source: source,
-                            label: label.to_owned(),
+                            type_: label.to_owned(),
                             annotation_declaration: typeql_annotation.clone(),
                         }
                     })?;
@@ -301,6 +329,7 @@ fn define_type_annotations(
                     &label,
                     attribute.clone(),
                     annotation.clone(),
+                    type_declaration,
                 )? {
                     if converted.is_value_type_annotation() {
                         return Err(DefineError::IllegalAnnotation {
@@ -310,7 +339,7 @@ fn define_type_annotations(
                     attribute.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
                         DefineError::SetAnnotation {
                             typedb_source: source,
-                            label: label.to_owned(),
+                            type_: label.to_owned(),
                             annotation_declaration: typeql_annotation.clone(),
                         }
                     })?;
@@ -327,14 +356,13 @@ fn define_alias(
     _type_manager: &TypeManager,
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
-    type_declaration
-        .capabilities
-        .iter()
-        .filter_map(|capability| try_unwrap!(CapabilityBase::Alias = &capability.base))
-        .try_for_each(|_| Err(DefineError::Unimplemented { description: "Alias definition.".to_string() }))?;
-
-    // TODO: Uncomment when alias is implemented
-    // define_alias_annotations(capability)?;
+    for capability in &type_declaration.capabilities {
+        let CapabilityBase::Alias(_alias) = &capability.base else {
+            continue;
+        };
+        return Err(DefineError::Unimplemented { description: "Alias definition.".to_string() });
+        // define_alias_annotations(capability) // Uncomment when implemented
+    }
 
     Ok(())
 }
@@ -360,20 +388,17 @@ fn define_sub(
         let supertype_label = Label::parse_from(sub.supertype_label.ident.as_str());
         let supertype = resolve_typeql_type(snapshot, type_manager, &supertype_label)
             .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
-        if type_.kind() != supertype.kind() {
-            return Err(err_capability_kind_mismatch(
-                &label,
-                &supertype_label,
-                capability,
-                type_.kind(),
-                supertype.kind(),
-            ));
-        }
 
         match (&type_, supertype) {
             (TypeEnum::Entity(type_), TypeEnum::Entity(supertype)) => {
-                let need_define =
-                    check_can_and_need_define_sub(snapshot, type_manager, &label, type_.clone(), supertype.clone())?;
+                let need_define = check_can_and_need_define_sub(
+                    snapshot,
+                    type_manager,
+                    &label,
+                    type_.clone(),
+                    supertype.clone(),
+                    capability,
+                )?;
                 if need_define {
                     type_
                         .set_supertype(snapshot, type_manager, thing_manager, supertype)
@@ -381,8 +406,14 @@ fn define_sub(
                 }
             }
             (TypeEnum::Relation(type_), TypeEnum::Relation(supertype)) => {
-                let need_define =
-                    check_can_and_need_define_sub(snapshot, type_manager, &label, type_.clone(), supertype.clone())?;
+                let need_define = check_can_and_need_define_sub(
+                    snapshot,
+                    type_manager,
+                    &label,
+                    type_.clone(),
+                    supertype.clone(),
+                    capability,
+                )?;
                 if need_define {
                     type_
                         .set_supertype(snapshot, type_manager, thing_manager, supertype)
@@ -390,8 +421,14 @@ fn define_sub(
                 }
             }
             (TypeEnum::Attribute(type_), TypeEnum::Attribute(supertype)) => {
-                let need_define =
-                    check_can_and_need_define_sub(snapshot, type_manager, &label, type_.clone(), supertype.clone())?;
+                let need_define = check_can_and_need_define_sub(
+                    snapshot,
+                    type_manager,
+                    &label,
+                    type_.clone(),
+                    supertype.clone(),
+                    capability,
+                )?;
                 if need_define {
                     type_
                         .set_supertype(snapshot, type_manager, thing_manager, supertype)
@@ -399,9 +436,17 @@ fn define_sub(
                 }
             }
             (TypeEnum::RoleType(_), TypeEnum::RoleType(_)) => {
-                return Err(err_unsupported_capability(&label, Kind::Role, capability));
+                unreachable!("RoleType's sub is controlled by specialise")
+            } // Turn into an error
+            (type_, supertype) => {
+                return Err(err_capability_kind_mismatch(
+                    &label,
+                    &supertype_label,
+                    capability,
+                    type_.kind(),
+                    supertype.kind(),
+                ))
             }
-            _ => unreachable!(),
         }
 
         define_sub_annotations(capability)?;
@@ -432,24 +477,31 @@ fn define_value_type(
         let value_type = resolve_value_type(snapshot, type_manager, &value_type_statement.value_type)
             .map_err(|typedb_source| DefineError::ValueTypeSymbolResolution { typedb_source })?;
 
-        let definition_status =
-            get_value_type_status(snapshot, type_manager, attribute_type.clone(), value_type.clone())
-                .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        let definition_status = get_value_type_status(
+            snapshot,
+            type_manager,
+            attribute_type.clone(),
+            value_type.clone(),
+            DefinableStatusMode::Declared,
+        )
+        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
         let define_needed = match definition_status {
             DefinableStatus::DoesNotExist => true,
             DefinableStatus::ExistsSame(_) => false,
             DefinableStatus::ExistsDifferent(existing_value_type) => {
                 return Err(DefineError::AttributeTypeValueTypeAlreadyDefinedButDifferent {
-                    label: label.to_owned(),
+                    type_: label.to_owned(),
+                    key: Keyword::Value,
                     value_type,
                     existing_value_type,
+                    declaration: capability.clone(),
                 });
             }
         };
 
         if define_needed {
             attribute_type.set_value_type(snapshot, type_manager, thing_manager, value_type.clone()).map_err(
-                |source| DefineError::SetValueType { label: label.to_owned(), value_type, typedb_source: source },
+                |source| DefineError::SetValueType { type_: label.to_owned(), value_type, typedb_source: source },
             )?;
         }
 
@@ -460,6 +512,7 @@ fn define_value_type(
             attribute_type.clone(),
             &label,
             capability,
+            type_declaration,
         )?;
     }
     Ok(())
@@ -472,6 +525,7 @@ fn define_value_type_annotations<'a>(
     attribute_type: AttributeType<'a>,
     attribute_type_label: &Label<'a>,
     typeql_capability: &TypeQLCapability,
+    typeql_type: &Type,
 ) -> Result<(), DefineError> {
     for typeql_annotation in &typeql_capability.annotations {
         let annotation =
@@ -482,6 +536,7 @@ fn define_value_type_annotations<'a>(
             attribute_type_label,
             attribute_type.clone(),
             annotation.clone(),
+            typeql_type,
         )? {
             if !converted.is_value_type_annotation() {
                 return Err(DefineError::IllegalAnnotation {
@@ -491,7 +546,7 @@ fn define_value_type_annotations<'a>(
             attribute_type.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
                 DefineError::SetAnnotation {
                     typedb_source: source,
-                    label: attribute_type_label.clone().into_owned(),
+                    type_: attribute_type_label.clone().into_owned(),
                     annotation_declaration: typeql_annotation.clone(),
                 }
             })?;
@@ -520,31 +575,34 @@ fn define_relates_with_annotations(
         let (role_label, ordering) = type_ref_to_label_and_ordering(&label, &relates.related)
             .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
 
-        let definition_status =
-            get_relates_status(snapshot, type_manager, relation_type.clone(), &role_label, ordering)
-                .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        let definition_status = get_relates_status(
+            snapshot,
+            type_manager,
+            relation_type.clone(),
+            &role_label,
+            ordering,
+            DefinableStatusMode::Declared,
+        )
+        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
         let defined = match definition_status {
             DefinableStatus::DoesNotExist => {
                 let relates = relation_type
                     .create_relates(snapshot, type_manager, thing_manager, role_label.name.as_str(), ordering)
                     .map_err(|source| DefineError::CreateRelates {
-                        typedb_source: source,
                         relates: relates.to_owned(),
+                        key: Keyword::Relates,
+                        typedb_source: source,
                     })?;
                 relates
             }
             DefinableStatus::ExistsSame(Some((existing_relates, _))) => existing_relates,
             DefinableStatus::ExistsSame(None) => unreachable!("Existing relates concept expected"),
-            DefinableStatus::ExistsDifferent((existing_relates, existing_ordering)) => {
+            DefinableStatus::ExistsDifferent((_, existing_ordering)) => {
                 return Err(DefineError::RelatesAlreadyDefinedButDifferent {
-                    label: label.clone(),
+                    type_: label.clone(),
+                    key: Keyword::Relates,
                     role: role_label.name.to_string(),
                     ordering,
-                    existing_relates: format!(
-                        "{} relates {}",
-                        existing_relates.relation().get_label(snapshot, type_manager).unwrap().name.to_string(),
-                        existing_relates.role().get_label(snapshot, type_manager).unwrap().name.to_string()
-                    ),
                     existing_ordering,
                     declaration: capability.to_owned(),
                 });
@@ -576,7 +634,7 @@ fn define_relates_annotations<'a>(
         )? {
             relates.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
                 DefineError::SetAnnotation {
-                    label: relation_label.clone().into_owned(),
+                    type_: relation_label.clone().into_owned(),
                     typedb_source: source,
                     annotation_declaration: typeql_annotation.clone(),
                 }
@@ -633,25 +691,34 @@ fn define_relates_specialise<'a>(
             DefinableStatus::ExistsSame(_) => Ok(false),
             DefinableStatus::ExistsDifferent(existing_superrole) => {
                 Err(DefineError::RelatesSpecialiseAlreadyDefinedButDifferent {
-                    label: relation_label.clone().into_owned(),
-                    specialised_interface: specialised_relates
+                    type_: relation_label.clone().into_owned(),
+                    relates_key: Keyword::Relates,
+                    as_key: Keyword::As,
+                    specialised_role_name: specialised_relates
                         .role()
                         .get_label(snapshot, type_manager)
                         .map_err(|source| DefineError::UnexpectedConceptRead { source })?
-                        .clone()
-                        .into_owned(),
-                    existing_specialised_interface: existing_superrole
+                        .name()
+                        .to_string(),
+                    specialising_role_name: relates
+                        .role()
                         .get_label(snapshot, type_manager)
                         .map_err(|source| DefineError::UnexpectedConceptRead { source })?
-                        .clone()
-                        .into_owned(),
+                        .name()
+                        .to_string(),
+                    existing_specialised_role_name: existing_superrole
+                        .get_label(snapshot, type_manager)
+                        .map_err(|source| DefineError::UnexpectedConceptRead { source })?
+                        .name()
+                        .to_string(),
+                    declaration: typeql_relates.clone(),
                 })
             }
         }?;
 
         if need_define {
             relates.set_specialise(snapshot, type_manager, thing_manager, specialised_relates).map_err(|source| {
-                DefineError::SetSpecialise { label: relation_label.clone().into_owned(), typedb_source: source }
+                DefineError::SetSpecialise { type_: relation_label.clone().into_owned(), typedb_source: source }
             })?;
         }
     }
@@ -679,28 +746,35 @@ fn define_owns_with_annotations(
         let object_type =
             type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
 
-        let definition_status =
-            get_owns_status(snapshot, type_manager, object_type.clone(), attribute_type.clone(), ordering)
-                .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        let definition_status = get_owns_status(
+            snapshot,
+            type_manager,
+            object_type.clone(),
+            attribute_type.clone(),
+            ordering,
+            DefinableStatusMode::Declared,
+        )
+        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
         let defined = match definition_status {
             DefinableStatus::DoesNotExist => {
                 let owns = object_type
                     .set_owns(snapshot, type_manager, thing_manager, attribute_type, ordering)
-                    .map_err(|source| DefineError::CreateOwns { owns: owns.clone(), typedb_source: source })?;
+                    .map_err(|source| DefineError::CreateOwns {
+                        owns: owns.clone(),
+                        key: Keyword::Owns,
+                        typedb_source: source,
+                    })?;
                 owns
             }
             DefinableStatus::ExistsSame(Some((existing_owns, _))) => existing_owns,
             DefinableStatus::ExistsSame(None) => unreachable!("Existing owns concept expected"),
-            DefinableStatus::ExistsDifferent((existing_owns, existing_ordering)) => {
+            DefinableStatus::ExistsDifferent((_, existing_ordering)) => {
                 return Err(DefineError::OwnsAlreadyDefinedButDifferent {
-                    label: label.clone(),
+                    type_: label.clone(),
+                    key: Keyword::Owns,
+                    attribute: attr_label,
                     declaration: capability.to_owned(),
                     ordering,
-                    existing_owns: format!(
-                        "{} owns {}",
-                        existing_owns.owner().get_label(snapshot, type_manager).unwrap().name.to_string(),
-                        existing_owns.attribute().get_label(snapshot, type_manager).unwrap().name.to_string(),
-                    ),
                     existing_ordering,
                 });
             }
@@ -731,7 +805,7 @@ fn define_owns_annotations<'a>(
         )? {
             owns.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
                 DefineError::SetAnnotation {
-                    label: owner_label.clone().into_owned(),
+                    type_: owner_label.clone().into_owned(),
                     typedb_source: source,
                     annotation_declaration: typeql_annotation.clone(),
                 }
@@ -761,12 +835,20 @@ fn define_plays_with_annotations(
         let object_type =
             type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
 
-        let definition_status = get_plays_status(snapshot, type_manager, object_type.clone(), role_type.clone())
-            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        let definition_status = get_plays_status(
+            snapshot,
+            type_manager,
+            object_type.clone(),
+            role_type.clone(),
+            DefinableStatusMode::Declared,
+        )
+        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
         let defined = match definition_status {
-            DefinableStatus::DoesNotExist => object_type
-                .set_plays(snapshot, type_manager, thing_manager, role_type)
-                .map_err(|source| DefineError::CreatePlays { plays: plays.clone(), typedb_source: source })?,
+            DefinableStatus::DoesNotExist => {
+                object_type.set_plays(snapshot, type_manager, thing_manager, role_type).map_err(|source| {
+                    DefineError::CreatePlays { plays: plays.clone(), key: Keyword::Plays, typedb_source: source }
+                })?
+            }
             DefinableStatus::ExistsSame(Some(existing_plays)) => existing_plays,
             DefinableStatus::ExistsSame(None) => unreachable!("Existing plays concept expected"),
             DefinableStatus::ExistsDifferent(_) => unreachable!("Plays cannot differ"),
@@ -797,7 +879,7 @@ fn define_plays_annotations<'a>(
         )? {
             plays.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
                 DefineError::SetAnnotation {
-                    label: player_label.clone().into_owned(),
+                    type_: player_label.clone().into_owned(),
                     typedb_source: source,
                     annotation_declaration: typeql_annotation.clone(),
                 }
@@ -807,7 +889,7 @@ fn define_plays_annotations<'a>(
     Ok(())
 }
 
-fn define_functions(
+fn define_function(
     _snapshot: &impl WritableSnapshot,
     _type_manager: &TypeManager,
     _declaration: &Function,
@@ -821,6 +903,7 @@ fn check_can_and_need_define_sub<'a, T: TypeAPI<'a>>(
     label: &Label<'a>,
     type_: T,
     new_supertype: T,
+    capability: &TypeQLCapability,
 ) -> Result<bool, DefineError> {
     let definition_status = get_sub_status(snapshot, type_manager, type_, new_supertype.clone())
         .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
@@ -828,17 +911,19 @@ fn check_can_and_need_define_sub<'a, T: TypeAPI<'a>>(
         DefinableStatus::DoesNotExist => Ok(true),
         DefinableStatus::ExistsSame(_) => Ok(false),
         DefinableStatus::ExistsDifferent(existing) => Err(DefineError::TypeSubAlreadyDefinedButDifferent {
-            label: label.clone().into_owned(),
-            supertype_label: new_supertype
+            type_: label.clone().into_owned(),
+            key: Keyword::Sub,
+            supertype: new_supertype
                 .get_label(snapshot, type_manager)
                 .map_err(|source| DefineError::UnexpectedConceptRead { source })?
                 .clone()
                 .into_owned(),
-            existing_supertype_label: existing
+            existing_supertype: existing
                 .get_label(snapshot, type_manager)
                 .map_err(|source| DefineError::UnexpectedConceptRead { source })?
                 .clone()
                 .into_owned(),
+            declaration: capability.clone(),
         }),
     }
 }
@@ -849,6 +934,7 @@ fn type_convert_and_validate_annotation_definition_need<'a, T: KindAPI<'a>>(
     label: &Label<'a>,
     type_: T,
     annotation: Annotation,
+    typeql_declaration: &Type,
 ) -> Result<Option<T::AnnotationType>, DefineError> {
     let converted =
         T::AnnotationType::try_from(annotation.clone()).map_err(|source| DefineError::IllegalAnnotation { source })?;
@@ -860,9 +946,10 @@ fn type_convert_and_validate_annotation_definition_need<'a, T: KindAPI<'a>>(
         DefinableStatus::DoesNotExist => Ok(Some(converted)),
         DefinableStatus::ExistsSame(_) => Ok(None),
         DefinableStatus::ExistsDifferent(existing) => Err(DefineError::TypeAnnotationAlreadyDefinedButDifferent {
-            label: label.clone().into_owned(),
+            type_: label.clone().into_owned(),
             annotation,
             existing_annotation: existing.clone().into(),
+            declaration: typeql_declaration.clone(),
         }),
     }
 }
@@ -885,9 +972,9 @@ fn capability_convert_and_validate_annotation_definition_need<'a, CAP: Capabilit
         DefinableStatus::ExistsSame(_) => Ok(None),
         DefinableStatus::ExistsDifferent(existing) => {
             Err(DefineError::CapabilityAnnotationAlreadyDefinedButDifferent {
-                declaration: typeql_capability.clone(),
                 annotation,
                 existing_annotation: existing.clone().into(),
+                declaration: typeql_capability.clone(),
             })
         }
     }
@@ -907,6 +994,10 @@ fn err_capability_kind_mismatch(
         left_kind,
         right_kind,
     }
+}
+
+fn err_unsupported_capability(label: &Label<'static>, kind: Kind, capability: &TypeQLCapability) -> DefineError {
+    DefineError::TypeCannotHaveCapability { type_: label.to_owned(), kind, capability: capability.clone() }
 }
 
 typedb_error!(
@@ -941,9 +1032,10 @@ typedb_error!(
         ),
         StructFieldAlreadyDefinedButDifferent(
             9,
-            "Struct field '{field}' already exists with a different definition {existing_field}.",
-            field: Field,
-            existing_field: StructDefinitionField
+            "Defining struct field for struct '{struct_name}' failed since it already has a different definition: {existing_field}.\nSource:\n{declaration}",
+            struct_name: String,
+            existing_field: StructDefinitionField,
+            declaration: Field
         ),
         SetSupertype(
             10,
@@ -953,8 +1045,8 @@ typedb_error!(
         ),
         TypeCannotHaveCapability(
             11,
-            "Invalid define - the type '{label}' of kind '{kind}', which cannot have: '{capability}'",
-            label: Label<'static>,
+            "Invalid define - the type '{type_}' of kind '{kind}', which cannot have: '{capability}'",
+            type_: Label<'static>,
             kind: Kind,
             capability: TypeQLCapability
         ),
@@ -963,113 +1055,118 @@ typedb_error!(
             "Error resolving value type in define query.",
             ( typedb_source: SymbolResolutionError )
         ),
-        // TODO: add source TypeQL fragment here so we get line number, ideally!
         TypeSubAlreadyDefinedButDifferent(
             13,
-            "Defining supertype of type '{label}' to '{supertype_label}' failed since it already has supertype '{existing_supertype_label}'. Try redefine instead?",
-            label: Label<'static>,
-            supertype_label: Label<'static>,
-            existing_supertype_label: Label<'static>
-        ),
-        // TODO: need the label that is the specialising type should be provided - need all 4: <x> relates <y> as <z> failed because <q> exists
-        RelatesSpecialiseAlreadyDefinedButDifferent(
-            14,
-            "On type '{label}', the define of specialise using '{specialised_interface}' failed since it already has specialise '{existing_specialised_interface}'. Try redefine instead?",
-            label: Label<'static>,
-            specialised_interface: Label<'static>,
-            existing_specialised_interface: Label<'static>
+            "Defining '{key} {supertype}' for type '{type_}' failed since a different '{type_} {key} {existing_supertype}' is already defined. Try redefine instead?\nSource:\n{declaration}",
+            type_: Label<'static>,
+            key: Keyword,
+            supertype: Label<'static>,
+            existing_supertype: Label<'static>,
+            declaration: TypeQLCapability
         ),
         AttributeTypeValueTypeAlreadyDefinedButDifferent(
-            15,
-            "Attribute type '{label}' cannot be defined to have value type '{value_type}' since it already has value type '{existing_value_type}'. Try redefine instead?",
-            label: Label<'static>,
+            14,
+            "Defining '{key} {value_type}' for type '{type_}' failed since a different '{type_} {key} {existing_value_type}' is already defined. Try redefine instead?\nSource:\n{declaration}",
+            type_: Label<'static>,
+            key: Keyword,
             value_type: ValueType,
-            existing_value_type: ValueType
+            existing_value_type: ValueType,
+            declaration: TypeQLCapability
         ),
         TypeAnnotationAlreadyDefinedButDifferent(
-            16,
-            "Annotation on type '{label}' cannot be defined as '{annotation}' since it already has '{existing_annotation}'. Try redefine instead?",
-            label: Label<'static>,
+            15,
+            "Defining annotation '{annotation}' for type '{type_}' failed since a different '{type_} {existing_annotation}' is already defined. Try redefine instead?\nSource:\n{declaration}",
+            type_: Label<'static>,
             annotation: Annotation,
-            existing_annotation: Annotation
+            existing_annotation: Annotation,
+            declaration: Type
         ),
         CapabilityAnnotationAlreadyDefinedButDifferent(
-            17,
-            "Annotation '{annotation}' already exists as '{existing_annotation}'. Try redefine instead?\nSource:\n:{declaration}",
-            declaration: TypeQLCapability,
+            16,
+            "Defining annotation '{annotation}' for a capability failed since a different annotation '{existing_annotation}' is already defined. Try redefine instead?\nSource:\n:{declaration}",
             annotation: Annotation,
-            existing_annotation: Annotation
-        ),
-        SetValueType(
-            18,
-            "Defining '{label}' to have value type '{value_type}' failed.",
-            label: Label<'static>,
-            value_type: ValueType,
-            ( typedb_source: ConceptWriteError )
-        ),
-        CreateRelates(
-            19,
-            "Defining new 'relates' failed.\nSource:\n{relates}",
-            relates: TypeQLRelates,
-            ( typedb_source: ConceptWriteError )
-        ),
-        CreatePlays(
-            20,
-            "Defining new 'plays' failed.\nSource:\n{plays}",
-            plays: TypeQLPlays,
-            ( typedb_source: ConceptWriteError )
-        ),
-        CreateOwns(
-            21,
-            "Defining new 'owns' failed.\nSource:\n{owns}",
-            owns: TypeQLOwns,
-            ( typedb_source: ConceptWriteError )
-        ),
-        SetOwnsOrdering(
-            22,
-            "Defining 'owns' ordering failed.\nSource:\n{owns}",
-            owns: TypeQLOwns,
-            ( typedb_source: ConceptWriteError )
+            existing_annotation: Annotation,
+            declaration: TypeQLCapability
         ),
         RelatesAlreadyDefinedButDifferent(
-            23,
-            "Relation type '{label}' define 'relates' failed because it already has existing relates '{existing_relates}{existing_ordering}'. Try redefine instead?\nSource:\n{declaration}",
-            label: Label<'static>,
+            17,
+            "Defining '{key} {role}{ordering}' for type '{type_}' failed since a different '{type_} {key} {role}{existing_ordering}' is already defined. Try redefine instead?\nSource:\n{declaration}",
+            type_: Label<'static>,
+            key: Keyword,
             role: String,
             ordering: Ordering,
-            existing_relates: String,
             existing_ordering: Ordering,
             declaration: TypeQLCapability
         ),
         OwnsAlreadyDefinedButDifferent(
-            24,
-            "Type '{label}' define 'owns{ordering}' failed because it already has existing owns '{existing_owns}{existing_ordering}'. Try redefine instead?\nSource:\n{declaration}.",
-            label: Label<'static>,
-            declaration: TypeQLCapability,
-            existing_owns: String,
+            18,
+            "Defining '{key} {attribute}{ordering}' for type '{type_}' failed since a different '{type_} {key} {attribute}{existing_ordering}' is already defined. Try redefine instead?\nSource:\n{declaration}",
+            type_: Label<'static>,
+            key: Keyword,
+            attribute: Label<'static>,
+            ordering: Ordering,
             existing_ordering: Ordering,
-            ordering: Ordering
+            declaration: TypeQLCapability
+        ),
+        RelatesSpecialiseAlreadyDefinedButDifferent(
+            19,
+            "Defining '{as_key} {specialised_role_name}' for '{type_} {relates_key} {specialising_role_name}' failed since a different '{type_} {relates_key} {specialising_role_name} {as_key} {existing_specialised_role_name}' is already defined. Try redefine instead?\nSource:\n{declaration}",
+            type_: Label<'static>,
+            relates_key: Keyword,
+            as_key: Keyword,
+            specialised_role_name: String,
+            specialising_role_name: String,
+            existing_specialised_role_name: String,
+            declaration: TypeQLRelates
+        ),
+        SetValueType(
+            20,
+            "Defining '{type_}' to have value type '{value_type}' failed.",
+            type_: Label<'static>,
+            value_type: ValueType,
+            ( typedb_source: ConceptWriteError )
+        ),
+        CreateRelates(
+            21,
+            "Defining new '{key}' failed.\nSource:\n{relates}",
+            relates: TypeQLRelates,
+            key: Keyword,
+            ( typedb_source: ConceptWriteError )
+        ),
+        CreatePlays(
+            22,
+            "Defining new '{key}' failed.\nSource:\n{plays}",
+            plays: TypeQLPlays,
+            key: Keyword,
+            ( typedb_source: ConceptWriteError )
+        ),
+        CreateOwns(
+            23,
+            "Defining new '{key}' failed.\nSource:\n{owns}",
+            owns: TypeQLOwns,
+            key: Keyword,
+            ( typedb_source: ConceptWriteError )
         ),
         IllegalAnnotation(
-            25,
+            24,
             "Illegal annotation",
             ( source: AnnotationError )
         ),
         SetAnnotation(
-            26,
-            "On type '{label}', defining annotation failed.\nSource:\n{annotation_declaration}",
-            label: Label<'static>,
+            25,
+            "Defining annotation failed for type '{type_}'.\nSource:\n{annotation_declaration}",
+            type_: Label<'static>,
             annotation_declaration: typeql::annotation::Annotation,
             ( typedb_source: ConceptWriteError )
         ),
         SetSpecialise(
-            27,
-            "On type '{label}', defining specialise failed.",
-            label: Label<'static>,
+            26,
+            "Defining specialise failed for type '{type_}'.",
+            type_: Label<'static>,
             ( typedb_source: ConceptWriteError )
         ),
         CapabilityKindMismatch(
-            28,
+            27,
             "Declaration failed because the left type '{left}' is of kind '{left_kind}' isn't the same kind as the right type '{right}' which has kind '{right_kind}'.\nSource:\n{declaration}",
             left: Label<'static>,
             right: Label<'static>,
@@ -1079,7 +1176,3 @@ typedb_error!(
         ),
     }
 );
-
-fn err_unsupported_capability(label: &Label<'static>, kind: Kind, capability: &TypeQLCapability) -> DefineError {
-    DefineError::TypeCannotHaveCapability { label: label.to_owned(), kind, capability: capability.clone() }
-}

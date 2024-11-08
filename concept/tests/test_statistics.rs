@@ -289,13 +289,15 @@ fn put_has_twice() {
     thing_manager.finalise(&mut snapshot).unwrap();
     snapshot.commit().unwrap().unwrap();
 
+    let mut synchronised = Statistics::new(SequenceNumber::MIN);
+    synchronised.may_synchronise(&storage).unwrap();
+
     let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
     person.set_has_unordered(&mut snapshot, &thing_manager, name.as_reference()).unwrap();
     thing_manager.finalise(&mut snapshot).unwrap();
-    snapshot.commit().unwrap().unwrap();
+    snapshot.commit().unwrap_err(); // Can't concurrently modify the same 'has'
 
-    let mut synchronised = Statistics::new(SequenceNumber::MIN);
-    synchronised.may_synchronise(&storage).unwrap();
+    synchronised.sequence_number = synchronised.sequence_number + 1;
 
     assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
 }

@@ -11,9 +11,9 @@ use std::{
     path::{Path, PathBuf},
     sync::{
         mpsc::{sync_channel, SyncSender},
-        Arc, Mutex, MutexGuard, RwLock,
+        Arc, Mutex, MutexGuard, RwLock, TryLockError,
     },
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use concept::{
@@ -44,6 +44,7 @@ use storage::{
 use tracing::{event, Level};
 
 use crate::{
+    transaction::TransactionError,
     DatabaseOpenError::FunctionCacheInitialise,
     DatabaseResetError::{
         CorruptionPartialResetKeyGeneratorInUse, CorruptionPartialResetThingVertexGeneratorInUse,
@@ -58,6 +59,8 @@ pub(super) struct Schema {
     pub(super) function_cache: Arc<FunctionCache>,
 }
 
+type SchemaWriteTransactionState = (bool, usize, VecDeque<TransactionReservationRequest>);
+
 pub struct Database<D> {
     name: String,
     path: PathBuf,
@@ -67,7 +70,7 @@ pub struct Database<D> {
     pub(super) thing_vertex_generator: Arc<ThingVertexGenerator>,
 
     pub(super) schema: Arc<RwLock<Schema>>,
-    schema_write_transaction_exclusivity: Mutex<(bool, usize, VecDeque<TransactionReservationRequest>)>,
+    schema_write_transaction_exclusivity: Mutex<SchemaWriteTransactionState>,
     _statistics_updater: IntervalRunner,
 }
 
@@ -83,43 +86,51 @@ impl<D> fmt::Debug for Database<D> {
 }
 
 impl<D> Database<D> {
+    const TRY_LOCK_SLEEP_INTERVAL: Duration = Duration::from_millis(10);
+
     pub fn name(&self) -> &str {
         &self.name
     }
 
-    pub(super) fn reserve_write_transaction(&self, timeout_millis: u64) {
-        // TODO: TransactionError
-        let mut guard = self.schema_write_transaction_exclusivity.lock().unwrap();
+    pub(super) fn reserve_write_transaction(&self, timeout_millis: u64) -> Result<(), TransactionError> {
+        let (mut guard, timeout_left) =
+            self.try_acquire_schema_write_transaction_lock(Duration::from_millis(timeout_millis))?;
         let (has_schema_transaction, running_write_transactions, ref mut notify_queue) = *guard;
+
         if has_schema_transaction || !notify_queue.is_empty() {
             let (sender, receiver) = sync_channel::<()>(0);
             notify_queue.push_back(TransactionReservationRequest::Write(sender));
             drop(guard);
-            receiver.recv().unwrap();
-            // TODO: turn into TransactionError on timeout
+            receiver.recv_timeout(timeout_left).map_err(|source| TransactionError::Timeout { source })?;
         } else {
             guard.1 = running_write_transactions + 1;
             drop(guard);
         }
+        Ok(())
     }
 
-    pub(super) fn reserve_schema_transaction(&self, timeout_millis: u64) {
-        let mut guard = self.schema_write_transaction_exclusivity.lock().unwrap();
+    pub(super) fn reserve_schema_transaction(&self, timeout_millis: u64) -> Result<(), TransactionError> {
+        let (mut guard, timeout_left) =
+            self.try_acquire_schema_write_transaction_lock(Duration::from_millis(timeout_millis))?;
         let (has_schema_transaction, running_write_transactions, ref mut notify_queue) = *guard;
+
         if has_schema_transaction || running_write_transactions > 0 || !notify_queue.is_empty() {
             let (sender, receiver) = sync_channel::<()>(0);
             notify_queue.push_back(TransactionReservationRequest::Schema(sender));
             drop(guard);
-            receiver.recv().unwrap();
-            // TODO: turn into TransactionError on timeout
+            receiver.recv_timeout(timeout_left).map_err(|source| TransactionError::Timeout { source })?;
         } else {
             guard.0 = true;
             drop(guard);
         }
+        Ok(())
     }
 
     pub(super) fn release_write_transaction(&self) {
-        let mut guard = self.schema_write_transaction_exclusivity.lock().unwrap();
+        let mut guard = self
+            .schema_write_transaction_exclusivity
+            .lock()
+            .expect("The exclusive access should already be acquired in `reserve`");
         guard.1 -= 1;
         if guard.1 == 0 {
             Self::fulfill_reservation_requests(&mut guard)
@@ -127,9 +138,40 @@ impl<D> Database<D> {
     }
 
     pub(super) fn release_schema_transaction(&self) {
-        let mut guard = self.schema_write_transaction_exclusivity.lock().unwrap();
+        let mut guard = self
+            .schema_write_transaction_exclusivity
+            .lock()
+            .expect("The exclusive access should already be acquired in `reserve`");
         guard.0 = false;
         Self::fulfill_reservation_requests(&mut guard)
+    }
+
+    fn try_acquire_schema_write_transaction_lock(
+        &self,
+        timeout: Duration,
+    ) -> Result<(MutexGuard<'_, SchemaWriteTransactionState>, Duration), TransactionError> {
+        let start_time = Instant::now();
+
+        let guard = loop {
+            match self.schema_write_transaction_exclusivity.try_lock() {
+                Ok(guard) => break guard,
+                Err(TryLockError::WouldBlock) => {
+                    if start_time.elapsed() >= timeout {
+                        return Err(TransactionError::WriteExclusivityTimeout {});
+                    }
+                    std::thread::sleep(Self::TRY_LOCK_SLEEP_INTERVAL);
+                }
+                Err(TryLockError::Poisoned(err)) => panic!(
+                    "Encountered a poisoned lock while trying to acquire exclusive schema write transaction access: {}",
+                    err
+                ),
+            }
+        };
+
+        let elapsed = start_time.elapsed();
+        let remaining_timeout = if timeout < elapsed { Duration::from_millis(0) } else { timeout - elapsed };
+
+        Ok((guard, remaining_timeout))
     }
 
     fn fulfill_reservation_requests(
@@ -143,15 +185,12 @@ impl<D> Database<D> {
         if let TransactionReservationRequest::Schema(notifier) = head {
             // fulfill exactly 1 schema request
             *has_schema_transaction = true;
-            notifier.send(()).unwrap();
-
-            // TODO: if get disconnect error, skip!
+            let _skipped_sync_error = notifier.send(()).ok();
         } else {
             // fulfill as many write requests as possible
             while let Some(TransactionReservationRequest::Write(notifier)) = notify_queue.pop_front() {
                 *running_write_transactions += 1;
-                notifier.send(()).unwrap();
-                // TODO: if get disconnect error, skip!
+                let _skipped_sync_error = notifier.send(()).ok();
             }
         }
     }
@@ -346,7 +385,8 @@ impl Database<WALClient> {
     pub fn reset(&mut self) -> Result<(), DatabaseResetError> {
         use DatabaseResetError::CorruptionPartialResetStorageInUse;
 
-        self.reserve_schema_transaction(Duration::from_secs(60).as_millis() as u64); // exclusively lock out other write or schema transactions;
+        self.reserve_schema_transaction(Duration::from_secs(60).as_millis() as u64)
+            .map_err(|typedb_source| DatabaseResetError::Transaction { typedb_source })?; // exclusively lock out other write or schema transactions;
         let mut locked_schema = self.schema.write().unwrap();
 
         match Arc::get_mut(&mut self.storage) {
@@ -426,23 +466,24 @@ typedb_error!(
     pub DatabaseResetError(component = "Database reset", prefix = "DBR") {
         DatabaseDelete(1, "Cannot delete database.", ( typedb_source: DatabaseDeleteError )),
         DatabaseCreate(2, "Cannot create database.", ( typedb_source: DatabaseCreateError )),
-        InUse(3, "Database cannot be reset since it is in use."),
-        StorageInUse(4, "Database cannot be reset since the storage is in use."),
+        Transaction(3, "Transaction error.", ( typedb_source: TransactionError )),
+        InUse(4, "Database cannot be reset since it is in use."),
+        StorageInUse(5, "Database cannot be reset since the storage is in use."),
         CorruptionPartialResetStorageInUse(
-            5,
+            6,
             "Corruption warning: database reset failed partway because the storage is still in use.",
             ( typedb_source: StorageResetError )
         ),
         CorruptionPartialResetKeyGeneratorInUse(
-            6,
+            7,
             "Corruption warning: Database reset failed partway because the schema key generator is still in use."
         ),
         CorruptionPartialResetTypeVertexGeneratorInUse(
-            7,
+            8,
             "Corruption warning: Database reset failed partway because the type key generator is still in use."
         ),
         CorruptionPartialResetThingVertexGeneratorInUse(
-            8,
+            9,
             "Corruption warning: Dataaase reset failed partway because the instance key generator is still in use."
         ),
     }

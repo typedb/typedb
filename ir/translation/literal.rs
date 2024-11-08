@@ -8,15 +8,19 @@ use std::{borrow::Cow, str::FromStr};
 
 use chrono::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime};
 use chrono_tz::Tz;
+use concept::type_::annotation::AnnotationRegex;
 use encoding::value::{
     decimal_value::Decimal,
     duration_value::{Duration, MONTHS_PER_YEAR, NANOS_PER_HOUR, NANOS_PER_MINUTE, NANOS_PER_SEC},
     timezone::TimeZone,
     value::Value,
 };
-use typeql::value::{
-    BooleanLiteral, DateFragment, DateTimeLiteral, DateTimeTZLiteral, DurationLiteral, IntegerLiteral, Literal, Sign,
-    SignedDecimalLiteral, SignedIntegerLiteral, StringLiteral, TimeFragment, ValueLiteral,
+use typeql::{
+    annotation::Regex,
+    value::{
+        BooleanLiteral, DateFragment, DateTimeLiteral, DateTimeTZLiteral, DurationLiteral, IntegerLiteral, Literal,
+        Sign, SignedDecimalLiteral, SignedIntegerLiteral, StringLiteral, TimeFragment, ValueLiteral,
+    },
 };
 
 use crate::LiteralParseError;
@@ -239,6 +243,16 @@ impl FromTypeQLLiteral for String {
         literal
             .unescape()
             .map_err(|err| LiteralParseError::CannotUnescapeString { literal: literal.clone(), source: err })
+    }
+}
+
+impl FromTypeQLLiteral for AnnotationRegex {
+    type TypeQLLiteral = Regex;
+
+    fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<AnnotationRegex, LiteralParseError> {
+        Ok(AnnotationRegex::new(literal.regex.unescape_regex().map_err(|err| {
+            LiteralParseError::CannotUnescapeRegexString { literal: literal.regex.clone(), source: err }
+        })?))
     }
 }
 

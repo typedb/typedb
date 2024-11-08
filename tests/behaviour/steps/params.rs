@@ -32,11 +32,11 @@ use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use test_utils::assert_matches;
 
-#[derive(Debug, Copy, Clone, Parameter)]
-#[param(name = "may_error", regex = "(; fails|)")]
+#[derive(Debug, Clone, Parameter)]
+#[param(name = "may_error", regex = "(|; fails|; fails with a message containing: \".*\")")]
 pub(crate) enum MayError {
     False,
-    True,
+    True(Option<String>),
 }
 
 impl MayError {
@@ -46,16 +46,30 @@ impl MayError {
                 res.unwrap();
                 None
             }
-            MayError::True => Some(res.unwrap_err()),
+            MayError::True(None) => Some(res.unwrap_err()),
+            MayError::True(Some(expected_message)) => {
+                let actual_error = res.unwrap_err();
+                let actual_message = format!("{actual_error:?}");
+
+                if actual_message.contains(expected_message) {
+                    Some(actual_error)
+                } else {
+                    panic!(
+                        "Expected error message containing: '{}', but got error message: '{}'",
+                        expected_message, actual_message
+                    );
+                }
+            }
         }
     }
 
-    pub fn check_concept_write_without_read_errors<T: fmt::Debug>(&self, res: &Result<T, ConceptWriteError>) {
-        match self {
-            MayError::False => {
-                res.as_ref().unwrap();
-            }
-            MayError::True => match res.as_ref().unwrap_err() {
+    pub fn check_concept_write_without_read_errors<T: fmt::Debug>(
+        &self,
+        res: &Result<T, ConceptWriteError>,
+    ) -> Option<ConceptWriteError> {
+        match self.check(res.as_ref().map_err(|e| e.clone())) {
+            None => None,
+            Some(error) => match error {
                 ConceptWriteError::ConceptRead { source } => {
                     panic!("Expected logic error, got ConceptRead {:?}", source)
                 }
@@ -64,14 +78,14 @@ impl MayError {
                 } => {
                     panic!("Expected logic error, got SchemaValidation::ConceptRead {:?}", source)
                 }
-                _ => {}
+                _ => Some(error),
             },
-        };
+        }
     }
 
     pub fn expects_error(&self) -> bool {
         match self {
-            MayError::True => true,
+            MayError::True(_) => true,
             MayError::False => false,
         }
     }
@@ -80,20 +94,26 @@ impl MayError {
 impl FromStr for MayError {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "; fails" => Self::True,
-            "" => Self::False,
-            invalid => return Err(format!("Invalid `MayError`: {invalid}")),
-        })
+        if s.is_empty() {
+            Ok(MayError::False)
+        } else if s == "; fails" {
+            Ok(MayError::True(None))
+        } else if let Some(message) =
+            s.strip_prefix("; fails with a message containing: \"").and_then(|suffix| suffix.strip_suffix("\""))
+        {
+            Ok(MayError::True(Some(message.to_string())))
+        } else {
+            Err(format!("Invalid `MayError`: {}", s))
+        }
     }
 }
 
-#[derive(Debug, Copy, Clone, Parameter)]
-#[param(name = "typeql_may_error", regex = "(; fails|; parsing fails|)")]
+#[derive(Debug, Clone, Parameter)]
+#[param(name = "typeql_may_error", regex = "(|; fails|; parsing fails|; fails with a message containing: \".*\")")]
 pub(crate) enum TypeQLMayError {
     False,
     Parsing,
-    Logic,
+    Logic(Option<String>),
 }
 
 impl TypeQLMayError {
@@ -115,14 +135,14 @@ impl TypeQLMayError {
 
     pub fn as_may_error_parsing(&self) -> MayError {
         match self {
-            TypeQLMayError::Parsing => MayError::True,
-            | TypeQLMayError::False | TypeQLMayError::Logic => MayError::False,
+            TypeQLMayError::Parsing => MayError::True(None),
+            | TypeQLMayError::False | TypeQLMayError::Logic(_) => MayError::False,
         }
     }
 
     pub fn as_may_error_logic(&self) -> MayError {
         match self {
-            TypeQLMayError::Logic => MayError::True,
+            TypeQLMayError::Logic(message) => MayError::True(message.clone()),
             | TypeQLMayError::False | TypeQLMayError::Parsing => MayError::False,
         }
     }
@@ -131,12 +151,19 @@ impl TypeQLMayError {
 impl FromStr for TypeQLMayError {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "; fails" => Self::Logic,
-            "; parsing fails" => Self::Parsing,
-            "" => Self::False,
-            invalid => return Err(format!("Invalid `TypeQLMayError`: {invalid}")),
-        })
+        if s.is_empty() {
+            Ok(TypeQLMayError::False)
+        } else if s == "; parsing fails" {
+            Ok(TypeQLMayError::Parsing)
+        } else if s == "; fails" {
+            Ok(TypeQLMayError::Logic(None))
+        } else if let Some(message) =
+            s.strip_prefix("; fails with a message containing: \"").and_then(|suffix| suffix.strip_suffix("\""))
+        {
+            Ok(TypeQLMayError::Logic(Some(message.to_string())))
+        } else {
+            Err(format!("Invalid `TypeQLMayError`: {}", s))
+        }
     }
 }
 

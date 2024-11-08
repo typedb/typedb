@@ -27,6 +27,19 @@ use crate::{
     MVCCStorage, StorageCommitError,
 };
 
+macro_rules! get_mapped_method {
+    ($method_name:ident, $get_func:ident) => {
+        fn $method_name<T>(
+            &self,
+            key: StorageKeyReference<'_>,
+            mut mapper: impl FnMut(ByteReference<'_>) -> T,
+        ) -> Result<Option<T>, SnapshotGetError> {
+            let value = self.$get_func::<BUFFER_VALUE_INLINE>(key)?;
+            Ok(value.map(|bytes| mapper(bytes.as_ref())))
+        }
+    };
+}
+
 pub trait ReadableSnapshot {
     fn open_sequence_number(&self) -> SequenceNumber;
 
@@ -35,14 +48,14 @@ pub trait ReadableSnapshot {
         key: StorageKeyReference<'_>,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError>;
 
-    fn get_mapped<T>(
+    get_mapped_method!(get_mapped, get);
+
+    fn get_last_existing<const INLINE_BYTES: usize>(
         &self,
         key: StorageKeyReference<'_>,
-        mut mapper: impl FnMut(ByteReference<'_>) -> T,
-    ) -> Result<Option<T>, SnapshotGetError> {
-        let value = self.get::<BUFFER_VALUE_INLINE>(key)?;
-        Ok(value.map(|bytes| mapper(bytes.as_ref())))
-    }
+    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError>;
+
+    get_mapped_method!(get_last_existing_mapped, get_last_existing);
 
     fn contains(&self, key: StorageKeyReference<'_>) -> Result<bool, SnapshotGetError> {
         Ok(self.get_mapped(key, |_| ())?.is_some())
@@ -213,6 +226,13 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         self.storage.get(key, self.open_sequence_number).map_err(|error| SnapshotGetError::MVCCRead { source: error })
     }
 
+    fn get_last_existing<const INLINE_BYTES: usize>(
+        &self,
+        key: StorageKeyReference<'_>,
+    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
+        self.get(key)
+    }
+
     fn iterate_range<'this, const PS: usize>(
         &'this self,
         range: KeyRange<StorageKey<'this, PS>>,
@@ -297,6 +317,23 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
             }
             Some(Write::Delete) => Ok(None),
             None => self
+                .storage
+                .get(key, self.open_sequence_number)
+                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
+        }
+    }
+
+    /// Get the last existing Value for the key, returning an empty Option if it did not exist
+    fn get_last_existing<const INLINE_BYTES: usize>(
+        &self,
+        key: StorageKeyReference<'_>,
+    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
+        let writes = self.operations().writes_in(key.keyspace_id());
+        match writes.get(key.bytes()) {
+            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => {
+                Ok(Some(ByteArray::copy(value.bytes())))
+            }
+            Some(Write::Delete) | None => self
                 .storage
                 .get(key, self.open_sequence_number)
                 .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
@@ -433,6 +470,23 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
             }
             Some(Write::Delete) => Ok(None),
             None => self
+                .storage
+                .get(key, self.open_sequence_number)
+                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
+        }
+    }
+
+    /// Get the last existing Value for the key, returning an empty Option if it did not exist
+    fn get_last_existing<const INLINE_BYTES: usize>(
+        &self,
+        key: StorageKeyReference<'_>,
+    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
+        let writes = self.operations().writes_in(key.keyspace_id());
+        match writes.get(key.bytes()) {
+            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => {
+                Ok(Some(ByteArray::copy(value.bytes())))
+            }
+            Some(Write::Delete) | None => self
                 .storage
                 .get(key, self.open_sequence_number)
                 .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
