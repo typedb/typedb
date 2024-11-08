@@ -37,6 +37,7 @@ mod vertex;
 pub fn compile(
     block: &Block,
     input_variables: &HashMap<Variable, VariablePosition>,
+    selected_variables: &Vec<Variable>,
     type_annotations: &TypeAnnotations,
     variable_registry: Arc<VariableRegistry>,
     expressions: &HashMap<Variable, ExecutableExpression<Variable>>,
@@ -60,7 +61,7 @@ pub fn compile(
     )
     .lower(
         input_variables.keys().copied(),
-        variable_registry.variable_names().keys().copied(),
+        selected_variables.clone(),
         &assigned_identities,
         &variable_registry,
     )

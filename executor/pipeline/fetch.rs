@@ -4,7 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, marker::PhantomData, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    marker::PhantomData,
+    sync::Arc,
+};
 
 use answer::{variable_value::VariableValue, Concept, Thing};
 use compiler::{
@@ -12,7 +16,9 @@ use compiler::{
         fetch::executable::{
             ExecutableFetch, ExecutableFetchListSubFetch, FetchObjectInstruction, FetchSomeInstruction,
         },
+        function::ExecutableFunction,
         match_::planner::function_plan::ExecutableFunctionRegistry,
+        pipeline::ExecutableStage,
     },
     VariablePosition,
 };
@@ -23,16 +29,25 @@ use concept::{
 };
 use encoding::value::label::Label;
 use error::typedb_error;
-use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
+use ir::{
+    pattern::ParameterID,
+    pipeline::{ParameterRegistry, VariableRegistry},
+};
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
+    batch::FixedBatch,
     document::{ConceptDocument, DocumentLeaf, DocumentList, DocumentMap, DocumentNode},
+    error::ReadExecutionError,
     pipeline::{
         pipeline::Pipeline,
         stage::{ExecutionContext, StageAPI},
         PipelineExecutionError,
+    },
+    read::{
+        pattern_executor::PatternExecutor, step_executor::create_executors_for_function,
+        tabled_functions::TabledFunctions,
     },
     row::MaybeOwnedRow,
     ExecutionInterrupt,
@@ -40,12 +55,13 @@ use crate::{
 
 pub struct FetchStageExecutor<Snapshot: ReadableSnapshot> {
     executable: Arc<ExecutableFetch>,
+    functions: Arc<ExecutableFunctionRegistry>,
     _phantom: PhantomData<Snapshot>,
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> FetchStageExecutor<Snapshot> {
-    pub(crate) fn new(executable: Arc<ExecutableFetch>) -> Self {
-        Self { executable, _phantom: PhantomData::default() }
+    pub(crate) fn new(executable: Arc<ExecutableFetch>, functions: Arc<ExecutableFunctionRegistry>) -> Self {
+        Self { executable, functions, _phantom: PhantomData::default() }
     }
 
     pub(crate) fn into_iterator<PreviousStage: StageAPI<Snapshot>>(
@@ -56,6 +72,7 @@ impl<Snapshot: ReadableSnapshot + 'static> FetchStageExecutor<Snapshot> {
     ) -> (impl Iterator<Item = Result<ConceptDocument, Box<PipelineExecutionError>>>, ExecutionContext<Snapshot>) {
         let ExecutionContext { snapshot, thing_manager, parameters } = context.clone();
         let executable = self.executable;
+        let functions = self.functions;
         let documents_iterator = previous_iterator
             .map_static(move |row_result| match row_result {
                 Ok(row) => execute_fetch(
@@ -63,6 +80,7 @@ impl<Snapshot: ReadableSnapshot + 'static> FetchStageExecutor<Snapshot> {
                     snapshot.clone(),
                     thing_manager.clone(),
                     parameters.clone(),
+                    functions.clone(),
                     row.as_reference(),
                     interrupt.clone(),
                 )
@@ -79,10 +97,12 @@ fn execute_fetch(
     snapshot: Arc<impl ReadableSnapshot + 'static>,
     thing_manager: Arc<ThingManager>,
     parameters: Arc<ParameterRegistry>,
+    functions: Arc<ExecutableFunctionRegistry>,
     row: MaybeOwnedRow<'_>,
     interrupt: ExecutionInterrupt,
 ) -> Result<ConceptDocument, FetchExecutionError> {
-    let node = execute_object(&fetch.object_instruction, snapshot, thing_manager, parameters, row, interrupt)?;
+    let node =
+        execute_object(&fetch.object_instruction, snapshot, thing_manager, parameters, functions, row, interrupt)?;
     Ok(ConceptDocument { root: node })
 }
 
@@ -91,19 +111,16 @@ fn execute_fetch_some(
     snapshot: Arc<impl ReadableSnapshot + 'static>,
     thing_manager: Arc<ThingManager>,
     parameters: Arc<ParameterRegistry>,
+    functions: Arc<ExecutableFunctionRegistry>,
     row: MaybeOwnedRow<'_>,
     interrupt: ExecutionInterrupt,
 ) -> Result<DocumentNode, FetchExecutionError> {
     match fetch_some {
-        FetchSomeInstruction::SingleVar(position) => {
-            variable_value_to_document(row.get(*position).as_reference())
-        }
+        FetchSomeInstruction::SingleVar(position) => variable_value_to_document(row.get(*position).as_reference()),
         FetchSomeInstruction::SingleAttribute(position, attribute_type) => {
             let variable_value = row.get(*position).as_reference();
             match variable_value {
-                VariableValue::Empty => {
-                    Ok(DocumentNode::Leaf(DocumentLeaf::Empty))
-                },
+                VariableValue::Empty => Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
                 VariableValue::Thing(Thing::Entity(entity)) => {
                     execute_attribute_single(entity, attribute_type.clone(), snapshot, thing_manager)
                         .map(|leaf| DocumentNode::Leaf(leaf))
@@ -115,70 +132,114 @@ fn execute_fetch_some(
                 VariableValue::Thing(Thing::Attribute(_)) => Err(FetchExecutionError::FetchAttributesOfAttribute {}),
                 VariableValue::Type(_) => Err(FetchExecutionError::FetchAttributesOfType {}),
                 VariableValue::Value(_) => Err(FetchExecutionError::FetchAttributesOfValue {}),
-                VariableValue::ThingList(_) | VariableValue::ValueList(_) => Err(FetchExecutionError::FetchAttributesOfList {}),
+                VariableValue::ThingList(_) | VariableValue::ValueList(_) => {
+                    Err(FetchExecutionError::FetchAttributesOfList {})
+                }
             }
         }
-        FetchSomeInstruction::SingleFunction(_function) => {
-            Err(FetchExecutionError::Unimplemented {
-                description: "Fetch expressions and match-return subqueries are not available yet (try a match-fetch subquery instead?).".to_owned()
-            })
+        FetchSomeInstruction::SingleFunction(function) => {
+            let inner_executors =
+                create_executors_for_function(&snapshot, &thing_manager, &functions, function, &mut HashSet::new())
+                    .map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
+            let mut inner = PatternExecutor::new(inner_executors);
+            inner.prepare(FixedBatch::from(row));
+
+            let execution_context =
+                Arc::new(ExecutionContext::new(snapshot.clone(), thing_manager.clone(), parameters.clone()));
+            let mut interrupt = interrupt;
+            while let Some(batch) = inner
+                .compute_next_batch(
+                    &execution_context,
+                    &mut interrupt,
+                    &mut TabledFunctions::new(functions.clone()), // TODO: Tabled functions?
+                    &mut Vec::new(),
+                )
+                .map_err(|err| FetchExecutionError::ReadExecution { typedb_source: Box::new(err) })?
+            {
+                for row in batch.into_iter() {
+                    println!("ROW: {row:?}");
+                    // let document = execute_fetch(
+                    //     &executable,
+                    //     snapshot.clone(),
+                    //     thing_manager.clone(),
+                    //     parameters.clone(),
+                    //     functions.clone(),
+                    //     row.as_reference(),
+                    //     interrupt.clone(),
+                    // )
+                    //     .map_err(|err| PipelineExecutionError::FetchError { typedb_source: err });
+                    // println!("DOCUMENT: {document:?}");
+                }
+            }
+
+            panic!("Weeeee")
+
+            // FetchSomeInstruction::SingleFunction(function) => {
+            //     println!("Got function execution {function:?}");
+            //     Err(FetchExecutionError::Unimplemented {
+            //         description: "Fetch expressions and match-return subqueries are not available yet (try a match-fetch subquery instead?).".to_owned()
+            //     })
         }
         FetchSomeInstruction::Object(object) => {
-            execute_object(object, snapshot, thing_manager, parameters, row, interrupt)
+            execute_object(object, snapshot, thing_manager, parameters, functions, row, interrupt)
         }
-        FetchSomeInstruction::ListFunction(_function) => {
+        FetchSomeInstruction::ListFunction(function) => {
+            println!("Got list function execution {function:?}");
             Err(FetchExecutionError::Unimplemented {
                 description: "Fetch expressions and match-return subqueries are not available yet (try a match-fetch subquery instead?).".to_owned()
             })
         }
-        FetchSomeInstruction::ListSubFetch(ExecutableFetchListSubFetch { input_position_mapping, variable_registry, stages, fetch }) => {
+        FetchSomeInstruction::ListSubFetch(ExecutableFetchListSubFetch {
+            input_position_mapping,
+            variable_registry,
+            stages,
+            fetch,
+        }) => {
             let pipeline = if input_position_mapping.is_empty() {
                 Pipeline::build_read_pipeline(
                     snapshot,
                     thing_manager,
                     &variable_registry,
-                    Arc::new(ExecutableFunctionRegistry::TODO__empty()), // TODO
+                    functions,
                     &**stages,
                     Some(fetch.clone()),
                     parameters,
-                    None
+                    None,
                 )
             } else {
                 let max_position = input_position_mapping.values().max().map(|pos| pos.as_usize()).unwrap();
                 let mut initial_row = vec![VariableValue::Empty; max_position + 1];
                 input_position_mapping.iter().for_each(|(parent_row_position, local_row_position)| {
-                    initial_row[local_row_position.as_usize()] = row[parent_row_position.as_usize()].as_reference().into_owned();
+                    initial_row[local_row_position.as_usize()] =
+                        row[parent_row_position.as_usize()].as_reference().into_owned();
                 });
                 let initial_row = MaybeOwnedRow::new_owned(initial_row, row.multiplicity());
                 Pipeline::build_read_pipeline(
                     snapshot,
                     thing_manager,
                     &variable_registry,
-                    Arc::new(ExecutableFunctionRegistry::TODO__empty()),
+                    functions,
                     &**stages,
                     Some(fetch.clone()),
                     parameters,
-                    Some(initial_row)
+                    Some(initial_row),
                 )
             };
 
-            let (iterator, _context) = pipeline.into_documents_iterator(interrupt)
+            let (iterator, _context) = pipeline
+                .into_documents_iterator(interrupt)
                 .map_err(|(err, _context)| FetchExecutionError::SubFetch { typedb_source: err })?;
 
             let mut nodes = Vec::new();
             for result in iterator {
-                nodes.push(
-                    result.map_err(|err| FetchExecutionError::SubFetch { typedb_source: err })?.root
-                );
+                nodes.push(result.map_err(|err| FetchExecutionError::SubFetch { typedb_source: err })?.root);
             }
             Ok(DocumentNode::List(DocumentList::new_from(nodes)))
         }
         FetchSomeInstruction::ListAttributesAsList(position, attribute_type) => {
             let variable_value = row.get(*position).as_reference();
             match variable_value {
-                VariableValue::Empty => {
-                    Ok(DocumentNode::Leaf(DocumentLeaf::Empty))
-                },
+                VariableValue::Empty => Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
                 VariableValue::Thing(Thing::Entity(entity)) => {
                     execute_attributes_list(entity, attribute_type.clone(), snapshot, thing_manager)
                         .map(|list| DocumentNode::List(list))
@@ -190,12 +251,14 @@ fn execute_fetch_some(
                 VariableValue::Thing(Thing::Attribute(_)) => Err(FetchExecutionError::FetchAttributesOfAttribute {}),
                 VariableValue::Type(_) => Err(FetchExecutionError::FetchAttributesOfType {}),
                 VariableValue::Value(_) => Err(FetchExecutionError::FetchAttributesOfValue {}),
-                VariableValue::ThingList(_) | VariableValue::ValueList(_) => Err(FetchExecutionError::FetchAttributesOfList {}),
+                VariableValue::ThingList(_) | VariableValue::ValueList(_) => {
+                    Err(FetchExecutionError::FetchAttributesOfList {})
+                }
             }
         }
-        FetchSomeInstruction::ListAttributesFromList(_, _) => {
-            Err(FetchExecutionError::Unimplemented { description: "List attributes are not available yet.".to_string() })
-        }
+        FetchSomeInstruction::ListAttributesFromList(_, _) => Err(FetchExecutionError::Unimplemented {
+            description: "List attributes are not available yet.".to_string(),
+        }),
     }
 }
 
@@ -204,12 +267,14 @@ fn execute_object(
     snapshot: Arc<impl ReadableSnapshot + 'static>,
     thing_manager: Arc<ThingManager>,
     parameters: Arc<ParameterRegistry>,
+    functions: Arc<ExecutableFunctionRegistry>,
     row: MaybeOwnedRow<'_>,
     interrupt: ExecutionInterrupt,
 ) -> Result<DocumentNode, FetchExecutionError> {
     match fetch_object {
         FetchObjectInstruction::Entries(entries) => {
-            let object = execute_object_entries(entries, snapshot, thing_manager, parameters, row, interrupt)?;
+            let object =
+                execute_object_entries(entries, snapshot, thing_manager, parameters, functions, row, interrupt)?;
             Ok(DocumentNode::Map(object))
         }
         FetchObjectInstruction::Attributes(position) => {
@@ -258,7 +323,7 @@ fn execute_attributes_all<'a>(
         let is_scalar = object
             .type_()
             .is_owned_attribute_type_scalar(snapshot.as_ref(), thing_manager.type_manager(), attribute_type)
-            .map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
+            .map_err(|err| FetchExecutionError::ConceptRead { source: Box::new(err) })?;
         if is_scalar {
             map.insert(label, leaf);
         } else {
@@ -317,6 +382,7 @@ fn execute_object_entries(
     snapshot: Arc<impl ReadableSnapshot + 'static>,
     thing_manager: Arc<ThingManager>,
     parameters: Arc<ParameterRegistry>,
+    functions: Arc<ExecutableFunctionRegistry>,
     row: MaybeOwnedRow<'_>,
     interrupt: ExecutionInterrupt,
 ) -> Result<DocumentMap, FetchExecutionError> {
@@ -329,6 +395,7 @@ fn execute_object_entries(
                 snapshot.clone(),
                 thing_manager.clone(),
                 parameters.clone(),
+                functions.clone(),
                 row.as_reference(),
                 interrupt.clone(),
             )?,
@@ -371,5 +438,6 @@ typedb_error!(
         SubFetch(10, "Error executing sub fetch.", ( typedb_source : Box<PipelineExecutionError>)),
 
         ConceptRead(30, "Unexpected failed to read concept.", ( source: Box<ConceptReadError>)),
+        ReadExecution(31, "Unexpected failed to execute read.", ( typedb_source: Box<ReadExecutionError> )),
     }
 );

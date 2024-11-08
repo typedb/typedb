@@ -38,6 +38,25 @@ pub enum ReduceInstruction<ID: IrID> {
 }
 
 impl<ID: IrID> ReduceInstruction<ID> {
+    pub fn id(&self) -> Option<ID> {
+        match self {
+            ReduceInstruction::Count => None,
+            ReduceInstruction::CountVar(id) => Some(id.clone()),
+            ReduceInstruction::SumLong(id) => Some(id.clone()),
+            ReduceInstruction::SumDouble(id) => Some(id.clone()),
+            ReduceInstruction::MaxLong(id) => Some(id.clone()),
+            ReduceInstruction::MaxDouble(id) => Some(id.clone()),
+            ReduceInstruction::MinLong(id) => Some(id.clone()),
+            ReduceInstruction::MinDouble(id) => Some(id.clone()),
+            ReduceInstruction::MeanLong(id) => Some(id.clone()),
+            ReduceInstruction::MeanDouble(id) => Some(id.clone()),
+            ReduceInstruction::MedianLong(id) => Some(id.clone()),
+            ReduceInstruction::MedianDouble(id) => Some(id.clone()),
+            ReduceInstruction::StdLong(id) => Some(id.clone()),
+            ReduceInstruction::StdDouble(id) => Some(id.clone()),
+        }
+    }
+
     pub fn output_type(&self) -> ValueType {
         match self {
             Self::Count => ValueType::Long,

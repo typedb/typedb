@@ -169,7 +169,7 @@ fn translate_fetch_list(
             }
         }
         FetchStream::SubQueryFetch(stages) => {
-            // clone context, since we don't want the inline function to affect the parent context // TODO: WHY?
+            // clone context, since we don't want the inline function to affect the parent context
             let mut local_context = parent_context.clone();
             let (translated_stages, subfetch) =
                 translate_pipeline_stages(snapshot, function_index, &mut local_context, value_parameters, stages)
@@ -232,13 +232,21 @@ fn translate_fetch_single(
             }
         }
         FetchSingle::Expression(expression) => {
+            println!("Found an expression: {:?}", expression);
             match &expression {
                 Expression::Variable(variable) => {
                     let var = try_get_variable(parent_context, variable)?;
                     Ok(FetchSome::SingleVar(var))
                 }
                 Expression::ListIndex(_) | Expression::Value(_) | Expression::Operation(_) | Expression::Paren(_) => {
-                    translate_inline_expression_single(parent_context, value_parameters, function_index, expression)
+                    let res = translate_inline_expression_single(
+                        parent_context,
+                        value_parameters,
+                        function_index,
+                        expression,
+                    );
+                    println!("Result: {res:?}");
+                    res
                 }
                 // function expressions may return Single or List, depending on signature invoked
                 Expression::Function(call) => {

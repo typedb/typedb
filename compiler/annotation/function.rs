@@ -61,6 +61,19 @@ pub enum AnnotatedFunctionReturn {
 }
 
 impl AnnotatedFunctionReturn {
+    pub(crate) fn referenced_variables(&self) -> Vec<Variable> {
+        match self {
+            AnnotatedFunctionReturn::Stream { variables, .. } => variables.clone(),
+            AnnotatedFunctionReturn::Single { variables, .. } => variables.clone(),
+            AnnotatedFunctionReturn::ReduceCheck { .. } => Vec::new(),
+            AnnotatedFunctionReturn::ReduceReducer { instructions } => {
+                instructions.iter().filter_map(|x| x.id()).collect()
+            }
+        }
+    }
+}
+
+impl AnnotatedFunctionReturn {
     pub fn annotations(&self) -> Cow<'_, [FunctionParameterAnnotation]> {
         match self {
             AnnotatedFunctionReturn::Stream { annotations, .. } => Cow::Borrowed(annotations),

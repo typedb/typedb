@@ -45,6 +45,7 @@ pub enum Pipeline<Snapshot: ReadableSnapshot, Nonterminals: StageAPI<Snapshot>> 
 impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pipeline<Snapshot, Nonterminals> {
     fn build_with_fetch(
         variable_registry: &VariableRegistry,
+        executable_functions: Arc<ExecutableFunctionRegistry>,
         last_stage: Nonterminals,
         last_stage_output_positions: HashMap<Variable, VariablePosition>,
         executable_fetch: Option<Arc<ExecutableFetch>>,
@@ -59,7 +60,7 @@ impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pip
         match executable_fetch {
             None => Pipeline::Unfetched(last_stage, named_outputs),
             Some(executable) => {
-                let fetch = FetchStageExecutor::new(executable);
+                let fetch = FetchStageExecutor::new(executable, executable_functions);
                 Pipeline::Fetched(last_stage, fetch)
             }
         }
@@ -170,7 +171,13 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
                 }
             }
         }
-        Pipeline::build_with_fetch(variable_registry, last_stage, output_variable_positions, executable_fetch)
+        Pipeline::build_with_fetch(
+            variable_registry,
+            executable_functions.clone(),
+            last_stage,
+            output_variable_positions,
+            executable_fetch,
+        )
     }
 }
 
@@ -186,15 +193,14 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
         let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, parameters);
         let mut last_stage = WritePipelineStage::Initial(Box::new(InitialStage::new_empty(context)));
+        // TODO: Receive as arg?
+        let executable_functions = Arc::new(ExecutableFunctionRegistry::empty());
         for executable_stage in executable_stages {
             match executable_stage {
                 ExecutableStage::Match(match_executable) => {
                     // TODO: Pass expressions & functions
-                    let match_stage = MatchStageExecutor::new(
-                        match_executable,
-                        last_stage,
-                        Arc::new(ExecutableFunctionRegistry::empty()),
-                    );
+                    let match_stage =
+                        MatchStageExecutor::new(match_executable, last_stage, executable_functions.clone());
                     last_stage = WritePipelineStage::Match(Box::new(match_stage));
                 }
                 ExecutableStage::Insert(insert_executable) => {
@@ -231,6 +237,12 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
                 }
             }
         }
-        Pipeline::build_with_fetch(variable_registry, last_stage, output_variable_positions, executable_fetch)
+        Pipeline::build_with_fetch(
+            variable_registry,
+            executable_functions,
+            last_stage,
+            output_variable_positions,
+            executable_fetch,
+        )
     }
 }

@@ -68,6 +68,7 @@ pub(crate) fn compile_function(
         schema_functions,
         stages,
         arguments.into_iter(),
+        &return_.referenced_variables(),
     )?;
 
     let returns = compile_return_operation(&executable_stages, return_)?;
@@ -90,16 +91,9 @@ fn compile_return_operation(
         AnnotatedFunctionReturn::Stream { variables, .. } => {
             Ok(ExecutableReturn::Stream(variables.iter().map(|var| variable_positions[var]).collect()))
         }
-        AnnotatedFunctionReturn::Single { selector, variables, .. } => Ok(ExecutableReturn::Single(
-            selector,
-            variables
-                .iter()
-                .map(|var| {
-                    println!("Want {var:?} in {variable_positions:?}"); // TODO: Debug and remove!
-                    variable_positions[var]
-                })
-                .collect(),
-        )),
+        AnnotatedFunctionReturn::Single { selector, variables, .. } => {
+            Ok(ExecutableReturn::Single(selector, variables.iter().map(|var| variable_positions[var]).collect()))
+        }
         | AnnotatedFunctionReturn::ReduceCheck {} => Ok(ExecutableReturn::Check),
         | AnnotatedFunctionReturn::ReduceReducer { instructions } => {
             let positional_reducers =

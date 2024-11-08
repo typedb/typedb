@@ -27,7 +27,7 @@ use crate::read::{
     stream_modifier::StreamModifierExecutor, tabled_call_executor::TabledCallExecutor,
 };
 
-pub(super) enum StepExecutors {
+pub enum StepExecutors {
     Immediate(ImmediateExecutor),
     Nested(NestedPatternExecutor),
     StreamModifier(StreamModifierExecutor),
@@ -181,7 +181,11 @@ pub(crate) fn create_executors_for_function(
         ExecutableReturn::Stream(positions) => {
             steps.push(StepExecutors::ReshapeForReturn(positions.clone()));
         }
-        _ => todo!(),
+        ExecutableReturn::Single(selector, positions) => {
+            todo!("ExecutableReturn::Single")
+        }
+        ExecutableReturn::Check => todo!("ExecutableReturn::Check"),
+        ExecutableReturn::Reduce(_) => todo!("ExecutableReturn::Reduce"),
     }
     Ok(steps)
 }
