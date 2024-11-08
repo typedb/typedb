@@ -95,7 +95,7 @@ fn compile_return_operation(
             variables
                 .iter()
                 .map(|var| {
-                    println!("Want {var:?} in {variable_positions:?}");
+                    println!("Want {var:?} in {variable_positions:?}"); // TODO: Debug and remove!
                     variable_positions[var]
                 })
                 .collect(),

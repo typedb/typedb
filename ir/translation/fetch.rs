@@ -174,14 +174,18 @@ fn translate_fetch_list(
             let (translated_stages, subfetch) =
                 translate_pipeline_stages(snapshot, function_index, &mut local_context, value_parameters, stages)
                     .map_err(|err| FetchRepresentationError::SubFetchRepresentation { typedb_source: err })?;
-            let input_variables = find_sub_fetch_inputs(parent_context, &translated_stages, subfetch.as_ref());
-            Ok(FetchSome::ListSubFetch(FetchListSubFetch {
-                context: local_context,
-                parameters: value_parameters.clone(),
-                input_variables,
-                stages: translated_stages,
-                fetch: subfetch.unwrap(),
-            }))
+            if let Some(subfetch) = subfetch {
+                let input_variables = find_sub_fetch_inputs(parent_context, &translated_stages, &subfetch);
+                Ok(FetchSome::ListSubFetch(FetchListSubFetch {
+                    context: local_context,
+                    parameters: value_parameters.clone(),
+                    input_variables,
+                    stages: translated_stages,
+                    fetch: subfetch,
+                }))
+            } else {
+                Err(Box::new(FetchRepresentationError::SubQueryIsNotFetch { declaration: list.clone() }))
+            }
         }
         FetchStream::SubQueryFunctionBlock(block) => {
             // clone context, since we don't want the inline function to affect the parent context
@@ -449,7 +453,7 @@ fn find_function_body_arguments(parent_context: &TranslationContext, function_bo
 fn find_sub_fetch_inputs(
     parent_context: &TranslationContext,
     stages: &[TranslatedStage],
-    fetch: Option<&FetchObject>,
+    fetch: &FetchObject,
 ) -> HashSet<Variable> {
     let mut arguments = HashSet::new();
     // Note: we rely on the fact that named variables that are "the same" become the same Variable, and the logic of
@@ -462,9 +466,7 @@ fn find_sub_fetch_inputs(
         }
     }
     let mut fetch_vars = HashSet::new();
-    if let Some(clause) = fetch {
-        clause.record_variables_recursive(&mut fetch_vars);
-    }
+    fetch.record_variables_recursive(&mut fetch_vars);
     for var in fetch_vars {
         if parent_context.variable_registry.has_variable_as_named(&var) {
             arguments.insert(var);
@@ -582,8 +584,13 @@ typedb_error!(
             "Error building representation of fetch sub-query.",
             (typedb_source : Box<RepresentationError>)
         ),
-        DuplicatedObjectKeyEncountered(
+        SubQueryIsNotFetch(
             17,
+            "Error building representation of fetch sub-query: no fetch found. Consider using expressions or functions.\nSource:\n{declaration}",
+            declaration: TypeQLFetchList
+        ),
+        DuplicatedObjectKeyEncountered(
+            18,
             "Encountered multiple mappings for one key {key} in a single object.\nSource:\n{declaration}",
             key: String,
             declaration: TypeQLFetchObject
