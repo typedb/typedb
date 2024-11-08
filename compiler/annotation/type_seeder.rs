@@ -16,13 +16,13 @@ use concept::{
     error::ConceptReadError,
     type_::{object_type::ObjectType, type_manager::TypeManager, OwnerAPI, PlayerAPI, TypeAPI},
 };
-use encoding::value::value_type::ValueTypeCategory;
+use encoding::value::value_type::{ValueType, ValueTypeCategory};
 use ir::{
     pattern::{
         conjunction::Conjunction,
         constraint::{
             Comparison, Constraint, FunctionCallBinding, Has, Is, Isa, IsaKind, Kind, Label, Links, Owns, Plays,
-            Relates, RoleName, Sub, SubKind,
+            Relates, RoleName, Sub, SubKind, Value,
         },
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
@@ -214,6 +214,8 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Constraint::Label(c) => c.apply(self, vertices)?,
                 Constraint::FunctionCallBinding(c) => c.apply(self, vertices)?,
                 Constraint::RoleName(c) => c.apply(self, vertices)?,
+                Constraint::Value(c) => c.apply(self, vertices)?,
+                | Constraint::Is(_)
                 | Constraint::Sub(_)
                 | Constraint::Isa(_)
                 | Constraint::Links(_)
@@ -222,7 +224,6 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 | Constraint::Relates(_)
                 | Constraint::Plays(_)
                 | Constraint::ExpressionBinding(_)
-                | Constraint::Is(_) => (),
                 | Constraint::Comparison(_) => (),
             }
         }
@@ -379,7 +380,8 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             | Constraint::FunctionCallBinding(_)
             | Constraint::RoleName(_)
             | Constraint::Label(_)
-            | Constraint::Kind(_) => false,
+            | Constraint::Kind(_)
+            | Constraint::Value(_) => false,
         };
         Ok(any_modified)
     }
@@ -499,6 +501,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 | Constraint::RoleName(_)
                 | Constraint::Label(_)
                 | Constraint::Kind(_)
+                | Constraint::Value(_)
                 | Constraint::ExpressionBinding(_)
                 | Constraint::FunctionCallBinding(_) => (), // Do nothing
             }
@@ -669,6 +672,45 @@ impl UnaryConstraint for RoleName<Variable> {
         } else {
             Err(TypeInferenceError::RoleNameNotResolved { name: self.name().to_string() })
         }
+    }
+}
+
+impl UnaryConstraint for Value<Variable> {
+    fn apply<Snapshot: ReadableSnapshot>(
+        &self,
+        seeder: &TypeGraphSeedingContext<'_, Snapshot>,
+        graph_vertices: &mut VertexAnnotations,
+    ) -> Result<(), TypeInferenceError> {
+        let pattern_value_type = match self.value_type() {
+            ir::pattern::ValueType::Builtin(value_type) => Ok(value_type.clone()),
+            ir::pattern::ValueType::Struct(struct_name) => {
+                let pattern_key = seeder.type_manager.get_struct_definition_key(seeder.snapshot, struct_name);
+                match pattern_key {
+                    Ok(Some(key)) => Ok(ValueType::Struct(key)),
+                    Ok(None) => Err(TypeInferenceError::ValueTypeNotFound { name: struct_name.clone().to_owned() }),
+                    Err(source) => Err(TypeInferenceError::ConceptRead { source }),
+                }
+            }
+        }?;
+
+        let mut annotations = BTreeSet::new();
+        let attribute_types = seeder
+            .type_manager
+            .get_attribute_types(seeder.snapshot)
+            .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+        for attribute_type in attribute_types {
+            let attribute_value_type_opt = attribute_type
+                .get_value_type_without_source(seeder.snapshot, seeder.type_manager)
+                .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+            if let Some(attribute_value_type) = attribute_value_type_opt {
+                if pattern_value_type == attribute_value_type {
+                    annotations.insert(TypeAnnotation::Attribute(attribute_type));
+                }
+            }
+        }
+
+        graph_vertices.add_or_intersect(self.attribute_type(), Cow::Owned(annotations));
+        Ok(())
     }
 }
 
@@ -957,7 +999,7 @@ impl BinaryConstraint for Sub<Variable> {
                     attribute
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Attribute(subtype.clone()))
+                        .map(|supertype| TypeAnnotation::Attribute(supertype.clone()))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -966,7 +1008,7 @@ impl BinaryConstraint for Sub<Variable> {
                     entity
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Entity(subtype.clone()))
+                        .map(|supertype| TypeAnnotation::Entity(supertype.clone()))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -984,7 +1026,7 @@ impl BinaryConstraint for Sub<Variable> {
                     role_type
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::RoleType(subtype.clone()))
+                        .map(|supertype| TypeAnnotation::RoleType(supertype.clone()))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -994,23 +1036,23 @@ impl BinaryConstraint for Sub<Variable> {
         } else {
             match left_type {
                 TypeAnnotation::Attribute(attribute) => {
-                    if let Some(subtype) = attribute.get_supertype(seeder.snapshot, seeder.type_manager)? {
-                        collector.insert(TypeAnnotation::Attribute(subtype));
+                    if let Some(supertype) = attribute.get_supertype(seeder.snapshot, seeder.type_manager)? {
+                        collector.insert(TypeAnnotation::Attribute(supertype));
                     }
                 }
                 TypeAnnotation::Entity(entity) => {
-                    if let Some(subtype) = entity.get_supertype(seeder.snapshot, seeder.type_manager)? {
-                        collector.insert(TypeAnnotation::Entity(subtype));
+                    if let Some(supertype) = entity.get_supertype(seeder.snapshot, seeder.type_manager)? {
+                        collector.insert(TypeAnnotation::Entity(supertype));
                     }
                 }
                 TypeAnnotation::Relation(relation) => {
-                    if let Some(subtype) = relation.get_supertype(seeder.snapshot, seeder.type_manager)? {
-                        collector.insert(TypeAnnotation::Relation(subtype));
+                    if let Some(supertype) = relation.get_supertype(seeder.snapshot, seeder.type_manager)? {
+                        collector.insert(TypeAnnotation::Relation(supertype));
                     }
                 }
                 TypeAnnotation::RoleType(role_type) => {
-                    if let Some(subtype) = role_type.get_supertype(seeder.snapshot, seeder.type_manager)? {
-                        collector.insert(TypeAnnotation::RoleType(subtype));
+                    if let Some(supertype) = role_type.get_supertype(seeder.snapshot, seeder.type_manager)? {
+                        collector.insert(TypeAnnotation::RoleType(supertype));
                     }
                 }
             }
@@ -1343,7 +1385,7 @@ impl<'graph> BinaryConstraint for RelationRoleEdge<'graph> {
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
         let relation = match left_type {
-            TypeAnnotation::Relation(relation) => relation.clone(),
+            TypeAnnotation::Relation(relation) => relation,
             _ => {
                 return Ok(());
             } // It can't be another type => Do nothing and let type-inference clean it up
@@ -1397,7 +1439,7 @@ impl BinaryConstraint for Relates<Variable> {
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), ConceptReadError> {
         let relation = match left_type {
-            TypeAnnotation::Relation(relation) => relation.clone(),
+            TypeAnnotation::Relation(relation) => relation,
             _ => {
                 return Ok(());
             } // It can't be another type => Do nothing and let type-inference clean it up

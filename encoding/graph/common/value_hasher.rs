@@ -50,7 +50,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
             hasher,
             value_bytes,
         );
-        let hash_bytes = &key_without_tail_byte.bytes()[key_without_hash.len()..key_without_hash.len() + hash_bytes]; 
+        let hash_bytes = &key_without_tail_byte.bytes()[key_without_hash.len()..key_without_hash.len() + hash_bytes];
         match Self::disambiguate(snapshot, key_without_tail_byte.as_ref(), value_bytes)? {
             Either::First(tail) => Ok(Either::First(Self::concat_hash_and_tail(hash_bytes, tail))),
             Either::Second(tail) => Ok(Either::Second(Self::concat_hash_and_tail(hash_bytes, tail))),

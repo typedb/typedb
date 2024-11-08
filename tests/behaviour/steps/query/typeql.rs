@@ -180,7 +180,10 @@ async fn typeql_read_query(context: &mut Context, may_error: params::TypeQLMayEr
 #[step(expr = r"get answers of typeql read query")]
 async fn get_answers_of_typeql_read_query(context: &mut Context, step: &Step) {
     let query = typeql::parse_query(step.docstring.as_ref().unwrap().as_str()).unwrap();
-    context.answers = execute_read_query(context, query).unwrap();
+    context.answers = match execute_read_query(context, query) {
+        Ok(answers) => answers,
+        Err(error) => panic!("Unexpected get answers error: {:?}", error),
+    }
 }
 
 #[apply(generic_step)]

@@ -50,7 +50,7 @@ use crate::{
         relates_executor::{RelatesBoundedSortedRole, RelatesUnboundedSortedRelation},
         relates_reverse_executor::{RelatesReverseBoundedSortedRelation, RelatesReverseUnboundedSortedRole},
         sub_executor::{SubBoundedSortedSuper, SubUnboundedSortedSub},
-        sub_reverse_executor::{SubReverseBoundedSortedSuper, SubReverseUnboundedSortedSub},
+        sub_reverse_executor::{SubReverseBoundedSortedSub, SubReverseUnboundedSortedSuper},
         tuple::{Tuple, TupleIndex, TuplePositions, TupleResult},
         type_list_executor::TypeIterator,
     },
@@ -105,8 +105,8 @@ pub(crate) enum TupleIterator {
     SubUnbounded(SortedTupleIterator<SubUnboundedSortedSub>),
     SubBounded(SortedTupleIterator<SubBoundedSortedSuper>),
 
-    SubReverseUnbounded(SortedTupleIterator<SubReverseUnboundedSortedSub>),
-    SubReverseBounded(SortedTupleIterator<SubReverseBoundedSortedSuper>),
+    SubReverseUnbounded(SortedTupleIterator<SubReverseUnboundedSortedSuper>),
+    SubReverseBounded(SortedTupleIterator<SubReverseBoundedSortedSub>),
 
     OwnsUnbounded(SortedTupleIterator<OwnsUnboundedSortedOwner>),
     OwnsBounded(SortedTupleIterator<OwnsBoundedSortedAttribute>),

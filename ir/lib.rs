@@ -174,6 +174,7 @@ typedb_error!(
             "Invalid query containing unbound concept variable {variable}",
             variable: String
         ),
+        ScopedValueTypeName(26, "Value type names cannot have scopes. Provided illegal name: '{scope}:{name}'.", scope: String, name: String),
     }
 );
 

@@ -102,6 +102,7 @@ typedb_error!(
             "Attempted to resolve value type for an attribute-type without one: {label}",
             label: String
         ),
+        ValueTypeNotFound(8, "Value type '{name}' was not found.", name: String),
     }
 );
 

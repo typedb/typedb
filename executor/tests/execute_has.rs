@@ -17,7 +17,7 @@ use compiler::{
     },
     executable::match_::{
         instructions::{
-            thing::{HasInstruction, HasReverseInstruction, IsaReverseInstruction},
+            thing::{HasInstruction, HasReverseInstruction, IsaInstruction, IsaReverseInstruction},
             ConstraintInstruction, Inputs,
         },
         planner::{
@@ -27,7 +27,6 @@ use compiler::{
     },
     ExecutorVariable, VariablePosition,
 };
-use compiler::executable::match_::instructions::thing::IsaInstruction;
 use concept::{
     thing::object::ObjectAPI,
     type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},

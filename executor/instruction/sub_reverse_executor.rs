@@ -43,9 +43,9 @@ pub(crate) struct SubReverseExecutor {
     checker: Checker<AdHocHkt<(Type, Type)>>,
 }
 
-pub(super) type SubReverseUnboundedSortedSub =
+pub(super) type SubReverseUnboundedSortedSuper =
     SubTupleIterator<AsLendingIterator<vec::IntoIter<Result<(Type, Type), ConceptReadError>>>>;
-pub(super) type SubReverseBoundedSortedSuper =
+pub(super) type SubReverseBoundedSortedSub =
     SubTupleIterator<AsLendingIterator<vec::IntoIter<Result<(Type, Type), ConceptReadError>>>>;
 
 pub(super) type SubFilterFn = FilterFn<(Type, Type)>;
@@ -117,7 +117,7 @@ impl SubReverseExecutor {
                     .iter()
                     .flat_map(|(sup, subs)| subs.iter().map(|sub| Ok((sub.clone(), sup.clone()))))
                     .collect_vec();
-                let as_tuples: SubReverseUnboundedSortedSub = NarrowingTupleIterator(
+                let as_tuples: SubReverseUnboundedSortedSuper = NarrowingTupleIterator(
                     AsLendingIterator::new(sub_with_super)
                         .try_filter::<_, SubFilterFn, (Type, Type), _>(filter_for_row)
                         .map(sub_to_tuple_super_sub),
@@ -138,7 +138,7 @@ impl SubReverseExecutor {
                 let type_manager = context.type_manager();
                 let subtypes = get_subtypes(&**context.snapshot(), type_manager, &supertype, self.sub.sub_kind())?;
                 let sub_with_super = subtypes.into_iter().map(|sub| Ok((sub, supertype.clone()))).collect_vec(); // TODO cache this
-                let as_tuples: SubReverseBoundedSortedSuper = NarrowingTupleIterator(
+                let as_tuples: SubReverseBoundedSortedSub = NarrowingTupleIterator(
                     AsLendingIterator::new(sub_with_super)
                         .try_filter::<_, SubFilterFn, (Type, Type), _>(filter_for_row)
                         .map(sub_to_tuple_sub_super),

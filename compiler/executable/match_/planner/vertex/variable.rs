@@ -450,8 +450,8 @@ impl Costed for ValuePlanner {
 fn is_input_available(input: &Input, available_inputs: &[VertexId]) -> bool {
     match input {
         Input::Fixed => true,
-        Input::Variable(variable_id) => {
-            available_inputs.iter().any(|available| available.as_variable_id().is_some_and(|avail| avail == *variable_id))
-        }
+        Input::Variable(variable_id) => available_inputs
+            .iter()
+            .any(|available| available.as_variable_id().is_some_and(|avail| avail == *variable_id)),
     }
 }

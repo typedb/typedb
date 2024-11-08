@@ -413,7 +413,8 @@ impl<T: Hkt> Checker<T> {
                     if *lhs == target_variable {
                         let rhs_as_vertex = CheckVertex::Variable(*rhs);
                         let rhs_variable_value = get_vertex_value(&rhs_as_vertex, row.as_ref(), &context.parameters);
-                        let rhs_value = Self::read_value(context.snapshot.as_ref(), &context.thing_manager, &rhs_variable_value)?;
+                        let rhs_value =
+                            Self::read_value(context.snapshot.as_ref(), &context.thing_manager, &rhs_variable_value)?;
                         if let Some(rhs_value) = rhs_value {
                             let comp_range = (Bound::Included(rhs_value.clone()), Bound::Included(rhs_value));
                             range = intersect(range, comp_range);
@@ -421,21 +422,20 @@ impl<T: Hkt> Checker<T> {
                     } else {
                         let lhs_as_vertex = CheckVertex::Variable(*lhs);
                         let lhs_variable_value = get_vertex_value(&lhs_as_vertex, row.as_ref(), &context.parameters);
-                        let lhs_value = Self::read_value(context.snapshot.as_ref(), &context.thing_manager, &lhs_variable_value)?;
+                        let lhs_value =
+                            Self::read_value(context.snapshot.as_ref(), &context.thing_manager, &lhs_variable_value)?;
                         if let Some(lhs_value) = lhs_value {
                             let comp_range = (Bound::Included(lhs_value.clone()), Bound::Included(lhs_value));
                             range = intersect(range, comp_range);
                         }
                     }
-                },
+                }
                 _ => (),
             }
         }
         let range = (range.0.map(|value| value.into_owned()), range.1.map(|value| value.into_owned()));
         Ok(range)
     }
-
-
 
     fn read_value<'a>(
         snapshot: &'a impl ReadableSnapshot,

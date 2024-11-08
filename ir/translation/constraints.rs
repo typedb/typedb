@@ -9,24 +9,25 @@ use encoding::value::label::Label;
 use typeql::{
     expression::{FunctionCall, FunctionName},
     statement::{
-        comparison::ComparisonStatement, thing::AttributeComparisonStatement, Assignment, AssignmentPattern,
-        InIterable, Is,
+        comparison::ComparisonStatement, thing::AttributeComparisonStatement, type_::ValueType as TypeQLValueType,
+        Assignment, AssignmentPattern, InIterable, Is,
     },
     token::Kind,
-    type_::NamedType,
+    type_::{BuiltinValueType, NamedType},
     ScopedLabel, TypeRef, TypeRefAny,
 };
 
 use crate::{
     pattern::{
         conjunction::ConjunctionBuilder,
-        constraint::{Comparator, ConstraintsBuilder, IsaKind},
-        Vertex,
+        constraint::{Comparator, ConstraintsBuilder, IsaKind, SubKind},
+        ValueType, Vertex,
     },
     pipeline::function_signature::FunctionSignatureIndex,
     translation::{
         expression::{add_typeql_expression, add_user_defined_function_call, build_expression},
         literal::translate_literal,
+        tokens::translate_value_type,
     },
     RepresentationError,
 };
@@ -143,7 +144,9 @@ fn add_type_statement(
                     )?;
                 }
             },
-            typeql::statement::type_::ConstraintBase::ValueType(_) => todo!(),
+            typeql::statement::type_::ConstraintBase::ValueType(value_type) => {
+                add_typeql_value(constraints, type_.clone(), value_type)?
+            }
             typeql::statement::type_::ConstraintBase::Owns(owns) => add_typeql_owns(constraints, type_.clone(), owns)?,
             typeql::statement::type_::ConstraintBase::Relates(relates) => {
                 add_typeql_relates(constraints, type_.clone(), relates)?
@@ -262,6 +265,22 @@ fn register_type_role_name_var(
     Ok(variable)
 }
 
+fn register_typeql_value_type(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    value_type: &TypeQLValueType,
+) -> Result<ValueType, RepresentationError> {
+    match &value_type.value_type {
+        NamedType::Role(scoped_label) => Err(RepresentationError::ScopedValueTypeName {
+            scope: scoped_label.scope.ident.as_str().to_owned(),
+            name: scoped_label.name.ident.as_str().to_owned(),
+        }),
+        NamedType::Label(label) => Ok(ValueType::Struct(label.ident.as_str().clone().to_owned())),
+        NamedType::BuiltinValueType(BuiltinValueType { token, .. }) => {
+            Ok(ValueType::Builtin(translate_value_type(token)))
+        }
+    }
+}
+
 fn add_typeql_kind(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     type_: Variable,
@@ -298,7 +317,12 @@ fn add_typeql_relates(
     relates: &typeql::statement::type_::Relates,
 ) -> Result<(), RepresentationError> {
     let role_type = register_typeql_role_type_any(constraints, &relates.related)?;
-    constraints.add_relates(relation_type, role_type)?;
+    constraints.add_relates(relation_type, role_type.clone())?;
+
+    if let Some(specialised) = &relates.specialised {
+        add_typeql_as(constraints, role_type, specialised)?;
+    }
+
     Ok(())
 }
 
@@ -309,6 +333,27 @@ fn add_typeql_plays(
 ) -> Result<(), RepresentationError> {
     let role_type = register_typeql_role_type(constraints, &plays.role)?;
     constraints.add_plays(player_type, role_type)?;
+    Ok(())
+}
+
+fn add_typeql_as(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    registered_specialising: Vertex<Variable>,
+    specialised: &typeql::TypeRef,
+) -> Result<(), RepresentationError> {
+    let kind = SubKind::Subtype; // will read from the IR when "as!" is introduced
+    let registered_specialised = register_typeql_role_type(constraints, specialised)?;
+    constraints.add_sub(kind, registered_specialising, registered_specialised)?;
+    Ok(())
+}
+
+fn add_typeql_value(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    attribute_type: Vertex<Variable>,
+    value_type: &TypeQLValueType,
+) -> Result<(), RepresentationError> {
+    let value_type = register_typeql_value_type(constraints, value_type)?;
+    constraints.add_value(attribute_type, value_type)?;
     Ok(())
 }
 

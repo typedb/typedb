@@ -624,15 +624,12 @@ impl StringAttributeID {
 
         let mut id_prefix = [0; Self::VALUE_TYPE_LENGTH + Self::HASHED_PREFIX_LENGTH];
         id_prefix[0..Self::VALUE_TYPE_LENGTH].copy_from_slice(&ValueTypeCategory::String.to_bytes());
-        id_prefix[Self::HASHED_PREFIX_RANGE].copy_from_slice(&string.bytes().bytes()[0..{ Self::HASHED_PREFIX_LENGTH }]);
-        
+        id_prefix[Self::HASHED_PREFIX_RANGE]
+            .copy_from_slice(&string.bytes().bytes()[0..{ Self::HASHED_PREFIX_LENGTH }]);
+
         // generate full AttributeVertex that we can use to check for existing hashed values in the same type
         let mut attribute_bytes = [0; AttributeVertex::RANGE_TYPE_ID.end + Self::LENGTH];
-        let prefix_length = AttributeVertex::write_prefix_type_attribute_id(
-            &mut attribute_bytes,
-            type_id,
-            &id_prefix
-        );
+        let prefix_length = AttributeVertex::write_prefix_type_attribute_id(&mut attribute_bytes, type_id, &id_prefix);
         let disambiguated_hash = Self::find_existing_or_next_disambiguated_hash(
             snapshot,
             hasher,
@@ -844,7 +841,9 @@ impl StructAttributeID {
     }
 
     pub fn get_hash_hash(&self) -> [u8; Self::HASH_LENGTH] {
-        self.bytes[ValueTypeBytes::CATEGORY_LENGTH..ValueTypeBytes::CATEGORY_LENGTH + Self::HASH_LENGTH].try_into().unwrap()
+        self.bytes[ValueTypeBytes::CATEGORY_LENGTH..ValueTypeBytes::CATEGORY_LENGTH + Self::HASH_LENGTH]
+            .try_into()
+            .unwrap()
     }
 
     pub fn get_hash_disambiguator(&self) -> u8 {
