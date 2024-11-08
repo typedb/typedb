@@ -12,12 +12,11 @@ use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::{
-    key_range::KeyRange,
+    key_range::{KeyRange, RangeStart},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{KeyspaceOpenError, KeyspaceValidationError},
     StorageOpenError,
 };
-use storage::key_range::RangeStart;
 use test_utils::{create_tmp_dir, init_logging};
 
 use crate::test_common::{checkpoint_storage, create_storage, load_storage};
@@ -132,9 +131,14 @@ fn create_reopen() {
             load_storage::<TestKeyspaceSet>(&storage_path, WAL::load(&storage_path).unwrap(), Some(checkpoint))
                 .unwrap();
         let items = storage
-            .iterate_keyspace_range(KeyRange::new_unbounded(RangeStart::Inclusive(StorageKey::<BUFFER_VALUE_INLINE>::Reference(
-                StorageKeyReference::from(&StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace, [0x0]))),
-            ))))
+            .iterate_keyspace_range(KeyRange::new_unbounded(RangeStart::Inclusive(
+                StorageKey::<BUFFER_VALUE_INLINE>::Reference(StorageKeyReference::from(&StorageKeyArray::<
+                    BUFFER_VALUE_INLINE,
+                >::from((
+                    Keyspace,
+                    [0x0],
+                )))),
+            )))
             .map_static::<(ByteArray<BUFFER_VALUE_INLINE>, ByteArray<128>), _>(|res| {
                 let (key, value) = res.unwrap();
                 (ByteArray::copy(key), ByteArray::copy(value))

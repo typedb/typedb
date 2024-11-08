@@ -13,12 +13,11 @@ use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     durability_client::{DurabilityClient, WALClient},
     isolation_manager::IsolationConflict,
-    key_range::KeyRange,
+    key_range::{KeyRange, RangeStart},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::{CommittableSnapshot, ReadableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
     MVCCStorage, StorageCommitError,
 };
-use storage::key_range::RangeStart;
 use test_utils::{create_tmp_dir, init_logging};
 
 use self::TestKeyspaceSet::Keyspace;

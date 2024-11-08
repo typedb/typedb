@@ -11,11 +11,10 @@ use lending_iterator::LendingIterator;
 use logger::result::ResultExt;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
-    key_range::KeyRange,
+    key_range::{KeyRange, RangeStart},
     key_value::{StorageKey, StorageKeyArray},
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
 };
-use storage::key_range::RangeStart;
 use test_utils::{create_tmp_dir, init_logging};
 
 use self::TestKeyspaceSet::Keyspace;
@@ -178,7 +177,10 @@ fn snapshot_read_buffered_delete_of_persisted_key() {
             2,
             snapshot
                 .iterate_range(KeyRange::new_within(
-                    RangeStart::Inclusive(StorageKey::Array(StorageKeyArray::new(Keyspace, ByteArray::inline([0x0], 1)))),
+                    RangeStart::Inclusive(StorageKey::Array(StorageKeyArray::new(
+                        Keyspace,
+                        ByteArray::inline([0x0], 1)
+                    ))),
                     false
                 ))
                 .count()
@@ -189,7 +191,10 @@ fn snapshot_read_buffered_delete_of_persisted_key() {
             1,
             snapshot
                 .iterate_range(KeyRange::new_within(
-                    RangeStart::Inclusive(StorageKey::Array(StorageKeyArray::new(Keyspace, ByteArray::inline([0x0], 1)))),
+                    RangeStart::Inclusive(StorageKey::Array(StorageKeyArray::new(
+                        Keyspace,
+                        ByteArray::inline([0x0], 1)
+                    ))),
                     false
                 ))
                 .count()

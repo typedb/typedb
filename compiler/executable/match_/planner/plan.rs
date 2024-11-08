@@ -963,9 +963,9 @@ impl ConjunctionPlan<'_> {
                         Inputs::Single([rhs_var.unwrap()]),
                         self.type_annotations,
                     ))
-                } else if constraint.unbound_direction(&self.graph) == Direction::Canonical
-                        && Some(sort_variable) != rhs_var
-                    || Some(sort_variable) == lhs_var
+                } else if Some(sort_variable) == lhs_var
+                    || (Some(sort_variable) != rhs_var
+                        && constraint.unbound_direction(&self.graph) == Direction::Canonical)
                 {
                     ConstraintInstruction::$fw($fwi::new(con, Inputs::None([]), self.type_annotations))
                 } else {

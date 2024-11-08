@@ -17,7 +17,7 @@ use compiler::{
     },
     executable::match_::{
         instructions::{
-            thing::{IsaReverseInstruction, LinksInstruction, LinksReverseInstruction},
+            thing::{IsaInstruction, IsaReverseInstruction, LinksInstruction, LinksReverseInstruction},
             ConstraintInstruction, Inputs,
         },
         planner::{
@@ -27,7 +27,6 @@ use compiler::{
     },
     ExecutorVariable, VariablePosition,
 };
-use compiler::executable::match_::instructions::thing::IsaInstruction;
 use concept::{
     thing::object::ObjectAPI,
     type_::{
