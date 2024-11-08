@@ -23,14 +23,13 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct TypeListInstruction<ID> {
     pub type_var: ID,
-    types: Arc<BTreeSet<Type>>,
+    types: BTreeSet<Type>,
     pub checks: Vec<CheckInstruction<ID>>,
 }
 
 impl TypeListInstruction<Variable> {
-    pub(crate) fn new(type_var: Variable, type_annotations: &TypeAnnotations) -> Self {
-        let types = type_annotations.vertex_annotations_of(&Vertex::Variable(type_var)).unwrap().clone();
-        Self { type_var, types, checks: Vec::new() }
+    pub(crate) fn new(type_var: Variable, types: Vec<Type>) -> Self {
+        Self { type_var, types: BTreeSet::from_iter(types), checks: Vec::new() }
     }
 }
 

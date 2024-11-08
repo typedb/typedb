@@ -214,7 +214,7 @@ impl<'a> TypeListPlanner<'a> {
 
     pub(crate) fn lower(&self, type_annotations: &TypeAnnotations) -> ConstraintInstruction<Variable> {
         let var = self.constraint.var();
-        ConstraintInstruction::TypeList(TypeListInstruction::new(var, type_annotations))
+        ConstraintInstruction::TypeList(TypeListInstruction::new(var, self.types.clone()))
     }
 
     pub(crate) fn lower_check(&self) -> CheckInstruction<Variable> {
