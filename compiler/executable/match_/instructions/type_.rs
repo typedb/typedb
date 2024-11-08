@@ -12,7 +12,7 @@ use std::{
 use answer::{variable::Variable, Type};
 use ir::pattern::{
     constraint::{Owns, Plays, Relates, Sub},
-    IrID, Vertex,
+    IrID, 
 };
 
 use crate::{

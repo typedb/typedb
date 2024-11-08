@@ -979,7 +979,7 @@ impl ConjunctionPlan<'_> {
         match constraint {
             ConstraintVertex::TypeList(type_list) => {
                 let var = type_list.constraint().var();
-                let instruction = type_list.lower(self.type_annotations);
+                let instruction = type_list.lower();
                 match_builder.push_instruction(var, instruction);
             }
 

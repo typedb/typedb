@@ -9,13 +9,12 @@ use std::{collections::HashSet, fmt};
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::pattern::Vertex;
-use itertools::{chain, Itertools};
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::match_::planner::{
         plan::{Graph, PatternVertexId, VariableVertexId, VertexId},
-        vertex::{Costed, ElementCost, Input, PlannerVertex},
+        vertex::{Costed, ElementCost, Input},
     },
 };
 
