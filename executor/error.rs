@@ -7,9 +7,8 @@
 use compiler::annotation::expression::instructions::ExpressionEvaluationError;
 use concept::error::ConceptReadError;
 use error::typedb_error;
-use ir::pipeline::function_signature::FunctionID;
 
-use crate::{row::MaybeOwnedRow, InterruptType};
+use crate::InterruptType;
 
 typedb_error!(
     pub ReadExecutionError(component = "Read execution", prefix = "REX") {

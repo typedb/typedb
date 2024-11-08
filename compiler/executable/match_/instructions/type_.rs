@@ -12,7 +12,7 @@ use std::{
 use answer::{variable::Variable, Type};
 use ir::pattern::{
     constraint::{Owns, Plays, Relates, Sub},
-    IrID, 
+    IrID,
 };
 
 use crate::{
@@ -23,13 +23,13 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct TypeListInstruction<ID> {
     pub type_var: ID,
-    types: BTreeSet<Type>,
+    types: Arc<BTreeSet<Type>>,
     pub checks: Vec<CheckInstruction<ID>>,
 }
 
 impl TypeListInstruction<Variable> {
-    pub(crate) fn new(type_var: Variable, types: Vec<Type>) -> Self {
-        Self { type_var, types: BTreeSet::from_iter(types), checks: Vec::new() }
+    pub(crate) fn new(type_var: Variable, types: Arc<BTreeSet<Type>>) -> Self {
+        Self { type_var, types, checks: Vec::new() }
     }
 }
 
