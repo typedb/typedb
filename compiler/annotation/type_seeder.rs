@@ -147,18 +147,10 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             if self.variable_registry
                 .get_variable_category(*id)
                 .map_or(false, |cat| { cat.is_thing_category() }) {
-               let mut to_be_removed : Vec<Type> = Vec::new();
-               for annotated_type in annotations.iter() {
-                   let annotated_type_is_abstract = annotated_type
-                       .is_abstract(self.snapshot, self.type_manager)
-                       .map_err(|source| { TypeInferenceError::ConceptRead { source }})?;
-                   if annotated_type_is_abstract {
-                       to_be_removed.push(annotated_type.clone());
-                   }
-               }
-               for annotated_type in to_be_removed.iter() {
-                   annotations.remove(annotated_type);
-               }
+                TypeAnnotation::try_retain(
+                    annotations,
+                    |type_| { type_.is_abstract(self.snapshot, self.type_manager).map(|b| !b)
+                }).map_err(|source| { TypeInferenceError::ConceptRead { source } })?;
             }
         }
 
@@ -780,20 +772,18 @@ trait BinaryConstraint {
         left_types: &BTreeSet<TypeAnnotation>,
     ) -> Result<BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>, ConceptReadError> {
         let mut left_to_right = BTreeMap::new();
+        let (left_is_thing, right_is_thing) = self.check_for_thing_vars(seeder);
         for left_type in left_types {
-            let mut right_annotations = BTreeSet::new();
-            let (left_is_thing, right_is_thing) = self.check_for_thing_vars(seeder);
-            self.annotate_left_to_right_for_type(seeder, left_type, &mut right_annotations)?;
             if !(left_is_thing && left_type.is_abstract(seeder.snapshot, seeder.type_manager)?) {
-                for right_type in right_annotations.iter() {
-                    if right_is_thing && right_type.is_abstract(seeder.snapshot, seeder.type_manager)? {
-                        continue;
-                    }
-                    left_to_right
-                        .entry(left_type.clone())
-                        .or_insert_with(BTreeSet::new)
-                        .insert(right_type.clone());
+                let mut right_annotations = BTreeSet::new();
+                self.annotate_left_to_right_for_type(seeder, left_type, &mut right_annotations)?;
+                if right_is_thing {
+                    TypeAnnotation::try_retain(
+                        &mut right_annotations,
+                        |type_: &TypeAnnotation| { type_.is_abstract(seeder.snapshot, seeder.type_manager).map(|b| !b) }
+                    )?;
                 }
+                left_to_right.insert(left_type.clone(), right_annotations);
             }
         }
         Ok(left_to_right)
@@ -805,22 +795,19 @@ trait BinaryConstraint {
         right_types: &BTreeSet<TypeAnnotation>,
     ) -> Result<BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>, ConceptReadError> {
         let mut right_to_left = BTreeMap::new();
+        let (left_is_thing, right_is_thing) = self.check_for_thing_vars(seeder);
         for right_type in right_types {
-            let mut left_annotations = BTreeSet::new();
-            let (left_is_thing, right_is_thing) = self.check_for_thing_vars(seeder);
-            self.annotate_right_to_left_for_type(seeder, right_type, &mut left_annotations)?;
             if !(right_is_thing && right_type.is_abstract(seeder.snapshot, seeder.type_manager)?) {
-                for left_type in left_annotations.iter() {
-                    if left_is_thing && left_type.is_abstract(seeder.snapshot, seeder.type_manager)? {
-                        continue;
-                    }
-                    right_to_left
-                        .entry(right_type.clone())
-                        .or_insert_with(BTreeSet::new)
-                        .insert(left_type.clone());
+                let mut left_annotations = BTreeSet::new();
+                self.annotate_right_to_left_for_type(seeder, right_type, &mut left_annotations)?;
+                if left_is_thing {
+                    TypeAnnotation::try_retain(
+                        &mut left_annotations,
+                        |type_: &TypeAnnotation| { type_.is_abstract(seeder.snapshot, seeder.type_manager).map(|b| !b) }
+                    )?;
                 }
+                right_to_left.insert(right_type.clone(), left_annotations);
             }
-            right_to_left.insert(right_type.clone(), left_annotations);
         }
         Ok(right_to_left)
     }
