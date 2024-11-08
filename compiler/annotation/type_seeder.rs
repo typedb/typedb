@@ -751,6 +751,7 @@ impl UnaryConstraint for FunctionCallBinding<Variable> {
                     graph_vertices.add_or_intersect(assigned_variable, Cow::Borrowed(types));
                 }
             }
+            //TODO: add annotations from function input arguments
         }
         Ok(())
     }
@@ -1603,7 +1604,7 @@ pub mod tests {
             conjunction,
             vertices: VertexAnnotations::from([
                 (var_animal.into(), BTreeSet::from([type_cat.clone()])),
-                (var_name.into(), BTreeSet::from([type_name.clone(), type_catname.clone(), type_dogname.clone()])),
+                (var_name.into(), BTreeSet::from([type_catname.clone(), type_dogname.clone()])),
                 (var_animal_type.into(), BTreeSet::from([type_cat.clone()])),
                 (var_name_type.into(), BTreeSet::from([type_name.clone()])),
                 (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat.clone()])),
@@ -1623,14 +1624,13 @@ pub mod tests {
                     vec![
                         (type_catname.clone(), type_name.clone()),
                         (type_dogname.clone(), type_name.clone()),
-                        (type_name.clone(), type_name.clone()),
                     ],
                 ),
                 expected_edge(
                     &constraints[4],
                     var_animal.into(),
                     var_name.into(),
-                    vec![(type_cat.clone(), type_name.clone()), (type_cat.clone(), type_catname.clone())],
+                    vec![(type_cat.clone(), type_catname.clone())],
                 ),
             ],
             nested_disjunctions: vec![],
@@ -1678,8 +1678,8 @@ pub mod tests {
         let mut expected_graph = TypeInferenceGraph {
             conjunction,
             vertices: VertexAnnotations::from([
-                (var_animal.into(), BTreeSet::from([type_cat.clone(), type_dog.clone(), type_animal.clone()])),
-                (var_name.into(), BTreeSet::from([type_name.clone(), type_catname.clone(), type_dogname.clone()])),
+                (var_animal.into(), BTreeSet::from([type_cat.clone(), type_dog.clone()])),
+                (var_name.into(), BTreeSet::from([type_catname.clone(), type_dogname.clone()])),
             ]),
             edges: vec![expected_edge(
                 &constraints[0],
@@ -1687,10 +1687,7 @@ pub mod tests {
                 var_name.into(),
                 vec![
                     (type_cat.clone(), type_catname.clone()),
-                    (type_cat.clone(), type_name.clone()),
                     (type_dog.clone(), type_dogname.clone()),
-                    (type_dog.clone(), type_name.clone()),
-                    (type_animal.clone(), type_name.clone()),
                 ],
             )],
             nested_disjunctions: vec![],
