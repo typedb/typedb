@@ -17,17 +17,9 @@ use concept::{
         object::Object,
         relation::Relation,
         thing_manager::ThingManager,
-        ThingAPI,
     },
 };
-use encoding::{
-    graph::{
-        thing::{vertex_attribute::AttributeVertex, ThingVertex},
-        type_::vertex::TypeVertexEncoding,
-        Typed,
-    },
-    value::value::Value,
-};
+use encoding::value::value::Value;
 use ir::pattern::{
     constraint::{Isa, IsaKind},
     Vertex,

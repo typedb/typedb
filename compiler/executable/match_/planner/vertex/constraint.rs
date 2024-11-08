@@ -4,7 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt, iter};
+use std::{
+    collections::{BTreeSet, HashMap},
+    fmt, iter,
+    sync::Arc,
+};
 
 use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
@@ -122,7 +126,7 @@ impl<'a> TypeListConstraint<'a> {
 pub(crate) struct TypeListPlanner<'a> {
     constraint: TypeListConstraint<'a>,
     var: VariableVertexId,
-    types: Vec<Type>,
+    types: Arc<BTreeSet<Type>>,
 }
 
 impl<'a> fmt::Debug for TypeListPlanner<'a> {
@@ -141,12 +145,7 @@ impl<'a> TypeListPlanner<'a> {
         variable_index: &HashMap<Variable, VariableVertexId>,
         type_annotations: &TypeAnnotations,
     ) -> Self {
-        let types = type_annotations
-            .vertex_annotations_of(label.type_label())
-            .into_iter()
-            .flat_map(|annos| annos.iter())
-            .cloned()
-            .collect();
+        let types = type_annotations.vertex_annotations_of(label.type_label()).cloned().unwrap_or_default();
         Self {
             constraint: TypeListConstraint::Label(label),
             var: variable_index[&label.type_().as_variable().unwrap()],
@@ -159,12 +158,7 @@ impl<'a> TypeListPlanner<'a> {
         variable_index: &HashMap<Variable, VariableVertexId>,
         type_annotations: &TypeAnnotations,
     ) -> Self {
-        let types = type_annotations
-            .vertex_annotations_of(role_name.type_())
-            .into_iter()
-            .flat_map(|annos| annos.iter())
-            .cloned()
-            .collect();
+        let types = type_annotations.vertex_annotations_of(role_name.type_()).cloned().unwrap_or_default();
         Self {
             constraint: TypeListConstraint::RoleName(role_name),
             var: variable_index[&role_name.type_().as_variable().unwrap()],
@@ -177,12 +171,7 @@ impl<'a> TypeListPlanner<'a> {
         variable_index: &HashMap<Variable, VariableVertexId>,
         type_annotations: &TypeAnnotations,
     ) -> Self {
-        let types = type_annotations
-            .vertex_annotations_of(kind.type_())
-            .into_iter()
-            .flat_map(|annos| annos.iter())
-            .cloned()
-            .collect();
+        let types = type_annotations.vertex_annotations_of(kind.type_()).cloned().unwrap_or_default();
         Self {
             constraint: TypeListConstraint::Kind(kind),
             var: variable_index[&kind.type_().as_variable().unwrap()],
@@ -195,12 +184,7 @@ impl<'a> TypeListPlanner<'a> {
         variable_index: &HashMap<Variable, VariableVertexId>,
         type_annotations: &TypeAnnotations,
     ) -> Self {
-        let types = type_annotations
-            .vertex_annotations_of(value.attribute_type())
-            .into_iter()
-            .flat_map(|annos| annos.iter())
-            .cloned()
-            .collect();
+        let types = type_annotations.vertex_annotations_of(value.attribute_type()).cloned().unwrap_or_default();
         Self {
             constraint: TypeListConstraint::Value(value),
             var: variable_index[&value.attribute_type().as_variable().unwrap()],
@@ -212,9 +196,9 @@ impl<'a> TypeListPlanner<'a> {
         &self.constraint
     }
 
-    pub(crate) fn lower(&self, type_annotations: &TypeAnnotations) -> ConstraintInstruction<Variable> {
+    pub(crate) fn lower(&self) -> ConstraintInstruction<Variable> {
         let var = self.constraint.var();
-        ConstraintInstruction::TypeList(TypeListInstruction::new(var, type_annotations))
+        ConstraintInstruction::TypeList(TypeListInstruction::new(var, self.types.clone()))
     }
 
     pub(crate) fn lower_check(&self) -> CheckInstruction<Variable> {

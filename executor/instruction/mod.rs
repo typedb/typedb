@@ -4,12 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashMap,
-    fmt,
-    marker::PhantomData,
-    ops::{Bound, RangeBounds},
-};
+use std::{collections::HashMap, fmt, marker::PhantomData, ops::Bound};
 
 use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::{
@@ -27,14 +22,13 @@ use encoding::value::{value::Value, ValueEncodable};
 use ir::{
     pattern::{
         constraint::{Comparator, IsaKind, SubKind},
-        ParameterID, Vertex,
+        Vertex,
     },
     pipeline::ParameterRegistry,
 };
 use itertools::Itertools;
 use lending_iterator::higher_order::{FnHktHelper, Hkt};
 use storage::snapshot::ReadableSnapshot;
-use tracing::field::debug;
 
 use crate::{
     instruction::{

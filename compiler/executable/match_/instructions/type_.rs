@@ -12,7 +12,7 @@ use std::{
 use answer::{variable::Variable, Type};
 use ir::pattern::{
     constraint::{Owns, Plays, Relates, Sub},
-    IrID, Vertex,
+    IrID,
 };
 
 use crate::{
@@ -28,8 +28,7 @@ pub struct TypeListInstruction<ID> {
 }
 
 impl TypeListInstruction<Variable> {
-    pub(crate) fn new(type_var: Variable, type_annotations: &TypeAnnotations) -> Self {
-        let types = type_annotations.vertex_annotations_of(&Vertex::Variable(type_var)).unwrap().clone();
+    pub(crate) fn new(type_var: Variable, types: Arc<BTreeSet<Type>>) -> Self {
         Self { type_var, types, checks: Vec::new() }
     }
 }

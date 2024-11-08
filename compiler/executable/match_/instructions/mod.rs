@@ -7,8 +7,9 @@
 #![allow(clippy::large_enum_variant)]
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeSet, HashMap, HashSet},
     ops::Deref,
+    sync::Arc,
 };
 
 use answer::{variable::Variable, Type};
@@ -483,7 +484,7 @@ impl<ID: IrID> CheckVertex<ID> {
 
 #[derive(Debug, Clone)]
 pub enum CheckInstruction<ID> {
-    TypeList { type_var: ID, types: Vec<Type> },
+    TypeList { type_var: ID, types: Arc<BTreeSet<Type>> },
 
     Sub { sub_kind: SubKind, subtype: CheckVertex<ID>, supertype: CheckVertex<ID> },
     Owns { owner: CheckVertex<ID>, attribute: CheckVertex<ID> },
