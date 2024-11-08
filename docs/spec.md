@@ -1537,9 +1537,9 @@ _Remark_ the following can be said in less space, but we chose the more principl
 
 * 🔶 `let $x, $y?, ..., $w = F($a, <EXPR_b>, ...)>` is satisfied if the following pattern is satisfied:
     ```
-    let $_b = <EXPR2>;
+    let $_b = <EXPR_b>;
     ...
-    let $x, $y?, ..., $w in F($a, $_2, ...)
+    let $x, $y?, ..., $w in F($a, $_b, ...)
     ```
 
 _System property_
