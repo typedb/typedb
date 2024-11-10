@@ -255,7 +255,11 @@ impl<'a> IsaPlanner<'a> {
 
     fn expected_output_size(&self, graph: &Graph<'_>, inputs: &[VertexId]) -> f64 {
         let thing = graph.elements()[&VertexId::Variable(self.thing)].as_variable().unwrap();
-        self.unrestricted_expected_size * thing.selectivity(inputs)
+        let thing_selectivity = thing.selectivity(inputs);
+        f64::max(
+            self.unrestricted_expected_size * thing_selectivity,
+            VariableVertex::OUTPUT_SIZE_MIN
+        )
     }
 }
 

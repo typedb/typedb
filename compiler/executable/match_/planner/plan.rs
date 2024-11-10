@@ -550,21 +550,17 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         }
 
         while !open_set.is_empty() {
-            println!("Picking next element...");
             let (next, _cost) = open_set
                 .iter()
                 .filter(|&&elem| self.graph.elements[&elem].is_valid(elem, &ordering, &self.graph))
                 .map(|&elem| {
                     let cost = self.calculate_marginal_cost(&ordering, elem, intersection_variable);
-                    let graph_element = &self.graph.elements[&elem];
-                    println!("Marginal cost for {:?} is {:?}", graph_element, cost);
-                    (elem, self.calculate_marginal_cost(&ordering, elem, intersection_variable))
+                    // useful when debugging
+                    let _graph_element = &self.graph.elements[&elem];
+                    (elem, cost)
                 })
                 .min_by(|(_, lhs_cost), (_, rhs_cost)| lhs_cost.total_cmp(rhs_cost))
                 .unwrap();
-            let elem = &self.graph.elements[&next];
-            println!("Chose {:?}", elem);
-
             let element = &self.graph.elements[&next];
 
             if element.is_variable() {

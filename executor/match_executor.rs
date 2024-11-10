@@ -40,7 +40,6 @@ impl MatchExecutor {
         input: MaybeOwnedRow<'_>,
         function_registry: Arc<ExecutableFunctionRegistry>,
     ) -> Result<Self, ConceptReadError> {
-        println!("{}", match_executable);
         Ok(Self {
             entry: TODO_REMOVE_create_executors_for_match(
                 snapshot,
