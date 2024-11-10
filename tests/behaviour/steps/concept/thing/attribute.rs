@@ -116,7 +116,7 @@ pub fn get_attribute_by_value(
     context: &mut Context,
     type_label: params::Label,
     value: params::Value,
-) -> Result<Option<Attribute<'static>>, ConceptReadError> {
+) -> Result<Option<Attribute<'static>>, Box<ConceptReadError>> {
     with_read_tx!(context, |tx| {
         let attribute_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();

@@ -58,7 +58,7 @@ pub(crate) enum SingleTypeIsaIterator {
 }
 
 impl LendingIterator for SingleTypeIsaIterator {
-    type Item<'a> = Result<(Thing<'a>, Type), ConceptReadError>;
+    type Item<'a> = Result<(Thing<'a>, Type), Box<ConceptReadError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         match self {
@@ -69,13 +69,13 @@ impl LendingIterator for SingleTypeIsaIterator {
     }
 }
 
-type MapToThingType<I, F> = Map<I, F, Result<(AsHkt![Thing<'_>], Type), ConceptReadError>>;
+type MapToThingType<I, F> = Map<I, F, Result<(AsHkt![Thing<'_>], Type), Box<ConceptReadError>>>;
 type EntityToThingTypeFn =
-    for<'a> fn(Result<Entity<'a>, ConceptReadError>) -> Result<(Thing<'a>, Type), ConceptReadError>;
+    for<'a> fn(Result<Entity<'a>, Box<ConceptReadError>>) -> Result<(Thing<'a>, Type), Box<ConceptReadError>>;
 type RelationToThingTypeFn =
-    for<'a> fn(Result<Relation<'a>, ConceptReadError>) -> Result<(Thing<'a>, Type), ConceptReadError>;
+    for<'a> fn(Result<Relation<'a>, Box<ConceptReadError>>) -> Result<(Thing<'a>, Type), Box<ConceptReadError>>;
 type AttributeToThingTypeFn =
-    for<'a> fn(Result<Attribute<'a>, ConceptReadError>) -> Result<(Thing<'a>, Type), ConceptReadError>;
+    for<'a> fn(Result<Attribute<'a>, Box<ConceptReadError>>) -> Result<(Thing<'a>, Type), Box<ConceptReadError>>;
 
 type MultipleTypeIsaObjectIterator = Flatten<
     AsLendingIterator<vec::IntoIter<ThingWithTypes<MapToThing<InstanceIterator<AsHkt![Object<'_>]>, ObjectEraseFn>>>>,
@@ -91,18 +91,18 @@ type MultipleTypeIsaAttributeIterator = Flatten<
 pub(super) type MultipleTypeIsaIterator = Chain<MultipleTypeIsaObjectIterator, MultipleTypeIsaAttributeIterator>;
 
 pub(super) type IsaTupleIterator<I> = Map<
-    TryFilter<I, Box<IsaFilterFn>, (AsHkt![Thing<'_>], Type), ConceptReadError>,
+    TryFilter<I, Box<IsaFilterFn>, (AsHkt![Thing<'_>], Type), Box<ConceptReadError>>,
     IsaToTupleFn,
     AsHkt![TupleResult<'_>],
 >;
 
 type RezipThingTypeFn =
-    for<'a, 'b> fn((&'a Result<Thing<'b>, ConceptReadError>, Type)) -> Result<(Thing<'a>, Type), ConceptReadError>;
+    for<'a, 'b> fn((&'a Result<Thing<'b>, Box<ConceptReadError>>, Type)) -> Result<(Thing<'a>, Type), Box<ConceptReadError>>;
 
 type ThingWithTypes<I> = Map<
     Zip<RepeatEach<I>, AsLendingIterator<iter::Cycle<vec::IntoIter<Type>>>>,
     RezipThingTypeFn,
-    Result<(AsHkt![Thing<'_>], Type), ConceptReadError>,
+    Result<(AsHkt![Thing<'_>], Type), Box<ConceptReadError>>,
 >;
 
 pub(super) type IsaUnboundedSortedTypeSingle = IsaTupleIterator<SingleTypeIsaIterator>;
@@ -112,12 +112,12 @@ pub(super) type IsaUnboundedSortedThingSingle = IsaTupleIterator<SingleTypeIsaIt
 pub(super) type IsaUnboundedSortedThingMerged = IsaTupleIterator<MultipleTypeIsaIterator>;
 
 pub(super) type IsaBoundedSortedType =
-    IsaTupleIterator<ThingWithTypes<Once<Result<AsHkt![Thing<'_>], ConceptReadError>>>>;
+    IsaTupleIterator<ThingWithTypes<Once<Result<AsHkt![Thing<'_>], Box<ConceptReadError>>>>>;
 
-pub(super) type MapToThing<I, F> = Map<I, F, Result<AsHkt![Thing<'_>], ConceptReadError>>;
-pub(super) type ObjectEraseFn = for<'a> fn(Result<Object<'a>, ConceptReadError>) -> Result<Thing<'a>, ConceptReadError>;
+pub(super) type MapToThing<I, F> = Map<I, F, Result<AsHkt![Thing<'_>], Box<ConceptReadError>>>;
+pub(super) type ObjectEraseFn = for<'a> fn(Result<Object<'a>, Box<ConceptReadError>>) -> Result<Thing<'a>, Box<ConceptReadError>>;
 pub(super) type AttributeEraseFn =
-    for<'a> fn(Result<Attribute<'a>, ConceptReadError>) -> Result<Thing<'a>, ConceptReadError>;
+    for<'a> fn(Result<Attribute<'a>, Box<ConceptReadError>>) -> Result<Thing<'a>, Box<ConceptReadError>>;
 
 pub(super) type IsaFilterFn = FilterFn<(AsHkt![Thing<'_>], Type)>;
 
@@ -166,7 +166,7 @@ impl IsaExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
-    ) -> Result<TupleIterator, ConceptReadError> {
+    ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter_for_row: Box<IsaFilterFn> = self.checker.filter_for_row(context, &row);
         let snapshot = &**context.snapshot();
         let thing_manager = context.thing_manager();
@@ -217,7 +217,7 @@ impl IsaExecutor {
     }
 }
 
-fn with_types<I: for<'a> LendingIterator<Item<'a> = Result<Thing<'a>, ConceptReadError>>>(
+fn with_types<I: for<'a> LendingIterator<Item<'a> = Result<Thing<'a>, Box<ConceptReadError>>>>(
     iter: I,
     types: Vec<Type>,
 ) -> ThingWithTypes<I> {
@@ -235,7 +235,7 @@ pub(super) fn instances_of_all_types_chained<'a>(
     instance_types_to_types: &BTreeMap<Type, Vec<Type>>,
     isa_kind: IsaKind,
     instance_values_range: (Bound<Value<'_>>, Bound<Value<'_>>),
-) -> Result<MultipleTypeIsaIterator, ConceptReadError> {
+) -> Result<MultipleTypeIsaIterator, Box<ConceptReadError>> {
     // TODO: this method contains a lot of heap allocations - we clone the Vec<Type> each time!
 
     // object types and attribute types will continue to be sorted, based on their source in the BTreeMap
@@ -246,7 +246,7 @@ pub(super) fn instances_of_all_types_chained<'a>(
         .into_iter()
         .map(|(type_, types)| {
             let returned_types = if matches!(isa_kind, IsaKind::Subtype) { types.clone() } else { vec![type_.clone()] };
-            Ok(with_types(
+            Ok::<_, Box<_>>(with_types(
                 thing_manager
                     .get_objects_in(snapshot, type_.as_object_type())
                     .map((|res| res.map(Thing::from)) as ObjectEraseFn),
@@ -266,7 +266,7 @@ pub(super) fn instances_of_all_types_chained<'a>(
         })
         .map(|(type_, types)| {
             let returned_types = if matches!(isa_kind, IsaKind::Subtype) { types.clone() } else { vec![type_.clone()] };
-            Ok(with_types(
+            Ok::<_, Box<_>>(with_types(
                 thing_manager
                     .get_attributes_in_range(snapshot, type_.as_attribute_type(), &instance_values_range)?
                     .map((|res| res.map(Thing::Attribute)) as AttributeEraseFn),

@@ -50,7 +50,7 @@ where
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
+    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (Box<PipelineExecutionError>, ExecutionContext<Snapshot>)>
     {
         let Self { previous: previous_stage, executable, function_registry, .. } = self;
         let (previous_iterator, context) = previous_stage.into_iterator(interrupt.clone())?;
@@ -85,7 +85,7 @@ where
     Snapshot: ReadableSnapshot + 'static,
     Iterator: StageIterator,
 {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         while !self.current_iterator.as_mut().is_some_and(|iter| iter.peek().is_some()) {
@@ -103,7 +103,7 @@ where
                 input_row,
                 self.function_registry.clone(),
             )
-            .map_err(|err| PipelineExecutionError::InitialisingMatchIterator { source: err });
+            .map_err(|err| Box::new(PipelineExecutionError::InitialisingMatchIterator { source: err }));
 
             match executor {
                 Ok(executor) => {
@@ -118,7 +118,7 @@ where
             };
         }
         self.current_iterator.as_mut().unwrap().next().map(|result| {
-            result.map_err(|err| PipelineExecutionError::ReadPatternExecution { typedb_source: err.clone() })
+            result.map_err(|err| Box::new(PipelineExecutionError::ReadPatternExecution { typedb_source: err.clone() }))
         })
     }
 }

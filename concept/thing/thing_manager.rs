@@ -198,7 +198,7 @@ impl ThingManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         player: &'o impl ObjectAPI<'o>,
-    ) -> impl for<'a> LendingIterator<Item<'a> = Result<Relation<'a>, ConceptReadError>> {
+    ) -> impl for<'a> LendingIterator<Item<'a> = Result<Relation<'a>, Box<ConceptReadError>>> {
         self.get_relations_roles(snapshot, player).map::<Result<Relation<'_>, _>, _>(|res| {
             let (rel, _, _) = res?;
             Ok(rel)
@@ -210,7 +210,7 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         player: &'o impl ObjectAPI<'o>,
         role_type: RoleType<'static>,
-    ) -> impl for<'a> LendingIterator<Item<'a> = Result<(Relation<'a>, u64), ConceptReadError>> {
+    ) -> impl for<'a> LendingIterator<Item<'a> = Result<(Relation<'a>, u64), Box<ConceptReadError>>> {
         self.get_relations_roles(snapshot, player).filter_map::<Result<(Relation<'_>, u64), _>, _>(move |item| {
             match item {
                 Ok((rel, role, count)) => (role == role_type).then_some(Ok((rel, count))),
@@ -222,7 +222,7 @@ impl ThingManager {
     pub fn get_attributes<'this, Snapshot: ReadableSnapshot>(
         &'this self,
         snapshot: &'this Snapshot,
-    ) -> Result<AttributeIterator<InstanceIterator<AsHkt![Attribute<'_>]>>, ConceptReadError> {
+    ) -> Result<AttributeIterator<InstanceIterator<AsHkt![Attribute<'_>]>>, Box<ConceptReadError>> {
         let has_reverse_start = ThingEdgeHasReverse::prefix_from_prefix(Prefix::VertexAttribute);
         let range =
             KeyRange::new_within(RangeStart::Inclusive(has_reverse_start), Prefix::VertexAttribute.fixed_width_keys());
@@ -240,7 +240,7 @@ impl ThingManager {
         &'this self,
         snapshot: &'this impl ReadableSnapshot,
         attribute_type: AttributeType<'this>,
-    ) -> Result<AttributeIterator<InstanceIterator<AsHkt![Attribute<'_>]>>, ConceptReadError> {
+    ) -> Result<AttributeIterator<InstanceIterator<AsHkt![Attribute<'_>]>>, Box<ConceptReadError>> {
         let attribute_value_type =
             attribute_type.get_value_type_without_source(snapshot, self.type_manager.as_ref())?;
         let Some(value_type) = attribute_value_type.as_ref() else {
@@ -265,7 +265,7 @@ impl ThingManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         attribute: &'a Attribute<'a>,
-    ) -> Result<Value<'static>, ConceptReadError> {
+    ) -> Result<Value<'static>, Box<ConceptReadError>> {
         match attribute.vertex().attribute_id() {
             AttributeID::Boolean(id) => Ok(Value::Boolean(id.read().as_bool())),
             AttributeID::Long(id) => Ok(Value::Long(id.read().as_i64())),
@@ -283,7 +283,7 @@ impl ThingManager {
                         .get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
                             String::from(StringBytes::new(Bytes::<1>::Reference(bytes)).as_str())
                         })
-                        .map_err(|error| ConceptReadError::SnapshotGet { source: error })?
+                        .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
                         .ok_or(ConceptReadError::CorruptMissingMandatoryAttributeValue)?
                 };
                 Ok(Value::String(Cow::Owned(string)))
@@ -293,7 +293,7 @@ impl ThingManager {
                     .get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
                         StructBytes::new(Bytes::<1>::Reference(bytes)).as_struct()
                     })
-                    .map_err(|error| ConceptReadError::SnapshotGet { source: error })?
+                    .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
                     .ok_or(ConceptReadError::CorruptMissingMandatoryAttributeValue)?;
                 Ok(Value::Struct(Cow::Owned(struct_value)))
             }
@@ -305,7 +305,7 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
-    ) -> Result<Option<Attribute<'static>>, ConceptReadError> {
+    ) -> Result<Option<Attribute<'static>>, Box<ConceptReadError>> {
         let value_type = value.value_type();
         let attribute_value_type = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?;
         if attribute_value_type.is_none() || attribute_value_type.as_ref().unwrap() != &value_type {
@@ -344,7 +344,7 @@ impl ThingManager {
                             AttributeID::String(id),
                         )),
                         Ok(None) => return Ok(None),
-                        Err(err) => return Err(ConceptReadError::SnapshotIterate { source: err }),
+                        Err(err) => return Err(Box::new(ConceptReadError::SnapshotIterate { source: err })),
                     }
                 }
             }
@@ -362,7 +362,7 @@ impl ThingManager {
                         attribute
                     }
                     Ok(None) => return Ok(None),
-                    Err(err) => return Err(ConceptReadError::SnapshotIterate { source: err }),
+                    Err(err) => return Err(Box::new(ConceptReadError::SnapshotIterate { source: err })),
                 }
             }
         };
@@ -375,7 +375,7 @@ impl ThingManager {
         snapshot: &'this impl ReadableSnapshot,
         attribute_type: AttributeType<'this>,
         range: &impl RangeBounds<Value<'this>>,
-    ) -> Result<AttributeIterator<InstanceIterator<AsHkt![Attribute<'_>]>>, ConceptReadError> {
+    ) -> Result<AttributeIterator<InstanceIterator<AsHkt![Attribute<'_>]>>, Box<ConceptReadError>> {
         if matches!(range.start_bound(), Bound::Unbounded) && matches!(range.end_bound(), Bound::Unbounded) {
             return self.get_attributes_in(snapshot, attribute_type);
         }
@@ -452,7 +452,7 @@ impl ThingManager {
         expected_value_type: ValueType,
         range: &impl RangeBounds<Value<'a>>,
         prefix_constructor: PrefixFn,
-    ) -> Result<Option<(Bound<Key>, Bound<Key>)>, ConceptReadError>
+    ) -> Result<Option<(Bound<Key>, Bound<Key>)>, Box<ConceptReadError>>
     where
         PrefixFn: for<'b> Fn(Value<'b>) -> Key,
     {
@@ -495,7 +495,7 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
-    ) -> Result<Option<Attribute<'static>>, ConceptReadError> {
+    ) -> Result<Option<Attribute<'static>>, Box<ConceptReadError>> {
         debug_assert!(AttributeID::is_inlineable(value.as_reference()));
         let attribute_value_type = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?;
         if attribute_value_type.is_none() || attribute_value_type.as_ref().unwrap() != &value.value_type() {
@@ -504,7 +504,7 @@ impl ThingManager {
         let vertex = AttributeVertex::build(attribute_type.vertex().type_id_(), AttributeID::build_inline(value));
         snapshot
             .get_mapped(vertex.as_storage_key().as_reference(), |_| Attribute::new(vertex.clone()))
-            .map_err(|err| ConceptReadError::SnapshotGet { source: err })
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))
     }
 
     pub(crate) fn has_attribute_with_value<'a>(
@@ -513,7 +513,7 @@ impl ThingManager {
         owner: &impl ObjectAPI<'a>,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         let value_type = value.value_type();
         OperationTimeValidation::validate_value_type_matches_attribute_type_for_read(
             snapshot,
@@ -537,7 +537,7 @@ impl ThingManager {
         let has = ThingEdgeHas::build(owner.vertex(), vertex);
         let has_exists = snapshot
             .get_mapped(has.into_storage_key().as_reference(), |_value| true)
-            .map_err(|err| ConceptReadError::SnapshotGet { source: err })?
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
             .unwrap_or(false);
         Ok(has_exists)
     }
@@ -547,11 +547,11 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         owner: &impl ObjectAPI<'a>,
         attribute: Attribute<'_>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
         let has_exists = snapshot
             .get_mapped(has.into_storage_key().as_reference(), |_value| true)
-            .map_err(|err| ConceptReadError::SnapshotGet { source: err })?
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
             .unwrap_or(false);
         Ok(has_exists)
     }
@@ -570,7 +570,7 @@ impl ThingManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'_>,
-    ) -> Result<HasReverseIterator, ConceptReadError> {
+    ) -> Result<HasReverseIterator, Box<ConceptReadError>> {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute_type(attribute_type.vertex().type_id_());
         let range = KeyRange::new_within(RangeStart::Inclusive(prefix), ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
         Ok(HasReverseIterator::new(snapshot.iterate_range(range)))
@@ -581,7 +581,7 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'_>,
         range: &impl RangeBounds<Value<'a>>,
-    ) -> Result<HasReverseIterator, ConceptReadError> {
+    ) -> Result<HasReverseIterator, Box<ConceptReadError>> {
         if matches!(range.start_bound(), Bound::Unbounded) && matches!(range.end_bound(), Bound::Unbounded) {
             return self.get_has_reverse(snapshot, attribute_type);
         }
@@ -638,7 +638,7 @@ impl ThingManager {
         attribute_type: AttributeType<'_>,
         path_to_field: Vec<StructFieldIDUInt>,
         value: Value<'_>,
-    ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<Attribute<'a>, ConceptReadError>>, ConceptReadError>
+    ) -> Result<impl for<'a> LendingIterator<Item<'a> = Result<Attribute<'a>, Box<ConceptReadError>>>, Box<ConceptReadError>>
     {
         debug_assert!({
             let value_type =
@@ -653,7 +653,7 @@ impl ThingManager {
             &value,
             &attribute_type.vertex(),
         )
-        .map_err(|source| ConceptReadError::SnapshotIterate { source })?;
+        .map_err(|source| Box::new(ConceptReadError::SnapshotIterate { source }))?;
         let index_attribute_iterator = snapshot
             .iterate_range(KeyRange::new_within(
                 RangeStart::Inclusive(prefix),
@@ -666,7 +666,7 @@ impl ThingManager {
                             StructIndexEntry::new(StructIndexEntryKey::new(key.into_bytes()), None).attribute_vertex(),
                         )
                     })
-                    .map_err(|err| ConceptReadError::SnapshotIterate { source: err })
+                    .map_err(|err| Box::new(ConceptReadError::SnapshotIterate { source: err }))
             });
 
         let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute_type(attribute_type.vertex().type_id_());
@@ -714,7 +714,7 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         owner: &impl ObjectAPI<'a>,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Vec<Attribute<'static>>, ConceptReadError> {
+    ) -> Result<Vec<Attribute<'static>>, Box<ConceptReadError>> {
         let key = build_object_vertex_property_has_order(owner.vertex(), attribute_type.vertex());
         let attribute_value_type = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?;
         let value_type = match attribute_value_type.as_ref() {
@@ -727,7 +727,7 @@ impl ThingManager {
                     .map(|id| Attribute::new(AttributeVertex::build(attribute_type.vertex().type_id_(), id)))
                     .collect()
             })
-            .map_err(|err| ConceptReadError::SnapshotGet { source: err })?
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
             .unwrap_or_else(Vec::new);
         Ok(attributes)
     }
@@ -737,7 +737,7 @@ impl ThingManager {
         snapshot: &'this impl ReadableSnapshot,
         owner: &impl ObjectAPI<'a>,
         attribute_types: impl Iterator<Item = AttributeType<'static>>,
-    ) -> Result<HasIterator, ConceptReadError> {
+    ) -> Result<HasIterator, Box<ConceptReadError>> {
         let (min_type_id, max_type_id) = match attribute_types.minmax() {
             MinMaxResult::NoElements => unreachable!(),
             MinMaxResult::OneElement(type_) => (type_.vertex().type_id_(), type_.vertex().type_id_()),
@@ -892,11 +892,11 @@ impl ThingManager {
         relation: Relation<'_>,
         player: &impl ObjectAPI<'a>,
         role_type: RoleType<'static>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.vertex());
         let links_exists = snapshot
             .get_mapped(links.into_storage_key().as_reference(), |_| true)
-            .map_err(|err| ConceptReadError::SnapshotGet { source: err })?
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
             .unwrap_or(false);
         Ok(links_exists)
     }
@@ -920,13 +920,13 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         relation: Relation<'_>,
         role_type: RoleType<'static>,
-    ) -> Result<Vec<Object<'static>>, ConceptReadError> {
+    ) -> Result<Vec<Object<'static>>, Box<ConceptReadError>> {
         let key = build_object_vertex_property_links_order(relation.into_vertex(), role_type.into_vertex());
         let players = snapshot
             .get_mapped(key.as_storage_key().as_reference(), |bytes| {
                 decode_role_players(bytes.bytes()).map(|vertex| Object::new(vertex).into_owned()).collect()
             })
-            .map_err(|err| ConceptReadError::SnapshotGet { source: err })?
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
             .unwrap_or_else(Vec::new);
         Ok(players)
     }
@@ -936,7 +936,7 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         relation: Relation<'_>,
         role_type: RoleType<'static>,
-    ) -> impl for<'x> LendingIterator<Item<'x> = Result<(RolePlayer<'x>, u64), ConceptReadError>> {
+    ) -> impl for<'x> LendingIterator<Item<'x> = Result<(RolePlayer<'x>, u64), Box<ConceptReadError>>> {
         self.get_role_players(snapshot, relation).filter_map::<Result<(RolePlayer<'_>, u64), _>, _>(move |item| {
             match item {
                 Ok((role_player, count)) => (role_player.role_type() == role_type).then_some(Ok((role_player, count))),
@@ -976,20 +976,20 @@ impl ThingManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         object: &impl ObjectAPI<'a>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         snapshot
             .contains(object.vertex().as_storage_key().as_reference())
-            .map_err(|error| ConceptReadError::SnapshotGet { source: error })
+            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
     }
 
     pub(crate) fn type_exists<'a>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_: impl TypeAPI<'a>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         snapshot
             .contains(type_.vertex().as_storage_key().as_reference())
-            .map_err(|error| ConceptReadError::SnapshotGet { source: error })
+            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
     }
 }
 
@@ -1005,8 +1005,8 @@ impl ThingManager {
     pub fn finalise(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Vec<ConceptWriteError>> {
         self.validate(snapshot)?;
 
-        self.cleanup_relations(snapshot).map_err(|err| vec![err])?;
-        self.cleanup_attributes(snapshot).map_err(|err| vec![err])?;
+        self.cleanup_relations(snapshot).map_err(|err| vec![*err])?;
+        self.cleanup_attributes(snapshot).map_err(|err| vec![*err])?;
 
         match self.create_commit_locks(snapshot) {
             Ok(_) => Ok(()),
@@ -1014,7 +1014,7 @@ impl ThingManager {
         }
     }
 
-    fn create_commit_locks(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), ConceptReadError> {
+    fn create_commit_locks(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Box<ConceptReadError>> {
         // TODO: Should not collect here (iterate_writes() already copies)
         for (key, _write) in snapshot.iterate_writes().collect_vec() {
             let key_reference = StorageKeyReference::from(&key);
@@ -1045,7 +1045,7 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         owner: &Object<'a>,
         attribute: Attribute<'a>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         let unique_constraint_opt = owner.type_().get_owned_attribute_type_constraint_unique(
             snapshot,
             self.type_manager(),
@@ -1055,7 +1055,7 @@ impl ThingManager {
             let attribute_key = attribute.vertex();
             let attribute_value = snapshot
                 .get_last_existing::<BUFFER_VALUE_INLINE>(attribute_key.as_storage_key().as_reference())
-                .map_err(|error| ConceptReadError::SnapshotGet { source: error })?
+                .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
                 .ok_or(ConceptReadError::CorruptMissingMandatoryAttributeValue)?;
 
             let lock_key = create_custom_lock_key(
@@ -1079,7 +1079,7 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         owner: &Object<'_>,
         attribute_type: AttributeType<'static>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         let cardinality_constraints =
             get_checked_constraints(owner.type_().get_owned_attribute_type_constraints_cardinality(
                 snapshot,
@@ -1110,7 +1110,7 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         player: &Object<'_>,
         role_type: RoleType<'static>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         let cardinality_constraints = get_checked_constraints(
             player.type_().get_played_role_type_constraints_cardinality(snapshot, self.type_manager(), role_type)?,
         );
@@ -1138,7 +1138,7 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         relation: &Relation<'_>,
         role_type: RoleType<'static>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         let cardinality_constraints = get_checked_constraints(
             relation.type_().get_related_role_type_constraints_cardinality(snapshot, self.type_manager(), role_type)?,
         );
@@ -1161,7 +1161,7 @@ impl ThingManager {
         Ok(())
     }
 
-    fn cleanup_relations(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), ConceptWriteError> {
+    fn cleanup_relations(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Box<ConceptWriteError>> {
         let mut any_deleted = true;
         while any_deleted {
             any_deleted = false;
@@ -1239,7 +1239,7 @@ impl ThingManager {
                             }
                         }
                     }
-                    Ok::<(), ConceptWriteError>(())
+                    Ok::<() , Box<ConceptWriteError>>(())
                 })?;
             }
         }
@@ -1247,7 +1247,7 @@ impl ThingManager {
         Ok(())
     }
 
-    fn cleanup_attributes(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), ConceptWriteError> {
+    fn cleanup_attributes(&self, snapshot: &mut impl WritableSnapshot) -> Result<() , Box<ConceptWriteError>> {
         for (key, _write) in snapshot
             .iterate_writes_range(KeyRange::new_within(
                 RangeStart::Inclusive(ThingEdgeHas::prefix()),
@@ -1319,7 +1319,7 @@ impl ThingManager {
                         }
                     }
                 }
-                Ok::<(), ConceptWriteError>(())
+                Ok::<() , Box<ConceptWriteError>>(())
             })?;
         }
 
@@ -1375,7 +1375,7 @@ impl ThingManager {
         out_object_attribute_types: &mut HashMap<Object<'static>, HashSet<AttributeType<'static>>>,
         out_object_role_types: &mut HashMap<Object<'static>, HashSet<RoleType<'static>>>,
         out_relation_role_types: &mut HashMap<Relation<'static>, HashSet<RoleType<'static>>>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         for key in snapshot
             .iterate_writes_range(KeyRange::new_variable_width(
                 RangeStart::Inclusive(StorageKey::new(
@@ -1421,7 +1421,7 @@ impl ThingManager {
         &self,
         snapshot: &impl WritableSnapshot,
         out_object_attribute_types: &mut HashMap<Object<'static>, HashSet<AttributeType<'static>>>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         for (key, _) in snapshot.iterate_writes_range(KeyRange::new_within(
             RangeStart::Inclusive(ThingEdgeHas::prefix()),
             ThingEdgeHas::FIXED_WIDTH_ENCODING,
@@ -1443,7 +1443,7 @@ impl ThingManager {
         snapshot: &impl WritableSnapshot,
         out_relation_role_types: &mut HashMap<Relation<'static>, HashSet<RoleType<'static>>>,
         out_object_role_types: &mut HashMap<Object<'static>, HashSet<RoleType<'static>>>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         for (key, _) in snapshot.iterate_writes_range(KeyRange::new_within(
             RangeStart::Inclusive(ThingEdgeLinks::prefix()),
             ThingEdgeLinks::FIXED_WIDTH_ENCODING,
@@ -1471,7 +1471,7 @@ impl ThingManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         entity_type: EntityType<'static>,
-    ) -> Result<Entity<'a>, ConceptWriteError> {
+    ) -> Result<Entity<'a> , Box<ConceptWriteError>> {
         OperationTimeValidation::validate_entity_type_is_not_abstract(snapshot, self, entity_type.clone())
             .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
@@ -1482,7 +1482,7 @@ impl ThingManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation_type: RelationType<'static>,
-    ) -> Result<Relation<'a>, ConceptWriteError> {
+    ) -> Result<Relation<'a> , Box<ConceptWriteError>> {
         OperationTimeValidation::validate_relation_type_is_not_abstract(snapshot, self, relation_type.clone())
             .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
@@ -1494,7 +1494,7 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
-    ) -> Result<Attribute<'a>, ConceptWriteError> {
+    ) -> Result<Attribute<'a> , Box<ConceptWriteError>> {
         OperationTimeValidation::validate_attribute_type_is_not_abstract(snapshot, self, attribute_type.clone())
             .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
@@ -1538,7 +1538,7 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
-    ) -> Result<Attribute<'a>, ConceptWriteError> {
+    ) -> Result<Attribute<'a> , Box<ConceptWriteError>> {
         OperationTimeValidation::validate_value_type_matches_attribute_type_for_write(
             snapshot,
             self,
@@ -1631,7 +1631,7 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         attribute_vertex: &AttributeVertex<'static>,
         struct_value: &StructValue<'_>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<() , Box<ConceptWriteError>> {
         let index_entries = struct_value
             .create_index_entries(snapshot, &self.vertex_generator, attribute_vertex)
             .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?;
@@ -1661,7 +1661,7 @@ impl ThingManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         attribute: Attribute<'_>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<() , Box<ConceptWriteError>> {
         let key = attribute.into_vertex().into_storage_key().into_owned_array();
         snapshot.delete(key);
         Ok(())
@@ -1683,7 +1683,7 @@ impl ThingManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         attribute: Attribute<'_>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<() , Box<ConceptWriteError>> {
         let value = match attribute
             .get_value(snapshot, self)
             .map_err(|error| ConceptWriteError::ConceptRead { source: error })?
@@ -1701,7 +1701,7 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         owner: &impl ObjectAPI<'a>,
         attribute: Attribute<'_>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<() , Box<ConceptWriteError>> {
         self.set_has_count(snapshot, owner, attribute, 1)
     }
 
@@ -1711,7 +1711,7 @@ impl ThingManager {
         owner: &impl ObjectAPI<'a>,
         attribute: Attribute<'_>,
         count: u64,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<() , Box<ConceptWriteError>> {
         let attribute_type = attribute.type_();
         let value = attribute.get_value(snapshot, self)?.into_owned();
 
@@ -1807,7 +1807,7 @@ impl ThingManager {
         owner: &impl ObjectAPI<'a>,
         attribute_type: AttributeType<'static>,
         attributes: Vec<Attribute<'_>>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<() , Box<ConceptWriteError>> {
         let attribute_value_type = attribute_type
             .get_value_type_without_source(snapshot, self.type_manager())?
             .expect("Value type validation should be implemented in the callers of this method!");
@@ -1840,7 +1840,7 @@ impl ThingManager {
         relation: Relation<'_>,
         player: impl ObjectAPI<'a>,
         role_type: RoleType<'_>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<() , Box<ConceptWriteError>> {
         let count: u64 = 1;
         // must be idempotent, so no lock required -- cannot fail
 
@@ -1866,7 +1866,7 @@ impl ThingManager {
         relation: Relation<'_>,
         role_type: RoleType<'static>,
         players: Vec<Object<'_>>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<() , Box<ConceptWriteError>> {
         let key =
             build_object_vertex_property_links_order(relation.as_reference().into_vertex(), role_type.into_vertex());
         let storage_key = key.into_storage_key().into_owned_array();
@@ -1886,7 +1886,7 @@ impl ThingManager {
         player: impl ObjectAPI<'a>,
         role_type: RoleType<'_>,
         count: u64,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<() , Box<ConceptWriteError>> {
         let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
         let links_reverse =
             ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.clone().into_vertex());
@@ -1917,7 +1917,7 @@ impl ThingManager {
         relation: Relation<'_>,
         player: impl ObjectAPI<'a>,
         role_type: RoleType<'_>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<() , Box<ConceptWriteError>> {
         let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.clone().into_vertex())
             .into_storage_key()
             .into_owned_array();
@@ -1960,11 +1960,11 @@ impl ThingManager {
         relation: Relation<'_>,
         player: impl ObjectAPI<'a>,
         role_type: RoleType<'_>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<() , Box<ConceptWriteError>> {
         let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
         let count = snapshot
             .get_mapped(links.as_storage_key().as_reference(), |arr| decode_u64(arr.bytes().try_into().unwrap()))
-            .map_err(|snapshot_err| ConceptReadError::SnapshotGet { source: snapshot_err })?;
+            .map_err(|snapshot_err| Box::new(ConceptReadError::SnapshotGet { source: snapshot_err }))?;
 
         #[cfg(debug_assertions)]
         {
@@ -1993,11 +1993,11 @@ impl ThingManager {
         player: impl ObjectAPI<'a>,
         role_type: RoleType<'_>,
         decrement_count: u64,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<() , Box<ConceptWriteError>> {
         let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
         let count = snapshot
             .get_mapped(links.as_storage_key().as_reference(), |arr| decode_u64(arr.bytes().try_into().unwrap()))
-            .map_err(|snapshot_err| ConceptReadError::SnapshotGet { source: snapshot_err })?;
+            .map_err(|snapshot_err| Box::new(ConceptReadError::SnapshotGet { source: snapshot_err }))?;
 
         #[cfg(debug_assertions)]
         {
@@ -2032,14 +2032,14 @@ impl ThingManager {
         relation: Relation<'_>,
         player: impl ObjectAPI<'a>,
         role_type: RoleType<'_>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<() , Box<ConceptWriteError>> {
         let players = relation
             .get_players(snapshot, self)
             .map_static(|item| {
                 let (roleplayer, _count) = item?;
                 Ok((roleplayer.player().into_owned(), roleplayer.role_type()))
             })
-            .try_collect::<Vec<_>, ConceptReadError>()?;
+            .try_collect::<Vec<_>, Box<ConceptReadError>>()?;
         for (rp_player, rp_role_type) in players {
             debug_assert!(!(rp_player == Object::new(player.vertex()) && role_type == rp_role_type));
             let index = ThingEdgeRolePlayerIndex::build(
@@ -2072,7 +2072,7 @@ impl ThingManager {
         player: Object<'_>,
         role_type: RoleType<'_>,
         count_for_player: u64,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<() , Box<ConceptWriteError>> {
         debug_assert_ne!(count_for_player, 0);
         let players = relation
             .get_players(snapshot, self)
@@ -2080,7 +2080,7 @@ impl ThingManager {
                 let (roleplayer, count) = item?;
                 Ok((roleplayer.player().into_owned(), roleplayer.role_type(), count))
             })
-            .try_collect::<Vec<_>, ConceptReadError>()?;
+            .try_collect::<Vec<_>, Box<ConceptReadError>>()?;
         for (rp_player, rp_role_type, rp_count) in players {
             let is_same_rp = rp_player == player && rp_role_type == role_type;
             if is_same_rp {

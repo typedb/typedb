@@ -57,7 +57,7 @@ pub(crate) struct HasExecutor {
 }
 
 pub(super) type HasTupleIterator<I> = Map<
-    TryFilter<I, Box<HasFilterFn>, (AsHkt![Has<'_>], u64), ConceptReadError>,
+    TryFilter<I, Box<HasFilterFn>, (AsHkt![Has<'_>], u64), Box<ConceptReadError>>,
     HasToTupleFn,
     AsHkt![TupleResult<'_>],
 >;
@@ -75,7 +75,7 @@ pub(super) const EXTRACT_ATTRIBUTE: HasVariableValueExtractor =
     |(has, _)| VariableValue::Thing(Thing::Attribute(has.attribute()));
 
 pub(crate) type HasOrderingFn = for<'a, 'b> fn(
-    (&'a Result<(Has<'a>, u64), ConceptReadError>, &'b Result<(Has<'b>, u64), ConceptReadError>),
+    (&'a Result<(Has<'a>, u64), Box<ConceptReadError>>, &'b Result<(Has<'b>, u64), Box<ConceptReadError>>),
 ) -> Ordering;
 
 impl HasExecutor {
@@ -85,7 +85,7 @@ impl HasExecutor {
         sort_by: ExecutorVariable,
         snapshot: &Snapshot,
         thing_manager: &ThingManager,
-    ) -> Result<Self, ConceptReadError> {
+    ) -> Result<Self, Box<ConceptReadError>> {
         debug_assert!(!variable_modes.all_inputs());
         let owner_attribute_types = has.owner_to_attribute_types().clone();
         debug_assert!(owner_attribute_types.len() > 0);
@@ -117,7 +117,7 @@ impl HasExecutor {
             for type_ in owner_attribute_types.keys() {
                 let instances: Vec<Object<'static>> = thing_manager
                     .get_objects_in(snapshot, type_.as_object_type())
-                    .map_static(|result| Ok(result?.clone().into_owned()))
+                    .map_static(|result| Ok::<_, Box<ConceptReadError>>(result?.clone().into_owned()))
                     .try_collect()?;
                 cache.extend(instances);
             }
@@ -144,7 +144,7 @@ impl HasExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
-    ) -> Result<TupleIterator, ConceptReadError> {
+    ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
         let filter_for_row: Box<HasFilterFn> = Box::new(move |item| match filter(item) {
@@ -198,7 +198,7 @@ impl HasExecutor {
                     let owners = self.owner_cache.as_ref().unwrap().iter();
                     let iterators = owners
                         .map(|object| {
-                            Ok(Peekable::new(object.get_has_types_range_unordered(
+                            Ok::<_, Box<_>>(Peekable::new(object.get_has_types_range_unordered(
                                 snapshot,
                                 thing_manager,
                                 self.attribute_types.iter().map(|ty| ty.as_attribute_type()),
@@ -267,7 +267,7 @@ fn create_has_filter_attributes(attribute_types: Arc<BTreeSet<Type>>) -> Arc<Has
 }
 
 fn compare_has_by_attribute_then_owner(
-    pair: (&Result<(Has<'_>, u64), ConceptReadError>, &Result<(Has<'_>, u64), ConceptReadError>),
+    pair: (&Result<(Has<'_>, u64), Box<ConceptReadError>>, &Result<(Has<'_>, u64), Box<ConceptReadError>>),
 ) -> Ordering {
     if let (Ok((has_1, _)), Ok((has_2, _))) = pair {
         (has_1.attribute(), has_2.owner()).cmp(&(has_2.attribute(), has_2.owner()))

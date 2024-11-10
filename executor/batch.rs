@@ -125,12 +125,12 @@ impl IntoIterator for FixedBatch {
 }
 
 pub struct FixedBatchRowIterator {
-    batch: Result<FixedBatch, ReadExecutionError>,
+    batch: Result<FixedBatch, Box<ReadExecutionError>>,
     index: u32,
 }
 
 impl FixedBatchRowIterator {
-    pub(crate) fn new(batch: Result<FixedBatch, ReadExecutionError>) -> Self {
+    pub(crate) fn new(batch: Result<FixedBatch, Box<ReadExecutionError>>) -> Self {
         Self { batch, index: 0 }
     }
 

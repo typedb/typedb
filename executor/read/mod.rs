@@ -40,7 +40,7 @@ pub(super) fn TODO_REMOVE_create_executors_for_match(
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
     match_executable: &MatchExecutable,
-) -> Result<PatternExecutor, ConceptReadError> {
+) -> Result<PatternExecutor, Box<ConceptReadError>> {
     let executors =
         step_executor::create_executors_for_match(snapshot, thing_manager, function_registry, match_executable)?;
     Ok(PatternExecutor::new(executors))
@@ -51,7 +51,7 @@ pub(super) fn create_executors_for_pipeline(
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
     executable_stages: &Vec<ExecutableStage>,
-) -> Result<PatternExecutor, ConceptReadError> {
+) -> Result<PatternExecutor, Box<ConceptReadError>> {
     let executors = create_executors_for_pipeline_stages(
         snapshot,
         thing_manager,

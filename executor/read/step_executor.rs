@@ -85,7 +85,7 @@ pub(crate) fn create_executors_for_match(
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
     match_executable: &MatchExecutable,
-) -> Result<Vec<StepExecutors>, ConceptReadError> {
+) -> Result<Vec<StepExecutors>, Box<ConceptReadError>> {
     let mut steps = Vec::with_capacity(match_executable.steps().len());
     for step in match_executable.steps() {
         match step {
@@ -141,7 +141,7 @@ pub(crate) fn create_executors_for_match(
                     .map(|branch_executable| {
                         let executors =
                             create_executors_for_match(snapshot, thing_manager, function_registry, &branch_executable)?;
-                        Ok(PatternExecutor::new(executors))
+                        Ok::<_, Box<_>>(PatternExecutor::new(executors))
                     })
                     .try_collect()?;
                 let inner_step = NestedPatternExecutor::new_disjunction(
@@ -168,7 +168,7 @@ pub(crate) fn create_executors_for_function(
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
     executable_function: &ExecutableFunction,
-) -> Result<Vec<StepExecutors>, ConceptReadError> {
+) -> Result<Vec<StepExecutors>, Box<ConceptReadError>> {
     let executable_stages = &executable_function.executable_stages;
     let mut steps = create_executors_for_pipeline_stages(
         snapshot,
@@ -192,7 +192,7 @@ pub(super) fn create_executors_for_pipeline_stages(
     function_registry: &ExecutableFunctionRegistry,
     executable_stages: &Vec<ExecutableStage>,
     at_index: usize,
-) -> Result<Vec<StepExecutors>, ConceptReadError> {
+) -> Result<Vec<StepExecutors>, Box<ConceptReadError>> {
     let mut previous_stage_steps = if at_index > 0 {
         create_executors_for_pipeline_stages(
             snapshot,

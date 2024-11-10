@@ -26,7 +26,7 @@ pub(crate) mod validation;
 
 typedb_error!(
     pub SchemaValidationError(component = "Schema validation", prefix = "SVL") {
-        ConceptRead(1, "Data validation failed due to concept read error.", (source: ConceptReadError)),
+        ConceptRead(1, "Data validation failed due to concept read error.", (source: Box<ConceptReadError>)),
         LabelShouldBeUnique(2, "Label '{label}' should be unique, but is already used by '{existing_kind}'.", label: Label<'static>, existing_kind: Kind),
         StructNameShouldBeUnique(3, "Struct name '{name}' must a unique, unused name.", name: String),
         StructShouldHaveAtLeastOneField(4, "Struct '{name}' should have at least one field.", name: String),

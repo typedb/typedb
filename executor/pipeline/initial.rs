@@ -38,7 +38,7 @@ impl<Snapshot> StageAPI<Snapshot> for InitialStage<Snapshot> {
     fn into_iterator(
         self,
         _interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
+    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (Box<PipelineExecutionError>, ExecutionContext<Snapshot>)>
     {
         Ok((InitialIterator::new(self.initial_batch), self.context))
     }
@@ -56,11 +56,11 @@ impl InitialIterator {
 }
 
 impl LendingIterator for InitialIterator {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.iterator.next().map(|result| {
-            result.map_err(|err| PipelineExecutionError::ReadPatternExecution { typedb_source: err.clone() })
+            result.map_err(|err| Box::new(PipelineExecutionError::ReadPatternExecution { typedb_source: err.clone() }))
         })
     }
 }

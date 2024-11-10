@@ -73,7 +73,7 @@ macro_rules! validate_capability_cardinality_constraint {
                 if constraint
                     .description()
                     .unwrap_cardinality()
-                    .map_err(|source| ConceptReadError::Constraint { source })
+                    .map_err(|source| Box::new(ConceptReadError::Constraint { source }))
                     .map_err(|source| DataValidationError::ConceptRead { source })?
                     .is_unchecked()
                 {
@@ -112,7 +112,7 @@ impl CommitTimeValidation {
         object: Object<'_>,
         modified_attribute_types: HashSet<AttributeType<'static>>,
         out_errors: &mut Vec<DataValidationError>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         let cardinality_check = CommitTimeValidation::validate_owns_cardinality_constraint(
             snapshot,
             thing_manager,
@@ -129,7 +129,7 @@ impl CommitTimeValidation {
         object: Object<'_>,
         modified_role_types: HashSet<RoleType<'static>>,
         out_errors: &mut Vec<DataValidationError>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         let cardinality_check =
             Self::validate_plays_cardinality_constraint(snapshot, thing_manager, object, modified_role_types);
         collect_errors!(out_errors, cardinality_check);
@@ -142,7 +142,7 @@ impl CommitTimeValidation {
         relation: Relation<'_>,
         modified_role_types: HashSet<RoleType<'static>>,
         out_errors: &mut Vec<DataValidationError>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         let cardinality_check =
             Self::validate_relates_cardinality_constraint(snapshot, thing_manager, relation, modified_role_types);
         collect_errors!(out_errors, cardinality_check);

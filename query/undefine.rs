@@ -934,7 +934,7 @@ fn err_unsupported_capability(label: &Label<'static>, kind: Kind, capability: &C
 typedb_error!(
     pub UndefineError(component = "Undefine execution", prefix = "UEX") {
         Unimplemented(1, "Unimplemented undefine functionality: {description}", description: String),
-        UnexpectedConceptRead(2, "Concept read error during undefine query execution.", ( source: ConceptReadError )),
+        UnexpectedConceptRead(2, "Concept read error during undefine query execution.", ( source: Box<ConceptReadError> )),
         DefinitionResolution(3, "Could not find symbol in undefine query.", ( typedb_source: SymbolResolutionError )),
         LiteralParseError(4, "Error parsing literal in undefine query.", ( source : LiteralParseError )),
         StructDoesNotExist(5, "Struct used in undefine query does not exist.\nSource:\n{declaration}", declaration: Struct),
@@ -943,14 +943,14 @@ typedb_error!(
             "Error removing struct type '{struct_name}'.\nSource:\n{declaration}",
             struct_name: String,
             declaration: Struct,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         TypeDeleteError(
             7,
             "Error removing type '{label}'.\nSource:\n{declaration}",
             label: Label<'static>,
             declaration: TypeQLLabel,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         ValueTypeSymbolResolution(
             8,
@@ -961,32 +961,32 @@ typedb_error!(
             9,
             "Undefining supertype failed.\nSource: {sub}",
             sub: TypeQLSub,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         UnsetOwnsError(
             10,
             "Undefining owns failed.\nSource: {owns}",
             owns: TypeQLOwns,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         DeleteRoleTypeError(
             11,
             "Undefining relates (role type) failed.\nSource: {relates}",
             relates: TypeQLRelates,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         UnsetPlaysError(
             12,
             "Undefining plays failed.\nSource: {plays}",
             plays: TypeQLPlays,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         UnsetValueTypeError(
             13,
             "Undefining '{label}' to have value type '{value_type}' failed.",
             label: Label<'static>,
             value_type: ValueType,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         UnsetTypeAnnotationError(
             14,
@@ -994,21 +994,21 @@ typedb_error!(
             label: Label<'static>,
             annotation_category: AnnotationCategory,
             declaration: AnnotationType,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         UnsetCapabilityAnnotationError(
             15,
             "Undefining '{annotation_category}' failed.\nSource:\n{declaration}",
             annotation_category: AnnotationCategory,
             declaration: AnnotationCapability,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         UnsetRelatesSpecialiseError(
             16,
             "For relation type '{type_}', undefining `relates as' failed.\nSource:\n{declaration}",
             type_: Label<'static>,
             declaration: Specialise,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         TypeCannotHaveCapability(
             17,

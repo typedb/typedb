@@ -27,11 +27,11 @@ pub(crate) fn get_label_or_concept_read_err<'a>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     type_: impl TypeAPI<'a>,
-) -> Result<Label<'static>, ConceptReadError> {
+) -> Result<Label<'static>, Box<ConceptReadError>> {
     type_
         .get_label(snapshot, type_manager)
         .map(|label| label.clone().into_owned())
-        .map_err(|_| ConceptReadError::CorruptMissingLabelOfType)
+        .map_err(|_| Box::new(ConceptReadError::CorruptMissingLabelOfType))
 }
 
 pub(crate) fn get_label_or_schema_err<'a>(
@@ -252,7 +252,7 @@ pub(crate) fn validate_type_supertype_abstractness<T: KindAPI<'static>>(
 //     not_stored_set_cardinalities: &HashMap<CAP, AnnotationCardinality>,
 //     not_stored_set_hidden: &HashMap<CAP, bool>,
 //     validation_errors: &mut Vec<SchemaValidationError>,
-// ) -> Result<(), ConceptReadError> {
+// ) -> Result<(), Box<ConceptReadError>> {
 //     let mut cardinality_connections: HashMap<CAP, HashSet<CAP>> = HashMap::new();
 //     let mut cardinalities: HashMap<CAP, AnnotationCardinality> = not_stored_set_cardinalities.clone();
 //

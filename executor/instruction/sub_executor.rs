@@ -43,13 +43,13 @@ pub(crate) struct SubExecutor {
 }
 
 pub(super) type SubTupleIterator<I> = NarrowingTupleIterator<
-    Map<TryFilter<I, Box<SubFilterFn>, (Type, Type), ConceptReadError>, SubToTupleFn, AdHocHkt<TupleResult<'static>>>,
+    Map<TryFilter<I, Box<SubFilterFn>, (Type, Type), Box<ConceptReadError>>, SubToTupleFn, AdHocHkt<TupleResult<'static>>>,
 >;
 
 pub(super) type SubUnboundedSortedSub =
-    SubTupleIterator<AsLendingIterator<vec::IntoIter<Result<(Type, Type), ConceptReadError>>>>;
+    SubTupleIterator<AsLendingIterator<vec::IntoIter<Result<(Type, Type), Box<ConceptReadError>>>>>;
 pub(super) type SubBoundedSortedSuper =
-    SubTupleIterator<AsLendingIterator<vec::IntoIter<Result<(Type, Type), ConceptReadError>>>>;
+    SubTupleIterator<AsLendingIterator<vec::IntoIter<Result<(Type, Type), Box<ConceptReadError>>>>>;
 
 pub(super) type SubFilterFn = FilterFn<(Type, Type)>;
 
@@ -122,7 +122,7 @@ impl SubExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
-    ) -> Result<TupleIterator, ConceptReadError> {
+    ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
         let filter_for_row: Box<SubFilterFn> = Box::new(move |item| match filter(item) {

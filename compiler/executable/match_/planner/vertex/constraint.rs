@@ -393,7 +393,8 @@ impl<'a> HasPlanner<'a> {
     fn expected_output_size(&self, graph: &Graph<'_>, inputs: &[VertexId]) -> f64 {
         // get selectivity of attribute and multiply it by the expected size based on types
         let attribute = &graph.elements()[&VertexId::Variable(self.attribute)].as_variable().unwrap();
-        let expected_size = self.unbound_typed_expected_size * attribute.selectivity(inputs);
+        let attribute_selectivity = attribute.selectivity(inputs);
+        let expected_size = self.unbound_typed_expected_size * attribute_selectivity;
         f64::max(expected_size, VariableVertex::OUTPUT_SIZE_MIN)
     }
 }

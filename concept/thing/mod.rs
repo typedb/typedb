@@ -51,7 +51,7 @@ pub trait ThingAPI<'a>: Sized + Clone {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<(), ConceptReadError>;
+    ) -> Result<(), Box<ConceptReadError>>;
 
     // TODO: implementers could cache the status in a OnceCell if we do many operations on the same Thing at once
     fn get_status(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> ConceptStatus;
@@ -60,7 +60,7 @@ pub trait ThingAPI<'a>: Sized + Clone {
         self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<(), ConceptWriteError>;
+    ) -> Result<(), Box<ConceptWriteError>>;
 
     fn prefix_for_type(type_: Self::TypeAPI<'_>) -> Prefix;
 }

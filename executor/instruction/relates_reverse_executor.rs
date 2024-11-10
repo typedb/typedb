@@ -51,9 +51,9 @@ pub(super) type RelatesReverseUnboundedSortedRole = RelatesTupleIterator<
             iter::Flatten<vec::IntoIter<BTreeSet<(RelationType<'static>, RoleType<'static>)>>>,
             fn(
                 (RelationType<'static>, RoleType<'static>),
-            ) -> Result<(RelationType<'static>, RoleType<'static>), ConceptReadError>,
+            ) -> Result<(RelationType<'static>, RoleType<'static>), Box<ConceptReadError>>,
         >,
-        Result<(RelationType<'static>, RoleType<'static>), ConceptReadError>,
+        Result<(RelationType<'static>, RoleType<'static>), Box<ConceptReadError>>,
     >,
 >;
 pub(super) type RelatesReverseBoundedSortedRelation = RelatesTupleIterator<
@@ -62,9 +62,9 @@ pub(super) type RelatesReverseBoundedSortedRelation = RelatesTupleIterator<
             vec::IntoIter<(RelationType<'static>, RoleType<'static>)>,
             fn(
                 (RelationType<'static>, RoleType<'static>),
-            ) -> Result<(RelationType<'static>, RoleType<'static>), ConceptReadError>,
+            ) -> Result<(RelationType<'static>, RoleType<'static>), Box<ConceptReadError>>,
         >,
-        Result<(AsHkt![RelationType<'_>], AsHkt![RoleType<'_>]), ConceptReadError>,
+        Result<(AsHkt![RelationType<'_>], AsHkt![RoleType<'_>]), Box<ConceptReadError>>,
     >,
 >;
 
@@ -120,7 +120,7 @@ impl RelatesReverseExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
-    ) -> Result<TupleIterator, ConceptReadError> {
+    ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
         let filter_for_row: Box<RelatesFilterFn> = Box::new(move |item| match filter(item) {

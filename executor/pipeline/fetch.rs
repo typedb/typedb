@@ -57,7 +57,7 @@ impl<Snapshot: ReadableSnapshot + 'static> FetchStageExecutor<Snapshot> {
         previous_iterator: PreviousStage::OutputIterator,
         context: ExecutionContext<Snapshot>,
         interrupt: ExecutionInterrupt,
-    ) -> (impl Iterator<Item = Result<ConceptDocument, PipelineExecutionError>>, ExecutionContext<Snapshot>) {
+    ) -> (impl Iterator<Item = Result<ConceptDocument, Box<PipelineExecutionError>>>, ExecutionContext<Snapshot>) {
         let ExecutionContext { snapshot, thing_manager, parameters } = context.clone();
         let executable = self.executable;
         let documents_iterator = previous_iterator
@@ -70,7 +70,7 @@ impl<Snapshot: ReadableSnapshot + 'static> FetchStageExecutor<Snapshot> {
                     row.as_reference(),
                     interrupt.clone(),
                 )
-                .map_err(|err| PipelineExecutionError::FetchError { typedb_source: err }),
+                .map_err(|err| Box::new(PipelineExecutionError::FetchError { typedb_source: err })),
                 Err(err) => Err(err.clone()),
             })
             .into_iter();
@@ -167,12 +167,12 @@ fn execute_fetch_some(
             };
 
             let (iterator, _context) = pipeline.into_documents_iterator(interrupt)
-                .map_err(|(err, _context)| FetchExecutionError::SubFetch { typedb_source: Box::new(err) })?;
+                .map_err(|(err, _context)| FetchExecutionError::SubFetch { typedb_source: err })?;
 
             let mut nodes = Vec::new();
             for result in iterator {
                 nodes.push(
-                    result.map_err(|err| FetchExecutionError::SubFetch { typedb_source: Box::new(err) })?.root
+                    result.map_err(|err| FetchExecutionError::SubFetch { typedb_source: err })?.root
                 );
             }
             Ok(DocumentNode::List(DocumentList::new_from(nodes)))
@@ -383,6 +383,6 @@ typedb_error!(
 
         SubFetch(10, "Error executing sub fetch.", ( typedb_source : Box<PipelineExecutionError>)),
 
-        ConceptReadError(30, "Unexpected failed to read concept.", ( source: ConceptReadError )),
+        ConceptReadError(30, "Unexpected failed to read concept.", ( source: Box<ConceptReadError>)),
     }
 );

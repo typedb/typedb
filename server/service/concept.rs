@@ -23,7 +23,7 @@ pub(crate) fn encode_thing_concept(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     include_thing_types: bool,
-) -> Result<typedb_protocol::Concept, ConceptReadError> {
+) -> Result<typedb_protocol::Concept, Box<ConceptReadError>> {
     let encoded = match thing {
         Thing::Entity(entity) => typedb_protocol::concept::Concept::Entity(encode_entity(
             entity,
@@ -53,7 +53,7 @@ pub(crate) fn encode_entity(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     include_thing_types: bool,
-) -> Result<typedb_protocol::Entity, ConceptReadError> {
+) -> Result<typedb_protocol::Entity, Box<ConceptReadError>> {
     Ok(typedb_protocol::Entity {
         iid: Vec::from(entity.iid().bytes()),
         entity_type: if include_thing_types {
@@ -69,7 +69,7 @@ pub(crate) fn encode_relation(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     include_thing_types: bool,
-) -> Result<typedb_protocol::Relation, ConceptReadError> {
+) -> Result<typedb_protocol::Relation, Box<ConceptReadError>> {
     Ok(typedb_protocol::Relation {
         iid: Vec::from(relation.iid().bytes()),
         relation_type: if include_thing_types {
@@ -86,7 +86,7 @@ pub(crate) fn encode_attribute(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     include_thing_types: bool,
-) -> Result<typedb_protocol::Attribute, ConceptReadError> {
+) -> Result<typedb_protocol::Attribute, Box<ConceptReadError>> {
     Ok(typedb_protocol::Attribute {
         iid: Vec::from(attribute.iid().bytes()),
         value: Some(encode_value(attribute.get_value(snapshot, thing_manager)?)),
@@ -101,7 +101,7 @@ pub(crate) fn encode_type_concept(
     type_: &Type,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-) -> Result<typedb_protocol::Concept, ConceptReadError> {
+) -> Result<typedb_protocol::Concept, Box<ConceptReadError>> {
     let encoded = match type_ {
         Type::Entity(entity) => {
             typedb_protocol::concept::Concept::EntityType(encode_entity_type(entity, snapshot, type_manager)?)
@@ -123,7 +123,7 @@ pub(crate) fn encode_entity_type(
     entity: &EntityType<'_>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-) -> Result<typedb_protocol::EntityType, ConceptReadError> {
+) -> Result<typedb_protocol::EntityType, Box<ConceptReadError>> {
     Ok(typedb_protocol::EntityType {
         label: entity.get_label(snapshot, type_manager)?.scoped_name().as_str().to_string(),
     })
@@ -133,7 +133,7 @@ pub(crate) fn encode_relation_type(
     relation: &RelationType<'_>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-) -> Result<typedb_protocol::RelationType, ConceptReadError> {
+) -> Result<typedb_protocol::RelationType, Box<ConceptReadError>> {
     Ok(typedb_protocol::RelationType {
         label: relation.get_label(snapshot, type_manager)?.scoped_name().as_str().to_string(),
     })
@@ -143,7 +143,7 @@ pub(crate) fn encode_attribute_type(
     attribute: &AttributeType<'_>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-) -> Result<typedb_protocol::AttributeType, ConceptReadError> {
+) -> Result<typedb_protocol::AttributeType, Box<ConceptReadError>> {
     Ok(typedb_protocol::AttributeType {
         label: attribute.get_label(snapshot, type_manager)?.scoped_name().as_str().to_string(),
         value_type: {
@@ -159,7 +159,7 @@ pub(crate) fn encode_role_type(
     role: &RoleType<'_>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-) -> Result<typedb_protocol::RoleType, ConceptReadError> {
+) -> Result<typedb_protocol::RoleType, Box<ConceptReadError>> {
     Ok(typedb_protocol::RoleType { label: role.get_label(snapshot, type_manager)?.scoped_name().as_str().to_owned() })
 }
 
@@ -167,7 +167,7 @@ pub(crate) fn encode_value_type(
     value_type: ValueType,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-) -> Result<typedb_protocol::ValueType, ConceptReadError> {
+) -> Result<typedb_protocol::ValueType, Box<ConceptReadError>> {
     let value_type_message = match value_type {
         ValueType::Boolean => typedb_protocol::value_type::ValueType::Boolean(typedb_protocol::value_type::Boolean {}),
         ValueType::Long => typedb_protocol::value_type::ValueType::Long(typedb_protocol::value_type::Long {}),

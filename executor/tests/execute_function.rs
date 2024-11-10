@@ -60,7 +60,7 @@ fn setup_common(schema: &str) -> Context {
 fn run_read_query(
     context: &Context,
     query: &str,
-) -> Result<(Vec<MaybeOwnedRow<'static>>, HashMap<String, VariablePosition>), PipelineExecutionError> {
+) -> Result<(Vec<MaybeOwnedRow<'static>>, HashMap<String, VariablePosition>), Box<PipelineExecutionError>> {
     let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
     let match_ = typeql::parse_query(query).unwrap().into_pipeline();
     let pipeline = context
@@ -76,8 +76,8 @@ fn run_read_query(
     let rows_positions = pipeline.rows_positions().unwrap().clone();
     let (iterator, _) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
-    let result: Result<Vec<MaybeOwnedRow<'static>>, PipelineExecutionError> =
-        iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
+    let result: Result<Vec<MaybeOwnedRow<'static>>, Box<PipelineExecutionError>> =
+        iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| Box::new(err.clone()))).collect();
 
     result.map(move |rows| (rows, rows_positions))
 }

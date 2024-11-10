@@ -477,11 +477,11 @@ impl OperationTimeValidation {
         attribute_type: AttributeType<'static>,
         value_type: ValueType,
         value: Value<'_>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let type_value_type = attribute_type.get_value_type_without_source(snapshot, thing_manager.type_manager())?;
         match type_value_type {
             Some(type_value_type) if value_type.is_trivially_castable_to(&type_value_type) => Ok(()),
-            Some(_) => Err(ConceptWriteError::DataValidation {
+            Some(_) => Err(Box::new(ConceptWriteError::DataValidation {
                 typedb_source: DataValidationError::ValueTypeMismatchWithAttributeType {
                     attribute_type: attribute_type
                         .get_label(snapshot, thing_manager.type_manager())
@@ -492,8 +492,8 @@ impl OperationTimeValidation {
                     provided_value_type: value_type,
                     provided_value: value.into_owned(),
                 },
-            }),
-            None => Err(ConceptWriteError::DataValidation {
+            })),
+            None => Err(Box::new(ConceptWriteError::DataValidation {
                 typedb_source: DataValidationError::AttributeTypeHasNoValueType {
                     attribute_type: attribute_type
                         .get_label(snapshot, thing_manager.type_manager())
@@ -503,7 +503,7 @@ impl OperationTimeValidation {
                     provided_value_type: value_type,
                     provided_value: value.into_owned(),
                 },
-            }),
+            })),
         }
     }
 
@@ -512,15 +512,15 @@ impl OperationTimeValidation {
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
         value_type: ValueType,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         let type_value_type = attribute_type.get_value_type_without_source(snapshot, thing_manager.type_manager())?;
         match type_value_type {
             Some(type_value_type) if value_type.is_trivially_castable_to(&type_value_type) => Ok(()),
-            _ => Err(ConceptReadError::ValueTypeMismatchWithAttributeType {
+            _ => Err(Box::new(ConceptReadError::ValueTypeMismatchWithAttributeType {
                 attribute_type,
                 expected: type_value_type,
                 provided: value_type,
-            }),
+            })),
         }
     }
 

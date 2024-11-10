@@ -52,9 +52,9 @@ pub(super) type PlaysReverseUnboundedSortedRole = PlaysTupleIterator<
             iter::Flatten<vec::IntoIter<BTreeSet<(ObjectType<'static>, RoleType<'static>)>>>,
             fn(
                 (ObjectType<'static>, RoleType<'static>),
-            ) -> Result<(ObjectType<'static>, RoleType<'static>), ConceptReadError>,
+            ) -> Result<(ObjectType<'static>, RoleType<'static>), Box<ConceptReadError>>,
         >,
-        Result<(AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>]), ConceptReadError>,
+        Result<(AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>]), Box<ConceptReadError>>,
     >,
 >;
 pub(super) type PlaysReverseBoundedSortedPlayer = PlaysTupleIterator<
@@ -63,9 +63,9 @@ pub(super) type PlaysReverseBoundedSortedPlayer = PlaysTupleIterator<
             vec::IntoIter<(ObjectType<'static>, RoleType<'static>)>,
             fn(
                 (ObjectType<'static>, RoleType<'static>),
-            ) -> Result<(ObjectType<'static>, RoleType<'static>), ConceptReadError>,
+            ) -> Result<(ObjectType<'static>, RoleType<'static>), Box<ConceptReadError>>,
         >,
-        Result<(AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>]), ConceptReadError>,
+        Result<(AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>]), Box<ConceptReadError>>,
     >,
 >;
 
@@ -122,7 +122,7 @@ impl PlaysReverseExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
-    ) -> Result<TupleIterator, ConceptReadError> {
+    ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
         let filter_for_row: Box<PlaysFilterFn> = Box::new(move |item| match filter(item) {

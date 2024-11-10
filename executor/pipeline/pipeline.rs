@@ -81,13 +81,13 @@ impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pip
         execution_interrupt: ExecutionInterrupt,
     ) -> Result<
         (Nonterminals::OutputIterator, ExecutionContext<Snapshot>),
-        (PipelineExecutionError, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
         match self {
             Self::Unfetched(nonterminals, _) => nonterminals.into_iterator(execution_interrupt),
             Self::Fetched(nonterminals, _) => {
                 let (_, context) = nonterminals.into_iterator(execution_interrupt)?;
-                Err((PipelineExecutionError::FetchUsedAsRows {}, context))
+                Err((Box::new(PipelineExecutionError::FetchUsedAsRows {}), context))
             }
         }
     }
@@ -96,13 +96,13 @@ impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pip
         self,
         execution_interrupt: ExecutionInterrupt,
     ) -> Result<
-        (impl Iterator<Item = Result<ConceptDocument, PipelineExecutionError>>, ExecutionContext<Snapshot>),
-        (PipelineExecutionError, ExecutionContext<Snapshot>),
+        (impl Iterator<Item = Result<ConceptDocument, Box<PipelineExecutionError>>>, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
         match self {
             Self::Unfetched(nonterminals, _) => {
                 let (_, context) = nonterminals.into_iterator(execution_interrupt)?;
-                Err((PipelineExecutionError::FetchUsedAsRows {}, context))
+                Err((Box::new(PipelineExecutionError::FetchUsedAsRows {}), context))
             }
             Self::Fetched(nonterminals, fetch_executor) => {
                 let (rows_iterator, context) = nonterminals.into_iterator(execution_interrupt.clone())?;
@@ -126,9 +126,9 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
         let context = ExecutionContext::new(snapshot, thing_manager, parameters);
         let mut last_stage = ReadPipelineStage::Initial(
-            input
+            Box::new(input
                 .map(|row| InitialStage::new_with(context.clone(), row))
-                .unwrap_or_else(|| InitialStage::new_empty(context)),
+                .unwrap_or_else(|| InitialStage::new_empty(context))),
         );
         for executable_stage in executable_stages {
             match executable_stage {
@@ -185,7 +185,7 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
     ) -> Self {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
         let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, parameters);
-        let mut last_stage = WritePipelineStage::Initial(InitialStage::new_empty(context));
+        let mut last_stage = WritePipelineStage::Initial(Box::new(InitialStage::new_empty(context)));
         for executable_stage in executable_stages {
             match executable_stage {
                 ExecutableStage::Match(match_executable) => {

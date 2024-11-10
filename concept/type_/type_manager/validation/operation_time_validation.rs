@@ -87,7 +87,7 @@ macro_rules! type_or_subtype_without_declared_capability_instances_existence_val
             thing_manager: &ThingManager,
             object_type: $object_type<'static>,
             interface_type: $interface_type<'static>,
-        ) -> Result<Option<$object_type<'static>>, ConceptReadError> {
+        ) -> Result<Option<$object_type<'static>>, Box<ConceptReadError>> {
             let mut type_that_has_instances = None;
 
             let mut object_types = VecDeque::new();
@@ -662,7 +662,7 @@ fn collect_object_types_with_interface_type_and_subtypes<CAP: Capability<'static
     type_manager: &TypeManager,
     interface_type: CAP::InterfaceType,
     out_object_types: &mut HashSet<CAP::ObjectType>,
-) -> Result<(), ConceptReadError> {
+) -> Result<(), Box<ConceptReadError>> {
     let interface_subtypes = interface_type.get_subtypes_transitive(snapshot, type_manager)?;
     let all_interface_subtypes = TypeAPI::chain_types(interface_type, interface_subtypes.into_iter().cloned());
 
@@ -681,7 +681,7 @@ fn collect_object_types_with_interface_type_and_supertypes_constraints<CAP: Capa
     type_manager: &TypeManager,
     interface_type: CAP::InterfaceType,
     out_object_types: &mut HashMap<CAP::ObjectType, HashSet<CapabilityConstraint<CAP>>>,
-) -> Result<(), ConceptReadError> {
+) -> Result<(), Box<ConceptReadError>> {
     let interface_supertypes = interface_type.get_supertypes_transitive(snapshot, type_manager)?;
     let all_interface_supertypes = TypeAPI::chain_types(interface_type, interface_supertypes.into_iter().cloned());
 
@@ -2757,7 +2757,7 @@ impl OperationTimeValidation {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         type_: T,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         match T::KIND {
             Kind::Entity => {
                 let entity_type = EntityType::new(type_.vertex().into_owned());
@@ -2796,7 +2796,7 @@ impl OperationTimeValidation {
         thing_manager: &ThingManager,
         owner_type: ObjectType<'a>,
         attribute_type: AttributeType<'a>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         let mut has_instances = false;
 
         let mut owner_iterator = thing_manager.get_objects_in(snapshot, owner_type.clone().into_owned());
@@ -2818,7 +2818,7 @@ impl OperationTimeValidation {
         thing_manager: &ThingManager,
         player_type: ObjectType<'a>,
         role_type: RoleType<'a>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         let mut has_instances = false;
 
         let mut player_iterator = thing_manager.get_objects_in(snapshot, player_type.clone().into_owned());
@@ -2839,7 +2839,7 @@ impl OperationTimeValidation {
         thing_manager: &ThingManager,
         relation_type: RelationType<'a>,
         role_type: RoleType<'a>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         let mut has_instances = false;
 
         let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type.clone().into_owned());
@@ -3074,7 +3074,7 @@ impl OperationTimeValidation {
         capability: CAP,
         interface_type: CAP::InterfaceType,
         new_interface_supertypes: &HashMap<CAP::InterfaceType, Option<CAP::InterfaceType>>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         debug_assert!(capability.interface() == interface_type);
         match constraint.scope() {
             ConstraintScope::SingleInstanceOfType => {
@@ -3191,7 +3191,7 @@ impl OperationTimeValidation {
                     let owns = object_type
                         .get_owns_attribute(snapshot, type_manager, attribute_type.clone())
                         .map_err(|source| DataValidationError::ConceptRead { source })?
-                        .ok_or(ConceptReadError::CorruptFoundHasWithoutOwns)
+                        .ok_or_else(|| Box::new(ConceptReadError::CorruptFoundHasWithoutOwns))
                         .map_err(|source| DataValidationError::ConceptRead { source })?;
 
                     for abstract_constraint in abstract_constraints.iter() {
@@ -3438,7 +3438,7 @@ impl OperationTimeValidation {
                     let plays = object_type
                         .get_plays_role(snapshot, type_manager, role_type.clone())
                         .map_err(|source| DataValidationError::ConceptRead { source })?
-                        .ok_or(ConceptReadError::CorruptFoundLinksWithoutPlays)
+                        .ok_or_else(|| Box::new(ConceptReadError::CorruptFoundLinksWithoutPlays))
                         .map_err(|source| DataValidationError::ConceptRead { source })?;
 
                     for abstract_constraint in abstract_constraints.iter() {
@@ -3550,7 +3550,7 @@ impl OperationTimeValidation {
                     let relates = relation_type
                         .get_relates_role(snapshot, type_manager, role_type.clone())
                         .map_err(|source| DataValidationError::ConceptRead { source })?
-                        .ok_or(ConceptReadError::CorruptFoundLinksWithoutRelates)
+                        .ok_or_else(|| Box::new(ConceptReadError::CorruptFoundLinksWithoutRelates))
                         .map_err(|source| DataValidationError::ConceptRead { source })?;
 
                     for abstract_constraint in abstract_constraints.iter() {

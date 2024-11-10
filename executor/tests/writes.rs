@@ -96,7 +96,7 @@ fn setup_schema(storage: Arc<MVCCStorage<WALClient>>) {
 }
 
 struct ShimStage<Snapshot> {
-    rows: Vec<Result<MaybeOwnedRow<'static>, PipelineExecutionError>>,
+    rows: Vec<Result<MaybeOwnedRow<'static>, Box<PipelineExecutionError>>>,
     context: ExecutionContext<Snapshot>,
 }
 
@@ -109,15 +109,15 @@ impl<Snapshot> ShimStage<Snapshot> {
 
 struct ShimIterator(
     AsNarrowingIterator<
-        vec::IntoIter<Result<MaybeOwnedRow<'static>, PipelineExecutionError>>,
-        Result<AsHkt![MaybeOwnedRow<'_>], PipelineExecutionError>,
+        vec::IntoIter<Result<MaybeOwnedRow<'static>, Box<PipelineExecutionError>>>,
+        Result<AsHkt![MaybeOwnedRow<'_>], Box<PipelineExecutionError>>,
     >,
 );
 
 impl StageIterator for ShimIterator {}
 
 impl LendingIterator for ShimIterator {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.0.next()

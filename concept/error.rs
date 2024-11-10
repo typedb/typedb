@@ -49,7 +49,7 @@ typedb_error!(
     pub ConceptWriteError(component = "Concept write", prefix = "COW") {
         SnapshotGet(1, "Concept write failed due to a snapshot read error.", (source: SnapshotGetError)),
         SnapshotIterate(2, "Concept write failed due to a snapshot iteration error.", (source: Arc<SnapshotIteratorError>)),
-        ConceptRead(3, "Concept write failed due to a concept read error.", (source: ConceptReadError)),
+        ConceptRead(3, "Concept write failed due to a concept read error.", (source: Box<ConceptReadError>)),
         SchemaValidation(4, "Concept write failed due to a schema validation error.", (typedb_source: SchemaValidationError)),
         DataValidation(5, "Concept write failed due to a data validation error.", (typedb_source: DataValidationError)),
         Encoding(6, "Concept write failed due to an encoding error.", (source: EncodingError)),
@@ -64,34 +64,34 @@ typedb_error!(
     }
 );
 
-impl From<ConceptReadError> for ConceptWriteError {
-    fn from(error: ConceptReadError) -> Self {
-        match error {
-            ConceptReadError::SnapshotGet { source } => Self::SnapshotGet { source },
-            ConceptReadError::SnapshotIterate { source } => Self::SnapshotIterate { source },
-            ConceptReadError::Encoding { source, .. } => Self::Encoding { source },
-            ConceptReadError::CorruptMissingLabelOfType => Self::ConceptRead { source: error },
-            ConceptReadError::CorruptMissingMandatoryCardinality => Self::ConceptRead { source: error },
-            ConceptReadError::CorruptMissingCapability => Self::ConceptRead { source: error },
-            ConceptReadError::OrderingValueMissing => Self::ConceptRead { source: error },
-            ConceptReadError::CorruptMissingMandatoryValueType => Self::ConceptRead { source: error },
-            ConceptReadError::CorruptMissingMandatoryAttributeValue => Self::ConceptRead { source: error },
-            ConceptReadError::CorruptMissingMandatoryRootRelatesForRole => Self::ConceptRead { source: error },
-            ConceptReadError::CorruptMissingMandatoryScopeForRoleTypeLabel => Self::ConceptRead { source: error },
-            ConceptReadError::CorruptMissingMandatorySpecialisingRelatesForRole => Self::ConceptRead { source: error },
+impl From<Box<ConceptReadError>> for Box<ConceptWriteError> {
+    fn from(error: Box<ConceptReadError>) -> Self {
+        Box::new(match *error {
+            ConceptReadError::SnapshotGet { source } => ConceptWriteError::SnapshotGet { source },
+            ConceptReadError::SnapshotIterate { source } => ConceptWriteError::SnapshotIterate { source },
+            ConceptReadError::Encoding { source, .. } => ConceptWriteError::Encoding { source },
+            ConceptReadError::CorruptMissingLabelOfType => ConceptWriteError::ConceptRead { source: error },
+            ConceptReadError::CorruptMissingMandatoryCardinality => ConceptWriteError::ConceptRead { source: error },
+            ConceptReadError::CorruptMissingCapability => ConceptWriteError::ConceptRead { source: error },
+            ConceptReadError::OrderingValueMissing => ConceptWriteError::ConceptRead { source: error },
+            ConceptReadError::CorruptMissingMandatoryValueType => ConceptWriteError::ConceptRead { source: error },
+            ConceptReadError::CorruptMissingMandatoryAttributeValue => ConceptWriteError::ConceptRead { source: error },
+            ConceptReadError::CorruptMissingMandatoryRootRelatesForRole => ConceptWriteError::ConceptRead { source: error },
+            ConceptReadError::CorruptMissingMandatoryScopeForRoleTypeLabel => ConceptWriteError::ConceptRead { source: error },
+            ConceptReadError::CorruptMissingMandatorySpecialisingRelatesForRole => ConceptWriteError::ConceptRead { source: error },
             ConceptReadError::CorruptMissingMandatoryCardinalityForNonSpecialisingCapability => {
-                Self::ConceptRead { source: error }
+                ConceptWriteError::ConceptRead { source: error }
             }
-            ConceptReadError::CorruptFoundHasWithoutOwns => Self::ConceptRead { source: error },
-            ConceptReadError::CorruptFoundLinksWithoutPlays => Self::ConceptRead { source: error },
-            ConceptReadError::CorruptFoundLinksWithoutRelates => Self::ConceptRead { source: error },
-            ConceptReadError::CannotGetOwnsDoesntExist(_, _) => Self::ConceptRead { source: error },
-            ConceptReadError::CannotGetPlaysDoesntExist(_, _) => Self::ConceptRead { source: error },
-            ConceptReadError::CannotGetRelatesDoesntExist(_, _) => Self::ConceptRead { source: error },
-            ConceptReadError::Annotation { .. } => Self::ConceptRead { source: error },
-            ConceptReadError::Constraint { .. } => Self::ConceptRead { source: error },
-            ConceptReadError::ValueTypeMismatchWithAttributeType { .. } => Self::ConceptRead { source: error },
-        }
+            ConceptReadError::CorruptFoundHasWithoutOwns => ConceptWriteError::ConceptRead { source: error },
+            ConceptReadError::CorruptFoundLinksWithoutPlays => ConceptWriteError::ConceptRead { source: error },
+            ConceptReadError::CorruptFoundLinksWithoutRelates => ConceptWriteError::ConceptRead { source: error },
+            ConceptReadError::CannotGetOwnsDoesntExist(_, _) => ConceptWriteError::ConceptRead { source: error },
+            ConceptReadError::CannotGetPlaysDoesntExist(_, _) => ConceptWriteError::ConceptRead { source: error },
+            ConceptReadError::CannotGetRelatesDoesntExist(_, _) => ConceptWriteError::ConceptRead { source: error },
+            ConceptReadError::Annotation { .. } => ConceptWriteError::ConceptRead { source: error },
+            ConceptReadError::Constraint { .. } => ConceptWriteError::ConceptRead { source: error },
+            ConceptReadError::ValueTypeMismatchWithAttributeType { .. } => ConceptWriteError::ConceptRead { source: error },
+        })
     }
 }
 

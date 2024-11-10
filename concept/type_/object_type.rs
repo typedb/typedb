@@ -93,7 +93,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
         ordering: Ordering,
-    ) -> Result<Owns<'static>, ConceptWriteError> {
+    ) -> Result<Owns<'static>, Box<ConceptWriteError>> {
         with_object_type!(self, |object| {
             object.set_owns(snapshot, type_manager, thing_manager, attribute_type, ordering)
         })
@@ -105,7 +105,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         with_object_type!(self, |object| { object.unset_owns(snapshot, type_manager, thing_manager, attribute_type) })
     }
 
@@ -113,7 +113,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_owns_declared(snapshot, type_manager) })
     }
 
@@ -121,7 +121,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_owns(snapshot, type_manager) })
     }
 
@@ -129,7 +129,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_owns_with_specialised(snapshot, type_manager) })
     }
 
@@ -138,7 +138,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns<'static>>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns<'static>>>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| {
             object.get_owned_attribute_type_constraints(snapshot, type_manager, attribute_type)
         })
@@ -149,7 +149,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| {
             object.get_owned_attribute_type_constraint_abstract(snapshot, type_manager, attribute_type)
         })
@@ -160,7 +160,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| {
             object.get_owned_attribute_type_constraints_cardinality(snapshot, type_manager, attribute_type)
         })
@@ -171,7 +171,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| {
             object.get_owned_attribute_type_constraints_distinct(snapshot, type_manager, attribute_type)
         })
@@ -182,7 +182,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| {
             object.get_owned_attribute_type_constraints_regex(snapshot, type_manager, attribute_type)
         })
@@ -193,7 +193,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| {
             object.get_owned_attribute_type_constraints_range(snapshot, type_manager, attribute_type)
         })
@@ -204,7 +204,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| {
             object.get_owned_attribute_type_constraints_values(snapshot, type_manager, attribute_type)
         })
@@ -215,7 +215,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| {
             object.get_owned_attribute_type_constraint_unique(snapshot, type_manager, attribute_type)
         })
@@ -235,7 +235,7 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.is_abstract(snapshot, type_manager) })
     }
 
@@ -244,7 +244,7 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         with_object_type!(self, |object| { object.delete(snapshot, type_manager, thing_manager) })
     }
 
@@ -252,7 +252,7 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, Label<'static>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_label(snapshot, type_manager) })
     }
 
@@ -260,7 +260,7 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Arc<Label<'static>>, ConceptReadError> {
+    ) -> Result<Arc<Label<'static>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_label_arc(snapshot, type_manager) })
     }
 
@@ -268,7 +268,7 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<ObjectType<'static>>, ConceptReadError> {
+    ) -> Result<Option<ObjectType<'static>>, Box<ConceptReadError>> {
         Ok(with_object_type!(self, |object| {
             object.get_supertype(snapshot, type_manager)?.map(|type_| type_.into_owned_object_type())
         }))
@@ -278,7 +278,7 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<ObjectType<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, Vec<ObjectType<'static>>>, Box<ConceptReadError>> {
         Ok(MaybeOwns::Owned(with_object_type!(self, |object| {
             object
                 .get_supertypes_transitive(snapshot, type_manager)?
@@ -292,7 +292,7 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<ObjectType<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<ObjectType<'static>>>, Box<ConceptReadError>> {
         Ok(MaybeOwns::Owned(with_object_type!(self, |object| {
             object
                 .get_subtypes(snapshot, type_manager)?
@@ -306,7 +306,7 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<ObjectType<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, Vec<ObjectType<'static>>>, Box<ConceptReadError>> {
         Ok(MaybeOwns::Owned(with_object_type!(self, |object| {
             object
                 .get_subtypes_transitive(snapshot, type_manager)?
@@ -334,7 +334,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
-    ) -> Result<Plays<'static>, ConceptWriteError> {
+    ) -> Result<Plays<'static>, Box<ConceptWriteError>> {
         with_object_type!(self, |object| { object.set_plays(snapshot, type_manager, thing_manager, role_type) })
     }
 
@@ -344,7 +344,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         with_object_type!(self, |object| { object.unset_plays(snapshot, type_manager, thing_manager, role_type) })
     }
 
@@ -352,7 +352,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_plays_declared(snapshot, type_manager) })
     }
 
@@ -360,7 +360,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_plays(snapshot, type_manager) })
     }
 
@@ -368,7 +368,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_plays_with_specialised(snapshot, type_manager) })
     }
 
@@ -377,7 +377,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
         role_type: RoleType<'static>,
-    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays<'static>>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays<'static>>>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_played_role_type_constraints(snapshot, type_manager, role_type) })
     }
 
@@ -386,7 +386,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
-    ) -> Result<Option<CapabilityConstraint<Plays<'static>>>, ConceptReadError> {
+    ) -> Result<Option<CapabilityConstraint<Plays<'static>>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| {
             object.get_played_role_type_constraint_abstract(snapshot, type_manager, role_type)
         })
@@ -397,7 +397,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Plays<'static>>>, ConceptReadError> {
+    ) -> Result<HashSet<CapabilityConstraint<Plays<'static>>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| {
             object.get_played_role_type_constraints_cardinality(snapshot, type_manager, role_type)
         })

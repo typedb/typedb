@@ -56,7 +56,7 @@ impl<'a> Relates<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<CapabilityConstraint<Relates<'static>>>, ConceptReadError> {
+    ) -> Result<Option<CapabilityConstraint<Relates<'static>>>, Box<ConceptReadError>> {
         type_manager.get_capability_abstract_constraint(snapshot, self.clone().into_owned())
     }
 
@@ -64,7 +64,7 @@ impl<'a> Relates<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<CapabilityConstraint<Relates<'static>>>, ConceptReadError> {
+    ) -> Result<HashSet<CapabilityConstraint<Relates<'static>>>, Box<ConceptReadError>> {
         type_manager.get_relates_distinct_constraints(snapshot, self.clone().into_owned())
     }
 
@@ -72,7 +72,7 @@ impl<'a> Relates<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         Ok(!self.get_constraints_distinct(snapshot, type_manager)?.is_empty())
     }
 
@@ -82,7 +82,7 @@ impl<'a> Relates<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         specialised: Relates<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.set_relates_specialise(snapshot, thing_manager, self.clone().into_owned(), specialised)
     }
 
@@ -91,7 +91,7 @@ impl<'a> Relates<'a> {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.unset_relates_specialise(snapshot, thing_manager, self.clone().into_owned())
     }
 
@@ -99,7 +99,7 @@ impl<'a> Relates<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         type_manager.get_relates_is_specialising(snapshot, self.clone().into_owned())
     }
 
@@ -109,7 +109,7 @@ impl<'a> Relates<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         annotation: RelatesAnnotation,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         match annotation {
             RelatesAnnotation::Abstract(_) => type_manager.set_relates_annotation_abstract(
                 snapshot,
@@ -136,7 +136,7 @@ impl<'a> Relates<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         annotation_category: AnnotationCategory,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let relates_annotation = RelatesAnnotation::try_getting_default(annotation_category)
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match relates_annotation {
@@ -213,7 +213,7 @@ impl<'a> Capability<'a> for Relates<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         Ok(self.get_constraint_abstract(snapshot, type_manager)?.is_some())
     }
 
@@ -221,7 +221,7 @@ impl<'a> Capability<'a> for Relates<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<RelatesAnnotation>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<RelatesAnnotation>>, Box<ConceptReadError>> {
         type_manager.get_relates_annotations_declared(snapshot, self.clone().into_owned())
     }
 
@@ -229,7 +229,7 @@ impl<'a> Capability<'a> for Relates<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Relates<'static>>>>, ConceptReadError>
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Relates<'static>>>>, Box<ConceptReadError>>
     where
         'a: 'static,
     {
@@ -240,7 +240,7 @@ impl<'a> Capability<'a> for Relates<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<CapabilityConstraint<Relates<'static>>>, ConceptReadError> {
+    ) -> Result<HashSet<CapabilityConstraint<Relates<'static>>>, Box<ConceptReadError>> {
         type_manager.get_relates_cardinality_constraints(snapshot, self.clone().into_owned())
     }
 
@@ -248,7 +248,7 @@ impl<'a> Capability<'a> for Relates<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<AnnotationCardinality, ConceptReadError> {
+    ) -> Result<AnnotationCardinality, Box<ConceptReadError>> {
         type_manager.get_relates_cardinality(snapshot, self.clone().into_owned())
     }
 }

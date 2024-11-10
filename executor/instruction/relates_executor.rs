@@ -49,7 +49,7 @@ pub(crate) struct RelatesExecutor {
 }
 
 pub(super) type RelatesTupleIterator<I> = Map<
-    TryFilter<I, Box<RelatesFilterFn>, (AsHkt![RelationType<'_>], AsHkt![RoleType<'_>]), ConceptReadError>,
+    TryFilter<I, Box<RelatesFilterFn>, (AsHkt![RelationType<'_>], AsHkt![RoleType<'_>]), Box<ConceptReadError>>,
     RelatesToTupleFn,
     AsHkt![TupleResult<'_>],
 >;
@@ -60,9 +60,9 @@ pub(super) type RelatesUnboundedSortedRelation = RelatesTupleIterator<
             iter::Flatten<vec::IntoIter<BTreeSet<(RelationType<'static>, RoleType<'static>)>>>,
             fn(
                 (RelationType<'static>, RoleType<'static>),
-            ) -> Result<(RelationType<'static>, RoleType<'static>), ConceptReadError>,
+            ) -> Result<(RelationType<'static>, RoleType<'static>), Box<ConceptReadError>>,
         >,
-        Result<(AsHkt![RelationType<'_>], AsHkt![RoleType<'_>]), ConceptReadError>,
+        Result<(AsHkt![RelationType<'_>], AsHkt![RoleType<'_>]), Box<ConceptReadError>>,
     >,
 >;
 pub(super) type RelatesBoundedSortedRole = RelatesTupleIterator<
@@ -71,9 +71,9 @@ pub(super) type RelatesBoundedSortedRole = RelatesTupleIterator<
             vec::IntoIter<(RelationType<'static>, RoleType<'static>)>,
             fn(
                 (RelationType<'static>, RoleType<'static>),
-            ) -> Result<(RelationType<'static>, RoleType<'static>), ConceptReadError>,
+            ) -> Result<(RelationType<'static>, RoleType<'static>), Box<ConceptReadError>>,
         >,
-        Result<(AsHkt![RelationType<'_>], AsHkt![RoleType<'_>]), ConceptReadError>,
+        Result<(AsHkt![RelationType<'_>], AsHkt![RoleType<'_>]), Box<ConceptReadError>>,
     >,
 >;
 
@@ -137,7 +137,7 @@ impl RelatesExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
-    ) -> Result<TupleIterator, ConceptReadError> {
+    ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
         let filter_for_row: Box<RelatesFilterFn> = Box::new(move |item| match filter(item) {
@@ -200,7 +200,7 @@ impl RelatesExecutor {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         relation: Type,
-    ) -> Result<BTreeSet<(RelationType<'static>, RoleType<'static>)>, ConceptReadError> {
+    ) -> Result<BTreeSet<(RelationType<'static>, RoleType<'static>)>, Box<ConceptReadError>> {
         let relation_type = relation.as_relation_type();
 
         Ok(relation_type

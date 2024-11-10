@@ -74,7 +74,7 @@ impl Type {
         &'a self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'a TypeManager,
-    ) -> Result<MaybeOwns<'a, Label<'static>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'a, Label<'static>>, Box<ConceptReadError>> {
         match self {
             Type::Entity(entity) => entity.get_label(snapshot, type_manager),
             Type::Relation(relation) => relation.get_label(snapshot, type_manager),
@@ -150,7 +150,7 @@ impl Type {
         supertype: &Self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         if self.kind() != supertype.kind() || self == supertype {
             return Ok(false);
         }
@@ -171,7 +171,7 @@ impl Type {
         supertype: &Self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         if self.kind() != supertype.kind() {
             return Ok(false);
         }

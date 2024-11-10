@@ -51,7 +51,7 @@ pub(crate) struct OwnsExecutor {
 }
 
 pub(super) type OwnsTupleIterator<I> = Map<
-    TryFilter<I, Box<OwnsFilterFn>, (AsHkt![ObjectType<'_>], AsHkt![AttributeType<'_>]), ConceptReadError>,
+    TryFilter<I, Box<OwnsFilterFn>, (AsHkt![ObjectType<'_>], AsHkt![AttributeType<'_>]), Box<ConceptReadError>>,
     OwnsToTupleFn,
     AsHkt![TupleResult<'_>],
 >;
@@ -62,9 +62,9 @@ pub(super) type OwnsUnboundedSortedOwner = OwnsTupleIterator<
             iter::Flatten<vec::IntoIter<BTreeSet<(ObjectType<'static>, AttributeType<'static>)>>>,
             fn(
                 (ObjectType<'static>, AttributeType<'static>),
-            ) -> Result<(ObjectType<'static>, AttributeType<'static>), ConceptReadError>,
+            ) -> Result<(ObjectType<'static>, AttributeType<'static>), Box<ConceptReadError>>,
         >,
-        Result<(AsHkt![ObjectType<'_>], AsHkt![AttributeType<'_>]), ConceptReadError>,
+        Result<(AsHkt![ObjectType<'_>], AsHkt![AttributeType<'_>]), Box<ConceptReadError>>,
     >,
 >;
 pub(super) type OwnsBoundedSortedAttribute = OwnsTupleIterator<
@@ -73,9 +73,9 @@ pub(super) type OwnsBoundedSortedAttribute = OwnsTupleIterator<
             vec::IntoIter<(ObjectType<'static>, AttributeType<'static>)>,
             fn(
                 (ObjectType<'static>, AttributeType<'static>),
-            ) -> Result<(ObjectType<'static>, AttributeType<'static>), ConceptReadError>,
+            ) -> Result<(ObjectType<'static>, AttributeType<'static>), Box<ConceptReadError>>,
         >,
-        Result<(AsHkt![ObjectType<'_>], AsHkt![AttributeType<'_>]), ConceptReadError>,
+        Result<(AsHkt![ObjectType<'_>], AsHkt![AttributeType<'_>]), Box<ConceptReadError>>,
     >,
 >;
 
@@ -139,7 +139,7 @@ impl OwnsExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
-    ) -> Result<TupleIterator, ConceptReadError> {
+    ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
         let filter_for_row: Box<OwnsFilterFn> = Box::new(move |item| match filter(item) {
@@ -200,7 +200,7 @@ impl OwnsExecutor {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         owner: Type,
-    ) -> Result<BTreeSet<(ObjectType<'static>, AttributeType<'static>)>, ConceptReadError> {
+    ) -> Result<BTreeSet<(ObjectType<'static>, AttributeType<'static>)>, Box<ConceptReadError>> {
         let object_type = match owner {
             Type::Entity(entity) => entity.into_owned_object_type(),
             Type::Relation(relation) => relation.into_owned_object_type(),

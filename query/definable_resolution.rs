@@ -116,7 +116,7 @@ pub(crate) fn try_resolve_typeql_type(
     snapshot: &impl WritableSnapshot,
     type_manager: &TypeManager,
     label: &Label<'_>,
-) -> Result<Option<Type>, ConceptReadError> {
+) -> Result<Option<Type>, Box<ConceptReadError>> {
     // TODO: Introduce a method on type_manager that does this in one step
     let type_ = if let Some(object_type) = try_resolve_object_type(snapshot, type_manager, label)? {
         match object_type {
@@ -171,7 +171,7 @@ pub(crate) fn try_resolve_struct_definition_key(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     name: &str,
-) -> Result<Option<DefinitionKey<'static>>, ConceptReadError> {
+) -> Result<Option<DefinitionKey<'static>>, Box<ConceptReadError>> {
     type_manager.get_struct_definition_key(snapshot, name)
 }
 
@@ -191,7 +191,7 @@ pub(crate) fn try_resolve_object_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label<'_>,
-) -> Result<Option<ObjectType<'static>>, ConceptReadError> {
+) -> Result<Option<ObjectType<'static>>, Box<ConceptReadError>> {
     type_manager.get_object_type(snapshot, label)
 }
 
@@ -211,7 +211,7 @@ pub(crate) fn try_resolve_entity_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label<'_>,
-) -> Result<Option<EntityType<'static>>, ConceptReadError> {
+) -> Result<Option<EntityType<'static>>, Box<ConceptReadError>> {
     type_manager.get_entity_type(snapshot, label)
 }
 
@@ -231,7 +231,7 @@ pub(crate) fn try_resolve_relation_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label<'_>,
-) -> Result<Option<RelationType<'static>>, ConceptReadError> {
+) -> Result<Option<RelationType<'static>>, Box<ConceptReadError>> {
     type_manager.get_relation_type(snapshot, label)
 }
 
@@ -251,7 +251,7 @@ pub(crate) fn try_resolve_attribute_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label<'_>,
-) -> Result<Option<AttributeType<'static>>, ConceptReadError> {
+) -> Result<Option<AttributeType<'static>>, Box<ConceptReadError>> {
     type_manager.get_attribute_type(snapshot, label)
 }
 
@@ -271,7 +271,7 @@ pub(crate) fn try_resolve_role_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label<'_>,
-) -> Result<Option<RoleType<'static>>, ConceptReadError> {
+) -> Result<Option<RoleType<'static>>, Box<ConceptReadError>> {
     type_manager.get_role_type(snapshot, label)
 }
 
@@ -296,7 +296,7 @@ pub(crate) fn try_resolve_relates_declared(
     type_manager: &TypeManager,
     relation_type: RelationType<'static>,
     role_name: &str,
-) -> Result<Option<Relates<'static>>, ConceptReadError> {
+) -> Result<Option<Relates<'static>>, Box<ConceptReadError>> {
     relation_type.get_relates_role_name_declared(snapshot, type_manager, role_name)
 }
 
@@ -321,7 +321,7 @@ pub(crate) fn try_resolve_relates(
     type_manager: &TypeManager,
     relation_type: RelationType<'static>,
     role_name: &str,
-) -> Result<Option<Relates<'static>>, ConceptReadError> {
+) -> Result<Option<Relates<'static>>, Box<ConceptReadError>> {
     relation_type.get_relates_role_name_with_specialised(snapshot, type_manager, role_name)
 }
 
@@ -346,7 +346,7 @@ pub(crate) fn try_resolve_owns_declared(
     type_manager: &TypeManager,
     object_type: ObjectType<'static>,
     attribute_type: AttributeType<'static>,
-) -> Result<Option<Owns<'static>>, ConceptReadError> {
+) -> Result<Option<Owns<'static>>, Box<ConceptReadError>> {
     object_type.get_owns_attribute_declared(snapshot, type_manager, attribute_type.clone())
 }
 
@@ -371,7 +371,7 @@ pub(crate) fn try_resolve_owns(
     type_manager: &TypeManager,
     object_type: ObjectType<'static>,
     attribute_type: AttributeType<'static>,
-) -> Result<Option<Owns<'static>>, ConceptReadError> {
+) -> Result<Option<Owns<'static>>, Box<ConceptReadError>> {
     object_type.get_owns_attribute_with_specialised(snapshot, type_manager, attribute_type.clone())
 }
 
@@ -396,7 +396,7 @@ pub(crate) fn try_resolve_plays_declared(
     type_manager: &TypeManager,
     object_type: ObjectType<'static>,
     role_type: RoleType<'static>,
-) -> Result<Option<Plays<'static>>, ConceptReadError> {
+) -> Result<Option<Plays<'static>>, Box<ConceptReadError>> {
     object_type.get_plays_role_declared(snapshot, type_manager, role_type.clone())
 }
 
@@ -421,7 +421,7 @@ pub(crate) fn try_resolve_plays(
     type_manager: &TypeManager,
     object_type: ObjectType<'static>,
     role_type: RoleType<'static>,
-) -> Result<Option<Plays<'static>>, ConceptReadError> {
+) -> Result<Option<Plays<'static>>, Box<ConceptReadError>> {
     object_type.get_plays_role_with_specialised(snapshot, type_manager, role_type.clone())
 }
 
@@ -446,7 +446,7 @@ pub(crate) fn try_resolve_plays_role_label(
     type_manager: &TypeManager,
     object_type: ObjectType<'static>,
     label: &Label<'_>,
-) -> Result<Option<Plays<'static>>, ConceptReadError> {
+) -> Result<Option<Plays<'static>>, Box<ConceptReadError>> {
     match label.scope {
         Some(_) => {
             let role_type = try_resolve_role_type(snapshot, type_manager, label)?;
@@ -478,6 +478,6 @@ typedb_error!(
         ScopedValueTypeName(14, "Value type names cannot have scopes. Provided illegal name: '{scope}:{name}'.", scope: String, name: String),
         ExpectedNonOptionalTypeSymbol(15, "Expected a type label or a type[] label, but not an optional type? label.\nSource:\n{declaration}", declaration: TypeRefAny ),
         ExpectedLabelButGotBuiltinValueType(16, "Expected type label got built-in value type name:\nSource:\n{declaration}", declaration: NamedType),
-        UnexpectedConceptRead(17, "Unexpected concept read error.", ( source: ConceptReadError ) ),
+        UnexpectedConceptRead(17, "Unexpected concept read error.", ( source: Box<ConceptReadError> ) ),
     }
 );

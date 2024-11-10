@@ -34,8 +34,8 @@ pub mod storage {
 pub mod encoding {
     use std::sync::atomic::AtomicU16;
 
-    pub const LABEL_NAME_STRING_INLINE: usize = 64;
-    pub const LABEL_SCOPE_STRING_INLINE: usize = 64;
+    pub const LABEL_NAME_STRING_INLINE: usize = 32;
+    pub const LABEL_SCOPE_STRING_INLINE: usize = 32;
     pub const LABEL_SCOPED_NAME_STRING_INLINE: usize = LABEL_NAME_STRING_INLINE + LABEL_SCOPE_STRING_INLINE;
     pub const DEFINITION_NAME_STRING_INLINE: usize = 64;
     pub const AD_HOC_BYTES_INLINE: usize = 128;

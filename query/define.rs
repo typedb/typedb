@@ -1003,14 +1003,14 @@ fn err_unsupported_capability(label: &Label<'static>, kind: Kind, capability: &T
 typedb_error!(
     pub DefineError(component = "Define execution", prefix = "DEX") {
         Unimplemented(1, "Unimplemented define functionality: {description}", description: String),
-        UnexpectedConceptRead(2, "Concept read error. ", ( source: ConceptReadError )),
+        UnexpectedConceptRead(2, "Concept read error. ", ( source: Box<ConceptReadError> )),
         SymbolResolution(3, "Failed to find symbol.", ( typedb_source: SymbolResolutionError )),
         LiteralParseError(4, "Failed to parse literal.", ( source: LiteralParseError )),
         TypeCreateError(
             5,
             "Failed to create type.\nSource:\n{type_declaration}",
             type_declaration: Type,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         RoleTypeDirectCreate(
             6,
@@ -1021,14 +1021,14 @@ typedb_error!(
             7,
             "Failed to create struct.\nSource:\n{struct_declaration}",
             struct_declaration: Struct,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         StructFieldCreateError(
             8,
             "Failed to create struct field '{struct_field}' in struct type '{struct_name}'.",
             struct_field: Field,
             struct_name: String,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         StructFieldAlreadyDefinedButDifferent(
             9,
@@ -1041,7 +1041,7 @@ typedb_error!(
             10,
             "Setting supertype failed.\nSource: {sub}",
             sub: typeql::schema::definable::type_::capability::Sub,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         TypeCannotHaveCapability(
             11,
@@ -1124,28 +1124,28 @@ typedb_error!(
             "Defining '{type_}' to have value type '{value_type}' failed.",
             type_: Label<'static>,
             value_type: ValueType,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         CreateRelates(
             21,
             "Defining new '{key}' failed.\nSource:\n{relates}",
             relates: TypeQLRelates,
             key: Keyword,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         CreatePlays(
             22,
             "Defining new '{key}' failed.\nSource:\n{plays}",
             plays: TypeQLPlays,
             key: Keyword,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         CreateOwns(
             23,
             "Defining new '{key}' failed.\nSource:\n{owns}",
             owns: TypeQLOwns,
             key: Keyword,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         IllegalAnnotation(
             24,
@@ -1157,13 +1157,13 @@ typedb_error!(
             "Defining annotation failed for type '{type_}'.\nSource:\n{annotation_declaration}",
             type_: Label<'static>,
             annotation_declaration: typeql::annotation::Annotation,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         SetSpecialise(
             26,
             "Defining specialise failed for type '{type_}'.",
             type_: Label<'static>,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         CapabilityKindMismatch(
             27,

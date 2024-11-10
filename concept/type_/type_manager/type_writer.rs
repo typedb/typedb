@@ -114,7 +114,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         snapshot.put(sub_edge.to_reverse_type_edge().into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_may_delete_supertype<T>(snapshot: &mut Snapshot, subtype: T) -> Result<(), ConceptWriteError>
+    pub(crate) fn storage_may_delete_supertype<T>(snapshot: &mut Snapshot, subtype: T) -> Result<(), Box<ConceptWriteError>>
     where
         T: TypeAPI<'static>,
     {

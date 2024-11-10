@@ -1000,7 +1000,7 @@ fn error_if_anything_redefined_else_set_true(anything_redefined: &mut bool) -> R
 typedb_error!(
     pub RedefineError(component = "Redefine execution", prefix = "REX") {
         Unimplemented(1, "Unimplemented redefine functionality: {description}", description: String),
-        UnexpectedConceptRead(2, "Concept read error during redefine query execution.", ( source: ConceptReadError )),
+        UnexpectedConceptRead(2, "Concept read error during redefine query execution.", ( source: Box<ConceptReadError> )),
         NothingRedefined(3, "Nothing was redefined."),
         DefinitionResolution(4, "Could not find symbol in redefine query.", ( typedb_source: SymbolResolutionError )),
         LiteralParseError(5, "Error parsing literal in redefine query.", ( source : LiteralParseError )),
@@ -1012,20 +1012,20 @@ typedb_error!(
             "Error removing field from struct type '{struct_name}'.\nSource:\n{declaration}",
             struct_name: String,
             declaration: Field,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         StructFieldCreateError(
             10,
             "Error creating new field in struct type '{struct_name}'.\nSource:\n{declaration}",
             struct_name: String,
             declaration: Field,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         SetSupertype(
             11,
             "Error setting supertype during redefine.\nSource:\n{declaration}",
             declaration: typeql::schema::definable::type_::capability::Sub,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         TypeCannotHaveCapability(
             12,
@@ -1146,7 +1146,7 @@ typedb_error!(
             "Redefining '{type_}' to have value type '{value_type}' failed.",
             type_: Label<'static>,
             value_type: ValueType,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         SetRelatesOrdering(
             28,
@@ -1154,7 +1154,7 @@ typedb_error!(
             type_: Label<'static>,
             key: Keyword,
             declaration: TypeQLRelates,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         SetOwnsOrdering(
             29,
@@ -1162,7 +1162,7 @@ typedb_error!(
             type_: Label<'static>,
             key: Keyword,
             declaration: TypeQLOwns,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         IllegalTypeAnnotation(
             30,
@@ -1185,14 +1185,14 @@ typedb_error!(
             type_: Label<'static>,
             annotation: Annotation,
             declaration: Type,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         SetCapabilityAnnotation(
             33,
             "Redefining '{annotation}' failed.\nSource:\n{declaration}",
             annotation: Annotation,
             declaration: Capability,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         SetRelatesSpecialise(
             34,
@@ -1201,7 +1201,7 @@ typedb_error!(
             relates_key: Keyword,
             as_key: Keyword,
             declaration: TypeQLRelates,
-            ( typedb_source: ConceptWriteError )
+            ( typedb_source: Box<ConceptWriteError> )
         ),
         CapabilityKindMismatch(
             35,

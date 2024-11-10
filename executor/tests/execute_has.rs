@@ -194,8 +194,8 @@ fn traverse_has_unbounded_sorted_from() {
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> =
+        iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| Box::new(err.clone()))).collect();
     assert_eq!(rows.len(), 7);
 
     for row in rows {
@@ -309,8 +309,8 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> =
+        iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| Box::new(err.clone()))).collect();
     assert_eq!(rows.len(), 3); // $person-1 is $person-2, one per name
 
     for row in rows {
@@ -415,8 +415,8 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> =
+        iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| Box::new(err.clone()))).collect();
     assert_eq!(rows.len(), 7);
 
     for row in rows {
@@ -503,8 +503,8 @@ fn traverse_has_unbounded_sorted_to_merged() {
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> =
+        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone()))).collect();
 
     // person 1 - has age 1, has age 2, has age 3, has name 1, has name 2 => 5 answers
     // person 2 - has age 1, has age 4, has age 5 => 3 answers
@@ -612,8 +612,8 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> =
+        iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| Box::new(err.clone()))).collect();
     assert_eq!(rows.len(), 7);
 
     for row in rows {

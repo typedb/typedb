@@ -38,10 +38,10 @@ pub(crate) struct IsExecutor {
     checker: Checker<AsHkt![VariableValue<'_>]>,
 }
 
-pub(crate) type IsToTupleFn = for<'a> fn(Result<VariableValue<'a>, ConceptReadError>) -> TupleResult<'a>;
+pub(crate) type IsToTupleFn = for<'a> fn(Result<VariableValue<'a>, Box<ConceptReadError>>) -> TupleResult<'a>;
 
 pub(super) type IsTupleIterator<I> = Map<
-    TryFilter<I, Box<IsFilterFn>, AsHkt![VariableValue<'_>], ConceptReadError>,
+    TryFilter<I, Box<IsFilterFn>, AsHkt![VariableValue<'_>], Box<ConceptReadError>>,
     IsToTupleFn,
     AsHkt![TupleResult<'_>],
 >;
@@ -49,14 +49,14 @@ pub(super) type IsTupleIterator<I> = Map<
 pub(super) type IsFilterFn = FilterFn<AsHkt![VariableValue<'_>]>;
 
 pub(crate) type IsIterator =
-    IsTupleIterator<lending_iterator::Once<Result<AsHkt![VariableValue<'_>], ConceptReadError>>>;
+    IsTupleIterator<lending_iterator::Once<Result<AsHkt![VariableValue<'_>], Box<ConceptReadError>>>>;
 
 type IsVariableValueExtractor = for<'a, 'b> fn(&'a VariableValue<'b>) -> VariableValue<'a>;
 
 pub(super) const EXTRACT_LHS: IsVariableValueExtractor = |lhs| lhs.as_reference();
 pub(super) const EXTRACT_RHS: IsVariableValueExtractor = |rhs| rhs.as_reference();
 
-fn is_to_tuple(result: Result<VariableValue<'_>, ConceptReadError>) -> TupleResult<'_> {
+fn is_to_tuple(result: Result<VariableValue<'_>, Box<ConceptReadError>>) -> TupleResult<'_> {
     match result {
         Ok(value) => Ok(Tuple::Pair([value.clone(), value])),
         Err(err) => Err(err),
@@ -90,11 +90,11 @@ impl IsExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
-    ) -> Result<TupleIterator, ConceptReadError> {
+    ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter_for_row: Box<IsFilterFn> = self.checker.filter_for_row(context, &row);
         let input: VariableValue<'static> = row.get(self.input).clone().into_owned();
 
-        fn as_tuples<T: for<'a> LendingIterator<Item<'a> = Result<VariableValue<'a>, ConceptReadError>>>(
+        fn as_tuples<T: for<'a> LendingIterator<Item<'a> = Result<VariableValue<'a>, Box<ConceptReadError>>>>(
             it: T,
         ) -> Map<T, IsToTupleFn, AsHkt![TupleResult<'_>]> {
             it.map::<TupleResult<'_>, IsToTupleFn>(is_to_tuple)

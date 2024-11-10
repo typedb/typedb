@@ -68,8 +68,8 @@ pub(super) type MultipleTypeIsaIterator = Chain<MultipleTypeIsaObjectIterator, M
 
 type ThingWithType<I> = Map<
     Zip<I, AsLendingIterator<iter::Cycle<option::IntoIter<Type>>>>,
-    for<'a> fn((Result<Thing<'a>, ConceptReadError>, Type)) -> Result<(Thing<'a>, Type), ConceptReadError>,
-    Result<(AsHkt![Thing<'_>], Type), ConceptReadError>,
+    for<'a> fn((Result<Thing<'a>, Box<ConceptReadError>>, Type)) -> Result<(Thing<'a>, Type), Box<ConceptReadError>>,
+    Result<(AsHkt![Thing<'_>], Type), Box<ConceptReadError>>,
 >;
 
 impl IsaReverseExecutor {
@@ -113,7 +113,7 @@ impl IsaReverseExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
-    ) -> Result<TupleIterator, ConceptReadError> {
+    ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter_for_row = self.checker.filter_for_row(context, &row);
         let snapshot = &**context.snapshot();
         let thing_manager = context.thing_manager();
@@ -166,7 +166,7 @@ impl IsaReverseExecutor {
     }
 }
 
-fn with_type<I: for<'a> LendingIterator<Item<'a> = Result<Thing<'a>, ConceptReadError>>>(
+fn with_type<I: for<'a> LendingIterator<Item<'a> = Result<Thing<'a>, Box<ConceptReadError>>>>(
     iter: I,
     type_: Type,
 ) -> ThingWithType<I> {
@@ -182,7 +182,7 @@ pub(super) fn instances_of_types_chained<'a>(
     types: impl Iterator<Item = &'a Type>,
     type_to_instance_types: &BTreeMap<Type, Vec<Type>>,
     isa_kind: IsaKind,
-) -> Result<MultipleTypeIsaIterator, ConceptReadError> {
+) -> Result<MultipleTypeIsaIterator, Box<ConceptReadError>> {
     let type_manager = thing_manager.type_manager();
     let (attribute_types, object_types) =
         types.into_iter().partition::<Vec<_>, _>(|type_| matches!(type_, Type::Attribute(_)));
@@ -196,7 +196,7 @@ pub(super) fn instances_of_types_chained<'a>(
                 vec![type_.clone()]
             };
             returned_types.into_iter().map(move |subtype| {
-                Ok(with_type(
+                Ok::<_, Box<_>>(with_type(
                     thing_manager
                         .get_objects_in(snapshot, subtype.as_object_type())
                         .map((|res| res.map(Thing::from)) as ObjectEraseFn),
@@ -218,7 +218,7 @@ pub(super) fn instances_of_types_chained<'a>(
                 vec![type_.clone()]
             };
             returned_types.into_iter().map(move |subtype| {
-                Ok(with_type(
+                Ok::<_, Box<_>>(with_type(
                     thing_manager
                         .get_attributes_in(snapshot, type_.as_attribute_type())?
                         .map((|res| res.map(Thing::Attribute)) as AttributeEraseFn),

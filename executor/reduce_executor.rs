@@ -44,7 +44,7 @@ impl GroupedReducer {
         &mut self,
         row: &MaybeOwnedRow<'_>,
         context: &ExecutionContext<Snapshot>,
-    ) -> Result<(), PipelineExecutionError> {
+    ) -> Result<(), Box<PipelineExecutionError>> {
         self.reused_group.clear();
         for &pos in &self.executable.input_group_positions {
             self.reused_group.push(row.get(pos).to_owned());

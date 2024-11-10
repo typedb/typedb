@@ -103,7 +103,7 @@ impl InstructionExecutor {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         sort_by: ExecutorVariable,
-    ) -> Result<Self, ConceptReadError> {
+    ) -> Result<Self, Box<ConceptReadError>> {
         match instruction {
             ConstraintInstruction::Is(is) => Ok(Self::Is(IsExecutor::new(is, variable_modes, sort_by))),
             ConstraintInstruction::TypeList(type_) => {
@@ -161,7 +161,7 @@ impl InstructionExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
-    ) -> Result<TupleIterator, ConceptReadError> {
+    ) -> Result<TupleIterator, Box<ConceptReadError>> {
         match self {
             Self::Is(executor) => executor.get_iterator(context, row),
             Self::TypeList(executor) => executor.get_iterator(context, row),
@@ -314,7 +314,7 @@ fn type_from_row_or_annotations<'a>(
 }
 
 type FilterFn<T> =
-    dyn for<'a, 'b> FnHktHelper<&'a Result<<T as Hkt>::HktSelf<'b>, ConceptReadError>, Result<bool, ConceptReadError>>;
+    dyn for<'a, 'b> FnHktHelper<&'a Result<<T as Hkt>::HktSelf<'b>, Box<ConceptReadError>>, Result<bool, Box<ConceptReadError>>>;
 
 pub(crate) struct Checker<T: Hkt> {
     extractors: HashMap<ExecutorVariable, for<'a, 'b> fn(&'a T::HktSelf<'b>) -> VariableValue<'a>>,
@@ -335,7 +335,7 @@ impl<T: Hkt> Checker<T> {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: Option<MaybeOwnedRow<'_>>,
         target_variable: ExecutorVariable,
-    ) -> Result<(Bound<Value<'_>>, Bound<Value<'_>>), ConceptReadError> {
+    ) -> Result<(Bound<Value<'_>>, Bound<Value<'_>>), Box<ConceptReadError>> {
         fn intersect<'a>(
             (a_min, a_max): (Bound<Value<'a>>, Bound<Value<'a>>),
             (b_min, b_max): (Bound<Value<'a>>, Bound<Value<'a>>),
@@ -435,7 +435,7 @@ impl<T: Hkt> Checker<T> {
         snapshot: &'a impl ReadableSnapshot,
         thing_manager: &'a ThingManager,
         variable_value: &'a VariableValue<'_>,
-    ) -> Result<Option<Value<'static>>, ConceptReadError> {
+    ) -> Result<Option<Value<'static>>, Box<ConceptReadError>> {
         // TODO: is there a way to do this without cloning the value?
         match variable_value {
             VariableValue::Thing(Thing::Attribute(attribute)) => {
@@ -456,7 +456,7 @@ impl<T: Hkt> Checker<T> {
         row: &MaybeOwnedRow<'_>,
     ) -> Box<FilterFn<T>> {
         type BoxExtractor<T> = Box<dyn for<'a> Fn(&'a <T as Hkt>::HktSelf<'_>) -> VariableValue<'a>>;
-        let mut filters: Vec<Box<dyn Fn(&T::HktSelf<'_>) -> Result<bool, ConceptReadError>>> =
+        let mut filters: Vec<Box<dyn Fn(&T::HktSelf<'_>) -> Result<bool, Box<ConceptReadError>>>> =
             Vec::with_capacity(self.checks.len());
 
         for check in &self.checks {
