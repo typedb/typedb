@@ -8,6 +8,7 @@
 #![deny(elided_lifetimes_in_paths)]
 #![allow(clippy::result_large_err)]
 
+use std::collections::BTreeSet;
 use std::fmt;
 
 use bytes::{byte_array::ByteArray, Bytes};
@@ -191,6 +192,35 @@ impl Type {
                 Ok(role.get_subtypes_transitive(snapshot, type_manager)?.contains(&self.as_role_type()))
             }
         }
+    }
+
+    pub fn is_abstract(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<bool, ConceptReadError> {
+        match self {
+            Type::Entity(entity) => entity.is_abstract(snapshot, type_manager),
+            Type::Relation(relation) => relation.is_abstract(snapshot, type_manager),
+            Type::Attribute(attribute) => attribute.is_abstract(snapshot, type_manager),
+            Type::RoleType(role) => role.is_abstract(snapshot, type_manager),
+        }
+    }
+
+    pub fn try_retain(
+        annotations: &mut BTreeSet<Self>,
+        predicate: impl Fn(&Self) -> Result<bool, ConceptReadError>,
+    ) -> Result<(), ConceptReadError> {
+        let mut to_be_removed = Vec::new();
+        for annotation in annotations.iter() {
+            if !predicate(annotation)? {
+                to_be_removed.push(annotation.clone());
+            }
+        }
+        for annotation in to_be_removed.iter() {
+            annotations.remove(annotation);
+        }
+        Ok(())
     }
 }
 
