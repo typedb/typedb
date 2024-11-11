@@ -2136,7 +2136,7 @@ _System property_
 
 ## Function semantics
 
-### Function signature, body, operators
+### Function signature
 
 #### **Case SIGNATURE_STREAM_FUN**
 
@@ -2165,6 +2165,8 @@ _STICKY: allow types to be optional in args (this extends types to sum types, in
 
 _Terminology_ If the function returns a single types (`C`) then we call it a **singleton** function.
 
+### Function body
+
 #### **Case READ_PIPELINE_FUN**
 
 * 🔶 Function body syntax:
@@ -2178,20 +2180,24 @@ _System property_
 * 🔶 _Read only_. Pipeline must be read-only, i.e. cannot use write clauses (`insert`, `delete`, `update`, `put`)
 * 🔶 _Require crow stream output_ Pipeline must be non-terminal (e.g. cannot end in `fetch`).
 
+### Function return
+
 #### **Case RETURN_STREAM_FUN**
 
-* 🔶 Function return syntax:
-    _Syntax_:
+The return clause corresponds to its output type signature.
+
+* 🔶 When function output type is `{ A, B, ... }` then return clause of the form:
     ```
-    return { $x, $y, ... };
+    return { $a, $b, ... };
     ```
+
 _System property_
 
 * 🔶 _Require bindings_ all vars (`$x`, `$y`, ...) must be bound in the pipeline (taken into account any variable selections through `select` and `reduce` operators).
 
 #### **Case RETURN_SINGLE_FUN**
 
-* 🔶 Function body syntax:
+* 🔶 When function output type is `A, B?, ... ` then return clause of the form: 
     _Syntax_:
     ```
     return <SINGLE> $x, $y, ...;
@@ -2201,22 +2207,25 @@ _System property_
     * `last`
     * `random`
 
-_System property_
+_System property_.
 
-* 🔶 _Require bindings_ all vars (`$x`, `$y`, ...) must be bound in the pipeline (taken into account any variable selections through `select` and `reduce` operators).
+* 🔶 `?` on output types correspond exactly to those variables in the return clause that are optional in the function body.
+* 🔶 _Require bindings_ all vars (`$x`, `$y`, ...) must be bound in the read pipeline of the function body (taken into account any variable selections through `select` and `reduce` operators).
 
-#### **Case AGG_RETURN_FUN**
+#### **Case RETURN_AGG_SINGLE_FUN**
 
-* 🔶 The syntax 
-    _Syntax_:
+* 🔶 When function output type is `A?, B?, ... ` then return clause of the form:
     ```
-    return <AGG>, ..., <AGG>;
+    return <AGG>, <AGG>, ...;
     ```
     is short-hand for:
     ```
-    return $_1 = <AGG>, ..., $_n = <AGG>;
-    return first $_1, ..., $_n;
+    reduce $_1? = <AGG>, $_2? = <AGG>, ... ;
+    return first $_1, $_2, ... ;
     ```
+
+_Remark_
+Note the optionality `?`, which ensures that the reduce step will not yield an empty crow stream.
 
 ### (Theory) Function semantics
 
@@ -2722,8 +2731,8 @@ _Note_: (STICKY:) what to do if type inference for function args fails based on 
 This is short hand for:
 ```
 "key": [ 
-  <PIPELINE>
-  reduce $_1 = <AGG>, ... , $_n = <AGG>; 
+  <READ_PIPELINE>
+  reduce $_1? = <AGG>, ... , $_n? = <AGG>; 
   return first $_1, ..., $_n; 
 ]
 ``` 
@@ -2804,8 +2813,10 @@ _Remark_: Offset is only useful when streams (and the order of answers) are full
 #### **Case SIMPLE_RED**
 * 🔶 Default reduce syntax
     ```
-    reduce $x_1=<AGG>, ... , $x_k=<AGG>;
-    ``` 
+    reduce $x_1(?)=<AGG>, ... , $x_k(?)=<AGG>;
+    ```
+
+**TODO**: require `?` wherever optionality may occur? Otherwise, must account for zero (not one) rows being returned.
 
     In this case, we output a ***single concept*** row `($x_1 -> <EL>, $x_2 -> <EL>, ...)`, where `<EL>` is a output element (i.e. instance, value, or list, but _never_ type) constructed as follows:
 
