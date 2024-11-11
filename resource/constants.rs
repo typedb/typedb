@@ -18,7 +18,7 @@ pub mod server {
 }
 
 pub mod traversal {
-    pub const CONSTANT_CONCEPT_LIMIT: usize = 50;
+    pub const CONSTANT_CONCEPT_LIMIT: usize = 10;
 }
 
 pub mod snapshot {
