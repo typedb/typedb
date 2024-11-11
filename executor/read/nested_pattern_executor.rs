@@ -26,7 +26,7 @@ impl Disjunction {
         let mut uniform_batch = FixedBatch::new(self.output_width);
         unmapped.into_iter().for_each(|row| {
             uniform_batch.append(|mut output_row| {
-                output_row.copy_mapped(row, self.selected_variables.iter().map(|pos| (pos.clone(), pos.clone())));
+                output_row.copy_mapped(row, self.selected_variables.iter().map(|&pos| (pos, pos)));
             })
         });
         uniform_batch
@@ -54,10 +54,7 @@ impl InlinedFunction {
                 output_row.copy_from_row(input.as_reference());
                 output_row.copy_mapped(
                     returned_row.as_reference(),
-                    self.return_mapping
-                        .iter()
-                        .enumerate()
-                        .map(|(src, dst)| (VariablePosition::new(src as u32), dst.clone())),
+                    self.return_mapping.iter().enumerate().map(|(src, &dst)| (VariablePosition::new(src as u32), dst)),
                 );
             });
         }

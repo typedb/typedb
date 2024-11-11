@@ -198,7 +198,7 @@ impl<D> Database<D> {
 
 impl Database<WALClient> {
     const STATISTICS_UPDATE_INTERVAL: Duration = Duration::from_millis(100);
-    
+
     pub fn open(path: &Path) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::InvalidUnicodeName;
 
@@ -211,7 +211,6 @@ impl Database<WALClient> {
             Self::create(path, name)
         }
     }
-
 
     fn create(path: &Path, name: impl AsRef<str>) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::{

@@ -133,15 +133,31 @@ impl ElementCost {
     const IN_MEM_COST_SIMPLE: f64 = 0.01;
     const IN_MEM_COST_COMPLEX: f64 = ElementCost::IN_MEM_COST_SIMPLE * 2.0;
     pub const EMPTY: Self = Self { per_input: 0.0, per_output: 0.0, branching_factor: 0.0 };
-    pub const MEM_SIMPLE_BRANCH_1: Self = Self { per_input: ElementCost::IN_MEM_COST_SIMPLE, per_output: ElementCost::IN_MEM_COST_SIMPLE, branching_factor: 1.0 };
-    pub const MEM_COMPLEX_BRANCH_1: Self = Self { per_input: ElementCost::IN_MEM_COST_COMPLEX, per_output: ElementCost::IN_MEM_COST_COMPLEX, branching_factor: 1.0 };
+    pub const MEM_SIMPLE_BRANCH_1: Self = Self {
+        per_input: ElementCost::IN_MEM_COST_SIMPLE,
+        per_output: ElementCost::IN_MEM_COST_SIMPLE,
+        branching_factor: 1.0,
+    };
+    pub const MEM_COMPLEX_BRANCH_1: Self = Self {
+        per_input: ElementCost::IN_MEM_COST_COMPLEX,
+        per_output: ElementCost::IN_MEM_COST_COMPLEX,
+        branching_factor: 1.0,
+    };
 
     fn in_mem_complex_with_branching(branching_factor: f64) -> Self {
-        Self { per_input: ElementCost::IN_MEM_COST_COMPLEX, per_output: ElementCost::IN_MEM_COST_COMPLEX, branching_factor }
+        Self {
+            per_input: ElementCost::IN_MEM_COST_COMPLEX,
+            per_output: ElementCost::IN_MEM_COST_COMPLEX,
+            branching_factor,
+        }
     }
-    
+
     fn in_mem_simple_with_branching(branching_factor: f64) -> Self {
-        Self { per_input: ElementCost::IN_MEM_COST_SIMPLE, per_output: ElementCost::IN_MEM_COST_SIMPLE, branching_factor }
+        Self {
+            per_input: ElementCost::IN_MEM_COST_SIMPLE,
+            per_output: ElementCost::IN_MEM_COST_SIMPLE,
+            branching_factor,
+        }
     }
 
     pub(crate) fn chain(self, other: Self) -> Self {

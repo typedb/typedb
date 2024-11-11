@@ -7,21 +7,19 @@
 #![allow(clippy::large_enum_variant)]
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeSet, HashMap, HashSet},
     fmt,
     fmt::{Debug, Display, Formatter},
     ops::Deref,
     sync::Arc,
 };
-use std::collections::BTreeSet;
 
-use itertools::Itertools;
-
-use answer::{Type, variable::Variable};
+use answer::{variable::Variable, Type};
 use ir::pattern::{
     constraint::{Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Is, IsaKind, SubKind},
     IrID, ParameterID, Vertex,
 };
+use itertools::Itertools;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations, executable::match_::planner::match_executable::InstructionAPI,

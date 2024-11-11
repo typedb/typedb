@@ -166,16 +166,17 @@ impl DistinctMapper {
 
 impl StreamModifierResultMapperTrait for DistinctMapper {
     fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> StreamModifierControl {
-        if let Some(input_batch) = subquery_result {
-            let mut output_batch = FixedBatch::new(self.output_width);
-            for row in input_batch {
-                if self.collector.insert(row.clone().into_owned()) {
-                    output_batch.append(|mut output_row| output_row.copy_from_row(row));
-                }
+        let Some(input_batch) = subquery_result else { return StreamModifierControl::Done(None) };
+        if input_batch.is_empty() {
+            return StreamModifierControl::Done(None);
+        };
+
+        let mut output_batch = FixedBatch::new(self.output_width);
+        for row in input_batch {
+            if self.collector.insert(row.clone().into_owned()) {
+                output_batch.append(|mut output_row| output_row.copy_from_row(row));
             }
-            StreamModifierControl::Retry(Some(output_batch))
-        } else {
-            StreamModifierControl::Done(None)
         }
+        StreamModifierControl::Retry(Some(output_batch))
     }
 }
