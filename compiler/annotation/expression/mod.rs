@@ -74,7 +74,6 @@ impl Error for ExpressionCompileError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::ConceptRead { source, .. } => Some(source),
-            Self::Representation { source } =>  None,
             Self::InternalStackWasEmpty
             | Self::InternalUnexpectedValueType
             | Self::UnsupportedOperandsForOperation { .. }
@@ -85,6 +84,7 @@ impl Error for ExpressionCompileError {
             | Self::VariableHasNoValueType { .. }
             | Self::VariableMustBeValueOrAttribute { .. }
             | Self::DerivedConflictingVariableCategory { .. }
+            | Self::Representation { .. }
             | Self::UnsupportedArgumentsForBuiltin
             | Self::ListIndexMustBeLong
             | Self::HeterogenousValuesInList

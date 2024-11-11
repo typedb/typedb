@@ -112,7 +112,6 @@ impl<From: NativeValueConvertible, To: ImplicitCast<From>> CompilableExpression 
     }
 
     fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompileError> {
-        dbg!(&builder.type_stack);
         let right_before = builder.pop_type_single()?.category();
         if right_before != From::VALUE_TYPE_CATEGORY {
             Err(ExpressionCompileError::InternalUnexpectedValueType)?;
