@@ -40,7 +40,7 @@ pub struct ExpressionCompilationContext<'this> {
     expression_tree: &'this ExpressionTree<Variable>,
     variable_value_categories: &'this HashMap<Variable, ExpressionValueType>,
     parameters: &'this ParameterRegistry,
-    pub type_stack: Vec<ExpressionValueType>,
+    type_stack: Vec<ExpressionValueType>,
 
     instructions: Vec<ExpressionOpCode>,
     variable_stack: Vec<Variable>,
