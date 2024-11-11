@@ -32,38 +32,164 @@
 * [Introduction](#introduction)
 * [The type system](#the-type-system)
     * [Grammar and notations](#grammar-and-notations)
+        * [Ordinary types](#ordinary-types)
+        * [Dependent types](#dependent-types)
+        * [Subtypes and castings](#subtypes-and-castings)
+        * [Algebraic type operators](#algebraic-type-operators)
+        * [List types](#list-types)
+        * [Modalities](#modalities)
     * [Rule system](#rule-system)
+        * [Ordinary types](#ordinary-types-1)
+        * [Dependendent types](#dependendent-types)
+        * [Subtypes and castings](#subtypes-and-castings-1)
+        * [Algebraic type operators](#algebraic-type-operators-1)
+        * [List types](#list-types-1)
+        * [Modalities](#modalities-1)
 * [Data definition language](#data-definition-language)
     * [Basics of schemas](#basics-of-schemas)
+        * [(Theory) Clauses and execution](#theory-clauses-and-execution)
+        * [(Feature) Pipelined definitions](#feature-pipelined-definitions)
+        * [(Feature) Variabilized definitions](#feature-variabilized-definitions)
     * [Define semantics](#define-semantics)
+        * [Type axioms](#type-axioms)
+        * [Constraints](#constraints)
+        * [Triggers](#triggers)
+        * [Value types](#value-types)
+        * [Functions defs](#functions-defs)
     * [Undefine semantics](#undefine-semantics)
+        * [Type axioms](#type-axioms-1)
+        * [Constraints](#constraints-1)
+        * [Triggers](#triggers-1)
+        * [Value types](#value-types-1)
+        * [Functions defs](#functions-defs-1)
     * [Redefine semantics](#redefine-semantics)
+        * [Type axioms](#type-axioms-2)
+        * [Constraints](#constraints-2)
+        * [Triggers](#triggers-2)
+        * [Value types](#value-types-2)
+        * [Functions defs](#functions-defs-2)
     * [Labels and aliases](#labels-and-aliases)
+        * [Define](#define)
+        * [Undefine](#undefine)
+        * [Redefine](#redefine)
 * [Pattern matching language](#pattern-matching-language)
     * [Basics: Patterns, variables, concept rows, satisfaction](#basics-patterns-variables-concept-rows-satisfaction)
+        * [(Theory) Statements and pattern](#theory-statements-and-pattern)
+        * [(Feature) Pattern operations](#feature-pattern-operations)
+        * [(Theory) Pattern branches](#theory-pattern-branches)
+        * [(Theory) Variables and bindings](#theory-variables-and-bindings)
+        * [(Theory) Typed concept rows](#theory-typed-concept-rows)
+        * [Input crows for patterns](#input-crows-for-patterns)
     * [Pattern semantics](#pattern-semantics)
+        * [Satisfaction and answers](#satisfaction-and-answers)
+        * [Typing satisfaction](#typing-satisfaction)
+        * [Pattern satisfaction](#pattern-satisfaction)
+        * [`Let` declarations in patterns](#let-declarations-in-patterns)
     * [Satisfaction semantics of...](#satisfaction-semantics-of)
     * [... Function statements](#-function-statements)
+        * [**Case LET_FUN_PATT**](#case-let_fun_patt)
+        * [**Case LET_IN_FUN_PATT**](#case-let_in_fun_patt)
     * [... Type statements](#-type-statements)
+        * [**Case TYPE_DEF_PATT**](#case-type_def_patt)
+        * [**Case REL_PATT**](#case-rel_patt)
+        * [**Case DIRECT_REL_PATT**](#case-direct_rel_patt)
+        * [**Case PLAYS_PATT**](#case-plays_patt)
+        * [**Case DIRECT_PLAYS_PATT**](#case-direct_plays_patt)
+        * [**Case VALUE_PATT**](#case-value_patt)
+        * [**Case OWNS_PATT**](#case-owns_patt)
+        * [**Case DIRECT_OWNS_PATT**](#case-direct_owns_patt)
+        * [**Cases TYP_IS_PATT and LABEL_PATT**](#cases-typ_is_patt-and-label_patt)
     * [... Type constraint statements](#-type-constraint-statements)
+        * [Cardinality](#cardinality)
+        * [Modalities](#modalities-2)
+        * [Values constraints](#values-constraints)
     * [... Element statements](#-element-statements)
+        * [**Case ISA_PATT**](#case-isa_patt)
+        * [**Case ANON_ISA_PATT**](#case-anon_isa_patt)
+        * [**Case DIRECT_ISA_PATT**](#case-direct_isa_patt)
+        * [**Case LINKS_PATT**](#case-links_patt)
+        * [**Case LINKS_LIST_PATT**](#case-links_list_patt)
+        * [**Case DIRECT_LINKS_PATT**](#case-direct_links_patt)
+        * [**Case HAS_PATT**](#case-has_patt)
+        * [**Case HAS_LIST_PATT**](#case-has_list_patt)
+        * [**Case DIRECT_HAS_PATT**](#case-direct_has_patt)
+        * [**Case IS_PATT**](#case-is_patt)
     * [... Expression and list statements](#-expression-and-list-statements)
+        * [Expressions grammar](#expressions-grammar)
+        * [Expression evaluation](#expression-evaluation)
+        * [(Feature) Boundedness of variables in expressions](#feature-boundedness-of-variables-in-expressions)
+        * [Simple expression patterns](#simple-expression-patterns)
+        * [List expression patterns](#list-expression-patterns)
+        * [**Case LET_IN_LIST_PATT**](#case-let_in_list_patt)
+        * [**Case LIST_CONTAINS_PATT**](#case-list_contains_patt)
 * [Data manipulation language](#data-manipulation-language)
     * [Match semantics](#match-semantics)
     * [Function semantics](#function-semantics)
+        * [Function signature, body, operators](#function-signature-body-operators)
+        * [(Theory) Function evaluation](#theory-function-evaluation)
+        * [(Theory) Order of execution (and recursion)](#theory-order-of-execution-and-recursion)
     * [Insert behavior](#insert-behavior)
+        * [Basics of inserting](#basics-of-inserting)
+        * [Insert statements](#insert-statements)
+        * [Optional inserts](#optional-inserts)
     * [Delete semantics](#delete-semantics)
+        * [Basics of deleting](#basics-of-deleting)
+        * [Delete statements](#delete-statements)
+        * [Clean-up](#clean-up)
     * [Update behavior](#update-behavior)
+        * [Basics of updating](#basics-of-updating)
+        * [Update statements](#update-statements)
+        * [Clean-up](#clean-up-1)
     * [Put behavior](#put-behavior)
 * [Query execution principles](#query-execution-principles)
     * [Basics: Pipelines, clauses, operators, branches](#basics-pipelines-clauses-operators-branches)
     * [Clauses (match, insert, delete, update, put, fetch)](#clauses-match-insert-delete-update-put-fetch)
+        * [Match](#match)
+        * [Insert](#insert)
+        * [Delete](#delete)
+        * [Update](#update)
+        * [Put](#put)
+        * [Fetch](#fetch)
     * [Operators (select, distinct, sort, limit, offset, reduce)](#operators-select-distinct-sort-limit-offset-reduce)
+        * [Select](#select)
+        * [Deselect](#deselect)
+        * [Distinct](#distinct)
+        * [Require](#require)
+        * [Sort](#sort)
+        * [Limit](#limit)
+        * [Offset](#offset)
+        * [Reduce](#reduce)
     * [Branches](#branches)
     * [Transactions](#transactions)
+        * [Basics](#basics)
+        * [Snapshots](#snapshots)
+        * [Concurrency](#concurrency)
 * [Glossary](#glossary)
     * [Type system](#type-system)
+        * [Type](#type)
+        * [Schema type](#schema-type)
+        * [Value type](#value-type)
+        * [Data instance / instance](#data-instance--instance)
+        * [Data value / value](#data-value--value)
+        * [Attribute instance value / attribute value](#attribute-instance-value--attribute-value)
+        * [Data element / element](#data-element--element)
+        * [Concept](#concept)
+        * [Concept row](#concept-row)
+        * [Stream](#stream)
+        * [Answer set](#answer-set)
+        * [Answer](#answer)
     * [TypeQL syntax](#typeql-syntax)
+        * [Schema query](#schema-query)
+        * [Data query](#data-query)
+        * [Clause / Stream clause](#clause--stream-clause)
+        * [Operators / Stream operator](#operators--stream-operator)
+        * [Functions](#functions)
+        * [Statement](#statement)
+        * [Pattern](#pattern)
+        * [Stream reduction / reduction](#stream-reduction--reduction)
+        * [Clause](#clause)
+        * [Block](#block)
+        * [Suffix](#suffix)
     * [Syntactic Sugar](#syntactic-sugar)
     * [Typing of operators](#typing-of-operators)
 
@@ -216,8 +342,8 @@
         * [**Case REL_PATT**](#case-rel_patt)
         * [**Case DIRECT_REL_PATT**](#case-direct_rel_patt)
         * [**Case PLAYS_PATT**](#case-plays_patt)
-        * [**Case VALUE_PATT**](#case-value_patt)
         * [**Case DIRECT_PLAYS_PATT**](#case-direct_plays_patt)
+        * [**Case VALUE_PATT**](#case-value_patt)
         * [**Case OWNS_PATT**](#case-owns_patt)
         * [**Case DIRECT_OWNS_PATT**](#case-direct_owns_patt)
         * [**Cases TYP_IS_PATT and LABEL_PATT**](#cases-typ_is_patt-and-label_patt)
@@ -233,20 +359,22 @@
             * [**Case PLAYS_ABSTRACT_PATT**](#case-plays_abstract_patt)
             * [**Case OWNS_ABSTRACT_PATT**](#case-owns_abstract_patt)
             * [**Case DISTINCT_PATT**](#case-distinct_patt)
-        * [Values](#values-3)
+        * [Values constraints](#values-constraints)
             * [**Cases VALUE_VALUES_PATT and OWNS_VALUES_PATT**](#cases-value_values_patt-and-owns_values_patt)
     * [... Element statements](#-element-statements)
         * [**Case ISA_PATT**](#case-isa_patt)
         * [**Case ANON_ISA_PATT**](#case-anon_isa_patt)
         * [**Case DIRECT_ISA_PATT**](#case-direct_isa_patt)
         * [**Case LINKS_PATT**](#case-links_patt)
+        * [**Case LINKS_LIST_PATT**](#case-links_list_patt)
         * [**Case DIRECT_LINKS_PATT**](#case-direct_links_patt)
         * [**Case HAS_PATT**](#case-has_patt)
+        * [**Case HAS_LIST_PATT**](#case-has_list_patt)
         * [**Case DIRECT_HAS_PATT**](#case-direct_has_patt)
         * [**Case IS_PATT**](#case-is_patt)
     * [... Expression and list statements](#-expression-and-list-statements)
-        * [Grammar](#grammar)
-        * [(Theory) Typed evaluation of expressions](#theory-typed-evaluation-of-expressions)
+        * [Expressions grammar](#expressions-grammar)
+        * [Expression evaluation](#expression-evaluation)
             * [Value expressions](#value-expressions)
             * [List expressions](#list-expressions)
         * [(Feature) Boundedness of variables in expressions](#feature-boundedness-of-variables-in-expressions)
@@ -264,10 +392,11 @@
         * [Function signature, body, operators](#function-signature-body-operators)
             * [**Case SIGNATURE_STREAM_FUN**](#case-signature_stream_fun)
             * [**Case SIGNATURE_SINGLE_FUN**](#case-signature_single_fun)
-            * [**Case PIPELINE_FUN**](#case-pipeline_fun)
-            * [**Case STREAM_RETURN_FUN**](#case-stream_return_fun)
-            * [**Case SINGLE_RETURN_FUN**](#case-single_return_fun)
-        * [(Theory) Function semantics](#theory-function-semantics)
+            * [**Case READ_PIPELINE_FUN**](#case-read_pipeline_fun)
+            * [**Case RETURN_STREAM_FUN**](#case-return_stream_fun)
+            * [**Case RETURN_SINGLE_FUN**](#case-return_single_fun)
+            * [**Case AGG_RETURN_FUN**](#case-agg_return_fun)
+      * [(Theory) Function semantics](#theory-function-semantics)
         * [(Theory) Order of execution (and recursion)](#theory-order-of-execution-and-recursion)
     * [Insert behavior](#insert-behavior)
         * [Basics of inserting](#basics-of-inserting)
@@ -320,11 +449,13 @@
             * [**Case FETCH_ATTR**](#case-fetch_attr)
             * [**Case FETCH_MULTI_ATTR**](#case-fetch_multi_attr)
             * [**Case FETCH_LIST_ATTR**](#case-fetch_list_attr)
+            * [**Case FETCH_ALL_ATTR**](#case-fetch_all_attr)
             * [**Case FETCH_SNGL_FUN**](#case-fetch_sngl_fun)
             * [**Case FETCH_STREAM_FUN**](#case-fetch_stream_fun)
             * [**Case FETCH_FETCH**](#case-fetch_fetch)
             * [**Case FETCH_RETURN_VAL**](#case-fetch_return_val)
-            * [**Case FETCH_REDUCE_LIST_VAL**](#case-fetch_reduce_list_val)
+            * [**Case FETCH_RETURN_STREAM**](#case-fetch_return_stream)
+            * [**Case FETCH_RETURN_AGG**](#case-fetch_return_agg)
             * [**Case FETCH_NESTED**](#case-fetch_nested)
     * [Operators (select, distinct, sort, limit, offset, reduce)](#operators-select-distinct-sort-limit-offset-reduce)
         * [Select](#select)
@@ -457,16 +588,16 @@ We discuss the grammar for statements relating to dependent types, and explain t
 * **Dependency deduplication (+set notation)**:  Our type system rewrites dependencies by removing duplicates in the same interface, i.e. $`a : A(x : I, y : I, y : I)`$ is rewritten to (and identified $`a : A(x : I, y : I)`$. In other words:
   > We **deduplicate** dependencies on the same element in the same interface.
   
-  It is therefore convenient to use _set notation_, writing $`a : A(x : I, y : I)`$ as $`A : A(\{x,y\}:I^2)`$. (Similarly, when $`I`$ appears $`k`$ times in $`A(...)`$, we would write $`\{x_1, ..., x_k\} : I^k`$) 
+  It is therefore convenient to use _set notation_, writing $`a : A(x : I, y : I)`$ as $`A : A(\{x,y\}:I)`$. (Similarly, when $`I`$ appears $`k`$ times in $`A(...)`$, we would write $`\{x_1, ..., x_k\} : I`$) 
 
 * **Interface specialization notation**:  If $`A : \mathbf{Kind}(J)`$, $`B : \mathbf{Kind}(I)`$, $`A \lneq B`$ and $`J \lneq I`$, then we say:
   > The interface $`J`$ of $`A`$ **specializes** the interface $`I`$ of $`B`$
 
   We write this as $`A(J) \leq B(I)`$. 
 
-* **Role cardinality notation**: $`|a|_I`$ counts elements in $`\{x_1,...,x_k\} :I^k`$
+* **Role cardinality notation**: $`|a|_I`$ counts elements in $`\{x_1,...,x_k\} :I`$
 
-  _Example_: $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$. Then $`|m|_{\mathsf{Spouse}} = 2`$.
+  _Example_: $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse})`$. Then $`|m|_{\mathsf{Spouse}} = 2`$.
 
 ### Subtypes and castings
 
@@ -569,7 +700,7 @@ This section describes the **rules** that govern the interaction of statements.
 
   _Remark_: This applies recursively to types with $`k`$ interfaces.
 
-  _Example_: $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse^2})`$ implies $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse})`$ and also $`\mathsf{Marriage} : \mathbf{Rel}`$ (we identify the empty brackets "$`()`$" with no brackets).
+  _Example_: $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse})`$ implies $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse})`$ and also $`\mathsf{Marriage} : \mathbf{Rel}`$ (we identify the empty brackets "$`()`$" with no brackets).
 
 * **Auto-inheritance rule**: If $`A : \mathbf{Kind}`$, $`B : \mathbf{Kind}(I)`$, $`A \leq B`$ and $`A`$ has no interface strictly specializing $`I`$ then $`A : \mathbf{Kind}(I)`$ ("strictly" meaning "not equal to $`I`$"). In words:
 
@@ -589,14 +720,14 @@ Beside the rules below, subtyping ($`\leq`$) is transitive and reflexive.
     > Elements in $`A(I,J)`$ casts into elements of $`A(I)`$.
 
     * _Remark_: More generally, this applies for types with $k \leq 0$ interfaces. (In particular, $`A(x:I) \leq A() = A`$)
-    * _Example_: If $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$ then both $`m : \mathsf{Marriage}(x:\mathsf{Spouse})`$ and $`m : \mathsf{Marriage}(y:\mathsf{Spouse})`$
+    * _Example_: If $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse})`$ then both $`m : \mathsf{Marriage}(x:\mathsf{Spouse})`$ and $`m : \mathsf{Marriage}(y:\mathsf{Spouse})`$
 
 * **"Covariance of dependencies" rule**: If $`A(J) \leq B(I)`$ (see "interface specialization" in "Grammar and notation" above) and $`a : A(x:I)`$ then this _implies_ $`a : B(x:J)`$. In other words:
     > When $`A`$ casts to $`B`$, and $`I`$ to $`J`$, then $`A(x : I)`$ casts to $`B(x : J)`$.
 
     _Remark_: This applies recursively for types with $`k`$ interfaces.
 
-    _Example_: If $`r : \mathsf{HeteroMarriage}(x:\mathsf{Husband}, y:\mathsf{Wife})`$ then $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$
+    _Example_: If $`r : \mathsf{HeteroMarriage}(x:\mathsf{Husband}, y:\mathsf{Wife})`$ then $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse})`$
 
 The next rule is special to attributes, describing their interactions with value types.
 
@@ -726,7 +857,7 @@ _System property_:
 * ✅ `(attribute) A value V` adds $`\mathsf{val} : A \to V`$, where $`V`$ is a primitive or a user-defined struct value type
 * ✅ `(attribute) A sub B` adds
     * $`A : \mathbf{Att}(O_A)`$, $`A <_! B`$ and $`O_A <_! O_B`$ where $`B : \mathbf{Att}(O_B)`$
-    * $`[A] : \mathbf{List}(O_{[A]})`$, $`[A] <_! [B]`$ and $`O_{A[]} <_! O_{B[]}`$ where $`B : \mathbf{Att}(O_B)`$
+    * $`[A] : \mathbf{List}(O_{A[]})`$, $`[A] <_! [B]`$ and $`O_{A[]} <_! O_{B[]}`$ where $`B : \mathbf{Att}(O_B)`$
 
 _Remark_ Here $`O_X`$ is an automatically generated interface in our type system (and $`O_{X[]}`$ is its list version, see "Type System").
 
@@ -764,7 +895,7 @@ _System property_:
 #### Cardinality
 
 ##### **Case CARD_DEF**
-* ✅ `A relates I @card(n..m)` postulates $n \leq k \leq m$ whenever $`a :_! A'(\{...\} : I^k)`$, $`A' \leq A`$, $`A' : \mathbf{Rel}(I)`$.
+* ✅ `A relates I @card(n..m)` postulates $n \leq k \leq m$ whenever $`a :_! A'(\{x_1, ..., x_k\} : I)`$, $`A' \leq A`$, $`A' : \mathbf{Rel}(I)`$.
   * **defaults** to `@card(1..1)` if omitted ("one")
 * 🔶 `A plays B:I @card(n..m)` postulates $n \leq |B(a:I)| \leq m$ for all $`a : A`$
   * **defaults** to `@card(0..)` if omitted ("many")
@@ -806,7 +937,7 @@ _Note_. This is "keyness by value" (not keyqueness by direct-typed attribute).
 
 _Key principle_: If $`\diamond(A : K)`$ can be inferred in the type system, then we say "$`A : K`$ holds abstractly". 
 
-* In all cases, the purposse of abstractness is to ***contrain `insert` behavior.***
+* In all cases, the purposse of abstractness is to ***constrain `insert` behavior.***
 * In a commited schema, it is never possible that both $`\diamond(A : K)`$ and $`A : K`$ are both true the same time (and _neither implies the other_).
 
 _System property_
@@ -1129,11 +1260,11 @@ _System property_:
   * or $`A`$ has no direct super-type
 * ✅ `(relation) A relates I` redefines $`A : \mathbf{Rel}(I)`$, ***requiring*** that $`A : \mathbf{Rel}([I])`$ (to be redefined)
   * _Inherited cardinality_: inherits card (default: `@card(0..)`) 
-  * _Data transformation_: moves any $`a : A(l : [I])`$ with $`l = [l_0, l_1, ..., l_{k-1}]`$ to $`a : A(\{l_0,l_1,...,l_{k-1}\} : I^k`$
+  * _Data transformation_: moves any $`a : A(l : [I])`$ with $`l = [l_0, l_1, ..., l_{k-1}]`$ to $`a : A(\{l_0,l_1,...,l_{k-1}\} : I`$
 * ✅ `(relation) A relates I as J` redefines $`I <_! J`$, ***requiring*** that either $`I <_! J' \neq J`$ or $`I`$ has no direct super-role
 * 🔶 `(relation) A relates I[]` redefines $`A : \mathbf{Rel}([I])`$, ***requiring*** that $`A : \mathbf{Rel}(I)`$ (to be redefined)
   * _Inherited cardinality_: inherits card (default: `@card(1..1)`) (STICKY)
-  * _Data transformation_: moves any $`a : A(l : [I])`$ with $`l = [l_0, l_1, ..., l_{k-1}]`$ to $`a : A(\{l_0,l_1,...,l_{k-1}\} : I^k`$
+  * _Data transformation_: moves any $`a : A(l : [I])`$ with $`l = [l_0, l_1, ..., l_{k-1}]`$ to $`a : A(\{l_0,l_1,...,l_{k-1}\} : I`$
 * 🔶 `(relation) A relates I[] as J[]` redefines $`I <_! J`$, ***requiring*** that either $`I <_! J' \neq J`$ or $`I`$ has no direct super-role
 
 #### **Case ATT_REDEF**
@@ -1768,8 +1899,12 @@ _To discuss: the usefulness of constraint patterns seems overall low, could thin
 
 ### **Case LINKS_PATT**
 * ✅ `$x links ($I: $y)` is satisfied if $`r(x) : A(r(y):r(I))`$ for some $`A : \mathbf{Rel}(r(I))`$.
-* 🔶 `$x links ($I[]: $y)` is satisfied if $`r(x) : A(r(y):[r(I)])`$ for some $`A : \mathbf{Rel}([r(I)])`$.
 * ✅ `$x links ($y)` is equivalent to `$x links ($_: $y)` for anonymous `$_` (See "Syntactic Sugar")
+
+
+### **Case LINKS_LIST_PATT**
+* 🔶 `$x links ($I[]: $y)` is satisfied if $`r(x) : A(r(y):[r(I)])`$ for some $`A : \mathbf{Rel}([r(I)])`$.
+* 🔶 `$x links ($I[]: <LIST_EXPR>)` is equivalent to `$x links ($I[]: $_y); $_y == <LIST_EXPR>;` for anonymous `$_y`
 
 ### **Case DIRECT_LINKS_PATT**
 * 🔮 `$x links! ($I: $y)` is satisfied if $`r(x) :_! A(r(y):r(I))`$ for some $`A : \mathbf{Rel}(r(I))`$.
@@ -1777,10 +1912,17 @@ _To discuss: the usefulness of constraint patterns seems overall low, could thin
 
 ### **Case HAS_PATT**
 * ✅ `$x has $B $y` is satisfied if $`r(y) : r(B)(r(x):O_{r(B)})`$ for some $`r(B) : \mathbf{Att}`$.
-* 🔶 `$x has $B[] $y` is satisfied if $`r(y) : [r(B)](r(x):O_{r(B[])})`$ for some $`r(B) : \mathbf{Att}`$.
+* ✅ `$x has $B == <VAL_EXPR>` is equivalent to `$x has $B $_y; $_y == <VAL_EXPR>` for anonymous `$_y` (see "Expressions")
+* ✅ `$x has $B <NV_VAL_EXPR>` is equivalent to  `$x has $B == <NV_VAL_EXPR>` (see "Expressions"; `NV_EXPR` is a "non-variable expression")
 * ✅ `$x has $y` is equivalent to `$x has $_ $y` for anonymous `$_`
 
 _Remark_. Note that `$x has $B $y` will match the individual list elements of list attributes (e.g. when $`r(x) : A`$ and $`A <_! O_B`$).
+
+### **Case HAS_LIST_PATT**
+
+* 🔶 `$x has $B[] $y` is satisfied if $`r(y) : [r(B)](r(x):O_{r(B[])})`$ for some $`r(B) : \mathbf{Att}`$.
+* 🔶 `$x has $B[] == <LIST_EXPR>` is equivalent to `$x has $B[] $_y; $_y == <LIST_EXPR>` for anonymous `$_y`
+* 🔶 `$x has $B[] <NV_LIST_EXPR>`is equivalent to  `$x has $B[] == <NV_VAL_EXPR>`.
 
 ### **Case DIRECT_HAS_PATT**
 
@@ -1801,44 +1943,51 @@ _Remark_: In the `is` pattern we cannot syntactically distinguish whether we are
 
 ## ... Expression and list statements
 
-### Grammar
+### Expressions grammar
+
+_Expression composition_
 
 ```javascript
-BOOL       ::= VAR | bool                                     // VAR = variable
-INT        ::= VAR | long | ( INT ) | INT (+|-|*|/|%) INT 
-               | (ceil|floor|round)( DBL ) | abs( INT ) | len( T_LIST )
-               | (max|min) ( INT ,..., INT )
-DBL        ::= VAR | double | ( DBL ) | DBL (+|-|*|/) DBL 
-               | (max|min) ( DBL ,..., DBL ) |                
-DEC        ::= ...                                            // similar to DBL
-STRING     ::= VAR | string | string + string
-DUR        ::= VAR | time | DUR (+|-) DUR 
-DATE       ::= VAR | datetime | DATETIME (+|-) DUR 
-DATETIME   ::= VAR | datetime | DATETIME (+|-) DUR 
-PRIM       ::= <any-expr-above>
-STRUCT     ::= VAR | { <COMP>: (value|VAR|STRUCT), ... }      // <COMP> = struct component
-               | <HINT> { <COMP>: (value|VAR|STRUCT), ... }   // <HINT> = struct label
-DESTRUCT   ::= { T_COMP: (VAR|VAR?|DESTRUCT), ... }           
-VAL        ::= PRIM | STRUCT |                   
-<T>        ::= <T> | <T>_LIST [ INT ]                         // T : Val
-               | <T_FCALL>                                    // fun call returning T/T?
-               | STRUCT.<T_COMP>                              // component of type T/T?
-<T>_LIST   ::= VAR | [ <T> ,..., <T> ] | <T>_LIST + <T>_LIST  // includes empty list []
-               T_LIST [ INT .. INT ]
-INT_LIST   ::= INT_LIST | [ INT .. INT ]
-VAL_EXPR   ::= <T> | STRUCT                                   // "value expression"
-LIST_EXPR  ::= <T>_LIST | INT_LIST                            // "list expression"
-EXPR       ::=  VAL_EXPR | LIST_EXPR
+BOOL        ::= VAR | bool                                     // VAR = variable
+INT         ::= VAR | long | ( INT ) | INT (+|-|*|/|%) INT 
+                | (ceil|floor|round)( DBL ) | abs( INT ) | len( T_LIST )
+                | (max|min) ( INT ,..., INT )
+DBL         ::= VAR | double | ( DBL ) | DBL (+|-|*|/) DBL 
+                | (max|min) ( DBL ,..., DBL ) |                
+DEC         ::= VAR | dec | ...                                // similar to DBL
+STRING      ::= VAR | string | string + string
+DUR         ::= VAR | time | DUR (+|-) DUR 
+DATE        ::= VAR | datetime | DATETIME (+|-) DUR 
+DATETIME    ::= VAR | datetime | DATETIME (+|-) DUR 
+PRIM        ::= <any-expr-above>
+STRUCT      ::= VAR | { <COMP>: (value|VAR|STRUCT), ... }      // <COMP> = struct component
+                | <HINT> { <COMP>: (value|VAR|STRUCT), ... }   // <HINT> = struct label
+DESTRUCT    ::= { T_COMP: (VAR|VAR?|DESTRUCT), ... }           
+VAL         ::= PRIM | STRUCT |                   
+<T>         ::= <T> | <T>_LIST [ INT ]                         // T : Val
+                | <T_FCALL>                                    // fun call returning T/T?
+                | STRUCT.<T_COMP>                              // component of type T/T?
+<T>_LIST    ::= VAR | [ <T> ,..., <T> ] | <T>_LIST + <T>_LIST  // includes empty list []
+                T_LIST [ INT .. INT ]
+INT_LIST    ::= INT_LIST | [ INT .. INT ]
+VAL_EXPR    ::= <T> | STRUCT                                   // "value expression"
+LIST_EXPR   ::= <T>_LIST | INT_LIST                            // "list expression"
+EXPR        ::= VAL_EXPR | LIST_EXPR
 ```
 
-***Selected details***
+As a special case, consider expression that are not single variables (i.e., exclude `$x` but allow `($x + 1)` or even `($x)`)
+```
+NV_VAL_EXPR ::= VAL_EXPR - VAR                                 // exclude sole variable
+NV_LIST_EXPR::= LIST_EXPR - VAR                                // exclude sole variable
+NV_EXPR     ::= EXPR - VAR                                     
+```
 
-* Careful: the generic case `<T>` modify earlier parts of the 
-* `T`-functions (`T_FUN`) are function calls to *single-return* functions with non-tupled output type `T` or `T?`
-* Datetime and time formats
-  ```
+_Value formats_
+
+```
   long       ::=   (0..9)*
   double     ::=   (0..9)*\.(0..9)+
+  dec        ::=   (0..9)*\.(0..9)+dec
   date       ::=   ___Y__M__D
   datetime   ::=   ___Y__M__DT__h__m__s
                  | ___Y__M__DT__h__m__s:___
@@ -1846,19 +1995,24 @@ EXPR       ::=  VAL_EXPR | LIST_EXPR
   duration   ::=   P___Y__M__D              
                  | P___Y__M__DT__h__m__s
                  | P___Y__M__DT__h__m__s:___
-  ```
+```
 
-_Remark_. 🔮 Introduce explicit castings between types to our grammar. For example:
+_Remarks_
+
+* Careful: the generic case `<T>` modify earlier parts of the 
+* `T`-functions (`T_FUN`) are function calls to *single-return* functions with non-tupled output type `T` or `T?`
+
+_Explicit casts_. 🔮 Introduce explicit castings between types to our grammar. For example:
 * `long(1.0) == 1` 
 * `double(10) / double(3) == 3.3333`)
 
-### (Theory) Typed evaluation of expressions
+### Expression evaluation
 
 Given a crow `r` that assign all vars in an `<EXPR>` we define
 * value evaluation `vev@r(<EXPR>)` (math. notation $`v_r(expr)`$)
 * type evaluation `Tev@r(<EXPR>)` (math. notation $`T_r(expr)`$)]
 
-as follows:
+as follows. First note that we can unambiguously distinguish **value** from **list** expressions in our grammar. We evaluate each of those as follows.
 
 #### Value expressions
 
@@ -1868,12 +2022,13 @@ as follows:
     * $`v_r(expr)`$ is the result of evaluating all operations with their **usual semantics** 
         * `1 + 1 == 2` 
         * `10 / 3 == 3` (integer division satisfies `p/q + p%q = p`)
-    * $`T_r(expr)`$ is the type of the **substituted expression**, noting:
+    * $`T_r(expr)`$ is the **unique type** of the substituted expression, noting:
+        * We allow **implicit casts** of `long -> dec -> double`. 
         * This is always unique except possibly for the `STRUCT` case (see property below)!
 
 _System property_.
 
-* 🔶 If $`T_r(expr)`$ is non-unique for a `STRUCT` expression (which may be the case because, `STRUCT` may share fields) we require the expression to have a `HINT`, or otherwise throw an error.
+* 🔶 If $`T_r(expr)`$ is non-unique for a `STRUCT` expression (which may be the case because, `STRUCT` may share fields) we require the expression to have a `HINT`, or otherwise throw an error (***see Grammar above***, case `STRUCT`).
 
 _Remark_. Struct values are semantically considered up to reordering their components.
 
@@ -1885,7 +2040,7 @@ _Remark_. Struct values are semantically considered up to reordering their compo
     * $`v_r(expr)`$ is the result of concatenation and sublist operations with their **usual semantics**
         * e.g. `[a] + [a,b,c][1..2] = [a,b,c]` (`[1..2]` includes indices `[1,2]`)
         * or `([a] + [a,b,c])[1..2] = [a,b]`
-    * $`T_r(expr)`$ is the **minimal type** of all the list elements
+    * $`T_r(expr)`$ is the **minimal type** of all the list elements (usually some sum type)
 
 **Note**: While the type checker cannot statically determine $`T_r(expr)`$, it can statically construct an upper bound of that type.
 
@@ -2204,29 +2359,32 @@ _System property_:
 * ✅ `$x has $A $y` adds new $`a :_! r(A)(r(x) : O_{r(A)})`$ and
     * If `$y` is instance add the new cast $`\mathsf{val}(a) = \mathsf{val}(y)`$
     * If `$y` is value var set $`\mathsf{val}(a) = r(a)`$
-* 🔷 `$x has $A <VAL_EXPR>` adds new element $`a :_! r(A)(r(x) : O_{r(A)})`$ and add cast $`\mathsf{val}(a) = v_r(val\_expr)`$
+* 🔷 `$x has $A == <VAL_EXPR>` adds new element $`a :_! r(A)(r(x) : O_{r(A)})`$ and add cast $`\mathsf{val}(a) = v_r(val\_expr)`$
+* 🔷 `$x has $A <NV_VAL_EXPR>` is shorthand for `$x has $A == <NV_VAL_EXPR>` (recall `NV_VAL_EXPR` is an expression that's not a sole variable)
 
 _System property_:
 
 1. ✅ _Idempotency_. If $`a :_! r(A)`$ with $`\mathsf{val}(a) = \mathsf{val}(b)`$ then we equate $`a = b`$ (this actually follows from the "Attribute identity rule", see "Type system").
 1. 🔶 _Capability check_. Must have $`T(x) \leq B <_! O_{r(A)}`$ **non-abstractly**, i.e. $`\diamond (B <_! O_{r(A)})`$ is not true for the minimal choice of $`B`$ satisfying  $`T(x) \leq B <_! O_{r(A)}`$
-1. 🔶 _Type check_. Must have $`T(y) \leq r(A)`$ **or** $`T(y) = V`$ where $`\mathsf{val} : r(A) \to V`$ (similarly for `<EXPR>`)
+1. 🔶 _Type check_. Value $`v`$ of newly inserted attribute must be of right value type (up to implicit casts, see "Expression evaluation"). Also must have $`T(y) \leq r(A)`$ if $`y`$ is given.
 
 _Remark_: ⛔ Previously we had the constraint that we cannot add $`r(y) :_! A(r(x) : O_A)`$ if there exists any subtype $`B \lneq A`$.
 
 #### **Case HAS_LIST_INS**
-* 🔶 `$x has $A[] <LIST_EXPR>` adds new list $`l = [l_1, l_2, ...] :_! [r(A)](r(x) : O_{r(A)[]})`$ **and** new attributes $`l_i :_! r(A)(r(x) : O_{r(A)})`$ where
+* 🔶 `$x has $A[] == <LIST_EXPR>` adds new list $`l = [l_1, l_2, ...] :_! [r(A)](r(x) : O_{r(A)[]})`$ **and** new attributes $`l_i :_! r(A)(r(x) : O_{r(A)})`$ where
     * denote by $`[v_1,v_2, ...] = v_r(list\_expr)`$ the evaluation of the list expression (relative to crow $`r`$)
-    * the list $`l`$ has the same length as $`[v_1,v_2, ...] = v_r(list\_expr)`$
-        * if $`v_i`$ is an attribute instance, we add new cast $`\mathsf{val}(l_i) = \mathsf{val}(v_i)`$ 
-        * if $`v_i`$ is a value, we add new cast $`\mathsf{val}(l_i) = v_i`$ 
+    * the list $`l`$ has the same length as $`[x_1,x_2, ...] = v_r(list\_expr)`$
+        * if $`y_i = x_i`$ is an attribute instance, we add new cast $`\mathsf{val}(l_i) = \mathsf{val}(v_i)`$ 
+        * if $`v_i = x_i`$ is a value, we add new cast $`\mathsf{val}(l_i) = v_i`$ 
+* 🔶 `$x has $A[] <NV_LIST_EXPR>` is shorthand for `$x has $A == <NV_LIST_EXPR>` (recall `NV_LIST_EXPR` is an expression that's not a sole variable)
+* 🔶 `$x has $A[] $y` is shorthand for `$x has $A == $y` but infers that the type of `$y` is a subtype of $`[r(A)]`$ (and thus we must have $`y_i = x_i`$ for all $`i`$ above)
 
 _System property_:
 
 1. ✅ _Idempotency_. Idempotency is automatic for (since lists are identified by their list elements) and enforced for new attributes as before.
 1. 🔶 _System cardinality bound: **1 list per owner**_. We cannot have any $`k : [r(A)](r(x) : O_{r(A)[]})`$ with $`k \neq l`$. (Users should use "Update" instead!)
 1. 🔶 _Capability check_. Must have $`T(x) \leq B <_! O_{r(A)[]}`$ **non-abstractly**, i.e. $`\diamond (B <_! O_{r(A)[]})`$ is not true for the minimal choice of $`B`$ satisfying $`T(x) \leq B <_! O_{r(A)[]}`$
-1. 🔶 _Type check_. For each list element, must have $`T(v_i) \leq r(A)`$ or $`T(v_i) = V`$ where $`\mathsf{val} : A \to V`$
+1. 🔶 _Type check_. For each list element, must have either $`T(v_i) : V`$ (up implicit casts) or $`T(y) \leq r(A)`$.
 
 ### Optional inserts
 
