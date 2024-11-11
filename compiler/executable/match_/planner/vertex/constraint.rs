@@ -617,7 +617,6 @@ pub(crate) struct SubPlanner<'a> {
     sub: &'a Sub<Variable>,
     type_: Input,
     supertype: Input,
-    kind: SubKind,
     unbound_direction: Direction,
 }
 
@@ -631,7 +630,6 @@ impl<'a> SubPlanner<'a> {
             sub,
             type_: Input::from_vertex(sub.subtype(), variable_index),
             supertype: Input::from_vertex(sub.supertype(), variable_index),
-            kind: sub.sub_kind(),
             unbound_direction: Direction::Reverse,
         }
     }

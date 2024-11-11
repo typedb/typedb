@@ -19,7 +19,7 @@ use itertools::Itertools;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
-    executable::match_::instructions::{CheckInstruction, Inputs, IsInstruction},
+    executable::match_::instructions::{CheckInstruction, Inputs},
 };
 
 #[derive(Debug, Clone)]
