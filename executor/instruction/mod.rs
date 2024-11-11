@@ -495,7 +495,7 @@ impl<T: Hkt> Checker<T> {
                                     thing_manager.type_manager(),
                                 ),
                                 SubKind::Exact => subtype.as_type().is_direct_subtype_of(
-                                    subtype.as_type(),
+                                    supertype.as_type(),
                                     &*snapshot,
                                     thing_manager.type_manager(),
                                 ),
