@@ -22,13 +22,12 @@ use crate::{
         planner::{
             plan::{Graph, VariableVertexId, VertexId},
             vertex::{
-                instance_count, Costed, Direction, ElementCost, Input, ADVANCE_ITERATOR_RELATIVE_COST,
-                OPEN_ITERATOR_RELATIVE_COST,
+                instance_count, variable::VariableVertex, Costed, Direction, ElementCost, Input,
+                ADVANCE_ITERATOR_RELATIVE_COST, OPEN_ITERATOR_RELATIVE_COST,
             },
         },
     },
 };
-use crate::executable::match_::planner::vertex::variable::VariableVertex;
 
 #[derive(Clone, Debug)]
 pub(crate) enum ConstraintVertex<'a> {
@@ -256,10 +255,7 @@ impl<'a> IsaPlanner<'a> {
     fn expected_output_size(&self, graph: &Graph<'_>, inputs: &[VertexId]) -> f64 {
         let thing = graph.elements()[&VertexId::Variable(self.thing)].as_variable().unwrap();
         let thing_selectivity = thing.selectivity(inputs);
-        f64::max(
-            self.unrestricted_expected_size * thing_selectivity,
-            VariableVertex::OUTPUT_SIZE_MIN
-        )
+        f64::max(self.unrestricted_expected_size * thing_selectivity, VariableVertex::OUTPUT_SIZE_MIN)
     }
 }
 
@@ -549,7 +545,7 @@ impl<'a> LinksPlanner<'a> {
     fn unbound_expected_scan_size(&self, graph: &Graph<'_>) -> f64 {
         f64::max(
             f64::min(self.unbound_expected_scan_size_canonical(graph), self.unbound_expected_scan_size_reverse(graph)),
-            VariableVertex::OUTPUT_SIZE_MIN
+            VariableVertex::OUTPUT_SIZE_MIN,
         )
     }
 
@@ -569,7 +565,7 @@ impl<'a> LinksPlanner<'a> {
         let relation = &graph.elements()[&VertexId::Variable(self.relation)].as_variable().unwrap();
         f64::max(
             self.unbound_typed_expected_size * player.selectivity(inputs) * relation.selectivity(inputs),
-            VariableVertex::OUTPUT_SIZE_MIN
+            VariableVertex::OUTPUT_SIZE_MIN,
         )
     }
 }

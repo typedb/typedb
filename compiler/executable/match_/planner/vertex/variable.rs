@@ -4,8 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashSet, fmt};
-use std::cmp::min;
+use std::{cmp::min, collections::HashSet, fmt};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -314,7 +313,11 @@ impl ThingPlanner {
     fn selectivity(&self, inputs: &[VertexId]) -> f64 {
         // decrease selectivity whenever we have any matching restrictions
         let bias: f64 = 2.0;
-        let selectivity = if self.restriction_exact.iter().any(|restriction| is_input_available(&Input::Variable(*restriction), inputs)) {
+        let selectivity = if self
+            .restriction_exact
+            .iter()
+            .any(|restriction| is_input_available(&Input::Variable(*restriction), inputs))
+        {
             // exactly 1 of the full set is selected
             1.0 / (self.unrestricted_expected_size * bias)
         } else {

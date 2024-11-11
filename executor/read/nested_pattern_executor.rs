@@ -54,10 +54,7 @@ impl InlinedFunction {
                 output_row.copy_from_row(input.as_reference());
                 output_row.copy_mapped(
                     returned_row.as_reference(),
-                    self.return_mapping
-                        .iter()
-                        .enumerate()
-                        .map(|(src, &dst)| (VariablePosition::new(src as u32), dst)),
+                    self.return_mapping.iter().enumerate().map(|(src, &dst)| (VariablePosition::new(src as u32), dst)),
                 );
             });
         }
