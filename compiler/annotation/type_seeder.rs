@@ -146,7 +146,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             let (Vertex::Variable(id), annotations) = annotated_vertex else { continue; };
             if self.variable_registry
                 .get_variable_category(*id)
-                .map_or(false, |cat| { cat.is_thing_category() }) {
+                .map_or(false, |cat| { cat.is_category_thing() }) {
                 TypeAnnotation::try_retain(
                     annotations,
                     |type_| { type_.is_abstract(self.snapshot, self.type_manager).map(|b| !b)
@@ -758,10 +758,10 @@ trait BinaryConstraint {
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
     ) -> (bool, bool) {
         let left_is_thing = matches!(self.left(), Vertex::Variable(var) if {
-                seeder.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_thing_category())
+                seeder.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_category_thing())
             });
         let right_is_thing = matches!(self.right(), Vertex::Variable(var) if {
-                seeder.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_thing_category())
+                seeder.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_category_thing())
             });
         (left_is_thing, right_is_thing)
     }
