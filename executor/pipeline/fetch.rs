@@ -138,9 +138,8 @@ fn execute_fetch_some(
             }
         }
         FetchSomeInstruction::SingleFunction(function) => {
-            let inner_executors =
-                create_executors_for_function(&snapshot, &thing_manager, &functions, function, &mut HashSet::new())
-                    .map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
+            let inner_executors = create_executors_for_function(&snapshot, &thing_manager, &functions, function)
+                .map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
             let mut inner = PatternExecutor::new(inner_executors);
             inner.prepare(FixedBatch::from(row));
 

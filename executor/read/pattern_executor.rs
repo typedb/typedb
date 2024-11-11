@@ -51,7 +51,7 @@ pub(crate) struct PatternExecutor {
 }
 
 impl PatternExecutor {
-    pub(super) fn new(executors: Vec<StepExecutors>) -> Self {
+    pub fn new(executors: Vec<StepExecutors>) -> Self {
         PatternExecutor { executors, control_stack: Vec::new() }
     }
 

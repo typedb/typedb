@@ -127,15 +127,20 @@ fn execute_write_query(
                                     }
                                 }
                             }
-                            (match item_error {
-                                None => Ok(QueryAnswer::ConceptDocuments(documents, parameters))
-                                Some(err) => Err(err)
-                            }, snapshot)
+                            (
+                                match item_error {
+                                    None => Ok(QueryAnswer::ConceptDocuments(documents, parameters)),
+                                    Some(err) => Err(err),
+                                },
+                                snapshot,
+                            )
                         }
-                        Err((err, ExecutionContext { snapshot, .. })) =>
-                            (Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecutionError {
+                        Err((err, ExecutionContext { snapshot, .. })) => (
+                            Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecutionError {
                                 typedb_source: err,
-                            })), snapshot),
+                            })),
+                            snapshot,
+                        ),
                     }
                 } else {
                     let named_outputs = pipeline.rows_positions().expect("Expected unfetched result").clone();
@@ -143,7 +148,10 @@ fn execute_write_query(
                         Ok((iterator, ExecutionContext { snapshot, .. })) => {
                             let result_as_batch = iterator.collect_owned();
                             match result_as_batch {
-                                Ok(batch) => (Ok(QueryAnswer::ConceptRows(row_batch_result_to_answer(batch, named_outputs))), snapshot),
+                                Ok(batch) => (
+                                    Ok(QueryAnswer::ConceptRows(row_batch_result_to_answer(batch, named_outputs))),
+                                    snapshot,
+                                ),
                                 Err(typedb_source) => (
                                     Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecutionError {
                                         typedb_source,
@@ -233,14 +241,10 @@ async fn typeql_read_query(context: &mut Context, may_error: params::TypeQLMayEr
 #[step(expr = r"get answers of typeql read query")]
 async fn get_answers_of_typeql_read_query(context: &mut Context, step: &Step) {
     let query = typeql::parse_query(step.docstring.as_ref().unwrap().as_str()).unwrap();
-<<<<<<< HEAD
-    context.answers = match execute_read_query(context, query) {
-        Ok(answers) => answers,
+    context.query_answer = match execute_read_query(context, query) {
+        Ok(answers) => Some(answers),
         Err(error) => panic!("Unexpected get answers error: {:?}", error),
     }
-=======
-    context.query_answer = Some(execute_read_query(context, query).unwrap());
->>>>>>> fa5763dbb (Add collection of concept documents to bdds)
 }
 
 #[apply(generic_step)]

@@ -121,6 +121,7 @@ impl AsWriteInstruction for compiler::executable::insert::instructions::Has {
         _parameters: &ParameterRegistry,
         row: &mut Row<'_>,
     ) -> Result<(), Box<WriteError>> {
+        println!("row: {row:?}\nowner:{:?}", self.owner);
         let owner_thing = get_thing(row, &self.owner);
         let attribute = get_thing(row, &self.attribute);
         owner_thing
