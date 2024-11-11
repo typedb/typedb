@@ -12,11 +12,7 @@ use std::{
 
 use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::SubInstruction, ExecutorVariable};
-use concept::{
-    error::ConceptReadError,
-    type_::{type_manager::TypeManager, TypeAPI},
-};
-use ir::pattern::constraint::SubKind;
+use concept::error::ConceptReadError;
 use itertools::Itertools;
 use lending_iterator::{
     adaptors::{Map, TryFilter},
@@ -134,8 +130,6 @@ impl SubExecutor {
             fail => fail,
         });
 
-        let snapshot = &**context.snapshot();
-
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
                 let sub_with_super = self
@@ -161,9 +155,8 @@ impl SubExecutor {
 
             BinaryIterateMode::BoundFrom => {
                 let subtype = type_from_row_or_annotations(self.sub.subtype(), row, self.sub_to_supertypes.keys());
-                let type_manager = context.type_manager();
-                let supertypes = get_supertypes(snapshot, type_manager, &subtype, self.sub.sub_kind())?;
-                let sub_with_super = supertypes.into_iter().map(|sup| Ok((subtype.clone(), sup))).collect_vec(); // TODO cache this
+                let supertypes = self.sub_to_supertypes.get(&subtype).unwrap_or(const { &Vec::new() });
+                let sub_with_super = supertypes.iter().map(|sup| Ok((subtype.clone(), sup.clone()))).collect_vec(); // TODO cache this
 
                 let as_tuples: SubBoundedSortedSuper = NarrowingTupleIterator(
                     AsLendingIterator::new(sub_with_super)
@@ -176,52 +169,6 @@ impl SubExecutor {
                     &self.variable_modes,
                 )))
             }
-        }
-    }
-}
-
-pub(super) fn get_supertypes(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    sub: &Type,
-    sub_kind: SubKind,
-) -> Result<Vec<Type>, ConceptReadError> {
-    match sub_kind {
-        SubKind::Exact => {
-            let supertype = match sub {
-                Type::Entity(type_) => type_.get_supertype(snapshot, type_manager)?.map(Type::Entity),
-                Type::Relation(type_) => type_.get_supertype(snapshot, type_manager)?.map(Type::Relation),
-                Type::Attribute(type_) => type_.get_supertype(snapshot, type_manager)?.map(Type::Attribute),
-                Type::RoleType(type_) => type_.get_supertype(snapshot, type_manager)?.map(Type::RoleType),
-            };
-            if let Some(x) = supertype {
-                Ok(vec![x])
-            } else {
-                Ok(Vec::new())
-            }
-        }
-        SubKind::Subtype => {
-            let mut supertypes = match sub {
-                Type::Entity(type_) => {
-                    let supertypes = type_.get_supertypes_transitive(snapshot, type_manager)?;
-                    supertypes.iter().cloned().map(Type::Entity).collect_vec()
-                }
-                Type::Relation(type_) => {
-                    let supertypes = type_.get_supertypes_transitive(snapshot, type_manager)?;
-                    supertypes.iter().cloned().map(Type::Relation).collect_vec()
-                }
-                Type::Attribute(type_) => {
-                    let supertypes = type_.get_supertypes_transitive(snapshot, type_manager)?;
-                    supertypes.iter().cloned().map(Type::Attribute).collect_vec()
-                }
-                Type::RoleType(type_) => {
-                    let supertypes = type_.get_supertypes_transitive(snapshot, type_manager)?;
-                    supertypes.iter().cloned().map(Type::RoleType).collect_vec()
-                }
-            };
-            supertypes.push(sub.clone());
-            supertypes.sort();
-            Ok(supertypes)
         }
     }
 }

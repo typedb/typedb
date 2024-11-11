@@ -12,11 +12,7 @@ use std::{
 
 use answer::Type;
 use compiler::{executable::match_::instructions::type_::SubReverseInstruction, ExecutorVariable};
-use concept::{
-    error::ConceptReadError,
-    type_::{type_manager::TypeManager, TypeAPI},
-};
-use ir::pattern::constraint::SubKind;
+use concept::error::ConceptReadError;
 use itertools::Itertools;
 use lending_iterator::{higher_order::AdHocHkt, AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
@@ -135,9 +131,8 @@ impl SubReverseExecutor {
 
             BinaryIterateMode::BoundFrom => {
                 let supertype = type_from_row_or_annotations(self.sub.supertype(), row, self.super_to_subtypes.keys());
-                let type_manager = context.type_manager();
-                let subtypes = get_subtypes(&**context.snapshot(), type_manager, &supertype, self.sub.sub_kind())?;
-                let sub_with_super = subtypes.into_iter().map(|sub| Ok((sub, supertype.clone()))).collect_vec(); // TODO cache this
+                let subtypes = self.super_to_subtypes.get(&supertype).unwrap_or(const { &Vec::new() });
+                let sub_with_super = subtypes.iter().map(|sub| Ok((sub.clone(), supertype.clone()))).collect_vec(); // TODO cache this
                 let as_tuples: SubReverseBoundedSortedSub = NarrowingTupleIterator(
                     AsLendingIterator::new(sub_with_super)
                         .try_filter::<_, SubFilterFn, (Type, Type), _>(filter_for_row)
@@ -151,58 +146,6 @@ impl SubReverseExecutor {
             }
         }
     }
-}
-
-pub(super) fn get_subtypes(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    supertype: &Type,
-    sub_kind: SubKind,
-) -> Result<Vec<Type>, ConceptReadError> {
-    let mut subtypes = match sub_kind {
-        SubKind::Exact => match supertype {
-            Type::Entity(type_) => {
-                let subtypes = type_.get_subtypes(snapshot, type_manager)?;
-                subtypes.iter().cloned().map(Type::Entity).collect_vec()
-            }
-            Type::Relation(type_) => {
-                let subtypes = type_.get_subtypes(snapshot, type_manager)?;
-                subtypes.iter().cloned().map(Type::Relation).collect_vec()
-            }
-            Type::Attribute(type_) => {
-                let subtypes = type_.get_subtypes(snapshot, type_manager)?;
-                subtypes.iter().cloned().map(Type::Attribute).collect_vec()
-            }
-            Type::RoleType(type_) => {
-                let subtypes = type_.get_subtypes(snapshot, type_manager)?;
-                subtypes.iter().cloned().map(Type::RoleType).collect_vec()
-            }
-        },
-        SubKind::Subtype => {
-            let mut subtypes = match supertype {
-                Type::Entity(type_) => {
-                    let subtypes = type_.get_subtypes_transitive(snapshot, type_manager)?;
-                    subtypes.iter().cloned().map(Type::Entity).collect_vec()
-                }
-                Type::Relation(type_) => {
-                    let subtypes = type_.get_subtypes_transitive(snapshot, type_manager)?;
-                    subtypes.iter().cloned().map(Type::Relation).collect_vec()
-                }
-                Type::Attribute(type_) => {
-                    let subtypes = type_.get_subtypes_transitive(snapshot, type_manager)?;
-                    subtypes.iter().cloned().map(Type::Attribute).collect_vec()
-                }
-                Type::RoleType(type_) => {
-                    let subtypes = type_.get_subtypes_transitive(snapshot, type_manager)?;
-                    subtypes.iter().cloned().map(Type::RoleType).collect_vec()
-                }
-            };
-            subtypes.push(supertype.clone());
-            subtypes
-        }
-    };
-    subtypes.sort();
-    Ok(subtypes)
 }
 
 fn create_sub_filter_super_sub(super_to_subtypes: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<SubFilterFn> {
