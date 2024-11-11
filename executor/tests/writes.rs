@@ -130,7 +130,7 @@ impl<Snapshot> StageAPI<Snapshot> for ShimStage<Snapshot> {
     fn into_iterator(
         self,
         _: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
+    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (Box<PipelineExecutionError>, ExecutionContext<Snapshot>)>
     {
         Ok((ShimIterator(AsNarrowingIterator::new(self.rows)), self.context))
     }
@@ -190,16 +190,16 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     );
     let insert_executor = InsertStageExecutor::new(Arc::new(insert_plan), initial);
     let (output_iter, context) =
-        insert_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match err {
-            PipelineExecutionError::WriteError { typedb_source } => typedb_source,
+        insert_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match err.as_ref() {
+            &PipelineExecutionError::WriteError { typedb_source } => typedb_source,
             _ => unreachable!(),
         })?;
     let output_rows = output_iter
         .map_static(|res| res.map(|row| row.into_owned()))
         .into_iter()
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|err| match err {
-            PipelineExecutionError::WriteError { typedb_source } => typedb_source,
+        .map_err(|err| match err.as_ref() {
+            &PipelineExecutionError::WriteError { typedb_source } => typedb_source,
             _ => unreachable!(),
         })?;
     Ok((output_rows, Arc::into_inner(context.snapshot).unwrap()))
@@ -271,8 +271,8 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     );
     let delete_executor = DeleteStageExecutor::new(Arc::new(delete_plan), initial);
     let (output_iter, context) =
-        delete_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match err {
-            PipelineExecutionError::WriteError { typedb_source } => typedb_source,
+        delete_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match err.as_ref() {
+            &PipelineExecutionError::WriteError { typedb_source } => typedb_source,
             _ => unreachable!(),
         })?;
     let output_rows = output_iter

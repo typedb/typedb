@@ -77,7 +77,7 @@ fn run_read_query(
     let (iterator, _) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
     let result: Result<Vec<MaybeOwnedRow<'static>>, Box<PipelineExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| Box::new(err.clone()))).collect();
+        iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
 
     result.map(move |rows| (rows, rows_positions))
 }
