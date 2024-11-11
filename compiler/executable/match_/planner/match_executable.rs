@@ -6,6 +6,7 @@
 
 use std::{
     collections::{HashMap, HashSet},
+    fmt::{write, Display, Formatter},
     slice,
 };
 
@@ -51,6 +52,16 @@ impl MatchExecutable {
 
     pub fn variable_positions_index(&self) -> &[Variable] {
         &self.variable_positions_index
+    }
+}
+
+impl Display for MatchExecutable {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Match executable plan:")?;
+        for (i, step) in self.steps().iter().enumerate() {
+            write!(f, "\n  {i}: {step}")?;
+        }
+        Ok(())
     }
 }
 
@@ -107,6 +118,21 @@ impl ExecutionStep {
     }
 }
 
+impl Display for ExecutionStep {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ExecutionStep::Intersection(step) => write!(f, "Sorted, {step}"),
+            ExecutionStep::UnsortedJoin(step) => write!(f, "Unsorted, {step}"),
+            ExecutionStep::Assignment(step) => write!(f, "Assign, {step}"),
+            ExecutionStep::Check(step) => write!(f, "Check, {step}"),
+            ExecutionStep::Disjunction(step) => write!(f, "Disjunction, {step}"),
+            ExecutionStep::Negation(step) => write!(f, "Negation, {step}"),
+            ExecutionStep::Optional(step) => write!(f, "Optional, {step}"),
+            ExecutionStep::FunctionCall(step) => write!(f, "FunctionCall, {step}"),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct IntersectionStep {
     pub sort_variable: ExecutorVariable,
@@ -159,6 +185,20 @@ impl IntersectionStep {
 
     fn output_width(&self) -> u32 {
         self.output_width
+    }
+}
+
+impl Display for IntersectionStep {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "inputs={:?}, output_size={}, sort_by={}",
+            &self.input_variables, self.output_width, self.sort_variable
+        )?;
+        for (instruction, modes) in &self.instructions {
+            write!(f, "\n      {instruction} with ({modes})")?;
+        }
+        Ok(())
     }
 }
 
@@ -221,6 +261,15 @@ impl UnsortedJoinStep {
     }
 }
 
+impl Display for UnsortedJoinStep {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "inputs={:?}, output_size={:?}", &self.input_variables, self.output_width)?;
+        write!(f, "\n      {}", &self.iterate_instruction)?;
+        // TODO: do we need these at all?
+        write!(f, "\n      {:?}", &self.check_instructions)
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct AssignmentStep {
     pub expression: ExecutableExpression<VariablePosition>,
@@ -253,6 +302,14 @@ impl AssignmentStep {
     }
 }
 
+impl Display for AssignmentStep {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "inputs={:?}, output_size={}", &self.input_positions, self.output_width)?;
+        // TODO: Display expression
+        write!(f, "\n      {:?}", &self.expression)
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct CheckStep {
     pub check_instructions: Vec<CheckInstruction<ExecutorVariable>>,
@@ -274,6 +331,15 @@ impl CheckStep {
     }
 }
 
+impl Display for CheckStep {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for check in &self.check_instructions {
+            write!(f, "\n      {}", check)?;
+        }
+        Ok(())
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct DisjunctionStep {
     pub branches: Vec<MatchExecutable>,
@@ -288,6 +354,18 @@ impl DisjunctionStep {
 
     pub fn output_width(&self) -> u32 {
         self.output_width
+    }
+}
+
+impl Display for DisjunctionStep {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "output_size={}", self.output_width)?;
+        for branch in &self.branches {
+            write!(f, "\n      --- Start branch ---")?;
+            write!(f, "{}", branch)?;
+            write!(f, "\n      --- End branch ---")?;
+        }
+        Ok(())
     }
 }
 
@@ -308,6 +386,27 @@ impl NegationStep {
     }
 }
 
+impl Display for NegationStep {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "\n      --- Start negation ---")?;
+        write!(f, "\n {}", &self.negation)?;
+        write!(f, "\n      --- End negation ---")
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct OptionalStep {
+    pub optional: MatchExecutable,
+}
+
+impl Display for OptionalStep {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "\n      --- Start negation ---")?;
+        write!(f, "\n {}", &self.optional)?;
+        write!(f, "\n      --- End negation ---")
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct FunctionCallStep {
     // TODO: Deduplication, selection counting etc.
@@ -323,9 +422,14 @@ impl FunctionCallStep {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct OptionalStep {
-    pub optional: MatchExecutable,
+impl Display for FunctionCallStep {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "fn_id={}, assigned={:?}, arguments={:?}, output_size={}\n",
+            self.function_id, &self.assigned, &self.arguments, self.output_width
+        )
+    }
 }
 
 pub trait InstructionAPI<ID: IrID> {

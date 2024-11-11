@@ -143,8 +143,6 @@ impl Statistics {
                         self.update_writes(&commits, storage).map_err(|err| DataRead { source: err })?;
                     }
                 }
-            } else {
-                unreachable!("Only open validated records as snapshots.")
             }
         }
 

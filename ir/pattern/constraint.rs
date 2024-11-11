@@ -4,7 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt, ops::Deref};
+use std::{
+    collections::HashMap,
+    fmt,
+    fmt::{Display, Formatter},
+    ops::Deref,
+};
 
 use answer::variable::Variable;
 use itertools::Itertools;
@@ -878,6 +883,16 @@ impl From<typeql::statement::type_::SubKind> for SubKind {
     }
 }
 
+impl Display for SubKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Exact => write!(f, "!"),
+            // This is not a great Display implementation since there is no symbol to read this variant
+            Self::Subtype => write!(f, ""),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Sub<ID> {
     kind: SubKind,
@@ -1055,6 +1070,16 @@ impl From<typeql::statement::thing::isa::IsaKind> for IsaKind {
         match kind {
             typeql::statement::thing::isa::IsaKind::Exact => Self::Exact,
             typeql::statement::thing::isa::IsaKind::Subtype => Self::Subtype,
+        }
+    }
+}
+
+impl Display for IsaKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Exact => write!(f, "!"),
+            // This is not a great Display implementation since there is no symbol to read this variant
+            Self::Subtype => write!(f, ""),
         }
     }
 }
@@ -1335,6 +1360,21 @@ impl From<typeql::token::Comparator> for Comparator {
             typeql::token::Comparator::Lte => Self::LessOrEqual,
             typeql::token::Comparator::Contains => Self::Contains,
             typeql::token::Comparator::Like => Self::Like,
+        }
+    }
+}
+
+impl Display for Comparator {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Equal => write!(f, "{}", typeql::token::Comparator::Eq),
+            Self::NotEqual => write!(f, "{}", typeql::token::Comparator::Neq),
+            Self::Less => write!(f, "{}", typeql::token::Comparator::Lt),
+            Self::Greater => write!(f, "{}", typeql::token::Comparator::Gt),
+            Self::LessOrEqual => write!(f, "{}", typeql::token::Comparator::Lte),
+            Self::GreaterOrEqual => write!(f, "{}", typeql::token::Comparator::Gte),
+            Self::Like => write!(f, "{}", typeql::token::Comparator::Like),
+            Self::Contains => write!(f, "{}", typeql::token::Comparator::Contains),
         }
     }
 }

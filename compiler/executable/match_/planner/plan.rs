@@ -553,10 +553,14 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             let (next, _cost) = open_set
                 .iter()
                 .filter(|&&elem| self.graph.elements[&elem].is_valid(elem, &ordering, &self.graph))
-                .map(|&elem| (elem, self.calculate_marginal_cost(&ordering, elem, intersection_variable)))
+                .map(|&elem| {
+                    let cost = self.calculate_marginal_cost(&ordering, elem, intersection_variable);
+                    // useful when debugging
+                    let _graph_element = &self.graph.elements[&elem];
+                    (elem, cost)
+                })
                 .min_by(|(_, lhs_cost), (_, rhs_cost)| lhs_cost.total_cmp(rhs_cost))
                 .unwrap();
-
             let element = &self.graph.elements[&next];
 
             if element.is_variable() {
@@ -622,7 +626,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 let intersection_variable = ordering.get(i + 1).and_then(|vertex| vertex.as_variable_id());
                 self.graph.elements[idx].cost(&ordering[..i], intersection_variable, &self.graph)
             })
-            .fold(ElementCost::FREE_BRANCH_1, |acc, e| acc.chain(e));
+            .fold(ElementCost::MEM_SIMPLE_BRANCH_1, |acc, e| acc.chain(e));
 
         let Self { shared_variables, graph, type_annotations, statistics: _ } = self;
 

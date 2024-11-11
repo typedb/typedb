@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt, hash::Hash};
+use std::{collections::HashMap, fmt, fmt::Formatter, hash::Hash};
 
 use answer::variable::Variable;
 use encoding::value::label::Label;
@@ -46,12 +46,12 @@ impl fmt::Display for ScopeId {
     }
 }
 
-pub trait IrID: Copy + fmt::Display + Hash + Eq + PartialEq + Ord + PartialOrd + 'static {}
+pub trait IrID: Copy + fmt::Display + fmt::Debug + Hash + Eq + PartialEq + Ord + PartialOrd + 'static {}
 
 impl IrID for Variable {}
 
 // TODO: rename to 'Identifier' in lieu of a better name
-#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Vertex<ID> {
     Variable(ID),
     Label(Label<'static>),
@@ -122,24 +122,36 @@ impl<ID> From<ID> for Vertex<ID> {
     }
 }
 
-impl<ID: fmt::Display> fmt::Display for Vertex<ID> {
+impl<ID: fmt::Debug> fmt::Debug for Vertex<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Variable(var) => fmt::Display::fmt(var, f),
+            Self::Variable(var) => fmt::Debug::fmt(var, f),
             Self::Label(label) => write!(f, "{}", label.scoped_name().as_str()),
-            Self::Parameter(param) => fmt::Display::fmt(param, f),
+            Self::Parameter(param) => fmt::Debug::fmt(param, f),
         }
     }
 }
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+impl<ID: fmt::Debug> fmt::Display for Vertex<ID> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
+    }
+}
+
+#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ParameterID {
     pub id: usize,
 }
 
-impl fmt::Display for ParameterID {
+impl fmt::Debug for ParameterID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Parameter[{}]", self.id)
+        write!(f, "Param[{}]", self.id)
+    }
+}
+
+impl fmt::Display for ParameterID {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
     }
 }
 

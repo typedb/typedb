@@ -6,6 +6,7 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
+    fmt::{Display, Formatter},
     sync::Arc,
 };
 
@@ -14,10 +15,11 @@ use ir::pattern::{
     constraint::{Owns, Plays, Relates, Sub},
     IrID,
 };
+use itertools::Itertools;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
-    executable::match_::instructions::{CheckInstruction, Inputs},
+    executable::match_::instructions::{CheckInstruction, Inputs, IsInstruction},
 };
 
 #[derive(Debug, Clone)]
@@ -51,6 +53,17 @@ impl<ID: IrID> TypeListInstruction<ID> {
             types,
             checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }
+    }
+}
+
+impl<ID: IrID> Display for TypeListInstruction<ID> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{} type ", self.type_var)?;
+        write!(f, "(")?;
+        for type_ in self.types.iter().sorted() {
+            write!(f, "{type_}")?;
+        }
+        write!(f, ")] filter {:?}", &self.checks)
     }
 }
 
@@ -99,6 +112,12 @@ impl<ID: IrID> SubInstruction<ID> {
     }
 }
 
+impl<ID: IrID> Display for SubInstruction<ID> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{}] filter {:?}", &self.sub, &self.checks)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct SubReverseInstruction<ID> {
     pub sub: Sub<ID>,
@@ -141,6 +160,12 @@ impl<ID: IrID> SubReverseInstruction<ID> {
             subtypes,
             checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }
+    }
+}
+
+impl<ID: IrID> Display for SubReverseInstruction<ID> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Reverse[{}] filter {:?}", &self.sub, &self.checks)
     }
 }
 
@@ -189,6 +214,12 @@ impl<ID: IrID> OwnsInstruction<ID> {
     }
 }
 
+impl<ID: IrID> Display for OwnsInstruction<ID> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{}] filter {:?}", &self.owns, &self.checks)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct OwnsReverseInstruction<ID> {
     pub owns: Owns<ID>,
@@ -231,6 +262,12 @@ impl<ID: IrID> OwnsReverseInstruction<ID> {
             owner_types,
             checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }
+    }
+}
+
+impl<ID: IrID> Display for OwnsReverseInstruction<ID> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Reverse[{}] filter {:?}", &self.owns, &self.checks)
     }
 }
 
@@ -280,6 +317,12 @@ impl<ID: IrID> RelatesInstruction<ID> {
     }
 }
 
+impl<ID: IrID> Display for RelatesInstruction<ID> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{}] filter {:?}", &self.relates, &self.checks)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct RelatesReverseInstruction<ID> {
     pub relates: Relates<ID>,
@@ -323,6 +366,12 @@ impl<ID: IrID> RelatesReverseInstruction<ID> {
             relation_types,
             checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }
+    }
+}
+
+impl<ID: IrID> Display for RelatesReverseInstruction<ID> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Reverse[{}] filter {:?}", &self.relates, &self.checks)
     }
 }
 
@@ -372,6 +421,12 @@ impl<ID: IrID> PlaysInstruction<ID> {
     }
 }
 
+impl<ID: IrID> Display for PlaysInstruction<ID> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{}] filter {:?}", &self.plays, &self.checks)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct PlaysReverseInstruction<ID> {
     pub plays: Plays<ID>,
@@ -415,5 +470,11 @@ impl<ID: IrID> PlaysReverseInstruction<ID> {
             player_types,
             checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }
+    }
+}
+
+impl<ID: IrID> Display for PlaysReverseInstruction<ID> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Reverse[{}] filter {:?}", &self.plays, &self.checks)
     }
 }

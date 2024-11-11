@@ -176,7 +176,6 @@ impl HasExecutor {
             }
             BinaryIterateMode::UnboundInverted => {
                 debug_assert!(self.owner_cache.is_some());
-
                 if let Some([owner]) = self.owner_cache.as_deref() {
                     // no heap allocs needed if there is only 1 iterator
                     let iterator = owner.get_has_types_range_unordered(
@@ -223,6 +222,7 @@ impl HasExecutor {
             BinaryIterateMode::BoundFrom => {
                 let owner = self.has.owner().as_variable().unwrap().as_position().unwrap();
                 debug_assert!(row.len() > owner.as_usize());
+                // TODO: inject value ranges
                 let iterator = match row.get(owner) {
                     VariableValue::Thing(Thing::Entity(entity)) => entity.get_has_types_range_unordered(
                         snapshot,

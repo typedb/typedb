@@ -5,6 +5,7 @@
  */
 
 use std::{collections::HashSet, fmt};
+use std::cmp::min;
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -29,6 +30,8 @@ pub(crate) enum VariableVertex {
 
 impl VariableVertex {
     const RESTRICTION_NONE: f64 = 1.0;
+    const SELECTIVITY_MIN: f64 = 0.000001;
+    pub(crate) const OUTPUT_SIZE_MIN: f64 = 1.0;
 
     pub(super) fn is_valid(&self, index: VertexId, ordered: &[VertexId], graph: &Graph<'_>) -> bool {
         let VertexId::Variable(index) = index else { unreachable!("variable with incompatible index: {index:?}") };
@@ -48,7 +51,7 @@ impl VariableVertex {
             Self::Thing(inner) => inner.unrestricted_expected_size,
             Self::Value(_) => 1.0,
         };
-        unrestricted_size * self.selectivity(inputs)
+        f64::max(unrestricted_size * self.selectivity(inputs), Self::OUTPUT_SIZE_MIN)
     }
 
     pub(crate) fn selectivity(&self, inputs: &[VertexId]) -> f64 {
@@ -163,7 +166,7 @@ impl InputPlanner {
 
 impl Costed for InputPlanner {
     fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
-        ElementCost::FREE_BRANCH_1
+        ElementCost::MEM_SIMPLE_BRANCH_1
     }
 }
 
@@ -207,7 +210,7 @@ impl TypePlanner {
 
 impl Costed for TypePlanner {
     fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
-        ElementCost::free_with_branching(self.unrestricted_expected_size)
+        ElementCost::in_mem_simple_with_branching(self.unrestricted_expected_size)
     }
 }
 
@@ -309,27 +312,38 @@ impl ThingPlanner {
     }
 
     fn selectivity(&self, inputs: &[VertexId]) -> f64 {
-        if !self.restriction_exact.is_empty() {
+        // decrease selectivity whenever we have any matching restrictions
+        let bias: f64 = 2.0;
+        let selectivity = if self.restriction_exact.iter().any(|restriction| is_input_available(&Input::Variable(*restriction), inputs)) {
             // exactly 1 of the full set is selected
-            return 1.0 / self.unrestricted_expected_size;
+            1.0 / (self.unrestricted_expected_size * bias)
         } else {
             // all are selected
             let mut selected = self.unrestricted_expected_size;
+            let mut any_restrictions = false;
             if self.restriction_equal.iter().any(|restriction| is_input_available(restriction, inputs)) {
                 // equality by value leads to one possible per attribute type
                 selected = self.unrestricted_expected_attribute_types as f64;
+                any_restrictions = true;
             }
             if self.restriction_from_below.iter().any(|restriction| is_input_available(restriction, inputs)) {
                 // some fraction of the selected will pass the strictest below filter
                 selected *= Self::RESTRICTION_BELOW_SELECTIVITY;
+                any_restrictions = true;
             }
             if self.restriction_from_above.iter().any(|restriction| is_input_available(restriction, inputs)) {
                 // some fraction of the selected will pass the strictest above filter
                 selected *= Self::RESTRICTION_ABOVE_SELECTIVITY;
+                any_restrictions = true;
             }
             // normalise again by all possible (with no restrictions, we get selectivity of 1.0)
-            selected / self.unrestricted_expected_size
-        }
+            if any_restrictions {
+                selected / (self.unrestricted_expected_size * bias)
+            } else {
+                selected / self.unrestricted_expected_size
+            }
+        };
+        f64::max(selectivity, VariableVertex::SELECTIVITY_MIN)
     }
 }
 
@@ -344,7 +358,7 @@ fn branching_for_intersections(intersection_count: usize) -> f64 {
 impl Costed for ThingPlanner {
     fn cost(&self, inputs: &[VertexId], intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
         match intersection {
-            None => ElementCost::FREE_BRANCH_1,
+            None => ElementCost::MEM_SIMPLE_BRANCH_1,
             Some(variable_id) => {
                 let mut intersection_count = 0;
                 for input in inputs {
@@ -354,8 +368,8 @@ impl Costed for ThingPlanner {
                     }
                 }
                 ElementCost {
-                    per_input: 0.0,
-                    per_output: 0.0,
+                    per_input: ElementCost::IN_MEM_COST_COMPLEX,
+                    per_output: ElementCost::IN_MEM_COST_COMPLEX,
                     branching_factor: branching_for_intersections(intersection_count),
                 }
             }
@@ -432,7 +446,7 @@ impl ValuePlanner {
         if self.restriction_value_above.iter().any(|restriction| is_input_available(restriction, inputs)) {
             selectivity *= Self::RESTRICTION_ABOVE_SELECTIVITY
         }
-        selectivity
+        f64::max(selectivity, VariableVertex::SELECTIVITY_MIN)
     }
 }
 
