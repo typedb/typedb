@@ -9,6 +9,7 @@ use std::{
     iter::zip,
     sync::Arc,
 };
+use itertools::Itertools;
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -146,11 +147,7 @@ pub fn compile_stages_and_fetch(
     (HashMap<Variable, VariablePosition>, Vec<ExecutableStage>, Option<Arc<ExecutableFetch>>),
     ExecutableCompilationError,
 > {
-    let selected_variables = if let Some(fetch) = annotated_fetch.as_ref() {
-        variable_registry.variable_names().keys().copied().collect::<Vec<_>>() // TODO: narrow?
-    } else {
-        Vec::new()
-    };
+    let selected_variables = variable_registry.variable_names().keys().copied().collect_vec();
     let (input_positions, executable_stages) = compile_pipeline_stages(
         statistics,
         variable_registry.clone(),
@@ -210,7 +207,7 @@ pub(crate) fn compile_pipeline_stages(
 fn compile_stage(
     statistics: &Statistics,
     variable_registry: Arc<VariableRegistry>,
-    functions: &ExecutableFunctionRegistry,
+    _functions: &ExecutableFunctionRegistry,
     input_variables: &HashMap<Variable, VariablePosition>,
     selected_variables: &Vec<Variable>,
     annotated_stage: AnnotatedStage,
@@ -220,7 +217,7 @@ fn compile_stage(
             let plan = crate::executable::match_::planner::compile(
                 block,
                 input_variables,
-                selected_variables, // variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
+                selected_variables,
                 block_annotations,
                 variable_registry,
                 executable_expressions,
