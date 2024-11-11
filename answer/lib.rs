@@ -198,7 +198,7 @@ impl Type {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         match self {
             Type::Entity(entity) => entity.is_abstract(snapshot, type_manager),
             Type::Relation(relation) => relation.is_abstract(snapshot, type_manager),
@@ -209,8 +209,8 @@ impl Type {
 
     pub fn try_retain(
         annotations: &mut BTreeSet<Self>,
-        predicate: impl Fn(&Self) -> Result<bool, ConceptReadError>,
-    ) -> Result<(), ConceptReadError> {
+        predicate: impl Fn(&Self) -> Result<bool, Box<ConceptReadError>>,
+    ) -> Result<(), Box<ConceptReadError>> {
         let mut to_be_removed = Vec::new();
         for annotation in annotations.iter() {
             if !predicate(annotation)? {
