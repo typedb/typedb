@@ -92,37 +92,37 @@ typedb_error!(
         CannotAcquireCapabilityAsExistingInstancesViolateItsConstraint(
             55,
             "Cannot add new schema as existing instances would violate the addition.",
-            (typedb_source: DataValidationError)
+            (typedb_source: Box<DataValidationError>)
         ),
         CannotSetAnnotationForCapabilityAsExistingInstancesViolateItsConstraint(
             56,
             "Cannot set annotation as existing instances would violate the new constraint.",
-            ( typedb_source: DataValidationError)
+            ( typedb_source: Box<DataValidationError>)
         ),
         CannotChangeSupertypeAsUpdatedCapabilityConstraintIsViolatedByExistingInstances(
             57,
             "Cannot change supertype as the schema constraints would not be compatible with existing instances.",
-            (typedb_source: DataValidationError)
+            (typedb_source: Box<DataValidationError>)
         ),
         CannotChangeInterfaceTypeSupertypeAsUpdatedCapabilityConstraintIsViolatedByExistingInstances(
             58,
             "Cannot change schema as it would result in schema constraint that are compatible with existing instances.",
-            ( typedb_source: DataValidationError)
+            ( typedb_source: Box<DataValidationError>)
         ),
         CannotUnsetInterfaceTypeSupertypeAsUpdatedCapabilityConstraintIsViolatedByExistingInstances(
             59,
             "Cannot remove schema element as the result would not be compatible with existing instances.",
-            ( typedb_source : DataValidationError)
+            ( typedb_source : Box<DataValidationError> )
         ),
         CannotSetAnnotationAsExistingInstancesViolateItsConstraint(
             60,
             "Cannot set annotation as the result would not be compatible with existing instances.",
-            (typedb_source:  DataValidationError)
+            (typedb_source: Box<DataValidationError> )
         ),
         CannotChangeSupertypeAsUpdatedConstraintIsViolatedByExistingInstances(
             61,
             "Cannot change superty as the resulting schema constraints would be not be compatible with existing instances.",
-            ( typedb_source: DataValidationError)
+            ( typedb_source: Box<DataValidationError>)
         ),
     }
 );

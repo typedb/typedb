@@ -108,7 +108,7 @@ fn execute_insert(
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
-) -> Result<(), WriteError> {
+) -> Result<(), Box<WriteError>> {
     debug_assert!(row.get_multiplicity() == 1);
     debug_assert!(row.len() == executable.output_row_schema.len());
     for instruction in &executable.concept_instructions {

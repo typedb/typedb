@@ -81,7 +81,7 @@ pub fn execute_delete(
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     input_output_row: &mut Row<'_>,
-) -> Result<(), WriteError> {
+) -> Result<(), Box<WriteError>> {
     // Row multiplicity doesn't matter. You can't delete the same thing twice
     for instruction in &executable.connection_instructions {
         match instruction {

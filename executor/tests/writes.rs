@@ -143,7 +143,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     query_str: &str,
     input_row_var_names: &[&str],
     input_rows: Vec<Vec<VariableValue<'static>>>,
-) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), WriteError> {
+) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), Box<WriteError>> {
     let mut translation_context = TranslationContext::new();
     let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_insert();
     let block = ir::translation::writes::translate_insert(&mut translation_context, &typeql_insert).unwrap();
@@ -213,7 +213,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     delete_str: &str,
     input_row_var_names: &[&str],
     input_rows: Vec<Vec<VariableValue<'static>>>,
-) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), WriteError> {
+) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), Box<WriteError>> {
     let mut translation_context = TranslationContext::new();
     let entry_annotations = {
         let typeql_match = typeql::parse_query(mock_match_string_for_annotations)

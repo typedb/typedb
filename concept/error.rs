@@ -50,8 +50,8 @@ typedb_error!(
         SnapshotGet(1, "Concept write failed due to a snapshot read error.", (source: SnapshotGetError)),
         SnapshotIterate(2, "Concept write failed due to a snapshot iteration error.", (source: Arc<SnapshotIteratorError>)),
         ConceptRead(3, "Concept write failed due to a concept read error.", (source: Box<ConceptReadError>)),
-        SchemaValidation(4, "Concept write failed due to a schema validation error.", (typedb_source: SchemaValidationError)),
-        DataValidation(5, "Concept write failed due to a data validation error.", (typedb_source: DataValidationError)),
+        SchemaValidation(4, "Concept write failed due to a schema validation error.", (typedb_source: Box<SchemaValidationError>)),
+        DataValidation(5, "Concept write failed due to a data validation error.", (typedb_source: Box<DataValidationError> )),
         Encoding(6, "Concept write failed due to an encoding error.", (source: EncodingError)),
         Annotation(7, "Concept write failed due to an annotation error.", (source: AnnotationError)),
 

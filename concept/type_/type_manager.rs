@@ -1331,7 +1331,7 @@ impl TypeManager {
                 relates.clone(),
                 true, // new relates is set
             )
-            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+            .map_err(|typedb_source| Box::new(ConceptWriteError::SchemaValidation { typedb_source }))?;
 
             let ordering = relates.role().get_ordering(snapshot, self)?;
 
@@ -1342,7 +1342,7 @@ impl TypeManager {
                 relates.clone().into_owned(),
                 get_relates_default_constraints(relates.clone(), ordering, false),
             )
-            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+            .map_err(|typedb_source| Box::new(ConceptWriteError::SchemaValidation { typedb_source }))?;
         }
 
         TypeWriter::storage_put_edge(snapshot, relates.clone());

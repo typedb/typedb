@@ -68,7 +68,7 @@ typedb_error!(
         RowsUsedAsFetch(3, "Cannot use query returning ConceptRows as a Fetch query."),
         ConceptRead(4, "Error reading concept.", ( source: Box<ConceptReadError> )),
         InitialisingMatchIterator(5, "Error initialising Match clause iterator.", ( source: Box<ConceptReadError> )),
-        WriteError(6, "Error executing write operation.", ( typedb_source: WriteError )),
+        WriteError(6, "Error executing write operation.", ( typedb_source: Box<WriteError> )),
         ReadPatternExecution(7, "Error executing a read pattern.", ( typedb_source : ReadExecutionError )),
         FetchError(8, "Error executing fetch operation.", ( typedb_source: FetchExecutionError )),
     }
