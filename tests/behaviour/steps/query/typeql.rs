@@ -379,6 +379,7 @@ fn does_value_match(id: &str, var_value: &VariableValue<'_>, _context: &Context)
     let expected_value_type = match id_type {
         "long" => ValueType::Long,
         "double" => ValueType::Double,
+        "string" => ValueType::String,
         _ => todo!(),
     };
     let expected = params::Value::from_str(id_value).unwrap().into_typedb(expected_value_type);

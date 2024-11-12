@@ -475,7 +475,7 @@ typedb_error!(
         FetchRelations(6, "Fetching relations is not supported, use '$var.*' or '$var.<attribute type>' to fetch attributes instead."),
 
         FetchSingleFunctionNotScalar(7, "Fetching results of a function call '{func_name}()' expected a scalar return, got a tuple instead.", func_name: String),
-        FetchSingleFunctionNotSingle(8, "Fetching results of a function call '{func_name}()' expected a single return, got a stream instead. Consider fetching '[ {func_name}() ]' or using `first` or `last` in `{func_name}`.", func_name: String),
+        FetchSingleFunctionNotSingle(8, "Fetching results of a function call '{func_name}()' expected a single return, got a stream instead. It must be wrapped in `[]` to collect into a list.", func_name: String),
         FetchListFunctionNotScalar(9, "Fetching results of a function call '[ {func_name}() ]' expected a scalar return, got a tuple instead.", func_name: String),
 
         SubFetch(10, "Error executing sub fetch.", ( typedb_source : Box<PipelineExecutionError>)),

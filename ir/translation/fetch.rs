@@ -24,6 +24,7 @@ use typeql::{
     value::StringLiteral,
     Expression, TypeRef, TypeRefAny, Variable as TypeQLVariable,
 };
+use primitive::maybe_owns::MaybeOwns;
 
 use crate::{
     pattern::{constraint::ConstraintsBuilder, ParameterID},
@@ -50,6 +51,7 @@ use crate::{
     },
     RepresentationError,
 };
+use crate::pipeline::function_signature::FunctionSignature;
 
 pub(super) fn translate_fetch(
     snapshot: &impl ReadableSnapshot,
@@ -146,7 +148,7 @@ fn translate_fetch_list(
                     Err(Box::new(FetchRepresentationError::BuiltinFunctionInList { declaration: call.clone() }))
                 }
                 FunctionName::Identifier(name) => {
-                    let some = translate_inline_user_function_call(
+                    let some = translate_inline_user_function_call_stream(
                         parent_context,
                         value_parameters,
                         function_index,
@@ -258,14 +260,13 @@ fn translate_fetch_single(
                             expression,
                         ),
                         FunctionName::Identifier(name) => {
-                            translate_inline_user_function_call(
+                            translate_inline_user_function_call_single(
                                 parent_context,
                                 value_parameters,
                                 function_index,
                                 call,
                                 name.as_str(),
                             )
-                            // TODO: we should error if this is NOT a single-return function
                         }
                     }
                 }
@@ -279,9 +280,11 @@ fn translate_fetch_single(
             let mut local_context = parent_context.clone();
             let body = translate_function_block(snapshot, function_index, &mut local_context, value_parameters, block)
                 .map_err(|err| FetchRepresentationError::FunctionRepresentation { declaration: block.clone() })?;
+            println!("FunctionBLOCK: {body:?}");
             let args = find_function_body_arguments(parent_context, &body);
+            println!("Function block args: {args:?}");
             if body.return_operation().is_stream() {
-                Err(Box::new(FetchRepresentationError::ExpectedSingleInlineFunction { declaration: block.clone() }))
+                Err(Box::new(FetchRepresentationError::ExpectedSingleInlineFunctionBlock { declaration: block.clone() }))
             } else {
                 Ok(FetchSome::SingleFunction(create_anonymous_function(
                     local_context,
@@ -348,13 +351,59 @@ fn translate_inline_expression_single(
     Ok(FetchSome::SingleFunction(create_anonymous_function(local_context, value_parameters.clone(), args, body)))
 }
 
-fn translate_inline_user_function_call(
+fn translate_inline_user_function_call_single(
     context: &mut TranslationContext,
     value_parameters: &mut ParameterRegistry,
     function_index: &impl FunctionSignatureIndex,
     call: &FunctionCall,
     function_name: &str,
 ) -> Result<FetchSome, Box<FetchRepresentationError>> {
+    let (local_context, stage, assign_vars, signature) = translate_inline_user_function_call(
+        context,
+        value_parameters,
+        function_index,
+        call,
+        function_name,
+    )?;
+    if signature.return_is_stream {
+        Err(Box::new(FetchRepresentationError::ExpectedSingleInlineFunctionCall { declaration: call.clone() }))
+    } else {
+        let parameters = value_parameters.clone();
+        let return_ = ReturnOperation::Single(SingleSelector::First, assign_vars);
+        let body = FunctionBody::new(vec![stage], return_);
+        let args = find_function_body_arguments(context, &body);
+        Ok(FetchSome::SingleFunction(create_anonymous_function(local_context, parameters, args, body)))
+    }
+}
+
+fn translate_inline_user_function_call_stream(
+    context: &mut TranslationContext,
+    value_parameters: &mut ParameterRegistry,
+    function_index: &impl FunctionSignatureIndex,
+    call: &FunctionCall,
+    function_name: &str,
+) -> Result<FetchSome, FetchRepresentationError> {
+    let (local_context, stage, assign_vars, _) = translate_inline_user_function_call(
+        context,
+        value_parameters,
+        function_index,
+        call,
+        function_name,
+    )?;
+    let parameters = value_parameters.clone();
+    let return_ = ReturnOperation::Stream(assign_vars);
+    let body = FunctionBody::new(vec![stage], return_);
+    let args = find_function_body_arguments(context, &body);
+    Ok(FetchSome::ListFunction(create_anonymous_function(local_context, parameters, args, body)))
+}
+
+fn translate_inline_user_function_call<'a>(
+    context: &mut TranslationContext,
+    value_parameters: &mut ParameterRegistry,
+    function_index: &'a impl FunctionSignatureIndex,
+    call: &FunctionCall,
+    function_name: &str,
+) -> Result<(TranslationContext, TranslatedStage, Vec<Variable>, MaybeOwns<'a, FunctionSignature>), FetchRepresentationError> {
     let signature = function_index
         .get_function_signature(function_name)
         .map_err(|err| FetchRepresentationError::FunctionRetrieval { name: function_name.to_owned(), source: err })?
@@ -393,34 +442,12 @@ fn translate_inline_user_function_call(
     )
     .map_err(|typedb_source| FetchRepresentationError::ExpressionRepresentation { typedb_source })?;
 
-    // let mut arg_vars = Vec::new();
-    // println!("Call: {call:?}");
-    // for arg in &call.args {
-    //     arg_vars.push(add_expression(function_index, &mut builder, arg)?);
-    // }
-    //
-    // builder
-    //     .conjunction_mut()
-    //     .constraints_mut()
-    //     .add_function_binding(assign_vars.clone(), &signature, arg_vars, function_name)
-    //     .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: Box::new(err) })?;
-
     let block = builder
         .finish()
         .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
     let stage = TranslatedStage::Match { block };
-    let parameters = value_parameters.clone();
-    if signature.return_is_stream {
-        let return_ = ReturnOperation::Stream(assign_vars);
-        let body = FunctionBody::new(vec![stage], return_);
-        let args = find_function_body_arguments(context, &body);
-        Ok(FetchSome::ListFunction(create_anonymous_function(local_context, parameters, args, body)))
-    } else {
-        let return_ = ReturnOperation::Single(SingleSelector::First, assign_vars);
-        let body = FunctionBody::new(vec![stage], return_);
-        let args = find_function_body_arguments(context, &body);
-        Ok(FetchSome::SingleFunction(create_anonymous_function(local_context, parameters, args, body)))
-    }
+
+    Ok((local_context, stage, assign_vars, signature))
 }
 
 fn add_expression(
@@ -573,44 +600,49 @@ typedb_error!(
             "Failed to build inline function representation.",
             declaration: FunctionBlock
         ),
-        ExpectedSingleInlineFunction(
+        ExpectedSingleInlineFunctionBlock(
             11,
             "The match-return returns a stream, which must be wrapped in `[]` to collect into a list.\nSource:\n{declaration}",
             declaration: FunctionBlock
         ),
-        ExpectedStreamInlineFunction(
+        ExpectedSingleInlineFunctionCall(
             12,
+            "The match-return returns a stream, which must be wrapped in `[]` to collect into a list.\nSource:\n{declaration}",
+            declaration: FunctionCall
+        ),
+        ExpectedStreamInlineFunction(
+            13,
             "The match-return returns a single value, which should not be be wrapped in `[]`.\nSource:\n{declaration}",
             declaration: FunctionBlock
         ),
         ExpectedStreamUserFunctionInList(
-            13,
+            14,
             "Illegal call to non-streaming function '{name}' inside a list '[]'. Use '()' or no bracketing to invoke functions that do not return streams.\nSource:\n{declaration}",
             name: String,
             declaration: FunctionCall
         ),
         BuiltinFunctionInList(
-            14,
+            15,
             "Built-in functions returning a single value should not be wrapped in '[]'. User-defined functions that return streams can be wrapped in '[]'.\nSource:\n{declaration}",
             declaration: FunctionCall
         ),
         AttributeListInList(
-            15,
+            16,
             "Fetching attributes as list should not be wrapped in another list, please remove the outer [].\nSource:\n{declaration}",
             declaration: FetchAttribute
         ),
         SubFetchRepresentation(
-            16,
+            17,
             "Error building representation of fetch sub-query.",
             (typedb_source : Box<RepresentationError>)
         ),
         SubQueryIsNotFetch(
-            17,
+            18,
             "Error building representation of fetch sub-query: no fetch found. Consider using expressions or functions.\nSource:\n{declaration}",
             declaration: TypeQLFetchList
         ),
         DuplicatedObjectKeyEncountered(
-            18,
+            19,
             "Encountered multiple mappings for one key {key} in a single object.\nSource:\n{declaration}",
             key: String,
             declaration: TypeQLFetchObject
