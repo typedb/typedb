@@ -660,28 +660,19 @@ pub mod tests {
                         &constraints[0],
                         var_animal.into(),
                         var_animal_type.into(),
-                        vec![
-                            (type_cat.clone(), type_animal.clone()),
-                            (type_dog.clone(), type_animal.clone()),
-                        ],
+                        vec![(type_cat.clone(), type_animal.clone()), (type_dog.clone(), type_animal.clone())],
                     ),
                     expected_edge(
                         &constraints[2],
                         var_name.into(),
                         var_name_type.into(),
-                        vec![
-                            (type_catname.clone(), type_name.clone()),
-                            (type_dogname.clone(), type_name.clone()),
-                        ],
+                        vec![(type_catname.clone(), type_name.clone()), (type_dogname.clone(), type_name.clone())],
                     ),
                     expected_edge(
                         &constraints[4],
                         var_animal.into(),
                         var_name.into(),
-                        vec![
-                            (type_cat.clone(), type_catname.clone()),
-                            (type_dog.clone(), type_dogname.clone()),
-                        ],
+                        vec![(type_cat.clone(), type_catname.clone()), (type_dog.clone(), type_dogname.clone())],
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
@@ -799,19 +790,13 @@ pub mod tests {
                     &conjunction.constraints()[1],
                     var_name.into(),
                     var_name_type.into(),
-                    vec![
-                        (type_catname.clone(), type_name.clone()),
-                        (type_dogname.clone(), type_name.clone()),
-                    ],
+                    vec![(type_catname.clone(), type_name.clone()), (type_dogname.clone(), type_name.clone())],
                 ),
                 expected_edge(
                     &conjunction.constraints()[2],
                     var_animal.into(),
                     var_name.into(),
-                    vec![
-                        (type_cat.clone(), type_catname.clone()),
-                        (type_dog.clone(), type_dogname.clone()),
-                    ],
+                    vec![(type_cat.clone(), type_catname.clone()), (type_dog.clone(), type_dogname.clone())],
                 ),
             ],
             nested_disjunctions: vec![NestedTypeInferenceGraphDisjunction {
@@ -864,17 +849,14 @@ pub mod tests {
         let expected_graph = TypeInferenceGraph {
             conjunction,
             vertices: VertexAnnotations::from([
-                (var_animal.into(), BTreeSet::from([ type_cat.clone(), type_dog.clone()])),
-                (var_name.into(), BTreeSet::from([ type_catname.clone(), type_dogname.clone()])),
+                (var_animal.into(), BTreeSet::from([type_cat.clone(), type_dog.clone()])),
+                (var_name.into(), BTreeSet::from([type_catname.clone(), type_dogname.clone()])),
             ]),
             edges: vec![expected_edge(
                 &constraints[0],
                 var_animal.into(),
                 var_name.into(),
-                vec![
-                    (type_cat.clone(), type_catname.clone()),
-                    (type_dog.clone(), type_dogname.clone()),
-                ],
+                vec![(type_cat.clone(), type_catname.clone()), (type_dog.clone(), type_dogname.clone())],
             )],
             nested_disjunctions: Vec::new(),
             nested_negations: Vec::new(),
@@ -1268,10 +1250,7 @@ pub mod tests {
                         &constraints[0],
                         var_animal.into(),
                         var_animal_type.into(),
-                        vec![
-                            (type_cat.clone(), type_cat.clone()),
-                            (type_dog.clone(), type_dog.clone()),
-                        ],
+                        vec![(type_cat.clone(), type_cat.clone()), (type_dog.clone(), type_dog.clone())],
                     ),
                     expected_edge(
                         &constraints[1],
@@ -1286,10 +1265,7 @@ pub mod tests {
                         &constraints[2],
                         var_animal_type.into(),
                         var_name_type.into(),
-                        vec![
-                            (type_cat.clone(), type_catname.clone()),
-                            (type_dog.clone(), type_dogname.clone()),
-                        ],
+                        vec![(type_cat.clone(), type_catname.clone()), (type_dog.clone(), type_dogname.clone())],
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
@@ -1507,28 +1483,19 @@ pub mod tests {
                         &constraints[0],
                         var_animal.into(),
                         Vertex::Label(LABEL_ANIMAL),
-                        vec![
-                            (type_cat.clone(), type_animal.clone()),
-                            (type_dog.clone(), type_animal.clone()),
-                        ],
+                        vec![(type_cat.clone(), type_animal.clone()), (type_dog.clone(), type_animal.clone())],
                     ),
                     expected_edge(
                         &constraints[1],
                         var_name.into(),
                         Vertex::Label(LABEL_NAME),
-                        vec![
-                            (type_catname.clone(), type_name.clone()),
-                            (type_dogname.clone(), type_name.clone()),
-                        ],
+                        vec![(type_catname.clone(), type_name.clone()), (type_dogname.clone(), type_name.clone())],
                     ),
                     expected_edge(
                         &constraints[2],
                         var_animal.into(),
                         var_name.into(),
-                        vec![
-                            (type_cat.clone(), type_catname.clone()),
-                            (type_dog.clone(), type_dogname.clone()),
-                        ],
+                        vec![(type_cat.clone(), type_catname.clone()), (type_dog.clone(), type_dogname.clone())],
                     ),
                 ],
                 nested_disjunctions: Vec::new(),

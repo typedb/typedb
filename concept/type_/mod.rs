@@ -67,7 +67,7 @@ macro_rules! get_with_specialised {
                 snapshot: &impl ReadableSnapshot,
                 type_manager: &TypeManager,
                 input_type: $input_type,
-            ) -> Result<Option<$output_type<'static>>, ConceptReadError> {
+            ) -> Result<Option<$output_type<'static>>, Box<ConceptReadError>> {
                 let self_result = self.$get_method(snapshot, type_manager, input_type.clone())?;
                 Ok(match self_result {
                     Some(owns) => Some(owns),
@@ -101,44 +101,44 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<bool, ConceptReadError>;
+    ) -> Result<bool, Box<ConceptReadError>>;
 
     fn delete(
         self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-    ) -> Result<(), ConceptWriteError>;
+    ) -> Result<(), Box<ConceptWriteError>>;
 
     fn get_label<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError>;
+    ) -> Result<MaybeOwns<'m, Label<'static>>, Box<ConceptReadError>>;
 
     fn get_label_arc(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Arc<Label<'static>>, ConceptReadError>;
+    ) -> Result<Arc<Label<'static>>, Box<ConceptReadError>>;
 
     fn get_supertype(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<Self>, ConceptReadError>;
+    ) -> Result<Option<Self>, Box<ConceptReadError>>;
 
     fn get_supertypes_transitive<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<Self>>, ConceptReadError>;
+    ) -> Result<MaybeOwns<'m, Vec<Self>>, Box<ConceptReadError>>;
 
     fn get_supertype_root(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<Self>, ConceptReadError> {
+    ) -> Result<Option<Self>, Box<ConceptReadError>> {
         Ok(self.get_supertypes_transitive(snapshot, type_manager)?.into_iter().last().cloned())
     }
 
@@ -146,20 +146,20 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Self>>, ConceptReadError>;
+    ) -> Result<MaybeOwns<'m, HashSet<Self>>, Box<ConceptReadError>>;
 
     fn get_subtypes_transitive<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<Self>>, ConceptReadError>;
+    ) -> Result<MaybeOwns<'m, Vec<Self>>, Box<ConceptReadError>>;
 
     fn is_supertype_of(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         other: Self,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         Ok(other.get_supertype(snapshot, type_manager)?.eq(&Some(self.clone())))
     }
 
@@ -168,7 +168,7 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         other: Self,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         Ok(other.get_supertypes_transitive(snapshot, type_manager)?.contains(self))
     }
 
@@ -177,7 +177,7 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         other: Self,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         Ok(self == &other || self.is_supertype_transitive_of(snapshot, type_manager, other)?)
     }
 
@@ -186,7 +186,7 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         other: Self,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         Ok(other.get_subtypes(snapshot, type_manager)?.contains(self))
     }
 
@@ -195,7 +195,7 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         other: Self,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         Ok(other.get_subtypes_transitive(snapshot, type_manager)?.contains(self))
     }
 
@@ -204,7 +204,7 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         other: Self,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         Ok(self == &other || self.is_subtype_transitive_of(snapshot, type_manager, other)?)
     }
 
@@ -221,13 +221,13 @@ pub trait KindAPI<'a>: TypeAPI<'a> {
         &'this self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<Self::AnnotationType>>, ConceptReadError>;
+    ) -> Result<MaybeOwns<'this, HashSet<Self::AnnotationType>>, Box<ConceptReadError>>;
 
     fn get_constraints<'this>(
         &'this self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<TypeConstraint<Self>>>, ConceptReadError>
+    ) -> Result<MaybeOwns<'this, HashSet<TypeConstraint<Self>>>, Box<ConceptReadError>>
     where
         'a: 'static;
 }
@@ -248,7 +248,7 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
         ordering: Ordering,
-    ) -> Result<Owns<'static>, ConceptWriteError>;
+    ) -> Result<Owns<'static>, Box<ConceptWriteError>>;
 
     fn unset_owns(
         &self,
@@ -256,38 +256,38 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<(), ConceptWriteError>;
+    ) -> Result<(), Box<ConceptWriteError>>;
 
     fn get_owns_declared<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError>;
+    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, Box<ConceptReadError>>;
 
     fn get_owns<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError>;
+    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, Box<ConceptReadError>>;
 
     fn get_owns_with_specialised<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError>;
+    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, Box<ConceptReadError>>;
 
     fn get_owned_attribute_type_constraints<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns<'static>>>>, ConceptReadError>;
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns<'static>>>>, Box<ConceptReadError>>;
 
     fn get_owned_attribute_types_declared(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<AttributeType<'static>>, ConceptReadError> {
+    ) -> Result<HashSet<AttributeType<'static>>, Box<ConceptReadError>> {
         Ok(self.get_owns_declared(snapshot, type_manager)?.iter().map(|owns| owns.attribute().clone()).collect())
     }
 
@@ -295,7 +295,7 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<AttributeType<'static>>, ConceptReadError> {
+    ) -> Result<HashSet<AttributeType<'static>>, Box<ConceptReadError>> {
         Ok(self.get_owns(snapshot, type_manager)?.iter().map(|owns| owns.attribute().clone()).collect())
     }
 
@@ -304,28 +304,28 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
+    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>>;
 
     fn get_owned_attribute_type_constraints_cardinality(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>>;
 
     fn get_owned_attribute_type_constraints_distinct(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>>;
 
     fn is_owned_attribute_type_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         Ok(self.get_owned_attribute_type_constraint_abstract(snapshot, type_manager, attribute_type)?.is_some())
     }
 
@@ -334,7 +334,7 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         Ok(!self.get_owned_attribute_type_constraints_distinct(snapshot, type_manager, attribute_type)?.is_empty())
     }
 
@@ -343,35 +343,35 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>>;
 
     fn get_owned_attribute_type_constraints_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>>;
 
     fn get_owned_attribute_type_constraints_values(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>>;
 
     fn get_owned_attribute_type_constraint_unique(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError>;
+    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>>;
 
     fn get_owns_attribute_declared(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Option<Owns<'static>>, ConceptReadError> {
+    ) -> Result<Option<Owns<'static>>, Box<ConceptReadError>> {
         Ok(self
             .get_owns_declared(snapshot, type_manager)?
             .iter()
@@ -384,7 +384,7 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         Ok(self.get_owns_attribute_declared(snapshot, type_manager, attribute_type)?.is_some())
     }
 
@@ -393,7 +393,7 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Option<Owns<'static>>, ConceptReadError> {
+    ) -> Result<Option<Owns<'static>>, Box<ConceptReadError>> {
         Ok(self.get_owns(snapshot, type_manager)?.iter().find(|owns| owns.attribute() == attribute_type).cloned())
     }
 
@@ -406,7 +406,7 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         Ok(self.get_owns_attribute(snapshot, type_manager, attribute_type)?.is_some())
     }
 
@@ -415,13 +415,13 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Owns<'static>, ConceptReadError> {
+    ) -> Result<Owns<'static>, Box<ConceptReadError>> {
         let owns = self.get_owns_attribute(snapshot, type_manager, attribute_type.clone())?;
         match owns {
-            None => Err(ConceptReadError::CannotGetOwnsDoesntExist(
+            None => Err(Box::new(ConceptReadError::CannotGetOwnsDoesntExist(
                 self.get_label(snapshot, type_manager)?.clone(),
                 attribute_type.get_label(snapshot, type_manager)?.clone(),
-            )),
+            ))),
             Some(owns) => Ok(owns),
         }
     }
@@ -434,7 +434,7 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
-    ) -> Result<Plays<'static>, ConceptWriteError>;
+    ) -> Result<Plays<'static>, Box<ConceptWriteError>>;
 
     fn unset_plays(
         &self,
@@ -442,31 +442,31 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
-    ) -> Result<(), ConceptWriteError>;
+    ) -> Result<(), Box<ConceptWriteError>>;
 
     fn get_plays_declared<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError>;
+    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, Box<ConceptReadError>>;
 
     fn get_plays<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError>;
+    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, Box<ConceptReadError>>;
 
     fn get_plays_with_specialised<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError>;
+    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, Box<ConceptReadError>>;
 
     fn get_played_role_types_declared(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<RoleType<'static>>, ConceptReadError> {
+    ) -> Result<HashSet<RoleType<'static>>, Box<ConceptReadError>> {
         Ok(self.get_plays_declared(snapshot, type_manager)?.iter().map(|plays| plays.role().clone()).collect())
     }
 
@@ -474,7 +474,7 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<RoleType<'static>>, ConceptReadError> {
+    ) -> Result<HashSet<RoleType<'static>>, Box<ConceptReadError>> {
         Ok(self.get_plays(snapshot, type_manager)?.iter().map(|plays| plays.role().clone()).collect())
     }
 
@@ -483,21 +483,21 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
         role_type: RoleType<'static>,
-    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays<'static>>>>, ConceptReadError>;
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays<'static>>>>, Box<ConceptReadError>>;
 
     fn get_played_role_type_constraint_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
-    ) -> Result<Option<CapabilityConstraint<Plays<'static>>>, ConceptReadError>;
+    ) -> Result<Option<CapabilityConstraint<Plays<'static>>>, Box<ConceptReadError>>;
 
     fn is_played_role_type_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         Ok(self.get_played_role_type_constraint_abstract(snapshot, type_manager, role_type)?.is_some())
     }
 
@@ -506,14 +506,14 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Plays<'static>>>, ConceptReadError>;
+    ) -> Result<HashSet<CapabilityConstraint<Plays<'static>>>, Box<ConceptReadError>>;
 
     fn get_plays_role_declared(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
-    ) -> Result<Option<Plays<'static>>, ConceptReadError> {
+    ) -> Result<Option<Plays<'static>>, Box<ConceptReadError>> {
         Ok(self.get_plays_declared(snapshot, type_manager)?.iter().find(|plays| plays.role() == role_type).cloned())
     }
 
@@ -522,7 +522,7 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         Ok(self.get_plays_role_declared(snapshot, type_manager, role_type)?.is_some())
     }
 
@@ -531,7 +531,7 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
-    ) -> Result<Option<Plays<'static>>, ConceptReadError> {
+    ) -> Result<Option<Plays<'static>>, Box<ConceptReadError>> {
         Ok(self.get_plays(snapshot, type_manager)?.iter().find(|plays| plays.role() == role_type).cloned())
     }
 
@@ -540,7 +540,7 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         Ok(self.get_plays_role(snapshot, type_manager, role_type)?.is_some())
     }
 
@@ -549,7 +549,7 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         role_name: &str,
-    ) -> Result<Option<Plays<'static>>, ConceptReadError> {
+    ) -> Result<Option<Plays<'static>>, Box<ConceptReadError>> {
         let mut result: Option<Plays<'static>> = None;
         for plays in self.get_plays(snapshot, type_manager)?.into_iter() {
             if plays.role().get_label(snapshot, type_manager)?.name.as_str() == role_name {
@@ -570,13 +570,13 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
-    ) -> Result<Plays<'static>, ConceptReadError> {
+    ) -> Result<Plays<'static>, Box<ConceptReadError>> {
         let plays = self.get_plays_role(snapshot, type_manager, role_type.clone())?;
         match plays {
-            None => Err(ConceptReadError::CannotGetPlaysDoesntExist(
+            None => Err(Box::new(ConceptReadError::CannotGetPlaysDoesntExist(
                 self.get_label(snapshot, type_manager)?.clone(),
                 role_type.get_label(snapshot, type_manager)?.clone(),
-            )),
+            ))),
             Some(plays) => Ok(plays),
         }
     }
@@ -643,19 +643,19 @@ pub trait Capability<'a>:
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<bool, ConceptReadError>;
+    ) -> Result<bool, Box<ConceptReadError>>;
 
     fn get_annotations_declared<'this>(
         &'this self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<Self::AnnotationType>>, ConceptReadError>;
+    ) -> Result<MaybeOwns<'this, HashSet<Self::AnnotationType>>, Box<ConceptReadError>>;
 
     fn get_constraints<'this>(
         &'this self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<CapabilityConstraint<Self>>>, ConceptReadError>
+    ) -> Result<MaybeOwns<'this, HashSet<CapabilityConstraint<Self>>>, Box<ConceptReadError>>
     where
         'a: 'static;
 
@@ -663,7 +663,7 @@ pub trait Capability<'a>:
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<CapabilityConstraint<Self>>, ConceptReadError>
+    ) -> Result<HashSet<CapabilityConstraint<Self>>, Box<ConceptReadError>>
     where
         'a: 'static;
 
@@ -671,5 +671,5 @@ pub trait Capability<'a>:
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<AnnotationCardinality, ConceptReadError>;
+    ) -> Result<AnnotationCardinality, Box<ConceptReadError>>;
 }

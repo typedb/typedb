@@ -12,10 +12,8 @@ use std::{
 };
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::HexBytesFormatter, Bytes};
-use chrono::{prelude::DateTime, NaiveDate, NaiveDateTime};
 use primitive::either::Either;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use seahash::hash;
 use storage::{
     key_value::{StorageKey, StorageKeyReference},
     keyspace::KeyspaceSet,
@@ -36,14 +34,11 @@ use crate::{
         date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes,
         decimal_bytes::DecimalBytes,
-        decimal_value::Decimal,
         double_bytes::DoubleBytes,
         duration_bytes::DurationBytes,
-        duration_value::Duration,
         long_bytes::LongBytes,
         string_bytes::StringBytes,
         struct_bytes::StructBytes,
-        timezone::TimeZone,
         value::Value,
         value_type::{ValueType, ValueTypeBytes, ValueTypeCategory},
         ValueEncodable,

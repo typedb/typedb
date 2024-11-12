@@ -1398,20 +1398,22 @@ fn attribute_struct_errors() {
         let snapshot = storage.clone().open_snapshot_write();
         let struct_def = type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap();
         assert!(matches!(
-            type_manager.resolve_struct_field(&snapshot, &["non-existant"], struct_def.clone()),
-            Err(ConceptReadError::Encoding { source: EncodingError::StructFieldUnresolvable { .. } })
+            *type_manager.resolve_struct_field(&snapshot, &["non-existant"], struct_def.clone()).unwrap_err(),
+            ConceptReadError::Encoding { source: EncodingError::StructFieldUnresolvable { .. } }
         ));
         assert!(matches!(
-            type_manager.resolve_struct_field(
-                &snapshot,
-                &["f_nested", "nested_string", "but-strings-arent-structs"],
-                struct_def.clone()
-            ),
-            Err(ConceptReadError::Encoding { source: EncodingError::IndexingIntoNonStructField { .. } })
+            *type_manager
+                .resolve_struct_field(
+                    &snapshot,
+                    &["f_nested", "nested_string", "but-strings-arent-structs"],
+                    struct_def.clone()
+                )
+                .unwrap_err(),
+            ConceptReadError::Encoding { source: EncodingError::IndexingIntoNonStructField { .. } }
         ));
         assert!(matches!(
-            type_manager.resolve_struct_field(&snapshot, &[], struct_def.clone()),
-            Err(ConceptReadError::Encoding { source: EncodingError::StructPathIncomplete { .. } })
+            *type_manager.resolve_struct_field(&snapshot, &[], struct_def.clone()).unwrap_err(),
+            ConceptReadError::Encoding { source: EncodingError::StructPathIncomplete { .. } }
         ));
     };
 

@@ -12,7 +12,7 @@ use encoding::{
     value::{label::Label, value::Value},
 };
 use executor::{
-    pipeline::stage::{ExecutionContext, StageAPI, StageIterator},
+    pipeline::stage::{ExecutionContext, StageIterator},
     ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;

@@ -24,11 +24,11 @@ typedb_error!(
     pub AnnotationError(component = "Query annotation", prefix = "QUA") {
         Unimplemented(0, "Unimplemented: {description}", description: String),
         TypeInference(1, "Type inference error while compiling query annotations.", ( typedb_source : TypeInferenceError )),
-        PreambleTypeInference(2, "Type inference error while compiling query premable functions.", ( typedb_source : FunctionAnnotationError )),
-        ExpressionCompilation(3, "Error inferring correct expression types.", ( source : ExpressionCompileError )),
+        PreambleTypeInference(2, "Type inference error while compiling query premable functions.", ( typedb_source : Box<FunctionAnnotationError> )),
+        ExpressionCompilation(3, "Error inferring correct expression types.", ( source : Box<ExpressionCompileError> )),
         FetchEntry(4, "Error during type inference for fetch operation for key '{key}'.", key: String, (typedb_source : Box<AnnotationError> )),
-        FetchBlockFunctionInferenceError(5, "Error during type inference for fetch sub-query.", (typedb_source : FunctionAnnotationError )),
-        ConceptRead(6, "Error while retrieving concept.", (source: ConceptReadError )),
+        FetchBlockFunctionInferenceError(5, "Error during type inference for fetch sub-query.", (typedb_source : Box<FunctionAnnotationError> )),
+        ConceptRead(6, "Error while retrieving concept.", (source: Box<ConceptReadError> )),
         FetchAttributeNotFound(7, "Fetching '${var}.{name}' failed since the attribute type is not defined.", var: String, name: String),
         FetchSingleAttributeNotOwned(8, "Type checking '${var}.{attribute}' failed, since attribute '{attribute}' cannot be when '${var}' has type '{owner}'.", var: String, owner: String, attribute: String),
         FetchAttributesNotOwned(9, "Type checking '[${var}.{attribute}]' failed, since attribute '{attribute}' cannot be when '${var}' has type '{owner}'.", var: String, owner: String, attribute: String),
@@ -81,7 +81,7 @@ typedb_error!(
 
 typedb_error!(
     pub TypeInferenceError(component = "Type inference", prefix = "INF") {
-        ConceptRead(1, "Concept read error.", ( source: ConceptReadError )),
+        ConceptRead(1, "Concept read error.", ( source: Box<ConceptReadError> )),
         LabelNotResolved(2, "Type label '{name}' not found.", name: String),
         RoleNameNotResolved(3, "Role label not found '{name}'.", name: String),
         IllegalInsertTypes(

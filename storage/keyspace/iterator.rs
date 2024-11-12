@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, io::Read};
+use std::cmp::Ordering;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use lending_iterator::{LendingIterator, Seekable};
@@ -89,13 +89,9 @@ impl KeyspaceRangeIterator {
                     ContinueCondition::Always => true,
                 }
             }
-            Err(err) => true,
+            Err(_err) => true,
         }
     }
-}
-
-fn identity(input: &[u8]) -> &[u8] {
-    input
 }
 
 impl LendingIterator for KeyspaceRangeIterator {

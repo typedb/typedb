@@ -62,7 +62,7 @@ pub(crate) struct LinksExecutor {
 }
 
 pub(super) type LinksTupleIterator<I> = Map<
-    TryFilter<I, Box<LinksFilterFn>, (AsHkt![Relation<'_>], AsHkt![RolePlayer<'_>], u64), ConceptReadError>,
+    TryFilter<I, Box<LinksFilterFn>, (AsHkt![Relation<'_>], AsHkt![RolePlayer<'_>], u64), Box<ConceptReadError>>,
     LinksToTupleFn,
     AsHkt![TupleResult<'_>],
 >;
@@ -85,8 +85,8 @@ pub(super) const EXTRACT_ROLE: LinksVariableValueExtractor =
 
 pub(crate) type LinksOrderingFn = for<'a, 'b> fn(
     (
-        &'a Result<(Relation<'a>, RolePlayer<'a>, u64), ConceptReadError>,
-        &'b Result<(Relation<'b>, RolePlayer<'b>, u64), ConceptReadError>,
+        &'a Result<(Relation<'a>, RolePlayer<'a>, u64), Box<ConceptReadError>>,
+        &'b Result<(Relation<'b>, RolePlayer<'b>, u64), Box<ConceptReadError>>,
     ),
 ) -> Ordering;
 
@@ -97,7 +97,7 @@ impl LinksExecutor {
         sort_by: ExecutorVariable,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<Self, ConceptReadError> {
+    ) -> Result<Self, Box<ConceptReadError>> {
         debug_assert!(!variable_modes.all_inputs());
         let relation_player_types = links.relation_to_player_types().clone();
         debug_assert!(!relation_player_types.is_empty());
@@ -132,7 +132,7 @@ impl LinksExecutor {
             for type_ in relation_player_types.keys() {
                 let instances: Vec<Relation<'static>> = thing_manager
                     .get_relations_in(snapshot, type_.as_relation_type())
-                    .map_static(|result| Ok(result?.clone().into_owned()))
+                    .map_static(|result| Ok::<_, Box<_>>(result?.clone().into_owned()))
                     .try_collect()?;
                 cache.extend(instances);
             }
@@ -159,7 +159,7 @@ impl LinksExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
-    ) -> Result<TupleIterator, ConceptReadError> {
+    ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
         let filter_for_row: Box<LinksFilterFn> = Box::new(move |item| match filter(item) {
@@ -220,7 +220,7 @@ impl LinksExecutor {
                     let relations = self.relation_cache.as_ref().unwrap().iter();
                     let iterators = relations
                         .map(|relation| {
-                            Ok(Peekable::new(thing_manager.get_links_by_relation_and_player_type_range(
+                            Ok::<_, Box<_>>(Peekable::new(thing_manager.get_links_by_relation_and_player_type_range(
                                 snapshot,
                                 relation.as_reference(),
                                 player_type_range.clone(),
@@ -312,8 +312,8 @@ fn create_links_filter_relations_players_roles(
 
 fn compare_by_player_then_relation(
     pair: (
-        &Result<(Relation<'_>, RolePlayer<'_>, u64), ConceptReadError>,
-        &Result<(Relation<'_>, RolePlayer<'_>, u64), ConceptReadError>,
+        &Result<(Relation<'_>, RolePlayer<'_>, u64), Box<ConceptReadError>>,
+        &Result<(Relation<'_>, RolePlayer<'_>, u64), Box<ConceptReadError>>,
     ),
 ) -> Ordering {
     if let (Ok((rel_1, rp_1, _)), Ok((rel_2, rp_2, _))) = pair {

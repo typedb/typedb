@@ -42,8 +42,10 @@ where
     fn into_iterator(
         self,
         mut interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
-    {
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         let (previous_iterator, mut context) = self.previous.into_iterator(interrupt.clone())?;
         // accumulate once, then we will operate in-place
         let mut batch = match previous_iterator.collect_owned() {
@@ -61,12 +63,12 @@ where
             if let Err(err) =
                 execute_delete(&self.executable, snapshot_mut, &context.thing_manager, &context.parameters, &mut row)
             {
-                return Err((PipelineExecutionError::WriteError { typedb_source: err }, context));
+                return Err((Box::new(PipelineExecutionError::WriteError { typedb_source: err }), context));
             }
 
             if index % 100 == 0 {
                 if let Some(interrupt) = interrupt.check() {
-                    return Err((PipelineExecutionError::Interrupted { interrupt }, context));
+                    return Err((Box::new(PipelineExecutionError::Interrupted { interrupt }), context));
                 }
             }
         }
@@ -81,7 +83,7 @@ pub fn execute_delete(
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     input_output_row: &mut Row<'_>,
-) -> Result<(), WriteError> {
+) -> Result<(), Box<WriteError>> {
     // Row multiplicity doesn't matter. You can't delete the same thing twice
     for instruction in &executable.connection_instructions {
         match instruction {

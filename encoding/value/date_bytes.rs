@@ -9,7 +9,6 @@ use chrono::{Datelike, NaiveDate};
 use crate::{
     graph::thing::vertex_attribute::{InlineEncodableAttributeID, ValueEncodingLength},
     value::{
-        boolean_bytes::BooleanBytes,
         primitive_encoding::{decode_i32, encode_i32},
         value_type::ValueType,
     },

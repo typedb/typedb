@@ -76,7 +76,7 @@ impl<'a> Relation<'a> {
         thing_manager: &ThingManager,
         player: &impl ObjectAPI<'o>,
         role: RoleType<'static>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         thing_manager.has_role_player(snapshot, self.as_reference(), player, role)
     }
 
@@ -84,7 +84,7 @@ impl<'a> Relation<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-    ) -> impl for<'x> LendingIterator<Item<'x> = Result<(RolePlayer<'x>, u64), ConceptReadError>> {
+    ) -> impl for<'x> LendingIterator<Item<'x> = Result<(RolePlayer<'x>, u64), Box<ConceptReadError>>> {
         thing_manager.get_role_players(snapshot, self.as_reference())
     }
 
@@ -93,7 +93,7 @@ impl<'a> Relation<'a> {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
-    ) -> impl for<'x> LendingIterator<Item<'x> = Result<(RolePlayer<'x>, u64), ConceptReadError>> {
+    ) -> impl for<'x> LendingIterator<Item<'x> = Result<(RolePlayer<'x>, u64), Box<ConceptReadError>>> {
         thing_manager.get_role_players_role(snapshot, self.as_reference(), role_type)
     }
 
@@ -102,7 +102,7 @@ impl<'a> Relation<'a> {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
-    ) -> Result<Vec<Object<'_>>, ConceptReadError> {
+    ) -> Result<Vec<Object<'_>>, Box<ConceptReadError>> {
         thing_manager.get_role_players_ordered(snapshot, self.as_reference(), role_type)
     }
 
@@ -111,7 +111,7 @@ impl<'a> Relation<'a> {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
-    ) -> impl for<'x> LendingIterator<Item<'x> = Result<Object<'x>, ConceptReadError>> {
+    ) -> impl for<'x> LendingIterator<Item<'x> = Result<Object<'x>, Box<ConceptReadError>>> {
         self.get_players(snapshot, thing_manager).filter_map::<Result<Object<'_>, _>, _>(move |res| match res {
             Ok((roleplayer, _count)) => (roleplayer.role_type() == role_type).then_some(Ok(roleplayer.player)),
             Err(error) => Some(Err(error)),
@@ -122,7 +122,7 @@ impl<'a> Relation<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<HashMap<RoleType<'static>, u64>, ConceptReadError> {
+    ) -> Result<HashMap<RoleType<'static>, u64>, Box<ConceptReadError>> {
         let mut counts = HashMap::new();
         let mut rp_iter = self.get_players(snapshot, thing_manager);
         while let Some((role_player, count)) = rp_iter.next().transpose()? {
@@ -144,9 +144,9 @@ impl<'a> Relation<'a> {
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
         player: Object<'_>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_relation_exists_to_add_player(snapshot, thing_manager, self)
-            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+            .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
         OperationTimeValidation::validate_relation_type_relates_role_type(
             snapshot,
@@ -154,7 +154,7 @@ impl<'a> Relation<'a> {
             self.type_(),
             role_type.clone(),
         )
-        .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+        .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
         OperationTimeValidation::validate_object_type_plays_role_type(
             snapshot,
@@ -162,13 +162,13 @@ impl<'a> Relation<'a> {
             player.type_(),
             role_type.clone(),
         )
-        .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+        .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
         OperationTimeValidation::validate_relates_is_not_abstract(snapshot, thing_manager, self, role_type.clone())
-            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+            .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
         OperationTimeValidation::validate_plays_is_not_abstract(snapshot, thing_manager, &player, role_type.clone())
-            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+            .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
         let distinct =
             self.type_().is_related_role_type_distinct(snapshot, thing_manager.type_manager(), role_type.clone())?;
@@ -185,14 +185,14 @@ impl<'a> Relation<'a> {
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
         new_players: Vec<Object<'_>>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         match role_type.get_ordering(snapshot, thing_manager.type_manager())? {
-            Ordering::Unordered => return Err(ConceptWriteError::SetPlayersOrderedRoleUnordered {}),
+            Ordering::Unordered => return Err(Box::new(ConceptWriteError::SetPlayersOrderedRoleUnordered {})),
             Ordering::Ordered => (),
         }
 
         OperationTimeValidation::validate_relation_exists_to_add_player(snapshot, thing_manager, self)
-            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+            .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
         OperationTimeValidation::validate_relation_type_relates_role_type(
             snapshot,
@@ -200,10 +200,10 @@ impl<'a> Relation<'a> {
             self.type_(),
             role_type.clone(),
         )
-        .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+        .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
         OperationTimeValidation::validate_relates_is_not_abstract(snapshot, thing_manager, self, role_type.clone())
-            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+            .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
         let mut new_counts = HashMap::<_, u64>::new();
         for player in &new_players {
@@ -213,10 +213,10 @@ impl<'a> Relation<'a> {
                 player.type_(),
                 role_type.clone(),
             )
-            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+            .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
             OperationTimeValidation::validate_plays_is_not_abstract(snapshot, thing_manager, player, role_type.clone())
-                .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+                .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
             *new_counts.entry(player).or_default() += 1;
         }
@@ -228,7 +228,7 @@ impl<'a> Relation<'a> {
             role_type.clone(),
             &new_counts,
         )
-        .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+        .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
         // 1. get owned list
         let old_players = thing_manager.get_role_players_ordered(snapshot, self.as_reference(), role_type.clone())?;
@@ -267,7 +267,7 @@ impl<'a> Relation<'a> {
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
         player: Object<'_>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         self.remove_player_many(snapshot, thing_manager, role_type, player, 1)
     }
 
@@ -278,9 +278,9 @@ impl<'a> Relation<'a> {
         role_type: RoleType<'static>,
         player: Object<'_>,
         delete_count: u64,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_relation_exists_to_remove_player(snapshot, thing_manager, self)
-            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+            .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
         OperationTimeValidation::validate_relation_type_relates_role_type(
             snapshot,
@@ -288,7 +288,7 @@ impl<'a> Relation<'a> {
             self.type_(),
             role_type.clone(),
         )
-        .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+        .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
         OperationTimeValidation::validate_object_type_plays_role_type(
             snapshot,
@@ -296,10 +296,10 @@ impl<'a> Relation<'a> {
             player.type_(),
             role_type.clone(),
         )
-        .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+        .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
         OperationTimeValidation::validate_relates_is_not_abstract(snapshot, thing_manager, self, role_type.clone())
-            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+            .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
         let distinct =
             self.type_().is_related_role_type_distinct(snapshot, thing_manager.type_manager(), role_type.clone())?;
@@ -369,7 +369,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         if matches!(self.get_status(snapshot, thing_manager), ConceptStatus::Persisted) {
             thing_manager.lock_existing_object(snapshot, self.as_reference());
         }
@@ -384,7 +384,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         for attr in self
             .get_has_unordered(snapshot, thing_manager)
             .map_static(|res| res.map(|(key, _value)| key.into_owned()))
@@ -404,7 +404,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
             .get_relations_roles(snapshot, thing_manager)
             .map_static(|res| res.map(|(relation, role, _count)| (relation.into_owned(), role.into_owned())))
             .try_collect::<Vec<_>, _>()
-            .map_err(|error| ConceptWriteError::ConceptRead { source: error })?
+            .map_err(|error| Box::new(ConceptWriteError::ConceptRead { source: error }))?
         {
             thing_manager.unset_links(snapshot, relation, self.as_reference(), role)?;
         }
@@ -416,7 +416,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
                 Ok((roleplayer.role_type, roleplayer.player.into_owned()))
             })
             .try_collect::<Vec<_>, _>()
-            .map_err(|error| ConceptWriteError::ConceptRead { source: error })?;
+            .map_err(|error| Box::new(ConceptWriteError::ConceptRead { source: error }))?;
         for (role, player) in players {
             // TODO: Deleting one player at a time, each of which will delete parts of the relation index, isn't optimal
             //       Instead, we could delete the players, then delete the entire index at once, if there is one

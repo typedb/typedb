@@ -53,7 +53,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     parameters: &'block ParameterRegistry,
     type_annotations: &'block TypeAnnotations,
     input_value_type_annotations: &mut BTreeMap<Variable, ExpressionValueType>,
-) -> Result<HashMap<Variable, ExecutableExpression<Variable>>, ExpressionCompileError> {
+) -> Result<HashMap<Variable, ExecutableExpression<Variable>>, Box<ExpressionCompileError>> {
     let mut context = BlockExpressionsCompilationContext {
         block,
         variable_registry,
@@ -81,8 +81,9 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
         };
         let existing_category = variable_registry.get_variable_category(var);
         let source = Constraint::ExpressionBinding((*expression_index.get(&var).unwrap()).clone());
-        variable_registry.set_assigned_value_variable_category(var, category, source)
-            .map_err(|source| { ExpressionCompileError::Representation { source } })?;
+        variable_registry
+            .set_assigned_value_variable_category(var, category, source)
+            .map_err(|source| Box::new(ExpressionCompileError::Representation { source }))?;
     }
     Ok(compiled_expressions)
 }
@@ -91,14 +92,14 @@ fn index_expressions<'block, Snapshot: ReadableSnapshot>(
     context: &BlockExpressionsCompilationContext<'_, Snapshot>,
     conjunction: &'block Conjunction,
     index: &mut HashMap<Variable, &'block ExpressionBinding<Variable>>,
-) -> Result<(), ExpressionCompileError> {
+) -> Result<(), Box<ExpressionCompileError>> {
     for constraint in conjunction.constraints() {
         if let Some(expression_binding) = constraint.as_expression_binding() {
             let &Vertex::Variable(left) = expression_binding.left() else { unreachable!() };
             if index.contains_key(&left) {
-                Err(ExpressionCompileError::MultipleAssignmentsForSingleVariable {
+                Err(Box::new(ExpressionCompileError::MultipleAssignmentsForSingleVariable {
                     assign_variable: context.variable_registry.variable_names().get(&left).cloned(),
-                })?;
+                }))?;
             }
             index.insert(left, expression_binding);
         }
@@ -125,7 +126,7 @@ fn compile_expressions_recursive<'a, Snapshot: ReadableSnapshot>(
     context: &mut BlockExpressionsCompilationContext<'a, Snapshot>,
     assigned_variable: Variable,
     expression_assignments: &HashMap<Variable, &'a ExpressionBinding<Variable>>,
-) -> Result<(), ExpressionCompileError> {
+) -> Result<(), Box<ExpressionCompileError>> {
     context.visited_expressions.insert(assigned_variable);
     let expression = expression_assignments.get(&assigned_variable).unwrap().expression();
     for variable in expression.variables() {
@@ -143,14 +144,14 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
     context: &mut BlockExpressionsCompilationContext<'a, Snapshot>,
     variable: Variable,
     expression_assignments: &HashMap<Variable, &'a ExpressionBinding<Variable>>,
-) -> Result<(), ExpressionCompileError> {
+) -> Result<(), Box<ExpressionCompileError>> {
     if expression_assignments.contains_key(&variable) {
         if !context.compiled_expressions.contains_key(&variable) {
             if context.visited_expressions.contains(&variable) {
                 // TODO: Do we catch double assignments?
-                Err(ExpressionCompileError::CircularDependencyInExpressions {
+                Err(Box::new(ExpressionCompileError::CircularDependencyInExpressions {
                     assign_variable: context.variable_registry.variable_names().get(&variable).cloned(),
-                })
+                }))
             } else {
                 compile_expressions_recursive(context, variable, expression_assignments)?;
                 context
@@ -166,14 +167,14 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
     } else if let Some(types) = context.type_annotations.vertex_annotations_of(&Vertex::Variable(variable)) {
         // resolve_value_types will error if the type_annotations aren't all attribute(list) types
         let value_types = resolve_value_types(types, context.snapshot, context.type_manager).map_err(|_source| {
-            ExpressionCompileError::CouldNotDetermineValueTypeForVariable {
-                variable: context.variable_registry.variable_names().get(&variable).cloned(),
-            }
-        })?;
-        if value_types.len() != 1 {
-            Err(ExpressionCompileError::VariableDidNotHaveSingleValueType {
+            Box::new(ExpressionCompileError::CouldNotDetermineValueTypeForVariable {
                 variable: context.variable_registry.variable_names().get(&variable).cloned(),
             })
+        })?;
+        if value_types.len() != 1 {
+            Err(Box::new(ExpressionCompileError::VariableDidNotHaveSingleValueType {
+                variable: context.variable_registry.variable_names().get(&variable).cloned(),
+            }))
         } else {
             let value_type = value_types.iter().find(|_| true).unwrap();
             let variable_category = context.variable_registry.get_variable_category(variable).unwrap();
@@ -188,15 +189,15 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
                     context.variable_value_types.insert(variable, ExpressionValueType::List(value_type.clone()));
                     Ok(())
                 }
-                _ => Err(ExpressionCompileError::VariableMustBeValueOrAttribute {
+                _ => Err(Box::new(ExpressionCompileError::VariableMustBeValueOrAttribute {
                     variable: context.variable_registry.variable_names().get(&variable).cloned(),
                     actual_category: variable_category,
-                })?, // TODO: I think this is practically unreachable?
+                }))?, // TODO: I think this is practically unreachable?
             }
         }
     } else {
-        Err(ExpressionCompileError::CouldNotDetermineValueTypeForVariable {
+        Err(Box::new(ExpressionCompileError::CouldNotDetermineValueTypeForVariable {
             variable: context.variable_registry.variable_names().get(&variable).cloned(),
-        })
+        }))
     }
 }

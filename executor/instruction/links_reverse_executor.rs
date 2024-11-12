@@ -75,7 +75,7 @@ impl LinksReverseExecutor {
         sort_by: ExecutorVariable,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<Self, ConceptReadError> {
+    ) -> Result<Self, Box<ConceptReadError>> {
         debug_assert!(!variable_modes.all_inputs());
         let player_relation_types = links_reverse.player_to_relation_types().clone();
         debug_assert!(!player_relation_types.is_empty());
@@ -110,7 +110,7 @@ impl LinksReverseExecutor {
             for type_ in player_relation_types.keys() {
                 let instances: Vec<Object<'static>> = thing_manager
                     .get_objects_in(snapshot, type_.as_object_type())
-                    .map_static(|result| Ok(result?.clone().into_owned()))
+                    .map_static(|result| Ok::<_, Box<_>>(result?.clone().into_owned()))
                     .try_collect()?;
                 cache.extend(instances);
             }
@@ -137,7 +137,7 @@ impl LinksReverseExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
-    ) -> Result<TupleIterator, ConceptReadError> {
+    ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
         let filter_for_row: Box<LinksFilterFn> = Box::new(move |item| match filter(item) {
@@ -199,11 +199,13 @@ impl LinksReverseExecutor {
                     let relations = self.player_cache.as_ref().unwrap().iter();
                     let iterators = relations
                         .map(|relation| {
-                            Ok(Peekable::new(thing_manager.get_links_reverse_by_player_and_relation_type_range(
-                                snapshot,
-                                relation.as_reference(),
-                                relation_type_range.clone(),
-                            )))
+                            Ok::<_, Box<_>>(Peekable::new(
+                                thing_manager.get_links_reverse_by_player_and_relation_type_range(
+                                    snapshot,
+                                    relation.as_reference(),
+                                    relation_type_range.clone(),
+                                ),
+                            ))
                         })
                         .collect::<Result<Vec<_>, _>>()?;
 
@@ -288,8 +290,8 @@ fn create_links_filter_relations_players_roles(
 
 fn compare_by_relation_then_player(
     pair: (
-        &Result<(Relation<'_>, RolePlayer<'_>, u64), ConceptReadError>,
-        &Result<(Relation<'_>, RolePlayer<'_>, u64), ConceptReadError>,
+        &Result<(Relation<'_>, RolePlayer<'_>, u64), Box<ConceptReadError>>,
+        &Result<(Relation<'_>, RolePlayer<'_>, u64), Box<ConceptReadError>>,
     ),
 ) -> Ordering {
     if let (Ok((rel_1, rp_1, _)), Ok((rel_2, rp_2, _))) = pair {

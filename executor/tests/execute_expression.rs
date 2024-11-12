@@ -25,18 +25,18 @@ use typeql::query::stage::Stage;
 
 #[derive(Debug)]
 pub enum PatternDefitionOrExpressionCompileError {
-    PatternDefinition { source: RepresentationError },
-    ExpressionCompilation { source: ExpressionCompileError },
+    PatternDefinition { source: Box<RepresentationError> },
+    ExpressionCompilation { source: Box<ExpressionCompileError> },
 }
 
-impl From<RepresentationError> for PatternDefitionOrExpressionCompileError {
-    fn from(value: RepresentationError) -> Self {
+impl From<Box<RepresentationError>> for PatternDefitionOrExpressionCompileError {
+    fn from(value: Box<RepresentationError>) -> Self {
         Self::PatternDefinition { source: value }
     }
 }
 
-impl From<ExpressionCompileError> for PatternDefitionOrExpressionCompileError {
-    fn from(value: ExpressionCompileError) -> Self {
+impl From<Box<ExpressionCompileError>> for PatternDefitionOrExpressionCompileError {
+    fn from(value: Box<ExpressionCompileError>) -> Self {
         Self::ExpressionCompilation { source: value }
     }
 }
@@ -246,12 +246,11 @@ fn test_functions() {
         assert_eq!(as_value!(result), Value::Long(4));
     }
 
-    assert!(matches!(
-        compile_expression_via_match("round(3.5e0, 4.5e0)", HashMap::new()),
-        Err(PatternDefitionOrExpressionCompileError::PatternDefinition {
-            source: RepresentationError::ExpressionBuiltinArgumentCountMismatch { .. }
-        })
-    ));
+    let err = compile_expression_via_match("round(3.5e0, 4.5e0)", HashMap::new()).unwrap_err();
+    let PatternDefitionOrExpressionCompileError::PatternDefinition { source } = err else {
+        panic!("wrong error type");
+    };
+    assert!(matches!(*source, RepresentationError::ExpressionBuiltinArgumentCountMismatch { .. }));
 }
 
 #[test]

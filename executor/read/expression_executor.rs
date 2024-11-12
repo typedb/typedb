@@ -13,8 +13,9 @@ use compiler::annotation::expression::{
         binary::{Binary, BinaryExpression, MathRemainderLong},
         list_operations::{ListConstructor, ListIndex, ListIndexRange},
         load_cast::{
-            CastBinaryLeft, CastBinaryRight, CastLeftLongToDouble, CastRightLongToDouble, CastUnary,
-            CastUnaryLongToDouble, ImplicitCast, LoadConstant, LoadVariable,
+            CastBinaryLeft, CastBinaryRight, CastLeftDecimalToDouble, CastLeftLongToDouble, CastRightDecimalToDouble,
+            CastRightLongToDouble, CastUnary, CastUnaryDecimalToDouble, CastUnaryLongToDouble, ImplicitCast,
+            LoadConstant, LoadVariable,
         },
         op_codes::ExpressionOpCode,
         operators,
@@ -22,9 +23,6 @@ use compiler::annotation::expression::{
         ExpressionEvaluationError,
     },
 };
-use compiler::annotation::expression::instructions::load_cast::CastUnaryDecimalToDouble;
-use compiler::annotation::expression::instructions::load_cast::CastLeftDecimalToDouble;
-use compiler::annotation::expression::instructions::load_cast::CastRightDecimalToDouble;
 use encoding::value::value::{NativeValueConvertible, Value};
 use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
 use storage::snapshot::ReadableSnapshot;

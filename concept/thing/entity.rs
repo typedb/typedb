@@ -97,7 +97,7 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         if matches!(self.get_status(snapshot, thing_manager), ConceptStatus::Persisted) {
             thing_manager.lock_existing_object(snapshot, self.as_reference());
         }
@@ -112,7 +112,7 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         for attr in self
             .get_has_unordered(snapshot, thing_manager)
             .map_static(|res| res.map(|(k, _)| k.into_owned()))

@@ -5,8 +5,8 @@
  */
 use std::marker::PhantomData;
 
-use encoding::value::{value::NativeValueConvertible, value_type::ValueTypeCategory};
-use encoding::value::decimal_value::Decimal;
+use encoding::value::{decimal_value::Decimal, value::NativeValueConvertible, value_type::ValueTypeCategory};
+
 use crate::annotation::expression::{
     expression_compiler::ExpressionCompilationContext,
     instructions::{
@@ -67,10 +67,10 @@ impl<From: NativeValueConvertible, To: ImplicitCast<From>> CompilableExpression 
         Some(To::VALUE_TYPE_CATEGORY)
     }
 
-    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompileError> {
+    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), Box<ExpressionCompileError>> {
         let value_before = builder.pop_type_single()?.category();
         if value_before != From::VALUE_TYPE_CATEGORY {
-            Err(ExpressionCompileError::InternalUnexpectedValueType)?;
+            Err(Box::new(ExpressionCompileError::InternalUnexpectedValueType))?;
         }
         builder.push_type_single(To::VALUE_TYPE_CATEGORY.try_into_value_type().unwrap());
 
@@ -88,11 +88,11 @@ impl<From: NativeValueConvertible, To: ImplicitCast<From>> CompilableExpression 
         Some(To::VALUE_TYPE_CATEGORY)
     }
 
-    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompileError> {
+    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), Box<ExpressionCompileError>> {
         let right = builder.pop_type_single()?;
         let left_before = builder.pop_type_single()?.category();
         if left_before != From::VALUE_TYPE_CATEGORY {
-            Err(ExpressionCompileError::InternalUnexpectedValueType)?;
+            Err(Box::new(ExpressionCompileError::InternalUnexpectedValueType))?;
         }
         builder.push_type_single(To::VALUE_TYPE_CATEGORY.try_into_value_type().unwrap());
         builder.push_type_single(right);
@@ -111,10 +111,10 @@ impl<From: NativeValueConvertible, To: ImplicitCast<From>> CompilableExpression 
         Some(To::VALUE_TYPE_CATEGORY)
     }
 
-    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompileError> {
+    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), Box<ExpressionCompileError>> {
         let right_before = builder.pop_type_single()?.category();
         if right_before != From::VALUE_TYPE_CATEGORY {
-            Err(ExpressionCompileError::InternalUnexpectedValueType)?;
+            Err(Box::new(ExpressionCompileError::InternalUnexpectedValueType))?;
         }
         builder.push_type_single(To::VALUE_TYPE_CATEGORY.try_into_value_type().unwrap());
 

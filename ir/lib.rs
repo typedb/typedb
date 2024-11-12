@@ -7,7 +7,6 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 #![allow(unused_variables)]
-#![allow(clippy::result_large_err)]
 
 use std::{error::Error, fmt};
 
@@ -162,7 +161,7 @@ typedb_error!(
         FetchRepresentation(
             23,
             "Error building representation of fetch clause.",
-            ( typedb_source : FetchRepresentationError )
+            ( typedb_source : Box<FetchRepresentationError> )
         ),
         NonTerminalFetch(
             24,

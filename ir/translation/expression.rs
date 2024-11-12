@@ -32,7 +32,7 @@ pub(super) fn add_typeql_expression(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_, '_>,
     rhs: &typeql::Expression,
-) -> Result<Vertex<Variable>, RepresentationError> {
+) -> Result<Vertex<Variable>, Box<RepresentationError>> {
     if let typeql::Expression::Value(literal) = rhs {
         let id = register_typeql_literal(constraints, literal)?;
         Ok(Vertex::Parameter(id))
@@ -54,7 +54,7 @@ pub(crate) fn build_expression(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_, '_>,
     expression: &typeql::Expression,
-) -> Result<ExpressionTree<Variable>, RepresentationError> {
+) -> Result<ExpressionTree<Variable>, Box<RepresentationError>> {
     let mut tree = ExpressionTree::empty();
     build_recursive(function_index, constraints, expression, &mut tree)?;
     Ok(tree)
@@ -65,7 +65,7 @@ fn build_recursive(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     expression: &typeql::Expression,
     tree: &mut ExpressionTree<Variable>,
-) -> Result<ExpressionTreeNodeId, RepresentationError> {
+) -> Result<ExpressionTreeNodeId, Box<RepresentationError>> {
     let expression = match expression {
         typeql::Expression::Paren(inner) => {
             return build_recursive(function_index, constraints, &inner.inner, tree);
@@ -110,7 +110,7 @@ fn build_recursive(
 fn register_typeql_literal(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     literal: &typeql::Literal,
-) -> Result<ParameterID, RepresentationError> {
+) -> Result<ParameterID, Box<RepresentationError>> {
     let value = translate_literal(literal)
         .map_err(|source| RepresentationError::LiteralParseError { literal: literal.to_string(), source })?;
     let id = constraints.parameters().register_value(value);
@@ -123,14 +123,14 @@ pub(super) fn add_user_defined_function_call(
     identifier: &typeql::Identifier,
     assigned: Vec<Variable>,
     args: &[typeql::Expression],
-) -> Result<(), RepresentationError> {
+) -> Result<(), Box<RepresentationError>> {
     let arguments = split_out_inline_expressions(function_index, constraints, args)?;
     let function_name = identifier.as_str();
     let callee = function_index
         .get_function_signature(function_name)
         .map_err(|source| RepresentationError::FunctionReadError { source })?;
     let Some(callee) = callee else {
-        return Err(RepresentationError::UnresolvedFunction { function_name: function_name.to_owned() });
+        return Err(Box::new(RepresentationError::UnresolvedFunction { function_name: function_name.to_owned() }));
     };
     constraints.add_function_binding(assigned, &callee, arguments, function_name)?;
     Ok(())
@@ -141,7 +141,7 @@ fn build_function(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     function_call: &typeql::expression::FunctionCall,
     tree: &mut ExpressionTree<Variable>,
-) -> Result<Expression<Variable>, RepresentationError> {
+) -> Result<Expression<Variable>, Box<RepresentationError>> {
     match &function_call.name {
         FunctionName::Builtin(builtin) => {
             let args = function_call
@@ -170,15 +170,18 @@ fn translate_operator(operator: &ArithmeticOperator) -> Operator {
     }
 }
 
-fn check_builtin_arg_count(builtin: Function, actual: usize, expected: usize) -> Result<(), RepresentationError> {
+fn check_builtin_arg_count(builtin: Function, actual: usize, expected: usize) -> Result<(), Box<RepresentationError>> {
     if actual == expected {
         Ok(())
     } else {
-        Err(RepresentationError::ExpressionBuiltinArgumentCountMismatch { builtin, expected, actual })
+        Err(Box::new(RepresentationError::ExpressionBuiltinArgumentCountMismatch { builtin, expected, actual }))
     }
 }
 
-fn to_builtin_id(typeql_id: &BuiltinFunctionName, args: &[usize]) -> Result<BuiltInFunctionID, RepresentationError> {
+fn to_builtin_id(
+    typeql_id: &BuiltinFunctionName,
+    args: &[usize],
+) -> Result<BuiltInFunctionID, Box<RepresentationError>> {
     let token = typeql_id.token;
     match token {
         Function::Abs => {
@@ -217,7 +220,10 @@ pub mod tests {
         RepresentationError,
     };
 
-    fn parse_query_get_match(context: &mut TranslationContext, query_str: &str) -> Result<Block, RepresentationError> {
+    fn parse_query_get_match(
+        context: &mut TranslationContext,
+        query_str: &str,
+    ) -> Result<Block, Box<RepresentationError>> {
         let mut query = typeql::parse_query(query_str).unwrap().into_pipeline();
         let match_ = query.stages.remove(0).into_match();
         translate_match(context, &HashMapFunctionSignatureIndex::empty(), &match_).and_then(|builder| builder.finish())

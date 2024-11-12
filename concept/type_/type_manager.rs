@@ -76,7 +76,7 @@ macro_rules! get_type_methods {
         $(
             pub fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, label: &Label<'_>
-            ) -> Result<Option<$output_type<'static>>, ConceptReadError> {
+            ) -> Result<Option<$output_type<'static>>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(label))
                 } else {
@@ -92,7 +92,7 @@ macro_rules! get_types_methods {
         fn $method_name:ident() -> $type_:ident = $reader_method:ident | $cache_method:ident;
     )*) => {
         $(
-            pub fn $method_name(&self, snapshot: &impl ReadableSnapshot) -> Result<Vec<$type_<'static>>, ConceptReadError> {
+            pub fn $method_name(&self, snapshot: &impl ReadableSnapshot) -> Result<Vec<$type_<'static>>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method())
                 } else {
@@ -110,7 +110,7 @@ macro_rules! get_supertype_methods {
         $(
             pub(crate) fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_<'static>
-            ) -> Result<Option<$type_<'static>>, ConceptReadError> {
+            ) -> Result<Option<$type_<'static>>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(type_))
                 } else {
@@ -129,7 +129,7 @@ macro_rules! get_supertypes_transitive_methods {
             // WARN: supertypes currently do NOT include themselves
             pub(crate) fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_<'static>
-            ) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, ConceptReadError> {
+            ) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
@@ -148,7 +148,7 @@ macro_rules! get_subtypes_methods {
         $(
             pub(crate) fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_<'static>
-            ) -> Result<MaybeOwns<'_, HashSet<$type_<'static>>>, ConceptReadError> {
+            ) -> Result<MaybeOwns<'_, HashSet<$type_<'static>>>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
@@ -168,7 +168,7 @@ macro_rules! get_subtypes_transitive_methods {
             // WARN: subtypes currently do NOT include themselves
             pub(crate) fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_<'static>
-            ) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, ConceptReadError> {
+            ) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
@@ -187,7 +187,7 @@ macro_rules! get_type_label_methods {
         $(
             pub(crate) fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_<'static>
-            ) -> Result<MaybeOwns<'_, Label<'static>>, ConceptReadError> {
+            ) -> Result<MaybeOwns<'_, Label<'static>>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
@@ -205,7 +205,7 @@ macro_rules! get_type_label_arc_methods {
         $(
             pub(crate) fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_<'static>
-            ) -> Result<Arc<Label<'static>>, ConceptReadError> {
+            ) -> Result<Arc<Label<'static>>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(type_))
                 } else {
@@ -223,7 +223,7 @@ macro_rules! get_annotations_declared_methods {
         $(
             pub(crate) fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_<'static>
-            ) -> Result<MaybeOwns<'_, HashSet<$annotation_type>>, ConceptReadError> {
+            ) -> Result<MaybeOwns<'_, HashSet<$annotation_type>>, Box<ConceptReadError>> {
                  if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
@@ -243,7 +243,7 @@ macro_rules! get_annotation_declared_by_category_methods {
             $(#[$meta])*
             pub(crate) fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_<'static>, annotation_category: AnnotationCategory,
-            ) -> Result<Option<$annotation_type>, ConceptReadError> {
+            ) -> Result<Option<$annotation_type>, Box<ConceptReadError>> {
                 Ok(type_.get_annotations_declared(snapshot, self)?.into_iter().find(|&type_annotation|
                 {
                     Annotation::from(type_annotation.clone()).category() == annotation_category
@@ -260,7 +260,7 @@ macro_rules! get_constraints_methods {
         $(
             pub(crate) fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_<'static>
-            ) -> Result<MaybeOwns<'_, HashSet<$constraint_type<$type_<'static>>>>, ConceptReadError> {
+            ) -> Result<MaybeOwns<'_, HashSet<$constraint_type<$type_<'static>>>>, Box<ConceptReadError>> {
                  if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
@@ -282,7 +282,7 @@ macro_rules! get_type_capability_constraints_methods {
                 snapshot: &impl ReadableSnapshot,
                 $type_: $type_decl<'static>,
                 interface_type: <$capability<'static> as Capability<'static>>::InterfaceType,
-            ) -> Result<MaybeOwns<'_, HashSet<CapabilityConstraint<$capability<'static>>>>, ConceptReadError> {
+            ) -> Result<MaybeOwns<'_, HashSet<CapabilityConstraint<$capability<'static>>>>, Box<ConceptReadError>> {
                  if let Some(cache) = &self.type_cache {
                      Ok(match cache.$cache_method($type_).get(&interface_type) {
                          Some(cached) => MaybeOwns::Borrowed(cached),
@@ -347,7 +347,7 @@ macro_rules! get_filtered_constraints_methods {
         $(
             pub(crate) fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_<'static>
-            ) -> Result<HashSet<$constraint_type<$type_<'static>>>, ConceptReadError> {
+            ) -> Result<HashSet<$constraint_type<$type_<'static>>>, Box<ConceptReadError>> {
                 Ok($filtering_method(type_.$get_constraints_method(snapshot, self)?.into_iter().cloned()))
             }
         )*
@@ -364,7 +364,7 @@ macro_rules! get_type_capability_filtered_constraints_methods {
                 snapshot: &impl ReadableSnapshot,
                 object_type: <$capability<'static> as Capability<'static>>::ObjectType,
                 interface_type: <$capability<'static> as Capability<'static>>::InterfaceType,
-            ) -> Result<HashSet<CapabilityConstraint<$capability<'static>>>, ConceptReadError> {
+            ) -> Result<HashSet<CapabilityConstraint<$capability<'static>>>, Box<ConceptReadError>> {
                 Ok($filtering_method(object_type.$get_constraints_method(snapshot, self, interface_type)?.into_iter().cloned()))
             }
         )*
@@ -388,7 +388,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         name: &str,
-    ) -> Result<Option<DefinitionKey<'static>>, ConceptReadError> {
+    ) -> Result<Option<DefinitionKey<'static>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_struct_definition_key(name))
         } else {
@@ -400,7 +400,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         definition_key: DefinitionKey<'static>,
-    ) -> Result<MaybeOwns<'_, StructDefinition>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, StructDefinition>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_struct_definition(definition_key.clone())))
         } else {
@@ -413,7 +413,7 @@ impl TypeManager {
         snapshot: &impl ReadableSnapshot,
         fields_path: &[&str],
         definition: StructDefinition,
-    ) -> Result<Vec<StructFieldIDUInt>, ConceptReadError> {
+    ) -> Result<Vec<StructFieldIDUInt>, Box<ConceptReadError>> {
         let mut resolved = Vec::with_capacity(fields_path.len());
         let maybe_owns_definition = MaybeOwns::Borrowed(&definition);
         let mut at = maybe_owns_definition;
@@ -430,31 +430,31 @@ impl TypeManager {
                         return if (i + 1) == fields_path.len() {
                             Ok(resolved)
                         } else {
-                            Err(ConceptReadError::Encoding {
+                            Err(Box::new(ConceptReadError::Encoding {
                                 source: EncodingError::IndexingIntoNonStructField {
                                     struct_name: definition.name,
                                     field_path: fields_path.iter().map(|&str| str.to_owned()).collect(),
                                 },
-                            })
+                            }))
                         };
                     }
                 }
             } else {
-                return Err(ConceptReadError::Encoding {
+                return Err(Box::new(ConceptReadError::Encoding {
                     source: EncodingError::StructFieldUnresolvable {
                         struct_name: definition.name,
                         field_path: fields_path.iter().map(|&str| str.to_owned()).collect(),
                     },
-                });
+                }));
             }
         }
 
-        Err(ConceptReadError::Encoding {
+        Err(Box::new(ConceptReadError::Encoding {
             source: EncodingError::StructPathIncomplete {
                 struct_name: definition.name,
                 field_path: fields_path.iter().map(|&str| str.to_owned()).collect(),
             },
-        })
+        }))
     }
 
     get_type_methods! {
@@ -519,7 +519,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         name: &str,
-    ) -> Result<Option<MaybeOwns<'_, Vec<RoleType<'static>>>>, ConceptReadError> {
+    ) -> Result<Option<MaybeOwns<'_, Vec<RoleType<'static>>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_roles_by_name(name).map(MaybeOwns::Borrowed))
         } else {
@@ -536,7 +536,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         entity_type: EntityType<'static>,
-    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_declared(entity_type)))
         } else {
@@ -549,7 +549,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'static>,
-    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_declared(relation_type)))
         } else {
@@ -562,7 +562,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'static>,
-    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_attribute_type_owns(attribute_type.clone())))
         } else {
@@ -575,7 +575,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'static>,
-    ) -> Result<MaybeOwns<'_, HashMap<ObjectType<'static>, Owns<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashMap<ObjectType<'static>, Owns<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_attribute_type_owner_types(attribute_type.clone())))
         } else {
@@ -591,7 +591,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'static>,
-    ) -> Result<MaybeOwns<'_, HashSet<Relates<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Relates<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_relation_type_relates_root(relation_type)))
         } else {
@@ -604,7 +604,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'static>,
-    ) -> Result<MaybeOwns<'_, HashSet<Relates<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Relates<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_relation_type_relates_declared(relation_type)))
         } else {
@@ -617,7 +617,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'static>,
-    ) -> Result<MaybeOwns<'_, HashSet<Relates<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Relates<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_relation_type_relates(relation_type)))
         } else {
@@ -630,7 +630,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'static>,
-    ) -> Result<MaybeOwns<'_, HashSet<Relates<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Relates<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_relation_type_relates_with_specialised(relation_type)))
         } else {
@@ -643,7 +643,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         role_type: RoleType<'static>,
-    ) -> Result<MaybeOwns<'_, HashSet<Plays<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Plays<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_role_type_plays(role_type.clone())))
         } else {
@@ -656,7 +656,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         role_type: RoleType<'static>,
-    ) -> Result<MaybeOwns<'_, HashMap<ObjectType<'static>, Plays<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashMap<ObjectType<'static>, Plays<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_role_type_player_types(role_type.clone())))
         } else {
@@ -672,7 +672,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         role_type: RoleType<'static>,
-    ) -> Result<Ordering, ConceptReadError> {
+    ) -> Result<Ordering, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_role_type_ordering(role_type))
         } else {
@@ -684,7 +684,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         role_type: RoleType<'static>,
-    ) -> Result<Relates<'static>, ConceptReadError> {
+    ) -> Result<Relates<'static>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_role_type_relates_root(role_type).clone())
         } else {
@@ -697,7 +697,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         role_type: RoleType<'static>,
-    ) -> Result<MaybeOwns<'_, HashSet<Relates<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Relates<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_role_type_relates(role_type)))
         } else {
@@ -710,7 +710,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         role_type: RoleType<'static>,
-    ) -> Result<MaybeOwns<'_, HashMap<RelationType<'static>, Relates<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashMap<RelationType<'static>, Relates<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_role_type_relation_types(role_type.clone())))
         } else {
@@ -726,7 +726,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         entity_type: EntityType<'static>,
-    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns(entity_type)))
         } else {
@@ -740,7 +740,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         entity_type: EntityType<'static>,
-    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_with_specialised(entity_type)))
         } else {
@@ -754,7 +754,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'static>,
-    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns(relation_type)))
         } else {
@@ -768,7 +768,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'static>,
-    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_with_specialised(relation_type)))
         } else {
@@ -782,7 +782,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'_>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         // TODO: it would be good if this doesn't require recomputation
         let mut max_card = 0;
         let relates = relation_type.get_relates(snapshot, self)?;
@@ -800,7 +800,7 @@ impl TypeManager {
         &'this self,
         snapshot: &impl ReadableSnapshot,
         entity_type: EntityType<'static>,
-    ) -> Result<MaybeOwns<'this, HashSet<Plays<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'this, HashSet<Plays<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_declared(entity_type)))
         } else {
@@ -813,7 +813,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         entity_type: EntityType<'static>,
-    ) -> Result<MaybeOwns<'_, HashSet<Plays<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Plays<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays(entity_type)))
         } else {
@@ -827,7 +827,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         entity_type: EntityType<'static>,
-    ) -> Result<MaybeOwns<'_, HashSet<Plays<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Plays<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_with_specialised(entity_type)))
         } else {
@@ -841,7 +841,7 @@ impl TypeManager {
         &'this self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'static>,
-    ) -> Result<MaybeOwns<'this, HashSet<Plays<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'this, HashSet<Plays<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_declared(relation_type)))
         } else {
@@ -854,7 +854,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'static>,
-    ) -> Result<MaybeOwns<'_, HashSet<Plays<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Plays<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays(relation_type)))
         } else {
@@ -871,7 +871,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'static>,
-    ) -> Result<MaybeOwns<'_, HashSet<Plays<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashSet<Plays<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_with_specialised(relation_type)))
         } else {
@@ -885,7 +885,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Option<(ValueType, AttributeType<'static>)>, ConceptReadError> {
+    ) -> Result<Option<(ValueType, AttributeType<'static>)>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_attribute_type_value_type(attribute_type).clone())
         } else {
@@ -897,7 +897,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Option<ValueType>, ConceptReadError> {
+    ) -> Result<Option<ValueType>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_attribute_type_value_type_declared(attribute_type).clone())
         } else {
@@ -909,7 +909,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         owns: Owns<'static>,
-    ) -> Result<Ordering, ConceptReadError> {
+    ) -> Result<Ordering, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_owns_ordering(owns))
         } else {
@@ -921,7 +921,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         relates: Relates<'static>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_relates_is_specialising(relates))
         } else {
@@ -998,7 +998,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_: T,
-    ) -> Result<Option<TypeConstraint<T>>, ConceptReadError> {
+    ) -> Result<Option<TypeConstraint<T>>, Box<ConceptReadError>> {
         let constraints = type_.get_constraints(snapshot, self)?;
         Ok(get_abstract_constraint(type_.clone(), constraints.iter()))
     }
@@ -1007,7 +1007,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         capability: CAP,
-    ) -> Result<Option<CapabilityConstraint<CAP>>, ConceptReadError> {
+    ) -> Result<Option<CapabilityConstraint<CAP>>, Box<ConceptReadError>> {
         let constraints = capability.get_constraints(snapshot, self)?;
         Ok(get_abstract_constraint(capability.clone(), constraints.iter()))
     }
@@ -1017,7 +1017,7 @@ impl TypeManager {
         snapshot: &impl ReadableSnapshot,
         object_type: ObjectType<'static>,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
         let owns_declared = object_type.get_owns_attribute_declared(snapshot, self, attribute_type.clone())?;
         Ok(if let Some(owns_declared) = owns_declared {
             let constraints = object_type.get_owned_attribute_type_constraints(snapshot, self, attribute_type)?;
@@ -1032,7 +1032,7 @@ impl TypeManager {
         snapshot: &impl ReadableSnapshot,
         object_type: ObjectType<'static>,
         role_type: RoleType<'static>,
-    ) -> Result<Option<CapabilityConstraint<Plays<'static>>>, ConceptReadError> {
+    ) -> Result<Option<CapabilityConstraint<Plays<'static>>>, Box<ConceptReadError>> {
         let plays_declared = object_type.get_plays_role_declared(snapshot, self, role_type.clone())?;
         Ok(if let Some(plays_declared) = plays_declared {
             let constraints = object_type.get_played_role_type_constraints(snapshot, self, role_type)?;
@@ -1047,7 +1047,7 @@ impl TypeManager {
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'static>,
         role_type: RoleType<'static>,
-    ) -> Result<Option<CapabilityConstraint<Relates<'static>>>, ConceptReadError> {
+    ) -> Result<Option<CapabilityConstraint<Relates<'static>>>, Box<ConceptReadError>> {
         let relates_declared = relation_type.get_relates_role_declared(snapshot, self, role_type.clone())?;
         Ok(if let Some(relates_declared) = relates_declared {
             let constraints = relation_type.get_related_role_type_constraints(snapshot, self, role_type)?;
@@ -1061,7 +1061,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         owns: Owns<'static>,
-    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
         Ok(get_unique_constraint(owns.get_constraints(snapshot, self)?.iter()))
     }
 
@@ -1070,7 +1070,7 @@ impl TypeManager {
         snapshot: &impl ReadableSnapshot,
         object_type: ObjectType<'static>,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
         Ok(get_unique_constraint(
             object_type.get_owned_attribute_type_constraints(snapshot, self, attribute_type)?.iter(),
         ))
@@ -1080,19 +1080,19 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         capability: CAP,
-    ) -> Result<AnnotationCardinality, ConceptReadError> {
+    ) -> Result<AnnotationCardinality, Box<ConceptReadError>> {
         self.get_capability_cardinality_constraint(snapshot, capability)?
-            .ok_or(ConceptReadError::CorruptMissingMandatoryCardinalityForNonSpecialisingCapability)?
+            .ok_or_else(|| Box::new(ConceptReadError::CorruptMissingMandatoryCardinalityForNonSpecialisingCapability))?
             .description()
             .unwrap_cardinality()
-            .map_err(|source| ConceptReadError::Constraint { source })
+            .map_err(|source| Box::new(ConceptReadError::Constraint { source }))
     }
 
     pub(crate) fn get_relates_cardinality(
         &self,
         snapshot: &impl ReadableSnapshot,
         relates: Relates<'static>,
-    ) -> Result<AnnotationCardinality, ConceptReadError> {
+    ) -> Result<AnnotationCardinality, Box<ConceptReadError>> {
         match relates.is_specialising(snapshot, self)? {
             true => {
                 debug_assert!(self.get_capability_cardinality_constraint(snapshot, relates.clone())?.is_none());
@@ -1106,7 +1106,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         capability: CAP,
-    ) -> Result<Option<CapabilityConstraint<CAP>>, ConceptReadError> {
+    ) -> Result<Option<CapabilityConstraint<CAP>>, Box<ConceptReadError>> {
         let constraints = capability.get_constraints(snapshot, self)?;
         Ok(get_cardinality_constraint(capability.clone(), constraints.iter()))
     }
@@ -1115,7 +1115,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         owns: Owns<'static>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         match owns.get_ordering(snapshot, self) {
             Ok(_) => {
                 Ok(if let Some(constraint) = get_unique_constraint(owns.get_constraints(snapshot, self)?.iter()) {
@@ -1127,16 +1127,20 @@ impl TypeManager {
                     false
                 })
             }
-            // Can be called from validation functions before storing ordering
-            Err(ConceptReadError::OrderingValueMissing) => Ok(false),
-            Err(err) => Err(err),
+            Err(err) => {
+                match *err {
+                    // Can be called from validation functions before storing ordering
+                    ConceptReadError::OrderingValueMissing => Ok(false),
+                    _ => Err(err),
+                }
+            }
         }
     }
 
     pub(crate) fn get_independent_attribute_types(
         &self,
         snapshot: &impl ReadableSnapshot,
-    ) -> Result<Arc<HashSet<AttributeType<'static>>>, ConceptReadError> {
+    ) -> Result<Arc<HashSet<AttributeType<'static>>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_independent_attribute_types())
         } else {
@@ -1173,7 +1177,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         name: String,
-    ) -> Result<DefinitionKey<'static>, ConceptWriteError> {
+    ) -> Result<DefinitionKey<'static>, Box<ConceptWriteError>> {
         OperationTimeValidation::validate_struct_name_uniqueness(snapshot, &name)
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1193,7 +1197,7 @@ impl TypeManager {
         field_name: &str,
         value_type: ValueType,
         is_optional: bool,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let mut struct_definition = TypeReader::get_struct_definition(snapshot, definition_key.clone())?;
         struct_definition
             .add_field(field_name, value_type, is_optional)
@@ -1209,7 +1213,7 @@ impl TypeManager {
         _thing_manager: &ThingManager,
         definition_key: DefinitionKey<'static>,
         field_name: &str,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         // TODO: Somehow check instances?
 
         let mut struct_definition = TypeReader::get_struct_definition(snapshot, definition_key.clone())?;
@@ -1224,7 +1228,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         _thing_manager: &ThingManager,
         definition_key: &DefinitionKey<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_deleted_struct_is_not_used_in_schema(snapshot, definition_key)
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1238,7 +1242,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         label: &Label<'_>,
-    ) -> Result<EntityType<'static>, ConceptWriteError> {
+    ) -> Result<EntityType<'static>, Box<ConceptWriteError>> {
         OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1256,7 +1260,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         label: &Label<'_>,
-    ) -> Result<RelationType<'static>, ConceptWriteError> {
+    ) -> Result<RelationType<'static>, Box<ConceptWriteError>> {
         OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1277,7 +1281,7 @@ impl TypeManager {
         label: &Label<'_>,
         relation_type: RelationType<'static>,
         ordering: Ordering,
-    ) -> Result<RoleType<'static>, ConceptWriteError> {
+    ) -> Result<RoleType<'static>, Box<ConceptWriteError>> {
         OperationTimeValidation::validate_new_role_name_uniqueness(
             snapshot,
             self,
@@ -1316,7 +1320,7 @@ impl TypeManager {
         relation_type: RelationType<'static>,
         role_type: RoleType<'static>,
         is_specialising: bool,
-    ) -> Result<Relates<'static>, ConceptWriteError> {
+    ) -> Result<Relates<'static>, Box<ConceptWriteError>> {
         let relates = Relates::new(relation_type.clone(), role_type.clone());
         let exists = relation_type.get_relates(snapshot, self)?.contains(&relates);
 
@@ -1327,7 +1331,7 @@ impl TypeManager {
                 relates.clone(),
                 true, // new relates is set
             )
-            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+            .map_err(|typedb_source| Box::new(ConceptWriteError::SchemaValidation { typedb_source }))?;
 
             let ordering = relates.role().get_ordering(snapshot, self)?;
 
@@ -1338,7 +1342,7 @@ impl TypeManager {
                 relates.clone().into_owned(),
                 get_relates_default_constraints(relates.clone(), ordering, false),
             )
-            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+            .map_err(|typedb_source| Box::new(ConceptWriteError::SchemaValidation { typedb_source }))?;
         }
 
         TypeWriter::storage_put_edge(snapshot, relates.clone());
@@ -1349,7 +1353,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         label: &Label<'_>,
-    ) -> Result<AttributeType<'static>, ConceptWriteError> {
+    ) -> Result<AttributeType<'static>, Box<ConceptWriteError>> {
         OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1367,7 +1371,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         object_type: ObjectType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         for owns in TypeReader::get_capabilities_declared::<Owns<'static>>(snapshot, object_type.clone())? {
             self.unset_owns_unchecked(snapshot, owns)?;
         }
@@ -1384,7 +1388,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         type_: impl KindAPI<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, self, type_.clone())
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1399,7 +1403,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         entity_type: EntityType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         self.validate_delete_type(snapshot, thing_manager, entity_type.clone())?;
 
         self.delete_object_type_capabilities_unchecked(snapshot, entity_type.clone().into_owned_object_type())?;
@@ -1411,7 +1415,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         relation_type: RelationType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         self.validate_delete_type(snapshot, thing_manager, relation_type.clone())?;
 
         let declared_relates =
@@ -1428,7 +1432,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         self.validate_delete_type(snapshot, thing_manager, attribute_type.clone())?;
 
         for owns in TypeReader::get_capabilities_for_interface::<Owns<'static>>(snapshot, attribute_type.clone())? {
@@ -1444,7 +1448,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         self.validate_delete_type(snapshot, thing_manager, role_type.clone())?;
 
         let relates = role_type.get_relates_root(snapshot, self)?;
@@ -1474,7 +1478,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         relates: Relates<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         for plays in TypeReader::get_capabilities_for_interface::<Plays<'static>>(snapshot, relates.role())? {
             self.unset_plays_unchecked(snapshot, plays)?;
         }
@@ -1488,7 +1492,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_: impl KindAPI<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         for annotation in TypeReader::get_type_annotations_declared(snapshot, type_.clone())? {
             self.unset_type_annotation(snapshot, type_.clone(), annotation.into().category())?;
         }
@@ -1502,7 +1506,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         owns: Owns<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         TypeWriter::storage_delete_type_edge_property::<Ordering>(snapshot, owns.clone());
         self.unset_capability(snapshot, owns)
     }
@@ -1511,7 +1515,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         plays: Plays<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         self.unset_capability(snapshot, plays)
     }
 
@@ -1519,7 +1523,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         relates: Relates<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         self.unset_capability(snapshot, relates)
     }
 
@@ -1527,7 +1531,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         capability: impl Capability<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         for annotation in TypeReader::get_capability_annotations_declared(snapshot, capability.clone())? {
             self.unset_capability_annotation(snapshot, capability.clone(), annotation.clone().into().category())?;
         }
@@ -1540,7 +1544,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         type_: T,
         label: &Label<'_>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, type_.clone()).is_ok());
 
         match T::KIND {
@@ -1562,7 +1566,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         relation_type: RelationType<'static>,
         label: &Label<'_>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, relation_type.clone()).is_ok());
 
         OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
@@ -1584,7 +1588,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         role_type: RoleType<'static>,
         name: &str,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, role_type.clone()).is_ok());
 
         let old_label = TypeReader::get_label(snapshot, role_type.clone())?.unwrap();
@@ -1611,7 +1615,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         role_type: RoleType<'static>,
         scope: &str,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, role_type.clone()).is_ok());
 
         let old_label = TypeReader::get_label(snapshot, role_type.clone())?.unwrap();
@@ -1630,7 +1634,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
         value_type: ValueType,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, attribute_type.clone()).is_ok());
 
         OperationTimeValidation::validate_value_type_compatible_with_inherited_value_type(
@@ -1687,7 +1691,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_value_type_can_be_unset(
             snapshot,
             self,
@@ -1703,7 +1707,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         attribute_type: AttributeType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let value_type = attribute_type.get_value_type_declared(snapshot, self)?;
         if value_type.is_some() {
             TypeWriter::storage_unset_value_type(snapshot, attribute_type);
@@ -1716,7 +1720,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         subtype: K,
         supertype: K,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         debug_assert! {
             OperationTimeValidation::validate_type_exists(snapshot, subtype.clone()).is_ok() &&
                 OperationTimeValidation::validate_type_exists(snapshot, supertype.clone()).is_ok()
@@ -1750,7 +1754,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         subtype: T,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, subtype.clone()).is_ok());
         TypeWriter::storage_may_delete_supertype(snapshot, subtype.clone())?;
         Ok(())
@@ -1762,7 +1766,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         subtype: AttributeType<'static>,
         supertype: AttributeType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_value_type_is_compatible_with_new_supertypes_value_type_transitive(
             snapshot,
             self,
@@ -1818,7 +1822,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         subtype: AttributeType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_value_type_is_compatible_with_new_supertypes_value_type_transitive(
             snapshot,
             self,
@@ -1864,7 +1868,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         subtype: T,
         supertype: T,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let object_subtype = subtype.clone().into_owned_object_type();
         let object_supertype = supertype.clone().into_owned_object_type();
 
@@ -1912,7 +1916,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         subtype: ObjectType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let object_subtype = subtype.clone().into_owned_object_type();
 
         OperationTimeValidation::validate_lost_owns_do_not_cause_lost_instances_while_changing_supertype(
@@ -1942,7 +1946,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         subtype: EntityType<'static>,
         supertype: EntityType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_updated_constraints_compatible_with_entity_type_and_sub_instances_on_supertype_change(
             snapshot,
             self,
@@ -1960,7 +1964,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         subtype: EntityType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         self.unset_object_type_supertype(snapshot, thing_manager, subtype.into_owned_object_type())
     }
 
@@ -1970,7 +1974,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         subtype: RelationType<'static>,
         supertype: RelationType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_role_names_compatible_with_new_relation_supertype_transitive(
             snapshot,
             self,
@@ -2032,7 +2036,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         subtype: RelationType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_relates_specialises_compatible_with_new_supertype_transitive(
             snapshot,
             self,
@@ -2060,7 +2064,7 @@ impl TypeManager {
         owner: ObjectType<'static>,
         attribute: AttributeType<'static>,
         ordering: Ordering,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         // TODO: When we introduce abstract owns, take care of extra validation of having
         // abstract - concrete - abstract - concrete - abstract for owner - subowner - subsubowner - ...
         let owns = Owns::new(ObjectType::new(owner.clone().into_vertex()), attribute.clone());
@@ -2112,7 +2116,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         owner: ObjectType<'static>,
         attribute_type: AttributeType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_unset_owns_is_not_inherited(
             snapshot,
             self,
@@ -2150,7 +2154,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         player: ObjectType<'static>,
         role: RoleType<'static>,
-    ) -> Result<Plays<'static>, ConceptWriteError> {
+    ) -> Result<Plays<'static>, Box<ConceptWriteError>> {
         // TODO: When we introduce abstract plays, take care of extra validation of having
         // abstract - concrete - abstract - concrete - abstract for owner - subowner - subsubowner - ...
         let plays = Plays::new(ObjectType::new(player.clone().into_vertex()), role);
@@ -2185,7 +2189,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         player: ObjectType<'static>,
         role_type: RoleType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_unset_plays_is_not_inherited(
             snapshot,
             self,
@@ -2223,7 +2227,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         owns: Owns<'static>,
         ordering: Ordering,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_updated_owns_does_not_conflict_with_any_sibling_owns_ordering(
             snapshot,
             self,
@@ -2259,7 +2263,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
         ordering: Ordering,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         if let Some(role_supertype) = role_type.get_supertype(snapshot, self)? {
             OperationTimeValidation::validate_role_supertype_ordering_match(
                 snapshot,
@@ -2312,7 +2316,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         entity_type: EntityType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Abstract(AnnotationAbstract);
 
         self.validate_set_type_annotation_general(snapshot, entity_type.clone(), annotation.clone())?;
@@ -2341,7 +2345,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         relation_type: RelationType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Abstract(AnnotationAbstract);
 
         self.validate_set_type_annotation_general(snapshot, relation_type.clone(), annotation.clone())?;
@@ -2370,7 +2374,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Abstract(AnnotationAbstract);
 
         self.validate_set_type_annotation_general(snapshot, attribute_type.clone(), annotation.clone())?;
@@ -2398,7 +2402,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         entity_type: EntityType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         self.unset_type_annotation_abstract(snapshot, entity_type)
     }
 
@@ -2406,7 +2410,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation_type: RelationType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         self.unset_type_annotation_abstract(snapshot, relation_type)
     }
 
@@ -2414,7 +2418,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         attribute_type: AttributeType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_no_attribute_subtypes_to_unset_abstractness(
             snapshot,
             self,
@@ -2438,7 +2442,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_: impl KindAPI<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Abstract;
 
         OperationTimeValidation::validate_no_abstract_subtypes_to_unset_abstract_annotation(
@@ -2457,7 +2461,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         relates: Relates<'static>,
         is_manual: bool,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Abstract(AnnotationAbstract);
 
         if is_manual {
@@ -2496,7 +2500,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         relates: Relates<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Abstract;
 
         OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(
@@ -2528,7 +2532,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Independent(AnnotationIndependent);
 
         self.validate_set_type_annotation_general(snapshot, attribute_type.clone(), annotation.clone())?;
@@ -2550,7 +2554,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_: impl KindAPI<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Independent;
         self.unset_type_annotation(snapshot, type_, annotation_category)
     }
@@ -2561,7 +2565,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         relates: Relates<'static>,
         specialised: Relates<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_relates_is_inherited(snapshot, self, relates.relation(), specialised.role())
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2596,7 +2600,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         relation_type: RelationType<'static>,
         specialised_role_type: RoleType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         if specialised_role_type.get_subtypes(snapshot, self)?.len() == 0 {
             let specialising_relates = relation_type
                 .get_relates_role_name_declared(
@@ -2604,7 +2608,7 @@ impl TypeManager {
                     self,
                     specialised_role_type.get_label(snapshot, self)?.name.as_str(),
                 )?
-                .ok_or(ConceptReadError::CorruptMissingMandatorySpecialisingRelatesForRole)?;
+                .ok_or_else(|| Box::new(ConceptReadError::CorruptMissingMandatorySpecialisingRelatesForRole))?;
             self.unset_relates_unchecked(snapshot, specialising_relates)?;
         }
         Ok(())
@@ -2616,7 +2620,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         subtype: RoleType<'static>,
         supertype: RoleType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_role_supertype_ordering_match(
             snapshot,
             self,
@@ -2662,7 +2666,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         relates: Relates<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let role_type = relates.role();
         let relation_type = relates.relation();
         if let Some(supertype) = role_type.get_supertype(snapshot, self)? {
@@ -2677,7 +2681,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_interface_type_supertype::<
             Relates<'static>,
         >(
@@ -2722,7 +2726,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         owns: Owns<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Distinct(AnnotationDistinct);
 
         self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
@@ -2753,7 +2757,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         relates: Relates<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Distinct(AnnotationDistinct);
 
         OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(
@@ -2790,7 +2794,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         owns: Owns<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Distinct;
         self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
@@ -2799,7 +2803,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         relates: Relates<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Distinct;
 
         OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(
@@ -2817,7 +2821,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         owns: Owns<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Unique(AnnotationUnique);
 
         self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
@@ -2846,7 +2850,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         owns: Owns<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Unique;
         self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
@@ -2856,7 +2860,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         owns: Owns<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Key(AnnotationKey);
 
         self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
@@ -2892,7 +2896,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         owns: Owns<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Key;
 
         if self.get_owns_annotation_declared_by_category(snapshot, owns.clone(), annotation_category)?.is_some() {
@@ -2925,7 +2929,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         owns: Owns<'static>,
         cardinality: AnnotationCardinality,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Cardinality(cardinality);
 
         self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
@@ -2948,7 +2952,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         owns: Owns<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Cardinality;
 
         if self.get_owns_annotation_declared_by_category(snapshot, owns.clone(), annotation_category)?.is_some() {
@@ -2981,7 +2985,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         plays: Plays<'static>,
         cardinality: AnnotationCardinality,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Cardinality(cardinality);
 
         self.validate_set_capability_annotation_general(snapshot, plays.clone(), annotation.clone())?;
@@ -3004,7 +3008,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         plays: Plays<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Cardinality;
 
         if self.get_plays_annotation_declared_by_category(snapshot, plays.clone(), annotation_category)?.is_some() {
@@ -3037,7 +3041,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         relates: Relates<'static>,
         cardinality: AnnotationCardinality,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Cardinality(cardinality);
 
         OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(
@@ -3067,7 +3071,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         relates: Relates<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Cardinality;
 
         OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(
@@ -3108,7 +3112,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
         regex: AnnotationRegex,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Regex(regex.clone());
 
         self.validate_set_type_annotation_general(snapshot, attribute_type.clone(), annotation.clone())?;
@@ -3159,7 +3163,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_: AttributeType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Regex;
         self.unset_type_annotation(snapshot, type_, annotation_category)
     }
@@ -3170,7 +3174,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         owns: Owns<'static>,
         regex: AnnotationRegex,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Regex(regex.clone());
 
         self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
@@ -3210,7 +3214,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         owns: Owns<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Regex;
         self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
@@ -3220,7 +3224,7 @@ impl TypeManager {
         _snapshot: &mut impl WritableSnapshot,
         _thing_manager: &ThingManager,
         _relation_type: RelationType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         unimplemented!("Cascade is temporarily turned off");
         // let annotation = Annotation::Cascade(AnnotationCascade);
         //
@@ -3243,7 +3247,7 @@ impl TypeManager {
         &self,
         _snapshot: &mut impl WritableSnapshot,
         _type_: RelationType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         unimplemented!("Cascade is temporarily turned off");
         // let annotation_category = AnnotationCategory::Cascade;
         // self.unset_type_annotation(snapshot, type_, annotation_category)
@@ -3255,7 +3259,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
         range: AnnotationRange,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Range(range.clone());
 
         self.validate_set_type_annotation_general(snapshot, attribute_type.clone(), annotation.clone())?;
@@ -3310,7 +3314,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_: impl KindAPI<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Range;
         self.unset_type_annotation(snapshot, type_, annotation_category)
     }
@@ -3321,7 +3325,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         owns: Owns<'static>,
         range: AnnotationRange,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Range(range.clone());
 
         self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
@@ -3365,7 +3369,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         owns: Owns<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Range;
         self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
@@ -3376,7 +3380,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
         values: AnnotationValues,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Values(values.clone());
 
         self.validate_set_type_annotation_general(snapshot, attribute_type.clone(), annotation.clone())?;
@@ -3436,7 +3440,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_: impl KindAPI<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Values;
         self.unset_type_annotation(snapshot, type_, annotation_category)
     }
@@ -3447,7 +3451,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         owns: Owns<'static>,
         values: AnnotationValues,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Values(values.clone());
 
         self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
@@ -3491,7 +3495,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         owns: Owns<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Values;
         self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
@@ -3501,7 +3505,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         type_: impl KindAPI<'static>,
         annotation: Annotation,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         storage_save_annotation!(snapshot, type_, annotation, TypeWriter::storage_put_type_vertex_property);
         Ok(())
     }
@@ -3511,7 +3515,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         capability: impl Capability<'static>,
         annotation: Annotation,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         storage_save_annotation!(snapshot, capability, annotation, TypeWriter::storage_put_type_edge_property);
         Ok(())
     }
@@ -3521,7 +3525,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         type_: impl KindAPI<'static>,
         annotation_category: AnnotationCategory,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         storage_delete_annotation!(
             snapshot,
             type_,
@@ -3537,7 +3541,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         capability: impl Capability<'static>,
         annotation_category: AnnotationCategory,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         storage_delete_annotation!(
             snapshot,
             capability,
@@ -3553,7 +3557,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         type_: impl KindAPI<'static>,
         annotation: Annotation,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let category = annotation.category();
 
         OperationTimeValidation::validate_declared_type_annotation_is_compatible_with_declared_annotations(
@@ -3572,7 +3576,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         capability: impl Capability<'static>,
         cardinality: AnnotationCardinality,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_cardinality_arguments(cardinality)
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -3592,7 +3596,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         capability: impl Capability<'static>,
         annotation: Annotation,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let category = annotation.category();
 
         OperationTimeValidation::validate_declared_capability_annotation_is_compatible_with_declared_annotations(

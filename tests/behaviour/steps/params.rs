@@ -17,7 +17,7 @@ use concept::{
         },
         constraint::{ConstraintCategory as TypeDBConstraintCategory, ConstraintDescription as TypeDBConstraint},
         object_type::ObjectType,
-        type_manager::{validation::SchemaValidationError, TypeManager},
+        type_manager::TypeManager,
     },
 };
 use cucumber::Parameter;
@@ -65,20 +65,18 @@ impl MayError {
 
     pub fn check_concept_write_without_read_errors<T: fmt::Debug>(
         &self,
-        res: &Result<T, ConceptWriteError>,
-    ) -> Option<ConceptWriteError> {
-        match self.check(res.as_ref().map_err(|e| e.clone())) {
+        res: &Result<T, Box<ConceptWriteError>>,
+    ) -> Option<Box<ConceptWriteError>> {
+        match self.check(res.as_ref().map_err(|e| e.as_ref())) {
             None => None,
             Some(error) => match error {
                 ConceptWriteError::ConceptRead { source } => {
                     panic!("Expected logic error, got ConceptRead {:?}", source)
                 }
-                ConceptWriteError::SchemaValidation {
-                    typedb_source: SchemaValidationError::ConceptRead { source },
-                } => {
-                    panic!("Expected logic error, got SchemaValidation::ConceptRead {:?}", source)
+                ConceptWriteError::SchemaValidation { typedb_source: err } => {
+                    panic!("Expected logic error, got SchemaValidation::ConceptRead {:?}", err)
                 }
-                _ => Some(error),
+                _ => Some(Box::new(error.clone())),
             },
         }
     }

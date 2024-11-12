@@ -160,12 +160,12 @@ pub fn annotate_functions(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
-) -> Result<AnnotatedUnindexedFunctions, FunctionAnnotationError> {
+) -> Result<AnnotatedUnindexedFunctions, Box<FunctionAnnotationError>> {
     // In the preliminary annotations, functions are annotated based only on the variable categories of the called function.
     let preliminary_annotated_functions = functions
         .iter_mut()
         .map(|function| annotate_named_function(function, snapshot, type_manager, indexed_annotated_functions, None))
-        .collect::<Result<Vec<AnnotatedFunction>, FunctionAnnotationError>>()?;
+        .collect::<Result<Vec<AnnotatedFunction>, Box<FunctionAnnotationError>>>()?;
     let preliminary_annotations = AnnotatedUnindexedFunctions::new(preliminary_annotated_functions);
 
     // In the second round, finer annotations are available at the function calls so the annotations in function bodies can be refined.
@@ -180,7 +180,7 @@ pub fn annotate_functions(
                 Some(&preliminary_annotations),
             )
         })
-        .collect::<Result<Vec<AnnotatedFunction>, FunctionAnnotationError>>()?;
+        .collect::<Result<Vec<AnnotatedFunction>, Box<FunctionAnnotationError>>>()?;
 
     // TODO: ^Optimise. There's no reason to do all of type inference again. We can re-use the graphs, and restart at the source of any SCC.
     // TODO: We don't propagate annotations until convergence, so we don't always detect unsatisfiable queries
@@ -197,7 +197,7 @@ pub(crate) fn annotate_anonymous_function(
     local_functions: Option<&AnnotatedUnindexedFunctions>,
     caller_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     caller_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
-) -> Result<AnnotatedFunction, FunctionAnnotationError> {
+) -> Result<AnnotatedFunction, Box<FunctionAnnotationError>> {
     let Function { arguments, argument_labels, .. } = function;
     debug_assert!(argument_labels.is_none());
     let mut argument_concept_variable_types = BTreeMap::new();
@@ -229,7 +229,7 @@ pub(super) fn annotate_named_function(
     type_manager: &TypeManager,
     indexed_annotated_functions: &IndexedAnnotatedFunctions,
     local_functions: Option<&AnnotatedUnindexedFunctions>,
-) -> Result<AnnotatedFunction, FunctionAnnotationError> {
+) -> Result<AnnotatedFunction, Box<FunctionAnnotationError>> {
     let Function { arguments, argument_labels, .. } = function;
     debug_assert!(argument_labels.is_some());
     let mut argument_concept_variable_types = BTreeMap::new();
@@ -263,7 +263,7 @@ fn annotate_function_impl(
     local_functions: Option<&AnnotatedUnindexedFunctions>,
     argument_concept_variable_types: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     argument_value_variable_types: BTreeMap<Variable, ExpressionValueType>,
-) -> Result<AnnotatedFunction, FunctionAnnotationError> {
+) -> Result<AnnotatedFunction, Box<FunctionAnnotationError>> {
     let Function { name, context, function_body: FunctionBody { stages, return_operation }, arguments, .. } = function;
 
     let (stages, running_variable_types, running_value_types) = annotate_pipeline_stages(
@@ -277,7 +277,9 @@ fn annotate_function_impl(
         argument_concept_variable_types,
         argument_value_variable_types,
     )
-    .map_err(|err| FunctionAnnotationError::TypeInference { name: name.to_string(), typedb_source: Box::new(err) })?;
+    .map_err(|err| {
+        Box::new(FunctionAnnotationError::TypeInference { name: name.to_string(), typedb_source: Box::new(err) })
+    })?;
 
     let return_ = annotate_return(
         snapshot,
@@ -301,8 +303,10 @@ fn annotate_arguments_from_labels(
     type_manager: &TypeManager,
     arguments: &[Variable],
     argument_labels: &[TypeRefAny],
-) -> Result<(BTreeMap<Variable, Arc<BTreeSet<Type>>>, BTreeMap<Variable, ExpressionValueType>), FunctionAnnotationError>
-{
+) -> Result<
+    (BTreeMap<Variable, Arc<BTreeSet<Type>>>, BTreeMap<Variable, ExpressionValueType>),
+    Box<FunctionAnnotationError>,
+> {
     // TODO
     let mut variable_types = BTreeMap::new();
     let mut value_types = BTreeMap::new();
@@ -324,7 +328,7 @@ fn get_argument_annotations_from_labels(
     type_manager: &TypeManager,
     typeql_label: &TypeRefAny,
     arg_index: usize,
-) -> Result<Either<Arc<BTreeSet<Type>>, ExpressionValueType>, FunctionAnnotationError> {
+) -> Result<Either<Arc<BTreeSet<Type>>, ExpressionValueType>, Box<FunctionAnnotationError>> {
     let TypeRef::Named(inner_type) = (match typeql_label {
         TypeRefAny::Type(inner) => inner,
         TypeRefAny::Optional(typeql::type_::Optional { inner: _inner, .. }) => todo!(),
@@ -340,7 +344,9 @@ fn get_argument_annotations_from_labels(
                 type_manager,
                 &Label::build(label.ident.as_str()),
             )
-            .map_err(|source| FunctionAnnotationError::CouldNotResolveArgumentType { index: arg_index, source })?;
+            .map_err(|source| {
+                Box::new(FunctionAnnotationError::CouldNotResolveArgumentType { index: arg_index, source })
+            })?;
             Ok(Either::Left(Arc::new(types)))
         }
         NamedType::BuiltinValueType(value_type) => {
@@ -359,7 +365,7 @@ fn annotate_return(
     return_operation: &ReturnOperation,
     input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
-) -> Result<AnnotatedFunctionReturn, FunctionAnnotationError> {
+) -> Result<AnnotatedFunctionReturn, Box<FunctionAnnotationError>> {
     // TODO: We don't consider the user annotations.
     match return_operation {
         ReturnOperation::Stream(vars) => {
@@ -391,7 +397,7 @@ fn annotate_return(
                     input_type_annotations,
                     input_value_type_annotations,
                 )
-                .map_err(|err| FunctionAnnotationError::ReturnReduce { typedb_source: Box::new(err) })?;
+                .map_err(|err| Box::new(FunctionAnnotationError::ReturnReduce { typedb_source: Box::new(err) }))?;
                 instructions.push(instruction);
             }
             Ok(AnnotatedFunctionReturn::ReduceReducer { instructions })

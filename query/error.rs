@@ -24,13 +24,13 @@ typedb_error!(
         Undefine(4, "Failed to execute undefine query.", ( typedb_source: UndefineError )),
         FunctionDefinition(5, "Error in provided function. ", ( typedb_source: FunctionRepresentationError )),
         FunctionRetrieval(6, "Failed to retrieve function. ",  ( typedb_source: FunctionError )),
-        Representation(7, "Error in provided query. ", ( typedb_source: RepresentationError )),
+        Representation(7, "Error in provided query. ", ( typedb_source: Box<RepresentationError> )),
         Annotation(8, "Error analysing query. ", ( typedb_source: AnnotationError )),
         ExecutableCompilation(9, "Error compiling query. ", ( typedb_source: ExecutableCompilationError )),
         WriteCompilation(10, "Error while compiling write query.", ( source: WriteCompilationError )),
         ExpressionCompilation(11, "Error while compiling expression.", ( source: ExpressionCompileError )),
-        WritePipelineExecutionError(12, "Error while execution write pipeline.", ( typedb_source: PipelineExecutionError )),
-        ReadPipelineExecutionError(13, "Error while executing read pipeline.", ( typedb_source: PipelineExecutionError )),
+        WritePipelineExecutionError(12, "Error while execution write pipeline.", ( typedb_source: Box<PipelineExecutionError> )),
+        ReadPipelineExecutionError(13, "Error while executing read pipeline.", ( typedb_source: Box<PipelineExecutionError> )),
         QueryExecutionClosedEarly(14, "Query execution was closed before it finished, possibly due to transaction close, rollback, commit, or a server-side error (these should be visible in the server logs)."),
     }
 );

@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use concept::error::ConceptWriteError;
 use cucumber::gherkin::Step;
 use database::transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite};
 use futures::future::join_all;
@@ -125,7 +126,7 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
                 match error {
                     DataCommitError::ConceptWriteErrors { source: errors, .. } => {
                         for error in errors {
-                            may_error.check_concept_write_without_read_errors::<()>(&Err(error));
+                            may_error.check_concept_write_without_read_errors::<()>(&Err(Box::new(error)));
                         }
                     }
                     DataCommitError::ConceptWriteErrorsFirst { typedb_source } => {
@@ -142,7 +143,7 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
                 match error {
                     SchemaCommitError::ConceptWriteErrors { source: errors, .. } => {
                         for error in errors {
-                            may_error.check_concept_write_without_read_errors::<()>(&Err(error));
+                            may_error.check_concept_write_without_read_errors::<()>(&Err(Box::new(error)));
                         }
                     }
                     SchemaCommitError::ConceptWriteErrorsFirst { typedb_source } => {

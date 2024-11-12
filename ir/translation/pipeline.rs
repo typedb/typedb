@@ -94,7 +94,7 @@ pub fn translate_pipeline(
     snapshot: &impl ReadableSnapshot,
     all_function_signatures: &impl FunctionSignatureIndex,
     query: &typeql::query::Pipeline,
-) -> Result<TranslatedPipeline, RepresentationError> {
+) -> Result<TranslatedPipeline, Box<RepresentationError>> {
     // all_function_signatures contains the preambles already!
     let translated_preamble = query
         .preambles
@@ -121,7 +121,7 @@ pub(crate) fn translate_pipeline_stages(
     all_function_signatures: &impl FunctionSignatureIndex,
     translation_context: &mut TranslationContext,
     stages: &[Stage],
-) -> Result<(Vec<TranslatedStage>, Option<FetchObject>), RepresentationError> {
+) -> Result<(Vec<TranslatedStage>, Option<FetchObject>), Box<RepresentationError>> {
     let mut translated_stages: Vec<TranslatedStage> = Vec::with_capacity(stages.len());
     for (i, stage) in stages.iter().enumerate() {
         let translated = translate_stage(snapshot, translation_context, all_function_signatures, stage)?;
@@ -129,7 +129,7 @@ pub(crate) fn translate_pipeline_stages(
             Either::First(stage) => translated_stages.push(stage),
             Either::Second(fetch) => {
                 if i != stages.len() - 1 {
-                    return Err(RepresentationError::NonTerminalFetch { declaration: stage.clone() });
+                    return Err(Box::new(RepresentationError::NonTerminalFetch { declaration: stage.clone() }));
                 } else {
                     return Ok((translated_stages, Some(fetch)));
                 }
@@ -144,7 +144,7 @@ fn translate_stage(
     translation_context: &mut TranslationContext,
     all_function_signatures: &impl FunctionSignatureIndex,
     typeql_stage: &TypeQLStage,
-) -> Result<Either<TranslatedStage, FetchObject>, RepresentationError> {
+) -> Result<Either<TranslatedStage, FetchObject>, Box<RepresentationError>> {
     match typeql_stage {
         TypeQLStage::Match(match_) => translate_match(translation_context, all_function_signatures, match_)
             .and_then(|builder| Ok(Either::First(TranslatedStage::Match { block: builder.finish()? }))),
@@ -155,7 +155,7 @@ fn translate_stage(
             .map(|(block, deleted_variables)| Either::First(TranslatedStage::Delete { block, deleted_variables })),
         TypeQLStage::Fetch(fetch) => translate_fetch(snapshot, translation_context, all_function_signatures, fetch)
             .map(Either::Second)
-            .map_err(|err| RepresentationError::FetchRepresentation { typedb_source: err }),
+            .map_err(|err| Box::new(RepresentationError::FetchRepresentation { typedb_source: err })),
         TypeQLStage::Operator(modifier) => match modifier {
             TypeQLOperator::Select(select) => translate_select(translation_context, select)
                 .map(|filter| Either::First(TranslatedStage::Select(filter))),
@@ -172,6 +172,6 @@ fn translate_stage(
             TypeQLOperator::Require(require) => translate_require(translation_context, require)
                 .map(|require| Either::First(TranslatedStage::Require(require))),
         },
-        _ => Err(RepresentationError::UnrecognisedClause { declaration: typeql_stage.clone() }),
+        _ => Err(Box::new(RepresentationError::UnrecognisedClause { declaration: typeql_stage.clone() })),
     }
 }

@@ -8,7 +8,6 @@ use std::{collections::HashMap, fmt, fmt::Formatter, hash::Hash};
 
 use answer::variable::Variable;
 use encoding::value::label::Label;
-use typeql::token;
 
 pub mod conjunction;
 pub mod constraint;

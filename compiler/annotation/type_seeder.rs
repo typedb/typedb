@@ -143,14 +143,14 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
 
         // Prune abstract types from type annotations of thing variables
         for annotated_vertex in vertices {
-            let (Vertex::Variable(id), annotations) = annotated_vertex else { continue; };
-            if self.variable_registry
-                .get_variable_category(*id)
-                .map_or(false, |cat| { cat.is_category_thing() }) {
-                TypeAnnotation::try_retain(
-                    annotations,
-                    |type_| { type_.is_abstract(self.snapshot, self.type_manager).map(|b| !b)
-                }).map_err(|source| { TypeInferenceError::ConceptRead { source } })?;
+            let (Vertex::Variable(id), annotations) = annotated_vertex else {
+                continue;
+            };
+            if self.variable_registry.get_variable_category(*id).map_or(false, |cat| cat.is_category_thing()) {
+                TypeAnnotation::try_retain(annotations, |type_| {
+                    type_.is_abstract(self.snapshot, self.type_manager).map(|b| !b)
+                })
+                .map_err(|source| TypeInferenceError::ConceptRead { source })?;
             }
         }
 
@@ -298,7 +298,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         &self,
         graph: &mut TypeInferenceGraph<'_>,
         context: &BlockContext,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         let unannotated_var = self.local_variables(context, graph.conjunction.scope_id()).find(|&var| {
             let vertex = Vertex::Variable(var);
             !graph.vertices.contains_key(&vertex)
@@ -324,7 +324,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     fn get_unbounded_type_annotations(
         &self,
         category: VariableCategory,
-    ) -> Result<BTreeSet<TypeAnnotation>, ConceptReadError> {
+    ) -> Result<BTreeSet<TypeAnnotation>, Box<ConceptReadError>> {
         let (include_entities, include_relations, include_attributes, include_roles) = match category {
             VariableCategory::Type => (true, true, true, true),
             VariableCategory::ThingType => (true, true, true, false),
@@ -356,7 +356,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     }
 
     // Phase 2: Use constraints to infer annotations on other vertices
-    fn propagate_vertex_annotations(&self, graph: &mut TypeInferenceGraph<'_>) -> Result<bool, ConceptReadError> {
+    fn propagate_vertex_annotations(&self, graph: &mut TypeInferenceGraph<'_>) -> Result<bool, Box<ConceptReadError>> {
         let mut is_modified = false;
         for c in graph.conjunction.constraints() {
             is_modified |= self.try_propagating_vertex_annotation(c, &mut graph.vertices)?;
@@ -374,7 +374,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         &self,
         constraint: &Constraint<Variable>,
         vertices: &mut VertexAnnotations,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         let any_modified = match constraint {
             Constraint::Isa(isa) => self.try_propagating_vertex_annotation_impl(isa, vertices)?,
             Constraint::Sub(sub) => self.try_propagating_vertex_annotation_impl(sub, vertices)?,
@@ -404,7 +404,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         &self,
         inner: &impl BinaryConstraint,
         vertices: &mut BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         let (left, right) = (inner.left(), inner.right());
         let any_modified = match (vertices.get(left), vertices.get(right)) {
             (None, None) => false,
@@ -427,7 +427,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         &self,
         nested: &mut NestedTypeInferenceGraphDisjunction<'_>,
         parent_vertices: &mut VertexAnnotations,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         let mut something_changed = false;
         // Apply annotations ot the parent on the nested
         for &variable in nested.shared_variables.iter() {
@@ -490,7 +490,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     }
 
     // Phase 3: seed edges
-    fn seed_edges(&self, graph: &mut TypeInferenceGraph<'_>) -> Result<(), ConceptReadError> {
+    fn seed_edges(&self, graph: &mut TypeInferenceGraph<'_>) -> Result<(), Box<ConceptReadError>> {
         let TypeInferenceGraph { conjunction, edges, vertices, .. } = graph;
         for constraint in conjunction.constraints() {
             match constraint {
@@ -533,7 +533,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         constraint: &'conj Constraint<Variable>,
         inner: &impl BinaryConstraint,
         vertices: &VertexAnnotations,
-    ) -> Result<TypeInferenceEdge<'conj>, ConceptReadError> {
+    ) -> Result<TypeInferenceEdge<'conj>, Box<ConceptReadError>> {
         let (left, right) = (inner.left().clone(), inner.right().clone());
         debug_assert!(vertices.contains_key(&left) && vertices.contains_key(&right));
         let left_to_right = inner.annotate_left_to_right(self, vertices.get(&left).unwrap())?;
@@ -555,7 +555,7 @@ pub(crate) fn get_type_annotation_from_label<Snapshot: ReadableSnapshot>(
     snapshot: &Snapshot,
     type_manager: &TypeManager,
     label_value: &encoding::value::label::Label<'static>,
-) -> Result<Option<TypeAnnotation>, ConceptReadError> {
+) -> Result<Option<TypeAnnotation>, Box<ConceptReadError>> {
     if let Some(t) = type_manager.get_attribute_type(snapshot, label_value)?.map(TypeAnnotation::Attribute) {
         Ok(Some(t))
     } else if let Some(t) = type_manager.get_entity_type(snapshot, label_value)?.map(TypeAnnotation::Entity) {
@@ -753,16 +753,13 @@ trait BinaryConstraint {
     fn left(&self) -> &Vertex<Variable>;
     fn right(&self) -> &Vertex<Variable>;
 
-    fn check_for_thing_vars(
-        &self,
-        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
-    ) -> (bool, bool) {
+    fn check_for_thing_vars(&self, seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>) -> (bool, bool) {
         let left_is_thing = matches!(self.left(), Vertex::Variable(var) if {
-                seeder.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_category_thing())
-            });
+            seeder.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_category_thing())
+        });
         let right_is_thing = matches!(self.right(), Vertex::Variable(var) if {
-                seeder.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_category_thing())
-            });
+            seeder.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_category_thing())
+        });
         (left_is_thing, right_is_thing)
     }
 
@@ -770,7 +767,7 @@ trait BinaryConstraint {
         &self,
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_types: &BTreeSet<TypeAnnotation>,
-    ) -> Result<BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>, ConceptReadError> {
+    ) -> Result<BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>, Box<ConceptReadError>> {
         let mut left_to_right = BTreeMap::new();
         let (left_is_thing, right_is_thing) = self.check_for_thing_vars(seeder);
         for left_type in left_types {
@@ -778,10 +775,9 @@ trait BinaryConstraint {
                 let mut right_annotations = BTreeSet::new();
                 self.annotate_left_to_right_for_type(seeder, left_type, &mut right_annotations)?;
                 if right_is_thing {
-                    TypeAnnotation::try_retain(
-                        &mut right_annotations,
-                        |type_: &TypeAnnotation| { type_.is_abstract(seeder.snapshot, seeder.type_manager).map(|b| !b) }
-                    )?;
+                    TypeAnnotation::try_retain(&mut right_annotations, |type_: &TypeAnnotation| {
+                        type_.is_abstract(seeder.snapshot, seeder.type_manager).map(|b| !b)
+                    })?;
                 }
                 left_to_right.insert(left_type.clone(), right_annotations);
             }
@@ -793,7 +789,7 @@ trait BinaryConstraint {
         &self,
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_types: &BTreeSet<TypeAnnotation>,
-    ) -> Result<BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>, ConceptReadError> {
+    ) -> Result<BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>, Box<ConceptReadError>> {
         let mut right_to_left = BTreeMap::new();
         let (left_is_thing, right_is_thing) = self.check_for_thing_vars(seeder);
         for right_type in right_types {
@@ -801,10 +797,9 @@ trait BinaryConstraint {
                 let mut left_annotations = BTreeSet::new();
                 self.annotate_right_to_left_for_type(seeder, right_type, &mut left_annotations)?;
                 if left_is_thing {
-                    TypeAnnotation::try_retain(
-                        &mut left_annotations,
-                        |type_: &TypeAnnotation| { type_.is_abstract(seeder.snapshot, seeder.type_manager).map(|b| !b) }
-                    )?;
+                    TypeAnnotation::try_retain(&mut left_annotations, |type_: &TypeAnnotation| {
+                        type_.is_abstract(seeder.snapshot, seeder.type_manager).map(|b| !b)
+                    })?;
                 }
                 right_to_left.insert(right_type.clone(), left_annotations);
             }
@@ -817,14 +812,14 @@ trait BinaryConstraint {
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError>;
+    ) -> Result<(), Box<ConceptReadError>>;
 
     fn annotate_right_to_left_for_type(
         &self,
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError>;
+    ) -> Result<(), Box<ConceptReadError>>;
 }
 
 // Note: The schema and data constraints for Owns, Relates & Plays behave identically
@@ -842,7 +837,7 @@ impl BinaryConstraint for Has<Variable> {
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         let owner = match left_type {
             TypeAnnotation::Entity(entity) => ObjectType::Entity(entity.clone()),
             TypeAnnotation::Relation(relation) => ObjectType::Relation(relation.clone()),
@@ -860,7 +855,7 @@ impl BinaryConstraint for Has<Variable> {
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         let attribute = match right_type {
             TypeAnnotation::Attribute(attribute) => attribute,
             _ => return Ok(()), // It can't be another type => Do nothing and let type-inference clean it up
@@ -887,7 +882,7 @@ impl BinaryConstraint for Owns<Variable> {
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         let owner = match left_type {
             TypeAnnotation::Entity(entity) => ObjectType::Entity(entity.clone()),
             TypeAnnotation::Relation(relation) => ObjectType::Relation(relation.clone()),
@@ -910,7 +905,7 @@ impl BinaryConstraint for Owns<Variable> {
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         let attribute = match right_type {
             TypeAnnotation::Attribute(attribute) => attribute,
             _ => {
@@ -945,7 +940,7 @@ impl BinaryConstraint for Isa<Variable> {
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         if self.isa_kind() == IsaKind::Subtype {
             match left_type {
                 TypeAnnotation::Attribute(attribute) => {
@@ -987,7 +982,7 @@ impl BinaryConstraint for Isa<Variable> {
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         if self.isa_kind() == IsaKind::Subtype {
             match right_type {
                 TypeAnnotation::Attribute(attribute) => {
@@ -1039,7 +1034,7 @@ impl BinaryConstraint for Sub<Variable> {
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         if self.sub_kind() == SubKind::Subtype {
             match left_type {
                 TypeAnnotation::Attribute(attribute) => {
@@ -1112,7 +1107,7 @@ impl BinaryConstraint for Sub<Variable> {
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         if self.sub_kind() == SubKind::Subtype {
             match right_type {
                 TypeAnnotation::Attribute(attribute) => {
@@ -1211,7 +1206,7 @@ impl BinaryConstraint for Is<Variable> {
         _seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         collector.insert(left_type.clone());
         Ok(())
     }
@@ -1221,7 +1216,7 @@ impl BinaryConstraint for Is<Variable> {
         _seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         collector.insert(right_type.clone());
         Ok(())
     }
@@ -1242,7 +1237,7 @@ impl BinaryConstraint for Comparison<Variable> {
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         let left_value_type = match left_type {
             TypeAnnotation::Attribute(attribute) => {
                 attribute.get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
@@ -1269,7 +1264,7 @@ impl BinaryConstraint for Comparison<Variable> {
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         let right_value_type = match right_type {
             TypeAnnotation::Attribute(attribute) => {
                 attribute.get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
@@ -1314,7 +1309,7 @@ impl<'graph> BinaryConstraint for PlayerRoleEdge<'graph> {
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         let player = match left_type {
             TypeAnnotation::Entity(entity) => ObjectType::Entity(entity.clone()),
             TypeAnnotation::Relation(relation) => ObjectType::Relation(relation.clone()),
@@ -1337,7 +1332,7 @@ impl<'graph> BinaryConstraint for PlayerRoleEdge<'graph> {
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         let role_type = match right_type {
             TypeAnnotation::RoleType(role_type) => role_type,
             _ => {
@@ -1372,7 +1367,7 @@ impl BinaryConstraint for Plays<Variable> {
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         let player = match left_type {
             TypeAnnotation::Entity(entity) => ObjectType::Entity(entity.clone()),
             TypeAnnotation::Relation(relation) => ObjectType::Relation(relation.clone()),
@@ -1395,7 +1390,7 @@ impl BinaryConstraint for Plays<Variable> {
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         let role_type = match right_type {
             TypeAnnotation::RoleType(role_type) => role_type,
             _ => {
@@ -1430,7 +1425,7 @@ impl<'graph> BinaryConstraint for RelationRoleEdge<'graph> {
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         let relation = match left_type {
             TypeAnnotation::Relation(relation) => relation,
             _ => {
@@ -1452,7 +1447,7 @@ impl<'graph> BinaryConstraint for RelationRoleEdge<'graph> {
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         let role_type = match right_type {
             TypeAnnotation::RoleType(role_type) => role_type,
             _ => {
@@ -1484,7 +1479,7 @@ impl BinaryConstraint for Relates<Variable> {
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         let relation = match left_type {
             TypeAnnotation::Relation(relation) => relation,
             _ => {
@@ -1506,7 +1501,7 @@ impl BinaryConstraint for Relates<Variable> {
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         let role_type = match right_type {
             TypeAnnotation::RoleType(role_type) => role_type,
             _ => {
@@ -1526,10 +1521,7 @@ impl BinaryConstraint for Relates<Variable> {
 
 #[cfg(test)]
 pub mod tests {
-    use std::{
-        collections::{BTreeMap, BTreeSet},
-        sync::Arc,
-    };
+    use std::collections::{BTreeMap, BTreeSet};
 
     use answer::Type as TypeAnnotation;
     use encoding::value::{label::Label, value_type::ValueType};
@@ -1608,10 +1600,7 @@ pub mod tests {
                     &constraints[2],
                     var_name.into(),
                     var_name_type.into(),
-                    vec![
-                        (type_catname.clone(), type_name.clone()),
-                        (type_dogname.clone(), type_name.clone()),
-                    ],
+                    vec![(type_catname.clone(), type_name.clone()), (type_dogname.clone(), type_name.clone())],
                 ),
                 expected_edge(
                     &constraints[4],
@@ -1672,10 +1661,7 @@ pub mod tests {
                 &constraints[0],
                 var_animal.into(),
                 var_name.into(),
-                vec![
-                    (type_cat.clone(), type_catname.clone()),
-                    (type_dog.clone(), type_dogname.clone()),
-                ],
+                vec![(type_cat.clone(), type_catname.clone()), (type_dog.clone(), type_dogname.clone())],
             )],
             nested_disjunctions: vec![],
             nested_negations: vec![],

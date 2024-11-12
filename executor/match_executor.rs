@@ -39,7 +39,7 @@ impl MatchExecutor {
         thing_manager: &Arc<ThingManager>,
         input: MaybeOwnedRow<'_>,
         function_registry: Arc<ExecutableFunctionRegistry>,
-    ) -> Result<Self, ConceptReadError> {
+    ) -> Result<Self, Box<ConceptReadError>> {
         Ok(Self {
             entry: TODO_REMOVE_create_executors_for_match(
                 snapshot,
@@ -67,7 +67,7 @@ impl MatchExecutor {
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
-    ) -> Result<Option<FixedBatch>, ReadExecutionError> {
+    ) -> Result<Option<FixedBatch>, Box<ReadExecutionError>> {
         if let Some(input) = self.input.take() {
             self.entry.prepare(FixedBatch::from(input.into_owned()));
         }
@@ -75,7 +75,7 @@ impl MatchExecutor {
             self.entry.compute_next_batch(context, interrupt, &mut self.tabled_functions, &mut self.suspend_points)?;
         if batch.is_none() && !self.suspend_points.is_empty() {
             self.suspend_points.clear(); // I had an infinite collection, so I don't want to risk it.
-            Err(ReadExecutionError::UnimplementedCyclicFunctions {})
+            Err(Box::new(ReadExecutionError::UnimplementedCyclicFunctions {}))
         } else {
             Ok(batch)
         }
@@ -99,7 +99,7 @@ impl<Snapshot> BatchIterator<Snapshot> {
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> Iterator for BatchIterator<Snapshot> {
-    type Item = Result<FixedBatch, ReadExecutionError>;
+    type Item = Result<FixedBatch, Box<ReadExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let batch = self.executor.compute_next_batch(&self.context, &mut self.interrupt);
@@ -111,7 +111,7 @@ impl<Snapshot: ReadableSnapshot + 'static> Iterator for BatchIterator<Snapshot> 
 type PatternRowIterator<Snapshot> = FlatMap<
     AsLendingIterator<BatchIterator<Snapshot>>,
     FixedBatchRowIterator,
-    fn(Result<FixedBatch, ReadExecutionError>) -> FixedBatchRowIterator,
+    fn(Result<FixedBatch, Box<ReadExecutionError>>) -> FixedBatchRowIterator,
 >;
 
 pub struct PatternIterator<Snapshot: ReadableSnapshot + 'static> {

@@ -51,8 +51,10 @@ where
     fn into_iterator(
         self,
         mut interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
-    {
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         let Self { executable, previous } = self;
         let (previous_iterator, mut context) = previous.into_iterator(interrupt.clone())?;
         let mut batch = match prepare_output_rows(executable.output_width() as u32, previous_iterator) {
@@ -69,12 +71,12 @@ where
             if let Err(err) =
                 execute_insert(&executable, snapshot_mut, &context.thing_manager, &context.parameters, &mut row)
             {
-                return Err((PipelineExecutionError::WriteError { typedb_source: err }, context));
+                return Err((Box::new(PipelineExecutionError::WriteError { typedb_source: err }), context));
             }
 
             if index % 100 == 0 {
                 if let Some(interrupt) = interrupt.check() {
-                    return Err((PipelineExecutionError::Interrupted { interrupt }, context));
+                    return Err((Box::new(PipelineExecutionError::Interrupted { interrupt }), context));
                 }
             }
         }
@@ -83,7 +85,10 @@ where
     }
 }
 
-fn prepare_output_rows(output_width: u32, input_iterator: impl StageIterator) -> Result<Batch, PipelineExecutionError> {
+fn prepare_output_rows(
+    output_width: u32,
+    input_iterator: impl StageIterator,
+) -> Result<Batch, Box<PipelineExecutionError>> {
     // TODO: if the previous stage is not already in Collected format, this will end up temporarily allocating 2x
     //       the current memory. However, in the other case we don't know how many rows in the output batch to allocate ahead of time
     //       and require resizing. For now we take the simpler strategy that doesn't require resizing.
@@ -108,7 +113,7 @@ fn execute_insert(
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
-) -> Result<(), WriteError> {
+) -> Result<(), Box<WriteError>> {
     debug_assert!(row.get_multiplicity() == 1);
     debug_assert!(row.len() == executable.output_row_schema.len());
     for instruction in &executable.concept_instructions {

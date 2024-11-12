@@ -7,7 +7,6 @@
 use crate::{
     graph::thing::vertex_attribute::{InlineEncodableAttributeID, ValueEncodingLength},
     value::{
-        date_bytes::DateBytes,
         decimal_value::Decimal,
         primitive_encoding::{decode_i64, decode_u64, encode_i64, encode_u64},
         value_type::ValueType,

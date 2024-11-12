@@ -38,11 +38,12 @@ pub(crate) struct TypeListExecutor {
 pub(super) type TypeFilterFn = FilterFn<Type>;
 
 pub(super) type TypeTupleIterator<I> = NarrowingTupleIterator<
-    Map<TryFilter<I, Box<TypeFilterFn>, Type, ConceptReadError>, TypeToTupleFn, AdHocHkt<TupleResult<'static>>>,
+    Map<TryFilter<I, Box<TypeFilterFn>, Type, Box<ConceptReadError>>, TypeToTupleFn, AdHocHkt<TupleResult<'static>>>,
 >;
 
-pub(crate) type TypeIterator =
-    TypeTupleIterator<AsLendingIterator<iter::Map<vec::IntoIter<Type>, fn(Type) -> Result<Type, ConceptReadError>>>>;
+pub(crate) type TypeIterator = TypeTupleIterator<
+    AsLendingIterator<iter::Map<vec::IntoIter<Type>, fn(Type) -> Result<Type, Box<ConceptReadError>>>>,
+>;
 
 type TypeVariableValueExtractor = for<'a> fn(&'a Type) -> VariableValue<'a>;
 pub(super) const EXTRACT_TYPE: TypeVariableValueExtractor = |ty| VariableValue::Type(ty.clone());
@@ -71,7 +72,7 @@ impl TypeListExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
-    ) -> Result<TupleIterator, ConceptReadError> {
+    ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter_for_row: Box<TypeFilterFn> = self.checker.filter_for_row(context, &row);
         let iterator = self.types.clone().into_iter().map(Ok as _);
         let as_tuples: TypeIterator = NarrowingTupleIterator(

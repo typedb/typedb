@@ -51,9 +51,9 @@ pub(super) type OwnsReverseUnboundedSortedAttribute = OwnsTupleIterator<
             iter::Flatten<vec::IntoIter<BTreeSet<(ObjectType<'static>, AttributeType<'static>)>>>,
             fn(
                 (ObjectType<'static>, AttributeType<'static>),
-            ) -> Result<(ObjectType<'static>, AttributeType<'static>), ConceptReadError>,
+            ) -> Result<(ObjectType<'static>, AttributeType<'static>), Box<ConceptReadError>>,
         >,
-        Result<(AsHkt![ObjectType<'_>], AsHkt![AttributeType<'_>]), ConceptReadError>,
+        Result<(AsHkt![ObjectType<'_>], AsHkt![AttributeType<'_>]), Box<ConceptReadError>>,
     >,
 >;
 pub(super) type OwnsReverseBoundedSortedOwner = OwnsTupleIterator<
@@ -62,9 +62,9 @@ pub(super) type OwnsReverseBoundedSortedOwner = OwnsTupleIterator<
             vec::IntoIter<(ObjectType<'static>, AttributeType<'static>)>,
             fn(
                 (ObjectType<'static>, AttributeType<'static>),
-            ) -> Result<(ObjectType<'static>, AttributeType<'static>), ConceptReadError>,
+            ) -> Result<(ObjectType<'static>, AttributeType<'static>), Box<ConceptReadError>>,
         >,
-        Result<(AsHkt![ObjectType<'_>], AsHkt![AttributeType<'_>]), ConceptReadError>,
+        Result<(AsHkt![ObjectType<'_>], AsHkt![AttributeType<'_>]), Box<ConceptReadError>>,
     >,
 >;
 
@@ -120,7 +120,7 @@ impl OwnsReverseExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
-    ) -> Result<TupleIterator, ConceptReadError> {
+    ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
         let filter_for_row: Box<OwnsFilterFn> = Box::new(move |item| match filter(item) {

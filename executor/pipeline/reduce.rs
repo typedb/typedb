@@ -40,8 +40,10 @@ where
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
-    {
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         let Self { previous, executable, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
         let rows = match reduce_iterator(&context, executable, previous_iterator) {
@@ -56,7 +58,7 @@ fn reduce_iterator<Snapshot: ReadableSnapshot>(
     context: &ExecutionContext<Snapshot>,
     executable: Arc<ReduceExecutable>,
     iterator: impl StageIterator,
-) -> Result<Batch, PipelineExecutionError> {
+) -> Result<Batch, Box<PipelineExecutionError>> {
     let mut iterator = iterator;
     let mut grouped_reducer = GroupedReducer::new(executable);
     while let Some(result) = iterator.next() {

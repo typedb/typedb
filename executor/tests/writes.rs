@@ -96,7 +96,7 @@ fn setup_schema(storage: Arc<MVCCStorage<WALClient>>) {
 }
 
 struct ShimStage<Snapshot> {
-    rows: Vec<Result<MaybeOwnedRow<'static>, PipelineExecutionError>>,
+    rows: Vec<Result<MaybeOwnedRow<'static>, Box<PipelineExecutionError>>>,
     context: ExecutionContext<Snapshot>,
 }
 
@@ -109,15 +109,15 @@ impl<Snapshot> ShimStage<Snapshot> {
 
 struct ShimIterator(
     AsNarrowingIterator<
-        vec::IntoIter<Result<MaybeOwnedRow<'static>, PipelineExecutionError>>,
-        Result<AsHkt![MaybeOwnedRow<'_>], PipelineExecutionError>,
+        vec::IntoIter<Result<MaybeOwnedRow<'static>, Box<PipelineExecutionError>>>,
+        Result<AsHkt![MaybeOwnedRow<'_>], Box<PipelineExecutionError>>,
     >,
 );
 
 impl StageIterator for ShimIterator {}
 
 impl LendingIterator for ShimIterator {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.0.next()
@@ -130,8 +130,10 @@ impl<Snapshot> StageAPI<Snapshot> for ShimStage<Snapshot> {
     fn into_iterator(
         self,
         _: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
-    {
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         Ok((ShimIterator(AsNarrowingIterator::new(self.rows)), self.context))
     }
 }
@@ -143,7 +145,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     query_str: &str,
     input_row_var_names: &[&str],
     input_rows: Vec<Vec<VariableValue<'static>>>,
-) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), WriteError> {
+) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), Box<WriteError>> {
     let mut translation_context = TranslationContext::new();
     let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_insert();
     let block = ir::translation::writes::translate_insert(&mut translation_context, &typeql_insert).unwrap();
@@ -190,15 +192,15 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     );
     let insert_executor = InsertStageExecutor::new(Arc::new(insert_plan), initial);
     let (output_iter, context) =
-        insert_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match err {
-            PipelineExecutionError::WriteError { typedb_source } => typedb_source,
+        insert_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match *err {
+            PipelineExecutionError::WriteError { typedb_source } => typedb_source.clone(),
             _ => unreachable!(),
         })?;
     let output_rows = output_iter
         .map_static(|res| res.map(|row| row.into_owned()))
         .into_iter()
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|err| match err {
+        .map_err(|err| match *err {
             PipelineExecutionError::WriteError { typedb_source } => typedb_source,
             _ => unreachable!(),
         })?;
@@ -213,7 +215,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     delete_str: &str,
     input_row_var_names: &[&str],
     input_rows: Vec<Vec<VariableValue<'static>>>,
-) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), WriteError> {
+) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), Box<WriteError>> {
     let mut translation_context = TranslationContext::new();
     let entry_annotations = {
         let typeql_match = typeql::parse_query(mock_match_string_for_annotations)
@@ -271,7 +273,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     );
     let delete_executor = DeleteStageExecutor::new(Arc::new(delete_plan), initial);
     let (output_iter, context) =
-        delete_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match err {
+        delete_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match *err {
             PipelineExecutionError::WriteError { typedb_source } => typedb_source,
             _ => unreachable!(),
         })?;
@@ -279,7 +281,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
         .map_static(|res| res.map(|row| row.into_owned()))
         .into_iter()
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|err| match err {
+        .map_err(|err| match *err {
             PipelineExecutionError::WriteError { typedb_source } => typedb_source,
             _ => unreachable!(),
         })?;

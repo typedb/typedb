@@ -6,7 +6,7 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    fmt::{write, Display, Formatter},
+    fmt::{Display, Formatter},
     slice,
 };
 

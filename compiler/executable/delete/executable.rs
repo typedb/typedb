@@ -33,7 +33,7 @@ pub fn compile(
     type_annotations: &TypeAnnotations,
     constraints: &[Constraint<Variable>],
     deleted_concepts: &[Variable],
-) -> Result<DeleteExecutable, WriteCompilationError> {
+) -> Result<DeleteExecutable, Box<WriteCompilationError>> {
     let named_role_types = collect_role_type_bindings(constraints, type_annotations)?;
     let mut connection_deletes = Vec::new();
     for constraint in constraints {
@@ -91,7 +91,7 @@ pub fn compile(
     let mut concept_deletes = Vec::new();
     for &variable in deleted_concepts {
         let Some(input_position) = input_variables.get(&variable) else {
-            return Err(WriteCompilationError::DeletedThingWasNotInInput { variable });
+            return Err(Box::new(WriteCompilationError::DeletedThingWasNotInInput { variable }));
         };
         if type_annotations
             .vertex_annotations_of(&Vertex::Variable(variable))
@@ -99,7 +99,7 @@ pub fn compile(
             .iter()
             .any(|type_| type_.kind() == Kind::Role)
         {
-            return Err(WriteCompilationError::IllegalRoleDelete { variable });
+            return Err(Box::new(WriteCompilationError::IllegalRoleDelete { variable }));
         } else {
             concept_deletes.push(ThingInstruction { thing: ThingSource(*input_position) });
         };

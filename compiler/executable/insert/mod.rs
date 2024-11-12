@@ -43,10 +43,10 @@ pub struct ThingSource(pub VariablePosition);
 pub(crate) fn get_thing_source(
     input_variables: &HashMap<Variable, VariablePosition>,
     variable: Variable,
-) -> Result<ThingSource, WriteCompilationError> {
+) -> Result<ThingSource, Box<WriteCompilationError>> {
     match input_variables.get(&variable) {
         Some(input) => Ok(ThingSource(*input)),
-        None => Err(WriteCompilationError::CouldNotDetermineThingVariableSource { variable }),
+        None => Err(Box::new(WriteCompilationError::CouldNotDetermineThingVariableSource { variable })),
     }
 }
 

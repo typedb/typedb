@@ -4,11 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    error::Error,
-    fmt,
-    sync::{mpsc::RecvTimeoutError, Arc},
-};
+use std::sync::{mpsc::RecvTimeoutError, Arc};
 
 use concept::{
     error::ConceptWriteError,
@@ -175,7 +171,7 @@ typedb_error!(
     pub DataCommitError(component = "Data commit", prefix = "DCT") {
         SnapshotInUse(1, "Failed to commit since the transaction snapshot is still in use."),
         ConceptWriteErrors(2, "Data commit error.", source: Vec<ConceptWriteError> ),
-        ConceptWriteErrorsFirst(3, "Data commit error.", ( typedb_source : ConceptWriteError )),
+        ConceptWriteErrorsFirst(3, "Data commit error.", ( typedb_source : Box<ConceptWriteError> )),
         SnapshotError(4, "Snapshot error.", ( typedb_source: SnapshotError )),
     }
 );
@@ -268,7 +264,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         self.type_manager.validate(&snapshot).map_err(|errs| {
             // TODO: send all the errors, not just the first,
             // when we can print the stacktraces of multiple errors, not just a single one
-            ConceptWriteErrorsFirst { typedb_source: errs.into_iter().next().unwrap() }
+            ConceptWriteErrorsFirst { typedb_source: Box::new(errs.into_iter().next().unwrap()) }
         })?;
 
         self.thing_manager.finalise(&mut snapshot).map_err(|errs| {
@@ -339,7 +335,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 typedb_error!(
     pub SchemaCommitError(component = "Schema commit", prefix = "SCT") {
         ConceptWriteErrors(1, "Schema commit error.", source: Vec<ConceptWriteError> ),
-        ConceptWriteErrorsFirst(2, "Schema commit error.", ( typedb_source : ConceptWriteError )),
+        ConceptWriteErrorsFirst(2, "Schema commit error.", ( typedb_source : Box<ConceptWriteError> )),
         TypeCacheUpdateError(3, "TypeCache update error.", ( typedb_source: TypeCacheCreateError )),
         StatisticsError(4, "Statistics error.", ( typedb_source: StatisticsError )),
         FunctionError(5, "Function error.", ( typedb_source: FunctionError )),

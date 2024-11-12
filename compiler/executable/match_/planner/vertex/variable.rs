@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::min, collections::HashSet, fmt};
+use std::{collections::HashSet, fmt};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;

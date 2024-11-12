@@ -163,15 +163,15 @@ pub(crate) enum TupleIterator {
 
 impl {
     pub(crate) fn write_values(&mut self, row: &mut Row<'_>);
-    pub(crate) fn peek(&mut self) -> Option<&Result<Tuple<'_>, ConceptReadError>>;
-    pub(crate) fn advance_past(&mut self) -> Result<usize, ConceptReadError> ;
+    pub(crate) fn peek(&mut self) -> Option<&Result<Tuple<'_>, Box<ConceptReadError>>>;
+    pub(crate) fn advance_past(&mut self) -> Result<usize, Box<ConceptReadError>>;
     fn skip_until_value(
         &mut self,
         index: TupleIndex,
         value: &VariableValue<'_>,
-    ) -> Result<Option<Ordering>, ConceptReadError> ;
-    pub(crate) fn advance_single(&mut self) -> Result<(), ConceptReadError> ;
-    pub(crate) fn peek_first_unbound_value(&mut self) -> Option<Result<&VariableValue<'_>, ConceptReadError>> ;
+    ) -> Result<Option<Ordering>, Box<ConceptReadError>>;
+    pub(crate) fn advance_single(&mut self) -> Result<(), Box<ConceptReadError>>;
+    pub(crate) fn peek_first_unbound_value(&mut self) -> Option<Result<&VariableValue<'_>, Box<ConceptReadError>>>;
     pub(crate) fn first_unbound_index(&self) -> TupleIndex ;
 }
 }
@@ -181,7 +181,7 @@ impl TupleIterator {
         &mut self,
         index: TupleIndex,
         value: &VariableValue<'_>,
-    ) -> Result<Option<Ordering>, ConceptReadError> {
+    ) -> Result<Option<Ordering>, Box<ConceptReadError>> {
         self.skip_until_value(index, value)
     }
 }
@@ -189,12 +189,12 @@ impl TupleIterator {
 pub(crate) trait TupleIteratorAPI {
     fn write_values(&mut self, row: &mut Row<'_>);
 
-    fn peek(&mut self) -> Option<&Result<Tuple<'_>, ConceptReadError>>;
+    fn peek(&mut self) -> Option<&Result<Tuple<'_>, Box<ConceptReadError>>>;
 
     /// Advance the iterator past the current answer, and return the number duplicate answers were skipped
-    fn advance_past(&mut self) -> Result<usize, ConceptReadError>;
+    fn advance_past(&mut self) -> Result<usize, Box<ConceptReadError>>;
 
-    fn advance_single(&mut self) -> Result<(), ConceptReadError>;
+    fn advance_single(&mut self) -> Result<(), Box<ConceptReadError>>;
 
     fn positions(&self) -> &TuplePositions;
 }
@@ -272,7 +272,7 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleI
         self.first_unbound
     }
 
-    fn count_until_enumerated_changes(&mut self) -> Result<usize, ConceptReadError> {
+    fn count_until_enumerated_changes(&mut self) -> Result<usize, Box<ConceptReadError>> {
         let Some(last_enumerated) = self.last_enumerated else {
             unreachable!("this should only be called if the tuple contains enumerated variables")
         };
@@ -299,7 +299,7 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleI
         }
     }
 
-    fn skip_until_changes(&mut self, change_width: usize) -> Result<(), ConceptReadError> {
+    fn skip_until_changes(&mut self, change_width: usize) -> Result<(), Box<ConceptReadError>> {
         // TODO: this should be optimisable with seek(to peek[index].increment())
         debug_assert!(self.peek().is_some());
 
@@ -334,7 +334,7 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleI
         &mut self,
         index: TupleIndex,
         target: &VariableValue<'_>,
-    ) -> Result<Option<Ordering>, ConceptReadError> {
+    ) -> Result<Option<Ordering>, Box<ConceptReadError>> {
         // TODO: this should use seek if index == self.first_unbound()
         loop {
             let peek = self.peek();
@@ -353,11 +353,14 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleI
         }
     }
 
-    fn peek_first_unbound_value(&mut self) -> Option<Result<&VariableValue<'_>, ConceptReadError>> {
+    fn peek_first_unbound_value(&mut self) -> Option<Result<&VariableValue<'_>, Box<ConceptReadError>>> {
         self.peek_current_value_at(self.first_unbound)
     }
 
-    fn peek_current_value_at(&mut self, index: TupleIndex) -> Option<Result<&VariableValue<'_>, ConceptReadError>> {
+    fn peek_current_value_at(
+        &mut self,
+        index: TupleIndex,
+    ) -> Option<Result<&VariableValue<'_>, Box<ConceptReadError>>> {
         self.peek()
             .map(|result| result.as_ref().map(|tuple| &tuple.values()[index as usize]).map_err(|err| err.clone()))
     }
@@ -399,11 +402,11 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> TupleIterato
         }
     }
 
-    fn peek(&mut self) -> Option<&Result<Tuple<'_>, ConceptReadError>> {
+    fn peek(&mut self) -> Option<&Result<Tuple<'_>, Box<ConceptReadError>>> {
         self.iterator.peek()
     }
 
-    fn advance_past(&mut self) -> Result<usize, ConceptReadError> {
+    fn advance_past(&mut self) -> Result<usize, Box<ConceptReadError>> {
         debug_assert!(self.peek().is_some());
 
         let past_enumerated_or_counted_index = self.last_enumerated_or_counted.map_or(0, |i| i as usize + 1);
@@ -427,7 +430,7 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> TupleIterato
         }
     }
 
-    fn advance_single(&mut self) -> Result<(), ConceptReadError> {
+    fn advance_single(&mut self) -> Result<(), Box<ConceptReadError>> {
         let _ = self.iterator.next().unwrap()?;
         Ok(())
     }

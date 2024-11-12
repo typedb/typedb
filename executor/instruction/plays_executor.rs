@@ -46,7 +46,7 @@ pub(crate) struct PlaysExecutor {
 }
 
 pub(super) type PlaysTupleIterator<I> = Map<
-    TryFilter<I, Box<PlaysFilterFn>, (AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>]), ConceptReadError>,
+    TryFilter<I, Box<PlaysFilterFn>, (AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>]), Box<ConceptReadError>>,
     PlaysToTupleFn,
     AsHkt![TupleResult<'_>],
 >;
@@ -57,9 +57,9 @@ pub(super) type PlaysUnboundedSortedPlayer = PlaysTupleIterator<
             iter::Flatten<vec::IntoIter<BTreeSet<(ObjectType<'static>, RoleType<'static>)>>>,
             fn(
                 (ObjectType<'static>, RoleType<'static>),
-            ) -> Result<(ObjectType<'static>, RoleType<'static>), ConceptReadError>,
+            ) -> Result<(ObjectType<'static>, RoleType<'static>), Box<ConceptReadError>>,
         >,
-        Result<(AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>]), ConceptReadError>,
+        Result<(AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>]), Box<ConceptReadError>>,
     >,
 >;
 pub(super) type PlaysBoundedSortedRole = PlaysTupleIterator<
@@ -68,9 +68,9 @@ pub(super) type PlaysBoundedSortedRole = PlaysTupleIterator<
             vec::IntoIter<(ObjectType<'static>, RoleType<'static>)>,
             fn(
                 (ObjectType<'static>, RoleType<'static>),
-            ) -> Result<(ObjectType<'static>, RoleType<'static>), ConceptReadError>,
+            ) -> Result<(ObjectType<'static>, RoleType<'static>), Box<ConceptReadError>>,
         >,
-        Result<(AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>]), ConceptReadError>,
+        Result<(AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>]), Box<ConceptReadError>>,
     >,
 >;
 
@@ -134,7 +134,7 @@ impl PlaysExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
-    ) -> Result<TupleIterator, ConceptReadError> {
+    ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
         let filter_for_row: Box<PlaysFilterFn> = Box::new(move |item| match filter(item) {
@@ -193,7 +193,7 @@ impl PlaysExecutor {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         player: Type,
-    ) -> Result<BTreeSet<(ObjectType<'static>, RoleType<'static>)>, ConceptReadError> {
+    ) -> Result<BTreeSet<(ObjectType<'static>, RoleType<'static>)>, Box<ConceptReadError>> {
         let object_type = match player {
             Type::Entity(entity) => entity.into_owned_object_type(),
             Type::Relation(relation) => relation.into_owned_object_type(),

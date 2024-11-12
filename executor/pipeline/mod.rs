@@ -40,7 +40,7 @@ impl WrittenRowsIterator {
 }
 
 impl LendingIterator for WrittenRowsIterator {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         let index = self.index;
@@ -54,7 +54,7 @@ impl LendingIterator for WrittenRowsIterator {
 }
 
 impl StageIterator for WrittenRowsIterator {
-    fn collect_owned(self) -> Result<Batch, PipelineExecutionError> {
+    fn collect_owned(self) -> Result<Batch, Box<PipelineExecutionError>> {
         debug_assert!(self.index == 0, "Truncating start of rows is not implemented");
         Ok(self.rows)
     }
@@ -66,9 +66,9 @@ typedb_error!(
         Interrupted(1, "Execution interrupted by to a concurrent {interrupt}.", interrupt: InterruptType),
         FetchUsedAsRows(2, "Cannot use a Fetch query to return ConceptRows"),
         RowsUsedAsFetch(3, "Cannot use query returning ConceptRows as a Fetch query."),
-        ConceptRead(4, "Error reading concept.", ( source: ConceptReadError )),
-        InitialisingMatchIterator(5, "Error initialising Match clause iterator.", ( source: ConceptReadError )),
-        WriteError(6, "Error executing write operation.", ( typedb_source: WriteError )),
+        ConceptRead(4, "Error reading concept.", ( source: Box<ConceptReadError> )),
+        InitialisingMatchIterator(5, "Error initialising Match clause iterator.", ( source: Box<ConceptReadError> )),
+        WriteError(6, "Error executing write operation.", ( typedb_source: Box<WriteError> )),
         ReadPatternExecution(7, "Error executing a read pattern.", ( typedb_source : ReadExecutionError )),
         FetchError(8, "Error executing fetch operation.", ( typedb_source: FetchExecutionError )),
     }

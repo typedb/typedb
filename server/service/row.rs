@@ -18,7 +18,7 @@ pub(crate) fn encode_row(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
-) -> Result<typedb_protocol::ConceptRow, ConceptReadError> {
+) -> Result<typedb_protocol::ConceptRow, Box<ConceptReadError>> {
     // TODO: multiplicity?
     let mut encoded_row = Vec::with_capacity(columns.len());
     for (_, position) in columns {
@@ -34,7 +34,7 @@ pub(crate) fn encode_row_entry(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
-) -> Result<typedb_protocol::row_entry::Entry, ConceptReadError> {
+) -> Result<typedb_protocol::row_entry::Entry, Box<ConceptReadError>> {
     match variable_value {
         VariableValue::Empty => Ok(typedb_protocol::row_entry::Entry::Empty(typedb_protocol::row_entry::Empty {})),
         VariableValue::Type(type_) => {
