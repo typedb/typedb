@@ -1001,7 +1001,7 @@ typedb_error!(
         Unimplemented(1, "Unimplemented redefine functionality: {description}", description: String),
         UnexpectedConceptRead(2, "Concept read error during redefine query execution.", ( source: Box<ConceptReadError> )),
         NothingRedefined(3, "Nothing was redefined."),
-        DefinitionResolution(4, "Could not find symbol in redefine query.", ( typedb_source: SymbolResolutionError )),
+        DefinitionResolution(4, "Could not find symbol in redefine query.", ( typedb_source: Box<SymbolResolutionError> )),
         LiteralParseError(5, "Error parsing literal in redefine query.", ( source : LiteralParseError )),
         CanOnlyRedefineOneThingPerQuery(6, "Redefine queries can currently only mutate exactly one schema element per query."),
         StructFieldDoesNotExist(7, "Struct field used in redefine query does not exist.\nSource:\n{declaration}", declaration: Field),
@@ -1036,7 +1036,7 @@ typedb_error!(
         ValueTypeSymbolResolution(
             13,
             "Error resolving value type in redefine query.",
-            ( typedb_source: SymbolResolutionError )
+            ( typedb_source: Box<SymbolResolutionError> )
         ),
         TypeSubNotDefined(
             14,

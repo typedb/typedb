@@ -147,10 +147,10 @@ fn define_types<'a>(
     for label in undefined_labels {
         let existing =
             try_resolve_typeql_type(snapshot, type_manager, &label).map_err(|err| DefineError::SymbolResolution {
-                typedb_source: SymbolResolutionError::UnexpectedConceptRead { source: err },
+                typedb_source: Box::new(SymbolResolutionError::UnexpectedConceptRead { source: err }),
             })?;
         if existing.is_none() {
-            return Err(DefineError::SymbolResolution { typedb_source: SymbolResolutionError::TypeNotFound { label } });
+            return Err(DefineError::SymbolResolution { typedb_source: Box::new(SymbolResolutionError::TypeNotFound { label }) });
         }
     }
 
@@ -232,7 +232,7 @@ fn define_type(
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
     let existing = try_resolve_typeql_type(snapshot, type_manager, &label).map_err(|err| {
-        DefineError::SymbolResolution { typedb_source: SymbolResolutionError::UnexpectedConceptRead { source: err } }
+        DefineError::SymbolResolution { typedb_source: Box::new(SymbolResolutionError::UnexpectedConceptRead { source: err }) }
     })?;
     match type_declaration.kind {
         None => {
@@ -1005,7 +1005,7 @@ typedb_error!(
     pub DefineError(component = "Define execution", prefix = "DEX") {
         Unimplemented(1, "Unimplemented define functionality: {description}", description: String),
         UnexpectedConceptRead(2, "Concept read error. ", ( source: Box<ConceptReadError> )),
-        SymbolResolution(3, "Failed to find symbol.", ( typedb_source: SymbolResolutionError )),
+        SymbolResolution(3, "Failed to find symbol.", ( typedb_source: Box<SymbolResolutionError> )),
         LiteralParseError(4, "Failed to parse literal.", ( source: LiteralParseError )),
         TypeCreateError(
             5,
@@ -1054,7 +1054,7 @@ typedb_error!(
         ValueTypeSymbolResolution(
             12,
             "Error resolving value type in define query.",
-            ( typedb_source: SymbolResolutionError )
+            ( typedb_source: Box<SymbolResolutionError> )
         ),
         TypeSubAlreadyDefinedButDifferent(
             13,
