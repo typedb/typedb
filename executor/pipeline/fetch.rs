@@ -33,6 +33,7 @@ use ir::{
     pattern::ParameterID,
     pipeline::{ParameterRegistry, VariableRegistry},
 };
+use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
@@ -52,6 +53,16 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
+
+macro_rules! execute_once_error_if_has_second {
+    ($call:expr, $error:expr) => {{
+        let first_result = $call;
+        if $call.is_some() {
+            return Err($error);
+        }
+        first_result
+    }};
+}
 
 pub struct FetchStageExecutor<Snapshot: ReadableSnapshot> {
     executable: Arc<ExecutableFetch>,
@@ -146,6 +157,7 @@ fn execute_fetch_some(
             let execution_context =
                 Arc::new(ExecutionContext::new(snapshot.clone(), thing_manager.clone(), parameters.clone()));
             let mut interrupt = interrupt;
+<<<<<<< HEAD
             while let Some(batch) = inner
                 .compute_next_batch(
                     &execution_context,
@@ -168,16 +180,44 @@ fn execute_fetch_some(
                     // )
                     //     .map_err(|err| PipelineExecutionError::FetchError { typedb_source: err });
                     // println!("DOCUMENT: {document:?}");
+=======
+            let mut tabled_functions = TabledFunctions::new(functions.clone()); // TODO: Get it somewhere else?
+            let mut suspend_points = Vec::new();
+
+            let batch = execute_once_error_if_has_second!(
+                inner
+                    .compute_next_batch(&execution_context, &mut interrupt, &mut tabled_functions, &mut suspend_points)
+                    .map_err(|err| FetchExecutionError::ReadExecution { typedb_source: err })?,
+                FetchExecutionError::FetchSingleFunctionNotSingle { func_name: "func".to_string() } // TODO: Can we get function name here?
+            );
+
+            let batch = match batch {
+                Some(batch) => batch,
+                // TODO: Could probably force to return this "Empty" in the batch
+                None => return Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
+            };
+
+            let mut row_iter = batch.into_iter();
+            let document = match execute_once_error_if_has_second!(
+                row_iter.next(),
+                FetchExecutionError::FetchSingleFunctionNotSingle { func_name: "func".to_string() }
+            ) {
+                Some(row) => {
+                    let mut row_iter = row.row().iter();
+                    let result = execute_once_error_if_has_second!(
+                        row_iter.next(),
+                        FetchExecutionError::FetchSingleFunctionNotScalar { func_name: "func".to_string() }
+                    );
+                    match result {
+                        Some(value) => variable_value_to_document(value.clone())?,
+                        None => DocumentNode::Leaf(DocumentLeaf::Empty),
+                    }
+>>>>>>> bd7089430 (Implement single functions)
                 }
-            }
+                None => DocumentNode::Leaf(DocumentLeaf::Empty),
+            };
 
-            panic!("Weeeee")
-
-            // FetchSomeInstruction::SingleFunction(function) => {
-            //     println!("Got function execution {function:?}");
-            //     Err(FetchExecutionError::Unimplemented {
-            //         description: "Fetch expressions and match-return subqueries are not available yet (try a match-fetch subquery instead?).".to_owned()
-            //     })
+            Ok(document)
         }
         FetchSomeInstruction::Object(object) => {
             execute_object(object, snapshot, thing_manager, parameters, functions, row, interrupt)
@@ -433,6 +473,10 @@ typedb_error!(
 
         FetchEntities(5, "Fetching entities is not supported, use '$var.*' or '$var.<attribute type>' to fetch attributes instead."),
         FetchRelations(6, "Fetching relations is not supported, use '$var.*' or '$var.<attribute type>' to fetch attributes instead."),
+
+        FetchSingleFunctionNotScalar(7, "Fetching results of a function call '{func_name}()' expected a scalar return, got a tuple instead.", func_name: String),
+        FetchSingleFunctionNotSingle(8, "Fetching results of a function call '{func_name}()' expected a single return, got a stream instead. Consider fetching '[ {func_name}() ]' or using `first` or `last` in `{func_name}`.", func_name: String),
+        FetchListFunctionNotScalar(9, "Fetching results of a function call '[ {func_name}() ]' expected a scalar return, got a tuple instead.", func_name: String),
 
         SubFetch(10, "Error executing sub fetch.", ( typedb_source : Box<PipelineExecutionError>)),
 

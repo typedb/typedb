@@ -660,11 +660,14 @@ impl AssignExecutor {
         while !output.is_full() {
             let Some(row) = input.next() else { break };
             let input_row = row.map_err(|err| err.clone())?;
-            let input_variables = self
-                .inputs
-                .iter()
-                .map(|&pos| (pos, ExpressionValue::try_from_value(input_row.get(pos).to_owned(), context).unwrap()))
-                .collect();
+            let mut input_variables = HashMap::new();
+            for &pos in &self.inputs {
+                input_variables.insert(
+                    pos,
+                    ExpressionValue::try_from_value(input_row.get(pos).to_owned(), context)
+                        .map_err(|source| ReadExecutionError::ExpressionEvaluate { source })?,
+                );
+            }
             let output_value = evaluate_expression(&self.expression, input_variables, &context.parameters)
                 .map_err(|err| ReadExecutionError::ExpressionEvaluate { source: err })?;
             output.append(|mut row| {

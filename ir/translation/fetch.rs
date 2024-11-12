@@ -26,7 +26,7 @@ use typeql::{
 };
 
 use crate::{
-    pattern::ParameterID,
+    pattern::{constraint::ConstraintsBuilder, ParameterID},
     pipeline::{
         block::{Block, BlockBuilder, BlockBuilderContext},
         fetch::{
@@ -38,7 +38,7 @@ use crate::{
         FunctionReadError, ParameterRegistry,
     },
     translation::{
-        expression::build_expression,
+        expression::{add_user_defined_function_call, build_expression},
         fetch::FetchRepresentationError::{
             AnonymousVariableEncountered, InvalidAttributeLabelEncountered, NamedVariableEncountered,
             OptionalVariableEncountered, VariableNotAvailable,
@@ -245,7 +245,7 @@ fn translate_fetch_single(
                         function_index,
                         expression,
                     );
-                    println!("Result: {res:?}");
+                    println!("Res: {res:?}");
                     res
                 }
                 // function expressions may return Single or List, depending on signature invoked
@@ -373,6 +373,7 @@ fn translate_inline_user_function_call(
         value_parameters,
     );
     let mut builder = Block::builder(builder_context);
+
     let mut assign_vars = Vec::new();
     for _ in &signature.returns {
         assign_vars.push(
@@ -382,16 +383,27 @@ fn translate_inline_user_function_call(
                 .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?,
         );
     }
-    let mut arg_vars = Vec::new();
-    for arg in &call.args {
-        arg_vars.push(add_expression(function_index, &mut builder, arg)?);
-    }
 
-    builder
-        .conjunction_mut()
-        .constraints_mut()
-        .add_function_binding(assign_vars.clone(), &signature, arg_vars, function_name)
-        .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
+    add_user_defined_function_call(
+        function_index,
+        &mut builder.conjunction_mut().constraints_mut(),
+        function_name,
+        assign_vars.clone(),
+        &call.args,
+    )
+    .map_err(|typedb_source| FetchRepresentationError::ExpressionRepresentation { typedb_source })?;
+
+    // let mut arg_vars = Vec::new();
+    // println!("Call: {call:?}");
+    // for arg in &call.args {
+    //     arg_vars.push(add_expression(function_index, &mut builder, arg)?);
+    // }
+    //
+    // builder
+    //     .conjunction_mut()
+    //     .constraints_mut()
+    //     .add_function_binding(assign_vars.clone(), &signature, arg_vars, function_name)
+    //     .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: Box::new(err) })?;
 
     let block = builder
         .finish()

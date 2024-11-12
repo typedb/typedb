@@ -117,15 +117,14 @@ fn register_typeql_literal(
     Ok(id)
 }
 
-pub(super) fn add_user_defined_function_call(
+pub fn add_user_defined_function_call(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_, '_>,
-    identifier: &typeql::Identifier,
+    function_name: &str,
     assigned: Vec<Variable>,
     args: &[typeql::Expression],
 ) -> Result<(), Box<RepresentationError>> {
     let arguments = split_out_inline_expressions(function_index, constraints, args)?;
-    let function_name = identifier.as_str();
     let callee = function_index
         .get_function_signature(function_name)
         .map_err(|source| RepresentationError::FunctionReadError { source })?;
@@ -153,7 +152,13 @@ fn build_function(
         }
         FunctionName::Identifier(identifier) => {
             let assign = constraints.create_anonymous_variable()?;
-            add_user_defined_function_call(function_index, constraints, identifier, vec![assign], &function_call.args)?;
+            add_user_defined_function_call(
+                function_index,
+                constraints,
+                identifier.as_str(),
+                vec![assign],
+                &function_call.args,
+            )?;
             Ok(Expression::Variable(assign))
         }
     }

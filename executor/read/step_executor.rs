@@ -20,11 +20,15 @@ use compiler::{
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
+use typeql::schema::definable::function::SingleSelector;
 
 use crate::read::{
-    collecting_stage_executor::CollectingStageExecutor, immediate_executor::ImmediateExecutor,
-    nested_pattern_executor::NestedPatternExecutor, pattern_executor::PatternExecutor,
-    stream_modifier::StreamModifierExecutor, tabled_call_executor::TabledCallExecutor,
+    collecting_stage_executor::CollectingStageExecutor,
+    immediate_executor::ImmediateExecutor,
+    nested_pattern_executor::NestedPatternExecutor,
+    pattern_executor::PatternExecutor,
+    stream_modifier::{LastMapper, StreamModifierExecutor},
+    tabled_call_executor::TabledCallExecutor,
 };
 
 pub enum StepExecutors {
@@ -180,14 +184,19 @@ pub(crate) fn create_executors_for_function(
     match &executable_function.returns {
         ExecutableReturn::Stream(positions) => {
             steps.push(StepExecutors::ReshapeForReturn(positions.clone()));
+            Ok(steps)
         }
         ExecutableReturn::Single(selector, positions) => {
-            todo!("ExecutableReturn::Single")
+            steps.push(StepExecutors::ReshapeForReturn(positions.clone()));
+            let step = match selector {
+                SingleSelector::First => StreamModifierExecutor::new_first(PatternExecutor::new(steps)),
+                SingleSelector::Last => StreamModifierExecutor::new_last(PatternExecutor::new(steps)),
+            };
+            Ok(vec![step.into()])
         }
         ExecutableReturn::Check => todo!("ExecutableReturn::Check"),
         ExecutableReturn::Reduce(_) => todo!("ExecutableReturn::Reduce"),
     }
-    Ok(steps)
 }
 
 pub(super) fn create_executors_for_pipeline_stages(

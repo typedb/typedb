@@ -23,7 +23,7 @@ use crate::{
         nested_pattern_executor::{Disjunction, InlinedFunction, Negation, NestedPatternExecutor},
         step_executor::StepExecutors,
         stream_modifier::{
-            DistinctMapper, LimitMapper, OffsetMapper, StreamModifierExecutor, StreamModifierResultMapper,
+            DistinctMapper, LastMapper, LimitMapper, OffsetMapper, StreamModifierExecutor, StreamModifierResultMapper,
         },
         tabled_call_executor::TabledCallResult,
         tabled_functions::{TabledFunctionPatternExecutorState, TabledFunctions},
@@ -438,6 +438,15 @@ impl PatternExecutor {
                 }
                 StreamModifierExecutor::Distinct { inner, output_width, .. } => {
                     let mapper = StreamModifierResultMapper::Distinct(DistinctMapper::new(*output_width));
+                    inner.prepare(FixedBatch::from(input.as_reference()));
+                    self.control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
+                        index,
+                        mapper,
+                        input: input.clone().into_owned(),
+                    }));
+                }
+                StreamModifierExecutor::Last { inner } => {
+                    let mapper = StreamModifierResultMapper::Last(LastMapper::new());
                     inner.prepare(FixedBatch::from(input.as_reference()));
                     self.control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
                         index,

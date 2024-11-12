@@ -9,11 +9,11 @@ use std::{
     iter::zip,
     sync::Arc,
 };
-use itertools::Itertools;
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::pipeline::{function_signature::FunctionID, VariableRegistry};
+use itertools::Itertools;
 
 use crate::{
     annotation::{

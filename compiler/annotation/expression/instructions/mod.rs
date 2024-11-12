@@ -44,8 +44,13 @@ pub enum ExpressionEvaluationError {
 }
 
 impl fmt::Debug for ExpressionEvaluationError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            // TODO: Temporary for debug. Convert to `typedb_error!`
+            ExpressionEvaluationError::CheckedOperationFailed => f.write_str("CheckedOperationFailed"),
+            ExpressionEvaluationError::CastFailed => f.write_str("CastFailed"),
+            ExpressionEvaluationError::ListIndexOutOfRange => f.write_str("ListIndexOutOfRange"),
+        }
     }
 }
 
