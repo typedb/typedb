@@ -22,6 +22,9 @@ use compiler::annotation::expression::{
         ExpressionEvaluationError,
     },
 };
+use compiler::annotation::expression::instructions::load_cast::CastUnaryDecimalToDouble;
+use compiler::annotation::expression::instructions::load_cast::CastLeftDecimalToDouble;
+use compiler::annotation::expression::instructions::load_cast::CastRightDecimalToDouble;
 use encoding::value::value::{NativeValueConvertible, Value};
 use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
 use storage::snapshot::ReadableSnapshot;
@@ -153,6 +156,10 @@ fn evaluate_instruction(
         ExpressionOpCode::CastUnaryLongToDouble => CastUnaryLongToDouble::evaluate(state),
         ExpressionOpCode::CastLeftLongToDouble => CastLeftLongToDouble::evaluate(state),
         ExpressionOpCode::CastRightLongToDouble => CastRightLongToDouble::evaluate(state),
+
+        ExpressionOpCode::CastUnaryDecimalToDouble => CastUnaryDecimalToDouble::evaluate(state),
+        ExpressionOpCode::CastLeftDecimalToDouble => CastLeftDecimalToDouble::evaluate(state),
+        ExpressionOpCode::CastRightDecimalToDouble => CastRightDecimalToDouble::evaluate(state),
 
         ExpressionOpCode::OpLongAddLong => operators::OpLongAddLong::evaluate(state),
         ExpressionOpCode::OpLongSubtractLong => operators::OpLongSubtractLong::evaluate(state),

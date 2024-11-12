@@ -34,6 +34,7 @@ use crate::annotation::expression::{
     },
     ExpressionCompileError,
 };
+use crate::annotation::expression::instructions::load_cast::{CastLeftDecimalToDouble, CastRightDecimalToDouble};
 
 pub struct ExpressionCompilationContext<'this> {
     expression_tree: &'this ExpressionTree<Variable>,
@@ -238,6 +239,11 @@ impl<'this> ExpressionCompilationContext<'this> {
                 CastRightLongToDouble::validate_and_append(self)?;
                 self.compile_op_double_double(op)?;
             }
+            ValueTypeCategory::Decimal => {
+                // The right needs to be cast
+                CastRightDecimalToDouble::validate_and_append(self)?;
+                self.compile_op_double_double(op)?;
+            }
             ValueTypeCategory::Double => {
                 self.compile_op_double_double(op)?;
             }
@@ -253,11 +259,19 @@ impl<'this> ExpressionCompilationContext<'this> {
     fn compile_op_decimal(&mut self, op: Operator, right: &Expression<Variable>) -> Result<(), ExpressionCompileError> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.category();
-        Err(ExpressionCompileError::UnsupportedOperandsForOperation {
-            op,
-            left_category: ValueTypeCategory::Decimal,
-            right_category,
-        })
+        match right_category {
+            ValueTypeCategory::Double => {
+                // The left needs to be cast
+                CastLeftDecimalToDouble::validate_and_append(self)?;
+                self.compile_op_double_double(op)?;
+            }
+            _ => Err(ExpressionCompileError::UnsupportedOperandsForOperation {
+                op,
+                left_category: ValueTypeCategory::Decimal,
+                right_category,
+            })?,
+        }
+        Ok(())
     }
 
     fn compile_op_string(&mut self, op: Operator, right: &Expression<Variable>) -> Result<(), ExpressionCompileError> {

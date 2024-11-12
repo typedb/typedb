@@ -12,6 +12,7 @@ use std::{
 use concept::error::ConceptReadError;
 use encoding::value::value_type::ValueTypeCategory;
 use ir::pattern::{expression::Operator, variable_category::VariableCategory};
+use ir::RepresentationError;
 
 pub mod block_compiler;
 pub mod compiled_expression;
@@ -60,6 +61,7 @@ pub enum ExpressionCompileError {
         derived_category: VariableCategory,
         existing_category: VariableCategory,
     },
+    Representation { source: RepresentationError },
 }
 
 impl Display for ExpressionCompileError {
@@ -82,6 +84,7 @@ impl Error for ExpressionCompileError {
             | Self::VariableHasNoValueType { .. }
             | Self::VariableMustBeValueOrAttribute { .. }
             | Self::DerivedConflictingVariableCategory { .. }
+            | Self::Representation { .. }
             | Self::UnsupportedArgumentsForBuiltin
             | Self::ListIndexMustBeLong
             | Self::HeterogenousValuesInList
