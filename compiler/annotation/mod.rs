@@ -25,7 +25,7 @@ typedb_error!(
         Unimplemented(0, "Unimplemented: {description}", description: String),
         TypeInference(1, "Type inference error while compiling query annotations.", ( typedb_source : TypeInferenceError )),
         PreambleTypeInference(2, "Type inference error while compiling query premable functions.", ( typedb_source : FunctionAnnotationError )),
-        ExpressionCompilation(3, "Error inferring correct expression types.", ( source : ExpressionCompileError )),
+        ExpressionCompilation(3, "Error inferring correct expression types.", ( source : Box<ExpressionCompileError> )),
         FetchEntry(4, "Error during type inference for fetch operation for key '{key}'.", key: String, (typedb_source : Box<AnnotationError> )),
         FetchBlockFunctionInferenceError(5, "Error during type inference for fetch sub-query.", (typedb_source : FunctionAnnotationError )),
         ConceptRead(6, "Error while retrieving concept.", (source: Box<ConceptReadError> )),
