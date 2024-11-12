@@ -959,8 +959,8 @@ _System property_
 
 _System property_
 
-1. 🔶 _Abstract interface inheritance_. Abstract interfaces are inherited if not specialized just like non-abstract interfaces. In math: if $`\diamond(B : \mathbf{Rel}(J))`$ and $`A \lneq B`$ without specializing $I$ (i.e. $`\not \exists I. A(I) \leq B(J)`$) then the type system will infer $`\diamond(B : \mathbf{Rel}(J))`$.
-1. 🔶 _Upwards closure_. When `A relates I @abstract` and $`I \lneq J`$ then `A` also relates `J` abstractly.
+1. 🔶 _Abstract interface inheritance_. Abstract interfaces are inherited if not specialized just like non-abstract interfaces. In math: if $`\diamond(B : \mathbf{Rel}(J))`$ and $`A \lneq B`$ without specializing $J$ (i.e. $`\not \exists I. A(I) \leq B(J)`$) then the type system will infer $`\diamond(A : \mathbf{Rel}(J))`$.
+1. 🔶 _Upwards closure_. When $`\diamond(A : \mathbf{Rel}(I))`$ and $`A(I) \leq B(J)`$ then $`\diamond(B : \mathbf{Rel}(J))`$
 
 _Remark_: In addition to user declarations, let's also recall the **three cases** in which `relates @abstract` gets implicitly inferred by the type system:
 * Un-specialization: if a relation type relates a specialized interface, _then_ it abstractly relates the unspecialized versions of the interface.
@@ -2818,8 +2818,7 @@ _Remark_: Offset is only useful when streams (and the order of answers) are full
 
 **TODO**: require `?` wherever optionality may occur? Otherwise, must account for zero (not one) rows being returned.
 
-    In this case, we output a ***single concept*** row `($x_1 -> <EL>, $x_2 -> <EL>, ...)`, where `<EL>` is a output element (i.e. instance, value, or list, but _never_ type) constructed as follows:
-
+In this case, we output a ***single concept*** row `($x_1 -> <EL>, $x_2 -> <EL>, ...)`, where `<EL>` is a output element (i.e. instance, value, or list, but _never_ type) constructed as follows:
 
 * 🔶 `<AGG>` is one of the following **aggregate functions**:
   * 🔶 `check`:
