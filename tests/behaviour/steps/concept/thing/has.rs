@@ -6,6 +6,9 @@
 
 use std::sync::Arc;
 
+use itertools::Itertools;
+use macro_rules_attribute::apply;
+
 use concept::{
     error::ConceptWriteError,
     thing::{
@@ -14,15 +17,13 @@ use concept::{
     },
     type_::{attribute_type::AttributeType, OwnerAPI},
 };
-use itertools::Itertools;
 use lending_iterator::LendingIterator;
-use macro_rules_attribute::apply;
 
 use crate::{
-    generic_step, params,
+    Context, generic_step,
+    params,
     params::check_boolean,
     transaction_context::{with_read_tx, with_write_tx},
-    Context,
 };
 
 pub(super) fn object_set_has_impl(

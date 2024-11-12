@@ -29,8 +29,9 @@ use storage::{
 };
 use test_utils::{create_tmp_dir, init_logging};
 
-use self::TestKeyspaceSet::Keyspace;
 use crate::test_common::create_storage;
+
+use self::TestKeyspaceSet::Keyspace;
 
 mod test_common;
 

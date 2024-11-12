@@ -6,9 +6,10 @@
 
 use std::collections::HashMap;
 
-use error::TypeDBError;
 use tonic::{Code, Status};
 use tonic_types::{ErrorDetails, StatusExt};
+
+use error::TypeDBError;
 
 // Errors caused by incorrect implementation or usage of the network protocol.
 // Note: NOT a typedb_error!(), since we want go directly to Status

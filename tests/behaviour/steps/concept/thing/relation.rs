@@ -6,21 +6,22 @@
 
 use std::{slice, sync::Arc};
 
+use cucumber::gherkin::Step;
+use itertools::Itertools;
+use macro_rules_attribute::apply;
+
 use concept::{
     thing::object::{Object, ObjectAPI},
     type_::TypeAPI,
 };
-use cucumber::gherkin::Step;
-use itertools::Itertools;
 use lending_iterator::LendingIterator;
-use macro_rules_attribute::apply;
 
 use crate::{
     concept::type_::BehaviourConceptTestExecutionError,
+    Context,
     generic_step,
     params::{self, check_boolean},
     transaction_context::{with_read_tx, with_write_tx},
-    Context,
 };
 
 #[apply(generic_step)]

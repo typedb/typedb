@@ -14,14 +14,14 @@ use std::{
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
+    AsBytes,
     graph::{
-        thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex, ThingVertex},
+        thing::{edge::ThingEdgeHasReverse, ThingVertex, vertex_attribute::AttributeVertex},
         type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
         Typed,
     },
-    layout::prefix::Prefix,
-    value::{decode_value_u64, value::Value, value_type::ValueType},
-    AsBytes, Keyable,
+    Keyable,
+    layout::prefix::Prefix, value::{decode_value_u64, value::Value, value_type::ValueType},
 };
 use iterator::State;
 use lending_iterator::{higher_order::Hkt, LendingIterator, Peekable};
@@ -32,11 +32,11 @@ use storage::{
 };
 
 use crate::{
+    ByteReference,
+    ConceptAPI,
+    ConceptStatus,
     edge_iterator,
-    error::{ConceptReadError, ConceptWriteError},
-    thing::{object::Object, thing_manager::ThingManager, HKInstance, ThingAPI},
-    type_::{attribute_type::AttributeType, ObjectTypeAPI},
-    ByteReference, ConceptAPI, ConceptStatus,
+    error::{ConceptReadError, ConceptWriteError}, thing::{HKInstance, object::Object, thing_manager::ThingManager, ThingAPI}, type_::{attribute_type::AttributeType, ObjectTypeAPI},
 };
 
 #[derive(Debug, Clone)]

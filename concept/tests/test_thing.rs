@@ -20,10 +20,10 @@ use concept::{
     type_::{
         annotation::{AnnotationCardinality, AnnotationDistinct, AnnotationIndependent, AnnotationUnique},
         attribute_type::AttributeTypeAnnotation,
+        Ordering,
+        OwnerAPI,
         owns::OwnsAnnotation,
-        relates::RelatesAnnotation,
-        type_manager::TypeManager,
-        Ordering, OwnerAPI, PlayerAPI,
+        PlayerAPI, relates::RelatesAnnotation, type_manager::TypeManager,
     },
 };
 use encoding::{

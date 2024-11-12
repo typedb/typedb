@@ -11,16 +11,16 @@ use std::{collections::BTreeMap, sync::Arc};
 use concept::{
     thing::{object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager, ThingAPI},
     type_::{
-        annotation::AnnotationCardinality, relates::RelatesAnnotation, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI,
+        annotation::AnnotationCardinality, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, relates::RelatesAnnotation,
     },
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
+    MVCCStorage,
     sequence_number::SequenceNumber,
     snapshot::{CommittableSnapshot, ReadableSnapshot},
-    MVCCStorage,
 };
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;

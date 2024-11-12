@@ -14,14 +14,17 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
+use criterion::{Criterion, criterion_group, criterion_main, profiler::Profiler, SamplingMode};
+use pprof::ProfilerGuard;
+use rand::distributions::{Alphanumeric, DistString};
+
 use concept::{
     thing::{object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager},
     type_::{
-        type_manager::{type_cache::TypeCache, TypeManager},
-        Ordering, OwnerAPI,
+        Ordering,
+        OwnerAPI, type_manager::{type_cache::TypeCache, TypeManager},
     },
 };
-use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
 use durability::DurabilitySequenceNumber;
 use encoding::{
     graph::{
@@ -30,12 +33,10 @@ use encoding::{
     },
     value::{label::Label, value::Value, value_type::ValueType},
 };
-use pprof::ProfilerGuard;
-use rand::distributions::{Alphanumeric, DistString};
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, WriteSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, WriteSnapshot},
 };
 use test_utils::init_logging;
 use test_utils_concept::{load_managers, setup_concept_storage};

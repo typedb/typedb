@@ -10,8 +10,8 @@ use typeql::{query::stage::Operator, token::Order};
 
 use crate::{
     pipeline::modifier::{Limit, Offset, Require, Select, Sort},
-    translation::{literal::FromTypeQLLiteral, TranslationContext},
     RepresentationError,
+    translation::{literal::FromTypeQLLiteral, TranslationContext},
 };
 
 pub fn translate_select(

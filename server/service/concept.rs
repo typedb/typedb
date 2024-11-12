@@ -4,8 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use answer::{Thing, Type};
 use chrono::{Datelike, NaiveDateTime, Timelike};
+
+use answer::{Thing, Type};
 use concept::{
     error::ConceptReadError,
     thing::{attribute::Attribute, entity::Entity, relation::Relation, thing_manager::ThingManager, ThingAPI},

@@ -15,6 +15,7 @@ use crate::{
     },
     type_::{
         attribute_type::AttributeType,
+        Capability,
         constraint::{CapabilityConstraint, Constraint, ConstraintError, TypeConstraint},
         entity_type::EntityType,
         owns::Owns,
@@ -22,8 +23,7 @@ use crate::{
         relates::Relates,
         relation_type::RelationType,
         role_type::RoleType,
-        type_manager::TypeManager,
-        Capability, TypeAPI,
+        type_manager::TypeManager, TypeAPI,
     },
 };
 

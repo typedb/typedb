@@ -6,20 +6,22 @@
 
 use std::sync::Arc;
 
-use concept::type_::{
-    annotation, annotation::Annotation, constraint::Constraint, Capability, Ordering, OwnerAPI, TypeAPI,
-};
 use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
 
-use super::thing_type::get_as_object_type;
-use crate::{
-    generic_step, params,
-    params::check_boolean,
-    transaction_context::{with_read_tx, with_schema_tx},
-    util, Context,
+use concept::type_::{
+    annotation, annotation::Annotation, Capability, constraint::Constraint, Ordering, OwnerAPI, TypeAPI,
 };
+
+use crate::{
+    Context, generic_step,
+    params,
+    params::check_boolean,
+    transaction_context::{with_read_tx, with_schema_tx}, util,
+};
+
+use super::thing_type::get_as_object_type;
 
 #[apply(generic_step)]
 #[step(expr = "{kind}\\({type_label}\\) set owns: {type_label}{may_error}")]

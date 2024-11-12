@@ -14,18 +14,18 @@ use crate::{
         object::{Object, ObjectAPI},
         relation::Relation,
         thing_manager::{
-            validation::{validation::DataValidation, DataValidationError},
             ThingManager,
+            validation::{DataValidationError, validation::DataValidation},
         },
     },
     type_::{
         attribute_type::AttributeType,
+        Capability,
         constraint::{CapabilityConstraint, Constraint},
+        OwnerAPI,
         owns::Owns,
-        plays::Plays,
-        relates::Relates,
-        role_type::RoleType,
-        Capability, OwnerAPI, PlayerAPI, TypeAPI,
+        PlayerAPI,
+        plays::Plays, relates::Relates, role_type::RoleType, TypeAPI,
     },
 };
 

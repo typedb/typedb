@@ -10,18 +10,18 @@ use bytes::Bytes;
 use encoding::{
     error::EncodingError,
     graph::{
-        definition::{definition_key::DefinitionKey, r#struct::StructDefinition, DefinitionValueEncoding},
+        definition::{definition_key::DefinitionKey, DefinitionValueEncoding, r#struct::StructDefinition},
         type_::{
+            CapabilityKind,
             edge::{TypeEdge, TypeEdgeEncoding},
             index::{IdentifierIndex, LabelToTypeVertexIndex, NameToStructDefinitionIndex},
             property::{TypeEdgeProperty, TypeEdgePropertyEncoding, TypeVertexProperty, TypeVertexPropertyEncoding},
             vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
-            CapabilityKind,
         },
     },
+    Keyable,
     layout::infix::Infix,
     value::{label::Label, value_type::ValueType},
-    Keyable,
 };
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
@@ -37,18 +37,18 @@ use crate::{
             AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
         },
         attribute_type::AttributeType,
+        Capability,
         constraint::{
-            get_owns_default_constraints, get_plays_default_constraints, get_relates_default_constraints,
-            CapabilityConstraint, Constraint, ConstraintScope, TypeConstraint,
+            CapabilityConstraint, Constraint, ConstraintScope,
+            get_owns_default_constraints, get_plays_default_constraints, get_relates_default_constraints, TypeConstraint,
         },
         entity_type::EntityType,
+        KindAPI,
         object_type::ObjectType,
+        Ordering,
         owns::Owns,
         relates::Relates,
-        relation_type::RelationType,
-        role_type::RoleType,
-        sub::Sub,
-        Capability, KindAPI, Ordering, TypeAPI,
+        relation_type::RelationType, role_type::RoleType, sub::Sub, TypeAPI,
     },
 };
 

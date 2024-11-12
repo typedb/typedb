@@ -11,15 +11,16 @@ use std::{
     ops::Deref,
 };
 
-use answer::variable::Variable;
 use itertools::Itertools;
+
+use answer::variable::Variable;
 
 use crate::{
     pattern::{
         expression::{ExpressionDefinitionError, ExpressionTree},
         function_call::FunctionCall,
-        variable_category::VariableCategory,
-        IrID, ScopeId, ValueType, Vertex,
+        IrID,
+        ScopeId, ValueType, variable_category::VariableCategory, Vertex,
     },
     pipeline::{block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry},
     RepresentationError,

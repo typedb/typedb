@@ -6,6 +6,8 @@
 
 use std::{collections::HashSet, sync::Arc};
 
+use typeql::query::SchemaQuery;
+
 use compiler::{
     annotation::pipeline::{annotate_pipeline, AnnotatedPipeline},
     executable::pipeline::{compile_pipeline, ExecutablePipeline},
@@ -21,7 +23,6 @@ use ir::{
     translation::pipeline::{translate_pipeline, TranslatedPipeline},
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use typeql::query::SchemaQuery;
 
 use crate::{define, error::QueryError, redefine, undefine};
 

@@ -12,8 +12,9 @@ use std::{
     hash::Hash,
 };
 
-use encoding::value::value::Value;
 use itertools::Itertools;
+
+use encoding::value::value::Value;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::type_::{
@@ -21,11 +22,11 @@ use crate::type_::{
         Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationDistinct,
         AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
     },
+    Capability,
+    KindAPI,
+    Ordering,
     owns::Owns,
-    plays::Plays,
-    relates::Relates,
-    type_manager::TypeManager,
-    Capability, KindAPI, Ordering,
+    plays::Plays, relates::Relates, type_manager::TypeManager,
 };
 
 macro_rules! with_constraint_description {

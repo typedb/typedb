@@ -6,7 +6,6 @@
 
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
-#![allow(clippy::result_large_err)]
 
 use std::{
     collections::HashMap,
@@ -16,16 +15,17 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use ::concept::thing::{attribute::Attribute, object::Object};
-use ::query::error::QueryError;
-use answer::variable_value::VariableValue;
 use cucumber::{gherkin::Feature, StatsWriter, World};
-use database::Database;
 use futures::{
     future::Either,
     stream::{self, StreamExt},
 };
 use itertools::Itertools;
+
+use ::concept::thing::{attribute::Attribute, object::Object};
+use ::query::error::QueryError;
+use answer::variable_value::VariableValue;
+use database::Database;
 use server::typedb;
 use storage::durability_client::WALClient;
 use thing_util::ObjectWithKey;

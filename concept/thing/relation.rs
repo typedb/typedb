@@ -11,18 +11,18 @@ use std::{
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
+    AsBytes,
     graph::{
         thing::{
             edge::{ThingEdgeLinks, ThingEdgeRolePlayerIndex},
-            vertex_object::ObjectVertex,
             ThingVertex,
+            vertex_object::ObjectVertex,
         },
         type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
         Typed,
     },
-    layout::prefix::Prefix,
-    value::decode_value_u64,
-    AsBytes, Keyable, Prefixed,
+    Keyable,
+    layout::prefix::Prefix, Prefixed, value::decode_value_u64,
 };
 use lending_iterator::{higher_order::Hkt, LendingIterator};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
@@ -32,15 +32,15 @@ use storage::{
 };
 
 use crate::{
+    ByteReference,
+    ConceptAPI,
+    ConceptStatus,
     edge_iterator,
-    error::{ConceptReadError, ConceptWriteError},
-    thing::{
+    error::{ConceptReadError, ConceptWriteError}, thing::{
+        HKInstance,
         object::{Object, ObjectAPI},
-        thing_manager::{validation::operation_time_validation::OperationTimeValidation, ThingManager},
-        HKInstance, ThingAPI,
-    },
-    type_::{relation_type::RelationType, role_type::RoleType, ObjectTypeAPI, Ordering, OwnerAPI},
-    ByteReference, ConceptAPI, ConceptStatus,
+        thing_manager::{ThingManager, validation::operation_time_validation::OperationTimeValidation}, ThingAPI,
+    }, type_::{ObjectTypeAPI, Ordering, OwnerAPI, relation_type::RelationType, role_type::RoleType},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]

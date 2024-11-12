@@ -8,7 +8,7 @@ use std::{path::Path, sync::Arc};
 
 use durability::wal::WAL;
 use storage::{
-    durability_client::WALClient, keyspace::KeyspaceSet, recovery::checkpoint::Checkpoint, MVCCStorage,
+    durability_client::WALClient, keyspace::KeyspaceSet, MVCCStorage, recovery::checkpoint::Checkpoint,
     StorageOpenError,
 };
 

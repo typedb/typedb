@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub(crate) use keyspace::{Keyspace, KeyspaceCheckpointError, KeyspaceError, Keyspaces, KEYSPACE_MAXIMUM_COUNT};
+pub(crate) use keyspace::{Keyspace, KEYSPACE_MAXIMUM_COUNT, KeyspaceCheckpointError, KeyspaceError, Keyspaces};
 pub use keyspace::{KeyspaceDeleteError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, KeyspaceValidationError};
 
 pub mod iterator;

@@ -7,6 +7,9 @@
 use std::{borrow::Cow, convert::Infallible, fmt, str::FromStr, sync::Arc};
 
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+use cucumber::Parameter;
+use itertools::Itertools;
+
 use concept::{
     error::ConceptWriteError,
     type_::{
@@ -17,10 +20,9 @@ use concept::{
         },
         constraint::{ConstraintCategory as TypeDBConstraintCategory, ConstraintDescription as TypeDBConstraint},
         object_type::ObjectType,
-        type_manager::{validation::SchemaValidationError, TypeManager},
+        type_manager::{TypeManager, validation::SchemaValidationError},
     },
 };
-use cucumber::Parameter;
 use encoding::{
     graph::type_::Kind as TypeDBTypeKind,
     value::{
@@ -28,7 +30,6 @@ use encoding::{
         value_type::ValueType as TypeDBValueType,
     },
 };
-use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use test_utils::assert_matches;
 

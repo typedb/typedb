@@ -5,18 +5,19 @@
  */
 
 use cucumber::gherkin::Step;
-use database::transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite};
 use futures::future::join_all;
 use macro_rules_attribute::apply;
+
+use database::transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite};
 use options::TransactionOptions;
 use server::typedb::Server;
 use test_utils::assert_matches;
 
 use crate::{
+    ActiveTransaction,
     connection::BehaviourConnectionTestExecutionError,
-    generic_step,
-    params::{self, check_boolean},
-    util, ActiveTransaction, Context,
+    Context,
+    generic_step, params::{self, check_boolean}, util,
 };
 
 async fn server_open_transaction_for_database(

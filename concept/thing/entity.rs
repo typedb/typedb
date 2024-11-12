@@ -8,27 +8,27 @@ use std::fmt;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
+    AsBytes,
     graph::{
-        thing::{vertex_object::ObjectVertex, ThingVertex},
+        thing::{ThingVertex, vertex_object::ObjectVertex},
         type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
         Typed,
     },
-    layout::prefix::Prefix,
-    AsBytes, Keyable, Prefixed,
+    Keyable, layout::prefix::Prefix, Prefixed,
 };
 use lending_iterator::{higher_order::Hkt, LendingIterator};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    error::{ConceptReadError, ConceptWriteError},
-    thing::{
+    ByteReference,
+    ConceptAPI,
+    ConceptStatus,
+    error::{ConceptReadError, ConceptWriteError}, thing::{
+        HKInstance,
         object::{Object, ObjectAPI},
         relation::IndexedPlayersIterator,
-        thing_manager::ThingManager,
-        HKInstance, ThingAPI,
-    },
-    type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI},
-    ByteReference, ConceptAPI, ConceptStatus,
+        thing_manager::ThingManager, ThingAPI,
+    }, type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]

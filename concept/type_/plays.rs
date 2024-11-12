@@ -7,7 +7,7 @@
 use std::collections::HashSet;
 
 use encoding::{
-    graph::type_::{edge::TypeEdgeEncoding, vertex::TypeVertexEncoding, CapabilityKind},
+    graph::type_::{CapabilityKind, edge::TypeEdgeEncoding, vertex::TypeVertexEncoding},
     layout::prefix::Prefix,
 };
 use lending_iterator::higher_order::Hkt;
@@ -19,11 +19,11 @@ use crate::{
     thing::thing_manager::ThingManager,
     type_::{
         annotation::{Annotation, AnnotationCardinality, AnnotationCategory, AnnotationError, DefaultFrom},
+        Capability,
         constraint::CapabilityConstraint,
         object_type::ObjectType,
         role_type::RoleType,
-        type_manager::TypeManager,
-        Capability, TypeAPI,
+        type_manager::TypeManager, TypeAPI,
     },
 };
 

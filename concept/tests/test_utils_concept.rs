@@ -17,8 +17,8 @@ use encoding::graph::{
 };
 use storage::{
     durability_client::{DurabilityClient, WALClient},
-    sequence_number::SequenceNumber,
     MVCCStorage,
+    sequence_number::SequenceNumber,
 };
 
 pub fn setup_concept_storage(storage: &mut Arc<MVCCStorage<WALClient>>) {

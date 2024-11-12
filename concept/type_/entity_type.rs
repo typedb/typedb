@@ -14,14 +14,14 @@ use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
     graph::{
         type_::{
-            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
             Kind,
+            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
         },
         Typed,
     },
     layout::prefix::{Prefix, Prefix::VertexEntityType},
-    value::label::Label,
     Prefixed,
+    value::label::Label,
 };
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
@@ -33,20 +33,20 @@ use storage::{
 
 use crate::{
     concept_iterator,
+    ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
     thing::{entity::Entity, thing_manager::ThingManager},
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationCategory, AnnotationError, DefaultFrom},
         attribute_type::AttributeType,
+        Capability,
         constraint::{CapabilityConstraint, TypeConstraint},
+        KindAPI,
         object_type::ObjectType,
-        owns::Owns,
-        plays::Plays,
-        role_type::RoleType,
-        type_manager::TypeManager,
-        Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
+        ObjectTypeAPI,
+        Ordering,
+        OwnerAPI, owns::Owns, PlayerAPI, plays::Plays, role_type::RoleType, ThingTypeAPI, type_manager::TypeManager, TypeAPI,
     },
-    ConceptAPI,
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]

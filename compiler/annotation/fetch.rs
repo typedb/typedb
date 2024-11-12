@@ -9,12 +9,12 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
+use answer::{Type, variable::Variable};
 use concept::type_::{
     attribute_type::AttributeType,
+    Capability,
     constraint::{Constraint, ConstraintDescription},
-    type_manager::TypeManager,
-    Capability, OwnerAPI, TypeAPI,
+    OwnerAPI, type_manager::TypeManager, TypeAPI,
 };
 use encoding::value::label::Label;
 use ir::{
@@ -31,12 +31,12 @@ use ir::{
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
+    AnnotationError,
     expression::compiled_expression::ExpressionValueType,
     function::{
         annotate_anonymous_function, AnnotatedFunction, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions,
     },
     pipeline::{annotate_stages_and_fetch, AnnotatedStage},
-    AnnotationError,
 };
 
 #[derive(Debug, Clone)]

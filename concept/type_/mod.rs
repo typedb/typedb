@@ -12,23 +12,25 @@ use std::{
     sync::Arc,
 };
 
+use serde::{Deserialize, Serialize};
+
 use bytes::{byte_reference::ByteReference, Bytes};
 use encoding::{
     graph::type_::{
+        CapabilityKind,
         edge::TypeEdgeEncoding,
-        property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
-        vertex::{TypeVertex, TypeVertexEncoding},
-        CapabilityKind, Kind,
+        Kind,
+        property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding}, vertex::{TypeVertex, TypeVertexEncoding},
     },
     layout::infix::Infix,
     value::label::Label,
 };
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
-use serde::{Deserialize, Serialize};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
+    ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
     thing::{thing_manager::ThingManager, ThingAPI},
     type_::{
@@ -41,7 +43,6 @@ use crate::{
         role_type::RoleType,
         type_manager::TypeManager,
     },
-    ConceptAPI,
 };
 
 pub mod annotation;

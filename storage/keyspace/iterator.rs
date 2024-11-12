@@ -4,15 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, io::Read};
+use std::cmp::Ordering;
+
+use rocksdb::DB;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use lending_iterator::{LendingIterator, Seekable};
-use rocksdb::DB;
 
 use crate::{
     key_range::{KeyRange, RangeEnd},
-    keyspace::{raw_iterator, raw_iterator::DBIterator, Keyspace, KeyspaceError},
+    keyspace::{Keyspace, KeyspaceError, raw_iterator, raw_iterator::DBIterator},
 };
 
 pub struct KeyspaceRangeIterator {
@@ -89,13 +90,9 @@ impl KeyspaceRangeIterator {
                     ContinueCondition::Always => true,
                 }
             }
-            Err(err) => true,
+            Err(_err) => true,
         }
     }
-}
-
-fn identity(input: &[u8]) -> &[u8] {
-    input
 }
 
 impl LendingIterator for KeyspaceRangeIterator {

@@ -6,7 +6,6 @@
 
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
-#![allow(clippy::result_large_err)]
 
 use std::collections::BTreeSet;
 use std::fmt;
@@ -16,17 +15,17 @@ use concept::{
     error::ConceptReadError,
     thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation},
     type_::{
-        attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, relation_type::RelationType,
-        role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI, TypeAPI,
+        attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, ObjectTypeAPI,
+        relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, TypeAPI,
     },
 };
 use encoding::{
+    AsBytes,
     graph::type_::{
-        vertex::{TypeVertex, TypeVertexEncoding},
         Kind,
+        vertex::{TypeVertex, TypeVertexEncoding},
     },
     value::{label::Label, value::Value},
-    AsBytes,
 };
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;

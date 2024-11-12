@@ -7,17 +7,17 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 #![allow(unused_variables)]
-#![allow(clippy::result_large_err)]
 
 use std::{error::Error, fmt};
 
-use error::typedb_error;
 use typeql::{
     query::stage::reduce::Reducer,
     statement::{InIterable, StructDeconstruct},
     token,
     value::StringLiteral,
 };
+
+use error::typedb_error;
 
 use crate::{
     pattern::{expression::ExpressionDefinitionError, variable_category::VariableCategory},

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Borrow, collections::Bound, fmt::Debug};
+use std::{collections::Bound, fmt::Debug};
 
 use primitive::prefix::Prefix;
 

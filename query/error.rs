@@ -5,8 +5,8 @@
  */
 
 use compiler::{
-    annotation::{expression::ExpressionCompileError, AnnotationError},
-    executable::{insert::WriteCompilationError, ExecutableCompilationError},
+    annotation::{AnnotationError, expression::ExpressionCompileError},
+    executable::{ExecutableCompilationError, insert::WriteCompilationError},
 };
 use error::typedb_error;
 use executor::pipeline::PipelineExecutionError;
