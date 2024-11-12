@@ -219,14 +219,12 @@ fn execute_fetch_some(
                 let mut row_iter = batch.into_iter();
                 while let Some(row) = row_iter.next() {
                     let mut row_iter = row.row().iter();
-                    let result = execute_once_error_if_has_second!(
+                    if let Some(value) = execute_once_error_if_has_second!(
                         row_iter.next(),
                         FetchExecutionError::FetchListFunctionNotScalar { func_name: "func".to_string() }
-                    );
-                    nodes.push(match result {
-                        Some(value) => variable_value_to_document(value.clone())?,
-                        None => DocumentNode::Leaf(DocumentLeaf::Empty),
-                    });
+                    ) {
+                        nodes.push(variable_value_to_document(value.clone())?);
+                    }
                 }
             }
 
