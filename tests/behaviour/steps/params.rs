@@ -65,11 +65,11 @@ impl MayError {
 
     pub fn check_concept_write_without_read_errors<T: fmt::Debug>(
         &self,
-        res: &Result<T, ConceptWriteError>,
-    ) -> Option<ConceptWriteError> {
+        res: &Result<T, Box<ConceptWriteError>>,
+    ) -> Option<Box<ConceptWriteError>> {
         match self.check(res.as_ref().map_err(|e| e.clone())) {
             None => None,
-            Some(error) => match error {
+            Some(error) => match *error {
                 ConceptWriteError::ConceptRead { source } => {
                     panic!("Expected logic error, got ConceptRead {:?}", source)
                 }

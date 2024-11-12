@@ -30,7 +30,7 @@ use crate::{
 fn object_create_instance_impl(
     context: &mut Context,
     object_type_label: params::Label,
-) -> Result<Object<'static>, ConceptWriteError> {
+) -> Result<Object<'static>, Box<ConceptWriteError>> {
     with_write_tx!(context, |tx| {
         let object_type =
             tx.type_manager.get_object_type(tx.snapshot.as_ref(), &object_type_label.into_typedb()).unwrap().unwrap();

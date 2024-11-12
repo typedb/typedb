@@ -125,11 +125,11 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
                 match error {
                     DataCommitError::ConceptWriteErrors { source: errors, .. } => {
                         for error in errors {
-                            may_error.check_concept_write_without_read_errors::<()>(&Err(error));
+                            may_error.check_concept_write_without_read_errors::<()>(&Err(Box::new(error)));
                         }
                     }
                     DataCommitError::ConceptWriteErrorsFirst { typedb_source } => {
-                        may_error.check_concept_write_without_read_errors::<()>(&Err(typedb_source));
+                        may_error.check_concept_write_without_read_errors::<()>(&Err(Box::new(typedb_source)));
                     }
                     DataCommitError::SnapshotInUse { .. } | DataCommitError::SnapshotError { .. } => {
                         panic!("Unexpected write commit error: {:?}", error);
@@ -142,11 +142,11 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
                 match error {
                     SchemaCommitError::ConceptWriteErrors { source: errors, .. } => {
                         for error in errors {
-                            may_error.check_concept_write_without_read_errors::<()>(&Err(error));
+                            may_error.check_concept_write_without_read_errors::<()>(&Err(Box::new(error)));
                         }
                     }
                     SchemaCommitError::ConceptWriteErrorsFirst { typedb_source } => {
-                        may_error.check_concept_write_without_read_errors::<()>(&Err(typedb_source));
+                        may_error.check_concept_write_without_read_errors::<()>(&Err(Box::new(typedb_source)));
                     }
 
                     SchemaCommitError::TypeCacheUpdateError { .. }

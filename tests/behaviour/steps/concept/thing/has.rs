@@ -29,7 +29,7 @@ pub(super) fn object_set_has_impl(
     context: &mut Context,
     object: &Object<'static>,
     attribute: &Attribute<'static>,
-) -> Result<(), ConceptWriteError> {
+) -> Result<(), Box<ConceptWriteError>> {
     with_write_tx!(context, |tx| object.set_has_unordered(
         Arc::get_mut(&mut tx.snapshot).unwrap(),
         &tx.thing_manager,
@@ -42,7 +42,7 @@ pub(super) fn object_set_has_ordered_impl(
     object: &Object<'static>,
     attribute_type: AttributeType<'static>,
     attributes: Vec<Attribute<'static>>,
-) -> Result<(), ConceptWriteError> {
+) -> Result<(), Box<ConceptWriteError>> {
     with_write_tx!(context, |tx| object.set_has_ordered(
         Arc::get_mut(&mut tx.snapshot).unwrap(),
         &tx.thing_manager,
@@ -55,7 +55,7 @@ fn object_unset_has_impl(
     context: &mut Context,
     object: &Object<'static>,
     key: &Attribute<'static>,
-) -> Result<(), ConceptWriteError> {
+) -> Result<(), Box<ConceptWriteError>> {
     with_write_tx!(context, |tx| object.unset_has_unordered(
         Arc::get_mut(&mut tx.snapshot).unwrap(),
         &tx.thing_manager,
@@ -67,7 +67,7 @@ fn object_unset_has_ordered_impl(
     context: &mut Context,
     object: &Object<'static>,
     attribute_type_label: params::Label,
-) -> Result<(), ConceptWriteError> {
+) -> Result<(), Box<ConceptWriteError>> {
     with_write_tx!(context, |tx| {
         let attribute_type = tx
             .type_manager
