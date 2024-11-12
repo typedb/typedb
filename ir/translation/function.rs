@@ -77,7 +77,7 @@ pub(crate) fn translate_function_block(
     let (stages, fetch) = translate_pipeline_stages(snapshot, function_index, context, &function_block.stages)
         .map_err(|err| FunctionRepresentationError::BlockDefinition {
             declaration: function_block.clone(),
-            typedb_source: Box::new(err),
+            typedb_source: err,
         })?;
 
     if fetch.is_some() {
@@ -190,7 +190,7 @@ fn build_return_reduce(
                 let reducer = build_reducer(context, typeql_reducer).map_err(|err| {
                     FunctionRepresentationError::ReturnReduction {
                         declaration: reduction.clone(),
-                        typedb_source: Box::new(err.clone()),
+                        typedb_source: err.clone(),
                     }
                 })?;
                 reducers.push(reducer);

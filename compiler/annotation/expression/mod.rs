@@ -61,7 +61,7 @@ pub enum ExpressionCompileError {
         derived_category: VariableCategory,
         existing_category: VariableCategory,
     },
-    Representation { source: RepresentationError },
+    Representation { source: Box<RepresentationError> },
 }
 
 impl Display for ExpressionCompileError {

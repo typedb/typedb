@@ -148,7 +148,7 @@ fn translate_fetch_list(
             let mut local_context = parent_context.clone();
             let (translated_stages, subfetch) =
                 translate_pipeline_stages(snapshot, function_index, &mut local_context, stages)
-                    .map_err(|err| FetchRepresentationError::SubFetchRepresentation { typedb_source: Box::new(err) })?;
+                    .map_err(|err| FetchRepresentationError::SubFetchRepresentation { typedb_source: err })?;
             let input_variables = find_sub_fetch_inputs(parent_context, &translated_stages, subfetch.as_ref());
             Ok(FetchSome::ListSubFetch(FetchListSubFetch {
                 context: local_context,
@@ -279,7 +279,7 @@ fn translate_inline_expression_single(
     let assign_var = add_expression(function_index, &mut builder, expression)?;
     let block = builder
         .finish()
-        .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: Box::new(err) })?;
+        .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
     let match_stage = TranslatedStage::Match { block };
     let return_ = ReturnOperation::Single(SingleSelector::First, vec![assign_var]);
     let body = FunctionBody::new(vec![match_stage], return_);
@@ -314,7 +314,7 @@ fn translate_inline_user_function_call(
     let mut assign_vars = Vec::new();
     for _ in &signature.returns {
         assign_vars.push(builder.conjunction_mut().declare_variable_anonymous().map_err(|err| {
-            FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: Box::new(err) }
+            FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err }
         })?);
     }
     let mut arg_vars = Vec::new();
@@ -326,11 +326,11 @@ fn translate_inline_user_function_call(
         .conjunction_mut()
         .constraints_mut()
         .add_function_binding(assign_vars.clone(), &signature, arg_vars, function_name)
-        .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: Box::new(err) })?;
+        .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
 
     let block = builder
         .finish()
-        .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: Box::new(err) })?;
+        .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
     let stage = TranslatedStage::Match { block };
     if signature.return_is_stream {
         let return_ = ReturnOperation::Stream(assign_vars);
@@ -353,13 +353,13 @@ fn add_expression(
     let mut conjunction_builder = builder.conjunction_mut();
     let assign_var = conjunction_builder
         .declare_variable_anonymous()
-        .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: Box::new(err) })?;
+        .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
     let expression = build_expression(function_index, &mut conjunction_builder.constraints_mut(), expression)
-        .map_err(|err| FetchRepresentationError::ExpressionRepresentation { typedb_source: Box::new(err) })?;
+        .map_err(|err| FetchRepresentationError::ExpressionRepresentation { typedb_source: err })?;
     let _ = conjunction_builder
         .constraints_mut()
         .add_assignment(assign_var, expression)
-        .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: Box::new(err) })?;
+        .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
     Ok(assign_var)
 }
 

@@ -99,7 +99,7 @@ fn variable_category_mismatch() {
     let Stage::Match(match_) = stages.first().unwrap() else { unreachable!() };
     assert!(matches!(
         translate_match(&mut TranslationContext::new(), &empty_function_index, match_),
-        Err(RepresentationError::VariableCategoryMismatch { .. })
+        Err(Box::new(RepresentationError::VariableCategoryMismatch { .. }))
     ));
 
     // let mut block = FunctionalBlock::new();

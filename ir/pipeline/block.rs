@@ -75,7 +75,7 @@ impl<'reg> BlockBuilder<'reg> {
         Self { conjunction: Conjunction::new(ScopeId::ROOT), context }
     }
 
-    pub fn finish(self) -> Result<Block, RepresentationError> {
+    pub fn finish(self) -> Result<Block, Box<RepresentationError>> {
         let Self { conjunction, context: BlockBuilderContext { block_context, variable_registry, .. } } = self;
         validate_conjunction(&conjunction, variable_registry)?;
         Ok(Block { conjunction, block_context })
@@ -93,14 +93,14 @@ impl<'reg> BlockBuilder<'reg> {
 fn validate_conjunction(
     conjunction: &Conjunction,
     variable_registry: &VariableRegistry,
-) -> Result<(), RepresentationError> {
+) -> Result<(), Box<RepresentationError>> {
     let unbound = conjunction
         .referenced_variables()
         .find(|&variable| variable_registry.get_variable_category(variable).is_none());
     match unbound {
-        Some(variable) => Err(RepresentationError::UnboundVariable {
+        Some(variable) => Err(Box::new(RepresentationError::UnboundVariable {
             variable: variable_registry.get_variable_name(variable).cloned().unwrap_or(String::new()),
-        }),
+        })),
         None => Ok(()),
     }
 }
@@ -136,7 +136,7 @@ impl BlockContext {
         var: Variable,
         var_name: &str,
         scope: ScopeId,
-    ) -> Result<(), RepresentationError> {
+    ) -> Result<(), Box<RepresentationError>> {
         debug_assert!(self.variable_declaration.contains_key(&var));
         self.add_referenced_variable(var);
         let existing_scope = self.variable_declaration.get_mut(&var).unwrap();
@@ -148,7 +148,7 @@ impl BlockContext {
             *existing_scope = scope;
             Ok(())
         } else {
-            Err(RepresentationError::DisjointVariableReuse { name: var_name.to_string() })
+            Err(Box::new(RepresentationError::DisjointVariableReuse { name: var_name.to_string() }))
         }
     }
 
@@ -243,7 +243,7 @@ impl<'a> BlockBuilderContext<'a> {
         &mut self,
         name: &str,
         scope: ScopeId,
-    ) -> Result<Variable, RepresentationError> {
+    ) -> Result<Variable, Box<RepresentationError>> {
         match self.variable_names_index.get(name) {
             None => {
                 let variable = self.variable_registry.register_variable_named(name.to_string());
@@ -258,7 +258,7 @@ impl<'a> BlockBuilderContext<'a> {
         }
     }
 
-    pub(crate) fn create_anonymous_variable(&mut self, scope: ScopeId) -> Result<Variable, RepresentationError> {
+    pub(crate) fn create_anonymous_variable(&mut self, scope: ScopeId) -> Result<Variable, Box<RepresentationError>> {
         let variable = self.variable_registry.register_anonymous_variable();
         self.block_context.add_variable_declaration(variable, scope);
         Ok(variable)
@@ -286,7 +286,7 @@ impl<'a> BlockBuilderContext<'a> {
         variable: Variable,
         category: VariableCategory,
         source: Constraint<Variable>,
-    ) -> Result<(), RepresentationError> {
+    ) -> Result<(), Box<RepresentationError>> {
         self.variable_registry.set_variable_category(variable, category, VariableCategorySource::Constraint(source))
     }
 

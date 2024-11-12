@@ -273,7 +273,7 @@ pub mod tests {
         translation::{match_::translate_match, TranslationContext},
     };
 
-    fn parse_value_via_typeql_expression(s: &str) -> Result<Value<'static>, RepresentationError> {
+    fn parse_value_via_typeql_expression(s: &str) -> Result<Value<'static>, Box<RepresentationError>> {
         let query = format!("match $x = {}; select $x;", s);
         if let Stage::Match(match_) =
             typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.first().unwrap()

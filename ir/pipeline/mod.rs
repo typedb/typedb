@@ -133,7 +133,7 @@ impl VariableRegistry {
         variable: Variable,
         category: VariableCategory,
         source: Constraint<Variable>,
-    ) -> Result<(), RepresentationError> {
+    ) -> Result<(), Box<RepresentationError>> {
         self.set_variable_category(variable, category, VariableCategorySource::Constraint(source))
     }
 
@@ -142,7 +142,7 @@ impl VariableRegistry {
         variable: Variable,
         category: VariableCategory,
         source: VariableCategorySource,
-    ) -> Result<(), RepresentationError> {
+    ) -> Result<(), Box<RepresentationError>> {
         let existing_category = self.variable_categories.get_mut(&variable);
         match existing_category {
             None => {
@@ -152,7 +152,7 @@ impl VariableRegistry {
             Some((existing_category, existing_source)) => {
                 let narrowest = existing_category.narrowest(category);
                 match narrowest {
-                    None => Err(RepresentationError::VariableCategoryMismatch {
+                    None => Err(Box::new(RepresentationError::VariableCategoryMismatch {
                         variable_name: self
                             .variable_names
                             .get(&variable)
@@ -162,7 +162,7 @@ impl VariableRegistry {
                         // category_1_source: source,
                         category_2: *existing_category,
                         // category_2_source: existing_source.clone(),
-                    }),
+                    })),
                     Some(narrowed) => {
                         if narrowed == *existing_category {
                             Ok(())

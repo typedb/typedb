@@ -25,7 +25,7 @@ use typeql::query::stage::Stage;
 
 #[derive(Debug)]
 pub enum PatternDefitionOrExpressionCompileError {
-    PatternDefinition { source: RepresentationError },
+    PatternDefinition { source: Box<RepresentationError> },
     ExpressionCompilation { source: ExpressionCompileError },
 }
 

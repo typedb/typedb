@@ -130,11 +130,11 @@ impl<'cx, 'reg> ConjunctionBuilder<'cx, 'reg> {
         Optional::new_builder(self.context, optional)
     }
 
-    pub fn get_or_declare_variable(&mut self, name: &str) -> Result<Variable, RepresentationError> {
+    pub fn get_or_declare_variable(&mut self, name: &str) -> Result<Variable, Box<RepresentationError>> {
         self.context.get_or_declare_variable(name, self.conjunction.scope_id)
     }
 
-    pub fn declare_variable_anonymous(&mut self) -> Result<Variable, RepresentationError> {
+    pub fn declare_variable_anonymous(&mut self) -> Result<Variable, Box<RepresentationError>> {
         self.context.create_anonymous_variable(self.conjunction.scope_id)
     }
 }

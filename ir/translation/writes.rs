@@ -20,7 +20,7 @@ use crate::{
 pub fn translate_insert(
     context: &mut TranslationContext,
     insert: &typeql::query::stage::Insert,
-) -> Result<Block, RepresentationError> {
+) -> Result<Block, Box<RepresentationError>> {
     let mut builder = Block::builder(context.new_block_builder_context());
     let function_index = HashMapFunctionSignatureIndex::empty();
     for statement in &insert.statements {
@@ -32,7 +32,7 @@ pub fn translate_insert(
 pub fn translate_delete(
     context: &mut TranslationContext,
     delete: &typeql::query::stage::Delete,
-) -> Result<(Block, Vec<Variable>), RepresentationError> {
+) -> Result<(Block, Vec<Variable>), Box<RepresentationError>> {
     let mut builder = Block::builder(context.new_block_builder_context());
     let mut conjunction = builder.conjunction_mut();
     let mut constraints = conjunction.constraints_mut();
