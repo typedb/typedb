@@ -167,7 +167,6 @@
 * [Glossary](#glossary)
     * [Type system](#type-system)
         * [Type](#type)
-        * [Schema type](#schema-type)
         * [Value type](#value-type)
         * [Data instance / instance](#data-instance--instance)
         * [Data value / value](#data-value--value)
@@ -476,7 +475,6 @@
 * [Glossary](#glossary)
     * [Type system](#type-system)
         * [Type](#type)
-        * [Schema type](#schema-type)
         * [Value type](#value-type)
         * [Data instance / instance](#data-instance--instance)
         * [Data value / value](#data-value--value)
@@ -550,9 +548,9 @@ We discuss the grammar for statements relating to types, and explain them in nat
 
 * **Combined kinds notation**. The following are useful abbreviations:
   * $`\mathbf{Obj} = \mathbf{Ent} + \mathbf{Rel}`$ (collection of **object types**)
-  * $`\mathbf{ERA} = \mathbf{Obj} + \mathbf{Att}`$ (collection of **ERA types**)
-  * $`\mathbf{Schema} = \mathbf{ERA} + \mathbf{Itf}`$ (collection of **schema types**)
-  * $`\mathbf{Label} = \mathbf{Schema} + \mathbf{Value}`$ (collection of all **labeled types**, i.e. types refered to by a single label)
+  * $`\mathbf{Dep} = \mathbf{Rel} + \mathbf{Att}`$ (collection of **dependent types**)
+  * $`\mathbf{ERA} = \mathbf{Ent} + \mathbf{Rel} + \mathbf{Att}`$ (collection of **ERA types**)
+  * $`\mathbf{Label} = \mathbf{ERA} + \mathbf{Itf} + \mathbf{Value}`$ (collection of all **labeled types**)
   * $`\mathbf{Alg} = \mathbf{Op}^*(\mathbf{Label})`$ (collection of all **algebraic types**, obtained by closing simple types under operators: sum, product, option... see "Type operators" below) *[USE-CASE: type-inference]*
   * $`\mathbf{Type} = \mathbf{Alg} + \mathbf{List}`$ (collection of all **types**)
 
@@ -2659,7 +2657,7 @@ _Note_. `<EXPR>` can, in particuar, be `T_LIST` expression (see "Expressions").
 
 _System property_
 
-1. 🔶 fails transaction if $`T_r(x)`$ does not own $`A`$ with `card(0,1)`.
+1. 🔶 fails transaction if $`T_r(x)`$ does not own $`A`$ with `card(x..1)`.
 
 #### **Case FETCH_MULTI_ATTR**
 * 🔶 `"key": [ $x.A ]` where $`A : \mathbf{Att}`$
@@ -2687,8 +2685,12 @@ _System property_
 #### **Case FETCH_SNGL_FUN**
 * 🔶 `"key": fun(...)` where `fun` is **scalar** (i.e. non-tuple) single-return.
 
+_System property_
+
+1. 🔶 Fails if `fun` is not .
+
 #### **Case FETCH_STREAM_FUN**
-* 🔶 `"key": [ fun(...) ]` where `fun` is **scalar** (i.e. non-tuple) stream-return.
+* 🔶 `"key": [ fun(...) ]` where `fun` is **scalar** (i.e. non-tuple) row-option or row-stream return
 
 _Note_: (STICKY:) what to do if type inference for function args fails based on previous pipeline stages?
 
