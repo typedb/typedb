@@ -18,9 +18,7 @@ use compiler::{
     executable::match_::{
         instructions::{
             thing::{IsaInstruction, IsaReverseInstruction},
-            ConstraintInstruction,
-            ConstraintInstruction::IsaReverse,
-            Inputs,
+            ConstraintInstruction, Inputs,
         },
         planner::{
             function_plan::ExecutableFunctionRegistry,

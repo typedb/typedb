@@ -4,17 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use typeql::{annotation::CardinalityRange, token};
-
 use concept::type_::annotation::{
     Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory, AnnotationDistinct,
     AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
 };
 use encoding::{graph::type_::Kind, value::value_type::ValueType};
+use typeql::{annotation::CardinalityRange, token};
 
 use crate::{
+    translation::literal::{translate_literal, FromTypeQLLiteral},
     LiteralParseError,
-    translation::literal::{FromTypeQLLiteral, translate_literal},
 };
 
 pub fn translate_annotation(typeql_kind: &typeql::Annotation) -> Result<Annotation, LiteralParseError> {

@@ -143,14 +143,14 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
 
         // Prune abstract types from type annotations of thing variables
         for annotated_vertex in vertices {
-            let (Vertex::Variable(id), annotations) = annotated_vertex else { continue; };
-            if self.variable_registry
-                .get_variable_category(*id)
-                .map_or(false, |cat| { cat.is_category_thing() }) {
-                TypeAnnotation::try_retain(
-                    annotations,
-                    |type_| { type_.is_abstract(self.snapshot, self.type_manager).map(|b| !b)
-                }).map_err(|source| { TypeInferenceError::ConceptRead { source } })?;
+            let (Vertex::Variable(id), annotations) = annotated_vertex else {
+                continue;
+            };
+            if self.variable_registry.get_variable_category(*id).map_or(false, |cat| cat.is_category_thing()) {
+                TypeAnnotation::try_retain(annotations, |type_| {
+                    type_.is_abstract(self.snapshot, self.type_manager).map(|b| !b)
+                })
+                .map_err(|source| TypeInferenceError::ConceptRead { source })?;
             }
         }
 
@@ -753,16 +753,13 @@ trait BinaryConstraint {
     fn left(&self) -> &Vertex<Variable>;
     fn right(&self) -> &Vertex<Variable>;
 
-    fn check_for_thing_vars(
-        &self,
-        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
-    ) -> (bool, bool) {
+    fn check_for_thing_vars(&self, seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>) -> (bool, bool) {
         let left_is_thing = matches!(self.left(), Vertex::Variable(var) if {
-                seeder.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_category_thing())
-            });
+            seeder.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_category_thing())
+        });
         let right_is_thing = matches!(self.right(), Vertex::Variable(var) if {
-                seeder.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_category_thing())
-            });
+            seeder.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_category_thing())
+        });
         (left_is_thing, right_is_thing)
     }
 
@@ -778,10 +775,9 @@ trait BinaryConstraint {
                 let mut right_annotations = BTreeSet::new();
                 self.annotate_left_to_right_for_type(seeder, left_type, &mut right_annotations)?;
                 if right_is_thing {
-                    TypeAnnotation::try_retain(
-                        &mut right_annotations,
-                        |type_: &TypeAnnotation| { type_.is_abstract(seeder.snapshot, seeder.type_manager).map(|b| !b) }
-                    )?;
+                    TypeAnnotation::try_retain(&mut right_annotations, |type_: &TypeAnnotation| {
+                        type_.is_abstract(seeder.snapshot, seeder.type_manager).map(|b| !b)
+                    })?;
                 }
                 left_to_right.insert(left_type.clone(), right_annotations);
             }
@@ -801,10 +797,9 @@ trait BinaryConstraint {
                 let mut left_annotations = BTreeSet::new();
                 self.annotate_right_to_left_for_type(seeder, right_type, &mut left_annotations)?;
                 if left_is_thing {
-                    TypeAnnotation::try_retain(
-                        &mut left_annotations,
-                        |type_: &TypeAnnotation| { type_.is_abstract(seeder.snapshot, seeder.type_manager).map(|b| !b) }
-                    )?;
+                    TypeAnnotation::try_retain(&mut left_annotations, |type_: &TypeAnnotation| {
+                        type_.is_abstract(seeder.snapshot, seeder.type_manager).map(|b| !b)
+                    })?;
                 }
                 right_to_left.insert(right_type.clone(), left_annotations);
             }
@@ -1526,10 +1521,7 @@ impl BinaryConstraint for Relates<Variable> {
 
 #[cfg(test)]
 pub mod tests {
-    use std::{
-        collections::{BTreeMap, BTreeSet},
-        sync::Arc,
-    };
+    use std::collections::{BTreeMap, BTreeSet};
 
     use answer::Type as TypeAnnotation;
     use encoding::value::{label::Label, value_type::ValueType};
@@ -1608,10 +1600,7 @@ pub mod tests {
                     &constraints[2],
                     var_name.into(),
                     var_name_type.into(),
-                    vec![
-                        (type_catname.clone(), type_name.clone()),
-                        (type_dogname.clone(), type_name.clone()),
-                    ],
+                    vec![(type_catname.clone(), type_name.clone()), (type_dogname.clone(), type_name.clone())],
                 ),
                 expected_edge(
                     &constraints[4],
@@ -1672,10 +1661,7 @@ pub mod tests {
                 &constraints[0],
                 var_animal.into(),
                 var_name.into(),
-                vec![
-                    (type_cat.clone(), type_catname.clone()),
-                    (type_dog.clone(), type_dogname.clone()),
-                ],
+                vec![(type_cat.clone(), type_catname.clone()), (type_dog.clone(), type_dogname.clone())],
             )],
             nested_disjunctions: vec![],
             nested_negations: vec![],

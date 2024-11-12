@@ -6,9 +6,8 @@
 
 use std::{cmp::Ordering, mem::transmute};
 
-use rocksdb::DBRawIterator;
-
 use lending_iterator::{LendingIterator, Seekable};
+use rocksdb::DBRawIterator;
 
 type KeyValue<'a> = Result<(&'a [u8], &'a [u8]), rocksdb::Error>;
 

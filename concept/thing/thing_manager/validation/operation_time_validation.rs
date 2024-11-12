@@ -18,17 +18,17 @@ use crate::{
         object::{Object, ObjectAPI},
         relation::Relation,
         thing_manager::{
-            ThingManager,
             validation::{
+                validation::{get_label_or_data_err, DataValidation},
                 DataValidationError,
-                validation::{DataValidation, get_label_or_data_err},
             },
+            ThingManager,
         },
         ThingAPI,
     },
     type_::{
         attribute_type::AttributeType, constraint::Constraint, entity_type::EntityType, object_type::ObjectType,
-        ObjectTypeAPI, OwnerAPI, PlayerAPI, relation_type::RelationType, role_type::RoleType, TypeAPI,
+        relation_type::RelationType, role_type::RoleType, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 
@@ -437,8 +437,10 @@ impl OperationTimeValidation {
 
             for checked_owner_type in owner_and_subtypes {
                 let mut objects = thing_manager.get_objects_in(snapshot, checked_owner_type.clone());
-                while let Some(object) =
-                    objects.next().transpose().map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+                while let Some(object) = objects
+                    .next()
+                    .transpose()
+                    .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
                 {
                     if object == owner {
                         continue;
@@ -529,7 +531,10 @@ impl OperationTimeValidation {
         thing_manager: &ThingManager,
         owner: &impl ObjectAPI<'a>,
     ) -> Result<(), Box<DataValidationError>> {
-        if thing_manager.object_exists(snapshot, owner).map_err(|source| Box::new(DataValidationError::ConceptRead { source }))? {
+        if thing_manager
+            .object_exists(snapshot, owner)
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+        {
             Ok(())
         } else {
             Err(Box::new(DataValidationError::SetHasOnDeletedOwner {
@@ -560,7 +565,10 @@ impl OperationTimeValidation {
         thing_manager: &ThingManager,
         owner: &impl ObjectAPI<'a>,
     ) -> Result<(), Box<DataValidationError>> {
-        if thing_manager.object_exists(snapshot, owner).map_err(|source| Box::new(DataValidationError::ConceptRead { source }))? {
+        if thing_manager
+            .object_exists(snapshot, owner)
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+        {
             Ok(())
         } else {
             Err(Box::new(DataValidationError::UnsetHasOnDeletedOwner {

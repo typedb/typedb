@@ -6,9 +6,11 @@
 
 use std::collections::{HashMap, HashSet};
 
+use answer::variable::Variable;
+use error::typedb_error;
+use storage::snapshot::ReadableSnapshot;
 use typeql::{
     expression::{FunctionCall, FunctionName},
-    Expression,
     query::stage::{
         fetch::{
             FetchAttribute, FetchList as TypeQLFetchList, FetchObject as TypeQLFetchObject,
@@ -19,12 +21,9 @@ use typeql::{
     },
     schema::definable::function::{FunctionBlock, SingleSelector},
     type_::NamedType,
-    TypeRef, TypeRefAny, value::StringLiteral, Variable as TypeQLVariable,
+    value::StringLiteral,
+    Expression, TypeRef, TypeRefAny, Variable as TypeQLVariable,
 };
-
-use answer::variable::Variable;
-use error::typedb_error;
-use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     pattern::ParameterID,
@@ -38,7 +37,6 @@ use crate::{
         function_signature::FunctionSignatureIndex,
         FunctionReadError,
     },
-    RepresentationError,
     translation::{
         expression::build_expression,
         fetch::FetchRepresentationError::{
@@ -50,6 +48,7 @@ use crate::{
         pipeline::{translate_pipeline_stages, TranslatedStage},
         TranslationContext,
     },
+    RepresentationError,
 };
 
 pub(super) fn translate_fetch(
@@ -256,7 +255,9 @@ fn extract_fetch_attribute(fetch_attribute: &FetchAttribute) -> Result<(bool, &s
             },
             TypeRef::Variable(_) => Err(Box::new(NamedVariableEncountered { declaration: list.inner.clone() })),
         },
-        TypeRefAny::Optional(_) => Err(Box::new(OptionalVariableEncountered { declaration: fetch_attribute.attribute.clone() })),
+        TypeRefAny::Optional(_) => {
+            Err(Box::new(OptionalVariableEncountered { declaration: fetch_attribute.attribute.clone() }))
+        }
     }
 }
 
@@ -313,9 +314,12 @@ fn translate_inline_user_function_call(
     let mut builder = Block::builder(builder_context);
     let mut assign_vars = Vec::new();
     for _ in &signature.returns {
-        assign_vars.push(builder.conjunction_mut().declare_variable_anonymous().map_err(|err| {
-            FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err }
-        })?);
+        assign_vars.push(
+            builder
+                .conjunction_mut()
+                .declare_variable_anonymous()
+                .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?,
+        );
     }
     let mut arg_vars = Vec::new();
     for arg in &call.args {
@@ -419,7 +423,9 @@ fn try_get_variable(
     variable: &TypeQLVariable,
 ) -> Result<Variable, Box<FetchRepresentationError>> {
     let name = match variable {
-        TypeQLVariable::Anonymous { .. } => return Err(Box::new(AnonymousVariableEncountered { declaration: variable.clone() })),
+        TypeQLVariable::Anonymous { .. } => {
+            return Err(Box::new(AnonymousVariableEncountered { declaration: variable.clone() }))
+        }
         TypeQLVariable::Named { .. } => variable.name().unwrap(),
     };
     context

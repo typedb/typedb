@@ -41,8 +41,9 @@ pub(super) type TypeTupleIterator<I> = NarrowingTupleIterator<
     Map<TryFilter<I, Box<TypeFilterFn>, Type, Box<ConceptReadError>>, TypeToTupleFn, AdHocHkt<TupleResult<'static>>>,
 >;
 
-pub(crate) type TypeIterator =
-    TypeTupleIterator<AsLendingIterator<iter::Map<vec::IntoIter<Type>, fn(Type) -> Result<Type, Box<ConceptReadError>>>>>;
+pub(crate) type TypeIterator = TypeTupleIterator<
+    AsLendingIterator<iter::Map<vec::IntoIter<Type>, fn(Type) -> Result<Type, Box<ConceptReadError>>>>,
+>;
 
 type TypeVariableValueExtractor = for<'a> fn(&'a Type) -> VariableValue<'a>;
 pub(super) const EXTRACT_TYPE: TypeVariableValueExtractor = |ty| VariableValue::Type(ty.clone());

@@ -6,37 +6,36 @@
 
 use std::collections::{HashMap, HashSet};
 
-use itertools::Itertools;
-
 use encoding::graph::definition::r#struct::StructDefinition;
+use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     error::ConceptReadError,
     type_::{
         attribute_type::AttributeType,
-        Capability,
-        constraint::{Constraint, ConstraintDescription, filter_by_source},
+        constraint::{filter_by_source, Constraint, ConstraintDescription},
         entity_type::EntityType,
-        KindAPI,
         object_type::ObjectType,
-        ObjectTypeAPI,
-        OwnerAPI,
         owns::Owns,
-        PlayerAPI,
-        plays::Plays, relates::Relates, relation_type::RelationType, role_type::RoleType, type_manager::{
+        plays::Plays,
+        relates::Relates,
+        relation_type::RelationType,
+        role_type::RoleType,
+        type_manager::{
             type_reader::TypeReader,
-            TypeManager,
             validation::{
-                SchemaValidationError,
                 validation::{
                     get_label_or_concept_read_err, validate_role_name_uniqueness_non_transitive,
                     validate_role_type_supertype_ordering_match, validate_sibling_owns_ordering_match_for_type,
                     validate_type_declared_constraints_narrowing_of_supertype_constraints,
                     validate_type_supertype_abstractness,
                 },
+                SchemaValidationError,
             },
-        }, TypeAPI,
+            TypeManager,
+        },
+        Capability, KindAPI, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 
@@ -354,8 +353,8 @@ impl CommitTimeValidation {
                 if capability_annotations_declared.is_empty()
                     || capability_annotations_declared == supertype_capability_annotations_declared
                 {
-                    validation_errors.push(
-                        Box::new(SchemaValidationError::CannotRedeclareInheritedCapabilityWithoutSpecialisation {
+                    validation_errors.push(Box::new(
+                        SchemaValidationError::CannotRedeclareInheritedCapabilityWithoutSpecialisation {
                             cap: CAP::KIND,
                             // interface: get_label_or_concept_read_err(snapshot, type_manager, interface_type.clone())?,
                             subtype: get_label_or_concept_read_err(snapshot, type_manager, capability.object())?,
@@ -364,8 +363,8 @@ impl CommitTimeValidation {
                                 type_manager,
                                 supertype_capability.object(),
                             )?,
-                        }),
-                    );
+                        },
+                    ));
                 }
             }
         }
@@ -432,14 +431,14 @@ impl CommitTimeValidation {
                 continue;
             }
             if declared_constraint_descriptions.clone().contains(&constraint.description()) {
-                validation_errors.push(
-                    Box::new(SchemaValidationError::CannotRedeclareConstraintOnSubtypeWithoutSpecialisation {
+                validation_errors.push(Box::new(
+                    SchemaValidationError::CannotRedeclareConstraintOnSubtypeWithoutSpecialisation {
                         // constraint: T::KIND,
                         subtype: get_label_or_concept_read_err(snapshot, type_manager, type_.clone())?,
                         // get_label_or_concept_read_err(snapshot, type_manager, constraint.source())?,
                         constraint: constraint.description(),
-                    }),
-                );
+                    },
+                ));
             }
         }
 
@@ -461,14 +460,14 @@ impl CommitTimeValidation {
         for constraint in capability.get_constraints(snapshot, type_manager)?.into_iter() {
             let description = constraint.description();
             if interface_type_constraint_descriptions.contains(&description) {
-                validation_errors.push(
-                    Box::new(SchemaValidationError::CapabilityConstraintAlreadyExistsForTheWholeInterfaceType {
+                validation_errors.push(Box::new(
+                    SchemaValidationError::CapabilityConstraintAlreadyExistsForTheWholeInterfaceType {
                         cap: CAP::KIND,
                         label: get_label_or_concept_read_err(snapshot, type_manager, capability.object())?,
                         // get_label_or_concept_read_err(snapshot, type_manager, capability.interface())?,
                         constraint: description,
-                    }),
-                );
+                    },
+                ));
             }
         }
 
@@ -563,14 +562,14 @@ impl CommitTimeValidation {
                     let declared_value_type_annotations =
                         attribute_type.get_value_type_annotations_declared(snapshot, type_manager)?;
                     if declared_value_type_annotations.is_empty() {
-                        validation_errors.push(
-                            Box::new(SchemaValidationError::CannotRedeclareInheritedValueTypeWithoutSpecialisation {
+                        validation_errors.push(Box::new(
+                            SchemaValidationError::CannotRedeclareInheritedValueTypeWithoutSpecialisation {
                                 label: get_label_or_concept_read_err(snapshot, type_manager, attribute_type.clone())?,
                                 super_label: get_label_or_concept_read_err(snapshot, type_manager, supertype)?,
                                 value_type: declared_value_type,
                                 // supertype_value_type,
-                            }),
-                        );
+                            },
+                        ));
                     }
                 }
             }

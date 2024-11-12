@@ -4,13 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use typeql::query::stage::Stage;
-
 use ir::{
     pipeline::function_signature::HashMapFunctionSignatureIndex,
-    RepresentationError,
     translation::{match_::translate_match, TranslationContext},
+    RepresentationError,
 };
+use typeql::query::stage::Stage;
 
 #[test]
 fn build_conjunction_constraints() {
@@ -97,10 +96,9 @@ fn variable_category_mismatch() {
     let parsed = typeql::parse_query(query).unwrap();
     let typeql::Query::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else { unreachable!() };
     let Stage::Match(match_) = stages.first().unwrap() else { unreachable!() };
-    assert!(matches!(
-        translate_match(&mut TranslationContext::new(), &empty_function_index, match_),
-        Err(Box::new(RepresentationError::VariableCategoryMismatch { .. }))
-    ));
+    let mut context = TranslationContext::new();
+    let translated = translate_match(&mut context, &empty_function_index, match_);
+    assert!(matches!(translated.unwrap_err().as_ref(), &RepresentationError::VariableCategoryMismatch { .. }));
 
     // let mut block = FunctionalBlock::new();
     // let conjunction = block.conjunction_mut();

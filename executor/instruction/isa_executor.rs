@@ -96,8 +96,9 @@ pub(super) type IsaTupleIterator<I> = Map<
     AsHkt![TupleResult<'_>],
 >;
 
-type RezipThingTypeFn =
-    for<'a, 'b> fn((&'a Result<Thing<'b>, Box<ConceptReadError>>, Type)) -> Result<(Thing<'a>, Type), Box<ConceptReadError>>;
+type RezipThingTypeFn = for<'a, 'b> fn(
+    (&'a Result<Thing<'b>, Box<ConceptReadError>>, Type),
+) -> Result<(Thing<'a>, Type), Box<ConceptReadError>>;
 
 type ThingWithTypes<I> = Map<
     Zip<RepeatEach<I>, AsLendingIterator<iter::Cycle<vec::IntoIter<Type>>>>,
@@ -115,7 +116,8 @@ pub(super) type IsaBoundedSortedType =
     IsaTupleIterator<ThingWithTypes<Once<Result<AsHkt![Thing<'_>], Box<ConceptReadError>>>>>;
 
 pub(super) type MapToThing<I, F> = Map<I, F, Result<AsHkt![Thing<'_>], Box<ConceptReadError>>>;
-pub(super) type ObjectEraseFn = for<'a> fn(Result<Object<'a>, Box<ConceptReadError>>) -> Result<Thing<'a>, Box<ConceptReadError>>;
+pub(super) type ObjectEraseFn =
+    for<'a> fn(Result<Object<'a>, Box<ConceptReadError>>) -> Result<Thing<'a>, Box<ConceptReadError>>;
 pub(super) type AttributeEraseFn =
     for<'a> fn(Result<Attribute<'a>, Box<ConceptReadError>>) -> Result<Thing<'a>, Box<ConceptReadError>>;
 

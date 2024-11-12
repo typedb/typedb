@@ -12,9 +12,8 @@ use std::{
     hash::Hash,
 };
 
-use itertools::Itertools;
-
 use encoding::value::value::Value;
+use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::type_::{
@@ -22,11 +21,11 @@ use crate::type_::{
         Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationDistinct,
         AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
     },
-    Capability,
-    KindAPI,
-    Ordering,
     owns::Owns,
-    plays::Plays, relates::Relates, type_manager::TypeManager,
+    plays::Plays,
+    relates::Relates,
+    type_manager::TypeManager,
+    Capability, KindAPI, Ordering,
 };
 
 macro_rules! with_constraint_description {
@@ -241,31 +240,42 @@ pub trait Constraint<T>: Sized + Clone + Hash + Eq {
         self.description().unchecked()
     }
 
-    fn validate_narrowed_by_strictly_same_type(&self, other: &ConstraintDescription) -> Result<(), Box<ConstraintError>> {
+    fn validate_narrowed_by_strictly_same_type(
+        &self,
+        other: &ConstraintDescription,
+    ) -> Result<(), Box<ConstraintError>> {
         match self.description().narrowed_by_strictly_same_type(other) {
             true => Ok(()),
-            false => Err(Box::new(ConstraintError::IsNotNarrowedBy { first: self.description(), second: other.clone() })),
+            false => {
+                Err(Box::new(ConstraintError::IsNotNarrowedBy { first: self.description(), second: other.clone() }))
+            }
         }
     }
 
     fn validate_narrowed_by_any_type(&self, other: &ConstraintDescription) -> Result<(), Box<ConstraintError>> {
         match self.description().narrowed_by_any_type(other) {
             true => Ok(()),
-            false => Err(Box::new(ConstraintError::IsNotNarrowedBy { first: self.description(), second: other.clone() })),
+            false => {
+                Err(Box::new(ConstraintError::IsNotNarrowedBy { first: self.description(), second: other.clone() }))
+            }
         }
     }
 
     fn validate_narrows_strictly_same_type(&self, other: &ConstraintDescription) -> Result<(), Box<ConstraintError>> {
         match other.narrowed_by_strictly_same_type(&self.description()) {
             true => Ok(()),
-            false => Err(Box::new(ConstraintError::IsNotNarrowedBy { first: other.clone(), second: self.description() })),
+            false => {
+                Err(Box::new(ConstraintError::IsNotNarrowedBy { first: other.clone(), second: self.description() }))
+            }
         }
     }
 
     fn validate_narrows_any_type(&self, other: &ConstraintDescription) -> Result<(), Box<ConstraintError>> {
         match other.narrowed_by_any_type(&self.description()) {
             true => Ok(()),
-            false => Err(Box::new(ConstraintError::IsNotNarrowedBy { first: other.clone(), second: self.description() })),
+            false => {
+                Err(Box::new(ConstraintError::IsNotNarrowedBy { first: other.clone(), second: self.description() }))
+            }
         }
     }
 

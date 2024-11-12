@@ -6,10 +6,9 @@
 
 use std::sync::Arc;
 
-use itertools::Itertools;
-
 use bytes::{byte_array::ByteArray, Bytes};
 use durability::wal::WAL;
+use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::{

@@ -11,8 +11,10 @@ use std::{
 
 use concept::error::ConceptReadError;
 use encoding::value::value_type::ValueTypeCategory;
-use ir::pattern::{expression::Operator, variable_category::VariableCategory};
-use ir::RepresentationError;
+use ir::{
+    pattern::{expression::Operator, variable_category::VariableCategory},
+    RepresentationError,
+};
 
 pub mod block_compiler;
 pub mod compiled_expression;
@@ -61,7 +63,9 @@ pub enum ExpressionCompileError {
         derived_category: VariableCategory,
         existing_category: VariableCategory,
     },
-    Representation { source: Box<RepresentationError> },
+    Representation {
+        source: Box<RepresentationError>,
+    },
 }
 
 impl Display for ExpressionCompileError {

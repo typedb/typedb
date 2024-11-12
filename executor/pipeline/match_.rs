@@ -50,8 +50,10 @@ where
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (Box<PipelineExecutionError>, ExecutionContext<Snapshot>)>
-    {
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         let Self { previous: previous_stage, executable, function_registry, .. } = self;
         let (previous_iterator, context) = previous_stage.into_iterator(interrupt.clone())?;
         let iterator = previous_iterator;

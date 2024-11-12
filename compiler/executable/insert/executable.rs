@@ -99,7 +99,11 @@ fn add_inserted_concepts(
                 Vertex::Variable(var) if input_variables.contains_key(var) => {
                     TypeSource::InputVariable(input_variables[var])
                 }
-                _ => return Err(Box::new(WriteCompilationError::CouldNotDetermineTypeOfInsertedVariable { variable: thing })),
+                _ => {
+                    return Err(Box::new(WriteCompilationError::CouldNotDetermineTypeOfInsertedVariable {
+                        variable: thing,
+                    }))
+                }
             }
         };
 
@@ -132,10 +136,14 @@ fn add_inserted_concepts(
                 if let Some(&position) = input_variables.get(&variable) {
                     ValueSource::Variable(position)
                 } else {
-                    return Err(Box::new(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute { variable: thing }));
+                    return Err(Box::new(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute {
+                        variable: thing,
+                    }));
                 }
             } else {
-                return Err(Box::new(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute { variable: thing }));
+                return Err(Box::new(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute {
+                    variable: thing,
+                }));
             };
             let write_to = VariablePosition::new((first_inserted_variable_position + vertex_instructions.len()) as u32);
             output_variables.insert(thing, write_to);
@@ -181,7 +189,9 @@ fn add_role_players(
                 if annotations.len() == 1 {
                     TypeSource::Constant(annotations.iter().find(|_| true).unwrap().clone())
                 } else {
-                    return Err(Box::new(WriteCompilationError::CouldNotUniquelyDetermineRoleType { variable: role_variable }));
+                    return Err(Box::new(WriteCompilationError::CouldNotUniquelyDetermineRoleType {
+                        variable: role_variable,
+                    }));
                 }
             }
             (Some(_), Some(_)) => unreachable!(),

@@ -125,11 +125,11 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
     ) -> Self {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
         let context = ExecutionContext::new(snapshot, thing_manager, parameters);
-        let mut last_stage = ReadPipelineStage::Initial(
-            Box::new(input
+        let mut last_stage = ReadPipelineStage::Initial(Box::new(
+            input
                 .map(|row| InitialStage::new_with(context.clone(), row))
-                .unwrap_or_else(|| InitialStage::new_empty(context))),
-        );
+                .unwrap_or_else(|| InitialStage::new_empty(context)),
+        ));
         for executable_stage in executable_stages {
             match executable_stage {
                 ExecutableStage::Match(match_executable) => {

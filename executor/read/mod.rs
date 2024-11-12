@@ -4,14 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashSet, sync::Arc};
+use std::sync::Arc;
 
 use compiler::executable::{
     match_::planner::{function_plan::ExecutableFunctionRegistry, match_executable::MatchExecutable},
     pipeline::ExecutableStage,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use ir::pipeline::function_signature::FunctionID;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{

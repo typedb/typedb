@@ -6,8 +6,6 @@
 
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use itertools::Itertools;
-
 use encoding::{
     graph::{
         definition::definition_key::DefinitionKey,
@@ -15,6 +13,7 @@ use encoding::{
     },
     value::{label::Label, value_type::ValueType},
 };
+use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::ReadableSnapshot;
@@ -24,8 +23,8 @@ use crate::{
     thing::{
         object::ObjectAPI,
         thing_manager::{
+            validation::{validation::DataValidation, DataValidationError},
             ThingManager,
-            validation::{DataValidationError, validation::DataValidation},
         },
     },
     type_::{
@@ -34,33 +33,33 @@ use crate::{
             AnnotationRegex, AnnotationUnique, AnnotationValues,
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
-        Capability,
         constraint::{
-            CapabilityConstraint, Constraint, ConstraintDescription, ConstraintScope,
             filter_by_constraint_category, filter_by_scope, filter_out_unchecked_constraints, get_abstract_constraints,
             get_checked_constraints, get_distinct_constraints, get_range_constraints, get_regex_constraints,
-            get_values_constraints, type_get_constraints_closest_source, TypeConstraint,
+            get_values_constraints, type_get_constraints_closest_source, CapabilityConstraint, Constraint,
+            ConstraintDescription, ConstraintScope, TypeConstraint,
         },
         entity_type::EntityType,
-        KindAPI,
         object_type::ObjectType,
-        Ordering,
-        OwnerAPI,
         owns::{Owns, OwnsAnnotation},
-        PlayerAPI,
-        plays::Plays, relates::{Relates, RelatesAnnotation}, relation_type::RelationType, role_type::RoleType, type_manager::{
+        plays::Plays,
+        relates::{Relates, RelatesAnnotation},
+        relation_type::RelationType,
+        role_type::RoleType,
+        type_manager::{
             type_reader::TypeReader,
-            TypeManager,
             validation::{
-                SchemaValidationError,
                 validation::{
                     get_label_or_schema_err, get_opt_label_or_schema_err, validate_role_name_uniqueness_non_transitive,
                     validate_role_type_supertype_ordering_match, validate_sibling_owns_ordering_match_for_type,
                     validate_type_declared_constraints_narrowing_of_supertype_constraints,
                     validate_type_supertype_abstractness,
                 },
+                SchemaValidationError,
             },
-        }, TypeAPI,
+            TypeManager,
+        },
+        Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 
@@ -201,14 +200,14 @@ macro_rules! cannot_change_supertype_as_capability_with_existing_instances_is_lo
                 .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
 
                 if type_having_instances.is_some() {
-                    return Err(
-                        Box::new(SchemaValidationError::CannotChangeSupertypeAsCapabilityIsLostWhileHavingHasInstances {
+                    return Err(Box::new(
+                        SchemaValidationError::CannotChangeSupertypeAsCapabilityIsLostWhileHavingHasInstances {
                             cap: $capability_kind,
                             label: get_label_or_schema_err(snapshot, type_manager, subtype)?,
                             new_super_label: get_opt_label_or_schema_err(snapshot, type_manager, supertype)?,
                             interface: get_label_or_schema_err(snapshot, type_manager, interface_type)?,
-                        }),
-                    );
+                        },
+                    ));
                 }
             }
 
@@ -257,7 +256,9 @@ macro_rules! new_acquired_capability_instances_validation {
                 &get_checked_constraints(default_constraints.into_iter()),
             )
             .map_err(|typedb_source| {
-                Box::new(SchemaValidationError::CannotAcquireCapabilityAsExistingInstancesViolateItsConstraint { typedb_source })
+                Box::new(SchemaValidationError::CannotAcquireCapabilityAsExistingInstancesViolateItsConstraint {
+                    typedb_source,
+                })
             })
         }
     };
@@ -305,9 +306,11 @@ macro_rules! new_annotation_constraints_compatible_with_capability_instances_val
                 &constraints,
             )
             .map_err(|typedb_source| {
-                Box::new(SchemaValidationError::CannotSetAnnotationForCapabilityAsExistingInstancesViolateItsConstraint {
-                    typedb_source,
-                })
+                Box::new(
+                    SchemaValidationError::CannotSetAnnotationForCapabilityAsExistingInstancesViolateItsConstraint {
+                        typedb_source,
+                    },
+                )
             })
         }
     };
@@ -601,10 +604,12 @@ macro_rules! new_annotation_constraints_compatible_with_type_and_sub_instances_v
             .collect();
 
             $validation_func(snapshot, type_manager, thing_manager, &affected_types, &constraints).map_err(
-                |typedb_source| Box::new(SchemaValidationError::CannotSetAnnotationAsExistingInstancesViolateItsConstraint {
-                    typedb_source,
+                |typedb_source| {
+                    Box::new(SchemaValidationError::CannotSetAnnotationAsExistingInstancesViolateItsConstraint {
+                        typedb_source,
+                    })
                 },
-            ))
+            )
         }
     };
 }
@@ -649,9 +654,11 @@ macro_rules! updated_constraints_compatible_with_type_and_sub_instances_on_super
 
             $validation_func(snapshot, type_manager, thing_manager, &affected_types, &constraints).map_err(
                 |typedb_source| {
-                    Box::new(SchemaValidationError::CannotChangeSupertypeAsUpdatedConstraintIsViolatedByExistingInstances {
-                        typedb_source,
-                    })
+                    Box::new(
+                        SchemaValidationError::CannotChangeSupertypeAsUpdatedConstraintIsViolatedByExistingInstances {
+                            typedb_source,
+                        },
+                    )
                 },
             )
         }
@@ -713,7 +720,8 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_: impl TypeAPI<'static>,
     ) -> Result<(), Box<SchemaValidationError>> {
-        TypeReader::get_label(snapshot, type_).map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
+        TypeReader::get_label(snapshot, type_)
+            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
         Ok(())
     }
 
@@ -761,17 +769,26 @@ impl OperationTimeValidation {
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
             .is_some()
         {
-            Err(Box::new(SchemaValidationError::LabelShouldBeUnique { label: new_label.clone(), existing_kind: Kind::Attribute }))
+            Err(Box::new(SchemaValidationError::LabelShouldBeUnique {
+                label: new_label.clone(),
+                existing_kind: Kind::Attribute,
+            }))
         } else if TypeReader::get_labelled_type::<RelationType<'static>>(snapshot, new_label)
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
             .is_some()
         {
-            Err(Box::new(SchemaValidationError::LabelShouldBeUnique { label: new_label.clone(), existing_kind: Kind::Relation }))
+            Err(Box::new(SchemaValidationError::LabelShouldBeUnique {
+                label: new_label.clone(),
+                existing_kind: Kind::Relation,
+            }))
         } else if TypeReader::get_labelled_type::<EntityType<'static>>(snapshot, new_label)
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
             .is_some()
         {
-            Err(Box::new(SchemaValidationError::LabelShouldBeUnique { label: new_label.clone(), existing_kind: Kind::Entity }))
+            Err(Box::new(SchemaValidationError::LabelShouldBeUnique {
+                label: new_label.clone(),
+                existing_kind: Kind::Entity,
+            }))
         } else {
             Ok(())
         }
@@ -928,11 +945,13 @@ impl OperationTimeValidation {
                 if old_value_type == new_value_type {
                     Ok(())
                 } else {
-                    Err(Box::new(SchemaValidationError::ChangingAttributeTypeSupertypeWillLeadToConflictingValueTypes {
-                        attribute: get_label_or_schema_err(snapshot, type_manager, subtype)?,
-                        value_type: subtype_declared_value_type,
-                        new_super_value_type: new_value_type.clone(),
-                    }))
+                    Err(Box::new(
+                        SchemaValidationError::ChangingAttributeTypeSupertypeWillLeadToConflictingValueTypes {
+                            attribute: get_label_or_schema_err(snapshot, type_manager, subtype)?,
+                            value_type: subtype_declared_value_type,
+                            new_super_value_type: new_value_type.clone(),
+                        },
+                    ))
                 }
             }
         }
@@ -1277,7 +1296,7 @@ impl OperationTimeValidation {
                             Ok(label) => label,
                             Err(err) => return err,
                         };
-                    Box::new( SchemaValidationError::SubtypeConstraintDoesNotNarrowSupertypeConstraint {
+                    Box::new(SchemaValidationError::SubtypeConstraintDoesNotNarrowSupertypeConstraint {
                         subtype: subtype_label,
                         supertype: attribute_type_label,
                         source,
@@ -1539,7 +1558,10 @@ impl OperationTimeValidation {
         type_manager: &TypeManager,
         type_: T,
     ) -> Result<(), Box<SchemaValidationError>> {
-        if type_.is_abstract(snapshot, type_manager).map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))? {
+        if type_
+            .is_abstract(snapshot, type_manager)
+            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
+        {
             Ok(())
         } else {
             Err(Box::new(SchemaValidationError::AttributeTypeSupertypeIsNotAbstract {
@@ -1752,25 +1774,27 @@ impl OperationTimeValidation {
                     .iter()
                     .any(|supertype_relates| supertype_relates == &subtype_role_supertype_relates)
                 {
-                    return Err(Box::new(SchemaValidationError::CannotChangeRelationTypeSupertypeAsRelatesSpecialiseIsLost {
-                        relation: relation_subtype
-                            .get_label(snapshot, type_manager)
-                            .unwrap()
-                            .as_reference()
-                            .into_owned(),
-                        // relation_supertype,
-                        role_1: subtype_capability
-                            .role()
-                            .get_label(snapshot, type_manager)
-                            .unwrap()
-                            .as_reference()
-                            .into_owned(),
-                        role_2: subtype_role_supertype
-                            .get_label(snapshot, type_manager)
-                            .unwrap()
-                            .as_reference()
-                            .into_owned(),
-                    }));
+                    return Err(Box::new(
+                        SchemaValidationError::CannotChangeRelationTypeSupertypeAsRelatesSpecialiseIsLost {
+                            relation: relation_subtype
+                                .get_label(snapshot, type_manager)
+                                .unwrap()
+                                .as_reference()
+                                .into_owned(),
+                            // relation_supertype,
+                            role_1: subtype_capability
+                                .role()
+                                .get_label(snapshot, type_manager)
+                                .unwrap()
+                                .as_reference()
+                                .into_owned(),
+                            role_2: subtype_role_supertype
+                                .get_label(snapshot, type_manager)
+                                .unwrap()
+                                .as_reference()
+                                .into_owned(),
+                        },
+                    ));
                 }
             }
         }
@@ -1800,8 +1824,8 @@ impl OperationTimeValidation {
                             .iter()
                             .any(|supertype_relates| supertype_relates == &subtype_role_supertype_relates)
                     {
-                        return Err(
-                            Box::new(SchemaValidationError::CannotChangeRelationTypeSupertypeAsRelatesSpecialiseIsLost {
+                        return Err(Box::new(
+                            SchemaValidationError::CannotChangeRelationTypeSupertypeAsRelatesSpecialiseIsLost {
                                 relation: relation_subtype
                                     .get_label(snapshot, type_manager)
                                     .unwrap()
@@ -1819,8 +1843,8 @@ impl OperationTimeValidation {
                                     .unwrap()
                                     .as_reference()
                                     .into_owned(),
-                            }),
-                        );
+                            },
+                        ));
                     }
                 }
             }
@@ -1891,13 +1915,15 @@ impl OperationTimeValidation {
                     .get_ordering(snapshot, type_manager)
                     .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
                 if attribute_type_ordering != new_supertype_ordering {
-                    return Err(Box::new(SchemaValidationError::OrderingDoesNotMatchWithCapabilityOfSupertypeInterface {
-                        label: get_label_or_schema_err(snapshot, type_manager, attribute_type_owner.clone())?,
-                        super_label: get_label_or_schema_err(snapshot, type_manager, new_supertype)?,
-                        interface: get_label_or_schema_err(snapshot, type_manager, attribute_type)?,
-                        expected: new_supertype_ordering,
-                        found: attribute_type_ordering,
-                    }));
+                    return Err(Box::new(
+                        SchemaValidationError::OrderingDoesNotMatchWithCapabilityOfSupertypeInterface {
+                            label: get_label_or_schema_err(snapshot, type_manager, attribute_type_owner.clone())?,
+                            super_label: get_label_or_schema_err(snapshot, type_manager, new_supertype)?,
+                            interface: get_label_or_schema_err(snapshot, type_manager, attribute_type)?,
+                            expected: new_supertype_ordering,
+                            found: attribute_type_ordering,
+                        },
+                    ));
                 }
             }
         }
@@ -2371,8 +2397,9 @@ impl OperationTimeValidation {
         owner: ObjectType<'static>,
         attribute_type: AttributeType<'static>,
     ) -> Result<(), Box<SchemaValidationError>> {
-        let all_owns =
-            owner.get_owns(snapshot, type_manager).map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
+        let all_owns = owner
+            .get_owns(snapshot, type_manager)
+            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
         let found_owns = all_owns.iter().find(|owns| owns.attribute() == attribute_type);
 
         match found_owns {
@@ -2396,8 +2423,9 @@ impl OperationTimeValidation {
         player: ObjectType<'static>,
         role_type: RoleType<'static>,
     ) -> Result<(), Box<SchemaValidationError>> {
-        let all_plays =
-            player.get_plays(snapshot, type_manager).map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
+        let all_plays = player
+            .get_plays(snapshot, type_manager)
+            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
         let found_plays = all_plays.iter().find(|plays| plays.role() == role_type);
 
         match found_plays {
@@ -2475,11 +2503,13 @@ impl OperationTimeValidation {
         if AnnotationUnique::value_type_valid(value_type.clone()) {
             Ok(())
         } else {
-            Err(Box::new(SchemaValidationError::ValueTypeIsNotKeyableForUniqueConstraintOfUniqueAnnotationDeclaredOnOwns {
-                owner: get_label_or_schema_err(snapshot, type_manager, owns.owner())?,
-                attribute: get_label_or_schema_err(snapshot, type_manager, owns.attribute())?,
-                value_type,
-            }))
+            Err(Box::new(
+                SchemaValidationError::ValueTypeIsNotKeyableForUniqueConstraintOfUniqueAnnotationDeclaredOnOwns {
+                    owner: get_label_or_schema_err(snapshot, type_manager, owns.owner())?,
+                    attribute: get_label_or_schema_err(snapshot, type_manager, owns.attribute())?,
+                    value_type,
+                },
+            ))
         }
     }
 
@@ -2492,11 +2522,13 @@ impl OperationTimeValidation {
         if AnnotationKey::value_type_valid(value_type.clone()) {
             Ok(())
         } else {
-            Err(Box::new(SchemaValidationError::ValueTypeIsNotKeyableForUniqueConstraintOfKeyAnnotationDeclaredOnOwns {
-                owner: get_label_or_schema_err(snapshot, type_manager, owns.owner())?,
-                attribute: get_label_or_schema_err(snapshot, type_manager, owns.attribute())?,
-                value_type,
-            }))
+            Err(Box::new(
+                SchemaValidationError::ValueTypeIsNotKeyableForUniqueConstraintOfKeyAnnotationDeclaredOnOwns {
+                    owner: get_label_or_schema_err(snapshot, type_manager, owns.owner())?,
+                    attribute: get_label_or_schema_err(snapshot, type_manager, owns.attribute())?,
+                    value_type,
+                },
+            ))
         }
     }
 
@@ -2878,7 +2910,7 @@ impl OperationTimeValidation {
             let mut entity_iterator = thing_manager.get_entities_in(snapshot, entity_type.clone());
             if let Some(res) = entity_iterator.next() {
                 if let Err(source) = res {
-                    return  Err(Box::new(DataValidationError::ConceptRead { source }));
+                    return Err(Box::new(DataValidationError::ConceptRead { source }));
                 };
 
                 for abstract_constraint in abstract_constraints.iter() {
@@ -3173,8 +3205,10 @@ impl OperationTimeValidation {
 
         for object_type in object_types {
             let mut object_iterator = thing_manager.get_objects_in(snapshot, object_type.clone().into_owned());
-            while let Some(object) =
-                object_iterator.next().transpose().map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            while let Some(object) = object_iterator
+                .next()
+                .transpose()
+                .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
             {
                 let mut cardinality_constraints_counts: HashMap<CapabilityConstraint<Owns<'static>>, u64> =
                     cardinality_constraints_iter.clone().map(|constraint| (constraint.clone(), 0)).collect();
@@ -3183,7 +3217,8 @@ impl OperationTimeValidation {
                 // non-interesting interfaces rather creating multiple iterators
                 let mut has_attribute_iterator = object.get_has_unordered(snapshot, thing_manager);
                 while let Some(attribute) = has_attribute_iterator.next() {
-                    let (attribute, count) = attribute.map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?;
+                    let (attribute, count) =
+                        attribute.map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?;
                     let attribute_type = attribute.type_();
                     if !attribute_types.contains(&attribute_type) {
                         continue;
@@ -3420,8 +3455,10 @@ impl OperationTimeValidation {
 
         for object_type in object_types {
             let mut object_iterator = thing_manager.get_objects_in(snapshot, object_type.clone().into_owned());
-            while let Some(object) =
-                object_iterator.next().transpose().map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            while let Some(object) = object_iterator
+                .next()
+                .transpose()
+                .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
             {
                 let mut cardinality_constraints_counts: HashMap<CapabilityConstraint<Plays<'static>>, u64> =
                     cardinality_constraints_iter.clone().map(|constraint| (constraint.clone(), 0)).collect();
@@ -3530,8 +3567,10 @@ impl OperationTimeValidation {
 
         for relation_type in relation_types {
             let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type.clone().into_owned());
-            while let Some(relation) =
-                relation_iterator.next().transpose().map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            while let Some(relation) = relation_iterator
+                .next()
+                .transpose()
+                .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
             {
                 let mut cardinality_constraints_counts: HashMap<CapabilityConstraint<Relates<'static>>, u64> =
                     cardinality_constraints_iter.clone().map(|constraint| (constraint.clone(), 0)).collect();

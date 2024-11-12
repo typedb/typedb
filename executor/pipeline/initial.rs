@@ -38,8 +38,10 @@ impl<Snapshot> StageAPI<Snapshot> for InitialStage<Snapshot> {
     fn into_iterator(
         self,
         _interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (Box<PipelineExecutionError>, ExecutionContext<Snapshot>)>
-    {
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         Ok((InitialIterator::new(self.initial_batch), self.context))
     }
 }

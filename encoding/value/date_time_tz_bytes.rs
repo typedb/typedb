@@ -8,7 +8,7 @@ use chrono::DateTime;
 
 use crate::{
     graph::thing::vertex_attribute::{InlineEncodableAttributeID, ValueEncodingLength},
-    value::{date_bytes::DateBytes, date_time_bytes::DateTimeBytes, timezone::TimeZone, value_type::ValueType},
+    value::{date_time_bytes::DateTimeBytes, timezone::TimeZone, value_type::ValueType},
 };
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]

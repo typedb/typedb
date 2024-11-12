@@ -13,13 +13,13 @@ use crate::{
     error::ConceptReadError,
     type_::{
         attribute_type::AttributeType,
-        constraint::{Constraint, filter_by_source},
-        KindAPI,
+        constraint::{filter_by_source, Constraint},
         object_type::ObjectType,
-        Ordering,
-        OwnerAPI,
         owns::Owns,
-        relation_type::RelationType, role_type::RoleType, type_manager::{type_reader::TypeReader, TypeManager, validation::SchemaValidationError}, TypeAPI,
+        relation_type::RelationType,
+        role_type::RoleType,
+        type_manager::{type_reader::TypeReader, validation::SchemaValidationError, TypeManager},
+        KindAPI, Ordering, OwnerAPI, TypeAPI,
     },
 };
 

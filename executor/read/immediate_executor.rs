@@ -51,7 +51,7 @@ impl ImmediateExecutor {
         step: &IntersectionStep,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-    ) -> Result<Self , Box<ConceptReadError>> {
+    ) -> Result<Self, Box<ConceptReadError>> {
         let IntersectionStep { sort_variable, instructions, selected_variables, output_width, .. } = step;
 
         let executor = IntersectionExecutor::new(
@@ -65,14 +65,14 @@ impl ImmediateExecutor {
         Ok(Self::SortedJoin(executor))
     }
 
-    pub(crate) fn new_unsorted_join(step: &UnsortedJoinStep) -> Result<Self , Box<ConceptReadError>> {
+    pub(crate) fn new_unsorted_join(step: &UnsortedJoinStep) -> Result<Self, Box<ConceptReadError>> {
         let UnsortedJoinStep { iterate_instruction, check_instructions, output_width, .. } = step;
         let executor =
             UnsortedJoinExecutor::new(iterate_instruction.clone(), check_instructions.clone(), *output_width);
         Ok(Self::UnsortedJoin(executor))
     }
 
-    pub(crate) fn new_assignment(step: &AssignmentStep) -> Result<Self , Box<ConceptReadError>> {
+    pub(crate) fn new_assignment(step: &AssignmentStep) -> Result<Self, Box<ConceptReadError>> {
         let AssignmentStep { expression, input_positions, unbound, selected_variables, output_width } = step;
         Ok(Self::Assignment(AssignExecutor::new(
             expression.clone(),
@@ -83,7 +83,7 @@ impl ImmediateExecutor {
         )))
     }
 
-    pub(crate) fn new_check(step: &CheckStep) -> Result<Self , Box<ConceptReadError>> {
+    pub(crate) fn new_check(step: &CheckStep) -> Result<Self, Box<ConceptReadError>> {
         let CheckStep { check_instructions, selected_variables, output_width } = step;
         Ok(Self::Check(CheckExecutor::new(check_instructions.clone(), selected_variables.clone(), *output_width)))
     }

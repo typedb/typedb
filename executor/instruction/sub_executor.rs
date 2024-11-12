@@ -43,7 +43,11 @@ pub(crate) struct SubExecutor {
 }
 
 pub(super) type SubTupleIterator<I> = NarrowingTupleIterator<
-    Map<TryFilter<I, Box<SubFilterFn>, (Type, Type), Box<ConceptReadError>>, SubToTupleFn, AdHocHkt<TupleResult<'static>>>,
+    Map<
+        TryFilter<I, Box<SubFilterFn>, (Type, Type), Box<ConceptReadError>>,
+        SubToTupleFn,
+        AdHocHkt<TupleResult<'static>>,
+    >,
 >;
 
 pub(super) type SubUnboundedSortedSub =

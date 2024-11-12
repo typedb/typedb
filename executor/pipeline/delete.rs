@@ -42,8 +42,10 @@ where
     fn into_iterator(
         self,
         mut interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (Box<PipelineExecutionError>, ExecutionContext<Snapshot>)>
-    {
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         let (previous_iterator, mut context) = self.previous.into_iterator(interrupt.clone())?;
         // accumulate once, then we will operate in-place
         let mut batch = match previous_iterator.collect_owned() {

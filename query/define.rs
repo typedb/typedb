@@ -6,22 +6,6 @@
 
 use std::collections::HashSet;
 
-use typeql::{
-    Definable,
-    query::schema::Define,
-    schema::definable::{
-        function::Function,
-        Struct,
-        struct_::Field,
-        Type, type_::{
-            capability::{Owns as TypeQLOwns, Plays as TypeQLPlays, Relates as TypeQLRelates},
-            Capability as TypeQLCapability, CapabilityBase,
-        },
-    },
-    token,
-    token::Keyword,
-};
-
 use answer::Type as TypeEnum;
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
@@ -29,11 +13,11 @@ use concept::{
     type_::{
         annotation::{Annotation, AnnotationError},
         attribute_type::AttributeType,
-        Capability,
-        KindAPI,
-        Ordering,
-        OwnerAPI,
-        owns::Owns, PlayerAPI, plays::Plays, relates::Relates, type_manager::TypeManager, TypeAPI,
+        owns::Owns,
+        plays::Plays,
+        relates::Relates,
+        type_manager::TypeManager,
+        Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 use encoding::{
@@ -41,20 +25,35 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use error::typedb_error;
-use ir::{LiteralParseError, translation::tokens::translate_annotation};
+use ir::{translation::tokens::translate_annotation, LiteralParseError};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use typeql::{
+    query::schema::Define,
+    schema::definable::{
+        function::Function,
+        struct_::Field,
+        type_::{
+            capability::{Owns as TypeQLOwns, Plays as TypeQLPlays, Relates as TypeQLRelates},
+            Capability as TypeQLCapability, CapabilityBase,
+        },
+        Struct, Type,
+    },
+    token,
+    token::Keyword,
+    Definable,
+};
 
 use crate::{
     definable_resolution::{
         filter_variants, get_struct_field_value_type_optionality, resolve_attribute_type, resolve_relates,
         resolve_relates_declared, resolve_role_type, resolve_struct_definition_key, resolve_typeql_type,
-        resolve_value_type, SymbolResolutionError, try_resolve_typeql_type, type_ref_to_label_and_ordering,
-        type_to_object_type,
+        resolve_value_type, try_resolve_typeql_type, type_ref_to_label_and_ordering, type_to_object_type,
+        SymbolResolutionError,
     },
     definable_status::{
-        DefinableStatus, DefinableStatusMode, get_capability_annotation_status, get_owns_status,
-        get_plays_status, get_relates_status, get_struct_field_status, get_struct_status, get_sub_status,
-        get_type_annotation_status, get_value_type_status,
+        get_capability_annotation_status, get_owns_status, get_plays_status, get_relates_status,
+        get_struct_field_status, get_struct_status, get_sub_status, get_type_annotation_status, get_value_type_status,
+        DefinableStatus, DefinableStatusMode,
     },
 };
 
@@ -150,7 +149,9 @@ fn define_types<'a>(
                 typedb_source: Box::new(SymbolResolutionError::UnexpectedConceptRead { source: err }),
             })?;
         if existing.is_none() {
-            return Err(DefineError::SymbolResolution { typedb_source: Box::new(SymbolResolutionError::TypeNotFound { label }) });
+            return Err(DefineError::SymbolResolution {
+                typedb_source: Box::new(SymbolResolutionError::TypeNotFound { label }),
+            });
         }
     }
 
@@ -231,9 +232,10 @@ fn define_type(
     undefined_labels: &mut HashSet<Label<'static>>,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(type_declaration.label.ident.as_str());
-    let existing = try_resolve_typeql_type(snapshot, type_manager, &label).map_err(|err| {
-        DefineError::SymbolResolution { typedb_source: Box::new(SymbolResolutionError::UnexpectedConceptRead { source: err }) }
-    })?;
+    let existing =
+        try_resolve_typeql_type(snapshot, type_manager, &label).map_err(|err| DefineError::SymbolResolution {
+            typedb_source: Box::new(SymbolResolutionError::UnexpectedConceptRead { source: err }),
+        })?;
     match type_declaration.kind {
         None => {
             if existing.is_none() {

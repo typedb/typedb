@@ -4,19 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use typeql::{
-    expression::{FunctionCall, FunctionName},
-    ScopedLabel,
-    statement::{
-        Assignment, AssignmentPattern, comparison::ComparisonStatement,
-        InIterable, Is, thing::AttributeComparisonStatement, type_::ValueType as TypeQLValueType,
-    },
-    token::Kind,
-    type_::{BuiltinValueType, NamedType}, TypeRef, TypeRefAny,
-};
-
 use answer::variable::Variable;
 use encoding::value::label::Label;
+use typeql::{
+    expression::{FunctionCall, FunctionName},
+    statement::{
+        comparison::ComparisonStatement, thing::AttributeComparisonStatement, type_::ValueType as TypeQLValueType,
+        Assignment, AssignmentPattern, InIterable, Is,
+    },
+    token::Kind,
+    type_::{BuiltinValueType, NamedType},
+    ScopedLabel, TypeRef, TypeRefAny,
+};
 
 use crate::{
     pattern::{
@@ -25,12 +24,12 @@ use crate::{
         ValueType, Vertex,
     },
     pipeline::function_signature::FunctionSignatureIndex,
-    RepresentationError,
     translation::{
         expression::{add_typeql_expression, add_user_defined_function_call, build_expression},
         literal::translate_literal,
         tokens::translate_value_type,
     },
+    RepresentationError,
 };
 
 pub(super) fn add_statement(
@@ -137,7 +136,9 @@ fn add_type_statement(
                 }
                 typeql::statement::type_::LabelConstraint::Scoped(scoped_label) => {
                     let &Vertex::Variable(var) = &type_ else {
-                        return Err(Box::new(RepresentationError::ScopedLabelWithLabel { declaration: scoped_label.clone() }));
+                        return Err(Box::new(RepresentationError::ScopedLabelWithLabel {
+                            declaration: scoped_label.clone(),
+                        }));
                     };
                     constraints.add_label(
                         var,
@@ -413,7 +414,9 @@ pub(super) fn add_typeql_relation(
                     }
                     TypeRefAny::Type(TypeRef::Variable(var)) => register_typeql_var(constraints, var)?,
                     TypeRefAny::Type(TypeRef::Named(NamedType::Role(name))) => {
-                        return Err(Box::new(RepresentationError::ScopedRoleNameInRelation { declaration: role_player.clone() }));
+                        return Err(Box::new(RepresentationError::ScopedRoleNameInRelation {
+                            declaration: role_player.clone(),
+                        }));
                     }
                     TypeRefAny::Optional(_) => todo!(),
                     TypeRefAny::List(_) => todo!(),
@@ -492,7 +495,9 @@ fn assignment_pattern_to_variables(
     match assignment {
         AssignmentPattern::Variables(vars) => assignment_typeql_vars_to_variables(constraints, vars),
         AssignmentPattern::Deconstruct(struct_deconstruct) => {
-            Err(Box::new(RepresentationError::UnimplementedStructAssignment { declaration: struct_deconstruct.clone() }))
+            Err(Box::new(RepresentationError::UnimplementedStructAssignment {
+                declaration: struct_deconstruct.clone(),
+            }))
         }
     }
 }

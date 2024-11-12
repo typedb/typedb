@@ -81,8 +81,9 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
         };
         let existing_category = variable_registry.get_variable_category(var);
         let source = Constraint::ExpressionBinding((*expression_index.get(&var).unwrap()).clone());
-        variable_registry.set_assigned_value_variable_category(var, category, source)
-            .map_err(|source| { Box::new(ExpressionCompileError::Representation { source }) })?;
+        variable_registry
+            .set_assigned_value_variable_category(var, category, source)
+            .map_err(|source| Box::new(ExpressionCompileError::Representation { source }))?;
     }
     Ok(compiled_expressions)
 }

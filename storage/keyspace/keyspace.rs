@@ -11,15 +11,13 @@ use std::{
     sync::Arc,
 };
 
+use bytes::Bytes;
 use itertools::Itertools;
-use rocksdb::{checkpoint::Checkpoint, DB, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions};
+use rocksdb::{checkpoint::Checkpoint, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, DB};
 use serde::{Deserialize, Serialize};
 
-use bytes::Bytes;
-
-use crate::{key_range::KeyRange, write_batches::WriteBatches};
-
 use super::iterator;
+use crate::{key_range::KeyRange, write_batches::WriteBatches};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct KeyspaceId(pub u8);

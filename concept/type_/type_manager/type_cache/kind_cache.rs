@@ -29,16 +29,16 @@ use storage::{
 
 use crate::type_::{
     attribute_type::AttributeType,
-    Capability,
     constraint::{CapabilityConstraint, TypeConstraint},
     entity_type::EntityType,
-    KindAPI,
     object_type::ObjectType,
-    ObjectTypeAPI,
-    Ordering,
     owns::Owns,
-    PlayerAPI,
-    plays::Plays, relates::Relates, relation_type::RelationType, role_type::RoleType, type_manager::type_reader::TypeReader, TypeAPI,
+    plays::Plays,
+    relates::Relates,
+    relation_type::RelationType,
+    role_type::RoleType,
+    type_manager::type_reader::TypeReader,
+    Capability, KindAPI, ObjectTypeAPI, Ordering, PlayerAPI, TypeAPI,
 };
 
 #[derive(Debug)]

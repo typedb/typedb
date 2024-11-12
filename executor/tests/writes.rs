@@ -130,8 +130,10 @@ impl<Snapshot> StageAPI<Snapshot> for ShimStage<Snapshot> {
     fn into_iterator(
         self,
         _: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (Box<PipelineExecutionError>, ExecutionContext<Snapshot>)>
-    {
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         Ok((ShimIterator(AsNarrowingIterator::new(self.rows)), self.context))
     }
 }

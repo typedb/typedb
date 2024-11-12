@@ -11,16 +11,15 @@ use std::{
     ops::Deref,
 };
 
-use itertools::Itertools;
-
 use answer::variable::Variable;
+use itertools::Itertools;
 
 use crate::{
     pattern::{
         expression::{ExpressionDefinitionError, ExpressionTree},
         function_call::FunctionCall,
-        IrID,
-        ScopeId, ValueType, variable_category::VariableCategory, Vertex,
+        variable_category::VariableCategory,
+        IrID, ScopeId, ValueType, Vertex,
     },
     pipeline::{block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry},
     RepresentationError,
@@ -189,7 +188,11 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         Ok(constraint.as_isa().unwrap())
     }
 
-    pub fn add_has(&mut self, owner: Variable, attribute: Variable) -> Result<&Has<Variable>, Box<RepresentationError>> {
+    pub fn add_has(
+        &mut self,
+        owner: Variable,
+        attribute: Variable,
+    ) -> Result<&Has<Variable>, Box<RepresentationError>> {
         let has = Has::new(owner, attribute);
 
         debug_assert!(self.context.is_variable_available(self.constraints.scope, owner));

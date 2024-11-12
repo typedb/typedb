@@ -6,19 +6,13 @@
 
 // TODO: not sure if these go elsewhere, or are useful in lower level packges outside //query
 
-use typeql::{
-    schema::definable::struct_::Field,
-    type_::{BuiltinValueType, NamedType, Optional},
-    TypeRef, TypeRefAny,
-};
-
 use answer::Type;
 use concept::{
     error::ConceptReadError,
     type_::{
-        attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, ObjectTypeAPI, Ordering,
-        OwnerAPI, owns::Owns, PlayerAPI, plays::Plays, relates::Relates,
-        relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, TypeAPI,
+        attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, owns::Owns, plays::Plays,
+        relates::Relates, relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI,
+        Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 use encoding::{
@@ -27,6 +21,11 @@ use encoding::{
 };
 use error::typedb_error;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use typeql::{
+    schema::definable::struct_::Field,
+    type_::{BuiltinValueType, NamedType, Optional},
+    TypeRef, TypeRefAny,
+};
 
 macro_rules! try_unwrap {
     ($variant:path = $item:expr) => {
@@ -67,9 +66,9 @@ pub(crate) fn named_type_to_label(named_type: &NamedType) -> Result<Label<'stati
         NamedType::Role(scoped_label) => {
             Ok(Label::build_scoped(scoped_label.name.ident.as_str(), scoped_label.scope.ident.as_str()))
         }
-        NamedType::BuiltinValueType(_) => {
-            Err(Box::new(SymbolResolutionError::ExpectedLabelButGotBuiltinValueType { declaration: named_type.clone() }))
-        }
+        NamedType::BuiltinValueType(_) => Err(Box::new(SymbolResolutionError::ExpectedLabelButGotBuiltinValueType {
+            declaration: named_type.clone(),
+        })),
     }
 }
 
@@ -97,7 +96,9 @@ pub(crate) fn get_struct_field_value_type_optionality(
         TypeRefAny::Type(TypeRef::Variable(_)) | TypeRefAny::Optional(Optional { inner: TypeRef::Variable(_), .. }) => {
             Err(Box::new(SymbolResolutionError::StructFieldIllegalVariable { declaration: field.clone() }))
         }
-        TypeRefAny::List(_) => Err(Box::new(SymbolResolutionError::StructFieldIllegalList { declaration: field.clone() })),
+        TypeRefAny::List(_) => {
+            Err(Box::new(SymbolResolutionError::StructFieldIllegalList { declaration: field.clone() }))
+        }
     }
 }
 
@@ -142,7 +143,9 @@ pub(crate) fn resolve_value_type(
             let key = try_resolve_struct_definition_key(snapshot, type_manager, label.ident.as_str());
             match key {
                 Ok(Some(key)) => Ok(ValueType::Struct(key)),
-                Ok(None) => Err(Box::new(SymbolResolutionError::ValueTypeNotFound { name: label.ident.as_str().to_owned() })),
+                Ok(None) => {
+                    Err(Box::new(SymbolResolutionError::ValueTypeNotFound { name: label.ident.as_str().to_owned() }))
+                }
                 Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { source })),
             }
         }

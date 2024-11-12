@@ -6,28 +6,27 @@
 
 use std::{collections::HashSet, sync::Arc};
 
-use itertools::Itertools;
-
 use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
     graph::type_::vertex::{TypeVertex, TypeVertexEncoding},
     layout::prefix::Prefix,
-    Prefixed,
     value::label::Label,
+    Prefixed,
 };
+use itertools::Itertools;
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
     thing::{object::Object, thing_manager::ThingManager},
     type_::{
-        attribute_type::AttributeType, constraint::CapabilityConstraint, entity_type::EntityType, ObjectTypeAPI,
-        Ordering, OwnerAPI, owns::Owns, PlayerAPI, plays::Plays,
-        relation_type::RelationType, role_type::RoleType, ThingTypeAPI, type_manager::TypeManager, TypeAPI,
+        attribute_type::AttributeType, constraint::CapabilityConstraint, entity_type::EntityType, owns::Owns,
+        plays::Plays, relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI,
+        Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
     },
+    ConceptAPI,
 };
 
 macro_rules! with_object_type {

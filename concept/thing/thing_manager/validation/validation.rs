@@ -15,7 +15,6 @@ use crate::{
     },
     type_::{
         attribute_type::AttributeType,
-        Capability,
         constraint::{CapabilityConstraint, Constraint, ConstraintError, TypeConstraint},
         entity_type::EntityType,
         owns::Owns,
@@ -23,7 +22,8 @@ use crate::{
         relates::Relates,
         relation_type::RelationType,
         role_type::RoleType,
-        type_manager::TypeManager, TypeAPI,
+        type_manager::TypeManager,
+        Capability, TypeAPI,
     },
 };
 
@@ -163,7 +163,7 @@ impl DataValidation {
     ) -> Result<(), Box<DataValidationError>> {
         constraint.validate_cardinality(count).map_err(|error_source| {
             let relation = relation.clone().into_owned();
-             Box::new(DataValidationError::RelatesConstraintViolated {
+            Box::new(DataValidationError::RelatesConstraintViolated {
                 relation_iid: HexBytesFormatter::owned(Vec::from(relation.iid().bytes())),
                 relation_type: relation.type_().get_label(snapshot, type_manager).unwrap().to_owned(),
                 role_type: role_type.get_label(snapshot, type_manager).unwrap().to_owned(),
@@ -180,11 +180,13 @@ impl DataValidation {
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<(), Box<DataValidationError>> {
-        constraint.validate_regex(value).map_err(|error_source|  Box::new(DataValidationError::AttributeTypeConstraintViolated {
-            attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().to_owned(),
-            // constraint_source: constraint.source().get_label(snapshot, type_manager).unwrap().to_owned(),
-            source: error_source,
-        }))
+        constraint.validate_regex(value).map_err(|error_source| {
+            Box::new(DataValidationError::AttributeTypeConstraintViolated {
+                attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().to_owned(),
+                // constraint_source: constraint.source().get_label(snapshot, type_manager).unwrap().to_owned(),
+                source: error_source,
+            })
+        })
     }
 
     pub(crate) fn validate_attribute_range_constraint(
@@ -194,11 +196,13 @@ impl DataValidation {
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<(), Box<DataValidationError>> {
-        constraint.validate_range(value).map_err(|error_source|  Box::new(DataValidationError::AttributeTypeConstraintViolated {
-            attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().to_owned(),
-            // constraint_source: constraint.source().get_label(snapshot, type_manager).unwrap().to_owned(),
-            source: error_source,
-        }))
+        constraint.validate_range(value).map_err(|error_source| {
+            Box::new(DataValidationError::AttributeTypeConstraintViolated {
+                attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().to_owned(),
+                // constraint_source: constraint.source().get_label(snapshot, type_manager).unwrap().to_owned(),
+                source: error_source,
+            })
+        })
     }
 
     pub(crate) fn validate_attribute_values_constraint(
@@ -208,11 +212,13 @@ impl DataValidation {
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<(), Box<DataValidationError>> {
-        constraint.validate_values(value).map_err(|error_source|  Box::new(DataValidationError::AttributeTypeConstraintViolated {
-            attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().to_owned(),
-            // constraint_source: constraint.source().get_label(snapshot, type_manager).unwrap().to_owned(),
-            source: error_source,
-        }))
+        constraint.validate_values(value).map_err(|error_source| {
+            Box::new(DataValidationError::AttributeTypeConstraintViolated {
+                attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().to_owned(),
+                // constraint_source: constraint.source().get_label(snapshot, type_manager).unwrap().to_owned(),
+                source: error_source,
+            })
+        })
     }
 
     pub(crate) fn validate_owns_regex_constraint(
@@ -223,13 +229,15 @@ impl DataValidation {
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<(), Box<DataValidationError>> {
-        constraint.validate_regex(value).map_err(|error_source|  Box::new(DataValidationError::OwnsConstraintViolated {
-            owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
-            owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().to_owned(),
-            attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().to_owned(),
-            // constraint_source: constraint.source(),
-            source: error_source,
-        }))
+        constraint.validate_regex(value).map_err(|error_source| {
+            Box::new(DataValidationError::OwnsConstraintViolated {
+                owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
+                owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().to_owned(),
+                attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().to_owned(),
+                // constraint_source: constraint.source(),
+                source: error_source,
+            })
+        })
     }
 
     pub(crate) fn validate_owns_range_constraint(
@@ -240,13 +248,15 @@ impl DataValidation {
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<(), Box<DataValidationError>> {
-        constraint.validate_range(value).map_err(|error_source|  Box::new(DataValidationError::OwnsConstraintViolated {
-            owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
-            owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().to_owned(),
-            attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().to_owned(),
-            // constraint_source: constraint.source(),
-            source: error_source,
-        }))
+        constraint.validate_range(value).map_err(|error_source| {
+            Box::new(DataValidationError::OwnsConstraintViolated {
+                owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
+                owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().to_owned(),
+                attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().to_owned(),
+                // constraint_source: constraint.source(),
+                source: error_source,
+            })
+        })
     }
 
     pub(crate) fn validate_owns_values_constraint(
@@ -257,13 +267,15 @@ impl DataValidation {
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<(), Box<DataValidationError>> {
-        constraint.validate_values(value).map_err(|error_source|  Box::new(DataValidationError::OwnsConstraintViolated {
-            owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
-            owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().to_owned(),
-            attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().to_owned(),
-            // constraint_source: constraint.source(),
-            source: error_source,
-        }))
+        constraint.validate_values(value).map_err(|error_source| {
+            Box::new(DataValidationError::OwnsConstraintViolated {
+                owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
+                owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().to_owned(),
+                attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().to_owned(),
+                // constraint_source: constraint.source(),
+                source: error_source,
+            })
+        })
     }
 
     pub(crate) fn validate_owns_distinct_constraint(
@@ -276,7 +288,7 @@ impl DataValidation {
     ) -> Result<(), Box<DataValidationError>> {
         debug_assert!(constraint.description().unwrap_distinct().is_ok());
         CapabilityConstraint::<Owns<'static>>::validate_distinct(count).map_err(|error_source| {
-             Box::new(DataValidationError::OwnsConstraintViolated {
+            Box::new(DataValidationError::OwnsConstraintViolated {
                 owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
                 owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().to_owned(),
                 attribute_type: attribute
@@ -302,7 +314,7 @@ impl DataValidation {
     ) -> Result<(), Box<DataValidationError>> {
         debug_assert!(constraint.description().unwrap_distinct().is_ok());
         CapabilityConstraint::<Relates<'static>>::validate_distinct(count).map_err(|error_source| {
-             Box::new(DataValidationError::RelatesConstraintViolated {
+            Box::new(DataValidationError::RelatesConstraintViolated {
                 relation_iid: HexBytesFormatter::owned(Vec::from(relation.iid().bytes())),
                 relation_type: relation.type_().get_label(snapshot, type_manager).unwrap().to_owned(),
                 role_type: role_type.get_label(snapshot, type_manager).unwrap().to_owned(),
@@ -337,10 +349,10 @@ impl DataValidation {
         let error_source = Box::new(ConstraintError::ViolatedUnique { value: value.clone().into_owned() });
         let is_key = match constraint_source.is_key(snapshot, type_manager) {
             Ok(is_key) => is_key,
-            Err(err) => return  Box::new(DataValidationError::ConceptRead { source: err }),
+            Err(err) => return Box::new(DataValidationError::ConceptRead { source: err }),
         };
         if is_key {
-             Box::new(DataValidationError::KeyConstraintViolatedUniqueness {
+            Box::new(DataValidationError::KeyConstraintViolatedUniqueness {
                 owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
                 owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().to_owned(),
                 attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().to_owned(),
@@ -349,7 +361,7 @@ impl DataValidation {
                 source: error_source,
             })
         } else {
-             Box::new(DataValidationError::OwnsConstraintViolated {
+            Box::new(DataValidationError::OwnsConstraintViolated {
                 owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
                 owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().to_owned(),
                 attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().to_owned(),

@@ -4,20 +4,20 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use concept::error::ConceptWriteError;
 use cucumber::gherkin::Step;
+use database::transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite};
 use futures::future::join_all;
 use macro_rules_attribute::apply;
-
-use database::transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite};
 use options::TransactionOptions;
 use server::typedb::Server;
 use test_utils::assert_matches;
 
 use crate::{
-    ActiveTransaction,
     connection::BehaviourConnectionTestExecutionError,
-    Context,
-    generic_step, params::{self, check_boolean}, util,
+    generic_step,
+    params::{self, check_boolean},
+    util, ActiveTransaction, Context,
 };
 
 async fn server_open_transaction_for_database(
@@ -130,7 +130,7 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
                         }
                     }
                     DataCommitError::ConceptWriteErrorsFirst { typedb_source } => {
-                        may_error.check_concept_write_without_read_errors::<()>(&Err(Box::new(typedb_source)));
+                        may_error.check_concept_write_without_read_errors::<()>(&Err(typedb_source));
                     }
                     DataCommitError::SnapshotInUse { .. } | DataCommitError::SnapshotError { .. } => {
                         panic!("Unexpected write commit error: {:?}", error);
@@ -147,7 +147,7 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
                         }
                     }
                     SchemaCommitError::ConceptWriteErrorsFirst { typedb_source } => {
-                        may_error.check_concept_write_without_read_errors::<()>(&Err(Box::new(typedb_source)));
+                        may_error.check_concept_write_without_read_errors::<()>(&Err(typedb_source));
                     }
 
                     SchemaCommitError::TypeCacheUpdateError { .. }

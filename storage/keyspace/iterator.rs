@@ -6,14 +6,13 @@
 
 use std::cmp::Ordering;
 
-use rocksdb::DB;
-
 use bytes::{byte_array::ByteArray, Bytes};
 use lending_iterator::{LendingIterator, Seekable};
+use rocksdb::DB;
 
 use crate::{
     key_range::{KeyRange, RangeEnd},
-    keyspace::{Keyspace, KeyspaceError, raw_iterator, raw_iterator::DBIterator},
+    keyspace::{raw_iterator, raw_iterator::DBIterator, Keyspace, KeyspaceError},
 };
 
 pub struct KeyspaceRangeIterator {

@@ -14,14 +14,14 @@ use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
     graph::{
         type_::{
-            Kind,
             vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+            Kind,
         },
         Typed,
     },
     layout::prefix::{Prefix, Prefix::VertexRelationType},
-    Prefixed,
     value::label::Label,
+    Prefixed,
 };
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
@@ -33,7 +33,6 @@ use storage::{
 
 use crate::{
     concept_iterator,
-    ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
     thing::{relation::Relation, thing_manager::ThingManager},
     type_::{
@@ -41,16 +40,17 @@ use crate::{
             Annotation, AnnotationAbstract, AnnotationCascade, AnnotationCategory, AnnotationError, DefaultFrom,
         },
         attribute_type::AttributeType,
-        Capability,
         constraint::{CapabilityConstraint, TypeConstraint},
         get_with_specialised,
-        KindAPI,
         object_type::ObjectType,
-        ObjectTypeAPI,
-        Ordering,
-        OwnerAPI,
-        owns::Owns, PlayerAPI, plays::Plays, relates::Relates, role_type::RoleType, ThingTypeAPI, type_manager::TypeManager, TypeAPI,
+        owns::Owns,
+        plays::Plays,
+        relates::Relates,
+        role_type::RoleType,
+        type_manager::TypeManager,
+        Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
     },
+    ConceptAPI,
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -109,7 +109,7 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-    ) -> Result<(),  Box<ConceptWriteError>> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.delete_relation_type(snapshot, thing_manager, self.clone().into_owned())
     }
 
@@ -202,7 +202,7 @@ impl<'a> RelationType<'a> {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         label: &Label<'_>,
-    ) -> Result<(),  Box<ConceptWriteError>> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.set_relation_type_label(snapshot, self.clone().into_owned(), label)
     }
 
@@ -212,7 +212,7 @@ impl<'a> RelationType<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         supertype: RelationType<'static>,
-    ) -> Result<(),  Box<ConceptWriteError>> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.set_relation_type_supertype(snapshot, thing_manager, self.clone().into_owned(), supertype)
     }
 
@@ -221,7 +221,7 @@ impl<'a> RelationType<'a> {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-    ) -> Result<(),  Box<ConceptWriteError>> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.unset_relation_type_supertype(snapshot, thing_manager, self.clone().into_owned())
     }
 
@@ -231,7 +231,7 @@ impl<'a> RelationType<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         annotation: RelationTypeAnnotation,
-    ) -> Result<(),  Box<ConceptWriteError>> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         match annotation {
             RelationTypeAnnotation::Abstract(_) => type_manager.set_relation_type_annotation_abstract(
                 snapshot,
@@ -250,7 +250,7 @@ impl<'a> RelationType<'a> {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         annotation_category: AnnotationCategory,
-    ) -> Result<(),  Box<ConceptWriteError>> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let relation_type_annotation = RelationTypeAnnotation::try_getting_default(annotation_category)
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match relation_type_annotation {
@@ -279,7 +279,7 @@ impl<'a> RelationType<'a> {
         thing_manager: &ThingManager,
         name: &str,
         ordering: Ordering,
-    ) -> Result<Relates<'static>,  Box<ConceptWriteError>> {
+    ) -> Result<Relates<'static>, Box<ConceptWriteError>> {
         let label = Label::build_scoped(name, self.get_label(snapshot, type_manager).unwrap().name().as_str());
         let role_type =
             type_manager.create_role_type(snapshot, thing_manager, &label, self.clone().into_owned(), ordering)?;
@@ -490,7 +490,7 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
         ordering: Ordering,
-    ) -> Result<Owns<'static>,  Box<ConceptWriteError>> {
+    ) -> Result<Owns<'static>, Box<ConceptWriteError>> {
         type_manager.set_owns(
             snapshot,
             thing_manager,
@@ -507,7 +507,7 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<(),  Box<ConceptWriteError>> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.unset_owns(snapshot, thing_manager, self.clone().into_owned_object_type(), attribute_type)?;
         Ok(())
     }
@@ -633,7 +633,7 @@ impl<'a> PlayerAPI<'a> for RelationType<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
-    ) -> Result<Plays<'static>,  Box<ConceptWriteError>> {
+    ) -> Result<Plays<'static>, Box<ConceptWriteError>> {
         type_manager.set_plays(snapshot, thing_manager, self.clone().into_owned_object_type(), role_type.clone())
     }
 
@@ -643,7 +643,7 @@ impl<'a> PlayerAPI<'a> for RelationType<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         role_type: RoleType<'static>,
-    ) -> Result<(),  Box<ConceptWriteError>> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.unset_plays(snapshot, thing_manager, self.clone().into_owned_object_type(), role_type)
     }
 

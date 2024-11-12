@@ -7,13 +7,12 @@
 use std::{
     borrow::Cow,
     io::{self, Read, Write},
-    sync::{Arc, mpsc},
+    sync::{mpsc, Arc},
 };
 
-use itertools::Itertools;
-
-use durability::{DurabilityRecordType, DurabilityService, DurabilityServiceError, RawRecord, wal::WAL};
+use durability::{wal::WAL, DurabilityRecordType, DurabilityService, DurabilityServiceError, RawRecord};
 use error::typedb_error;
+use itertools::Itertools;
 
 use crate::sequence_number::SequenceNumber;
 

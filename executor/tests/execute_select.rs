@@ -223,8 +223,9 @@ fn anonymous_vars_not_enumerated_or_counted() {
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> =
-        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone()))).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
 
     // person1, <something>
     // person2, <something>
@@ -324,8 +325,9 @@ fn unselected_named_vars_counted() {
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> =
-        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone()))).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
 
     // 7x person 1, <something>
     // 3x person 2, <something>
@@ -448,8 +450,9 @@ fn cartesian_named_counted_checked() {
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> =
-        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone()))).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
 
     // 2x person 1, age_1, <name something>, <email something>
     // 2x person 1, age_2, <name something>, <email something>

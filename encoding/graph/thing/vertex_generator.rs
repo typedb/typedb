@@ -37,7 +37,6 @@ use crate::{
         boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
         duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes, struct_bytes::StructBytes,
-        value_type::ValueTypeCategory,
     },
     AsBytes, Keyable, Prefixed,
 };

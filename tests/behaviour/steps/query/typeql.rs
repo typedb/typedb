@@ -6,30 +6,29 @@
 
 use std::{collections::HashMap, str::FromStr, sync::Arc};
 
-use cucumber::gherkin::Step;
-use macro_rules_attribute::apply;
-
-use answer::{Thing, variable_value::VariableValue};
+use answer::{variable_value::VariableValue, Thing};
 use compiler::VariablePosition;
 use concept::{thing::object::ObjectAPI, type_::TypeAPI};
+use cucumber::gherkin::Step;
 use encoding::value::{label::Label, value_type::ValueType, ValueEncodable};
 use executor::{
     batch::Batch,
-    ExecutionInterrupt,
     pipeline::stage::{ExecutionContext, StageIterator},
+    ExecutionInterrupt,
 };
 use lending_iterator::LendingIterator;
+use macro_rules_attribute::apply;
 use query::{error::QueryError, query_manager::QueryManager};
 use test_utils::assert_matches;
 
 use crate::{
-    BehaviourTestExecutionError, Context,
-    generic_step,
-    params,
+    generic_step, params,
     transaction_context::{
-        ActiveTransaction::{Read, Schema}, with_read_tx, with_schema_tx,
-        with_write_tx_deconstructed,
-    }, util::iter_table_map,
+        with_read_tx, with_schema_tx, with_write_tx_deconstructed,
+        ActiveTransaction::{Read, Schema},
+    },
+    util::iter_table_map,
+    BehaviourTestExecutionError, Context,
 };
 
 fn batch_result_to_answer(

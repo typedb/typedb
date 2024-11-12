@@ -6,11 +6,10 @@
 
 use std::{borrow::Borrow, cmp::Ordering};
 
-use serde::{Deserialize, Serialize};
-
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use lending_iterator::higher_order::Hkt;
 use primitive::prefix::Prefix;
+use serde::{Deserialize, Serialize};
 
 use crate::keyspace::{KeyspaceId, KeyspaceSet};
 

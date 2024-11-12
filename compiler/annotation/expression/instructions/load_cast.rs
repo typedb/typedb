@@ -5,8 +5,8 @@
  */
 use std::marker::PhantomData;
 
-use encoding::value::{value::NativeValueConvertible, value_type::ValueTypeCategory};
-use encoding::value::decimal_value::Decimal;
+use encoding::value::{decimal_value::Decimal, value::NativeValueConvertible, value_type::ValueTypeCategory};
+
 use crate::annotation::expression::{
     expression_compiler::ExpressionCompilationContext,
     instructions::{

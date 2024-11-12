@@ -4,17 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    cmp::Ordering,
-    collections::{hash_set, HashSet},
-    iter::Peekable,
-    sync::Arc,
-};
+use std::{cmp::Ordering, iter::Peekable, sync::Arc};
 
-use compiler::{
-    executable::{modifiers::SortExecutable, reduce::ReduceExecutable},
-    VariablePosition,
-};
+use compiler::executable::{modifiers::SortExecutable, reduce::ReduceExecutable};
 use ir::pipeline::modifier::SortVariable;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
@@ -25,7 +17,6 @@ use crate::{
     pipeline::stage::ExecutionContext,
     read::pattern_executor::PatternExecutor,
     reduce_executor::GroupedReducer,
-    row::MaybeOwnedRow,
 };
 
 pub(super) struct CollectingStageExecutor {

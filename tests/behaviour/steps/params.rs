@@ -7,9 +7,6 @@
 use std::{borrow::Cow, convert::Infallible, fmt, str::FromStr, sync::Arc};
 
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
-use cucumber::Parameter;
-use itertools::Itertools;
-
 use concept::{
     error::ConceptWriteError,
     type_::{
@@ -20,9 +17,10 @@ use concept::{
         },
         constraint::{ConstraintCategory as TypeDBConstraintCategory, ConstraintDescription as TypeDBConstraint},
         object_type::ObjectType,
-        type_manager::{TypeManager, validation::SchemaValidationError},
+        type_manager::TypeManager,
     },
 };
+use cucumber::Parameter;
 use encoding::{
     graph::type_::Kind as TypeDBTypeKind,
     value::{
@@ -30,6 +28,7 @@ use encoding::{
         value_type::ValueType as TypeDBValueType,
     },
 };
+use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use test_utils::assert_matches;
 
@@ -68,18 +67,16 @@ impl MayError {
         &self,
         res: &Result<T, Box<ConceptWriteError>>,
     ) -> Option<Box<ConceptWriteError>> {
-        match self.check(res.as_ref().map_err(|e| e.clone())) {
+        match self.check(res.as_ref().map_err(|e| e.as_ref())) {
             None => None,
-            Some(error) => match *error {
+            Some(error) => match error {
                 ConceptWriteError::ConceptRead { source } => {
                     panic!("Expected logic error, got ConceptRead {:?}", source)
                 }
-                ConceptWriteError::SchemaValidation {
-                    typedb_source: SchemaValidationError::ConceptRead { source },
-                } => {
-                    panic!("Expected logic error, got SchemaValidation::ConceptRead {:?}", source)
+                ConceptWriteError::SchemaValidation { typedb_source: err } => {
+                    panic!("Expected logic error, got SchemaValidation::ConceptRead {:?}", err)
                 }
-                _ => Some(error),
+                _ => Some(Box::new(error.clone())),
             },
         }
     }

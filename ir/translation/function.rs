@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use answer::variable::Variable;
+use storage::snapshot::ReadableSnapshot;
 use typeql::{
     schema::definable::function::{
         Argument, FunctionBlock, Output, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream,
@@ -11,9 +13,6 @@ use typeql::{
     type_::NamedType,
     TypeRef, TypeRefAny,
 };
-
-use answer::variable::Variable;
-use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     pattern::variable_category::{VariableCategory, VariableOptionality},
@@ -74,10 +73,9 @@ pub(crate) fn translate_function_block(
     context: &mut TranslationContext,
     function_block: &FunctionBlock,
 ) -> Result<FunctionBody, FunctionRepresentationError> {
-    let (stages, fetch) = translate_pipeline_stages(snapshot, function_index, context, &function_block.stages)
-        .map_err(|err| FunctionRepresentationError::BlockDefinition {
-            declaration: function_block.clone(),
-            typedb_source: err,
+    let (stages, fetch) =
+        translate_pipeline_stages(snapshot, function_index, context, &function_block.stages).map_err(|err| {
+            FunctionRepresentationError::BlockDefinition { declaration: function_block.clone(), typedb_source: err }
         })?;
 
     if fetch.is_some() {

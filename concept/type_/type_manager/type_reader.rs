@@ -10,18 +10,18 @@ use bytes::Bytes;
 use encoding::{
     error::EncodingError,
     graph::{
-        definition::{definition_key::DefinitionKey, DefinitionValueEncoding, r#struct::StructDefinition},
+        definition::{definition_key::DefinitionKey, r#struct::StructDefinition, DefinitionValueEncoding},
         type_::{
-            CapabilityKind,
             edge::{TypeEdge, TypeEdgeEncoding},
             index::{IdentifierIndex, LabelToTypeVertexIndex, NameToStructDefinitionIndex},
             property::{TypeEdgeProperty, TypeEdgePropertyEncoding, TypeVertexProperty, TypeVertexPropertyEncoding},
             vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+            CapabilityKind,
         },
     },
-    Keyable,
     layout::infix::Infix,
     value::{label::Label, value_type::ValueType},
+    Keyable,
 };
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
@@ -37,18 +37,18 @@ use crate::{
             AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
         },
         attribute_type::AttributeType,
-        Capability,
         constraint::{
-            CapabilityConstraint, Constraint, ConstraintScope,
-            get_owns_default_constraints, get_plays_default_constraints, get_relates_default_constraints, TypeConstraint,
+            get_owns_default_constraints, get_plays_default_constraints, get_relates_default_constraints,
+            CapabilityConstraint, Constraint, ConstraintScope, TypeConstraint,
         },
         entity_type::EntityType,
-        KindAPI,
         object_type::ObjectType,
-        Ordering,
         owns::Owns,
         relates::Relates,
-        relation_type::RelationType, role_type::RoleType, sub::Sub, TypeAPI,
+        relation_type::RelationType,
+        role_type::RoleType,
+        sub::Sub,
+        Capability, KindAPI, Ordering, TypeAPI,
     },
 };
 
@@ -215,7 +215,9 @@ impl TypeReader {
             .map_err(|error| Box::new(ConceptReadError::SnapshotIterate { source: error }))
     }
 
-    pub(crate) fn get_role_types(snapshot: &impl ReadableSnapshot) -> Result<Vec<RoleType<'static>>, Box<ConceptReadError>> {
+    pub(crate) fn get_role_types(
+        snapshot: &impl ReadableSnapshot,
+    ) -> Result<Vec<RoleType<'static>>, Box<ConceptReadError>> {
         snapshot
             .iterate_range(KeyRange::new_within(
                 RangeStart::Inclusive(RoleType::prefix_for_kind()),
@@ -227,7 +229,10 @@ impl TypeReader {
 
     // TODO: Should get_{super/sub}type[s_transitive] return T or T::SelfStatic.
     // T::SelfStatic is the more consistent, more honest interface, but T is convenient.
-    pub(crate) fn get_supertype<T>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Option<T>, Box<ConceptReadError>>
+    pub(crate) fn get_supertype<T>(
+        snapshot: &impl ReadableSnapshot,
+        subtype: T,
+    ) -> Result<Option<T>, Box<ConceptReadError>>
     where
         T: TypeAPI<'static>,
     {
@@ -273,7 +278,10 @@ impl TypeReader {
             .map_err(|error| Box::new(ConceptReadError::SnapshotIterate { source: error }))
     }
 
-    pub fn get_subtypes_transitive<T>(snapshot: &impl ReadableSnapshot, type_: T) -> Result<Vec<T>, Box<ConceptReadError>>
+    pub fn get_subtypes_transitive<T>(
+        snapshot: &impl ReadableSnapshot,
+        type_: T,
+    ) -> Result<Vec<T>, Box<ConceptReadError>>
     where
         T: TypeAPI<'static>,
     {

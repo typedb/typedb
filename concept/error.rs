@@ -70,27 +70,7 @@ impl From<Box<ConceptReadError>> for Box<ConceptWriteError> {
             ConceptReadError::SnapshotGet { source } => ConceptWriteError::SnapshotGet { source },
             ConceptReadError::SnapshotIterate { source } => ConceptWriteError::SnapshotIterate { source },
             ConceptReadError::Encoding { source, .. } => ConceptWriteError::Encoding { source },
-            ConceptReadError::CorruptMissingLabelOfType => ConceptWriteError::ConceptRead { source: error },
-            ConceptReadError::CorruptMissingMandatoryCardinality => ConceptWriteError::ConceptRead { source: error },
-            ConceptReadError::CorruptMissingCapability => ConceptWriteError::ConceptRead { source: error },
-            ConceptReadError::OrderingValueMissing => ConceptWriteError::ConceptRead { source: error },
-            ConceptReadError::CorruptMissingMandatoryValueType => ConceptWriteError::ConceptRead { source: error },
-            ConceptReadError::CorruptMissingMandatoryAttributeValue => ConceptWriteError::ConceptRead { source: error },
-            ConceptReadError::CorruptMissingMandatoryRootRelatesForRole => ConceptWriteError::ConceptRead { source: error },
-            ConceptReadError::CorruptMissingMandatoryScopeForRoleTypeLabel => ConceptWriteError::ConceptRead { source: error },
-            ConceptReadError::CorruptMissingMandatorySpecialisingRelatesForRole => ConceptWriteError::ConceptRead { source: error },
-            ConceptReadError::CorruptMissingMandatoryCardinalityForNonSpecialisingCapability => {
-                ConceptWriteError::ConceptRead { source: error }
-            }
-            ConceptReadError::CorruptFoundHasWithoutOwns => ConceptWriteError::ConceptRead { source: error },
-            ConceptReadError::CorruptFoundLinksWithoutPlays => ConceptWriteError::ConceptRead { source: error },
-            ConceptReadError::CorruptFoundLinksWithoutRelates => ConceptWriteError::ConceptRead { source: error },
-            ConceptReadError::CannotGetOwnsDoesntExist(_, _) => ConceptWriteError::ConceptRead { source: error },
-            ConceptReadError::CannotGetPlaysDoesntExist(_, _) => ConceptWriteError::ConceptRead { source: error },
-            ConceptReadError::CannotGetRelatesDoesntExist(_, _) => ConceptWriteError::ConceptRead { source: error },
-            ConceptReadError::Annotation { .. } => ConceptWriteError::ConceptRead { source: error },
-            ConceptReadError::Constraint { .. } => ConceptWriteError::ConceptRead { source: error },
-            ConceptReadError::ValueTypeMismatchWithAttributeType { .. } => ConceptWriteError::ConceptRead { source: error },
+            _ => ConceptWriteError::ConceptRead { source: error },
         })
     }
 }

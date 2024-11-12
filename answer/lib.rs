@@ -7,25 +7,24 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use std::collections::BTreeSet;
-use std::fmt;
+use std::{collections::BTreeSet, fmt};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use concept::{
     error::ConceptReadError,
     thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation},
     type_::{
-        attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, ObjectTypeAPI,
-        relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, TypeAPI,
+        attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, relation_type::RelationType,
+        role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI, TypeAPI,
     },
 };
 use encoding::{
-    AsBytes,
     graph::type_::{
-        Kind,
         vertex::{TypeVertex, TypeVertexEncoding},
+        Kind,
     },
     value::{label::Label, value::Value},
+    AsBytes,
 };
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;

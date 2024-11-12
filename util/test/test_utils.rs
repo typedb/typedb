@@ -12,9 +12,8 @@ use std::{
     sync::Mutex,
 };
 
-use tracing::subscriber::DefaultGuard;
-
 use logger::initialise_logging;
+use tracing::subscriber::DefaultGuard;
 
 pub static LOGGING_GUARD: Mutex<OnceCell<DefaultGuard>> = Mutex::new(OnceCell::new());
 

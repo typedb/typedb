@@ -199,11 +199,13 @@ impl LinksReverseExecutor {
                     let relations = self.player_cache.as_ref().unwrap().iter();
                     let iterators = relations
                         .map(|relation| {
-                            Ok::<_, Box<_>>(Peekable::new(thing_manager.get_links_reverse_by_player_and_relation_type_range(
-                                snapshot,
-                                relation.as_reference(),
-                                relation_type_range.clone(),
-                            )))
+                            Ok::<_, Box<_>>(Peekable::new(
+                                thing_manager.get_links_reverse_by_player_and_relation_type_range(
+                                    snapshot,
+                                    relation.as_reference(),
+                                    relation_type_range.clone(),
+                                ),
+                            ))
                         })
                         .collect::<Result<Vec<_>, _>>()?;
 

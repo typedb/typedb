@@ -10,8 +10,8 @@ use crate::{
         block::{Block, BlockBuilder},
         function_signature::FunctionSignatureIndex,
     },
-    RepresentationError,
     translation::{constraints::add_statement, TranslationContext},
+    RepresentationError,
 };
 
 pub fn translate_match<'a>(

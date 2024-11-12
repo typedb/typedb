@@ -73,7 +73,7 @@ impl HasReverseExecutor {
         sort_by: ExecutorVariable,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<Self,  Box<ConceptReadError>> {
+    ) -> Result<Self, Box<ConceptReadError>> {
         debug_assert!(!variable_modes.all_inputs());
         let attribute_owner_types = has_reverse.attribute_to_owner_types().clone();
         debug_assert!(!attribute_owner_types.is_empty());
@@ -246,7 +246,7 @@ impl HasReverseExecutor {
         thing_manager: &ThingManager,
         attribute_types: impl Iterator<Item = AttributeType<'a>>,
         attribute_values_range: (Bound<Value<'_>>, Bound<Value<'_>>),
-    ) -> Result<MultipleTypeHasReverseIterator,  Box<ConceptReadError>> {
+    ) -> Result<MultipleTypeHasReverseIterator, Box<ConceptReadError>> {
         let type_manager = thing_manager.type_manager();
         let iterators: Vec<_> = attribute_types
             // TODO: we shouldn't really filter out errors here, but presumably a ConceptReadError will crop up elsewhere too if it happens here
@@ -283,7 +283,7 @@ fn create_has_filter_owners(owner_types: Arc<BTreeSet<Type>>) -> Arc<HasFilterFn
 }
 
 fn compare_has_by_owner_then_attribute(
-    pair: (&Result<(Has<'_>, u64),  Box<ConceptReadError>>, &Result<(Has<'_>, u64),  Box<ConceptReadError>>),
+    pair: (&Result<(Has<'_>, u64), Box<ConceptReadError>>, &Result<(Has<'_>, u64), Box<ConceptReadError>>),
 ) -> Ordering {
     if let (Ok((has_1, _)), Ok((has_2, _))) = pair {
         (has_2.owner(), has_1.attribute()).cmp(&(has_2.owner(), has_2.attribute()))

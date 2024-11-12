@@ -277,7 +277,9 @@ fn annotate_function_impl(
         argument_concept_variable_types,
         argument_value_variable_types,
     )
-    .map_err(|err| Box::new(FunctionAnnotationError::TypeInference { name: name.to_string(), typedb_source: Box::new(err) }))?;
+    .map_err(|err| {
+        Box::new(FunctionAnnotationError::TypeInference { name: name.to_string(), typedb_source: Box::new(err) })
+    })?;
 
     let return_ = annotate_return(
         snapshot,
@@ -301,8 +303,10 @@ fn annotate_arguments_from_labels(
     type_manager: &TypeManager,
     arguments: &[Variable],
     argument_labels: &[TypeRefAny],
-) -> Result<(BTreeMap<Variable, Arc<BTreeSet<Type>>>, BTreeMap<Variable, ExpressionValueType>), Box<FunctionAnnotationError>>
-{
+) -> Result<
+    (BTreeMap<Variable, Arc<BTreeSet<Type>>>, BTreeMap<Variable, ExpressionValueType>),
+    Box<FunctionAnnotationError>,
+> {
     // TODO
     let mut variable_types = BTreeMap::new();
     let mut value_types = BTreeMap::new();
@@ -340,7 +344,9 @@ fn get_argument_annotations_from_labels(
                 type_manager,
                 &Label::build(label.ident.as_str()),
             )
-            .map_err(|source| Box::new(FunctionAnnotationError::CouldNotResolveArgumentType { index: arg_index, source }))?;
+            .map_err(|source| {
+                Box::new(FunctionAnnotationError::CouldNotResolveArgumentType { index: arg_index, source })
+            })?;
             Ok(Either::Left(Arc::new(types)))
         }
         NamedType::BuiltinValueType(value_type) => {

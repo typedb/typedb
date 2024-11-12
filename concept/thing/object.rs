@@ -16,8 +16,8 @@ use encoding::{
         vertex_object::ObjectVertex,
     },
     layout::prefix::Prefix,
-    Prefixed,
     value::{decode_value_u64, value::Value},
+    Prefixed,
 };
 use lending_iterator::{higher_order::Hkt, LendingIterator};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
@@ -27,20 +27,20 @@ use storage::{
 };
 
 use crate::{
-    ConceptStatus,
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
         attribute::Attribute,
         entity::Entity,
         has::Has,
-        HKInstance,
         relation::{Relation, RelationRoleIterator},
-        thing_manager::{ThingManager, validation::operation_time_validation::OperationTimeValidation}, ThingAPI,
+        thing_manager::{validation::operation_time_validation::OperationTimeValidation, ThingManager},
+        HKInstance, ThingAPI,
     },
     type_::{
-        attribute_type::AttributeType, object_type::ObjectType, ObjectTypeAPI, Ordering, OwnerAPI, role_type::RoleType,
+        attribute_type::AttributeType, object_type::ObjectType, role_type::RoleType, ObjectTypeAPI, Ordering, OwnerAPI,
     },
+    ConceptStatus,
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

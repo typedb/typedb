@@ -313,8 +313,10 @@ fn type_from_row_or_annotations<'a>(
     }
 }
 
-type FilterFn<T> =
-    dyn for<'a, 'b> FnHktHelper<&'a Result<<T as Hkt>::HktSelf<'b>, Box<ConceptReadError>>, Result<bool, Box<ConceptReadError>>>;
+type FilterFn<T> = dyn for<'a, 'b> FnHktHelper<
+    &'a Result<<T as Hkt>::HktSelf<'b>, Box<ConceptReadError>>,
+    Result<bool, Box<ConceptReadError>>,
+>;
 
 pub(crate) struct Checker<T: Hkt> {
     extractors: HashMap<ExecutorVariable, for<'a, 'b> fn(&'a T::HktSelf<'b>) -> VariableValue<'a>>,

@@ -14,14 +14,13 @@ use std::{
 };
 
 use chrono::Utc;
+use error::typedb_error;
 use itertools::Itertools;
 use same_file::is_same_file;
 
-use error::typedb_error;
-
 use crate::{
     durability_client::DurabilityClient,
-    keyspace::{KeyspaceCheckpointError, KeyspaceOpenError, Keyspaces, KeyspaceSet},
+    keyspace::{KeyspaceCheckpointError, KeyspaceOpenError, KeyspaceSet, Keyspaces},
     recovery::commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
     sequence_number::SequenceNumber,
 };

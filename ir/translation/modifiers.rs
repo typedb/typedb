@@ -10,8 +10,8 @@ use typeql::{query::stage::Operator, token::Order};
 
 use crate::{
     pipeline::modifier::{Limit, Offset, Require, Select, Sort},
-    RepresentationError,
     translation::{literal::FromTypeQLLiteral, TranslationContext},
+    RepresentationError,
 };
 
 pub fn translate_select(
@@ -61,18 +61,18 @@ pub fn translate_offset(
     context: &mut TranslationContext,
     offset: &typeql::query::stage::modifier::Offset,
 ) -> Result<Offset, Box<RepresentationError>> {
-    u64::from_typeql_literal(&offset.offset)
-        .map(Offset::new)
-        .map_err(|source| Box::new(RepresentationError::LiteralParseError { literal: offset.offset.value.clone(), source }))
+    u64::from_typeql_literal(&offset.offset).map(Offset::new).map_err(|source| {
+        Box::new(RepresentationError::LiteralParseError { literal: offset.offset.value.clone(), source })
+    })
 }
 
 pub fn translate_limit(
     context: &mut TranslationContext,
     limit: &typeql::query::stage::modifier::Limit,
 ) -> Result<Limit, Box<RepresentationError>> {
-    u64::from_typeql_literal(&limit.limit)
-        .map(Limit::new)
-        .map_err(|source| Box::new(RepresentationError::LiteralParseError { literal: limit.limit.value.clone(), source }))
+    u64::from_typeql_literal(&limit.limit).map(Limit::new).map_err(|source| {
+        Box::new(RepresentationError::LiteralParseError { literal: limit.limit.value.clone(), source })
+    })
 }
 
 pub fn translate_require(

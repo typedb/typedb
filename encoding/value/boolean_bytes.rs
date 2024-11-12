@@ -6,7 +6,7 @@
 
 use crate::{
     graph::thing::vertex_attribute::{InlineEncodableAttributeID, ValueEncodingLength},
-    value::{value::Value, value_type::ValueType},
+    value::value_type::ValueType,
 };
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]

@@ -20,10 +20,10 @@ use concept::{
     type_::{
         annotation::{AnnotationCardinality, AnnotationDistinct, AnnotationIndependent, AnnotationUnique},
         attribute_type::AttributeTypeAnnotation,
-        Ordering,
-        OwnerAPI,
         owns::OwnsAnnotation,
-        PlayerAPI, relates::RelatesAnnotation, type_manager::TypeManager,
+        relates::RelatesAnnotation,
+        type_manager::TypeManager,
+        Ordering, OwnerAPI, PlayerAPI,
     },
 };
 use encoding::{
@@ -1402,11 +1402,13 @@ fn attribute_struct_errors() {
             ConceptReadError::Encoding { source: EncodingError::StructFieldUnresolvable { .. } }
         ));
         assert!(matches!(
-            *type_manager.resolve_struct_field(
-                &snapshot,
-                &["f_nested", "nested_string", "but-strings-arent-structs"],
-                struct_def.clone()
-            ).unwrap_err(),
+            *type_manager
+                .resolve_struct_field(
+                    &snapshot,
+                    &["f_nested", "nested_string", "but-strings-arent-structs"],
+                    struct_def.clone()
+                )
+                .unwrap_err(),
             ConceptReadError::Encoding { source: EncodingError::IndexingIntoNonStructField { .. } }
         ));
         assert!(matches!(

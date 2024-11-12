@@ -4,11 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    error::Error,
-    fmt,
-    sync::{mpsc::RecvTimeoutError, Arc},
-};
+use std::sync::{mpsc::RecvTimeoutError, Arc};
 
 use concept::{
     error::ConceptWriteError,

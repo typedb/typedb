@@ -6,6 +6,8 @@
 
 use std::{net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
 
+use database::database_manager::DatabaseManager;
+use error::typedb_error;
 use tokio::sync::mpsc::channel;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
@@ -17,11 +19,7 @@ use typedb_protocol::{
 };
 use uuid::Uuid;
 
-use database::database_manager::DatabaseManager;
-use error::typedb_error;
-
 use crate::service::{
-    ConnectionID,
     error::{IntoGRPCStatus, IntoProtocolErrorMessage, ProtocolError},
     response_builders::{
         connection::connection_open_res,
@@ -30,6 +28,7 @@ use crate::service::{
         server_manager::servers_all_res,
     },
     transaction_service::TransactionService,
+    ConnectionID,
 };
 
 #[derive(Debug)]

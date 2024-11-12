@@ -44,8 +44,10 @@ where
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (Box<PipelineExecutionError>, ExecutionContext<Snapshot>)>
-    {
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         let Self { previous, executable, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
         // accumulate once, then we will operate in-place
@@ -135,8 +137,10 @@ where
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (Box<PipelineExecutionError>, ExecutionContext<Snapshot>)>
-    {
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         let Self { offset_executable, previous, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
         Ok((OffsetStageIterator::new(previous_iterator, offset_executable.offset), context))
@@ -197,8 +201,10 @@ where
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (Box<PipelineExecutionError>, ExecutionContext<Snapshot>)>
-    {
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         let Self { limit_executable, previous, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
         Ok((LimitStageIterator::new(previous_iterator, limit_executable.limit), context))
@@ -256,8 +262,10 @@ where
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (Box<PipelineExecutionError>, ExecutionContext<Snapshot>)>
-    {
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         let Self { previous, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
         Ok((SelectStageIterator::new(previous_iterator), context))
@@ -309,8 +317,10 @@ where
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (Box<PipelineExecutionError>, ExecutionContext<Snapshot>)>
-    {
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         let Self { require_executable, previous, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
         Ok((RequireStageIterator::new(previous_iterator, require_executable), context))

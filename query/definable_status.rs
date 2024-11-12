@@ -7,9 +7,9 @@
 use concept::{
     error::ConceptReadError,
     type_::{
-        annotation::AnnotationCategory, attribute_type::AttributeType, Capability,
-        entity_type::EntityType, KindAPI, object_type::ObjectType, Ordering, owns::Owns,
-        plays::Plays, relates::Relates, relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, TypeAPI,
+        annotation::AnnotationCategory, attribute_type::AttributeType, entity_type::EntityType,
+        object_type::ObjectType, owns::Owns, plays::Plays, relates::Relates, relation_type::RelationType,
+        role_type::RoleType, type_manager::TypeManager, Capability, KindAPI, Ordering, TypeAPI,
     },
 };
 use encoding::{

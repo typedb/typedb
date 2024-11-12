@@ -4,13 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use answer::variable::Variable;
+use encoding::value::value::Value;
 use typeql::{
     expression::{BuiltinFunctionName, FunctionName},
     token::{ArithmeticOperator, Function},
 };
-
-use answer::variable::Variable;
-use encoding::value::value::Value;
 
 use crate::{
     pattern::{
@@ -22,11 +21,11 @@ use crate::{
         ParameterID, Vertex,
     },
     pipeline::function_signature::FunctionSignatureIndex,
-    RepresentationError,
     translation::{
         constraints::{register_typeql_var, split_out_inline_expressions},
         literal::translate_literal,
     },
+    RepresentationError,
 };
 
 pub(super) fn add_typeql_expression(
@@ -179,7 +178,10 @@ fn check_builtin_arg_count(builtin: Function, actual: usize, expected: usize) ->
     }
 }
 
-fn to_builtin_id(typeql_id: &BuiltinFunctionName, args: &[usize]) -> Result<BuiltInFunctionID, Box<RepresentationError>> {
+fn to_builtin_id(
+    typeql_id: &BuiltinFunctionName,
+    args: &[usize],
+) -> Result<BuiltInFunctionID, Box<RepresentationError>> {
     let token = typeql_id.token;
     match token {
         Function::Abs => {
@@ -204,10 +206,9 @@ fn to_builtin_id(typeql_id: &BuiltinFunctionName, args: &[usize]) -> Result<Buil
 
 #[cfg(test)]
 pub mod tests {
-    use itertools::Itertools;
-
     use answer::variable::Variable;
     use encoding::value::value::Value;
+    use itertools::Itertools;
 
     use crate::{
         pattern::{
@@ -215,11 +216,14 @@ pub mod tests {
             Vertex,
         },
         pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex},
-        RepresentationError,
         translation::{match_::translate_match, TranslationContext},
+        RepresentationError,
     };
 
-    fn parse_query_get_match(context: &mut TranslationContext, query_str: &str) -> Result<Block, Box<RepresentationError>> {
+    fn parse_query_get_match(
+        context: &mut TranslationContext,
+        query_str: &str,
+    ) -> Result<Block, Box<RepresentationError>> {
         let mut query = typeql::parse_query(query_str).unwrap().into_pipeline();
         let match_ = query.stages.remove(0).into_match();
         translate_match(context, &HashMapFunctionSignatureIndex::empty(), &match_).and_then(|builder| builder.finish())
