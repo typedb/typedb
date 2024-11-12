@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable_value::VariableValue, Concept, Thing};
+use answer::{variable::Variable, variable_value::VariableValue, Concept, Thing};
 use compiler::{
     executable::{
         fetch::executable::{
@@ -18,7 +18,6 @@ use compiler::{
         },
         function::ExecutableFunction,
         match_::planner::function_plan::ExecutableFunctionRegistry,
-        pipeline::ExecutableStage,
     },
     VariablePosition,
 };
@@ -31,9 +30,8 @@ use encoding::value::label::Label;
 use error::typedb_error;
 use ir::{
     pattern::ParameterID,
-    pipeline::{ParameterRegistry, VariableRegistry},
+    pipeline::ParameterRegistry,
 };
-use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
@@ -47,8 +45,8 @@ use crate::{
         PipelineExecutionError,
     },
     read::{
-        pattern_executor::PatternExecutor, step_executor::create_executors_for_function,
-        tabled_functions::TabledFunctions,
+        pattern_executor::PatternExecutor,
+        step_executor::create_executors_for_function, tabled_functions::TabledFunctions,
     },
     row::MaybeOwnedRow,
     ExecutionInterrupt,
@@ -122,7 +120,7 @@ fn execute_fetch_some(
     snapshot: Arc<impl ReadableSnapshot + 'static>,
     thing_manager: Arc<ThingManager>,
     parameters: Arc<ParameterRegistry>,
-    functions: Arc<ExecutableFunctionRegistry>,
+    functions_registry: Arc<ExecutableFunctionRegistry>,
     row: MaybeOwnedRow<'_>,
     interrupt: ExecutionInterrupt,
 ) -> Result<DocumentNode, FetchExecutionError> {
@@ -148,46 +146,24 @@ fn execute_fetch_some(
                 }
             }
         }
-        FetchSomeInstruction::SingleFunction(function) => {
-            let inner_executors = create_executors_for_function(&snapshot, &thing_manager, &functions, function)
-                .map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
-            let mut inner = PatternExecutor::new(inner_executors);
-            inner.prepare(FixedBatch::from(row));
-
-            let execution_context =
-                Arc::new(ExecutionContext::new(snapshot.clone(), thing_manager.clone(), parameters.clone()));
+        FetchSomeInstruction::SingleFunction(function, variable_positions) => {
+            let (mut pattern_executor, execution_context) = execute_single_function(
+                snapshot,
+                thing_manager,
+                parameters,
+                functions_registry.clone(),
+                variable_positions,
+                row,
+                function,
+            )?;
             let mut interrupt = interrupt;
-<<<<<<< HEAD
-            while let Some(batch) = inner
-                .compute_next_batch(
-                    &execution_context,
-                    &mut interrupt,
-                    &mut TabledFunctions::new(functions.clone()), // TODO: Tabled functions?
-                    &mut Vec::new(),
-                )
-                .map_err(|err| FetchExecutionError::ReadExecution { typedb_source: Box::new(err) })?
-            {
-                for row in batch.into_iter() {
-                    println!("ROW: {row:?}");
-                    // let document = execute_fetch(
-                    //     &executable,
-                    //     snapshot.clone(),
-                    //     thing_manager.clone(),
-                    //     parameters.clone(),
-                    //     functions.clone(),
-                    //     row.as_reference(),
-                    //     interrupt.clone(),
-                    // )
-                    //     .map_err(|err| PipelineExecutionError::FetchError { typedb_source: err });
-                    // println!("DOCUMENT: {document:?}");
-=======
-            let mut tabled_functions = TabledFunctions::new(functions.clone()); // TODO: Get it somewhere else?
+            let mut tabled_functions = TabledFunctions::new(functions_registry.clone());
             let mut suspend_points = Vec::new();
 
             let batch = execute_once_error_if_has_second!(
-                inner
+                pattern_executor
                     .compute_next_batch(&execution_context, &mut interrupt, &mut tabled_functions, &mut suspend_points)
-                    .map_err(|err| FetchExecutionError::ReadExecution { typedb_source: err })?,
+                    .map_err(|err| FetchExecutionError::ReadExecution { typedb_source: Box::new(err) })?,
                 FetchExecutionError::FetchSingleFunctionNotSingle { func_name: "func".to_string() } // TODO: Can we get function name here?
             );
 
@@ -212,7 +188,6 @@ fn execute_fetch_some(
                         Some(value) => variable_value_to_document(value.clone())?,
                         None => DocumentNode::Leaf(DocumentLeaf::Empty),
                     }
->>>>>>> bd7089430 (Implement single functions)
                 }
                 None => DocumentNode::Leaf(DocumentLeaf::Empty),
             };
@@ -220,13 +195,42 @@ fn execute_fetch_some(
             Ok(document)
         }
         FetchSomeInstruction::Object(object) => {
-            execute_object(object, snapshot, thing_manager, parameters, functions, row, interrupt)
+            execute_object(object, snapshot, thing_manager, parameters, functions_registry, row, interrupt)
         }
-        FetchSomeInstruction::ListFunction(function) => {
-            println!("Got list function execution {function:?}");
-            Err(FetchExecutionError::Unimplemented {
-                description: "Fetch expressions and match-return subqueries are not available yet (try a match-fetch subquery instead?).".to_owned()
-            })
+        FetchSomeInstruction::ListFunction(function, variable_positions) => {
+            let (mut pattern_executor, execution_context) = execute_single_function(
+                snapshot,
+                thing_manager,
+                parameters,
+                functions_registry.clone(),
+                variable_positions,
+                row,
+                function,
+            )?;
+            let mut interrupt = interrupt;
+            let mut tabled_functions = TabledFunctions::new(functions_registry.clone());
+            let mut suspend_points = Vec::new();
+
+            let mut nodes = Vec::new();
+            while let Some(batch) = pattern_executor
+                .compute_next_batch(&execution_context, &mut interrupt, &mut tabled_functions, &mut suspend_points)
+                .map_err(|err| FetchExecutionError::ReadExecution { typedb_source: Box::new(err) })?
+            {
+                let mut row_iter = batch.into_iter();
+                while let Some(row) = row_iter.next() {
+                    let mut row_iter = row.row().iter();
+                    let result = execute_once_error_if_has_second!(
+                        row_iter.next(),
+                        FetchExecutionError::FetchListFunctionNotScalar { func_name: "func".to_string() }
+                    );
+                    nodes.push(match result {
+                        Some(value) => variable_value_to_document(value.clone())?,
+                        None => DocumentNode::Leaf(DocumentLeaf::Empty),
+                    });
+                }
+            }
+
+            Ok(DocumentNode::List(DocumentList::new_from(nodes)))
         }
         FetchSomeInstruction::ListSubFetch(ExecutableFetchListSubFetch {
             input_position_mapping,
@@ -239,7 +243,7 @@ fn execute_fetch_some(
                     snapshot,
                     thing_manager,
                     &variable_registry,
-                    functions,
+                    functions_registry,
                     &**stages,
                     Some(fetch.clone()),
                     parameters,
@@ -257,7 +261,7 @@ fn execute_fetch_some(
                     snapshot,
                     thing_manager,
                     &variable_registry,
-                    functions,
+                    functions_registry,
                     &**stages,
                     Some(fetch.clone()),
                     parameters,
@@ -414,6 +418,32 @@ fn execute_attributes_list<'a>(
         }
     }
     Ok(list)
+}
+
+fn execute_single_function<Snapshot: ReadableSnapshot + 'static>(
+    snapshot: Arc<Snapshot>,
+    thing_manager: Arc<ThingManager>,
+    parameters: Arc<ParameterRegistry>,
+    functions_registry: Arc<ExecutableFunctionRegistry>,
+    variable_positions: &HashMap<Variable, VariablePosition>,
+    row: MaybeOwnedRow<'_>,
+    function: &ExecutableFunction,
+) -> Result<(PatternExecutor, Arc<ExecutionContext<Snapshot>>), FetchExecutionError> {
+    let mut args = vec![VariableValue::Empty; function.argument_positions.len()];
+    for (var, write_pos) in &function.argument_positions {
+        debug_assert!(write_pos.as_usize() < args.len());
+        args[write_pos.as_usize()] = row.get(variable_positions.get(var).unwrap().clone()).clone().into_owned();
+    }
+    let args = MaybeOwnedRow::new_owned(args, row.multiplicity());
+
+    let step_executors = create_executors_for_function(&snapshot, &thing_manager, &functions_registry, function)
+        .map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
+    let mut pattern_executor = PatternExecutor::new(step_executors);
+    pattern_executor.prepare(FixedBatch::from(args));
+
+    let execution_context =
+        Arc::new(ExecutionContext::new(snapshot.clone(), thing_manager.clone(), parameters.clone()));
+    Ok((pattern_executor, execution_context))
 }
 
 fn execute_object_entries(

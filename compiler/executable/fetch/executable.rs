@@ -31,11 +31,11 @@ pub struct ExecutableFetch {
 pub enum FetchSomeInstruction {
     SingleVar(VariablePosition),
     SingleAttribute(VariablePosition, AttributeType<'static>),
-    SingleFunction(ExecutableFunction),
+    SingleFunction(ExecutableFunction, HashMap<Variable, VariablePosition>),
 
     Object(Box<FetchObjectInstruction>),
 
-    ListFunction(ExecutableFunction),
+    ListFunction(ExecutableFunction, HashMap<Variable, VariablePosition>),
     ListSubFetch(ExecutableFetchListSubFetch),
     ListAttributesAsList(VariablePosition, AttributeType<'static>),
     ListAttributesFromList(VariablePosition, AttributeType<'static>),
@@ -113,7 +113,7 @@ fn compile_some(
                 .map_err(|err| FetchCompilationError::AnonymousFunctionCompilation {
                 typedb_source: Box::new(err),
             })?;
-            Ok(FetchSomeInstruction::SingleFunction(compiled))
+            Ok(FetchSomeInstruction::SingleFunction(compiled, variable_positions.clone()))
         }
         AnnotatedFetchSome::Object(object) => {
             let compiled = compile_object(statistics, available_functions, *object, variable_positions)?;
@@ -124,7 +124,7 @@ fn compile_some(
                 .map_err(|err| FetchCompilationError::AnonymousFunctionCompilation {
                 typedb_source: Box::new(err),
             })?;
-            Ok(FetchSomeInstruction::ListFunction(compiled))
+            Ok(FetchSomeInstruction::ListFunction(compiled, variable_positions.clone()))
         }
         AnnotatedFetchSome::ListSubFetch(sub_fetch) => {
             let AnnotatedFetchListSubFetch { variable_registry, input_variables, stages, fetch } = sub_fetch;

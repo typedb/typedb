@@ -8,9 +8,10 @@ use std::collections::{HashMap, HashSet};
 
 use answer::variable::Variable;
 use error::typedb_error;
+use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::ReadableSnapshot;
 use typeql::{
-    expression::{FunctionCall, FunctionName},
+    expression::{FunctionCall, FunctionName, List},
     query::stage::{
         fetch::{
             FetchAttribute, FetchList as TypeQLFetchList, FetchObject as TypeQLFetchObject,
@@ -24,7 +25,6 @@ use typeql::{
     value::StringLiteral,
     Expression, TypeRef, TypeRefAny, Variable as TypeQLVariable,
 };
-use primitive::maybe_owns::MaybeOwns;
 
 use crate::{
     pattern::{constraint::ConstraintsBuilder, ParameterID},
@@ -35,7 +35,7 @@ use crate::{
             FetchSome,
         },
         function::{Function, FunctionBody, ReturnOperation},
-        function_signature::FunctionSignatureIndex,
+        function_signature::{FunctionSignature, FunctionSignatureIndex},
         FunctionReadError, ParameterRegistry,
     },
     translation::{
@@ -51,7 +51,6 @@ use crate::{
     },
     RepresentationError,
 };
-use crate::pipeline::function_signature::FunctionSignature;
 
 pub(super) fn translate_fetch(
     snapshot: &impl ReadableSnapshot,
@@ -144,30 +143,16 @@ fn translate_fetch_list(
         FetchStream::Function(call) => {
             match &call.name {
                 FunctionName::Builtin(name) => {
-                    // built-in functions always return single values, so should not be wrapped in a list
+                    // built-in functions always return single values, so should not be wrapped in a list (although we could allow it if it's something interesting)
                     Err(Box::new(FetchRepresentationError::BuiltinFunctionInList { declaration: call.clone() }))
                 }
-                FunctionName::Identifier(name) => {
-                    let some = translate_inline_user_function_call_stream(
-                        parent_context,
-                        value_parameters,
-                        function_index,
-                        call,
-                        name.as_str(),
-                    )?;
-                    match some {
-                        FetchSome::SingleFunction(_) => {
-                            Err(Box::new(FetchRepresentationError::ExpectedStreamUserFunctionInList {
-                                name: name.as_str().to_owned(),
-                                declaration: call.clone(),
-                            }))
-                        }
-                        FetchSome::ListFunction(_) => Ok(some),
-                        _ => unreachable!(
-                            "User function call was not translated into a single or list function call representation."
-                        ),
-                    }
-                }
+                FunctionName::Identifier(name) => translate_inline_user_function_call_stream(
+                    parent_context,
+                    value_parameters,
+                    function_index,
+                    call,
+                    name.as_str(),
+                ),
             }
         }
         FetchStream::SubQueryFetch(stages) => {
@@ -234,45 +219,34 @@ fn translate_fetch_single(
             }
         }
         FetchSingle::Expression(expression) => {
-            println!("Found an expression: {:?}", expression);
             match &expression {
                 Expression::Variable(variable) => {
                     let var = try_get_variable(parent_context, variable)?;
                     Ok(FetchSome::SingleVar(var))
                 }
                 Expression::ListIndex(_) | Expression::Value(_) | Expression::Operation(_) | Expression::Paren(_) => {
-                    let res = translate_inline_expression_single(
+                    translate_inline_expression_single(parent_context, value_parameters, function_index, expression)
+                }
+                // function expressions may return Single or List, depending on signature invoked // TODO: Remove when resolved
+                Expression::Function(call) => match &call.name {
+                    FunctionName::Builtin(_) => {
+                        translate_inline_expression_single(parent_context, value_parameters, function_index, expression)
+                    }
+                    FunctionName::Identifier(name) => translate_inline_user_function_call_single(
                         parent_context,
                         value_parameters,
                         function_index,
-                        expression,
-                    );
-                    println!("Res: {res:?}");
-                    res
-                }
-                // function expressions may return Single or List, depending on signature invoked
-                Expression::Function(call) => {
-                    match &call.name {
-                        FunctionName::Builtin(_) => translate_inline_expression_single(
-                            parent_context,
-                            value_parameters,
-                            function_index,
-                            expression,
-                        ),
-                        FunctionName::Identifier(name) => {
-                            translate_inline_user_function_call_single(
-                                parent_context,
-                                value_parameters,
-                                function_index,
-                                call,
-                                name.as_str(),
-                            )
-                        }
-                    }
-                }
+                        call,
+                        name.as_str(),
+                    ),
+                },
                 // list expressions should be mapped to FetchList
-                Expression::List(_) => Err(Box::new(FetchRepresentationError::Unimplemented {})),
-                Expression::ListIndexRange(_) => Err(Box::new(FetchRepresentationError::Unimplemented {})),
+                Expression::List(_) => {
+                    Err(Box::new(FetchRepresentationError::Unimplemented { description: "list expressions".to_string() }))
+                }
+                Expression::ListIndexRange(_) => {
+                    Err(Box::new(FetchRepresentationError::Unimplemented { description: "list index range".to_string() }))
+                }
             }
         }
         FetchSingle::FunctionBlock(block) => {
@@ -358,13 +332,8 @@ fn translate_inline_user_function_call_single(
     call: &FunctionCall,
     function_name: &str,
 ) -> Result<FetchSome, Box<FetchRepresentationError>> {
-    let (local_context, stage, assign_vars, signature) = translate_inline_user_function_call(
-        context,
-        value_parameters,
-        function_index,
-        call,
-        function_name,
-    )?;
+    let (local_context, stage, assign_vars, signature) =
+        translate_inline_user_function_call(context, value_parameters, function_index, call, function_name)?;
     if signature.return_is_stream {
         Err(Box::new(FetchRepresentationError::ExpectedSingleInlineFunctionCall { declaration: call.clone() }))
     } else {
@@ -382,14 +351,9 @@ fn translate_inline_user_function_call_stream(
     function_index: &impl FunctionSignatureIndex,
     call: &FunctionCall,
     function_name: &str,
-) -> Result<FetchSome, FetchRepresentationError> {
-    let (local_context, stage, assign_vars, _) = translate_inline_user_function_call(
-        context,
-        value_parameters,
-        function_index,
-        call,
-        function_name,
-    )?;
+) -> Result<FetchSome, Box<FetchRepresentationError>> {
+    let (local_context, stage, assign_vars, _) =
+        translate_inline_user_function_call(context, value_parameters, function_index, call, function_name)?;
     let parameters = value_parameters.clone();
     let return_ = ReturnOperation::Stream(assign_vars);
     let body = FunctionBody::new(vec![stage], return_);
@@ -403,7 +367,10 @@ fn translate_inline_user_function_call<'a>(
     function_index: &'a impl FunctionSignatureIndex,
     call: &FunctionCall,
     function_name: &str,
-) -> Result<(TranslationContext, TranslatedStage, Vec<Variable>, MaybeOwns<'a, FunctionSignature>), FetchRepresentationError> {
+) -> Result<
+    (TranslationContext, TranslatedStage, Vec<Variable>, MaybeOwns<'a, FunctionSignature>),
+    Box<FetchRepresentationError>,
+> {
     let signature = function_index
         .get_function_signature(function_name)
         .map_err(|err| FetchRepresentationError::FunctionRetrieval { name: function_name.to_owned(), source: err })?
@@ -545,7 +512,8 @@ typedb_error!(
     pub FetchRepresentationError(component = "Fetch representation", prefix = "FER") {
         Unimplemented(
             0,
-            "Functionality is not implemented."
+            "Functionality is not implemented: {description}.",
+            description: String
         ),
         AnonymousVariableEncountered(
             1,

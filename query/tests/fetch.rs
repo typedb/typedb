@@ -85,12 +85,12 @@ fetch {
     "single type": $t,
     "single attr": $a,
     "single-card attributes": $x.age,
-#    "single value expression": $a + 1,
-#    "single answer block": (
-#        match
-#        $x has name $name;
-#        return first $name;
-#    ),
+    "single value expression": $a + 1,
+    "single answer block": (
+        match
+        $x has name $name;
+        return first $name;
+    ),
 #    "reduce answer block": (
 #        match
 #        $x has name $name;

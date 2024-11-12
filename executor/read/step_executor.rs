@@ -195,7 +195,11 @@ pub(crate) fn create_executors_for_function(
             Ok(vec![step.into()])
         }
         ExecutableReturn::Check => todo!("ExecutableReturn::Check"),
-        ExecutableReturn::Reduce(_) => todo!("ExecutableReturn::Reduce"),
+        ExecutableReturn::Reduce(reduce) => {
+            let reduce_executable = todo!("ExecutableReturn::Reduce");
+            let step = CollectingStageExecutor::new_reduce(PatternExecutor::new(steps), reduce_executable);
+            Ok(vec![StepExecutors::CollectingStage(step)])
+        }
     }
 }
 
