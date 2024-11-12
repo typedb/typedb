@@ -16,8 +16,8 @@ pub mod function_manager;
 typedb_error!(
     pub FunctionError(component = "Function", prefix = "FUN") {
         FunctionNotFound(1, "Function was not found"),
-        AllFunctionsTypeCheckFailure(2, "Type checking all functions currently defined failed.", ( typedb_source: FunctionAnnotationError )),
-        CommittedFunctionsTypeCheck(3, "Type checking stored functions failed.", ( typedb_source: FunctionAnnotationError )),
+        AllFunctionsTypeCheckFailure(2, "Type checking all functions currently defined failed.", ( typedb_source: Box<FunctionAnnotationError> )),
+        CommittedFunctionsTypeCheck(3, "Type checking stored functions failed.", ( typedb_source: Box<FunctionAnnotationError> )),
         FunctionTranslation(4, "Failed to translate TypeQL function into internal representation", ( typedb_source: FunctionRepresentationError )),
         FunctionAlreadyExists(5, "A function with name '{name}' already exists", name: String),
         CreateFunctionEncoding(6, "Encoding error while trying to create function.", ( source: EncodingError )),

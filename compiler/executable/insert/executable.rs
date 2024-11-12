@@ -51,7 +51,7 @@ pub fn compile(
     constraints: &[Constraint<Variable>],
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,
-) -> Result<InsertExecutable, WriteCompilationError> {
+) -> Result<InsertExecutable, Box<WriteCompilationError>> {
     let mut concept_inserts = Vec::with_capacity(constraints.len());
     let variables = add_inserted_concepts(constraints, input_variables, type_annotations, &mut concept_inserts)?;
 
@@ -78,7 +78,7 @@ fn add_inserted_concepts(
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,
     vertex_instructions: &mut Vec<ConceptInstruction>,
-) -> Result<HashMap<Variable, VariablePosition>, WriteCompilationError> {
+) -> Result<HashMap<Variable, VariablePosition>, Box<WriteCompilationError>> {
     let first_inserted_variable_position =
         input_variables.values().map(|pos| pos.position + 1).max().unwrap_or(0) as usize;
     let mut output_variables = input_variables.clone();
@@ -89,7 +89,7 @@ fn add_inserted_concepts(
         let &Vertex::Variable(thing) = isa.thing() else { unreachable!() };
 
         if input_variables.contains_key(&thing) {
-            return Err(WriteCompilationError::IsaStatementForInputVariable { variable: thing });
+            return Err(Box::new(WriteCompilationError::IsaStatementForInputVariable { variable: thing }));
         }
 
         let type_ = if let Some(type_) = type_bindings.get(isa.type_()) {
@@ -99,7 +99,7 @@ fn add_inserted_concepts(
                 Vertex::Variable(var) if input_variables.contains_key(var) => {
                     TypeSource::InputVariable(input_variables[var])
                 }
-                _ => return Err(WriteCompilationError::CouldNotDetermineTypeOfInsertedVariable { variable: thing }),
+                _ => return Err(Box::new(WriteCompilationError::CouldNotDetermineTypeOfInsertedVariable { variable: thing })),
             }
         };
 
@@ -109,12 +109,12 @@ fn add_inserted_concepts(
         let kinds = get_kinds_from_annotations(annotations);
 
         if kinds.contains(&Kind::Role) {
-            return Err(WriteCompilationError::IllegalInsertForRole { isa: isa.clone() });
+            return Err(Box::new(WriteCompilationError::IllegalInsertForRole { isa: isa.clone() }));
         }
 
         if kinds.contains(&Kind::Relation) || kinds.contains(&Kind::Entity) {
             if kinds.contains(&Kind::Attribute) {
-                return Err(WriteCompilationError::IsaTypeMayBeAttributeOrObject { isa: isa.clone() });
+                return Err(Box::new(WriteCompilationError::IsaTypeMayBeAttributeOrObject { isa: isa.clone() }));
             }
             let write_to = VariablePosition::new((first_inserted_variable_position + vertex_instructions.len()) as u32);
             output_variables.insert(thing, write_to);
@@ -132,10 +132,10 @@ fn add_inserted_concepts(
                 if let Some(&position) = input_variables.get(&variable) {
                     ValueSource::Variable(position)
                 } else {
-                    return Err(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute { variable: thing });
+                    return Err(Box::new(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute { variable: thing }));
                 }
             } else {
-                return Err(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute { variable: thing });
+                return Err(Box::new(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute { variable: thing }));
             };
             let write_to = VariablePosition::new((first_inserted_variable_position + vertex_instructions.len()) as u32);
             output_variables.insert(thing, write_to);
@@ -151,7 +151,7 @@ fn add_has(
     constraints: &[Constraint<Variable>],
     input_variables: &HashMap<Variable, VariablePosition>,
     instructions: &mut Vec<ConnectionInstruction>,
-) -> Result<(), WriteCompilationError> {
+) -> Result<(), Box<WriteCompilationError>> {
     filter_variants!(Constraint::Has: constraints).try_for_each(|has| {
         let owner = get_thing_source(input_variables, has.owner().as_variable().unwrap())?;
         let attribute = get_thing_source(input_variables, has.attribute().as_variable().unwrap())?;
@@ -165,7 +165,7 @@ fn add_role_players(
     type_annotations: &TypeAnnotations,
     input_variables: &HashMap<Variable, VariablePosition>,
     instructions: &mut Vec<ConnectionInstruction>,
-) -> Result<(), WriteCompilationError> {
+) -> Result<(), Box<WriteCompilationError>> {
     let named_role_types = collect_role_type_bindings(constraints, type_annotations)?;
     for role_player in filter_variants!(Constraint::Links: constraints) {
         let relation = get_thing_source(input_variables, role_player.relation().as_variable().unwrap())?;
@@ -181,7 +181,7 @@ fn add_role_players(
                 if annotations.len() == 1 {
                     TypeSource::Constant(annotations.iter().find(|_| true).unwrap().clone())
                 } else {
-                    return Err(WriteCompilationError::CouldNotUniquelyDetermineRoleType { variable: role_variable });
+                    return Err(Box::new(WriteCompilationError::CouldNotUniquelyDetermineRoleType { variable: role_variable }));
                 }
             }
             (Some(_), Some(_)) => unreachable!(),
@@ -194,7 +194,7 @@ fn add_role_players(
 fn resolve_value_variable_for_inserted_attribute(
     constraints: &[Constraint<Variable>],
     variable: Variable,
-) -> Result<&Vertex<Variable>, WriteCompilationError> {
+) -> Result<&Vertex<Variable>, Box<WriteCompilationError>> {
     // Find the comparison linking thing to value
     filter_variants!(Constraint::Comparison: constraints)
         .filter_map(|cmp| {
@@ -209,13 +209,13 @@ fn resolve_value_variable_for_inserted_attribute(
         .exactly_one()
         .map_err(|mut err| {
             debug_assert_eq!(err.next(), None);
-            WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute { variable }
+            Box::new(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute { variable })
         })
 }
 
 fn collect_value_bindings(
     constraints: &[Constraint<Variable>],
-) -> Result<HashMap<&Vertex<Variable>, ParameterID>, WriteCompilationError> {
+) -> Result<HashMap<&Vertex<Variable>, ParameterID>, Box<WriteCompilationError>> {
     #[cfg(debug_assertions)]
     let mut seen = HashSet::new();
 
@@ -244,7 +244,7 @@ fn collect_value_bindings(
 fn collect_type_bindings(
     constraints: &[Constraint<Variable>],
     type_annotations: &TypeAnnotations,
-) -> Result<HashMap<Vertex<Variable>, answer::Type>, WriteCompilationError> {
+) -> Result<HashMap<Vertex<Variable>, answer::Type>, Box<WriteCompilationError>> {
     #[cfg(debug_assertions)]
     let mut seen = HashSet::new();
 
@@ -273,7 +273,7 @@ fn collect_type_bindings(
 pub(crate) fn collect_role_type_bindings(
     constraints: &[Constraint<Variable>],
     type_annotations: &TypeAnnotations,
-) -> Result<HashMap<Variable, answer::Type>, WriteCompilationError> {
+) -> Result<HashMap<Variable, answer::Type>, Box<WriteCompilationError>> {
     #[cfg(debug_assertions)]
     let mut seen = HashSet::new();
 
@@ -284,7 +284,7 @@ pub(crate) fn collect_role_type_bindings(
             let type_ = if annotations.len() == 1 {
                 annotations.iter().find(|_| true).unwrap()
             } else {
-                return Err(WriteCompilationError::CouldNotUniquelyResolveRoleTypeFromName { variable });
+                return Err(Box::new(WriteCompilationError::CouldNotUniquelyResolveRoleTypeFromName { variable }));
             };
 
             #[cfg(debug_assertions)]

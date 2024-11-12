@@ -43,11 +43,11 @@ macro_rules! unwrap_constraint_description_methods {
         fn $method_name:ident() -> $return_type:ident = $target_enum:ident;
     )*) => {
         $(
-            pub(crate) fn $method_name(self) -> Result<$return_type, ConstraintError> {
+            pub(crate) fn $method_name(self) -> Result<$return_type, Box<ConstraintError>> {
                 with_constraint_description!(
                     self,
                     $target_enum,
-                    Err(ConstraintError::CannotUnwrapConstraint(stringify!($target_enum).to_string())),
+                    Err(Box::new(ConstraintError::CannotUnwrapConstraint(stringify!($target_enum).to_string()))),
                     |constraint| Ok(constraint.clone())
                 )
             }
@@ -241,78 +241,78 @@ pub trait Constraint<T>: Sized + Clone + Hash + Eq {
         self.description().unchecked()
     }
 
-    fn validate_narrowed_by_strictly_same_type(&self, other: &ConstraintDescription) -> Result<(), ConstraintError> {
+    fn validate_narrowed_by_strictly_same_type(&self, other: &ConstraintDescription) -> Result<(), Box<ConstraintError>> {
         match self.description().narrowed_by_strictly_same_type(other) {
             true => Ok(()),
-            false => Err(ConstraintError::IsNotNarrowedBy { first: self.description(), second: other.clone() }),
+            false => Err(Box::new(ConstraintError::IsNotNarrowedBy { first: self.description(), second: other.clone() })),
         }
     }
 
-    fn validate_narrowed_by_any_type(&self, other: &ConstraintDescription) -> Result<(), ConstraintError> {
+    fn validate_narrowed_by_any_type(&self, other: &ConstraintDescription) -> Result<(), Box<ConstraintError>> {
         match self.description().narrowed_by_any_type(other) {
             true => Ok(()),
-            false => Err(ConstraintError::IsNotNarrowedBy { first: self.description(), second: other.clone() }),
+            false => Err(Box::new(ConstraintError::IsNotNarrowedBy { first: self.description(), second: other.clone() })),
         }
     }
 
-    fn validate_narrows_strictly_same_type(&self, other: &ConstraintDescription) -> Result<(), ConstraintError> {
+    fn validate_narrows_strictly_same_type(&self, other: &ConstraintDescription) -> Result<(), Box<ConstraintError>> {
         match other.narrowed_by_strictly_same_type(&self.description()) {
             true => Ok(()),
-            false => Err(ConstraintError::IsNotNarrowedBy { first: other.clone(), second: self.description() }),
+            false => Err(Box::new(ConstraintError::IsNotNarrowedBy { first: other.clone(), second: self.description() })),
         }
     }
 
-    fn validate_narrows_any_type(&self, other: &ConstraintDescription) -> Result<(), ConstraintError> {
+    fn validate_narrows_any_type(&self, other: &ConstraintDescription) -> Result<(), Box<ConstraintError>> {
         match other.narrowed_by_any_type(&self.description()) {
             true => Ok(()),
-            false => Err(ConstraintError::IsNotNarrowedBy { first: other.clone(), second: self.description() }),
+            false => Err(Box::new(ConstraintError::IsNotNarrowedBy { first: other.clone(), second: self.description() })),
         }
     }
 
-    fn validate_cardinality(&self, count: u64) -> Result<(), ConstraintError> {
+    fn validate_cardinality(&self, count: u64) -> Result<(), Box<ConstraintError>> {
         let cardinality = self.description().unwrap_cardinality()?;
         match cardinality.value_valid(count) {
             true => Ok(()),
-            false => Err(ConstraintError::ViolatedCardinality { cardinality, count }),
+            false => Err(Box::new(ConstraintError::ViolatedCardinality { cardinality, count })),
         }
     }
 
-    fn validate_regex(&self, value: Value<'_>) -> Result<(), ConstraintError> {
+    fn validate_regex(&self, value: Value<'_>) -> Result<(), Box<ConstraintError>> {
         match &value {
             Value::String(string_value) => {
                 let regex = self.description().unwrap_regex()?;
                 match regex.value_valid(string_value) {
                     true => Ok(()),
-                    false => Err(ConstraintError::ViolatedRegex { regex, value: value.into_owned() }),
+                    false => Err(Box::new(ConstraintError::ViolatedRegex { regex, value: value.into_owned() })),
                 }
             }
-            _ => Err(ConstraintError::CorruptConstraintIsNotApplicableToValue {
+            _ => Err(Box::new(ConstraintError::CorruptConstraintIsNotApplicableToValue {
                 description: self.description(),
                 value: value.into_owned(),
-            }),
+            })),
         }
     }
 
-    fn validate_range(&self, value: Value<'_>) -> Result<(), ConstraintError> {
+    fn validate_range(&self, value: Value<'_>) -> Result<(), Box<ConstraintError>> {
         let range = self.description().unwrap_range()?;
         match range.value_valid(value.as_reference()) {
             true => Ok(()),
-            false => Err(ConstraintError::ViolatedRange { range, value: value.into_owned() }),
+            false => Err(Box::new(ConstraintError::ViolatedRange { range, value: value.into_owned() })),
         }
     }
 
-    fn validate_values(&self, value: Value<'_>) -> Result<(), ConstraintError> {
+    fn validate_values(&self, value: Value<'_>) -> Result<(), Box<ConstraintError>> {
         let values = self.description().unwrap_values()?;
         match values.value_valid(value.as_reference()) {
             true => Ok(()),
-            false => Err(ConstraintError::ViolatedValues { values, value: value.into_owned() }),
+            false => Err(Box::new(ConstraintError::ViolatedValues { values, value: value.into_owned() })),
         }
     }
 
-    fn validate_distinct(count: u64) -> Result<(), ConstraintError> {
+    fn validate_distinct(count: u64) -> Result<(), Box<ConstraintError>> {
         match count > 1 {
             false => Ok(()),
-            true => Err(ConstraintError::ViolatedDistinct { count }),
+            true => Err(Box::new(ConstraintError::ViolatedDistinct { count })),
         }
     }
 }

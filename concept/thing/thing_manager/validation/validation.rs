@@ -50,7 +50,7 @@ macro_rules! create_data_validation_type_abstractness_error_methods {
             ) -> Box<DataValidationError> {
                 debug_assert!(constraint.description().unwrap_abstract().is_ok());
                 let constraint_source = constraint.source();
-                let error_source = ConstraintError::ViolatedAbstract;
+                let error_source = Box::new(ConstraintError::ViolatedAbstract);
                 Box::new(DataValidationError::$error {
                     $type_: constraint_source.get_label(snapshot, type_manager).unwrap().to_owned(),
                     source: error_source
@@ -73,7 +73,7 @@ macro_rules! create_data_validation_capability_abstractness_error_methods {
             ) -> Box<DataValidationError> {
                 debug_assert!(constraint.description().unwrap_abstract().is_ok());
                 let constraint_source = constraint.source();
-                let error_source = ConstraintError::ViolatedAbstract;
+                let error_source = Box::new(ConstraintError::ViolatedAbstract);
                 let $interface_type = constraint_source.interface();
                 Box::new(DataValidationError::$error {
                     $object: HexBytesFormatter::owned(Vec::from($object.iid().bytes())),
@@ -334,7 +334,7 @@ impl DataValidation {
     ) -> Box<DataValidationError> {
         debug_assert!(constraint.description().unwrap_unique().is_ok());
         let constraint_source = constraint.source();
-        let error_source = ConstraintError::ViolatedUnique { value: value.clone().into_owned() };
+        let error_source = Box::new(ConstraintError::ViolatedUnique { value: value.clone().into_owned() });
         let is_key = match constraint_source.is_key(snapshot, type_manager) {
             Ok(is_key) => is_key,
             Err(err) => return  Box::new(DataValidationError::ConceptRead { source: err }),

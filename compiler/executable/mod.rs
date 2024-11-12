@@ -19,8 +19,8 @@ pub mod reduce;
 
 typedb_error!(
     pub ExecutableCompilationError(component = "Query executable", prefix = "QEE") {
-        InsertExecutableCompilation(1, "Error compiling insert clause into executable.", (source : WriteCompilationError)),
-        DeleteExecutableCompilation(2, "Error compiling delete clause into executable.", (source : WriteCompilationError)),
+        InsertExecutableCompilation(1, "Error compiling insert clause into executable.", (source : Box<WriteCompilationError>)),
+        DeleteExecutableCompilation(2, "Error compiling delete clause into executable.", (source : Box<WriteCompilationError>)),
         FetchCompliation(3, "Error compiling fetch clause into executable.", (typedb_source : FetchCompilationError)),
     }
 );

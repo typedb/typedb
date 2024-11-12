@@ -126,7 +126,7 @@ pub enum ConceptReadError {
         source: AnnotationError,
     },
     Constraint {
-        source: ConstraintError,
+        source: Box<ConstraintError>,
     },
     ValueTypeMismatchWithAttributeType {
         attribute_type: AttributeType<'static>,
