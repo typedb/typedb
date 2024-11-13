@@ -213,37 +213,33 @@ fn translate_fetch_single(
                 }))
             }
         }
-        FetchSingle::Expression(expression) => {
-            match &expression {
-                Expression::Variable(variable) => {
-                    let var = try_get_variable(parent_context, variable)?;
-                    Ok(FetchSome::SingleVar(var))
-                }
-                Expression::ListIndex(_) | Expression::Value(_) | Expression::Operation(_) | Expression::Paren(_) => {
+        FetchSingle::Expression(expression) => match &expression {
+            Expression::Variable(variable) => {
+                let var = try_get_variable(parent_context, variable)?;
+                Ok(FetchSome::SingleVar(var))
+            }
+            Expression::ListIndex(_) | Expression::Value(_) | Expression::Operation(_) | Expression::Paren(_) => {
+                translate_inline_expression_single(parent_context, value_parameters, function_index, expression)
+            }
+            Expression::Function(call) => match &call.name {
+                FunctionName::Builtin(_) => {
                     translate_inline_expression_single(parent_context, value_parameters, function_index, expression)
                 }
-                // function expressions may return Single or List, depending on signature invoked // TODO: Remove when resolved
-                Expression::Function(call) => match &call.name {
-                    FunctionName::Builtin(_) => {
-                        translate_inline_expression_single(parent_context, value_parameters, function_index, expression)
-                    }
-                    FunctionName::Identifier(name) => translate_inline_user_function_call_single(
-                        parent_context,
-                        value_parameters,
-                        function_index,
-                        call,
-                        name.as_str(),
-                    ),
-                },
-                // list expressions should be mapped to FetchList
-                Expression::List(_) => {
-                    Err(Box::new(FetchRepresentationError::Unimplemented { description: "list expressions".to_string() }))
-                }
-                Expression::ListIndexRange(_) => {
-                    Err(Box::new(FetchRepresentationError::Unimplemented { description: "list index range".to_string() }))
-                }
+                FunctionName::Identifier(name) => translate_inline_user_function_call_single(
+                    parent_context,
+                    value_parameters,
+                    function_index,
+                    call,
+                    name.as_str(),
+                ),
+            },
+            Expression::List(_) => {
+                Err(Box::new(FetchRepresentationError::Unimplemented { description: "list expressions".to_string() }))
             }
-        }
+            Expression::ListIndexRange(_) => {
+                Err(Box::new(FetchRepresentationError::Unimplemented { description: "list index range".to_string() }))
+            }
+        },
         FetchSingle::FunctionBlock(block) => {
             // clone context, since we don't want the inline function to affect the parent context
             let mut local_context = parent_context.clone();

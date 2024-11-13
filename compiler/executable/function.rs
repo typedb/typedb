@@ -46,7 +46,7 @@ pub enum ExecutableReturn {
     Stream(Vec<VariablePosition>),
     Single(SingleSelector, Vec<VariablePosition>),
     Check,
-    Reduce(Vec<ReduceInstruction<VariablePosition>>),
+    Reduce(Arc<ReduceExecutable>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -96,9 +96,8 @@ fn compile_return_operation(
         }
         | AnnotatedFunctionReturn::ReduceCheck {} => Ok(ExecutableReturn::Check),
         | AnnotatedFunctionReturn::ReduceReducer { instructions } => {
-            let positional_reducers =
-                instructions.into_iter().map(|reducer| reducer.map(&variable_positions)).collect();
-            Ok(ExecutableReturn::Reduce(positional_reducers))
+            let reductions = instructions.into_iter().map(|reducer| reducer.map(&variable_positions)).collect();
+            Ok(ExecutableReturn::Reduce(Arc::new(ReduceExecutable { reductions, input_group_positions: Vec::new() })))
         }
     }
 }

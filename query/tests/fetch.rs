@@ -74,7 +74,7 @@ fn fetch() {
     "#,
     );
 
-    // TODO: uncomment the match-returns, and expression fetching when we
+    // TODO: uncomment commented features once they are introduced
     let query = typeql::parse_query(
         r#"
 match
@@ -91,17 +91,11 @@ fetch {
         $x has name $name;
         return first $name;
     ),
-#    "reduce answer block": (
-#        match
-#        $x has name $name;
-#        return count($name);
-#    ),
-#    "list positional return block": [
-#        match
-#        $x has name $n,
-#            has age $a;
-#        return { $n, $a };
-#    ],
+    "reduce answer block": (
+        match
+        $x has name $name, has age $age;
+        return count($name);
+    ),
     "list pipeline": [
         match
         $x has name $n,
@@ -111,7 +105,7 @@ fetch {
         };
     ],
     "list higher-card attributes": [ $x.name ],
-#    "list attributes": $x.name[],
+#    "list attributes": $x.name[], # TODO: Uncomment when it's implemented
     "all attributes": { $x.* }
 };"#,
     )
@@ -129,74 +123,3 @@ fetch {
         println!("{}", document.unwrap());
     }
 }
-
-//
-// #[test]
-// fn insert_match_insert_pipeline() {
-//     let (_tmp_dir, storage) = setup_storage();
-//     let (type_manager, thing_manager, function_manager) = load_managers(storage.clone());
-//     let mut statistics = Statistics::new(SequenceNumber::new(0));
-//     statistics.may_synchronise(&storage).unwrap();
-//
-//     define_schema(&storage, &type_manager, &thing_manager);
-//     let query_manager = QueryManager::new();
-//     let mut snapshot = storage.clone().open_snapshot_write();
-//     let query = typeql::parse_query(
-//         r#"
-//         insert
-//             $p1 isa person, has name "John";
-//             $p2 isa person, has name "James";
-//         match
-//             $p_either isa person; $n isa name;
-//         insert
-//              $p_either has $n;
-//     "#,
-//     )
-//     .unwrap()
-//     .into_pipeline();
-//     query_manager
-//         .prepare_write_pipeline(
-//             snapshot,
-//             &type_manager,
-//             thing_manager,
-//             &function_manager,
-//             &statistics,
-//             &IndexedAnnotatedFunctions::empty(),
-//             &query,
-//         )
-//         .unwrap();
-// }
-//
-// #[test]
-// fn insert_insert_pipeline() {
-//     let (_tmp_dir, storage) = setup_storage();
-//     let (type_manager, thing_manager, function_manager) = load_managers(storage.clone());
-//     let mut statistics = Statistics::new(SequenceNumber::new(0));
-//     statistics.may_synchronise(&storage).unwrap();
-//
-//     define_schema(&storage, &type_manager, &thing_manager);
-//     let query_manager = QueryManager::new();
-//     let mut snapshot = storage.clone().open_snapshot_write();
-//     let query = typeql::parse_query(
-//         r#"
-//         insert
-//             $p1 isa person, has name "John";
-//             $p2 isa person, has name "James";
-//         insert
-//             (friend: $p1, friend: $p2) isa friendship;
-//     "#,
-//     )
-//     .unwrap()
-//     .into_pipeline();
-//     query_manager
-//         .prepare_write_pipeline(
-//             snapshot,
-//             &type_manager,
-//             thing_manager,
-//             &function_manager,
-//             &statistics,
-//             &IndexedAnnotatedFunctions::empty(),
-//             &query,
-//         )
-//         .unwrap();
-// }

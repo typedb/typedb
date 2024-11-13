@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use answer::variable::Variable;
 use encoding::value::value_type::ValueType;
@@ -13,10 +13,15 @@ use ir::pattern::IrID;
 use crate::VariablePosition;
 
 #[derive(Debug, Clone)]
+pub struct ReduceStageExecutable {
+    pub reduce_executable: Arc<ReduceExecutable>,
+    pub output_row_mapping: HashMap<Variable, VariablePosition>, // output_row = (group_vars, reduce_outputs)
+}
+
+#[derive(Debug, Clone)]
 pub struct ReduceExecutable {
     pub reductions: Vec<ReduceInstruction<VariablePosition>>,
     pub input_group_positions: Vec<VariablePosition>,
-    pub output_row_mapping: HashMap<Variable, VariablePosition>, // output_row = (group_vars, reduce_outputs)
 }
 
 #[derive(Debug, Clone)]

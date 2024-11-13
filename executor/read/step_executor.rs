@@ -14,6 +14,7 @@ use compiler::{
             match_executable::{ExecutionStep, MatchExecutable},
         },
         pipeline::ExecutableStage,
+        reduce::ReduceExecutable,
     },
     VariablePosition,
 };
@@ -195,9 +196,8 @@ pub(crate) fn create_executors_for_function(
             Ok(vec![step.into()])
         }
         ExecutableReturn::Check => todo!("ExecutableReturn::Check"),
-        ExecutableReturn::Reduce(reduce) => {
-            let reduce_executable = todo!("ExecutableReturn::Reduce");
-            let step = CollectingStageExecutor::new_reduce(PatternExecutor::new(steps), reduce_executable);
+        ExecutableReturn::Reduce(executable) => {
+            let step = CollectingStageExecutor::new_reduce(PatternExecutor::new(steps), executable.clone());
             Ok(vec![StepExecutors::CollectingStage(step)])
         }
     }
@@ -247,10 +247,10 @@ pub(super) fn create_executors_for_pipeline_stages(
             let step = CollectingStageExecutor::new_sort(PatternExecutor::new(previous_stage_steps), sort_executable);
             Ok(vec![StepExecutors::CollectingStage(step)])
         }
-        ExecutableStage::Reduce(reduce_executable) => {
+        ExecutableStage::Reduce(reduce_stage_executable) => {
             let step = CollectingStageExecutor::new_reduce(
                 PatternExecutor::new(previous_stage_steps),
-                reduce_executable.clone(),
+                reduce_stage_executable.reduce_executable.clone(),
             );
             Ok(vec![StepExecutors::CollectingStage(step)])
         }
