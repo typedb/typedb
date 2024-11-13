@@ -74,7 +74,12 @@ impl MayError {
                     panic!("Expected logic error, got ConceptRead {:?}", source)
                 }
                 ConceptWriteError::SchemaValidation { typedb_source: err } => {
-                    panic!("Expected logic error, got SchemaValidation::ConceptRead {:?}", err)
+                    match **err {
+                        SchemaValidationError::ConceptRead { .. } => {
+                            panic!("Expected logic error, got SchemaValidation::ConceptRead {:?}", err)
+                        },
+                        _ => Some(Box::new(error.clone()))
+                    }
                 }
                 _ => Some(Box::new(error.clone())),
             },
@@ -181,6 +186,7 @@ macro_rules! check_boolean {
     };
 }
 pub(crate) use check_boolean;
+use concept::type_::type_manager::validation::SchemaValidationError;
 
 impl FromStr for Boolean {
     type Err = String;
