@@ -6,6 +6,7 @@
 [![Discord](https://img.shields.io/discord/665254494820368395?color=7389D8&label=discord&logo=discord&logoColor=ffffff)](https://typedb.com/discord)
 [![Discussion Forum](https://img.shields.io/badge/discourse-forum-blue.svg)](https://forum.typedb.com)
 [![Hosted By: Cloudsmith](https://img.shields.io/badge/OSS%20hosting%20by-cloudsmith-blue?logo=cloudsmith&style=flat)](https://cloudsmith.com)
+[![Gurubase](https://img.shields.io/badge/Gurubase-Ask%20TypeDB%20Guru-006BFF)](https://gurubase.io/g/typedb)
 
 # Introducing TypeDB
 
