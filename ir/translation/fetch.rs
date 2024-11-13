@@ -179,17 +179,12 @@ fn translate_fetch_list(
             let mut local_context = parent_context.clone();
             let body = translate_function_block(snapshot, function_index, &mut local_context, value_parameters, block)
                 .map_err(|err| FetchRepresentationError::FunctionRepresentation { declaration: block.clone() })?;
-            let args = find_function_body_arguments(parent_context, &body);
-            if !body.return_operation().is_stream() {
-                Err(Box::new(FetchRepresentationError::ExpectedStreamInlineFunction { declaration: block.clone() }))
-            } else {
-                Ok(FetchSome::SingleFunction(create_anonymous_function(
-                    local_context,
-                    value_parameters.clone(),
-                    args,
-                    body,
-                )))
-            }
+            Ok(FetchSome::ListFunction(create_anonymous_function(
+                local_context,
+                value_parameters.clone(),
+                find_function_body_arguments(parent_context, &body),
+                body,
+            )))
         }
     }
 }
@@ -254,16 +249,13 @@ fn translate_fetch_single(
             let mut local_context = parent_context.clone();
             let body = translate_function_block(snapshot, function_index, &mut local_context, value_parameters, block)
                 .map_err(|err| FetchRepresentationError::FunctionRepresentation { declaration: block.clone() })?;
-            println!("FunctionBLOCK: {body:?}");
-            let args = find_function_body_arguments(parent_context, &body);
-            println!("Function block args: {args:?}");
             if body.return_operation().is_stream() {
                 Err(Box::new(FetchRepresentationError::ExpectedSingleInlineFunctionBlock { declaration: block.clone() }))
             } else {
                 Ok(FetchSome::SingleFunction(create_anonymous_function(
                     local_context,
                     value_parameters.clone(),
-                    args,
+                    find_function_body_arguments(parent_context, &body),
                     body,
                 )))
             }
@@ -578,39 +570,34 @@ typedb_error!(
             "The match-return returns a stream, which must be wrapped in `[]` to collect into a list.\nSource:\n{declaration}",
             declaration: FunctionCall
         ),
-        ExpectedStreamInlineFunction(
-            13,
-            "The match-return returns a single value, which should not be be wrapped in `[]`.\nSource:\n{declaration}",
-            declaration: FunctionBlock
-        ),
         ExpectedStreamUserFunctionInList(
-            14,
+            13,
             "Illegal call to non-streaming function '{name}' inside a list '[]'. Use '()' or no bracketing to invoke functions that do not return streams.\nSource:\n{declaration}",
             name: String,
             declaration: FunctionCall
         ),
         BuiltinFunctionInList(
-            15,
+            14,
             "Built-in functions returning a single value should not be wrapped in '[]'. User-defined functions that return streams can be wrapped in '[]'.\nSource:\n{declaration}",
             declaration: FunctionCall
         ),
         AttributeListInList(
-            16,
+            15,
             "Fetching attributes as list should not be wrapped in another list, please remove the outer [].\nSource:\n{declaration}",
             declaration: FetchAttribute
         ),
         SubFetchRepresentation(
-            17,
+            16,
             "Error building representation of fetch sub-query.",
             (typedb_source : Box<RepresentationError>)
         ),
         SubQueryIsNotFetch(
-            18,
+            17,
             "Error building representation of fetch sub-query: no fetch found. Consider using expressions or functions.\nSource:\n{declaration}",
             declaration: TypeQLFetchList
         ),
         DuplicatedObjectKeyEncountered(
-            19,
+            18,
             "Encountered multiple mappings for one key {key} in a single object.\nSource:\n{declaration}",
             key: String,
             declaration: TypeQLFetchObject
