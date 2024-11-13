@@ -17,7 +17,7 @@ use concept::{
         },
         constraint::{ConstraintCategory as TypeDBConstraintCategory, ConstraintDescription as TypeDBConstraint},
         object_type::ObjectType,
-        type_manager::TypeManager,
+        type_manager::{validation::SchemaValidationError, TypeManager},
     },
 };
 use cucumber::Parameter;
@@ -73,14 +73,12 @@ impl MayError {
                 ConceptWriteError::ConceptRead { source } => {
                     panic!("Expected logic error, got ConceptRead {:?}", source)
                 }
-                ConceptWriteError::SchemaValidation { typedb_source: err } => {
-                    match **err {
-                        SchemaValidationError::ConceptRead { .. } => {
-                            panic!("Expected logic error, got SchemaValidation::ConceptRead {:?}", err)
-                        },
-                        _ => Some(Box::new(error.clone()))
+                ConceptWriteError::SchemaValidation { typedb_source: err } => match **err {
+                    SchemaValidationError::ConceptRead { .. } => {
+                        panic!("Expected logic error, got SchemaValidation::ConceptRead {:?}", err)
                     }
-                }
+                    _ => Some(Box::new(error.clone())),
+                },
                 _ => Some(Box::new(error.clone())),
             },
         }
@@ -186,7 +184,6 @@ macro_rules! check_boolean {
     };
 }
 pub(crate) use check_boolean;
-use concept::type_::type_manager::validation::SchemaValidationError;
 
 impl FromStr for Boolean {
     type Err = String;
