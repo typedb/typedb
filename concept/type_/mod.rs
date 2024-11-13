@@ -318,7 +318,7 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         Ok(self
             .get_owned_attribute_type_constraints_cardinality(snapshot, type_manager, attribute_type)?
             .into_iter()
@@ -526,7 +526,7 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         Ok(self
             .get_played_role_type_constraints_cardinality(snapshot, type_manager, role_type)?
             .into_iter()

@@ -31,10 +31,7 @@ use concept::{
 };
 use encoding::value::label::Label;
 use error::typedb_error;
-use ir::{
-    pattern::ParameterID,
-    pipeline::ParameterRegistry,
-};
+use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
@@ -48,8 +45,8 @@ use crate::{
         PipelineExecutionError,
     },
     read::{
-        pattern_executor::PatternExecutor,
-        step_executor::create_executors_for_function, tabled_functions::TabledFunctions,
+        pattern_executor::PatternExecutor, step_executor::create_executors_for_function,
+        tabled_functions::TabledFunctions,
     },
     row::MaybeOwnedRow,
     ExecutionInterrupt,
@@ -364,7 +361,7 @@ fn execute_attributes_all<'a>(
         let is_scalar = object
             .type_()
             .is_owned_attribute_type_scalar(snapshot.as_ref(), thing_manager.type_manager(), attribute_type)
-            .map_err(|err| FetchExecutionError::ConceptRead { source: Box::new(err) })?;
+            .map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
         if is_scalar {
             map.insert(label, leaf);
         } else {

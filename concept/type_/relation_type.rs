@@ -366,7 +366,7 @@ impl<'a> RelationType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         Ok(self
             .get_related_role_type_constraints_cardinality(snapshot, type_manager, role_type)?
             .into_iter()

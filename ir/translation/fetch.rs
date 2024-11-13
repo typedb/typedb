@@ -11,7 +11,7 @@ use error::typedb_error;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::ReadableSnapshot;
 use typeql::{
-    expression::{FunctionCall, FunctionName, List},
+    expression::{FunctionCall, FunctionName},
     query::stage::{
         fetch::{
             FetchAttribute, FetchList as TypeQLFetchList, FetchObject as TypeQLFetchObject,
@@ -27,7 +27,7 @@ use typeql::{
 };
 
 use crate::{
-    pattern::{constraint::ConstraintsBuilder, ParameterID},
+    pattern::ParameterID,
     pipeline::{
         block::{Block, BlockBuilder, BlockBuilderContext},
         fetch::{
@@ -252,10 +252,14 @@ fn translate_fetch_single(
             let body = translate_function_block(snapshot, function_index, &mut local_context, value_parameters, block)
                 .map_err(|err| FetchRepresentationError::FunctionRepresentation { declaration: block.clone() })?;
             if body.return_operation().is_stream() {
-                return Err(Box::new(FetchRepresentationError::ExpectedSingleFunctionBlock { declaration: block.clone() }));
+                return Err(Box::new(FetchRepresentationError::ExpectedSingleFunctionBlock {
+                    declaration: block.clone(),
+                }));
             }
             if !body.return_operation.is_scalar() {
-                return Err(Box::new(FetchRepresentationError::ExpectedScalarFunctionBlock { declaration: block.clone() }));
+                return Err(Box::new(FetchRepresentationError::ExpectedScalarFunctionBlock {
+                    declaration: block.clone(),
+                }));
             }
             Ok(FetchSome::SingleFunction(create_anonymous_function(
                 local_context,
@@ -376,7 +380,7 @@ fn translate_inline_user_function_call<'a>(
         })?;
 
     if signature.returns.len() > 1 {
-        return Err(FetchRepresentationError::ExpectedScalarInlineFunctionCall { declaration: call.clone() });
+        return Err(Box::new(FetchRepresentationError::ExpectedScalarInlineFunctionCall { declaration: call.clone() }));
     }
 
     // because function calls expect to be able to extract out expression calls, we'll translate

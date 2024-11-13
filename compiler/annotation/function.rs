@@ -276,15 +276,10 @@ fn annotate_function_impl(
     local_functions: Option<&AnnotatedUnindexedFunctions>,
     argument_concept_variable_types: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     argument_value_variable_types: BTreeMap<Variable, ExpressionValueType>,
-<<<<<<< HEAD
 ) -> Result<AnnotatedFunction, Box<FunctionAnnotationError>> {
-    let Function { name, context, function_body: FunctionBody { stages, return_operation }, arguments, .. } = function;
-=======
-) -> Result<AnnotatedFunction, FunctionAnnotationError> {
     let Function {
         name, context, parameters, function_body: FunctionBody { stages, return_operation }, arguments, ..
     } = function;
->>>>>>> 8039e6eaf (Make parameter registry single for queries and subqueries)
 
     let (stages, running_variable_types, running_value_types) = annotate_pipeline_stages(
         snapshot,
