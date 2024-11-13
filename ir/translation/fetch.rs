@@ -179,6 +179,12 @@ fn translate_fetch_list(
             let mut local_context = parent_context.clone();
             let body = translate_function_block(snapshot, function_index, &mut local_context, value_parameters, block)
                 .map_err(|err| FetchRepresentationError::FunctionRepresentation { declaration: block.clone() })?;
+            if !body.return_operation.is_scalar() && !matches!(body.return_operation, ReturnOperation::ReduceReducer(_))
+            {
+                return Err(Box::new(FetchRepresentationError::ExpectedScalarOrReduceFunctionBlock {
+                    declaration: block.clone(),
+                }));
+            }
             Ok(FetchSome::ListFunction(create_anonymous_function(
                 local_context,
                 value_parameters.clone(),
@@ -246,15 +252,17 @@ fn translate_fetch_single(
             let body = translate_function_block(snapshot, function_index, &mut local_context, value_parameters, block)
                 .map_err(|err| FetchRepresentationError::FunctionRepresentation { declaration: block.clone() })?;
             if body.return_operation().is_stream() {
-                Err(Box::new(FetchRepresentationError::ExpectedSingleInlineFunctionBlock { declaration: block.clone() }))
-            } else {
-                Ok(FetchSome::SingleFunction(create_anonymous_function(
-                    local_context,
-                    value_parameters.clone(),
-                    find_function_body_arguments(parent_context, &body),
-                    body,
-                )))
+                return Err(Box::new(FetchRepresentationError::ExpectedSingleFunctionBlock { declaration: block.clone() }));
             }
+            if !body.return_operation.is_scalar() {
+                return Err(Box::new(FetchRepresentationError::ExpectedScalarFunctionBlock { declaration: block.clone() }));
+            }
+            Ok(FetchSome::SingleFunction(create_anonymous_function(
+                local_context,
+                value_parameters.clone(),
+                find_function_body_arguments(parent_context, &body),
+                body,
+            )))
         }
     }
 }
@@ -366,6 +374,10 @@ fn translate_inline_user_function_call<'a>(
             name: function_name.to_owned(),
             declaration: call.clone(),
         })?;
+
+    if signature.returns.len() > 1 {
+        return Err(FetchRepresentationError::ExpectedScalarInlineFunctionCall { declaration: call.clone() });
+    }
 
     // because function calls expect to be able to extract out expression calls, we'll translate
     // into a match-return
@@ -556,44 +568,59 @@ typedb_error!(
             "Failed to build inline function representation.",
             declaration: FunctionBlock
         ),
-        ExpectedSingleInlineFunctionBlock(
+        ExpectedSingleFunctionBlock(
             11,
             "The match-return returns a stream, which must be wrapped in `[]` to collect into a list.\nSource:\n{declaration}",
             declaration: FunctionBlock
         ),
-        ExpectedSingleInlineFunctionCall(
+        ExpectedScalarFunctionBlock(
             12,
-            "The match-return returns a stream, which must be wrapped in `[]` to collect into a list.\nSource:\n{declaration}",
+            "The match-return returns a non-scalar result, which cannot be represented as a single value.\nSource:\n{declaration}",
+            declaration: FunctionBlock
+        ),
+        ExpectedScalarOrReduceFunctionBlock(
+            13,
+            "The match-return returns a non-scalar non-reduce result, which cannot be represented in a list.\nSource:\n{declaration}",
+            declaration: FunctionBlock
+        ),
+        ExpectedSingleInlineFunctionCall(
+            14,
+            "The function returns a stream, which must be wrapped in `[]` to collect into a list.\nSource:\n{declaration}",
+            declaration: FunctionCall
+        ),
+        ExpectedScalarInlineFunctionCall(
+            15,
+            "The function returns a non-scalar result, which cannot be used as an inline call. Consider using a function block instead.\nSource:\n{declaration}",
             declaration: FunctionCall
         ),
         ExpectedStreamUserFunctionInList(
-            13,
+            16,
             "Illegal call to non-streaming function '{name}' inside a list '[]'. Use '()' or no bracketing to invoke functions that do not return streams.\nSource:\n{declaration}",
             name: String,
             declaration: FunctionCall
         ),
         BuiltinFunctionInList(
-            14,
+            17,
             "Built-in functions returning a single value should not be wrapped in '[]'. User-defined functions that return streams can be wrapped in '[]'.\nSource:\n{declaration}",
             declaration: FunctionCall
         ),
         AttributeListInList(
-            15,
+            18,
             "Fetching attributes as list should not be wrapped in another list, please remove the outer [].\nSource:\n{declaration}",
             declaration: FetchAttribute
         ),
         SubFetchRepresentation(
-            16,
+            19,
             "Error building representation of fetch sub-query.",
             (typedb_source : Box<RepresentationError>)
         ),
         SubQueryIsNotFetch(
-            17,
+            20,
             "Error building representation of fetch sub-query: no fetch found. Consider using expressions or functions.\nSource:\n{declaration}",
             declaration: TypeQLFetchList
         ),
         DuplicatedObjectKeyEncountered(
-            18,
+            21,
             "Encountered multiple mappings for one key {key} in a single object.\nSource:\n{declaration}",
             key: String,
             declaration: TypeQLFetchObject

@@ -90,6 +90,15 @@ impl ReturnOperation {
         }
     }
 
+    pub(crate) fn is_scalar(&self) -> bool {
+        match self {
+            Self::Stream(vars) => vars.len() < 2,
+            Self::Single(_, vars) => vars.len() < 2,
+            Self::ReduceCheck() => true,
+            Self::ReduceReducer(reducers) => reducers.len() < 2,
+        }
+    }
+
     pub(crate) fn variables(&self) -> Cow<'_, [Variable]> {
         match self {
             ReturnOperation::Stream(vars) => Cow::Borrowed(vars),

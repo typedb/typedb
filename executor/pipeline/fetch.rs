@@ -222,10 +222,7 @@ fn execute_fetch_some(
                 let mut row_iter = batch.into_iter();
                 while let Some(row) = row_iter.next() {
                     let mut row_iter = row.row().iter();
-                    if let Some(value) = execute_once_error_if_has_second!(
-                        row_iter.next(),
-                        FetchExecutionError::FetchListFunctionNotScalar { func_name: "func".to_string() }
-                    ) {
+                    while let Some(value) = row_iter.next() {
                         nodes.push(variable_value_to_document(value.clone())?);
                     }
                 }
@@ -532,7 +529,6 @@ typedb_error!(
 
         FetchSingleFunctionNotScalar(7, "Fetching results of a function call '{func_name}()' expected a scalar return, got a tuple instead.", func_name: String),
         FetchSingleFunctionNotSingle(8, "Fetching results of a function call '{func_name}()' expected a single return, got a stream instead. It must be wrapped in `[]` to collect into a list.", func_name: String),
-        FetchListFunctionNotScalar(9, "Fetching results of a function call '[ {func_name}() ]' expected a scalar return, got a tuple instead.", func_name: String),
 
         SubFetch(10, "Error executing sub fetch.", ( typedb_source : Box<PipelineExecutionError>)),
 
