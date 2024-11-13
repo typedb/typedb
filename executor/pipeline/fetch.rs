@@ -23,7 +23,10 @@ use compiler::{
 };
 use concept::{
     error::ConceptReadError,
-    thing::{object::ObjectAPI, thing_manager::ThingManager},
+    thing::{
+        object::{HasIterator, ObjectAPI},
+        thing_manager::ThingManager,
+    },
     type_::{attribute_type::AttributeType, Capability, OwnerAPI, TypeAPI},
 };
 use encoding::value::label::Label;
@@ -383,16 +386,21 @@ fn execute_attribute_single<'a>(
     snapshot: Arc<impl ReadableSnapshot>,
     thing_manager: Arc<ThingManager>,
 ) -> Result<DocumentLeaf, FetchExecutionError> {
-    let mut iter = object.get_has_type_unordered(snapshot.as_ref(), thing_manager.as_ref(), attribute_type);
-    let attribute = iter.next();
-    match attribute {
-        None => Ok(DocumentLeaf::Empty),
-        Some(Err(err)) => Err(FetchExecutionError::ConceptRead { source: err }),
-        Some(Ok((attribute, count))) => {
+    let mut iter = prepare_attribute_type_has_iterator(object, attribute_type.clone(), &snapshot, &thing_manager)?;
+
+    while let Some(result) = iter.next() {
+        let (has, count) = result.map_err(|source| FetchExecutionError::ConceptRead { source })?;
+        let attribute = has.attribute();
+        let suitable = attribute
+            .type_()
+            .is_subtype_transitive_of_or_same(snapshot.as_ref(), thing_manager.type_manager(), attribute_type.clone())
+            .map_err(|source| FetchExecutionError::ConceptRead { source })?;
+        if suitable {
             debug_assert!(count <= 1);
-            Ok(DocumentLeaf::Concept(Concept::Thing(Thing::Attribute(attribute.into_owned()))))
+            return Ok(DocumentLeaf::Concept(Concept::Thing(Thing::Attribute(has.attribute().into_owned()))));
         }
     }
+    Ok(DocumentLeaf::Empty)
 }
 
 fn execute_attributes_list<'a>(
@@ -402,20 +410,40 @@ fn execute_attributes_list<'a>(
     thing_manager: Arc<ThingManager>,
 ) -> Result<DocumentList, FetchExecutionError> {
     let mut list = DocumentList::new();
-    let mut iter = object.get_has_type_unordered(snapshot.as_ref(), thing_manager.as_ref(), attribute_type);
+    let mut iter = prepare_attribute_type_has_iterator(object, attribute_type.clone(), &snapshot, &thing_manager)?;
+
     while let Some(result) = iter.next() {
-        match result {
-            Ok((attribute, count)) => {
-                for _ in 0..count {
-                    list.list.push(DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Thing(Thing::Attribute(
-                        attribute.as_reference().into_owned(),
-                    )))));
-                }
+        let (has, count) = result.map_err(|source| FetchExecutionError::ConceptRead { source })?;
+        let attribute = has.attribute();
+        let suitable = attribute
+            .type_()
+            .is_subtype_transitive_of_or_same(snapshot.as_ref(), thing_manager.type_manager(), attribute_type.clone())
+            .map_err(|source| FetchExecutionError::ConceptRead { source })?;
+        if suitable {
+            for _ in 0..count {
+                list.list.push(DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Thing(Thing::Attribute(
+                    has.attribute().into_owned(),
+                )))));
             }
-            Err(err) => return Err(FetchExecutionError::ConceptRead { source: err }),
         }
     }
     Ok(list)
+}
+
+fn prepare_attribute_type_has_iterator<'a>(
+    object: impl ObjectAPI<'a>,
+    attribute_type: AttributeType<'static>,
+    snapshot: &Arc<impl ReadableSnapshot>,
+    thing_manager: &Arc<ThingManager>,
+) -> Result<HasIterator, FetchExecutionError> {
+    let subtypes = attribute_type
+        .get_subtypes_transitive(snapshot.as_ref(), thing_manager.type_manager())
+        .map_err(|source| FetchExecutionError::ConceptRead { source })?;
+    let attribute_types = TypeAPI::chain_types(attribute_type.clone(), subtypes.into_iter().cloned());
+
+    object
+        .get_has_types_range_unordered(snapshot.as_ref(), thing_manager.as_ref(), attribute_types)
+        .map_err(|source| FetchExecutionError::ConceptRead { source })
 }
 
 fn execute_single_function<Snapshot: ReadableSnapshot + 'static>(
