@@ -40,7 +40,7 @@ use crate::{
     document::{ConceptDocument, DocumentLeaf, DocumentList, DocumentMap, DocumentNode},
     error::ReadExecutionError,
     pipeline::{
-        pipeline::Pipeline,
+        pipeline::{Pipeline, PipelineError},
         stage::{ExecutionContext, StageAPI},
         PipelineExecutionError,
     },
@@ -169,7 +169,6 @@ fn execute_fetch_some(
 
             let batch = match batch {
                 Some(batch) => batch,
-                // TODO: Could probably force to return this "Empty" in the batch
                 None => return Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
             };
 
@@ -262,7 +261,8 @@ fn execute_fetch_some(
                     parameters,
                     Some(initial_row),
                 )
-            };
+            }
+            .map_err(|typedb_source| FetchExecutionError::Pipeline { typedb_source })?;
 
             let (iterator, _context) = pipeline
                 .into_documents_iterator(interrupt)
@@ -531,5 +531,6 @@ typedb_error!(
 
         ConceptRead(30, "Unexpected failed to read concept.", ( source: Box<ConceptReadError>)),
         ReadExecution(31, "Unexpected failed to execute read.", ( typedb_source: Box<ReadExecutionError> )),
+        Pipeline(32, "Pipeline error.", ( typedb_source: Box<PipelineError> )),
     }
 );

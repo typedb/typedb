@@ -67,25 +67,25 @@ fn execute_read_query(context: &mut Context, query: typeql::Query) -> Result<Que
                         match item {
                             Ok(item) => documents.push(item),
                             Err(err) => {
-                                return Err(QueryError::ReadPipelineExecutionError { typedb_source: err });
+                                return Err(QueryError::ReadPipelineExecution { typedb_source: err });
                             }
                         }
                     }
                     Ok(QueryAnswer::ConceptDocuments(documents, parameters))
                 }
-                Err((err, _)) => Err(QueryError::ReadPipelineExecutionError { typedb_source: err }),
+                Err((err, _)) => Err(QueryError::ReadPipelineExecution { typedb_source: err }),
             }
         } else {
-            let named_outputs = pipeline.rows_positions().expect("Unfetched result").clone();
+            let named_outputs = pipeline.rows_positions().expect("Expected unfetched result").clone();
             let result_as_batch = match pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
                 Ok((iterator, _)) => iterator.collect_owned(),
                 Err((err, _)) => {
-                    return Err(QueryError::ReadPipelineExecutionError { typedb_source: err });
+                    return Err(QueryError::ReadPipelineExecution { typedb_source: err });
                 }
             };
             match result_as_batch {
                 Ok(batch) => Ok(QueryAnswer::ConceptRows(row_batch_result_to_answer(batch, named_outputs))),
-                Err(typedb_source) => Err(QueryError::ReadPipelineExecutionError { typedb_source }),
+                Err(typedb_source) => Err(QueryError::ReadPipelineExecution { typedb_source }),
             }
         }
     })
@@ -122,7 +122,7 @@ fn execute_write_query(
                                     Ok(item) => documents.push(item),
                                     Err(err) => {
                                         item_error = Some(BehaviourTestExecutionError::Query(
-                                            QueryError::WritePipelineExecutionError { typedb_source: err },
+                                            QueryError::WritePipelineExecution { typedb_source: err },
                                         ));
                                     }
                                 }
@@ -136,7 +136,7 @@ fn execute_write_query(
                             )
                         }
                         Err((err, ExecutionContext { snapshot, .. })) => (
-                            Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecutionError {
+                            Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecution {
                                 typedb_source: err,
                             })),
                             snapshot,
@@ -153,7 +153,7 @@ fn execute_write_query(
                                     snapshot,
                                 ),
                                 Err(typedb_source) => (
-                                    Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecutionError {
+                                    Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecution {
                                         typedb_source,
                                     })),
                                     snapshot,
@@ -161,7 +161,7 @@ fn execute_write_query(
                             }
                         }
                         Err((err, ExecutionContext { snapshot, .. })) => (
-                            Err(BehaviourTestExecutionError::Query(QueryError::ReadPipelineExecutionError {
+                            Err(BehaviourTestExecutionError::Query(QueryError::ReadPipelineExecution {
                                 typedb_source: err,
                             })),
                             snapshot,

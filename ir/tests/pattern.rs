@@ -97,7 +97,8 @@ fn variable_category_mismatch() {
     let typeql::Query::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else { unreachable!() };
     let Stage::Match(match_) = stages.first().unwrap() else { unreachable!() };
     let mut context = TranslationContext::new();
-    let translated = translate_match(&mut context, &mut ParameterRegistry::new(), &empty_function_index, match_);
+    let mut parameters = ParameterRegistry::new();
+    let translated = translate_match(&mut context, &mut parameters, &empty_function_index, match_);
     assert!(matches!(translated.unwrap_err().as_ref(), &RepresentationError::VariableCategoryMismatch { .. }));
 
     // let mut block = FunctionalBlock::new();

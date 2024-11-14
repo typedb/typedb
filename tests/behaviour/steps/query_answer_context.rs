@@ -12,9 +12,11 @@ use concept::{
     type_::{type_manager::TypeManager, TypeAPI},
 };
 use encoding::{graph::type_::Kind, value::value::Value};
-use executor::document::{ConceptDocument, DocumentLeaf, DocumentList, DocumentMap, DocumentNode};
+use executor::document::{ConceptDocument, DocumentLeaf, DocumentMap, DocumentNode};
 use ir::pipeline::ParameterRegistry;
 use storage::snapshot::ReadableSnapshot;
+
+use crate::json::JSON;
 
 #[derive(Debug, Clone)]
 pub enum QueryAnswer {
@@ -37,8 +39,6 @@ macro_rules! with_documents_answer {
     };
 }
 pub(crate) use with_documents_answer;
-
-use crate::json::JSON;
 
 impl QueryAnswer {
     pub fn as_rows(&self) -> &Vec<HashMap<String, VariableValue<'static>>> {

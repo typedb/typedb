@@ -15,6 +15,7 @@ use compiler::{
     VariablePosition,
 };
 use concept::thing::thing_manager::ThingManager;
+use error::typedb_error;
 use ir::pipeline::{ParameterRegistry, VariableRegistry};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -123,7 +124,7 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         executable_fetch: Option<Arc<ExecutableFetch>>,
         parameters: Arc<ParameterRegistry>,
         input: Option<MaybeOwnedRow<'_>>,
-    ) -> Self {
+    ) -> Result<Self, Box<PipelineError>> {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
         let context = ExecutionContext::new(snapshot, thing_manager, parameters);
         let mut last_stage = ReadPipelineStage::Initial(Box::new(
@@ -140,10 +141,10 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
                     last_stage = ReadPipelineStage::Match(Box::new(match_stage));
                 }
                 ExecutableStage::Insert(_) => {
-                    unreachable!("Insert clause cannot exist in a read pipeline.")
+                    return Err(Box::new(PipelineError::InvalidReadPipelineStage { stage: "Insert".to_string() }))
                 }
                 ExecutableStage::Delete(_) => {
-                    unreachable!("Delete clause cannot exist in a read pipeline.")
+                    return Err(Box::new(PipelineError::InvalidReadPipelineStage { stage: "Delete".to_string() }))
                 }
                 ExecutableStage::Select(select_executable) => {
                     let select_stage = SelectStageExecutor::new(select_executable.clone(), last_stage);
@@ -171,13 +172,13 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
                 }
             }
         }
-        Pipeline::build_with_fetch(
+        Ok(Pipeline::build_with_fetch(
             variable_registry,
             executable_functions.clone(),
             last_stage,
             output_variable_positions,
             executable_fetch,
-        )
+        ))
     }
 }
 
@@ -193,7 +194,6 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
         let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, parameters);
         let mut last_stage = WritePipelineStage::Initial(Box::new(InitialStage::new_empty(context)));
-        // TODO: Receive as arg?
         let executable_functions = Arc::new(ExecutableFunctionRegistry::empty());
         for executable_stage in executable_stages {
             match executable_stage {
@@ -246,3 +246,9 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         )
     }
 }
+
+typedb_error!(
+    pub PipelineError(component = "Pipeline", prefix = "PIP") {
+        InvalidReadPipelineStage(1, "{stage} clause cannot exist in a read pipeline.", stage : String),
+    }
+);

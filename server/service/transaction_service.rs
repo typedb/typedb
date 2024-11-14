@@ -905,17 +905,16 @@ impl TransactionService {
             Err((err, ExecutionContext { snapshot, .. })) => {
                 return (
                     Arc::into_inner(snapshot).unwrap(),
-                    Err(QueryError::WritePipelineExecutionError { typedb_source: err }),
+                    Err(QueryError::WritePipelineExecution { typedb_source: err }),
                 );
             }
         };
 
         match iterator.collect_owned() {
             Ok(batch) => (Arc::into_inner(snapshot).unwrap(), Ok((query_output_descriptor, batch))),
-            Err(err) => (
-                Arc::into_inner(snapshot).unwrap(),
-                Err(QueryError::WritePipelineExecutionError { typedb_source: err }),
-            ),
+            Err(err) => {
+                (Arc::into_inner(snapshot).unwrap(), Err(QueryError::WritePipelineExecution { typedb_source: err }))
+            }
         }
     }
 
@@ -1013,7 +1012,7 @@ impl TransactionService {
                 unwrap_or_execute_and_return!(pipeline.into_documents_iterator(interrupt.clone()), |(err, _)| {
                     Self::submit_response_sync(
                         sender,
-                        StreamQueryResponse::done_err(QueryError::ReadPipelineExecutionError { typedb_source: err }),
+                        StreamQueryResponse::done_err(QueryError::ReadPipelineExecution { typedb_source: err }),
                     );
                 });
 
@@ -1056,7 +1055,7 @@ impl TransactionService {
                 unwrap_or_execute_and_return!(pipeline.into_rows_iterator(interrupt.clone()), |(err, _)| {
                     Self::submit_response_sync(
                         sender,
-                        StreamQueryResponse::done_err(QueryError::ReadPipelineExecutionError { typedb_source: err }),
+                        StreamQueryResponse::done_err(QueryError::ReadPipelineExecution { typedb_source: err }),
                     );
                 });
 
