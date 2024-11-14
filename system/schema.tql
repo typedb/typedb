@@ -1,18 +1,30 @@
 define
-    schema-version sub attribute, value long;
-    name sub attribute, value string;
+    attribute schema-version value long;
+    attribute name value string;
+    attribute uuid value string;
+    attribute hash value string;
+    attribute salt value string;
 
-    user sub entity,
-        owns name,
-        plays user:user;
+    entity user,
+        owns uuid @card(1),
+        owns name @card(1),
+        plays user-password:user;
 
-    credential sub entity,
-        plays credential:credential;
+        entity password,
+        owns hash @card(1),
+        owns salt @card(1),
+        plays user-password:password;
 
-    password sub credential,
-        owns hash,
-        owns salt;
+    relation user-password,
+        relates user @card(1),
+        relates password @card(1);
 
-    user-credential sub relation,
-        relates user,
-        relates credential;
+# for insert query
+#insert $u isa user, has uuid 'uuid', has name 'John';
+#$p isa password, has hash 'hash', has salt 'salt';
+#(user: $u, password: $p) isa user-password;
+
+# for list query: match (user: $u, password: $p) isa user-password; $u has name $n;
+# for get query: match (user: $u, password: $p) isa user-password; $u has name 'John';
+# for delete query:
+#match $up isa user-password, links (user: $u, password: $p); delete $u; $p; $up;

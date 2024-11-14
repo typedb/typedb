@@ -1,30 +1,32 @@
 use tonic::Request;
-use system::concepts::{Credential, Password, User};
+use system::concepts::{Credential, PasswordHash, User};
 use user::errors::UserCreateError;
 
 pub fn users_create_req(request: Request<typedb_protocol::user_manager::create::Req>) -> Result<(User, Credential), UserCreateError> {
     let message = request.into_inner();
     match message.user {
-        Some(user) => {
-            match user.credential {
-                Some(cred) => {
-                    match cred.credential {
-                        Some(cred2) => {
-                            todo!()
-                        }
-                        None => {
-                            todo!()
-                        }
+        Some(
+            typedb_protocol::User {
+                name: username,
+                credential: Some(
+                    typedb_protocol::Credential {
+                        credential: Some(
+                            typedb_protocol::credential::Credential::Password(
+                                typedb_protocol::credential::Password { value: Some(password) }
+                            )
+                        )
                     }
-                }
-                None => {
-                    // todo!("credential object must be supplied")
-                    Ok((User::new("test user".to_string()), Credential::new_password_type(Password::new(Vec::new(), Vec::new()))))
-                }
+                )
             }
+        ) => {
+            let user = User::new(username);
+            let credential = Credential::new_password_type(
+                PasswordHash::from_password(password.as_str())
+            );
+            Ok((user, credential))
         }
-        None => {
-            todo!("user object must be supplied")
+        _ => {
+            Err(UserCreateError::Unexpected { }) // user object must be supplied
         }
     }
 }

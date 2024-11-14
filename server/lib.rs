@@ -10,3 +10,4 @@
 pub mod parameters;
 mod service;
 pub mod typedb;
+mod authenticator;

@@ -15,9 +15,19 @@ rust_library(
         "*.rs",
     ]),
     deps = [
+        "//answer",
+        "//common/lending_iterator",
         "//common/options",
+        "//compiler",
+        "//concept",
         "//database",
-        "//storage"
+        "//executor",
+        "//function",
+        "//query",
+        "//storage",
+        "@vaticle_typeql//rust:typeql",
+        "@crates//:pwhash",
+        "@crates//:uuid",
     ]
 )
 

@@ -15,10 +15,15 @@ rust_library(
         "*.rs",
     ]),
     deps = [
+        "//answer",
+        "//common/lending_iterator",
         "//common/error",
-        "//system",
+        "//database",
+        "//executor",
+        "//query",
         "//storage",
-        "//database"
+        "//system",
+        "@vaticle_typeql//rust:typeql",
     ]
 )
 

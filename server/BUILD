@@ -45,6 +45,7 @@ rust_library(
         "@crates//:tonic-types",
         "@crates//:tracing",
         "@crates//:uuid",
+        "@crates//:pwhash",
     ]
 )
 

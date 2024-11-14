@@ -8,7 +8,7 @@ use std::{net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
 
 use database::database_manager::DatabaseManager;
 use user::user_manager::UserManager;
-use system::concepts::{Credential, Password, User};
+use system::concepts::{Credential, PasswordHash, User};
 use error::typedb_error;
 use tokio::sync::mpsc::channel;
 use tokio_stream::wrappers::ReceiverStream;
@@ -41,11 +41,11 @@ pub(crate) struct TypeDBService {
 }
 
 impl TypeDBService {
-    pub(crate) fn new(address: &SocketAddr, database_manager: DatabaseManager, user_manager: UserManager) -> Self {
+    pub(crate) fn new(address: &SocketAddr, database_manager: DatabaseManager, user_manager: Arc<UserManager>) -> Self {
         Self {
             address: address.clone(),
             database_manager: Arc::new(database_manager),
-            user_manager: Arc::new(user_manager)
+            user_manager
         }
     }
 
@@ -169,7 +169,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         let get_req = request.into_inner();
         let user = self.user_manager.get(get_req.name.as_str());
         match user {
-            Some(u) => Ok(Response::new(users_get_res(u))),
+            Some((u, _)) => Ok(Response::new(users_get_res(u))),
             None => Err(ServiceError::UserDoesNotExist { name: get_req.name }.into_error_message().into_status())
         }
     }

@@ -5,15 +5,19 @@
  */
 
 use std::{error::Error, fmt, fs, io, path::PathBuf};
+use std::sync::Arc;
 use user::user_manager::UserManager;
 use database::{database_manager::DatabaseManager, DatabaseOpenError};
 use resource::constants::server::GRPC_CONNECTION_KEEPALIVE;
+use system::concepts::{Credential, PasswordHash, User};
 use system::create_if_not_exists;
 use crate::{parameters::config::Config, service::typedb_service::TypeDBService};
+use crate::authenticator::Authenticator;
 
 #[derive(Debug)]
 pub struct Server {
     data_directory: PathBuf,
+    user_manager: Arc<UserManager>,
     typedb_service: Option<TypeDBService>,
     config: Config,
 }
@@ -29,12 +33,21 @@ impl Server {
         let database_manager = DatabaseManager::new(storage_directory)
             .map_err(|err| ServerOpenError::DatabaseOpenError { source: err })?;
         let system_db = create_if_not_exists(&database_manager);
-        let user_manager = UserManager::new(system_db);
+        let user_manager = Arc::new(UserManager::new(system_db));
         let typedb_service = TypeDBService::new(
-            &config.server.address, database_manager, user_manager
+            &config.server.address, database_manager, user_manager.clone()
         );
+        user_manager.create(&User::new("one".to_string()), &Credential::new_password_type(PasswordHash::from_password("password1"))).unwrap();
+        user_manager.create(&User::new("two".to_string()), &Credential::new_password_type(PasswordHash::from_password("password2"))).unwrap();
+        let u1 = user_manager.get("one");
+        println!("{:?}", u1);
+        let u2 = user_manager.get("two");
+        println!("{:?}", u2);
+        let users = user_manager.all();
+        println!("{:?}", users);
         Ok(Self {
             data_directory: storage_directory.to_owned(),
+            user_manager: user_manager.clone(),
             typedb_service: Some(typedb_service),
             config
         })
@@ -47,13 +60,14 @@ impl Server {
     pub async fn serve(mut self) -> Result<(), tonic::transport::Error> {
         let service = typedb_protocol::type_db_server::TypeDbServer::new(self.typedb_service.take().unwrap());
         println!("Ready...");
+        let authenticator = Arc::new(Authenticator::new(self.user_manager.clone()));
         tonic::transport::Server::builder()
             .http2_keepalive_interval(Some(GRPC_CONNECTION_KEEPALIVE))
+            .layer(tonic::service::interceptor(move |req| authenticator.authenticate(req)))
             .add_service(service)
             .serve(self.config.server.address)
             .await
     }
-
     fn create_storage_directory(storage_directory: &PathBuf) -> Result<(), ServerOpenError> {
         fs::create_dir_all(storage_directory).map_err(|error|
             ServerOpenError::CouldNotCreateDataDirectory {
@@ -63,6 +77,7 @@ impl Server {
         )?;
         Ok(())
     }
+
 }
 
 #[derive(Debug)]

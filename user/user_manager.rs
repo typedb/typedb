@@ -1,50 +1,77 @@
-use std::sync::Arc;
-use system::concepts::{Credential, User};
-use system::repositories::{credential_repository, user_repository};
-use system::transaction_manager::TransactionManager;
 use crate::errors::{UserCreateError, UserDeleteError};
 use database::Database;
+use std::sync::Arc;
 use storage::durability_client::WALClient;
+use system::concepts::{Credential, User};
+use system::repositories::user_repository;
+use system::util::transaction_util::TransactionUtil;
 
 #[derive(Debug)]
 pub struct UserManager {
-    transaction_manager: TransactionManager
+    transaction_manager: TransactionUtil
 }
 
 impl UserManager {
     pub fn new(system_db: Arc<Database<WALClient>>) -> Self {
         UserManager {
-            transaction_manager: TransactionManager::new(system_db.clone()),
+            transaction_manager: TransactionUtil::new(system_db.clone()),
         }
     }
 
     pub fn all(&self) -> Vec<User> {
         self.transaction_manager.read_transaction(|tx| {
-            user_repository::list(&tx)
+            user_repository::list(tx)
         })
     }
 
-    pub fn get(&self, name: &str) -> Option<User> {
+    pub fn get(&self, username: &str) -> Option<(User, Credential)> {
         self.transaction_manager.read_transaction(|tx| {
-            user_repository::get(&tx, name)
+            user_repository::get(tx, username)
         })
     }
 
-    pub fn contains(&self, name: &str) -> bool {
-        self.get(name).is_some()
+    pub fn contains(&self, username: &str) -> bool {
+        self.get(username).is_some()
     }
 
     pub fn create(&self, user: &User, credential: &Credential) -> Result<(), UserCreateError> {
-        self.transaction_manager.write_transaction(|tx| {
-            user_repository::create(&tx, &user);
-            credential_repository::create(&tx, &user.name, credential);
-        }).map_err(|e| UserCreateError::Unexpected {})
+        let commit = self.transaction_manager.write_transaction(
+            |snapshot,
+             type_mgr,
+             thing_mgr,
+             fn_mgr,
+             db,
+             tx_opts| {
+            let snapshot = user_repository::create(
+                Arc::into_inner(snapshot).unwrap(),
+                &type_mgr,
+                thing_mgr.clone(),
+                &fn_mgr,
+                user,
+                credential
+            );
+            ((), snapshot)
+        });
+        commit.map_err(|e| UserCreateError::Unexpected {})
     }
 
     pub fn delete(&self, username: &str) -> Result<(), UserDeleteError> {
-        self.transaction_manager.write_transaction(|tx| {
-            user_repository::delete(&tx, username);
-            credential_repository::delete_by_user(&tx, username);
-        }).map_err(|_| UserDeleteError::Unexpected {})
+        let commit = self.transaction_manager.write_transaction(
+            |snapshot,
+             type_mgr,
+             thing_mgr,
+             fn_mgr,
+             db,
+             tx_opts| {
+                let snapshot = user_repository::delete(
+                    Arc::into_inner(snapshot).unwrap(),
+                    &type_mgr,
+                    thing_mgr.clone(),
+                    &fn_mgr,
+                    username
+                );
+                ((), snapshot)
+            });
+        commit.map_err(|e| UserDeleteError::Unexpected {})
     }
 }
