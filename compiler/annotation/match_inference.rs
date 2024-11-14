@@ -371,7 +371,7 @@ impl<'this> NestedTypeInferenceGraphDisjunction<'this> {
     fn prune_vertices_from_self(&mut self, parent_vertices: &mut VertexAnnotations) -> bool {
         let mut is_modified = false;
         for nested_graph in &mut self.disjunction {
-            nested_graph.prune_vertices_from_constraints();
+            is_modified |= nested_graph.prune_vertices_from_constraints();
         }
 
         for (parent_vertex, parent_vertex_types) in parent_vertices {
