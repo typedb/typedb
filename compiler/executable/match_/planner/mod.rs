@@ -59,9 +59,9 @@ pub fn compile(
         statistics,
     )
     .lower(
+        input_variables.keys().copied(),
         variable_registry.variable_names().keys().copied(),
         &assigned_identities,
-        input_variables.keys().copied(),
         &variable_registry,
     )
     .finish(variable_registry)
