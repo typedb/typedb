@@ -135,7 +135,7 @@ fn multi_threaded_inserts() {
 
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), Some(storage.read_watermark()));
+    let (type_manager, thing_manager) = load_managers(storage.clone(), Some(storage.snapshot_watermark()));
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new(0))));
     const NUM_THREADS: usize = 32;
     const INTERNAL_ITERS: usize = 1000;

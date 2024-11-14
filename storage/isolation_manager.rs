@@ -99,6 +99,7 @@ impl IsolationManager {
         commit_record: CommitRecord,
         durability_client: &impl DurabilityClient,
     ) -> Result<ValidatedCommit, DurabilityClientError> {
+        self.timeline.may_update_latest_sequence_number(sequence_number);
         let window = self.timeline.get_or_create_window(sequence_number);
         window.insert_pending(sequence_number, commit_record);
         let CommitStatus::Pending(commit_record) = window.get_status(sequence_number) else { unreachable!() };
@@ -244,6 +245,10 @@ impl IsolationManager {
         self.timeline.watermark()
     }
 
+    pub(crate) fn highest_possible_watermark(&self) -> SequenceNumber {
+        self.timeline.latest_sequence_number()
+    }
+
     pub fn reset(&mut self) {
         self.timeline = Timeline::new(self.initial_sequence_number)
     }
@@ -364,13 +369,18 @@ struct Timeline {
     // We can adjust the Window size to amortise the cost of the read-write locks to maintain the timeline
     windows: RwLock<VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>>,
     watermark: AtomicU64,
+    latest_utilised_sequence_number: AtomicU64,
 }
 
 impl Timeline {
     // The whole of the timeline uses the underlying u64
     fn new(next_sequence_number: SequenceNumber) -> Timeline {
         let windows = VecDeque::from([Arc::new(TimelineWindow::new(next_sequence_number))]);
-        Timeline { windows: RwLock::new(windows), watermark: AtomicU64::new(next_sequence_number.number() - 1) }
+        Timeline {
+            windows: RwLock::new(windows),
+            watermark: AtomicU64::new(next_sequence_number.number() - 1),
+            latest_utilised_sequence_number: AtomicU64::new(next_sequence_number.number() - 1),
+        }
     }
 
     fn may_free_windows(&self) {
@@ -383,6 +393,14 @@ impl Timeline {
                 windows.pop_front();
             }
         }
+    }
+
+    fn may_update_latest_sequence_number(&self, sequence_number: SequenceNumber) {
+        self.latest_utilised_sequence_number.fetch_max(sequence_number.number(), Ordering::SeqCst);
+    }
+
+    fn latest_sequence_number(&self) -> SequenceNumber {
+        SequenceNumber::new(self.latest_utilised_sequence_number.load(Ordering::SeqCst))
     }
 
     fn may_increment_watermark(&self, sequence_number: SequenceNumber) {

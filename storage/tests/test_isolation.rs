@@ -612,7 +612,7 @@ fn isolation_manager_reads_evicted_from_disk() {
     let mut snapshot0 = storage.clone().open_snapshot_write();
     snapshot0.put_val(key_1.clone().into_owned_array(), value_1.clone());
     snapshot0.commit().unwrap();
-    let watermark_after_0 = storage.read_watermark();
+    let watermark_after_0 = storage.snapshot_watermark();
 
     let mut snapshot1 = storage.clone().open_snapshot_write();
     snapshot1.delete(key_1.clone().into_owned_array());
@@ -664,12 +664,12 @@ fn isolation_manager_correctly_recovers_from_disk() {
         let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.put_val(key_1.clone().into_owned_array(), value_1.clone());
         snapshot.commit().unwrap();
-        storage.clone().read_watermark()
+        storage.clone().snapshot_watermark()
     };
 
     {
         // TODO: Find a way to make commits crash before they're committed
         let storage = load_storage::<TestKeyspaceSet>(&storage_path, WAL::load(&storage_path).unwrap(), None).unwrap();
-        assert_eq!(watermark_after_one_commit, storage.read_watermark());
+        assert_eq!(watermark_after_one_commit, storage.snapshot_watermark());
     };
 }

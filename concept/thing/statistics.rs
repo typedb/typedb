@@ -111,7 +111,7 @@ impl Statistics {
     pub fn may_synchronise(&mut self, storage: &MVCCStorage<impl DurabilityClient>) -> Result<(), StatisticsError> {
         use StatisticsError::{DataRead, ReloadCommitData};
 
-        let storage_watermark = storage.read_watermark();
+        let storage_watermark = storage.snapshot_watermark();
         debug_assert!(self.sequence_number <= storage_watermark);
         if self.sequence_number == storage_watermark {
             return Ok(());
