@@ -180,7 +180,7 @@ impl<Durability> MVCCStorage<Durability> {
 
     pub fn open_snapshot_write_at(self: Arc<Self>, sequence_number: SequenceNumber) -> WriteSnapshot<Durability> {
         // guarantee external consistency: await this sequence number to be behind the watermark
-        while sequence_number < self.snapshot_watermark() {
+        while self.snapshot_watermark() < sequence_number {
             sleep(Duration::from_micros(WATERMARK_WAIT_INTERVAL_MICROSECONDS));
         }
         WriteSnapshot::new(self, sequence_number)
@@ -198,7 +198,7 @@ impl<Durability> MVCCStorage<Durability> {
     }
 
     pub fn open_snapshot_read_at(self: Arc<Self>, sequence_number: SequenceNumber) -> ReadSnapshot<Durability> {
-        while sequence_number < self.snapshot_watermark() {
+        while self.snapshot_watermark() < sequence_number{
             sleep(Duration::from_micros(WATERMARK_WAIT_INTERVAL_MICROSECONDS));
         }
         ReadSnapshot::new(self, sequence_number)
