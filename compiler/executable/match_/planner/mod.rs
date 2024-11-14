@@ -244,7 +244,7 @@ impl StepBuilder {
 #[derive(Debug)]
 struct MatchExecutableBuilder {
     selected_variables: Vec<Variable>,
-    current_outputs: Vec<Variable>,
+    current_outputs: HashSet<Variable>,
     produced_so_far: HashSet<Variable>,
 
     steps: Vec<StepBuilder>,
@@ -262,8 +262,8 @@ impl MatchExecutableBuilder {
         input_variables: Vec<Variable>,
     ) -> Self {
         let index = assigned_positions.clone();
-        let produced_so_far = input_variables.iter().copied().collect();
-        let current_outputs = input_variables;
+        let produced_so_far = HashSet::from_iter(input_variables.iter().copied());
+        let current_outputs = produced_so_far.clone();
         let reverse_index = index.iter().map(|(&var, &pos)| (pos, var)).collect();
         let next_position = assigned_positions
             .values()
@@ -301,7 +301,7 @@ impl MatchExecutableBuilder {
 
         if self.current.is_none() {
             self.current = Some(Box::new(StepBuilder {
-                selected_variables: self.current_outputs.clone(),
+                selected_variables:  Vec::from_iter(self.current_outputs.iter().copied()),
                 builder: StepInstructionsBuilder::Intersection(IntersectionBuilder::new()),
             }));
         }
@@ -327,7 +327,7 @@ impl MatchExecutableBuilder {
         }
         if self.current.is_none() {
             self.current = Some(Box::new(StepBuilder {
-                selected_variables: self.current_outputs.clone(),
+                selected_variables:  Vec::from_iter(self.current_outputs.iter().copied()),
                 builder: StepInstructionsBuilder::Check(CheckBuilder::default()),
             }))
         }
@@ -367,7 +367,7 @@ impl MatchExecutableBuilder {
             }
         }
         if added_to_current {
-            self.current.as_mut().unwrap().selected_variables = self.current_outputs.clone();
+            self.current.as_mut().unwrap().selected_variables = Vec::from_iter(self.current_outputs.iter().copied());
         }
         inlined
     }
@@ -382,7 +382,7 @@ impl MatchExecutableBuilder {
             }
         }
         self.produced_so_far.extend(self.current_outputs.iter().copied());
-        step.selected_variables = self.current_outputs.clone();
+        step.selected_variables = Vec::from_iter(self.current_outputs.iter().copied());
 
         self.steps.push(step);
     }
@@ -396,10 +396,10 @@ impl MatchExecutableBuilder {
     }
 
     fn register_output(&mut self, var: Variable) {
+        self.current_outputs.insert(var);
         if let hash_map::Entry::Vacant(entry) = self.index.entry(var) {
             entry.insert(ExecutorVariable::RowPosition(self.next_output));
             self.reverse_index.insert(ExecutorVariable::RowPosition(self.next_output), var);
-            self.current_outputs.push(var);
             self.next_output.position += 1;
         }
     }
@@ -413,13 +413,13 @@ impl MatchExecutableBuilder {
 
     fn remove_output(&mut self, var: Variable) {
         if !self.selected_variables.contains(&var) {
-            self.current_outputs.retain(|v| v != &var);
+            self.current_outputs.remove(&var);
         }
     }
 
     fn finish_one(&mut self) {
         if let Some(mut current) = self.current.take() {
-            current.selected_variables = self.current_outputs.clone();
+            current.selected_variables = Vec::from_iter(self.current_outputs.iter().copied());
             self.steps.push(*current);
         }
     }
