@@ -1,0 +1,5 @@
+[profile.dev.package.librocksdb-sys]
+    opt-level = 3
+
+[profile.dev.package.rocksdb]
+    opt-level = 3
