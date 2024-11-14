@@ -274,7 +274,7 @@ impl MatchExecutableBuilder {
         Self {
             selected_variables,
             current_outputs,
-            produced_so_far: HashSet::new(),
+            produced_so_far: input_variables.iter().copied().collect(),
             steps: Vec::new(),
             current: None,
             reverse_index,
