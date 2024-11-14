@@ -182,7 +182,13 @@ pub(crate) fn compile_pipeline_stages(
         input_variables.enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))).collect();
 
     for stage in annotated_stages {
-        let selected_variables = selected_variables.iter().cloned().chain(stage.referenced_variables()).collect();
+        // TODO: We can filter out the variables that are no longer needed in the future stages, but are carried as selected variables from the previous one
+        let selected_variables = selected_variables
+            .iter()
+            .cloned()
+            .chain(stage.named_referenced_variables(variable_registry.as_ref()))
+            .unique()
+            .collect();
         let executable_stage = match executable_stages.last().map(|stage| stage.output_row_mapping()) {
             Some(row_mapping) => compile_stage(
                 statistics,
