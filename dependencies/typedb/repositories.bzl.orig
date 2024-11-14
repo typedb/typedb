@@ -1,0 +1,52 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+
+def typedb_bazel_distribution():
+    git_repository(
+        name = "typedb_bazel_distribution",
+        remote = "https://github.com/typedb/bazel-distribution",
+        commit = "4a01d09ef542a423ced909db9a61291dc0a6acc5",
+    )
+
+def typedb_dependencies():
+    git_repository(
+        name = "typedb_dependencies",
+        remote = "https://github.com/dmitrii-ubskii/dependencies",
+        commit = "32c98d1f01ecf5c0c7f4ed6437b094a5f368504d",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_dependencies
+    )
+
+def typeql():
+    git_repository(
+        name = "typeql",
+<<<<<<< HEAD
+        remote = "https://github.com/typedb/typeql",
+        commit = "99148c0a50ac7681c730cf3de63f3f740f8bb5d4",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typeql
+=======
+        remote = "https://github.com/dmitrii-ubskii/typeql",
+        commit = "d31ef4ab684a4b3691fbe7117fbfb2fe8313cddc",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typeql
+>>>>>>> 3523b0c20 (update IDE sync tool & commit Cargo.tomls + Cargo.lock)
+    )
+
+def typedb_common():
+    git_repository(
+        name = "typedb_common",
+        remote = "https://github.com/typedb/typedb-common",
+        tag = "2.25.3",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_common
+    )
+
+def typedb_protocol():
+    git_repository(
+        name = "typedb_protocol",
+        remote = "https://github.com/dmitrii-ubskii/typedb-protocol",
+        commit = "23ce8e9f082d64e546f1218ee0f09b7c6d129e77",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_protocol
+    )
+
+def typedb_behaviour():
+    git_repository(
+        name = "typedb_behaviour",
+        remote = "https://github.com/typedb/typedb-behaviour",
+        commit = "cebce33a710a69f55888e850da769705dd5dd39d",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_behaviour
+    )

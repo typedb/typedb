@@ -9,7 +9,7 @@ use steps::Context;
 #[tokio::test]
 async fn test() {
     // Bazel specific path: when running the test in bazel, the external data from
-    // @vaticle_typedb_behaviour is stored in a directory that is a sibling to
+    // @typedb_behaviour is stored in a directory that is a sibling to
     // the working directory.
     assert!(Context::test("tests/behaviour/debug/debug.feature", true).await);
 }

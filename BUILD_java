@@ -3,17 +3,17 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("//:deployment.bzl", deployment_github = "deployment", deployment_docker = "deployment")
-load("@vaticle_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
-load("@vaticle_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
-load("@vaticle_bazel_distribution//brew:rules.bzl", "deploy_brew")
-load("@vaticle_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble_zip", "checksum", "assemble_versioned")
-load("@vaticle_bazel_distribution//github:rules.bzl", "deploy_github")
-load("@vaticle_bazel_distribution//common/targz:rules.bzl", "targz_edit")
-load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
-load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
-load("@vaticle_dependencies//distribution/artifact:rules.bzl", "artifact_repackage")
-load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@vaticle_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
+load("@typedb_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
+load("@typedb_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
+load("@typedb_bazel_distribution//brew:rules.bzl", "deploy_brew")
+load("@typedb_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble_zip", "checksum", "assemble_versioned")
+load("@typedb_bazel_distribution//github:rules.bzl", "deploy_github")
+load("@typedb_bazel_distribution//common/targz:rules.bzl", "targz_edit")
+load("@typedb_dependencies//builder/java:rules.bzl", "native_java_libraries")
+load("@typedb_dependencies//distribution:deployment.bzl", "deployment")
+load("@typedb_dependencies//distribution/artifact:rules.bzl", "artifact_repackage")
+load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@typedb_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
 load("@io_bazel_rules_docker//container:image.bzl", docker_container_image = "container_image")
 load("@io_bazel_rules_docker//container:container.bzl", docker_container_push = "container_push")
 
@@ -33,9 +33,9 @@ native_java_libraries(
     ],
     deps = [
         # Vaticle Dependencies
-        "@vaticle_typedb_common//:common",
+        "@typedb_common//:common",
     ],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb:{pom_version}"],
+    tags = ["maven_coordinates=com.typedb.typedb:typedb:{pom_version}"],
     visibility = ["//visibility:public"],
 )
 
@@ -56,7 +56,7 @@ permissions = {
 
 artifact_repackage(
     name = "console-artifact-jars-linux-arm64",
-    srcs = ["@vaticle_typedb_console_artifact_linux-arm64//file"],
+    srcs = ["@typedb_console_artifact_linux-arm64//file"],
     files_to_keep = ["console"],
 )
 
@@ -65,7 +65,7 @@ assemble_targz(
     targets = [
         ":console-artifact-jars-linux-arm64",
         "//server:server-deps-linux-arm64",
-        "@vaticle_typedb_common//binary:assemble-bash-targz"
+        "@typedb_common//binary:assemble-bash-targz"
     ],
     additional_files = assemble_files,
     empty_directories = empty_directories,
@@ -75,7 +75,7 @@ assemble_targz(
 
 artifact_repackage(
     name = "console-artifact-jars-linux-x86_64",
-    srcs = ["@vaticle_typedb_console_artifact_linux-x86_64//file"],
+    srcs = ["@typedb_console_artifact_linux-x86_64//file"],
     files_to_keep = ["console"],
 )
 
@@ -84,7 +84,7 @@ assemble_targz(
     targets = [
         ":console-artifact-jars-linux-x86_64",
         "//server:server-deps-linux-x86_64",
-        "@vaticle_typedb_common//binary:assemble-bash-targz"
+        "@typedb_common//binary:assemble-bash-targz"
     ],
     additional_files = assemble_files,
     empty_directories = empty_directories,
@@ -94,7 +94,7 @@ assemble_targz(
 
 artifact_repackage(
     name = "console-artifact-jars-mac-arm64",
-    srcs = ["@vaticle_typedb_console_artifact_mac-arm64//file"],
+    srcs = ["@typedb_console_artifact_mac-arm64//file"],
     files_to_keep = ["console"],
 )
 
@@ -103,7 +103,7 @@ assemble_zip(
     targets = [
         "//server:server-deps-mac-arm64",
         ":console-artifact-jars-mac-arm64",
-        "@vaticle_typedb_common//binary:assemble-bash-targz",
+        "@typedb_common//binary:assemble-bash-targz",
     ],
     additional_files = assemble_files,
     empty_directories = empty_directories,
@@ -113,7 +113,7 @@ assemble_zip(
 
 artifact_repackage(
     name = "console-artifact-jars-mac-x86_64",
-    srcs = ["@vaticle_typedb_console_artifact_mac-x86_64//file"],
+    srcs = ["@typedb_console_artifact_mac-x86_64//file"],
     files_to_keep = ["console"],
 )
 
@@ -122,7 +122,7 @@ assemble_zip(
     targets = [
         "//server:server-deps-mac-x86_64",
         ":console-artifact-jars-mac-x86_64",
-        "@vaticle_typedb_common//binary:assemble-bash-targz",
+        "@typedb_common//binary:assemble-bash-targz",
     ],
     additional_files = assemble_files,
     empty_directories = empty_directories,
@@ -132,7 +132,7 @@ assemble_zip(
 
 artifact_repackage(
     name = "console-artifact-jars-windows-x86_64",
-    srcs = ["@vaticle_typedb_console_artifact_windows-x86_64//file"],
+    srcs = ["@typedb_console_artifact_windows-x86_64//file"],
     files_to_keep = ["console"],
 )
 
@@ -141,7 +141,7 @@ assemble_zip(
     targets = [
         "//server:server-deps-windows-x86_64",
         ":console-artifact-jars-windows-x86_64",
-        "@vaticle_typedb_common//binary:assemble-bat-targz",
+        "@typedb_common//binary:assemble-bat-targz",
     ],
     additional_files = assemble_files,
     empty_directories = empty_directories,
@@ -152,7 +152,7 @@ assemble_zip(
 deploy_artifact(
     name = "deploy-linux-arm64-targz",
     target = ":assemble-linux-arm64-targz",
-    artifact_group = "vaticle_typedb",
+    artifact_group = "typedb",
     artifact_name = "typedb-all-linux-arm64-{version}.tar.gz",
     release = deployment['artifact.release'],
     snapshot = deployment['artifact.snapshot'],
@@ -161,7 +161,7 @@ deploy_artifact(
 deploy_artifact(
     name = "deploy-linux-x86_64-targz",
     target = ":assemble-linux-x86_64-targz",
-    artifact_group = "vaticle_typedb",
+    artifact_group = "typedb",
     artifact_name = "typedb-all-linux-x86_64-{version}.tar.gz",
     release = deployment['artifact.release'],
     snapshot = deployment['artifact.snapshot'],
@@ -170,7 +170,7 @@ deploy_artifact(
 deploy_artifact(
     name = "deploy-mac-arm64-zip",
     target = ":assemble-mac-arm64-zip",
-    artifact_group = "vaticle_typedb",
+    artifact_group = "typedb",
     artifact_name = "typedb-all-mac-arm64-{version}.zip",
     release = deployment['artifact.release'],
     snapshot = deployment['artifact.snapshot'],
@@ -179,7 +179,7 @@ deploy_artifact(
 deploy_artifact(
     name = "deploy-mac-x86_64-zip",
     target = ":assemble-mac-x86_64-zip",
-    artifact_group = "vaticle_typedb",
+    artifact_group = "typedb",
     artifact_name = "typedb-all-mac-x86_64-{version}.zip",
     release = deployment['artifact.release'],
     snapshot = deployment['artifact.snapshot'],
@@ -188,7 +188,7 @@ deploy_artifact(
 deploy_artifact(
     name = "deploy-windows-x86_64-zip",
     target = ":assemble-windows-x86_64-zip",
-    artifact_group = "vaticle_typedb",
+    artifact_group = "typedb",
     artifact_name = "typedb-all-windows-x86_64-{version}.zip",
     release = deployment['artifact.release'],
     snapshot = deployment['artifact.snapshot'],
@@ -265,22 +265,22 @@ apt_symlinks = {
 
 targz_edit(
     name = "console-artifact-native-x86_64.tar.gz",
-    src = "@vaticle_typedb_console_artifact_linux-x86_64//file",
+    src = "@typedb_console_artifact_linux-x86_64//file",
     strip_components = 1,
 )
 
 assemble_apt(
     name = "assemble-linux-x86_64-apt",
     package_name = "typedb",
-    maintainer = "Vaticle <community@vaticle.com>",
+    maintainer = "Vaticle <community@typedb.com>",
     description = "TypeDB",
     depends = apt_depends,
-    workspace_refs = "@vaticle_typedb_workspace_refs//:refs.json",
+    workspace_refs = "@typedb_workspace_refs//:refs.json",
     archives = [
         "//server:server-deps-linux-x86_64",
         ":console-artifact-native-x86_64.tar.gz",
-        "@vaticle_typedb_common//binary:assemble-bash-targz",
-        "@vaticle_typedb_common//binary:assemble-apt-targz",
+        "@typedb_common//binary:assemble-bash-targz",
+        "@typedb_common//binary:assemble-apt-targz",
     ],
     installation_dir = apt_installation_dir,
     files = assemble_files,
@@ -299,22 +299,22 @@ deploy_apt(
 
 targz_edit(
     name = "console-artifact-native-arm64.tar.gz",
-    src = "@vaticle_typedb_console_artifact_linux-arm64//file",
+    src = "@typedb_console_artifact_linux-arm64//file",
     strip_components = 1,
 )
 
 assemble_apt(
     name = "assemble-linux-arm64-apt",
     package_name = "typedb",
-    maintainer = "Vaticle <community@vaticle.com>",
+    maintainer = "Vaticle <community@typedb.com>",
     description = "TypeDB",
     depends = apt_depends,
-    workspace_refs = "@vaticle_typedb_workspace_refs//:refs.json",
+    workspace_refs = "@typedb_workspace_refs//:refs.json",
     archives = [
         "//server:server-deps-linux-arm64",
         ":console-artifact-native-arm64.tar.gz",
-        "@vaticle_typedb_common//binary:assemble-bash-targz",
-        "@vaticle_typedb_common//binary:assemble-apt-targz",
+        "@typedb_common//binary:assemble-bash-targz",
+        "@typedb_common//binary:assemble-apt-targz",
     ],
     installation_dir = apt_installation_dir,
     files = assemble_files,
@@ -333,18 +333,18 @@ deploy_apt(
 
 release_validate_deps(
     name = "release-validate-deps",
-    refs = "@vaticle_typedb_workspace_refs//:refs.json",
+    refs = "@typedb_workspace_refs//:refs.json",
     tagged_deps = [
-        "@vaticle_typeql",
-        "@vaticle_typedb_common",
-        "@vaticle_typedb_protocol",
+        "@typeql",
+        "@typedb_common",
+        "@typedb_protocol",
     ],
     tags = ["manual"]  # in order for bazel test //... to not fail
 )
 
 docker_container_image(
     name = "assemble-docker",
-    base = "@vaticle_ubuntu_image//image",
+    base = "@typedb_ubuntu_image//image",
     tars = [":assemble-linux-x86_64-targz"],
     directory = "opt",
     workdir = "/opt/typedb-all-linux-x86_64",
@@ -410,11 +410,11 @@ checkstyle_test(
 filegroup(
     name = "ci",
     data = [
-        "@vaticle_dependencies//factory/analysis:dependency-analysis",
-        "@vaticle_dependencies//library/maven:update",
-        "@vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh",
-        "@vaticle_dependencies//tool/release/notes:create",
-        "@vaticle_dependencies//tool/checkstyle:test-coverage",
-        "@vaticle_dependencies//tool/unuseddeps:unused-deps",
+        "@typedb_dependencies//factory/analysis:dependency-analysis",
+        "@typedb_dependencies//library/maven:update",
+        "@typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh",
+        "@typedb_dependencies//tool/release/notes:create",
+        "@typedb_dependencies//tool/checkstyle:test-coverage",
+        "@typedb_dependencies//tool/unuseddeps:unused-deps",
     ],
 )
