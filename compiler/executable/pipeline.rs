@@ -180,14 +180,16 @@ pub(crate) fn compile_pipeline_stages(
     let mut executable_stages: Vec<ExecutableStage> = Vec::with_capacity(annotated_stages.len());
     let input_variable_positions =
         input_variables.enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))).collect();
+
     for stage in annotated_stages {
+        let selected_variables = selected_variables.iter().cloned().chain(stage.referenced_variables()).collect();
         let executable_stage = match executable_stages.last().map(|stage| stage.output_row_mapping()) {
             Some(row_mapping) => compile_stage(
                 statistics,
                 variable_registry.clone(),
                 functions,
                 &row_mapping,
-                selected_variables,
+                &selected_variables,
                 stage,
             )?,
             None => compile_stage(
@@ -195,7 +197,7 @@ pub(crate) fn compile_pipeline_stages(
                 variable_registry.clone(),
                 functions,
                 &input_variable_positions,
-                selected_variables,
+                &selected_variables,
                 stage,
             )?,
         };

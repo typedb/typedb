@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     sync::Arc,
 };
 
@@ -72,6 +72,22 @@ pub enum AnnotatedStage {
     Limit(Limit),
     Require(Require),
     Reduce(Reduce, Vec<ReduceInstruction<Variable>>),
+}
+
+impl AnnotatedStage {
+    pub fn referenced_variables(&self) -> HashSet<Variable> {
+        match self {
+            AnnotatedStage::Match { block, .. } => block.variables().collect(),
+            AnnotatedStage::Insert { block, .. } => block.variables().collect(),
+            AnnotatedStage::Delete { block, .. } => block.variables().collect(),
+            AnnotatedStage::Select(select) => select.variables.iter().cloned().collect(),
+            AnnotatedStage::Sort(sort) => sort.variables.iter().map(|sort_variable| sort_variable.variable()).collect(),
+            AnnotatedStage::Offset(_) => HashSet::new(),
+            AnnotatedStage::Limit(_) => HashSet::new(),
+            AnnotatedStage::Require(_) => HashSet::new(),
+            AnnotatedStage::Reduce(reduce, _) => reduce.variables().collect(),
+        }
+    }
 }
 
 pub fn annotate_pipeline(

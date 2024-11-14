@@ -4,15 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashSet,
-    error::Error,
-    fmt,
-    fmt::{Debug, Formatter},
-    hash::Hash,
-};
+use std::{collections::HashSet, error::Error, fmt, hash::Hash};
 
 use encoding::value::value::Value;
+use error::typedb_error;
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
@@ -46,7 +41,7 @@ macro_rules! unwrap_constraint_description_methods {
                 with_constraint_description!(
                     self,
                     $target_enum,
-                    Err(Box::new(ConstraintError::CannotUnwrapConstraint(stringify!($target_enum).to_string()))),
+                    Err(Box::new(ConstraintError::CannotUnwrap { type_: stringify!($target_enum).to_string() })),
                     |constraint| Ok(constraint.clone())
                 )
             }
@@ -67,13 +62,13 @@ pub enum ConstraintCategory {
 }
 
 impl fmt::Display for ConstraintCategory {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(self, f)
     }
 }
 
 impl fmt::Debug for ConstraintCategory {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Abstract => write!(f, "{}", AnnotationCategory::Abstract),
             Self::Distinct => write!(f, "{}", AnnotationCategory::Distinct),
@@ -212,14 +207,23 @@ impl ConstraintDescription {
 }
 
 impl fmt::Display for ConstraintDescription {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(self, f)
     }
 }
 
 impl fmt::Debug for ConstraintDescription {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.category())
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ConstraintDescription::Abstract(annotation) => write!(f, "{}", annotation),
+            ConstraintDescription::Distinct(annotation) => write!(f, "{}", annotation),
+            ConstraintDescription::Independent(annotation) => write!(f, "{}", annotation),
+            ConstraintDescription::Unique(annotation) => write!(f, "{}", annotation),
+            ConstraintDescription::Cardinality(annotation) => write!(f, "{}", annotation),
+            ConstraintDescription::Regex(annotation) => write!(f, "{}", annotation),
+            ConstraintDescription::Range(annotation) => write!(f, "{}", annotation),
+            ConstraintDescription::Values(annotation) => write!(f, "{}", annotation),
+        }
     }
 }
 
@@ -574,39 +578,17 @@ pub(crate) fn type_get_constraints_closest_source<'a, T: KindAPI<'static>>(
         .next()
 }
 
-#[derive(Debug, Clone)]
-pub enum ConstraintError {
-    CannotUnwrapConstraint(String),
-    CorruptConstraintIsNotApplicableToValue { description: ConstraintDescription, value: Value<'static> },
-    IsNotNarrowedBy { first: ConstraintDescription, second: ConstraintDescription },
-    ViolatedAbstract,
-    ViolatedCardinality { cardinality: AnnotationCardinality, count: u64 },
-    ViolatedRegex { regex: AnnotationRegex, value: Value<'static> },
-    ViolatedRange { range: AnnotationRange, value: Value<'static> },
-    ViolatedValues { values: AnnotationValues, value: Value<'static> },
-    ViolatedUnique { value: Value<'static> },
-    ViolatedDistinct { count: u64 },
-}
-
-impl fmt::Display for ConstraintError {
-    fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+typedb_error!(
+    pub ConstraintError(component = "Constraint", prefix = "CNT") {
+        CannotUnwrap(1, "Error getting mandatory constraint of type {type_}.", type_: String),
+        CorruptConstraintIsNotApplicableToValue(2, "Reached an invalid state: constraint {description} cannot be applied to value {value}.", description: ConstraintDescription, value: Value<'static>),
+        IsNotNarrowedBy(3, "Constraint {first} is not narrowed by {second}.", first: ConstraintDescription, second: ConstraintDescription),
+        ViolatedAbstract(4, "Constraint '@abstract' has been violated."),
+        ViolatedCardinality(5, "Constraint '{cardinality}' has been violated: found {count} instances.", cardinality: AnnotationCardinality, count: u64),
+        ViolatedRegex(6, "Constraint '{regex}' has been violated: value '{value}' does not match the regex.", regex: AnnotationRegex, value: Value<'static>),
+        ViolatedRange(7, "Constraint '{range}' has been violated: value '{value}' does not match the range.", range: AnnotationRange, value: Value<'static>),
+        ViolatedValues(8, "Constraint '{values}' has been violated: value '{value}' does not match the set of values.", values: AnnotationValues, value: Value<'static>),
+        ViolatedUnique(9, "Constraint '@unique' has been violated: there is a conflict for value '{value}'.", value: Value<'static>),
+        ViolatedDistinct(10, "Constraint '@distinct' has been violated: found {count} instances", count: u64),
     }
-}
-
-impl Error for ConstraintError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::CannotUnwrapConstraint(_) => None,
-            Self::CorruptConstraintIsNotApplicableToValue { .. } => None,
-            Self::IsNotNarrowedBy { .. } => None,
-            Self::ViolatedAbstract => None,
-            Self::ViolatedCardinality { .. } => None,
-            Self::ViolatedRegex { .. } => None,
-            Self::ViolatedRange { .. } => None,
-            Self::ViolatedValues { .. } => None,
-            Self::ViolatedUnique { .. } => None,
-            Self::ViolatedDistinct { .. } => None,
-        }
-    }
-}
+);
