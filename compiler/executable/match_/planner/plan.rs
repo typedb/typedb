@@ -660,13 +660,13 @@ impl ConjunctionPlan<'_> {
         &self,
         selected_variables: impl IntoIterator<Item = Variable> + Clone,
         already_assigned_positions: &HashMap<Variable, ExecutorVariable>,
-        input_variables: &Vec<Variable>,
+        input_variables: impl IntoIterator<Item = Variable> + Clone,
         variable_registry: &VariableRegistry,
     ) -> MatchExecutableBuilder {
         let mut match_builder = MatchExecutableBuilder::new(
             already_assigned_positions,
             selected_variables.clone().into_iter().collect(),
-            input_variables,
+            input_variables.into_iter().collect(),
         );
 
         for &index in &self.ordering {
@@ -795,7 +795,7 @@ impl ConjunctionPlan<'_> {
                         .clone() // FIXME
                         .plan(match_builder.position_mapping().keys().filter(|&&v| v != variable).copied())
                         .lower(
-                            &match_builder.produced_so_far,
+                            match_builder.produced_so_far.iter().copied(),
                             match_builder
                                 .produced_so_far
                                 .iter()
@@ -856,7 +856,7 @@ impl ConjunctionPlan<'_> {
                 let negation = negation.plan().lower(
                     match_builder.current_outputs.iter().copied(),
                     match_builder.position_mapping(),
-                    &match_builder.position_mapping().keys().copied().collect(),
+                    match_builder.position_mapping().keys().copied(),
                     variable_registry,
                 );
                 let variable_positions = negation.index.clone(); // FIXME needless clone
@@ -913,7 +913,7 @@ impl ConjunctionPlan<'_> {
                     .clone() // FIXME
                     .plan(match_builder.position_mapping().keys().copied())
                     .lower(
-                        &match_builder.produced_so_far,
+                        match_builder.produced_so_far.iter().copied(),
                         match_builder.current_outputs.iter().copied(),
                         match_builder.position_mapping(),
                         variable_registry,
@@ -1185,17 +1185,16 @@ pub(super) struct DisjunctionPlan<'a> {
 impl<'a> DisjunctionPlan<'a> {
     fn lower(
         &self,
-        disjunction_inputs: &HashSet<Variable>,
+        disjunction_inputs: impl IntoIterator<Item = Variable> + Clone,
         selected_variables: impl IntoIterator<Item = Variable> + Clone,
         assigned_positions: &HashMap<Variable, ExecutorVariable>,
         variable_registry: &VariableRegistry,
     ) -> DisjunctionBuilder {
         let mut branches: Vec<_> = Vec::with_capacity(self.branches.len());
-        let disjunction_inputs_as_vec = disjunction_inputs.iter().copied().collect::<Vec<_>>();
         let mut assigned_positions = assigned_positions.clone();
         for branch in &self.branches {
             let lowered_branch =
-                branch.lower(selected_variables.clone(), &assigned_positions, &disjunction_inputs_as_vec, variable_registry);
+                branch.lower(selected_variables.clone(), &assigned_positions, disjunction_inputs.clone(), variable_registry);
             assigned_positions = lowered_branch.position_mapping().clone();
             branches.push(lowered_branch);
         }

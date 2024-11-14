@@ -61,7 +61,7 @@ pub fn compile(
     .lower(
         variable_registry.variable_names().keys().copied(),
         &assigned_identities,
-        &input_variables.keys().copied().collect(),
+        input_variables.keys().copied(),
         &variable_registry,
     )
     .finish(variable_registry)
@@ -259,10 +259,11 @@ impl MatchExecutableBuilder {
     fn new(
         assigned_positions: &HashMap<Variable, ExecutorVariable>,
         selected_variables: Vec<Variable>,
-        input_variables: &Vec<Variable>,
+        input_variables: Vec<Variable>,
     ) -> Self {
         let index = assigned_positions.clone();
-        let current_outputs = input_variables.clone();
+        let produced_so_far = input_variables.iter().copied().collect();
+        let current_outputs = input_variables;
         let reverse_index = index.iter().map(|(&var, &pos)| (pos, var)).collect();
         let next_position = assigned_positions
             .values()
@@ -274,7 +275,7 @@ impl MatchExecutableBuilder {
         Self {
             selected_variables,
             current_outputs,
-            produced_so_far: input_variables.iter().copied().collect(),
+            produced_so_far,
             steps: Vec::new(),
             current: None,
             reverse_index,
