@@ -32,6 +32,7 @@ use concept::{
 use encoding::value::label::Label;
 use error::typedb_error;
 use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
+use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
@@ -229,9 +230,9 @@ fn execute_single_function(
         FetchExecutionError::FetchSingleFunctionNotSingle { func_name: "func".to_string() }
     ) {
         Some(row) => {
-            let mut row_iter = row.row().iter();
+            let mut value_iter = row.row().iter();
             let result = exactly_one_or_return_err!(
-                row_iter.next(),
+                value_iter.next(),
                 FetchExecutionError::FetchSingleFunctionNotScalar { func_name: "func".to_string() }
             );
             match result {
@@ -293,10 +294,8 @@ fn execute_list_function(
         .compute_next_batch(&execution_context, &mut interrupt, &mut tabled_functions, &mut suspend_points)
         .map_err(|err| FetchExecutionError::ReadExecution { typedb_source: Box::new(err) })?
     {
-        let mut row_iter = batch.into_iter();
-        while let Some(row) = row_iter.next() {
-            let mut row_iter = row.row().iter();
-            while let Some(value) = row_iter.next() {
+        for row in batch {
+            for value in row {
                 nodes.push(variable_value_to_document(value.clone())?);
             }
         }
@@ -523,10 +522,7 @@ fn prepare_single_function_execution<Snapshot: ReadableSnapshot + 'static>(
         .map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
     let mut pattern_executor = PatternExecutor::new(step_executors);
     pattern_executor.prepare(FixedBatch::from(args));
-
-    let execution_context =
-        Arc::new(ExecutionContext::new(snapshot.clone(), thing_manager.clone(), parameters.clone()));
-    Ok((pattern_executor, execution_context))
+    Ok((pattern_executor, Arc::new(ExecutionContext::new(snapshot, thing_manager, parameters))))
 }
 
 fn execute_object_entries(
