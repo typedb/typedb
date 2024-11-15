@@ -11,13 +11,13 @@ use steps::Context;
 #[tokio::test]
 async fn test() {
     // Bazel specific path: when running the test in bazel, the external data from
-    // @vaticle_typedb_behaviour is stored in a directory that is a sibling to
+    // @typedb_behaviour is stored in a directory that is a sibling to
     // the working directory.
     #[cfg(feature = "bazel")]
-    let path = "../vaticle_typedb_behaviour/concept/thing/roleplayer.feature";
+    let path = "../typedb_behaviour/concept/thing/roleplayer.feature";
 
     #[cfg(not(feature = "bazel"))]
-    let path = "bazel-typedb/external/vaticle_typedb_behaviour/concept/thing/roleplayer.feature";
+    let path = "bazel-typedb/external/typedb_behaviour/concept/thing/roleplayer.feature";
 
     assert!(Context::test(path, true).await);
 }

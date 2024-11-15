@@ -2,15 +2,15 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
-load("@vaticle_dependencies//distribution/artifact:rules.bzl", "artifact_repackage")
+load("@typedb_dependencies//distribution:deployment.bzl", "deployment")
+load("@typedb_dependencies//distribution/artifact:rules.bzl", "artifact_repackage")
 load("//:deployment.bzl", deployment_docker = "deployment", deployment_github = "deployment")
-load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@vaticle_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
+load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@typedb_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
 
-load("@vaticle_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
-load("@vaticle_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble_versioned", "assemble_zip")
-load("@vaticle_bazel_distribution//platform:constraints.bzl", "constraint_linux_arm64", "constraint_linux_x86_64",
+load("@typedb_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
+load("@typedb_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble_versioned", "assemble_zip")
+load("@typedb_bazel_distribution//platform:constraints.bzl", "constraint_linux_arm64", "constraint_linux_x86_64",
      "constraint_mac_arm64", "constraint_mac_x86_64", "constraint_win_x86_64")
 
 load("@io_bazel_rules_docker//container:image.bzl", docker_container_image = "container_image")
@@ -53,11 +53,11 @@ other_permissions = {} # These don't seem to work.
 alias(
     name = "typedb_console_artifact",
     actual = select({
-        "@vaticle_bazel_distribution//platform:is_linux_arm64" : "@vaticle_typedb_console_artifact_linux-arm64//file",
-        "@vaticle_bazel_distribution//platform:is_linux_x86_64" : "@vaticle_typedb_console_artifact_linux-x86_64//file",
-        "@vaticle_bazel_distribution//platform:is_mac_arm64" : "@vaticle_typedb_console_artifact_mac-arm64//file",
-        "@vaticle_bazel_distribution//platform:is_mac_x86_64" : "@vaticle_typedb_console_artifact_mac-x86_64//file",
-        #"@vaticle_bazel_distribution//platform:is_windows_x86_64" : "@vaticle_typedb_console_artifact_windows-x86_64//file",
+        "@typedb_bazel_distribution//platform:is_linux_arm64" : "@typedb_console_artifact_linux-arm64//file",
+        "@typedb_bazel_distribution//platform:is_linux_x86_64" : "@typedb_console_artifact_linux-x86_64//file",
+        "@typedb_bazel_distribution//platform:is_mac_arm64" : "@typedb_console_artifact_mac-arm64//file",
+        "@typedb_bazel_distribution//platform:is_mac_x86_64" : "@typedb_console_artifact_mac-x86_64//file",
+        #"@typedb_bazel_distribution//platform:is_windows_x86_64" : "@typedb_console_artifact_windows-x86_64//file",
     })
 )
 
@@ -215,22 +215,22 @@ deploy_artifact(
 alias(
     name = "assemble-typedb-all",
     actual = select({
-        "@vaticle_bazel_distribution//platform:is_linux_arm64" : ":assemble-all-linux-arm64-targz",
-        "@vaticle_bazel_distribution//platform:is_linux_x86_64" : ":assemble-all-linux-x86_64-targz",
-        "@vaticle_bazel_distribution//platform:is_mac_arm64" : ":assemble-all-mac-arm64-zip",
-        "@vaticle_bazel_distribution//platform:is_mac_x86_64" : ":assemble-all-mac-x86_64-zip",
-#        "@vaticle_bazel_distribution//platform:is_windows_x86_64" : ":assemble-windows-x86_64-zip"
+        "@typedb_bazel_distribution//platform:is_linux_arm64" : ":assemble-all-linux-arm64-targz",
+        "@typedb_bazel_distribution//platform:is_linux_x86_64" : ":assemble-all-linux-x86_64-targz",
+        "@typedb_bazel_distribution//platform:is_mac_arm64" : ":assemble-all-mac-arm64-zip",
+        "@typedb_bazel_distribution//platform:is_mac_x86_64" : ":assemble-all-mac-x86_64-zip",
+#        "@typedb_bazel_distribution//platform:is_windows_x86_64" : ":assemble-windows-x86_64-zip"
     }),
     visibility = ["//tests/assembly:__subpackages__"],
 )
 alias(
     name = "deploy-typedb-server",
     actual = select({
-        "@vaticle_bazel_distribution//platform:is_linux_arm64" : ":deploy-linux-arm64-targz",
-        "@vaticle_bazel_distribution//platform:is_linux_x86_64" : ":deploy-linux-x86_64-targz",
-        "@vaticle_bazel_distribution//platform:is_mac_arm64" : ":deploy-mac-arm64-zip",
-        "@vaticle_bazel_distribution//platform:is_mac_x86_64" : ":deploy-mac-x86_64-zip",
-#        "@vaticle_bazel_distribution//platform:is_windows_x86_64" : ":deploy-windows-x86_64-zip"
+        "@typedb_bazel_distribution//platform:is_linux_arm64" : ":deploy-linux-arm64-targz",
+        "@typedb_bazel_distribution//platform:is_linux_x86_64" : ":deploy-linux-x86_64-targz",
+        "@typedb_bazel_distribution//platform:is_mac_arm64" : ":deploy-mac-arm64-zip",
+        "@typedb_bazel_distribution//platform:is_mac_x86_64" : ":deploy-mac-x86_64-zip",
+#        "@typedb_bazel_distribution//platform:is_windows_x86_64" : ":deploy-windows-x86_64-zip"
     })
 )
 
@@ -302,11 +302,11 @@ docker_container_push(
 # validation & tests
 release_validate_deps(
     name = "release-validate-deps",
-    refs = "@vaticle_typedb_workspace_refs//:refs.json",
+    refs = "@typedb_workspace_refs//:refs.json",
     tagged_deps = [
         # TODO: Reenable
-        # "@vaticle_typeql",
-         "@vaticle_typedb_protocol",
+        # "@typeql",
+         "@typedb_protocol",
     ],
     tags = ["manual"],  # in order for bazel test //... to not fail
     version_file = "VERSION",
@@ -314,7 +314,7 @@ release_validate_deps(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", ".factory/*", "bin/*", ".circleci/*"]),
+    include = glob(["*", ".cargo/*", ".factory/*", "bin/*", ".circleci/*"]),
     exclude = glob([
         "*.md",
         ".circleci/windows/*",
@@ -340,12 +340,12 @@ checkstyle_test(
 filegroup(
     name = "tools",
     data = [
-        "@vaticle_dependencies//factory/analysis:dependency-analysis",
-        "@vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh",
-        "@vaticle_dependencies//tool/release/notes:create",
-        "@vaticle_dependencies//tool/checkstyle:test-coverage",
-        "@vaticle_dependencies//tool/unuseddeps:unused-deps",
+        "@typedb_dependencies//factory/analysis:dependency-analysis",
+        "@typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh",
+        "@typedb_dependencies//tool/release/notes:create",
+        "@typedb_dependencies//tool/checkstyle:test-coverage",
+        "@typedb_dependencies//tool/unuseddeps:unused-deps",
         "@rust_analyzer_toolchain_tools//lib/rustlib/src:rustc_srcs",
-        "@vaticle_dependencies//tool/ide:rust_sync",
+        "@typedb_dependencies//tool/ide:rust_sync",
     ],
 )

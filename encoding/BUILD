@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
-load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 package(default_visibility = [
     ":__subpackages__",
     "//answer:__subpackages__",
