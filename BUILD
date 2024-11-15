@@ -314,7 +314,7 @@ release_validate_deps(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", ".factory/*", "bin/*", ".circleci/*"]),
+    include = glob(["*", ".cargo/*", ".factory/*", "bin/*", ".circleci/*"]),
     exclude = glob([
         "*.md",
         ".circleci/windows/*",
