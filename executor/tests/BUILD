@@ -93,6 +93,7 @@ rust_test(
     name = "test_functions",
     crate_root = "execute_function.rs",
     srcs = ["execute_function.rs"],
+    env = {"RUST_MIN_STACK": "40960000"},
     deps = deps + [
         "//function",
         "//query:query",

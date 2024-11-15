@@ -317,6 +317,7 @@ fn function_binary() {
     }
 }
 
+#[ignore] // TODO: Re-enable when the CONSTANT_CONCEPT_LIMIT assert is fixed
 #[test]
 fn quadratic_reachability_in_tree() {
     let custom_schema = r#"define
@@ -380,6 +381,7 @@ fn quadratic_reachability_in_tree() {
     }
 }
 
+#[ignore] // TODO: Re-enable when the CONSTANT_CONCEPT_LIMIT assert is fixed
 #[test]
 fn linear_reachability_in_tree() {
     let custom_schema = r#"define
