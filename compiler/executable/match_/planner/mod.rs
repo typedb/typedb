@@ -59,12 +59,7 @@ pub fn compile(
         expressions,
         statistics,
     )
-    .lower(
-        input_variables.keys().copied(),
-        selected_variables.clone(),
-        &assigned_identities,
-        &variable_registry,
-    )
+    .lower(input_variables.keys().copied(), selected_variables.clone(), &assigned_identities, &variable_registry)
     .finish(variable_registry)
 }
 
