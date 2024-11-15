@@ -52,7 +52,7 @@ use crate::{
     ExecutionInterrupt,
 };
 
-macro_rules! execute_once_error_if_has_second {
+macro_rules! exactly_one_or_return_err {
     ($call:expr, $error:expr) => {{
         let first_result = $call;
         if $call.is_some() {
@@ -122,182 +122,127 @@ fn execute_fetch_some(
     parameters: Arc<ParameterRegistry>,
     functions_registry: Arc<ExecutableFunctionRegistry>,
     row: MaybeOwnedRow<'_>,
-    interrupt: ExecutionInterrupt,
+    mut interrupt: ExecutionInterrupt,
 ) -> Result<DocumentNode, FetchExecutionError> {
     match fetch_some {
         FetchSomeInstruction::SingleVar(position) => variable_value_to_document(row.get(*position).as_reference()),
         FetchSomeInstruction::SingleAttribute(position, attribute_type) => {
-            let variable_value = row.get(*position).as_reference();
-            match variable_value {
-                VariableValue::Empty => Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
-                VariableValue::Thing(Thing::Entity(entity)) => {
-                    execute_attribute_single(entity, attribute_type.clone(), snapshot, thing_manager)
-                        .map(|leaf| DocumentNode::Leaf(leaf))
-                }
-                VariableValue::Thing(Thing::Relation(relation)) => {
-                    execute_attribute_single(relation, attribute_type.clone(), snapshot, thing_manager)
-                        .map(|leaf| DocumentNode::Leaf(leaf))
-                }
-                VariableValue::Thing(Thing::Attribute(_)) => Err(FetchExecutionError::FetchAttributesOfAttribute {}),
-                VariableValue::Type(_) => Err(FetchExecutionError::FetchAttributesOfType {}),
-                VariableValue::Value(_) => Err(FetchExecutionError::FetchAttributesOfValue {}),
-                VariableValue::ThingList(_) | VariableValue::ValueList(_) => {
-                    Err(FetchExecutionError::FetchAttributesOfList {})
-                }
-            }
+            execute_single_attribute(snapshot, thing_manager, row, position, attribute_type)
         }
-        FetchSomeInstruction::SingleFunction(function, variable_positions) => {
-            let (mut pattern_executor, execution_context) = execute_single_function(
-                snapshot,
-                thing_manager,
-                parameters,
-                functions_registry.clone(),
-                variable_positions,
-                row,
-                function,
-            )?;
-            let mut interrupt = interrupt;
-            let mut tabled_functions = TabledFunctions::new(functions_registry.clone());
-            let mut suspend_points = Vec::new();
-
-            let batch = execute_once_error_if_has_second!(
-                pattern_executor
-                    .compute_next_batch(&execution_context, &mut interrupt, &mut tabled_functions, &mut suspend_points)
-                    .map_err(|err| FetchExecutionError::ReadExecution { typedb_source: Box::new(err) })?,
-                FetchExecutionError::FetchSingleFunctionNotSingle { func_name: "func".to_string() } // TODO: Can we get function name here?
-            );
-
-            let batch = match batch {
-                Some(batch) => batch,
-                None => return Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
-            };
-
-            let mut row_iter = batch.into_iter();
-            let document = match execute_once_error_if_has_second!(
-                row_iter.next(),
-                FetchExecutionError::FetchSingleFunctionNotSingle { func_name: "func".to_string() }
-            ) {
-                Some(row) => {
-                    let mut row_iter = row.row().iter();
-                    let result = execute_once_error_if_has_second!(
-                        row_iter.next(),
-                        FetchExecutionError::FetchSingleFunctionNotScalar { func_name: "func".to_string() }
-                    );
-                    match result {
-                        Some(value) => variable_value_to_document(value.clone())?,
-                        None => DocumentNode::Leaf(DocumentLeaf::Empty),
-                    }
-                }
-                None => DocumentNode::Leaf(DocumentLeaf::Empty),
-            };
-
-            Ok(document)
-        }
+        FetchSomeInstruction::SingleFunction(function, variable_positions) => execute_single_function(
+            snapshot,
+            thing_manager,
+            parameters,
+            functions_registry,
+            row,
+            interrupt,
+            variable_positions,
+            function,
+        ),
         FetchSomeInstruction::Object(object) => {
             execute_object(object, snapshot, thing_manager, parameters, functions_registry, row, interrupt)
         }
-        FetchSomeInstruction::ListFunction(function, variable_positions) => {
-            let (mut pattern_executor, execution_context) = execute_single_function(
-                snapshot,
-                thing_manager,
-                parameters,
-                functions_registry.clone(),
-                variable_positions,
-                row,
-                function,
-            )?;
-            let mut interrupt = interrupt;
-            let mut tabled_functions = TabledFunctions::new(functions_registry.clone());
-            let mut suspend_points = Vec::new();
-
-            let mut nodes = Vec::new();
-            while let Some(batch) = pattern_executor
-                .compute_next_batch(&execution_context, &mut interrupt, &mut tabled_functions, &mut suspend_points)
-                .map_err(|err| FetchExecutionError::ReadExecution { typedb_source: Box::new(err) })?
-            {
-                let mut row_iter = batch.into_iter();
-                while let Some(row) = row_iter.next() {
-                    let mut row_iter = row.row().iter();
-                    while let Some(value) = row_iter.next() {
-                        nodes.push(variable_value_to_document(value.clone())?);
-                    }
-                }
-            }
-
-            Ok(DocumentNode::List(DocumentList::new_from(nodes)))
-        }
-        FetchSomeInstruction::ListSubFetch(ExecutableFetchListSubFetch {
-            input_position_mapping,
-            variable_registry,
-            stages,
-            fetch,
-        }) => {
-            let pipeline = if input_position_mapping.is_empty() {
-                Pipeline::build_read_pipeline(
-                    snapshot,
-                    thing_manager,
-                    &variable_registry,
-                    functions_registry,
-                    &**stages,
-                    Some(fetch.clone()),
-                    parameters,
-                    None,
-                )
-            } else {
-                let max_position = input_position_mapping.values().max().map(|pos| pos.as_usize()).unwrap();
-                let mut initial_row = vec![VariableValue::Empty; max_position + 1];
-                input_position_mapping.iter().for_each(|(parent_row_position, local_row_position)| {
-                    initial_row[local_row_position.as_usize()] =
-                        row[parent_row_position.as_usize()].as_reference().into_owned();
-                });
-                let initial_row = MaybeOwnedRow::new_owned(initial_row, row.multiplicity());
-                Pipeline::build_read_pipeline(
-                    snapshot,
-                    thing_manager,
-                    &variable_registry,
-                    functions_registry,
-                    &**stages,
-                    Some(fetch.clone()),
-                    parameters,
-                    Some(initial_row),
-                )
-            }
-            .map_err(|typedb_source| FetchExecutionError::Pipeline { typedb_source })?;
-
-            let (iterator, _context) = pipeline
-                .into_documents_iterator(interrupt)
-                .map_err(|(err, _context)| FetchExecutionError::SubFetch { typedb_source: err })?;
-
-            let mut nodes = Vec::new();
-            for result in iterator {
-                nodes.push(result.map_err(|err| FetchExecutionError::SubFetch { typedb_source: err })?.root);
-            }
-            Ok(DocumentNode::List(DocumentList::new_from(nodes)))
+        FetchSomeInstruction::ListFunction(function, variable_positions) => execute_list_function(
+            snapshot,
+            thing_manager,
+            parameters,
+            functions_registry,
+            row,
+            interrupt,
+            variable_positions,
+            function,
+        ),
+        FetchSomeInstruction::ListSubFetch(subfetch) => {
+            execute_list_subfetch(snapshot, thing_manager, parameters, functions_registry, row, interrupt, subfetch)
         }
         FetchSomeInstruction::ListAttributesAsList(position, attribute_type) => {
-            let variable_value = row.get(*position).as_reference();
-            match variable_value {
-                VariableValue::Empty => Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
-                VariableValue::Thing(Thing::Entity(entity)) => {
-                    execute_attributes_list(entity, attribute_type.clone(), snapshot, thing_manager)
-                        .map(|list| DocumentNode::List(list))
-                }
-                VariableValue::Thing(Thing::Relation(relation)) => {
-                    execute_attributes_list(relation, attribute_type.clone(), snapshot, thing_manager)
-                        .map(|list| DocumentNode::List(list))
-                }
-                VariableValue::Thing(Thing::Attribute(_)) => Err(FetchExecutionError::FetchAttributesOfAttribute {}),
-                VariableValue::Type(_) => Err(FetchExecutionError::FetchAttributesOfType {}),
-                VariableValue::Value(_) => Err(FetchExecutionError::FetchAttributesOfValue {}),
-                VariableValue::ThingList(_) | VariableValue::ValueList(_) => {
-                    Err(FetchExecutionError::FetchAttributesOfList {})
-                }
+            execute_list_attributes_as_list(snapshot, thing_manager, row, position, attribute_type)
+        }
+        FetchSomeInstruction::ListAttributesFromList(_, _) => {
+            Err(FetchExecutionError::Unimplemented { description: "List attributes are not available yet." })
+        }
+    }
+}
+
+fn execute_single_attribute(
+    snapshot: Arc<impl ReadableSnapshot + 'static>,
+    thing_manager: Arc<ThingManager>,
+    row: MaybeOwnedRow<'_>,
+    position: &VariablePosition,
+    attribute_type: &AttributeType<'static>,
+) -> Result<DocumentNode, FetchExecutionError> {
+    let variable_value = row.get(*position).as_reference();
+    match variable_value {
+        VariableValue::Empty => Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
+        VariableValue::Thing(Thing::Entity(entity)) => {
+            execute_attribute_single(entity, attribute_type.clone(), snapshot, thing_manager)
+                .map(|leaf| DocumentNode::Leaf(leaf))
+        }
+        VariableValue::Thing(Thing::Relation(relation)) => {
+            execute_attribute_single(relation, attribute_type.clone(), snapshot, thing_manager)
+                .map(|leaf| DocumentNode::Leaf(leaf))
+        }
+        VariableValue::Thing(Thing::Attribute(_)) => Err(FetchExecutionError::FetchAttributesOfAttribute {}),
+        VariableValue::Type(_) => Err(FetchExecutionError::FetchAttributesOfType {}),
+        VariableValue::Value(_) => Err(FetchExecutionError::FetchAttributesOfValue {}),
+        VariableValue::ThingList(_) | VariableValue::ValueList(_) => Err(FetchExecutionError::FetchAttributesOfList {}),
+    }
+}
+
+fn execute_single_function(
+    snapshot: Arc<impl ReadableSnapshot + 'static>,
+    thing_manager: Arc<ThingManager>,
+    parameters: Arc<ParameterRegistry>,
+    functions_registry: Arc<ExecutableFunctionRegistry>,
+    row: MaybeOwnedRow<'_>,
+    mut interrupt: ExecutionInterrupt,
+    variable_positions: &HashMap<Variable, VariablePosition>,
+    function: &ExecutableFunction,
+) -> Result<DocumentNode, FetchExecutionError> {
+    let (mut pattern_executor, execution_context) = prepare_single_function_execution(
+        snapshot,
+        thing_manager,
+        parameters,
+        functions_registry.clone(),
+        variable_positions,
+        row,
+        function,
+    )?;
+    let mut tabled_functions = TabledFunctions::new(functions_registry.clone());
+    let mut suspend_points = Vec::new();
+
+    let batch = exactly_one_or_return_err!(
+        pattern_executor
+            .compute_next_batch(&execution_context, &mut interrupt, &mut tabled_functions, &mut suspend_points)
+            .map_err(|err| FetchExecutionError::ReadExecution { typedb_source: Box::new(err) })?,
+        FetchExecutionError::FetchSingleFunctionNotSingle { func_name: "func".to_string() } // TODO: Can we get function name here?
+    );
+
+    let batch = match batch {
+        Some(batch) => batch,
+        None => return Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
+    };
+
+    let mut row_iter = batch.into_iter();
+    let document = match exactly_one_or_return_err!(
+        row_iter.next(),
+        FetchExecutionError::FetchSingleFunctionNotSingle { func_name: "func".to_string() }
+    ) {
+        Some(row) => {
+            let mut row_iter = row.row().iter();
+            let result = exactly_one_or_return_err!(
+                row_iter.next(),
+                FetchExecutionError::FetchSingleFunctionNotScalar { func_name: "func".to_string() }
+            );
+            match result {
+                Some(value) => variable_value_to_document(value.clone())?,
+                None => DocumentNode::Leaf(DocumentLeaf::Empty),
             }
         }
-        FetchSomeInstruction::ListAttributesFromList(_, _) => Err(FetchExecutionError::Unimplemented {
-            description: "List attributes are not available yet.".to_string(),
-        }),
-    }
+        None => DocumentNode::Leaf(DocumentLeaf::Empty),
+    };
+
+    Ok(document)
 }
 
 fn execute_object(
@@ -318,6 +263,124 @@ fn execute_object(
         FetchObjectInstruction::Attributes(position) => {
             execute_object_attributes(*position, snapshot, thing_manager, row)
         }
+    }
+}
+
+fn execute_list_function(
+    snapshot: Arc<impl ReadableSnapshot + 'static>,
+    thing_manager: Arc<ThingManager>,
+    parameters: Arc<ParameterRegistry>,
+    functions_registry: Arc<ExecutableFunctionRegistry>,
+    row: MaybeOwnedRow<'_>,
+    mut interrupt: ExecutionInterrupt,
+    variable_positions: &HashMap<Variable, VariablePosition>,
+    function: &ExecutableFunction,
+) -> Result<DocumentNode, FetchExecutionError> {
+    let (mut pattern_executor, execution_context) = prepare_single_function_execution(
+        snapshot,
+        thing_manager,
+        parameters,
+        functions_registry.clone(),
+        variable_positions,
+        row,
+        function,
+    )?;
+    let mut tabled_functions = TabledFunctions::new(functions_registry.clone());
+    let mut suspend_points = Vec::new();
+
+    let mut nodes = Vec::new();
+    while let Some(batch) = pattern_executor
+        .compute_next_batch(&execution_context, &mut interrupt, &mut tabled_functions, &mut suspend_points)
+        .map_err(|err| FetchExecutionError::ReadExecution { typedb_source: Box::new(err) })?
+    {
+        let mut row_iter = batch.into_iter();
+        while let Some(row) = row_iter.next() {
+            let mut row_iter = row.row().iter();
+            while let Some(value) = row_iter.next() {
+                nodes.push(variable_value_to_document(value.clone())?);
+            }
+        }
+    }
+
+    Ok(DocumentNode::List(DocumentList::new_from(nodes)))
+}
+
+fn execute_list_subfetch(
+    snapshot: Arc<impl ReadableSnapshot + 'static>,
+    thing_manager: Arc<ThingManager>,
+    parameters: Arc<ParameterRegistry>,
+    functions_registry: Arc<ExecutableFunctionRegistry>,
+    row: MaybeOwnedRow<'_>,
+    interrupt: ExecutionInterrupt,
+    executable_subfetch: &ExecutableFetchListSubFetch,
+) -> Result<DocumentNode, FetchExecutionError> {
+    let ExecutableFetchListSubFetch { input_position_mapping, variable_registry, stages, fetch } = executable_subfetch;
+
+    let pipeline = if input_position_mapping.is_empty() {
+        Pipeline::build_read_pipeline(
+            snapshot,
+            thing_manager,
+            &variable_registry,
+            functions_registry,
+            &**stages,
+            Some(fetch.clone()),
+            parameters,
+            None,
+        )
+    } else {
+        let max_position = input_position_mapping.values().max().map(|pos| pos.as_usize()).unwrap();
+        let mut initial_row = vec![VariableValue::Empty; max_position + 1];
+        input_position_mapping.iter().for_each(|(parent_row_position, local_row_position)| {
+            initial_row[local_row_position.as_usize()] =
+                row[parent_row_position.as_usize()].as_reference().into_owned();
+        });
+        let initial_row = MaybeOwnedRow::new_owned(initial_row, row.multiplicity());
+        Pipeline::build_read_pipeline(
+            snapshot,
+            thing_manager,
+            &variable_registry,
+            functions_registry,
+            &**stages,
+            Some(fetch.clone()),
+            parameters,
+            Some(initial_row),
+        )
+    }
+    .map_err(|typedb_source| FetchExecutionError::Pipeline { typedb_source })?;
+
+    let (iterator, _context) = pipeline
+        .into_documents_iterator(interrupt)
+        .map_err(|(err, _context)| FetchExecutionError::SubFetch { typedb_source: err })?;
+
+    let mut nodes = Vec::new();
+    for result in iterator {
+        nodes.push(result.map_err(|err| FetchExecutionError::SubFetch { typedb_source: err })?.root);
+    }
+    Ok(DocumentNode::List(DocumentList::new_from(nodes)))
+}
+
+fn execute_list_attributes_as_list(
+    snapshot: Arc<impl ReadableSnapshot + 'static>,
+    thing_manager: Arc<ThingManager>,
+    row: MaybeOwnedRow<'_>,
+    position: &VariablePosition,
+    attribute_type: &AttributeType<'static>,
+) -> Result<DocumentNode, FetchExecutionError> {
+    let variable_value = row.get(*position).as_reference();
+    match variable_value {
+        VariableValue::Empty => Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
+        VariableValue::Thing(Thing::Entity(entity)) => {
+            execute_attributes_list(entity, attribute_type.clone(), snapshot, thing_manager)
+                .map(|list| DocumentNode::List(list))
+        }
+        VariableValue::Thing(Thing::Relation(relation)) => {
+            execute_attributes_list(relation, attribute_type.clone(), snapshot, thing_manager)
+                .map(|list| DocumentNode::List(list))
+        }
+        VariableValue::Thing(Thing::Attribute(_)) => Err(FetchExecutionError::FetchAttributesOfAttribute {}),
+        VariableValue::Type(_) => Err(FetchExecutionError::FetchAttributesOfType {}),
+        VariableValue::Value(_) => Err(FetchExecutionError::FetchAttributesOfValue {}),
+        VariableValue::ThingList(_) | VariableValue::ValueList(_) => Err(FetchExecutionError::FetchAttributesOfList {}),
     }
 }
 
@@ -440,7 +503,7 @@ fn prepare_attribute_type_has_iterator<'a>(
         .map_err(|source| FetchExecutionError::ConceptRead { source })
 }
 
-fn execute_single_function<Snapshot: ReadableSnapshot + 'static>(
+fn prepare_single_function_execution<Snapshot: ReadableSnapshot + 'static>(
     snapshot: Arc<Snapshot>,
     thing_manager: Arc<ThingManager>,
     parameters: Arc<ParameterRegistry>,
@@ -514,7 +577,7 @@ fn variable_value_to_document(variable_value: VariableValue<'_>) -> Result<Docum
 
 typedb_error!(
     pub FetchExecutionError(component = "Fetch execution", prefix = "FEX") {
-        Unimplemented(0, "Unimplemented: {description}.", description: String),
+        Unimplemented(0, "Unimplemented: {description}.", description: &'static str),
 
         FetchAttributesOfType(1, "Received unexpected Type instead of Entity or Relation while fetching owned attributes."),
         FetchAttributesOfAttribute(2, "Received unexpected Attribute instead of Entity or Relation while fetching owned attributes."),

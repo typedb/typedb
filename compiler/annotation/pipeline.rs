@@ -79,7 +79,7 @@ impl AnnotatedStage {
     pub fn named_referenced_variables<'a>(
         &'a self,
         variable_registry: &'a VariableRegistry,
-    ) -> Box<dyn Iterator<Item = Variable> + '_> {
+    ) -> impl Iterator<Item = Variable> + '_ {
         let variables: Box<dyn Iterator<Item = Variable> + '_> = match self {
             AnnotatedStage::Match { block, .. } => Box::new(block.variables()),
             AnnotatedStage::Insert { block, .. } => Box::new(block.variables()),
@@ -91,7 +91,7 @@ impl AnnotatedStage {
             AnnotatedStage::Require(_) => Box::new(iter::empty()),
             AnnotatedStage::Reduce(reduce, _) => Box::new(reduce.variables()),
         };
-        Box::new(variables.filter(move |variable| variable_registry.get_variable_name(variable.clone()).is_some()))
+        variables.filter(move |variable| variable_registry.get_variable_name(variable.clone()).is_some())
     }
 }
 

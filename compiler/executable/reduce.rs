@@ -44,21 +44,22 @@ pub enum ReduceInstruction<ID: IrID> {
 
 impl<ID: IrID> ReduceInstruction<ID> {
     pub fn id(&self) -> Option<ID> {
-        match self {
-            ReduceInstruction::Count => None,
-            ReduceInstruction::CountVar(id) => Some(id.clone()),
-            ReduceInstruction::SumLong(id) => Some(id.clone()),
-            ReduceInstruction::SumDouble(id) => Some(id.clone()),
-            ReduceInstruction::MaxLong(id) => Some(id.clone()),
-            ReduceInstruction::MaxDouble(id) => Some(id.clone()),
-            ReduceInstruction::MinLong(id) => Some(id.clone()),
-            ReduceInstruction::MinDouble(id) => Some(id.clone()),
-            ReduceInstruction::MeanLong(id) => Some(id.clone()),
-            ReduceInstruction::MeanDouble(id) => Some(id.clone()),
-            ReduceInstruction::MedianLong(id) => Some(id.clone()),
-            ReduceInstruction::MedianDouble(id) => Some(id.clone()),
-            ReduceInstruction::StdLong(id) => Some(id.clone()),
-            ReduceInstruction::StdDouble(id) => Some(id.clone()),
+        match *self {
+            Self::Count => None,
+
+            Self::CountVar(id)
+            | Self::SumLong(id)
+            | Self::SumDouble(id)
+            | Self::MaxLong(id)
+            | Self::MaxDouble(id)
+            | Self::MinLong(id)
+            | Self::MinDouble(id)
+            | Self::MeanLong(id)
+            | Self::MeanDouble(id)
+            | Self::MedianLong(id)
+            | Self::MedianDouble(id)
+            | Self::StdLong(id)
+            | Self::StdDouble(id) => Some(id),
         }
     }
 

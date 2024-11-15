@@ -24,7 +24,7 @@ typedb_error!(
     pub AnnotationError(component = "Query annotation", prefix = "QUA") {
         Unimplemented(0, "Unimplemented: {description}", description: String),
         TypeInference(1, "Type inference error while compiling query annotations.", ( typedb_source : TypeInferenceError )),
-        PreambleTypeInference(2, "Type inference error while compiling query preamable functions.", ( typedb_source : Box<FunctionAnnotationError> )),
+        PreambleTypeInference(2, "Type inference error while compiling query preamble functions.", ( typedb_source : Box<FunctionAnnotationError> )),
         ExpressionCompilation(3, "Error inferring correct expression types.", ( source : Box<ExpressionCompileError> )),
         FetchEntry(4, "Error during type inference for fetch operation for key '{key}'.", key: String, (typedb_source : Box<AnnotationError> )),
         FetchBlockFunctionInferenceError(5, "Error during type inference for fetch sub-query.", (typedb_source : Box<FunctionAnnotationError> )),

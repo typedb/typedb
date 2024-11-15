@@ -283,15 +283,12 @@ fn validate_attribute_owned_and_scalar(
     attribute_type: AttributeType<'static>,
 ) -> Result<(), AnnotationError> {
     for owner_type in owner_types {
-        match owner_type.kind() {
-            Kind::Entity | Kind::Relation => {}
-            kind @ (Kind::Attribute | Kind::Role) => {
-                return Err(AnnotationError::FetchSingleAttributeCannotBeOwnedByKind {
-                    var: owner.to_owned(),
-                    kind: kind.to_string(),
-                    attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
-                })
-            }
+        if let kind @ (Kind::Attribute | Kind::Role) = owner_type.kind() {
+            return Err(AnnotationError::FetchSingleAttributeCannotBeOwnedByKind {
+                var: owner.to_owned(),
+                kind: kind.to_string(),
+                attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
+            });
         }
         let object_type = owner_type.as_object_type();
         if object_type
@@ -327,15 +324,12 @@ fn validate_attribute_owned_and_streamable(
     owner_type: &Type,
     attribute_type: AttributeType<'static>,
 ) -> Result<(), AnnotationError> {
-    match owner_type.kind() {
-        Kind::Entity | Kind::Relation => {}
-        kind @ (Kind::Attribute | Kind::Role) => {
-            return Err(AnnotationError::FetchAttributesCannotBeOwnedByKind {
-                var: owner.to_owned(),
-                kind: kind.to_string(),
-                attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
-            })
-        }
+    if let kind @ (Kind::Attribute | Kind::Role) = owner_type.kind() {
+        return Err(AnnotationError::FetchAttributesCannotBeOwnedByKind {
+            var: owner.to_owned(),
+            kind: kind.to_string(),
+            attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
+        });
     }
 
     let _ = owner_type

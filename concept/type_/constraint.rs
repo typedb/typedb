@@ -41,7 +41,7 @@ macro_rules! unwrap_constraint_description_methods {
                 with_constraint_description!(
                     self,
                     $target_enum,
-                    Err(Box::new(ConstraintError::CannotUnwrap { type_: stringify!($target_enum).to_string() })),
+                    Err(Box::new(ConstraintError::CannotUnwrap { type_: stringify!($target_enum) })),
                     |constraint| Ok(constraint.clone())
                 )
             }
@@ -580,7 +580,7 @@ pub(crate) fn type_get_constraints_closest_source<'a, T: KindAPI<'static>>(
 
 typedb_error!(
     pub ConstraintError(component = "Constraint", prefix = "CNT") {
-        CannotUnwrap(1, "Error getting mandatory constraint of type {type_}.", type_: String),
+        CannotUnwrap(1, "Error getting mandatory constraint of type {type_}.", type_: &'static str),
         CorruptConstraintIsNotApplicableToValue(2, "Reached an invalid state: constraint {description} cannot be applied to value {value}.", description: ConstraintDescription, value: Value<'static>),
         IsNotNarrowedBy(3, "Constraint {first} is not narrowed by {second}.", first: ConstraintDescription, second: ConstraintDescription),
         ViolatedAbstract(4, "Constraint '@abstract' has been violated."),
