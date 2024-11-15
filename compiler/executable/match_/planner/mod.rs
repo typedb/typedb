@@ -301,7 +301,7 @@ impl MatchExecutableBuilder {
 
         if self.current.is_none() {
             self.current = Some(Box::new(StepBuilder {
-                selected_variables:  Vec::from_iter(self.current_outputs.iter().copied()),
+                selected_variables: Vec::from_iter(self.current_outputs.iter().copied()),
                 builder: StepInstructionsBuilder::Intersection(IntersectionBuilder::new()),
             }));
         }
@@ -327,7 +327,7 @@ impl MatchExecutableBuilder {
         }
         if self.current.is_none() {
             self.current = Some(Box::new(StepBuilder {
-                selected_variables:  Vec::from_iter(self.current_outputs.iter().copied()),
+                selected_variables: Vec::from_iter(self.current_outputs.iter().copied()),
                 builder: StepInstructionsBuilder::Check(CheckBuilder::default()),
             }))
         }
