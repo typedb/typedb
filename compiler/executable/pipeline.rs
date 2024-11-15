@@ -60,7 +60,7 @@ impl ExecutableStage {
                 .output_row_schema
                 .iter()
                 .enumerate()
-                .filter_map(|(i, opt)| opt.map(|(v, _)| (i,v)))
+                .filter_map(|(i, opt)| opt.map(|(v, _)| (i, v)))
                 .map(|(i, v)| (v, VariablePosition::new(i as u32)))
                 .collect(),
             ExecutableStage::Delete(executable) => executable
