@@ -149,7 +149,6 @@ impl PatternExecutor {
                                                 ExecuteInlinedFunction {
                                                     index: executor_index,
                                                     input: input_row.into_owned(),
-                                                    parameters_override: inlined.parameter_registry.clone(),
                                                 },
                                             ))
                                         }
@@ -245,18 +244,14 @@ impl PatternExecutor {
                         self.push_next_instruction(context, index.next(), mapped)?;
                     }
                 }
-                ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction {
-                    index,
-                    parameters_override,
-                    input,
-                }) => {
+                ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction { index, input, }) => {
                     let NestedPatternExecutor::InlinedFunction(executor) = &mut executors[index.0].unwrap_nested()
                     else {
                         unreachable!();
                     };
                     let suspension_count_before = suspensions.record_nested_pattern_entry();
                     let unmapped_opt = executor.inner.batch_continue(
-                        &context.clone_with_replaced_parameters(parameters_override.clone()),
+                        &context.clone_with_replaced_parameters(executor.parameter_registry.clone()),
                         interrupt,
                         tabled_functions,
                         suspensions,
@@ -269,7 +264,6 @@ impl PatternExecutor {
                         control_stack.push(ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction {
                             index,
                             input,
-                            parameters_override,
                         }));
                         self.push_next_instruction(context, index.next(), mapped)?;
                     }
@@ -409,7 +403,6 @@ impl PatternExecutor {
                 NestedPatternExecutor::InlinedFunction(InlinedFunction {
                     inner,
                     arg_mapping,
-                    parameter_registry,
                     ..
                 }) => {
                     let mapped_input = MaybeOwnedRow::new_owned(
@@ -420,7 +413,6 @@ impl PatternExecutor {
                     self.control_stack.push(ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction {
                         index,
                         input: input.clone().into_owned(),
-                        parameters_override: parameter_registry.clone(),
                     }));
                 }
             }
