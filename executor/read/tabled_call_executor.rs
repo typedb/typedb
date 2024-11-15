@@ -17,7 +17,7 @@ use crate::{
         pattern_executor::ExecutorIndex,
         tabled_call_executor::TabledCallResult::Suspend,
         tabled_functions::{CallKey, TableIndex, TabledFunctionPatternExecutorState, TabledFunctionState},
-        SuspendPoint, TabledCallSuspension,
+        PatternSuspension, TabledCallSuspension,
     },
     row::MaybeOwnedRow,
 };
@@ -53,12 +53,19 @@ impl TabledCallExecutor {
     }
 
     pub(crate) fn prepare(&mut self, input: MaybeOwnedRow<'static>) {
+        self.prepare_impl(input, TableIndex(0))
+    }
+
+    pub(crate) fn restore_from_suspension(&mut self, input: MaybeOwnedRow<'static>, next_table_index: TableIndex) {
+        self.prepare_impl(input, next_table_index);
+    }
+    pub fn prepare_impl(&mut self, input: MaybeOwnedRow<'static>, next_table_row: TableIndex) {
         let arguments = MaybeOwnedRow::new_owned(
             self.argument_positions.iter().map(|pos| input.get(pos.clone()).to_owned()).collect(),
             input.multiplicity(),
         );
         let call_key = CallKey { function_id: self.function_id.clone(), arguments };
-        self.active_executor = Some(TabledCallExecutorState { call_key, input, next_table_row: TableIndex(0) });
+        self.active_executor = Some(TabledCallExecutorState { call_key, input, next_table_row });
     }
 
     pub(crate) fn active_call_key(&self) -> Option<&CallKey> {
@@ -82,9 +89,10 @@ impl TabledCallExecutor {
         output_batch
     }
 
-    pub(crate) fn create_suspend_point_for(&self, executor_index: ExecutorIndex) -> SuspendPoint {
-        SuspendPoint::TabledCall(TabledCallSuspension {
+    pub(crate) fn create_suspension_at(&self, executor_index: ExecutorIndex, depth: usize) -> PatternSuspension {
+        PatternSuspension::AtTabledCall(TabledCallSuspension {
             executor_index,
+            depth,
             input_row: self.active_executor.as_ref().unwrap().input.clone().into_owned(),
             next_table_row: self.active_executor.as_ref().unwrap().next_table_row,
         })

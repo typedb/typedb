@@ -22,6 +22,10 @@ pub(super) struct PatternStart {
     pub(super) input_batch: FixedBatch,
 }
 
+pub(super) struct RestoreSuspension {
+    pub(super) depth: usize,
+}
+
 pub(super) struct ExecuteImmediate {
     pub(super) index: ExecutorIndex,
 }
@@ -78,6 +82,7 @@ pub(super) struct Yield {
 
 pub(super) enum ControlInstruction {
     PatternStart(PatternStart),
+    RestoreSuspension(RestoreSuspension),
 
     ExecuteImmediate(ExecuteImmediate),
 
