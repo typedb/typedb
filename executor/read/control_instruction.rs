@@ -4,10 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::Arc;
-
-use ir::pipeline::ParameterRegistry;
-
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     read::{
@@ -20,6 +16,10 @@ use crate::{
 
 pub(super) struct PatternStart {
     pub(super) input_batch: FixedBatch,
+}
+
+pub(super) struct RestoreSuspension {
+    pub(super) depth: usize,
 }
 
 pub(super) struct ExecuteImmediate {
@@ -39,7 +39,6 @@ pub(super) struct ExecuteStreamModifier {
 
 pub(super) struct ExecuteInlinedFunction {
     pub(super) index: ExecutorIndex,
-    pub(super) parameters_override: Arc<ParameterRegistry>, // TODO: Get this straight from the executor?
     pub(super) input: MaybeOwnedRow<'static>,
 }
 
@@ -78,6 +77,7 @@ pub(super) struct Yield {
 
 pub(super) enum ControlInstruction {
     PatternStart(PatternStart),
+    RestoreSuspension(RestoreSuspension),
 
     ExecuteImmediate(ExecuteImmediate),
 
