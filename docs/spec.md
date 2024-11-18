@@ -2837,7 +2837,7 @@ To allow for partial results, the function executor can keep track of their mach
 
 #### Recursive execution
 
-The recursive case is more difficult due to the presence of **stack cycles**: a stack cycle is stack machine state in which a the (sub)stack evaluating a function call `G(z)` contains (itself or in an iterated subframe) a step calling `G(z)` (with the *same* input `z` as argument for `G`).
+The recursive case is more difficult due to the presence of **cyclic call**: a cycle call is stack machine state in which a the (sub)stack evaluating a function call `G(z)` contains (itself or in an iterated subframe) a step calling `G(z)` (with the *same* input `z` as argument for `G`).
 
 In the recursive case, we keep function **tables** for all functions that may be recursive:
 * a table `Tab(F,x)` records
@@ -2851,17 +2851,17 @@ In the recursive case, we keep function **tables** for all functions that may be
 
 Execution now proceeds in execution **super-steps**.
 * Before the **first** execution super-step, tables are initialized to be *empty* and associated suspension point sets are *empty* too
-* In the **n**th super-step, we run our stack machine with the following modifications:
+* In the **n**th super-step, we run our entry stack of steps with the following modifications:
     * ***Advancing state***: whenever a stack evaluating a function call `F(x)` completes a result
         * add the result to `Tab(F,x)` if it is not yet a row in that table.
         * advance its executor so that it can resume execution from the last result
     * ***Suspending cycles***: whenever, while executing the stack for `F(x)`, we reach a cyclic call `G(z)` with input `u,z,v,...` then
-        * we continue execution with the existing `i` output rows in `Tab(G,z)` (note: therefore, no need to open a substack)
+        * we continue execution with the existing `i` output rows in `Tab(G,z)` (note: therefore, no need to open a substack—just read from table!)
         * afterwards, record a suspension point in `Tab(F,x)` with input `u,z,v,...` at the step calling `G(z)` and table state index `i`.
     * ***Propagating suspensions***: whenever the super-stack (from which the function call `F(x)` originates) itself evaluates a function call `H(p)` then:
         * when we backtrack through the step calling `F(x)` (since all results to this call have been exhausted), then add a suspension point in `Tab(H,p)` with the calls inputs, the call step, and the table size index of `F(x)` at the time of backtracking.
     * ***Evaluating functions*** *(in the presence of suspensions points)*: whenever we open a stack for the evaluation of `F(x)` do the following:
-        * if the previous (i.e. (**n-1**)th) super-step has recorded no suspension points in `Tab(F,x)` then start evaluating the stack of `F(x)` return existing output results in `Tab(F,x)` and then continue the executor (until completion or suspension; if either are reached already then this last step does nothing)
+        * if the previous (i.e. (**n-1**)th) super-step has recorded no suspension points in `Tab(F,x)` then start evaluating the stack of `F(x)`: first, return existing output results in `Tab(F,x)` and, then, continue the executor (until completion or suspension; if either are reached already then this last step does nothing)
         * if the previous super-step has set suspension points in `Tab(F,x)`, then we restore execution as follows (note: this in particular applies to the entry stack): *for each suspension point* run the stack evaluating `F(x)` to completion, starting from the *given step* (calling `G(z)`) with the *given inputs* by the suspension point, and only return outputs of `G(z)` after the *given table state index*. As before, make use of existing output results in `Tab(F,x)` and then continue the executor (until completion or suspension).
     * ***Key property***; for each table `Tab(F,x)`, stack step, and step input, there is at most one suspension point set by the previous super-step
 * Execution completes after **n** super-steps if the **n**th super-step either produces no suspension points to start with in the (**n+1**)th step, or if no new outputs in tables were written in the super-step.
