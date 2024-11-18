@@ -2586,7 +2586,7 @@ Orphaned relation and attribute instance (i.e. those with insufficient dependenc
   ```
   In particular, `<PUT>` needs to be an `insert` compatible set of statements. 
 
-# Query execution principles
+# Pipeline semantics
 
 ## Basics: Pipelines, clauses, operators, branches
 
@@ -2883,7 +2883,112 @@ In this case, we output a ***single concept*** row `($x_1 -> <EL>, $x_2 -> <EL>,
 
 (to be written)
 
-## Transactions
+
+# Pipeline execution
+
+## Executables
+
+### Terminology
+
+* **Steps** = a unit in our execution plans: 
+    * can itself comprise multiple *instructions* to be executed, 
+    * has information about *inputs* and *outputs*.
+* **Executable** = mainly a list of steps (plus, again, info about inputs and outputs)
+* **Executor** = Executable + state of execution
+
+(Note on input and outputs: we distinguish "ID and positions". **Variable IDs** (like $3) are *global*, **positions** are *local* to steps and executables)
+
+### Match Executable
+
+```
+MatchExecutable { 
+    Steps,
+    VariableID -> Position 
+    Position -> VariableID
+}
+```
+
+An **step** in a match executable may be:
+* **Immediate** step: a step that can be executed
+    * Intersection (retrieves new data by doing vertex/edge lookups on a single "sort variable")
+    * Check (filters existing data by appropriate lookups)
+    * Unsorted join ...
+    * ...
+* **Nested** step: a step that contains a nested executable
+    * Assignment (contains expression executable to be assigned to var)
+    * Function call (contains function executable to be assigned to var)
+    * Negation (contains subquery executable)
+    * Disjunction (contains subquery executable)
+    * ...
+
+### Function Executable
+
+A function executable comprises steps organized into a stack.
+
+* during execution, **steps** with given inputs will become the *frames* in that stack
+* each step (i.e. frame) passes its *output* as *inputs* to its descendants
+    * no information is ever passed the other way, i.e. from descendants to ancestors
+* a step (i.e., frame) may be either **immediate** or **nested**: in the latter case it spawns a **substack** when it is executed
+    * as a consequence: our execution looks like a "stack of stacks"
+    * when a substack completes execution, it passes execution results to its **superstack**, where execution continues
+    * the first stack in our stack of stack is called the **entry stack** (it has no superstack)
+* in contrast to match executables (at present), nested steps in function executables include **modifier steps**:
+    * for example, we could have a `sum($x in PATT)` step, which executes a sum computation over a variable after executing a nested match (spawned in a substack)
+
+***Remark***. At present not all steps are **batch executable** (i.e., not all steps can be executed in batch). Therefore, the current design includes a `BatchToRow` step, which converts batches to single rows. Non-batch-executable steps include function calls. In the future everything should be batch executable, and leverage vectorization if possible:
+* SIMD for batched expression assignment?
+* SIMD for batched modifiers (e.g. sums)?
+
+#### Non-recursive execution
+
+In the non-recursive case, to execute a function (or, really, *any pattern* in a match clause, since patterns can be thought of simply as a functions without arguments), we run the steps on the entry stack to completion (which may spawn substacks on the way) returning completed results of the entry stack.
+
+To allow for partial results, the function executor can keep track of their machine state, and resume only when a request for more results is given.
+
+#### Recursive execution
+
+The recursive case is more difficult due to the presence of **stack cycles**: a stack cycle is stack machine state in which a the (sub)stack evaluating a function call `G(z)` contains (itself or in an iterated subframe) a step calling `G(z)` (with the *same* input `z` as argument for `G`).
+
+In the recursive case, we keep function **tables** for all functions that may be recursive:
+* a table `Tab(F,x)` records
+    * **output rows** `y` of a function `F` with fixed input argument `x`
+    * an **executor** state of the stack evaluating `F`.
+* each table `Tab(F,x)` also has an associated set of **suspension points**; these comprise:
+    * an **instruction number** (referring to a step in the stack of `F`)
+        * this instruction will always be a function call, say to `G(z)`
+    * the **inputs** `u,z,v,...` to the function call step (calling `G(z)`) at the time of suspension
+    * a **table state index** indicating how many output rows were present in `G(z)` at the time of suspension
+
+Execution now proceeds in execution **super-steps**.
+* Before the **first** execution super-step, tables are initialized to be *empty* and associated suspension point sets are *empty* too
+* In the **n**th super-step, we run our stack machine with the following modifications:
+    * ***Advancing state***: whenever a stack evaluating a function call `F(x)` completes a result
+        * add the result to `Tab(F,x)` if it is not yet a row in that table.
+        * advance its executor so that it can resume execution from the last result
+    * ***Suspending cycles***: whenever, while executing the stack for `F(x)`, we reach a cyclic call `G(z)` with input `u,z,v,...` then
+        * we continue execution with the existing `i` output rows in `Tab(G,z)` (note: therefore, no need to open a substack)
+        * afterwards, record a suspension point in `Tab(F,x)` with input `u,z,v,...` at the step calling `G(z)` and table state index `i`.
+    * ***Propagating suspensions***: whenever the super-stack (from which the function call `F(x)` originates) itself evaluates a function call `H(p)` then:
+        * when we backtrack through the step calling `F(x)` (since all results to this call have been exhausted), then add a suspension point in `Tab(H,p)` with the calls inputs, the call step, and the table size index of `F(x)` at the time of backtracking.
+    * ***Evaluating functions*** *(in the presence of suspensions points)*: whenever we open a stack for the evaluation of `F(x)` do the following:
+        * if the previous (i.e. (**n-1**)th) super-step has recorded no suspension points in `Tab(F,x)` then start evaluating the stack of `F(x)` return existing output results in `Tab(F,x)` and then continue the executor (until completion or suspension; if either are reached already then this last step does nothing)
+        * if the previous super-step has set suspension points in `Tab(F,x)`, then we restore execution as follows (note: this in particular applies to the entry stack): *for each suspension point* run the stack evaluating `F(x)` to completion, starting from the *given step* (calling `G(z)`) with the *given inputs* by the suspension point, and only return outputs of `G(z)` after the *given table state index*. As before, make use of existing output results in `Tab(F,x)` and then continue the executor (until completion or suspension).
+    * ***Key property***; for each table `Tab(F,x)`, stack step, and step input, there is at most one suspension point set by the previous super-step
+* Execution completes after **n** super-steps if the **n**th super-step either produces no suspension points to start with in the (**n+1**)th step, or if no new outputs in tables were written in the super-step.
+
+*Remark*: Tabling may also be employed in the non-recursive case if the query planner deems this improves performance (without tabling, a lot of work may be replicated).
+
+### Query Executable
+
+(Future, inspired by functions, generalization of match executable ... these make sense as the query planner may have to work across different matches eventually, *for example to parallelize independent writes and reads*)
+
+Query Executable, in contrast to Function executable, should include not only read steps but also write steps.
+
+## Query plans
+
+(to be written)
+
+## Transactions and isolation
 
 (to be written)
 
