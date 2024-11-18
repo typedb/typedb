@@ -256,6 +256,7 @@ pub mod tests {
                 value_parameters,
                 vec![],
                 Some(vec![]),
+                None,
                 FunctionBody::new(
                     vec![TranslatedStage::Match { block: function_block }],
                     ReturnOperation::Stream(vec![f_var_animal]),

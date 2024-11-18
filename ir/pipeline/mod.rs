@@ -260,7 +260,7 @@ pub enum VariableCategorySource {
     Argument,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct ParameterRegistry {
     fetch_key_registry: HashMap<ParameterID, String>,
     value_registry: HashMap<ParameterID, Value<'static>>,

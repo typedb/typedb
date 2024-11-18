@@ -12,7 +12,7 @@ use std::{
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use ir::pipeline::{function_signature::FunctionID, VariableRegistry};
+use ir::pipeline::{function_signature::FunctionID, reduce::AssignedReduction, VariableRegistry};
 use itertools::Itertools;
 
 use crate::{
@@ -295,13 +295,11 @@ fn compile_stage(
                 input_group_positions.push(input_variables[variable]);
             }
             let mut reductions = Vec::with_capacity(reduce.assigned_reductions.len());
-            for (&(assigned_variable, _), reducer_on_variable) in
+            for (&AssignedReduction { assigned, .. }, reducer_on_variable) in
                 zip(reduce.assigned_reductions.iter(), typed_reducers.iter())
             {
-                output_row_mapping.insert(
-                    assigned_variable,
-                    VariablePosition::new((input_group_positions.len() + reductions.len()) as u32),
-                );
+                output_row_mapping
+                    .insert(assigned, VariablePosition::new((input_group_positions.len() + reductions.len()) as u32));
                 let reducer_on_position = reducer_on_variable.clone().map(input_variables);
                 reductions.push(reducer_on_position);
             }

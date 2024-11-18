@@ -5,14 +5,19 @@
 features = {}
 
 [package]
-	name = "error"
+	name = "structural_equality"
 	edition = "2021"
 	version = "0.0.0"
 
 [lib]
-	path = "error.rs"
+	path = "structural_equality.rs"
 
 [dependencies]
+
+	[dependencies.serde]
+		features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
+		version = "1.0.210"
+		default-features = false
 
 	[dependencies.typeql]
 		features = []

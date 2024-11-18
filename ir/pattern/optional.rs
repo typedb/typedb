@@ -7,6 +7,7 @@
 use std::fmt::{Display, Formatter};
 
 use answer::variable::Variable;
+use structural_equality::StructuralEquality;
 
 use crate::{
     pattern::{
@@ -45,6 +46,16 @@ impl Optional {
 impl Scope for Optional {
     fn scope_id(&self) -> ScopeId {
         todo!()
+    }
+}
+
+impl StructuralEquality for Optional {
+    fn hash(&self) -> u64 {
+        self.conjunction.hash()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.conjunction.equals(&other.conjunction)
     }
 }
 

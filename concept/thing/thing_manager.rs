@@ -243,7 +243,7 @@ impl ThingManager {
     ) -> Result<AttributeIterator<InstanceIterator<AsHkt![Attribute<'_>]>>, Box<ConceptReadError>> {
         let attribute_value_type =
             attribute_type.get_value_type_without_source(snapshot, self.type_manager.as_ref())?;
-        let Some(value_type) = attribute_value_type.as_ref() else {
+        let Some(_value_type) = attribute_value_type.as_ref() else {
             return Ok(AttributeIterator::new_empty());
         };
 

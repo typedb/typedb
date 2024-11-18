@@ -4,9 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt;
+use std::{
+    fmt,
+    hash::{DefaultHasher, Hasher},
+};
 
 use answer::variable::Variable;
+use structural_equality::StructuralEquality;
 
 use crate::{
     pattern::{
@@ -71,6 +75,19 @@ impl Conjunction {
 impl Scope for Conjunction {
     fn scope_id(&self) -> ScopeId {
         self.scope_id
+    }
+}
+
+impl StructuralEquality for Conjunction {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.constraints().hash_into(&mut hasher);
+        self.nested_patterns().hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.constraints().equals(other.constraints()) && self.nested_patterns().equals(other.nested_patterns())
     }
 }
 

@@ -33,6 +33,7 @@ rust_library(
         "//common/lending_iterator",
         "//common/logger",
         "//common/primitive",
+        "//common/structural_equality",
         "//durability",
         "//resource",
         "//storage",

@@ -261,7 +261,7 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         &'this self,
         _: KeyRange<StorageKey<'this, PS>>,
     ) -> BufferRangeIterator {
-        BufferRangeIterator::empty()
+        BufferRangeIterator::new_empty()
     }
 
     fn iterate_storage_range<'this, const PS: usize>(
@@ -590,6 +590,8 @@ typedb_error!(
 pub enum SnapshotGetError {
     MVCCRead { source: MVCCReadError },
     ExpectedRequiredKeyToExist { key: StorageKey<'static, BUFFER_KEY_INLINE> },
+    // for tests:
+    MockError {},
 }
 
 impl fmt::Display for SnapshotGetError {
@@ -603,6 +605,7 @@ impl Error for SnapshotGetError {
         match self {
             Self::MVCCRead { source, .. } => Some(source),
             SnapshotGetError::ExpectedRequiredKeyToExist { .. } => None,
+            SnapshotGetError::MockError { .. } => None,
         }
     }
 }

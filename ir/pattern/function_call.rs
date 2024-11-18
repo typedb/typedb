@@ -4,9 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::BTreeMap, fmt, hash::Hash};
+use std::{
+    collections::BTreeMap,
+    fmt,
+    hash::{DefaultHasher, Hash, Hasher},
+};
 
 use itertools::Itertools;
+use structural_equality::StructuralEquality;
 
 use crate::{pattern::IrID, pipeline::function_signature::FunctionID};
 
@@ -32,6 +37,19 @@ impl<ID: IrID> FunctionCall<ID> {
 
     pub fn argument_ids(&self) -> impl Iterator<Item = ID> + '_ {
         self.call_variable_mapping.keys().cloned()
+    }
+}
+
+impl<ID: StructuralEquality> StructuralEquality for FunctionCall<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.function_id.hash_into(&mut hasher);
+        self.call_variable_mapping.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.function_id.equals(&other.function_id) && self.call_variable_mapping.equals(&other.call_variable_mapping)
     }
 }
 

@@ -34,6 +34,7 @@ pub fn translate_typeql_function(
         function_index,
         function.signature.ident.as_str(),
         &function.signature.args,
+        &function.signature.output,
         &function.block,
         Some(function),
     )
@@ -44,6 +45,7 @@ pub fn translate_function_from(
     function_index: &impl FunctionSignatureIndex,
     name: &str,
     args: &[Argument],
+    output: &Output,
     block: &FunctionBlock,
     declaration: Option<&typeql::Function>,
 ) -> Result<Function, FunctionRepresentationError> {
@@ -65,7 +67,7 @@ pub fn translate_function_from(
             }
         })?;
     }
-    Ok(Function::new(name, context, value_parameters, arguments, Some(argument_labels), body))
+    Ok(Function::new(name, context, value_parameters, arguments, Some(argument_labels),  Some(output.clone()), body))
 }
 
 pub(crate) fn translate_function_block(

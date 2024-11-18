@@ -20,7 +20,7 @@ use ir::{
         fetch::FetchObject,
         function::Function,
         modifier::{Limit, Offset, Require, Select, Sort},
-        reduce::{Reduce, Reducer},
+        reduce::{AssignedReduction, Reduce, Reducer},
         ParameterRegistry, VariableRegistry,
     },
     translation::pipeline::TranslatedStage,
@@ -337,12 +337,12 @@ fn annotate_stage(
 
         TranslatedStage::Reduce(reduce) => {
             let mut reduce_instructions = Vec::with_capacity(reduce.assigned_reductions.len());
-            for &(assigned, reducer) in &reduce.assigned_reductions {
+            for &AssignedReduction { assigned, reduction } in &reduce.assigned_reductions {
                 let typed_reduce = resolve_reducer_by_value_type(
                     snapshot,
                     type_manager,
                     variable_registry,
-                    reducer,
+                    reduction,
                     running_variable_annotations,
                     running_value_variable_assigned_types,
                 )?;

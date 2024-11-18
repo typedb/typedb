@@ -21,6 +21,7 @@ rust_library(
     deps = [
         "//answer",
         "//common/primitive",
+        "//common/structural_equality",
         "//common/error",
         "//concept",
         "//durability",

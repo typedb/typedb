@@ -259,7 +259,7 @@ impl BufferRangeIterator {
         Self { inner: range.into_iter().peekable() }
     }
 
-    pub(crate) fn empty() -> Self {
+    pub fn new_empty() -> Self {
         Self { inner: Vec::new().into_iter().peekable() }
     }
 

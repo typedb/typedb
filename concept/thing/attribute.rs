@@ -15,7 +15,7 @@ use std::{
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
     graph::{
-        thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex, ThingVertex},
+        thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex},
         type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
         Typed,
     },

@@ -4,14 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-#![deny(unused_must_use)]
-#![deny(elided_lifetimes_in_paths)]
+pub(crate) struct QueryCache {}
 
-mod definable_resolution;
-mod definable_status;
-mod define;
-pub mod error;
-mod query_cache;
-pub mod query_manager;
-mod redefine;
-mod undefine;
+struct CachedQuery {}

@@ -11,8 +11,6 @@ use std::{
     str::FromStr,
 };
 
-use crate::graph::thing::vertex_attribute::InlineEncodableAttributeID;
-
 pub const FRACTIONAL_PART_DENOMINATOR_LOG10: u32 = 19;
 const FRACTIONAL_PART_DENOMINATOR: u64 = 10u64.pow(FRACTIONAL_PART_DENOMINATOR_LOG10);
 

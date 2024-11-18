@@ -29,6 +29,23 @@ rust_test(
     ],
 )
 
+rust_test(
+    name = "test_structural_equality",
+    crate_root = "structural_equality.rs",
+    srcs =  ["structural_equality.rs", "common.rs"],
+    deps = [
+        "//answer",
+        "//common/bytes",
+        "//common/primitive",
+        "//common/structural_equality",
+        "//encoding",
+        "//storage",
+        "//ir:ir",
+        "//resource",
+        "@typeql//rust:typeql",
+    ],
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),

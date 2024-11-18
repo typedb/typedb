@@ -19,6 +19,11 @@ features = {}
 		features = []
 		default-features = false
 
+	[dependencies.structural_equality]
+		path = "../common/structural_equality"
+		features = []
+		default-features = false
+
 	[dependencies.bytes]
 		path = "../common/bytes"
 		features = []
