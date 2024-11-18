@@ -112,6 +112,10 @@ features = {}
 	name = "test_migration"
 
 [[test]]
+	path = "tests/behaviour/query/language/fetch.rs"
+	name = "test_fetch"
+
+[[test]]
 	path = "tests/behaviour/query/language/expressions.rs"
 	name = "test_expressions"
 

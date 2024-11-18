@@ -244,7 +244,7 @@ impl PatternExecutor {
                         self.push_next_instruction(context, index.next(), mapped)?;
                     }
                 }
-                ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction { index, input, }) => {
+                ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction { index, input }) => {
                     let NestedPatternExecutor::InlinedFunction(executor) = &mut executors[index.0].unwrap_nested()
                     else {
                         unreachable!();
@@ -261,10 +261,8 @@ impl PatternExecutor {
                     }
                     if let Some(unmapped) = unmapped_opt {
                         let mapped = executor.map_output(input.as_reference(), unmapped);
-                        control_stack.push(ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction {
-                            index,
-                            input,
-                        }));
+                        control_stack
+                            .push(ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction { index, input }));
                         self.push_next_instruction(context, index.next(), mapped)?;
                     }
                 }
@@ -400,11 +398,7 @@ impl PatternExecutor {
                         input: input.clone().into_owned(),
                     }));
                 }
-                NestedPatternExecutor::InlinedFunction(InlinedFunction {
-                    inner,
-                    arg_mapping,
-                    ..
-                }) => {
+                NestedPatternExecutor::InlinedFunction(InlinedFunction { inner, arg_mapping, .. }) => {
                     let mapped_input = MaybeOwnedRow::new_owned(
                         arg_mapping.iter().map(|&arg_pos| input.get(arg_pos).clone().into_owned()).collect(),
                         input.multiplicity(),

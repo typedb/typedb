@@ -47,7 +47,7 @@ use crate::{
     },
     read::{
         pattern_executor::PatternExecutor, step_executor::create_executors_for_function,
-        tabled_functions::TabledFunctions,
+        tabled_functions::TabledFunctions, QueryPatternSuspensions,
     },
     row::MaybeOwnedRow,
     ExecutionInterrupt,
@@ -210,7 +210,7 @@ fn execute_single_function(
         function,
     )?;
     let mut tabled_functions = TabledFunctions::new(functions_registry.clone());
-    let mut suspend_points = Vec::new();
+    let mut suspend_points = QueryPatternSuspensions::new();
 
     let batch = exactly_one_or_return_err!(
         pattern_executor
@@ -288,7 +288,7 @@ fn execute_list_function(
         function,
     )?;
     let mut tabled_functions = TabledFunctions::new(functions_registry.clone());
-    let mut suspend_points = Vec::new();
+    let mut suspend_points = QueryPatternSuspensions::new();
 
     let mut nodes = Vec::new();
     // TODO: We could create an iterator over rows in a single call here instead
