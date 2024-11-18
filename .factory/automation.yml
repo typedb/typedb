@@ -106,10 +106,10 @@ build:
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //tests/behaviour/query/language:test_match --test_output=streamed
+        bazel test //tests/behaviour/query/language:test_fetch --test_output=streamed
 #        bazel test //tests/behaviour/query/language:test_expressions --test_output=streamed
 #        bazel test //tests/behaviour/query/language:test_modifiers --test_output=streamed
 #        bazel test //tests/behaviour/query/language:test_get --test_output=streamed
-        bazel test //tests/behaviour/query/language:test_fetch --test_output=streamed
 
 #    test-behaviour-query-write:
 #      image: vaticle-ubuntu-22.04
