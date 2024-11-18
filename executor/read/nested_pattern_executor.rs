@@ -62,7 +62,7 @@ impl InlinedFunction {
     }
 }
 
-pub(super) enum NestedPatternExecutor {
+pub(crate) enum NestedPatternExecutor {
     Disjunction(Disjunction),
     Negation(Negation),
     InlinedFunction(InlinedFunction),

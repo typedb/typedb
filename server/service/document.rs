@@ -77,7 +77,7 @@ fn encode_map(
         DocumentMap::UserKeys(map) => {
             let mut encoded_map = HashMap::with_capacity(map.len());
             for (key, value) in map.into_iter() {
-                let key_name = parameters.fetch_key(key).unwrap();
+                let key_name = parameters.fetch_key(key).expect("Expected key in parameters to get its name");
                 let encoded_value = encode_node(value, snapshot, type_manager, thing_manager, parameters)?;
                 encoded_map.insert(key_name.to_owned(), encoded_value);
             }

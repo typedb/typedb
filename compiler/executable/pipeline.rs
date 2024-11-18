@@ -13,6 +13,7 @@ use std::{
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::pipeline::{function_signature::FunctionID, VariableRegistry};
+use itertools::Itertools;
 
 use crate::{
     annotation::{
@@ -27,7 +28,7 @@ use crate::{
         insert::executable::InsertExecutable,
         match_::planner::{function_plan::ExecutableFunctionRegistry, match_executable::MatchExecutable},
         modifiers::{LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable},
-        reduce::ReduceExecutable,
+        reduce::{ReduceExecutable, ReduceRowsExecutable},
         ExecutableCompilationError,
     },
     VariablePosition,
@@ -39,6 +40,7 @@ pub struct ExecutablePipeline {
     pub executable_fetch: Option<Arc<ExecutableFetch>>,
 }
 
+#[derive(Debug)]
 pub enum ExecutableStage {
     Match(Arc<MatchExecutable>),
     Insert(Arc<InsertExecutable>),
@@ -145,12 +147,14 @@ pub fn compile_stages_and_fetch(
     (HashMap<Variable, VariablePosition>, Vec<ExecutableStage>, Option<Arc<ExecutableFetch>>),
     ExecutableCompilationError,
 > {
+    let selected_variables = variable_registry.variable_names().keys().copied().collect_vec();
     let (input_positions, executable_stages) = compile_pipeline_stages(
         statistics,
         variable_registry.clone(),
         available_functions,
         annotated_stages,
         input_variables.iter().cloned(),
+        &selected_variables,
     )?;
     let stages_variable_positions =
         executable_stages.last().map(|stage: &ExecutableStage| stage.output_row_mapping()).unwrap_or(HashMap::new());
@@ -171,14 +175,37 @@ pub(crate) fn compile_pipeline_stages(
     functions: &ExecutableFunctionRegistry,
     annotated_stages: Vec<AnnotatedStage>,
     input_variables: impl Iterator<Item = Variable>,
+    selected_variables: &Vec<Variable>,
 ) -> Result<(HashMap<Variable, VariablePosition>, Vec<ExecutableStage>), ExecutableCompilationError> {
     let mut executable_stages: Vec<ExecutableStage> = Vec::with_capacity(annotated_stages.len());
     let input_variable_positions =
         input_variables.enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))).collect();
+
     for stage in annotated_stages {
+        // TODO: We can filter out the variables that are no longer needed in the future stages, but are carried as selected variables from the previous one
+        let selected_variables = selected_variables
+            .iter()
+            .cloned()
+            .chain(stage.named_referenced_variables(variable_registry.as_ref()))
+            .unique()
+            .collect();
         let executable_stage = match executable_stages.last().map(|stage| stage.output_row_mapping()) {
-            Some(row_mapping) => compile_stage(statistics, variable_registry.clone(), functions, &row_mapping, stage)?,
-            None => compile_stage(statistics, variable_registry.clone(), functions, &input_variable_positions, stage)?,
+            Some(row_mapping) => compile_stage(
+                statistics,
+                variable_registry.clone(),
+                functions,
+                &row_mapping,
+                &selected_variables,
+                stage,
+            )?,
+            None => compile_stage(
+                statistics,
+                variable_registry.clone(),
+                functions,
+                &input_variable_positions,
+                &selected_variables,
+                stage,
+            )?,
         };
         executable_stages.push(executable_stage);
     }
@@ -188,8 +215,9 @@ pub(crate) fn compile_pipeline_stages(
 fn compile_stage(
     statistics: &Statistics,
     variable_registry: Arc<VariableRegistry>,
-    functions: &ExecutableFunctionRegistry,
+    _functions: &ExecutableFunctionRegistry,
     input_variables: &HashMap<Variable, VariablePosition>,
+    selected_variables: &Vec<Variable>,
     annotated_stage: AnnotatedStage,
 ) -> Result<ExecutableStage, ExecutableCompilationError> {
     match &annotated_stage {
@@ -197,6 +225,7 @@ fn compile_stage(
             let plan = crate::executable::match_::planner::compile(
                 block,
                 input_variables,
+                selected_variables,
                 block_annotations,
                 variable_registry,
                 executable_expressions,
@@ -277,8 +306,7 @@ fn compile_stage(
                 reductions.push(reducer_on_position);
             }
             Ok(ExecutableStage::Reduce(Arc::new(ReduceExecutable {
-                reductions,
-                input_group_positions,
+                reduce_rows_executable: Arc::new(ReduceRowsExecutable { reductions, input_group_positions }),
                 output_row_mapping,
             })))
         }

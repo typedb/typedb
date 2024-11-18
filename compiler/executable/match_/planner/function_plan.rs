@@ -45,9 +45,4 @@ impl ExecutableFunctionRegistry {
             FunctionID::Preamble(id) => self.preamble_functions.get(id).unwrap(),
         }
     }
-
-    // TODO: Find all references, update them and remove this.
-    pub fn TODO__empty() -> Self {
-        Self::empty()
-    }
 }

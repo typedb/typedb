@@ -27,6 +27,7 @@ use crate::{
     filter_variants, VariablePosition,
 };
 
+#[derive(Debug)]
 pub struct InsertExecutable {
     pub concept_instructions: Vec<ConceptInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,

@@ -11,26 +11,31 @@ use ir::pipeline::modifier::SortVariable;
 
 use crate::VariablePosition;
 
+#[derive(Debug)]
 pub struct SelectExecutable {
     pub retained_positions: HashSet<VariablePosition>,
     pub output_row_mapping: HashMap<Variable, VariablePosition>,
 }
 
+#[derive(Debug)]
 pub struct SortExecutable {
     pub sort_on: Vec<SortVariable>,
     pub output_row_mapping: HashMap<Variable, VariablePosition>,
 }
 
+#[derive(Debug)]
 pub struct OffsetExecutable {
     pub offset: u64,
     pub output_row_mapping: HashMap<Variable, VariablePosition>,
 }
 
+#[derive(Debug)]
 pub struct LimitExecutable {
     pub limit: u64,
     pub output_row_mapping: HashMap<Variable, VariablePosition>,
 }
 
+#[derive(Debug)]
 pub struct RequireExecutable {
     pub required: HashSet<VariablePosition>,
     pub output_row_mapping: HashMap<Variable, VariablePosition>,

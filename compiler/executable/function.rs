@@ -25,12 +25,13 @@ use crate::{
     executable::{
         match_::planner::function_plan::ExecutableFunctionRegistry,
         pipeline::{compile_pipeline_stages, ExecutableStage},
-        reduce::ReduceInstruction,
+        reduce::{ReduceInstruction, ReduceRowsExecutable},
         ExecutableCompilationError,
     },
     VariablePosition,
 };
 
+#[derive(Debug)]
 pub struct ExecutableFunction {
     pub executable_stages: Vec<ExecutableStage>,
     pub argument_positions: HashMap<Variable, VariablePosition>,
@@ -40,11 +41,12 @@ pub struct ExecutableFunction {
     // pub plan_cost: f64, // TODO: Where do we fit this in?
 }
 
+#[derive(Debug)]
 pub enum ExecutableReturn {
     Stream(Vec<VariablePosition>),
     Single(SingleSelector, Vec<VariablePosition>),
     Check,
-    Reduce(Vec<ReduceInstruction<VariablePosition>>),
+    Reduce(Arc<ReduceRowsExecutable>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -66,6 +68,7 @@ pub(crate) fn compile_function(
         schema_functions,
         stages,
         arguments.into_iter(),
+        &return_.referenced_variables(),
     )?;
 
     let returns = compile_return_operation(&executable_stages, return_)?;
@@ -93,9 +96,11 @@ fn compile_return_operation(
         }
         | AnnotatedFunctionReturn::ReduceCheck {} => Ok(ExecutableReturn::Check),
         | AnnotatedFunctionReturn::ReduceReducer { instructions } => {
-            let positional_reducers =
-                instructions.into_iter().map(|reducer| reducer.map(&variable_positions)).collect();
-            Ok(ExecutableReturn::Reduce(positional_reducers))
+            let reductions = instructions.into_iter().map(|reducer| reducer.map(&variable_positions)).collect();
+            Ok(ExecutableReturn::Reduce(Arc::new(ReduceRowsExecutable {
+                reductions,
+                input_group_positions: Vec::new(),
+            })))
         }
     }
 }

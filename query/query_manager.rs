@@ -12,6 +12,7 @@ use compiler::{
 };
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::pipeline::{
+    fetch::FetchExecutionError,
     pipeline::Pipeline,
     stage::{ReadPipelineStage, WritePipelineStage},
 };
@@ -99,7 +100,7 @@ impl QueryManager {
         .map_err(|err| QueryError::ExecutableCompilation { typedb_source: err })?;
 
         // 4: Executor
-        Ok(Pipeline::build_read_pipeline(
+        Pipeline::build_read_pipeline(
             snapshot,
             thing_manager,
             variable_registry.as_ref(),
@@ -108,7 +109,8 @@ impl QueryManager {
             executable_fetch,
             Arc::new(parameters),
             None,
-        ))
+        )
+        .map_err(|typedb_source| QueryError::Pipeline { typedb_source })
     }
 
     pub fn prepare_write_pipeline<Snapshot: WritableSnapshot>(
@@ -169,7 +171,7 @@ impl QueryManager {
         let ExecutablePipeline { executable_functions, executable_stages, executable_fetch } = match executable_pipeline
         {
             Ok(executable) => executable,
-            Err(err) => return Err((snapshot, QueryError::ExecutableCompilation { typedb_source: err })),
+            Err(typedb_source) => return Err((snapshot, QueryError::ExecutableCompilation { typedb_source })),
         };
 
         // 4: Executor

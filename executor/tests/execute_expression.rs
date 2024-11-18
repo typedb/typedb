@@ -50,9 +50,15 @@ fn compile_expression_via_match(
 > {
     let query = format!("match $x = {}; select $x;", s);
     let mut translation_context = TranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
     if let Stage::Match(match_) = typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.first().unwrap() {
-        let block =
-            translate_match(&mut translation_context, &HashMapFunctionSignatureIndex::empty(), match_)?.finish()?;
+        let block = translate_match(
+            &mut translation_context,
+            &mut value_parameters,
+            &HashMapFunctionSignatureIndex::empty(),
+            match_,
+        )?
+        .finish()?;
         let variable_mapping = variable_types
             .keys()
             .map(|&name| (name.to_owned(), translation_context.get_variable(name).unwrap()))
@@ -69,9 +75,9 @@ fn compile_expression_via_match(
         let compiled = ExpressionCompilationContext::compile(
             expression_binding.expression(),
             &variable_types_mapped,
-            &translation_context.parameters,
+            &value_parameters,
         )?;
-        Ok((variable_mapping, compiled, translation_context.parameters))
+        Ok((variable_mapping, compiled, value_parameters))
     } else {
         unreachable!();
     }

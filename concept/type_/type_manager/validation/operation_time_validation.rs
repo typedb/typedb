@@ -1099,7 +1099,7 @@ impl OperationTimeValidation {
 
             for supertype_constraint in supertype_constraints.into_iter() {
                 supertype_constraint.validate_narrowed_by_strictly_same_type(&constraint_description).map_err(
-                    |source| {
+                    |typedb_source| {
                         let attribute_type_label =
                             match get_label_or_schema_err(snapshot, type_manager, attribute_type.clone()) {
                                 Ok(label) => label,
@@ -1112,7 +1112,7 @@ impl OperationTimeValidation {
                         Box::new(SchemaValidationError::SubtypeConstraintDoesNotNarrowSupertypeConstraint {
                             subtype: attribute_type_label,
                             supertype: supertype_label,
-                            source,
+                            typedb_source,
                         })
                     },
                 )?;
@@ -1138,7 +1138,7 @@ impl OperationTimeValidation {
 
             for supertype_constraint in supertype_constraints.into_iter() {
                 supertype_constraint.validate_narrowed_by_strictly_same_type(&constraint_description).map_err(
-                    |source| {
+                    |typedb_source| {
                         let attribute_type_label =
                             match get_label_or_schema_err(snapshot, type_manager, attribute_type.clone()) {
                                 Ok(label) => label,
@@ -1151,7 +1151,7 @@ impl OperationTimeValidation {
                         Box::new(SchemaValidationError::SubtypeConstraintDoesNotNarrowSupertypeConstraint {
                             subtype: attribute_type_label,
                             supertype: supertype_label,
-                            source,
+                            typedb_source,
                         })
                     },
                 )?;
@@ -1177,7 +1177,7 @@ impl OperationTimeValidation {
 
             for supertype_constraint in supertype_constraints.into_iter() {
                 supertype_constraint.validate_narrowed_by_strictly_same_type(&constraint_description).map_err(
-                    |source| {
+                    |typedb_source| {
                         let attribute_type_label =
                             match get_label_or_schema_err(snapshot, type_manager, attribute_type.clone()) {
                                 Ok(label) => label,
@@ -1190,7 +1190,7 @@ impl OperationTimeValidation {
                         Box::new(SchemaValidationError::SubtypeConstraintDoesNotNarrowSupertypeConstraint {
                             subtype: attribute_type_label,
                             supertype: supertype_label,
-                            source,
+                            typedb_source,
                         })
                     },
                 )?;
@@ -1214,22 +1214,24 @@ impl OperationTimeValidation {
                 .get_constraints_regex(snapshot, type_manager)
                 .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
             for regex_constraint in regex_constraints {
-                regex_constraint.validate_narrows_strictly_same_type(&constraint_description).map_err(|source| {
-                    let subtype_label = match get_label_or_schema_err(snapshot, type_manager, subtype.clone()) {
-                        Ok(label) => label,
-                        Err(err) => return err,
-                    };
-                    let attribute_type_label =
-                        match get_label_or_schema_err(snapshot, type_manager, attribute_type.clone()) {
+                regex_constraint.validate_narrows_strictly_same_type(&constraint_description).map_err(
+                    |typedb_source| {
+                        let subtype_label = match get_label_or_schema_err(snapshot, type_manager, subtype.clone()) {
                             Ok(label) => label,
                             Err(err) => return err,
                         };
-                    Box::new(SchemaValidationError::SubtypeConstraintDoesNotNarrowSupertypeConstraint {
-                        subtype: subtype_label,
-                        supertype: attribute_type_label,
-                        source,
-                    })
-                })?;
+                        let attribute_type_label =
+                            match get_label_or_schema_err(snapshot, type_manager, attribute_type.clone()) {
+                                Ok(label) => label,
+                                Err(err) => return err,
+                            };
+                        Box::new(SchemaValidationError::SubtypeConstraintDoesNotNarrowSupertypeConstraint {
+                            subtype: subtype_label,
+                            supertype: attribute_type_label,
+                            typedb_source,
+                        })
+                    },
+                )?;
             }
         }
         Ok(())
@@ -1250,22 +1252,24 @@ impl OperationTimeValidation {
                 .get_constraints_range(snapshot, type_manager)
                 .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
             for range_constraint in range_constraints {
-                range_constraint.validate_narrows_strictly_same_type(&constraint_description).map_err(|source| {
-                    let subtype_label = match get_label_or_schema_err(snapshot, type_manager, subtype.clone()) {
-                        Ok(label) => label,
-                        Err(err) => return err,
-                    };
-                    let attribute_type_label =
-                        match get_label_or_schema_err(snapshot, type_manager, attribute_type.clone()) {
+                range_constraint.validate_narrows_strictly_same_type(&constraint_description).map_err(
+                    |typedb_source| {
+                        let subtype_label = match get_label_or_schema_err(snapshot, type_manager, subtype.clone()) {
                             Ok(label) => label,
                             Err(err) => return err,
                         };
-                    Box::new(SchemaValidationError::SubtypeConstraintDoesNotNarrowSupertypeConstraint {
-                        subtype: subtype_label,
-                        supertype: attribute_type_label,
-                        source,
-                    })
-                })?;
+                        let attribute_type_label =
+                            match get_label_or_schema_err(snapshot, type_manager, attribute_type.clone()) {
+                                Ok(label) => label,
+                                Err(err) => return err,
+                            };
+                        Box::new(SchemaValidationError::SubtypeConstraintDoesNotNarrowSupertypeConstraint {
+                            subtype: subtype_label,
+                            supertype: attribute_type_label,
+                            typedb_source,
+                        })
+                    },
+                )?;
             }
         }
         Ok(())
@@ -1286,22 +1290,24 @@ impl OperationTimeValidation {
                 .get_constraints_regex(snapshot, type_manager)
                 .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
             for values_constraint in values_constraints {
-                values_constraint.validate_narrows_strictly_same_type(&constraint_description).map_err(|source| {
-                    let subtype_label = match get_label_or_schema_err(snapshot, type_manager, subtype.clone()) {
-                        Ok(label) => label,
-                        Err(err) => return err,
-                    };
-                    let attribute_type_label =
-                        match get_label_or_schema_err(snapshot, type_manager, attribute_type.clone()) {
+                values_constraint.validate_narrows_strictly_same_type(&constraint_description).map_err(
+                    |typedb_source| {
+                        let subtype_label = match get_label_or_schema_err(snapshot, type_manager, subtype.clone()) {
                             Ok(label) => label,
                             Err(err) => return err,
                         };
-                    Box::new(SchemaValidationError::SubtypeConstraintDoesNotNarrowSupertypeConstraint {
-                        subtype: subtype_label,
-                        supertype: attribute_type_label,
-                        source,
-                    })
-                })?;
+                        let attribute_type_label =
+                            match get_label_or_schema_err(snapshot, type_manager, attribute_type.clone()) {
+                                Ok(label) => label,
+                                Err(err) => return err,
+                            };
+                        Box::new(SchemaValidationError::SubtypeConstraintDoesNotNarrowSupertypeConstraint {
+                            subtype: subtype_label,
+                            supertype: attribute_type_label,
+                            typedb_source,
+                        })
+                    },
+                )?;
             }
         }
         Ok(())
@@ -1341,14 +1347,14 @@ impl OperationTimeValidation {
                 .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
             for regex_constraint in regex_constraints {
                 regex_constraint.validate_narrows_strictly_same_type(type_constraint_description)
-                    .map_err(|source| {
+                    .map_err(|typedb_source| {
                         let label = match get_label_or_schema_err(snapshot, type_manager, attribute_type.clone()) {
                             Ok(label) => label,
                             Err(err) => return err,
                         };
                         Box::new(SchemaValidationError::CannotSetAnnotationToInterfaceBecauseItsConstraintIsNotNarrowedByItsCapabilityConstraint {
                             interface: label,
-                            source,
+                            typedb_source,
                         })
                     })?;
             }
@@ -1390,14 +1396,14 @@ impl OperationTimeValidation {
                 .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
             for range_constraint in range_constraints {
                 range_constraint.validate_narrows_strictly_same_type(type_constraint_description)
-                    .map_err(|source| {
+                    .map_err(|typedb_source| {
                         let label = match get_label_or_schema_err(snapshot, type_manager, attribute_type.clone()) {
                             Ok(label) => label,
                             Err(err) => return err,
                         };
                         Box::new(SchemaValidationError::CannotSetAnnotationToInterfaceBecauseItsConstraintIsNotNarrowedByItsCapabilityConstraint {
                             interface: label,
-                            source,
+                            typedb_source,
                         })
                     })?;
             }
@@ -1439,14 +1445,14 @@ impl OperationTimeValidation {
                 .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
             for values_constraint in values_constraints {
                 values_constraint.validate_narrows_strictly_same_type(type_constraint_description)
-                    .map_err(|source| {
+                    .map_err(|typedb_source| {
                         let label = match get_label_or_schema_err(snapshot, type_manager, attribute_type.clone()) {
                             Ok(label) => label,
                             Err(err) => return err,
                         };
                         Box::new(SchemaValidationError::CannotSetAnnotationToInterfaceBecauseItsConstraintIsNotNarrowedByItsCapabilityConstraint {
                             interface: label,
-                            source,
+                            typedb_source,
                         })
                     })?;
             }
@@ -1467,7 +1473,7 @@ impl OperationTimeValidation {
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
         for regex_constraint in attribute_type_regex_constraints {
             regex_constraint.validate_narrowed_by_strictly_same_type(&capability_constraint_description)
-                .map_err(|source| {
+                .map_err(|typedb_source| {
                     let owner_label = match get_label_or_schema_err(snapshot, type_manager, owns.owner()) {
                         Ok(label) => label,
                         Err(err) => return err,
@@ -1480,7 +1486,7 @@ impl OperationTimeValidation {
                         cap: CapabilityKind::Owns,
                         label: owner_label,
                         interface: attribute_label,
-                        source,
+                        typedb_source,
                     })
                 })?;
         }
@@ -1500,7 +1506,7 @@ impl OperationTimeValidation {
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
         for range_constraint in attribute_type_range_constraints {
             range_constraint.validate_narrowed_by_strictly_same_type(&capability_constraint_description)
-                .map_err(|source| {
+                .map_err(|typedb_source| {
                     let owner_label = match get_label_or_schema_err(snapshot, type_manager, owns.owner()) {
                         Ok(label) => label,
                         Err(err) => return err,
@@ -1513,7 +1519,7 @@ impl OperationTimeValidation {
                         cap: CapabilityKind::Owns,
                         interface: attribute_label,
                         label: owner_label,
-                        source,
+                        typedb_source,
                     })
                 })?;
         }
@@ -1533,7 +1539,7 @@ impl OperationTimeValidation {
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
         for values_constraint in attribute_type_values_constraints {
             values_constraint.validate_narrowed_by_strictly_same_type(&capability_constraint_description)
-                .map_err(|source| {
+                .map_err(|typedb_source| {
                     let owner_label = match get_label_or_schema_err(snapshot, type_manager, owns.owner()) {
                         Ok(label) => label,
                         Err(err) => return err,
@@ -1546,7 +1552,7 @@ impl OperationTimeValidation {
                         cap: CapabilityKind::Owns,
                         label: owner_label,
                         interface: attribute_label,
-                        source,
+                        typedb_source,
                     })
                 })?;
         }

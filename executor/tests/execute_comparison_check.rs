@@ -35,6 +35,7 @@ use ir::{
     pipeline::block::Block,
     translation::TranslationContext,
 };
+use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -79,7 +80,8 @@ fn attribute_equality() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.new_block_builder_context());
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let var_age_a = conjunction.get_or_declare_variable("a").unwrap();
     let var_age_b = conjunction.get_or_declare_variable("b").unwrap();

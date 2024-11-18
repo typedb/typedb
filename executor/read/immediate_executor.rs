@@ -663,8 +663,13 @@ impl AssignExecutor {
             let input_variables = self
                 .inputs
                 .iter()
-                .map(|&pos| (pos, ExpressionValue::try_from_value(input_row.get(pos).to_owned(), context).unwrap()))
-                .collect();
+                .map(|&pos| {
+                    let value = input_row.get(pos).to_owned();
+                    let expression_value = ExpressionValue::try_from_value(value, context)
+                        .map_err(|source| ReadExecutionError::ExpressionEvaluate { source })?;
+                    Ok((pos, expression_value))
+                })
+                .try_collect()?;
             let output_value = evaluate_expression(&self.expression, input_variables, &context.parameters)
                 .map_err(|err| ReadExecutionError::ExpressionEvaluate { source: err })?;
             output.append(|mut row| {

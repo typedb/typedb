@@ -6,7 +6,7 @@
 
 use std::{cmp::Ordering, iter::Peekable, sync::Arc};
 
-use compiler::executable::{modifiers::SortExecutable, reduce::ReduceExecutable};
+use compiler::executable::{modifiers::SortExecutable, reduce::ReduceRowsExecutable};
 use ir::pipeline::modifier::SortVariable;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
@@ -65,8 +65,11 @@ impl CollectingStageExecutor {
         (pattern, collector)
     }
 
-    pub(crate) fn new_reduce(previous_stage: PatternExecutor, reduce_executable: Arc<ReduceExecutable>) -> Self {
-        Self { pattern: previous_stage, collector: CollectorEnum::Reduce(ReduceCollector::new(reduce_executable)) }
+    pub(crate) fn new_reduce(
+        previous_stage: PatternExecutor,
+        reduce_rows_executable: Arc<ReduceRowsExecutable>,
+    ) -> Self {
+        Self { pattern: previous_stage, collector: CollectorEnum::Reduce(ReduceCollector::new(reduce_rows_executable)) }
     }
 
     pub(crate) fn new_sort(previous_stage: PatternExecutor, sort_executable: &SortExecutable) -> Self {
@@ -109,14 +112,14 @@ pub(super) trait CollectedStageIteratorTrait {
 
 // Reduce
 pub(super) struct ReduceCollector {
-    reduce_executable: Arc<ReduceExecutable>,
+    reduce_executable: Arc<ReduceRowsExecutable>,
     active_reducer: Option<GroupedReducer>,
     output: Option<BatchRowIterator>,
     output_width: u32,
 }
 
 impl ReduceCollector {
-    fn new(reduce_executable: Arc<ReduceExecutable>) -> Self {
+    fn new(reduce_executable: Arc<ReduceRowsExecutable>) -> Self {
         let output_width = (reduce_executable.input_group_positions.len() + reduce_executable.reductions.len()) as u32;
         Self { reduce_executable, active_reducer: None, output: None, output_width }
     }

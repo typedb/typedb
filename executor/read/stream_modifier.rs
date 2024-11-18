@@ -16,6 +16,7 @@ pub(super) enum StreamModifierExecutor {
     Offset { inner: PatternExecutor, offset: u64 },
     Limit { inner: PatternExecutor, limit: u64 },
     Distinct { inner: PatternExecutor, output_width: u32 },
+    Last { inner: PatternExecutor },
 }
 
 impl Into<StepExecutors> for StreamModifierExecutor {
@@ -37,11 +38,21 @@ impl StreamModifierExecutor {
         Self::Distinct { inner, output_width }
     }
 
+    pub(crate) fn new_first(inner: PatternExecutor) -> Self {
+        const FIRST_LIMIT: u64 = 1;
+        Self::new_limit(inner, FIRST_LIMIT)
+    }
+
+    pub(crate) fn new_last(inner: PatternExecutor) -> Self {
+        Self::Last { inner }
+    }
+
     pub(crate) fn get_inner(&mut self) -> &mut PatternExecutor {
         match self {
             Self::Offset { inner, .. } => inner,
             Self::Limit { inner, .. } => inner,
             Self::Distinct { inner, .. } => inner,
+            Self::Last { inner, .. } => inner,
         }
     }
 }
@@ -50,6 +61,7 @@ pub(super) enum StreamModifierResultMapper {
     Offset(OffsetMapper),
     Limit(LimitMapper),
     Distinct(DistinctMapper),
+    Last(LastMapper),
 }
 
 impl StreamModifierResultMapper {
@@ -58,6 +70,7 @@ impl StreamModifierResultMapper {
             Self::Offset(mapper) => mapper.map_output(subquery_result),
             Self::Limit(mapper) => mapper.map_output(subquery_result),
             Self::Distinct(mapper) => mapper.map_output(subquery_result),
+            Self::Last(mapper) => mapper.map_output(subquery_result),
         }
     }
 }
@@ -178,5 +191,26 @@ impl StreamModifierResultMapperTrait for DistinctMapper {
             }
         }
         StreamModifierControl::Retry(Some(output_batch))
+    }
+}
+
+pub(super) struct LastMapper {
+    last_row: Option<MaybeOwnedRow<'static>>,
+}
+
+impl LastMapper {
+    pub(crate) fn new() -> Self {
+        Self { last_row: None }
+    }
+}
+
+impl StreamModifierResultMapperTrait for LastMapper {
+    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> StreamModifierControl {
+        if let Some(input_batch) = subquery_result {
+            self.last_row = Some(input_batch.get_row(input_batch.len() - 1).into_owned());
+            StreamModifierControl::Retry(None)
+        } else {
+            StreamModifierControl::Done(self.last_row.clone().map(FixedBatch::from))
+        }
     }
 }

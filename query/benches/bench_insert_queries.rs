@@ -108,15 +108,12 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let outputs = pipeline.rows_positions().unwrap().clone();
     let (iter, ctx) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(typedb_source, ctx)| {
-            (QueryError::WritePipelineExecutionError { typedb_source }, Arc::into_inner(ctx.snapshot).unwrap())
+            (QueryError::WritePipelineExecution { typedb_source }, Arc::into_inner(ctx.snapshot).unwrap())
         })?;
     let mut batch = match iter.collect_owned() {
         Ok(batch) => batch,
         Err(typedb_source) => {
-            return Err((
-                QueryError::WritePipelineExecutionError { typedb_source },
-                Arc::into_inner(ctx.snapshot).unwrap(),
-            ));
+            return Err((QueryError::WritePipelineExecution { typedb_source }, Arc::into_inner(ctx.snapshot).unwrap()));
         }
     };
     let mut collected = Vec::with_capacity(batch.len());

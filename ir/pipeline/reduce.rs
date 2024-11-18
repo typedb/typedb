@@ -16,6 +16,10 @@ impl Reduce {
     pub(crate) fn new(assigned_reductions: Vec<(Variable, Reducer)>, within_group: Vec<Variable>) -> Self {
         Self { assigned_reductions, within_group }
     }
+
+    pub fn variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.assigned_reductions.iter().map(|(variable, _)| variable).cloned().chain(self.within_group.iter().cloned())
+    }
 }
 
 #[derive(Clone, Copy, Debug)]

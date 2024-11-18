@@ -72,7 +72,7 @@ pub mod tests {
             block::Block,
             function::{Function, FunctionBody, ReturnOperation},
             function_signature::{FunctionID, FunctionSignature},
-            VariableRegistry,
+            ParameterRegistry, VariableRegistry,
         },
         translation::{pipeline::TranslatedStage, TranslationContext},
     };
@@ -110,7 +110,9 @@ pub mod tests {
         let type_player_1 = Type::Relation(RelationType::build_from_type_id(TypeID::build(2)));
 
         let mut translation_context = TranslationContext::new();
-        let dummy = Block::builder(translation_context.new_block_builder_context()).finish().unwrap();
+        let mut value_parameters = ParameterRegistry::new();
+        let dummy =
+            Block::builder(translation_context.new_block_builder_context(&mut value_parameters)).finish().unwrap();
         let constraint1 = Constraint::Links(Links::new(var_relation, var_player, var_role_type));
         let constraint2 = Constraint::Links(Links::new(var_relation, var_player, var_role_type));
         let nested1 = TypeInferenceGraph {
@@ -238,7 +240,8 @@ pub mod tests {
             // with fun fn_test() -> animal: match $called_animal isa cat, has $called_name; return { $called_animal };
             // match $animal = fn_test();
             let mut function_context = TranslationContext::new();
-            let mut builder = Block::builder(function_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(function_context.new_block_builder_context(&mut value_parameters));
             let mut f_conjunction = builder.conjunction_mut();
             let f_var_animal = f_conjunction.get_or_declare_variable("called_animal").unwrap();
             let f_var_animal_type = f_conjunction.get_or_declare_variable("called_animal_type").unwrap();
@@ -250,6 +253,7 @@ pub mod tests {
             let f_ir = Function::new(
                 "fn_test",
                 function_context,
+                value_parameters,
                 vec![],
                 Some(vec![]),
                 FunctionBody::new(
@@ -259,7 +263,8 @@ pub mod tests {
             );
 
             let mut entry_context = TranslationContext::new();
-            let mut builder = Block::builder(entry_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(entry_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
 
@@ -443,7 +448,8 @@ pub mod tests {
             // Case 1: $a isa cat, has name $n;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -514,7 +520,8 @@ pub mod tests {
             // Case 2: $a isa animal, has cat-name $n;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -583,7 +590,8 @@ pub mod tests {
             // Case 3: $a isa cat, has dog-name $n;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -618,7 +626,8 @@ pub mod tests {
             let types_n = all_concrete_names.clone();
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -694,7 +703,8 @@ pub mod tests {
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
         let mut translation_context = TranslationContext::new();
-        let mut builder = Block::builder(translation_context.new_block_builder_context());
+        let mut value_parameters = ParameterRegistry::new();
+        let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
         let mut conjunction = builder.conjunction_mut();
         let (var_animal, var_name, var_name_type) = ["animal", "name", "name_type"]
             .into_iter()
@@ -822,7 +832,8 @@ pub mod tests {
         // Case 1: $a has $n;
         let snapshot = storage.clone().open_snapshot_write();
         let mut translation_context = TranslationContext::new();
-        let mut builder = Block::builder(translation_context.new_block_builder_context());
+        let mut value_parameters = ParameterRegistry::new();
+        let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
         let mut conjunction = builder.conjunction_mut();
         let (var_animal, var_name) = ["animal", "name"]
             .into_iter()
@@ -877,7 +888,8 @@ pub mod tests {
         // With roles specified
         let snapshot = storage.clone().open_snapshot_write();
         let mut translation_context = TranslationContext::new();
-        let mut builder = Block::builder(translation_context.new_block_builder_context());
+        let mut value_parameters = ParameterRegistry::new();
+        let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
         let mut conjunction = builder.conjunction_mut();
         let (
             var_has_fear,
@@ -1020,7 +1032,8 @@ pub mod tests {
             // Case 1: $a isa $at; $at label cat; $n isa! $nt; $at owns $nt;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_owned_type) =
                 ["animal", "name", "animal_type", "name_type"]
@@ -1089,7 +1102,8 @@ pub mod tests {
             let snapshot = storage.clone().open_snapshot_write();
 
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_owner_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -1156,7 +1170,8 @@ pub mod tests {
             // Case 3: $a isa $at; $at type cat; $n isa $nt; $nt type dogname; $at owns $nt;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -1212,7 +1227,8 @@ pub mod tests {
             let types_n = all_concrete_names.clone();
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -1293,7 +1309,8 @@ pub mod tests {
             // Case 1: $a isa cat, has name $n;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let [var_animal, var_name] =
                 ["animal", "name"].map(|name| conjunction.get_or_declare_variable(name).unwrap());
@@ -1357,7 +1374,8 @@ pub mod tests {
             // Case 2: $a isa animal, has cat-name $n;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let [var_animal, var_name] =
                 ["animal", "name"].map(|name| conjunction.get_or_declare_variable(name).unwrap());
@@ -1419,7 +1437,8 @@ pub mod tests {
             // Case 3: $a isa cat, has dog-name $n;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let [var_animal, var_name] =
                 ["animal", "name"].map(|name| conjunction.get_or_declare_variable(name).unwrap());
@@ -1448,7 +1467,8 @@ pub mod tests {
             let types_n = all_concrete_names.clone();
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let [var_animal, var_name] =
                 ["animal", "name"].map(|name| conjunction.get_or_declare_variable(name).unwrap());

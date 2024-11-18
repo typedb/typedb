@@ -23,7 +23,7 @@ use crate::{
         nested_pattern_executor::{Disjunction, InlinedFunction, Negation, NestedPatternExecutor},
         step_executor::StepExecutors,
         stream_modifier::{
-            DistinctMapper, LimitMapper, OffsetMapper, StreamModifierExecutor, StreamModifierResultMapper,
+            DistinctMapper, LastMapper, LimitMapper, OffsetMapper, StreamModifierExecutor, StreamModifierResultMapper,
         },
         tabled_call_executor::TabledCallResult,
         tabled_functions::{TabledFunctionPatternExecutorState, TabledFunctions},
@@ -51,7 +51,7 @@ pub(crate) struct PatternExecutor {
 }
 
 impl PatternExecutor {
-    pub(super) fn new(executors: Vec<StepExecutors>) -> Self {
+    pub fn new(executors: Vec<StepExecutors>) -> Self {
         PatternExecutor { executors, control_stack: Vec::new() }
     }
 
@@ -244,7 +244,7 @@ impl PatternExecutor {
                         self.push_next_instruction(context, index.next(), mapped)?;
                     }
                 }
-                ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction { index, input, }) => {
+                ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction { index, input }) => {
                     let NestedPatternExecutor::InlinedFunction(executor) = &mut executors[index.0].unwrap_nested()
                     else {
                         unreachable!();
@@ -261,10 +261,8 @@ impl PatternExecutor {
                     }
                     if let Some(unmapped) = unmapped_opt {
                         let mapped = executor.map_output(input.as_reference(), unmapped);
-                        control_stack.push(ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction {
-                            index,
-                            input,
-                        }));
+                        control_stack
+                            .push(ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction { index, input }));
                         self.push_next_instruction(context, index.next(), mapped)?;
                     }
                 }
@@ -400,11 +398,7 @@ impl PatternExecutor {
                         input: input.clone().into_owned(),
                     }));
                 }
-                NestedPatternExecutor::InlinedFunction(InlinedFunction {
-                    inner,
-                    arg_mapping,
-                    ..
-                }) => {
+                NestedPatternExecutor::InlinedFunction(InlinedFunction { inner, arg_mapping, .. }) => {
                     let mapped_input = MaybeOwnedRow::new_owned(
                         arg_mapping.iter().map(|&arg_pos| input.get(arg_pos).clone().into_owned()).collect(),
                         input.multiplicity(),
@@ -438,6 +432,15 @@ impl PatternExecutor {
                 }
                 StreamModifierExecutor::Distinct { inner, output_width, .. } => {
                     let mapper = StreamModifierResultMapper::Distinct(DistinctMapper::new(*output_width));
+                    inner.prepare(FixedBatch::from(input.as_reference()));
+                    self.control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
+                        index,
+                        mapper,
+                        input: input.clone().into_owned(),
+                    }));
+                }
+                StreamModifierExecutor::Last { inner } => {
+                    let mapper = StreamModifierResultMapper::Last(LastMapper::new());
                     inner.prepare(FixedBatch::from(input.as_reference()));
                     self.control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
                         index,

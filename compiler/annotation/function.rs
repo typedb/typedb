@@ -61,6 +61,19 @@ pub enum AnnotatedFunctionReturn {
 }
 
 impl AnnotatedFunctionReturn {
+    pub(crate) fn referenced_variables(&self) -> Vec<Variable> {
+        match self {
+            AnnotatedFunctionReturn::Stream { variables, .. } => variables.clone(),
+            AnnotatedFunctionReturn::Single { variables, .. } => variables.clone(),
+            AnnotatedFunctionReturn::ReduceCheck { .. } => Vec::new(),
+            AnnotatedFunctionReturn::ReduceReducer { instructions } => {
+                instructions.iter().filter_map(|x| x.id()).collect()
+            }
+        }
+    }
+}
+
+impl AnnotatedFunctionReturn {
     pub fn annotations(&self) -> Cow<'_, [FunctionParameterAnnotation]> {
         match self {
             AnnotatedFunctionReturn::Stream { annotations, .. } => Cow::Borrowed(annotations),
@@ -264,14 +277,16 @@ fn annotate_function_impl(
     argument_concept_variable_types: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     argument_value_variable_types: BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<AnnotatedFunction, Box<FunctionAnnotationError>> {
-    let Function { name, context, function_body: FunctionBody { stages, return_operation }, arguments, .. } = function;
+    let Function {
+        name, context, parameters, function_body: FunctionBody { stages, return_operation }, arguments, ..
+    } = function;
 
     let (stages, running_variable_types, running_value_types) = annotate_pipeline_stages(
         snapshot,
         type_manager,
         indexed_annotated_functions,
         &mut context.variable_registry,
-        &context.parameters,
+        &parameters,
         local_functions,
         stages.clone(),
         argument_concept_variable_types,
@@ -291,7 +306,7 @@ fn annotate_function_impl(
     )?;
     Ok(AnnotatedFunction {
         variable_registry: context.variable_registry.clone(),
-        parameter_registry: context.parameters.clone(),
+        parameter_registry: parameters.clone(),
         arguments: arguments.clone(),
         stages,
         return_,

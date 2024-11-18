@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use answer::variable::Variable;
 use encoding::value::value_type::ValueType;
@@ -12,11 +12,16 @@ use ir::pattern::IrID;
 
 use crate::VariablePosition;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ReduceExecutable {
+    pub reduce_rows_executable: Arc<ReduceRowsExecutable>,
+    pub output_row_mapping: HashMap<Variable, VariablePosition>, // output_row = (group_vars, reduce_outputs)
+}
+
+#[derive(Debug, Clone)]
+pub struct ReduceRowsExecutable {
     pub reductions: Vec<ReduceInstruction<VariablePosition>>,
     pub input_group_positions: Vec<VariablePosition>,
-    pub output_row_mapping: HashMap<Variable, VariablePosition>, // output_row = (group_vars, reduce_outputs)
 }
 
 #[derive(Debug, Clone)]
@@ -38,6 +43,26 @@ pub enum ReduceInstruction<ID: IrID> {
 }
 
 impl<ID: IrID> ReduceInstruction<ID> {
+    pub fn id(&self) -> Option<ID> {
+        match *self {
+            Self::Count => None,
+
+            Self::CountVar(id)
+            | Self::SumLong(id)
+            | Self::SumDouble(id)
+            | Self::MaxLong(id)
+            | Self::MaxDouble(id)
+            | Self::MinLong(id)
+            | Self::MinDouble(id)
+            | Self::MeanLong(id)
+            | Self::MeanDouble(id)
+            | Self::MedianLong(id)
+            | Self::MedianDouble(id)
+            | Self::StdLong(id)
+            | Self::StdDouble(id) => Some(id),
+        }
+    }
+
     pub fn output_type(&self) -> ValueType {
         match self {
             Self::Count => ValueType::Long,

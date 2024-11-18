@@ -13,10 +13,11 @@ use answer::{variable::Variable, Type};
 use concept::type_::{
     attribute_type::AttributeType,
     constraint::{Constraint, ConstraintDescription},
+    owns::Owns,
     type_manager::TypeManager,
     Capability, OwnerAPI, TypeAPI,
 };
-use encoding::value::label::Label;
+use encoding::{graph::type_::Kind, value::label::Label};
 use ir::{
     pattern::ParameterID,
     pipeline::{
@@ -183,7 +184,13 @@ fn annotate_some(
                     name: attribute,
                 })?;
             let owner_types = input_type_annotations.get(&variable).unwrap();
-            validate_attribute_is_single(snapshot, type_manager, variable_name, owner_types, attribute_type.clone())?;
+            validate_attribute_owned_and_scalar(
+                snapshot,
+                type_manager,
+                variable_name,
+                owner_types,
+                attribute_type.clone(),
+            )?;
             Ok(AnnotatedFetchSome::SingleAttribute(variable, attribute_type))
         }
         FetchSome::SingleFunction(mut function) => {
@@ -248,7 +255,7 @@ fn annotate_some(
                     name: attribute,
                 })?;
             for owner_type in input_type_annotations.get(&variable).unwrap().iter() {
-                validate_attribute_is_streamable(
+                validate_attribute_owned_and_streamable(
                     snapshot,
                     type_manager,
                     variable_name,
@@ -268,7 +275,7 @@ fn annotate_some(
     }
 }
 
-fn validate_attribute_is_single(
+fn validate_attribute_owned_and_scalar(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     owner: &str,
@@ -276,29 +283,30 @@ fn validate_attribute_is_single(
     attribute_type: AttributeType<'static>,
 ) -> Result<(), AnnotationError> {
     for owner_type in owner_types {
-        let owns = owner_type
-            .as_object_type()
+        if let kind @ (Kind::Attribute | Kind::Role) = owner_type.kind() {
+            return Err(AnnotationError::FetchSingleAttributeCannotBeOwnedByKind {
+                var: owner.to_owned(),
+                kind: kind.to_string(),
+                attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
+            });
+        }
+        let object_type = owner_type.as_object_type();
+        if object_type
             .get_owns_attribute(snapshot, type_manager, attribute_type.clone())
             .map_err(|err| AnnotationError::ConceptRead { source: err })?
-            .ok_or_else(|| AnnotationError::FetchSingleAttributeNotOwned {
+            .is_none()
+        {
+            return Err(AnnotationError::FetchSingleAttributeNotOwned {
                 var: owner.to_owned(),
                 owner: owner_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
                 attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
-            })?;
+            });
+        }
 
-        let max_card = owns
-            .get_cardinality_constraints(snapshot, type_manager)
-            .map_err(|err| AnnotationError::ConceptRead { source: err })?
-            .iter()
-            .filter_map(|card| {
-                if let ConstraintDescription::Cardinality(card) = card.description() {
-                    card.end()
-                } else {
-                    unreachable!()
-                }
-            })
-            .max();
-        if max_card.is_some_and(|max| max > 1) {
+        let is_bounded_to_one = object_type
+            .is_owned_attribute_type_bounded_to_one(snapshot, type_manager, attribute_type.clone())
+            .map_err(|err| AnnotationError::ConceptRead { source: err })?;
+        if !is_bounded_to_one {
             return Err(AnnotationError::AttributeFetchCardTooHigh {
                 var: owner.to_owned(),
                 owner: owner_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
@@ -309,13 +317,21 @@ fn validate_attribute_is_single(
     Ok(())
 }
 
-fn validate_attribute_is_streamable(
+fn validate_attribute_owned_and_streamable(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     owner: &str,
     owner_type: &Type,
     attribute_type: AttributeType<'static>,
 ) -> Result<(), AnnotationError> {
+    if let kind @ (Kind::Attribute | Kind::Role) = owner_type.kind() {
+        return Err(AnnotationError::FetchAttributesCannotBeOwnedByKind {
+            var: owner.to_owned(),
+            kind: kind.to_string(),
+            attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
+        });
+    }
+
     let _ = owner_type
         .as_object_type()
         .get_owns_attribute(snapshot, type_manager, attribute_type.clone())
@@ -337,8 +353,8 @@ fn annotate_sub_fetch(
     input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<AnnotatedFetchListSubFetch, AnnotationError> {
-    let FetchListSubFetch { context, input_variables, stages, fetch } = sub_fetch;
-    let TranslationContext { mut variable_registry, parameters, .. } = context;
+    let FetchListSubFetch { context, parameters, input_variables, stages, fetch } = sub_fetch;
+    let TranslationContext { mut variable_registry, .. } = context;
     let (annotated_stages, annotated_fetch) = annotate_stages_and_fetch(
         snapshot,
         type_manager,

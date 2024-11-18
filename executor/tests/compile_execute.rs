@@ -26,7 +26,7 @@ use executor::{
 };
 use function::function_manager::FunctionManager;
 use ir::{
-    pipeline::function_signature::HashMapFunctionSignatureIndex,
+    pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
     translation::{match_::translate_match, TranslationContext},
 };
 use itertools::Itertools;
@@ -93,7 +93,9 @@ fn test_has_planning_traversal() {
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
-    let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
+    let mut value_parameters = ParameterRegistry::new();
+    let builder =
+        translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
     let block = builder.finish().unwrap();
 
     // Executor
@@ -114,6 +116,7 @@ fn test_has_planning_traversal() {
     let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
+        &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
         Arc::new(translation_context.variable_registry),
         &HashMap::new(),
@@ -175,7 +178,9 @@ fn test_expression_planning_traversal() {
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
-    let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
+    let mut value_parameters = ParameterRegistry::new();
+    let builder =
+        translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
     let block = builder.finish().unwrap();
 
     // Executor
@@ -198,7 +203,7 @@ fn test_expression_planning_traversal() {
         &type_manager,
         &block,
         &mut translation_context.variable_registry,
-        &translation_context.parameters,
+        &value_parameters,
         &entry_annotations,
         &mut BTreeMap::new(),
     )
@@ -207,6 +212,7 @@ fn test_expression_planning_traversal() {
     let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
+        &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
         Arc::new(translation_context.variable_registry),
         &compiled_expressions,
@@ -221,7 +227,7 @@ fn test_expression_planning_traversal() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::new(translation_context.parameters.clone()));
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::new(value_parameters));
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows = iterator
@@ -267,7 +273,9 @@ fn test_links_planning_traversal() {
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
-    let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
+    let mut value_parameters = ParameterRegistry::new();
+    let builder =
+        translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
     let block = builder.finish().unwrap();
 
     // Executor
@@ -288,6 +296,7 @@ fn test_links_planning_traversal() {
     let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
+        &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
         Arc::new(translation_context.variable_registry),
         &HashMap::new(),
@@ -355,7 +364,9 @@ fn test_links_intersection() {
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
-    let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
+    let mut value_parameters = ParameterRegistry::new();
+    let builder =
+        translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
     let block = builder.finish().unwrap();
 
     // Executor
@@ -376,6 +387,7 @@ fn test_links_intersection() {
     let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
+        &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
         Arc::new(translation_context.variable_registry),
         &HashMap::new(),
@@ -434,7 +446,9 @@ fn test_negation_planning_traversal() {
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
-    let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
+    let mut value_parameters = ParameterRegistry::new();
+    let builder =
+        translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
     let block = builder.finish().unwrap();
 
     // Executor
@@ -455,6 +469,7 @@ fn test_negation_planning_traversal() {
     let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
+        &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
         Arc::new(translation_context.variable_registry),
         &HashMap::new(),
@@ -534,7 +549,9 @@ fn test_forall_planning_traversal() {
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
-    let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
+    let mut value_parameters = ParameterRegistry::new();
+    let builder =
+        translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
     let block = builder.finish().unwrap();
 
     // Executor
@@ -555,6 +572,7 @@ fn test_forall_planning_traversal() {
     let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
+        &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
         Arc::new(translation_context.variable_registry),
         &HashMap::new(),
@@ -620,7 +638,9 @@ fn test_named_var_select() {
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
-    let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
+    let mut value_parameters = ParameterRegistry::new();
+    let builder =
+        translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
     let block = builder.finish().unwrap();
 
     // Executor
@@ -641,6 +661,7 @@ fn test_named_var_select() {
     let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
+        &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
         Arc::new(translation_context.variable_registry),
         &HashMap::new(),
@@ -706,7 +727,9 @@ fn test_disjunction_planning_traversal() {
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
-    let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
+    let mut value_parameters = ParameterRegistry::new();
+    let builder =
+        translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
     let block = builder.finish().unwrap();
 
     // Executor
@@ -727,6 +750,7 @@ fn test_disjunction_planning_traversal() {
     let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
+        &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
         Arc::new(translation_context.variable_registry),
         &HashMap::new(),
@@ -796,7 +820,9 @@ fn test_disjunction_planning_nested_negations() {
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
-    let builder = translate_match(&mut translation_context, &empty_function_index, &match_).unwrap();
+    let mut value_parameters = ParameterRegistry::new();
+    let builder =
+        translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
     let block = builder.finish().unwrap();
 
     // Executor
@@ -817,6 +843,7 @@ fn test_disjunction_planning_nested_negations() {
     let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
+        &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
         Arc::new(translation_context.variable_registry),
         &HashMap::new(),

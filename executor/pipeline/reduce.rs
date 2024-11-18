@@ -6,7 +6,7 @@
 
 use std::sync::Arc;
 
-use compiler::executable::reduce::ReduceExecutable;
+use compiler::executable::reduce::{ReduceExecutable, ReduceRowsExecutable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -60,7 +60,7 @@ fn reduce_iterator<Snapshot: ReadableSnapshot>(
     iterator: impl StageIterator,
 ) -> Result<Batch, Box<PipelineExecutionError>> {
     let mut iterator = iterator;
-    let mut grouped_reducer = GroupedReducer::new(executable);
+    let mut grouped_reducer = GroupedReducer::new(executable.reduce_rows_executable.clone());
     while let Some(result) = iterator.next() {
         grouped_reducer.accept(&result?, &context)?;
     }

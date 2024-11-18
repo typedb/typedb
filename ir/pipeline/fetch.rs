@@ -10,7 +10,7 @@ use answer::variable::Variable;
 
 use crate::{
     pattern::ParameterID,
-    pipeline::function::Function,
+    pipeline::{function::Function, ParameterRegistry},
     translation::{pipeline::TranslatedStage, TranslationContext},
 };
 
@@ -85,6 +85,7 @@ impl FetchObject {
 #[derive(Debug, Clone)]
 pub struct FetchListSubFetch {
     pub context: TranslationContext,
+    pub parameters: ParameterRegistry,
     pub input_variables: HashSet<Variable>,
     pub stages: Vec<TranslatedStage>,
     pub fetch: FetchObject,

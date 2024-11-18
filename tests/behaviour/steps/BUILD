@@ -38,6 +38,7 @@ rust_library(
         "@crates//:futures",
         "@crates//:itertools",
         "@crates//:macro_rules_attribute",
+        "@crates//:serde_json",
     ],
 )
 

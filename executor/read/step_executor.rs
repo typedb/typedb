@@ -14,20 +14,25 @@ use compiler::{
             match_executable::{ExecutionStep, MatchExecutable},
         },
         pipeline::ExecutableStage,
+        reduce::ReduceRowsExecutable,
     },
     VariablePosition,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
+use typeql::schema::definable::function::SingleSelector;
 
 use crate::read::{
-    collecting_stage_executor::CollectingStageExecutor, immediate_executor::ImmediateExecutor,
-    nested_pattern_executor::NestedPatternExecutor, pattern_executor::PatternExecutor,
-    stream_modifier::StreamModifierExecutor, tabled_call_executor::TabledCallExecutor,
+    collecting_stage_executor::CollectingStageExecutor,
+    immediate_executor::ImmediateExecutor,
+    nested_pattern_executor::NestedPatternExecutor,
+    pattern_executor::PatternExecutor,
+    stream_modifier::{LastMapper, StreamModifierExecutor},
+    tabled_call_executor::TabledCallExecutor,
 };
 
-pub(super) enum StepExecutors {
+pub enum StepExecutors {
     Immediate(ImmediateExecutor),
     Nested(NestedPatternExecutor),
     StreamModifier(StreamModifierExecutor),
@@ -180,10 +185,22 @@ pub(crate) fn create_executors_for_function(
     match &executable_function.returns {
         ExecutableReturn::Stream(positions) => {
             steps.push(StepExecutors::ReshapeForReturn(positions.clone()));
+            Ok(steps)
         }
-        _ => todo!(),
+        ExecutableReturn::Single(selector, positions) => {
+            steps.push(StepExecutors::ReshapeForReturn(positions.clone()));
+            let step = match selector {
+                SingleSelector::First => StreamModifierExecutor::new_first(PatternExecutor::new(steps)),
+                SingleSelector::Last => StreamModifierExecutor::new_last(PatternExecutor::new(steps)),
+            };
+            Ok(vec![step.into()])
+        }
+        ExecutableReturn::Check => todo!("ExecutableReturn::Check"),
+        ExecutableReturn::Reduce(executable) => {
+            let step = CollectingStageExecutor::new_reduce(PatternExecutor::new(steps), executable.clone());
+            Ok(vec![StepExecutors::CollectingStage(step)])
+        }
     }
-    Ok(steps)
 }
 
 pub(super) fn create_executors_for_pipeline_stages(
@@ -230,10 +247,10 @@ pub(super) fn create_executors_for_pipeline_stages(
             let step = CollectingStageExecutor::new_sort(PatternExecutor::new(previous_stage_steps), sort_executable);
             Ok(vec![StepExecutors::CollectingStage(step)])
         }
-        ExecutableStage::Reduce(reduce_executable) => {
+        ExecutableStage::Reduce(reduce_stage_executable) => {
             let step = CollectingStageExecutor::new_reduce(
                 PatternExecutor::new(previous_stage_steps),
-                reduce_executable.clone(),
+                reduce_stage_executable.reduce_rows_executable.clone(),
             );
             Ok(vec![StepExecutors::CollectingStage(step)])
         }

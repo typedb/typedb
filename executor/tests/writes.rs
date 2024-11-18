@@ -35,7 +35,10 @@ use executor::{
     write::WriteError,
     ExecutionInterrupt,
 };
-use ir::{pipeline::function_signature::HashMapFunctionSignatureIndex, translation::TranslationContext};
+use ir::{
+    pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
+    translation::TranslationContext,
+};
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::{
     durability_client::WALClient,
@@ -147,8 +150,11 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     input_rows: Vec<Vec<VariableValue<'static>>>,
 ) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), Box<WriteError>> {
     let mut translation_context = TranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
     let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_insert();
-    let block = ir::translation::writes::translate_insert(&mut translation_context, &typeql_insert).unwrap();
+    let block =
+        ir::translation::writes::translate_insert(&mut translation_context, &mut value_parameters, &typeql_insert)
+            .unwrap();
     let input_row_format = input_row_var_names
         .iter()
         .enumerate()
@@ -188,7 +194,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let snapshot = Arc::new(snapshot);
     let initial = ShimStage::new(
         input_rows,
-        ExecutionContext { snapshot, thing_manager, parameters: Arc::new(translation_context.parameters) },
+        ExecutionContext { snapshot, thing_manager, parameters: Arc::new(value_parameters) },
     );
     let insert_executor = InsertStageExecutor::new(Arc::new(insert_plan), initial);
     let (output_iter, context) =
@@ -217,6 +223,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     input_rows: Vec<Vec<VariableValue<'static>>>,
 ) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), Box<WriteError>> {
     let mut translation_context = TranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
     let entry_annotations = {
         let typeql_match = typeql::parse_query(mock_match_string_for_annotations)
             .unwrap()
@@ -227,6 +234,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
             .into_match();
         let block = ir::translation::match_::translate_match(
             &mut translation_context,
+            &mut value_parameters,
             &HashMapFunctionSignatureIndex::empty(),
             &typeql_match,
         )
@@ -251,7 +259,8 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
 
     let typeql_delete = typeql::parse_query(delete_str).unwrap().into_pipeline().stages.pop().unwrap().into_delete();
     let (block, deleted_concepts) =
-        ir::translation::writes::translate_delete(&mut translation_context, &typeql_delete).unwrap();
+        ir::translation::writes::translate_delete(&mut translation_context, &mut value_parameters, &typeql_delete)
+            .unwrap();
     let input_row_format = input_row_var_names
         .iter()
         .enumerate()
@@ -269,7 +278,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     let snapshot = Arc::new(snapshot);
     let initial = ShimStage::new(
         input_rows,
-        ExecutionContext { snapshot, thing_manager, parameters: Arc::new(translation_context.parameters) },
+        ExecutionContext { snapshot, thing_manager, parameters: Arc::new(value_parameters) },
     );
     let delete_executor = DeleteStageExecutor::new(Arc::new(delete_plan), initial);
     let (output_iter, context) =

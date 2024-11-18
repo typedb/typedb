@@ -5,7 +5,8 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    iter,
     sync::Arc,
 };
 
@@ -72,6 +73,26 @@ pub enum AnnotatedStage {
     Limit(Limit),
     Require(Require),
     Reduce(Reduce, Vec<ReduceInstruction<Variable>>),
+}
+
+impl AnnotatedStage {
+    pub fn named_referenced_variables<'a>(
+        &'a self,
+        variable_registry: &'a VariableRegistry,
+    ) -> impl Iterator<Item = Variable> + '_ {
+        let variables: Box<dyn Iterator<Item = Variable> + '_> = match self {
+            AnnotatedStage::Match { block, .. } => Box::new(block.variables()),
+            AnnotatedStage::Insert { block, .. } => Box::new(block.variables()),
+            AnnotatedStage::Delete { block, .. } => Box::new(block.variables()),
+            AnnotatedStage::Select(select) => Box::new(select.variables.iter().cloned()),
+            AnnotatedStage::Sort(sort) => Box::new(sort.variables.iter().map(|sort_variable| sort_variable.variable())),
+            AnnotatedStage::Offset(_) => Box::new(iter::empty()),
+            AnnotatedStage::Limit(_) => Box::new(iter::empty()),
+            AnnotatedStage::Require(_) => Box::new(iter::empty()),
+            AnnotatedStage::Reduce(reduce, _) => Box::new(reduce.variables()),
+        };
+        variables.filter(move |variable| variable_registry.get_variable_name(variable.clone()).is_some())
+    }
 }
 
 pub fn annotate_pipeline(

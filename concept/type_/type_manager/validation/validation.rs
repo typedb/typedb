@@ -98,7 +98,7 @@ pub(crate) fn validate_type_declared_constraints_narrowing_of_supertype_constrai
     for subtype_constraint in filter_by_source!(subtype_constraints.into_iter(), subtype.clone()) {
         for supertype_constraint in supertype_constraints.iter() {
             supertype_constraint.validate_narrowed_by_any_type(&subtype_constraint.description()).map_err(
-                |source| {
+                |typedb_source| {
                     let subtype_label = match get_label_or_schema_err(snapshot, type_manager, subtype.clone()) {
                         Ok(label) => label,
                         Err(err) => return err,
@@ -110,7 +110,7 @@ pub(crate) fn validate_type_declared_constraints_narrowing_of_supertype_constrai
                     Box::new(SchemaValidationError::SubtypeConstraintDoesNotNarrowSupertypeConstraint {
                         subtype: subtype_label,
                         supertype: supertype_label,
-                        source,
+                        typedb_source,
                     })
                 },
             )?;

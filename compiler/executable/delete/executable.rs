@@ -21,6 +21,7 @@ use crate::{
     VariablePosition,
 };
 
+#[derive(Debug)]
 pub struct DeleteExecutable {
     pub concept_instructions: Vec<ThingInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,

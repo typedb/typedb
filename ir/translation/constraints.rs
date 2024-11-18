@@ -445,7 +445,7 @@ fn add_typeql_iterable_binding(
 ) -> Result<(), Box<RepresentationError>> {
     match rhs {
         typeql::Expression::Function(FunctionCall { name: FunctionName::Identifier(identifier), args, .. }) => {
-            add_user_defined_function_call(function_index, constraints, identifier, assigned, args)
+            add_user_defined_function_call(function_index, constraints, identifier.as_str(), assigned, args)
         }
         typeql::Expression::Function(FunctionCall { name: FunctionName::Builtin(_), .. }) => {
             todo!("builtin function returning list (e.g. list(stream_func()))")
