@@ -361,7 +361,7 @@ impl<'a> RelationType<'a> {
         type_manager.get_type_relates_cardinality_constraints(snapshot, self.clone().into_owned(), role_type)
     }
 
-    fn is_related_role_type_scalar(
+    fn is_related_role_type_bounded_to_one(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
@@ -371,7 +371,7 @@ impl<'a> RelationType<'a> {
             .get_related_role_type_constraints_cardinality(snapshot, type_manager, role_type)?
             .into_iter()
             .map(|constraint| constraint.description().unwrap_cardinality().expect("Only Cardinality constraints"))
-            .any(|cardinality| cardinality.is_scalar()))
+            .any(|cardinality| cardinality.is_bounded_to_one()))
     }
 
     pub(crate) fn get_related_role_type_constraints_distinct(

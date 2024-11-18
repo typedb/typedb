@@ -224,6 +224,7 @@ fn execute_single_function(
         None => return Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
     };
 
+    // TODO: We could create an iterator over rows in a single call here instead
     let mut row_iter = batch.into_iter();
     let document = match exactly_one_or_return_err!(
         row_iter.next(),
@@ -290,6 +291,7 @@ fn execute_list_function(
     let mut suspend_points = Vec::new();
 
     let mut nodes = Vec::new();
+    // TODO: We could create an iterator over rows in a single call here instead
     while let Some(batch) = pattern_executor
         .compute_next_batch(&execution_context, &mut interrupt, &mut tabled_functions, &mut suspend_points)
         .map_err(|err| FetchExecutionError::ReadExecution { typedb_source: Box::new(err) })?
@@ -420,11 +422,11 @@ fn execute_attributes_all<'a>(
             .map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
         let leaf = DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Thing(Thing::Attribute(attribute.into_owned()))));
 
-        let is_scalar = object
+        let is_bounded_to_one = object
             .type_()
-            .is_owned_attribute_type_scalar(snapshot.as_ref(), thing_manager.type_manager(), attribute_type)
+            .is_owned_attribute_type_bounded_to_one(snapshot.as_ref(), thing_manager.type_manager(), attribute_type)
             .map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
-        if is_scalar {
+        if is_bounded_to_one {
             map.insert(label, leaf);
         } else {
             let entry = map.entry(label).or_insert_with(|| DocumentNode::List(DocumentList::new()));

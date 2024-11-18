@@ -303,10 +303,10 @@ fn validate_attribute_owned_and_scalar(
             });
         }
 
-        let is_scalar = object_type
-            .is_owned_attribute_type_scalar(snapshot, type_manager, attribute_type.clone())
+        let is_bounded_to_one = object_type
+            .is_owned_attribute_type_bounded_to_one(snapshot, type_manager, attribute_type.clone())
             .map_err(|err| AnnotationError::ConceptRead { source: err })?;
-        if !is_scalar {
+        if !is_bounded_to_one {
             return Err(AnnotationError::AttributeFetchCardTooHigh {
                 var: owner.to_owned(),
                 owner: owner_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),

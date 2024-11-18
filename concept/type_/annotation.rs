@@ -156,7 +156,7 @@ impl AnnotationCardinality {
         self == &Self::unchecked()
     }
 
-    pub fn is_scalar(&self) -> bool {
+    pub fn is_bounded_to_one(&self) -> bool {
         self.end() == Some(1)
     }
 

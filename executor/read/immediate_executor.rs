@@ -669,7 +669,7 @@ impl AssignExecutor {
                         .map_err(|source| ReadExecutionError::ExpressionEvaluate { source })?;
                     Ok((pos, expression_value))
                 })
-                .collect::<Result<_, _>>()?;
+                .try_collect()?;
             let output_value = evaluate_expression(&self.expression, input_variables, &context.parameters)
                 .map_err(|err| ReadExecutionError::ExpressionEvaluate { source: err })?;
             output.append(|mut row| {

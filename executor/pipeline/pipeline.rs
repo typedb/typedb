@@ -194,6 +194,7 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
         let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, parameters);
         let mut last_stage = WritePipelineStage::Initial(Box::new(InitialStage::new_empty(context)));
+        // TODO: Receive as an argument from schema
         let executable_functions = Arc::new(ExecutableFunctionRegistry::empty());
         for executable_stage in executable_stages {
             match executable_stage {

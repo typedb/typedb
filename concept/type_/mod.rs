@@ -313,7 +313,7 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         attribute_type: AttributeType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>>;
 
-    fn is_owned_attribute_type_scalar(
+    fn is_owned_attribute_type_bounded_to_one(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
@@ -323,7 +323,7 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
             .get_owned_attribute_type_constraints_cardinality(snapshot, type_manager, attribute_type)?
             .into_iter()
             .map(|constraint| constraint.description().unwrap_cardinality().expect("Only Cardinality constraints"))
-            .any(|cardinality| cardinality.is_scalar()))
+            .any(|cardinality| cardinality.is_bounded_to_one()))
     }
 
     fn get_owned_attribute_type_constraints_distinct(
@@ -521,7 +521,7 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         role_type: RoleType<'static>,
     ) -> Result<HashSet<CapabilityConstraint<Plays<'static>>>, Box<ConceptReadError>>;
 
-    fn is_played_role_type_scalar(
+    fn is_played_role_type_bounded_to_one(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
@@ -531,7 +531,7 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
             .get_played_role_type_constraints_cardinality(snapshot, type_manager, role_type)?
             .into_iter()
             .map(|constraint| constraint.description().unwrap_cardinality().expect("Only Cardinality constraints"))
-            .any(|cardinality| cardinality.is_scalar()))
+            .any(|cardinality| cardinality.is_bounded_to_one()))
     }
 
     fn get_plays_role_declared(
