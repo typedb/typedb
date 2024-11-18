@@ -2839,15 +2839,15 @@ To allow for partial results, the function executor can keep track of their mach
 
 The recursive case is more difficult due to the presence of **cyclic call**: a cycle call is stack machine state in which a the (sub)stack evaluating a function call `G(z)` contains (itself or in an iterated subframe) a step calling `G(z)` (with the *same* input `z` as argument for `G`).
 
-In the recursive case, we keep function **tables** for all functions that may be recursive:
-* a table `Tab(F,x)` records
-    * **output rows** `y` of a function `F` with fixed input argument `x`
-    * an **executor** state of the stack evaluating `F`.
-* each table `Tab(F,x)` also has an associated set of **suspension points**; these comprise:
-    * an **instruction number** (referring to a step in the stack of `F`)
-        * this instruction will always be a function call, say to `G(z)`
+In the recursive case, we provide **tabled executors** for all functions that may be recursive:
+* a tabled executor `Tab(F,x)` records
+    * a table of **output rows** `y` of the function `F` for the fixed input argument `x`
+    * an **executor** state of the stack evaluating `F(x)`.
+* each tabled executor `Tab(F,x)` also has an associated *set* of **suspension points**; these points comprise:
+    * an **step number** (referring to a step in the stack of `F`)
+        * this step will always be a function call, say to `G(z)`
     * the **inputs** `u,z,v,...` to the function call step (calling `G(z)`) at the time of suspension
-    * a **table state index** indicating how many output rows were present in `G(z)` at the time of suspension
+    * a **table state index** indicating how many output rows were present in `Tab(G,z)` at the time of suspension
 
 Execution now proceeds in execution **super-steps**.
 * Before the **first** execution super-step, tables are initialized to be *empty* and associated suspension point sets are *empty* too
@@ -2862,9 +2862,9 @@ Execution now proceeds in execution **super-steps**.
         * when we backtrack through the step calling `F(x)` (since all results to this call have been exhausted), then add a suspension point in `Tab(H,p)` with the calls inputs, the call step, and the table size index of `F(x)` at the time of backtracking.
     * ***Evaluating functions*** *(in the presence of suspensions points)*: whenever we open a stack for the evaluation of `F(x)` do the following:
         * if the previous (i.e. (**n-1**)th) super-step has recorded no suspension points in `Tab(F,x)` then start evaluating the stack of `F(x)`: first, return existing output results in `Tab(F,x)` and, then, continue the executor (until completion or suspension; if either are reached already then this last step does nothing)
-        * if the previous super-step has set suspension points in `Tab(F,x)`, then we restore execution as follows (note: this in particular applies to the entry stack): *for each suspension point* run the stack evaluating `F(x)` to completion, starting from the *given step* (calling `G(z)`) with the *given inputs* by the suspension point, and only return outputs of `G(z)` after the *given table state index*. As before, make use of existing output results in `Tab(F,x)` and then continue the executor (until completion or suspension).
+        * if the previous super-step has set suspension points in `Tab(F,x)`, then we restore execution as follows (note: this in particular applies to the entry stack): *for each suspension point* run the stack evaluating `F(x)` to completion, starting from the *given step* (calling `G(z)`) with the *given inputs* by the suspension point, and only return outputs of `G(z)` after the *given table state index*. As before, make use of existing output results in `Tab(G,z)` and then continue the executor (until completion or suspension).
     * ***Key property***; for each table `Tab(F,x)`, stack step, and step input, there is at most one suspension point set by the previous super-step
-* Execution completes after **n** super-steps if the **n**th super-step either produces no suspension points to start with in the (**n+1**)th step, or if no new outputs in tables were written in the super-step.
+* ***Execution completes*** after the **n**th super-step if the step either produces no suspension points (and thus no way to start the (**n+1**)th step), or if no new output rows were written to the tabled executors during step.
 
 *Remark*: Tabling may also be employed in the non-recursive case if the query planner deems this improves performance (without tabling, a lot of work may be replicated).
 
