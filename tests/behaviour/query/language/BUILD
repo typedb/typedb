@@ -79,7 +79,7 @@ rust_test(
         "//tests/behaviour/steps:steps",
         "@crates//:tokio",
     ],
-    data = ["@vaticle_typedb_behaviour//query/language:fetch.feature"],
+    data = ["@typedb_behaviour//query/language:fetch.feature"],
     crate_features = ["bazel"],
 )
 
