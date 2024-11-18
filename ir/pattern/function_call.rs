@@ -40,7 +40,7 @@ impl<ID: IrID> FunctionCall<ID> {
     }
 }
 
-impl<ID: StructuralEquality> StructuralEquality for FunctionCall<ID> {
+impl<ID: StructuralEquality + Ord> StructuralEquality for FunctionCall<ID> {
     fn hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
         self.function_id.hash_into(&mut hasher);

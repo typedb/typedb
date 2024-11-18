@@ -45,7 +45,7 @@ impl Function {
         output: Option<Output>,
         function_body: FunctionBody,
     ) -> Self {
-        Self { name: name.to_string(), context, parameters, function_body, arguments, argument_labels }
+        Self { name: name.to_string(), context, parameters, function_body, output, arguments, argument_labels }
     }
 
     pub fn name(&self) -> &str {

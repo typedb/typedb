@@ -694,7 +694,7 @@ impl<ID: IrID> Constraint<ID> {
     }
 }
 
-impl<ID: StructuralEquality> StructuralEquality for Constraint<ID> {
+impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
     fn hash(&self) -> u64 {
         &mem::discriminant(self).hash()
             ^ &match self {
@@ -1529,7 +1529,7 @@ impl<ID: IrID> From<FunctionCallBinding<ID>> for Constraint<ID> {
     }
 }
 
-impl<ID: StructuralEquality> StructuralEquality for FunctionCallBinding<ID> {
+impl<ID: StructuralEquality + Ord> StructuralEquality for FunctionCallBinding<ID> {
     fn hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
         self.assigned.hash_into(&mut hasher);

@@ -67,7 +67,7 @@ pub fn translate_function_from(
             }
         })?;
     }
-    Ok(Function::new(name, context, value_parameters, arguments, Some(argument_labels),  Some(output.clone()), body))
+    Ok(Function::new(name, context, value_parameters, arguments, Some(argument_labels), Some(output.clone()), body))
 }
 
 pub(crate) fn translate_function_block(

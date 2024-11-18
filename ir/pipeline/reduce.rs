@@ -24,7 +24,11 @@ impl Reduce {
     }
 
     pub fn variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.assigned_reductions.iter().map(|(variable, _)| variable).cloned().chain(self.within_group.iter().cloned())
+        self.assigned_reductions
+            .iter()
+            .map(|assign_reduction| &assign_reduction.assigned)
+            .cloned()
+            .chain(self.within_group.iter().cloned())
     }
 }
 
