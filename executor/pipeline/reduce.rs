@@ -6,7 +6,7 @@
 
 use std::sync::Arc;
 
-use compiler::executable::reduce::{ReduceExecutable, ReduceStageExecutable};
+use compiler::executable::reduce::{ReduceExecutable, ReduceRowsExecutable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -20,12 +20,12 @@ use crate::{
 };
 
 pub struct ReduceStageExecutor<PreviousStage> {
-    executable: Arc<ReduceStageExecutable>,
+    executable: Arc<ReduceExecutable>,
     previous: PreviousStage,
 }
 
 impl<PreviousStage> ReduceStageExecutor<PreviousStage> {
-    pub fn new(executable: Arc<ReduceStageExecutable>, previous: PreviousStage) -> Self {
+    pub fn new(executable: Arc<ReduceExecutable>, previous: PreviousStage) -> Self {
         Self { executable, previous }
     }
 }
@@ -56,11 +56,11 @@ where
 
 fn reduce_iterator<Snapshot: ReadableSnapshot>(
     context: &ExecutionContext<Snapshot>,
-    executable: Arc<ReduceStageExecutable>,
+    executable: Arc<ReduceExecutable>,
     iterator: impl StageIterator,
 ) -> Result<Batch, Box<PipelineExecutionError>> {
     let mut iterator = iterator;
-    let mut grouped_reducer = GroupedReducer::new(executable.reduce_executable.clone());
+    let mut grouped_reducer = GroupedReducer::new(executable.reduce_rows_executable.clone());
     while let Some(result) = iterator.next() {
         grouped_reducer.accept(&result?, &context)?;
     }

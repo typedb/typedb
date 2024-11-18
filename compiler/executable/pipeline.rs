@@ -28,7 +28,7 @@ use crate::{
         insert::executable::InsertExecutable,
         match_::planner::{function_plan::ExecutableFunctionRegistry, match_executable::MatchExecutable},
         modifiers::{LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable},
-        reduce::{ReduceExecutable, ReduceStageExecutable},
+        reduce::{ReduceExecutable, ReduceRowsExecutable},
         ExecutableCompilationError,
     },
     VariablePosition,
@@ -51,7 +51,7 @@ pub enum ExecutableStage {
     Offset(Arc<OffsetExecutable>),
     Limit(Arc<LimitExecutable>),
     Require(Arc<RequireExecutable>),
-    Reduce(Arc<ReduceStageExecutable>),
+    Reduce(Arc<ReduceExecutable>),
 }
 
 impl ExecutableStage {
@@ -305,8 +305,8 @@ fn compile_stage(
                 let reducer_on_position = reducer_on_variable.clone().map(input_variables);
                 reductions.push(reducer_on_position);
             }
-            Ok(ExecutableStage::Reduce(Arc::new(ReduceStageExecutable {
-                reduce_executable: Arc::new(ReduceExecutable { reductions, input_group_positions }),
+            Ok(ExecutableStage::Reduce(Arc::new(ReduceExecutable {
+                reduce_rows_executable: Arc::new(ReduceRowsExecutable { reductions, input_group_positions }),
                 output_row_mapping,
             })))
         }

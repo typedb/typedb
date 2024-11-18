@@ -8,7 +8,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use answer::{variable_value::VariableValue, Thing};
 use compiler::{
-    executable::reduce::{ReduceExecutable, ReduceInstruction},
+    executable::reduce::{ReduceInstruction, ReduceRowsExecutable},
     VariablePosition,
 };
 use encoding::value::value::Value;
@@ -21,7 +21,7 @@ use crate::{
 };
 
 pub(crate) struct GroupedReducer {
-    executable: Arc<ReduceExecutable>, // for accessing input group positions
+    rows_executable: Arc<ReduceRowsExecutable>, // for accessing input group positions
     grouped_reductions: HashMap<Vec<VariableValue<'static>>, Vec<ReducerExecutor>>,
     reused_group: Vec<VariableValue<'static>>,
     // Clone for efficient instantiation of reducers for a new group
@@ -29,7 +29,7 @@ pub(crate) struct GroupedReducer {
 }
 
 impl GroupedReducer {
-    pub(crate) fn new(executable: Arc<ReduceExecutable>) -> Self {
+    pub(crate) fn new(executable: Arc<ReduceRowsExecutable>) -> Self {
         let reducers: Vec<ReducerExecutor> = executable.reductions.iter().map(ReducerExecutor::build).collect();
         let reused_group = Vec::with_capacity(executable.input_group_positions.len());
         let mut grouped_reductions = HashMap::new();
@@ -37,7 +37,12 @@ impl GroupedReducer {
         if executable.input_group_positions.is_empty() {
             grouped_reductions.insert(Vec::new(), reducers.clone());
         }
-        Self { executable, grouped_reductions, reused_group, uninitialised_reducer_executors: reducers }
+        Self {
+            rows_executable: executable,
+            grouped_reductions,
+            reused_group,
+            uninitialised_reducer_executors: reducers,
+        }
     }
 
     pub(crate) fn accept<Snapshot: ReadableSnapshot>(
@@ -46,7 +51,7 @@ impl GroupedReducer {
         context: &ExecutionContext<Snapshot>,
     ) -> Result<(), Box<PipelineExecutionError>> {
         self.reused_group.clear();
-        for &pos in &self.executable.input_group_positions {
+        for &pos in &self.rows_executable.input_group_positions {
             self.reused_group.push(row.get(pos).to_owned());
         }
         if !self.grouped_reductions.contains_key(&self.reused_group) {
@@ -60,7 +65,12 @@ impl GroupedReducer {
     }
 
     pub(crate) fn finalise(self) -> Batch {
-        let Self { executable, uninitialised_reducer_executors: sample_reducers, grouped_reductions, .. } = self;
+        let Self {
+            rows_executable: executable,
+            uninitialised_reducer_executors: sample_reducers,
+            grouped_reductions,
+            ..
+        } = self;
         let mut batch = Batch::new(
             (executable.input_group_positions.len() + sample_reducers.len()) as u32,
             grouped_reductions.len(),

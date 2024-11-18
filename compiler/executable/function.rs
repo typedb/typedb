@@ -25,7 +25,7 @@ use crate::{
     executable::{
         match_::planner::function_plan::ExecutableFunctionRegistry,
         pipeline::{compile_pipeline_stages, ExecutableStage},
-        reduce::{ReduceExecutable, ReduceInstruction},
+        reduce::{ReduceInstruction, ReduceRowsExecutable},
         ExecutableCompilationError,
     },
     VariablePosition,
@@ -46,7 +46,7 @@ pub enum ExecutableReturn {
     Stream(Vec<VariablePosition>),
     Single(SingleSelector, Vec<VariablePosition>),
     Check,
-    Reduce(Arc<ReduceExecutable>),
+    Reduce(Arc<ReduceRowsExecutable>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -97,7 +97,10 @@ fn compile_return_operation(
         | AnnotatedFunctionReturn::ReduceCheck {} => Ok(ExecutableReturn::Check),
         | AnnotatedFunctionReturn::ReduceReducer { instructions } => {
             let reductions = instructions.into_iter().map(|reducer| reducer.map(&variable_positions)).collect();
-            Ok(ExecutableReturn::Reduce(Arc::new(ReduceExecutable { reductions, input_group_positions: Vec::new() })))
+            Ok(ExecutableReturn::Reduce(Arc::new(ReduceRowsExecutable {
+                reductions,
+                input_group_positions: Vec::new(),
+            })))
         }
     }
 }

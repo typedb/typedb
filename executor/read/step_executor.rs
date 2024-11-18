@@ -14,7 +14,7 @@ use compiler::{
             match_executable::{ExecutionStep, MatchExecutable},
         },
         pipeline::ExecutableStage,
-        reduce::ReduceExecutable,
+        reduce::ReduceRowsExecutable,
     },
     VariablePosition,
 };
@@ -250,7 +250,7 @@ pub(super) fn create_executors_for_pipeline_stages(
         ExecutableStage::Reduce(reduce_stage_executable) => {
             let step = CollectingStageExecutor::new_reduce(
                 PatternExecutor::new(previous_stage_steps),
-                reduce_stage_executable.reduce_executable.clone(),
+                reduce_stage_executable.reduce_rows_executable.clone(),
             );
             Ok(vec![StepExecutors::CollectingStage(step)])
         }

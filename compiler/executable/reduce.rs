@@ -13,13 +13,13 @@ use ir::pattern::IrID;
 use crate::VariablePosition;
 
 #[derive(Debug, Clone)]
-pub struct ReduceStageExecutable {
-    pub reduce_executable: Arc<ReduceExecutable>,
+pub struct ReduceExecutable {
+    pub reduce_rows_executable: Arc<ReduceRowsExecutable>,
     pub output_row_mapping: HashMap<Variable, VariablePosition>, // output_row = (group_vars, reduce_outputs)
 }
 
 #[derive(Debug, Clone)]
-pub struct ReduceExecutable {
+pub struct ReduceRowsExecutable {
     pub reductions: Vec<ReduceInstruction<VariablePosition>>,
     pub input_group_positions: Vec<VariablePosition>,
 }
