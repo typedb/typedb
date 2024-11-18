@@ -17,6 +17,7 @@ use executor::{
 };
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
+use query::query_cache::QueryCache;
 use query::query_manager::QueryManager;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils::{assert_matches, TempDir};
@@ -41,7 +42,7 @@ fn setup_common() -> Context {
 
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
-    let query_manager = QueryManager::new();
+    let query_manager = QueryManager::new(Arc::new(QueryCache::new()));
     let schema = r#"
     define
         attribute age value long;

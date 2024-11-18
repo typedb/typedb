@@ -192,7 +192,7 @@ async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMay
     }
 
     with_schema_tx!(context, |tx| {
-        let result = QueryManager::new().execute_schema(
+        let result = QueryManager::new(Arc::new(QueryCache::new())).execute_schema(
             Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.type_manager,
             &tx.thing_manager,

@@ -34,13 +34,14 @@ use crate::{
     VariablePosition,
 };
 
+#[derive(Debug, Clone)]
 pub struct ExecutablePipeline {
     pub executable_functions: ExecutableFunctionRegistry,
     pub executable_stages: Vec<ExecutableStage>,
     pub executable_fetch: Option<Arc<ExecutableFetch>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ExecutableStage {
     Match(Arc<MatchExecutable>),
     Insert(Arc<InsertExecutable>),
@@ -83,7 +84,7 @@ impl ExecutableStage {
 
 pub fn compile_pipeline(
     statistics: &Statistics,
-    variable_registry: Arc<VariableRegistry>,
+    variable_registry: &VariableRegistry,
     annotated_schema_functions: &IndexedAnnotatedFunctions,
     annotated_preamble: AnnotatedUnindexedFunctions,
     annotated_stages: Vec<AnnotatedStage>,
@@ -138,7 +139,7 @@ pub fn compile_pipeline(
 
 pub fn compile_stages_and_fetch(
     statistics: &Statistics,
-    variable_registry: Arc<VariableRegistry>,
+    variable_registry: &VariableRegistry,
     available_functions: &ExecutableFunctionRegistry,
     annotated_stages: Vec<AnnotatedStage>,
     annotated_fetch: Option<AnnotatedFetch>,
@@ -150,7 +151,7 @@ pub fn compile_stages_and_fetch(
     let selected_variables = variable_registry.variable_names().keys().copied().collect_vec();
     let (input_positions, executable_stages) = compile_pipeline_stages(
         statistics,
-        variable_registry.clone(),
+        variable_registry,
         available_functions,
         annotated_stages,
         input_variables.iter().cloned(),
@@ -171,7 +172,7 @@ pub fn compile_stages_and_fetch(
 
 pub(crate) fn compile_pipeline_stages(
     statistics: &Statistics,
-    variable_registry: Arc<VariableRegistry>,
+    variable_registry: &VariableRegistry,
     functions: &ExecutableFunctionRegistry,
     annotated_stages: Vec<AnnotatedStage>,
     input_variables: impl Iterator<Item = Variable>,
@@ -192,7 +193,7 @@ pub(crate) fn compile_pipeline_stages(
         let executable_stage = match executable_stages.last().map(|stage| stage.output_row_mapping()) {
             Some(row_mapping) => compile_stage(
                 statistics,
-                variable_registry.clone(),
+                variable_registry,
                 functions,
                 &row_mapping,
                 &selected_variables,
@@ -200,7 +201,7 @@ pub(crate) fn compile_pipeline_stages(
             )?,
             None => compile_stage(
                 statistics,
-                variable_registry.clone(),
+                variable_registry,
                 functions,
                 &input_variable_positions,
                 &selected_variables,
@@ -214,7 +215,7 @@ pub(crate) fn compile_pipeline_stages(
 
 fn compile_stage(
     statistics: &Statistics,
-    variable_registry: Arc<VariableRegistry>,
+    variable_registry: &VariableRegistry,
     _functions: &ExecutableFunctionRegistry,
     input_variables: &HashMap<Variable, VariablePosition>,
     selected_variables: &Vec<Variable>,
@@ -235,7 +236,6 @@ fn compile_stage(
         }
         AnnotatedStage::Insert { block, annotations } => {
             let plan = crate::executable::insert::executable::compile(
-                variable_registry,
                 block.conjunction().constraints(),
                 input_variables,
                 annotations,

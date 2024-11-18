@@ -209,7 +209,8 @@ impl IntersectionExecutor {
         } else {
             row.set_multiplicity(self.intersection_multiplicity);
             for &position in &self.outputs_selected.selected {
-                row.set(position, self.intersection_row[position.as_usize()].clone());
+                let value = self.intersection_row[position.as_usize()].clone();
+                row.set(position, value);
             }
         }
     }
@@ -392,7 +393,9 @@ impl IntersectionExecutor {
 
         let input_row = self.input.as_mut().unwrap().peek().unwrap().as_ref().map_err(|&err| err.clone())?;
         for &position in &self.outputs_selected {
-            if position.as_usize() < input_row.len() && !input_row.get(position).is_empty() {
+            // note: some input variable positions are re-used across stages, so we should only copy
+            //       inputs into the output row if it is not already populated by the intersection
+            if position.as_usize() < input_row.len() && !input_row.get(position).is_empty() && row.get(position).is_empty() {
                 row.set(position, input_row.get(position).clone().into_owned())
             }
         }

@@ -17,6 +17,7 @@ use concept::{
 use error::typedb_error;
 use function::{function_manager::FunctionManager, FunctionError};
 use options::TransactionOptions;
+use query::query_manager::QueryManager;
 use storage::{
     durability_client::DurabilityClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
@@ -30,6 +31,7 @@ pub struct TransactionRead<D> {
     pub type_manager: Arc<TypeManager>,
     pub thing_manager: Arc<ThingManager>,
     pub function_manager: Arc<FunctionManager>,
+    pub query_manager: Arc<QueryManager>,
     _database: Arc<Database<D>>,
     transaction_options: TransactionOptions,
 }
@@ -58,6 +60,7 @@ impl<D: DurabilityClient> TransactionRead<D> {
             database.definition_key_generator.clone(),
             Some(schema.function_cache.clone()),
         ));
+        let query_manager = Arc::new(QueryManager::new(database.query_cache.clone()));
 
         drop(schema);
 
@@ -66,6 +69,7 @@ impl<D: DurabilityClient> TransactionRead<D> {
             type_manager,
             thing_manager,
             function_manager,
+            query_manager,
             _database: database,
             transaction_options,
         })
@@ -88,6 +92,7 @@ pub struct TransactionWrite<D> {
     pub type_manager: Arc<TypeManager>,
     pub thing_manager: Arc<ThingManager>,
     pub function_manager: Arc<FunctionManager>,
+    pub query_manager: Arc<QueryManager>,
     pub database: Arc<Database<D>>,
     pub transaction_options: TransactionOptions,
 }
@@ -112,6 +117,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             database.definition_key_generator.clone(),
             Some(schema.function_cache.clone()),
         ));
+        let query_manager = Arc::new(QueryManager::new(database.query_cache.clone()));
         drop(schema);
 
         Ok(Self {
@@ -119,6 +125,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             type_manager,
             thing_manager,
             function_manager,
+            query_manager,
             database,
             transaction_options,
         })
@@ -129,10 +136,11 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         type_manager: Arc<TypeManager>,
         thing_manager: Arc<ThingManager>,
         function_manager: Arc<FunctionManager>,
+        query_manager: Arc<QueryManager>,
         database: Arc<Database<D>>,
         transaction_options: TransactionOptions,
     ) -> Self {
-        Self { snapshot, type_manager, thing_manager, function_manager, database, transaction_options }
+        Self { snapshot, type_manager, thing_manager, function_manager, query_manager, database, transaction_options }
     }
 
     pub fn commit(self) -> Result<(), DataCommitError> {
@@ -197,6 +205,7 @@ pub struct TransactionSchema<D> {
     pub type_manager: Arc<TypeManager>,
     pub thing_manager: Arc<ThingManager>,
     pub function_manager: Arc<FunctionManager>,
+    pub query_manager: Arc<QueryManager>,
     pub database: Arc<Database<D>>,
     pub transaction_options: TransactionOptions,
 }
@@ -220,12 +229,14 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             )
         };
         let function_manager = Arc::new(FunctionManager::new(database.definition_key_generator.clone(), None));
+        let query_manager = Arc::new(QueryManager::new(database.query_cache.clone()));
 
         Ok(Self {
             snapshot: Arc::new(snapshot),
             type_manager,
             thing_manager: Arc::new(thing_manager),
             function_manager,
+            query_manager,
             database,
             transaction_options,
         })
@@ -236,6 +247,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         type_manager: Arc<TypeManager>,
         thing_manager: Arc<ThingManager>,
         function_manager: Arc<FunctionManager>,
+        query_manager: Arc<QueryManager>,
         database: Arc<Database<D>>,
         transaction_options: TransactionOptions,
     ) -> Self {
@@ -244,6 +256,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             type_manager,
             thing_manager,
             function_manager,
+            query_manager,
             database,
             transaction_options,
         }
@@ -313,7 +326,10 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         thing_statistics
             .may_synchronise(&self.database.storage)
             .map_err(|typedb_source| StatisticsError { typedb_source })?;
+        let total_count = thing_statistics.total_count;
         schema.thing_statistics = Arc::new(thing_statistics);
+        
+        self.database.query_cache.force_reset(total_count);
 
         *schema_commit_guard = schema;
         Ok(())

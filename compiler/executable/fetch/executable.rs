@@ -128,10 +128,9 @@ fn compile_some(
         }
         AnnotatedFetchSome::ListSubFetch(sub_fetch) => {
             let AnnotatedFetchListSubFetch { variable_registry, input_variables, stages, fetch } = sub_fetch;
-            let registry = Arc::new(variable_registry);
             let (input_positions, compiled_stages, compiled_fetch) = compile_stages_and_fetch(
                 statistics,
-                registry.clone(),
+                &variable_registry,
                 available_functions,
                 stages,
                 Some(fetch),
@@ -148,7 +147,7 @@ fn compile_some(
                 .collect();
 
             Ok(FetchSomeInstruction::ListSubFetch(ExecutableFetchListSubFetch {
-                variable_registry: registry,
+                variable_registry: Arc::new(variable_registry),
                 input_position_mapping: input_position_remapping,
                 stages: compiled_stages,
                 fetch: compiled_fetch.unwrap(),

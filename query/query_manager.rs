@@ -23,16 +23,19 @@ use ir::{
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
+use resource::perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES};
 
 use crate::{define, error::QueryError, redefine, undefine};
+use crate::query_cache::QueryCache;
 
-#[derive(Default)]
-pub struct QueryManager {}
+#[derive(Debug)]
+pub struct QueryManager {
+    cache: Arc<QueryCache>,
+}
 
 impl QueryManager {
-    // TODO: clean up if QueryManager remains stateless
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(cache: Arc<QueryCache>) -> Self {
+        Self { cache }
     }
 
     pub fn execute_schema(
@@ -69,41 +72,53 @@ impl QueryManager {
             value_parameters: parameters,
         } = self.translate_pipeline(snapshot.as_ref(), function_manager, query)?;
 
-        // 2: Annotate
-        let annotated_schema_functions = function_manager
-            .get_annotated_functions(snapshot.as_ref(), type_manager)
-            .map_err(|err| QueryError::FunctionRetrieval { typedb_source: err })?;
+        let executable_pipeline = match self.cache.get(&translated_preamble, &translated_stages) {
+            Some(executable_pipeline) => {
+                QUERY_CACHE_HITS.increment();
+                executable_pipeline
+            },
+            None => {
+                // 2: Annotate
+                let annotated_schema_functions = function_manager
+                    .get_annotated_functions(snapshot.as_ref(), type_manager)
+                    .map_err(|err| QueryError::FunctionRetrieval { typedb_source: err })?;
 
-        let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = annotate_pipeline(
-            snapshot.as_ref(),
-            type_manager,
-            &annotated_schema_functions,
-            &mut variable_registry,
-            &parameters,
-            translated_preamble,
-            translated_stages,
-            translated_fetch,
-        )
-        .map_err(|err| QueryError::Annotation { typedb_source: err })?;
+                let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = annotate_pipeline(
+                    snapshot.as_ref(),
+                    type_manager,
+                    &annotated_schema_functions,
+                    &mut variable_registry,
+                    &parameters,
+                    translated_preamble.clone(),
+                    translated_stages.clone(),
+                    translated_fetch.clone(),
+                )
+                    .map_err(|err| QueryError::Annotation { typedb_source: err })?;
 
-        // 3: Compile
-        let variable_registry = Arc::new(variable_registry);
-        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch } = compile_pipeline(
-            thing_manager.statistics(),
-            variable_registry.clone(),
-            &annotated_schema_functions,
-            annotated_preamble,
-            annotated_stages,
-            annotated_fetch,
-            &HashSet::with_capacity(0),
-        )
-        .map_err(|err| QueryError::ExecutableCompilation { typedb_source: err })?;
+                // 3: Compile
+                let executable_pipeline = compile_pipeline(
+                    thing_manager.statistics(),
+                    &variable_registry,
+                    &annotated_schema_functions,
+                    annotated_preamble,
+                    annotated_stages,
+                    annotated_fetch,
+                    &HashSet::with_capacity(0),
+                )
+                    .map_err(|err| QueryError::ExecutableCompilation { typedb_source: err })?;
+                self.cache.insert(translated_preamble, translated_stages, executable_pipeline.clone());
+                QUERY_CACHE_MISSES.increment();
+                executable_pipeline
+            }
+        };
+
+        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch } = executable_pipeline;
 
         // 4: Executor
         Pipeline::build_read_pipeline(
             snapshot,
             thing_manager,
-            variable_registry.as_ref(),
+            variable_registry.variable_names(),
             Arc::new(executable_functions),
             &executable_stages,
             executable_fetch,
@@ -133,51 +148,59 @@ impl QueryManager {
             Err(err) => return Err((snapshot, err)),
         };
 
-        // 2: Annotate
-        let annotated_schema_functions = match function_manager.get_annotated_functions(&snapshot, type_manager) {
-            Ok(functions) => functions,
-            Err(err) => {
-                return Err((snapshot, QueryError::FunctionRetrieval { typedb_source: err }));
+        let executable_pipeline = match self.cache.get(&translated_preamble, &translated_stages) {
+            Some(executable_pipeline) => {
+                QUERY_CACHE_HITS.increment();
+                executable_pipeline
+            },
+            None => {
+                // 2: Annotate
+                let annotated_schema_functions = match function_manager.get_annotated_functions(&snapshot, type_manager) {
+                    Ok(functions) => functions,
+                    Err(err) => return Err((snapshot, QueryError::FunctionRetrieval { typedb_source: err })),
+                };
+
+                let annotated_pipeline = annotate_pipeline(
+                    &snapshot,
+                    type_manager,
+                    &annotated_schema_functions,
+                    &mut variable_registry,
+                    &value_parameters,
+                    translated_preamble.clone(),
+                    translated_stages.clone(),
+                    translated_fetch.clone(),
+                );
+
+                let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = match annotated_pipeline {
+                    Ok(annotated_pipeline) => annotated_pipeline,
+                    Err(err) => return Err((snapshot, QueryError::Annotation { typedb_source: err })),
+                };
+
+                // 3: Compile
+                let executable_pipeline = match compile_pipeline(
+                    thing_manager.statistics(),
+                    &variable_registry,
+                    &annotated_schema_functions,
+                    annotated_preamble,
+                    annotated_stages,
+                    annotated_fetch,
+                    &HashSet::with_capacity(0),
+                ) {
+                    Ok(executable) => executable,
+                    Err(err) => return Err((snapshot, QueryError::ExecutableCompilation { typedb_source: err })),
+                };
+                self.cache.insert(translated_preamble, translated_stages, executable_pipeline.clone());
+                QUERY_CACHE_MISSES.increment();
+                executable_pipeline
             }
         };
 
-        let annotated_pipeline = annotate_pipeline(
-            &snapshot,
-            type_manager,
-            &annotated_schema_functions,
-            &mut variable_registry,
-            &value_parameters,
-            translated_preamble,
-            translated_stages,
-            translated_fetch,
-        );
-
-        let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = match annotated_pipeline {
-            Ok(annotated_pipeline) => annotated_pipeline,
-            Err(err) => return Err((snapshot, QueryError::Annotation { typedb_source: err })),
-        };
-
-        // 3: Compile
-        let variable_registry = Arc::new(variable_registry);
-        let executable_pipeline = compile_pipeline(
-            thing_manager.statistics(),
-            variable_registry.clone(),
-            &annotated_schema_functions,
-            annotated_preamble,
-            annotated_stages,
-            annotated_fetch,
-            &HashSet::with_capacity(0),
-        );
-        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch } = match executable_pipeline
-        {
-            Ok(executable) => executable,
-            Err(typedb_source) => return Err((snapshot, QueryError::ExecutableCompilation { typedb_source })),
-        };
+        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch } = executable_pipeline;
 
         // 4: Executor
         Ok(Pipeline::build_write_pipeline(
             snapshot,
-            &variable_registry,
+            variable_registry.variable_names(),
             thing_manager,
             executable_stages,
             executable_fetch,

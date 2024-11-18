@@ -31,6 +31,7 @@ use executor::{
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use query::{error::QueryError, query_manager::QueryManager};
+use query::query_cache::QueryCache;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot},
@@ -99,8 +100,8 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline();
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
 
-    let qm = QueryManager::new();
-    let pipeline = qm
+    let query_manager = QueryManager::new(Arc::new(QueryCache::new()));
+    let pipeline = query_manager
         .prepare_write_pipeline(snapshot, type_manager, thing_manager, &function_manager, &typeql_insert)
         .map_err(|(snapshot, err)| (err, snapshot))?;
     let outputs = pipeline.rows_positions().unwrap().clone();

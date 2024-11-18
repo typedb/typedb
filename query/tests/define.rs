@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::sync::Arc;
+use query::query_cache::QueryCache;
 use query::query_manager::QueryManager;
 use storage::snapshot::CommittableSnapshot;
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -15,7 +17,7 @@ fn basic() {
     setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let query_manager = QueryManager::new();
+    let query_manager = QueryManager::new(Arc::new(QueryCache::new()));
 
     let query_str = r#"
     define

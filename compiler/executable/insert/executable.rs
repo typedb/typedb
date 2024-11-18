@@ -4,18 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
+use std::collections::{HashMap, HashSet};
+
+use itertools::Itertools;
 
 use answer::variable::Variable;
 use encoding::graph::type_::Kind;
-use ir::{
-    pattern::{constraint::Constraint, expression::Expression, ParameterID, Vertex},
-    pipeline::VariableRegistry,
-};
-use itertools::Itertools;
+use ir::pattern::{constraint::Constraint, expression::Expression, ParameterID, Vertex};
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
@@ -32,7 +27,6 @@ pub struct InsertExecutable {
     pub concept_instructions: Vec<ConceptInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
     pub output_row_schema: Vec<Option<(Variable, VariableSource)>>,
-    pub variable_registry: Arc<VariableRegistry>,
 }
 
 impl InsertExecutable {
@@ -48,7 +42,6 @@ impl InsertExecutable {
  */
 
 pub fn compile(
-    variable_registry: Arc<VariableRegistry>,
     constraints: &[Constraint<Variable>],
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,
@@ -70,7 +63,6 @@ pub fn compile(
         concept_instructions: concept_inserts,
         connection_instructions: connection_inserts,
         output_row_schema,
-        variable_registry,
     })
 }
 
