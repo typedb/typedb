@@ -4,11 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::iter::empty;
+use std::{iter::empty, mem};
 
 use answer::variable::Variable;
 use primitive::either::Either;
 use storage::snapshot::ReadableSnapshot;
+use structural_equality::StructuralEquality;
 use typeql::query::stage::{Operator as TypeQLOperator, Stage as TypeQLStage, Stage};
 
 use crate::{
@@ -78,15 +79,54 @@ pub enum TranslatedStage {
 impl TranslatedStage {
     pub fn variables(&self) -> Box<dyn Iterator<Item = Variable> + '_> {
         match self {
-            TranslatedStage::Match { block }
-            | TranslatedStage::Insert { block }
-            | TranslatedStage::Delete { block, .. } => Box::new(block.variables()),
-            TranslatedStage::Select(select) => Box::new(select.variables.iter().cloned()),
-            TranslatedStage::Sort(sort) => Box::new(sort.variables.iter().map(|sort_var| sort_var.variable())),
-            TranslatedStage::Offset(_) => Box::new(empty()),
-            TranslatedStage::Limit(_) => Box::new(empty()),
-            TranslatedStage::Require(require) => Box::new(require.variables.iter().cloned()),
-            TranslatedStage::Reduce(reduce) => Box::new(reduce.within_group.iter().cloned()),
+            Self::Match { block } | Self::Insert { block } | Self::Delete { block, .. } => Box::new(block.variables()),
+            Self::Select(select) => Box::new(select.variables.iter().cloned()),
+            Self::Sort(sort) => Box::new(sort.variables.iter().map(|sort_var| sort_var.variable())),
+            Self::Offset(_) => Box::new(empty()),
+            Self::Limit(_) => Box::new(empty()),
+            Self::Require(require) => Box::new(require.variables.iter().cloned()),
+            Self::Reduce(reduce) => Box::new(reduce.within_group.iter().cloned()),
+        }
+    }
+}
+
+impl StructuralEquality for TranslatedStage {
+    fn hash(&self) -> u64 {
+        mem::discriminant(self).hash()
+            ^ match self {
+                Self::Match { block } => block.hash(),
+                Self::Insert { block } => block.hash(),
+                Self::Delete { block, .. } => block.hash(),
+                Self::Select(select) => select.hash(),
+                Self::Sort(sort) => sort.hash(),
+                Self::Offset(offset) => offset.hash(),
+                Self::Limit(limit) => limit.hash(),
+                Self::Require(require) => require.hash(),
+                Self::Reduce(reduce) => reduce.hash(),
+            }
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Match { block }, Self::Match { block: other_block }) => block.equals(other_block),
+            (Self::Insert { block }, Self::Insert { block: other_block }) => block.equals(other_block),
+            (Self::Delete { block, .. }, Self::Delete { block: other_block, .. }) => block.equals(other_block),
+            (Self::Select(select), Self::Select(other_select)) => select.equals(other_select),
+            (Self::Sort(sort), Self::Sort(other_sort)) => sort.equals(other_sort),
+            (Self::Offset(offset), Self::Offset(other_offset)) => offset.equals(other_offset),
+            (Self::Limit(limit), Self::Limit(other_limit)) => limit.equals(other_limit),
+            (Self::Require(require), Self::Require(other_require)) => require.equals(other_require),
+            (Self::Reduce(reduce), Self::Reduce(other_reduce)) => reduce.equals(other_reduce),
+            // note: this style forces updating the match when the variants change
+            (Self::Match { .. }, _)
+            | (Self::Insert { .. }, _)
+            | (Self::Delete { .. }, _)
+            | (Self::Select { .. }, _)
+            | (Self::Sort { .. }, _)
+            | (Self::Offset { .. }, _)
+            | (Self::Limit { .. }, _)
+            | (Self::Require { .. }, _)
+            | (Self::Reduce { .. }, _) => false,
         }
     }
 }

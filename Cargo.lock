@@ -119,6 +119,7 @@ dependencies = [
  "lending_iterator",
  "primitive",
  "storage",
+ "structural_equality",
 ]
 
 [[package]]
@@ -868,6 +869,7 @@ dependencies = [
  "seahash",
  "serde",
  "storage",
+ "structural_equality",
  "test_utils",
  "test_utils_encoding",
  "tracing",
@@ -1437,7 +1439,9 @@ dependencies = [
  "error",
  "itertools 0.10.5",
  "primitive",
+ "resource",
  "storage",
+ "structural_equality",
  "test_utils",
  "typeql",
 ]
@@ -2823,6 +2827,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
+name = "structural_equality"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "typeql",
+]
+
+[[package]]
 name = "subtle"
 version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3283,7 +3295,7 @@ dependencies = [
 [[package]]
 name = "typedb-protocol"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typedb-protocol?rev=0800eeeeb5e1182ff94f4bc43c3a2a8fdfcceb2f#0800eeeeb5e1182ff94f4bc43c3a2a8fdfcceb2f"
+source = "git+https://github.com/typedb/typedb-protocol?rev=8e316bb783a6315c881f3cba54d9afe52fef5edb#8e316bb783a6315c881f3cba54d9afe52fef5edb"
 dependencies = [
  "prost",
  "tonic",
@@ -3311,7 +3323,7 @@ checksum = "42ff0bf0c66b8238c6f3b578df37d0b7848e55df8577b3f74f92a69acceeb825"
 [[package]]
 name = "typeql"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typeql?rev=133c8cdcbfea4ea6671c4a92ef4404eea545c0d6#133c8cdcbfea4ea6671c4a92ef4404eea545c0d6"
+source = "git+https://github.com/typedb/typeql?rev=c31b226a0c04dc5276e71ec2e557deec3f61e986#c31b226a0c04dc5276e71ec2e557deec3f61e986"
 dependencies = [
  "chrono",
  "itertools 0.10.5",

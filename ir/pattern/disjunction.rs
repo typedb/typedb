@@ -7,6 +7,7 @@
 use std::fmt;
 
 use answer::variable::Variable;
+use structural_equality::StructuralEquality;
 
 use super::conjunction::ConjunctionBuilder;
 use crate::{
@@ -36,6 +37,16 @@ impl Disjunction {
 impl Scope for Disjunction {
     fn scope_id(&self) -> ScopeId {
         todo!()
+    }
+}
+
+impl StructuralEquality for Disjunction {
+    fn hash(&self) -> u64 {
+        self.conjunctions().hash()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.conjunctions().equals(other.conjunctions())
     }
 }
 

@@ -7,6 +7,7 @@
 use std::collections::{HashMap, HashSet};
 
 use answer::variable::Variable;
+use structural_equality::StructuralEquality;
 
 use crate::{
     pattern::{
@@ -65,6 +66,16 @@ impl Scope for Block {
     }
 }
 
+impl StructuralEquality for Block {
+    fn hash(&self) -> u64 {
+        self.conjunction().hash()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.conjunction().equals(other.conjunction())
+    }
+}
+
 #[derive(Debug)]
 pub struct BlockBuilder<'reg> {
     context: BlockBuilderContext<'reg>,
@@ -106,7 +117,7 @@ fn validate_conjunction(
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Eq, PartialEq)]
 pub struct BlockContext {
     variable_declaration: HashMap<Variable, ScopeId>,
     scope_parents: HashMap<ScopeId, ScopeId>,

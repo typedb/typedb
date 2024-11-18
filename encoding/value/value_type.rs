@@ -7,7 +7,8 @@
 use std::{
     fmt,
     fmt::{Display, Formatter},
-    ops::Range,
+    mem,
+    ops::{BitXor, Range},
 };
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
@@ -16,6 +17,7 @@ use serde::{
     de::{self, Unexpected, Visitor},
     Deserialize, Deserializer, Serialize, Serializer,
 };
+use structural_equality::StructuralEquality;
 
 use crate::{
     graph::{definition::definition_key::DefinitionKey, type_::property::TypeVertexPropertyEncoding},
@@ -24,7 +26,7 @@ use crate::{
 };
 
 // We can support Prefix::ATTRIBUTE_MAX - Prefix::ATTRIBUTE_MIN different built-in value types
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum ValueType {
     Boolean,
     Long,
@@ -114,6 +116,44 @@ impl ValueType {
             // TODO: we will have to decide if we consider date datatypes to be approximately castable to each other
             ValueType::Date => other == &ValueType::DateTime,
             _ => false,
+        }
+    }
+}
+
+impl StructuralEquality for ValueType {
+    fn hash(&self) -> u64 {
+        mem::discriminant(self).hash()
+            & match self {
+                ValueType::Struct(key) => (key.definition_id().as_uint() as usize).hash(),
+                _ => 0,
+            }
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Boolean, Self::Boolean) => true,
+            (Self::Long, Self::Long) => true,
+            (Self::Double, Self::Double) => true,
+            (Self::Decimal, Self::Decimal) => true,
+            (Self::Date, Self::Date) => true,
+            (Self::DateTime, Self::DateTime) => true,
+            (Self::DateTimeTZ, Self::DateTimeTZ) => true,
+            (Self::Duration, Self::Duration) => true,
+            (Self::String, Self::String) => true,
+            (Self::Struct(key), Self::Struct(other_key)) => {
+                (key.definition_id().as_uint() as usize).equals(&(other_key.definition_id().as_uint() as usize))
+            }
+            // note: this style forces updating the match when the variants change
+            (Self::Boolean { .. }, _)
+            | (Self::Long { .. }, _)
+            | (Self::Double { .. }, _)
+            | (Self::Decimal { .. }, _)
+            | (Self::Date { .. }, _)
+            | (Self::DateTime { .. }, _)
+            | (Self::DateTimeTZ { .. }, _)
+            | (Self::Duration { .. }, _)
+            | (Self::String { .. }, _)
+            | (Self::Struct { .. }, _) => false,
         }
     }
 }

@@ -6,6 +6,8 @@
 
 use std::fmt;
 
+use structural_equality::StructuralEquality;
+
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Variable {
     id: VariableId,
@@ -38,5 +40,15 @@ pub(crate) struct VariableId {
 impl fmt::Display for VariableId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.id)
+    }
+}
+
+impl StructuralEquality for Variable {
+    fn hash(&self) -> u64 {
+        self.id.id as u64
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self == other
     }
 }

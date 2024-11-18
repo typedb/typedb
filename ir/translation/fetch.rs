@@ -445,7 +445,7 @@ fn create_anonymous_function(
     args: Vec<Variable>,
     body: FunctionBody,
 ) -> Function {
-    Function::new("_generated_fetch_inline_function_", context, parameters, args, None, body)
+    Function::new("_generated_fetch_inline_function_", context, parameters, args, None, None, body)
 }
 
 // Given a function body, and the _parent_ translation context, we can reconstruct which are arguments

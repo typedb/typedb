@@ -7,10 +7,13 @@
 use std::{
     collections::HashMap,
     fmt::{Debug, Display, Formatter},
+    mem,
+    ops::BitXor,
 };
 
 use encoding::graph::definition::definition_key::DefinitionKey;
 use primitive::maybe_owns::MaybeOwns;
+use structural_equality::StructuralEquality;
 
 use crate::{
     pattern::variable_category::{VariableCategory, VariableOptionality},
@@ -68,6 +71,27 @@ impl FunctionID {
         match self {
             FunctionID::Schema(id) => id.definition_id().as_uint() as usize,
             FunctionID::Preamble(id) => *id,
+        }
+    }
+}
+
+impl StructuralEquality for FunctionID {
+    fn hash(&self) -> u64 {
+        StructuralEquality::hash(&mem::discriminant(self)).bitxor(match self {
+            FunctionID::Schema(key) => StructuralEquality::hash(&(key.definition_id().as_uint() as usize)),
+            FunctionID::Preamble(id) => StructuralEquality::hash(id),
+        })
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Schema(key), Self::Schema(other_key)) => StructuralEquality::equals(
+                &(key.definition_id().as_uint() as usize),
+                &(other_key.definition_id().as_uint() as usize),
+            ),
+            (Self::Preamble(id), Self::Preamble(other_id)) => id.equals(other_id),
+            // note: this style forces updating the match when the variants change
+            (Self::Schema { .. }, _) | (Self::Preamble { .. }, _) => false,
         }
     }
 }

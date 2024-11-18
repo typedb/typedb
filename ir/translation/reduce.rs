@@ -12,7 +12,7 @@ use typeql::{
 use crate::{
     pattern::variable_category::VariableCategory,
     pipeline::{
-        reduce::{Reduce, Reducer},
+        reduce::{AssignedReduction, Reduce, Reducer},
         VariableRegistry,
     },
     translation::TranslationContext,
@@ -33,7 +33,7 @@ pub fn translate_reduce(
             is_optional,
             reducer.clone(),
         );
-        reductions.push((assigned_var, reducer));
+        reductions.push(AssignedReduction::new(assigned_var, reducer));
     }
 
     let group = match &typeql_reduce.within_group {

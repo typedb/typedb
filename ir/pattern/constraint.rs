@@ -8,11 +8,14 @@ use std::{
     collections::HashMap,
     fmt,
     fmt::{Display, Formatter},
+    hash::{DefaultHasher, Hasher},
+    mem,
     ops::Deref,
 };
 
 use answer::variable::Variable;
 use itertools::Itertools;
+use structural_equality::StructuralEquality;
 
 use crate::{
     pattern::{
@@ -72,6 +75,16 @@ impl Constraints {
         });
         self.constraints.push(constraint);
         self.constraints.last().unwrap()
+    }
+}
+
+impl StructuralEquality for Constraints {
+    fn hash(&self) -> u64 {
+        self.constraints().hash()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.constraints().equals(other.constraints())
     }
 }
 
@@ -433,7 +446,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub enum Constraint<ID: IrID> {
+pub enum Constraint<ID> {
     Is(Is<ID>),
     Kind(Kind<ID>),
     Label(Label<ID>),
@@ -681,24 +694,83 @@ impl<ID: IrID> Constraint<ID> {
     }
 }
 
+impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
+    fn hash(&self) -> u64 {
+        &mem::discriminant(self).hash()
+            ^ &match self {
+                Self::Is(inner) => inner.hash(),
+                Self::Kind(inner) => inner.hash(),
+                Self::Label(inner) => inner.hash(),
+                Self::RoleName(inner) => inner.hash(),
+                Self::Sub(inner) => inner.hash(),
+                Self::Isa(inner) => inner.hash(),
+                Self::Links(inner) => inner.hash(),
+                Self::Has(inner) => inner.hash(),
+                Self::ExpressionBinding(inner) => inner.hash(),
+                Self::FunctionCallBinding(inner) => inner.hash(),
+                Self::Comparison(inner) => inner.hash(),
+                Self::Owns(inner) => inner.hash(),
+                Self::Relates(inner) => inner.hash(),
+                Self::Plays(inner) => inner.hash(),
+                Self::Value(inner) => inner.hash(),
+            }
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Is(inner), Self::Is(other_inner)) => inner.equals(other_inner),
+            (Self::Kind(inner), Self::Kind(other_inner)) => inner.equals(other_inner),
+            (Self::Label(inner), Self::Label(other_inner)) => inner.equals(other_inner),
+            (Self::RoleName(inner), Self::RoleName(other_inner)) => inner.equals(other_inner),
+            (Self::Sub(inner), Self::Sub(other_inner)) => inner.equals(other_inner),
+            (Self::Isa(inner), Self::Isa(other_inner)) => inner.equals(other_inner),
+            (Self::Links(inner), Self::Links(other_inner)) => inner.equals(other_inner),
+            (Self::Has(inner), Self::Has(other_inner)) => inner.equals(other_inner),
+            (Self::ExpressionBinding(inner), Self::ExpressionBinding(other_inner)) => inner.equals(other_inner),
+            (Self::FunctionCallBinding(inner), Self::FunctionCallBinding(other_inner)) => inner.equals(other_inner),
+            (Self::Comparison(inner), Self::Comparison(other_inner)) => inner.equals(other_inner),
+            (Self::Owns(inner), Self::Owns(other_inner)) => inner.equals(other_inner),
+            (Self::Relates(inner), Self::Relates(other_inner)) => inner.equals(other_inner),
+            (Self::Plays(inner), Self::Plays(other_inner)) => inner.equals(other_inner),
+            (Self::Value(inner), Self::Value(other_inner)) => inner.equals(other_inner),
+            // note: this style forces updating the match when the variants change
+            (Self::Is { .. }, _)
+            | (Self::Kind { .. }, _)
+            | (Self::Label { .. }, _)
+            | (Self::RoleName { .. }, _)
+            | (Self::Sub { .. }, _)
+            | (Self::Isa { .. }, _)
+            | (Self::Links { .. }, _)
+            | (Self::Has { .. }, _)
+            | (Self::ExpressionBinding { .. }, _)
+            | (Self::FunctionCallBinding { .. }, _)
+            | (Self::Comparison { .. }, _)
+            | (Self::Owns { .. }, _)
+            | (Self::Relates { .. }, _)
+            | (Self::Plays { .. }, _)
+            | (Self::Value { .. }, _) => false,
+        }
+    }
+}
+
 impl<ID: IrID> fmt::Display for Constraint<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Constraint::Is(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::Kind(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::Label(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::RoleName(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::Sub(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::Isa(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::Links(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::Has(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::ExpressionBinding(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::FunctionCallBinding(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::Comparison(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::Owns(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::Relates(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::Plays(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::Value(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Is(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Kind(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Label(constraint) => fmt::Display::fmt(constraint, f),
+            Self::RoleName(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Sub(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Isa(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Links(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Has(constraint) => fmt::Display::fmt(constraint, f),
+            Self::ExpressionBinding(constraint) => fmt::Display::fmt(constraint, f),
+            Self::FunctionCallBinding(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Comparison(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Owns(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Relates(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Plays(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Value(constraint) => fmt::Display::fmt(constraint, f),
         }
     }
 }
@@ -756,6 +828,19 @@ impl<ID: IrID> From<Label<ID>> for Constraint<ID> {
     }
 }
 
+impl<ID: StructuralEquality> StructuralEquality for Label<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.type_var.hash_into(&mut hasher);
+        self.type_label.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.type_label.equals(&other.type_var) && self.type_label.equals(&other.type_label)
+    }
+}
+
 impl<ID: IrID> fmt::Display for Label<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // TODO: implement indentation without rewriting it everywhere
@@ -806,6 +891,19 @@ impl<ID: IrID> RoleName<ID> {
 impl<ID: IrID> From<RoleName<ID>> for Constraint<ID> {
     fn from(value: RoleName<ID>) -> Self {
         Constraint::RoleName(value)
+    }
+}
+
+impl<ID: StructuralEquality> StructuralEquality for RoleName<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        hasher.write_u64(StructuralEquality::hash(&self.left));
+        hasher.write_u64(StructuralEquality::hash(self.name.as_str()));
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.left.equals(&other.left) && self.name.as_str().equals(other.name.as_str())
     }
 }
 
@@ -860,13 +958,26 @@ impl<ID: IrID> From<Kind<ID>> for Constraint<ID> {
     }
 }
 
+impl<ID: StructuralEquality> StructuralEquality for Kind<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        hasher.write_u64(StructuralEquality::hash(self.kind.as_str()));
+        hasher.write_u64(StructuralEquality::hash(&self.type_));
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.kind.as_str().equals(other.kind.as_str()) && self.type_.equals(&other.type_)
+    }
+}
+
 impl<ID: IrID> fmt::Display for Kind<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(self, f)
     }
 }
 
-impl<ID: IrID> fmt::Debug for Kind<ID> {
+impl<ID: fmt::Debug> fmt::Debug for Kind<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} {}", self.kind, self.type_)
     }
@@ -884,6 +995,16 @@ impl From<typeql::statement::type_::SubKind> for SubKind {
             typeql::statement::type_::SubKind::Direct => Self::Exact,
             typeql::statement::type_::SubKind::Transitive => Self::Subtype,
         }
+    }
+}
+
+impl StructuralEquality for SubKind {
+    fn hash(&self) -> u64 {
+        mem::discriminant(self).hash()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self == other
     }
 }
 
@@ -948,6 +1069,20 @@ impl<ID: IrID> From<Sub<ID>> for Constraint<ID> {
     }
 }
 
+impl<ID: StructuralEquality> StructuralEquality for Sub<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        hasher.write_u64(StructuralEquality::hash(&self.kind));
+        hasher.write_u64(StructuralEquality::hash(&self.subtype));
+        hasher.write_u64(StructuralEquality::hash(&self.supertype));
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.kind.equals(&other.kind) && self.subtype.equals(&other.subtype) && self.supertype.equals(&other.supertype)
+    }
+}
+
 impl<ID: IrID> fmt::Display for Sub<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} sub {}", self.subtype, self.supertype)
@@ -997,6 +1132,19 @@ impl<ID: IrID> Is<ID> {
 impl<ID: IrID> From<Is<ID>> for Constraint<ID> {
     fn from(val: Is<ID>) -> Self {
         Constraint::Is(val)
+    }
+}
+
+impl<ID: StructuralEquality> StructuralEquality for Is<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.lhs.hash_into(&mut hasher);
+        self.rhs.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.lhs.equals(&other.lhs) && self.rhs.equals(&other.rhs)
     }
 }
 
@@ -1057,6 +1205,20 @@ impl<ID: IrID> From<Isa<ID>> for Constraint<ID> {
     }
 }
 
+impl<ID: StructuralEquality> StructuralEquality for Isa<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.kind.hash_into(&mut hasher);
+        self.thing.hash_into(&mut hasher);
+        self.type_.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.kind.equals(&other.kind) && self.thing.equals(&other.thing) && self.type_.equals(&other.type_)
+    }
+}
+
 impl<ID: IrID> fmt::Display for Isa<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} isa {}", self.thing, self.type_)
@@ -1075,6 +1237,16 @@ impl From<typeql::statement::thing::isa::IsaKind> for IsaKind {
             typeql::statement::thing::isa::IsaKind::Exact => Self::Exact,
             typeql::statement::thing::isa::IsaKind::Subtype => Self::Subtype,
         }
+    }
+}
+
+impl StructuralEquality for IsaKind {
+    fn hash(&self) -> u64 {
+        mem::discriminant(self).hash()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self == other
     }
 }
 
@@ -1148,6 +1320,22 @@ impl<ID: IrID> From<Links<ID>> for Constraint<ID> {
     }
 }
 
+impl<ID: StructuralEquality> StructuralEquality for Links<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.relation.hash_into(&mut hasher);
+        self.player.hash_into(&mut hasher);
+        self.role_type.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.relation.equals(&other.relation)
+            && self.player.equals(&other.player)
+            && self.role_type.equals(&other.role_type)
+    }
+}
+
 impl<ID: IrID> fmt::Display for Links<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} rp {} (role: {})", self.relation, self.player, self.role_type)
@@ -1197,6 +1385,19 @@ impl<ID: IrID> Has<ID> {
 impl<ID: IrID> From<Has<ID>> for Constraint<ID> {
     fn from(has: Has<ID>) -> Self {
         Constraint::Has(has)
+    }
+}
+
+impl<ID: StructuralEquality> StructuralEquality for Has<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.owner.hash_into(&mut hasher);
+        self.attribute.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.owner.equals(&other.owner) && self.attribute.equals(&other.attribute)
     }
 }
 
@@ -1258,6 +1459,19 @@ impl<ID: IrID> From<ExpressionBinding<ID>> for Constraint<ID> {
     }
 }
 
+impl<ID: StructuralEquality> StructuralEquality for ExpressionBinding<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.left.hash_into(&mut hasher);
+        self.expression.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.left.equals(&other.left) && self.expression.equals(&other.expression)
+    }
+}
+
 impl<ID: IrID> fmt::Display for ExpressionBinding<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} = {}", self.left, self.expression)
@@ -1315,6 +1529,22 @@ impl<ID: IrID> From<FunctionCallBinding<ID>> for Constraint<ID> {
     }
 }
 
+impl<ID: StructuralEquality + Ord> StructuralEquality for FunctionCallBinding<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.assigned.hash_into(&mut hasher);
+        self.function_call.hash_into(&mut hasher);
+        self.is_stream.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.assigned.equals(&other.assigned)
+            && self.function_call.equals(&other.function_call)
+            && self.is_stream.equals(&other.is_stream)
+    }
+}
+
 impl<ID: IrID> fmt::Display for FunctionCallBinding<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.is_stream {
@@ -1365,6 +1595,16 @@ impl From<typeql::token::Comparator> for Comparator {
             typeql::token::Comparator::Contains => Self::Contains,
             typeql::token::Comparator::Like => Self::Like,
         }
+    }
+}
+
+impl StructuralEquality for Comparator {
+    fn hash(&self) -> u64 {
+        mem::discriminant(self).hash()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self == other
     }
 }
 
@@ -1430,6 +1670,20 @@ impl<ID: IrID> From<Comparison<ID>> for Constraint<ID> {
     }
 }
 
+impl<ID: StructuralEquality> StructuralEquality for Comparison<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.lhs.hash_into(&mut hasher);
+        self.rhs.hash_into(&mut hasher);
+        self.comparator.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.lhs.equals(&other.lhs) && self.rhs.equals(&other.rhs) && self.comparator.equals(&other.comparator)
+    }
+}
+
 impl<ID: IrID> fmt::Display for Comparison<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
@@ -1479,6 +1733,19 @@ impl<ID: IrID> Owns<ID> {
 impl<ID: IrID> From<Owns<ID>> for Constraint<ID> {
     fn from(val: Owns<ID>) -> Self {
         Constraint::Owns(val)
+    }
+}
+
+impl<ID: StructuralEquality> StructuralEquality for Owns<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.owner.hash_into(&mut hasher);
+        self.attribute.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.owner.equals(&other.owner) && self.attribute.equals(&other.attribute)
     }
 }
 
@@ -1534,6 +1801,19 @@ impl<ID: IrID> From<Relates<ID>> for Constraint<ID> {
     }
 }
 
+impl<ID: StructuralEquality> StructuralEquality for Relates<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.relation.hash_into(&mut hasher);
+        self.role_type.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.relation.equals(&other.relation) && self.role_type.equals(&other.role_type)
+    }
+}
+
 impl<ID: IrID> fmt::Display for Relates<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
@@ -1586,6 +1866,19 @@ impl<ID: IrID> From<Plays<ID>> for Constraint<ID> {
     }
 }
 
+impl<ID: StructuralEquality> StructuralEquality for Plays<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.player.hash_into(&mut hasher);
+        self.role_type.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.player.equals(&other.player) && self.role_type.equals(&other.role_type)
+    }
+}
+
 impl<ID: IrID> fmt::Display for Plays<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
@@ -1634,6 +1927,19 @@ impl<ID: IrID> Value<ID> {
 impl<ID: IrID> From<Value<ID>> for Constraint<ID> {
     fn from(val: Value<ID>) -> Self {
         Constraint::Value(val)
+    }
+}
+
+impl<ID: StructuralEquality> StructuralEquality for Value<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.attribute_type.hash_into(&mut hasher);
+        self.value_type.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.attribute_type.equals(&other.attribute_type) && self.value_type.equals(&other.value_type)
     }
 }
 

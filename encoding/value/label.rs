@@ -11,6 +11,7 @@ use resource::constants::{
     encoding::{LABEL_NAME_STRING_INLINE, LABEL_SCOPED_NAME_STRING_INLINE, LABEL_SCOPE_STRING_INLINE},
     snapshot::BUFFER_VALUE_INLINE,
 };
+use structural_equality::StructuralEquality;
 
 use crate::{
     graph::type_::property::TypeVertexPropertyEncoding, layout::infix::Infix, value::string_bytes::StringBytes, AsBytes,
@@ -21,18 +22,6 @@ pub struct Label<'a> {
     pub name: StringBytes<'a, LABEL_NAME_STRING_INLINE>,
     pub scope: Option<StringBytes<'a, LABEL_SCOPE_STRING_INLINE>>,
     pub scoped_name: StringBytes<'a, LABEL_SCOPED_NAME_STRING_INLINE>,
-}
-
-impl<'a> Ord for Label<'a> {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.scoped_name().as_str().cmp(other.scoped_name().as_str())
-    }
-}
-
-impl<'a> PartialOrd for Label<'a> {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
 }
 
 impl<'a> Label<'a> {
@@ -123,6 +112,28 @@ impl<'a> TypeVertexPropertyEncoding<'a> for Label<'a> {
 
     fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
         Some(Bytes::Array(ByteArray::from(self.scoped_name().bytes())))
+    }
+}
+
+impl<'a> Ord for Label<'a> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.scoped_name().as_str().cmp(other.scoped_name().as_str())
+    }
+}
+
+impl<'a> PartialOrd for Label<'a> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<'a> StructuralEquality for Label<'a> {
+    fn hash(&self) -> u64 {
+        self.scoped_name.as_str().hash()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.scoped_name == other.scoped_name
     }
 }
 

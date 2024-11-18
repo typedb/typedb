@@ -4,28 +4,25 @@
 
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_library")
+
 package(default_visibility = ["//visibility:public"])
 
 rust_library(
-    name = "answer",
-    crate_root = "lib.rs",
+    name = "structural_equality",
+    crate_root = "structural_equality.rs",
     srcs = glob([
         "*.rs",
     ]),
     deps = [
-        "//common/bytes",
-        "//common/primitive",
-        "//common/structural_equality",
-        "//common/lending_iterator",
-        "//concept",
-        "//encoding",
-        "//storage",
-    ],
+        "@typeql//rust:typeql",
+
+        "@crates//:serde",
+    ]
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
+    include = glob(["*", "*/*", "*/*/*"]),
     exclude = glob([
         "Cargo.*",
     ]),

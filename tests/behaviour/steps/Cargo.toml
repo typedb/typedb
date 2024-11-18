@@ -34,13 +34,43 @@ features = {}
 		version = "0.19.1"
 		default-features = false
 
+	[dependencies.query]
+		path = "../../../query"
+		features = []
+		default-features = false
+
 	[dependencies.concept]
 		path = "../../../concept"
 		features = []
 		default-features = false
 
+	[dependencies.durability]
+		path = "../../../durability"
+		features = []
+		default-features = false
+
+	[dependencies.ir]
+		path = "../../../ir"
+		features = []
+		default-features = false
+
+	[dependencies.macro_rules_attribute]
+		features = ["default"]
+		version = "0.2.0"
+		default-features = false
+
 	[dependencies.storage]
 		path = "../../../storage"
+		features = []
+		default-features = false
+
+	[dependencies.futures]
+		features = ["alloc", "async-await", "default", "executor", "futures-executor", "std", "thread-pool"]
+		version = "0.3.30"
+		default-features = false
+
+	[dependencies.encoding]
+		path = "../../../encoding"
 		features = []
 		default-features = false
 
@@ -64,6 +94,11 @@ features = {}
 		features = []
 		default-features = false
 
+	[dependencies.answer]
+		path = "../../../answer"
+		features = []
+		default-features = false
+
 	[dependencies.executor]
 		path = "../../../executor"
 		features = []
@@ -81,7 +116,7 @@ features = {}
 
 	[dependencies.typeql]
 		features = []
-		rev = "0be38cbab19da7d6b2549ad5aa1248fc811bc4e0"
+		rev = "c31b226a0c04dc5276e71ec2e557deec3f61e986"
 		git = "https://github.com/typedb/typeql"
 		default-features = false
 
@@ -90,49 +125,9 @@ features = {}
 		features = []
 		default-features = false
 
-	[dependencies.query]
-		path = "../../../query"
-		features = []
-		default-features = false
-
-	[dependencies.durability]
-		path = "../../../durability"
-		features = []
-		default-features = false
-
-	[dependencies.ir]
-		path = "../../../ir"
-		features = []
-		default-features = false
-
-	[dependencies.macro_rules_attribute]
-		features = ["default"]
-		version = "0.2.0"
-		default-features = false
-
-	[dependencies.futures]
-		features = ["alloc", "async-await", "default", "executor", "futures-executor", "std", "thread-pool"]
-		version = "0.3.30"
-		default-features = false
-
-	[dependencies.encoding]
-		path = "../../../encoding"
-		features = []
-		default-features = false
-
-	[dependencies.answer]
-		path = "../../../answer"
-		features = []
-		default-features = false
-
 	[dependencies.chrono]
 		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-targets"]
 		version = "0.4.38"
-		default-features = false
-
-	[dependencies.serde_json]
-		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
-		version = "1.0.128"
 		default-features = false
 
 	[dependencies.lending_iterator]

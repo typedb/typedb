@@ -7,10 +7,12 @@
 use std::{
     error::Error,
     fmt::{Display, Formatter},
-    hash::Hash,
+    hash::{DefaultHasher, Hash, Hasher},
+    mem,
 };
 
 use answer::variable::Variable;
+use structural_equality::StructuralEquality;
 
 use crate::{
     pattern::{IrID, ParameterID},
@@ -74,6 +76,16 @@ impl<ID: IrID> ExpressionTree<ID> {
     }
 }
 
+impl<ID: StructuralEquality> StructuralEquality for ExpressionTree<ID> {
+    fn hash(&self) -> u64 {
+        self.preorder_tree.hash()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.preorder_tree.equals(&other.preorder_tree)
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Expression<ID> {
     Constant(ParameterID),
@@ -84,6 +96,41 @@ pub enum Expression<ID> {
 
     List(ListConstructor),
     ListIndexRange(ListIndexRange<ID>),
+}
+
+impl<ID: StructuralEquality> StructuralEquality for Expression<ID> {
+    fn hash(&self) -> u64 {
+        StructuralEquality::hash(&mem::discriminant(self))
+            ^ match self {
+                Expression::Constant(inner) => StructuralEquality::hash(inner),
+                Expression::Variable(inner) => StructuralEquality::hash(inner),
+                Expression::Operation(inner) => StructuralEquality::hash(inner),
+                Expression::BuiltInCall(inner) => StructuralEquality::hash(inner),
+                Expression::ListIndex(inner) => StructuralEquality::hash(inner),
+                Expression::List(inner) => StructuralEquality::hash(inner),
+                Expression::ListIndexRange(inner) => StructuralEquality::hash(inner),
+            }
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Constant(inner), Self::Constant(other_inner)) => inner.equals(other_inner),
+            (Self::Variable(inner), Self::Variable(other_inner)) => inner.equals(other_inner),
+            (Self::Operation(inner), Self::Operation(other_inner)) => inner.equals(other_inner),
+            (Self::BuiltInCall(inner), Self::BuiltInCall(other_inner)) => inner.equals(other_inner),
+            (Self::ListIndex(inner), Self::ListIndex(other_inner)) => inner.equals(other_inner),
+            (Self::List(inner), Self::List(other_inner)) => inner.equals(other_inner),
+            (Self::ListIndexRange(inner), Self::ListIndexRange(other_inner)) => inner.equals(other_inner),
+            // this structure forces us to update the match block when the variants change!
+            (Self::Constant(_), _)
+            | (Self::Variable(_), _)
+            | (Self::Operation(_), _)
+            | (Self::BuiltInCall(_), _)
+            | (Self::ListIndex(_), _)
+            | (Self::List(_), _)
+            | (Self::ListIndexRange(_), _) => false,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -115,6 +162,22 @@ impl Operation {
     }
 }
 
+impl StructuralEquality for Operation {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        hasher.write_u64(StructuralEquality::hash(&self.operator));
+        hasher.write_u64(StructuralEquality::hash(&self.right_expression_id));
+        hasher.write_u64(StructuralEquality::hash(&self.left_expression_id));
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.operator.equals(&other.operator)
+            && self.right_expression_id.equals(&other.right_expression_id)
+            && self.left_expression_id.equals(&other.left_expression_id)
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct BuiltInCall {
     builtin_id: BuiltInFunctionID,
@@ -135,6 +198,20 @@ impl BuiltInCall {
     }
 }
 
+impl StructuralEquality for BuiltInCall {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        hasher.write_u64(StructuralEquality::hash(&self.builtin_id));
+        hasher.write_u64(StructuralEquality::hash(self.argument_expression_ids()));
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.builtin_id.equals(&other.builtin_id)
+            && self.argument_expression_ids().equals(other.argument_expression_ids())
+    }
+}
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum BuiltInFunctionID {
     Abs,
@@ -145,6 +222,16 @@ pub enum BuiltInFunctionID {
     // Max,
     // Min,
     // Length
+}
+
+impl StructuralEquality for BuiltInFunctionID {
+    fn hash(&self) -> u64 {
+        StructuralEquality::hash(&mem::discriminant(self))
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self == other
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -167,6 +254,19 @@ impl<ID: IrID> ListIndex<ID> {
     }
 }
 
+impl<ID: StructuralEquality> StructuralEquality for ListIndex<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        hasher.write_u64(StructuralEquality::hash(&self.list_variable));
+        hasher.write_u64(StructuralEquality::hash(&self.index_expression_id));
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.list_variable.equals(&other.list_variable) && self.index_expression_id.equals(&other.index_expression_id)
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ListConstructor {
     item_expression_ids: Vec<ExpressionTreeNodeId>,
@@ -184,6 +284,19 @@ impl ListConstructor {
 
     pub fn len_id(&self) -> ParameterID {
         self.len_id
+    }
+}
+
+impl StructuralEquality for ListConstructor {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        hasher.write_u64(StructuralEquality::hash(&self.item_expression_ids));
+        hasher.write_u64(StructuralEquality::hash(&self.len_id));
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.item_expression_ids.equals(&other.item_expression_ids) && self.len_id.equals(&other.len_id)
     }
 }
 
@@ -216,6 +329,22 @@ impl<ID: IrID> ListIndexRange<ID> {
     }
 }
 
+impl<ID: StructuralEquality> StructuralEquality for ListIndexRange<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        hasher.write_u64(StructuralEquality::hash(&self.list_variable));
+        hasher.write_u64(StructuralEquality::hash(&self.from_expression_id));
+        hasher.write_u64(StructuralEquality::hash(&self.to_expression_id));
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.list_variable.equals(&other.list_variable)
+            && self.from_expression_id.equals(&other.from_expression_id)
+            && self.to_expression_id.equals(&other.to_expression_id)
+    }
+}
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum Operator {
     Add,
@@ -224,6 +353,16 @@ pub enum Operator {
     Divide,
     Modulo,
     Power,
+}
+
+impl StructuralEquality for Operator {
+    fn hash(&self) -> u64 {
+        StructuralEquality::hash(&mem::discriminant(self))
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self == other
+    }
 }
 
 // Display traits

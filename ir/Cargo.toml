@@ -14,6 +14,11 @@ features = {}
 
 [dev-dependencies]
 
+	[dev-dependencies.resource]
+		path = "../resource"
+		features = []
+		default-features = false
+
 	[dev-dependencies.bytes]
 		path = "../common/bytes"
 		features = []
@@ -26,18 +31,13 @@ features = {}
 		features = []
 		default-features = false
 
-	[dependencies.chrono-tz]
-		features = ["case-insensitive", "default", "std"]
-		version = "0.9.0"
-		default-features = false
-
 	[dependencies.primitive]
 		path = "../common/primitive"
 		features = []
 		default-features = false
 
-	[dependencies.answer]
-		path = "../answer"
+	[dependencies.structural_equality]
+		path = "../common/structural_equality"
 		features = []
 		default-features = false
 
@@ -49,12 +49,6 @@ features = {}
 	[dependencies.concept]
 		path = "../concept"
 		features = []
-		default-features = false
-
-	[dependencies.typeql]
-		features = []
-		rev = "0be38cbab19da7d6b2549ad5aa1248fc811bc4e0"
-		git = "https://github.com/typedb/typeql"
 		default-features = false
 
 	[dependencies.storage]
@@ -72,14 +66,30 @@ features = {}
 		features = []
 		default-features = false
 
-	[dependencies.chrono]
-		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-targets"]
-		version = "0.4.38"
-		default-features = false
-
 	[dependencies.itertools]
 		features = ["default", "use_alloc", "use_std"]
 		version = "0.10.5"
+		default-features = false
+
+	[dependencies.chrono-tz]
+		features = ["case-insensitive", "default", "std"]
+		version = "0.9.0"
+		default-features = false
+
+	[dependencies.answer]
+		path = "../answer"
+		features = []
+		default-features = false
+
+	[dependencies.typeql]
+		features = []
+		rev = "c31b226a0c04dc5276e71ec2e557deec3f61e986"
+		git = "https://github.com/typedb/typeql"
+		default-features = false
+
+	[dependencies.chrono]
+		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-targets"]
+		version = "0.4.38"
 		default-features = false
 
 [[test]]
@@ -89,4 +99,8 @@ features = {}
 [[test]]
 	path = "tests/pipeline.rs"
 	name = "pipeline"
+
+[[test]]
+	path = "tests/structural_equality.rs"
+	name = "test_structural_equality"
 

@@ -4,21 +4,71 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::{
+    hash::{DefaultHasher, Hasher},
+    mem,
+};
+
 use answer::variable::Variable;
+use structural_equality::StructuralEquality;
 
 #[derive(Debug, Clone)]
 pub struct Reduce {
-    pub assigned_reductions: Vec<(Variable, Reducer)>,
+    pub assigned_reductions: Vec<AssignedReduction>,
     pub within_group: Vec<Variable>,
 }
 
 impl Reduce {
-    pub(crate) fn new(assigned_reductions: Vec<(Variable, Reducer)>, within_group: Vec<Variable>) -> Self {
+    pub(crate) fn new(assigned_reductions: Vec<AssignedReduction>, within_group: Vec<Variable>) -> Self {
         Self { assigned_reductions, within_group }
     }
 
     pub fn variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.assigned_reductions.iter().map(|(variable, _)| variable).cloned().chain(self.within_group.iter().cloned())
+        self.assigned_reductions
+            .iter()
+            .map(|assign_reduction| &assign_reduction.assigned)
+            .cloned()
+            .chain(self.within_group.iter().cloned())
+    }
+}
+
+impl StructuralEquality for Reduce {
+    fn hash(&self) -> u64 {
+        // TODO: these really could be order-free
+        let mut hasher = DefaultHasher::new();
+        hasher.write_u64(self.assigned_reductions.hash());
+        hasher.write_u64(self.within_group.hash());
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        // TODO: these really could be order-free
+        self.assigned_reductions.equals(&other.assigned_reductions) && self.within_group.equals(&other.within_group)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AssignedReduction {
+    pub assigned: Variable,
+    pub reduction: Reducer,
+}
+
+impl AssignedReduction {
+    pub(crate) fn new(assigned: Variable, reduction: Reducer) -> Self {
+        Self { assigned, reduction }
+    }
+}
+
+impl StructuralEquality for AssignedReduction {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        hasher.write_u64(self.assigned.hash());
+        hasher.write_u64(self.reduction.hash());
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.assigned.equals(&other.assigned) && self.reduction.equals(&other.reduction)
     }
 }
 
@@ -60,5 +110,15 @@ impl Reducer {
             | Self::Min(var)
             | Self::Std(var) => Some(*var),
         }
+    }
+}
+
+impl StructuralEquality for Reducer {
+    fn hash(&self) -> u64 {
+        mem::discriminant(self).hash() ^ self.variable().hash()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        mem::discriminant(self) == mem::discriminant(other) && self.variable().equals(&other.variable())
     }
 }

@@ -4,10 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt, fmt::Formatter, hash::Hash};
+use std::{collections::HashMap, fmt, fmt::Formatter, hash::Hash, mem, ops::BitXor};
 
 use answer::variable::Variable;
 use encoding::value::label::Label;
+use structural_equality::StructuralEquality;
 
 pub mod conjunction;
 pub mod constraint;
@@ -121,6 +122,26 @@ impl<ID> From<ID> for Vertex<ID> {
     }
 }
 
+impl<ID: StructuralEquality> StructuralEquality for Vertex<ID> {
+    fn hash(&self) -> u64 {
+        StructuralEquality::hash(&mem::discriminant(self)).bitxor(match self {
+            Vertex::Variable(var) => StructuralEquality::hash(var),
+            Vertex::Label(label) => StructuralEquality::hash(label),
+            Vertex::Parameter(parameter) => StructuralEquality::hash(parameter),
+        })
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Variable(var), Self::Variable(other_var)) => var.equals(other_var),
+            (Self::Label(label), Self::Label(other_label)) => label.equals(other_label),
+            (Self::Parameter(parameter), Self::Parameter(other_parameter)) => parameter.equals(other_parameter),
+            // note: this style forces updating the match when the variants change
+            (Self::Variable { .. }, _) | (Self::Parameter { .. }, _) | (Self::Label { .. }, _) => false,
+        }
+    }
+}
+
 impl<ID: fmt::Debug> fmt::Debug for Vertex<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -140,6 +161,16 @@ impl<ID: fmt::Debug> fmt::Display for Vertex<ID> {
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ParameterID {
     pub id: usize,
+}
+
+impl StructuralEquality for ParameterID {
+    fn hash(&self) -> u64 {
+        StructuralEquality::hash(&self.id)
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self == other
+    }
 }
 
 impl fmt::Debug for ParameterID {
@@ -191,6 +222,24 @@ impl ValueType {
     #[must_use]
     pub fn is_struct(&self) -> bool {
         matches!(self, Self::Struct(..))
+    }
+}
+
+impl StructuralEquality for ValueType {
+    fn hash(&self) -> u64 {
+        StructuralEquality::hash(&mem::discriminant(self)).bitxor(match self {
+            ValueType::Builtin(value_type) => StructuralEquality::hash(value_type),
+            ValueType::Struct(name) => StructuralEquality::hash(name.as_str()),
+        })
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Builtin(inner), Self::Builtin(other_inner)) => inner.equals(other_inner),
+            (Self::Struct(inner), Self::Struct(other_inner)) => inner.as_str().equals(other_inner.as_str()),
+            // note: this style forces updating the match when the variants change
+            (Self::Builtin { .. }, _) | (Self::Struct { .. }, _) => false,
+        }
     }
 }
 
