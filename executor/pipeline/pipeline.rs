@@ -173,7 +173,7 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
             }
         }
         Ok(Pipeline::build_with_fetch(
-            variable_registry,
+            variable_names,
             executable_functions.clone(),
             last_stage,
             output_variable_positions,
@@ -239,7 +239,7 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
             }
         }
         Pipeline::build_with_fetch(
-            variable_registry,
+            variable_names,
             executable_functions,
             last_stage,
             output_variable_positions,

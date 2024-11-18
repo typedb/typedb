@@ -101,7 +101,7 @@ impl<'a> Hash for IRQuery<'a> {
 
 impl<'a> PartialEq<Self> for IRQuery<'a> {
     fn eq(&self, other: &Self) -> bool {
-        StructuralEquality::equal(self, other)
+        StructuralEquality::equals(self, other)
     }
 }
 
@@ -110,15 +110,15 @@ impl<'a> Eq for IRQuery<'a> {}
 impl<'a> StructuralEquality for IRQuery<'a> {
     fn hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
-        hasher.write_u64(StructuralEquality::hash(self.preamable.as_ref()));
-        hasher.write_u64(StructuralEquality::hash(self.stages.as_ref()));
-        hasher.write_u64(StructuralEquality::hash(self.fetch.as_ref()));
+        self.preamable.hash_into(&mut hasher);
+        self.stages.hash_into(&mut hasher);
+        self.fetch.hash_into(&mut hasher);
         hasher.finish()
     }
 
-    fn equal(&self, other: &Self) -> bool {
-        StructuralEquality::equal(self.preamable.as_ref(), other.preamable.as_ref()) &&
-            StructuralEquality::equal(self.stages.as_ref(), other.stages.as_ref()) &&
-            StructuralEquality::equal(self.fetch.as_ref(), other.fetch.as_ref())
+    fn equals(&self, other: &Self) -> bool {
+        self.preamable.equals(&other.preamable) &&
+            self.stages.equals(&other.stages) &&
+            self.fetch.equals(&other.fetch)
     }
 }

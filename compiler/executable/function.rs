@@ -25,7 +25,7 @@ use crate::{
     executable::{
         match_::planner::function_plan::ExecutableFunctionRegistry,
         pipeline::{compile_pipeline_stages, ExecutableStage},
-        reduce::{ReduceInstruction, ReduceRowsExecutable},
+        reduce::{ReduceRowsExecutable},
         ExecutableCompilationError,
     },
     VariablePosition,

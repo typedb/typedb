@@ -321,7 +321,7 @@ fn execute_list_subfetch(
         Pipeline::build_read_pipeline(
             snapshot,
             thing_manager,
-            &variable_registry,
+            variable_registry.variable_names(),
             functions_registry,
             &**stages,
             Some(fetch.clone()),
@@ -338,8 +338,8 @@ fn execute_list_subfetch(
         let initial_row = MaybeOwnedRow::new_owned(initial_row, row.multiplicity());
         Pipeline::build_read_pipeline(
             snapshot,
-            thing_manager,
-            &variable_registry,
+            thing_manager, 
+            variable_registry.variable_names(),
             functions_registry,
             &**stages,
             Some(fetch.clone()),

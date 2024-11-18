@@ -34,11 +34,6 @@ features = {}
 		version = "0.5.1"
 		default-features = false
 
-	[dev-dependencies.resource]
-		path = "../resource"
-		features = []
-		default-features = false
-
 	[dev-dependencies.bytes]
 		path = "../common/bytes"
 		features = []
@@ -66,6 +61,41 @@ features = {}
 		version = "1.40.0"
 		default-features = false
 
+	[dependencies.resource]
+		path = "../resource"
+		features = []
+		default-features = false
+
+	[dependencies.structural_equality]
+		path = "../common/structural_equality"
+		features = []
+		default-features = false
+
+	[dependencies.concept]
+		path = "../concept"
+		features = []
+		default-features = false
+
+	[dependencies.ir]
+		path = "../ir"
+		features = []
+		default-features = false
+
+	[dependencies.storage]
+		path = "../storage"
+		features = []
+		default-features = false
+
+	[dependencies.encoding]
+		path = "../encoding"
+		features = []
+		default-features = false
+
+	[dependencies.error]
+		path = "../common/error"
+		features = []
+		default-features = false
+
 	[dependencies.answer]
 		path = "../answer"
 		features = []
@@ -81,39 +111,14 @@ features = {}
 		features = []
 		default-features = false
 
-	[dependencies.concept]
-		path = "../concept"
-		features = []
-		default-features = false
-
-	[dependencies.ir]
-		path = "../ir"
-		features = []
-		default-features = false
-
 	[dependencies.typeql]
 		features = []
-		rev = "c31b226a0c04dc5276e71ec2e557deec3f61e986"
+		rev = "0be38cbab19da7d6b2549ad5aa1248fc811bc4e0"
 		git = "https://github.com/typedb/typeql"
-		default-features = false
-
-	[dependencies.storage]
-		path = "../storage"
-		features = []
-		default-features = false
-
-	[dependencies.encoding]
-		path = "../encoding"
-		features = []
 		default-features = false
 
 	[dependencies.compiler]
 		path = "../compiler"
-		features = []
-		default-features = false
-
-	[dependencies.error]
-		path = "../common/error"
 		features = []
 		default-features = false
 

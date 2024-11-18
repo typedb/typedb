@@ -187,7 +187,7 @@ pub(crate) fn compile_pipeline_stages(
         let selected_variables = selected_variables
             .iter()
             .cloned()
-            .chain(stage.named_referenced_variables(variable_registry.as_ref()))
+            .chain(stage.named_referenced_variables(variable_registry))
             .unique()
             .collect();
         let executable_stage = match executable_stages.last().map(|stage| stage.output_row_mapping()) {

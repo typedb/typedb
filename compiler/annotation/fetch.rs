@@ -12,8 +12,6 @@ use std::{
 use answer::{variable::Variable, Type};
 use concept::type_::{
     attribute_type::AttributeType,
-    constraint::{Constraint, ConstraintDescription},
-    owns::Owns,
     type_manager::TypeManager,
     Capability, OwnerAPI, TypeAPI,
 };
