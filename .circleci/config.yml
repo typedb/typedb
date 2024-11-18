@@ -131,9 +131,9 @@ commands:
           docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
           export VERSION=$(cat VERSION)
           export DOCKER_REPO="typedb"
-          docker manifest create vaticle/$DOCKER_REPO:$VERSION --amend vaticle/$DOCKER_REPO:$VERSION-x86_64 --amend vaticle/$DOCKER_REPO:$VERSION-arm64
-          docker manifest push vaticle/$DOCKER_REPO:$VERSION
-          # TODO: After beta: docker manifest push vaticle/$DOCKER_REPO:latest
+          docker manifest create typedb/$DOCKER_REPO:$VERSION --amend typedb/$DOCKER_REPO:$VERSION-x86_64 --amend typedb/$DOCKER_REPO:$VERSION-arm64
+          docker manifest push typedb/$DOCKER_REPO:$VERSION
+          # TODO: After beta: docker manifest push typedb/$DOCKER_REPO:latest
 
 jobs:
   # per platform snapshot deployment
