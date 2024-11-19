@@ -275,8 +275,7 @@ impl TransactionService {
             match result {
                 Ok(Continue(())) => (),
                 Ok(Break(())) => {
-                    let self_p = format!("{self:p}");
-                    event!(Level::TRACE, self_p, "Stream ended, closing transaction service.");
+                    event!(Level::TRACE, "Stream ended, closing transaction service.");
                     self.do_close().await;
                     return;
                 }
