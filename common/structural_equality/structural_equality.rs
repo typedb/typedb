@@ -20,7 +20,7 @@ pub fn is_structurally_equivalent<T: StructuralEquality>(first: &T, second: &T) 
 }
 
 pub fn ordered_hash_combine(a: u64, b: u64) -> u64 {
-    a ^ (b + 0x9e3779b9 + (a << 6) + (a >> 2))
+    a ^ (b.wrapping_add(0x9e3779b9).wrapping_add(a << 6).wrapping_add(a >> 2))
 }
 
 pub trait StructuralEquality {
