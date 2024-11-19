@@ -43,7 +43,7 @@ build:
       command: |
         sudo apt update
         sudo apt install -y protobuf-compiler
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
         cargo check
 
 #     cargo-toml-sync:
