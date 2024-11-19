@@ -1453,6 +1453,7 @@ dependencies = [
  "storage",
  "structural_equality",
  "test_utils",
+ "test_utils_storage",
  "typeql",
 ]
 
@@ -2873,6 +2874,7 @@ dependencies = [
  "same-file",
  "serde",
  "test_utils",
+ "test_utils_storage",
  "tracing",
  "xoshiro",
 ]
@@ -3071,6 +3073,17 @@ dependencies = [
  "storage",
  "test_utils",
  "tracing",
+]
+
+[[package]]
+name = "test_utils_storage"
+version = "0.0.0"
+dependencies = [
+ "bytes 0.0.0",
+ "durability",
+ "logger",
+ "resource",
+ "storage",
 ]
 
 [[package]]

@@ -179,7 +179,6 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let variable_registry = Arc::new(translation_context.variable_registry);
 
     let insert_plan = compiler::executable::insert::executable::compile(
-        variable_registry,
         block.conjunction().constraints(),
         &input_row_format,
         &entry_annotations,

@@ -25,7 +25,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use executor::{
-    pipeline::stage::{StageAPI, StageIterator},
+    pipeline::stage::{StageIterator},
     ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
@@ -100,7 +100,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline();
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
 
-    let query_manager = QueryManager::new(Arc::new(QueryCache::new()));
+    let query_manager = QueryManager::new(Arc::new(QueryCache::new(0)));
     let pipeline = query_manager
         .prepare_write_pipeline(snapshot, type_manager, thing_manager, &function_manager, &typeql_insert)
         .map_err(|(snapshot, err)| (err, snapshot))?;

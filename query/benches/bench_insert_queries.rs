@@ -102,7 +102,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline();
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
 
-    let qm = QueryManager::new(Arc::new(QueryCache::new()));
+    let qm = QueryManager::new(Arc::new(QueryCache::new(0)));
     let pipeline = qm
         .prepare_write_pipeline(snapshot, type_manager, thing_manager, &function_manager, &typeql_insert)
         .map_err(|(snapshot, err)| (err, snapshot))?;

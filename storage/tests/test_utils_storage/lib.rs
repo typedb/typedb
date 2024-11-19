@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+pub mod mock_snapshot;
+
 use std::{path::Path, sync::Arc};
 
 use durability::wal::WAL;

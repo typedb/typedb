@@ -19,11 +19,10 @@ use storage::{
     MVCCStorage, StorageCommitError,
 };
 use test_utils::{create_tmp_dir, init_logging};
+use test_utils_storage::{create_storage, load_storage, test_keyspace_set};
 
 use self::TestKeyspaceSet::Keyspace;
-use crate::test_common::{create_storage, load_storage};
 
-mod test_common;
 
 test_keyspace_set! {
     Keyspace => 0: "keyspace",

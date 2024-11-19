@@ -17,7 +17,7 @@ fn basic() {
     setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let query_manager = QueryManager::new(Arc::new(QueryCache::new()));
+    let query_manager = QueryManager::new(Arc::new(QueryCache::new(0)));
 
     let query_str = r#"
     define

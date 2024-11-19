@@ -24,6 +24,11 @@ features = {}
 		features = []
 		default-features = false
 
+	[dev-dependencies.test_utils_storage]
+		path = "../storage/tests"
+		features = []
+		default-features = false
+
 [dependencies]
 
 	[dependencies.test_utils]

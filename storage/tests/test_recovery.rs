@@ -15,10 +15,8 @@ use storage::{
     MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging};
+use test_utils_storage::{checkpoint_storage, create_storage, load_storage, test_keyspace_set};
 
-use crate::test_common::{checkpoint_storage, create_storage, load_storage};
-
-mod test_common;
 
 #[test]
 fn wal_and_checkpoint_ok() {

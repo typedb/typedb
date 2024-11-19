@@ -8,10 +8,8 @@ use ir::{
     pipeline::function_signature::HashMapFunctionSignatureIndex, translation::function::translate_typeql_function,
 };
 use structural_equality::{is_structurally_equivalent, StructuralEquality};
+use test_utils_storage::mock_snapshot::MockSnapshot;
 
-use crate::common::MockSnapshot;
-
-mod common;
 
 #[test]
 fn test_function_equivalence() {
@@ -124,4 +122,9 @@ fn test_function_not_equivalence() {
     assert!(!is_structurally_equivalent(&different_1_ir, &different_4_ir));
     assert!(!is_structurally_equivalent(&different_2_ir, &different_4_ir));
     assert!(!is_structurally_equivalent(&different_3_ir, &different_4_ir));
+}
+
+#[test]
+fn test_pipeline_equivalence() {
+
 }

@@ -94,7 +94,7 @@ fn setup_common(schema: &str) -> Context {
 
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
-    let query_manager = QueryManager::new(Arc::new(QueryCache::new()));
+    let query_manager = QueryManager::new(Arc::new(QueryCache::new(0)));
 
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(schema).unwrap().into_schema();

@@ -39,6 +39,11 @@ features = {}
 		version = "0.5.1"
 		default-features = false
 
+	[dev-dependencies.test_utils_storage]
+		path = "../storage/tests"
+		features = []
+		default-features = false
+
 	[dev-dependencies.pprof]
 		features = ["cpp", "criterion", "default", "flamegraph", "inferno"]
 		version = "0.13.0"
