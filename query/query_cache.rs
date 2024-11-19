@@ -5,19 +5,19 @@
  */
 
 
-use std::borrow::{Borrow, Cow};
-use std::collections::HashMap;
+use std::borrow::Borrow;
 use std::hash::{DefaultHasher, Hash, Hasher};
+use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, RwLock};
+
+use moka::sync::Cache;
 
 use compiler::executable::pipeline::ExecutablePipeline;
 use ir::pipeline::function::Function;
 use ir::translation::pipeline::TranslatedStage;
-use resource::constants::database::QUERY_PLAN_CACHE_FLUSH_STATISTICS_CHANGE_PERCENT;
+use resource::constants::database::{QUERY_PLAN_CACHE_FLUSH_STATISTICS_CHANGE_PERCENT, QUERY_PLAN_CACHE_SIZE};
 use resource::perf_counters::QUERY_CACHE_FLUSH;
 use structural_equality::StructuralEquality;
-use moka::sync::Cache;
 
 #[derive(Debug)]
 pub struct QueryCache {
@@ -27,7 +27,7 @@ pub struct QueryCache {
 
 impl QueryCache {
     pub fn new(statistics_size: u64) -> Self {
-        let cache = Cache::new(100);
+        let cache = Cache::new(QUERY_PLAN_CACHE_SIZE);
         QueryCache {
             cache,
             statistics_size: AtomicU64::from(statistics_size),
