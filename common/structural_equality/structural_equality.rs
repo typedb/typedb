@@ -8,7 +8,6 @@ use std::{
     collections::{BTreeMap, HashSet},
     hash::{DefaultHasher, Hash, Hasher},
     mem::Discriminant,
-    ops::BitXorAssign,
 };
 
 mod typeql_structural_equality;

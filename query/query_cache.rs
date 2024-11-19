@@ -8,6 +8,7 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hash, Hasher};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::RwLock;
 
 use compiler::executable::pipeline::ExecutablePipeline;
@@ -16,44 +17,45 @@ use ir::translation::pipeline::TranslatedStage;
 use resource::constants::database::QUERY_PLAN_CACHE_FLUSH_STATISTICS_CHANGE_PERCENT;
 use resource::perf_counters::QUERY_CACHE_FLUSH;
 use structural_equality::StructuralEquality;
+use moka::sync::Cache;
 
 #[derive(Debug)]
 pub struct QueryCache {
     // TODO: replace with actual cache type
-    cache: RwLock<(HashMap<IRQuery<'static>, ExecutablePipeline>, u64)>
+    cache: Cache<IRQuery<'static>, ExecutablePipeline>,
+    statistics_size: AtomicU64,
 }
 
 impl QueryCache {
     pub fn new(statistics_size: u64) -> Self {
-        QueryCache { cache: RwLock::new((HashMap::new(), statistics_size)) }
+        let cache = Cache::new(100);
+        QueryCache { 
+            cache,
+            statistics_size: AtomicU64::from(statistics_size),
+        }
     }
 
-    pub(crate) fn get(&self, preamble: &Vec<Function>, stages: &Vec<TranslatedStage>) -> Option<ExecutablePipeline> {
-        let key = IRQuery::new_ref(preamble, stages);
-        let guard = self.cache.read().unwrap();
-        guard.0.get(&key).cloned()
+    pub(crate) fn get<'a>(&self, preamble: &'a Vec<Function>, stages: &'a Vec<TranslatedStage>) -> Option<ExecutablePipeline> {
+        let key: IRQuery<'a> = IRQuery::new_ref(preamble, stages);
+        self.cache.get(&key)
     }
 
     pub(crate) fn insert(&self, preamble: Vec<Function>, stages: Vec<TranslatedStage>, pipeline: ExecutablePipeline) {
         let key = IRQuery::new_owned(preamble, stages);
-        let mut guard = self.cache.write().unwrap();
-        guard.0.insert(key, pipeline);
+        self.cache.insert(key, pipeline);
     }
     
     pub fn may_reset(&self, new_statistics_size: u64) {
-        let read_guard = self.cache.read().unwrap();
-        let last_statistics_size = read_guard.1;
+        let last_statistics_size = self.statistics_size.load(Ordering::SeqCst);
         let change = (last_statistics_size as f64 - new_statistics_size as f64) / (last_statistics_size as f64);
         if change.abs() > QUERY_PLAN_CACHE_FLUSH_STATISTICS_CHANGE_PERCENT {
-            drop(read_guard);
             self.force_reset(new_statistics_size);
         }
     }
     
     pub fn force_reset(&self, new_statistics_size: u64) {
-        let mut write_guard = self.cache.write().unwrap();
-        write_guard.0.clear();
-        write_guard.1 = new_statistics_size;
+        self.cache.invalidate_all();
+        self.statistics_size.store(new_statistics_size, Ordering::SeqCst);
         QUERY_CACHE_FLUSH.increment();
     }
 }
@@ -94,14 +96,13 @@ impl<'a> IRQuery<'a> {
 
 impl<'a> Hash for IRQuery<'a> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let hash = StructuralEquality::hash(self);
-        state.write_u64(hash)
+        self.hash_into(state);
     }
 }
 
 impl<'a> PartialEq<Self> for IRQuery<'a> {
     fn eq(&self, other: &Self) -> bool {
-        StructuralEquality::equals(self, other)
+        self.equals(other)
     }
 }
 

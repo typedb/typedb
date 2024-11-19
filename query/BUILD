@@ -29,6 +29,7 @@ rust_library(
         "@typeql//rust:typeql",
 
         "@crates//:tokio",
+        "@crates//:moka",
     ],
 )
 
