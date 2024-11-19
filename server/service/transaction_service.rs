@@ -572,8 +572,13 @@ impl TransactionService {
 
     async fn finish_running_write_query_no_transmit(&mut self, interrupt: InterruptType) -> Result<(), Status> {
         if let Some((req_id, worker)) = self.running_write_query.take() {
-            let (transaction, _) = worker.await.unwrap();
+            let (transaction, result) = worker.await.unwrap();
             self.transaction = Some(transaction);
+
+            if let Err(err) = result {
+                return Err(err.into_error_message().into_status());
+            }
+
             // transmission of interrupt signal is ok if it fails
             match Self::respond_query_response(
                 &self.response_sender,
