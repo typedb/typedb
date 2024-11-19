@@ -42,7 +42,7 @@ build:
       image: typedb-ubuntu-22.04
       command: |
         sudo apt update
-        sudo apt install -y protobuf-compiler
+        sudo apt install -y protobuf-compiler libclang-dev
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
         source ~/.cargo/env
         cargo check
