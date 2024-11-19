@@ -38,6 +38,14 @@ build:
 #        git diff --exit-code dependencies/maven/artifacts.snapshot
 #        bazel run @typedb_dependencies//tool/unuseddeps:unused-deps -- list
 
+    cargo-check:
+      image: typedb-ubuntu-22.04
+      command: |
+        sudo apt update
+        sudo apt install -y protobuf-compiler
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+        cargo check
+
 #     cargo-toml-sync:
 #       image: typedb-ubuntu-22.04
 #       command: |
