@@ -42,7 +42,11 @@ build:
       image: typedb-ubuntu-22.04
       command: |
         sudo apt update
-        sudo apt install -y protobuf-compiler libclang-dev
+        sudo apt install -y libclang-dev
+        curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v21.12/protoc-21.12-linux-x86_64.zip
+        mkdir protoc
+        unzip protoc-21.12-linux-x86_64.zip -d protoc
+        export PROTOC=$PWD/protoc/bin/protoc
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
         source ~/.cargo/env
         cargo check
