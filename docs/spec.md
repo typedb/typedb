@@ -1334,13 +1334,12 @@ Variables appear in statements. They fall in different categories, which can be 
     * Any variable used in a type position in a statement
 
   * **Value variables** (**vvar**, lowercase convention in this spec)
-    * Any variable which are typed with non-comparable attribute types is a value variables (**#BDD**)
-    * Any variable assigned to the output of an non-list expression 
-    * Any variable derived from the output of a function (with value output type) is a value variable
+    * Any variable assigned (with `=`) to the output of an non-list expression 
+    * Any variable assigned (with `=` or `in`) to the output of a function in a position with value output type is a value variable
 
   * **List variables** (**lvar**, lowercase convention in this spec)
-    * Any variable typed with a list type
-    * Any variable assigned to a list expression.
+    * Any variable assigned (with `=`) to a list expression.
+    * Any variable typed with a list type (e.g., `... has name[] $l`)
 
   * **Instance variables** (**ivar**, lowercase convention in this spec)
     * Any remaining variable must be an instance var.
