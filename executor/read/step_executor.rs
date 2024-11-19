@@ -14,7 +14,6 @@ use compiler::{
             match_executable::{ExecutionStep, MatchExecutable},
         },
         pipeline::ExecutableStage,
-        reduce::ReduceRowsExecutable,
     },
     VariablePosition,
 };
@@ -28,7 +27,7 @@ use crate::read::{
     immediate_executor::ImmediateExecutor,
     nested_pattern_executor::NestedPatternExecutor,
     pattern_executor::PatternExecutor,
-    stream_modifier::{LastMapper, StreamModifierExecutor},
+    stream_modifier::{StreamModifierExecutor},
     tabled_call_executor::TabledCallExecutor,
 };
 

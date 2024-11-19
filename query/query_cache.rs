@@ -5,7 +5,6 @@
  */
 
 
-use std::borrow::Borrow;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -13,6 +12,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use moka::sync::Cache;
 
 use compiler::executable::pipeline::ExecutablePipeline;
+use ir::pipeline::fetch::FetchObject;
 use ir::pipeline::function::Function;
 use ir::translation::pipeline::TranslatedStage;
 use resource::constants::database::{QUERY_PLAN_CACHE_FLUSH_STATISTICS_CHANGE_PERCENT, QUERY_PLAN_CACHE_SIZE};
@@ -34,13 +34,24 @@ impl QueryCache {
         }
     }
 
-    pub(crate) fn get(&self, preamble: Arc<Vec<Function>>, stages: Arc<Vec<TranslatedStage>>) -> Option<ExecutablePipeline> {
-        let key = IRQuery::new(preamble, stages, Arc::new(None));
+    pub(crate) fn get(
+        &self,
+        preamble: Arc<Vec<Function>>,
+        stages: Arc<Vec<TranslatedStage>>,
+        fetch: Arc<Option<FetchObject>>,
+    ) -> Option<ExecutablePipeline> {
+        let key = IRQuery::new(preamble, stages, fetch);
         self.cache.get(&key)
     }
 
-    pub(crate) fn insert(&self, preamble: Arc<Vec<Function>>, stages: Arc<Vec<TranslatedStage>>, pipeline: ExecutablePipeline) {
-        let key = IRQuery::new(preamble, stages, Arc::new(None));
+    pub(crate) fn insert(
+        &self,
+        preamble: Arc<Vec<Function>>,
+        stages: Arc<Vec<TranslatedStage>>,
+        fetch: Arc<Option<FetchObject>>,
+        pipeline: ExecutablePipeline
+    ) {
+        let key = IRQuery::new(preamble, stages, fetch);
         self.cache.insert(key, pipeline);
     }
     
@@ -63,14 +74,14 @@ impl QueryCache {
 struct IRQuery {
     preamable: Arc<Vec<Function>>,
     stages: Arc<Vec<TranslatedStage>>,
-    fetch: Arc<Option<usize>>,
+    fetch: Arc<Option<FetchObject>>,
 }
 
 impl IRQuery {
     fn new(
         preamable: Arc<Vec<Function>>,
         stages: Arc<Vec<TranslatedStage>>,
-        fetch: Arc<Option<usize>>,
+        fetch: Arc<Option<FetchObject>>,
     ) -> Self {
         Self { preamable, stages, fetch }
     }

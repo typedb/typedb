@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashSet, error::Error, fmt, hash::Hash};
+use std::{collections::HashSet, fmt, hash::Hash};
 
 use encoding::value::value::Value;
 use error::typedb_error;

@@ -12,7 +12,6 @@ use compiler::{
 };
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::pipeline::{
-    fetch::FetchExecutionError,
     pipeline::Pipeline,
     stage::{ReadPipelineStage, WritePipelineStage},
 };
@@ -75,7 +74,7 @@ impl QueryManager {
         let arced_stages = Arc::new(translated_stages);
         let arced_fetch= Arc::new(translated_fetch);
 
-        let executable_pipeline = match self.cache.get(arced_premable.clone(), arced_stages.clone()) {
+        let executable_pipeline = match self.cache.get(arced_premable.clone(), arced_stages.clone(), arced_fetch.clone()) {
             Some(executable_pipeline) => {
                 QUERY_CACHE_HITS.increment();
                 executable_pipeline
@@ -109,7 +108,7 @@ impl QueryManager {
                     &HashSet::with_capacity(0),
                 )
                     .map_err(|err| QueryError::ExecutableCompilation { typedb_source: err })?;
-                self.cache.insert(arced_premable, arced_stages, executable_pipeline.clone());
+                self.cache.insert(arced_premable, arced_stages, arced_fetch, executable_pipeline.clone());
                 QUERY_CACHE_MISSES.increment();
                 executable_pipeline
             }
@@ -154,7 +153,7 @@ impl QueryManager {
         let arced_stages = Arc::new(translated_stages);
         let arced_fetch= Arc::new(translated_fetch);
 
-        let executable_pipeline = match self.cache.get(arced_premable.clone(), arced_stages.clone()) {
+        let executable_pipeline = match self.cache.get(arced_premable.clone(), arced_stages.clone(), arced_fetch.clone()) {
             Some(executable_pipeline) => {
                 QUERY_CACHE_HITS.increment();
                 executable_pipeline
@@ -195,7 +194,7 @@ impl QueryManager {
                     Ok(executable) => executable,
                     Err(err) => return Err((snapshot, QueryError::ExecutableCompilation { typedb_source: err })),
                 };
-                self.cache.insert(arced_premable, arced_stages, executable_pipeline.clone());
+                self.cache.insert(arced_premable, arced_stages, arced_fetch, executable_pipeline.clone());
                 QUERY_CACHE_MISSES.increment();
                 executable_pipeline
             }

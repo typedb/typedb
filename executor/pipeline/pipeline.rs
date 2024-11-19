@@ -16,7 +16,7 @@ use compiler::{
 };
 use concept::thing::thing_manager::ThingManager;
 use error::typedb_error;
-use ir::pipeline::{ParameterRegistry, VariableRegistry};
+use ir::pipeline::{ParameterRegistry, };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{

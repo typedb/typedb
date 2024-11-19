@@ -6,7 +6,6 @@
 
 use std::{
     collections::{hash_map, HashMap, HashSet},
-    sync::Arc,
 };
 
 use answer::variable::Variable;

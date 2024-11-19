@@ -42,9 +42,7 @@ use storage::{
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
 };
 use tracing::{event, Level};
-use typeql::Query;
 use query::query_cache::QueryCache;
-use query::query_manager::QueryManager;
 
 use crate::{
     transaction::TransactionError,

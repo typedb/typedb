@@ -165,7 +165,6 @@ fn translate_fetch_list(
                 let input_variables = find_sub_fetch_inputs(parent_context, &translated_stages, &subfetch);
                 Ok(FetchSome::ListSubFetch(FetchListSubFetch {
                     context: local_context,
-                    parameters: value_parameters.clone(),
                     input_variables,
                     stages: translated_stages,
                     fetch: subfetch,
