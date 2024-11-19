@@ -2610,6 +2610,7 @@ version = "1.0.132"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d726bfaff4b320266d395898905d0eba0345aae23b54aee3a737e260fd46db03"
 dependencies = [
+ "indexmap 2.6.0",
  "itoa",
  "memchr",
  "ryu",
@@ -2768,6 +2769,7 @@ dependencies = [
  "options",
  "primitive",
  "query",
+ "serde_json",
  "server",
  "storage",
  "test_utils",
@@ -3323,7 +3325,7 @@ checksum = "42ff0bf0c66b8238c6f3b578df37d0b7848e55df8577b3f74f92a69acceeb825"
 [[package]]
 name = "typeql"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typeql?rev=c31b226a0c04dc5276e71ec2e557deec3f61e986#c31b226a0c04dc5276e71ec2e557deec3f61e986"
+source = "git+https://github.com/typedb/typeql?rev=0be38cbab19da7d6b2549ad5aa1248fc811bc4e0#0be38cbab19da7d6b2549ad5aa1248fc811bc4e0"
 dependencies = [
  "chrono",
  "itertools 0.10.5",

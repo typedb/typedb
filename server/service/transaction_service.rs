@@ -275,7 +275,8 @@ impl TransactionService {
             match result {
                 Ok(Continue(())) => (),
                 Ok(Break(())) => {
-                    event!(Level::TRACE, "Stream ended, closing transaction service.");
+                    let self_p = format!("{self:p}");
+                    event!(Level::TRACE, self_p, "Stream ended, closing transaction service.");
                     self.do_close().await;
                     return;
                 }
@@ -307,6 +308,17 @@ impl TransactionService {
                 for request in message.reqs {
                     let request_id = Uuid::from_slice(&request.req_id).unwrap();
                     let metadata = request.metadata;
+                    match &request.req {
+                        None => {}
+                        Some(req) => match req {
+                            typedb_protocol::transaction::req::Req::OpenReq(_) => event!(Level::TRACE, "OpenReq"),
+                            typedb_protocol::transaction::req::Req::QueryReq(_) => event!(Level::TRACE, "QueryReq"),
+                            typedb_protocol::transaction::req::Req::StreamReq(_) => event!(Level::TRACE, "StreamReq"),
+                            typedb_protocol::transaction::req::Req::CommitReq(_) => event!(Level::TRACE, "CommitReq"),
+                            typedb_protocol::transaction::req::Req::RollbackReq(_) => event!(Level::TRACE, "RollbackReq"),
+                            typedb_protocol::transaction::req::Req::CloseReq(_) => event!(Level::TRACE, "CloseReq"),
+                        }
+                    }
                     match request.req {
                         None => {
                             return Err(ProtocolError::MissingField {
@@ -572,8 +584,13 @@ impl TransactionService {
 
     async fn finish_running_write_query_no_transmit(&mut self, interrupt: InterruptType) -> Result<(), Status> {
         if let Some((req_id, worker)) = self.running_write_query.take() {
-            let (transaction, _) = worker.await.unwrap();
+            let (transaction, result) = worker.await.unwrap();
             self.transaction = Some(transaction);
+
+            if let Err(err) = result {
+                return Err(err.into_error_message().into_status());
+            }
+
             // transmission of interrupt signal is ok if it fails
             match Self::respond_query_response(
                 &self.response_sender,
