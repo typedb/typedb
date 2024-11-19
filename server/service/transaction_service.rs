@@ -308,17 +308,6 @@ impl TransactionService {
                 for request in message.reqs {
                     let request_id = Uuid::from_slice(&request.req_id).unwrap();
                     let metadata = request.metadata;
-                    match &request.req {
-                        None => {}
-                        Some(req) => match req {
-                            typedb_protocol::transaction::req::Req::OpenReq(_) => event!(Level::TRACE, "OpenReq"),
-                            typedb_protocol::transaction::req::Req::QueryReq(_) => event!(Level::TRACE, "QueryReq"),
-                            typedb_protocol::transaction::req::Req::StreamReq(_) => event!(Level::TRACE, "StreamReq"),
-                            typedb_protocol::transaction::req::Req::CommitReq(_) => event!(Level::TRACE, "CommitReq"),
-                            typedb_protocol::transaction::req::Req::RollbackReq(_) => event!(Level::TRACE, "RollbackReq"),
-                            typedb_protocol::transaction::req::Req::CloseReq(_) => event!(Level::TRACE, "CloseReq"),
-                        }
-                    }
                     match request.req {
                         None => {
                             return Err(ProtocolError::MissingField {
