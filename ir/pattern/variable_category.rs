@@ -57,7 +57,6 @@ impl VariableCategory {
             (_, Self::Object) | (Self::Object, _) => None,
 
             (Self::Attribute, Self::Attribute) => Some(Self::Attribute),
-            (Self::Value, Self::Attribute) | (Self::Attribute, Self::Value) => Some(Self::Attribute),
             (_, Self::Attribute) | (Self::Attribute, _) => None,
 
             (Self::Value, Self::Value) => Some(Self::Value),
