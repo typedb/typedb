@@ -47,7 +47,7 @@ fn setup(
     schema: &str,
     data: &str,
 ) -> Statistics {
-    let query_manager = QueryManager::new(Arc::new(QueryCache::new(0)));
+    let query_manager = QueryManager::new(None);
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(schema).unwrap().into_schema();
     query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, define).unwrap();

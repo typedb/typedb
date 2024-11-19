@@ -7,7 +7,7 @@ load("@rules_rust//rust:defs.bzl", "rust_test", "rust_binary")
 package(default_visibility = ["//visibility:public",])
 
 # To run this via Bazel, Criterion must be provided the --bench argument:
-#   bazel run --compilation_mode=opt //executor/benches:bench_insert_queries -- --bench
+#   bazel run --compilation_mode=opt //query/benches:bench_insert_queries -- --bench
 rust_test(
     name = "bench_insert_queries",
     srcs = glob([

@@ -27,7 +27,7 @@ use resource::perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES};
 use crate::{define, error::QueryError, redefine, undefine};
 use crate::query_cache::QueryCache;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct QueryManager {
     cache: Option<Arc<QueryCache>>,
 }

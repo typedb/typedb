@@ -95,6 +95,7 @@ impl<T: StructuralEquality + Hash> StructuralEquality for HashSet<T> {
             // values may generally be in a small rang, so we run them through a hasher first to make the XOR more effective
             let mut hasher = DefaultHasher::new();
             element.hash_into(&mut hasher);
+            // WARNING: must use XOR or other commutative operator!
             acc ^ hasher.finish()
         })
     }
@@ -115,6 +116,7 @@ impl<K: StructuralEquality + Ord, V: StructuralEquality> StructuralEquality for 
             let mut hasher = DefaultHasher::new();
             key.hash_into(&mut hasher);
             value.hash_into(&mut hasher);
+            // WARNING: must use XOR or other commutative operator!
             acc ^ hasher.finish()
         })
     }
@@ -138,6 +140,7 @@ impl<K: StructuralEquality + Hash, V: StructuralEquality> StructuralEquality for
             let mut hasher = DefaultHasher::new();
             key.hash_into(&mut hasher);
             value.hash_into(&mut hasher);
+            // WARNING: must use XOR or other commutative operator!
             acc ^ hasher.finish()
         })
     }

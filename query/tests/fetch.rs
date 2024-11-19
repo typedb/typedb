@@ -18,7 +18,7 @@ use test_utils_encoding::create_core_storage;
 
 fn define_schema(storage: Arc<MVCCStorage<WALClient>>, type_manager: &TypeManager, thing_manager: &ThingManager) {
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let query_manager = QueryManager::new(Arc::new(QueryCache::new(0)));
+    let query_manager = QueryManager::new(None);
 
     let query_str = r#"
     define
@@ -40,7 +40,7 @@ fn insert_data(
     query_string: &str,
 ) {
     let mut snapshot = storage.clone().open_snapshot_write();
-    let query_manager = QueryManager::new(Arc::new(QueryCache::new(0)));
+    let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new(0))));
     let query = typeql::parse_query(query_string).unwrap().into_pipeline();
     let pipeline =
         query_manager.prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, &query).unwrap();
@@ -114,7 +114,7 @@ fetch {
 
     let pipeline = query.into_pipeline();
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let pipeline = QueryManager::new(Arc::new(QueryCache::new(0)))
+    let pipeline = QueryManager::new(Some(Arc::new(QueryCache::new(0))))
         .prepare_read_pipeline(snapshot.clone(), &type_manager, thing_manager.clone(), &function_manager, &pipeline)
         .unwrap();
 
