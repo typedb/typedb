@@ -20,7 +20,9 @@ impl Counter {
     }
     
     pub fn increment(&self) {
-        self.counter.fetch_add(1, Ordering::Relaxed);
+        if self.enabled {
+            self.counter.fetch_add(1, Ordering::Relaxed);
+        }
     }
 }
 

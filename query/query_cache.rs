@@ -5,11 +5,11 @@
  */
 
 
-use std::borrow::Cow;
+use std::borrow::{Borrow, Cow};
 use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 use compiler::executable::pipeline::ExecutablePipeline;
 use ir::pipeline::function::Function;
@@ -21,27 +21,26 @@ use moka::sync::Cache;
 
 #[derive(Debug)]
 pub struct QueryCache {
-    // TODO: replace with actual cache type
-    cache: Cache<IRQuery<'static>, ExecutablePipeline>,
+    cache: Cache<IRQuery, ExecutablePipeline>,
     statistics_size: AtomicU64,
 }
 
 impl QueryCache {
     pub fn new(statistics_size: u64) -> Self {
         let cache = Cache::new(100);
-        QueryCache { 
+        QueryCache {
             cache,
             statistics_size: AtomicU64::from(statistics_size),
         }
     }
 
-    pub(crate) fn get<'a>(&self, preamble: &'a Vec<Function>, stages: &'a Vec<TranslatedStage>) -> Option<ExecutablePipeline> {
-        let key: IRQuery<'a> = IRQuery::new_ref(preamble, stages);
+    pub(crate) fn get(&self, preamble: Arc<Vec<Function>>, stages: Arc<Vec<TranslatedStage>>) -> Option<ExecutablePipeline> {
+        let key = IRQuery::new(preamble, stages, Arc::new(None));
         self.cache.get(&key)
     }
 
-    pub(crate) fn insert(&self, preamble: Vec<Function>, stages: Vec<TranslatedStage>, pipeline: ExecutablePipeline) {
-        let key = IRQuery::new_owned(preamble, stages);
+    pub(crate) fn insert(&self, preamble: Arc<Vec<Function>>, stages: Arc<Vec<TranslatedStage>>, pipeline: ExecutablePipeline) {
+        let key = IRQuery::new(preamble, stages, Arc::new(None));
         self.cache.insert(key, pipeline);
     }
     
@@ -61,54 +60,37 @@ impl QueryCache {
 }
 
 #[derive(Debug)]
-struct IRQuery<'a> {
-    preamable: Cow<'a, Vec<Function>>,
-    stages: Cow<'a, Vec<TranslatedStage>>,
-    // TODO
-    fetch: Cow<'a, Option<usize>>,
+struct IRQuery {
+    preamable: Arc<Vec<Function>>,
+    stages: Arc<Vec<TranslatedStage>>,
+    fetch: Arc<Option<usize>>,
 }
 
-impl<'a> IRQuery<'a> {
-    fn new_owned(
-        preamable: Vec<Function>,
-        stages: Vec<TranslatedStage>,
-        // fetch: Option<FetchObject>,
+impl IRQuery {
+    fn new(
+        preamable: Arc<Vec<Function>>,
+        stages: Arc<Vec<TranslatedStage>>,
+        fetch: Arc<Option<usize>>,
     ) -> Self {
-        Self {
-            preamable: Cow::Owned(preamable),
-            stages: Cow::Owned(stages),
-            fetch: Cow::Owned(None),
-        }
-    }
-
-    fn new_ref(
-        preamable: &'a Vec<Function>,
-        stages: &'a Vec<TranslatedStage>,
-        // fetch: &'a Option<FetchObject>,
-    ) -> Self {
-        Self {
-            preamable: Cow::Borrowed(preamable),
-            stages: Cow::Borrowed(stages),
-            fetch: Cow::Owned(None),
-        }
+        Self { preamable, stages, fetch }
     }
 }
 
-impl<'a> Hash for IRQuery<'a> {
+impl Hash for IRQuery {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.hash_into(state);
     }
 }
 
-impl<'a> PartialEq<Self> for IRQuery<'a> {
+impl PartialEq<Self> for IRQuery {
     fn eq(&self, other: &Self) -> bool {
         self.equals(other)
     }
 }
 
-impl<'a> Eq for IRQuery<'a> {}
+impl Eq for IRQuery {}
 
-impl<'a> StructuralEquality for IRQuery<'a> {
+impl StructuralEquality for IRQuery {
     fn hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
         self.preamable.hash_into(&mut hasher);

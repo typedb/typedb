@@ -71,8 +71,11 @@ impl QueryManager {
             mut variable_registry,
             value_parameters: parameters,
         } = self.translate_pipeline(snapshot.as_ref(), function_manager, query)?;
+        let arced_premable = Arc::new(translated_preamble);
+        let arced_stages = Arc::new(translated_stages);
+        let arced_fetch= Arc::new(translated_fetch);
 
-        let executable_pipeline = match self.cache.get(&translated_preamble, &translated_stages) {
+        let executable_pipeline = match self.cache.get(arced_premable.clone(), arced_stages.clone()) {
             Some(executable_pipeline) => {
                 QUERY_CACHE_HITS.increment();
                 executable_pipeline
@@ -89,9 +92,9 @@ impl QueryManager {
                     &annotated_schema_functions,
                     &mut variable_registry,
                     &parameters,
-                    translated_preamble.clone(),
-                    translated_stages.clone(),
-                    translated_fetch.clone(),
+                    (*arced_premable).clone(),
+                    (*arced_stages).clone(),
+                    (*arced_fetch).clone(),
                 )
                     .map_err(|err| QueryError::Annotation { typedb_source: err })?;
 
@@ -106,7 +109,7 @@ impl QueryManager {
                     &HashSet::with_capacity(0),
                 )
                     .map_err(|err| QueryError::ExecutableCompilation { typedb_source: err })?;
-                self.cache.insert(translated_preamble, translated_stages, executable_pipeline.clone());
+                self.cache.insert(arced_premable, arced_stages, executable_pipeline.clone());
                 QUERY_CACHE_MISSES.increment();
                 executable_pipeline
             }
@@ -147,8 +150,11 @@ impl QueryManager {
             Ok(translated) => translated,
             Err(err) => return Err((snapshot, err)),
         };
+        let arced_premable = Arc::new(translated_preamble);
+        let arced_stages = Arc::new(translated_stages);
+        let arced_fetch= Arc::new(translated_fetch);
 
-        let executable_pipeline = match self.cache.get(&translated_preamble, &translated_stages) {
+        let executable_pipeline = match self.cache.get(arced_premable.clone(), arced_stages.clone()) {
             Some(executable_pipeline) => {
                 QUERY_CACHE_HITS.increment();
                 executable_pipeline
@@ -166,9 +172,9 @@ impl QueryManager {
                     &annotated_schema_functions,
                     &mut variable_registry,
                     &value_parameters,
-                    translated_preamble.clone(),
-                    translated_stages.clone(),
-                    translated_fetch.clone(),
+                    (*arced_premable).clone(),
+                    (*arced_stages).clone(),
+                    (*arced_fetch).clone(),
                 );
 
                 let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = match annotated_pipeline {
@@ -189,7 +195,7 @@ impl QueryManager {
                     Ok(executable) => executable,
                     Err(err) => return Err((snapshot, QueryError::ExecutableCompilation { typedb_source: err })),
                 };
-                self.cache.insert(translated_preamble, translated_stages, executable_pipeline.clone());
+                self.cache.insert(arced_premable, arced_stages, executable_pipeline.clone());
                 QUERY_CACHE_MISSES.increment();
                 executable_pipeline
             }
