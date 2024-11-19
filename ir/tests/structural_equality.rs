@@ -278,3 +278,27 @@ fetch {
     assert!(!is_structurally_equivalent(&translated_stages, &different_translated_stages));
     assert!(!is_structurally_equivalent(&translated_fetch, &different_translated_fetch));
 }
+
+#[test]
+fn test_anonymous_non_equivalence() {
+    let query = "match $x relates $_ as parent;";
+    let TranslatedPipeline { translated_stages, ..} = translate_pipeline(
+        &MockSnapshot {},
+        &HashMapFunctionSignatureIndex::empty(),
+        &typeql::parse_query(query).unwrap().into_pipeline(),
+    ).unwrap();
+    assert!(translated_stages.equals(&translated_stages));
+    
+    let non_equivalent_query = "match $x relates $role as parent;";
+    let TranslatedPipeline {
+        translated_stages: different_translated_stages,
+        ..
+    } = translate_pipeline(
+        &MockSnapshot {},
+        &HashMapFunctionSignatureIndex::empty(),
+        &typeql::parse_query(non_equivalent_query).unwrap().into_pipeline(),
+    ).unwrap();
+    assert!(different_translated_stages.equals(&different_translated_stages));
+    
+    assert!(!is_structurally_equivalent(&translated_stages, &different_translated_stages));
+}

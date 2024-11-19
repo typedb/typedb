@@ -193,19 +193,21 @@ impl Statistics {
                 commits,
                 storage,
             )?;
-            total_delta += delta;
             if ObjectVertex::is_entity_vertex(key_reference) {
                 let type_ = Entity::new(ObjectVertex::new(Bytes::Reference(key_reference.byte_ref()))).type_();
                 self.update_entities(type_, delta);
+                total_delta += delta;
             } else if ObjectVertex::is_relation_vertex(key_reference) {
                 let type_ = Relation::new(ObjectVertex::new(Bytes::Reference(key_reference.byte_ref()))).type_();
                 self.update_relations(type_, delta);
+                total_delta += delta;
             } else if AttributeVertex::is_attribute_vertex(key_reference) {
                 let type_ = Attribute::new(AttributeVertex::new(Bytes::Reference(key_reference.byte_ref()))).type_();
                 self.update_attributes(type_, delta);
             } else if ThingEdgeHas::is_has(key_reference) {
                 let edge = ThingEdgeHas::new(Bytes::Reference(key_reference.byte_ref()));
-                self.update_has(Object::new(edge.from()).type_(), Attribute::new(edge.to()).type_(), delta)
+                self.update_has(Object::new(edge.from()).type_(), Attribute::new(edge.to()).type_(), delta);
+                total_delta += delta;
             } else if ThingEdgeLinks::is_links(key_reference) {
                 let edge = ThingEdgeLinks::new(Bytes::Reference(key_reference.byte_ref()));
                 let role_type = RoleType::build_from_type_id(edge.role_id());
@@ -214,16 +216,19 @@ impl Statistics {
                     role_type,
                     Relation::new(edge.from()).type_(),
                     delta,
-                )
+                );
+                total_delta += delta;
             } else if ThingEdgeRolePlayerIndex::is_index(key_reference) {
                 let edge = ThingEdgeRolePlayerIndex::new(Bytes::Reference(key_reference.byte_ref()));
-                self.update_indexed_player(Object::new(edge.from()).type_(), Object::new(edge.to()).type_(), delta)
+                self.update_indexed_player(Object::new(edge.from()).type_(), Object::new(edge.to()).type_(), delta);
+                // note: don't update total count based on index
             } else if EntityType::is_decodable_from_key(key_reference) {
                 let type_ = EntityType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
                 if matches!(write, Write::Delete) {
                     self.entity_counts.remove(&type_);
                     self.clear_object_type(ObjectType::Entity(type_));
                 }
+                // note: don't update total count based on type updates
             } else if RelationType::is_decodable_from_key(key_reference) {
                 let type_ = RelationType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
                 if matches!(write, Write::Delete) {
@@ -232,6 +237,7 @@ impl Statistics {
                     let as_object_type = ObjectType::Relation(type_);
                     self.clear_object_type(as_object_type.clone());
                 }
+                // note: don't update total count based on type updates
             } else if AttributeType::is_decodable_from_key(key_reference) {
                 let type_ = AttributeType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
                 if matches!(write, Write::Delete) {
@@ -242,6 +248,7 @@ impl Statistics {
                     }
                     self.has_attribute_counts.retain(|_, map| !map.is_empty());
                 }
+                // note: don't update total count based on type updates
             } else if RoleType::is_decodable_from_key(key_reference) {
                 let type_ = RoleType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
                 if matches!(write, Write::Delete) {
@@ -255,6 +262,7 @@ impl Statistics {
                     }
                     self.relation_role_counts.retain(|_, map| !map.is_empty());
                 }
+                // note: don't update total count based on type updates
             }
         }
         Ok(total_delta)

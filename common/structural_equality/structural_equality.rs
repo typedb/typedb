@@ -146,7 +146,7 @@ impl<K: StructuralEquality + Hash, V: StructuralEquality> StructuralEquality for
     }
 
     fn equals(&self, other: &Self) -> bool {
-        /// Note: this is a quadratic operation! Best to precede with a Hash check elsewhere.
+        // Note: this is a quadratic operation! Best to precede with a Hash check elsewhere.
         if self.len() != other.len() {
             return false;
         }
