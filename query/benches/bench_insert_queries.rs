@@ -32,6 +32,7 @@ use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use pprof::ProfilerGuard;
 use query::{error::QueryError, query_manager::QueryManager};
+use query::query_cache::QueryCache;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot},
@@ -96,13 +97,13 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     snapshot: Snapshot,
     type_manager: &TypeManager,
     thing_manager: Arc<ThingManager>,
+    query_manager: QueryManager,
     query_str: &str,
 ) -> Result<(Vec<HashMap<String, VariableValue<'static>>>, Snapshot), (QueryError, Snapshot)> {
     let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline();
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
 
-    let qm = QueryManager::new();
-    let pipeline = qm
+    let pipeline = query_manager
         .prepare_write_pipeline(snapshot, type_manager, thing_manager, &function_manager, &typeql_insert)
         .map_err(|(snapshot, err)| (err, snapshot))?;
     let outputs = pipeline.rows_positions().unwrap().clone();
@@ -146,6 +147,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), Some(storage.read_watermark()));
+    let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new(0))));
 
     group.bench_function("insert_queries", |b| {
         b.iter(|| {
@@ -155,6 +157,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                 snapshot,
                 &type_manager,
                 thing_manager.clone(),
+                query_manager.clone(),
                 &format!("insert $p isa person, has age {age};"),
             )
             .unwrap();

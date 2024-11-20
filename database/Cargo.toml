@@ -36,6 +36,11 @@ features = {}
 		features = []
 		default-features = false
 
+	[dependencies.query]
+		path = "../query"
+		features = []
+		default-features = false
+
 	[dependencies.concept]
 		path = "../concept"
 		features = []

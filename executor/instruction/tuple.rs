@@ -13,7 +13,7 @@ use concept::{
         relation::{Relation, RolePlayer},
     },
     type_::{
-        attribute_type::AttributeType, object_type::ObjectType, owns::Owns, plays::Plays, relates::Relates,
+        attribute_type::AttributeType, object_type::ObjectType,
         relation_type::RelationType, role_type::RoleType,
     },
 };

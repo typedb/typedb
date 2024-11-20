@@ -8,7 +8,7 @@ use std::{
     fmt,
     fmt::{Display, Formatter},
     mem,
-    ops::{BitXor, Range},
+    ops::{Range},
 };
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};

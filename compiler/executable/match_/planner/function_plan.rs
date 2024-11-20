@@ -15,6 +15,7 @@ use ir::pipeline::function_signature::FunctionID;
 
 use crate::executable::function::ExecutableFunction;
 
+#[derive(Clone)]
 pub struct ExecutableFunctionRegistry {
     // Keep this abstraction in case we introduce function plan caching.
     schema_functions: Arc<HashMap<DefinitionKey<'static>, ExecutableFunction>>,

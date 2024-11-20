@@ -8,7 +8,6 @@ use std::{
     borrow::Cow,
     hash::{DefaultHasher, Hasher},
     mem,
-    ops::BitXor,
 };
 
 use answer::variable::Variable;

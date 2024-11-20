@@ -720,13 +720,14 @@ impl TransactionService {
                 type_manager,
                 thing_manager,
                 function_manager,
+                query_manager,
                 database,
                 transaction_options,
             } = schema_transaction;
             let mut snapshot = Arc::into_inner(snapshot).unwrap();
-            let (snapshot, type_manager, thing_manager, result) = spawn_blocking(move || {
-                let result = QueryManager::new().execute_schema(&mut snapshot, &type_manager, &thing_manager, query);
-                (snapshot, type_manager, thing_manager, result)
+            let (snapshot, type_manager, thing_manager, query_manager, result) = spawn_blocking(move || {
+                let result = query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, query);
+                (snapshot, type_manager, thing_manager, query_manager, result)
             })
             .await
             .unwrap();
@@ -736,6 +737,7 @@ impl TransactionService {
                 type_manager,
                 thing_manager,
                 function_manager,
+                query_manager,
                 database,
                 transaction_options,
             );
@@ -821,6 +823,7 @@ impl TransactionService {
                     type_manager,
                     thing_manager,
                     function_manager,
+                    query_manager,
                     database,
                     transaction_options,
                 } = schema_transaction;
@@ -830,6 +833,7 @@ impl TransactionService {
                     &type_manager,
                     thing_manager.clone(),
                     &function_manager,
+                    &query_manager,
                     &pipeline,
                     interrupt,
                 );
@@ -839,6 +843,7 @@ impl TransactionService {
                     type_manager,
                     thing_manager,
                     function_manager,
+                    query_manager,
                     database,
                     transaction_options,
                 ));
@@ -850,6 +855,7 @@ impl TransactionService {
                     type_manager,
                     thing_manager,
                     function_manager,
+                    query_manager,
                     database,
                     transaction_options,
                 } = write_transaction;
@@ -859,6 +865,7 @@ impl TransactionService {
                     &type_manager,
                     thing_manager.clone(),
                     &function_manager,
+                    &query_manager,
                     &pipeline,
                     interrupt,
                 );
@@ -868,6 +875,7 @@ impl TransactionService {
                     type_manager,
                     thing_manager,
                     function_manager,
+                    query_manager,
                     database,
                     transaction_options,
                 ));
@@ -886,10 +894,11 @@ impl TransactionService {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
+        query_manager: &QueryManager,
         pipeline: &typeql::query::Pipeline,
         interrupt: ExecutionInterrupt,
     ) -> (Snapshot, Result<(StreamQueryOutputDescriptor, Batch), QueryError>) {
-        let result = QueryManager::new().prepare_write_pipeline(
+        let result = query_manager.prepare_write_pipeline(
             snapshot,
             type_manager,
             thing_manager,
@@ -985,12 +994,14 @@ impl TransactionService {
             let type_manager = transaction.type_manager.clone();
             let thing_manager = transaction.thing_manager.clone();
             let function_manager = transaction.function_manager.clone();
+            let query_manager = transaction.query_manager.clone();
             spawn_blocking(move || {
                 let pipeline = Self::prepare_read_query_in(
                     snapshot.clone(),
                     &type_manager,
                     thing_manager.clone(),
                     &function_manager,
+                    &query_manager,
                     &pipeline,
                 );
 
@@ -1098,9 +1109,10 @@ impl TransactionService {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
+        query_manager: &QueryManager,
         pipeline: &typeql::query::Pipeline,
     ) -> Result<Pipeline<Snapshot, ReadPipelineStage<Snapshot>>, QueryError> {
-        QueryManager::new().prepare_read_pipeline(snapshot, type_manager, thing_manager, function_manager, pipeline)
+        query_manager.prepare_read_pipeline(snapshot, type_manager, thing_manager, function_manager, pipeline)
     }
 
     fn submit_response_sync(sender: &Sender<StreamQueryResponse>, response: StreamQueryResponse) {

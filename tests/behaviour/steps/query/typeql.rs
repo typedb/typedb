@@ -52,7 +52,7 @@ fn row_batch_result_to_answer(
 
 fn execute_read_query(context: &mut Context, query: typeql::Query) -> Result<QueryAnswer, QueryError> {
     with_read_tx!(context, |tx| {
-        let pipeline = QueryManager {}.prepare_read_pipeline(
+        let pipeline = tx.query_manager.prepare_read_pipeline(
             tx.snapshot.clone(),
             &tx.type_manager,
             tx.thing_manager.clone(),
@@ -99,9 +99,9 @@ fn execute_write_query(
         return Err(BehaviourTestExecutionError::UseInvalidTransactionAsWrite);
     }
 
-    with_write_tx_deconstructed!(context, |snapshot, type_manager, thing_manager, function_manager, _db, _opts| {
+    with_write_tx_deconstructed!(context, |snapshot, type_manager, thing_manager, function_manager, query_manager, _db, _opts| {
         let snapshot = Arc::into_inner(snapshot).unwrap();
-        let pipeline_result = QueryManager {}.prepare_write_pipeline(
+        let pipeline_result = query_manager.prepare_write_pipeline(
             snapshot,
             &type_manager,
             thing_manager.clone(),
@@ -192,7 +192,7 @@ async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMay
     }
 
     with_schema_tx!(context, |tx| {
-        let result = QueryManager::new().execute_schema(
+        let result = tx.query_manager.execute_schema(
             Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.type_manager,
             &tx.thing_manager,

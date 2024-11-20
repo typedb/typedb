@@ -32,7 +32,7 @@ rust_test(
 rust_test(
     name = "test_structural_equality",
     crate_root = "structural_equality.rs",
-    srcs =  ["structural_equality.rs", "common.rs"],
+    srcs =  ["structural_equality.rs"],
     deps = [
         "//answer",
         "//common/bytes",
@@ -42,6 +42,7 @@ rust_test(
         "//storage",
         "//ir:ir",
         "//resource",
+        "//storage/tests:test_utils_storage",
         "@typeql//rust:typeql",
     ],
 )

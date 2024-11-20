@@ -16,7 +16,7 @@ use compiler::{executable::match_::instructions::type_::OwnsInstruction, Executo
 use concept::{
     error::ConceptReadError,
     type_::{
-        attribute_type::AttributeType, object_type::ObjectType, type_manager::TypeManager, Capability, ObjectTypeAPI,
+        attribute_type::AttributeType, object_type::ObjectType, type_manager::TypeManager, ObjectTypeAPI,
         OwnerAPI,
     },
 };

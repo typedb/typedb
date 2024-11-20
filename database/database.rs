@@ -42,6 +42,7 @@ use storage::{
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
 };
 use tracing::{event, Level};
+use query::query_cache::QueryCache;
 
 use crate::{
     transaction::TransactionError,
@@ -70,6 +71,7 @@ pub struct Database<D> {
     pub(super) thing_vertex_generator: Arc<ThingVertexGenerator>,
 
     pub(super) schema: Arc<RwLock<Schema>>,
+    pub(super) query_cache: Arc<QueryCache>,
     schema_write_transaction_exclusivity: Mutex<SchemaWriteTransactionState>,
     _statistics_updater: IntervalRunner,
 }
@@ -252,7 +254,8 @@ impl Database<WALClient> {
         let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache, function_cache }));
         let schema_txn_lock = Arc::new(RwLock::default());
 
-        let update_statistics = make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone());
+        let query_cache = Arc::new(QueryCache::new(0));
+        let update_statistics = make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone(), query_cache.clone());
 
         Ok(Database::<WALClient> {
             name: name.to_owned(),
@@ -262,6 +265,7 @@ impl Database<WALClient> {
             type_vertex_generator,
             thing_vertex_generator,
             schema,
+            query_cache,
             schema_write_transaction_exclusivity: Mutex::new((false, 0, VecDeque::with_capacity(100))),
             _statistics_updater: IntervalRunner::new(update_statistics, Self::STATISTICS_UPDATE_INTERVAL),
         })
@@ -304,6 +308,7 @@ impl Database<WALClient> {
             .map_err(|err| DurabilityClientRead { typedb_source: err })?
             .unwrap_or_else(|| Statistics::new(SequenceNumber::MIN));
         thing_statistics.may_synchronise(&storage).map_err(|err| StatisticsInitialise { typedb_source: err })?;
+        let total_count = thing_statistics.total_count;
         let thing_statistics = Arc::new(thing_statistics);
 
         let type_cache = Arc::new(
@@ -323,7 +328,8 @@ impl Database<WALClient> {
         let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache, function_cache }));
         let schema_txn_lock = Arc::new(RwLock::default());
 
-        let update_statistics = make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone());
+        let query_cache = Arc::new(QueryCache::new(total_count));
+        let update_statistics = make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone(), query_cache.clone());
 
         let database = Database::<WALClient> {
             name: name.to_owned(),
@@ -333,6 +339,7 @@ impl Database<WALClient> {
             type_vertex_generator,
             thing_vertex_generator,
             schema,
+            query_cache,
             schema_write_transaction_exclusivity: Mutex::new((false, 0, VecDeque::with_capacity(100))),
             _statistics_updater: IntervalRunner::new(update_statistics, Self::STATISTICS_UPDATE_INTERVAL),
         };
@@ -361,6 +368,7 @@ impl Database<WALClient> {
     pub fn delete(self) -> Result<(), DatabaseDeleteError> {
         drop(self._statistics_updater);
         drop(Arc::into_inner(self.schema).expect("Cannot get exclusive ownership of inner of Arc<Schema>."));
+        drop(Arc::into_inner(self.query_cache).expect("Cannot get exclusive ownership of inner of Arc<QueryCache>."));
         drop(
             Arc::into_inner(self.type_vertex_generator)
                 .expect("Cannot get exclusive ownership of inner of Arc<TypeVertexGenerator>"),
@@ -410,6 +418,8 @@ impl Database<WALClient> {
 
         let thing_statistics = Arc::get_mut(&mut locked_schema.thing_statistics).unwrap();
         thing_statistics.reset(self.storage.read_watermark());
+        
+        self.query_cache.force_reset(0);
 
         self.release_schema_transaction();
         Ok(())
@@ -420,12 +430,17 @@ fn make_update_statistics_fn(
     storage: Arc<MVCCStorage<WALClient>>,
     schema: Arc<RwLock<Schema>>,
     schema_txn_lock: Arc<RwLock<()>>,
+    query_cache: Arc<QueryCache>,
 ) -> impl Fn() {
     move || {
-        let _schema_txn_guard = schema_txn_lock.read().unwrap(); // prevent Schema txns from opening during statistics update
-        let mut thing_statistics = (*schema.read().unwrap().thing_statistics).clone();
-        thing_statistics.may_synchronise(&storage).ok();
-        schema.write().unwrap().thing_statistics = Arc::new(thing_statistics);
+        if storage.read_watermark() > (*schema).read().unwrap().thing_statistics.sequence_number {
+            let _schema_txn_guard = schema_txn_lock.read().unwrap(); // prevent Schema txns from opening during statistics update
+            let mut thing_statistics = (*schema.read().unwrap().thing_statistics).clone();
+            thing_statistics.may_synchronise(&storage).ok();
+            let total_count = thing_statistics.total_count;
+            query_cache.may_reset(total_count);
+            schema.write().unwrap().thing_statistics = Arc::new(thing_statistics);
+        }
     }
 }
 
@@ -484,7 +499,11 @@ typedb_error!(
         ),
         CorruptionPartialResetThingVertexGeneratorInUse(
             9,
-            "Corruption warning: Dataaase reset failed partway because the instance key generator is still in use."
+            "Corruption warning: Database reset failed partway because the instance key generator is still in use."
+        ),
+        CorruptionPartialResetQuertyCacheInUse(
+            10,
+            "Corruption warning: Database reset failed partway because the query cache is still in use."
         ),
     }
 );

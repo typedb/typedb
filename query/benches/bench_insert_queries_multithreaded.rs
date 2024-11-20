@@ -25,12 +25,13 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use executor::{
-    pipeline::stage::{StageAPI, StageIterator},
+    pipeline::stage::{StageIterator},
     ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use query::{error::QueryError, query_manager::QueryManager};
+use query::query_cache::QueryCache;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot},
@@ -94,13 +95,13 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     snapshot: Snapshot,
     type_manager: &TypeManager,
     thing_manager: Arc<ThingManager>,
+    query_manager: QueryManager,
     query_str: &str,
 ) -> Result<(Vec<HashMap<String, VariableValue<'static>>>, Snapshot), (QueryError, Snapshot)> {
     let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline();
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
 
-    let qm = QueryManager::new();
-    let pipeline = qm
+    let pipeline = query_manager
         .prepare_write_pipeline(snapshot, type_manager, thing_manager, &function_manager, &typeql_insert)
         .map_err(|(snapshot, err)| (err, snapshot))?;
     let outputs = pipeline.rows_positions().unwrap().clone();
@@ -139,6 +140,7 @@ fn multi_threaded_inserts() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), Some(storage.read_watermark()));
+    let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new(0))));
     const NUM_THREADS: usize = 32;
     const INTERNAL_ITERS: usize = 1000;
     let start_signal_rw_lock = Arc::new(RwLock::new(()));
@@ -148,6 +150,7 @@ fn multi_threaded_inserts() {
         let type_manager_cloned = type_manager.clone();
         let thing_manager_cloned = thing_manager.clone();
         let rw_lock_cloned = start_signal_rw_lock.clone();
+        let query_manager_cloned = query_manager.clone();
         thread::spawn(move || {
             drop(rw_lock_cloned.read().unwrap());
             for _ in 0..INTERNAL_ITERS {
@@ -157,6 +160,7 @@ fn multi_threaded_inserts() {
                     snapshot,
                     &type_manager_cloned,
                     thing_manager_cloned.clone(),
+                    query_manager_cloned.clone(),
                     &format!("insert $p isa person, has age {age};"),
                 )
                 .unwrap();

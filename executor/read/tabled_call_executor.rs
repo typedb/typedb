@@ -8,8 +8,6 @@ use std::sync::{MutexGuard, TryLockError};
 
 use compiler::VariablePosition;
 use ir::pipeline::function_signature::FunctionID;
-use lending_iterator::LendingIterator;
-use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::FixedBatch,

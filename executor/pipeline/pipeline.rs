@@ -16,7 +16,7 @@ use compiler::{
 };
 use concept::thing::thing_manager::ThingManager;
 use error::typedb_error;
-use ir::pipeline::{ParameterRegistry, VariableRegistry};
+use ir::pipeline::{ParameterRegistry, };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -45,7 +45,7 @@ pub enum Pipeline<Snapshot: ReadableSnapshot, Nonterminals: StageAPI<Snapshot>> 
 
 impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pipeline<Snapshot, Nonterminals> {
     fn build_with_fetch(
-        variable_registry: &VariableRegistry,
+        variable_names: &HashMap<Variable, String>,
         executable_functions: Arc<ExecutableFunctionRegistry>,
         last_stage: Nonterminals,
         last_stage_output_positions: HashMap<Variable, VariablePosition>,
@@ -54,7 +54,7 @@ impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pip
         let named_outputs = last_stage_output_positions
             .iter()
             .filter_map(|(variable, &position)| {
-                variable_registry.variable_names().get(variable).map(|name| (name.clone(), position))
+                variable_names.get(variable).map(|name| (name.clone(), position))
             })
             .collect::<HashMap<_, _>>();
 
@@ -118,7 +118,7 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
     pub fn build_read_pipeline(
         snapshot: Arc<Snapshot>,
         thing_manager: Arc<ThingManager>,
-        variable_registry: &VariableRegistry,
+        variable_names: &HashMap<Variable, String>,
         executable_functions: Arc<ExecutableFunctionRegistry>,
         executable_stages: &[ExecutableStage],
         executable_fetch: Option<Arc<ExecutableFetch>>,
@@ -173,7 +173,7 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
             }
         }
         Ok(Pipeline::build_with_fetch(
-            variable_registry,
+            variable_names,
             executable_functions.clone(),
             last_stage,
             output_variable_positions,
@@ -185,7 +185,7 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
 impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage<Snapshot>> {
     pub fn build_write_pipeline(
         snapshot: Snapshot,
-        variable_registry: &VariableRegistry,
+        variable_names: &HashMap<Variable, String>,
         thing_manager: Arc<ThingManager>,
         executable_stages: Vec<ExecutableStage>,
         executable_fetch: Option<Arc<ExecutableFetch>>,
@@ -239,7 +239,7 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
             }
         }
         Pipeline::build_with_fetch(
-            variable_registry,
+            variable_names,
             executable_functions,
             last_stage,
             output_variable_positions,

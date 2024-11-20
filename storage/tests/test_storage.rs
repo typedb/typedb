@@ -18,10 +18,8 @@ use storage::{
     StorageOpenError,
 };
 use test_utils::{create_tmp_dir, init_logging};
+use test_utils_storage::{checkpoint_storage, create_storage, load_storage, test_keyspace_set};
 
-use crate::test_common::{checkpoint_storage, create_storage, load_storage};
-
-mod test_common;
 
 #[test]
 fn create_delete() {
@@ -109,11 +107,10 @@ fn empty_value<const SZ: usize>() -> Bytes<'static, SZ> {
 #[test]
 fn create_reopen() {
     test_keyspace_set! { Keyspace => 0: "keyspace" }
-    use TestKeyspaceSet::Keyspace;
 
     let keys = [[0x0, 0x0, 0x1], [0x1, 0x0, 0x10], [0x1, 0x0, 0xff], [0x2, 0x0, 0xff]]
         .into_iter()
-        .map(|bytes| StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace, bytes)))
+        .map(|bytes| StorageKeyArray::<BUFFER_VALUE_INLINE>::from((TestKeyspaceSet::Keyspace, bytes)))
         .collect_vec();
 
     init_logging();
@@ -135,7 +132,7 @@ fn create_reopen() {
                 StorageKey::<BUFFER_VALUE_INLINE>::Reference(StorageKeyReference::from(&StorageKeyArray::<
                     BUFFER_VALUE_INLINE,
                 >::from((
-                    Keyspace,
+                    TestKeyspaceSet::Keyspace,
                     [0x0],
                 )))),
             )))
@@ -155,25 +152,24 @@ fn get_put_iterate() {
         Keyspace1 => 0: "keyspace_1",
         Keyspace2 => 1: "keyspace_2",
     }
-    use TestKeyspaceSet::{Keyspace1, Keyspace2};
 
     init_logging();
     let storage_path = create_tmp_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
-    let keyspace_1_key_1 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace1, [0x0, 0x0, 0x1]));
-    let keyspace_1_key_2 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace1, [0x1, 0x0, 0x10]));
-    let keyspace_1_key_3 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace1, [0x1, 0x0, 0xff]));
-    let keyspace_1_key_4 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace1, [0x2, 0x0, 0xff]));
+    let keyspace_1_key_1 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((TestKeyspaceSet::Keyspace1, [0x0, 0x0, 0x1]));
+    let keyspace_1_key_2 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((TestKeyspaceSet::Keyspace1, [0x1, 0x0, 0x10]));
+    let keyspace_1_key_3 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((TestKeyspaceSet::Keyspace1, [0x1, 0x0, 0xff]));
+    let keyspace_1_key_4 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((TestKeyspaceSet::Keyspace1, [0x2, 0x0, 0xff]));
     storage.put_raw(StorageKeyReference::from(&keyspace_1_key_1), &empty_value());
     storage.put_raw(StorageKeyReference::from(&keyspace_1_key_2), &empty_value());
     storage.put_raw(StorageKeyReference::from(&keyspace_1_key_3), &empty_value());
     storage.put_raw(StorageKeyReference::from(&keyspace_1_key_4), &empty_value());
 
-    let keyspace_2_key_1 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace2, [0x1, 0x0, 0x1]));
-    let keyspace_2_key_2 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace2, [0xb, 0x0, 0x10]));
-    let keyspace_2_key_3 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace2, [0x5, 0x0, 0xff]));
-    let keyspace_2_key_4 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace2, [0x2, 0x0, 0xff]));
+    let keyspace_2_key_1 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((TestKeyspaceSet::Keyspace2, [0x1, 0x0, 0x1]));
+    let keyspace_2_key_2 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((TestKeyspaceSet::Keyspace2, [0xb, 0x0, 0x10]));
+    let keyspace_2_key_3 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((TestKeyspaceSet::Keyspace2, [0x5, 0x0, 0xff]));
+    let keyspace_2_key_4 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((TestKeyspaceSet::Keyspace2, [0x2, 0x0, 0xff]));
     storage.put_raw(StorageKeyReference::from(&keyspace_2_key_1), &empty_value());
     storage.put_raw(StorageKeyReference::from(&keyspace_2_key_2), &empty_value());
     storage.put_raw(StorageKeyReference::from(&keyspace_2_key_3), &empty_value());
@@ -187,7 +183,7 @@ fn get_put_iterate() {
         storage.get_raw_mapped(StorageKeyReference::from(&keyspace_2_key_1), ByteArray::copy);
     assert_eq!(second_value, Some(ByteArray::empty()));
 
-    let prefix = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace1, [0x1]));
+    let prefix = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((TestKeyspaceSet::Keyspace1, [0x1]));
     let items: Vec<(ByteArray<BUFFER_VALUE_INLINE>, ByteArray<128>)> = storage
         .iterate_keyspace_range(KeyRange::new_within(
             RangeStart::Inclusive(StorageKey::<BUFFER_VALUE_INLINE>::Reference(StorageKeyReference::from(&prefix))),

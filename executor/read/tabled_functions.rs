@@ -11,7 +11,6 @@ use std::{
 
 use compiler::executable::{function::ExecutableReturn, match_::planner::function_plan::ExecutableFunctionRegistry};
 use ir::pipeline::{function_signature::FunctionID, ParameterRegistry};
-use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{

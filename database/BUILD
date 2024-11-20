@@ -16,10 +16,11 @@ rust_library(
         "//common/options",
         "//common/error",
         "//concept",
+        "//durability",
         "//encoding",
         "//function",
+        "//query",
         "//storage",
-        "//durability",
 
         "@typeql//rust:typeql",
         "@crates//:itertools",

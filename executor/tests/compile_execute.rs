@@ -31,6 +31,7 @@ use ir::{
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
+use query::query_cache::QueryCache;
 use query::query_manager::QueryManager;
 use storage::{
     durability_client::WALClient, sequence_number::SequenceNumber, snapshot::CommittableSnapshot, MVCCStorage,
@@ -46,14 +47,15 @@ fn setup(
     schema: &str,
     data: &str,
 ) -> Statistics {
+    let query_manager = QueryManager::new(None);
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(schema).unwrap().into_schema();
-    QueryManager {}.execute_schema(&mut snapshot, &type_manager, &thing_manager, define).unwrap();
+    query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, define).unwrap();
     snapshot.commit().unwrap();
 
     let snapshot = storage.clone().open_snapshot_write();
     let query = typeql::parse_query(data).unwrap().into_pipeline();
-    let pipeline = QueryManager {}
+    let pipeline = query_manager
         .prepare_write_pipeline(snapshot, &type_manager, thing_manager.clone(), &FunctionManager::default(), &query)
         .unwrap();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
@@ -118,7 +120,7 @@ fn test_has_planning_traversal() {
         &HashMap::new(),
         &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
-        Arc::new(translation_context.variable_registry),
+        &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
     );
@@ -214,7 +216,7 @@ fn test_expression_planning_traversal() {
         &HashMap::new(),
         &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
-        Arc::new(translation_context.variable_registry),
+        &translation_context.variable_registry,
         &compiled_expressions,
         &statistics,
     );
@@ -298,7 +300,7 @@ fn test_links_planning_traversal() {
         &HashMap::new(),
         &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
-        Arc::new(translation_context.variable_registry),
+        &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
     );
@@ -389,7 +391,7 @@ fn test_links_intersection() {
         &HashMap::new(),
         &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
-        Arc::new(translation_context.variable_registry),
+        &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
     );
@@ -471,7 +473,7 @@ fn test_negation_planning_traversal() {
         &HashMap::new(),
         &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
-        Arc::new(translation_context.variable_registry),
+        &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
     );
@@ -574,7 +576,7 @@ fn test_forall_planning_traversal() {
         &HashMap::new(),
         &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
-        Arc::new(translation_context.variable_registry),
+        &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
     );
@@ -663,7 +665,7 @@ fn test_named_var_select() {
         &HashMap::new(),
         &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
-        Arc::new(translation_context.variable_registry),
+        &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
     );
@@ -752,7 +754,7 @@ fn test_disjunction_planning_traversal() {
         &HashMap::new(),
         &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
-        Arc::new(translation_context.variable_registry),
+        &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
     );
@@ -845,7 +847,7 @@ fn test_disjunction_planning_nested_negations() {
         &HashMap::new(),
         &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
-        Arc::new(translation_context.variable_registry),
+        &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
     );

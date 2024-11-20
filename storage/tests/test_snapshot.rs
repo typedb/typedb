@@ -16,11 +16,10 @@ use storage::{
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
 };
 use test_utils::{create_tmp_dir, init_logging};
+use test_utils_storage::{create_storage, test_keyspace_set};
 
 use self::TestKeyspaceSet::Keyspace;
-use crate::test_common::create_storage;
 
-mod test_common;
 
 test_keyspace_set! {
     Keyspace => 0: "keyspace",

@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{HashMap, },
     marker::PhantomData,
     sync::Arc,
 };
@@ -27,12 +27,11 @@ use concept::{
         object::{HasIterator, ObjectAPI},
         thing_manager::ThingManager,
     },
-    type_::{attribute_type::AttributeType, Capability, OwnerAPI, TypeAPI},
+    type_::{attribute_type::AttributeType, OwnerAPI, TypeAPI},
 };
 use encoding::value::label::Label;
 use error::typedb_error;
 use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
-use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
@@ -321,7 +320,7 @@ fn execute_list_subfetch(
         Pipeline::build_read_pipeline(
             snapshot,
             thing_manager,
-            &variable_registry,
+            variable_registry.variable_names(),
             functions_registry,
             &**stages,
             Some(fetch.clone()),
@@ -338,8 +337,8 @@ fn execute_list_subfetch(
         let initial_row = MaybeOwnedRow::new_owned(initial_row, row.multiplicity());
         Pipeline::build_read_pipeline(
             snapshot,
-            thing_manager,
-            &variable_registry,
+            thing_manager, 
+            variable_registry.variable_names(),
             functions_registry,
             &**stages,
             Some(fetch.clone()),

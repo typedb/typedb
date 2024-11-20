@@ -16,6 +16,7 @@ use executor::{
 };
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
+use query::query_cache::QueryCache;
 use query::query_manager::QueryManager;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils::TempDir;
@@ -93,13 +94,14 @@ fn setup_common(schema: &str) -> Context {
 
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
-    let query_manager = QueryManager::new();
+    let query_manager = QueryManager::new(None);
 
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(schema).unwrap().into_schema();
     query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, define).unwrap();
     snapshot.commit().unwrap();
 
+    let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new(0))));
     // reload to obtain latest vertex generators and statistics entries
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     Context { _tmp_dir, storage, type_manager, function_manager, query_manager, thing_manager }

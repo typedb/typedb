@@ -7,7 +7,6 @@
 use std::{
     hash::{DefaultHasher, Hasher},
     mem,
-    ops::BitXor,
 };
 
 use typeql::{

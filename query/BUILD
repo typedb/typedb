@@ -14,6 +14,7 @@ rust_library(
     ]),
     deps = [
         "//answer",
+        "//common/structural_equality",
         "//concept",
         "//compiler",
         "//common/lending_iterator",
@@ -23,10 +24,12 @@ rust_library(
         "//executor",
         "//ir",
         "//storage",
+        "//resource",
 
         "@typeql//rust:typeql",
 
         "@crates//:tokio",
+        "@crates//:moka",
     ],
 )
 

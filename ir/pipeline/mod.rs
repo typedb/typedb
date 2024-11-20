@@ -5,6 +5,7 @@
  */
 
 use std::{collections::HashMap, error::Error, fmt, sync::Arc};
+use std::collections::HashSet;
 
 use answer::variable::Variable;
 use encoding::value::value::Value;
@@ -112,17 +113,22 @@ impl VariableRegistry {
     }
 
     fn register_variable_named(&mut self, name: String) -> Variable {
-        let variable = self.allocate_variable();
+        let variable = self.allocate_variable(false);
         self.variable_names.insert(variable, name);
         variable
     }
 
     fn register_anonymous_variable(&mut self) -> Variable {
-        self.allocate_variable()
+        let variable = self.allocate_variable(true);
+        variable
     }
 
-    fn allocate_variable(&mut self) -> Variable {
-        let variable = Variable::new(self.variable_id_allocator);
+    fn allocate_variable(&mut self, anonymous: bool) -> Variable {
+        let variable = if anonymous {
+            Variable::new_anonymous(self.variable_id_allocator)
+        } else {
+            Variable::new(self.variable_id_allocator)
+        };
         self.variable_id_allocator += 1;
         variable
     }

@@ -6,7 +6,6 @@
 
 use std::{
     collections::{hash_map, HashMap, HashSet},
-    sync::Arc,
 };
 
 use answer::variable::Variable;
@@ -39,7 +38,7 @@ pub fn compile(
     input_variables: &HashMap<Variable, VariablePosition>,
     selected_variables: &Vec<Variable>,
     type_annotations: &TypeAnnotations,
-    variable_registry: Arc<VariableRegistry>,
+    variable_registry: &VariableRegistry,
     expressions: &HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &Statistics,
 ) -> MatchExecutable {
@@ -60,7 +59,7 @@ pub fn compile(
         statistics,
     )
     .lower(input_variables.keys().copied(), selected_variables.clone(), &assigned_identities, &variable_registry)
-    .finish(variable_registry)
+    .finish(&variable_registry)
 }
 
 #[derive(Debug)]
@@ -183,7 +182,7 @@ impl StepBuilder {
         self,
         index: &HashMap<Variable, ExecutorVariable>,
         named_variables: &HashSet<ExecutorVariable>,
-        variable_registry: Arc<VariableRegistry>,
+        variable_registry: &VariableRegistry,
     ) -> ExecutionStep {
         let selected_variables = self
             .selected_variables
@@ -221,7 +220,7 @@ impl StepBuilder {
             ),
             StepInstructionsBuilder::Disjunction(DisjunctionBuilder { branches }) => {
                 ExecutionStep::Disjunction(DisjunctionStep::new(
-                    branches.into_iter().map(|builder| builder.finish(variable_registry.clone())).collect(),
+                    branches.into_iter().map(|builder| builder.finish(variable_registry)).collect(),
                     selected_variables,
                     output_width,
                 ))
@@ -420,7 +419,7 @@ impl MatchExecutableBuilder {
         }
     }
 
-    fn finish(mut self, variable_registry: Arc<VariableRegistry>) -> MatchExecutable {
+    fn finish(mut self, variable_registry: &VariableRegistry) -> MatchExecutable {
         self.finish_one();
         let named_variables = self
             .index
@@ -430,7 +429,7 @@ impl MatchExecutableBuilder {
         let steps = self
             .steps
             .into_iter()
-            .map(|builder| builder.finish(&self.index, &named_variables, variable_registry.clone()))
+            .map(|builder| builder.finish(&self.index, &named_variables, variable_registry))
             .collect();
         let variable_positions_index = self
             .reverse_index

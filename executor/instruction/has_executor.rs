@@ -7,7 +7,7 @@
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet, HashMap},
-    sync::{Arc, OnceLock},
+    sync::{Arc, },
 };
 
 use answer::{variable_value::VariableValue, Thing, Type};

@@ -15,7 +15,7 @@ use answer::Type;
 use compiler::{executable::match_::instructions::type_::OwnsReverseInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
-    type_::{attribute_type::AttributeType, object_type::ObjectType, Capability},
+    type_::{attribute_type::AttributeType, object_type::ObjectType, },
 };
 use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};

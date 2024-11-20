@@ -8,8 +8,8 @@ use std::{
     collections::{BTreeMap, HashSet},
     hash::{DefaultHasher, Hash, Hasher},
     mem::Discriminant,
-    ops::BitXorAssign,
 };
+use std::collections::HashMap;
 
 mod typeql_structural_equality;
 
@@ -89,12 +89,13 @@ impl<T: StructuralEquality> StructuralEquality for [T] {
     }
 }
 
-impl<T: StructuralEquality> StructuralEquality for HashSet<T> {
+impl<T: StructuralEquality + Hash> StructuralEquality for HashSet<T> {
     fn hash(&self) -> u64 {
         self.iter().fold(0, |acc, element| {
             // values may generally be in a small rang, so we run them through a hasher first to make the XOR more effective
             let mut hasher = DefaultHasher::new();
             element.hash_into(&mut hasher);
+            // WARNING: must use XOR or other commutative operator!
             acc ^ hasher.finish()
         })
     }
@@ -115,6 +116,7 @@ impl<K: StructuralEquality + Ord, V: StructuralEquality> StructuralEquality for 
             let mut hasher = DefaultHasher::new();
             key.hash_into(&mut hasher);
             value.hash_into(&mut hasher);
+            // WARNING: must use XOR or other commutative operator!
             acc ^ hasher.finish()
         })
     }
@@ -128,6 +130,30 @@ impl<K: StructuralEquality + Ord, V: StructuralEquality> StructuralEquality for 
             // TODO: bit strange that we don't use structural equality here, but we do in the hash?
             other.get(key).is_some_and(|other_value| value.equals(other_value))
         })
+    }
+}
+
+impl<K: StructuralEquality + Hash, V: StructuralEquality> StructuralEquality for HashMap<K, V> {
+    fn hash(&self) -> u64 {
+        self.iter().fold(0, |acc, (key, value)| {
+            // values may generally be in a small rang, so we run them through a hasher first to make the XOR more effective
+            let mut hasher = DefaultHasher::new();
+            key.hash_into(&mut hasher);
+            value.hash_into(&mut hasher);
+            // WARNING: must use XOR or other commutative operator!
+            acc ^ hasher.finish()
+        })
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        // Note: this is a quadratic operation! Best to precede with a Hash check elsewhere.
+        if self.len() != other.len() {
+            return false;
+        }
+
+        self.iter().all(|(key, value)| other.iter().any(|(other_key, other_value)| {
+            key.equals(other_key) && value.equals(other_value)
+        }))
     }
 }
 

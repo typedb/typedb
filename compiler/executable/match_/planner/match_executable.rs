@@ -139,7 +139,7 @@ pub struct IntersectionStep {
     pub instructions: Vec<(ConstraintInstruction<ExecutorVariable>, VariableModes)>,
     new_variables: Vec<VariablePosition>,
     pub output_width: u32,
-    input_variables: Vec<VariablePosition>,
+    bound_variables: Vec<VariablePosition>,
     pub selected_variables: Vec<VariablePosition>,
 }
 
@@ -151,7 +151,7 @@ impl IntersectionStep {
         named_variables: &HashSet<ExecutorVariable>,
         output_width: u32,
     ) -> Self {
-        let mut input_variables = Vec::with_capacity(instructions.len() * 2);
+        let mut bound_variables = Vec::with_capacity(instructions.len() * 2);
         let mut new_variables = Vec::with_capacity(instructions.len() * 2);
         instructions.iter().for_each(|instruction| {
             instruction.new_variables_foreach(|var| {
@@ -163,8 +163,8 @@ impl IntersectionStep {
             });
             instruction.input_variables_foreach(|var| {
                 let var = var.as_position().unwrap();
-                if !input_variables.contains(&var) {
-                    input_variables.push(var)
+                if !bound_variables.contains(&var) {
+                    bound_variables.push(var)
                 }
             });
         });
@@ -176,7 +176,7 @@ impl IntersectionStep {
                 (instruction, variable_modes)
             })
             .collect();
-        Self { sort_variable, instructions, new_variables, output_width, input_variables, selected_variables }
+        Self { sort_variable, instructions, new_variables, output_width, bound_variables, selected_variables }
     }
 
     fn new_variables(&self) -> &[VariablePosition] {
@@ -192,8 +192,8 @@ impl Display for IntersectionStep {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "inputs={:?}, output_size={}, sort_by={}",
-            &self.input_variables, self.output_width, self.sort_variable
+            "bound_vars={:?}, output_size={}, sort_by={}",
+            &self.bound_variables, self.output_width, self.sort_variable
         )?;
         for (instruction, modes) in &self.instructions {
             write!(f, "\n      {instruction} with ({modes})")?;
@@ -207,7 +207,7 @@ pub struct UnsortedJoinStep {
     pub iterate_instruction: ConstraintInstruction<ExecutorVariable>,
     pub check_instructions: Vec<ConstraintInstruction<ExecutorVariable>>,
     new_variables: Vec<VariablePosition>,
-    input_variables: Vec<VariablePosition>,
+    bound_variables: Vec<VariablePosition>,
     selected_variables: Vec<VariablePosition>,
     pub output_width: u32,
 }
@@ -219,7 +219,7 @@ impl UnsortedJoinStep {
         selected_variables: &[VariablePosition],
         output_width: u32,
     ) -> Self {
-        let mut input_variables = Vec::with_capacity(check_instructions.len() * 2);
+        let mut bound_variables = Vec::with_capacity(check_instructions.len() * 2);
         let mut new_variables = Vec::with_capacity(5);
         iterate_instruction.new_variables_foreach(|var| {
             if let Some(var) = var.as_position() {
@@ -230,15 +230,15 @@ impl UnsortedJoinStep {
         });
         iterate_instruction.input_variables_foreach(|var| {
             let var = var.as_position().unwrap();
-            if !input_variables.contains(&var) {
-                input_variables.push(var)
+            if !bound_variables.contains(&var) {
+                bound_variables.push(var)
             }
         });
         check_instructions.iter().for_each(|instruction| {
             instruction.input_variables_foreach(|var| {
                 let var = var.as_position().unwrap();
-                if !input_variables.contains(&var) {
-                    input_variables.push(var)
+                if !bound_variables.contains(&var) {
+                    bound_variables.push(var)
                 }
             })
         });
@@ -246,7 +246,7 @@ impl UnsortedJoinStep {
             iterate_instruction,
             check_instructions,
             new_variables,
-            input_variables,
+            bound_variables,
             selected_variables: selected_variables.to_owned(),
             output_width,
         }
@@ -263,7 +263,7 @@ impl UnsortedJoinStep {
 
 impl Display for UnsortedJoinStep {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "inputs={:?}, output_size={:?}", &self.input_variables, self.output_width)?;
+        write!(f, "bound_vars={:?}, output_size={:?}", &self.bound_variables, self.output_width)?;
         write!(f, "\n      {}", &self.iterate_instruction)?;
         // TODO: do we need these at all?
         write!(f, "\n      {:?}", &self.check_instructions)

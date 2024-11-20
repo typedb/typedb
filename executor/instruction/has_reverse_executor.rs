@@ -6,8 +6,7 @@
 
 use std::{
     cmp::Ordering,
-    collections::{btree_map, BTreeMap, BTreeSet, Bound, HashMap},
-    iter::Map,
+    collections::{ BTreeMap, BTreeSet, Bound, HashMap},
     sync::{Arc, OnceLock},
     vec,
 };
@@ -16,9 +15,8 @@ use answer::Type;
 use compiler::{executable::match_::instructions::thing::HasReverseInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
-    iterator::InstanceIterator,
     thing::{
-        attribute::{Attribute, AttributeIterator},
+        attribute::{Attribute, },
         has::Has,
         object::HasReverseIterator,
         thing_manager::ThingManager,
@@ -26,7 +24,6 @@ use concept::{
     type_::attribute_type::AttributeType,
 };
 use encoding::value::value::Value;
-use ir::pattern::constraint::IsaKind;
 use itertools::{Itertools, MinMaxResult};
 use lending_iterator::{adaptors::Flatten, kmerge::KMergeBy, AsHkt, AsLendingIterator, LendingIterator, Peekable};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
@@ -34,12 +31,10 @@ use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
     snapshot::ReadableSnapshot,
 };
-use tracing::warn;
 
 use crate::{
     instruction::{
         has_executor::{HasFilterFn, HasOrderingFn, HasTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
-        isa_executor::{AttributeEraseFn, MapToThing},
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, Tuple, TuplePositions},
         BinaryIterateMode, Checker, VariableModes,

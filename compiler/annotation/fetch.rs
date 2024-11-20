@@ -12,10 +12,8 @@ use std::{
 use answer::{variable::Variable, Type};
 use concept::type_::{
     attribute_type::AttributeType,
-    constraint::{Constraint, ConstraintDescription},
-    owns::Owns,
     type_manager::TypeManager,
-    Capability, OwnerAPI, TypeAPI,
+     OwnerAPI, TypeAPI,
 };
 use encoding::{graph::type_::Kind, value::label::Label};
 use ir::{
@@ -239,6 +237,7 @@ fn annotate_some(
                 type_manager,
                 indexed_annotated_functions,
                 local_functions,
+                parameters,
                 sub_fetch,
                 input_type_annotations,
                 input_value_type_annotations,
@@ -349,18 +348,19 @@ fn annotate_sub_fetch(
     type_manager: &TypeManager,
     schema_function_annotations: &IndexedAnnotatedFunctions,
     annotated_preamble: Option<&AnnotatedUnindexedFunctions>,
+    parameters: &ParameterRegistry,
     sub_fetch: FetchListSubFetch,
     input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<AnnotatedFetchListSubFetch, AnnotationError> {
-    let FetchListSubFetch { context, parameters, input_variables, stages, fetch } = sub_fetch;
+    let FetchListSubFetch { context, input_variables, stages, fetch } = sub_fetch;
     let TranslationContext { mut variable_registry, .. } = context;
     let (annotated_stages, annotated_fetch) = annotate_stages_and_fetch(
         snapshot,
         type_manager,
         schema_function_annotations,
         &mut variable_registry,
-        &parameters,
+        parameters,
         annotated_preamble,
         stages,
         Some(fetch),

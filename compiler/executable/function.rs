@@ -25,13 +25,13 @@ use crate::{
     executable::{
         match_::planner::function_plan::ExecutableFunctionRegistry,
         pipeline::{compile_pipeline_stages, ExecutableStage},
-        reduce::{ReduceInstruction, ReduceRowsExecutable},
+        reduce::{ReduceRowsExecutable},
         ExecutableCompilationError,
     },
     VariablePosition,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ExecutableFunction {
     pub executable_stages: Vec<ExecutableStage>,
     pub argument_positions: HashMap<Variable, VariablePosition>,
@@ -41,7 +41,7 @@ pub struct ExecutableFunction {
     // pub plan_cost: f64, // TODO: Where do we fit this in?
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ExecutableReturn {
     Stream(Vec<VariablePosition>),
     Single(SingleSelector, Vec<VariablePosition>),
@@ -64,7 +64,7 @@ pub(crate) fn compile_function(
     let AnnotatedFunction { variable_registry, parameter_registry, arguments, stages, return_ } = function;
     let (argument_positions, executable_stages) = compile_pipeline_stages(
         statistics,
-        Arc::new(variable_registry),
+        &variable_registry,
         schema_functions,
         stages,
         arguments.into_iter(),
