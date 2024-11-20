@@ -9,6 +9,9 @@ use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     sync::Arc,
 };
+use std::fmt::{Display, Formatter};
+
+use itertools::{Itertools, MinMaxResult};
 
 use answer::Type;
 use compiler::{executable::match_::instructions::thing::LinksReverseInstruction, ExecutorVariable};
@@ -20,8 +23,7 @@ use concept::{
         thing_manager::ThingManager,
     },
 };
-use itertools::{Itertools, MinMaxResult};
-use lending_iterator::{kmerge::KMergeBy, AsHkt, LendingIterator, Peekable};
+use lending_iterator::{AsHkt, kmerge::KMergeBy, LendingIterator, Peekable};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
@@ -30,15 +32,15 @@ use storage::{
 
 use crate::{
     instruction::{
+        Checker,
         iterator::{SortedTupleIterator, TupleIterator},
         links_executor::{
-            LinksFilterFn, LinksOrderingFn, LinksTupleIterator, EXTRACT_PLAYER, EXTRACT_RELATION, EXTRACT_ROLE,
+            EXTRACT_PLAYER, EXTRACT_RELATION, EXTRACT_ROLE, LinksFilterFn, LinksOrderingFn, LinksTupleIterator,
         },
-        tuple::{
+        TernaryIterateMode, tuple::{
             links_to_tuple_player_relation_role, links_to_tuple_relation_player_role,
             links_to_tuple_role_relation_player, TuplePositions,
-        },
-        Checker, TernaryIterateMode, VariableModes,
+        }, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -266,6 +268,12 @@ impl LinksReverseExecutor {
                 )))
             }
         }
+    }
+}
+
+impl Display for LinksReverseExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Reverse[{}], mode={}", &self.links, &self.iterate_mode)
     }
 }
 

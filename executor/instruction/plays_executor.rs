@@ -10,14 +10,16 @@ use std::{
     sync::Arc,
     vec,
 };
+use std::fmt::{Display, Formatter};
 
-use answer::{variable_value::VariableValue, Type};
+use itertools::Itertools;
+
+use answer::{Type, variable_value::VariableValue};
 use compiler::{executable::match_::instructions::type_::PlaysInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
-    type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI, PlayerAPI},
+    type_::{object_type::ObjectType, ObjectTypeAPI, PlayerAPI, role_type::RoleType, type_manager::TypeManager},
 };
-use itertools::Itertools;
 use lending_iterator::{
     adaptors::{Map, TryFilter},
     AsHkt, AsNarrowingIterator, LendingIterator,
@@ -26,9 +28,9 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, PlaysToTupleFn, TuplePositions, TupleResult},
-        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, VariableModes,
+        BinaryIterateMode,
+        Checker,
+        FilterFn, iterator::{SortedTupleIterator, TupleIterator}, tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, PlaysToTupleFn, TuplePositions, TupleResult}, type_from_row_or_annotations, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -205,6 +207,12 @@ impl PlaysExecutor {
             .into_iter()
             .map(|role_type| (object_type.clone(), role_type))
             .collect())
+    }
+}
+
+impl Display for PlaysExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "[{}], mode={}", &self.plays, &self.iterate_mode)
     }
 }
 

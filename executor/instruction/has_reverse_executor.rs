@@ -6,17 +6,20 @@
 
 use std::{
     cmp::Ordering,
-    collections::{ BTreeMap, BTreeSet, Bound, HashMap},
+    collections::{Bound, BTreeMap, BTreeSet, HashMap},
     sync::{Arc, OnceLock},
     vec,
 };
+use std::fmt::{Display, Formatter};
+
+use itertools::{Itertools, MinMaxResult};
 
 use answer::Type;
 use compiler::{executable::match_::instructions::thing::HasReverseInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
     thing::{
-        attribute::{Attribute, },
+        attribute::Attribute,
         has::Has,
         object::HasReverseIterator,
         thing_manager::ThingManager,
@@ -24,8 +27,7 @@ use concept::{
     type_::attribute_type::AttributeType,
 };
 use encoding::value::value::Value;
-use itertools::{Itertools, MinMaxResult};
-use lending_iterator::{adaptors::Flatten, kmerge::KMergeBy, AsHkt, AsLendingIterator, LendingIterator, Peekable};
+use lending_iterator::{adaptors::Flatten, AsHkt, AsLendingIterator, kmerge::KMergeBy, LendingIterator, Peekable};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
@@ -34,10 +36,10 @@ use storage::{
 
 use crate::{
     instruction::{
-        has_executor::{HasFilterFn, HasOrderingFn, HasTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
-        iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, Tuple, TuplePositions},
-        BinaryIterateMode, Checker, VariableModes,
+        BinaryIterateMode,
+        Checker,
+        has_executor::{EXTRACT_ATTRIBUTE, EXTRACT_OWNER, HasFilterFn, HasOrderingFn, HasTupleIterator},
+        iterator::{SortedTupleIterator, TupleIterator}, tuple::{has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, Tuple, TuplePositions}, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -249,6 +251,12 @@ impl HasReverseExecutor {
             .map(|type_| thing_manager.get_has_reverse_in_range(snapshot, type_, &attribute_values_range))
             .try_collect()?;
         Ok(AsLendingIterator::new(iterators).flatten())
+    }
+}
+impl Display for HasReverseExecutor {
+    
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Reverse[{}], mode={}", &self.has, &self.iterate_mode)
     }
 }
 

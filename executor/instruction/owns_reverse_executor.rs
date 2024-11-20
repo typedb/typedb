@@ -10,6 +10,9 @@ use std::{
     sync::Arc,
     vec,
 };
+use std::fmt::{Display, Formatter};
+
+use itertools::Itertools;
 
 use answer::Type;
 use compiler::{executable::match_::instructions::type_::OwnsReverseInstruction, ExecutorVariable};
@@ -17,18 +20,17 @@ use concept::{
     error::ConceptReadError,
     type_::{attribute_type::AttributeType, object_type::ObjectType, },
 };
-use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        BinaryIterateMode,
+        Checker,
         iterator::{SortedTupleIterator, TupleIterator},
         owns_executor::{
-            OwnsFilterFn, OwnsTupleIterator, OwnsVariableValueExtractor, EXTRACT_ATTRIBUTE, EXTRACT_OWNER,
-        },
-        tuple::{owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, TuplePositions},
-        type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
+            EXTRACT_ATTRIBUTE, EXTRACT_OWNER, OwnsFilterFn, OwnsTupleIterator, OwnsVariableValueExtractor,
+        }, tuple::{owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, TuplePositions}, type_from_row_or_annotations, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -188,6 +190,12 @@ impl OwnsReverseExecutor {
                 )))
             }
         }
+    }
+}
+
+impl Display for OwnsReverseExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Reverse[{}], mode={}", &self.owns, &self.iterate_mode)
     }
 }
 

@@ -10,6 +10,9 @@ use std::{
     sync::Arc,
     vec,
 };
+use std::fmt::{Display, Formatter};
+
+use itertools::Itertools;
 
 use answer::Type;
 use compiler::{executable::match_::instructions::type_::RelatesReverseInstruction, ExecutorVariable};
@@ -17,18 +20,17 @@ use concept::{
     error::ConceptReadError,
     type_::{relation_type::RelationType, role_type::RoleType},
 };
-use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        BinaryIterateMode,
+        Checker,
         iterator::{SortedTupleIterator, TupleIterator},
         relates_executor::{
-            RelatesFilterFn, RelatesTupleIterator, RelatesVariableValueExtractor, EXTRACT_RELATION, EXTRACT_ROLE,
-        },
-        tuple::{relates_to_tuple_relation_role, relates_to_tuple_role_relation, TuplePositions},
-        type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
+            EXTRACT_RELATION, EXTRACT_ROLE, RelatesFilterFn, RelatesTupleIterator, RelatesVariableValueExtractor,
+        }, tuple::{relates_to_tuple_relation_role, relates_to_tuple_role_relation, TuplePositions}, type_from_row_or_annotations, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -186,6 +188,12 @@ impl RelatesReverseExecutor {
                 )))
             }
         }
+    }
+}
+
+impl Display for RelatesReverseExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Reverse[{}], mode={}", &self.relates, &self.iterate_mode)
     }
 }
 

@@ -5,24 +5,26 @@
  */
 
 use std::{collections::HashMap, iter, vec};
+use std::fmt::{Display, Formatter};
 
-use answer::{variable_value::VariableValue, Type};
+use itertools::Itertools;
+
+use answer::{Type, variable_value::VariableValue};
 use compiler::{executable::match_::instructions::type_::TypeListInstruction, ExecutorVariable};
 use concept::error::ConceptReadError;
-use itertools::Itertools;
 use lending_iterator::{
     adaptors::{Map, TryFilter},
-    higher_order::AdHocHkt,
-    AsLendingIterator, LendingIterator,
+    AsLendingIterator,
+    higher_order::AdHocHkt, LendingIterator,
 };
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        Checker,
+        FilterFn,
         iterator::{SortedTupleIterator, TupleIterator},
-        sub_executor::NarrowingTupleIterator,
-        tuple::{type_to_tuple, TuplePositions, TupleResult, TypeToTupleFn},
-        Checker, FilterFn, VariableModes,
+        sub_executor::NarrowingTupleIterator, tuple::{TuplePositions, TupleResult, type_to_tuple, TypeToTupleFn}, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -79,5 +81,15 @@ impl TypeListExecutor {
             AsLendingIterator::new(iterator).try_filter::<_, TypeFilterFn, Type, _>(filter_for_row).map(type_to_tuple),
         );
         Ok(TupleIterator::Type(SortedTupleIterator::new(as_tuples, self.tuple_positions.clone(), &self.variable_modes)))
+    }
+}
+
+impl Display for TypeListExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Type [")?;
+        for type_ in &self.types {
+            write!(f, "{}, ", type_)?;
+        }
+        writeln!(f, "], variable modes={:?}", &self.variable_modes)
     }
 }

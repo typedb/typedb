@@ -5,6 +5,7 @@
  */
 
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
 
 use answer::variable_value::VariableValue;
 use compiler::{
@@ -19,16 +20,17 @@ use lending_iterator::{
 };
 use storage::snapshot::ReadableSnapshot;
 
-use super::tuple::Tuple;
 use crate::{
     instruction::{
-        iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{TuplePositions, TupleResult},
-        Checker, FilterFn, VariableModes,
+        Checker,
+        FilterFn,
+        iterator::{SortedTupleIterator, TupleIterator}, tuple::{TuplePositions, TupleResult}, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+
+use super::tuple::Tuple;
 
 pub(crate) struct IsExecutor {
     is: Is<ExecutorVariable>,
@@ -64,6 +66,7 @@ fn is_to_tuple(result: Result<VariableValue<'_>, Box<ConceptReadError>>) -> Tupl
 }
 
 impl IsExecutor {
+    
     pub(crate) fn new(
         is: IsInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
@@ -104,5 +107,11 @@ impl IsExecutor {
         let as_tuples = as_tuples(iterator.try_filter::<_, IsFilterFn, VariableValue<'_>, _>(filter_for_row));
 
         Ok(TupleIterator::Is(SortedTupleIterator::new(as_tuples, self.tuple_positions.clone(), &self.variable_modes)))
+    }
+}
+
+impl Display for IsExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}, input: {}", &self.is, &self.input)
     }
 }

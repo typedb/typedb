@@ -9,8 +9,11 @@ use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     sync::Arc,
 };
+use std::fmt::{Display, Formatter};
 
-use answer::{variable_value::VariableValue, Thing, Type};
+use itertools::{Itertools, MinMaxResult};
+
+use answer::{Thing, Type, variable_value::VariableValue};
 use compiler::{executable::match_::instructions::thing::LinksInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
@@ -19,11 +22,10 @@ use concept::{
         thing_manager::ThingManager,
     },
 };
-use itertools::{Itertools, MinMaxResult};
 use lending_iterator::{
     adaptors::{Map, TryFilter},
-    kmerge::KMergeBy,
-    AsHkt, LendingIterator, Peekable,
+    AsHkt,
+    kmerge::KMergeBy, LendingIterator, Peekable,
 };
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{
@@ -33,12 +35,12 @@ use storage::{
 
 use crate::{
     instruction::{
-        iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{
+        Checker,
+        FilterFn,
+        iterator::{SortedTupleIterator, TupleIterator}, TernaryIterateMode, tuple::{
             links_to_tuple_player_relation_role, links_to_tuple_relation_player_role,
             links_to_tuple_role_relation_player, LinksToTupleFn, Tuple, TuplePositions, TupleResult,
-        },
-        Checker, FilterFn, TernaryIterateMode, VariableModes,
+        }, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -288,6 +290,12 @@ impl LinksExecutor {
                 )))
             }
         }
+    }
+}
+
+impl Display for LinksExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "[{}], mode={}", &self.links, &self.iterate_mode)
     }
 }
 

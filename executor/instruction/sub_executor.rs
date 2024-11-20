@@ -9,23 +9,25 @@ use std::{
     sync::Arc,
     vec,
 };
+use std::fmt::{Display, Formatter};
 
-use answer::{variable_value::VariableValue, Type};
+use itertools::Itertools;
+
+use answer::{Type, variable_value::VariableValue};
 use compiler::{executable::match_::instructions::type_::SubInstruction, ExecutorVariable};
 use concept::error::ConceptReadError;
-use itertools::Itertools;
 use lending_iterator::{
     adaptors::{Map, TryFilter},
-    higher_order::AdHocHkt,
-    AsLendingIterator, LendingIterator,
+    AsLendingIterator,
+    higher_order::AdHocHkt, LendingIterator,
 };
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, SubToTupleFn, TuplePositions, TupleResult},
-        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, VariableModes,
+        BinaryIterateMode,
+        Checker,
+        FilterFn, iterator::{SortedTupleIterator, TupleIterator}, tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, SubToTupleFn, TuplePositions, TupleResult}, type_from_row_or_annotations, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -174,6 +176,12 @@ impl SubExecutor {
                 )))
             }
         }
+    }
+}
+
+impl Display for SubExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "[{}], mode={}", &self.sub, &self.iterate_mode)
     }
 }
 

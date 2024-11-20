@@ -7,10 +7,11 @@
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet, HashMap},
-    sync::{Arc, },
+    sync::Arc,
 };
+use std::fmt::{Display, Formatter};
 
-use answer::{variable_value::VariableValue, Thing, Type};
+use answer::{Thing, Type, variable_value::VariableValue};
 use compiler::{executable::match_::instructions::thing::HasInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
@@ -22,8 +23,8 @@ use concept::{
 };
 use lending_iterator::{
     adaptors::{Map, TryFilter},
-    kmerge::KMergeBy,
-    AsHkt, LendingIterator, Peekable,
+    AsHkt,
+    kmerge::KMergeBy, LendingIterator, Peekable,
 };
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{
@@ -33,12 +34,12 @@ use storage::{
 
 use crate::{
     instruction::{
-        iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{
+        BinaryIterateMode,
+        Checker,
+        FilterFn, iterator::{SortedTupleIterator, TupleIterator}, tuple::{
             has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, HasToTupleFn, Tuple, TuplePositions,
             TupleResult,
-        },
-        BinaryIterateMode, Checker, FilterFn, VariableModes,
+        }, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -246,6 +247,12 @@ impl HasExecutor {
                 )))
             }
         }
+    }
+}
+
+impl Display for HasExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "[{}], mode={}", &self.has, &self.iterate_mode)
     }
 }
 

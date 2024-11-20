@@ -5,6 +5,9 @@
  */
 
 use std::{collections::BTreeMap, iter, option, sync::Arc, vec};
+use std::fmt::{Display, Formatter};
+
+use itertools::Itertools;
 
 use answer::{Thing, Type};
 use compiler::{executable::match_::instructions::thing::IsaReverseInstruction, ExecutorVariable};
@@ -18,24 +21,24 @@ use concept::{
     },
 };
 use ir::pattern::constraint::{Isa, IsaKind};
-use itertools::Itertools;
 use lending_iterator::{
     adaptors::{Chain, Flatten, Map, Zip},
     AsHkt, AsLendingIterator, LendingIterator,
 };
 use storage::snapshot::ReadableSnapshot;
 
-use super::isa_executor::{AttributeEraseFn, MapToThing, ObjectEraseFn};
 use crate::{
     instruction::{
-        isa_executor::{IsaFilterFn, IsaTupleIterator, SingleTypeIsaIterator, EXTRACT_THING, EXTRACT_TYPE},
-        iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, TuplePositions},
-        type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes, TYPES_EMPTY,
+        BinaryIterateMode,
+        Checker,
+        isa_executor::{EXTRACT_THING, EXTRACT_TYPE, IsaFilterFn, IsaTupleIterator, SingleTypeIsaIterator},
+        iterator::{SortedTupleIterator, TupleIterator}, tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, TuplePositions}, type_from_row_or_annotations, TYPES_EMPTY, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+
+use super::isa_executor::{AttributeEraseFn, MapToThing, ObjectEraseFn};
 
 pub(crate) struct IsaReverseExecutor {
     isa: Isa<ExecutorVariable>,
@@ -163,6 +166,12 @@ impl IsaReverseExecutor {
                 )))
             }
         }
+    }
+}
+
+impl Display for IsaReverseExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Reverse[{}], mode={}", &self.isa, &self.iterate_mode)
     }
 }
 

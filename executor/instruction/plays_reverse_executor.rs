@@ -10,6 +10,9 @@ use std::{
     sync::Arc,
     vec,
 };
+use std::fmt::{Display, Formatter};
+
+use itertools::Itertools;
 
 use answer::Type;
 use compiler::{executable::match_::instructions::type_::PlaysReverseInstruction, ExecutorVariable};
@@ -17,23 +20,23 @@ use concept::{
     error::ConceptReadError,
     type_::{object_type::ObjectType, role_type::RoleType},
 };
-use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
-use super::type_from_row_or_annotations;
 use crate::{
     instruction::{
+        BinaryIterateMode,
+        Checker,
         iterator::{SortedTupleIterator, TupleIterator},
         plays_executor::{
-            PlaysFilterFn, PlaysTupleIterator, PlaysVariableValueExtractor, EXTRACT_PLAYER, EXTRACT_ROLE,
-        },
-        tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, TuplePositions},
-        BinaryIterateMode, Checker, VariableModes,
+            EXTRACT_PLAYER, EXTRACT_ROLE, PlaysFilterFn, PlaysTupleIterator, PlaysVariableValueExtractor,
+        }, tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, TuplePositions}, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+
+use super::type_from_row_or_annotations;
 
 pub(crate) struct PlaysReverseExecutor {
     plays: ir::pattern::constraint::Plays<ExecutorVariable>,
@@ -186,6 +189,12 @@ impl PlaysReverseExecutor {
                 )))
             }
         }
+    }
+}
+
+impl Display for PlaysReverseExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Reverse[{}], mode={}", &self.plays, &self.iterate_mode)
     }
 }
 
