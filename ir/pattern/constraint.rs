@@ -1003,8 +1003,8 @@ impl StructuralEquality for SubKind {
     }
 }
 
-impl Display for SubKind {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for SubKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Exact => write!(f, "!"),
             // This is not a great Display implementation since there is no symbol to read this variant
@@ -1245,8 +1245,8 @@ impl StructuralEquality for IsaKind {
     }
 }
 
-impl Display for IsaKind {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for IsaKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Exact => write!(f, "!"),
             // This is not a great Display implementation since there is no symbol to read this variant
@@ -1603,8 +1603,8 @@ impl StructuralEquality for Comparator {
     }
 }
 
-impl Display for Comparator {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for Comparator {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Equal => write!(f, "{}", typeql::token::Comparator::Eq),
             Self::NotEqual => write!(f, "{}", typeql::token::Comparator::Neq),

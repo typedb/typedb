@@ -6,7 +6,7 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
-    fmt::{Display, Formatter},
+    fmt,
     sync::Arc,
 };
 
@@ -55,8 +55,8 @@ impl<ID: IrID> IsaInstruction<ID> {
     }
 }
 
-impl<ID: IrID> Display for IsaInstruction<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for IsaInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{}] filter {}", &self.isa, DisplayVec::new(&self.checks))
     }
 }
@@ -95,8 +95,8 @@ impl<ID: IrID> IsaReverseInstruction<ID> {
     }
 }
 
-impl<ID: IrID> Display for IsaReverseInstruction<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for IsaReverseInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Reverse[{}] filter {}", &self.isa, DisplayVec::new(&self.checks))
     }
 }
@@ -147,8 +147,8 @@ impl<ID: IrID> HasInstruction<ID> {
     }
 }
 
-impl<ID: IrID> Display for HasInstruction<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for HasInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{}] filter {}", &self.has, DisplayVec::new(&self.checks))
     }
 }
@@ -198,8 +198,8 @@ impl<ID: IrID> HasReverseInstruction<ID> {
     }
 }
 
-impl<ID: IrID> Display for HasReverseInstruction<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for HasReverseInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Reverse[{}] filter {}", &self.has, DisplayVec::new(&self.checks))
     }
 }
@@ -257,8 +257,8 @@ impl<ID: IrID> LinksInstruction<ID> {
     }
 }
 
-impl<ID: IrID> Display for LinksInstruction<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for LinksInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{}] filter {}", &self.links, DisplayVec::new(&self.checks))
     }
 }
@@ -316,8 +316,8 @@ impl<ID: IrID> LinksReverseInstruction<ID> {
     }
 }
 
-impl<ID: IrID> Display for LinksReverseInstruction<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for LinksReverseInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Reverse[{}] filter {}", &self.links, DisplayVec::new(&self.checks))
     }
 }
