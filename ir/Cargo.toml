@@ -19,11 +19,6 @@ features = {}
 		features = []
 		default-features = false
 
-	[dev-dependencies.bytes]
-		path = "../common/bytes"
-		features = []
-		default-features = false
-
 	[dev-dependencies.test_utils_storage]
 		path = "../storage/tests"
 		features = []
@@ -86,9 +81,14 @@ features = {}
 		features = []
 		default-features = false
 
+	[dependencies.bytes]
+		path = "../common/bytes"
+		features = []
+		default-features = false
+
 	[dependencies.typeql]
 		features = []
-		rev = "0be38cbab19da7d6b2549ad5aa1248fc811bc4e0"
+		rev = "a839354d9633794d989fc15b3e41bb85e202f761"
 		git = "https://github.com/typedb/typeql"
 		default-features = false
 

@@ -2905,6 +2905,7 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 name = "structural_equality"
 version = "0.0.0"
 dependencies = [
+ "paste",
  "serde",
  "typeql",
 ]
@@ -3421,7 +3422,7 @@ checksum = "42ff0bf0c66b8238c6f3b578df37d0b7848e55df8577b3f74f92a69acceeb825"
 [[package]]
 name = "typeql"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typeql?rev=0be38cbab19da7d6b2549ad5aa1248fc811bc4e0#0be38cbab19da7d6b2549ad5aa1248fc811bc4e0"
+source = "git+https://github.com/typedb/typeql?rev=a839354d9633794d989fc15b3e41bb85e202f761#a839354d9633794d989fc15b3e41bb85e202f761"
 dependencies = [
  "chrono",
  "itertools 0.10.5",

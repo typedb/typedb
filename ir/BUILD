@@ -20,6 +20,7 @@ rust_library(
     ]),
     deps = [
         "//answer",
+        "//common/bytes",
         "//common/primitive",
         "//common/structural_equality",
         "//common/error",
