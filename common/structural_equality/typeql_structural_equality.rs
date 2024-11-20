@@ -19,17 +19,11 @@ use crate::{ordered_hash_combine, StructuralEquality};
 
 impl StructuralEquality for Variable {
     fn hash(&self) -> u64 {
-        &mem::discriminant(self).hash()
+        mem::discriminant(self).hash()
             ^ match self {
-                Variable::Anonymous { optional, .. } => {
-                    if optional.is_some() {
-                        0
-                    } else {
-                        1
-                    }
-                }
+                Variable::Anonymous { optional, .. } => optional.is_none() as u64,
                 Variable::Named { ident, optional, .. } => {
-                    ordered_hash_combine(ident.as_str().hash(), if optional.is_some() { 0 } else { 1 })
+                    ordered_hash_combine(ident.as_str().hash(), optional.is_none() as u64)
                 }
             }
     }
