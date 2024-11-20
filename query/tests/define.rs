@@ -4,7 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use query::query_manager::QueryManager;
+use std::sync::Arc;
+
+use query::{query_cache::QueryCache, query_manager::QueryManager};
 use storage::snapshot::CommittableSnapshot;
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
