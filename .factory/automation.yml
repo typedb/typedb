@@ -49,7 +49,7 @@ build:
         export PROTOC=$PWD/protoc/bin/protoc
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
         source ~/.cargo/env
-        cargo check
+        cargo check --profile=ci-check
 
 #     cargo-toml-sync:
 #       image: typedb-ubuntu-22.04
