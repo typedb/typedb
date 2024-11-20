@@ -132,6 +132,8 @@ pub(super) struct IntersectionExecutor {
     intersection_multiplicity: u64,
 
     output: Option<FixedBatch>,
+    
+    rows_produced: u64,
 }
 
 impl IntersectionExecutor {
@@ -162,6 +164,7 @@ impl IntersectionExecutor {
             intersection_row: vec![VariableValue::Empty; output_width as usize],
             intersection_multiplicity: 1,
             output: None,
+            rows_produced: 0,
         })
     }
 
@@ -176,6 +179,14 @@ impl IntersectionExecutor {
         self.may_create_intersection_iterators(context)?;
         Ok(())
     }
+    
+    fn formatted_executors(&self) -> String {
+        let mut string = String::new();
+        for executor in &self.instruction_executors {
+            string.push_str(&format!("{}\n", executor));
+        }
+        string
+    }
 
     fn batch_continue(
         &mut self,
@@ -184,6 +195,7 @@ impl IntersectionExecutor {
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         debug_assert!(self.output.is_none());
         self.may_compute_next_batch(context)?;
+        println!("Instructions:\n {} ==> produced rows: {}", self.formatted_executors(), self.rows_produced);
         Ok(self.output.take())
     }
 
@@ -213,6 +225,7 @@ impl IntersectionExecutor {
                 row.set(position, value);
             }
         }
+        self.rows_produced += 1;
     }
 
     fn compute_next_row(

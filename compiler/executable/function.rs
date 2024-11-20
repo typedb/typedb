@@ -30,9 +30,11 @@ use crate::{
     },
     VariablePosition,
 };
+use crate::executable::next_executable_id;
 
 #[derive(Debug, Clone)]
 pub struct ExecutableFunction {
+    pub executable_id: u64,
     pub executable_stages: Vec<ExecutableStage>,
     pub argument_positions: HashMap<Variable, VariablePosition>,
     pub returns: ExecutableReturn,
@@ -69,10 +71,12 @@ pub(crate) fn compile_function(
         stages,
         arguments.into_iter(),
         &return_.referenced_variables(),
+        false,
     )?;
 
     let returns = compile_return_operation(&executable_stages, return_)?;
     Ok(ExecutableFunction {
+        executable_id: next_executable_id(),
         executable_stages,
         argument_positions,
         returns,

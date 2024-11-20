@@ -5,6 +5,7 @@
  */
 
 use std::sync::Arc;
+use std::time::Instant;
 
 use compiler::executable::insert::{
     executable::InsertExecutable,
@@ -56,11 +57,13 @@ where
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
         let Self { executable, previous } = self;
+        let start = Instant::now();
         let (previous_iterator, mut context) = previous.into_iterator(interrupt.clone())?;
         let mut batch = match prepare_output_rows(executable.output_width() as u32, previous_iterator) {
             Ok(output_rows) => output_rows,
             Err(err) => return Err((err, context)),
         };
+        let after_read = Instant::now();
 
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so we can get mut:
         let snapshot_mut = Arc::get_mut(&mut context.snapshot).unwrap();
@@ -80,6 +83,10 @@ where
                 }
             }
         }
+        let end = Instant::now();
+        
+        println!("Time to execute stage before insert: {} us",  after_read.duration_since(start).as_micros());
+        println!("Time to execute insert: {} us",  end.duration_since(after_read).as_micros());
 
         Ok((WrittenRowsIterator::new(batch), context))
     }

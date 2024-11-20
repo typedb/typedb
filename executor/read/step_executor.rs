@@ -21,6 +21,7 @@ use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::schema::definable::function::SingleSelector;
+use compiler::executable::next_executable_id;
 
 use crate::read::{
     collecting_stage_executor::CollectingStageExecutor,
@@ -113,7 +114,7 @@ pub(crate) fn create_executors_for_match(
                 // I shouldn't need to pass recursive here since it's stratified
                 let inner =
                     create_executors_for_match(snapshot, thing_manager, function_registry, &negation_step.negation)?;
-                steps.push(NestedPatternExecutor::new_negation(PatternExecutor::new(inner)).into())
+                steps.push(NestedPatternExecutor::new_negation(PatternExecutor::new(negation_step.negation.executable_id(), inner)).into())
             }
             ExecutionStep::FunctionCall(function_call) => {
                 let function = function_registry.get(function_call.function_id.clone());
@@ -128,7 +129,7 @@ pub(crate) fn create_executors_for_match(
                 } else {
                     let inner_executors =
                         create_executors_for_function(snapshot, thing_manager, function_registry, function)?;
-                    let inner = PatternExecutor::new(inner_executors);
+                    let inner = PatternExecutor::new(function.executable_id, inner_executors);
                     let step = NestedPatternExecutor::new_inlined_function(
                         inner,
                         function_call,
@@ -145,7 +146,7 @@ pub(crate) fn create_executors_for_match(
                     .map(|branch_executable| {
                         let executors =
                             create_executors_for_match(snapshot, thing_manager, function_registry, &branch_executable)?;
-                        Ok::<_, Box<_>>(PatternExecutor::new(executors))
+                        Ok::<_, Box<_>>(PatternExecutor::new(branch_executable.executable_id(), executors))
                     })
                     .try_collect()?;
                 let inner_step = NestedPatternExecutor::new_disjunction(
@@ -156,7 +157,7 @@ pub(crate) fn create_executors_for_match(
                 .into();
                 // Hack: wrap it in a distinct
                 let step = StepExecutors::StreamModifier(StreamModifierExecutor::new_distinct(
-                    PatternExecutor::new(vec![inner_step]),
+                    PatternExecutor::new(next_executable_id(), vec![inner_step]),
                     step.output_width,
                 ));
                 steps.push(step);
@@ -189,14 +190,14 @@ pub(crate) fn create_executors_for_function(
         ExecutableReturn::Single(selector, positions) => {
             steps.push(StepExecutors::ReshapeForReturn(positions.clone()));
             let step = match selector {
-                SingleSelector::First => StreamModifierExecutor::new_first(PatternExecutor::new(steps)),
-                SingleSelector::Last => StreamModifierExecutor::new_last(PatternExecutor::new(steps)),
+                SingleSelector::First => StreamModifierExecutor::new_first(PatternExecutor::new(executable_function.executable_id, steps)),
+                SingleSelector::Last => StreamModifierExecutor::new_last(PatternExecutor::new(executable_function.executable_id, steps)),
             };
             Ok(vec![step.into()])
         }
         ExecutableReturn::Check => todo!("ExecutableReturn::Check"),
         ExecutableReturn::Reduce(executable) => {
-            let step = CollectingStageExecutor::new_reduce(PatternExecutor::new(steps), executable.clone());
+            let step = CollectingStageExecutor::new_reduce(PatternExecutor::new(executable_function.executable_id, steps), executable.clone());
             Ok(vec![StepExecutors::CollectingStage(step)])
         }
     }
@@ -231,24 +232,25 @@ pub(super) fn create_executors_for_pipeline_stages(
         ExecutableStage::Select(_) => todo!(),
         ExecutableStage::Offset(offset_executable) => {
             let step = StreamModifierExecutor::new_offset(
-                PatternExecutor::new(previous_stage_steps),
+                // TODO: not sure if these are correct new executable IDs or should be different? 
+                PatternExecutor::new(next_executable_id(), previous_stage_steps),
                 offset_executable.offset,
             );
             Ok(vec![step.into()])
         }
         ExecutableStage::Limit(limit_executable) => {
             let step =
-                StreamModifierExecutor::new_limit(PatternExecutor::new(previous_stage_steps), limit_executable.limit);
+                StreamModifierExecutor::new_limit(PatternExecutor::new(next_executable_id(), previous_stage_steps), limit_executable.limit);
             Ok(vec![step.into()])
         }
         ExecutableStage::Require(_) => todo!(),
         ExecutableStage::Sort(sort_executable) => {
-            let step = CollectingStageExecutor::new_sort(PatternExecutor::new(previous_stage_steps), sort_executable);
+            let step = CollectingStageExecutor::new_sort(PatternExecutor::new(next_executable_id(), previous_stage_steps), sort_executable);
             Ok(vec![StepExecutors::CollectingStage(step)])
         }
         ExecutableStage::Reduce(reduce_stage_executable) => {
             let step = CollectingStageExecutor::new_reduce(
-                PatternExecutor::new(previous_stage_steps),
+                PatternExecutor::new(next_executable_id(), previous_stage_steps),
                 reduce_stage_executable.reduce_rows_executable.clone(),
             );
             Ok(vec![StepExecutors::CollectingStage(step)])

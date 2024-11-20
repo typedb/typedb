@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use answer::{variable_value::VariableValue, Thing, Type};
+use answer::{Thing, Type, variable_value::VariableValue};
 use compiler::ExecutorVariable;
 use concept::{
     error::ConceptReadError,

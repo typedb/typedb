@@ -21,6 +21,7 @@ use compiler::{
     },
     VariablePosition,
 };
+use compiler::executable::next_executable_id;
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -79,7 +80,7 @@ impl<Snapshot: ReadableSnapshot + 'static> FetchStageExecutor<Snapshot> {
         context: ExecutionContext<Snapshot>,
         interrupt: ExecutionInterrupt,
     ) -> (impl Iterator<Item = Result<ConceptDocument, Box<PipelineExecutionError>>>, ExecutionContext<Snapshot>) {
-        let ExecutionContext { snapshot, thing_manager, parameters } = context.clone();
+        let ExecutionContext { snapshot, thing_manager, parameters, profile: _profile, } = context.clone();
         let executable = self.executable;
         let functions = self.functions;
         let documents_iterator = previous_iterator
@@ -521,7 +522,7 @@ fn prepare_single_function_execution<Snapshot: ReadableSnapshot + 'static>(
 
     let step_executors = create_executors_for_function(&snapshot, &thing_manager, &functions_registry, function)
         .map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
-    let mut pattern_executor = PatternExecutor::new(step_executors);
+    let mut pattern_executor = PatternExecutor::new(next_executable_id(), step_executors);
     pattern_executor.prepare(FixedBatch::from(args));
     Ok((pattern_executor, Arc::new(ExecutionContext::new(snapshot, thing_manager, parameters))))
 }

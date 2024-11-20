@@ -135,6 +135,7 @@ fn compile_some(
                 stages,
                 Some(fetch),
                 &input_variables,
+                false,
             )
             .map_err(|err| FetchCompilationError::SubFetchCompilation { typedb_source: Box::new(err) })?;
             let input_position_remapping = input_variables

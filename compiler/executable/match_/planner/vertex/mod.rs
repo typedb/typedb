@@ -456,7 +456,7 @@ impl Costed for DisjunctionPlanner<'_> {
         self.builder()
             .branches()
             .iter()
-            .map(|branch| branch.clone().with_inputs(input_variables.clone()).plan().cost())
+            .map(|branch| branch.clone().with_inputs(input_variables.clone()).plan(false,).cost())
             .fold(ElementCost::EMPTY, ElementCost::combine_parallel)
     }
 }

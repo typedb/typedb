@@ -898,6 +898,8 @@ impl TransactionService {
         pipeline: &typeql::query::Pipeline,
         interrupt: ExecutionInterrupt,
     ) -> (Snapshot, Result<(StreamQueryOutputDescriptor, Batch), QueryError>) {
+        println!("Running query: {}", pipeline);
+        let start = Instant::now();
         let result = query_manager.prepare_write_pipeline(
             snapshot,
             type_manager,
@@ -924,12 +926,17 @@ impl TransactionService {
             }
         };
 
-        match iterator.collect_owned() {
+        let result = match iterator.collect_owned() {
             Ok(batch) => (Arc::into_inner(snapshot).unwrap(), Ok((query_output_descriptor, batch))),
             Err(err) => {
                 (Arc::into_inner(snapshot).unwrap(), Err(QueryError::WritePipelineExecution { typedb_source: err }))
             }
-        }
+        };
+        
+        let end = Instant::now();
+        println!("Time to execute write query: {} us", end.duration_since(start).as_micros());
+        
+        result
     }
 
     // Write query is already executed, but for simplicity, we convert it to something that conform to the same API as the read path

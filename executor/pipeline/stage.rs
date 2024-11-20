@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::mem::discriminant;
 use std::sync::Arc;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
@@ -28,21 +29,28 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
+use crate::profile::QueryProfile;
 
 #[derive(Debug)]
 pub struct ExecutionContext<Snapshot> {
     pub snapshot: Arc<Snapshot>,
     pub thing_manager: Arc<ThingManager>,
     pub parameters: Arc<ParameterRegistry>,
+    pub profile: Arc<QueryProfile>,
 }
 
 impl<Snapshot> ExecutionContext<Snapshot> {
     pub fn new(snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>, parameters: Arc<ParameterRegistry>) -> Self {
-        Self { snapshot, thing_manager, parameters }
+        Self { snapshot, thing_manager, parameters, profile: Arc::new(QueryProfile::new(false)) }
     }
 
     pub(crate) fn clone_with_replaced_parameters(&self, parameters: Arc<ParameterRegistry>) -> Self {
-        Self { snapshot: self.snapshot.clone(), thing_manager: self.thing_manager.clone(), parameters }
+        Self { 
+            snapshot: self.snapshot.clone(),
+            thing_manager: self.thing_manager.clone(),
+            parameters,
+            profile: self.profile.clone() 
+        }
     }
 
     pub(crate) fn snapshot(&self) -> &Arc<Snapshot> {
@@ -64,8 +72,8 @@ impl<Snapshot> ExecutionContext<Snapshot> {
 
 impl<Snapshot> Clone for ExecutionContext<Snapshot> {
     fn clone(&self) -> Self {
-        let Self { snapshot, thing_manager, parameters } = self;
-        Self { snapshot: snapshot.clone(), thing_manager: thing_manager.clone(), parameters: parameters.clone() }
+        let Self { snapshot, thing_manager, parameters, profile } = self;
+        Self { snapshot: snapshot.clone(), thing_manager: thing_manager.clone(), parameters: parameters.clone(), profile: profile.clone() }
     }
 }
 

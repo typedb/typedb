@@ -22,6 +22,7 @@ use ir::{
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
+use compiler::executable::pipeline::ExecutableStage;
 use resource::perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES};
 
 use crate::{define, error::QueryError, redefine, undefine};
@@ -108,6 +109,7 @@ impl QueryManager {
                     annotated_stages,
                     annotated_fetch,
                     &HashSet::with_capacity(0),
+                    false,
                 )
                     .map_err(|err| QueryError::ExecutableCompilation { typedb_source: err })?;
                 self.cache.as_ref().map(|cache| cache.insert(arced_premable, arced_stages, arced_fetch, executable_pipeline.clone()));
@@ -140,6 +142,8 @@ impl QueryManager {
         function_manager: &FunctionManager,
         query: &typeql::query::Pipeline,
     ) -> Result<Pipeline<Snapshot, WritePipelineStage<Snapshot>>, (Snapshot, QueryError)> {
+        let is_stocking = format!("{query}").contains("STOCKING");
+
         // 1: Translate
         let TranslatedPipeline {
             translated_preamble,
@@ -155,14 +159,14 @@ impl QueryManager {
         let arced_stages = Arc::new(translated_stages);
         let arced_fetch= Arc::new(translated_fetch);
 
-        let executable_pipeline = match self.cache.as_ref().map(|cache|
-            cache.get(arced_premable.clone(), arced_stages.clone(), arced_fetch.clone())
-        ).flatten() {
-            Some(executable_pipeline) => {
-                QUERY_CACHE_HITS.increment();
-                executable_pipeline
-            },
-            None => {
+        // let executable_pipeline = match self.cache.as_ref().map(|cache|
+        //     cache.get(arced_premable.clone(), arced_stages.clone(), arced_fetch.clone())
+        // ).flatten() {
+        //     Some(executable_pipeline) => {
+        //         QUERY_CACHE_HITS.increment();
+        //         executable_pipeline
+        //     },
+        //     None => {
                 // 2: Annotate
                 let annotated_schema_functions = match function_manager.get_annotated_functions(&snapshot, type_manager) {
                     Ok(functions) => functions,
@@ -194,15 +198,27 @@ impl QueryManager {
                     annotated_stages,
                     annotated_fetch,
                     &HashSet::with_capacity(0),
+                    is_stocking,
                 ) {
                     Ok(executable) => executable,
                     Err(err) => return Err((snapshot, QueryError::ExecutableCompilation { typedb_source: err })),
                 };
-                self.cache.as_ref().map(|cache| cache.insert(arced_premable, arced_stages, arced_fetch, executable_pipeline.clone()));
-                QUERY_CACHE_MISSES.increment();
-                executable_pipeline
+                // self.cache.as_ref().map(|cache| cache.insert(arced_premable, arced_stages, arced_fetch, executable_pipeline.clone()));
+                // QUERY_CACHE_MISSES.increment();
+                // executable_pipeline
+            // }
+        // };
+
+        if is_stocking {
+            match executable_pipeline.executable_stages.first().unwrap() {
+                ExecutableStage::Match(match_) => {
+                    println!("Running query:");
+                    println!("{}", query);
+                    println!("{}", match_)
+                },
+                _ => {}
             }
-        };
+        }
 
         let ExecutablePipeline { executable_functions, executable_stages, executable_fetch } = executable_pipeline;
 

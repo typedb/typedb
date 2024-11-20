@@ -24,6 +24,7 @@ use crate::{
 
 #[derive(Clone, Debug)]
 pub struct MatchExecutable {
+    executable_id: u64,
     pub(crate) steps: Vec<ExecutionStep>,
     variable_positions: HashMap<Variable, VariablePosition>,
     variable_positions_index: Vec<Variable>,
@@ -31,11 +32,16 @@ pub struct MatchExecutable {
 
 impl MatchExecutable {
     pub fn new(
+        executable_id: u64,
         steps: Vec<ExecutionStep>,
         variable_positions: HashMap<Variable, VariablePosition>,
         variable_positions_index: Vec<Variable>,
     ) -> Self {
-        Self { steps, variable_positions, variable_positions_index }
+        Self { executable_id, steps, variable_positions, variable_positions_index }
+    }
+    
+    pub fn executable_id(&self) -> u64 {
+        self.executable_id
     }
 
     pub fn steps(&self) -> &[ExecutionStep] {

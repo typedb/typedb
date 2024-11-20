@@ -4,14 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{hash_map, HashMap, HashSet},
-};
+use std::collections::{hash_map, HashMap, HashSet};
+
+use itertools::Itertools;
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::pipeline::{block::Block, function_signature::FunctionID, VariableRegistry};
-use itertools::Itertools;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -27,6 +26,7 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
+use crate::executable::next_executable_id;
 
 pub mod function_plan;
 pub mod match_executable;
@@ -41,6 +41,7 @@ pub fn compile(
     variable_registry: &VariableRegistry,
     expressions: &HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &Statistics,
+    log_planning: bool,
 ) -> MatchExecutable {
     let conjunction = block.conjunction();
     let block_context = block.block_context();
@@ -57,6 +58,7 @@ pub fn compile(
         &variable_registry,
         expressions,
         statistics,
+        log_planning,
     )
     .lower(input_variables.keys().copied(), selected_variables.clone(), &assigned_identities, &variable_registry)
     .finish(&variable_registry)
@@ -439,6 +441,7 @@ impl MatchExecutableBuilder {
             .map(|(_, &v)| v)
             .collect();
         MatchExecutable::new(
+            next_executable_id(),
             steps,
             self.index.into_iter().filter_map(|(var, id)| Some((var, id.as_position()?))).collect(),
             variable_positions_index,
