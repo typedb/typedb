@@ -24,8 +24,9 @@ use crate::{
     },
     executable::{
         match_::planner::function_plan::ExecutableFunctionRegistry,
+        next_executable_id,
         pipeline::{compile_pipeline_stages, ExecutableStage},
-        reduce::{ReduceRowsExecutable},
+        reduce::ReduceRowsExecutable,
         ExecutableCompilationError,
     },
     VariablePosition,
@@ -33,6 +34,7 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub struct ExecutableFunction {
+    pub executable_id: u64,
     pub executable_stages: Vec<ExecutableStage>,
     pub argument_positions: HashMap<Variable, VariablePosition>,
     pub returns: ExecutableReturn,
@@ -73,6 +75,7 @@ pub(crate) fn compile_function(
 
     let returns = compile_return_operation(&executable_stages, return_)?;
     Ok(ExecutableFunction {
+        executable_id: next_executable_id(),
         executable_stages,
         argument_positions,
         returns,

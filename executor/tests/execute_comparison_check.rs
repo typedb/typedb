@@ -24,12 +24,14 @@ use compiler::{
     },
     ExecutorVariable, VariablePosition,
 };
+use compiler::executable::next_executable_id;
 use concept::type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
     error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
+use executor::profile::QueryProfile;
 use ir::{
     pattern::constraint::{Comparator, IsaKind},
     pipeline::block::Block,
@@ -151,7 +153,7 @@ fn attribute_equality() {
         )),
     ];
 
-    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
+    let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -161,6 +163,7 @@ fn attribute_equality() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 

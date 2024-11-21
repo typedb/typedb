@@ -5,7 +5,8 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, },
+    collections::{BTreeMap, BTreeSet, HashMap},
+    fmt::{Display, Formatter},
     iter,
     sync::Arc,
     vec,
@@ -205,6 +206,12 @@ impl PlaysExecutor {
             .into_iter()
             .map(|role_type| (object_type.clone(), role_type))
             .collect())
+    }
+}
+
+impl Display for PlaysExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "[{}], mode={}", &self.plays, &self.iterate_mode)
     }
 }
 

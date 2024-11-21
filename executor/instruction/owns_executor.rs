@@ -6,6 +6,7 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
+    fmt::{Display, Formatter},
     iter,
     sync::Arc,
     vec,
@@ -16,8 +17,7 @@ use compiler::{executable::match_::instructions::type_::OwnsInstruction, Executo
 use concept::{
     error::ConceptReadError,
     type_::{
-        attribute_type::AttributeType, object_type::ObjectType, type_manager::TypeManager, ObjectTypeAPI,
-        OwnerAPI,
+        attribute_type::AttributeType, object_type::ObjectType, type_manager::TypeManager, ObjectTypeAPI, OwnerAPI,
     },
 };
 use itertools::Itertools;
@@ -212,6 +212,12 @@ impl OwnsExecutor {
             .into_iter()
             .map(|attribute_type| (object_type.clone(), attribute_type))
             .collect())
+    }
+}
+
+impl Display for OwnsExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "[{}], mode={}", &self.owns, &self.iterate_mode)
     }
 }
 

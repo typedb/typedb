@@ -20,12 +20,11 @@ use ir::{
     pipeline::function_signature::{FunctionID, HashMapFunctionSignatureIndex},
     translation::pipeline::{translate_pipeline, TranslatedPipeline},
 };
+use resource::perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::query::SchemaQuery;
-use resource::perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES};
 
-use crate::{define, error::QueryError, redefine, undefine};
-use crate::query_cache::QueryCache;
+use crate::{define, error::QueryError, query_cache::QueryCache, redefine, undefine};
 
 #[derive(Debug, Clone)]
 pub struct QueryManager {
@@ -72,15 +71,18 @@ impl QueryManager {
         } = self.translate_pipeline(snapshot.as_ref(), function_manager, query)?;
         let arced_premable = Arc::new(translated_preamble);
         let arced_stages = Arc::new(translated_stages);
-        let arced_fetch= Arc::new(translated_fetch);
+        let arced_fetch = Arc::new(translated_fetch);
 
-        let executable_pipeline = match self.cache.as_ref().map(|cache| 
-            cache.get(arced_premable.clone(), arced_stages.clone(), arced_fetch.clone())
-        ).flatten() {
+        let executable_pipeline = match self
+            .cache
+            .as_ref()
+            .map(|cache| cache.get(arced_premable.clone(), arced_stages.clone(), arced_fetch.clone()))
+            .flatten()
+        {
             Some(executable_pipeline) => {
                 QUERY_CACHE_HITS.increment();
                 executable_pipeline
-            },
+            }
             None => {
                 // 2: Annotate
                 let annotated_schema_functions = function_manager
@@ -97,7 +99,7 @@ impl QueryManager {
                     (*arced_stages).clone(),
                     (*arced_fetch).clone(),
                 )
-                    .map_err(|err| QueryError::Annotation { typedb_source: err })?;
+                .map_err(|err| QueryError::Annotation { typedb_source: err })?;
 
                 // 3: Compile
                 let executable_pipeline = compile_pipeline(
@@ -109,8 +111,10 @@ impl QueryManager {
                     annotated_fetch,
                     &HashSet::with_capacity(0),
                 )
-                    .map_err(|err| QueryError::ExecutableCompilation { typedb_source: err })?;
-                self.cache.as_ref().map(|cache| cache.insert(arced_premable, arced_stages, arced_fetch, executable_pipeline.clone()));
+                .map_err(|err| QueryError::ExecutableCompilation { typedb_source: err })?;
+                self.cache
+                    .as_ref()
+                    .map(|cache| cache.insert(arced_premable, arced_stages, arced_fetch, executable_pipeline.clone()));
                 QUERY_CACHE_MISSES.increment();
                 executable_pipeline
             }
@@ -153,18 +157,22 @@ impl QueryManager {
         };
         let arced_premable = Arc::new(translated_preamble);
         let arced_stages = Arc::new(translated_stages);
-        let arced_fetch= Arc::new(translated_fetch);
+        let arced_fetch = Arc::new(translated_fetch);
 
-        let executable_pipeline = match self.cache.as_ref().map(|cache|
-            cache.get(arced_premable.clone(), arced_stages.clone(), arced_fetch.clone())
-        ).flatten() {
+        let executable_pipeline = match self
+            .cache
+            .as_ref()
+            .map(|cache| cache.get(arced_premable.clone(), arced_stages.clone(), arced_fetch.clone()))
+            .flatten()
+        {
             Some(executable_pipeline) => {
                 QUERY_CACHE_HITS.increment();
                 executable_pipeline
-            },
+            }
             None => {
                 // 2: Annotate
-                let annotated_schema_functions = match function_manager.get_annotated_functions(&snapshot, type_manager) {
+                let annotated_schema_functions = match function_manager.get_annotated_functions(&snapshot, type_manager)
+                {
                     Ok(functions) => functions,
                     Err(err) => return Err((snapshot, QueryError::FunctionRetrieval { typedb_source: err })),
                 };
@@ -180,10 +188,11 @@ impl QueryManager {
                     (*arced_fetch).clone(),
                 );
 
-                let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = match annotated_pipeline {
-                    Ok(annotated_pipeline) => annotated_pipeline,
-                    Err(err) => return Err((snapshot, QueryError::Annotation { typedb_source: err })),
-                };
+                let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } =
+                    match annotated_pipeline {
+                        Ok(annotated_pipeline) => annotated_pipeline,
+                        Err(err) => return Err((snapshot, QueryError::Annotation { typedb_source: err })),
+                    };
 
                 // 3: Compile
                 let executable_pipeline = match compile_pipeline(
@@ -198,7 +207,9 @@ impl QueryManager {
                     Ok(executable) => executable,
                     Err(err) => return Err((snapshot, QueryError::ExecutableCompilation { typedb_source: err })),
                 };
-                self.cache.as_ref().map(|cache| cache.insert(arced_premable, arced_stages, arced_fetch, executable_pipeline.clone()));
+                self.cache
+                    .as_ref()
+                    .map(|cache| cache.insert(arced_premable, arced_stages, arced_fetch, executable_pipeline.clone()));
                 QUERY_CACHE_MISSES.increment();
                 executable_pipeline
             }

@@ -4,9 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{hash_map, HashMap, HashSet},
-};
+use std::collections::{hash_map, HashMap, HashSet};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -15,15 +13,18 @@ use itertools::Itertools;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
-    executable::match_::{
-        instructions::{CheckInstruction, ConstraintInstruction},
-        planner::{
-            match_executable::{
-                AssignmentStep, CheckStep, DisjunctionStep, ExecutionStep, FunctionCallStep, IntersectionStep,
-                MatchExecutable, NegationStep,
+    executable::{
+        match_::{
+            instructions::{CheckInstruction, ConstraintInstruction},
+            planner::{
+                match_executable::{
+                    AssignmentStep, CheckStep, DisjunctionStep, ExecutionStep, FunctionCallStep, IntersectionStep,
+                    MatchExecutable, NegationStep,
+                },
+                plan::plan_conjunction,
             },
-            plan::plan_conjunction,
         },
+        next_executable_id,
     },
     ExecutorVariable, VariablePosition,
 };
@@ -439,6 +440,7 @@ impl MatchExecutableBuilder {
             .map(|(_, &v)| v)
             .collect();
         MatchExecutable::new(
+            next_executable_id(),
             steps,
             self.index.into_iter().filter_map(|(var, id)| Some((var, id.as_position()?))).collect(),
             variable_positions_index,

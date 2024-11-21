@@ -31,6 +31,7 @@ use executor::{
         stage::{ExecutionContext, StageAPI, StageIterator},
         PipelineExecutionError,
     },
+    profile::QueryProfile,
     row::MaybeOwnedRow,
     write::WriteError,
     ExecutionInterrupt,
@@ -193,7 +194,12 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let snapshot = Arc::new(snapshot);
     let initial = ShimStage::new(
         input_rows,
-        ExecutionContext { snapshot, thing_manager, parameters: Arc::new(value_parameters) },
+        ExecutionContext {
+            snapshot,
+            thing_manager,
+            parameters: Arc::new(value_parameters),
+            profile: Arc::new(QueryProfile::new(false)),
+        },
     );
     let insert_executor = InsertStageExecutor::new(Arc::new(insert_plan), initial);
     let (output_iter, context) =
@@ -277,7 +283,12 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     let snapshot = Arc::new(snapshot);
     let initial = ShimStage::new(
         input_rows,
-        ExecutionContext { snapshot, thing_manager, parameters: Arc::new(value_parameters) },
+        ExecutionContext {
+            snapshot,
+            thing_manager,
+            parameters: Arc::new(value_parameters),
+            profile: Arc::new(QueryProfile::new(false)),
+        },
     );
     let delete_executor = DeleteStageExecutor::new(Arc::new(delete_plan), initial);
     let (output_iter, context) =

@@ -6,6 +6,7 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
+    fmt::{Display, Formatter},
     iter,
     sync::Arc,
     vec,
@@ -15,7 +16,7 @@ use answer::Type;
 use compiler::{executable::match_::instructions::type_::OwnsReverseInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
-    type_::{attribute_type::AttributeType, object_type::ObjectType, },
+    type_::{attribute_type::AttributeType, object_type::ObjectType},
 };
 use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
@@ -188,6 +189,12 @@ impl OwnsReverseExecutor {
                 )))
             }
         }
+    }
+}
+
+impl Display for OwnsReverseExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Reverse[{}], mode={}", &self.owns, &self.iterate_mode)
     }
 }
 

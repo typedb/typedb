@@ -7,6 +7,7 @@
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet, HashMap},
+    fmt::{Display, Formatter},
     sync::Arc,
 };
 
@@ -288,6 +289,12 @@ impl LinksExecutor {
                 )))
             }
         }
+    }
+}
+
+impl Display for LinksExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "[{}], mode={}", &self.links, &self.iterate_mode)
     }
 }
 

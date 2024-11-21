@@ -7,7 +7,8 @@
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet, HashMap},
-    sync::{Arc, },
+    fmt::{Display, Formatter},
+    sync::Arc,
 };
 
 use answer::{variable_value::VariableValue, Thing, Type};
@@ -246,6 +247,12 @@ impl HasExecutor {
                 )))
             }
         }
+    }
+}
+
+impl Display for HasExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "[{}], mode={}", &self.has, &self.iterate_mode)
     }
 }
 

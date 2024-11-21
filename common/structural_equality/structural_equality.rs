@@ -5,11 +5,10 @@
  */
 
 use std::{
-    collections::{BTreeMap, HashSet},
+    collections::{BTreeMap, HashMap, HashSet},
     hash::{DefaultHasher, Hash, Hasher},
     mem::Discriminant,
 };
-use std::collections::HashMap;
 
 mod typeql_structural_equality;
 
@@ -151,9 +150,9 @@ impl<K: StructuralEquality + Hash, V: StructuralEquality> StructuralEquality for
             return false;
         }
 
-        self.iter().all(|(key, value)| other.iter().any(|(other_key, other_value)| {
-            key.equals(other_key) && value.equals(other_value)
-        }))
+        self.iter().all(|(key, value)| {
+            other.iter().any(|(other_key, other_value)| key.equals(other_key) && value.equals(other_value))
+        })
     }
 }
 

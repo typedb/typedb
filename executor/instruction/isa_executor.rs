@@ -4,7 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::BTreeMap, iter, ops::Bound, sync::Arc, vec};
+use std::{
+    collections::BTreeMap,
+    fmt::{Display, Formatter},
+    iter,
+    ops::Bound,
+    sync::Arc,
+    vec,
+};
 
 use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::{executable::match_::instructions::thing::IsaInstruction, ExecutorVariable};
@@ -216,6 +223,12 @@ impl IsaExecutor {
                 )))
             }
         }
+    }
+}
+
+impl Display for IsaExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "[{}], mode={}", &self.isa, &self.iterate_mode)
     }
 }
 

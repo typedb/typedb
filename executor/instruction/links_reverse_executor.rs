@@ -7,6 +7,7 @@
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet, HashMap},
+    fmt::{Display, Formatter},
     sync::Arc,
 };
 
@@ -266,6 +267,12 @@ impl LinksReverseExecutor {
                 )))
             }
         }
+    }
+}
+
+impl Display for LinksReverseExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Reverse[{}], mode={}", &self.links, &self.iterate_mode)
     }
 }
 

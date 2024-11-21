@@ -4,16 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
-use std::hash::{DefaultHasher, Hasher};
-use std::mem;
+use std::{
+    collections::{HashMap, HashSet},
+    hash::{DefaultHasher, Hasher},
+    mem,
+};
 
 use answer::variable::Variable;
 use structural_equality::{ordered_hash_combine, StructuralEquality};
 
 use crate::{
     pattern::ParameterID,
-    pipeline::{function::Function },
+    pipeline::function::Function,
     translation::{pipeline::TranslatedStage, TranslationContext},
 };
 
@@ -72,8 +74,8 @@ impl StructuralEquality for FetchSome {
                 FetchSome::ListFunction(function) => function.hash(),
                 FetchSome::ListSubFetch(fetch) => fetch.hash(),
                 FetchSome::ListAttributesAsList(fetch) => fetch.hash(),
-                FetchSome::ListAttributesFromList(fetch) => fetch.hash()
-            }
+                FetchSome::ListAttributesFromList(fetch) => fetch.hash(),
+            },
         )
     }
 
@@ -86,7 +88,9 @@ impl StructuralEquality for FetchSome {
             (Self::ListFunction(inner), Self::ListFunction(other_inner)) => inner.equals(other_inner),
             (Self::ListSubFetch(inner), Self::ListSubFetch(other_inner)) => inner.equals(other_inner),
             (Self::ListAttributesAsList(inner), Self::ListAttributesAsList(other_inner)) => inner.equals(other_inner),
-            (Self::ListAttributesFromList(inner), Self::ListAttributesFromList(other_inner)) => inner.equals(other_inner),
+            (Self::ListAttributesFromList(inner), Self::ListAttributesFromList(other_inner)) => {
+                inner.equals(other_inner)
+            }
 
             (Self::SingleVar(_), _)
             | (Self::SingleAttribute(_), _)
@@ -145,18 +149,14 @@ impl StructuralEquality for FetchObject {
             match self {
                 FetchObject::Entries(entries) => StructuralEquality::hash(entries),
                 FetchObject::Attributes(variable) => variable.hash(),
-            }
+            },
         )
     }
 
     fn equals(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Entries(entries), Self::Entries(other_entries)) => {
-                entries.equals(other_entries)
-            },
-            (Self::Attributes(var), Self::Attributes(other_var)) => {
-                var.equals(other_var)
-            },
+            (Self::Entries(entries), Self::Entries(other_entries)) => entries.equals(other_entries),
+            (Self::Attributes(var), Self::Attributes(other_var)) => var.equals(other_var),
             (Self::Entries(_), _) | (Self::Attributes(_), _) => false,
         }
     }
@@ -172,10 +172,7 @@ pub struct FetchListSubFetch {
 
 impl StructuralEquality for FetchListSubFetch {
     fn hash(&self) -> u64 {
-        ordered_hash_combine(
-            self.stages.hash(),
-            self.fetch.hash(),
-        )
+        ordered_hash_combine(self.stages.hash(), self.fetch.hash())
     }
 
     fn equals(&self, other: &Self) -> bool {

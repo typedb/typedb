@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::sync::atomic::{AtomicU64, Ordering};
+
 use error::typedb_error;
 
 use crate::executable::{fetch::executable::FetchCompilationError, insert::WriteCompilationError};
@@ -16,6 +18,12 @@ pub mod match_;
 pub mod modifiers;
 pub mod pipeline;
 pub mod reduce;
+
+static EXECUTABLE_ID: AtomicU64 = AtomicU64::new(0);
+
+pub fn next_executable_id() -> u64 {
+    EXECUTABLE_ID.fetch_add(1, Ordering::Relaxed)
+}
 
 typedb_error!(
     pub ExecutableCompilationError(component = "Query executable", prefix = "QEE") {

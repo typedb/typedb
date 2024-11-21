@@ -16,6 +16,7 @@ use crate::{
         stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator, WrittenRowsIterator,
     },
+    profile::StageProfile,
     row::Row,
     write::{write_instruction::AsWriteInstruction, WriteError},
     ExecutionInterrupt,
@@ -54,15 +55,21 @@ where
         };
 
         // TODO: all write stages will have the same block below: we could merge them
+        let profile = context.profile.profile_stage(|| String::from("Delete"), self.executable.executable_id);
 
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so unwrap:
         let snapshot_mut = Arc::get_mut(&mut context.snapshot).unwrap();
         for index in 0..batch.len() {
             // TODO: parallelise -- though this requires our snapshots support parallel writes!
             let mut row = batch.get_row_mut(index);
-            if let Err(err) =
-                execute_delete(&self.executable, snapshot_mut, &context.thing_manager, &context.parameters, &mut row)
-            {
+            if let Err(err) = execute_delete(
+                &self.executable,
+                snapshot_mut,
+                &context.thing_manager,
+                &context.parameters,
+                &mut row,
+                &profile,
+            ) {
                 return Err((Box::new(PipelineExecutionError::WriteError { typedb_source: err }), context));
             }
 
@@ -83,19 +90,29 @@ pub fn execute_delete(
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     input_output_row: &mut Row<'_>,
+    stage_profile: &StageProfile,
 ) -> Result<(), Box<WriteError>> {
     // Row multiplicity doesn't matter. You can't delete the same thing twice
+    let mut index = 0;
     for instruction in &executable.connection_instructions {
+        let step_profile = stage_profile.extend_or_get(index, || format!("{}", instruction));
+        let measurement = step_profile.start_measurement();
         match instruction {
             ConnectionInstruction::Has(has) => has.execute(snapshot, thing_manager, parameters, input_output_row)?,
-            ConnectionInstruction::RolePlayer(role_player) => {
+            ConnectionInstruction::Links(role_player) => {
                 role_player.execute(snapshot, thing_manager, parameters, input_output_row)?
             }
         }
+        measurement.end(&step_profile, 1, 1);
+        index += 1;
     }
 
     for instruction in &executable.concept_instructions {
+        let step_profile = stage_profile.extend_or_get(index, || format!("{}", instruction));
+        let measurement = step_profile.start_measurement();
         instruction.execute(snapshot, thing_manager, parameters, input_output_row)?;
+        measurement.end(&step_profile, 1, 1);
+        index += 1;
     }
 
     Ok(())

@@ -4,7 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, iter, vec};
+use std::{
+    collections::HashMap,
+    fmt::{Display, Formatter},
+    iter, vec,
+};
 
 use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::TypeListInstruction, ExecutorVariable};
@@ -79,5 +83,15 @@ impl TypeListExecutor {
             AsLendingIterator::new(iterator).try_filter::<_, TypeFilterFn, Type, _>(filter_for_row).map(type_to_tuple),
         );
         Ok(TupleIterator::Type(SortedTupleIterator::new(as_tuples, self.tuple_positions.clone(), &self.variable_modes)))
+    }
+}
+
+impl Display for TypeListExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Type [")?;
+        for type_ in &self.types {
+            write!(f, "{}, ", type_)?;
+        }
+        writeln!(f, "], variable modes={:?}", &self.variable_modes)
     }
 }

@@ -17,7 +17,6 @@ use storage::{
 use test_utils::{create_tmp_dir, init_logging};
 use test_utils_storage::{checkpoint_storage, create_storage, load_storage, test_keyspace_set};
 
-
 #[test]
 fn wal_and_checkpoint_ok() {
     test_keyspace_set! { Keyspace => 0: "keyspace" }

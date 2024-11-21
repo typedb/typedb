@@ -6,24 +6,27 @@
 
 use std::collections::{HashMap, HashSet};
 
-use itertools::Itertools;
-
 use answer::variable::Variable;
 use encoding::graph::type_::Kind;
 use ir::pattern::{constraint::Constraint, expression::Expression, ParameterID, Vertex};
+use itertools::Itertools;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
-    executable::insert::{
-        get_kinds_from_annotations, get_thing_source,
-        instructions::{ConceptInstruction, ConnectionInstruction, Has, PutAttribute, PutObject, RolePlayer},
-        ThingSource, TypeSource, ValueSource, VariableSource, WriteCompilationError,
+    executable::{
+        insert::{
+            get_kinds_from_annotations, get_thing_source,
+            instructions::{ConceptInstruction, ConnectionInstruction, Has, Links, PutAttribute, PutObject},
+            ThingSource, TypeSource, ValueSource, VariableSource, WriteCompilationError,
+        },
+        next_executable_id,
     },
     filter_variants, VariablePosition,
 };
 
 #[derive(Debug)]
 pub struct InsertExecutable {
+    pub executable_id: u64,
     pub concept_instructions: Vec<ConceptInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
     pub output_row_schema: Vec<Option<(Variable, VariableSource)>>,
@@ -60,6 +63,7 @@ pub fn compile(
     });
 
     Ok(InsertExecutable {
+        executable_id: next_executable_id(),
         concept_instructions: concept_inserts,
         connection_instructions: connection_inserts,
         output_row_schema,
@@ -189,7 +193,7 @@ fn add_role_players(
             }
             (Some(_), Some(_)) => unreachable!(),
         };
-        instructions.push(ConnectionInstruction::RolePlayer(RolePlayer { relation, player, role }));
+        instructions.push(ConnectionInstruction::Links(Links { relation, player, role }));
     }
     Ok(())
 }

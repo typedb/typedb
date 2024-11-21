@@ -5,7 +5,8 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, },
+    collections::{BTreeMap, BTreeSet, HashMap},
+    fmt::{Display, Formatter},
     iter,
     sync::Arc,
     vec,
@@ -186,6 +187,12 @@ impl PlaysReverseExecutor {
                 )))
             }
         }
+    }
+}
+
+impl Display for PlaysReverseExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Reverse[{}], mode={}", &self.plays, &self.iterate_mode)
     }
 }
 

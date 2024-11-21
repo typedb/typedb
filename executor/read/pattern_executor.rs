@@ -46,13 +46,14 @@ impl ExecutorIndex {
 }
 
 pub(crate) struct PatternExecutor {
+    executable_id: u64,
     executors: Vec<StepExecutors>,
     control_stack: Vec<ControlInstruction>,
 }
 
 impl PatternExecutor {
-    pub fn new(executors: Vec<StepExecutors>) -> Self {
-        PatternExecutor { executors, control_stack: Vec::new() }
+    pub fn new(executable_id: u64, executors: Vec<StepExecutors>) -> Self {
+        PatternExecutor { executable_id, executors, control_stack: Vec::new() }
     }
 
     pub(crate) fn has_empty_control_stack(&self) -> bool {
@@ -101,7 +102,7 @@ impl PatternExecutor {
         //  We could switch to iteration & handle the stack ourselves: StackFrame { pattern_executor, return_address }
         // debug_assert!(self.control_stack.len() > 0);
         while self.control_stack.last().is_some() {
-            let Self { control_stack, executors } = self;
+            let Self { control_stack, executors, executable_id: _ } = self;
             // TODO: inject interrupt into Checkers that could filter out many rows without ending as well.
             if let Some(interrupt) = interrupt.check() {
                 return Err(ReadExecutionError::Interrupted { interrupt });
@@ -291,7 +292,7 @@ impl PatternExecutor {
                     self.execute_tabled_call(context, interrupt, tabled_functions, suspensions, index)?;
                 }
                 ControlInstruction::CollectingStage(CollectingStage { index }) => {
-                    let (pattern, mut collector) = executors[index.0].unwrap_collecting_stage().to_parts_mut();
+                    let (pattern, collector) = executors[index.0].unwrap_collecting_stage().to_parts_mut();
                     match pattern.batch_continue(context, interrupt, tabled_functions, suspensions)? {
                         Some(batch) => {
                             collector.accept(context, batch);

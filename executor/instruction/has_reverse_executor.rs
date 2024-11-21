@@ -6,7 +6,8 @@
 
 use std::{
     cmp::Ordering,
-    collections::{ BTreeMap, BTreeSet, Bound, HashMap},
+    collections::{BTreeMap, BTreeSet, Bound, HashMap},
+    fmt::{Display, Formatter},
     sync::{Arc, OnceLock},
     vec,
 };
@@ -15,12 +16,7 @@ use answer::Type;
 use compiler::{executable::match_::instructions::thing::HasReverseInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
-    thing::{
-        attribute::{Attribute, },
-        has::Has,
-        object::HasReverseIterator,
-        thing_manager::ThingManager,
-    },
+    thing::{attribute::Attribute, has::Has, object::HasReverseIterator, thing_manager::ThingManager},
     type_::attribute_type::AttributeType,
 };
 use encoding::value::value::Value;
@@ -249,6 +245,11 @@ impl HasReverseExecutor {
             .map(|type_| thing_manager.get_has_reverse_in_range(snapshot, type_, &attribute_values_range))
             .try_collect()?;
         Ok(AsLendingIterator::new(iterators).flatten())
+    }
+}
+impl Display for HasReverseExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Reverse[{}], mode={}", &self.has, &self.iterate_mode)
     }
 }
 

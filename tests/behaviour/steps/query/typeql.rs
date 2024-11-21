@@ -99,7 +99,13 @@ fn execute_write_query(
         return Err(BehaviourTestExecutionError::UseInvalidTransactionAsWrite);
     }
 
-    with_write_tx_deconstructed!(context, |snapshot, type_manager, thing_manager, function_manager, query_manager, _db, _opts| {
+    with_write_tx_deconstructed!(context, |snapshot,
+                                           type_manager,
+                                           thing_manager,
+                                           function_manager,
+                                           query_manager,
+                                           _db,
+                                           _opts| {
         let snapshot = Arc::into_inner(snapshot).unwrap();
         let pipeline_result = query_manager.prepare_write_pipeline(
             snapshot,

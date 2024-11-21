@@ -20,7 +20,6 @@ use storage::{
 use test_utils::{create_tmp_dir, init_logging};
 use test_utils_storage::{checkpoint_storage, create_storage, load_storage, test_keyspace_set};
 
-
 #[test]
 fn create_delete() {
     test_keyspace_set! {}

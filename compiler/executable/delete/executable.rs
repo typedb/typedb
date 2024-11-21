@@ -13,16 +13,18 @@ use ir::pattern::{constraint::Constraint, Vertex};
 use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::{
-        delete::instructions::{ConnectionInstruction, Has, RolePlayer, ThingInstruction},
+        delete::instructions::{ConnectionInstruction, Has, Links, ThingInstruction},
         insert::{
             executable::collect_role_type_bindings, get_thing_source, ThingSource, TypeSource, WriteCompilationError,
         },
+        next_executable_id,
     },
     VariablePosition,
 };
 
 #[derive(Debug)]
 pub struct DeleteExecutable {
+    pub executable_id: u64,
     pub concept_instructions: Vec<ThingInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
     pub output_row_schema: Vec<Option<Variable>>,
@@ -69,7 +71,7 @@ pub fn compile(
                     Vertex::Label(_) => unreachable!("expected role name, found label in a `links` constraint"),
                     Vertex::Parameter(_) => unreachable!(),
                 };
-                connection_deletes.push(ConnectionInstruction::RolePlayer(RolePlayer { relation, player, role }));
+                connection_deletes.push(ConnectionInstruction::Links(Links { relation, player, role }));
             }
             | Constraint::Isa(_)
             | Constraint::Kind(_)
@@ -120,6 +122,7 @@ pub fn compile(
     }
 
     Ok(DeleteExecutable {
+        executable_id: next_executable_id(),
         connection_instructions: connection_deletes,
         concept_instructions: concept_deletes,
         output_row_schema,

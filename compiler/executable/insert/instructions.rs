@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::fmt::{Display, Formatter};
+
 use super::{ThingSource, TypeSource, ValueSource};
 
 #[derive(Debug)]
@@ -12,10 +14,28 @@ pub enum ConceptInstruction {
     PutAttribute(PutAttribute),
 }
 
+impl Display for ConceptInstruction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ConceptInstruction::PutObject(_) => write!(f, "Put object"),
+            ConceptInstruction::PutAttribute(_) => write!(f, "Put attribute"),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum ConnectionInstruction {
-    Has(Has),               // TODO: Ordering
-    RolePlayer(RolePlayer), // TODO: Ordering
+    Has(Has),     // TODO: Ordering
+    Links(Links), // TODO: Ordering
+}
+
+impl Display for ConnectionInstruction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Has(_) => write!(f, "Put has"),
+            Self::Links(_) => write!(f, "Put links"),
+        }
+    }
 }
 
 // TODO: Move to storing the inserted thing directly into the output row
@@ -39,7 +59,7 @@ pub struct Has {
 }
 
 #[derive(Debug)]
-pub struct RolePlayer {
+pub struct Links {
     pub relation: ThingSource,
     pub player: ThingSource,
     pub role: TypeSource,

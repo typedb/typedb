@@ -5,12 +5,14 @@
  */
 
 use ir::{
-    pipeline::function_signature::HashMapFunctionSignatureIndex, translation::function::translate_typeql_function,
+    pipeline::function_signature::HashMapFunctionSignatureIndex,
+    translation::{
+        function::translate_typeql_function,
+        pipeline::{translate_pipeline, TranslatedPipeline},
+    },
 };
-use ir::translation::pipeline::{translate_pipeline, TranslatedPipeline};
 use structural_equality::{is_structurally_equivalent, StructuralEquality};
 use test_utils_storage::mock_snapshot::MockSnapshot;
-
 
 #[test]
 fn test_function_equivalence() {
@@ -150,11 +152,12 @@ fetch {
   'my-key': { $ol.* }
 };
 ";
-    let TranslatedPipeline { translated_preamble, translated_stages, translated_fetch, ..} = translate_pipeline(
+    let TranslatedPipeline { translated_preamble, translated_stages, translated_fetch, .. } = translate_pipeline(
         &MockSnapshot {},
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(pipeline).unwrap().into_pipeline(),
-    ).unwrap();
+    )
+    .unwrap();
     assert!(translated_preamble.equals(&translated_preamble));
     assert!(translated_stages.equals(&translated_stages));
     assert!(translated_fetch.equals(&translated_fetch));
@@ -191,12 +194,12 @@ fetch {
         &MockSnapshot {},
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(structurally_equivalent_pipeline).unwrap().into_pipeline(),
-    ).unwrap();
+    )
+    .unwrap();
 
     assert!(equivalent_translated_preamble.equals(&equivalent_translated_preamble));
     assert!(equivalent_translated_stages.equals(&equivalent_translated_stages));
     assert!(equivalent_translated_fetch.equals(&equivalent_translated_fetch));
-
 
     assert!(is_structurally_equivalent(&translated_preamble, &equivalent_translated_preamble));
     assert!(is_structurally_equivalent(&translated_stages, &equivalent_translated_stages));
@@ -227,11 +230,12 @@ insert $ol has OL_DELIVERY_D 2024-11-18T15:06:09.224;
 fetch {
   'my-key': { $ol.* }
 };";
-    let TranslatedPipeline { translated_preamble, translated_stages, translated_fetch, ..} = translate_pipeline(
+    let TranslatedPipeline { translated_preamble, translated_stages, translated_fetch, .. } = translate_pipeline(
         &MockSnapshot {},
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(pipeline).unwrap().into_pipeline(),
-    ).unwrap();
+    )
+    .unwrap();
     assert!(translated_preamble.equals(&translated_preamble));
     assert!(translated_stages.equals(&translated_stages));
     assert!(translated_fetch.equals(&translated_fetch));
@@ -267,12 +271,12 @@ fetch {
         &MockSnapshot {},
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(different).unwrap().into_pipeline(),
-    ).unwrap();
+    )
+    .unwrap();
 
     assert!(different_translated_preamble.equals(&different_translated_preamble));
     assert!(different_translated_stages.equals(&different_translated_stages));
     assert!(different_translated_fetch.equals(&different_translated_fetch));
-
 
     assert!(!is_structurally_equivalent(&translated_preamble, &different_translated_preamble));
     assert!(!is_structurally_equivalent(&translated_stages, &different_translated_stages));
@@ -282,23 +286,22 @@ fetch {
 #[test]
 fn test_anonymous_non_equivalence() {
     let query = "match $x relates $_ as parent;";
-    let TranslatedPipeline { translated_stages, ..} = translate_pipeline(
+    let TranslatedPipeline { translated_stages, .. } = translate_pipeline(
         &MockSnapshot {},
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_pipeline(),
-    ).unwrap();
+    )
+    .unwrap();
     assert!(translated_stages.equals(&translated_stages));
-    
+
     let non_equivalent_query = "match $x relates $role as parent;";
-    let TranslatedPipeline {
-        translated_stages: different_translated_stages,
-        ..
-    } = translate_pipeline(
+    let TranslatedPipeline { translated_stages: different_translated_stages, .. } = translate_pipeline(
         &MockSnapshot {},
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(non_equivalent_query).unwrap().into_pipeline(),
-    ).unwrap();
+    )
+    .unwrap();
     assert!(different_translated_stages.equals(&different_translated_stages));
-    
+
     assert!(!is_structurally_equivalent(&translated_stages, &different_translated_stages));
 }

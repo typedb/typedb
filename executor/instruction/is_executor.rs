@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    fmt::{Display, Formatter},
+};
 
 use answer::variable_value::VariableValue;
 use compiler::{
@@ -104,5 +107,11 @@ impl IsExecutor {
         let as_tuples = as_tuples(iterator.try_filter::<_, IsFilterFn, VariableValue<'_>, _>(filter_for_row));
 
         Ok(TupleIterator::Is(SortedTupleIterator::new(as_tuples, self.tuple_positions.clone(), &self.variable_modes)))
+    }
+}
+
+impl Display for IsExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}, input: {}", &self.is, &self.input)
     }
 }

@@ -22,7 +22,8 @@ use concept::{
     type_::type_manager::TypeManager,
 };
 use executor::{
-    match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow, ExecutionInterrupt,
+    match_executor::MatchExecutor, pipeline::stage::ExecutionContext, profile::QueryProfile, row::MaybeOwnedRow,
+    ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
 use ir::{
@@ -31,8 +32,7 @@ use ir::{
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
-use query::query_cache::QueryCache;
-use query::query_manager::QueryManager;
+use query::{query_cache::QueryCache, query_manager::QueryManager};
 use storage::{
     durability_client::WALClient, sequence_number::SequenceNumber, snapshot::CommittableSnapshot, MVCCStorage,
 };
@@ -130,6 +130,7 @@ fn test_has_planning_traversal() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
@@ -226,6 +227,7 @@ fn test_expression_planning_traversal() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
@@ -310,6 +312,7 @@ fn test_links_planning_traversal() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
@@ -401,6 +404,7 @@ fn test_links_intersection() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
@@ -483,6 +487,7 @@ fn test_negation_planning_traversal() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
@@ -586,6 +591,7 @@ fn test_forall_planning_traversal() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
@@ -675,6 +681,7 @@ fn test_named_var_select() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
@@ -764,6 +771,7 @@ fn test_disjunction_planning_traversal() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
@@ -857,6 +865,7 @@ fn test_disjunction_planning_nested_negations() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 

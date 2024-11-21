@@ -7,6 +7,7 @@
 // let's start with a simple and fast global list of NAME = COUNTER for now.
 
 use std::sync::atomic::{AtomicU64, Ordering};
+
 use crate::constants::server::PERF_COUNTERS_ENABLED;
 
 pub struct Counter {
@@ -18,7 +19,7 @@ impl Counter {
     const fn new(enabled: bool) -> Self {
         Self { counter: AtomicU64::new(0), enabled }
     }
-    
+
     pub fn increment(&self) {
         if self.enabled {
             self.counter.fetch_add(1, Ordering::Relaxed);

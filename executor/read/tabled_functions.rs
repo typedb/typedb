@@ -42,10 +42,11 @@ impl TabledFunctions {
                 &context.snapshot,
                 &context.thing_manager,
                 &self.function_registry,
+                &context.profile,
                 function,
             )
             .map_err(|source| ReadExecutionError::ConceptRead { source })?;
-            let pattern_executor = PatternExecutor::new(executors);
+            let pattern_executor = PatternExecutor::new(function.executable_id, executors);
             let width = match &function.returns {
                 ExecutableReturn::Stream(v) => v.len() as u32,
                 _ => todo!(),

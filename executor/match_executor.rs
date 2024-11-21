@@ -17,6 +17,7 @@ use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
+    profile::QueryProfile,
     read::{
         pattern_executor::PatternExecutor, tabled_functions::TabledFunctions, QueryPatternSuspensions,
         TODO_REMOVE_create_executors_for_match,
@@ -40,6 +41,7 @@ impl MatchExecutor {
         thing_manager: &Arc<ThingManager>,
         input: MaybeOwnedRow<'_>,
         function_registry: Arc<ExecutableFunctionRegistry>,
+        profile: &QueryProfile,
     ) -> Result<Self, Box<ConceptReadError>> {
         Ok(Self {
             entry: TODO_REMOVE_create_executors_for_match(
@@ -47,6 +49,7 @@ impl MatchExecutor {
                 thing_manager,
                 &function_registry,
                 match_executable,
+                profile,
             )?,
             tabled_functions: TabledFunctions::new(function_registry),
             input: Some(input.into_owned()),

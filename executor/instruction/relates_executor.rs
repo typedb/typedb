@@ -6,6 +6,7 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
+    fmt::{Display, Formatter},
     iter,
     sync::Arc,
     vec,
@@ -208,6 +209,12 @@ impl RelatesExecutor {
             .into_iter()
             .map(|role_type| (relation_type.clone(), role_type))
             .collect())
+    }
+}
+
+impl Display for RelatesExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "[{}], mode={}", &self.relates, &self.iterate_mode)
     }
 }
 

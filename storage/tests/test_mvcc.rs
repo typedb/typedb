@@ -31,7 +31,6 @@ use test_utils::{create_tmp_dir, init_logging};
 use test_utils_storage::{create_storage, test_keyspace_set};
 use TestKeyspaceSet::Keyspace;
 
-
 test_keyspace_set! {
     Keyspace => 0: "keyspace",
 }

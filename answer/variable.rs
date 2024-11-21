@@ -18,7 +18,7 @@ impl Variable {
     pub fn new(id: u16) -> Self {
         Self { id: VariableId { id }, anonymous: false }
     }
-    
+
     pub fn new_anonymous(id: u16) -> Self {
         Self { id: VariableId { id }, anonymous: true }
     }
@@ -50,10 +50,7 @@ impl fmt::Display for VariableId {
 
 impl StructuralEquality for Variable {
     fn hash(&self) -> u64 {
-        ordered_hash_combine(
-            self.anonymous as u64,
-            self.id.id as u64
-        )
+        ordered_hash_combine(self.anonymous as u64, self.id.id as u64)
     }
 
     fn equals(&self, other: &Self) -> bool {

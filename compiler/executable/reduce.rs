@@ -10,12 +10,26 @@ use answer::variable::Variable;
 use encoding::value::value_type::ValueType;
 use ir::pattern::IrID;
 
-use crate::VariablePosition;
+use crate::{executable::next_executable_id, VariablePosition};
 
 #[derive(Debug, Clone)]
 pub struct ReduceExecutable {
+    pub executable_id: u64,
     pub reduce_rows_executable: Arc<ReduceRowsExecutable>,
     pub output_row_mapping: HashMap<Variable, VariablePosition>, // output_row = (group_vars, reduce_outputs)
+}
+
+impl ReduceExecutable {
+    pub(crate) fn new(
+        rows_executable: ReduceRowsExecutable,
+        output_row_mapping: HashMap<Variable, VariablePosition>,
+    ) -> Self {
+        Self {
+            executable_id: next_executable_id(),
+            reduce_rows_executable: Arc::new(rows_executable),
+            output_row_mapping,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
