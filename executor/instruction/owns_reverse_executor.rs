@@ -6,31 +6,30 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
+    fmt::{Display, Formatter},
     iter,
     sync::Arc,
     vec,
 };
-use std::fmt::{Display, Formatter};
-
-use itertools::Itertools;
 
 use answer::Type;
 use compiler::{executable::match_::instructions::type_::OwnsReverseInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
-    type_::{attribute_type::AttributeType, object_type::ObjectType, },
+    type_::{attribute_type::AttributeType, object_type::ObjectType},
 };
+use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        BinaryIterateMode,
-        Checker,
         iterator::{SortedTupleIterator, TupleIterator},
         owns_executor::{
-            EXTRACT_ATTRIBUTE, EXTRACT_OWNER, OwnsFilterFn, OwnsTupleIterator, OwnsVariableValueExtractor,
-        }, tuple::{owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, TuplePositions}, type_from_row_or_annotations, VariableModes,
+            OwnsFilterFn, OwnsTupleIterator, OwnsVariableValueExtractor, EXTRACT_ATTRIBUTE, EXTRACT_OWNER,
+        },
+        tuple::{owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, TuplePositions},
+        type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

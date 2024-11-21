@@ -90,7 +90,6 @@ pub fn compile_pipeline(
     annotated_stages: Vec<AnnotatedStage>,
     annotated_fetch: Option<AnnotatedFetch>,
     input_variables: &HashSet<Variable>,
-    log_planning: bool,
 ) -> Result<ExecutablePipeline, ExecutableCompilationError> {
     // TODO: Cache compiled schema functions?
     let mut executable_schema_functions = HashMap::new();
@@ -134,7 +133,6 @@ pub fn compile_pipeline(
         annotated_stages,
         annotated_fetch,
         input_variables,
-        log_planning,
     )?;
     Ok(ExecutablePipeline { executable_functions: schema_and_preamble_functions, executable_stages, executable_fetch })
 }
@@ -146,7 +144,6 @@ pub fn compile_stages_and_fetch(
     annotated_stages: Vec<AnnotatedStage>,
     annotated_fetch: Option<AnnotatedFetch>,
     input_variables: &HashSet<Variable>,
-    log_planning: bool,
 ) -> Result<
     (HashMap<Variable, VariablePosition>, Vec<ExecutableStage>, Option<Arc<ExecutableFetch>>),
     ExecutableCompilationError,
@@ -159,7 +156,6 @@ pub fn compile_stages_and_fetch(
         annotated_stages,
         input_variables.iter().cloned(),
         &selected_variables,
-        log_planning,
     )?;
     let stages_variable_positions =
         executable_stages.last().map(|stage: &ExecutableStage| stage.output_row_mapping()).unwrap_or(HashMap::new());
@@ -181,7 +177,6 @@ pub(crate) fn compile_pipeline_stages(
     annotated_stages: Vec<AnnotatedStage>,
     input_variables: impl Iterator<Item = Variable>,
     selected_variables: &Vec<Variable>,
-    log_planning: bool,
 ) -> Result<(HashMap<Variable, VariablePosition>, Vec<ExecutableStage>), ExecutableCompilationError> {
     let mut executable_stages: Vec<ExecutableStage> = Vec::with_capacity(annotated_stages.len());
     let input_variable_positions =
@@ -196,15 +191,9 @@ pub(crate) fn compile_pipeline_stages(
             .unique()
             .collect();
         let executable_stage = match executable_stages.last().map(|stage| stage.output_row_mapping()) {
-            Some(row_mapping) => compile_stage(
-                statistics,
-                variable_registry,
-                functions,
-                &row_mapping,
-                &selected_variables,
-                stage,
-                log_planning,
-            )?,
+            Some(row_mapping) => {
+                compile_stage(statistics, variable_registry, functions, &row_mapping, &selected_variables, stage)?
+            }
             None => compile_stage(
                 statistics,
                 variable_registry,
@@ -212,7 +201,6 @@ pub(crate) fn compile_pipeline_stages(
                 &input_variable_positions,
                 &selected_variables,
                 stage,
-                log_planning,
             )?,
         };
         executable_stages.push(executable_stage);
@@ -227,7 +215,6 @@ fn compile_stage(
     input_variables: &HashMap<Variable, VariablePosition>,
     selected_variables: &Vec<Variable>,
     annotated_stage: AnnotatedStage,
-    log_planning: bool,
 ) -> Result<ExecutableStage, ExecutableCompilationError> {
     match &annotated_stage {
         AnnotatedStage::Match { block, block_annotations, executable_expressions } => {
@@ -239,7 +226,6 @@ fn compile_stage(
                 variable_registry,
                 executable_expressions,
                 statistics,
-                log_planning,
             );
             Ok(ExecutableStage::Match(Arc::new(plan)))
         }

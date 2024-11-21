@@ -6,17 +6,16 @@
 
 use std::sync::Arc;
 
-use compiler::executable::{
-    match_::planner::{function_plan::ExecutableFunctionRegistry, match_executable::MatchExecutable},
-    pipeline::ExecutableStage,
+use compiler::executable::match_::planner::{
+    function_plan::ExecutableFunctionRegistry, match_executable::MatchExecutable,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
+    profile::QueryProfile,
     read::{
         pattern_executor::{BranchIndex, ExecutorIndex, PatternExecutor},
-        step_executor::create_executors_for_pipeline_stages,
         tabled_call_executor::TabledCallExecutor,
         tabled_functions::TableIndex,
     },
@@ -40,9 +39,15 @@ pub(super) fn TODO_REMOVE_create_executors_for_match(
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
     match_executable: &MatchExecutable,
+    profile: &QueryProfile,
 ) -> Result<PatternExecutor, Box<ConceptReadError>> {
-    let executors =
-        step_executor::create_executors_for_match(snapshot, thing_manager, function_registry, match_executable)?;
+    let executors = step_executor::create_executors_for_match(
+        snapshot,
+        thing_manager,
+        function_registry,
+        profile,
+        match_executable,
+    )?;
     Ok(PatternExecutor::new(match_executable.executable_id(), executors))
 }
 

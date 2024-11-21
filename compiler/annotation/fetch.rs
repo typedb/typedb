@@ -10,11 +10,7 @@ use std::{
 };
 
 use answer::{variable::Variable, Type};
-use concept::type_::{
-    attribute_type::AttributeType,
-    type_manager::TypeManager,
-     OwnerAPI, TypeAPI,
-};
+use concept::type_::{attribute_type::AttributeType, type_manager::TypeManager, OwnerAPI, TypeAPI};
 use encoding::{graph::type_::Kind, value::label::Label};
 use ir::{
     pattern::ParameterID,

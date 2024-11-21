@@ -4,12 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::BTreeMap, iter, ops::Bound, sync::Arc, vec};
-use std::fmt::{Display, Formatter};
+use std::{
+    collections::BTreeMap,
+    fmt::{Display, Formatter},
+    iter,
+    ops::Bound,
+    sync::Arc,
+    vec,
+};
 
-use itertools::Itertools;
-
-use answer::{Thing, Type, variable_value::VariableValue};
+use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::{executable::match_::instructions::thing::IsaInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
@@ -27,6 +31,7 @@ use ir::pattern::{
     constraint::{Isa, IsaKind},
     Vertex,
 };
+use itertools::Itertools;
 use lending_iterator::{
     adaptors::{Chain, Flatten, Map, RepeatEach, TryFilter, Zip},
     AsHkt, AsLendingIterator, LendingIterator, Once,
@@ -35,9 +40,9 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        BinaryIterateMode,
-        Checker,
-        FilterFn, iterator::{SortedTupleIterator, TupleIterator}, tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, IsaToTupleFn, TuplePositions, TupleResult}, TYPES_EMPTY, VariableModes,
+        iterator::{SortedTupleIterator, TupleIterator},
+        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, IsaToTupleFn, TuplePositions, TupleResult},
+        BinaryIterateMode, Checker, FilterFn, VariableModes, TYPES_EMPTY,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -289,4 +294,3 @@ pub(super) fn instances_of_all_types_chained<'a>(
     let thing_iter: MultipleTypeIsaIterator = object_iter.chain(attribute_iter);
     Ok(thing_iter)
 }
-

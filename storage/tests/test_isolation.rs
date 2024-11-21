@@ -23,7 +23,6 @@ use test_utils_storage::{create_storage, load_storage, test_keyspace_set};
 
 use self::TestKeyspaceSet::Keyspace;
 
-
 test_keyspace_set! {
     Keyspace => 0: "keyspace",
 }

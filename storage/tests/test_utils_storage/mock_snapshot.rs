@@ -4,16 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
 use std::iter::empty;
+
 use bytes::byte_array::ByteArray;
-use storage::key_range::KeyRange;
-use storage::key_value::{StorageKey, StorageKeyArray, StorageKeyReference};
-use storage::sequence_number::SequenceNumber;
-use storage::snapshot::{ReadableSnapshot, SnapshotGetError};
-use storage::snapshot::buffer::BufferRangeIterator;
-use storage::snapshot::iterator::SnapshotRangeIterator;
-use storage::snapshot::write::Write;
+use storage::{
+    key_range::KeyRange,
+    key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
+    sequence_number::SequenceNumber,
+    snapshot::{
+        buffer::BufferRangeIterator, iterator::SnapshotRangeIterator, write::Write, ReadableSnapshot, SnapshotGetError,
+    },
+};
 
 pub struct MockSnapshot {}
 

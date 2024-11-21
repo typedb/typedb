@@ -6,11 +6,10 @@
 
 use std::collections::{HashMap, HashSet};
 
-use itertools::Itertools;
-
 use answer::variable::Variable;
 use encoding::graph::type_::Kind;
 use ir::pattern::{constraint::Constraint, expression::Expression, ParameterID, Vertex};
+use itertools::Itertools;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,

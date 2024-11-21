@@ -24,13 +24,13 @@ use crate::{
     },
     executable::{
         match_::planner::function_plan::ExecutableFunctionRegistry,
+        next_executable_id,
         pipeline::{compile_pipeline_stages, ExecutableStage},
-        reduce::{ReduceRowsExecutable},
+        reduce::ReduceRowsExecutable,
         ExecutableCompilationError,
     },
     VariablePosition,
 };
-use crate::executable::next_executable_id;
 
 #[derive(Debug, Clone)]
 pub struct ExecutableFunction {
@@ -71,7 +71,6 @@ pub(crate) fn compile_function(
         stages,
         arguments.into_iter(),
         &return_.referenced_variables(),
-        false,
     )?;
 
     let returns = compile_return_operation(&executable_stages, return_)?;

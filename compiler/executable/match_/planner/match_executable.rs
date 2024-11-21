@@ -39,7 +39,7 @@ impl MatchExecutable {
     ) -> Self {
         Self { executable_id, steps, variable_positions, variable_positions_index }
     }
-    
+
     pub fn executable_id(&self) -> u64 {
         self.executable_id
     }
@@ -127,14 +127,14 @@ impl ExecutionStep {
 impl Display for ExecutionStep {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ExecutionStep::Intersection(step) => write!(f, "Sorted, {step}"),
-            ExecutionStep::UnsortedJoin(step) => write!(f, "Unsorted, {step}"),
-            ExecutionStep::Assignment(step) => write!(f, "Assign, {step}"),
-            ExecutionStep::Check(step) => write!(f, "Check, {step}"),
-            ExecutionStep::Disjunction(step) => write!(f, "Disjunction, {step}"),
-            ExecutionStep::Negation(step) => write!(f, "Negation, {step}"),
-            ExecutionStep::Optional(step) => write!(f, "Optional, {step}"),
-            ExecutionStep::FunctionCall(step) => write!(f, "FunctionCall, {step}"),
+            ExecutionStep::Intersection(step) => write!(f, "{step}"),
+            ExecutionStep::UnsortedJoin(step) => write!(f, "{step}"),
+            ExecutionStep::Assignment(step) => write!(f, "{step}"),
+            ExecutionStep::Check(step) => write!(f, "{step}"),
+            ExecutionStep::Disjunction(step) => write!(f, "{step}"),
+            ExecutionStep::Negation(step) => write!(f, "{step}"),
+            ExecutionStep::Optional(step) => write!(f, "{step}"),
+            ExecutionStep::FunctionCall(step) => write!(f, "{step}"),
         }
     }
 }
@@ -198,7 +198,7 @@ impl Display for IntersectionStep {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "bound_vars={:?}, output_size={}, sort_by={}",
+            "Sorted Iterator Intersection [bound_vars={:?}, output_size={}, sort_by={}]",
             &self.bound_variables, self.output_width, self.sort_variable
         )?;
         for (instruction, modes) in &self.instructions {
@@ -269,7 +269,7 @@ impl UnsortedJoinStep {
 
 impl Display for UnsortedJoinStep {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "bound_vars={:?}, output_size={:?}", &self.bound_variables, self.output_width)?;
+        write!(f, "Unsorted Iterate [bound_vars={:?}, output_size={:?}]", &self.bound_variables, self.output_width)?;
         write!(f, "\n      {}", &self.iterate_instruction)?;
         // TODO: do we need these at all?
         write!(f, "\n      {:?}", &self.check_instructions)
@@ -310,7 +310,7 @@ impl AssignmentStep {
 
 impl Display for AssignmentStep {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "inputs={:?}, output_size={}", &self.input_positions, self.output_width)?;
+        write!(f, "Assignment [inputs={:?}, output_size={}]", &self.input_positions, self.output_width)?;
         // TODO: Display expression
         write!(f, "\n      {:?}", &self.expression)
     }
@@ -339,6 +339,7 @@ impl CheckStep {
 
 impl Display for CheckStep {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Check")?;
         for check in &self.check_instructions {
             write!(f, "\n      {}", check)?;
         }
@@ -365,7 +366,7 @@ impl DisjunctionStep {
 
 impl Display for DisjunctionStep {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "output_size={}", self.output_width)?;
+        write!(f, "Disjunction [output_size={}]", self.output_width)?;
         for branch in &self.branches {
             write!(f, "\n      --- Start branch ---")?;
             write!(f, "{}", branch)?;
@@ -394,7 +395,8 @@ impl NegationStep {
 
 impl Display for NegationStep {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "\n      --- Start negation ---")?;
+        writeln!(f, "Negation")?;
+        write!(f, "      --- Start negation ---")?;
         write!(f, "\n {}", &self.negation)?;
         write!(f, "\n      --- End negation ---")
     }
@@ -407,6 +409,7 @@ pub struct OptionalStep {
 
 impl Display for OptionalStep {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Optional")?;
         write!(f, "\n      --- Start negation ---")?;
         write!(f, "\n {}", &self.optional)?;
         write!(f, "\n      --- End negation ---")
@@ -432,7 +435,7 @@ impl Display for FunctionCallStep {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "fn_id={}, assigned={:?}, arguments={:?}, output_size={}\n",
+            "Function Call [fn_id={}, assigned={:?}, arguments={:?}, output_size={}]\n",
             self.function_id, &self.assigned, &self.arguments, self.output_width
         )
     }

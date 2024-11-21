@@ -4,11 +4,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex, RwLock};
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::Instant;
+use std::{
+    collections::HashMap,
+    fmt::{Display, Formatter},
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc, RwLock,
+    },
+    time::{Duration, Instant},
+};
 
 #[derive(Debug)]
 pub struct QueryProfile {
@@ -20,53 +24,89 @@ impl QueryProfile {
     pub fn new(enabled: bool) -> Self {
         Self { pattern_profiles: RwLock::new(HashMap::new()), enabled }
     }
-    
-    pub fn profile_pattern(&self, id: u64) -> Arc<PatternProfile> {
+
+    pub fn profile_pattern(&self, description_fn: impl Fn() -> String, id: u64) -> Arc<PatternProfile> {
         if self.enabled {
             let mut profiles = self.pattern_profiles.read().unwrap();
             if let Some(profile) = profiles.get(&id) {
                 profile.clone()
             } else {
                 drop(profiles);
-                self.pattern_profiles.write().unwrap().insert(id, Arc::new(PatternProfile::new(true))).unwrap()
+                let profile = Arc::new(PatternProfile::new(description_fn(), true));
+                self.pattern_profiles.write().unwrap().insert(id, profile.clone());
+                profile
             }
         } else {
-            Arc::new(PatternProfile::new(false))
+            Arc::new(PatternProfile::new(String::new(), false))
         }
+    }
+}
+
+impl Display for QueryProfile {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Query profile[measurements_enabled={}]", self.enabled)?;
+        let profiles = self.pattern_profiles.read().unwrap();
+        for (id, pattern_profile) in profiles.iter() {
+            writeln!(f, "  Pattern[id={}] - {}", id, &pattern_profile.description)?;
+            write!(f, "{}", pattern_profile)?;
+        }
+        Ok(())
     }
 }
 
 #[derive(Debug)]
 pub struct PatternProfile {
-    step_profiles: Vec<Arc<StepProfile>>,
+    description: String,
+    step_profiles: RwLock<Vec<Arc<StepProfile>>>,
     enabled: bool,
 }
 
 impl PatternProfile {
-    
-    fn new(enabled: bool) -> Self {
-        Self { step_profiles: Vec::new(), enabled }
+    fn new(description: String, enabled: bool) -> Self {
+        Self { description, step_profiles: RwLock::new(Vec::new()), enabled }
     }
-    
-    fn add_step(&mut self, description_getter: fn() -> String) -> Arc<StepProfile> {
-        let profile = if self.enabled {
-            StepProfile::new_enabled(description_getter())
+
+    pub(crate) fn extend_or_get(&self, index: usize, description_getter: impl Fn() -> String) -> Arc<StepProfile> {
+        if self.enabled {
+            let profiles = self.step_profiles.read().unwrap();
+            if index < profiles.len() {
+                profiles[index].clone()
+            } else {
+                debug_assert!(index == profiles.len(), "Can only extend step profiles sequentially");
+                let profile = Arc::new(StepProfile::new_enabled(description_getter()));
+                drop(profiles);
+                let mut profiles_mut = self.step_profiles.write().unwrap();
+                profiles_mut.push(profile.clone());
+                profile
+            }
         } else {
-            StepProfile::new_disabled()
-        };
-        self.step_profiles.push(Arc::new(profile));
-        self.step_profiles.last().unwrap().clone()
+            Arc::new(StepProfile::new_disabled())
+        }
+    }
+}
+
+impl Display for PatternProfile {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut aggregate_time = 0;
+        for (i, step_profile) in self.step_profiles.read().unwrap().iter().enumerate() {
+            match step_profile.data.as_ref() {
+                None => writeln!(f, "    {}.\n", i)?,
+                Some(data) => writeln!(f, "    {}. {}\n", i, data)?,
+            }
+        }
+        Ok(())
     }
 }
 
 #[derive(Debug)]
 pub struct StepProfile {
-    data: Option<StepProfileData>
+    data: Option<StepProfileData>,
 }
 
 #[derive(Debug)]
 struct StepProfileData {
     description: String,
+    batches: AtomicU64,
     rows: AtomicU64,
     nanos: AtomicU64,
 }
@@ -76,45 +116,57 @@ impl StepProfile {
         Self {
             data: Some(StepProfileData {
                 description,
+                batches: AtomicU64::new(0),
                 rows: AtomicU64::new(0),
                 nanos: AtomicU64::new(0),
-            })
+            }),
         }
     }
-    
+
     fn new_disabled() -> Self {
         Self { data: None }
     }
 
-    fn start_measurement(&self) -> StepProfileMeasurement<'_> {
+    pub(crate) fn start_measurement(&self) -> StepProfileMeasurement {
         if self.data.is_some() {
-            StepProfileMeasurement::new(self, Some(Instant::now()))
+            StepProfileMeasurement::new(Some(Instant::now()))
         } else {
-            StepProfileMeasurement::new(self, None)
+            StepProfileMeasurement::new(None)
         }
     }
 }
 
-pub struct StepProfileMeasurement<'a> {
-    profile: &'a StepProfile,
+impl Display for StepProfileData {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}\n    ==> batches: {}, rows: {}, micros: {}",
+            &self.description,
+            self.batches.load(Ordering::Relaxed),
+            self.rows.load(Ordering::Relaxed),
+            Duration::from_nanos(self.nanos.load(Ordering::Relaxed)).as_micros(),
+        )
+    }
+}
+
+pub struct StepProfileMeasurement {
+    // note: we don't store &StepProfile to make callers more flexible with immutable lifetime borrows
     start: Option<Instant>,
 }
 
-impl<'a> StepProfileMeasurement<'a> {
-    fn new(step_profile: &'a StepProfile, start: Option<Instant>) -> Self {
-        Self {
-            profile: step_profile,
-            start,
-        }
+impl StepProfileMeasurement {
+    fn new(start: Option<Instant>) -> Self {
+        Self { start }
     }
 
-    fn end(self, rows_produced: u64) {
+    pub(crate) fn end(self, profile: &StepProfile, batches: u64, rows_produced: u64) {
         match self.start {
             None => {}
             Some(start) => {
                 let end = Instant::now();
                 let duration = end.duration_since(start).as_nanos() as u64;
-                let profile_data = self.profile.data.as_ref().unwrap();
+                let profile_data = profile.data.as_ref().unwrap();
+                profile_data.batches.fetch_add(batches, Ordering::Relaxed);
                 profile_data.rows.fetch_add(rows_produced, Ordering::Relaxed);
                 profile_data.nanos.fetch_add(duration, Ordering::Relaxed);
             }

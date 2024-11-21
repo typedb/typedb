@@ -7,11 +7,9 @@
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet, HashMap},
+    fmt::{Display, Formatter},
     sync::Arc,
 };
-use std::fmt::{Display, Formatter};
-
-use itertools::{Itertools, MinMaxResult};
 
 use answer::Type;
 use compiler::{executable::match_::instructions::thing::LinksReverseInstruction, ExecutorVariable};
@@ -23,7 +21,8 @@ use concept::{
         thing_manager::ThingManager,
     },
 };
-use lending_iterator::{AsHkt, kmerge::KMergeBy, LendingIterator, Peekable};
+use itertools::{Itertools, MinMaxResult};
+use lending_iterator::{kmerge::KMergeBy, AsHkt, LendingIterator, Peekable};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
@@ -32,15 +31,15 @@ use storage::{
 
 use crate::{
     instruction::{
-        Checker,
         iterator::{SortedTupleIterator, TupleIterator},
         links_executor::{
-            EXTRACT_PLAYER, EXTRACT_RELATION, EXTRACT_ROLE, LinksFilterFn, LinksOrderingFn, LinksTupleIterator,
+            LinksFilterFn, LinksOrderingFn, LinksTupleIterator, EXTRACT_PLAYER, EXTRACT_RELATION, EXTRACT_ROLE,
         },
-        TernaryIterateMode, tuple::{
+        tuple::{
             links_to_tuple_player_relation_role, links_to_tuple_relation_player_role,
             links_to_tuple_role_relation_player, TuplePositions,
-        }, VariableModes,
+        },
+        Checker, TernaryIterateMode, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

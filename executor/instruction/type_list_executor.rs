@@ -4,27 +4,29 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, iter, vec};
-use std::fmt::{Display, Formatter};
+use std::{
+    collections::HashMap,
+    fmt::{Display, Formatter},
+    iter, vec,
+};
 
-use itertools::Itertools;
-
-use answer::{Type, variable_value::VariableValue};
+use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::TypeListInstruction, ExecutorVariable};
 use concept::error::ConceptReadError;
+use itertools::Itertools;
 use lending_iterator::{
     adaptors::{Map, TryFilter},
-    AsLendingIterator,
-    higher_order::AdHocHkt, LendingIterator,
+    higher_order::AdHocHkt,
+    AsLendingIterator, LendingIterator,
 };
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        Checker,
-        FilterFn,
         iterator::{SortedTupleIterator, TupleIterator},
-        sub_executor::NarrowingTupleIterator, tuple::{TuplePositions, TupleResult, type_to_tuple, TypeToTupleFn}, VariableModes,
+        sub_executor::NarrowingTupleIterator,
+        tuple::{type_to_tuple, TuplePositions, TupleResult, TypeToTupleFn},
+        Checker, FilterFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

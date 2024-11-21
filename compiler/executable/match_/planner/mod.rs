@@ -6,27 +6,28 @@
 
 use std::collections::{hash_map, HashMap, HashSet};
 
-use itertools::Itertools;
-
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::pipeline::{block::Block, function_signature::FunctionID, VariableRegistry};
+use itertools::Itertools;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
-    executable::match_::{
-        instructions::{CheckInstruction, ConstraintInstruction},
-        planner::{
-            match_executable::{
-                AssignmentStep, CheckStep, DisjunctionStep, ExecutionStep, FunctionCallStep, IntersectionStep,
-                MatchExecutable, NegationStep,
+    executable::{
+        match_::{
+            instructions::{CheckInstruction, ConstraintInstruction},
+            planner::{
+                match_executable::{
+                    AssignmentStep, CheckStep, DisjunctionStep, ExecutionStep, FunctionCallStep, IntersectionStep,
+                    MatchExecutable, NegationStep,
+                },
+                plan::plan_conjunction,
             },
-            plan::plan_conjunction,
         },
+        next_executable_id,
     },
     ExecutorVariable, VariablePosition,
 };
-use crate::executable::next_executable_id;
 
 pub mod function_plan;
 pub mod match_executable;
@@ -41,7 +42,6 @@ pub fn compile(
     variable_registry: &VariableRegistry,
     expressions: &HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &Statistics,
-    log_planning: bool,
 ) -> MatchExecutable {
     let conjunction = block.conjunction();
     let block_context = block.block_context();
@@ -58,7 +58,6 @@ pub fn compile(
         &variable_registry,
         expressions,
         statistics,
-        log_planning,
     )
     .lower(input_variables.keys().copied(), selected_variables.clone(), &assigned_identities, &variable_registry)
     .finish(&variable_registry)

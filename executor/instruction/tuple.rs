@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use answer::{Thing, Type, variable_value::VariableValue};
+use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::ExecutorVariable;
 use concept::{
     error::ConceptReadError,
@@ -12,10 +12,7 @@ use concept::{
         has::Has,
         relation::{Relation, RolePlayer},
     },
-    type_::{
-        attribute_type::AttributeType, object_type::ObjectType,
-        relation_type::RelationType, role_type::RoleType,
-    },
+    type_::{attribute_type::AttributeType, object_type::ObjectType, relation_type::RelationType, role_type::RoleType},
 };
 use lending_iterator::higher_order::Hkt;
 

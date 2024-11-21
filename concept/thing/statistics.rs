@@ -1156,8 +1156,7 @@ mod serialise {
                             .ok_or_else(|| de::Error::missing_field(Field::StatisticsVersion.name()))?,
                         sequence_number: open_sequence_number
                             .ok_or_else(|| de::Error::missing_field(Field::OpenSequenceNumber.name()))?,
-                        total_count: total_count 
-                            .ok_or_else(|| de::Error::missing_field(Field::TotalCount.name()))?,
+                        total_count: total_count.ok_or_else(|| de::Error::missing_field(Field::TotalCount.name()))?,
                         total_thing_count: total_thing_count
                             .ok_or_else(|| de::Error::missing_field(Field::TotalThingCount.name()))?,
                         total_entity_count: total_entity_count

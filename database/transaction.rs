@@ -328,7 +328,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             .map_err(|typedb_source| StatisticsError { typedb_source })?;
         let total_count = thing_statistics.total_count;
         schema.thing_statistics = Arc::new(thing_statistics);
-        
+
         self.database.query_cache.force_reset(total_count);
 
         *schema_commit_guard = schema;

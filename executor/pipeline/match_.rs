@@ -91,7 +91,7 @@ where
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         while !self.current_iterator.as_mut().is_some_and(|iter| iter.peek().is_some()) {
-            let ExecutionContext { snapshot, thing_manager, .. } = &self.context;
+            let ExecutionContext { snapshot, thing_manager, profile, .. } = &self.context;
 
             let input_row = match self.source_iterator.next()? {
                 Ok(row) => row,
@@ -104,6 +104,7 @@ where
                 thing_manager,
                 input_row,
                 self.function_registry.clone(),
+                &profile,
             )
             .map_err(|err| Box::new(PipelineExecutionError::InitialisingMatchIterator { source: err }));
 

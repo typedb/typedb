@@ -5,14 +5,12 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, },
+    collections::{BTreeMap, BTreeSet, HashMap},
+    fmt::{Display, Formatter},
     iter,
     sync::Arc,
     vec,
 };
-use std::fmt::{Display, Formatter};
-
-use itertools::Itertools;
 
 use answer::Type;
 use compiler::{executable::match_::instructions::type_::RelatesReverseInstruction, ExecutorVariable};
@@ -20,17 +18,18 @@ use concept::{
     error::ConceptReadError,
     type_::{relation_type::RelationType, role_type::RoleType},
 };
+use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        BinaryIterateMode,
-        Checker,
         iterator::{SortedTupleIterator, TupleIterator},
         relates_executor::{
-            EXTRACT_RELATION, EXTRACT_ROLE, RelatesFilterFn, RelatesTupleIterator, RelatesVariableValueExtractor,
-        }, tuple::{relates_to_tuple_relation_role, relates_to_tuple_role_relation, TuplePositions}, type_from_row_or_annotations, VariableModes,
+            RelatesFilterFn, RelatesTupleIterator, RelatesVariableValueExtractor, EXTRACT_RELATION, EXTRACT_ROLE,
+        },
+        tuple::{relates_to_tuple_relation_role, relates_to_tuple_role_relation, TuplePositions},
+        type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

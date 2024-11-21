@@ -6,7 +6,7 @@
 
 use std::sync::Arc;
 
-use compiler::executable::reduce::{ReduceExecutable, };
+use compiler::executable::reduce::ReduceExecutable;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{

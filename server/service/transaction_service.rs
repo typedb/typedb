@@ -900,13 +900,8 @@ impl TransactionService {
     ) -> (Snapshot, Result<(StreamQueryOutputDescriptor, Batch), QueryError>) {
         println!("Running query: {}", pipeline);
         let start = Instant::now();
-        let result = query_manager.prepare_write_pipeline(
-            snapshot,
-            type_manager,
-            thing_manager,
-            function_manager,
-            pipeline,
-        );
+        let result =
+            query_manager.prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, pipeline);
         let (query_output_descriptor, pipeline) = match result {
             Ok(pipeline) => {
                 let named_outputs = pipeline.rows_positions().unwrap();
@@ -916,8 +911,8 @@ impl TransactionService {
             Err((snapshot, err)) => return (snapshot, Err(err)),
         };
 
-        let (iterator, snapshot) = match pipeline.into_rows_iterator(interrupt) {
-            Ok((iterator, ExecutionContext { snapshot, .. })) => (iterator, snapshot),
+        let (iterator, snapshot, query_profile) = match pipeline.into_rows_iterator(interrupt) {
+            Ok((iterator, ExecutionContext { snapshot, profile, .. })) => (iterator, snapshot, profile),
             Err((err, ExecutionContext { snapshot, .. })) => {
                 return (
                     Arc::into_inner(snapshot).unwrap(),
@@ -932,10 +927,11 @@ impl TransactionService {
                 (Arc::into_inner(snapshot).unwrap(), Err(QueryError::WritePipelineExecution { typedb_source: err }))
             }
         };
-        
+
         let end = Instant::now();
         println!("Time to execute write query: {} us", end.duration_since(start).as_micros());
-        
+        println!("Query profile: {}", query_profile);
+
         result
     }
 
@@ -995,7 +991,7 @@ impl TransactionService {
         debug_assert!(
             self.request_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some()
         );
-        let mut interrupt = self.query_interrupt_receiver.clone();
+        let interrupt = self.query_interrupt_receiver.clone();
         with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
             let snapshot = transaction.snapshot.clone();
             let type_manager = transaction.type_manager.clone();
@@ -1028,7 +1024,7 @@ impl TransactionService {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
     ) {
-        if pipeline.has_fetch() {
+        let query_profile = if pipeline.has_fetch() {
             let initial_response = StreamQueryResponse::init_ok_documents(Read);
             Self::submit_response_sync(sender, initial_response);
             let (mut iterator, context) =
@@ -1068,13 +1064,14 @@ impl TransactionService {
                     }
                 }
             }
+            context.profile
         } else {
             let named_outputs = pipeline.rows_positions().unwrap();
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
             let initial_response = StreamQueryResponse::init_ok_rows(&descriptor, Read);
             Self::submit_response_sync(sender, initial_response);
 
-            let (mut iterator, _) =
+            let (mut iterator, context) =
                 unwrap_or_execute_and_return!(pipeline.into_rows_iterator(interrupt.clone()), |(err, _)| {
                     Self::submit_response_sync(
                         sender,
@@ -1107,7 +1104,9 @@ impl TransactionService {
                     }
                 }
             }
-        }
+            context.profile
+        };
+        println!("Query profile: {}", query_profile);
         Self::submit_response_sync(&sender, StreamQueryResponse::done_ok())
     }
 

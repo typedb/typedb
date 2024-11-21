@@ -4,8 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
-use std::fmt::{Display, Formatter};
+use std::{
+    collections::HashMap,
+    fmt::{Display, Formatter},
+};
 
 use answer::variable_value::VariableValue;
 use compiler::{
@@ -20,17 +22,16 @@ use lending_iterator::{
 };
 use storage::snapshot::ReadableSnapshot;
 
+use super::tuple::Tuple;
 use crate::{
     instruction::{
-        Checker,
-        FilterFn,
-        iterator::{SortedTupleIterator, TupleIterator}, tuple::{TuplePositions, TupleResult}, VariableModes,
+        iterator::{SortedTupleIterator, TupleIterator},
+        tuple::{TuplePositions, TupleResult},
+        Checker, FilterFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-
-use super::tuple::Tuple;
 
 pub(crate) struct IsExecutor {
     is: Is<ExecutorVariable>,
@@ -66,7 +67,6 @@ fn is_to_tuple(result: Result<VariableValue<'_>, Box<ConceptReadError>>) -> Tupl
 }
 
 impl IsExecutor {
-    
     pub(crate) fn new(
         is: IsInstruction<ExecutorVariable>,
         variable_modes: VariableModes,

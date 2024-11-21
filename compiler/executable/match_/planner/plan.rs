@@ -66,7 +66,6 @@ pub(crate) fn plan_conjunction<'a>(
     variable_registry: &VariableRegistry,
     expressions: &'a HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &'a Statistics,
-    log_planning: bool,
 ) -> ConjunctionPlan<'a> {
     make_builder(
         conjunction,
@@ -77,7 +76,7 @@ pub(crate) fn plan_conjunction<'a>(
         expressions,
         statistics,
     )
-    .plan(log_planning)
+    .plan()
 }
 
 fn make_builder<'a>(
@@ -121,7 +120,7 @@ fn make_builder<'a>(
                     statistics,
                 )
                 .with_inputs(negation.conjunction().captured_variables(block_context))
-                .plan(false,),
+                .plan(),
             ),
             NestedPattern::Optional(_) => todo!(),
         }
@@ -519,7 +518,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         }
     }
 
-    fn initialise_greedy_ordering(&self, log: bool) -> Vec<VertexId> {
+    fn initialise_greedy_ordering(&self) -> Vec<VertexId> {
         let mut open_set: HashSet<VertexId> = chain!(
             self.graph.variable_to_pattern.keys().map(|&variable_id| VertexId::Variable(variable_id)),
             self.graph.pattern_to_variable.keys().map(|&pattern_id| VertexId::Pattern(pattern_id))
@@ -559,19 +558,11 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                     let cost = self.calculate_marginal_cost(&ordering, elem, intersection_variable);
                     // useful when debugging
                     let _graph_element = &self.graph.elements[&elem];
-                    
-                    if log {
-                        println!("  Choice {:?}, cost: {cost}", _graph_element);
-                    }
-                    
                     (elem, cost)
                 })
                 .min_by(|(_, lhs_cost), (_, rhs_cost)| lhs_cost.total_cmp(rhs_cost))
                 .unwrap();
             let element = &self.graph.elements[&next];
-            if log {
-                println!("--> Chose {:?}, cost: {_cost}", element);
-            }
 
             if element.is_variable() {
                 commit_variables!();
@@ -625,8 +616,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         per_input + branching_factor * per_output
     }
 
-    pub(super) fn plan(self, log_planning: bool) -> ConjunctionPlan<'a> {
-        let ordering = self.initialise_greedy_ordering(log_planning);
+    pub(super) fn plan(self) -> ConjunctionPlan<'a> {
+        let ordering = self.initialise_greedy_ordering();
         let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
 
         let cost = ordering
@@ -1176,7 +1167,7 @@ impl<'a> DisjunctionPlanBuilder<'a> {
 
     fn plan(self, input_variables: impl Iterator<Item = Variable> + Clone) -> DisjunctionPlan<'a> {
         let branches =
-            self.branches.into_iter().map(|branch| branch.with_inputs(input_variables.clone()).plan(false)).collect_vec();
+            self.branches.into_iter().map(|branch| branch.with_inputs(input_variables.clone()).plan()).collect_vec();
         let cost = branches.iter().map(ConjunctionPlan::cost).fold(ElementCost::EMPTY, ElementCost::combine_parallel);
         DisjunctionPlan { branches, _cost: cost }
     }

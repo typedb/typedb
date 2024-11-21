@@ -31,8 +31,7 @@ use executor::{
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use pprof::ProfilerGuard;
-use query::{error::QueryError, query_manager::QueryManager};
-use query::query_cache::QueryCache;
+use query::{error::QueryError, query_cache::QueryCache, query_manager::QueryManager};
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot},

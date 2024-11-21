@@ -6,14 +6,13 @@
 
 use std::{cmp::Ordering, iter::Iterator};
 
-use itertools::zip_eq;
-
 use answer::variable_value::VariableValue;
 use compiler::{
     executable::match_::instructions::{VariableMode, VariableModes},
     ExecutorVariable, VariablePosition,
 };
 use concept::error::ConceptReadError;
+use itertools::zip_eq;
 use lending_iterator::{adaptors::Inspect, LendingIterator, Peekable};
 
 use crate::{

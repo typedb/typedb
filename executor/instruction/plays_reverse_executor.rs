@@ -5,14 +5,12 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, },
+    collections::{BTreeMap, BTreeSet, HashMap},
+    fmt::{Display, Formatter},
     iter,
     sync::Arc,
     vec,
 };
-use std::fmt::{Display, Formatter};
-
-use itertools::Itertools;
 
 use answer::Type;
 use compiler::{executable::match_::instructions::type_::PlaysReverseInstruction, ExecutorVariable};
@@ -20,23 +18,23 @@ use concept::{
     error::ConceptReadError,
     type_::{object_type::ObjectType, role_type::RoleType},
 };
+use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
+use super::type_from_row_or_annotations;
 use crate::{
     instruction::{
-        BinaryIterateMode,
-        Checker,
         iterator::{SortedTupleIterator, TupleIterator},
         plays_executor::{
-            EXTRACT_PLAYER, EXTRACT_ROLE, PlaysFilterFn, PlaysTupleIterator, PlaysVariableValueExtractor,
-        }, tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, TuplePositions}, VariableModes,
+            PlaysFilterFn, PlaysTupleIterator, PlaysVariableValueExtractor, EXTRACT_PLAYER, EXTRACT_ROLE,
+        },
+        tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, TuplePositions},
+        BinaryIterateMode, Checker, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-
-use super::type_from_row_or_annotations;
 
 pub(crate) struct PlaysReverseExecutor {
     plays: ir::pattern::constraint::Plays<ExecutorVariable>,

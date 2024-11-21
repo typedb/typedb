@@ -35,6 +35,7 @@ use encoding::{
 };
 use error::typedb_error;
 use function::{function_cache::FunctionCache, FunctionError};
+use query::query_cache::QueryCache;
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
     recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
@@ -42,7 +43,6 @@ use storage::{
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
 };
 use tracing::{event, Level};
-use query::query_cache::QueryCache;
 
 use crate::{
     transaction::TransactionError,
@@ -255,7 +255,8 @@ impl Database<WALClient> {
         let schema_txn_lock = Arc::new(RwLock::default());
 
         let query_cache = Arc::new(QueryCache::new(0));
-        let update_statistics = make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone(), query_cache.clone());
+        let update_statistics =
+            make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone(), query_cache.clone());
 
         Ok(Database::<WALClient> {
             name: name.to_owned(),
@@ -329,7 +330,8 @@ impl Database<WALClient> {
         let schema_txn_lock = Arc::new(RwLock::default());
 
         let query_cache = Arc::new(QueryCache::new(total_count));
-        let update_statistics = make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone(), query_cache.clone());
+        let update_statistics =
+            make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone(), query_cache.clone());
 
         let database = Database::<WALClient> {
             name: name.to_owned(),
@@ -418,7 +420,7 @@ impl Database<WALClient> {
 
         let thing_statistics = Arc::get_mut(&mut locked_schema.thing_statistics).unwrap();
         thing_statistics.reset(self.storage.read_watermark());
-        
+
         self.query_cache.force_reset(0);
 
         self.release_schema_transaction();

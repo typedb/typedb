@@ -6,25 +6,24 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet},
+    fmt::{Display, Formatter},
     sync::Arc,
     vec,
 };
-use std::fmt::{Display, Formatter};
-
-use itertools::Itertools;
 
 use answer::Type;
 use compiler::{executable::match_::instructions::type_::SubReverseInstruction, ExecutorVariable};
 use concept::error::ConceptReadError;
-use lending_iterator::{AsLendingIterator, higher_order::AdHocHkt, LendingIterator};
+use itertools::Itertools;
+use lending_iterator::{higher_order::AdHocHkt, AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        BinaryIterateMode,
-        Checker,
-        FilterFn,
-        iterator::{SortedTupleIterator, TupleIterator}, sub_executor::{EXTRACT_SUB, EXTRACT_SUPER, NarrowingTupleIterator, SubTupleIterator}, tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, TuplePositions}, type_from_row_or_annotations, VariableModes,
+        iterator::{SortedTupleIterator, TupleIterator},
+        sub_executor::{NarrowingTupleIterator, SubTupleIterator, EXTRACT_SUB, EXTRACT_SUPER},
+        tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, TuplePositions},
+        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

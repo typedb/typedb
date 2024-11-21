@@ -4,19 +4,24 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
-use std::hash::{DefaultHasher, Hash, Hasher};
-use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
-
-use moka::sync::Cache;
+use std::{
+    hash::{DefaultHasher, Hash, Hasher},
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
+};
 
 use compiler::executable::pipeline::ExecutablePipeline;
-use ir::pipeline::fetch::FetchObject;
-use ir::pipeline::function::Function;
-use ir::translation::pipeline::TranslatedStage;
-use resource::constants::database::{QUERY_PLAN_CACHE_FLUSH_STATISTICS_CHANGE_PERCENT, QUERY_PLAN_CACHE_SIZE};
-use resource::perf_counters::QUERY_CACHE_FLUSH;
+use ir::{
+    pipeline::{fetch::FetchObject, function::Function},
+    translation::pipeline::TranslatedStage,
+};
+use moka::sync::Cache;
+use resource::{
+    constants::database::{QUERY_PLAN_CACHE_FLUSH_STATISTICS_CHANGE_PERCENT, QUERY_PLAN_CACHE_SIZE},
+    perf_counters::QUERY_CACHE_FLUSH,
+};
 use structural_equality::StructuralEquality;
 
 #[derive(Debug)]
@@ -28,10 +33,7 @@ pub struct QueryCache {
 impl QueryCache {
     pub fn new(statistics_size: u64) -> Self {
         let cache = Cache::new(QUERY_PLAN_CACHE_SIZE);
-        QueryCache {
-            cache,
-            statistics_size: AtomicU64::from(statistics_size),
-        }
+        QueryCache { cache, statistics_size: AtomicU64::from(statistics_size) }
     }
 
     pub(crate) fn get(
@@ -49,12 +51,12 @@ impl QueryCache {
         preamble: Arc<Vec<Function>>,
         stages: Arc<Vec<TranslatedStage>>,
         fetch: Arc<Option<FetchObject>>,
-        pipeline: ExecutablePipeline
+        pipeline: ExecutablePipeline,
     ) {
         let key = IRQuery::new(preamble, stages, fetch);
         self.cache.insert(key, pipeline);
     }
-    
+
     pub fn may_reset(&self, new_statistics_size: u64) {
         let last_statistics_size = self.statistics_size.load(Ordering::SeqCst);
         let change = (last_statistics_size as f64 - new_statistics_size as f64) / (last_statistics_size as f64);
@@ -62,7 +64,7 @@ impl QueryCache {
             self.force_reset(new_statistics_size);
         }
     }
-    
+
     pub fn force_reset(&self, new_statistics_size: u64) {
         self.cache.invalidate_all();
         self.statistics_size.store(new_statistics_size, Ordering::SeqCst);
@@ -78,11 +80,7 @@ struct IRQuery {
 }
 
 impl IRQuery {
-    fn new(
-        preamable: Arc<Vec<Function>>,
-        stages: Arc<Vec<TranslatedStage>>,
-        fetch: Arc<Option<FetchObject>>,
-    ) -> Self {
+    fn new(preamable: Arc<Vec<Function>>, stages: Arc<Vec<TranslatedStage>>, fetch: Arc<Option<FetchObject>>) -> Self {
         Self { preamable, stages, fetch }
     }
 }
@@ -111,8 +109,6 @@ impl StructuralEquality for IRQuery {
     }
 
     fn equals(&self, other: &Self) -> bool {
-        self.preamable.equals(&other.preamable) &&
-            self.stages.equals(&other.stages) &&
-            self.fetch.equals(&other.fetch)
+        self.preamable.equals(&other.preamable) && self.stages.equals(&other.stages) && self.fetch.equals(&other.fetch)
     }
 }

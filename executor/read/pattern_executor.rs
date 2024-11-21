@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::ops::DerefMut;
+use std::{ops::DerefMut, sync::Arc};
 
 use compiler::VariablePosition;
 use lending_iterator::LendingIterator;
@@ -14,6 +14,7 @@ use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
+    profile::PatternProfile,
     read::{
         control_instruction::{
             CollectingStage, ControlInstruction, ExecuteDisjunction, ExecuteImmediate, ExecuteInlinedFunction,

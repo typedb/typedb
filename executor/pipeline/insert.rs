@@ -4,8 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::Arc;
-use std::time::Instant;
+use std::{sync::Arc, time::Instant};
 
 use compiler::executable::insert::{
     executable::InsertExecutable,
@@ -84,9 +83,9 @@ where
             }
         }
         let end = Instant::now();
-        
-        println!("Time to execute stage before insert: {} us",  after_read.duration_since(start).as_micros());
-        println!("Time to execute insert: {} us",  end.duration_since(after_read).as_micros());
+
+        println!("Time to execute stage before insert: {} us", after_read.duration_since(start).as_micros());
+        println!("Time to execute insert: {} us", end.duration_since(after_read).as_micros());
 
         Ok((WrittenRowsIterator::new(batch), context))
     }

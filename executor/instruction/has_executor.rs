@@ -7,11 +7,11 @@
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet, HashMap},
+    fmt::{Display, Formatter},
     sync::Arc,
 };
-use std::fmt::{Display, Formatter};
 
-use answer::{Thing, Type, variable_value::VariableValue};
+use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::{executable::match_::instructions::thing::HasInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
@@ -23,8 +23,8 @@ use concept::{
 };
 use lending_iterator::{
     adaptors::{Map, TryFilter},
-    AsHkt,
-    kmerge::KMergeBy, LendingIterator, Peekable,
+    kmerge::KMergeBy,
+    AsHkt, LendingIterator, Peekable,
 };
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{
@@ -34,12 +34,12 @@ use storage::{
 
 use crate::{
     instruction::{
-        BinaryIterateMode,
-        Checker,
-        FilterFn, iterator::{SortedTupleIterator, TupleIterator}, tuple::{
+        iterator::{SortedTupleIterator, TupleIterator},
+        tuple::{
             has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, HasToTupleFn, Tuple, TuplePositions,
             TupleResult,
-        }, VariableModes,
+        },
+        BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

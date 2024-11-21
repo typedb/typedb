@@ -5,21 +5,20 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, },
+    collections::{BTreeMap, BTreeSet, HashMap},
+    fmt::{Display, Formatter},
     iter,
     sync::Arc,
     vec,
 };
-use std::fmt::{Display, Formatter};
 
-use itertools::Itertools;
-
-use answer::{Type, variable_value::VariableValue};
+use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::PlaysInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
-    type_::{object_type::ObjectType, ObjectTypeAPI, PlayerAPI, role_type::RoleType, type_manager::TypeManager},
+    type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI, PlayerAPI},
 };
+use itertools::Itertools;
 use lending_iterator::{
     adaptors::{Map, TryFilter},
     AsHkt, AsNarrowingIterator, LendingIterator,
@@ -28,9 +27,9 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        BinaryIterateMode,
-        Checker,
-        FilterFn, iterator::{SortedTupleIterator, TupleIterator}, tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, PlaysToTupleFn, TuplePositions, TupleResult}, type_from_row_or_annotations, VariableModes,
+        iterator::{SortedTupleIterator, TupleIterator},
+        tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, PlaysToTupleFn, TuplePositions, TupleResult},
+        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

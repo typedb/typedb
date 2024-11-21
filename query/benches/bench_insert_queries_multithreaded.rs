@@ -24,14 +24,10 @@ use encoding::{
     graph::definition::definition_key_generator::DefinitionKeyGenerator,
     value::{label::Label, value_type::ValueType},
 };
-use executor::{
-    pipeline::stage::{StageIterator},
-    ExecutionInterrupt,
-};
+use executor::{pipeline::stage::StageIterator, ExecutionInterrupt};
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
-use query::{error::QueryError, query_manager::QueryManager};
-use query::query_cache::QueryCache;
+use query::{error::QueryError, query_cache::QueryCache, query_manager::QueryManager};
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot},

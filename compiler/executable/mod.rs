@@ -5,6 +5,7 @@
  */
 
 use std::sync::atomic::{AtomicU64, Ordering};
+
 use error::typedb_error;
 
 use crate::executable::{fetch::executable::FetchCompilationError, insert::WriteCompilationError};

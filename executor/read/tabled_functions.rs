@@ -42,6 +42,7 @@ impl TabledFunctions {
                 &context.snapshot,
                 &context.thing_manager,
                 &self.function_registry,
+                &context.profile,
                 function,
             )
             .map_err(|source| ReadExecutionError::ConceptRead { source })?;

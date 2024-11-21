@@ -5,7 +5,6 @@
  */
 
 use std::{collections::HashMap, error::Error, fmt, sync::Arc};
-use std::collections::HashSet;
 
 use answer::variable::Variable;
 use encoding::value::value::Value;

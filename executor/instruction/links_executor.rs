@@ -7,13 +7,11 @@
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet, HashMap},
+    fmt::{Display, Formatter},
     sync::Arc,
 };
-use std::fmt::{Display, Formatter};
 
-use itertools::{Itertools, MinMaxResult};
-
-use answer::{Thing, Type, variable_value::VariableValue};
+use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::{executable::match_::instructions::thing::LinksInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
@@ -22,10 +20,11 @@ use concept::{
         thing_manager::ThingManager,
     },
 };
+use itertools::{Itertools, MinMaxResult};
 use lending_iterator::{
     adaptors::{Map, TryFilter},
-    AsHkt,
-    kmerge::KMergeBy, LendingIterator, Peekable,
+    kmerge::KMergeBy,
+    AsHkt, LendingIterator, Peekable,
 };
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{
@@ -35,12 +34,12 @@ use storage::{
 
 use crate::{
     instruction::{
-        Checker,
-        FilterFn,
-        iterator::{SortedTupleIterator, TupleIterator}, TernaryIterateMode, tuple::{
+        iterator::{SortedTupleIterator, TupleIterator},
+        tuple::{
             links_to_tuple_player_relation_role, links_to_tuple_relation_player_role,
             links_to_tuple_role_relation_player, LinksToTupleFn, Tuple, TuplePositions, TupleResult,
-        }, VariableModes,
+        },
+        Checker, FilterFn, TernaryIterateMode, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

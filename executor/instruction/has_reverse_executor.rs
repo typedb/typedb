@@ -6,28 +6,22 @@
 
 use std::{
     cmp::Ordering,
-    collections::{Bound, BTreeMap, BTreeSet, HashMap},
+    collections::{BTreeMap, BTreeSet, Bound, HashMap},
+    fmt::{Display, Formatter},
     sync::{Arc, OnceLock},
     vec,
 };
-use std::fmt::{Display, Formatter};
-
-use itertools::{Itertools, MinMaxResult};
 
 use answer::Type;
 use compiler::{executable::match_::instructions::thing::HasReverseInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
-    thing::{
-        attribute::Attribute,
-        has::Has,
-        object::HasReverseIterator,
-        thing_manager::ThingManager,
-    },
+    thing::{attribute::Attribute, has::Has, object::HasReverseIterator, thing_manager::ThingManager},
     type_::attribute_type::AttributeType,
 };
 use encoding::value::value::Value;
-use lending_iterator::{adaptors::Flatten, AsHkt, AsLendingIterator, kmerge::KMergeBy, LendingIterator, Peekable};
+use itertools::{Itertools, MinMaxResult};
+use lending_iterator::{adaptors::Flatten, kmerge::KMergeBy, AsHkt, AsLendingIterator, LendingIterator, Peekable};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
@@ -36,10 +30,10 @@ use storage::{
 
 use crate::{
     instruction::{
-        BinaryIterateMode,
-        Checker,
-        has_executor::{EXTRACT_ATTRIBUTE, EXTRACT_OWNER, HasFilterFn, HasOrderingFn, HasTupleIterator},
-        iterator::{SortedTupleIterator, TupleIterator}, tuple::{has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, Tuple, TuplePositions}, VariableModes,
+        has_executor::{HasFilterFn, HasOrderingFn, HasTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
+        iterator::{SortedTupleIterator, TupleIterator},
+        tuple::{has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, Tuple, TuplePositions},
+        BinaryIterateMode, Checker, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -254,7 +248,6 @@ impl HasReverseExecutor {
     }
 }
 impl Display for HasReverseExecutor {
-    
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Reverse[{}], mode={}", &self.has, &self.iterate_mode)
     }

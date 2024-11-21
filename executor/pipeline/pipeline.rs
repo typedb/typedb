@@ -16,7 +16,7 @@ use compiler::{
 };
 use concept::thing::thing_manager::ThingManager;
 use error::typedb_error;
-use ir::pipeline::{ParameterRegistry, };
+use ir::pipeline::ParameterRegistry;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -53,9 +53,7 @@ impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pip
     ) -> Self {
         let named_outputs = last_stage_output_positions
             .iter()
-            .filter_map(|(variable, &position)| {
-                variable_names.get(variable).map(|name| (name.clone(), position))
-            })
+            .filter_map(|(variable, &position)| variable_names.get(variable).map(|name| (name.clone(), position)))
             .collect::<HashMap<_, _>>();
 
         match executable_fetch {

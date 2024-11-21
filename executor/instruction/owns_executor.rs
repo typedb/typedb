@@ -6,23 +6,21 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
+    fmt::{Display, Formatter},
     iter,
     sync::Arc,
     vec,
 };
-use std::fmt::{Display, Formatter};
 
-use itertools::Itertools;
-
-use answer::{Type, variable_value::VariableValue};
+use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::OwnsInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
     type_::{
-        attribute_type::AttributeType, object_type::ObjectType, ObjectTypeAPI, OwnerAPI,
-        type_manager::TypeManager,
+        attribute_type::AttributeType, object_type::ObjectType, type_manager::TypeManager, ObjectTypeAPI, OwnerAPI,
     },
 };
+use itertools::Itertools;
 use lending_iterator::{
     adaptors::{Map, TryFilter},
     AsHkt, AsNarrowingIterator, LendingIterator,
@@ -31,11 +29,11 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        BinaryIterateMode,
-        Checker,
-        FilterFn, iterator::{SortedTupleIterator, TupleIterator}, tuple::{
+        iterator::{SortedTupleIterator, TupleIterator},
+        tuple::{
             owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, OwnsToTupleFn, TuplePositions, TupleResult,
-        }, type_from_row_or_annotations, VariableModes,
+        },
+        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

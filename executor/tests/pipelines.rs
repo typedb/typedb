@@ -17,8 +17,7 @@ use executor::{
 };
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
-use query::query_cache::QueryCache;
-use query::query_manager::QueryManager;
+use query::{query_cache::QueryCache, query_manager::QueryManager};
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils::{assert_matches, TempDir};
 use test_utils_concept::{load_managers, setup_concept_storage};

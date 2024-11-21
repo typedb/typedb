@@ -6,28 +6,27 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet},
+    fmt::{Display, Formatter},
     sync::Arc,
     vec,
 };
-use std::fmt::{Display, Formatter};
 
-use itertools::Itertools;
-
-use answer::{Type, variable_value::VariableValue};
+use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::SubInstruction, ExecutorVariable};
 use concept::error::ConceptReadError;
+use itertools::Itertools;
 use lending_iterator::{
     adaptors::{Map, TryFilter},
-    AsLendingIterator,
-    higher_order::AdHocHkt, LendingIterator,
+    higher_order::AdHocHkt,
+    AsLendingIterator, LendingIterator,
 };
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        BinaryIterateMode,
-        Checker,
-        FilterFn, iterator::{SortedTupleIterator, TupleIterator}, tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, SubToTupleFn, TuplePositions, TupleResult}, type_from_row_or_annotations, VariableModes,
+        iterator::{SortedTupleIterator, TupleIterator},
+        tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, SubToTupleFn, TuplePositions, TupleResult},
+        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
