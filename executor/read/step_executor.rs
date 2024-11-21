@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt, sync::Arc};
+use std::sync::Arc;
 
 use compiler::{
     executable::{
@@ -21,10 +21,10 @@ use compiler::{
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
-use typeql::{match_, schema::definable::function::SingleSelector};
+use typeql::schema::definable::function::SingleSelector;
 
 use crate::{
-    profile::{QueryProfile, StageProfile},
+    profile::QueryProfile,
     read::{
         collecting_stage_executor::CollectingStageExecutor, immediate_executor::ImmediateExecutor,
         nested_pattern_executor::NestedPatternExecutor, pattern_executor::PatternExecutor,

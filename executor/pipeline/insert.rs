@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{sync::Arc, time::Instant};
+use std::sync::Arc;
 
 use compiler::executable::insert::{
     executable::InsertExecutable,

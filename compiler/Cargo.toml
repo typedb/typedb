@@ -24,7 +24,9 @@ features = {}
 		features = []
 		default-features = false
 
-[dependencies.answer]
+[dependencies]
+
+	[dependencies.answer]
 		path = "../answer"
 		features = []
 		default-features = false

@@ -33,7 +33,7 @@ impl QueryProfile {
 
     pub fn profile_stage(&self, description_fn: impl Fn() -> String, id: u64) -> Arc<StageProfile> {
         if self.enabled {
-            let mut profiles = self.stage_profiles.read().unwrap();
+            let profiles = self.stage_profiles.read().unwrap();
             if let Some(profile) = profiles.get(&id) {
                 profile.clone()
             } else {
@@ -94,7 +94,6 @@ impl StageProfile {
 
 impl Display for StageProfile {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let mut aggregate_time = 0;
         for (i, step_profile) in self.step_profiles.read().unwrap().iter().enumerate() {
             match step_profile.data.as_ref() {
                 None => writeln!(f, "    {}.\n", i)?,

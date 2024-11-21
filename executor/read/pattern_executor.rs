@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{ops::DerefMut, sync::Arc};
+use std::ops::DerefMut;
 
 use compiler::VariablePosition;
 use lending_iterator::LendingIterator;
@@ -14,7 +14,6 @@ use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
-    profile::StageProfile,
     read::{
         control_instruction::{
             CollectingStage, ControlInstruction, ExecuteDisjunction, ExecuteImmediate, ExecuteInlinedFunction,
@@ -293,7 +292,7 @@ impl PatternExecutor {
                     self.execute_tabled_call(context, interrupt, tabled_functions, suspensions, index)?;
                 }
                 ControlInstruction::CollectingStage(CollectingStage { index }) => {
-                    let (pattern, mut collector) = executors[index.0].unwrap_collecting_stage().to_parts_mut();
+                    let (pattern, collector) = executors[index.0].unwrap_collecting_stage().to_parts_mut();
                     match pattern.batch_continue(context, interrupt, tabled_functions, suspensions)? {
                         Some(batch) => {
                             collector.accept(context, batch);
