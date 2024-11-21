@@ -219,6 +219,7 @@ impl<'a> fmt::Debug for ConjunctionPlanBuilder<'a> {
 }
 
 impl<'a> ConjunctionPlanBuilder<'a> {
+
     fn new(type_annotations: &'a TypeAnnotations, statistics: &'a Statistics) -> Self {
         Self { shared_variables: Vec::new(), graph: Graph::default(), type_annotations, statistics }
     }
@@ -565,6 +566,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         }
 
         while !open_set.is_empty() {
+            println!("Choosing next plan element...");
             let (next, _cost) = open_set
                 .iter()
                 .filter(|&&elem| self.graph.elements[&elem].is_valid(elem, &ordering, &self.graph))
@@ -572,11 +574,14 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                     let cost = self.calculate_marginal_cost(&ordering, elem, sort_variable);
                     // useful when debugging
                     let _graph_element = &self.graph.elements[&elem];
+                    println!("  Choice {:?}, cost: {cost}", _graph_element);
+
                     (elem, cost)
                 })
                 .min_by(|(_, lhs_cost), (_, rhs_cost)| lhs_cost.total_cmp(rhs_cost))
                 .unwrap();
             let element = &self.graph.elements[&next];
+            println!("--> Chose {:?}, cost: {_cost}", element);
 
             if element.is_variable() {
                 commit_variables!();
