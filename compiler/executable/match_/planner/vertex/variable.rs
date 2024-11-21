@@ -17,6 +17,7 @@ use crate::{
         vertex::{Costed, ElementCost, Input},
     },
 };
+use crate::executable::match_::planner::vertex::{CombinedCost, CostMetaData, Direction};
 
 #[derive(Clone, Debug)]
 pub(crate) enum VariableVertex {
@@ -32,15 +33,16 @@ impl VariableVertex {
     const SELECTIVITY_MIN: f64 = 0.000001;
     pub(crate) const OUTPUT_SIZE_MIN: f64 = 1.0;
 
-    pub(super) fn is_valid(&self, index: VertexId, ordered: &[VertexId], graph: &Graph<'_>) -> bool {
-        let VertexId::Variable(index) = index else { unreachable!("variable with incompatible index: {index:?}") };
-        match self {
-            Self::Input(_) => true, // always valid: comes from the enclosing scope
-
-            Self::Type(inner) => inner.is_valid(index, ordered, graph),
-            Self::Thing(inner) => inner.is_valid(index, ordered, graph),
-            Self::Value(inner) => inner.is_valid(index, ordered, graph),
-        }
+    pub(super) fn is_valid(&self, ordered: &[VertexId], graph: &Graph<'_>) -> bool {
+        // let VertexId::Variable(index) = index else { unreachable!("variable with incompatible index: {index:?}") };
+        // match self {
+        //     Self::Input(_) => true, // always valid: comes from the enclosing scope
+        //
+        //     Self::Type(inner) => inner.is_valid(index, ordered, graph),
+        //     Self::Thing(inner) => inner.is_valid(index, ordered, graph),
+        //     Self::Value(inner) => inner.is_valid(index, ordered, graph),
+        // }
+        false
     }
 
     pub(crate) fn expected_output_size(&self, inputs: &[VertexId]) -> f64 {
@@ -50,16 +52,16 @@ impl VariableVertex {
             Self::Thing(inner) => inner.unrestricted_expected_size,
             Self::Value(_) => 1.0,
         };
-        f64::max(unrestricted_size * self.selectivity(inputs), Self::OUTPUT_SIZE_MIN)
+        f64::max(unrestricted_size * self.restriction_based_selectivity(inputs), Self::OUTPUT_SIZE_MIN)
     }
 
-    pub(crate) fn selectivity(&self, inputs: &[VertexId]) -> f64 {
+    pub(crate) fn restriction_based_selectivity(&self, inputs: &[VertexId]) -> f64 {
         // the fraction of possible actual outputs (based on type information) when restricted (for example, by comparators)
         match self {
             VariableVertex::Input(_) => Self::RESTRICTION_NONE,
-            VariableVertex::Type(inner) => inner.selectivity(inputs),
-            VariableVertex::Thing(inner) => inner.selectivity(inputs),
-            VariableVertex::Value(inner) => inner.selectivity(inputs),
+            VariableVertex::Type(inner) => inner.restriction_based_selectivity(inputs),
+            VariableVertex::Thing(inner) => inner.restriction_based_selectivity(inputs),
+            VariableVertex::Value(inner) => inner.restriction_based_selectivity(inputs),
         }
     }
 
@@ -136,13 +138,35 @@ impl VariableVertex {
 }
 
 impl Costed for VariableVertex {
-    fn cost(&self, inputs: &[VertexId], intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
-        match self {
-            Self::Input(inner) => inner.cost(inputs, intersection, graph),
-            Self::Type(inner) => inner.cost(inputs, intersection, graph),
-            Self::Thing(inner) => inner.cost(inputs, intersection, graph),
-            Self::Value(inner) => inner.cost(inputs, intersection, graph),
-        }
+    fn cost(&self,
+            _inputs: &[VertexId],
+            _step_sort_variable: Option<VariableVertexId>,
+            _step_start_index: usize,
+            _graph: &Graph<'_>
+    ) -> ElementCost {
+        // match self {
+        //     Self::Input(inner) => inner.cost(inputs, step_sort_variable, graph),
+        //     Self::Type(inner) => inner.cost(inputs, step_sort_variable, graph),
+        //     Self::Thing(inner) => inner.cost(inputs, step_sort_variable, graph),
+        //     Self::Value(inner) => inner.cost(inputs, step_sort_variable, graph),
+        // }
+        ElementCost::MEM_SIMPLE_BRANCH_1
+    }
+
+    fn cost_and_metadata(&self,
+                         vertex_ordering: &[VertexId],
+                         graph: &Graph<'_>
+    ) -> (CombinedCost, CostMetaData) {
+        let var_set : Vec<Variable> = vertex_ordering
+            .iter()
+            .map(|id| graph.elements().get(id).unwrap().as_variable().unwrap().variable())
+            .collect();
+        let total_size = if var_set.contains(&self.variable()) {
+            self.expected_output_size(vertex_ordering)
+        } else {
+            1.0
+        };
+        (CombinedCost::in_mem_simple_with_ratio(total_size), CostMetaData::None)
     }
 }
 
@@ -164,8 +188,17 @@ impl InputPlanner {
 }
 
 impl Costed for InputPlanner {
-    fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
+    fn cost(&self,
+            _: &[VertexId],
+            _step_sort_variable: Option<VariableVertexId>,
+            _step_start_index: usize,
+            _: &Graph<'_>
+    ) -> ElementCost {
         ElementCost::MEM_SIMPLE_BRANCH_1
+    }
+
+    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
+        (CombinedCost::MEM_SIMPLE_BRANCH_1, CostMetaData::None)
     }
 }
 
@@ -201,15 +234,24 @@ impl TypePlanner {
         }
     }
 
-    fn selectivity(&self, _inputs: &[VertexId]) -> f64 {
+    fn restriction_based_selectivity(&self, _inputs: &[VertexId]) -> f64 {
         // TODO: if we incorporate, say, annotations, we could add some selectivity here
         VariableVertex::RESTRICTION_NONE
     }
 }
 
 impl Costed for TypePlanner {
-    fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
+    fn cost(&self,
+            _: &[VertexId],
+            _step_sort_variable: Option<VariableVertexId>,
+            _step_start_index: usize,
+            _: &Graph<'_>
+    ) -> ElementCost {
         ElementCost::in_mem_simple_with_branching(self.unrestricted_expected_size)
+    }
+
+    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
+        (CombinedCost::in_mem_simple_with_ratio(self.unrestricted_expected_size), CostMetaData::None)
     }
 }
 
@@ -310,7 +352,7 @@ impl ThingPlanner {
         }
     }
 
-    fn selectivity(&self, inputs: &[VertexId]) -> f64 {
+    fn restriction_based_selectivity(&self, inputs: &[VertexId]) -> f64 {
         // decrease selectivity whenever we have any matching restrictions
         let bias: f64 = 2.0;
         let selectivity = if self
@@ -359,24 +401,34 @@ fn branching_for_intersections(intersection_count: usize) -> f64 {
 }
 
 impl Costed for ThingPlanner {
-    fn cost(&self, inputs: &[VertexId], intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
-        match intersection {
-            None => ElementCost::MEM_SIMPLE_BRANCH_1,
-            Some(variable_id) => {
-                let mut intersection_count = 0;
-                for input in inputs {
-                    let input_element = &graph.elements()[input];
-                    if input_element.variables().any(|var| var == variable_id) {
-                        intersection_count += 1;
-                    }
-                }
-                ElementCost {
-                    per_input: ElementCost::IN_MEM_COST_COMPLEX,
-                    per_output: ElementCost::IN_MEM_COST_COMPLEX,
-                    branching_factor: branching_for_intersections(intersection_count),
-                }
-            }
-        }
+    fn cost(&self,
+            inputs: &[VertexId],
+            step_sort_variable: Option<VariableVertexId>,
+            step_start_index: usize,
+            graph: &Graph<'_>
+    ) -> ElementCost {
+        // match step_sort_variable {
+        //     None => ElementCost::MEM_SIMPLE_BRANCH_1,
+        //     Some(variable_id) => {
+        //         let mut intersection_count = 0;
+        //         for input in inputs {
+        //             let input_element = &graph.elements()[input];
+        //             if input_element.variables().any(|var| var == variable_id) {
+        //                 intersection_count += 1;
+        //             }
+        //         }
+        //         ElementCost {
+        //             per_input: ElementCost::IN_MEM_COST_COMPLEX,
+        //             per_output: ElementCost::IN_MEM_COST_COMPLEX,
+        //             branching_factor: branching_for_intersections(intersection_count),
+        //         }
+        //     }
+        // }
+        ElementCost::MEM_SIMPLE_BRANCH_1
+    }
+
+    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
+        (CombinedCost::MEM_SIMPLE_BRANCH_1, CostMetaData::None)
     }
 }
 
@@ -436,7 +488,7 @@ impl ValuePlanner {
         self.restriction_value_above.insert(other);
     }
 
-    fn selectivity(&self, inputs: &[VertexId]) -> f64 {
+    fn restriction_based_selectivity(&self, inputs: &[VertexId]) -> f64 {
         // since there's no "expected size" of a value variable (we will always assign exactly 1 value)
         // we arbitrarily set some thresholds for selectivity of predicates
         let mut selectivity = VariableVertex::RESTRICTION_NONE;
@@ -454,12 +506,21 @@ impl ValuePlanner {
 }
 
 impl Costed for ValuePlanner {
-    fn cost(&self, inputs: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
+    fn cost(&self,
+            inputs: &[VertexId],
+            _step_sort_variable: Option<VariableVertexId>,
+            _step_start_index: usize,
+            _: &Graph<'_>
+    ) -> ElementCost {
         if inputs.is_empty() {
-            ElementCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+            ElementCost { per_input: 0.0, per_output: 0.0, io_ratio: 1.0 }
         } else {
-            ElementCost { per_input: f64::INFINITY, per_output: 0.0, branching_factor: f64::INFINITY }
+            ElementCost { per_input: f64::INFINITY, per_output: 0.0, io_ratio: f64::INFINITY }
         }
+    }
+
+    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
+        (CombinedCost::MEM_SIMPLE_BRANCH_1, CostMetaData::None) // TODO: don't understand the above implementation
     }
 }
 

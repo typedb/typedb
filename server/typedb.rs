@@ -28,7 +28,8 @@ pub struct Server {
 
 impl Server {
     pub fn open(config: Config) -> Result<Self, ServerOpenError> {
-        let storage_directory = &config.storage.data;
+        // let storage_directory = &config.storage.data;
+        let storage_directory = &PathBuf::from("/Users/cxdorn/typedb_data");
         if !storage_directory.exists() {
             Self::create_storage_directory(storage_directory)?;
         } else if !storage_directory.is_dir() {
@@ -40,6 +41,7 @@ impl Server {
         let user_manager = Arc::new(UserManager::new(system_db));
         initialise_default_user(&user_manager);
         let typedb_service = TypeDBService::new(&config.server.address, database_manager, user_manager.clone());
+        println!("Storage directory: {:?}", storage_directory);
         Ok(Self {
             data_directory: storage_directory.to_owned(),
             user_manager,

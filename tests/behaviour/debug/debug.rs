@@ -11,5 +11,5 @@ async fn test() {
     // Bazel specific path: when running the test in bazel, the external data from
     // @typedb_behaviour is stored in a directory that is a sibling to
     // the working directory.
-    assert!(Context::test("tests/behaviour/debug/debug.feature", true).await);
+    assert!(Context::test("tests/behaviour/debug/debug.feature", false).await);
 }

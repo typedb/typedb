@@ -343,6 +343,7 @@ impl TransactionService {
                 Err(ProtocolError::TransactionAlreadyOpen {}.into_status())
             }
             (true, typedb_protocol::transaction::req::Req::QueryReq(query_req)) => {
+                println!("Received query request: {}", query_req.query);
                 self.handle_query(request_id, query_req).await
             }
             (true, typedb_protocol::transaction::req::Req::StreamReq(stream_req)) => {
@@ -677,6 +678,7 @@ impl TransactionService {
         req_id: Uuid,
         query_req: typedb_protocol::query::Req,
     ) -> Result<ControlFlow<(), ()>, Status> {
+
         let _query_options = &query_req.options; // TODO: pass query options
         let parsed = match parse_query(&query_req.query) {
             Ok(parsed) => parsed,
@@ -867,6 +869,8 @@ impl TransactionService {
                 (transaction, result)
             })),
             Some(Transaction::Write(write_transaction)) => Ok(spawn_blocking(move || {
+                let duration = Instant::now();
+
                 let TransactionWrite {
                     snapshot,
                     type_manager,
@@ -896,6 +900,9 @@ impl TransactionService {
                     database,
                     transaction_options,
                 ));
+
+                println!("Write query took: {:?}", duration.elapsed());
+
                 (transaction, result)
             })),
             Some(Transaction::Read(transaction)) => {
@@ -1012,6 +1019,8 @@ impl TransactionService {
             let function_manager = transaction.function_manager.clone();
             let query_manager = transaction.query_manager.clone();
             spawn_blocking(move || {
+                let duration = Instant::now();
+
                 let pipeline = Self::prepare_read_query_in(
                     snapshot.clone(),
                     &type_manager,
@@ -1025,6 +1034,8 @@ impl TransactionService {
                     Self::submit_response_sync(&sender, StreamQueryResponse::done_err(err));
                 });
                 Self::respond_read_query_sync(pipeline, interrupt, &sender, snapshot, &type_manager, thing_manager);
+
+                println!("Read query took: {:?}", duration.elapsed());
             })
         })
     }
