@@ -24,9 +24,6 @@ features = {}
 		features = []
 		default-features = false
 
-[dependencies]
-log = "0.4.22"
-
 [dependencies.answer]
 		path = "../answer"
 		features = []

@@ -15,14 +15,16 @@ use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::insert::{
         get_kinds_from_annotations, get_thing_source,
-        instructions::{ConceptInstruction, ConnectionInstruction, Has, PutAttribute, PutObject, RolePlayer},
+        instructions::{ConceptInstruction, ConnectionInstruction, Has, PutAttribute, PutObject, Links},
         ThingSource, TypeSource, ValueSource, VariableSource, WriteCompilationError,
     },
     filter_variants, VariablePosition,
 };
+use crate::executable::next_executable_id;
 
 #[derive(Debug)]
 pub struct InsertExecutable {
+    pub executable_id: u64,
     pub concept_instructions: Vec<ConceptInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
     pub output_row_schema: Vec<Option<(Variable, VariableSource)>>,
@@ -59,6 +61,7 @@ pub fn compile(
     });
 
     Ok(InsertExecutable {
+        executable_id: next_executable_id(),
         concept_instructions: concept_inserts,
         connection_instructions: connection_inserts,
         output_row_schema,
@@ -188,7 +191,7 @@ fn add_role_players(
             }
             (Some(_), Some(_)) => unreachable!(),
         };
-        instructions.push(ConnectionInstruction::RolePlayer(RolePlayer { relation, player, role }));
+        instructions.push(ConnectionInstruction::Links(Links { relation, player, role }));
     }
     Ok(())
 }

@@ -25,6 +25,7 @@ use crate::{
     write::{write_instruction::AsWriteInstruction, WriteError},
     ExecutionInterrupt,
 };
+use crate::profile::StageProfile;
 
 pub struct InsertStageExecutor<PreviousStage> {
     executable: Arc<InsertExecutable>,
@@ -56,13 +57,14 @@ where
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
         let Self { executable, previous } = self;
-        let start = Instant::now();
         let (previous_iterator, mut context) = previous.into_iterator(interrupt.clone())?;
+
+        let profile = context.profile.profile_stage(|| String::from("Insert"), executable.executable_id);
+
         let mut batch = match prepare_output_rows(executable.output_width() as u32, previous_iterator) {
             Ok(output_rows) => output_rows,
             Err(err) => return Err((err, context)),
         };
-        let after_read = Instant::now();
 
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so we can get mut:
         let snapshot_mut = Arc::get_mut(&mut context.snapshot).unwrap();
@@ -71,7 +73,7 @@ where
             let mut row = batch.get_row_mut(index);
 
             if let Err(err) =
-                execute_insert(&executable, snapshot_mut, &context.thing_manager, &context.parameters, &mut row)
+                execute_insert(&executable, snapshot_mut, &context.thing_manager, &context.parameters, &mut row, &profile)
             {
                 return Err((Box::new(PipelineExecutionError::WriteError { typedb_source: err }), context));
             }
@@ -82,11 +84,6 @@ where
                 }
             }
         }
-        let end = Instant::now();
-
-        println!("Time to execute stage before insert: {} us", after_read.duration_since(start).as_micros());
-        println!("Time to execute insert: {} us", end.duration_since(after_read).as_micros());
-
         Ok((WrittenRowsIterator::new(batch), context))
     }
 }
@@ -119,10 +116,14 @@ fn execute_insert(
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
+    stage_profile: &StageProfile,
 ) -> Result<(), Box<WriteError>> {
     debug_assert!(row.get_multiplicity() == 1);
     debug_assert!(row.len() == executable.output_row_schema.len());
+    let mut index = 0;
     for instruction in &executable.concept_instructions {
+        let step_profile = stage_profile.extend_or_get(index, || format!("{}", instruction));
+        let measurement = step_profile.start_measurement();
         match instruction {
             ConceptInstruction::PutAttribute(isa_attr) => {
                 isa_attr.execute(snapshot, thing_manager, parameters, row)?;
@@ -131,16 +132,22 @@ fn execute_insert(
                 isa_object.execute(snapshot, thing_manager, parameters, row)?;
             }
         }
+        measurement.end(&step_profile, 1, 1);
+        index += 1;
     }
     for instruction in &executable.connection_instructions {
+        let step_profile = stage_profile.extend_or_get(index, || format!("{}", instruction));
+        let measurement = step_profile.start_measurement();
         match instruction {
             ConnectionInstruction::Has(has) => {
                 has.execute(snapshot, thing_manager, parameters, row)?;
             }
-            ConnectionInstruction::RolePlayer(role_player) => {
+            ConnectionInstruction::Links(role_player) => {
                 role_player.execute(snapshot, thing_manager, parameters, row)?;
             }
         };
+        measurement.end(&step_profile, 1, 1);
+        index += 1;
     }
     Ok(())
 }

@@ -18,8 +18,10 @@ pub fn initialise_logging_global() {
         // .add_directive("database=trace".parse().unwrap())
         // .add_directive("server=trace".parse().unwrap())
         // .add_directive("storage=trace".parse().unwrap())
+        .add_directive("executor=trace".parse().unwrap())
         // useful for debugging what tonic is doing:
-        .add_directive("tonic=trace".parse().unwrap());
+        // .add_directive("tonic=trace".parse().unwrap());
+    ;
 
     let subscriber = SubscriberBuilder::default().with_max_level(Level::TRACE).with_env_filter(filter).finish();
     tracing::subscriber::set_global_default(subscriber).unwrap()

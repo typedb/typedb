@@ -550,7 +550,6 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         }
 
         while !open_set.is_empty() {
-            println!("Choosing next plan element...");
             let (next, _cost) = open_set
                 .iter()
                 .filter(|&&elem| self.graph.elements[&elem].is_valid(elem, &ordering, &self.graph))

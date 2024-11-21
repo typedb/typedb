@@ -21,10 +21,21 @@ use crate::{
     },
     VariablePosition,
 };
+use crate::executable::next_executable_id;
 
 #[derive(Debug)]
 pub struct ExecutableFetch {
+    pub executable_id: u64,
     pub object_instruction: FetchObjectInstruction,
+}
+
+impl ExecutableFetch {
+    fn new(object_instruction: FetchObjectInstruction) -> Self {
+        Self {
+            executable_id: next_executable_id(),
+            object_instruction
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -62,7 +73,7 @@ pub fn compile_fetch(
     variable_positions: &HashMap<Variable, VariablePosition>,
 ) -> Result<ExecutableFetch, FetchCompilationError> {
     let compiled = compile_object(statistics, available_functions, fetch.object, variable_positions)?;
-    Ok(ExecutableFetch { object_instruction: compiled })
+    Ok(ExecutableFetch::new(compiled))
 }
 
 fn compile_object(

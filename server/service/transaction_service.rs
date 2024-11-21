@@ -898,8 +898,6 @@ impl TransactionService {
         pipeline: &typeql::query::Pipeline,
         interrupt: ExecutionInterrupt,
     ) -> (Snapshot, Result<(StreamQueryOutputDescriptor, Batch), QueryError>) {
-        println!("Running query: {}", pipeline);
-        let start = Instant::now();
         let result =
             query_manager.prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, pipeline);
         let (query_output_descriptor, pipeline) = match result {
@@ -927,11 +925,9 @@ impl TransactionService {
                 (Arc::into_inner(snapshot).unwrap(), Err(QueryError::WritePipelineExecution { typedb_source: err }))
             }
         };
-
-        let end = Instant::now();
-        println!("Time to execute write query: {} us", end.duration_since(start).as_micros());
-        println!("Query profile: {}", query_profile);
-
+        if query_profile.is_enabled() {
+            event!(Level::INFO, "Write query completed.\n{}", query_profile);
+        }
         result
     }
 
@@ -1106,7 +1102,9 @@ impl TransactionService {
             }
             context.profile
         };
-        println!("Query profile: {}", query_profile);
+        if query_profile.is_enabled() {
+            event!(Level::INFO, "Read query done (including network request time).\n{}", query_profile);
+        }
         Self::submit_response_sync(&sender, StreamQueryResponse::done_ok())
     }
 

@@ -14,7 +14,7 @@ use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
-    profile::PatternProfile,
+    profile::StageProfile,
     read::{
         control_instruction::{
             CollectingStage, ControlInstruction, ExecuteDisjunction, ExecuteImmediate, ExecuteInlinedFunction,

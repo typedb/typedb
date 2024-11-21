@@ -13,31 +13,36 @@ use std::{
     },
     time::{Duration, Instant},
 };
+use itertools::Itertools;
 
 #[derive(Debug)]
 pub struct QueryProfile {
-    pattern_profiles: RwLock<HashMap<u64, Arc<PatternProfile>>>,
+    stage_profiles: RwLock<HashMap<u64, Arc<StageProfile>>>,
     enabled: bool,
 }
 
 impl QueryProfile {
     pub fn new(enabled: bool) -> Self {
-        Self { pattern_profiles: RwLock::new(HashMap::new()), enabled }
+        Self { stage_profiles: RwLock::new(HashMap::new()), enabled }
+    }
+    
+    pub fn is_enabled(&self) -> bool {
+        self.enabled
     }
 
-    pub fn profile_pattern(&self, description_fn: impl Fn() -> String, id: u64) -> Arc<PatternProfile> {
+    pub fn profile_stage(&self, description_fn: impl Fn() -> String, id: u64) -> Arc<StageProfile> {
         if self.enabled {
-            let mut profiles = self.pattern_profiles.read().unwrap();
+            let mut profiles = self.stage_profiles.read().unwrap();
             if let Some(profile) = profiles.get(&id) {
                 profile.clone()
             } else {
                 drop(profiles);
-                let profile = Arc::new(PatternProfile::new(description_fn(), true));
-                self.pattern_profiles.write().unwrap().insert(id, profile.clone());
+                let profile = Arc::new(StageProfile::new(description_fn(), true));
+                self.stage_profiles.write().unwrap().insert(id, profile.clone());
                 profile
             }
         } else {
-            Arc::new(PatternProfile::new(String::new(), false))
+            Arc::new(StageProfile::new(String::new(), false))
         }
     }
 }
@@ -45,9 +50,10 @@ impl QueryProfile {
 impl Display for QueryProfile {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Query profile[measurements_enabled={}]", self.enabled)?;
-        let profiles = self.pattern_profiles.read().unwrap();
-        for (id, pattern_profile) in profiles.iter() {
-            writeln!(f, "  Pattern[id={}] - {}", id, &pattern_profile.description)?;
+        let profiles = self.stage_profiles.read().unwrap();
+        for (id, pattern_profile) in profiles.iter().sorted_by_key(|(id, _)| *id) {
+            writeln!(f, "  -----")?;
+            writeln!(f, "  Stage or Pattern [id={}] - {}", id, &pattern_profile.description)?;
             write!(f, "{}", pattern_profile)?;
         }
         Ok(())
@@ -55,13 +61,13 @@ impl Display for QueryProfile {
 }
 
 #[derive(Debug)]
-pub struct PatternProfile {
+pub struct StageProfile {
     description: String,
     step_profiles: RwLock<Vec<Arc<StepProfile>>>,
     enabled: bool,
 }
 
-impl PatternProfile {
+impl StageProfile {
     fn new(description: String, enabled: bool) -> Self {
         Self { description, step_profiles: RwLock::new(Vec::new()), enabled }
     }
@@ -85,7 +91,7 @@ impl PatternProfile {
     }
 }
 
-impl Display for PatternProfile {
+impl Display for StageProfile {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut aggregate_time = 0;
         for (i, step_profile) in self.step_profiles.read().unwrap().iter().enumerate() {

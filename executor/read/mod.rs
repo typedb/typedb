@@ -51,22 +51,6 @@ pub(super) fn TODO_REMOVE_create_executors_for_match(
     Ok(PatternExecutor::new(match_executable.executable_id(), executors))
 }
 
-// pub(super) fn create_executors_for_pipeline(
-//     snapshot: &Arc<impl ReadableSnapshot + 'static>,
-//     thing_manager: &Arc<ThingManager>,
-//     function_registry: &ExecutableFunctionRegistry,
-//     executable_stages: &Vec<ExecutableStage>,
-// ) -> Result<PatternExecutor, Box<ConceptReadError>> {
-//     let executors = create_executors_for_pipeline_stages(
-//         snapshot,
-//         thing_manager,
-//         function_registry,
-//         executable_stages,
-//         executable_stages.len() - 1,
-//     )?;
-//     Ok(PatternExecutor::new(executors))
-// }
-
 #[derive(Debug)]
 pub(crate) enum PatternSuspension {
     AtTabledCall(TabledCallSuspension),

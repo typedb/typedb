@@ -131,7 +131,7 @@ impl AsWriteInstruction for compiler::executable::insert::instructions::Has {
     }
 }
 
-impl AsWriteInstruction for compiler::executable::insert::instructions::RolePlayer {
+impl AsWriteInstruction for compiler::executable::insert::instructions::Links {
     fn execute(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -198,7 +198,7 @@ impl AsWriteInstruction for compiler::executable::delete::instructions::Has {
     }
 }
 
-impl AsWriteInstruction for compiler::executable::delete::instructions::RolePlayer {
+impl AsWriteInstruction for compiler::executable::delete::instructions::Links {
     fn execute(
         &self,
         snapshot: &mut impl WritableSnapshot,

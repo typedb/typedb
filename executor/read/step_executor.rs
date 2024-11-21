@@ -24,7 +24,7 @@ use storage::snapshot::ReadableSnapshot;
 use typeql::{match_, schema::definable::function::SingleSelector};
 
 use crate::{
-    profile::{PatternProfile, QueryProfile},
+    profile::{StageProfile, QueryProfile},
     read::{
         collecting_stage_executor::CollectingStageExecutor, immediate_executor::ImmediateExecutor,
         nested_pattern_executor::NestedPatternExecutor, pattern_executor::PatternExecutor,
@@ -92,33 +92,33 @@ pub(crate) fn create_executors_for_match(
     query_profile: &QueryProfile,
     match_executable: &MatchExecutable,
 ) -> Result<Vec<StepExecutors>, Box<ConceptReadError>> {
-    let pattern_profile = query_profile.profile_pattern(|| String::from("Match"), match_executable.executable_id());
+    let stage_profile = query_profile.profile_stage(|| String::from("Match"), match_executable.executable_id());
     let mut steps = Vec::with_capacity(match_executable.steps().len());
     for (index, step) in match_executable.steps().iter().enumerate() {
         match step {
             ExecutionStep::Intersection(inner) => {
-                let step_profile = pattern_profile.extend_or_get(index, || format!("{}", inner));
+                let step_profile = stage_profile.extend_or_get(index, || format!("{}", inner));
                 let step = ImmediateExecutor::new_intersection(inner, snapshot, thing_manager, step_profile)?;
                 steps.push(step.into());
             }
             ExecutionStep::UnsortedJoin(inner) => {
-                let step_profile = pattern_profile.extend_or_get(index, || format!("{}", inner));
+                let step_profile = stage_profile.extend_or_get(index, || format!("{}", inner));
                 let step = ImmediateExecutor::new_unsorted_join(inner, step_profile)?;
                 steps.push(step.into());
             }
             ExecutionStep::Assignment(inner) => {
-                let step_profile = pattern_profile.extend_or_get(index, || format!("{}", inner));
+                let step_profile = stage_profile.extend_or_get(index, || format!("{}", inner));
                 let step = ImmediateExecutor::new_assignment(inner, step_profile)?;
                 steps.push(step.into());
             }
             ExecutionStep::Check(inner) => {
-                let step_profile = pattern_profile.extend_or_get(index, || format!("{}", inner));
+                let step_profile = stage_profile.extend_or_get(index, || format!("{}", inner));
                 let step = ImmediateExecutor::new_check(inner, step_profile)?;
                 steps.push(step.into());
             }
             ExecutionStep::Negation(negation_step) => {
                 // NOTE: still create the profile so each step has an entry in the profile, even if unused
-                let _step_profile = pattern_profile.extend_or_get(index, || format!("{}", negation_step));
+                let _step_profile = stage_profile.extend_or_get(index, || format!("{}", negation_step));
                 let inner = create_executors_for_match(
                     snapshot,
                     thing_manager,
@@ -137,7 +137,7 @@ pub(crate) fn create_executors_for_match(
             }
             ExecutionStep::FunctionCall(function_call) => {
                 // NOTE: still create the profile so each step has an entry in the profile, even if unused
-                let _step_profile = pattern_profile.extend_or_get(index, || format!("{}", function_call));
+                let _step_profile = stage_profile.extend_or_get(index, || format!("{}", function_call));
 
                 let function = function_registry.get(function_call.function_id.clone());
                 if function.is_tabled == FunctionTablingType::Tabled {
@@ -167,7 +167,7 @@ pub(crate) fn create_executors_for_match(
             }
             ExecutionStep::Disjunction(step) => {
                 // NOTE: still create the profile so each step has an entry in the profile, even if unused
-                let _step_profile = pattern_profile.extend_or_get(index, || format!("{}", step));
+                let _step_profile = stage_profile.extend_or_get(index, || format!("{}", step));
 
                 // I shouldn't need to pass recursive here since it's stratified
                 let branches = step
