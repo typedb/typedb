@@ -5,6 +5,7 @@
  */
 
 use std::fmt::{Display, Formatter};
+
 use super::{ThingSource, TypeSource, ValueSource};
 
 #[derive(Debug)]
@@ -24,7 +25,7 @@ impl Display for ConceptInstruction {
 
 #[derive(Debug)]
 pub enum ConnectionInstruction {
-    Has(Has),               // TODO: Ordering
+    Has(Has),     // TODO: Ordering
     Links(Links), // TODO: Ordering
 }
 

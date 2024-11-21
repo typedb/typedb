@@ -5,12 +5,12 @@
  */
 
 use std::{mem::discriminant, sync::Arc};
-use tracing::Level;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use tracing::Level;
 
 use crate::{
     batch::Batch,

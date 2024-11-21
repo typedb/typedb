@@ -24,7 +24,7 @@ use storage::snapshot::ReadableSnapshot;
 use typeql::{match_, schema::definable::function::SingleSelector};
 
 use crate::{
-    profile::{StageProfile, QueryProfile},
+    profile::{QueryProfile, StageProfile},
     read::{
         collecting_stage_executor::CollectingStageExecutor, immediate_executor::ImmediateExecutor,
         nested_pattern_executor::NestedPatternExecutor, pattern_executor::PatternExecutor,

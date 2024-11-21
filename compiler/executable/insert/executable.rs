@@ -13,14 +13,16 @@ use itertools::Itertools;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
-    executable::insert::{
-        get_kinds_from_annotations, get_thing_source,
-        instructions::{ConceptInstruction, ConnectionInstruction, Has, PutAttribute, PutObject, Links},
-        ThingSource, TypeSource, ValueSource, VariableSource, WriteCompilationError,
+    executable::{
+        insert::{
+            get_kinds_from_annotations, get_thing_source,
+            instructions::{ConceptInstruction, ConnectionInstruction, Has, Links, PutAttribute, PutObject},
+            ThingSource, TypeSource, ValueSource, VariableSource, WriteCompilationError,
+        },
+        next_executable_id,
     },
     filter_variants, VariablePosition,
 };
-use crate::executable::next_executable_id;
 
 #[derive(Debug)]
 pub struct InsertExecutable {

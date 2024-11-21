@@ -41,7 +41,7 @@ use crate::{
         stage::{ExecutionContext, StageAPI},
         PipelineExecutionError,
     },
-    profile::QueryProfile,
+    profile::{QueryProfile, StageProfile},
     read::{
         pattern_executor::PatternExecutor, step_executor::create_executors_for_function,
         tabled_functions::TabledFunctions, QueryPatternSuspensions,
@@ -49,7 +49,6 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-use crate::profile::StageProfile;
 
 macro_rules! exactly_one_or_return_err {
     ($call:expr, $error:expr) => {{

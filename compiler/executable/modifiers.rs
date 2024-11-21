@@ -8,9 +8,8 @@ use std::collections::{HashMap, HashSet};
 
 use answer::variable::Variable;
 use ir::pipeline::modifier::SortVariable;
-use crate::executable::next_executable_id;
 
-use crate::VariablePosition;
+use crate::{executable::next_executable_id, VariablePosition};
 
 #[derive(Debug)]
 pub struct SelectExecutable {
@@ -20,12 +19,11 @@ pub struct SelectExecutable {
 }
 
 impl SelectExecutable {
-    pub(crate) fn new(retained_positions: HashSet<VariablePosition>, output_row_mapping: HashMap<Variable, VariablePosition>) -> Self {
-        Self {
-            executable_id: next_executable_id(),
-            retained_positions,
-            output_row_mapping,
-        }
+    pub(crate) fn new(
+        retained_positions: HashSet<VariablePosition>,
+        output_row_mapping: HashMap<Variable, VariablePosition>,
+    ) -> Self {
+        Self { executable_id: next_executable_id(), retained_positions, output_row_mapping }
     }
 }
 
@@ -38,11 +36,7 @@ pub struct SortExecutable {
 
 impl SortExecutable {
     pub(crate) fn new(sort_on: Vec<SortVariable>, output_row_mapping: HashMap<Variable, VariablePosition>) -> Self {
-        Self {
-            executable_id: next_executable_id(),
-            sort_on,
-            output_row_mapping,
-        }
+        Self { executable_id: next_executable_id(), sort_on, output_row_mapping }
     }
 }
 
@@ -55,11 +49,7 @@ pub struct OffsetExecutable {
 
 impl OffsetExecutable {
     pub(crate) fn new(offset: u64, output_row_mapping: HashMap<Variable, VariablePosition>) -> Self {
-        Self {
-            executable_id: next_executable_id(),
-            offset,
-            output_row_mapping,
-        }
+        Self { executable_id: next_executable_id(), offset, output_row_mapping }
     }
 }
 
@@ -72,11 +62,7 @@ pub struct LimitExecutable {
 
 impl LimitExecutable {
     pub(crate) fn new(limit: u64, output_row_mapping: HashMap<Variable, VariablePosition>) -> Self {
-        Self {
-            executable_id: next_executable_id(),
-            limit,
-            output_row_mapping,
-        }
+        Self { executable_id: next_executable_id(), limit, output_row_mapping }
     }
 }
 
@@ -88,11 +74,10 @@ pub struct RequireExecutable {
 }
 
 impl RequireExecutable {
-    pub(crate) fn new(required: HashSet<VariablePosition>, output_row_mapping: HashMap<Variable, VariablePosition>) -> Self {
-        Self {
-            executable_id: next_executable_id(),
-            required,
-            output_row_mapping,
-        }
+    pub(crate) fn new(
+        required: HashSet<VariablePosition>,
+        output_row_mapping: HashMap<Variable, VariablePosition>,
+    ) -> Self {
+        Self { executable_id: next_executable_id(), required, output_row_mapping }
     }
 }

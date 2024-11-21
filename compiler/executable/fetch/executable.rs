@@ -16,12 +16,12 @@ use crate::{
     executable::{
         function::{compile_function, ExecutableFunction, FunctionTablingType},
         match_::planner::function_plan::ExecutableFunctionRegistry,
+        next_executable_id,
         pipeline::{compile_stages_and_fetch, ExecutableStage},
         ExecutableCompilationError,
     },
     VariablePosition,
 };
-use crate::executable::next_executable_id;
 
 #[derive(Debug)]
 pub struct ExecutableFetch {
@@ -31,10 +31,7 @@ pub struct ExecutableFetch {
 
 impl ExecutableFetch {
     fn new(object_instruction: FetchObjectInstruction) -> Self {
-        Self {
-            executable_id: next_executable_id(),
-            object_instruction
-        }
+        Self { executable_id: next_executable_id(), object_instruction }
     }
 }
 

@@ -5,12 +5,13 @@
  */
 
 use std::fmt::{Display, Formatter};
+
 use crate::executable::insert::{ThingSource, TypeSource};
 
 #[derive(Debug)]
 pub enum ConnectionInstruction {
-    Has(Has),               // TODO: Ordering
-    Links(Links),           // TODO: Ordering
+    Has(Has),     // TODO: Ordering
+    Links(Links), // TODO: Ordering
 }
 
 impl Display for ConnectionInstruction {

@@ -21,7 +21,7 @@ pub mod error;
 pub(crate) mod instruction;
 pub mod match_executor;
 pub mod pipeline;
-mod profile;
+pub mod profile;
 pub mod read;
 pub(crate) mod reduce_executor;
 pub mod row;

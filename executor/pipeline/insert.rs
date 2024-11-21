@@ -21,11 +21,11 @@ use crate::{
         stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator, WrittenRowsIterator,
     },
+    profile::StageProfile,
     row::{MaybeOwnedRow, Row},
     write::{write_instruction::AsWriteInstruction, WriteError},
     ExecutionInterrupt,
 };
-use crate::profile::StageProfile;
 
 pub struct InsertStageExecutor<PreviousStage> {
     executable: Arc<InsertExecutable>,
@@ -72,9 +72,14 @@ where
             // TODO: parallelise -- though this requires our snapshots support parallel writes!
             let mut row = batch.get_row_mut(index);
 
-            if let Err(err) =
-                execute_insert(&executable, snapshot_mut, &context.thing_manager, &context.parameters, &mut row, &profile)
-            {
+            if let Err(err) = execute_insert(
+                &executable,
+                snapshot_mut,
+                &context.thing_manager,
+                &context.parameters,
+                &mut row,
+                &profile,
+            ) {
                 return Err((Box::new(PipelineExecutionError::WriteError { typedb_source: err }), context));
             }
 

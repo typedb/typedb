@@ -17,10 +17,10 @@ use crate::{
         insert::{
             executable::collect_role_type_bindings, get_thing_source, ThingSource, TypeSource, WriteCompilationError,
         },
+        next_executable_id,
     },
     VariablePosition,
 };
-use crate::executable::next_executable_id;
 
 #[derive(Debug)]
 pub struct DeleteExecutable {

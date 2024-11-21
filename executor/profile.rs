@@ -13,6 +13,7 @@ use std::{
     },
     time::{Duration, Instant},
 };
+
 use itertools::Itertools;
 
 #[derive(Debug)]
@@ -25,7 +26,7 @@ impl QueryProfile {
     pub fn new(enabled: bool) -> Self {
         Self { stage_profiles: RwLock::new(HashMap::new()), enabled }
     }
-    
+
     pub fn is_enabled(&self) -> bool {
         self.enabled
     }

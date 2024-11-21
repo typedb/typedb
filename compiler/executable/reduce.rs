@@ -9,9 +9,8 @@ use std::{collections::HashMap, sync::Arc};
 use answer::variable::Variable;
 use encoding::value::value_type::ValueType;
 use ir::pattern::IrID;
-use crate::executable::next_executable_id;
 
-use crate::VariablePosition;
+use crate::{executable::next_executable_id, VariablePosition};
 
 #[derive(Debug, Clone)]
 pub struct ReduceExecutable {
@@ -21,11 +20,14 @@ pub struct ReduceExecutable {
 }
 
 impl ReduceExecutable {
-    pub(crate) fn new(rows_executable: ReduceRowsExecutable, output_row_mapping:  HashMap<Variable, VariablePosition>,) -> Self {
+    pub(crate) fn new(
+        rows_executable: ReduceRowsExecutable,
+        output_row_mapping: HashMap<Variable, VariablePosition>,
+    ) -> Self {
         Self {
             executable_id: next_executable_id(),
             reduce_rows_executable: Arc::new(rows_executable),
-            output_row_mapping
+            output_row_mapping,
         }
     }
 }

@@ -256,30 +256,24 @@ fn compile_stage(
                 retained_positions.insert(pos);
                 output_row_mapping.insert(variable, pos);
             }
-            Ok(ExecutableStage::Select(Arc::new(SelectExecutable::new(retained_positions, output_row_mapping ))))
+            Ok(ExecutableStage::Select(Arc::new(SelectExecutable::new(retained_positions, output_row_mapping))))
         }
-        AnnotatedStage::Sort(sort) => Ok(ExecutableStage::Sort(Arc::new(SortExecutable::new(
-            sort.variables.clone(),
-            input_variables.clone(),
-        )))),
-        AnnotatedStage::Offset(offset) => Ok(ExecutableStage::Offset(Arc::new(OffsetExecutable::new(
-            offset.offset(),
-            input_variables.clone(),
-        )))),
-        AnnotatedStage::Limit(limit) => Ok(ExecutableStage::Limit(Arc::new(LimitExecutable::new(
-            limit.limit(),
-            input_variables.clone(),
-        )))),
+        AnnotatedStage::Sort(sort) => {
+            Ok(ExecutableStage::Sort(Arc::new(SortExecutable::new(sort.variables.clone(), input_variables.clone()))))
+        }
+        AnnotatedStage::Offset(offset) => {
+            Ok(ExecutableStage::Offset(Arc::new(OffsetExecutable::new(offset.offset(), input_variables.clone()))))
+        }
+        AnnotatedStage::Limit(limit) => {
+            Ok(ExecutableStage::Limit(Arc::new(LimitExecutable::new(limit.limit(), input_variables.clone()))))
+        }
         AnnotatedStage::Require(require) => {
             let mut required_positions = HashSet::with_capacity(require.variables.len());
             for &variable in &require.variables {
                 let pos = input_variables[&variable];
                 required_positions.insert(pos);
             }
-            Ok(ExecutableStage::Require(Arc::new(RequireExecutable::new(
-                required_positions,
-                input_variables.clone(),
-            ))))
+            Ok(ExecutableStage::Require(Arc::new(RequireExecutable::new(required_positions, input_variables.clone()))))
         }
         AnnotatedStage::Reduce(reduce, typed_reducers) => {
             debug_assert_eq!(reduce.assigned_reductions.len(), typed_reducers.len());
@@ -298,9 +292,9 @@ fn compile_stage(
                 let reducer_on_position = reducer_on_variable.clone().map(input_variables);
                 reductions.push(reducer_on_position);
             }
-            Ok(ExecutableStage::Reduce(Arc::new(ReduceExecutable::new( 
+            Ok(ExecutableStage::Reduce(Arc::new(ReduceExecutable::new(
                 ReduceRowsExecutable { reductions, input_group_positions },
-                output_row_mapping
+                output_row_mapping,
             ))))
         }
     }
