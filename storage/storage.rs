@@ -169,7 +169,7 @@ impl<Durability> MVCCStorage<Durability> {
 
     pub fn open_snapshot_write(self: Arc<Self>) -> WriteSnapshot<Durability> {
         // guarantee external consistency: we always await the latest snapshots to finish
-        let possible_sequence_number = self.isolation_manager.highest_possible_watermark();
+        let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
         let mut open_sequence_number = self.snapshot_watermark();
         while open_sequence_number < possible_sequence_number {
             sleep(Duration::from_micros(WATERMARK_WAIT_INTERVAL_MICROSECONDS));
@@ -188,7 +188,7 @@ impl<Durability> MVCCStorage<Durability> {
 
     pub fn open_snapshot_read(self: Arc<Self>) -> ReadSnapshot<Durability> {
         // guarantee external consistency: we always await the latest snapshots to finish
-        let possible_sequence_number = self.isolation_manager.highest_possible_watermark();
+        let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
         let mut open_sequence_number = self.snapshot_watermark();
         while open_sequence_number < possible_sequence_number {
             sleep(Duration::from_micros(WATERMARK_WAIT_INTERVAL_MICROSECONDS));
@@ -206,7 +206,7 @@ impl<Durability> MVCCStorage<Durability> {
 
     pub fn open_snapshot_schema(self: Arc<Self>) -> SchemaSnapshot<Durability> {
         // guarantee external consistency: we always await the latest snapshots to finish
-        let possible_sequence_number = self.isolation_manager.highest_possible_watermark();
+        let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
         let mut open_sequence_number = self.snapshot_watermark();
         while open_sequence_number < possible_sequence_number {
             sleep(Duration::from_micros(WATERMARK_WAIT_INTERVAL_MICROSECONDS));

@@ -435,7 +435,7 @@ fn make_update_statistics_fn(
     query_cache: Arc<QueryCache>,
 ) -> impl Fn() {
     move || {
-        if storage.read_watermark() > (*schema).read().unwrap().thing_statistics.sequence_number {
+        if storage.snapshot_watermark() > (*schema).read().unwrap().thing_statistics.sequence_number {
             let _schema_txn_guard = schema_txn_lock.read().unwrap(); // prevent Schema txns from opening during statistics update
             let mut thing_statistics = (*schema.read().unwrap().thing_statistics).clone();
             thing_statistics.may_synchronise(&storage).ok();
