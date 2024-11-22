@@ -25,10 +25,11 @@ use lending_iterator::{
 };
 use storage::snapshot::ReadableSnapshot;
 
-use super::isa_executor::{AttributeEraseFn, MapToThing, ObjectEraseFn};
 use crate::{
     instruction::{
-        isa_executor::{IsaFilterFn, IsaTupleIterator, SingleTypeIsaIterator, EXTRACT_THING, EXTRACT_TYPE},
+        isa_executor::{
+            AttributeEraseFn, IsaFilterFn, IsaTupleIterator, MapToThing, ObjectEraseFn, EXTRACT_THING, EXTRACT_TYPE,
+        },
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes, TYPES_EMPTY,
@@ -46,12 +47,8 @@ pub(crate) struct IsaReverseExecutor {
     checker: Checker<(AsHkt![Thing<'_>], Type)>,
 }
 
-pub(crate) type IsaReverseUnboundedSortedTypeSingle = IsaTupleIterator<SingleTypeIsaIterator>;
-pub(crate) type IsaReverseUnboundedSortedThingSingle = IsaTupleIterator<SingleTypeIsaIterator>;
 pub(crate) type IsaReverseBoundedSortedThing = IsaTupleIterator<MultipleTypeIsaIterator>;
-
-pub(crate) type IsaReverseUnboundedSortedTypeMerged = IsaTupleIterator<MultipleTypeIsaIterator>;
-pub(crate) type IsaReverseUnboundedSortedThingMerged = IsaTupleIterator<MultipleTypeIsaIterator>;
+pub(crate) type IsaReverseUnboundedSortedType = IsaTupleIterator<MultipleTypeIsaIterator>;
 
 type MultipleTypeIsaObjectIterator = Flatten<
     AsLendingIterator<vec::IntoIter<ThingWithType<MapToThing<InstanceIterator<AsHkt![Object<'_>]>, ObjectEraseFn>>>>,
@@ -126,10 +123,10 @@ impl IsaReverseExecutor {
                     self.type_to_instance_types.as_ref(),
                     self.isa.isa_kind(),
                 )?;
-                let as_tuples: IsaReverseUnboundedSortedTypeMerged = thing_iter
+                let as_tuples: IsaReverseUnboundedSortedType = thing_iter
                     .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
                     .map(isa_to_tuple_type_thing);
-                Ok(TupleIterator::IsaReverseUnboundedMerged(SortedTupleIterator::new(
+                Ok(TupleIterator::IsaReverseUnbounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
@@ -223,7 +220,7 @@ pub(super) fn instances_of_types_chained<'a>(
             } else {
                 vec![type_.clone()]
             };
-            returned_types.into_iter().map(move |subtype| {
+            returned_types.into_iter().map(move |_subtype| {
                 Ok::<_, Box<_>>(with_type(
                     thing_manager
                         .get_attributes_in(snapshot, type_.as_attribute_type())?

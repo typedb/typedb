@@ -13,9 +13,7 @@ use concept::{
     iterator::InstanceIterator,
     thing::{
         attribute::{Attribute, AttributeIterator},
-        entity::Entity,
         object::Object,
-        relation::Relation,
         thing_manager::ThingManager,
     },
 };
@@ -50,14 +48,6 @@ pub(crate) struct IsaExecutor {
     checker: Checker<(AsHkt![Thing<'_>], Type)>,
 }
 
-type MapToThingType<I, F> = Map<I, F, Result<(AsHkt![Thing<'_>], Type), Box<ConceptReadError>>>;
-type EntityToThingTypeFn =
-    for<'a> fn(Result<Entity<'a>, Box<ConceptReadError>>) -> Result<(Thing<'a>, Type), Box<ConceptReadError>>;
-type RelationToThingTypeFn =
-    for<'a> fn(Result<Relation<'a>, Box<ConceptReadError>>) -> Result<(Thing<'a>, Type), Box<ConceptReadError>>;
-type AttributeToThingTypeFn =
-    for<'a> fn(Result<Attribute<'a>, Box<ConceptReadError>>) -> Result<(Thing<'a>, Type), Box<ConceptReadError>>;
-
 type MultipleTypeIsaObjectIterator = Flatten<
     AsLendingIterator<vec::IntoIter<ThingWithTypes<MapToThing<InstanceIterator<AsHkt![Object<'_>]>, ObjectEraseFn>>>>,
 >;
@@ -87,9 +77,7 @@ type ThingWithTypes<I> = Map<
     Result<(AsHkt![Thing<'_>], Type), Box<ConceptReadError>>,
 >;
 
-pub(super) type IsaUnboundedSortedTypeMerged = IsaTupleIterator<MultipleTypeIsaIterator>;
-
-pub(super) type IsaUnboundedSortedThingMerged = IsaTupleIterator<MultipleTypeIsaIterator>;
+pub(super) type IsaUnboundedSortedThing = IsaTupleIterator<MultipleTypeIsaIterator>;
 
 pub(super) type IsaBoundedSortedType =
     IsaTupleIterator<ThingWithTypes<Once<Result<AsHkt![Thing<'_>], Box<ConceptReadError>>>>>;
@@ -165,10 +153,10 @@ impl IsaExecutor {
                     self.isa.isa_kind(),
                     instances_range,
                 )?;
-                let as_tuples: IsaUnboundedSortedThingMerged = thing_iter
+                let as_tuples: IsaUnboundedSortedThing = thing_iter
                     .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
                     .map(isa_to_tuple_thing_type);
-                Ok(TupleIterator::IsaUnboundedMerged(SortedTupleIterator::new(
+                Ok(TupleIterator::IsaUnbounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
@@ -216,7 +204,7 @@ fn with_types<I: for<'a> LendingIterator<Item<'a> = Result<Thing<'a>, Box<Concep
     })
 }
 
-pub(super) fn instances_of_all_types_chained<'a>(
+pub(super) fn instances_of_all_types_chained(
     snapshot: &impl ReadableSnapshot,
     thing_manager: &ThingManager,
     instance_types_to_types: &BTreeMap<Type, Vec<Type>>,
