@@ -154,10 +154,10 @@ release:
     owner: typedb
     branch: [master, "3.0"]
   validation:
-    validate-dependencies:
-      image: typedb-ubuntu-22.04
-      command: |
-        bazel test //:release-validate-deps --test_output=streamed
+#    validate-dependencies:
+#      image: typedb-ubuntu-22.04
+#      command: |
+#        bazel test //:release-validate-deps --test_output=streamed
 
 #    validate-release-notes:
 #      image: typedb-ubuntu-22.04

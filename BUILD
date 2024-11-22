@@ -306,7 +306,7 @@ release_validate_deps(
     tagged_deps = [
         # TODO: Reenable
 #         "@typeql",
-#         "@typedb_protocol",
+         "@typedb_protocol",
     ],
     tags = ["manual"],  # in order for bazel test //... to not fail
     version_file = "VERSION",
