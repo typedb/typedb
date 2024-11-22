@@ -16,6 +16,7 @@ pub enum VariableCategory {
     Thing,
     Object,
 
+    AttributeOrValue,
     Attribute,
     Value,
 
@@ -49,11 +50,19 @@ impl VariableCategory {
 
             (Self::Thing, Self::Thing) => Some(Self::Thing),
             (Self::Thing, Self::Object) | (Self::Object, Self::Thing) => Some(Self::Object),
+            (Self::Thing, Self::AttributeOrValue) | (Self::AttributeOrValue, Self::Thing) => Some(Self::Attribute),
             (Self::Thing, Self::Attribute) | (Self::Attribute, Self::Thing) => Some(Self::Attribute),
             (_, Self::Thing) | (Self::Thing, _) => None,
 
             (Self::Object, Self::Object) => Some(Self::Object),
             (_, Self::Object) | (Self::Object, _) => None,
+
+            (Self::AttributeOrValue, Self::AttributeOrValue) => Some(Self::AttributeOrValue),
+            (Self::AttributeOrValue, Self::Attribute) | (Self::Attribute, Self::AttributeOrValue) => {
+                Some(Self::Attribute)
+            }
+            (Self::AttributeOrValue, Self::Value) | (Self::Value, Self::AttributeOrValue) => Some(Self::Value),
+            (Self::AttributeOrValue, _) | (_, Self::AttributeOrValue) => None,
 
             (Self::Attribute, Self::Attribute) => Some(Self::Attribute),
             (_, Self::Attribute) | (Self::Attribute, _) => None,

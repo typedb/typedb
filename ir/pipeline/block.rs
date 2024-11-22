@@ -106,9 +106,11 @@ fn validate_conjunction(
     conjunction: &Conjunction,
     variable_registry: &VariableRegistry,
 ) -> Result<(), Box<RepresentationError>> {
-    let unbound = conjunction
-        .referenced_variables()
-        .find(|&variable| variable_registry.get_variable_category(variable).is_none());
+    let unbound =
+        conjunction.referenced_variables().find(|&variable| match variable_registry.get_variable_category(variable) {
+            Some(VariableCategory::AttributeOrValue) | None => true,
+            _ => false,
+        });
     match unbound {
         Some(variable) => Err(Box::new(RepresentationError::UnboundVariable {
             variable: variable_registry.get_variable_name(variable).cloned().unwrap_or(String::new()),

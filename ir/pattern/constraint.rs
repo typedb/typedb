@@ -253,17 +253,12 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
         if let Some(lhs) = lhs_var {
             debug_assert!(self.context.is_variable_available(self.constraints.scope, lhs));
-            self.context.set_variable_category(lhs, VariableCategory::Value, comparison.clone().into())?;
+            self.context.set_variable_category(lhs, VariableCategory::AttributeOrValue, comparison.clone().into())?;
         }
-
         if let Some(rhs) = rhs_var {
             debug_assert!(self.context.is_variable_available(self.constraints.scope, rhs));
-            self.context.set_variable_category(rhs, VariableCategory::Value, comparison.clone().into())?;
+            self.context.set_variable_category(rhs, VariableCategory::AttributeOrValue, comparison.clone().into())?;
         }
-
-        // TODO The above lines were the two lines below
-        // self.context.set_variable_category(lhs, VariableCategory::AttributeOrValue, comparison.clone().into())?;
-        // self.context.set_variable_category(rhs, VariableCategory::AttributeOrValue, comparison.clone().into())?;
 
         let as_ref = self.constraints.add_constraint(comparison);
         Ok(as_ref.as_comparison().unwrap())

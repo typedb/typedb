@@ -334,6 +334,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             VariableCategory::ObjectList | VariableCategory::Object => (true, true, false, false),
             VariableCategory::AttributeList | VariableCategory::Attribute => (false, false, true, false),
             VariableCategory::ValueList | VariableCategory::Value => (false, false, true, false),
+            VariableCategory::AttributeOrValue => unreachable!("Insufficiently bound variable!"),
         };
         let mut annotations = BTreeSet::new();
 
