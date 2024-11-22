@@ -19,11 +19,10 @@ use lending_iterator::{
 };
 use storage::snapshot::ReadableSnapshot;
 
-use super::tuple::Tuple;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{TuplePositions, TupleResult},
+        tuple::{Tuple, TuplePositions, TupleResult},
         Checker, FilterFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,

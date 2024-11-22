@@ -97,6 +97,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             .constraints()
             .iter()
             .flat_map(|constraint| constraint.vertices())
+            .filter(|vertex| !vertex.is_parameter())
             .unique()
             .all(|vertex| graph.vertices.contains_key(vertex)));
 
@@ -1637,7 +1638,7 @@ pub mod tests {
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
 
-        let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), (type_fears, _, _)) =
+        let ((_type_animal, type_cat, type_dog), (_type_name, type_catname, type_dogname), (type_fears, _, _)) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
         // Case 1: $a has $n;

@@ -7,7 +7,6 @@
 use std::{
     collections::HashMap,
     fmt,
-    fmt::{Display, Formatter},
     hash::{DefaultHasher, Hasher},
     mem,
     ops::Deref,
