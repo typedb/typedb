@@ -305,8 +305,8 @@ release_validate_deps(
     refs = "@typedb_workspace_refs//:refs.json",
     tagged_deps = [
         # TODO: Reenable
-        # "@typeql",
-         "@typedb_protocol",
+#         "@typeql",
+#         "@typedb_protocol",
     ],
     tags = ["manual"],  # in order for bazel test //... to not fail
     version_file = "VERSION",
