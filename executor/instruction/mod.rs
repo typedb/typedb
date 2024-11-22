@@ -186,6 +186,7 @@ impl InstructionExecutor {
     pub(crate) const fn name(&self) -> &'static str {
         match self {
             InstructionExecutor::Is(_) => "is",
+            InstructionExecutor::Iid(_) => "iid",
             InstructionExecutor::Isa(_) => "isa",
             InstructionExecutor::IsaReverse(_) => "isa_reverse",
             InstructionExecutor::Has(_) => "has",
@@ -499,6 +500,29 @@ impl<T: Hkt> Checker<T> {
 
         for check in &self.checks {
             match check {
+                &CheckInstruction::Iid { var, iid } => {
+                    let maybe_var_extractor = self.extractors.get(&var);
+                    let var: BoxExtractor<T> = match maybe_var_extractor {
+                        Some(&subtype) => Box::new(subtype),
+                        None => make_const_extractor(&CheckVertex::Variable(var), row, context),
+                    };
+                    let iid = context.parameters().iid(iid).unwrap().clone();
+                    filters.push(Box::new(move |value| {
+                        let value = var(value);
+                        match value {
+                            VariableValue::Thing(thing) => match thing {
+                                Thing::Entity(entity) => Ok(iid.bytes() == entity.vertex().bytes().bytes()),
+                                Thing::Relation(relation) => Ok(iid.bytes() == relation.vertex().bytes().bytes()),
+                                Thing::Attribute(attribute) => Ok(iid.bytes() == attribute.vertex().bytes().bytes()),
+                            },
+                            VariableValue::Empty => Ok(false),
+                            VariableValue::Type(_) => Ok(false),
+                            VariableValue::Value(_) => Ok(false), // or unreachable?
+                            VariableValue::ThingList(_) | VariableValue::ValueList(_) => todo!(),
+                        }
+                    }))
+                }
+
                 &CheckInstruction::TypeList { type_var, ref types } => {
                     let maybe_type_extractor = self.extractors.get(&type_var);
                     let type_: BoxExtractor<T> = match maybe_type_extractor {
