@@ -34,7 +34,8 @@ pub fn check_annotations(
 ) -> Result<(), TypeInferenceError> {
     for constraint in block.conjunction().constraints() {
         match constraint {
-            Constraint::Isa(_) => (), // Nothing to do
+            Constraint::Isa(_) => (),             // Nothing to do
+            Constraint::Iid(_) => unreachable!(), // iid in insert should have been rejected by now
             Constraint::Has(has) => {
                 validate_has_insertable(
                     snapshot,
