@@ -31,7 +31,7 @@ enum ContinueCondition {
 impl KeyspaceRangeIterator {
     pub(crate) fn new<'a, const INLINE_BYTES: usize>(
         keyspace: &'a Keyspace,
-        range: KeyRange<Bytes<'a, INLINE_BYTES>>,
+        range: &KeyRange<Bytes<'a, INLINE_BYTES>>,
     ) -> Self {
         // TODO: if self.has_prefix_extractor_for(prefix), we can enable bloom filters
         // read_opts.set_prefix_same_as_start(true);

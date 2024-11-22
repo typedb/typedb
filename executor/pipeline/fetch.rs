@@ -5,6 +5,7 @@
  */
 
 use std::{collections::HashMap, marker::PhantomData, sync::Arc};
+use itertools::{Itertools, MinMaxResult};
 
 use answer::{variable::Variable, variable_value::VariableValue, Concept, Thing};
 use compiler::{
@@ -30,6 +31,7 @@ use encoding::value::label::Label;
 use error::typedb_error;
 use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
 use lending_iterator::LendingIterator;
+use storage::key_range::{KeyRange, RangeEnd, RangeStart};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -538,9 +540,17 @@ fn prepare_attribute_type_has_iterator<'a>(
         .get_subtypes_transitive(snapshot.as_ref(), thing_manager.type_manager())
         .map_err(|source| FetchExecutionError::ConceptRead { source })?;
     let attribute_types = TypeAPI::chain_types(attribute_type.clone(), subtypes.into_iter().cloned());
-
+    let (min_type, max_type) = match attribute_types.into_iter().minmax() {
+        MinMaxResult::NoElements => return Ok(HasIterator::new_empty()),
+        MinMaxResult::OneElement(item) => (item.clone(), item.clone()),
+        MinMaxResult::MinMax(min, max) => (min.clone(), max.clone()),
+    };
+    let range = KeyRange::new_variable_width(
+        RangeStart::Inclusive(min_type),
+        RangeEnd::EndPrefixInclusive(max_type),
+    );
     object
-        .get_has_types_range_unordered(snapshot.as_ref(), thing_manager.as_ref(), attribute_types)
+        .get_has_types_range_unordered(snapshot.as_ref(), thing_manager.as_ref(), &range)
         .map_err(|source| FetchExecutionError::ConceptRead { source })
 }
 

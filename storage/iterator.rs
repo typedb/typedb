@@ -6,7 +6,7 @@
 
 use std::{cmp::Ordering, error::Error, fmt, sync::Arc};
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use lending_iterator::{LendingIterator, Peekable, Seekable};
 
 use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};
@@ -34,11 +34,14 @@ impl MVCCRangeIterator {
     //
     pub(crate) fn new<D, const PS: usize>(
         storage: &MVCCStorage<D>,
-        range: KeyRange<StorageKey<'_, PS>>,
+        range: &KeyRange<StorageKey<'_, PS>>,
         open_sequence_number: SequenceNumber,
     ) -> Self {
         let keyspace = storage.get_keyspace(range.start().get_value().keyspace_id());
-        let iterator = keyspace.iterate_range(range.map(|key| key.into_bytes(), |fixed_width| fixed_width));
+        let mapped_range = range.map(
+            |key| key.as_bytes(),
+            |fixed_width| fixed_width);
+        let iterator = keyspace.iterate_range(&mapped_range);
         MVCCRangeIterator {
             storage_name: storage.name(),
             keyspace_id: keyspace.id(),

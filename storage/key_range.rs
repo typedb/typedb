@@ -49,15 +49,14 @@ impl<T: Prefix> KeyRange<T> {
         (self.start, self.end, self.fixed_width_keys)
     }
 
-    pub fn map<V: Prefix>(
-        self,
-        prefix_mapper: impl Fn(T) -> V,
+    pub fn map<'a, V: Prefix>(
+        &'a self,
+        prefix_mapper: impl Fn(&'a T) -> V,
         fixed_width_mapper: impl Fn(bool) -> bool,
     ) -> KeyRange<V> {
-        let (start, end, fixed_width) = self.into_raw();
-        let start = start.map(&prefix_mapper);
-        let end = end.map(&prefix_mapper);
-        let fixed_width = fixed_width_mapper(fixed_width);
+        let start = (&self.start).map(&prefix_mapper);
+        let end = (&self.end).map(&prefix_mapper);
+        let fixed_width = fixed_width_mapper(self.fixed_width_keys);
         match fixed_width {
             true => KeyRange::new_fixed_width(start, end),
             false => KeyRange::new_variable_width(start, end),
@@ -82,7 +81,7 @@ where
         matches!(self, Self::Exclusive(_))
     }
 
-    pub fn map<U: Ord + Debug>(self, mapper: impl FnOnce(T) -> U) -> RangeStart<U> {
+    pub fn map<'a: 'b, 'b, U: Ord + Debug + 'b>(&'a self, mapper: impl FnOnce(&'a T) -> U) -> RangeStart<U> {
         match self {
             Self::Inclusive(end) => RangeStart::Inclusive(mapper(end)),
             Self::Exclusive(end) => RangeStart::Exclusive(mapper(end)),
@@ -118,7 +117,7 @@ impl<T> RangeEnd<T>
 where
     T: Ord + Debug,
 {
-    pub fn map<U: Ord + Debug>(self, mapper: impl FnOnce(T) -> U) -> RangeEnd<U> {
+    pub fn map<'a: 'b, 'b, U: Ord + Debug + 'b >(&'a self, mapper: impl FnOnce(&'a T) -> U) -> RangeEnd<U> {
         match self {
             RangeEnd::WithinStartAsPrefix => RangeEnd::WithinStartAsPrefix,
             RangeEnd::EndPrefixInclusive(end) => RangeEnd::EndPrefixInclusive(mapper(end)),

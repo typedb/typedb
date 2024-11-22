@@ -252,9 +252,9 @@ impl Keyspace {
     }
 
     // TODO: we should benchmark using iterator pools, which would require changing prefix/range on read options
-    pub(crate) fn iterate_range<'s, const PREFIX_INLINE_SIZE: usize>(
-        &'s self,
-        range: KeyRange<Bytes<'s, PREFIX_INLINE_SIZE>>,
+    pub(crate) fn iterate_range<const PREFIX_INLINE_SIZE: usize>(
+        & self,
+        range: &KeyRange<Bytes<'_, PREFIX_INLINE_SIZE>>,
     ) -> iterator::KeyspaceRangeIterator {
         iterator::KeyspaceRangeIterator::new(self, range)
     }

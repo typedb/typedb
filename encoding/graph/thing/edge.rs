@@ -63,7 +63,7 @@ impl<'a> ThingEdgeHas<'a> {
     }
 
     pub fn prefix_from_type(
-        type_: TypeVertex<'static>,
+        type_: TypeVertex<'_>,
     ) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
         bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
@@ -272,7 +272,7 @@ impl<'a> ThingEdgeHasReverse<'a> {
     ) -> KeyRange<StorageKey<'static, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM_TO_TYPE }>> {
         KeyRange::new_fixed_width(
             RangeStart::Inclusive(Self::prefix_from_attribute_to_type(from.clone(), range_start)),
-            range_end.map(|vertex| Self::prefix_from_attribute_to_type(from, vertex)),
+            range_end.map(|vertex| Self::prefix_from_attribute_to_type(from, vertex.as_reference())),
         )
     }
     // end TODO

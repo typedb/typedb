@@ -44,6 +44,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::min_max_types;
 
 pub(crate) struct HasExecutor {
     has: ir::pattern::constraint::Has<ExecutorVariable>,
@@ -168,7 +169,7 @@ impl HasExecutor {
                 );
                 // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
                 let as_tuples: HasUnboundedSortedOwner = thing_manager
-                    .get_has_from_owner_type_range_unordered(snapshot, key_range)
+                    .get_has_from_owner_type_range_unordered(snapshot, &key_range)
                     .try_filter::<_, HasFilterFn, (Has<'_>, _), _>(filter_for_row)
                     .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_owner_attribute);
                 Ok(TupleIterator::HasUnbounded(SortedTupleIterator::new(
@@ -179,13 +180,18 @@ impl HasExecutor {
             }
             BinaryIterateMode::UnboundInverted => {
                 debug_assert!(self.owner_cache.is_some());
+                let (min_attribute_type, max_attribute_type) = min_max_types(&*self.attribute_types);
+                let type_range = KeyRange::new_variable_width(
+                    RangeStart::Inclusive(min_attribute_type.as_attribute_type()),
+                    RangeEnd::EndPrefixInclusive(max_attribute_type.as_attribute_type()),
+                );
                 if let Some([owner]) = self.owner_cache.as_deref() {
                     // no heap allocs needed if there is only 1 iterator
                     let iterator = owner.get_has_types_range_unordered(
                         snapshot,
                         thing_manager,
                         // TODO: this should be just the types owned by the one instance's type in the cache!
-                        self.attribute_types.iter().map(|t| t.as_attribute_type()),
+                        &type_range,
                     )?;
                     let as_tuples: HasUnboundedSortedAttributeSingle = iterator
                         .try_filter::<_, HasFilterFn, (Has<'_>, _), _>(filter_for_row)
@@ -204,7 +210,7 @@ impl HasExecutor {
                             Ok::<_, Box<_>>(Peekable::new(object.get_has_types_range_unordered(
                                 snapshot,
                                 thing_manager,
-                                self.attribute_types.iter().map(|ty| ty.as_attribute_type()),
+                                &type_range,
                             )?))
                         })
                         .collect::<Result<Vec<_>, _>>()?;
@@ -224,18 +230,23 @@ impl HasExecutor {
             }
             BinaryIterateMode::BoundFrom => {
                 let owner = self.has.owner().as_variable().unwrap().as_position().unwrap();
+                let (min_attribute_type, max_attribute_type) = min_max_types(&*self.attribute_types);
+                let type_range = KeyRange::new_variable_width(
+                    RangeStart::Inclusive(min_attribute_type.as_attribute_type()),
+                    RangeEnd::EndPrefixInclusive(max_attribute_type.as_attribute_type()),
+                );
                 debug_assert!(row.len() > owner.as_usize());
                 // TODO: inject value ranges
                 let iterator = match row.get(owner) {
                     VariableValue::Thing(Thing::Entity(entity)) => entity.get_has_types_range_unordered(
                         snapshot,
                         thing_manager,
-                        self.attribute_types.iter().map(|t| t.as_attribute_type()),
+                        &type_range,
                     )?,
                     VariableValue::Thing(Thing::Relation(relation)) => relation.get_has_types_range_unordered(
                         snapshot,
                         thing_manager,
-                        self.attribute_types.iter().map(|t| t.as_attribute_type()),
+                        &type_range,
                     )?,
                     _ => unreachable!("Has owner must be an entity or relation."),
                 };

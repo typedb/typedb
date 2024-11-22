@@ -25,6 +25,7 @@ use storage::{
     key_value::StorageKey,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
+use storage::key_range::KeyRange;
 
 use crate::{
     edge_iterator,
@@ -219,9 +220,9 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         &self,
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
-        attribute_types_defining_range: impl Iterator<Item = AttributeType<'static>>,
+        attribute_type_range: &KeyRange<AttributeType<'static>>,
     ) -> Result<HasIterator, Box<ConceptReadError>> {
-        thing_manager.get_has_from_thing_to_type_range_unordered(snapshot, self, attribute_types_defining_range)
+        thing_manager.get_has_from_thing_to_type_range_unordered(snapshot, self, attribute_type_range)
     }
 
     fn set_has_unordered(

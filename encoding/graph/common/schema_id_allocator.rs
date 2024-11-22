@@ -61,7 +61,7 @@ impl<'a, T: SchemaID + Keyable<'a, BUFFER_KEY_INLINE>> SchemaIDAllocator<T> {
         snapshot: &mut Snapshot,
         start: u64,
     ) -> Result<Option<u64>, EncodingError> {
-        let mut schema_object_iter = snapshot.iterate_range(KeyRange::new_fixed_width(
+        let mut schema_object_iter = snapshot.iterate_range(&KeyRange::new_fixed_width(
             RangeStart::Inclusive(T::object_from_id(self.prefix, start).into_storage_key()),
             RangeEnd::EndPrefixInclusive(T::object_from_id(self.prefix, T::MAX_ID).into_storage_key()),
         ));

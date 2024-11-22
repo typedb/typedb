@@ -99,7 +99,7 @@ macro_rules! edge_iterator {
                 $name { snapshot_iterator: Some(snapshot_iterator) }
             }
 
-            pub(crate) fn new_empty() -> Self {
+            pub fn new_empty() -> Self {
                 $name { snapshot_iterator: None }
             }
 

@@ -135,7 +135,7 @@ impl ThingManager {
         let storage_key_prefix =
             <T::HktSelf<'_> as ThingAPI<'_>>::Vertex::build_prefix_type(prefix, thing_type.vertex().type_id_());
         let snapshot_iterator = snapshot
-            .iterate_range(KeyRange::new_within(RangeStart::Inclusive(storage_key_prefix), prefix.fixed_width_keys()));
+            .iterate_range(&KeyRange::new_within(RangeStart::Inclusive(storage_key_prefix), prefix.fixed_width_keys()));
         InstanceIterator::new(snapshot_iterator)
     }
 
@@ -143,7 +143,7 @@ impl ThingManager {
         let (prefix_start, prefix_end_exclusive) = <T::HktSelf<'_> as ThingAPI<'_>>::PREFIX_RANGE_INCLUSIVE;
         let key_start = <T::HktSelf<'_> as ThingAPI<'_>>::Vertex::build_prefix_prefix(prefix_start);
         let key_end = <T::HktSelf<'_> as ThingAPI<'_>>::Vertex::build_prefix_prefix(prefix_end_exclusive);
-        let snapshot_iterator = snapshot.iterate_range(KeyRange::new_variable_width(
+        let snapshot_iterator = snapshot.iterate_range(&KeyRange::new_variable_width(
             RangeStart::Inclusive(key_start),
             RangeEnd::EndPrefixInclusive(key_end),
         ));
@@ -200,7 +200,7 @@ impl ThingManager {
         player: &impl ObjectAPI<'o>,
     ) -> RelationRoleIterator {
         let prefix = ThingEdgeLinks::prefix_reverse_from_player(player.vertex());
-        RelationRoleIterator::new(snapshot.iterate_range(KeyRange::new_within(
+        RelationRoleIterator::new(snapshot.iterate_range(&KeyRange::new_within(
             RangeStart::Inclusive(prefix),
             ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE,
         )))
@@ -238,8 +238,8 @@ impl ThingManager {
         let has_reverse_start = ThingEdgeHasReverse::prefix_from_prefix(Prefix::VertexAttribute);
         let range =
             KeyRange::new_within(RangeStart::Inclusive(has_reverse_start), Prefix::VertexAttribute.fixed_width_keys());
-        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(range.clone());
-        let has_reverse_iterator_storage = snapshot.iterate_storage_range(range);
+        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(&range);
+        let has_reverse_iterator_storage = snapshot.iterate_storage_range(&range);
         Ok(AttributeIterator::new(
             self.get_instances::<Attribute<'_>>(snapshot),
             has_reverse_iterator_buffer,
@@ -262,8 +262,8 @@ impl ThingManager {
         let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute_type(attribute_type.vertex().type_id_());
         let range =
             KeyRange::new_within(RangeStart::Inclusive(has_reverse_prefix), ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
-        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(range.clone());
-        let has_reverse_iterator_storage = snapshot.iterate_storage_range(range);
+        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(&range);
+        let has_reverse_iterator_storage = snapshot.iterate_storage_range(&range);
 
         Ok(AttributeIterator::new(
             self.get_instances_in(snapshot, attribute_type.into_owned()),
@@ -446,11 +446,11 @@ impl ThingManager {
         };
         let has_reverse_range =
             KeyRange::new_variable_width(RangeStart::Inclusive(has_reverse_start_prefix), has_reverse_end_prefix);
-        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(has_reverse_range.clone());
-        let has_reverse_iterator_storage = snapshot.iterate_storage_range(has_reverse_range);
+        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(&has_reverse_range);
+        let has_reverse_iterator_storage = snapshot.iterate_storage_range(&has_reverse_range);
 
         let range = KeyRange::new_variable_width(key_range_start, key_range_end);
-        let snapshot_iterator = snapshot.iterate_range(range);
+        let snapshot_iterator = snapshot.iterate_range(&range);
         let attributes_iterator = InstanceIterator::new(snapshot_iterator);
         Ok(AttributeIterator::new(
             attributes_iterator,
@@ -571,11 +571,13 @@ impl ThingManager {
     pub fn get_has_from_owner_type_range_unordered(
         &self,
         snapshot: &impl ReadableSnapshot,
-        owner_type_range: KeyRange<ObjectType<'static>>,
+        owner_type_range: &KeyRange<ObjectType<'static>>,
     ) -> HasIterator {
-        let range = owner_type_range
-            .map(|type_| ThingEdgeHas::prefix_from_type(type_.into_vertex()), |_| ThingEdgeHas::FIXED_WIDTH_ENCODING);
-        HasIterator::new(snapshot.iterate_range(range))
+        let range = owner_type_range.map(
+            |type_| ThingEdgeHas::prefix_from_type(type_.vertex()), 
+        |_| ThingEdgeHas::FIXED_WIDTH_ENCODING
+        );
+        HasIterator::new(snapshot.iterate_range(&range))
     }
 
     pub fn get_has_reverse(
@@ -585,7 +587,7 @@ impl ThingManager {
     ) -> Result<HasReverseIterator, Box<ConceptReadError>> {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute_type(attribute_type.vertex().type_id_());
         let range = KeyRange::new_within(RangeStart::Inclusive(prefix), ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
-        Ok(HasReverseIterator::new(snapshot.iterate_range(range)))
+        Ok(HasReverseIterator::new(snapshot.iterate_range(&range)))
     }
 
     pub fn get_has_reverse_in_range<'a>(
@@ -641,7 +643,7 @@ impl ThingManager {
         } else {
             KeyRange::new_variable_width(key_range_start, key_range_end)
         };
-        Ok(HasReverseIterator::new(snapshot.iterate_range(key_range)))
+        Ok(HasReverseIterator::new(snapshot.iterate_range(&key_range)))
     }
 
     pub fn get_attributes_by_struct_field<'this, Snapshot: ReadableSnapshot>(
@@ -669,7 +671,7 @@ impl ThingManager {
         )
         .map_err(|source| Box::new(ConceptReadError::SnapshotIterate { source }))?;
         let index_attribute_iterator = snapshot
-            .iterate_range(KeyRange::new_within(
+            .iterate_range(&KeyRange::new_within(
                 RangeStart::Inclusive(prefix),
                 Prefix::IndexValueToStruct.fixed_width_keys(),
             ))
@@ -686,8 +688,8 @@ impl ThingManager {
         let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute_type(attribute_type.vertex().type_id_());
         let range =
             KeyRange::new_within(RangeStart::Inclusive(has_reverse_prefix), ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
-        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(range.clone());
-        let has_reverse_iterator_storage = snapshot.iterate_storage_range(range);
+        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(&range);
+        let has_reverse_iterator_storage = snapshot.iterate_storage_range(&range);
 
         let iter = AttributeIterator::new(
             index_attribute_iterator,
@@ -706,7 +708,7 @@ impl ThingManager {
         let prefix = ThingEdgeHas::prefix_from_object(owner.vertex());
         HasAttributeIterator::new(
             snapshot
-                .iterate_range(KeyRange::new_within(RangeStart::Inclusive(prefix), ThingEdgeHas::FIXED_WIDTH_ENCODING)),
+                .iterate_range(&KeyRange::new_within(RangeStart::Inclusive(prefix), ThingEdgeHas::FIXED_WIDTH_ENCODING)),
         )
     }
 
@@ -719,7 +721,7 @@ impl ThingManager {
         let prefix = ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), attribute_type.into_vertex().type_id_());
         HasAttributeIterator::new(
             snapshot
-                .iterate_range(KeyRange::new_within(RangeStart::Inclusive(prefix), ThingEdgeHas::FIXED_WIDTH_ENCODING)),
+                .iterate_range(&KeyRange::new_within(RangeStart::Inclusive(prefix), ThingEdgeHas::FIXED_WIDTH_ENCODING)),
         )
     }
 
@@ -750,24 +752,13 @@ impl ThingManager {
         &'this self,
         snapshot: &'this impl ReadableSnapshot,
         owner: &impl ObjectAPI<'a>,
-        attribute_types: impl Iterator<Item = AttributeType<'static>>,
+        attribute_type_range: &KeyRange<AttributeType<'static>>,
     ) -> Result<HasIterator, Box<ConceptReadError>> {
-        let (min_type_id, max_type_id) = match attribute_types.minmax() {
-            MinMaxResult::NoElements => unreachable!(),
-            MinMaxResult::OneElement(type_) => (type_.vertex().type_id_(), type_.vertex().type_id_()),
-            MinMaxResult::MinMax(min, max) => (min.vertex().type_id_(), max.vertex().type_id_()),
-        };
-        let min_edge_prefix = ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), min_type_id);
-        let max_edge_prefix = ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), max_type_id);
-        let range = if min_edge_prefix != max_edge_prefix {
-            KeyRange::new_variable_width(
-                RangeStart::Inclusive(min_edge_prefix),
-                RangeEnd::EndPrefixInclusive(max_edge_prefix),
-            )
-        } else {
-            KeyRange::new_within(RangeStart::Inclusive(min_edge_prefix), ThingEdgeHas::FIXED_WIDTH_ENCODING)
-        };
-        Ok(HasIterator::new(snapshot.iterate_range(range)))
+        let mapped_range = attribute_type_range.map(
+            |attribute_type| ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), attribute_type.vertex().type_id_()),
+            |_| ThingEdgeHas::FIXED_WIDTH_ENCODING
+        );
+        Ok(HasIterator::new(snapshot.iterate_range(&mapped_range)))
     }
 
     pub(crate) fn get_owners(
@@ -776,7 +767,7 @@ impl ThingManager {
         attribute: Attribute<'_>,
     ) -> AttributeOwnerIterator {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute.into_vertex());
-        AttributeOwnerIterator::new(snapshot.iterate_range(KeyRange::new_within(
+        AttributeOwnerIterator::new(snapshot.iterate_range(&KeyRange::new_within(
             RangeStart::Inclusive(prefix),
             ThingEdgeHasReverse::FIXED_WIDTH_ENCODING,
         )))
@@ -789,7 +780,7 @@ impl ThingManager {
         owner_type: impl ObjectTypeAPI<'a>,
     ) -> AttributeOwnerIterator {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute_to_type(attribute.into_vertex(), owner_type.vertex());
-        AttributeOwnerIterator::new(snapshot.iterate_range(KeyRange::new_within(
+        AttributeOwnerIterator::new(snapshot.iterate_range(&KeyRange::new_within(
             RangeStart::Inclusive(prefix),
             ThingEdgeHasReverse::FIXED_WIDTH_ENCODING,
         )))
@@ -799,14 +790,14 @@ impl ThingManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         attribute: Attribute<'_>,
-        owner_type_range: KeyRange<ObjectType<'static>>,
+        owner_type_range: &KeyRange<ObjectType<'static>>,
     ) -> HasReverseIterator {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute_to_type_range(
             attribute.into_vertex(),
             owner_type_range.start().get_value().vertex(),
-            owner_type_range.end().clone().map(|object_type| object_type.into_vertex()),
+            owner_type_range.end().map(|object_type| object_type.vertex()),
         );
-        HasReverseIterator::new(snapshot.iterate_range(prefix))
+        HasReverseIterator::new(snapshot.iterate_range(&prefix))
     }
 
     pub(crate) fn has_owners(
@@ -817,7 +808,7 @@ impl ThingManager {
     ) -> bool {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute.into_vertex());
         snapshot.any_in_range(
-            KeyRange::new_within(RangeStart::Inclusive(prefix), ThingEdgeHasReverse::FIXED_WIDTH_ENCODING),
+            &KeyRange::new_within(RangeStart::Inclusive(prefix), ThingEdgeHasReverse::FIXED_WIDTH_ENCODING),
             buffered_only,
         )
     }
@@ -830,7 +821,7 @@ impl ThingManager {
     ) -> bool {
         let prefix = ThingEdgeLinks::prefix_from_relation(relation.into_vertex());
         snapshot.any_in_range(
-            KeyRange::new_within(RangeStart::Inclusive(prefix), ThingEdgeLinks::FIXED_WIDTH_ENCODING),
+            &KeyRange::new_within(RangeStart::Inclusive(prefix), ThingEdgeLinks::FIXED_WIDTH_ENCODING),
             buffered_only,
         )
     }
@@ -838,26 +829,26 @@ impl ThingManager {
     pub fn get_links_by_relation_type_range(
         &self,
         snapshot: &impl ReadableSnapshot,
-        relation_type_range: KeyRange<RelationType<'static>>,
+        relation_type_range: &KeyRange<RelationType<'static>>,
     ) -> LinksIterator {
         let range = relation_type_range.map(
-            |type_| ThingEdgeLinks::prefix_from_relation_type(type_.into_vertex()),
+            |type_| ThingEdgeLinks::prefix_from_relation_type(type_.vertex()),
             |_| ThingEdgeLinks::FIXED_WIDTH_ENCODING,
         );
-        LinksIterator::new(snapshot.iterate_range(range))
+        LinksIterator::new(snapshot.iterate_range(&range))
     }
 
     pub fn get_links_by_relation_and_player_type_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         relation: Relation<'_>,
-        player_type_range: KeyRange<ObjectType<'static>>,
+        player_type_range: &KeyRange<ObjectType<'static>>,
     ) -> LinksIterator {
         let range = player_type_range.map(
-            |type_| ThingEdgeLinks::prefix_from_relation_player_type(relation.vertex(), type_.into_vertex()),
+            |type_| ThingEdgeLinks::prefix_from_relation_player_type(relation.vertex(), type_.vertex()),
             |_| ThingEdgeLinks::FIXED_WIDTH_ENCODING,
         );
-        LinksIterator::new(snapshot.iterate_range(range))
+        LinksIterator::new(snapshot.iterate_range(&range))
     }
 
     pub fn get_links_by_relation_and_player<'a>(
@@ -868,7 +859,7 @@ impl ThingManager {
     ) -> LinksIterator {
         let prefix = ThingEdgeLinks::prefix_from_relation_player(relation.into_vertex(), player.into_vertex());
         LinksIterator::new(
-            snapshot.iterate_range(KeyRange::new_within(
+            snapshot.iterate_range(&KeyRange::new_within(
                 RangeStart::Inclusive(prefix),
                 ThingEdgeLinks::FIXED_WIDTH_ENCODING,
             )),
@@ -878,26 +869,26 @@ impl ThingManager {
     pub fn get_links_reverse_by_player_type_range(
         &self,
         snapshot: &impl ReadableSnapshot,
-        player_type_range: KeyRange<ObjectType<'static>>,
+        player_type_range: &KeyRange<ObjectType<'static>>,
     ) -> LinksIterator {
         let range = player_type_range.map(
-            |type_| ThingEdgeLinks::prefix_reverse_from_player_type(type_.into_vertex()),
+            |type_| ThingEdgeLinks::prefix_reverse_from_player_type(type_.vertex()),
             |_| ThingEdgeLinks::FIXED_WIDTH_ENCODING,
         );
-        LinksIterator::new(snapshot.iterate_range(range))
+        LinksIterator::new(snapshot.iterate_range(&range))
     }
 
     pub fn get_links_reverse_by_player_and_relation_type_range<'a>(
         &self,
         snapshot: &impl ReadableSnapshot,
         player: impl ObjectAPI<'a>,
-        relation_type_range: KeyRange<RelationType<'static>>,
+        relation_type_range: &KeyRange<RelationType<'static>>,
     ) -> LinksIterator {
         let range = relation_type_range.map(
-            |type_| ThingEdgeLinks::prefix_reverse_from_player_relation_type(player.vertex(), type_.into_vertex()),
+            |type_| ThingEdgeLinks::prefix_reverse_from_player_relation_type(player.vertex(), type_.vertex()),
             |_| ThingEdgeLinks::FIXED_WIDTH_ENCODING,
         );
-        LinksIterator::new(snapshot.iterate_range(range))
+        LinksIterator::new(snapshot.iterate_range(&range))
     }
 
     pub(crate) fn has_role_player<'a>(
@@ -922,7 +913,7 @@ impl ThingManager {
     ) -> RolePlayerIterator {
         let prefix = ThingEdgeLinks::prefix_from_relation(relation.into_vertex());
         RolePlayerIterator::new(
-            snapshot.iterate_range(KeyRange::new_within(
+            snapshot.iterate_range(&KeyRange::new_within(
                 RangeStart::Inclusive(prefix),
                 ThingEdgeLinks::FIXED_WIDTH_ENCODING,
             )),
@@ -965,7 +956,7 @@ impl ThingManager {
         from: Object<'_>,
     ) -> IndexedPlayersIterator {
         let prefix = ThingEdgeRolePlayerIndex::prefix_from(from.vertex());
-        IndexedPlayersIterator::new(snapshot.iterate_range(KeyRange::new_within(
+        IndexedPlayersIterator::new(snapshot.iterate_range(&KeyRange::new_within(
             RangeStart::Inclusive(prefix),
             ThingEdgeRolePlayerIndex::FIXED_WIDTH_ENCODING,
         )))
@@ -1180,7 +1171,7 @@ impl ThingManager {
         while any_deleted {
             any_deleted = false;
             for (key, _) in snapshot
-                .iterate_writes_range(KeyRange::new_within(
+                .iterate_writes_range(&KeyRange::new_within(
                     RangeStart::Inclusive(ThingEdgeLinks::prefix()),
                     ThingEdgeLinks::FIXED_WIDTH_ENCODING,
                 ))
@@ -1202,7 +1193,7 @@ impl ThingManager {
         while any_deleted {
             any_deleted = false;
             for key in snapshot
-                .iterate_writes_range(KeyRange::new_within(
+                .iterate_writes_range(&KeyRange::new_within(
                     RangeStart::Inclusive(ObjectVertex::build_prefix_prefix(Prefix::VertexRelation)),
                     ObjectVertex::FIXED_WIDTH_ENCODING,
                 ))
@@ -1220,7 +1211,7 @@ impl ThingManager {
         while any_deleted {
             any_deleted = false;
             for relation_type in snapshot
-                .iterate_writes_range(KeyRange::new_within(
+                .iterate_writes_range(&KeyRange::new_within(
                     RangeStart::Inclusive(TypeVertexProperty::build_prefix()),
                     TypeVertexProperty::FIXED_WIDTH_ENCODING,
                 ))
@@ -1263,7 +1254,7 @@ impl ThingManager {
 
     fn cleanup_attributes(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Box<ConceptWriteError>> {
         for (key, _write) in snapshot
-            .iterate_writes_range(KeyRange::new_within(
+            .iterate_writes_range(&KeyRange::new_within(
                 RangeStart::Inclusive(ThingEdgeHas::prefix()),
                 ThingEdgeHas::FIXED_WIDTH_ENCODING,
             ))
@@ -1281,7 +1272,7 @@ impl ThingManager {
         }
 
         for (key, _value) in snapshot
-            .iterate_writes_range(KeyRange::new_within(
+            .iterate_writes_range(&KeyRange::new_within(
                 RangeStart::Inclusive(StorageKey::new(
                     AttributeVertex::KEYSPACE,
                     Bytes::inline(Prefix::VertexAttribute.prefix_id().bytes(), 1),
@@ -1301,7 +1292,7 @@ impl ThingManager {
         }
 
         for attribute_type in snapshot
-            .iterate_writes_range(KeyRange::new_within(
+            .iterate_writes_range(&KeyRange::new_within(
                 RangeStart::Inclusive(TypeVertexProperty::build_prefix()),
                 TypeVertexProperty::FIXED_WIDTH_ENCODING,
             ))
@@ -1394,7 +1385,7 @@ impl ThingManager {
         out_relation_role_types: &mut HashMap<Relation<'static>, HashSet<RoleType<'static>>>,
     ) -> Result<(), Box<ConceptReadError>> {
         for key in snapshot
-            .iterate_writes_range(KeyRange::new_variable_width(
+            .iterate_writes_range(&KeyRange::new_variable_width(
                 RangeStart::Inclusive(StorageKey::new(
                     ObjectVertex::KEYSPACE,
                     Bytes::<0>::reference(ObjectVertex::build_prefix_prefix(Prefix::VertexEntity).bytes()),
@@ -1439,7 +1430,7 @@ impl ThingManager {
         snapshot: &impl WritableSnapshot,
         out_object_attribute_types: &mut HashMap<Object<'static>, HashSet<AttributeType<'static>>>,
     ) -> Result<(), Box<ConceptReadError>> {
-        for (key, _) in snapshot.iterate_writes_range(KeyRange::new_within(
+        for (key, _) in snapshot.iterate_writes_range(&KeyRange::new_within(
             RangeStart::Inclusive(ThingEdgeHas::prefix()),
             ThingEdgeHas::FIXED_WIDTH_ENCODING,
         )) {
@@ -1461,7 +1452,7 @@ impl ThingManager {
         out_relation_role_types: &mut HashMap<Relation<'static>, HashSet<RoleType<'static>>>,
         out_object_role_types: &mut HashMap<Object<'static>, HashSet<RoleType<'static>>>,
     ) -> Result<(), Box<ConceptReadError>> {
-        for (key, _) in snapshot.iterate_writes_range(KeyRange::new_within(
+        for (key, _) in snapshot.iterate_writes_range(&KeyRange::new_within(
             RangeStart::Inclusive(ThingEdgeLinks::prefix()),
             ThingEdgeLinks::FIXED_WIDTH_ENCODING,
         )) {

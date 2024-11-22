@@ -183,7 +183,7 @@ impl LinksExecutor {
                     RangeEnd::EndPrefixInclusive(last_key_from_type.as_relation_type()),
                 );
                 // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
-                let iterator = thing_manager.get_links_by_relation_type_range(snapshot, key_range);
+                let iterator = thing_manager.get_links_by_relation_type_range(snapshot, &key_range);
                 let as_tuples: LinksUnboundedSortedRelation = iterator
                     .try_filter::<_, LinksFilterFn, (Relation<'_>, RolePlayer<'_>, _), _>(filter_for_row)
                     .map(links_to_tuple_relation_player_role);
@@ -208,7 +208,7 @@ impl LinksExecutor {
                         snapshot,
                         relation.as_reference(),
                         // TODO: this should be just the types owned by the one instance's type in the cache!
-                        player_type_range,
+                        &player_type_range,
                     );
                     let as_tuples: LinksUnboundedSortedPlayerSingle = iterator
                         .try_filter::<_, LinksFilterFn, (Relation<'_>, RolePlayer<'_>, _), _>(filter_for_row)
@@ -227,7 +227,7 @@ impl LinksExecutor {
                             Ok::<_, Box<_>>(Peekable::new(thing_manager.get_links_by_relation_and_player_type_range(
                                 snapshot,
                                 relation.as_reference(),
-                                player_type_range.clone(),
+                                &player_type_range.clone(),
                             )))
                         })
                         .collect::<Result<Vec<_>, _>>()?;
@@ -260,7 +260,7 @@ impl LinksExecutor {
                         .get_links_by_relation_and_player_type_range(
                             snapshot,
                             relation.as_reference(),
-                            player_type_range,
+                            &player_type_range,
                         ),
                     _ => unreachable!("Links relation must be a relation."),
                 };

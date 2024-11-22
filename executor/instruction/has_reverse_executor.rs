@@ -38,6 +38,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::min_max_types;
 
 pub(crate) struct HasReverseExecutor {
     has: ir::pattern::constraint::Has<ExecutorVariable>,
@@ -175,7 +176,7 @@ impl HasReverseExecutor {
                         .get_has_reverse_by_attribute_and_owner_type_range(
                             snapshot,
                             attr.as_reference(),
-                            owner_type_range,
+                            &owner_type_range,
                         )
                         .try_filter::<_, HasFilterFn, (Has<'_>, _), _>(filter_for_row);
                     let as_tuples: HasReverseUnboundedSortedOwnerSingle =
@@ -192,7 +193,7 @@ impl HasReverseExecutor {
                         Peekable::new(thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
                             snapshot,
                             attribute.as_reference(),
-                            owner_type_range.clone(),
+                            &owner_type_range.clone(),
                         ))
                     });
 
@@ -221,7 +222,7 @@ impl HasReverseExecutor {
                 let iterator = thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
                     snapshot,
                     attribute.as_thing().as_attribute(),
-                    type_range,
+                    &type_range,
                 );
                 let filtered = iterator.try_filter::<_, HasFilterFn, (Has<'_>, _), _>(filter_for_row);
                 let as_tuples: HasReverseBoundedSortedOwner =
@@ -253,14 +254,6 @@ impl HasReverseExecutor {
 impl fmt::Display for HasReverseExecutor {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "Reverse[{}], mode={}", &self.has, &self.iterate_mode)
-    }
-}
-
-fn min_max_types<'a>(types: impl IntoIterator<Item = &'a Type>) -> (Type, Type) {
-    match types.into_iter().minmax() {
-        MinMaxResult::NoElements => unreachable!("Empty type iterator"),
-        MinMaxResult::OneElement(item) => (item.clone(), item.clone()),
-        MinMaxResult::MinMax(min, max) => (min.clone(), max.clone()),
     }
 }
 

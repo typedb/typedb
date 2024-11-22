@@ -132,7 +132,7 @@ pub struct ObjectCache {
 impl EntityTypeCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> Box<[Option<EntityTypeCache>]> {
         let entities = snapshot
-            .iterate_range(KeyRange::new_within(
+            .iterate_range(&KeyRange::new_within(
                 RangeStart::Inclusive(EntityType::prefix_for_kind()),
                 EntityType::PREFIX.fixed_width_keys(),
             ))
@@ -155,7 +155,7 @@ impl EntityTypeCache {
 impl RelationTypeCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> Box<[Option<RelationTypeCache>]> {
         let relations = snapshot
-            .iterate_range(KeyRange::new_within(
+            .iterate_range(&KeyRange::new_within(
                 RangeStart::Inclusive(RelationType::prefix_for_kind()),
                 Prefix::VertexRelationType.fixed_width_keys(),
             ))
@@ -194,7 +194,7 @@ impl RelationTypeCache {
 impl AttributeTypeCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> Box<[Option<AttributeTypeCache>]> {
         let attributes = snapshot
-            .iterate_range(KeyRange::new_within(
+            .iterate_range(&KeyRange::new_within(
                 RangeStart::Inclusive(AttributeType::prefix_for_kind()),
                 TypeVertex::FIXED_WIDTH_ENCODING,
             ))
@@ -224,7 +224,7 @@ impl AttributeTypeCache {
 impl RoleTypeCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> Box<[Option<RoleTypeCache>]> {
         let roles = snapshot
-            .iterate_range(KeyRange::new_within(
+            .iterate_range(&KeyRange::new_within(
                 RangeStart::Inclusive(RoleType::prefix_for_kind()),
                 TypeVertex::FIXED_WIDTH_ENCODING,
             ))
@@ -262,7 +262,7 @@ impl RoleTypeCache {
 impl OwnsCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> HashMap<Owns<'static>, OwnsCache> {
         let mut map = HashMap::new();
-        let mut it = snapshot.iterate_range(KeyRange::new_within(
+        let mut it = snapshot.iterate_range(&KeyRange::new_within(
             RangeStart::Inclusive(TypeEdge::build_prefix(Prefix::EdgeOwnsReverse)),
             TypeEdge::FIXED_WIDTH_ENCODING,
         ));
@@ -284,7 +284,7 @@ impl OwnsCache {
 impl PlaysCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> HashMap<Plays<'static>, PlaysCache> {
         let mut map = HashMap::new();
-        let mut it = snapshot.iterate_range(KeyRange::new_within(
+        let mut it = snapshot.iterate_range(&KeyRange::new_within(
             RangeStart::Inclusive(TypeEdge::build_prefix(Prefix::EdgePlays)),
             TypeEdge::FIXED_WIDTH_ENCODING,
         ));
@@ -304,7 +304,7 @@ impl PlaysCache {
 impl RelatesCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> HashMap<Relates<'static>, RelatesCache> {
         let mut map = HashMap::new();
-        let mut it = snapshot.iterate_range(KeyRange::new_within(
+        let mut it = snapshot.iterate_range(&KeyRange::new_within(
             RangeStart::Inclusive(TypeEdge::build_prefix(Prefix::EdgeRelates)),
             TypeEdge::FIXED_WIDTH_ENCODING,
         ));
