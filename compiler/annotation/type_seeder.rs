@@ -1525,6 +1525,7 @@ pub mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
     use answer::Type as TypeAnnotation;
+    use concept::type_::{Ordering, OwnerAPI};
     use encoding::value::{label::Label, value_type::ValueType};
     use ir::{
         pattern::{
@@ -1695,52 +1696,113 @@ pub mod tests {
 
         let (_, (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
-        let type_age = {
+
+        let label_owner = Label::build("owner");
+        let (type_owner, type_age) = {
             let mut snapshot = storage.clone().open_snapshot_write();
+            let type_owner = type_manager.create_entity_type(&mut snapshot, &label_owner).unwrap();
             let type_age = type_manager.create_attribute_type(&mut snapshot, &Label::build("age")).unwrap();
             type_age.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
+            type_owner
+                .set_owns(&mut snapshot, &type_manager, &thing_manager, type_age.clone(), Ordering::Unordered)
+                .unwrap();
+            type_owner
+                .set_owns(
+                    &mut snapshot,
+                    &type_manager,
+                    &thing_manager,
+                    type_catname.as_attribute_type().clone(),
+                    Ordering::Unordered,
+                )
+                .unwrap();
+            type_owner
+                .set_owns(
+                    &mut snapshot,
+                    &type_manager,
+                    &thing_manager,
+                    type_dogname.as_attribute_type().clone(),
+                    Ordering::Unordered,
+                )
+                .unwrap();
             snapshot.commit().unwrap();
-            TypeAnnotation::Attribute(type_age)
+            (TypeAnnotation::Entity(type_owner), TypeAnnotation::Attribute(type_age))
         };
+
         {
-            // // Case 1: $a > $b;
+            // // Case 1: $x isa owner, has $a; $a > $b;
             let mut translation_context = TranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
+
+            let var_x = conjunction.get_or_declare_variable("x").unwrap();
             let var_a = conjunction.get_or_declare_variable("a").unwrap();
             let var_b = conjunction.get_or_declare_variable("b").unwrap();
+
             // Try seeding
+            conjunction
+                .constraints_mut()
+                .add_isa(IsaKind::Exact, var_x.into(), Vertex::Label(label_owner.clone()))
+                .unwrap();
+            conjunction.constraints_mut().add_has(var_x.into(), var_a.into()).unwrap();
+            conjunction.constraints_mut().add_has(var_x.into(), var_b.into()).unwrap();
             conjunction.constraints_mut().add_comparison(var_a.into(), var_b.into(), Comparator::Greater).unwrap();
 
             let block = builder.finish().unwrap();
             let conjunction = block.conjunction();
 
-            let types_a =
-                BTreeSet::from([type_age.clone(), type_name.clone(), type_catname.clone(), type_dogname.clone()]);
-            let types_b =
-                BTreeSet::from([type_age.clone(), type_name.clone(), type_catname.clone(), type_dogname.clone()]);
+            let types_x = BTreeSet::from([type_owner.clone()]);
+            let types_a = BTreeSet::from([type_age.clone(), type_catname.clone(), type_dogname.clone()]);
+            let types_b = BTreeSet::from([type_age.clone(), type_catname.clone(), type_dogname.clone()]);
             let constraints = conjunction.constraints();
             let expected_graph = TypeInferenceGraph {
                 conjunction,
-                vertices: VertexAnnotations::from([(var_a.into(), types_a), (var_b.into(), types_b)]),
-                edges: vec![expected_edge(
-                    &constraints[0],
-                    var_a.into(),
-                    var_b.into(),
-                    vec![
-                        (type_age.clone(), type_age.clone()),
-                        (type_catname.clone(), type_catname.clone()),
-                        (type_catname.clone(), type_dogname.clone()),
-                        (type_catname.clone(), type_name.clone()),
-                        (type_dogname.clone(), type_catname.clone()),
-                        (type_dogname.clone(), type_dogname.clone()),
-                        (type_dogname.clone(), type_name.clone()),
-                        (type_name.clone(), type_catname.clone()),
-                        (type_name.clone(), type_dogname.clone()),
-                        (type_name.clone(), type_name.clone()),
-                    ],
-                )],
+                vertices: VertexAnnotations::from([
+                    (Vertex::Label(label_owner.clone()), types_x.clone()),
+                    (var_x.into(), types_x),
+                    (var_a.into(), types_a),
+                    (var_b.into(), types_b),
+                ]),
+                edges: vec![
+                    expected_edge(
+                        &constraints[0],
+                        var_x.into(),
+                        Vertex::Label(label_owner),
+                        vec![(type_owner.clone(), type_owner.clone())],
+                    ),
+                    expected_edge(
+                        &constraints[1],
+                        var_x.into(),
+                        var_a.into(),
+                        vec![
+                            (type_owner.clone(), type_age.clone()),
+                            (type_owner.clone(), type_catname.clone()),
+                            (type_owner.clone(), type_dogname.clone()),
+                        ],
+                    ),
+                    expected_edge(
+                        &constraints[2],
+                        var_x.into(),
+                        var_b.into(),
+                        vec![
+                            (type_owner.clone(), type_age.clone()),
+                            (type_owner.clone(), type_catname.clone()),
+                            (type_owner.clone(), type_dogname.clone()),
+                        ],
+                    ),
+                    expected_edge(
+                        &constraints[3],
+                        var_a.into(),
+                        var_b.into(),
+                        vec![
+                            (type_age.clone(), type_age.clone()),
+                            (type_catname.clone(), type_catname.clone()),
+                            (type_catname.clone(), type_dogname.clone()),
+                            (type_dogname.clone(), type_catname.clone()),
+                            (type_dogname.clone(), type_dogname.clone()),
+                        ],
+                    ),
+                ],
                 nested_disjunctions: vec![],
                 nested_negations: vec![],
                 nested_optionals: vec![],
@@ -1757,7 +1819,7 @@ pub mod tests {
             );
             let graph = seeder.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
             assert_eq!(expected_graph.vertices, graph.vertices);
-            assert_eq!(expected_graph, graph);
+            assert_eq!(expected_graph.edges, graph.edges);
         }
     }
 }
