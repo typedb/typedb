@@ -7,7 +7,8 @@
 use std::{collections::HashMap, error::Error, fmt, sync::Arc};
 
 use answer::variable::Variable;
-use encoding::value::value::Value;
+use bytes::byte_array::ByteArray;
+use encoding::{graph::thing::THING_VERTEX_MAX_LENGTH, value::value::Value};
 use error::typedb_error;
 use itertools::Itertools;
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
@@ -53,7 +54,7 @@ impl Error for FunctionReadError {
     }
 }
 
-typedb_error!(
+typedb_error! {
     pub FunctionRepresentationError(component = "Function representation", prefix = "FNR") {
         FunctionArgumentUnused(
             1,
@@ -91,7 +92,7 @@ typedb_error!(
             declaration: FunctionBlock
         ),
     }
-);
+}
 
 #[derive(Debug, Clone)]
 pub struct VariableRegistry {
@@ -266,8 +267,9 @@ pub enum VariableCategorySource {
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct ParameterRegistry {
-    fetch_key_registry: HashMap<ParameterID, String>,
     value_registry: HashMap<ParameterID, Value<'static>>,
+    iid_registry: HashMap<ParameterID, ByteArray<THING_VERTEX_MAX_LENGTH>>,
+    fetch_key_registry: HashMap<ParameterID, String>,
 }
 
 impl ParameterRegistry {
@@ -276,14 +278,21 @@ impl ParameterRegistry {
     }
 
     pub(crate) fn register_value(&mut self, value: Value<'static>) -> ParameterID {
-        let id = ParameterID { id: self.value_registry.len() };
+        let id = ParameterID::Value(self.value_registry.len());
         let _prev = self.value_registry.insert(id, value);
         debug_assert_eq!(_prev, None);
         id
     }
 
+    pub(crate) fn register_iid(&mut self, iid: ByteArray<THING_VERTEX_MAX_LENGTH>) -> ParameterID {
+        let id = ParameterID::Iid(self.iid_registry.len());
+        let _prev = self.iid_registry.insert(id, iid);
+        debug_assert_eq!(_prev, None);
+        id
+    }
+
     pub(crate) fn register_fetch_key(&mut self, key: String) -> ParameterID {
-        let id = ParameterID { id: self.fetch_key_registry.len() };
+        let id = ParameterID::FetchKey(self.fetch_key_registry.len());
         let _prev = self.fetch_key_registry.insert(id, key);
         debug_assert_eq!(_prev, None);
         id
@@ -295,6 +304,10 @@ impl ParameterRegistry {
 
     pub fn value_unchecked(&self, id: ParameterID) -> &Value<'static> {
         self.value_registry.get(&id).unwrap()
+    }
+
+    pub fn iid(&self, id: ParameterID) -> Option<&ByteArray<THING_VERTEX_MAX_LENGTH>> {
+        self.iid_registry.get(&id)
     }
 
     pub fn fetch_key(&self, id: ParameterID) -> Option<&String> {

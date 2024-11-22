@@ -151,7 +151,7 @@ impl<const BYTES: usize> ByteArrayInline<BYTES> {
         Self::checked_build(data, 0, total_length as u8)
     }
 
-    fn new(bytes: [u8; BYTES], length: usize) -> Self {
+    pub fn new(bytes: [u8; BYTES], length: usize) -> Self {
         Self::checked_build(bytes, 0, length as u8)
     }
 

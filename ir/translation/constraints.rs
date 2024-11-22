@@ -5,7 +5,9 @@
  */
 
 use answer::variable::Variable;
-use encoding::value::label::Label;
+use bytes::byte_array::{ByteArray, ByteArrayInline};
+use encoding::{graph::thing::THING_VERTEX_MAX_LENGTH, value::label::Label};
+use itertools::Itertools;
 use typeql::{
     expression::{FunctionCall, FunctionName},
     statement::{
@@ -102,7 +104,7 @@ fn add_thing_statement(
     for constraint in &thing.constraints {
         match constraint {
             typeql::statement::thing::Constraint::Isa(isa) => add_typeql_isa(constraints, var, isa)?,
-            typeql::statement::thing::Constraint::Iid(_) => todo!(),
+            typeql::statement::thing::Constraint::Iid(iid) => add_typeql_iid(constraints, var, iid)?,
             typeql::statement::thing::Constraint::Has(has) => add_typeql_has(function_index, constraints, var, has)?,
             typeql::statement::thing::Constraint::Links(links) => {
                 add_typeql_relation(constraints, var, &links.relation)?
@@ -367,6 +369,34 @@ fn add_typeql_isa(
     let kind = isa.kind.into();
     let type_ = register_typeql_type(constraints, &isa.type_)?;
     constraints.add_isa(kind, thing, type_)?;
+    Ok(())
+}
+
+fn parse_iid(iid: &str) -> ByteArray<THING_VERTEX_MAX_LENGTH> {
+    fn from_hex(c: u8) -> u8 {
+        // relying on the fact that typeql ensures only hex digits
+        match c {
+            b'0'..=b'9' => c - b'0',
+            b'a'..=b'f' => c - b'a',
+            b'A'..=b'F' => c - b'A',
+            _ => unreachable!(),
+        }
+    }
+    let mut bytes = [0u8; THING_VERTEX_MAX_LENGTH];
+    for (i, (hi, lo)) in iid.bytes().skip(2).tuples().enumerate() {
+        bytes[i] = (from_hex(hi) << 4) + from_hex(lo);
+    }
+    let len = iid.as_bytes().len() / 2;
+    ByteArray::Inline(ByteArrayInline::new(bytes, len))
+}
+
+fn add_typeql_iid(
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    thing: Variable,
+    iid: &typeql::statement::thing::Iid,
+) -> Result<(), Box<RepresentationError>> {
+    let iid_parameter = constraints.parameters().register_iid(parse_iid(&iid.iid));
+    constraints.add_iid(thing, iid_parameter)?;
     Ok(())
 }
 

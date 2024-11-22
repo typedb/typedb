@@ -23,6 +23,7 @@ use crate::{
         Typed,
     },
     layout::prefix::Prefix,
+    layout::prefix::PrefixID,
     value::{
         boolean_bytes::BooleanBytes,
         date_bytes::DateBytes,
@@ -48,6 +49,7 @@ pub struct AttributeVertex<'a> {
 
 impl<'a> AttributeVertex<'a> {
     pub const PREFIX: Prefix = Prefix::VertexAttribute;
+    pub const MAX_LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH + ValueEncodingLength::LONG_LENGTH;
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes[Self::RANGE_PREFIX] == Self::PREFIX.prefix_id().bytes);

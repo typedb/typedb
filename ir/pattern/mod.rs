@@ -159,13 +159,20 @@ impl<ID: fmt::Debug> fmt::Display for Vertex<ID> {
 }
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ParameterID {
-    pub id: usize,
+pub enum ParameterID {
+    Value(usize),
+    Iid(usize),
+    FetchKey(usize),
 }
 
 impl StructuralEquality for ParameterID {
     fn hash(&self) -> u64 {
-        StructuralEquality::hash(&self.id)
+        let id = match *self {
+            ParameterID::Value(id) => id,
+            ParameterID::Iid(id) => id,
+            ParameterID::FetchKey(id) => id,
+        };
+        StructuralEquality::hash(&id)
     }
 
     fn equals(&self, other: &Self) -> bool {
@@ -175,7 +182,14 @@ impl StructuralEquality for ParameterID {
 
 impl fmt::Debug for ParameterID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Param[{}]", self.id)
+        write!(f, "Param[")?;
+        match self {
+            ParameterID::Value(id) => write!(f, "Value({id})")?,
+            ParameterID::Iid(id) => write!(f, "IID({id})")?,
+            ParameterID::FetchKey(id) => write!(f, "FetchKey({id})")?,
+        }
+        write!(f, "]")?;
+        Ok(())
     }
 }
 
