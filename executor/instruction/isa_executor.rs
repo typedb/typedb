@@ -50,25 +50,6 @@ pub(crate) struct IsaExecutor {
     checker: Checker<(AsHkt![Thing<'_>], Type)>,
 }
 
-#[allow(clippy::large_enum_variant)]
-pub(crate) enum SingleTypeIsaIterator {
-    Entity(MapToThingType<InstanceIterator<AsHkt![Entity<'_>]>, EntityToThingTypeFn>),
-    Relation(MapToThingType<InstanceIterator<AsHkt![Relation<'_>]>, RelationToThingTypeFn>),
-    Attribute(MapToThingType<AttributeIterator<InstanceIterator<AsHkt![Attribute<'_>]>>, AttributeToThingTypeFn>),
-}
-
-impl LendingIterator for SingleTypeIsaIterator {
-    type Item<'a> = Result<(Thing<'a>, Type), Box<ConceptReadError>>;
-
-    fn next(&mut self) -> Option<Self::Item<'_>> {
-        match self {
-            SingleTypeIsaIterator::Entity(inner) => inner.next(),
-            SingleTypeIsaIterator::Relation(inner) => inner.next(),
-            SingleTypeIsaIterator::Attribute(inner) => inner.next(),
-        }
-    }
-}
-
 type MapToThingType<I, F> = Map<I, F, Result<(AsHkt![Thing<'_>], Type), Box<ConceptReadError>>>;
 type EntityToThingTypeFn =
     for<'a> fn(Result<Entity<'a>, Box<ConceptReadError>>) -> Result<(Thing<'a>, Type), Box<ConceptReadError>>;
@@ -106,10 +87,8 @@ type ThingWithTypes<I> = Map<
     Result<(AsHkt![Thing<'_>], Type), Box<ConceptReadError>>,
 >;
 
-pub(super) type IsaUnboundedSortedTypeSingle = IsaTupleIterator<SingleTypeIsaIterator>;
 pub(super) type IsaUnboundedSortedTypeMerged = IsaTupleIterator<MultipleTypeIsaIterator>;
 
-pub(super) type IsaUnboundedSortedThingSingle = IsaTupleIterator<SingleTypeIsaIterator>;
 pub(super) type IsaUnboundedSortedThingMerged = IsaTupleIterator<MultipleTypeIsaIterator>;
 
 pub(super) type IsaBoundedSortedType =
