@@ -67,10 +67,10 @@ pub fn compile(
     println!("-- Variable mappings -- ");
     for (var, pos) in plan.variable_positions() {
         if let Some(named_var) = variable_registry.variable_names().get(var) {
-            println!("   ${:?} id ${:?} pos {:?}", named_var, var, pos);
+            println!("   {:?} id {:?} pos {:?}", named_var, var, pos);
         }
         else {
-            println!("   anon id ${:?} pos {:?}", var, pos);
+            println!("   anon id {:?} pos {:?}", var, pos);
         }
     }
 

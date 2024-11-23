@@ -382,7 +382,7 @@ impl<'a> HasPlanner<'a> {
             })
             .sum::<u64>() as f64;
 
-        //  We should compute that we are doing multiple seeks() and and merge-sorting.
+        //  We should compute that we are doing multiple seeks() and merge-sorting.
         //  in general, we assume the cardinality is small, so we just open 1 iterator and post-filter
         let unbound_typed_expected_size_canonical = owner_types
             .iter()
@@ -433,7 +433,7 @@ impl<'a> HasPlanner<'a> {
 
     fn unbound_expected_scan_size_reverse(&self, graph: &Graph<'_>) -> f64 {
         let attribute = &graph.elements()[&VertexId::Variable(self.attribute)].as_variable().unwrap();
-        self.unbound_typed_expected_size_reverse * attribute.selectivity(&[])
+        self.unbound_typed_expected_size_reverse * attribute.selectivity(&[]) // why no inputs?
     }
 
     fn expected_output_size(&self, graph: &Graph<'_>, inputs: &[VertexId]) -> f64 {

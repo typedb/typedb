@@ -565,6 +565,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             }};
         }
 
+        println!("Starting greedy ordering for graph {:?}", self.graph);
+
         while !open_set.is_empty() {
             println!("Choosing next plan element...");
             let (next, _cost) = open_set
@@ -586,41 +588,28 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             if element.is_variable() {
                 commit_variables!();
             } else if element.is_constraint() {
+                // TODO: deal with the case where constraint variables intersect with more than one produced variable
                 if let Ok(var) = element.variables().filter(|var| produced_at_this_stage.contains(var)).exactly_one() {
+                    // Note: this code is unreachable in since the greedy planner will always choose the immediatedly produced variables
                     let prev = &self.graph.elements[ordering.last().unwrap()];
                     let next_constraint = &element.as_constraint().unwrap();
                     let prev_constraint = &prev.as_constraint().unwrap();
                     if next_constraint.can_sort_on(var)
                         && prev_constraint.can_sort_on(var)
-                        && (sort_variable == Some(var) || sort_variable.is_none())
+                        && sort_variable.is_none()
                     {
                         sort_variable = Some(var);
-                    } else {
+                    } else if !(next_constraint.can_sort_on(var))
+                        || !(sort_variable == Some(var)) {
                         commit_variables!()
                     }
                 } else {
                     commit_variables!()
                 }
+                // At this point, either sort var is set, or we have committed all variables (i.e. produced var is empty)
 
                 produced_at_this_stage
                     .extend(element.variables().filter(|&var| !ordering.contains(&VertexId::Variable(var))));
-
-                if sort_variable.is_none() {
-                    let constraint = element.as_constraint().unwrap();
-                    if constraint.unbound_direction(&self.graph) == Direction::Canonical {
-                        if let Some(candidate_sort_variable) = constraint.variables().next() {
-                            if produced_at_this_stage.contains(&candidate_sort_variable) {
-                                sort_variable = Some(candidate_sort_variable);
-                            }
-                        }
-                    } else {
-                        if let Some(candidate_sort_variable) = constraint.variables().nth(1) {
-                            if produced_at_this_stage.contains(&candidate_sort_variable) {
-                                sort_variable = Some(candidate_sort_variable);
-                            }
-                        }
-                    }
-                }
 
                 ordering.push(next);
                 open_set.remove(&next);

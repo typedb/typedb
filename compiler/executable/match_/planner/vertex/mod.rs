@@ -184,7 +184,12 @@ impl ElementCost {
 }
 
 pub(super) trait Costed {
-    fn cost(&self, inputs: &[VertexId], sort_variable: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost;
+    fn cost(
+        &self,
+        inputs: &[VertexId],
+        sort_variable: Option<VariableVertexId>,
+        graph: &Graph<'_>,
+    ) -> ElementCost;
 }
 
 impl Costed for PlannerVertex<'_> {
