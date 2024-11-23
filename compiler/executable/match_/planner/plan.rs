@@ -611,6 +611,23 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 produced_at_this_stage
                     .extend(element.variables().filter(|&var| !ordering.contains(&VertexId::Variable(var))));
 
+                if sort_variable.is_none() {
+                    let constraint = element.as_constraint().unwrap();
+                    if constraint.unbound_direction(&self.graph) == Direction::Canonical {
+                        if let Some(candidate_sort_variable) = constraint.variables().next() {
+                            if produced_at_this_stage.contains(&candidate_sort_variable) {
+                                sort_variable = Some(candidate_sort_variable);
+                            }
+                        }
+                    } else {
+                        if let Some(candidate_sort_variable) = constraint.variables().nth(1) {
+                            if produced_at_this_stage.contains(&candidate_sort_variable) {
+                                sort_variable = Some(candidate_sort_variable);
+                            }
+                        }
+                    }
+                }
+
                 ordering.push(next);
                 open_set.remove(&next);
             } else {
