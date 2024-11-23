@@ -595,6 +595,7 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'_>,
         range: &impl RangeBounds<Value<'a>>,
+        owner_types_range: &KeyRange<ObjectType<'_>>,
     ) -> Result<HasReverseIterator, Box<ConceptReadError>> {
         if matches!(range.start_bound(), Bound::Unbounded) && matches!(range.end_bound(), Bound::Unbounded) {
             return self.get_has_reverse(snapshot, attribute_type);
@@ -605,12 +606,18 @@ impl ThingManager {
         };
 
         let Some((range_start, range_end)) = Self::get_value_range(attribute_value_type, range, |value| {
+            // TODO: we can append the start_owner_type if the attribute vertex prefix is complete...
             let attribute_vertex_prefix = AttributeVertex::build_prefix_for_value(
                 attribute_type.vertex().type_id_(),
                 value,
                 self.vertex_generator.hasher(),
             );
-            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(attribute_vertex_prefix.as_reference().byte_ref())
+            // we can take the start type as inclusive or exclusive - either works
+            let start_owner_type = owner_types_range.start().get_value();
+            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(
+                attribute_vertex_prefix.as_reference().byte_ref(),
+                ObjectVertex::build_prefix_type(Object::prefix_for_type(start_owner_type.clone()), start_owner_type.vertex().type_id_())
+            )
         })?
         else {
             return Ok(HasReverseIterator::new_empty());
