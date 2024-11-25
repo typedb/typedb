@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt::{Display, Formatter};
+use std::fmt;
 
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
@@ -59,8 +59,8 @@ impl StructuralEquality for Optional {
     }
 }
 
-impl Display for Optional {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for Optional {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }

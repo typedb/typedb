@@ -27,12 +27,8 @@ pub fn translate_reduce(
     for reduce_assign in &typeql_reduce.reduce_assignments {
         let reducer = build_reducer(context, &reduce_assign.reducer)?;
         let (category, is_optional) = resolve_category_optionality(&reducer, &context.variable_registry);
-        let assigned_var = context.register_reduced_variable(
-            reduce_assign.variable.name().unwrap(),
-            category,
-            is_optional,
-            reducer.clone(),
-        );
+        let assigned_var =
+            context.register_reduced_variable(reduce_assign.variable.name().unwrap(), category, is_optional, reducer);
         reductions.push(AssignedReduction::new(assigned_var, reducer));
     }
 

@@ -4,14 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::BTreeMap,
-    fmt::{Display, Formatter},
-    iter,
-    ops::Bound,
-    sync::Arc,
-    vec,
-};
+use std::{collections::BTreeMap, fmt, iter, ops::Bound, sync::Arc, vec};
 
 use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::{executable::match_::instructions::thing::IsaInstruction, ExecutorVariable};
@@ -226,8 +219,8 @@ impl IsaExecutor {
     }
 }
 
-impl Display for IsaExecutor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for IsaExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "[{}], mode={}", &self.isa, &self.iterate_mode)
     }
 }
@@ -255,7 +248,7 @@ pub(super) fn instances_of_all_types_chained<'a>(
 
     // object types and attribute types will continue to be sorted, based on their source in the BTreeMap
     let (attribute_types, object_types) =
-        instance_types_to_types.into_iter().partition::<Vec<_>, _>(|(type_, _)| matches!(type_, Type::Attribute(_)));
+        instance_types_to_types.iter().partition::<Vec<_>, _>(|(type_, _)| matches!(type_, Type::Attribute(_)));
 
     let object_iters: Vec<_> = object_types
         .into_iter()

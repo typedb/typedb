@@ -12,7 +12,6 @@ use std::{
 
 use cucumber::gherkin::Step;
 use macro_rules_attribute::apply;
-use serde_json::Error;
 
 use crate::{generic_step, json::JSON, Context};
 

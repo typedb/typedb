@@ -59,7 +59,7 @@ impl TabledCallExecutor {
     }
     pub fn prepare_impl(&mut self, input: MaybeOwnedRow<'static>, next_table_row: TableIndex) {
         let arguments = MaybeOwnedRow::new_owned(
-            self.argument_positions.iter().map(|pos| input.get(pos.clone()).to_owned()).collect(),
+            self.argument_positions.iter().map(|pos| input.get(*pos).to_owned()).collect(),
             input.multiplicity(),
         );
         let call_key = CallKey { function_id: self.function_id.clone(), arguments };
@@ -80,7 +80,7 @@ impl TabledCallExecutor {
                     output_row.set(VariablePosition::new(i as u32), element.clone());
                 }
                 for (returned_index, output_position) in self.assignment_positions.iter().enumerate() {
-                    output_row.set(output_position.clone(), returned_row[returned_index].clone().into_owned());
+                    output_row.set(*output_position, returned_row[returned_index].clone().into_owned());
                 }
             });
         }

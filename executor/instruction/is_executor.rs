@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashMap,
-    fmt::{Display, Formatter},
-};
+use std::{collections::HashMap, fmt};
 
 use answer::variable_value::VariableValue;
 use compiler::{
@@ -110,8 +107,8 @@ impl IsExecutor {
     }
 }
 
-impl Display for IsExecutor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for IsExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "{}, input: {}", &self.is, &self.input)
     }
 }

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt::{Display, Formatter};
+use std::fmt;
 
 use encoding::graph::thing::edge::{ThingEdgeHas, ThingEdgeHasReverse};
 use lending_iterator::higher_order::Hkt;
@@ -54,8 +54,8 @@ impl Hkt for Has<'static> {
     type HktSelf<'a> = Has<'a>;
 }
 
-impl<'a> Display for Has<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<'a> fmt::Display for Has<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} has {}", self.owner(), self.attribute())
     }
 }

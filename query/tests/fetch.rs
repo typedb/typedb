@@ -27,7 +27,7 @@ fn define_schema(storage: Arc<MVCCStorage<WALClient>>, type_manager: &TypeManage
       entity person owns name @card(0..), owns age, plays friendship:friend @card(0..);
     "#;
     let schema_query = typeql::parse_query(query_str).unwrap().into_schema();
-    query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, schema_query).unwrap();
+    query_manager.execute_schema(&mut snapshot, type_manager, thing_manager, schema_query).unwrap();
     snapshot.commit().unwrap();
 }
 
@@ -38,13 +38,13 @@ fn insert_data(
     function_manager: &FunctionManager,
     query_string: &str,
 ) {
-    let mut snapshot = storage.clone().open_snapshot_write();
+    let snapshot = storage.clone().open_snapshot_write();
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new(0))));
     let query = typeql::parse_query(query_string).unwrap().into_pipeline();
     let pipeline =
         query_manager.prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, &query).unwrap();
     let (iterator, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
-    let mut snapshot = Arc::into_inner(context.snapshot).unwrap();
+    let snapshot = Arc::into_inner(context.snapshot).unwrap();
     snapshot.commit().unwrap();
 }
 

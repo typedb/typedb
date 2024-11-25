@@ -250,14 +250,14 @@ impl ThingPlanner {
             .iter()
             .for_each(|type_| match type_ {
                 answer::Type::Entity(type_) => {
-                    statistics.entity_counts.get(type_).map(|count| {
+                    if let Some(count) = statistics.entity_counts.get(type_) {
                         unrestricted_expected_size += *count as f64;
-                    });
+                    }
                 }
                 answer::Type::Relation(type_) => {
-                    statistics.relation_counts.get(type_).map(|count| {
+                    if let Some(count) = statistics.relation_counts.get(type_) {
                         unrestricted_expected_size += *count as f64;
-                    });
+                    }
                 }
                 answer::Type::Attribute(type_) => {
                     statistics.attribute_counts.get(type_).map(|count| {

@@ -179,7 +179,7 @@ pub(crate) fn create_executors_for_match(
                             thing_manager,
                             function_registry,
                             query_profile,
-                            &branch_executable,
+                            branch_executable,
                         )?;
                         Ok::<_, Box<_>>(PatternExecutor::new(branch_executable.executable_id(), executors))
                     })

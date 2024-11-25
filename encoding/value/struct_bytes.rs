@@ -54,7 +54,7 @@ impl<'a, const INLINE_LENGTH: usize> StructBytes<'a, INLINE_LENGTH> {
 
     pub fn as_struct(self) -> StructValue<'static> {
         let mut offset: usize = 0;
-        decode_struct_increment_offset(&mut offset, self.bytes.bytes()).unwrap()
+        decode_struct_increment_offset(&mut offset, &self.bytes).unwrap()
     }
 
     pub fn length(&self) -> usize {
@@ -107,7 +107,7 @@ fn encode_struct_into<'a>(struct_value: &StructValue<'a>, buf: &mut Vec<u8>) -> 
             | Value::Date(_)
             | Value::DateTime(_)
             | Value::DateTimeTZ(_)
-            | Value::Duration(_) => buf.extend_from_slice(value.encode_bytes::<AD_HOC_BYTES_INLINE>().bytes()),
+            | Value::Duration(_) => buf.extend_from_slice(&value.encode_bytes::<AD_HOC_BYTES_INLINE>()),
         }
     }
     Ok(())

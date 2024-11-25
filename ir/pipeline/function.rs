@@ -174,12 +174,12 @@ impl StructuralEquality for ReturnOperation {
 
     fn equals(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Stream(vars), Self::Stream(other_vars)) => vars.equals(&other_vars),
+            (Self::Stream(vars), Self::Stream(other_vars)) => vars.equals(other_vars),
             (Self::Single(selector, vars), Self::Single(other_selector, other_vars)) => {
-                selector.equals(other_selector) && vars.equals(&other_vars)
+                selector.equals(other_selector) && vars.equals(other_vars)
             }
             (Self::ReduceCheck(), Self::ReduceCheck()) => true,
-            (Self::ReduceReducer(inner), Self::ReduceReducer(other_inner)) => inner.equals(&other_inner),
+            (Self::ReduceReducer(inner), Self::ReduceReducer(other_inner)) => inner.equals(other_inner),
             // note: this style forces updating the match when the variants change
             (Self::Stream { .. }, _)
             | (Self::Single { .. }, _)

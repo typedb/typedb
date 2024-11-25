@@ -231,7 +231,7 @@ impl PatternExecutor {
                     };
                     let branch = &mut disjunction.branches[branch_index.0];
                     let suspension_count_before = suspensions.record_nested_pattern_entry();
-                    let batch_opt = branch.batch_continue(&context, interrupt, tabled_functions, suspensions)?;
+                    let batch_opt = branch.batch_continue(context, interrupt, tabled_functions, suspensions)?;
                     if suspensions.record_nested_pattern_exit() != suspension_count_before {
                         suspensions.push_nested(index, branch_index, input.clone());
                     }
@@ -270,7 +270,7 @@ impl PatternExecutor {
                 ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier { index, mut mapper, input }) => {
                     let inner = &mut executors[index.0].unwrap_stream_modifier().get_inner();
                     let suspension_count_before = suspensions.record_nested_pattern_entry();
-                    let unmapped = inner.batch_continue(&context, interrupt, tabled_functions, suspensions)?;
+                    let unmapped = inner.batch_continue(context, interrupt, tabled_functions, suspensions)?;
                     if suspensions.record_nested_pattern_exit() != suspension_count_before {
                         suspensions.push_nested(index, BranchIndex(0), input.clone());
                     }

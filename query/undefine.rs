@@ -556,7 +556,7 @@ fn undefine_type_capability_owns(
     owns: &TypeQLOwns,
     capability_undefinable: &CapabilityType,
 ) -> Result<(), UndefineError> {
-    let (attr_label, ordering) = type_ref_to_label_and_ordering(&type_label, &owns.owned)
+    let (attr_label, ordering) = type_ref_to_label_and_ordering(type_label, &owns.owned)
         .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
     let attribute_type = resolve_attribute_type(snapshot, type_manager, &attr_label)
         .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
@@ -609,7 +609,7 @@ fn undefine_type_capability_plays(
         .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
 
     let object_type = type_to_object_type(&type_)
-        .map_err(|_| err_unsupported_capability(&type_label, type_.kind(), capability_undefinable))?;
+        .map_err(|_| err_unsupported_capability(type_label, type_.kind(), capability_undefinable))?;
 
     let definition_status = get_plays_status(
         snapshot,
@@ -642,11 +642,11 @@ fn undefine_type_capability_relates(
     relates: &TypeQLRelates,
     capability_undefinable: &CapabilityType,
 ) -> Result<(), UndefineError> {
-    let (role_label, ordering) = type_ref_to_label_and_ordering(&type_label, &relates.related)
+    let (role_label, ordering) = type_ref_to_label_and_ordering(type_label, &relates.related)
         .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
 
     let TypeEnum::Relation(relation_type) = &type_ else {
-        return Err(err_unsupported_capability(&type_label, type_.kind(), capability_undefinable));
+        return Err(err_unsupported_capability(type_label, type_.kind(), capability_undefinable));
     };
 
     let definition_status = get_relates_status(
@@ -692,7 +692,7 @@ fn undefine_type_capability_value_type(
     capability_undefinable: &CapabilityType,
 ) -> Result<(), UndefineError> {
     let TypeEnum::Attribute(attribute_type) = &type_ else {
-        return Err(err_unsupported_capability(&type_label, type_.kind(), capability_undefinable));
+        return Err(err_unsupported_capability(type_label, type_.kind(), capability_undefinable));
     };
     let value_type = resolve_value_type(snapshot, type_manager, &value_type.value_type)
         .map_err(|typedb_source| UndefineError::ValueTypeSymbolResolution { typedb_source })?;

@@ -4,12 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashMap,
-    fmt::{Debug, Display, Formatter},
-    mem,
-    ops::BitXor,
-};
+use std::{collections::HashMap, fmt, mem, ops::BitXor};
 
 use encoding::graph::definition::definition_key::DefinitionKey;
 use primitive::maybe_owns::MaybeOwns;
@@ -96,8 +91,8 @@ impl StructuralEquality for FunctionID {
     }
 }
 
-impl Display for FunctionID {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for FunctionID {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             FunctionID::Schema(definition_key) => {
                 write!(f, "SchemaFunction#{}", definition_key.definition_id().as_uint())
@@ -107,7 +102,7 @@ impl Display for FunctionID {
     }
 }
 
-pub trait FunctionIDAPI: Debug + Clone + Into<FunctionID> {}
+pub trait FunctionIDAPI: fmt::Debug + Clone + Into<FunctionID> {}
 impl FunctionIDAPI for DefinitionKey<'static> {}
 impl FunctionIDAPI for usize {}
 

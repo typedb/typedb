@@ -37,15 +37,15 @@ impl<'a> TypeEdge<'a> {
 
     fn build(prefix: Prefix, from: TypeVertex, to: TypeVertex) -> Self {
         let mut bytes = ByteArray::zeros(Self::LENGTH);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
-        bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
-        bytes.bytes_mut()[Self::range_to()].copy_from_slice(to.bytes().bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
+        bytes[Self::range_from()].copy_from_slice(from.bytes().bytes());
+        bytes[Self::range_to()].copy_from_slice(to.bytes().bytes());
         Self { bytes: Bytes::Array(bytes) }
     }
 
     pub fn build_prefix(prefix: Prefix) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
@@ -54,8 +54,8 @@ impl<'a> TypeEdge<'a> {
         from_prefix: Prefix,
     ) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM_PREFIX }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_PREFIX);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
-        bytes.bytes_mut()[Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeVertex::LENGTH_PREFIX]
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
+        bytes[Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeVertex::LENGTH_PREFIX]
             .copy_from_slice(&from_prefix.prefix_id().bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
@@ -65,23 +65,21 @@ impl<'a> TypeEdge<'a> {
         from: TypeVertex<'_>,
     ) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
-        bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
+        bytes[Self::range_from()].copy_from_slice(from.bytes().bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
     pub fn from(&'a self) -> TypeVertex<'a> {
-        let reference = ByteReference::new(&self.bytes.bytes()[Self::range_from()]);
-        TypeVertex::new(Bytes::Reference(reference))
+        TypeVertex::new(Bytes::reference(&self.bytes[Self::range_from()]))
     }
 
     pub fn to(&'a self) -> TypeVertex<'a> {
-        let reference = ByteReference::new(&self.bytes.bytes()[Self::range_to()]);
-        TypeVertex::new(Bytes::Reference(reference))
+        TypeVertex::new(Bytes::reference(&self.bytes[Self::range_to()]))
     }
 
     pub fn prefix(&self) -> Prefix {
-        Prefix::from_prefix_id(PrefixID::new(self.bytes.bytes()[Self::RANGE_PREFIX].try_into().unwrap()))
+        Prefix::from_prefix_id(PrefixID::new(self.bytes[Self::RANGE_PREFIX].try_into().unwrap()))
     }
 
     const fn range_from() -> Range<usize> {

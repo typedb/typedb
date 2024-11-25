@@ -40,7 +40,7 @@ pub(crate) struct TypeDBService {
 
 impl TypeDBService {
     pub(crate) fn new(address: &SocketAddr, database_manager: DatabaseManager) -> Self {
-        Self { address: address.clone(), database_manager: Arc::new(database_manager) }
+        Self { address: *address, database_manager: Arc::new(database_manager) }
     }
 
     pub(crate) fn database_manager(&self) -> &DatabaseManager {

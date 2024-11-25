@@ -104,7 +104,7 @@ where
                 thing_manager,
                 input_row,
                 self.function_registry.clone(),
-                &profile,
+                profile,
             )
             .map_err(|err| Box::new(PipelineExecutionError::InitialisingMatchIterator { source: err }));
 

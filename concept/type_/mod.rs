@@ -4,13 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashSet,
-    fmt::{Display, Formatter},
-    hash::Hash,
-    iter,
-    sync::Arc,
-};
+use std::{collections::HashSet, fmt, hash::Hash, iter, sync::Arc};
 
 use bytes::{byte_reference::ByteReference, Bytes};
 use encoding::{
@@ -618,8 +612,8 @@ pub enum Ordering {
     Ordered,
 }
 
-impl Display for Ordering {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for Ordering {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Ordering::Unordered => write!(f, ""),
             Ordering::Ordered => write!(f, "[]"),

@@ -12,7 +12,6 @@ use std::{
     collections::{HashMap, VecDeque},
     error::Error,
     fmt,
-    fmt::{Display, Formatter},
     io::Read,
     sync::{
         atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering},
@@ -322,8 +321,8 @@ pub enum IsolationConflict {
     ExclusiveLock,
 }
 
-impl Display for IsolationConflict {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for IsolationConflict {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             IsolationConflict::DeletingRequiredKey => write!(f, "Transaction data a concurrent commit requires."),
             IsolationConflict::RequireDeletedKey => write!(f, "Transaction uses data a concurrent commit deletes."),
@@ -721,7 +720,7 @@ impl CommitRecord {
             let predecessor_writes = pred_write_buffer.writes();
 
             for (key, write) in writes.iter() {
-                if let Some(predecessor_write) = predecessor_writes.get(key.bytes()) {
+                if let Some(predecessor_write) = predecessor_writes.get(key) {
                     match (predecessor_write, write) {
                         (Write::Insert { .. } | Write::Put { .. }, Write::Put { reinsert, .. }) => {
                             puts_to_update.push(DependentPut::Inserted { reinsert: reinsert.clone() });

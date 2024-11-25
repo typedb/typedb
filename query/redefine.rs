@@ -61,7 +61,7 @@ macro_rules! verify_no_annotations_for_capability {
             Err(RedefineError::IllegalCapabilityAnnotation {
                 declaration: $capability.clone(),
                 source: $annotation_error(annotation.category()),
-                annotation: annotation,
+                annotation,
             })
         } else {
             Ok(())
@@ -593,7 +593,7 @@ fn redefine_relates_specialise<'a>(
 ) -> Result<(), RedefineError> {
     if let Some(specialised_label) = &typeql_relates.specialised {
         let specialised_relates =
-            resolve_relates(snapshot, type_manager, relates.relation(), &specialised_label.ident.as_str())
+            resolve_relates(snapshot, type_manager, relates.relation(), specialised_label.ident.as_str())
                 .map_err(|typedb_source| RedefineError::DefinitionResolution { typedb_source })?;
 
         let definition_status = get_sub_status(snapshot, type_manager, relates.role(), specialised_relates.role())

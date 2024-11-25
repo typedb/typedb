@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use concept::error::ConceptWriteError;
 use cucumber::gherkin::Step;
 use database::transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite};
 use futures::future::join_all;

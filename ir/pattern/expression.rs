@@ -6,7 +6,7 @@
 
 use std::{
     error::Error,
-    fmt::{Display, Formatter},
+    fmt,
     hash::{DefaultHasher, Hash, Hasher},
     mem,
 };
@@ -366,14 +366,14 @@ impl StructuralEquality for Operator {
 }
 
 // Display traits
-impl<ID: IrID> Display for ExpressionTree<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for ExpressionTree<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }
 
-impl<ID: IrID> Display for Expression<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for Expression<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }
@@ -388,8 +388,8 @@ pub enum ExpressionDefinitionError {
     EmptyExpressionTree {},
 }
 
-impl Display for ExpressionDefinitionError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for ExpressionDefinitionError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }

@@ -7,10 +7,7 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use std::{
-    fmt::{Display, Formatter},
-    slice,
-};
+use std::{fmt, slice};
 
 use compiler::VariablePosition;
 use tokio::sync::broadcast::error::TryRecvError;
@@ -59,8 +56,8 @@ pub enum InterruptType {
     SchemaQueryExecution,
 }
 
-impl Display for InterruptType {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for InterruptType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             InterruptType::TransactionClosed => write!(f, "transaction close"),
             InterruptType::TransactionCommitted => write!(f, "transaction commit"),

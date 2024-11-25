@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    fmt::{Display, Formatter},
-    hash::Hash,
-};
+use std::{fmt, hash::Hash};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::HexBytesFormatter, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
@@ -45,8 +42,8 @@ impl<'a> TypeVertex<'a> {
 
     pub(crate) fn build(prefix: PrefixID, type_id: TypeID) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
-        array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
+        array[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
+        array[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         TypeVertex { bytes: Bytes::Array(array) }
     }
 
@@ -118,8 +115,8 @@ impl TypeID {
     }
 }
 
-impl Display for TypeID {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for TypeID {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", &HexBytesFormatter::borrowed(&self.bytes()))
     }
 }

@@ -29,7 +29,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
     fn write_hash(bytes: &mut [u8], hasher: &impl Fn(&[u8]) -> u64, value_bytes: &[u8]) -> usize {
         debug_assert!(bytes.len() >= Self::HASH_LENGTH);
         let hash_bytes = &hasher(value_bytes).to_be_bytes()[0..Self::HASH_LENGTH];
-        bytes[0..hash_bytes.len()].copy_from_slice(&hash_bytes);
+        bytes[0..hash_bytes.len()].copy_from_slice(hash_bytes);
         Self::HASH_LENGTH
     }
 
@@ -44,13 +44,13 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
     {
         let mut key_without_tail_byte: ByteArray<BUFFER_KEY_INLINE> =
             ByteArray::zeros(key_without_hash.len() + Self::HASH_LENGTH);
-        key_without_tail_byte.bytes_mut()[0..key_without_hash.len()].copy_from_slice(key_without_hash);
+        key_without_tail_byte[0..key_without_hash.len()].copy_from_slice(key_without_hash);
         let hash_bytes = Self::write_hash(
-            &mut key_without_tail_byte.bytes_mut()[key_without_hash.len()..key_without_hash.len() + Self::HASH_LENGTH],
+            &mut key_without_tail_byte[key_without_hash.len()..key_without_hash.len() + Self::HASH_LENGTH],
             hasher,
             value_bytes,
         );
-        let hash_bytes = &key_without_tail_byte.bytes()[key_without_hash.len()..key_without_hash.len() + hash_bytes];
+        let hash_bytes = &key_without_tail_byte[key_without_hash.len()..key_without_hash.len() + hash_bytes];
         match Self::disambiguate(snapshot, key_without_tail_byte.as_ref(), value_bytes)? {
             Either::First(tail) => Ok(Either::First(Self::concat_hash_and_tail(hash_bytes, tail))),
             Either::Second(tail) => Ok(Either::Second(Self::concat_hash_and_tail(hash_bytes, tail))),
@@ -75,10 +75,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
     {
         let tail_byte_index = key_without_tail_byte.length();
         let mut iter = snapshot.iterate_range(KeyRange::new_within(
-            RangeStart::Inclusive(StorageKey::<BUFFER_KEY_INLINE>::new_ref(
-                Self::KEYSPACE,
-                key_without_tail_byte.clone(),
-            )),
+            RangeStart::Inclusive(StorageKey::<BUFFER_KEY_INLINE>::new_ref(Self::KEYSPACE, key_without_tail_byte)),
             Self::FIXED_WIDTH_KEYS,
         ));
         let mut next = iter.next().transpose()?;
@@ -87,7 +84,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         let mut next_tail: u8 = Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG; // Start with the bit set
         while let Some((key, value)) = next {
             let key_tail = key.bytes()[tail_byte_index];
-            if value.bytes() == value_bytes {
+            if &*value == value_bytes {
                 return Ok(Either::First(key_tail));
             } else if next_tail != key_tail {
                 // found unused tail ID. This could be a hole. We have to complete iteration.

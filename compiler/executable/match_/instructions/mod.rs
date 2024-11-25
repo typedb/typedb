@@ -9,7 +9,6 @@
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
     fmt,
-    fmt::{Debug, Display, Formatter},
     ops::Deref,
     sync::Arc,
 };
@@ -51,8 +50,8 @@ impl VariableMode {
     }
 }
 
-impl Display for VariableMode {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for VariableMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             VariableMode::Input => write!(f, "input"),
             VariableMode::Output => write!(f, "output"),
@@ -110,8 +109,8 @@ impl VariableModes {
     }
 }
 
-impl Display for VariableModes {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for VariableModes {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (key, group) in &self.modes.iter().sorted_by_key(|(_, value)| *value).group_by(|(_, value)| *value) {
             write!(f, "{key}s=")?;
             for (var, _) in group {
@@ -394,8 +393,8 @@ impl<ID: IrID + Copy> InstructionAPI<ID> for ConstraintInstruction<ID> {
     }
 }
 
-impl<ID: IrID> Display for ConstraintInstruction<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for ConstraintInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ConstraintInstruction::Is(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::TypeList(instruction) => write!(f, "{instruction}"),
@@ -450,8 +449,8 @@ impl<ID: IrID> IsInstruction<ID> {
     }
 }
 
-impl<ID: IrID> Display for IsInstruction<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for IsInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} filter {}", &self.is, DisplayVec::new(&self.checks))
     }
 }
@@ -539,8 +538,8 @@ impl<ID: IrID> CheckVertex<ID> {
     }
 }
 
-impl<ID: IrID> Display for CheckVertex<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for CheckVertex<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             CheckVertex::Variable(var) => write!(f, "{var}"),
             CheckVertex::Type(type_) => write!(f, "{type_}"),
@@ -603,8 +602,8 @@ impl<ID: IrID> CheckInstruction<ID> {
     }
 }
 
-impl<ID: IrID> Display for CheckInstruction<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for CheckInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Check[")?;
         match self {
             Self::TypeList { type_var, types } => {
@@ -679,18 +678,18 @@ impl<ID> Deref for Inputs<ID> {
     }
 }
 
-struct DisplayVec<'a, T: Display> {
+struct DisplayVec<'a, T: fmt::Display> {
     vec: &'a Vec<T>,
 }
 
-impl<'a, T: Display> DisplayVec<'a, T> {
+impl<'a, T: fmt::Display> DisplayVec<'a, T> {
     fn new(vec: &'a Vec<T>) -> Self {
         Self { vec }
     }
 }
 
-impl<'a, T: Display> Display for DisplayVec<'a, T> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl<'a, T: fmt::Display> fmt::Display for DisplayVec<'a, T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;
         for (i, element) in self.vec.iter().enumerate() {
             if i != self.vec.len() - 1 {

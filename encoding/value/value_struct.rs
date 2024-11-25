@@ -189,7 +189,7 @@ impl<'a> StructIndexEntry<'a> {
     }
 
     pub fn attribute_vertex(&self) -> AttributeVertex<'static> {
-        let bytes = self.key.key_bytes.bytes();
+        let bytes = &self.key.key_bytes;
         let attribute_type_id = TypeID::new(bytes[StructIndexEntry::ENCODING_TYPEID_RANGE].try_into().unwrap());
         let attribute_id = AttributeID::new(&bytes[(bytes.len() - StructAttributeID::LENGTH)..bytes.len()]);
         AttributeVertex::build(attribute_type_id, attribute_id)
@@ -320,7 +320,7 @@ impl<'a> StructIndexEntry<'a> {
                 match Self::find_existing_or_next_disambiguated_hash(
                     snapshot,
                     hasher,
-                    prefix_key.bytes(),
+                    &prefix_key,
                     string_bytes.bytes().bytes(),
                 )? {
                     Either::First(hash) => hash,

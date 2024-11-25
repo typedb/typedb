@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    error::Error,
-    fmt::{Debug, Display, Formatter},
-};
+use std::{error::Error, fmt};
 
 use concept::error::ConceptReadError;
 use encoding::value::value_type::ValueTypeCategory;
@@ -68,9 +65,9 @@ pub enum ExpressionCompileError {
     },
 }
 
-impl Display for ExpressionCompileError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        Debug::fmt(self, f)
+impl fmt::Display for ExpressionCompileError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
     }
 }
 

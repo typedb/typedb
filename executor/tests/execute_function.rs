@@ -148,7 +148,7 @@ fn run_write_query(
         )
         .unwrap();
     let rows_positions = pipeline.rows_positions().unwrap().clone();
-    let (mut iterator, ExecutionContext { snapshot, .. }) =
+    let (iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let snapshot = Arc::into_inner(snapshot).unwrap();
     let result: Result<Vec<MaybeOwnedRow<'static>>, Box<PipelineExecutionError>> =
@@ -495,7 +495,7 @@ fn fibonacci() {
         "#;
         let (rows, positions) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 1);
-        let f_7_position = positions.get("f_7").unwrap().clone();
+        let f_7_position = *positions.get("f_7").unwrap();
         assert_eq!(rows[0].get(f_7_position).as_value().clone().unwrap_long(), 13);
     }
 }

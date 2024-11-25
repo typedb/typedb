@@ -6,7 +6,7 @@
 
 use std::{
     collections::HashMap,
-    fmt::{Display, Formatter},
+    fmt,
     sync::{
         atomic::{AtomicU64, Ordering},
         Arc, RwLock,
@@ -48,8 +48,8 @@ impl QueryProfile {
     }
 }
 
-impl Display for QueryProfile {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for QueryProfile {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "Query profile[measurements_enabled={}]", self.enabled)?;
         let profiles = self.stage_profiles.read().unwrap();
         for (id, pattern_profile) in profiles.iter().sorted_by_key(|(id, _)| *id) {
@@ -92,8 +92,8 @@ impl StageProfile {
     }
 }
 
-impl Display for StageProfile {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for StageProfile {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (i, step_profile) in self.step_profiles.read().unwrap().iter().enumerate() {
             match step_profile.data.as_ref() {
                 None => writeln!(f, "    {}.\n", i)?,
@@ -142,8 +142,8 @@ impl StepProfile {
     }
 }
 
-impl Display for StepProfileData {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for StepProfileData {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "{}\n    ==> batches: {}, rows: {}, micros: {}",

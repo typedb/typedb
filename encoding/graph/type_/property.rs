@@ -44,9 +44,9 @@ impl<'a> TypeVertexProperty<'a> {
 
     pub fn build(vertex: TypeVertex<'_>, infix: Infix) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH_NO_SUFFIX);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        array.bytes_mut()[Self::range_type_vertex()].copy_from_slice(vertex.bytes().bytes());
-        array.bytes_mut()[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
+        array[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        array[Self::range_type_vertex()].copy_from_slice(vertex.bytes().bytes());
+        array[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
         TypeVertexProperty { bytes: Bytes::Array(array) }
     }
 
@@ -56,10 +56,10 @@ impl<'a> TypeVertexProperty<'a> {
         suffix: Bytes<'_, INLINE_BYTES>,
     ) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH_NO_SUFFIX + suffix.length());
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        array.bytes_mut()[Self::range_type_vertex()].copy_from_slice(vertex.bytes().bytes());
-        array.bytes_mut()[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
-        array.bytes_mut()[Self::range_suffix(suffix.length())].copy_from_slice(suffix.bytes());
+        array[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        array[Self::range_type_vertex()].copy_from_slice(vertex.bytes().bytes());
+        array[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
+        array[Self::range_suffix(suffix.length())].copy_from_slice(&suffix);
         TypeVertexProperty { bytes: Bytes::Array(array) }
     }
 
@@ -71,11 +71,11 @@ impl<'a> TypeVertexProperty<'a> {
     }
 
     pub fn type_vertex(&'a self) -> TypeVertex<'a> {
-        TypeVertex::new(Bytes::Reference(ByteReference::new(&self.bytes().bytes()[Self::range_type_vertex()])))
+        TypeVertex::new(Bytes::reference(&self.bytes().bytes()[Self::range_type_vertex()]))
     }
 
     pub fn infix(&self) -> Infix {
-        let infix_bytes = &self.bytes.bytes()[Self::range_infix()];
+        let infix_bytes = &self.bytes[Self::range_infix()];
         Infix::from_infix_id(InfixID::new(infix_bytes.try_into().unwrap()))
     }
 
@@ -86,7 +86,7 @@ impl<'a> TypeVertexProperty<'a> {
     pub fn suffix(&self) -> Option<ByteReference> {
         let suffix_length = self.suffix_length();
         if suffix_length > 0 {
-            Some(ByteReference::new(&self.bytes.bytes()[Self::range_suffix(self.suffix_length())]))
+            Some(ByteReference::new(&self.bytes[Self::range_suffix(self.suffix_length())]))
         } else {
             None
         }
@@ -162,9 +162,9 @@ impl<'a> TypeEdgeProperty<'a> {
 
     pub fn build(edge: TypeEdge<'_>, infix: Infix) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH_NO_SUFFIX);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::PropertyTypeEdge.prefix_id().bytes());
-        array.bytes_mut()[Self::range_type_edge()].copy_from_slice(edge.bytes().bytes());
-        array.bytes_mut()[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
+        array[Self::RANGE_PREFIX].copy_from_slice(&Prefix::PropertyTypeEdge.prefix_id().bytes());
+        array[Self::range_type_edge()].copy_from_slice(edge.bytes().bytes());
+        array[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
         TypeEdgeProperty { bytes: Bytes::Array(array) }
     }
 
@@ -174,10 +174,10 @@ impl<'a> TypeEdgeProperty<'a> {
         suffix: Bytes<'_, INLINE_BYTES>,
     ) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH_NO_SUFFIX + suffix.length());
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::PropertyTypeEdge.prefix_id().bytes());
-        array.bytes_mut()[Self::range_type_edge()].copy_from_slice(edge.bytes().bytes());
-        array.bytes_mut()[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
-        array.bytes_mut()[Self::range_suffix(suffix.length())].copy_from_slice(suffix.bytes());
+        array[Self::RANGE_PREFIX].copy_from_slice(&Prefix::PropertyTypeEdge.prefix_id().bytes());
+        array[Self::range_type_edge()].copy_from_slice(edge.bytes().bytes());
+        array[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
+        array[Self::range_suffix(suffix.length())].copy_from_slice(&suffix);
         TypeEdgeProperty { bytes: Bytes::Array(array) }
     }
 
@@ -189,11 +189,11 @@ impl<'a> TypeEdgeProperty<'a> {
     }
 
     pub fn type_edge(&'a self) -> TypeEdge<'a> {
-        TypeEdge::new(Bytes::Reference(ByteReference::new(&self.bytes().bytes()[Self::range_type_edge()])))
+        TypeEdge::new(Bytes::reference(&self.bytes().bytes()[Self::range_type_edge()]))
     }
 
     pub fn infix(&self) -> Infix {
-        let infix_bytes = &self.bytes.bytes()[Self::range_infix()];
+        let infix_bytes = &self.bytes[Self::range_infix()];
         Infix::from_infix_id(InfixID::new(infix_bytes.try_into().unwrap()))
     }
 
@@ -204,7 +204,7 @@ impl<'a> TypeEdgeProperty<'a> {
     pub fn suffix(&self) -> Option<ByteReference> {
         let suffix_length = self.suffix_length();
         if suffix_length > 0 {
-            Some(ByteReference::new(&self.bytes.bytes()[Self::range_suffix(self.suffix_length())]))
+            Some(ByteReference::new(&self.bytes[Self::range_suffix(suffix_length)]))
         } else {
             None
         }

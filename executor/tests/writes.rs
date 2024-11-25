@@ -159,7 +159,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let input_row_format = input_row_var_names
         .iter()
         .enumerate()
-        .map(|(i, v)| (translation_context.get_variable(*v).unwrap(), VariablePosition::new(i as u32)))
+        .map(|(i, v)| (translation_context.get_variable(v).unwrap(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
     let variable_registry = &translation_context.variable_registry;
@@ -269,7 +269,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     let input_row_format = input_row_var_names
         .iter()
         .enumerate()
-        .map(|(i, v)| (translation_context.get_variable(*v).unwrap(), VariablePosition::new(i as u32)))
+        .map(|(i, v)| (translation_context.get_variable(v).unwrap(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
     let delete_plan = compiler::executable::delete::executable::compile(

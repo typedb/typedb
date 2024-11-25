@@ -15,7 +15,7 @@ mod typeql_structural_equality;
 pub fn is_structurally_equivalent<T: StructuralEquality>(first: &T, second: &T) -> bool {
     let first_hash = first.hash();
     let second_hash = second.hash();
-    return first_hash == second_hash && first.equals(second);
+    first_hash == second_hash && first.equals(second)
 }
 
 pub fn ordered_hash_combine(a: u64, b: u64) -> u64 {

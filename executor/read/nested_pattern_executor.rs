@@ -68,9 +68,9 @@ pub(crate) enum NestedPatternExecutor {
     InlinedFunction(InlinedFunction),
 }
 
-impl Into<StepExecutors> for NestedPatternExecutor {
-    fn into(self) -> StepExecutors {
-        StepExecutors::Nested(self)
+impl From<NestedPatternExecutor> for StepExecutors {
+    fn from(val: NestedPatternExecutor) -> Self {
+        StepExecutors::Nested(val)
     }
 }
 impl NestedPatternExecutor {

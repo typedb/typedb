@@ -67,7 +67,7 @@ fn reduce_iterator<Snapshot: ReadableSnapshot>(
     let mut iterator = iterator;
     let mut grouped_reducer = GroupedReducer::new(executable.reduce_rows_executable.clone());
     while let Some(result) = iterator.next() {
-        grouped_reducer.accept(&result?, &context)?;
+        grouped_reducer.accept(&result?, context)?;
     }
     Ok(grouped_reducer.finalise())
 }

@@ -30,15 +30,15 @@ pub trait ThingVertex<'a>: Prefixed<'a, BUFFER_KEY_INLINE> + Typed<'a, BUFFER_KE
     fn build_prefix_prefix(prefix: Prefix) -> StorageKey<'static, { PrefixID::LENGTH }> {
         debug_assert!(matches!(prefix, Prefix::VertexEntity | Prefix::VertexRelation | Prefix::VertexAttribute));
         let mut array = ByteArray::zeros(PrefixID::LENGTH);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
+        array[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
         StorageKey::new(Self::KEYSPACE, Bytes::Array(array))
     }
 
     fn build_prefix_type(prefix: Prefix, type_id: TypeID) -> StorageKey<'static, THING_VERTEX_LENGTH_PREFIX_TYPE> {
         debug_assert!(matches!(prefix, Prefix::VertexEntity | Prefix::VertexRelation | Prefix::VertexAttribute));
         let mut array = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
-        array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
+        array[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
+        array[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         StorageKey::new(Self::KEYSPACE, Bytes::Array(array))
     }
 }

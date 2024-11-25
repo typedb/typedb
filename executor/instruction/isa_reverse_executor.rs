@@ -4,13 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::BTreeMap,
-    fmt::{Display, Formatter},
-    iter, option,
-    sync::Arc,
-    vec,
-};
+use std::{collections::BTreeMap, fmt, iter, option, sync::Arc, vec};
 
 use answer::{Thing, Type};
 use compiler::{executable::match_::instructions::thing::IsaReverseInstruction, ExecutorVariable};
@@ -172,8 +166,8 @@ impl IsaReverseExecutor {
     }
 }
 
-impl Display for IsaReverseExecutor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for IsaReverseExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "Reverse[{}], mode={}", &self.isa, &self.iterate_mode)
     }
 }

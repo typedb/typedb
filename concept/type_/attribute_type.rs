@@ -6,7 +6,7 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    fmt::{Display, Formatter},
+    fmt,
     sync::Arc,
 };
 
@@ -387,8 +387,8 @@ impl<'a> AttributeType<'a> {
     }
 }
 
-impl<'a> Display for AttributeType<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<'a> fmt::Display for AttributeType<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[AttributeType:{}]", self.vertex.type_id_())
     }
 }

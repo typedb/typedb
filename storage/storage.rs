@@ -275,7 +275,7 @@ impl<Durability> MVCCStorage<Durability> {
                 } else {
                     let existing_stored = self
                         .get::<BUFFER_VALUE_INLINE>(wrapped, snapshot.open_sequence_number())?
-                        .is_some_and(|reference| reference.bytes() == value.bytes());
+                        .is_some_and(|reference| &reference == value);
                     reinsert.store(!existing_stored, Ordering::Release);
                 }
             }
@@ -378,7 +378,7 @@ impl<Durability> MVCCStorage<Durability> {
         // TODO: writes should always have to go through a transaction? Otherwise we have to WAL right here in a different path
         self.keyspaces
             .get(key.keyspace_id())
-            .put(key.bytes(), value.bytes())
+            .put(key.bytes(), value)
             .map_err(|e| MVCCStorageError {
                 storage_name: self.name(),
                 kind: MVCCStorageErrorKind::KeyspaceError {
@@ -500,7 +500,7 @@ impl<'bytes> MVCCKey<'bytes> {
     fn build(key: &[u8], sequence_number: SequenceNumber, storage_operation: StorageOperation) -> Self {
         let length = key.len() + SequenceNumber::serialised_len() + StorageOperation::serialised_len();
         let mut byte_array = ByteArray::zeros(length);
-        let bytes = byte_array.bytes_mut();
+        let bytes = &mut *byte_array;
 
         let key_end = key.len();
         let sequence_number_end = key_end + SequenceNumber::serialised_len();
@@ -514,7 +514,7 @@ impl<'bytes> MVCCKey<'bytes> {
     }
 
     fn wrap_slice(bytes: &'bytes [u8]) -> Self {
-        Self { bytes: Bytes::Reference(ByteReference::new(bytes)) }
+        Self { bytes: Bytes::reference(bytes) }
     }
 
     pub(crate) fn is_visible_to(&self, sequence_number: SequenceNumber) -> bool {
@@ -522,7 +522,7 @@ impl<'bytes> MVCCKey<'bytes> {
     }
 
     fn bytes(&self) -> &[u8] {
-        self.bytes.bytes()
+        &self.bytes
     }
 
     fn length(&self) -> usize {

@@ -19,9 +19,9 @@ pub(super) enum StreamModifierExecutor {
     Last { inner: PatternExecutor },
 }
 
-impl Into<StepExecutors> for StreamModifierExecutor {
-    fn into(self) -> StepExecutors {
-        StepExecutors::StreamModifier(self)
+impl From<StreamModifierExecutor> for StepExecutors {
+    fn from(val: StreamModifierExecutor) -> Self {
+        StepExecutors::StreamModifier(val)
     }
 }
 

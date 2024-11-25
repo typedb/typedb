@@ -113,7 +113,7 @@ pub fn determine_tabling_requirements(
 ) -> HashMap<FunctionID, FunctionTablingType> {
     let mut cycle_detection: HashMap<FunctionID, TablingRequirement> =
         functions.keys().map(|function_id| (function_id.clone(), TablingRequirement::Unexplored)).collect();
-    for (function_id, _) in functions {
+    for function_id in functions.keys() {
         if cycle_detection[function_id] == TablingRequirement::Unexplored {
             determine_tabling_requirements_impl(functions, &mut cycle_detection, function_id)
         }

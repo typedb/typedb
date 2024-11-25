@@ -116,7 +116,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     while let Some(row) = row_iterator.next() {
         let mut translated_row = HashMap::with_capacity(outputs.len());
         for (name, pos) in &outputs {
-            translated_row.insert(name.clone(), row.get(pos.clone()).clone().into_owned());
+            translated_row.insert(name.clone(), row.get(*pos).clone().into_owned());
         }
         collected.push(translated_row);
     }
@@ -181,10 +181,7 @@ fn multi_threaded_inserts() {
     {
         let snapshot = storage.clone().open_snapshot_read();
         let person_type = type_manager.get_entity_type(&snapshot, &Label::parse_from("person")).unwrap().unwrap();
-        assert_eq!(
-            NUM_THREADS as usize * INTERNAL_ITERS,
-            thing_manager.get_entities_in(&snapshot, person_type).count()
-        );
+        assert_eq!(NUM_THREADS * INTERNAL_ITERS, thing_manager.get_entities_in(&snapshot, person_type).count());
         snapshot.close_resources();
     }
 }

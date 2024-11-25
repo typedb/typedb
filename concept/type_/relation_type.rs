@@ -4,11 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashSet,
-    fmt::{Display, Formatter},
-    sync::Arc,
-};
+use std::{collections::HashSet, fmt, sync::Arc};
 
 use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
@@ -479,8 +475,8 @@ impl<'a> RelationType<'a> {
     }
 }
 
-impl<'a> Display for RelationType<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<'a> fmt::Display for RelationType<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[RelationType:{}]", self.vertex.type_id_())
     }
 }

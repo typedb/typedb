@@ -15,29 +15,29 @@ use compiler::{
         function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         match_inference::infer_types,
     },
-    executable::match_::{
-        instructions::{thing::IsaInstruction, CheckInstruction, CheckVertex, ConstraintInstruction, Inputs},
-        planner::{
-            function_plan::ExecutableFunctionRegistry,
-            match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
+    executable::{
+        match_::{
+            instructions::{thing::IsaInstruction, CheckInstruction, CheckVertex, ConstraintInstruction, Inputs},
+            planner::{
+                function_plan::ExecutableFunctionRegistry,
+                match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
+            },
         },
+        next_executable_id,
     },
     ExecutorVariable, VariablePosition,
 };
-use compiler::executable::next_executable_id;
 use concept::type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, profile::QueryProfile,
+    row::MaybeOwnedRow, ExecutionInterrupt,
 };
-use executor::profile::QueryProfile;
 use ir::{
     pattern::constraint::{Comparator, IsaKind},
-    pipeline::block::Block,
+    pipeline::{block::Block, ParameterRegistry},
     translation::TranslationContext,
 };
-use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils_concept::{load_managers, setup_concept_storage};

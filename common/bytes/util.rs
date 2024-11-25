@@ -6,7 +6,7 @@
 
 use std::{
     borrow::Cow,
-    fmt::{self, Formatter, Write},
+    fmt::{self, Write},
 };
 
 // TODO: this needs to be optimised using bigger strides than a single byte!
@@ -70,7 +70,7 @@ impl<'a> HexBytesFormatter<'a> {
 }
 
 impl fmt::Display for HexBytesFormatter<'_> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(self, f)
     }
 }

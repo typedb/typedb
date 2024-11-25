@@ -691,8 +691,8 @@ impl<ID: IrID> Constraint<ID> {
 
 impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
     fn hash(&self) -> u64 {
-        &mem::discriminant(self).hash()
-            ^ &match self {
+        mem::discriminant(self).hash()
+            ^ match self {
                 Self::Is(inner) => inner.hash(),
                 Self::Kind(inner) => inner.hash(),
                 Self::Label(inner) => inner.hash(),

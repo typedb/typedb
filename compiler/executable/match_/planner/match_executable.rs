@@ -6,8 +6,7 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    fmt::{Display, Formatter},
-    slice,
+    fmt, slice,
 };
 
 use answer::variable::Variable;
@@ -61,8 +60,8 @@ impl MatchExecutable {
     }
 }
 
-impl Display for MatchExecutable {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for MatchExecutable {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Match executable plan:")?;
         for (i, step) in self.steps().iter().enumerate() {
             write!(f, "\n  {i}: {step}")?;
@@ -124,8 +123,8 @@ impl ExecutionStep {
     }
 }
 
-impl Display for ExecutionStep {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for ExecutionStep {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ExecutionStep::Intersection(step) => write!(f, "{step}"),
             ExecutionStep::UnsortedJoin(step) => write!(f, "{step}"),
@@ -194,8 +193,8 @@ impl IntersectionStep {
     }
 }
 
-impl Display for IntersectionStep {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for IntersectionStep {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "Sorted Iterator Intersection [bound_vars={:?}, output_size={}, sort_by={}]",
@@ -267,8 +266,8 @@ impl UnsortedJoinStep {
     }
 }
 
-impl Display for UnsortedJoinStep {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for UnsortedJoinStep {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Unsorted Iterate [bound_vars={:?}, output_size={:?}]", &self.bound_variables, self.output_width)?;
         write!(f, "\n      {}", &self.iterate_instruction)?;
         // TODO: do we need these at all?
@@ -308,8 +307,8 @@ impl AssignmentStep {
     }
 }
 
-impl Display for AssignmentStep {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for AssignmentStep {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Assignment [inputs={:?}, output_size={}]", &self.input_positions, self.output_width)?;
         // TODO: Display expression
         write!(f, "\n      {:?}", &self.expression)
@@ -337,8 +336,8 @@ impl CheckStep {
     }
 }
 
-impl Display for CheckStep {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for CheckStep {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Check")?;
         for check in &self.check_instructions {
             write!(f, "\n      {}", check)?;
@@ -364,8 +363,8 @@ impl DisjunctionStep {
     }
 }
 
-impl Display for DisjunctionStep {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for DisjunctionStep {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Disjunction [output_size={}]", self.output_width)?;
         for branch in &self.branches {
             write!(f, "\n      --- Start branch ---")?;
@@ -393,8 +392,8 @@ impl NegationStep {
     }
 }
 
-impl Display for NegationStep {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for NegationStep {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "Negation")?;
         write!(f, "      --- Start negation ---")?;
         write!(f, "\n {}", &self.negation)?;
@@ -407,8 +406,8 @@ pub struct OptionalStep {
     pub optional: MatchExecutable,
 }
 
-impl Display for OptionalStep {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for OptionalStep {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "Optional")?;
         write!(f, "\n      --- Start negation ---")?;
         write!(f, "\n {}", &self.optional)?;
@@ -431,11 +430,11 @@ impl FunctionCallStep {
     }
 }
 
-impl Display for FunctionCallStep {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
+impl fmt::Display for FunctionCallStep {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(
             f,
-            "Function Call [fn_id={}, assigned={:?}, arguments={:?}, output_size={}]\n",
+            "Function Call [fn_id={}, assigned={:?}, arguments={:?}, output_size={}]",
             self.function_id, &self.assigned, &self.arguments, self.output_width
         )
     }

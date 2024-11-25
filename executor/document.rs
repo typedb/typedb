@@ -4,8 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use core::fmt;
-use std::{collections::HashMap, fmt::Formatter, sync::Arc};
+use std::{collections::HashMap, fmt, sync::Arc};
 
 use answer::Concept;
 use encoding::{graph::type_::Kind, value::label::Label};
@@ -17,7 +16,7 @@ pub struct ConceptDocument {
 }
 
 impl fmt::Display for ConceptDocument {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(&self.root, f)
     }
 }
@@ -40,7 +39,7 @@ impl DocumentNode {
 }
 
 impl fmt::Display for DocumentNode {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::List(list) => fmt::Display::fmt(list, f),
             Self::Map(map) => fmt::Display::fmt(map, f),
@@ -56,7 +55,7 @@ pub enum DocumentMap {
 }
 
 impl fmt::Display for DocumentMap {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{{")?;
         match self {
             Self::UserKeys(map) => {
@@ -90,7 +89,7 @@ impl DocumentList {
 }
 
 impl fmt::Display for DocumentList {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;
         for node in &self.list {
             write!(f, " {},", node)?
@@ -107,7 +106,7 @@ pub enum DocumentLeaf {
 }
 
 impl fmt::Display for DocumentLeaf {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             DocumentLeaf::Empty => write!(f, "empty"),
             DocumentLeaf::Concept(concept) => write!(f, "{concept}"),
