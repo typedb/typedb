@@ -33,12 +33,12 @@ impl<'a, const INLINE_LENGTH: usize> StringBytes<'a, INLINE_LENGTH> {
     }
 
     pub const fn build_ref(value: &'a str) -> Self {
-        StringBytes { bytes: Bytes::Reference(ByteReference::new(value.as_bytes())) }
+        StringBytes { bytes: Bytes::reference(value.as_bytes()) }
     }
 
     pub fn as_str(&self) -> &str {
-        std::str::from_utf8(self.bytes.bytes())
-            .map_err(|err| EncodingError::UFT8Decode { bytes: Box::from(self.bytes.bytes()), source: err })
+        std::str::from_utf8(&self.bytes)
+            .map_err(|err| EncodingError::UFT8Decode { bytes: Box::from(&*self.bytes), source: err })
             .unwrap_or_log()
     }
 

@@ -38,12 +38,10 @@ impl KeyspaceRangeIterator {
 
         let read_opts = keyspace.new_read_options();
         let kv_storage: &'static DB = unsafe { std::mem::transmute(&keyspace.kv_storage) };
-        let mut iterator = raw_iterator::DBIterator::new_from(
-            kv_storage.raw_iterator_opt(read_opts),
-            range.start().get_value().bytes(),
-        );
+        let mut iterator =
+            raw_iterator::DBIterator::new_from(kv_storage.raw_iterator_opt(read_opts), range.start().get_value());
         if range.start().is_exclusive() {
-            Self::may_skip_start(&mut iterator, range.start().get_value().bytes());
+            Self::may_skip_start(&mut iterator, range.start().get_value());
         }
 
         let continue_condition = match range.end() {

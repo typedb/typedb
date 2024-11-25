@@ -89,7 +89,7 @@ impl<'a> fmt::Display for DefinitionKey<'a> {
         // we'll just arbitrarily write it out as an u64 in Big Endian
         debug_assert!(self.bytes.length() < (u64::BITS / 8) as usize);
         let mut bytes = [0u8; (u64::BITS / 8) as usize];
-        bytes[0..self.bytes.length()].copy_from_slice(self.bytes.bytes());
+        bytes[0..self.bytes.length()].copy_from_slice(&self.bytes);
         let as_u64 = u64::from_be_bytes(bytes);
         write!(f, "{}", as_u64)
     }
@@ -126,7 +126,7 @@ impl<'a> Serialize for DefinitionKey<'a> {
     where
         S: Serializer,
     {
-        serializer.serialize_bytes(self.bytes.bytes())
+        serializer.serialize_bytes(&self.bytes)
     }
 }
 

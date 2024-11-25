@@ -378,7 +378,7 @@ impl<Durability> MVCCStorage<Durability> {
         // TODO: writes should always have to go through a transaction? Otherwise we have to WAL right here in a different path
         self.keyspaces
             .get(key.keyspace_id())
-            .put(key.bytes(), value.bytes())
+            .put(key.bytes(), value)
             .map_err(|e| MVCCStorageError {
                 storage_name: self.name(),
                 kind: MVCCStorageErrorKind::KeyspaceError {
@@ -514,7 +514,7 @@ impl<'bytes> MVCCKey<'bytes> {
     }
 
     fn wrap_slice(bytes: &'bytes [u8]) -> Self {
-        Self { bytes: Bytes::Reference(ByteReference::new(bytes)) }
+        Self { bytes: Bytes::reference(bytes) }
     }
 
     pub(crate) fn is_visible_to(&self, sequence_number: SequenceNumber) -> bool {
@@ -522,7 +522,7 @@ impl<'bytes> MVCCKey<'bytes> {
     }
 
     fn bytes(&self) -> &[u8] {
-        self.bytes.bytes()
+        &self.bytes
     }
 
     fn length(&self) -> usize {

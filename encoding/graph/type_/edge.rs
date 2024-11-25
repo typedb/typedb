@@ -71,17 +71,15 @@ impl<'a> TypeEdge<'a> {
     }
 
     pub fn from(&'a self) -> TypeVertex<'a> {
-        let reference = ByteReference::new(&self.bytes.bytes()[Self::range_from()]);
-        TypeVertex::new(Bytes::Reference(reference))
+        TypeVertex::new(Bytes::reference(&self.bytes[Self::range_from()]))
     }
 
     pub fn to(&'a self) -> TypeVertex<'a> {
-        let reference = ByteReference::new(&self.bytes.bytes()[Self::range_to()]);
-        TypeVertex::new(Bytes::Reference(reference))
+        TypeVertex::new(Bytes::reference(&self.bytes[Self::range_to()]))
     }
 
     pub fn prefix(&self) -> Prefix {
-        Prefix::from_prefix_id(PrefixID::new(self.bytes.bytes()[Self::RANGE_PREFIX].try_into().unwrap()))
+        Prefix::from_prefix_id(PrefixID::new(self.bytes[Self::RANGE_PREFIX].try_into().unwrap()))
     }
 
     const fn range_from() -> Range<usize> {

@@ -9,7 +9,7 @@ use std::{
     cmp::Ordering,
     fmt,
     hash::{Hash, Hasher},
-    ops::Range,
+    ops::{Deref, Range},
 };
 
 use lending_iterator::higher_order::Hkt;
@@ -47,15 +47,8 @@ impl<const ARRAY_INLINE_SIZE: usize> Bytes<'static, ARRAY_INLINE_SIZE> {
 }
 
 impl<'bytes, const ARRAY_INLINE_SIZE: usize> Bytes<'bytes, ARRAY_INLINE_SIZE> {
-    pub fn reference(bytes: &'bytes [u8]) -> Self {
+    pub const fn reference(bytes: &'bytes [u8]) -> Self {
         Self::Reference(ByteReference::new(bytes))
-    }
-
-    pub fn bytes(&'bytes self) -> &'bytes [u8] {
-        match self {
-            Bytes::Array(array) => array.bytes(),
-            Bytes::Reference(reference) => reference.bytes(),
-        }
     }
 
     pub fn length(&self) -> usize {
@@ -131,9 +124,20 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> fmt::Display for Bytes<'bytes, ARRA
     }
 }
 
+impl<'bytes, const ARRAY_INLINE_SIZE: usize> Deref for Bytes<'bytes, ARRAY_INLINE_SIZE> {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Bytes::Array(array) => array.bytes(),
+            Bytes::Reference(reference) => reference.bytes(),
+        }
+    }
+}
+
 impl<'bytes, const ARRAY_INLINE_SIZE: usize> PartialEq for Bytes<'bytes, ARRAY_INLINE_SIZE> {
     fn eq(&self, other: &Self) -> bool {
-        self.bytes().eq(other.bytes())
+        (**self).eq(&**other)
     }
 }
 
@@ -147,29 +151,29 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> PartialOrd for Bytes<'bytes, ARRAY_
 
 impl<'bytes, const ARRAY_INLINE_SIZE: usize> Ord for Bytes<'bytes, ARRAY_INLINE_SIZE> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.bytes().cmp(other.bytes())
+        (**self).cmp(&**other)
     }
 }
 
 impl<'bytes, const ARRAY_INLINE_SIZE: usize> Hash for Bytes<'bytes, ARRAY_INLINE_SIZE> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.bytes().hash(state)
+        (**self).hash(state)
     }
 }
 
 impl<'bytes, const ARRAY_INLINE_SIZE: usize> Borrow<[u8]> for Bytes<'bytes, ARRAY_INLINE_SIZE> {
     fn borrow(&self) -> &[u8] {
-        self.bytes()
+        self
     }
 }
 
 impl<'bytes, const ARRAY_INLINE_SIZE: usize> Prefix for Bytes<'bytes, ARRAY_INLINE_SIZE> {
     fn starts_with(&self, other: &Self) -> bool {
-        self.bytes().starts_with(other.bytes())
+        (**self).starts_with(other)
     }
 
     fn into_starts_with(self, other: Self) -> bool {
-        self.bytes().starts_with(other.bytes())
+        (*self).starts_with(&other)
     }
 }
 

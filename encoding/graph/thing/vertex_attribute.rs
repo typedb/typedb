@@ -50,7 +50,7 @@ impl<'a> AttributeVertex<'a> {
     pub const PREFIX: Prefix = Prefix::VertexAttribute;
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
-        debug_assert!(bytes.bytes()[Self::RANGE_PREFIX] == Self::PREFIX.prefix_id().bytes);
+        debug_assert!(bytes[Self::RANGE_PREFIX] == Self::PREFIX.prefix_id().bytes);
         debug_assert!(bytes.length() > THING_VERTEX_LENGTH_PREFIX_TYPE);
         Self { bytes }
     }
@@ -99,7 +99,7 @@ impl<'a> AttributeVertex<'a> {
     }
 
     pub fn attribute_id(&self) -> AttributeID {
-        AttributeID::new(&self.bytes.bytes()[self.range_of_attribute_id()])
+        AttributeID::new(&self.bytes[self.range_of_attribute_id()])
     }
 
     fn range_of_attribute_id(&self) -> Range<usize> {
@@ -764,12 +764,10 @@ impl StructAttributeID {
         let existing_or_new = Self::find_existing_or_next_disambiguated_hash(
             snapshot,
             hasher,
-            Bytes::Array(
-                ByteArray::<{ THING_VERTEX_LENGTH_PREFIX_TYPE + ValueTypeBytes::CATEGORY_LENGTH }>::copy_concat([
-                    attribute_prefix.bytes(),
-                    &ValueTypeCategory::Struct.to_bytes(),
-                ]),
-            )
+            ByteArray::<{ THING_VERTEX_LENGTH_PREFIX_TYPE + ValueTypeBytes::CATEGORY_LENGTH }>::copy_concat([
+                attribute_prefix.bytes(),
+                &ValueTypeCategory::Struct.to_bytes(),
+            ])
             .bytes(),
             struct_bytes.bytes().bytes(),
         )?;
@@ -795,12 +793,10 @@ impl StructAttributeID {
         let existing_or_new = Self::find_existing_or_next_disambiguated_hash(
             snapshot,
             hasher,
-            Bytes::Array(
-                ByteArray::<{ THING_VERTEX_LENGTH_PREFIX_TYPE + ValueTypeBytes::CATEGORY_LENGTH }>::copy_concat([
-                    attribute_prefix.bytes(),
-                    &ValueTypeCategory::Struct.to_bytes(),
-                ]),
-            )
+            ByteArray::<{ THING_VERTEX_LENGTH_PREFIX_TYPE + ValueTypeBytes::CATEGORY_LENGTH }>::copy_concat([
+                attribute_prefix.bytes(),
+                &ValueTypeCategory::Struct.to_bytes(),
+            ])
             .bytes(),
             struct_bytes.bytes().bytes(),
         )?;

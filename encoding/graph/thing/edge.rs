@@ -50,7 +50,7 @@ impl<'a> ThingEdgeHas<'a> {
         PrefixID::LENGTH + ObjectVertex::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
-        debug_assert_eq!(bytes.bytes()[Self::RANGE_PREFIX], Self::PREFIX.prefix_id().bytes());
+        debug_assert_eq!(bytes[Self::RANGE_PREFIX], Self::PREFIX.prefix_id().bytes());
         ThingEdgeHas { bytes }
     }
 
@@ -105,12 +105,12 @@ impl<'a> ThingEdgeHas<'a> {
     }
 
     pub fn from(&'a self) -> ObjectVertex<'a> {
-        let reference = ByteReference::new(&self.bytes.bytes()[Self::range_from()]);
+        let reference = ByteReference::new(&self.bytes[Self::range_from()]);
         ObjectVertex::new(Bytes::Reference(reference))
     }
 
     pub fn to(&'a self) -> AttributeVertex<'a> {
-        let reference = ByteReference::new(&self.bytes.bytes()[self.range_to()]);
+        let reference = ByteReference::new(&self.bytes[self.range_to()]);
         AttributeVertex::new(Bytes::Reference(reference))
     }
 
@@ -192,7 +192,7 @@ impl<'a> ThingEdgeHasReverse<'a> {
         + THING_VERTEX_LENGTH_PREFIX_TYPE;
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> ThingEdgeHasReverse<'a> {
-        debug_assert_eq!(bytes.bytes()[Self::RANGE_PREFIX], Self::PREFIX.prefix_id().bytes());
+        debug_assert_eq!(bytes[Self::RANGE_PREFIX], Self::PREFIX.prefix_id().bytes());
         ThingEdgeHasReverse { bytes }
     }
 
@@ -289,12 +289,12 @@ impl<'a> ThingEdgeHasReverse<'a> {
     }
 
     pub fn from(&'a self) -> AttributeVertex<'a> {
-        let reference = ByteReference::new(&self.bytes.bytes()[self.range_from()]);
+        let reference = ByteReference::new(&self.bytes[self.range_from()]);
         AttributeVertex::new(Bytes::Reference(reference))
     }
 
     pub fn to(&'a self) -> ObjectVertex<'a> {
-        let reference = ByteReference::new(&self.bytes.bytes()[self.range_to()]);
+        let reference = ByteReference::new(&self.bytes[self.range_to()]);
         ObjectVertex::new(Bytes::Reference(reference))
     }
 
@@ -314,7 +314,7 @@ impl<'a> ThingEdgeHasReverse<'a> {
 
     #[allow(clippy::wrong_self_convention, reason = "`from` refers to the edge's source vertex")]
     fn from_length(&self) -> usize {
-        let value_type_prefix = self.bytes.bytes()[Self::INDEX_FROM_VALUE_PREFIX];
+        let value_type_prefix = self.bytes[Self::INDEX_FROM_VALUE_PREFIX];
         let id_encoding_length =
             AttributeID::value_type_encoding_length(ValueTypeCategory::from_bytes([value_type_prefix]));
         THING_VERTEX_LENGTH_PREFIX_TYPE + id_encoding_length
@@ -520,12 +520,12 @@ impl<'a> ThingEdgeLinks<'a> {
 
     pub fn from(&self) -> ObjectVertex<'_> {
         // TODO: copy?
-        ObjectVertex::new(Bytes::Reference(ByteReference::new(&self.bytes.bytes()[Self::RANGE_FROM])))
+        ObjectVertex::new(Bytes::reference(&self.bytes[Self::RANGE_FROM]))
     }
 
     pub fn to(&self) -> ObjectVertex<'_> {
         // TODO: copy?
-        ObjectVertex::new(Bytes::Reference(ByteReference::new(&self.bytes.bytes()[Self::RANGE_TO])))
+        ObjectVertex::new(Bytes::reference(&self.bytes[Self::RANGE_TO]))
     }
 
     pub fn into_from(self) -> ObjectVertex<'a> {
@@ -573,7 +573,7 @@ impl<'a> ThingEdgeLinks<'a> {
     }
 
     pub fn role_id(&'a self) -> TypeID {
-        let bytes = &self.bytes.bytes()[Self::RANGE_ROLE_ID];
+        let bytes = &self.bytes[Self::RANGE_ROLE_ID];
         TypeID::new(bytes.try_into().unwrap())
     }
 }

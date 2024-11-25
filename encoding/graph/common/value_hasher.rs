@@ -84,7 +84,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         let mut next_tail: u8 = Self::HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG; // Start with the bit set
         while let Some((key, value)) = next {
             let key_tail = key.bytes()[tail_byte_index];
-            if value.bytes() == value_bytes {
+            if &*value == value_bytes {
                 return Ok(Either::First(key_tail));
             } else if next_tail != key_tail {
                 // found unused tail ID. This could be a hole. We have to complete iteration.

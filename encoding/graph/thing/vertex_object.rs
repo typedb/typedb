@@ -73,7 +73,7 @@ impl<'a> ObjectVertex<'a> {
     }
 
     pub fn object_id(&self) -> ObjectID {
-        ObjectID::new(self.bytes.bytes()[Self::range_object_id()].try_into().unwrap())
+        ObjectID::new(self.bytes[Self::range_object_id()].try_into().unwrap())
     }
 
     pub(crate) fn length(&self) -> usize {

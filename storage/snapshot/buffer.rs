@@ -192,7 +192,7 @@ impl WriteBuffer {
         // TODO: we shouldn't have to copy now that we use single-writer semantics
         BufferRangeIterator::new(
             self.writes
-                .range::<[u8], _>((range_start.as_bound().map(|bytes| bytes.bytes()), end))
+                .range::<[u8], _>((range_start.as_bound().map(|bytes| &**bytes), end))
                 .map(|(key, val)| (StorageKeyArray::new_raw(self.keyspace_id, key.clone()), val.clone()))
                 .collect::<Vec<_>>(),
         )
@@ -208,7 +208,7 @@ impl WriteBuffer {
             Bound::Excluded(exclusive_end_bytes.bytes())
         };
         self.writes
-            .range::<[u8], _>((range_start.as_bound().map(|bytes| bytes.bytes()), end))
+            .range::<[u8], _>((range_start.as_bound().map(|bytes| &**bytes), end))
             .any(|(_, write)| !write.is_delete())
     }
 

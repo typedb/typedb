@@ -54,7 +54,7 @@ impl<'a, const INLINE_LENGTH: usize> StructBytes<'a, INLINE_LENGTH> {
 
     pub fn as_struct(self) -> StructValue<'static> {
         let mut offset: usize = 0;
-        decode_struct_increment_offset(&mut offset, self.bytes.bytes()).unwrap()
+        decode_struct_increment_offset(&mut offset, &self.bytes).unwrap()
     }
 
     pub fn length(&self) -> usize {

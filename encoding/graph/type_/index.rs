@@ -52,9 +52,7 @@ impl<'a, T: Indexable> IdentifierIndex<'a, T> {
     }
 
     pub fn identifier(&'a self) -> StringBytes<'a, BUFFER_KEY_INLINE> {
-        StringBytes::new(Bytes::Reference(ByteReference::new(
-            &self.bytes.bytes()[Self::range_identifier(self.identifier_length())],
-        )))
+        StringBytes::new(Bytes::reference(&self.bytes[Self::range_identifier(self.identifier_length())]))
     }
 
     fn identifier_length(&self) -> usize {
