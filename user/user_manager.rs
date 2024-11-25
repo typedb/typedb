@@ -55,7 +55,7 @@ impl UserManager {
         commit.map_err(|e| UserCreateError::Unexpected {})
     }
 
-    pub fn update(&self, username: &str, user: &User, credential: &Credential) -> Result<(), UserUpdateError> {
+    pub fn update(&self, username: &str, user: &Option<User>, credential: &Option<Credential>) -> Result<(), UserUpdateError> {
         let commit = self.transaction_manager.write_transaction(
             |snapshot,
              type_mgr,

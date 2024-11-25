@@ -32,6 +32,6 @@ pub fn users_create_req(request: Request<typedb_protocol::user_manager::create::
     }
 }
 
-pub fn users_update_req(request: Request<typedb_protocol::user::update::Req>) -> Result<(String, User, Credential), UserUpdateError> {
+pub fn users_update_req(request: Request<typedb_protocol::user::update::Req>) -> Result<(String, Option<User>, Option<Credential>), UserUpdateError> {
     todo!()
 }

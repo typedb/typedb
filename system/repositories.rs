@@ -88,8 +88,8 @@ pub mod user_repository {
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
         username: &str,
-        user: &User,
-        credential: &Credential
+        user: &Option<User>,
+        credential: &Option<Credential>
     ) -> Arc<WriteSnapshot<WALClient>> {
         todo!()
     }
