@@ -36,7 +36,7 @@ pub mod user_repository {
                 "match
                 (user: $u, password: $p) isa user-password;
                 $u has name '{username}';
-                $p has hash $h",
+                $p has hash $h;",
                 username = username
             ).as_str()
         ).unwrap();
@@ -98,7 +98,7 @@ pub mod user_repository {
         let query = parse_query(
             format!(
                 "match $up isa user-password, links (user: $u, password: $p);
-                $u isa user, has name {username};
+                $u isa user, has name '{username}';
                 delete $u; $p; $up;",
                 username = username
             ).as_str()

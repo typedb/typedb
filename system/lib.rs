@@ -14,7 +14,6 @@ const SYSTEM_DB: &str = "system";
 // TODO: read from a file at compile time
 const SCHEMA: &str = "
 define
-    attribute schema-version value long;
     attribute name value string;
     attribute uuid value string;
     attribute hash value string;
