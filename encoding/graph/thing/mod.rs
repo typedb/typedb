@@ -31,7 +31,7 @@ const fn max(lhs: usize, rhs: usize) -> usize {
     }
 }
 
-pub const THING_VERTEX_MAX_LENGTH: usize = max(ObjectVertex::LENGTH, AttributeVertex::MAX_LENGTH) + 1;
+pub const THING_VERTEX_MAX_LENGTH: usize = max(ObjectVertex::LENGTH, AttributeVertex::MAX_LENGTH);
 
 pub trait ThingVertex<'a>:
     Prefixed<'a, BUFFER_KEY_INLINE> + Typed<'a, BUFFER_KEY_INLINE> + Keyable<'a, BUFFER_KEY_INLINE>
