@@ -91,15 +91,15 @@ pub mod user_repository {
         user: &Option<User>,
         credential: &Option<Credential>
     ) -> Arc<WriteSnapshot<WALClient>> {
-        let update_user = parse_query(format!("").as_str()).unwrap();
-        let (_, snapshot) = execute_write_pipeline(
-            snapshot, type_manager, thing_manager.clone(), function_manager, &update_user.into_pipeline()
-        );
-        let update_credential = parse_query(format!("").as_str()).unwrap();
-        let (_, snapshot) = execute_write_pipeline(
-            Arc::into_inner(snapshot).unwrap(), type_manager, thing_manager.clone(), function_manager, &update_credential.into_pipeline()
-        );
-        snapshot
+        if user.is_some() {
+            todo!("update user detail")
+        }
+
+        if credential.is_some() {
+            todo!("update credential detail")
+        }
+
+        todo!()
     }
 
     pub fn delete(
