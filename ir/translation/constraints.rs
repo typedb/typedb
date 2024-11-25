@@ -372,18 +372,21 @@ fn add_typeql_isa(
     Ok(())
 }
 
-fn parse_iid(iid: &str) -> ByteArray<THING_VERTEX_MAX_LENGTH> {
+fn parse_iid(mut iid: &str) -> ByteArray<THING_VERTEX_MAX_LENGTH> {
     fn from_hex(c: u8) -> u8 {
         // relying on the fact that typeql ensures only hex digits
         match c {
             b'0'..=b'9' => c - b'0',
-            b'a'..=b'f' => c - b'a',
-            b'A'..=b'F' => c - b'A',
+            b'a'..=b'f' => c - b'a' + 10,
+            b'A'..=b'F' => c - b'A' + 10,
             _ => unreachable!(),
         }
     }
+
+    iid = &iid["0x".len()..];
+
     let mut bytes = [0u8; THING_VERTEX_MAX_LENGTH];
-    for (i, (hi, lo)) in iid.bytes().skip(2).tuples().enumerate() {
+    for (i, (hi, lo)) in iid.bytes().tuples().enumerate() {
         bytes[i] = (from_hex(hi) << 4) + from_hex(lo);
     }
     let len = iid.as_bytes().len() / 2;
