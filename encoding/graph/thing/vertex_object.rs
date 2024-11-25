@@ -49,6 +49,18 @@ impl<'a> ObjectVertex<'a> {
         ObjectVertex { bytes: Bytes::Array(array) }
     }
 
+    pub fn try_from_bytes(bytes: &'a [u8]) -> Option<Self> {
+        if bytes.len() != Self::LENGTH {
+            return None;
+        }
+        let prefix = &bytes[..1];
+        if prefix != Prefix::VertexEntity.prefix_id().bytes() && prefix != Prefix::VertexRelation.prefix_id().bytes() {
+            return None;
+        }
+        // all byte patterns beyond the prefix are valid for object vertices
+        Some(Self::new(Bytes::reference(bytes)))
+    }
+
     pub fn is_entity_vertex(storage_key: StorageKeyReference<'_>) -> bool {
         storage_key.keyspace_id() == Self::KEYSPACE.id()
             && storage_key.bytes().len() == Self::LENGTH

@@ -25,6 +25,7 @@ use crate::{
             HasReverseBoundedSortedOwner, HasReverseUnboundedSortedAttribute, HasReverseUnboundedSortedOwnerMerged,
             HasReverseUnboundedSortedOwnerSingle,
         },
+        iid_executor::IidIterator,
         is_executor::IsIterator,
         isa_executor::{IsaBoundedSortedType, IsaUnboundedSortedThing},
         isa_reverse_executor::{IsaReverseBoundedSortedThing, IsaReverseUnboundedSortedType},
@@ -94,6 +95,7 @@ dispatch_tuple_iterator! {
 #[allow(clippy::large_enum_variant)]
 pub(crate) enum TupleIterator {
     Is(SortedTupleIterator<IsIterator>),
+    Iid(SortedTupleIterator<IidIterator>),
     Type(SortedTupleIterator<TypeIterator>),
 
     SubUnbounded(SortedTupleIterator<SubUnboundedSortedSub>),
