@@ -37,14 +37,6 @@ impl Server {
         let typedb_service = TypeDBService::new(
             &config.server.address, database_manager, user_manager.clone()
         );
-        user_manager.create(&User::new("one".to_string()), &Credential::new_password_type(PasswordHash::from_password("password1"))).unwrap();
-        user_manager.create(&User::new("two".to_string()), &Credential::new_password_type(PasswordHash::from_password("password2"))).unwrap();
-        let u1 = user_manager.get("one");
-        println!("{:?}", u1);
-        let u2 = user_manager.get("two");
-        println!("{:?}", u2);
-        let users = user_manager.all();
-        println!("{:?}", users);
         Ok(Self {
             data_directory: storage_directory.to_owned(),
             user_manager: user_manager.clone(),
