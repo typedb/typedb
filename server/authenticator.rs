@@ -25,7 +25,7 @@ impl Authenticator {
             (Some(Ok(username)), Some(Ok(password))) => {
                 match self.user_manager.get(username) {
                     Some((_, Credential::PasswordType { password_hash })) => {
-                        if password_hash.is_hash_equal(password) {
+                        if password_hash.matches(password) {
                             Ok(req)
                         } else {
                             Err(Status::unauthenticated("invalid credential supplied"))

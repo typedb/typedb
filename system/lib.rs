@@ -18,16 +18,14 @@ define
     attribute name value string;
     attribute uuid value string;
     attribute hash value string;
-    attribute salt value string;
 
     entity user,
         owns uuid @card(1),
         owns name @card(1),
         plays user-password:user;
 
-        entity password,
+    entity password,
         owns hash @card(1),
-        owns salt @card(1),
         plays user-password:password;
 
     relation user-password,

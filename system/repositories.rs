@@ -36,7 +36,7 @@ pub mod user_repository {
                 "match
                 (user: $u, password: $p) isa user-password;
                 $u has name '{username}';
-                $p has hash $h, has salt $s;",
+                $p has hash $h",
                 username = username
             ).as_str()
         ).unwrap();
@@ -46,10 +46,9 @@ pub mod user_repository {
         if !rows.is_empty() {
             let row = rows.pop().unwrap();
             let hash = get_string(&tx, &row, "h");
-            let salt = get_string(&tx, &row, "s");
             Some((
                 User::new(username.to_string()),
-                Credential::PasswordType { password_hash: PasswordHash::new(hash, salt)}
+                Credential::PasswordType { password_hash: PasswordHash::new(hash)}
             ))
         } else {
             None
@@ -65,14 +64,14 @@ pub mod user_repository {
         credential: &Credential
     ) -> Arc<WriteSnapshot<WALClient>> {
         let query = match credential {
-            Credential::PasswordType { password_hash: PasswordHash { hash, salt }} => {
+            Credential::PasswordType { password_hash: PasswordHash { value: hash}} => {
                 let uuid = Uuid::new_v4().to_string();
                 parse_query(
                     format!(
                         "insert $u isa user, has uuid '{uuid}', has name '{name}';
-                        $p isa password, has hash '{hash}', has salt '{salt}';
+                        $p isa password, has hash '{hash}';
                         (user: $u, password: $p) isa user-password;",
-                        uuid = uuid, name = user.name, hash = hash, salt = salt
+                        uuid = uuid, name = user.name, hash = hash
                     ).as_str()
                 ).unwrap()
             }

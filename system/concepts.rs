@@ -24,20 +24,19 @@ impl Credential {
 
 #[derive(Debug)]
 pub struct PasswordHash {
-    pub hash: String,
-    pub salt: String
+    pub value: String,
 }
 
 impl PasswordHash {
-    pub fn new(hash: String, salt: String) -> Self {
-        Self { hash, salt }
+    pub fn new(hash: String) -> Self {
+        Self { value: hash }
     }
 
     pub fn from_password(password: &str) -> Self {
-        Self { hash: bcrypt::hash(password).unwrap(), salt: "".to_string() }
+        Self { value: bcrypt::hash(password).unwrap() }
     }
 
-    pub fn is_hash_equal(&self, password: &str) -> bool {
-        bcrypt::verify(password, self.hash.as_str())
+    pub fn matches(&self, password: &str) -> bool {
+        bcrypt::verify(password, self.value.as_str())
     }
 }
