@@ -237,7 +237,7 @@ impl<'this> TypeInferenceGraph<'this> {
         });
 
         vertices.into_iter().for_each(|(variable, types)| {
-            vertex_annotations.entry(variable).or_insert_with(|| Arc::new(types.into_iter().collect()));
+            vertex_annotations.entry(variable).or_insert_with(|| Arc::new(types));
         });
 
         chain(

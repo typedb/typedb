@@ -148,9 +148,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 continue;
             };
             if self.variable_registry.get_variable_category(*id).map_or(false, |cat| cat.is_category_thing()) {
-                TypeAnnotation::try_retain(annotations, |type_| {
-                    type_.is_abstract(self.snapshot, self.type_manager).map(|b| !b)
-                })
+                TypeAnnotation::try_retain(annotations, |type_| self.check_abstract(type_))
                 .map_err(|source| TypeInferenceError::ConceptRead { source })?;
             }
         }
@@ -414,13 +412,19 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             (None, None) => false,
             (Some(_), Some(_)) => false,
             (Some(left_types), None) => {
-                let left_to_right = inner.annotate_left_to_right(self, left_types)?;
-                vertices.insert(right.clone(), left_to_right.into_values().flatten().collect());
+                let mut right_types = BTreeSet::new();
+                left_types.iter().try_for_each(|type_| {
+                    inner.annotate_left_to_right_for_type(self, type_, &mut right_types)
+                })?;
+                vertices.insert(right.clone(), right_types);
                 true
             }
             (None, Some(right_types)) => {
-                let right_to_left = inner.annotate_right_to_left(self, right_types)?;
-                vertices.insert(left.clone(), right_to_left.into_values().flatten().collect());
+                let mut left_types = BTreeSet::new();
+                right_types.iter().try_for_each(|type_| {
+                    inner.annotate_right_to_left_for_type(self, type_, &mut left_types)
+                })?;
+                vertices.insert(left.clone(), left_types);
                 true
             }
         };
@@ -545,6 +549,10 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         let right_to_left = inner.annotate_right_to_left(self, vertices.get(&right).unwrap())?;
 
         Ok(TypeInferenceEdge::build(constraint, left, right, left_to_right, right_to_left))
+    }
+
+    fn check_abstract(&self, type_: &TypeAnnotation) -> Result<bool, Box<ConceptReadError>> {
+        type_.is_abstract(self.snapshot, self.type_manager).map(|b| !b)
     }
 }
 
@@ -780,9 +788,7 @@ trait BinaryConstraint {
                 let mut right_annotations = BTreeSet::new();
                 self.annotate_left_to_right_for_type(seeder, left_type, &mut right_annotations)?;
                 if right_is_thing {
-                    TypeAnnotation::try_retain(&mut right_annotations, |type_: &TypeAnnotation| {
-                        type_.is_abstract(seeder.snapshot, seeder.type_manager).map(|b| !b)
-                    })?;
+                    TypeAnnotation::try_retain(&mut right_annotations, |type_| seeder.check_abstract(type_))?;
                 }
                 left_to_right.insert(left_type.clone(), right_annotations);
             }
