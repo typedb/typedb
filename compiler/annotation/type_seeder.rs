@@ -387,10 +387,10 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             }
             Constraint::Has(has) => self.try_propagating_vertex_annotation_impl(has, vertices)?,
             Constraint::Is(is) => self.try_propagating_vertex_annotation_impl(is, vertices)?,
-            Constraint::Comparison(cmp) => self.try_propagating_vertex_annotation_impl(cmp, vertices)?,
             Constraint::Owns(owns) => self.try_propagating_vertex_annotation_impl(owns, vertices)?,
             Constraint::Relates(relates) => self.try_propagating_vertex_annotation_impl(relates, vertices)?,
             Constraint::Plays(plays) => self.try_propagating_vertex_annotation_impl(plays, vertices)?,
+            Constraint::Comparison(_) // Unlike in 2.x, We don't use comparisons to propagate.
             | Constraint::Iid(_)
             | Constraint::ExpressionBinding(_)
             | Constraint::FunctionCallBinding(_)
@@ -513,6 +513,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Constraint::Has(has) => edges.push(self.seed_edge(constraint, has, vertices)?),
                 Constraint::Is(is) => edges.push(self.seed_edge(constraint, is, vertices)?),
                 Constraint::Comparison(cmp) => {
+                    // We don't use comparisons to propagate, but we still want to use it to prune.
                     if vertices.contains_key(cmp.right()) && vertices.contains_key(cmp.left()) {
                         edges.push(self.seed_edge(constraint, cmp, vertices)?)
                     }
@@ -784,7 +785,8 @@ trait BinaryConstraint {
         allowed_right_types: &BTreeSet<TypeAnnotation>,
     ) -> Result<BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>, Box<ConceptReadError>> {
         let mut left_to_right = BTreeMap::new();
-        #[cfg(debug_assertions)]{
+        #[cfg(debug_assertions)]
+        {
             let (left_is_thing, right_is_thing) = self.check_for_thing_vars(seeder);
             debug_assert!(!left_is_thing || left_types.iter().all(|t| seeder.is_not_abstract(t).unwrap()));
             debug_assert!(!right_is_thing || allowed_right_types.iter().all(|t| seeder.is_not_abstract(t).unwrap()));
@@ -793,7 +795,10 @@ trait BinaryConstraint {
             let mut right_annotations = BTreeSet::new();
             self.annotate_left_to_right_for_type(seeder, left_type, &mut right_annotations)?;
             right_annotations.retain(|type_| allowed_right_types.contains(type_));
-            debug_assert!(!self.check_for_thing_vars(seeder).1 || right_annotations.iter().all(|t| seeder.is_not_abstract(t).unwrap()));
+            debug_assert!(
+                !self.check_for_thing_vars(seeder).1
+                    || right_annotations.iter().all(|t| seeder.is_not_abstract(t).unwrap())
+            );
             if !right_annotations.is_empty() {
                 left_to_right.insert(left_type.clone(), right_annotations);
             }
@@ -808,7 +813,8 @@ trait BinaryConstraint {
         allowed_left_types: &BTreeSet<TypeAnnotation>,
     ) -> Result<BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>, Box<ConceptReadError>> {
         let mut right_to_left = BTreeMap::new();
-        #[cfg(debug_assertions)]{
+        #[cfg(debug_assertions)]
+        {
             let (left_is_thing, right_is_thing) = self.check_for_thing_vars(seeder);
             debug_assert!(!right_is_thing || right_types.iter().all(|t| seeder.is_not_abstract(t).unwrap()));
             debug_assert!(!left_is_thing || allowed_left_types.iter().all(|t| seeder.is_not_abstract(t).unwrap()));
@@ -817,7 +823,10 @@ trait BinaryConstraint {
             let mut left_annotations = BTreeSet::new();
             self.annotate_right_to_left_for_type(seeder, right_type, &mut left_annotations)?;
             left_annotations.retain(|type_| allowed_left_types.contains(type_));
-            debug_assert!(!self.check_for_thing_vars(seeder).0 || left_annotations.iter().all(|t| seeder.is_not_abstract(t).unwrap()));
+            debug_assert!(
+                !self.check_for_thing_vars(seeder).0
+                    || left_annotations.iter().all(|t| seeder.is_not_abstract(t).unwrap())
+            );
             if !left_annotations.is_empty() {
                 right_to_left.insert(right_type.clone(), left_annotations);
             }
@@ -1250,12 +1259,105 @@ impl BinaryConstraint for Comparison<Variable> {
         self.rhs()
     }
 
+    fn annotate_left_to_right(
+        &self,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+        left_types: &BTreeSet<Type>,
+        allowed_right_types: &BTreeSet<Type>,
+    ) -> Result<BTreeMap<Type, BTreeSet<Type>>, Box<ConceptReadError>> {
+        let mut left_to_right = BTreeMap::new();
+        #[cfg(debug_assertions)]
+        {
+            let (left_is_thing, right_is_thing) = self.check_for_thing_vars(seeder);
+            debug_assert!(!left_is_thing || left_types.iter().all(|t| seeder.is_not_abstract(t).unwrap()));
+            debug_assert!(!right_is_thing || allowed_right_types.iter().all(|t| seeder.is_not_abstract(t).unwrap()));
+        }
+        // TODO: Optimise?
+        for left_type in left_types {
+            let mut right_annotations = BTreeSet::new();
+            let left_value_type = match left_type {
+                TypeAnnotation::Attribute(attribute) => {
+                    attribute.get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
+                }
+                _ => unreachable!("Expected attribute type"),
+            };
+            if let Some(value_type) = left_value_type {
+                let comparable_types = ValueTypeCategory::comparable_categories(value_type.category());
+                for subattr in allowed_right_types {
+                    if let Some(subvaluetype) = subattr
+                        .as_attribute_type()
+                        .get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
+                    {
+                        if comparable_types.contains(&subvaluetype.category()) {
+                            right_annotations.insert(TypeAnnotation::Attribute(subattr.as_attribute_type().clone()));
+                        }
+                    }
+                }
+            }
+            debug_assert!(
+                !self.check_for_thing_vars(seeder).1
+                    || right_annotations.iter().all(|t| seeder.is_not_abstract(t).unwrap())
+            );
+            if !right_annotations.is_empty() {
+                left_to_right.insert(left_type.clone(), right_annotations);
+            }
+        }
+        Ok(left_to_right)
+    }
+
+    fn annotate_right_to_left(
+        &self,
+        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+        right_types: &BTreeSet<Type>,
+        allowed_left_types: &BTreeSet<Type>,
+    ) -> Result<BTreeMap<Type, BTreeSet<Type>>, Box<ConceptReadError>> {
+        let mut right_to_left = BTreeMap::new();
+        #[cfg(debug_assertions)]
+        {
+            let (left_is_thing, right_is_thing) = self.check_for_thing_vars(seeder);
+            debug_assert!(!right_is_thing || right_types.iter().all(|t| seeder.is_not_abstract(t).unwrap()));
+            debug_assert!(!left_is_thing || allowed_left_types.iter().all(|t| seeder.is_not_abstract(t).unwrap()));
+        }
+        // TODO: Optimise?
+        for right_type in right_types {
+            let mut left_annotations = BTreeSet::new();
+            let right_value_type = match right_type {
+                TypeAnnotation::Attribute(attribute) => {
+                    attribute.get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
+                }
+                _ => unreachable!("Expected attribute type"),
+            };
+            if let Some(value_type) = right_value_type {
+                let comparable_types = ValueTypeCategory::comparable_categories(value_type.category());
+                for subattr in allowed_left_types {
+                    if let Some(subvaluetype) = subattr
+                        .as_attribute_type()
+                        .get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
+                    {
+                        if comparable_types.contains(&subvaluetype.category()) {
+                            left_annotations.insert(TypeAnnotation::Attribute(subattr.as_attribute_type().clone()));
+                        }
+                    }
+                }
+            }
+            debug_assert!(
+                !self.check_for_thing_vars(seeder).0
+                    || left_annotations.iter().all(|t| seeder.is_not_abstract(t).unwrap())
+            );
+            if !left_annotations.is_empty() {
+                right_to_left.insert(right_type.clone(), left_annotations);
+            }
+        }
+        Ok(right_to_left)
+    }
+
     fn annotate_left_to_right_for_type(
         &self,
         seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
+        unreachable!();
         let left_value_type = match left_type {
             TypeAnnotation::Attribute(attribute) => {
                 attribute.get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
@@ -1283,24 +1385,8 @@ impl BinaryConstraint for Comparison<Variable> {
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
-        let right_value_type = match right_type {
-            TypeAnnotation::Attribute(attribute) => {
-                attribute.get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
-            }
-            _ => unreachable!("Expected attribute type"),
-        };
-        if let Some(value_type) = right_value_type {
-            let comparable_types = ValueTypeCategory::comparable_categories(value_type.category());
-            for subattr in seeder.type_manager.get_attribute_types(seeder.snapshot)?.iter() {
-                if let Some(subvaluetype) =
-                    subattr.get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
-                {
-                    if comparable_types.contains(&subvaluetype.category()) {
-                        collector.insert(TypeAnnotation::Attribute(subattr.clone()));
-                    }
-                }
-            }
-        }
+        unreachable!();
+
         Ok(())
     }
 }
