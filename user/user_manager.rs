@@ -1,4 +1,4 @@
-use crate::errors::{UserCreateError, UserDeleteError};
+use crate::errors::{UserCreateError, UserDeleteError, UserUpdateError};
 use database::Database;
 use std::sync::Arc;
 use storage::durability_client::WALClient;
@@ -53,6 +53,28 @@ impl UserManager {
             ((), snapshot)
         });
         commit.map_err(|e| UserCreateError::Unexpected {})
+    }
+
+    pub fn update(&self, username: &str, user: &User, credential: &Credential) -> Result<(), UserUpdateError> {
+        let commit = self.transaction_manager.write_transaction(
+            |snapshot,
+             type_mgr,
+             thing_mgr,
+             fn_mgr,
+             db,
+             tx_opts| {
+                let snapshot = user_repository::update(
+                    Arc::into_inner(snapshot).unwrap(),
+                    &type_mgr,
+                    thing_mgr.clone(),
+                    &fn_mgr,
+                    username,
+                    user,
+                    credential
+                );
+                ((), snapshot)
+            });
+        commit.map_err(|e| UserUpdateError::Unexpected {})
     }
 
     pub fn delete(&self, username: &str) -> Result<(), UserDeleteError> {

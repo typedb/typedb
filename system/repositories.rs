@@ -83,8 +83,14 @@ pub mod user_repository {
     }
 
     pub fn update(
-        tx: &TransactionWrite<WALClient>, username: &str, update: &User
-    ) {
+        snapshot: WriteSnapshot<WALClient>,
+        type_manager: &TypeManager,
+        thing_manager: Arc<ThingManager>,
+        function_manager: &FunctionManager,
+        username: &str,
+        user: &User,
+        credential: &Credential
+    ) -> Arc<WriteSnapshot<WALClient>> {
         todo!()
     }
 
