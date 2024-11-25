@@ -30,7 +30,7 @@ pub struct IidInstruction<ID> {
 
 impl IidInstruction<Variable> {
     pub fn new(iid: Iid<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let types = type_annotations.vertex_annotations_of(&iid.var()).unwrap().clone();
+        let types = type_annotations.vertex_annotations_of(iid.var()).unwrap().clone();
         Self { iid, types, checks: Vec::new() }
     }
 }
