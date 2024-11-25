@@ -32,14 +32,14 @@ macro_rules! with_rows_answer {
 }
 pub(crate) use with_rows_answer;
 
-#[expect(unused_macros, reason="added for symmetry")]
+#[expect(unused_macros, reason = "added for symmetry")]
 macro_rules! with_documents_answer {
     ($context:ident, |$answer:ident| $expr:expr) => {
         let $answer = $context.query_answer.as_ref().unwrap().as_documents();
         $expr
     };
 }
-#[expect(unused_imports, reason="added for symmetry")]
+#[expect(unused_imports, reason = "added for symmetry")]
 pub(crate) use with_documents_answer;
 
 impl QueryAnswer {
