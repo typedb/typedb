@@ -22,8 +22,8 @@ pub fn initialise_system_database(database_manager: &DatabaseManager) -> Arc<Dat
             let db = database_manager
                 .database(SYSTEM_DB)
                 .expect(format!("The {} database could not be found.", SYSTEM_DB).as_str());
-            let tx_mgr = TransactionUtil::new(db.clone());
-            tx_mgr
+            let tx_util = TransactionUtil::new(db.clone());
+            tx_util
                 .schema_transaction(|query_mgr, snapshot, type_mgr, thing_mgr, fn_mgr| {
                     let query = typeql::parse_query(SCHEMA)
                         .expect(

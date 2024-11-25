@@ -12,20 +12,20 @@ use crate::errors::{UserCreateError, UserDeleteError, UserUpdateError};
 
 #[derive(Debug)]
 pub struct UserManager {
-    transaction_manager: TransactionUtil,
+    transaction_util: TransactionUtil,
 }
 
 impl UserManager {
     pub fn new(system_db: Arc<Database<WALClient>>) -> Self {
-        UserManager { transaction_manager: TransactionUtil::new(system_db.clone()) }
+        UserManager { transaction_util: TransactionUtil::new(system_db.clone()) }
     }
 
     pub fn all(&self) -> Vec<User> {
-        self.transaction_manager.read_transaction(|tx| user_repository::list(tx))
+        self.transaction_util.read_transaction(|tx| user_repository::list(tx))
     }
 
     pub fn get(&self, username: &str) -> Option<(User, Credential)> {
-        self.transaction_manager.read_transaction(|tx| user_repository::get(tx, username))
+        self.transaction_util.read_transaction(|tx| user_repository::get(tx, username))
     }
 
     pub fn contains(&self, username: &str) -> bool {
@@ -34,7 +34,7 @@ impl UserManager {
 
     pub fn create(&self, user: &User, credential: &Credential) -> Result<(), UserCreateError> {
         let commit =
-            self.transaction_manager.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, db, tx_opts| {
+            self.transaction_util.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, db, tx_opts| {
                 let snapshot = user_repository::create(
                     Arc::into_inner(snapshot).unwrap(),
                     &type_mgr,
@@ -45,7 +45,10 @@ impl UserManager {
                 );
                 ((), snapshot)
             });
-        commit.map_err(|e| UserCreateError::Unexpected {})
+        commit.map_err(|e| {
+
+            UserCreateError::Unexpected {}
+        })
     }
 
     pub fn update(
@@ -55,7 +58,7 @@ impl UserManager {
         credential: &Option<Credential>,
     ) -> Result<(), UserUpdateError> {
         let commit =
-            self.transaction_manager.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, db, tx_opts| {
+            self.transaction_util.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, db, tx_opts| {
                 let snapshot = user_repository::update(
                     Arc::into_inner(snapshot).unwrap(),
                     &type_mgr,
@@ -72,7 +75,7 @@ impl UserManager {
 
     pub fn delete(&self, username: &str) -> Result<(), UserDeleteError> {
         let commit =
-            self.transaction_manager.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, db, tx_opts| {
+            self.transaction_util.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, db, tx_opts| {
                 let snapshot = user_repository::delete(
                     Arc::into_inner(snapshot).unwrap(),
                     &type_mgr,
