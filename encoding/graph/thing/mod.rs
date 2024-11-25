@@ -12,7 +12,7 @@ use self::{vertex_attribute::AttributeVertex, vertex_object::ObjectVertex};
 use crate::{
     graph::{type_::vertex::TypeID, Typed},
     layout::prefix::{Prefix, PrefixID},
-    EncodingKeyspace, Prefixed,
+    EncodingKeyspace, Keyable, Prefixed,
 };
 
 pub mod edge;
