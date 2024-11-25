@@ -100,7 +100,6 @@ impl IidExecutor {
 
         let iid_parameter = self.iid.iid().as_parameter().unwrap();
         let bytes = context.parameters().iid(iid_parameter).unwrap();
-        eprintln!("[{}:{}] bytes = {:x?}", file!(), line!(), bytes);
 
         let snapshot = &**context.snapshot();
         let thing_manager = context.thing_manager();
