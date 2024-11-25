@@ -43,11 +43,9 @@ pub mod user_repository {
         let (tx, result) =
             execute_read_pipeline(tx, &query.into_pipeline());
         let rows = result.unwrap();
-        let mut users: Vec<User> = vec![];
-        for row in rows {
-            let name  = get_string(&tx, &row, "n");
-            users.push(User::new(name))
-        }
+        let users = rows.iter().map(|row| {
+            User::new(get_string(&tx, &row, "n"))
+        }).collect();
         users
     }
 
