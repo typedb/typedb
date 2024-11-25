@@ -47,7 +47,7 @@ pub mod transaction_util {
                 database,
                 transaction_options,
             );
-            tx.commit().map(|u| result)
+            tx.commit().map(|_| result)
         }
 
         pub fn read_transaction<T>(&self, fn_: impl Fn(TransactionRead<WALClient>) -> T) -> T {

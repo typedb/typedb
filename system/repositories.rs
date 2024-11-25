@@ -53,8 +53,7 @@ pub mod user_repository {
                 "match
                 (user: $u, password: $p) isa user-password;
                 $u has name '{username}';
-                $p has hash $h;",
-                username = username
+                $p has hash $h;"
             )
             .as_str(),
         )
