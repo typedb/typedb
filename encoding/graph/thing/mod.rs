@@ -11,7 +11,7 @@ use storage::key_value::StorageKey;
 use crate::{
     graph::{type_::vertex::TypeID, Typed},
     layout::prefix::{Prefix, PrefixID},
-    EncodingKeyspace, Keyable, Prefixed,
+    EncodingKeyspace, Prefixed,
 };
 
 pub mod edge;

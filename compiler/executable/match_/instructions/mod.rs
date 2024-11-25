@@ -678,18 +678,18 @@ impl<ID> Deref for Inputs<ID> {
     }
 }
 
-struct DisplayVec<'a, T: Display> {
+struct DisplayVec<'a, T: fmt::Display> {
     vec: &'a Vec<T>,
 }
 
-impl<'a, T: Display> DisplayVec<'a, T> {
+impl<'a, T: fmt::Display> DisplayVec<'a, T> {
     fn new(vec: &'a Vec<T>) -> Self {
         Self { vec }
     }
 }
 
-impl<'a, T: Display> Display for DisplayVec<'a, T> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl<'a, T: fmt::Display> fmt::Display for DisplayVec<'a, T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;
         for (i, element) in self.vec.iter().enumerate() {
             if i != self.vec.len() - 1 {

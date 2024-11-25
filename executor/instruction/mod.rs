@@ -15,13 +15,10 @@ use compiler::{
 };
 use concept::{
     error::ConceptReadError,
-    thing::{object::ObjectAPI, thing_manager::ThingManager, ThingAPI},
+    thing::{object::ObjectAPI, thing_manager::ThingManager},
     type_::{OwnerAPI, PlayerAPI},
 };
-use encoding::{
-    value::{value::Value, ValueEncodable},
-    AsBytes,
-};
+use encoding::value::{value::Value, ValueEncodable};
 use ir::{
     pattern::{
         constraint::{Comparator, IsaKind, SubKind},
@@ -213,7 +210,6 @@ impl fmt::Display for InstructionExecutor {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             InstructionExecutor::Is(inner) => fmt::Display::fmt(inner, f),
-            InstructionExecutor::Iid(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::TypeList(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::Sub(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::SubReverse(inner) => fmt::Display::fmt(inner, f),
