@@ -6,8 +6,7 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
-    fmt::{Display, Formatter},
-    iter,
+    fmt, iter,
     sync::Arc,
     vec,
 };
@@ -215,8 +214,8 @@ impl OwnsExecutor {
     }
 }
 
-impl Display for OwnsExecutor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for OwnsExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "[{}], mode={}", &self.owns, &self.iterate_mode)
     }
 }

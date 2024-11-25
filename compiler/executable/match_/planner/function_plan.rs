@@ -4,11 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashMap,
-    fmt::{Debug, Formatter},
-    sync::Arc,
-};
+use std::{collections::HashMap, fmt, sync::Arc};
 
 use encoding::graph::definition::definition_key::DefinitionKey;
 use ir::pipeline::function_signature::FunctionID;
@@ -22,8 +18,8 @@ pub struct ExecutableFunctionRegistry {
     preamble_functions: HashMap<usize, ExecutableFunction>,
 }
 
-impl Debug for ExecutableFunctionRegistry {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Debug for ExecutableFunctionRegistry {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("ExecutableFunctionRegistry { omitted }")
     }
 }

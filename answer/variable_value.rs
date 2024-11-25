@@ -4,11 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    cmp::Ordering,
-    fmt::{Display, Formatter},
-    sync::Arc,
-};
+use std::{cmp::Ordering, fmt, sync::Arc};
 
 use encoding::value::value::Value;
 use lending_iterator::higher_order::Hkt;
@@ -117,8 +113,8 @@ impl PartialOrd for VariableValue<'_> {
     }
 }
 
-impl Display for VariableValue<'_> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for VariableValue<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             VariableValue::Empty => write!(f, "[None]"),
             VariableValue::Type(type_) => write!(f, "{}", type_),

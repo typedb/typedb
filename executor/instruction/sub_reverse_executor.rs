@@ -6,7 +6,7 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet},
-    fmt::{Display, Formatter},
+    fmt,
     sync::Arc,
     vec,
 };
@@ -149,8 +149,8 @@ impl SubReverseExecutor {
     }
 }
 
-impl Display for SubReverseExecutor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for SubReverseExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "Reverse[{}], mode={}", &self.sub, &self.iterate_mode)
     }
 }

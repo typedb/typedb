@@ -6,7 +6,7 @@
 
 use std::{
     collections::{BTreeMap, HashMap},
-    fmt::{Debug, Display, Formatter},
+    fmt,
 };
 
 use bytes::{byte_reference::ByteReference, Bytes};
@@ -165,7 +165,7 @@ impl<'a> ThingAPI<'a> for Object<'a> {
     }
 }
 
-pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + Clone + Debug {
+pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + Clone + fmt::Debug {
     fn type_(&self) -> impl ObjectTypeAPI<'static>;
 
     fn into_owned_object(self) -> Object<'static>;
@@ -460,11 +460,11 @@ impl<'a> PartialOrd for Object<'a> {
     }
 }
 
-impl<'a> Display for Object<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<'a> fmt::Display for Object<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Object::Entity(entity) => Display::fmt(entity, f),
-            Object::Relation(relation) => Display::fmt(relation, f),
+            Object::Entity(entity) => fmt::Display::fmt(entity, f),
+            Object::Relation(relation) => fmt::Display::fmt(relation, f),
         }
     }
 }

@@ -7,7 +7,7 @@
 use std::{
     cmp::Ordering,
     collections::HashSet,
-    fmt::{Display, Formatter},
+    fmt,
     hash::{Hash, Hasher},
     sync::{Arc, OnceLock},
 };
@@ -375,8 +375,8 @@ edge_iterator!(
     storage_key_to_owner
 );
 
-impl<'a> Display for Attribute<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<'a> fmt::Display for Attribute<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "[Attribute-{}:{}:{}]",

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt::{Display, Formatter};
+use std::fmt;
 
 use crate::executable::insert::{ThingSource, TypeSource};
 
@@ -14,8 +14,8 @@ pub enum ConnectionInstruction {
     Links(Links), // TODO: Ordering
 }
 
-impl Display for ConnectionInstruction {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for ConnectionInstruction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ConnectionInstruction::Has(_) => write!(f, "has"),
             ConnectionInstruction::Links(_) => write!(f, "links"),
@@ -28,8 +28,8 @@ pub struct ThingInstruction {
     pub thing: ThingSource,
 }
 
-impl Display for ThingInstruction {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for ThingInstruction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "instance")
     }
 }

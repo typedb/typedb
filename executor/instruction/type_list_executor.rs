@@ -4,11 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashMap,
-    fmt::{Display, Formatter},
-    iter, vec,
-};
+use std::{collections::HashMap, fmt, iter, vec};
 
 use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::TypeListInstruction, ExecutorVariable};
@@ -86,8 +82,8 @@ impl TypeListExecutor {
     }
 }
 
-impl Display for TypeListExecutor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for TypeListExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Type [")?;
         for type_ in &self.types {
             write!(f, "{}, ", type_)?;

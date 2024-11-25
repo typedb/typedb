@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashMap,
-    fmt::{Display, Formatter},
-};
+use std::{collections::HashMap, fmt};
 
 use encoding::value::value_type::ValueType;
 use ir::pattern::{IrID, ParameterID};
@@ -69,8 +66,8 @@ impl ExpressionValueType {
     }
 }
 
-impl Display for ExpressionValueType {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for ExpressionValueType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ExpressionValueType::Single(single) => write!(f, "{}", single),
             ExpressionValueType::List(list) => write!(f, "{}[]", list),

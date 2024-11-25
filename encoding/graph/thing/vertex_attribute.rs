@@ -4,12 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    fmt::{Display, Formatter},
-    marker::PhantomData,
-    ops::Range,
-    sync::Arc,
-};
+use std::{fmt, marker::PhantomData, ops::Range, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::HexBytesFormatter, Bytes};
 use primitive::either::Either;
@@ -404,8 +399,8 @@ impl AttributeID {
     }
 }
 
-impl Display for AttributeID {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for AttributeID {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", &HexBytesFormatter::borrowed(self.bytes()))
     }
 }

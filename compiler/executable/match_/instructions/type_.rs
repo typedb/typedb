@@ -6,7 +6,7 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
-    fmt::{Display, Formatter},
+    fmt,
     sync::Arc,
 };
 
@@ -56,8 +56,8 @@ impl<ID: IrID> TypeListInstruction<ID> {
     }
 }
 
-impl<ID: IrID> Display for TypeListInstruction<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for TypeListInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{} type ", self.type_var)?;
         write!(f, "(")?;
         for type_ in self.types.iter().sorted() {
@@ -112,8 +112,8 @@ impl<ID: IrID> SubInstruction<ID> {
     }
 }
 
-impl<ID: IrID> Display for SubInstruction<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for SubInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{}] filter {:?}", &self.sub, &self.checks)
     }
 }
@@ -163,8 +163,8 @@ impl<ID: IrID> SubReverseInstruction<ID> {
     }
 }
 
-impl<ID: IrID> Display for SubReverseInstruction<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for SubReverseInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Reverse[{}] filter {:?}", &self.sub, &self.checks)
     }
 }
@@ -214,8 +214,8 @@ impl<ID: IrID> OwnsInstruction<ID> {
     }
 }
 
-impl<ID: IrID> Display for OwnsInstruction<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for OwnsInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{}] filter {:?}", &self.owns, &self.checks)
     }
 }
@@ -265,8 +265,8 @@ impl<ID: IrID> OwnsReverseInstruction<ID> {
     }
 }
 
-impl<ID: IrID> Display for OwnsReverseInstruction<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for OwnsReverseInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Reverse[{}] filter {:?}", &self.owns, &self.checks)
     }
 }
@@ -317,8 +317,8 @@ impl<ID: IrID> RelatesInstruction<ID> {
     }
 }
 
-impl<ID: IrID> Display for RelatesInstruction<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for RelatesInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{}] filter {:?}", &self.relates, &self.checks)
     }
 }
@@ -369,8 +369,8 @@ impl<ID: IrID> RelatesReverseInstruction<ID> {
     }
 }
 
-impl<ID: IrID> Display for RelatesReverseInstruction<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for RelatesReverseInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Reverse[{}] filter {:?}", &self.relates, &self.checks)
     }
 }
@@ -421,8 +421,8 @@ impl<ID: IrID> PlaysInstruction<ID> {
     }
 }
 
-impl<ID: IrID> Display for PlaysInstruction<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for PlaysInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{}] filter {:?}", &self.plays, &self.checks)
     }
 }
@@ -473,8 +473,8 @@ impl<ID: IrID> PlaysReverseInstruction<ID> {
     }
 }
 
-impl<ID: IrID> Display for PlaysReverseInstruction<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for PlaysReverseInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Reverse[{}] filter {:?}", &self.plays, &self.checks)
     }
 }

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt::{Display, Formatter};
+use std::fmt;
 
 use super::{ThingSource, TypeSource, ValueSource};
 
@@ -14,8 +14,8 @@ pub enum ConceptInstruction {
     PutAttribute(PutAttribute),
 }
 
-impl Display for ConceptInstruction {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for ConceptInstruction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ConceptInstruction::PutObject(_) => write!(f, "Put object"),
             ConceptInstruction::PutAttribute(_) => write!(f, "Put attribute"),
@@ -29,8 +29,8 @@ pub enum ConnectionInstruction {
     Links(Links), // TODO: Ordering
 }
 
-impl Display for ConnectionInstruction {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for ConnectionInstruction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Has(_) => write!(f, "Put has"),
             Self::Links(_) => write!(f, "Put links"),

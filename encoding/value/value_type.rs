@@ -4,12 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    fmt,
-    fmt::{Display, Formatter},
-    mem,
-    ops::Range,
-};
+use std::{fmt, mem, ops::Range};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
@@ -158,8 +153,8 @@ impl StructuralEquality for ValueType {
     }
 }
 
-impl Display for ValueType {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for ValueType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.category().name())
     }
 }
@@ -264,8 +259,8 @@ impl ValueTypeCategory {
     }
 }
 
-impl Display for ValueTypeCategory {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for ValueTypeCategory {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.name())
     }
 }

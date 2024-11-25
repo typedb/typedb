@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    fmt::{Display, Formatter},
-    ops::Range,
-};
+use std::{fmt, ops::Range};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::{encoding::DefinitionIDUInt, snapshot::BUFFER_KEY_INLINE};
@@ -87,8 +84,8 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for DefinitionKey<'a> {
 
 impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for DefinitionKey<'a> {}
 
-impl<'a> Display for DefinitionKey<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<'a> fmt::Display for DefinitionKey<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // we'll just arbitrarily write it out as an u64 in Big Endian
         debug_assert!(self.bytes.length() < (u64::BITS / 8) as usize);
         let mut bytes = [0u8; (u64::BITS / 8) as usize];
@@ -142,7 +139,7 @@ impl<'de> Deserialize<'de> for DefinitionKey<'de> {
         impl<'de> Visitor<'de> for DefinitionKeyVisitor {
             type Value = DefinitionKey<'static>;
 
-            fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("`DefinitionKey`")
             }
 

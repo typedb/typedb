@@ -6,7 +6,7 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet},
-    fmt::{Display, Formatter},
+    fmt,
     sync::Arc,
     vec,
 };
@@ -178,8 +178,8 @@ impl SubExecutor {
     }
 }
 
-impl Display for SubExecutor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for SubExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "[{}], mode={}", &self.sub, &self.iterate_mode)
     }
 }

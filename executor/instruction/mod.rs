@@ -4,13 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashMap,
-    fmt,
-    fmt::{Display, Formatter},
-    marker::PhantomData,
-    ops::Bound,
-};
+use std::{collections::HashMap, fmt, marker::PhantomData, ops::Bound};
 
 use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::{
@@ -212,26 +206,27 @@ impl InstructionExecutor {
     }
 }
 
-impl Display for InstructionExecutor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for InstructionExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            InstructionExecutor::Is(inner) => Display::fmt(inner, f),
-            InstructionExecutor::TypeList(inner) => Display::fmt(inner, f),
-            InstructionExecutor::Sub(inner) => Display::fmt(inner, f),
-            InstructionExecutor::SubReverse(inner) => Display::fmt(inner, f),
-            InstructionExecutor::Owns(inner) => Display::fmt(inner, f),
-            InstructionExecutor::OwnsReverse(inner) => Display::fmt(inner, f),
-            InstructionExecutor::Relates(inner) => Display::fmt(inner, f),
-            InstructionExecutor::RelatesReverse(inner) => Display::fmt(inner, f),
-            InstructionExecutor::Plays(inner) => Display::fmt(inner, f),
-            InstructionExecutor::PlaysReverse(inner) => Display::fmt(inner, f),
-            InstructionExecutor::Isa(inner) => Display::fmt(inner, f),
-            InstructionExecutor::IsaReverse(inner) => Display::fmt(inner, f),
-            InstructionExecutor::Has(inner) => Display::fmt(inner, f),
-            InstructionExecutor::HasReverse(inner) => Display::fmt(inner, f),
-            InstructionExecutor::Links(inner) => Display::fmt(inner, f),
-            InstructionExecutor::LinksReverse(inner) => Display::fmt(inner, f),
-            InstructionExecutor::FunctionCallBinding(inner) => Display::fmt(inner, f),
+            InstructionExecutor::Is(inner) => fmt::Display::fmt(inner, f),
+            InstructionExecutor::Iid(inner) => fmt::Display::fmt(inner, f),
+            InstructionExecutor::TypeList(inner) => fmt::Display::fmt(inner, f),
+            InstructionExecutor::Sub(inner) => fmt::Display::fmt(inner, f),
+            InstructionExecutor::SubReverse(inner) => fmt::Display::fmt(inner, f),
+            InstructionExecutor::Owns(inner) => fmt::Display::fmt(inner, f),
+            InstructionExecutor::OwnsReverse(inner) => fmt::Display::fmt(inner, f),
+            InstructionExecutor::Relates(inner) => fmt::Display::fmt(inner, f),
+            InstructionExecutor::RelatesReverse(inner) => fmt::Display::fmt(inner, f),
+            InstructionExecutor::Plays(inner) => fmt::Display::fmt(inner, f),
+            InstructionExecutor::PlaysReverse(inner) => fmt::Display::fmt(inner, f),
+            InstructionExecutor::Isa(inner) => fmt::Display::fmt(inner, f),
+            InstructionExecutor::IsaReverse(inner) => fmt::Display::fmt(inner, f),
+            InstructionExecutor::Has(inner) => fmt::Display::fmt(inner, f),
+            InstructionExecutor::HasReverse(inner) => fmt::Display::fmt(inner, f),
+            InstructionExecutor::Links(inner) => fmt::Display::fmt(inner, f),
+            InstructionExecutor::LinksReverse(inner) => fmt::Display::fmt(inner, f),
+            InstructionExecutor::FunctionCallBinding(inner) => fmt::Display::fmt(inner, f),
         }
     }
 }
@@ -279,8 +274,8 @@ impl BinaryIterateMode {
     }
 }
 
-impl Display for BinaryIterateMode {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for BinaryIterateMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(self, f)
     }
 }
@@ -332,8 +327,8 @@ impl TernaryIterateMode {
     }
 }
 
-impl Display for TernaryIterateMode {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for TernaryIterateMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(self, f)
     }
 }

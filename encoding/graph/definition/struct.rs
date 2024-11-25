@@ -6,7 +6,7 @@
 
 use std::{
     collections::{hash_map::Entry, HashMap},
-    fmt::{Display, Formatter},
+    fmt,
 };
 
 use bytes::{byte_reference::ByteReference, Bytes};
@@ -32,8 +32,8 @@ pub struct StructDefinitionField {
     pub value_type: ValueType,
 }
 
-impl Display for StructDefinitionField {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for StructDefinitionField {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Value type: {}, optional: {}", self.value_type, self.optional)
     }
 }
