@@ -4,12 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{BTreeSet, HashMap},
-    sync::Arc,
-};
+use std::{collections::HashMap, fmt, sync::Arc};
 
-use answer::{variable_value::VariableValue, Type};
+use answer::variable_value::VariableValue;
 use compiler::{executable::match_::instructions::thing::IidInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
@@ -132,5 +129,11 @@ impl IidExecutor {
         let iterator = AsNarrowingIterator::new(instance.transpose());
         let as_tuples = as_tuples(iterator.try_filter::<_, IidFilterFn, VariableValue<'_>, _>(filter_for_row));
         Ok(TupleIterator::Iid(SortedTupleIterator::new(as_tuples, self.tuple_positions.clone(), &self.variable_modes)))
+    }
+}
+
+impl fmt::Display for IidExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{}", &self.iid)
     }
 }
