@@ -1353,41 +1353,20 @@ impl BinaryConstraint for Comparison<Variable> {
 
     fn annotate_left_to_right_for_type(
         &self,
-        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
-        left_type: &TypeAnnotation,
-        collector: &mut BTreeSet<TypeAnnotation>,
+        _seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+        _left_type: &TypeAnnotation,
+        _collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
-        unreachable!();
-        let left_value_type = match left_type {
-            TypeAnnotation::Attribute(attribute) => {
-                attribute.get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
-            }
-            _ => return Ok(()), // It can't be another type => Do nothing and let type-inference clean it up
-        };
-        if let Some(value_type) = left_value_type {
-            let comparable_types = ValueTypeCategory::comparable_categories(value_type.category());
-            for subattr in seeder.type_manager.get_attribute_types(seeder.snapshot)?.iter() {
-                if let Some(subvaluetype) =
-                    subattr.get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
-                {
-                    if comparable_types.contains(&subvaluetype.category()) {
-                        collector.insert(TypeAnnotation::Attribute(subattr.clone()));
-                    }
-                }
-            }
-        }
-        Ok(())
+        unreachable!()
     }
 
     fn annotate_right_to_left_for_type(
         &self,
-        seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
-        right_type: &TypeAnnotation,
-        collector: &mut BTreeSet<TypeAnnotation>,
+        _seeder: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
+        _right_type: &TypeAnnotation,
+        _collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
-        unreachable!();
-
-        Ok(())
+        unreachable!()
     }
 }
 
