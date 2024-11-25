@@ -279,15 +279,11 @@ pub(crate) mod user_manager {
         for user in users {
             users_proto.push(new_user(user));
         }
-        typedb_protocol::user_manager::all::Res {
-            users: users_proto
-        }
+        typedb_protocol::user_manager::all::Res { users: users_proto }
     }
 
     pub(crate) fn users_get_res(user: User) -> typedb_protocol::user_manager::get::Res {
-        typedb_protocol::user_manager::get::Res {
-            user: Some(new_user(user)),
-        }
+        typedb_protocol::user_manager::get::Res { user: Some(new_user(user)) }
     }
 
     pub(crate) fn users_contains_res(contains: bool) -> typedb_protocol::user_manager::contains::Res {
@@ -307,9 +303,6 @@ pub(crate) mod user_manager {
     }
 
     fn new_user(user: User) -> typedb_protocol::User {
-        typedb_protocol::User {
-            name: user.name,
-            credential: None,
-        }
+        typedb_protocol::User { name: user.name, credential: None }
     }
 }

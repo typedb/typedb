@@ -7,47 +7,46 @@
 use std::{net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
 
 use database::database_manager::DatabaseManager;
-use user::user_manager::UserManager;
-use system::concepts::{Credential, PasswordHash, User};
 use error::typedb_error;
+use system::concepts::{Credential, PasswordHash, User};
 use tokio::sync::mpsc::channel;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
 use tracing::{event, Level};
-use typedb_protocol::{self, server_manager::all::{Req, Res}, transaction::{Client, Server}};
+use typedb_protocol::{
+    self,
+    server_manager::all::{Req, Res},
+    transaction::{Client, Server},
+};
+use user::{errors::UserCreateError, user_manager::UserManager};
 use uuid::Uuid;
-use user::errors::UserCreateError;
 
 use crate::service::{
     error::{IntoGRPCStatus, IntoProtocolErrorMessage, ProtocolError},
+    request_parser::{users_create_req, users_update_req},
     response_builders::{
         connection::connection_open_res,
         database::database_delete_res,
         database_manager::{database_all_res, database_contains_res, database_create_res, database_get_res},
-        user_manager::{users_all_res, users_get_res, users_contains_res, user_create_res, users_delete_res},
         server_manager::servers_all_res,
+        user_manager::{
+            user_create_res, user_update_res, users_all_res, users_contains_res, users_delete_res, users_get_res,
+        },
     },
     transaction_service::TransactionService,
     ConnectionID,
 };
-use crate::service::request_parser::{users_create_req, users_update_req};
-use crate::service::response_builders::user_manager::user_update_res;
 
 #[derive(Debug)]
 pub(crate) struct TypeDBService {
     address: SocketAddr,
     database_manager: Arc<DatabaseManager>,
-    user_manager: Arc<UserManager>
-    // map of connection ID to ConnectionService
+    user_manager: Arc<UserManager>, // map of connection ID to ConnectionService
 }
 
 impl TypeDBService {
     pub(crate) fn new(address: &SocketAddr, database_manager: DatabaseManager, user_manager: Arc<UserManager>) -> Self {
-        Self {
-            address: address.clone(),
-            database_manager: Arc::new(database_manager),
-            user_manager
-        }
+        Self { address: address.clone(), database_manager: Arc::new(database_manager), user_manager }
     }
 
     pub(crate) fn database_manager(&self) -> &DatabaseManager {
@@ -171,13 +170,13 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         let user = self.user_manager.get(get_req.name.as_str());
         match user {
             Some((u, _)) => Ok(Response::new(users_get_res(u))),
-            None => Err(ServiceError::UserDoesNotExist { name: get_req.name }.into_error_message().into_status())
+            None => Err(ServiceError::UserDoesNotExist { name: get_req.name }.into_error_message().into_status()),
         }
     }
 
     async fn users_all(
         &self,
-        _: Request<typedb_protocol::user_manager::all::Req>
+        _: Request<typedb_protocol::user_manager::all::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::all::Res>, Status> {
         let users = self.user_manager.all();
         Ok(Response::new(users_all_res(users)))
@@ -185,7 +184,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
 
     async fn users_contains(
         &self,
-        request: Request<typedb_protocol::user_manager::contains::Req>
+        request: Request<typedb_protocol::user_manager::contains::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::contains::Res>, Status> {
         let contains_req = request.into_inner();
         let contains = self.user_manager.contains(contains_req.name.as_str());
@@ -194,7 +193,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
 
     async fn users_create(
         &self,
-        request: Request<typedb_protocol::user_manager::create::Req>
+        request: Request<typedb_protocol::user_manager::create::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::create::Res>, Status> {
         users_create_req(request)
             .and_then(|(usr, cred)| self.user_manager.create(&usr, &cred))
@@ -204,25 +203,23 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
 
     async fn users_update(
         &self,
-        request: Request<typedb_protocol::user::update::Req>
+        request: Request<typedb_protocol::user::update::Req>,
     ) -> Result<Response<typedb_protocol::user::update::Res>, Status> {
         users_update_req(request)
-            .and_then(|(username, user, cred)|
-                self.user_manager.update(username.as_str(), &user, &cred)
-            )
+            .and_then(|(username, user, cred)| self.user_manager.update(username.as_str(), &user, &cred))
             .map(|_| Response::new(user_update_res()))
             .map_err(|err| err.into_error_message().into_status())
     }
 
     async fn users_delete(
         &self,
-        request: Request<typedb_protocol::user::delete::Req>
+        request: Request<typedb_protocol::user::delete::Req>,
     ) -> Result<Response<typedb_protocol::user::delete::Res>, Status> {
         let delete_req = request.into_inner();
         let result = self.user_manager.delete(delete_req.name.as_str());
         match result {
             Ok(_) => Ok(Response::new(users_delete_res())),
-            Err(e) => Err(e.into_error_message().into_status())
+            Err(e) => Err(e.into_error_message().into_status()),
         }
     }
 

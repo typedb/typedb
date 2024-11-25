@@ -4,16 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fmt, fs, io, path::PathBuf};
-use std::sync::Arc;
-use user::user_manager::UserManager;
+use std::{error::Error, fmt, fs, io, path::PathBuf, sync::Arc};
+
 use database::{database_manager::DatabaseManager, DatabaseOpenError};
 use resource::constants::server::GRPC_CONNECTION_KEEPALIVE;
-use system::concepts::{Credential, PasswordHash, User};
-use system::initialise_system_database;
-use user::initialise_default_user;
-use crate::{parameters::config::Config, service::typedb_service::TypeDBService};
-use crate::authenticator::Authenticator;
+use system::{
+    concepts::{Credential, PasswordHash, User},
+    initialise_system_database,
+};
+use user::{initialise_default_user, user_manager::UserManager};
+
+use crate::{authenticator::Authenticator, parameters::config::Config, service::typedb_service::TypeDBService};
 
 #[derive(Debug)]
 pub struct Server {
@@ -36,14 +37,12 @@ impl Server {
         let system_db = initialise_system_database(&database_manager);
         let user_manager = Arc::new(UserManager::new(system_db));
         initialise_default_user(&user_manager);
-        let typedb_service = TypeDBService::new(
-            &config.server.address, database_manager, user_manager.clone()
-        );
+        let typedb_service = TypeDBService::new(&config.server.address, database_manager, user_manager.clone());
         Ok(Self {
             data_directory: storage_directory.to_owned(),
             user_manager,
             typedb_service: Some(typedb_service),
-            config
+            config,
         })
     }
 
@@ -63,15 +62,12 @@ impl Server {
             .await
     }
     fn create_storage_directory(storage_directory: &PathBuf) -> Result<(), ServerOpenError> {
-        fs::create_dir_all(storage_directory).map_err(|error|
-            ServerOpenError::CouldNotCreateDataDirectory {
-                path: storage_directory.to_owned(),
-                source: error
-            }
-        )?;
+        fs::create_dir_all(storage_directory).map_err(|error| ServerOpenError::CouldNotCreateDataDirectory {
+            path: storage_directory.to_owned(),
+            source: error,
+        })?;
         Ok(())
     }
-
 }
 
 #[derive(Debug)]

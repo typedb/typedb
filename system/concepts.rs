@@ -2,7 +2,7 @@ use pwhash::bcrypt;
 
 #[derive(Debug)]
 pub struct User {
-    pub name: String
+    pub name: String,
 }
 
 impl User {
@@ -13,7 +13,7 @@ impl User {
 
 #[derive(Debug)]
 pub enum Credential {
-    PasswordType { password_hash: PasswordHash }
+    PasswordType { password_hash: PasswordHash },
 }
 
 impl Credential {

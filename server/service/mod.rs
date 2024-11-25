@@ -7,10 +7,10 @@
 mod concept;
 mod document;
 mod error;
+mod request_parser;
 mod response_builders;
 mod row;
 pub(crate) mod transaction_service;
 pub(crate) mod typedb_service;
-mod request_parser;
 
 pub(crate) type ConnectionID = uuid::Bytes;
