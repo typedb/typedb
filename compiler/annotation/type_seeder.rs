@@ -784,15 +784,16 @@ trait BinaryConstraint {
         allowed_right_types: &BTreeSet<TypeAnnotation>,
     ) -> Result<BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>, Box<ConceptReadError>> {
         let mut left_to_right = BTreeMap::new();
-        #[cfg(debug_assertions)]
-        let (left_is_thing, right_is_thing) = self.check_for_thing_vars(seeder);
-        debug_assert!(!left_is_thing || left_types.iter().all(|t| seeder.is_not_abstract(t).unwrap()));
-        debug_assert!(!right_is_thing || allowed_right_types.iter().all(|t| seeder.is_not_abstract(t).unwrap()));
+        #[cfg(debug_assertions)]{
+            let (left_is_thing, right_is_thing) = self.check_for_thing_vars(seeder);
+            debug_assert!(!left_is_thing || left_types.iter().all(|t| seeder.is_not_abstract(t).unwrap()));
+            debug_assert!(!right_is_thing || allowed_right_types.iter().all(|t| seeder.is_not_abstract(t).unwrap()));
+        }
         for left_type in left_types {
             let mut right_annotations = BTreeSet::new();
             self.annotate_left_to_right_for_type(seeder, left_type, &mut right_annotations)?;
             right_annotations.retain(|type_| allowed_right_types.contains(type_));
-            debug_assert!(!right_is_thing || right_annotations.iter().all(|t| seeder.is_not_abstract(t).unwrap()));
+            debug_assert!(!self.check_for_thing_vars(seeder).1 || right_annotations.iter().all(|t| seeder.is_not_abstract(t).unwrap()));
             if !right_annotations.is_empty() {
                 left_to_right.insert(left_type.clone(), right_annotations);
             }
@@ -807,14 +808,16 @@ trait BinaryConstraint {
         allowed_left_types: &BTreeSet<TypeAnnotation>,
     ) -> Result<BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>, Box<ConceptReadError>> {
         let mut right_to_left = BTreeMap::new();
-        let (left_is_thing, right_is_thing) = self.check_for_thing_vars(seeder);
-        debug_assert!(!right_is_thing || right_types.iter().all(|t| seeder.is_not_abstract(t).unwrap()));
-        debug_assert!(!left_is_thing || allowed_left_types.iter().all(|t| seeder.is_not_abstract(t).unwrap()));
+        #[cfg(debug_assertions)]{
+            let (left_is_thing, right_is_thing) = self.check_for_thing_vars(seeder);
+            debug_assert!(!right_is_thing || right_types.iter().all(|t| seeder.is_not_abstract(t).unwrap()));
+            debug_assert!(!left_is_thing || allowed_left_types.iter().all(|t| seeder.is_not_abstract(t).unwrap()));
+        }
         for right_type in right_types {
             let mut left_annotations = BTreeSet::new();
             self.annotate_right_to_left_for_type(seeder, right_type, &mut left_annotations)?;
             left_annotations.retain(|type_| allowed_left_types.contains(type_));
-            debug_assert!(!left_is_thing || left_annotations.iter().all(|t| seeder.is_not_abstract(t).unwrap()));
+            debug_assert!(!self.check_for_thing_vars(seeder).0 || left_annotations.iter().all(|t| seeder.is_not_abstract(t).unwrap()));
             if !left_annotations.is_empty() {
                 right_to_left.insert(right_type.clone(), left_annotations);
             }
