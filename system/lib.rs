@@ -8,29 +8,9 @@ use database::Database;
 use std::sync::Arc;
 use storage::durability_client::WALClient;
 use typeql;
+use crate::repositories::SCHEMA;
 
 const SYSTEM_DB: &str = "system";
-
-// TODO: read from a file at compile time
-const SCHEMA: &str = "
-define
-    attribute name value string;
-    attribute uuid value string;
-    attribute hash value string;
-
-    entity user,
-        owns uuid @card(1),
-        owns name @card(1),
-        plays user-password:user;
-
-    entity password,
-        owns hash @card(1),
-        plays user-password:password;
-
-    relation user-password,
-        relates user @card(1),
-        relates password @card(1);
-";
 
 pub fn initialise_system_database(database_manager: &DatabaseManager) -> Arc<Database<WALClient>> {
     match database_manager.database(SYSTEM_DB) {
