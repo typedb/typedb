@@ -15,10 +15,13 @@ use compiler::{
 };
 use concept::{
     error::ConceptReadError,
-    thing::{object::ObjectAPI, thing_manager::ThingManager},
+    thing::{object::ObjectAPI, thing_manager::ThingManager, ThingAPI},
     type_::{OwnerAPI, PlayerAPI},
 };
-use encoding::value::{value::Value, ValueEncodable};
+use encoding::{
+    value::{value::Value, ValueEncodable},
+    AsBytes,
+};
 use ir::{
     pattern::{
         constraint::{Comparator, IsaKind, SubKind},

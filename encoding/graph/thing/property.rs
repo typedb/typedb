@@ -64,9 +64,9 @@ impl<'a> ObjectVertexProperty<'a> {
 
     fn build(vertex: ObjectVertex<'_>, infix: Infix) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH_NO_SUFFIX);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        array.bytes_mut()[Self::range_object_vertex()].copy_from_slice(vertex.bytes().bytes());
-        array.bytes_mut()[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
+        array[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        array[Self::range_object_vertex()].copy_from_slice(vertex.bytes().bytes());
+        array[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
         ObjectVertexProperty { bytes: Bytes::Array(array) }
     }
 
@@ -76,10 +76,10 @@ impl<'a> ObjectVertexProperty<'a> {
         suffix: Bytes<'_, INLINE_BYTES>,
     ) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH_NO_SUFFIX + suffix.length());
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        array.bytes_mut()[Self::range_object_vertex()].copy_from_slice(vertex.bytes().bytes());
-        array.bytes_mut()[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
-        array.bytes_mut()[Self::range_suffix(suffix.length())].copy_from_slice(&suffix);
+        array[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        array[Self::range_object_vertex()].copy_from_slice(vertex.bytes().bytes());
+        array[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
+        array[Self::range_suffix(suffix.length())].copy_from_slice(&suffix);
         ObjectVertexProperty { bytes: Bytes::Array(array) }
     }
 

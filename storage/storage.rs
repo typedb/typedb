@@ -275,7 +275,7 @@ impl<Durability> MVCCStorage<Durability> {
                 } else {
                     let existing_stored = self
                         .get::<BUFFER_VALUE_INLINE>(wrapped, snapshot.open_sequence_number())?
-                        .is_some_and(|reference| reference.bytes() == value.bytes());
+                        .is_some_and(|reference| &reference == value);
                     reinsert.store(!existing_stored, Ordering::Release);
                 }
             }
@@ -500,7 +500,7 @@ impl<'bytes> MVCCKey<'bytes> {
     fn build(key: &[u8], sequence_number: SequenceNumber, storage_operation: StorageOperation) -> Self {
         let length = key.len() + SequenceNumber::serialised_len() + StorageOperation::serialised_len();
         let mut byte_array = ByteArray::zeros(length);
-        let bytes = byte_array.bytes_mut();
+        let bytes = &mut *byte_array;
 
         let key_end = key.len();
         let sequence_number_end = key_end + SequenceNumber::serialised_len();

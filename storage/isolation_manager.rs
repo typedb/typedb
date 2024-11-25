@@ -720,7 +720,7 @@ impl CommitRecord {
             let predecessor_writes = pred_write_buffer.writes();
 
             for (key, write) in writes.iter() {
-                if let Some(predecessor_write) = predecessor_writes.get(key.bytes()) {
+                if let Some(predecessor_write) = predecessor_writes.get(key) {
                     match (predecessor_write, write) {
                         (Write::Insert { .. } | Write::Put { .. }, Write::Put { reinsert, .. }) => {
                             puts_to_update.push(DependentPut::Inserted { reinsert: reinsert.clone() });

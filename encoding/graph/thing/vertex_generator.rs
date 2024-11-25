@@ -101,7 +101,7 @@ impl ThingVertexGenerator {
         for type_id in entity_types {
             let mut max_object_id =
                 ObjectVertex::build_entity(TypeID::build(type_id), ObjectID::build(u64::MAX)).into_bytes().into_array();
-            bytes::util::increment(max_object_id.bytes_mut()).unwrap();
+            bytes::util::increment(&mut max_object_id).unwrap();
             let next_storage_key: StorageKey<{ ObjectVertex::LENGTH }> =
                 StorageKey::new_ref(ObjectVertex::KEYSPACE, max_object_id.as_ref());
             if let Some(prev_vertex) = storage.get_prev_raw(next_storage_key.as_reference(), Self::extract_object_id) {
@@ -114,7 +114,7 @@ impl ThingVertexGenerator {
             let mut max_object_id = ObjectVertex::build_relation(TypeID::build(type_id), ObjectID::build(u64::MAX))
                 .into_bytes()
                 .into_array();
-            bytes::util::increment(max_object_id.bytes_mut()).unwrap();
+            bytes::util::increment(&mut max_object_id).unwrap();
             let next_storage_key: StorageKey<{ ObjectVertex::LENGTH }> =
                 StorageKey::new_ref(ObjectVertex::KEYSPACE, max_object_id.as_ref());
             if let Some(prev_vertex) = storage.get_prev_raw(next_storage_key.as_reference(), Self::extract_object_id) {

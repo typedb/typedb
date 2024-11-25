@@ -37,15 +37,15 @@ impl<'a> TypeEdge<'a> {
 
     fn build(prefix: Prefix, from: TypeVertex, to: TypeVertex) -> Self {
         let mut bytes = ByteArray::zeros(Self::LENGTH);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
-        bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
-        bytes.bytes_mut()[Self::range_to()].copy_from_slice(to.bytes().bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
+        bytes[Self::range_from()].copy_from_slice(from.bytes().bytes());
+        bytes[Self::range_to()].copy_from_slice(to.bytes().bytes());
         Self { bytes: Bytes::Array(bytes) }
     }
 
     pub fn build_prefix(prefix: Prefix) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
@@ -54,8 +54,8 @@ impl<'a> TypeEdge<'a> {
         from_prefix: Prefix,
     ) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM_PREFIX }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_PREFIX);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
-        bytes.bytes_mut()[Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeVertex::LENGTH_PREFIX]
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
+        bytes[Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeVertex::LENGTH_PREFIX]
             .copy_from_slice(&from_prefix.prefix_id().bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
@@ -65,8 +65,8 @@ impl<'a> TypeEdge<'a> {
         from: TypeVertex<'_>,
     ) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
-        bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
+        bytes[Self::range_from()].copy_from_slice(from.bytes().bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 

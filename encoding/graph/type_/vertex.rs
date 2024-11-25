@@ -42,8 +42,8 @@ impl<'a> TypeVertex<'a> {
 
     pub(crate) fn build(prefix: PrefixID, type_id: TypeID) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
-        array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
+        array[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
+        array[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         TypeVertex { bytes: Bytes::Array(array) }
     }
 

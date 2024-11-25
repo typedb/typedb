@@ -24,7 +24,7 @@ where
     let mut start = 0;
     for item in key_items {
         let end = start + item.len();
-        bytes.bytes_mut()[start..end].copy_from_slice(item);
+        bytes[start..end].copy_from_slice(item);
         start = end;
     }
     bytes

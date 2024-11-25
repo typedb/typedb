@@ -44,13 +44,13 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
     {
         let mut key_without_tail_byte: ByteArray<BUFFER_KEY_INLINE> =
             ByteArray::zeros(key_without_hash.len() + Self::HASH_LENGTH);
-        key_without_tail_byte.bytes_mut()[0..key_without_hash.len()].copy_from_slice(key_without_hash);
+        key_without_tail_byte[0..key_without_hash.len()].copy_from_slice(key_without_hash);
         let hash_bytes = Self::write_hash(
-            &mut key_without_tail_byte.bytes_mut()[key_without_hash.len()..key_without_hash.len() + Self::HASH_LENGTH],
+            &mut key_without_tail_byte[key_without_hash.len()..key_without_hash.len() + Self::HASH_LENGTH],
             hasher,
             value_bytes,
         );
-        let hash_bytes = &key_without_tail_byte.bytes()[key_without_hash.len()..key_without_hash.len() + hash_bytes];
+        let hash_bytes = &key_without_tail_byte[key_without_hash.len()..key_without_hash.len() + hash_bytes];
         match Self::disambiguate(snapshot, key_without_tail_byte.as_ref(), value_bytes)? {
             Either::First(tail) => Ok(Either::First(Self::concat_hash_and_tail(hash_bytes, tail))),
             Either::Second(tail) => Ok(Either::Second(Self::concat_hash_and_tail(hash_bytes, tail))),

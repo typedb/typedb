@@ -53,7 +53,7 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> Bytes<'bytes, ARRAY_INLINE_SIZE> {
 
     pub fn length(&self) -> usize {
         match self {
-            Bytes::Array(array) => array.length(),
+            Bytes::Array(array) => array.len(),
             Bytes::Reference(reference) => reference.length(),
         }
     }
@@ -129,7 +129,7 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> Deref for Bytes<'bytes, ARRAY_INLIN
 
     fn deref(&self) -> &Self::Target {
         match self {
-            Bytes::Array(array) => array.bytes(),
+            Bytes::Array(array) => array,
             Bytes::Reference(reference) => reference.bytes(),
         }
     }

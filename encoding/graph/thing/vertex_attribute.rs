@@ -57,9 +57,9 @@ impl<'a> AttributeVertex<'a> {
 
     pub fn build(type_id: TypeID, attribute_id: AttributeID) -> Self {
         let mut bytes = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE + attribute_id.length());
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
-        bytes.bytes_mut()[Self::range_for_attribute_id(attribute_id.length())].copy_from_slice(attribute_id.bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
+        bytes[Self::range_for_attribute_id(attribute_id.length())].copy_from_slice(attribute_id.bytes());
         Self::new(Bytes::Array(bytes))
     }
 
@@ -70,10 +70,10 @@ impl<'a> AttributeVertex<'a> {
     ) -> StorageKey<'static, BUFFER_KEY_INLINE> {
         // preallocate upper bound length and then truncate later
         let mut bytes = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE + AttributeID::max_length());
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         let id_length = AttributeID::write_deterministic_value_or_prefix(
-            &mut bytes.bytes_mut()[Self::RANGE_TYPE_ID.end..],
+            &mut bytes[Self::RANGE_TYPE_ID.end..],
             value,
             large_value_hasher,
         );
@@ -566,7 +566,7 @@ impl StringAttributeID {
         let value_bytes = &self.bytes[Self::VALUE_TYPE_LENGTH..];
         let mut bytes = ByteArray::zeros(Self::INLINE_OR_PREFIXED_HASH_LENGTH);
         let inline_string_length = self.get_inline_length() as usize;
-        bytes.bytes_mut()[0..inline_string_length].copy_from_slice(&value_bytes[0..inline_string_length]);
+        bytes[0..inline_string_length].copy_from_slice(&value_bytes[0..inline_string_length]);
         bytes.truncate(inline_string_length);
         StringBytes::new(Bytes::Array(bytes))
     }
@@ -693,8 +693,7 @@ impl StringAttributeID {
         debug_assert!(self.is_inline());
         let mut bytes = ByteArray::zeros(Self::LENGTH);
         let inline_string_length = self.get_inline_length();
-        bytes.bytes_mut()[0..inline_string_length as usize]
-            .copy_from_slice(&self.bytes[0..inline_string_length as usize]);
+        bytes[0..inline_string_length as usize].copy_from_slice(&self.bytes[0..inline_string_length as usize]);
         bytes.truncate(inline_string_length as usize);
         StringBytes::new(Bytes::Array(bytes))
     }
@@ -764,11 +763,10 @@ impl StructAttributeID {
         let existing_or_new = Self::find_existing_or_next_disambiguated_hash(
             snapshot,
             hasher,
-            ByteArray::<{ THING_VERTEX_LENGTH_PREFIX_TYPE + ValueTypeBytes::CATEGORY_LENGTH }>::copy_concat([
+            &ByteArray::<{ THING_VERTEX_LENGTH_PREFIX_TYPE + ValueTypeBytes::CATEGORY_LENGTH }>::copy_concat([
                 attribute_prefix.bytes(),
                 &ValueTypeCategory::Struct.to_bytes(),
-            ])
-            .bytes(),
+            ]),
             struct_bytes.bytes().bytes(),
         )?;
 
@@ -793,11 +791,10 @@ impl StructAttributeID {
         let existing_or_new = Self::find_existing_or_next_disambiguated_hash(
             snapshot,
             hasher,
-            ByteArray::<{ THING_VERTEX_LENGTH_PREFIX_TYPE + ValueTypeBytes::CATEGORY_LENGTH }>::copy_concat([
+            &ByteArray::<{ THING_VERTEX_LENGTH_PREFIX_TYPE + ValueTypeBytes::CATEGORY_LENGTH }>::copy_concat([
                 attribute_prefix.bytes(),
                 &ValueTypeCategory::Struct.to_bytes(),
-            ])
-            .bytes(),
+            ]),
             struct_bytes.bytes().bytes(),
         )?;
 

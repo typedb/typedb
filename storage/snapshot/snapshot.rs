@@ -149,7 +149,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
         let keyspace_id = key.keyspace_id();
         let writes = self.operations().writes_in(keyspace_id);
         match writes.get(key.bytes()) {
-            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(ByteArray::copy(value.bytes())),
+            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(ByteArray::copy(value)),
             Some(Write::Delete) => {
                 Err(SnapshotGetError::ExpectedRequiredKeyToExist { key: StorageKey::Array(key.into_owned_array()) })
             }
@@ -312,9 +312,7 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         let writes = self.operations().writes_in(key.keyspace_id());
         match writes.get(key.bytes()) {
-            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => {
-                Ok(Some(ByteArray::copy(value.bytes())))
-            }
+            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
             Some(Write::Delete) => Ok(None),
             None => self
                 .storage
@@ -330,9 +328,7 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         let writes = self.operations().writes_in(key.keyspace_id());
         match writes.get(key.bytes()) {
-            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => {
-                Ok(Some(ByteArray::copy(value.bytes())))
-            }
+            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
             Some(Write::Delete) | None => self
                 .storage
                 .get(key, self.open_sequence_number)
@@ -465,9 +461,7 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         let writes = self.operations().writes_in(key.keyspace_id());
         match writes.get(key.bytes()) {
-            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => {
-                Ok(Some(ByteArray::copy(value.bytes())))
-            }
+            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
             Some(Write::Delete) => Ok(None),
             None => self
                 .storage
@@ -483,9 +477,7 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         let writes = self.operations().writes_in(key.keyspace_id());
         match writes.get(key.bytes()) {
-            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => {
-                Ok(Some(ByteArray::copy(value.bytes())))
-            }
+            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
             Some(Write::Delete) | None => self
                 .storage
                 .get(key, self.open_sequence_number)

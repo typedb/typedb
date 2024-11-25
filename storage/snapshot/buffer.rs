@@ -174,7 +174,7 @@ impl WriteBuffer {
     }
 
     pub(crate) fn contains(&self, key: &ByteArray<BUFFER_KEY_INLINE>) -> bool {
-        self.writes.contains_key(key.bytes())
+        self.writes.contains_key(key)
     }
 
     pub(crate) fn get(&self, key: &[u8]) -> Option<&Write> {
@@ -187,7 +187,7 @@ impl WriteBuffer {
         let end = if matches!(range_end, RangeEnd::Unbounded) {
             Bound::Unbounded
         } else {
-            Bound::Excluded(exclusive_end_bytes.bytes())
+            Bound::Excluded(&*exclusive_end_bytes)
         };
         // TODO: we shouldn't have to copy now that we use single-writer semantics
         BufferRangeIterator::new(
@@ -205,7 +205,7 @@ impl WriteBuffer {
         let end = if matches!(range_end, RangeEnd::Unbounded) {
             Bound::Unbounded
         } else {
-            Bound::Excluded(exclusive_end_bytes.bytes())
+            Bound::Excluded(&*exclusive_end_bytes)
         };
         self.writes
             .range::<[u8], _>((range_start.as_bound().map(|bytes| &**bytes), end))
@@ -219,12 +219,12 @@ impl WriteBuffer {
         match end {
             RangeEnd::WithinStartAsPrefix => {
                 let mut start_plus_1 = start.get_value().clone().into_array();
-                increment(start_plus_1.bytes_mut()).unwrap();
+                increment(&mut start_plus_1).unwrap();
                 start_plus_1
             }
             RangeEnd::EndPrefixInclusive(value) => {
                 let mut end_plus_1 = value.clone().into_array();
-                increment(end_plus_1.bytes_mut()).unwrap();
+                increment(&mut end_plus_1).unwrap();
                 end_plus_1
             }
             RangeEnd::EndPrefixExclusive(value) => value.clone().into_array(),

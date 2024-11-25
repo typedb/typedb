@@ -9,7 +9,7 @@ use std::{
     cmp::Ordering,
     fmt,
     hash::{Hash, Hasher},
-    ops::Range,
+    ops::{Deref, DerefMut, Range},
 };
 
 use primitive::prefix::Prefix;
@@ -69,29 +69,11 @@ impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
     }
 
     pub fn as_ref(&self) -> ByteReference<'_> {
-        ByteReference::new(self.bytes())
-    }
-
-    pub fn bytes(&self) -> &[u8] {
-        match self {
-            ByteArray::Inline(inline) => inline.bytes(),
-            ByteArray::Boxed(boxed) => boxed.bytes(),
-        }
-    }
-
-    pub fn bytes_mut(&mut self) -> &mut [u8] {
-        match self {
-            ByteArray::Inline(inline) => inline.bytes_mut(),
-            ByteArray::Boxed(boxed) => boxed.bytes_mut(),
-        }
-    }
-
-    pub fn length(&self) -> usize {
-        self.bytes().len()
+        ByteReference::new(self)
     }
 
     pub fn truncate(&mut self, length: usize) {
-        assert!(length <= self.length());
+        assert!(length <= self.len());
         match self {
             ByteArray::Inline(inline) => inline.truncate(length),
             ByteArray::Boxed(boxed) => boxed.truncate(length),
@@ -99,7 +81,7 @@ impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
     }
 
     pub fn truncate_range(&mut self, range: Range<usize>) {
-        assert!(range.start <= self.length() && range.end <= self.length());
+        assert!(range.start <= self.len() && range.end <= self.len());
         match self {
             ByteArray::Inline(inline) => inline.truncate_range(range),
             ByteArray::Boxed(boxed) => boxed.truncate_range(range),
@@ -107,11 +89,11 @@ impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
     }
 
     pub fn starts_with(&self, bytes: &[u8]) -> bool {
-        self.length() >= bytes.len() && &self.bytes()[0..bytes.len()] == bytes
+        self.len() >= bytes.len() && &self[0..bytes.len()] == bytes
     }
 
     pub fn increment(&mut self) -> Result<(), BytesError> {
-        increment(self.bytes_mut())
+        increment(self)
     }
 }
 
@@ -123,7 +105,7 @@ impl<const BYTES: usize> From<ByteReference<'_>> for ByteArray<BYTES> {
 
 impl<const INLINE_BYTES: usize> Hash for ByteArray<INLINE_BYTES> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.bytes().hash(state)
+        (**self).hash(state)
     }
 }
 
@@ -337,9 +319,35 @@ impl ByteArrayBoxed {
     }
 }
 
+impl<const INLINE_SIZE: usize> AsRef<[u8]> for ByteArray<INLINE_SIZE> {
+    fn as_ref(&self) -> &[u8] {
+        self
+    }
+}
+
 impl<const INLINE_SIZE: usize> Borrow<[u8]> for ByteArray<INLINE_SIZE> {
     fn borrow(&self) -> &[u8] {
-        self.bytes()
+        self
+    }
+}
+
+impl<const INLINE_SIZE: usize> Deref for ByteArray<INLINE_SIZE> {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Self::Boxed(bytes) => bytes.bytes(),
+            Self::Inline(bytes) => bytes.bytes(),
+        }
+    }
+}
+
+impl<const INLINE_SIZE: usize> DerefMut for ByteArray<INLINE_SIZE> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        match self {
+            Self::Boxed(bytes) => bytes.bytes_mut(),
+            Self::Inline(bytes) => bytes.bytes_mut(),
+        }
     }
 }
 
@@ -351,13 +359,13 @@ impl<const INLINE_BYTES: usize> PartialOrd for ByteArray<INLINE_BYTES> {
 
 impl<const INLINE_BYTES: usize> Ord for ByteArray<INLINE_BYTES> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.bytes().cmp(other.bytes())
+        (**self).cmp(&**other)
     }
 }
 
 impl<const INLINE_BYTES: usize> PartialEq for ByteArray<INLINE_BYTES> {
     fn eq(&self, other: &Self) -> bool {
-        self.bytes() == other.bytes()
+        (**self).eq(&**other)
     }
 }
 
@@ -365,7 +373,7 @@ impl<const INLINE_BYTES: usize> Eq for ByteArray<INLINE_BYTES> {}
 
 impl<const INLINE_BYTES: usize> PartialEq<[u8]> for ByteArray<INLINE_BYTES> {
     fn eq(&self, other: &[u8]) -> bool {
-        self.bytes() == other
+        &**self == other
     }
 }
 
@@ -380,10 +388,10 @@ impl fmt::Debug for ByteArrayBoxed {
 
 impl<const ARRAY_INLINE_SIZE: usize> Prefix for ByteArray<ARRAY_INLINE_SIZE> {
     fn starts_with(&self, other: &Self) -> bool {
-        self.bytes().starts_with(other.bytes())
+        self.starts_with(other)
     }
 
     fn into_starts_with(self, other: Self) -> bool {
-        self.bytes().starts_with(other.bytes())
+        self.starts_with(&other)
     }
 }

@@ -44,8 +44,8 @@ impl<'a> DefinitionKey<'a> {
 
     pub fn build(prefix: Prefix, definition_id: DefinitionID) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
-        array.bytes_mut()[Self::RANGE_DEFINITION_ID].copy_from_slice(&definition_id.bytes());
+        array[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
+        array[Self::RANGE_DEFINITION_ID].copy_from_slice(&definition_id.bytes());
         Self { bytes: Bytes::Array(array) }
     }
 

@@ -69,20 +69,18 @@ impl KeyspaceRangeIterator {
         match value {
             Ok((key, _)) => {
                 match condition {
-                    ContinueCondition::ExactPrefix(prefix) => key.starts_with(prefix.bytes()),
+                    ContinueCondition::ExactPrefix(prefix) => key.starts_with(prefix),
                     ContinueCondition::EndPrefixInclusive(end_inclusive) => {
                         // if the key is shorter than the end, and the end starts with the key, then it must be OK
                         //  example: A will be included when searching up to and including AA
                         // otherwise, the key is longer and we check the corresponding ranges
-                        end_inclusive.bytes().starts_with(key)
-                            || &key[0..end_inclusive.length()] <= end_inclusive.bytes()
+                        end_inclusive.starts_with(key) || &key[0..end_inclusive.len()] <= end_inclusive
                     }
                     ContinueCondition::EndPrefixExclusive(end_exclusive) => {
                         // if the key is shorter than the end, and the end starts with the key, then it must be OK
                         //  example: A will be included when searching up to but not including AA
                         // otherwise, the key is longer and we check the corresponding ranges
-                        end_exclusive.bytes().starts_with(key)
-                            || &key[0..end_exclusive.length()] < end_exclusive.bytes()
+                        end_exclusive.starts_with(key) || &key[0..end_exclusive.len()] < end_exclusive
                     }
                     ContinueCondition::Always => true,
                 }

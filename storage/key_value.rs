@@ -142,11 +142,11 @@ impl<const SZ: usize> StorageKeyArray<SZ> {
     }
 
     pub fn length(&self) -> usize {
-        self.byte_array.length()
+        self.byte_array.len()
     }
 
     pub fn bytes(&self) -> &[u8] {
-        self.byte_array.bytes()
+        &self.byte_array
     }
 
     pub fn byte_array(&self) -> &ByteArray<SZ> {

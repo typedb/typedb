@@ -1065,7 +1065,7 @@ impl ThingManager {
                     &Infix::PropertyAnnotationUnique.infix_id().bytes(),
                     unique_constraint.source().attribute().vertex().bytes().bytes(),
                     attribute_key.attribute_id().bytes(),
-                    attribute_value.bytes(),
+                    &attribute_value,
                     owner.vertex().bytes().bytes(),
                     unique_constraint.source().owner().vertex().bytes().bytes(),
                 ]

@@ -56,9 +56,9 @@ impl<'a> ThingEdgeHas<'a> {
 
     pub fn build<'b>(from: ObjectVertex<'b>, to: AttributeVertex<'b>) -> ThingEdgeHas<'static> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT + to.length());
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
-        bytes.bytes_mut()[Self::range_to_for_vertex(to.as_reference())].copy_from_slice(to.bytes().bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes[Self::range_from()].copy_from_slice(from.bytes().bytes());
+        bytes[Self::range_to_for_vertex(to.as_reference())].copy_from_slice(to.bytes().bytes());
         ThingEdgeHas { bytes: Bytes::Array(bytes) }
     }
 
@@ -66,9 +66,8 @@ impl<'a> ThingEdgeHas<'a> {
         type_: TypeVertex<'static>,
     ) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        bytes.bytes_mut()[Self::range_from_type()]
-            .copy_from_slice(ObjectVertex::build_prefix_from_type_vertex(type_).bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes[Self::range_from_type()].copy_from_slice(ObjectVertex::build_prefix_from_type_vertex(type_).bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
@@ -76,8 +75,8 @@ impl<'a> ThingEdgeHas<'a> {
         from: ObjectVertex<'_>,
     ) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes[Self::range_from()].copy_from_slice(from.bytes().bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
@@ -86,11 +85,11 @@ impl<'a> ThingEdgeHas<'a> {
         to_type_id: TypeID,
     ) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes[Self::range_from()].copy_from_slice(from.bytes().bytes());
         let to_prefix = AttributeVertex::build_prefix_type(Prefix::VertexAttribute, to_type_id);
         let to_type_range = Self::range_from().end..Self::range_from().end + to_prefix.length();
-        bytes.bytes_mut()[to_type_range].copy_from_slice(to_prefix.bytes());
+        bytes[to_type_range].copy_from_slice(to_prefix.bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
@@ -198,11 +197,11 @@ impl<'a> ThingEdgeHasReverse<'a> {
 
     pub fn build(from: AttributeVertex<'_>, to: ObjectVertex<'_>) -> Self {
         let mut bytes = ByteArray::zeros(PrefixID::LENGTH + from.length() + to.length());
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         let range_from = Self::range_from_for_vertex(from.as_reference());
-        bytes.bytes_mut()[range_from.clone()].copy_from_slice(from.bytes().bytes());
+        bytes[range_from.clone()].copy_from_slice(from.bytes().bytes());
         let range_to = range_from.end..range_from.end + to.length();
-        bytes.bytes_mut()[range_to].copy_from_slice(to.bytes().bytes());
+        bytes[range_to].copy_from_slice(to.bytes().bytes());
         ThingEdgeHasReverse { bytes: Bytes::Array(bytes) }
     }
 
@@ -210,8 +209,8 @@ impl<'a> ThingEdgeHasReverse<'a> {
         from_prefix: Prefix,
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_PREFIX_FROM_PREFIX }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_PREFIX);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        bytes.bytes_mut()[Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + PrefixID::LENGTH]
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes[Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + PrefixID::LENGTH]
             .copy_from_slice(&from_prefix.prefix_id().bytes);
         StorageKey::new_owned(EncodingKeyspace::Data, bytes)
     }
@@ -220,12 +219,11 @@ impl<'a> ThingEdgeHasReverse<'a> {
         from_type_id: TypeID,
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_PREFIX_FROM_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         let from_prefix_end = Self::RANGE_PREFIX.end + PrefixID::LENGTH;
-        bytes.bytes_mut()[Self::RANGE_PREFIX.end..from_prefix_end]
-            .copy_from_slice(&Prefix::VertexAttribute.prefix_id().bytes);
+        bytes[Self::RANGE_PREFIX.end..from_prefix_end].copy_from_slice(&Prefix::VertexAttribute.prefix_id().bytes);
         let from_type_id_end = from_prefix_end + TypeID::LENGTH;
-        bytes.bytes_mut()[from_prefix_end..from_type_id_end].copy_from_slice(&from_type_id.bytes());
+        bytes[from_prefix_end..from_type_id_end].copy_from_slice(&from_type_id.bytes());
         StorageKey::new_owned(EncodingKeyspace::Data, bytes)
     }
 
@@ -236,8 +234,8 @@ impl<'a> ThingEdgeHasReverse<'a> {
             attribute_vertex_prefix.bytes()[AttributeVertex::RANGE_PREFIX] == AttributeVertex::PREFIX.prefix_id().bytes
         );
         let mut bytes = ByteArray::zeros(Self::RANGE_PREFIX.end + attribute_vertex_prefix.length());
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        bytes.bytes_mut()[Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + attribute_vertex_prefix.length()]
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes[Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + attribute_vertex_prefix.length()]
             .copy_from_slice(attribute_vertex_prefix.bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
@@ -247,8 +245,8 @@ impl<'a> ThingEdgeHasReverse<'a> {
         from: AttributeVertex<'_>,
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_BOUND_PREFIX_FROM);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        bytes.bytes_mut()[Self::range_from_for_vertex(from.as_reference())].copy_from_slice(from.bytes().bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes[Self::range_from_for_vertex(from.as_reference())].copy_from_slice(from.bytes().bytes());
         bytes.truncate(Self::range_from_for_vertex(from.as_reference()).end);
         StorageKey::new_owned(EncodingKeyspace::Data, bytes)
     }
@@ -258,11 +256,11 @@ impl<'a> ThingEdgeHasReverse<'a> {
         to_type: TypeVertex<'_>,
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM_TO_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_BOUND_PREFIX_FROM_TO_TYPE);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         let range_from = Self::range_from_for_vertex(from.as_reference());
-        bytes.bytes_mut()[range_from.clone()].copy_from_slice(from.bytes().bytes());
+        bytes[range_from.clone()].copy_from_slice(from.bytes().bytes());
         let to_type_range = range_from.end..range_from.end + TypeVertex::LENGTH;
-        bytes.bytes_mut()[to_type_range].copy_from_slice(ObjectVertex::build_prefix_from_type_vertex(to_type).bytes());
+        bytes[to_type_range].copy_from_slice(ObjectVertex::build_prefix_from_type_vertex(to_type).bytes());
         bytes.truncate(range_from.end + TypeVertex::LENGTH);
         StorageKey::new_owned(EncodingKeyspace::Data, bytes)
     }
@@ -386,10 +384,10 @@ impl<'a> ThingEdgeLinks<'a> {
 
     pub fn build_links(relation: ObjectVertex<'_>, player: ObjectVertex<'_>, role_type: TypeVertex<'_>) -> Self {
         let mut bytes = ByteArray::zeros(Self::LENGTH);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(relation.bytes().bytes());
-        bytes.bytes_mut()[Self::RANGE_TO].copy_from_slice(player.bytes().bytes());
-        bytes.bytes_mut()[Self::RANGE_ROLE_ID].copy_from_slice(&role_type.type_id_().bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes[Self::RANGE_FROM].copy_from_slice(relation.bytes().bytes());
+        bytes[Self::RANGE_TO].copy_from_slice(player.bytes().bytes());
+        bytes[Self::RANGE_ROLE_ID].copy_from_slice(&role_type.type_id_().bytes());
         ThingEdgeLinks { bytes: Bytes::Array(bytes) }
     }
 
@@ -399,10 +397,10 @@ impl<'a> ThingEdgeLinks<'a> {
         role_type: TypeVertex<'_>,
     ) -> Self {
         let mut bytes = ByteArray::zeros(Self::LENGTH);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX_REVERSE.prefix_id().bytes());
-        bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(player.bytes().bytes());
-        bytes.bytes_mut()[Self::RANGE_TO].copy_from_slice(relation.bytes().bytes());
-        bytes.bytes_mut()[Self::RANGE_ROLE_ID].copy_from_slice(&role_type.type_id_().bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX_REVERSE.prefix_id().bytes());
+        bytes[Self::RANGE_FROM].copy_from_slice(player.bytes().bytes());
+        bytes[Self::RANGE_TO].copy_from_slice(relation.bytes().bytes());
+        bytes[Self::RANGE_ROLE_ID].copy_from_slice(&role_type.type_id_().bytes());
         ThingEdgeLinks { bytes: Bytes::Array(bytes) }
     }
 
@@ -410,8 +408,8 @@ impl<'a> ThingEdgeLinks<'a> {
         relation_type: TypeVertex<'_>,
     ) -> StorageKey<'static, { ThingEdgeLinks::LENGTH_PREFIX_FROM_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        bytes.bytes_mut()[Self::range_from_type()]
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes[Self::range_from_type()]
             .copy_from_slice(ObjectVertex::build_prefix_from_type_vertex(relation_type).bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
@@ -420,8 +418,8 @@ impl<'a> ThingEdgeLinks<'a> {
         relation: ObjectVertex<'_>,
     ) -> StorageKey<'static, { ThingEdgeLinks::LENGTH_PREFIX_FROM }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(relation.bytes().bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes[Self::RANGE_FROM].copy_from_slice(relation.bytes().bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
@@ -430,10 +428,9 @@ impl<'a> ThingEdgeLinks<'a> {
         player_type: TypeVertex<'_>,
     ) -> StorageKey<'static, { ThingEdgeLinks::LENGTH_PREFIX_FROM_TO_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TO_TYPE);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(relation.bytes().bytes());
-        bytes.bytes_mut()[Self::range_to_type()]
-            .copy_from_slice(ObjectVertex::build_prefix_from_type_vertex(player_type).bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes[Self::RANGE_FROM].copy_from_slice(relation.bytes().bytes());
+        bytes[Self::range_to_type()].copy_from_slice(ObjectVertex::build_prefix_from_type_vertex(player_type).bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
@@ -442,9 +439,9 @@ impl<'a> ThingEdgeLinks<'a> {
         player: ObjectVertex<'_>,
     ) -> StorageKey<'static, { ThingEdgeLinks::LENGTH_PREFIX_FROM_TO }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TO);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(relation.bytes().bytes());
-        bytes.bytes_mut()[Self::RANGE_TO].copy_from_slice(player.bytes().bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes[Self::RANGE_FROM].copy_from_slice(relation.bytes().bytes());
+        bytes[Self::RANGE_TO].copy_from_slice(player.bytes().bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
@@ -452,8 +449,8 @@ impl<'a> ThingEdgeLinks<'a> {
         player: ObjectVertex<'_>,
     ) -> StorageKey<'static, { ThingEdgeLinks::LENGTH_PREFIX_FROM }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX_REVERSE.prefix_id().bytes());
-        bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(player.bytes().bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX_REVERSE.prefix_id().bytes());
+        bytes[Self::RANGE_FROM].copy_from_slice(player.bytes().bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
@@ -461,8 +458,8 @@ impl<'a> ThingEdgeLinks<'a> {
         player_type: TypeVertex<'_>,
     ) -> StorageKey<'static, { ThingEdgeLinks::LENGTH_PREFIX_FROM }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX_REVERSE.prefix_id().bytes());
-        bytes.bytes_mut()[Self::range_from_type()]
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX_REVERSE.prefix_id().bytes());
+        bytes[Self::range_from_type()]
             .copy_from_slice(ObjectVertex::build_prefix_from_type_vertex(player_type).bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
@@ -472,9 +469,9 @@ impl<'a> ThingEdgeLinks<'a> {
         relation_type: TypeVertex<'_>,
     ) -> StorageKey<'static, { ThingEdgeLinks::LENGTH_PREFIX_FROM_TO_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TO_TYPE);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX_REVERSE.prefix_id().bytes());
-        bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(player.bytes().bytes());
-        bytes.bytes_mut()[Self::range_to_type()]
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX_REVERSE.prefix_id().bytes());
+        bytes[Self::RANGE_FROM].copy_from_slice(player.bytes().bytes());
+        bytes[Self::range_to_type()]
             .copy_from_slice(ObjectVertex::build_prefix_from_type_vertex(relation_type).bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
@@ -484,9 +481,9 @@ impl<'a> ThingEdgeLinks<'a> {
         relation: ObjectVertex<'_>,
     ) -> StorageKey<'static, { ThingEdgeLinks::LENGTH_PREFIX_FROM_TO }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TO);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX_REVERSE.prefix_id().bytes());
-        bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(player.bytes().bytes());
-        bytes.bytes_mut()[Self::RANGE_TO].copy_from_slice(relation.bytes().bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX_REVERSE.prefix_id().bytes());
+        bytes[Self::RANGE_FROM].copy_from_slice(player.bytes().bytes());
+        bytes[Self::RANGE_TO].copy_from_slice(relation.bytes().bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
@@ -631,12 +628,12 @@ impl<'a> ThingEdgeRolePlayerIndex<'a> {
         to_role_type_id: TypeID,
     ) -> ThingEdgeRolePlayerIndex<'static> {
         let mut bytes = ByteArray::zeros(Self::LENGTH);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(from.bytes().bytes());
-        bytes.bytes_mut()[Self::RANGE_TO].copy_from_slice(to.bytes().bytes());
-        bytes.bytes_mut()[Self::RANGE_RELATION].copy_from_slice(relation.bytes().bytes());
-        bytes.bytes_mut()[Self::RANGE_FROM_ROLE_TYPE_ID].copy_from_slice(&from_role_type_id.bytes());
-        bytes.bytes_mut()[Self::RANGE_TO_ROLE_TYPE_ID].copy_from_slice(&to_role_type_id.bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes[Self::RANGE_FROM].copy_from_slice(from.bytes().bytes());
+        bytes[Self::RANGE_TO].copy_from_slice(to.bytes().bytes());
+        bytes[Self::RANGE_RELATION].copy_from_slice(relation.bytes().bytes());
+        bytes[Self::RANGE_FROM_ROLE_TYPE_ID].copy_from_slice(&from_role_type_id.bytes());
+        bytes[Self::RANGE_TO_ROLE_TYPE_ID].copy_from_slice(&to_role_type_id.bytes());
         ThingEdgeRolePlayerIndex { bytes: Bytes::Array(bytes) }
     }
 
@@ -644,8 +641,8 @@ impl<'a> ThingEdgeRolePlayerIndex<'a> {
         from: ObjectVertex<'_>,
     ) -> StorageKey<'static, { ThingEdgeRolePlayerIndex::LENGTH_PREFIX_FROM }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(from.bytes().bytes());
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes[Self::RANGE_FROM].copy_from_slice(from.bytes().bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
