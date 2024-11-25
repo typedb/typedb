@@ -41,7 +41,7 @@ impl Server {
         );
         Ok(Self {
             data_directory: storage_directory.to_owned(),
-            user_manager: user_manager.clone(),
+            user_manager,
             typedb_service: Some(typedb_service),
             config
         })
