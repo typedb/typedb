@@ -98,11 +98,11 @@ impl IidExecutor {
             fail => fail,
         });
 
-        let iid_parameter = self.iid.iid().as_parameter().unwrap();
-        let bytes = context.parameters().iid(iid_parameter).unwrap();
-
         let snapshot = &**context.snapshot();
         let thing_manager = context.thing_manager();
+
+        let iid_parameter = self.iid.iid().as_parameter().unwrap();
+        let bytes = context.parameters().iid(iid_parameter).unwrap();
 
         let instance = if let Some(object) = ObjectVertex::try_from_bytes(bytes) {
             let object = Object::new(object);
