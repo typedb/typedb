@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, slice, str::FromStr, sync::Arc};
+use std::{collections::HashMap, str::FromStr, sync::Arc};
 
 use answer::{variable_value::VariableValue, Thing};
 use compiler::VariablePosition;
@@ -13,19 +13,18 @@ use cucumber::gherkin::Step;
 use encoding::value::{label::Label, value_type::ValueType, ValueEncodable};
 use executor::{
     batch::Batch,
-    document::ConceptDocument,
     pipeline::stage::{ExecutionContext, StageIterator},
     ExecutionInterrupt,
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
-use query::{error::QueryError, query_manager::QueryManager};
+use query::error::QueryError;
 use test_utils::assert_matches;
 
 use crate::{
     generic_step, params,
-    query_answer_context::{with_documents_answer, with_rows_answer, QueryAnswer},
+    query_answer_context::{with_rows_answer, QueryAnswer},
     transaction_context::{
         with_read_tx, with_schema_tx, with_write_tx_deconstructed,
         ActiveTransaction::{Read, Schema},
@@ -61,9 +60,9 @@ fn execute_read_query(context: &mut Context, query: typeql::Query) -> Result<Que
         )?;
         if pipeline.has_fetch() {
             match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {
-                Ok((mut iterator, ExecutionContext { parameters, .. })) => {
+                Ok((iterator, ExecutionContext { parameters, .. })) => {
                     let mut documents = vec![];
-                    while let Some(item) = iterator.next() {
+                    for item in iterator {
                         match item {
                             Ok(item) => documents.push(item),
                             Err(err) => {
@@ -120,10 +119,10 @@ fn execute_write_query(
             Ok(pipeline) => {
                 if pipeline.has_fetch() {
                     match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {
-                        Ok((mut iterator, ExecutionContext { parameters, snapshot, .. })) => {
+                        Ok((iterator, ExecutionContext { parameters, snapshot, .. })) => {
                             let mut documents = vec![];
                             let mut item_error: Option<BehaviourTestExecutionError> = None;
-                            while let Some(item) = iterator.next() {
+                            for item in iterator {
                                 match item {
                                     Ok(item) => documents.push(item),
                                     Err(err) => {

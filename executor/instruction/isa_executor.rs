@@ -255,7 +255,7 @@ pub(super) fn instances_of_all_types_chained<'a>(
 
     // object types and attribute types will continue to be sorted, based on their source in the BTreeMap
     let (attribute_types, object_types) =
-        instance_types_to_types.into_iter().partition::<Vec<_>, _>(|(type_, _)| matches!(type_, Type::Attribute(_)));
+        instance_types_to_types.iter().partition::<Vec<_>, _>(|(type_, _)| matches!(type_, Type::Attribute(_)));
 
     let object_iters: Vec<_> = object_types
         .into_iter()

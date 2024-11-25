@@ -58,8 +58,7 @@ fn test_assembly() {
 }
 
 fn run_test_against_server() -> Output {
-    let console_script_result = build_cmd("typedb-extracted/typedb console --script=tests/assembly/script.tql")
+    build_cmd("typedb-extracted/typedb console --script=tests/assembly/script.tql")
         .output()
-        .expect("Failed to run console script");
-    console_script_result
+        .expect("Failed to run console script")
 }

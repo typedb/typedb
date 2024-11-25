@@ -114,12 +114,12 @@ impl StructuralEquality for FetchSingleAttribute {
     fn hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
         self.variable.hash_into(&mut hasher);
-        (&self.attribute).hash_into(&mut hasher);
+        self.attribute.hash_into(&mut hasher);
         hasher.finish()
     }
 
     fn equals(&self, other: &Self) -> bool {
-        self.variable.equals(&other.variable) && (&self.attribute).equals(&other.attribute)
+        self.variable.equals(&other.variable) && self.attribute.equals(&other.attribute)
     }
 }
 
@@ -188,7 +188,7 @@ pub struct FetchListAttributeAsList {
 
 impl StructuralEquality for FetchListAttributeAsList {
     fn hash(&self) -> u64 {
-        ordered_hash_combine(self.variable.hash(), (&self.attribute).hash())
+        ordered_hash_combine(self.variable.hash(), self.attribute.hash())
     }
 
     fn equals(&self, other: &Self) -> bool {
@@ -204,7 +204,7 @@ pub struct FetchListAttributeFromList {
 
 impl StructuralEquality for FetchListAttributeFromList {
     fn hash(&self) -> u64 {
-        ordered_hash_combine(self.variable.hash(), (&self.attribute).hash())
+        ordered_hash_combine(self.variable.hash(), self.attribute.hash())
     }
 
     fn equals(&self, other: &Self) -> bool {

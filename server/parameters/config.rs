@@ -16,6 +16,12 @@ pub struct Config {
     pub(crate) storage: StorageConfig,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Config {
     pub fn new() -> Self {
         let typedb_dir_or_current = std::env::current_exe()

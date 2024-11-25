@@ -41,9 +41,9 @@ pub(crate) enum ImmediateExecutor {
     Assignment(AssignExecutor),
 }
 
-impl Into<StepExecutors> for ImmediateExecutor {
-    fn into(self) -> StepExecutors {
-        StepExecutors::Immediate(self)
+impl From<ImmediateExecutor> for StepExecutors {
+    fn from(val: ImmediateExecutor) -> Self {
+        StepExecutors::Immediate(val)
     }
 }
 

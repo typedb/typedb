@@ -1740,12 +1740,9 @@ pub mod tests {
             let var_b = conjunction.get_or_declare_variable("b").unwrap();
 
             // Try seeding
-            conjunction
-                .constraints_mut()
-                .add_isa(IsaKind::Exact, var_x.into(), Vertex::Label(label_owner.clone()))
-                .unwrap();
-            conjunction.constraints_mut().add_has(var_x.into(), var_a.into()).unwrap();
-            conjunction.constraints_mut().add_has(var_x.into(), var_b.into()).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Exact, var_x, Vertex::Label(label_owner.clone())).unwrap();
+            conjunction.constraints_mut().add_has(var_x, var_a).unwrap();
+            conjunction.constraints_mut().add_has(var_x, var_b).unwrap();
             conjunction.constraints_mut().add_comparison(var_a.into(), var_b.into(), Comparator::Greater).unwrap();
 
             let block = builder.finish().unwrap();

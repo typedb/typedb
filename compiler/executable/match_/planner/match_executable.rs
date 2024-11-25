@@ -433,9 +433,9 @@ impl FunctionCallStep {
 
 impl Display for FunctionCallStep {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
+        writeln!(
             f,
-            "Function Call [fn_id={}, assigned={:?}, arguments={:?}, output_size={}]\n",
+            "Function Call [fn_id={}, assigned={:?}, arguments={:?}, output_size={}]",
             self.function_id, &self.assigned, &self.arguments, self.output_width
         )
     }

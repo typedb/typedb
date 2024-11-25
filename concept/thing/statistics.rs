@@ -910,7 +910,7 @@ mod serialise {
                     Ok(Statistics {
                         encoding_version: statistics_version,
                         sequence_number: open_sequence_number,
-                        total_count: total_count,
+                        total_count,
                         total_thing_count,
                         total_entity_count,
                         total_relation_count,

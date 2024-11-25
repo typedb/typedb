@@ -286,7 +286,7 @@ fn annotate_function_impl(
         type_manager,
         indexed_annotated_functions,
         &mut context.variable_registry,
-        &parameters,
+        parameters,
         local_functions,
         stages.clone(),
         argument_concept_variable_types,

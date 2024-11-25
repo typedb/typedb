@@ -38,7 +38,6 @@ macro_rules! with_documents_answer {
         $expr
     };
 }
-pub(crate) use with_documents_answer;
 
 impl QueryAnswer {
     pub fn as_rows(&self) -> &Vec<HashMap<String, VariableValue<'static>>> {
@@ -124,7 +123,7 @@ impl QueryAnswer {
             DocumentMap::UserKeys(user_keys_map) => user_keys_map
                 .iter()
                 .map(|(parameter_id, node)| {
-                    let key_name = match parameters.fetch_key(parameter_id.clone()) {
+                    let key_name = match parameters.fetch_key(*parameter_id) {
                         Some(name) => name,
                         None => panic!("Expected parameter {parameter_id:?} string in {parameters:?}"),
                     };

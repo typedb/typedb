@@ -55,7 +55,7 @@ impl<'a> AttributeVertex<'a> {
     pub const PREFIX: Prefix = Prefix::VertexAttribute;
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
-        debug_assert!(&bytes.bytes()[Self::RANGE_PREFIX] == &Self::PREFIX.prefix_id().bytes);
+        debug_assert!(bytes.bytes()[Self::RANGE_PREFIX] == Self::PREFIX.prefix_id().bytes);
         debug_assert!(bytes.length() > THING_VERTEX_LENGTH_PREFIX_TYPE);
         Self { bytes }
     }
@@ -453,7 +453,7 @@ impl<const LENGTH_VALUE_WITH_PREFIX: usize, EncodedBytesType: InlineEncodableAtt
     pub fn new(bytes: [u8; LENGTH_VALUE_WITH_PREFIX]) -> Self {
         // assert ensures generics are used correctly (see above note with link to rust-lang issue)
         debug_assert!(LENGTH_VALUE_WITH_PREFIX == EncodedBytesType::ENCODED_LENGTH + Self::VALUE_TYPE_LENGTH);
-        Self { bytes, _ph: PhantomData::default() }
+        Self { bytes, _ph: PhantomData }
     }
 
     pub(crate) fn build(value: EncodedBytesType) -> Self {

@@ -206,10 +206,7 @@ enum StreamingCondition {
 impl StreamingCondition {
     fn continue_(&self, iteration: usize) -> bool {
         match self {
-            StreamingCondition::Count(count) => {
-                let result = iteration < *count;
-                result
-            }
+            StreamingCondition::Count(count) => iteration < *count,
             StreamingCondition::Duration(start_time, limit_millis) => {
                 (Instant::now().duration_since(*start_time).as_millis() as usize) < *limit_millis
             }
@@ -350,11 +347,9 @@ impl TransactionService {
             }
             (true, typedb_protocol::transaction::req::Req::StreamReq(stream_req)) => {
                 match self.handle_stream_continue(request_id, stream_req).await {
-                    None => return Ok(Continue(())),
+                    None => Ok(Continue(())),
                     Some(query_response) => {
-                        return Ok(
-                            Self::respond_query_response(&self.response_sender, request_id, query_response).await
-                        );
+                        Ok(Self::respond_query_response(&self.response_sender, request_id, query_response).await)
                     }
                 }
             }
@@ -685,7 +680,7 @@ impl TransactionService {
 
                 // schema queries are handled immediately so there is a query response or a fatal Status
                 let response = self.handle_query_schema(schema_query).await?;
-                return Ok(Self::respond_query_response(&self.response_sender, req_id, response).await);
+                Ok(Self::respond_query_response(&self.response_sender, req_id, response).await)
             }
             Query::Pipeline(pipeline) => {
                 #[allow(clippy::collapsible_else_if)]
@@ -1023,7 +1018,7 @@ impl TransactionService {
         let query_profile = if pipeline.has_fetch() {
             let initial_response = StreamQueryResponse::init_ok_documents(Read);
             Self::submit_response_sync(sender, initial_response);
-            let (mut iterator, context) =
+            let (iterator, context) =
                 unwrap_or_execute_and_return!(pipeline.into_documents_iterator(interrupt.clone()), |(err, _)| {
                     Self::submit_response_sync(
                         sender,
@@ -1032,7 +1027,7 @@ impl TransactionService {
                 });
 
             let parameters = context.parameters;
-            while let Some(next) = iterator.next() {
+            for next in iterator {
                 if let Some(interrupt) = interrupt.check() {
                     Self::submit_response_sync(
                         sender,
@@ -1046,7 +1041,7 @@ impl TransactionService {
                 });
 
                 let encoded_document =
-                    encode_document(document, snapshot.as_ref(), &type_manager, &thing_manager, &parameters);
+                    encode_document(document, snapshot.as_ref(), type_manager, &thing_manager, &parameters);
                 match encoded_document {
                     Ok(encoded_document) => {
                         Self::submit_response_sync(sender, StreamQueryResponse::next_document(encoded_document))
@@ -1088,7 +1083,7 @@ impl TransactionService {
                     Self::submit_response_sync(sender, StreamQueryResponse::done_err(err));
                 });
 
-                let encoded_row = encode_row(row, &descriptor, snapshot.as_ref(), &type_manager, &thing_manager);
+                let encoded_row = encode_row(row, &descriptor, snapshot.as_ref(), type_manager, &thing_manager);
                 match encoded_row {
                     Ok(encoded_row) => Self::submit_response_sync(sender, StreamQueryResponse::next_row(encoded_row)),
                     Err(err) => {
@@ -1105,7 +1100,7 @@ impl TransactionService {
         if query_profile.is_enabled() {
             event!(Level::INFO, "Read query done (including network request time).\n{}", query_profile);
         }
-        Self::submit_response_sync(&sender, StreamQueryResponse::done_ok())
+        Self::submit_response_sync(sender, StreamQueryResponse::done_ok())
     }
 
     fn prepare_read_query_in<Snapshot: ReadableSnapshot + 'static>(

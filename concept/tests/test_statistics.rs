@@ -297,7 +297,7 @@ fn put_has_twice() {
     thing_manager.finalise(&mut snapshot).unwrap();
     snapshot.commit().unwrap_err(); // Can't concurrently modify the same 'has'
 
-    synchronised.sequence_number = synchronised.sequence_number + 1;
+    synchronised.sequence_number += 1;
 
     assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
 }

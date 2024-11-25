@@ -55,12 +55,12 @@ pub fn compile(
         block_context,
         input_variables,
         type_annotations,
-        &variable_registry,
+        variable_registry,
         expressions,
         statistics,
     )
-    .lower(input_variables.keys().copied(), selected_variables.clone(), &assigned_identities, &variable_registry)
-    .finish(&variable_registry)
+    .lower(input_variables.keys().copied(), selected_variables.clone(), &assigned_identities, variable_registry)
+    .finish(variable_registry)
 }
 
 #[derive(Debug)]

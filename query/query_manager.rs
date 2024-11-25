@@ -76,8 +76,7 @@ impl QueryManager {
         let executable_pipeline = match self
             .cache
             .as_ref()
-            .map(|cache| cache.get(arced_premable.clone(), arced_stages.clone(), arced_fetch.clone()))
-            .flatten()
+            .and_then(|cache| cache.get(arced_premable.clone(), arced_stages.clone(), arced_fetch.clone()))
         {
             Some(executable_pipeline) => {
                 QUERY_CACHE_HITS.increment();
@@ -112,9 +111,9 @@ impl QueryManager {
                     &HashSet::with_capacity(0),
                 )
                 .map_err(|err| QueryError::ExecutableCompilation { typedb_source: err })?;
-                self.cache
-                    .as_ref()
-                    .map(|cache| cache.insert(arced_premable, arced_stages, arced_fetch, executable_pipeline.clone()));
+                if let Some(cache) = self.cache.as_ref() {
+                    cache.insert(arced_premable, arced_stages, arced_fetch, executable_pipeline.clone())
+                }
                 QUERY_CACHE_MISSES.increment();
                 executable_pipeline
             }
@@ -162,8 +161,7 @@ impl QueryManager {
         let executable_pipeline = match self
             .cache
             .as_ref()
-            .map(|cache| cache.get(arced_premable.clone(), arced_stages.clone(), arced_fetch.clone()))
-            .flatten()
+            .and_then(|cache| cache.get(arced_premable.clone(), arced_stages.clone(), arced_fetch.clone()))
         {
             Some(executable_pipeline) => {
                 QUERY_CACHE_HITS.increment();
@@ -207,9 +205,9 @@ impl QueryManager {
                     Ok(executable) => executable,
                     Err(err) => return Err((snapshot, QueryError::ExecutableCompilation { typedb_source: err })),
                 };
-                self.cache
-                    .as_ref()
-                    .map(|cache| cache.insert(arced_premable, arced_stages, arced_fetch, executable_pipeline.clone()));
+                if let Some(cache) = self.cache.as_ref() {
+                    cache.insert(arced_premable, arced_stages, arced_fetch, executable_pipeline.clone())
+                }
                 QUERY_CACHE_MISSES.increment();
                 executable_pipeline
             }

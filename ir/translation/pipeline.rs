@@ -159,7 +159,7 @@ pub fn translate_pipeline(
         translated_stages,
         translated_fetch,
         variable_registry: translation_context.variable_registry,
-        value_parameters: value_parameters,
+        value_parameters,
     })
 }
 

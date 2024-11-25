@@ -68,7 +68,7 @@ pub struct FetchStageExecutor<Snapshot: ReadableSnapshot> {
 
 impl<Snapshot: ReadableSnapshot + 'static> FetchStageExecutor<Snapshot> {
     pub(crate) fn new(executable: Arc<ExecutableFetch>, functions: Arc<ExecutableFunctionRegistry>) -> Self {
-        Self { executable, functions, _phantom: PhantomData::default() }
+        Self { executable, functions, _phantom: PhantomData }
     }
 
     pub(crate) fn into_iterator<PreviousStage: StageAPI<Snapshot>>(
@@ -137,7 +137,7 @@ fn execute_fetch_some(
     functions_registry: Arc<ExecutableFunctionRegistry>,
     query_profile: Arc<QueryProfile>,
     row: MaybeOwnedRow<'_>,
-    mut interrupt: ExecutionInterrupt,
+    interrupt: ExecutionInterrupt,
 ) -> Result<DocumentNode, FetchExecutionError> {
     match fetch_some {
         FetchSomeInstruction::SingleVar(position) => variable_value_to_document(row.get(*position).as_reference()),
@@ -206,12 +206,10 @@ fn execute_single_attribute(
     match variable_value {
         VariableValue::Empty => Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
         VariableValue::Thing(Thing::Entity(entity)) => {
-            execute_attribute_single(entity, attribute_type.clone(), snapshot, thing_manager)
-                .map(|leaf| DocumentNode::Leaf(leaf))
+            execute_attribute_single(entity, attribute_type.clone(), snapshot, thing_manager).map(DocumentNode::Leaf)
         }
         VariableValue::Thing(Thing::Relation(relation)) => {
-            execute_attribute_single(relation, attribute_type.clone(), snapshot, thing_manager)
-                .map(|leaf| DocumentNode::Leaf(leaf))
+            execute_attribute_single(relation, attribute_type.clone(), snapshot, thing_manager).map(DocumentNode::Leaf)
         }
         VariableValue::Thing(Thing::Attribute(_)) => Err(FetchExecutionError::FetchAttributesOfAttribute {}),
         VariableValue::Type(_) => Err(FetchExecutionError::FetchAttributesOfType {}),
@@ -367,7 +365,7 @@ fn execute_list_subfetch(
             thing_manager,
             variable_registry.variable_names(),
             functions_registry,
-            &**stages,
+            stages,
             Some(fetch.clone()),
             parameters,
             None,
@@ -385,7 +383,7 @@ fn execute_list_subfetch(
             thing_manager,
             variable_registry.variable_names(),
             functions_registry,
-            &**stages,
+            stages,
             Some(fetch.clone()),
             parameters,
             Some(initial_row),
@@ -415,12 +413,10 @@ fn execute_list_attributes_as_list(
     match variable_value {
         VariableValue::Empty => Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
         VariableValue::Thing(Thing::Entity(entity)) => {
-            execute_attributes_list(entity, attribute_type.clone(), snapshot, thing_manager)
-                .map(|list| DocumentNode::List(list))
+            execute_attributes_list(entity, attribute_type.clone(), snapshot, thing_manager).map(DocumentNode::List)
         }
         VariableValue::Thing(Thing::Relation(relation)) => {
-            execute_attributes_list(relation, attribute_type.clone(), snapshot, thing_manager)
-                .map(|list| DocumentNode::List(list))
+            execute_attributes_list(relation, attribute_type.clone(), snapshot, thing_manager).map(DocumentNode::List)
         }
         VariableValue::Thing(Thing::Attribute(_)) => Err(FetchExecutionError::FetchAttributesOfAttribute {}),
         VariableValue::Type(_) => Err(FetchExecutionError::FetchAttributesOfType {}),
@@ -561,7 +557,7 @@ fn prepare_single_function_execution<Snapshot: ReadableSnapshot + 'static>(
     let mut args = vec![VariableValue::Empty; function.argument_positions.len()];
     for (var, write_pos) in &function.argument_positions {
         debug_assert!(write_pos.as_usize() < args.len());
-        args[write_pos.as_usize()] = row.get(variable_positions.get(var).unwrap().clone()).clone().into_owned();
+        args[write_pos.as_usize()] = row.get(*variable_positions.get(var).unwrap()).clone().into_owned();
     }
     let args = MaybeOwnedRow::new_owned(args, row.multiplicity());
 

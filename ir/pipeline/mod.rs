@@ -118,8 +118,7 @@ impl VariableRegistry {
     }
 
     fn register_anonymous_variable(&mut self) -> Variable {
-        let variable = self.allocate_variable(true);
-        variable
+        self.allocate_variable(true)
     }
 
     fn allocate_variable(&mut self, anonymous: bool) -> Variable {

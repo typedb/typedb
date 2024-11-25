@@ -110,7 +110,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(typedb_source, ctx)| {
             (QueryError::WritePipelineExecution { typedb_source }, Arc::into_inner(ctx.snapshot).unwrap())
         })?;
-    let mut batch = match iter.collect_owned() {
+    let batch = match iter.collect_owned() {
         Ok(batch) => batch,
         Err(typedb_source) => {
             return Err((QueryError::WritePipelineExecution { typedb_source }, Arc::into_inner(ctx.snapshot).unwrap()));
@@ -121,7 +121,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     while let Some(row) = row_iterator.next() {
         let mut translated_row = HashMap::with_capacity(outputs.len());
         for (name, pos) in &outputs {
-            translated_row.insert(name.clone(), row.get(pos.clone()).clone().into_owned());
+            translated_row.insert(name.clone(), row.get(*pos).clone().into_owned());
         }
         collected.push(translated_row);
     }

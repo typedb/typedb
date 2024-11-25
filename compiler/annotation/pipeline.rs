@@ -91,7 +91,7 @@ impl AnnotatedStage {
             AnnotatedStage::Require(_) => Box::new(iter::empty()),
             AnnotatedStage::Reduce(reduce, _) => Box::new(reduce.variables()),
         };
-        variables.filter(move |variable| variable_registry.get_variable_name(variable.clone()).is_some())
+        variables.filter(move |variable| variable_registry.get_variable_name(*variable).is_some())
     }
 }
 
@@ -369,7 +369,7 @@ pub fn validate_sort_variables_comparable(
         } else if let Some(types) = variable_annotations.get(&sort_var.variable()) {
             let value_types = resolve_value_types(types, snapshot, type_manager)
                 .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
-            if value_types.len() == 0 {
+            if value_types.is_empty() {
                 let variable_name = variable_registry.variable_names().get(&sort_var.variable()).unwrap().clone();
                 return Err(AnnotationError::CouldNotDetermineValueTypeForReducerInput { variable: variable_name });
             }

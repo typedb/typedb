@@ -32,7 +32,7 @@ use ir::{
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
-use query::{query_cache::QueryCache, query_manager::QueryManager};
+use query::query_manager::QueryManager;
 use storage::{
     durability_client::WALClient, sequence_number::SequenceNumber, snapshot::CommittableSnapshot, MVCCStorage,
 };

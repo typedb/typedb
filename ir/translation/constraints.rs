@@ -276,7 +276,7 @@ fn register_typeql_value_type(
             scope: scoped_label.scope.ident.as_str().to_owned(),
             name: scoped_label.name.ident.as_str().to_owned(),
         })),
-        NamedType::Label(label) => Ok(ValueType::Struct(label.ident.as_str().clone().to_owned())),
+        NamedType::Label(label) => Ok(ValueType::Struct(label.ident.as_str().to_owned())),
         NamedType::BuiltinValueType(BuiltinValueType { token, .. }) => {
             Ok(ValueType::Builtin(translate_value_type(token)))
         }

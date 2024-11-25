@@ -36,7 +36,6 @@ macro_rules! try_unwrap {
         }
     };
 }
-pub(crate) use try_unwrap;
 
 macro_rules! filter_variants {
     ($variant:path : $iterable:expr) => {

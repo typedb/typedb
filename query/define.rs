@@ -588,16 +588,13 @@ fn define_relates_with_annotations(
         )
         .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
         let defined = match definition_status {
-            DefinableStatus::DoesNotExist => {
-                let relates = relation_type
-                    .create_relates(snapshot, type_manager, thing_manager, role_label.name.as_str(), ordering)
-                    .map_err(|source| DefineError::CreateRelates {
-                        relates: relates.to_owned(),
-                        key: Keyword::Relates,
-                        typedb_source: source,
-                    })?;
-                relates
-            }
+            DefinableStatus::DoesNotExist => relation_type
+                .create_relates(snapshot, type_manager, thing_manager, role_label.name.as_str(), ordering)
+                .map_err(|source| DefineError::CreateRelates {
+                    relates: relates.to_owned(),
+                    key: Keyword::Relates,
+                    typedb_source: source,
+                })?,
             DefinableStatus::ExistsSame(Some((existing_relates, _))) => existing_relates,
             DefinableStatus::ExistsSame(None) => unreachable!("Existing relates concept expected"),
             DefinableStatus::ExistsDifferent((_, existing_ordering)) => {
@@ -674,11 +671,11 @@ fn define_relates_specialises(
     Ok(())
 }
 
-fn define_relates_specialise<'a>(
+fn define_relates_specialise(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
-    relation_label: &Label<'a>,
+    relation_label: &Label<'_>,
     relates: Relates<'static>,
     typeql_relates: &TypeQLRelates,
 ) -> Result<(), DefineError> {
@@ -760,14 +757,9 @@ fn define_owns_with_annotations(
         .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
         let defined = match definition_status {
             DefinableStatus::DoesNotExist => {
-                let owns = object_type
-                    .set_owns(snapshot, type_manager, thing_manager, attribute_type, ordering)
-                    .map_err(|source| DefineError::CreateOwns {
-                        owns: owns.clone(),
-                        key: Keyword::Owns,
-                        typedb_source: source,
-                    })?;
-                owns
+                object_type.set_owns(snapshot, type_manager, thing_manager, attribute_type, ordering).map_err(
+                    |source| DefineError::CreateOwns { owns: owns.clone(), key: Keyword::Owns, typedb_source: source },
+                )?
             }
             DefinableStatus::ExistsSame(Some((existing_owns, _))) => existing_owns,
             DefinableStatus::ExistsSame(None) => unreachable!("Existing owns concept expected"),

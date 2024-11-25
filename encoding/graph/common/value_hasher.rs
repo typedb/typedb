@@ -29,7 +29,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
     fn write_hash(bytes: &mut [u8], hasher: &impl Fn(&[u8]) -> u64, value_bytes: &[u8]) -> usize {
         debug_assert!(bytes.len() >= Self::HASH_LENGTH);
         let hash_bytes = &hasher(value_bytes).to_be_bytes()[0..Self::HASH_LENGTH];
-        bytes[0..hash_bytes.len()].copy_from_slice(&hash_bytes);
+        bytes[0..hash_bytes.len()].copy_from_slice(hash_bytes);
         Self::HASH_LENGTH
     }
 
@@ -75,10 +75,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
     {
         let tail_byte_index = key_without_tail_byte.length();
         let mut iter = snapshot.iterate_range(KeyRange::new_within(
-            RangeStart::Inclusive(StorageKey::<BUFFER_KEY_INLINE>::new_ref(
-                Self::KEYSPACE,
-                key_without_tail_byte.clone(),
-            )),
+            RangeStart::Inclusive(StorageKey::<BUFFER_KEY_INLINE>::new_ref(Self::KEYSPACE, key_without_tail_byte)),
             Self::FIXED_WIDTH_KEYS,
         ));
         let mut next = iter.next().transpose()?;
