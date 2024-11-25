@@ -10,7 +10,8 @@ use user::user_manager::UserManager;
 use database::{database_manager::DatabaseManager, DatabaseOpenError};
 use resource::constants::server::GRPC_CONNECTION_KEEPALIVE;
 use system::concepts::{Credential, PasswordHash, User};
-use system::create_if_not_exists;
+use system::initialise_system_database;
+use user::initialise_default_user;
 use crate::{parameters::config::Config, service::typedb_service::TypeDBService};
 use crate::authenticator::Authenticator;
 
@@ -32,8 +33,9 @@ impl Server {
         }
         let database_manager = DatabaseManager::new(storage_directory)
             .map_err(|err| ServerOpenError::DatabaseOpenError { source: err })?;
-        let system_db = create_if_not_exists(&database_manager);
+        let system_db = initialise_system_database(&database_manager);
         let user_manager = Arc::new(UserManager::new(system_db));
+        initialise_default_user(&user_manager);
         let typedb_service = TypeDBService::new(
             &config.server.address, database_manager, user_manager.clone()
         );

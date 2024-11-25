@@ -35,7 +35,7 @@ define
         relates password @card(1);
 ";
 
-pub fn create_if_not_exists(database_manager: &DatabaseManager) -> Arc<Database<WALClient>> {
+pub fn initialise_system_database(database_manager: &DatabaseManager) -> Arc<Database<WALClient>> {
     match database_manager.database(SYSTEM_DB) {
         Some(db) => db,
         None => {
