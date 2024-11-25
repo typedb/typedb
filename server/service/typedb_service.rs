@@ -30,7 +30,8 @@ use crate::service::{
     transaction_service::TransactionService,
     ConnectionID,
 };
-use crate::service::request_parser::users_create_req;
+use crate::service::request_parser::{users_create_req, users_update_req};
+use crate::service::response_builders::user_manager::user_update_res;
 
 #[derive(Debug)]
 pub(crate) struct TypeDBService {
@@ -203,10 +204,12 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
 
     async fn users_update(
         &self,
-        _request: Request<typedb_protocol::user::update::Req>
+        request: Request<typedb_protocol::user::update::Req>
     ) -> Result<Response<typedb_protocol::user::update::Res>, Status> {
-        println!("users_update");
-        todo!()
+        users_update_req(request)
+            .and_then(|(username, usr, cred)| self.user_manager.update(username.as_str(), &usr, &cred))
+            .map(|_| Response::new(user_update_res()))
+            .map_err(|err| err.into_error_message().into_status())
     }
 
     async fn users_delete(

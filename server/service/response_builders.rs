@@ -298,6 +298,10 @@ pub(crate) mod user_manager {
         typedb_protocol::user_manager::create::Res {}
     }
 
+    pub(crate) fn user_update_res() -> typedb_protocol::user::update::Res {
+        typedb_protocol::user::update::Res {}
+    }
+
     pub(crate) fn users_delete_res() -> typedb_protocol::user::delete::Res {
         typedb_protocol::user::delete::Res {}
     }

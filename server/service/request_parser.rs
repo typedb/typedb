@@ -1,6 +1,7 @@
 use tonic::Request;
+use typedb_protocol::server_manager::all::Req;
 use system::concepts::{Credential, PasswordHash, User};
-use user::errors::UserCreateError;
+use user::errors::{UserCreateError, UserUpdateError};
 
 pub fn users_create_req(request: Request<typedb_protocol::user_manager::create::Req>) -> Result<(User, Credential), UserCreateError> {
     let message = request.into_inner();
@@ -29,4 +30,8 @@ pub fn users_create_req(request: Request<typedb_protocol::user_manager::create::
             Err(UserCreateError::Unexpected { }) // user object must be supplied
         }
     }
+}
+
+pub fn users_update_req(request: Request<typedb_protocol::user::update::Req>) -> Result<(String, User, Credential), UserUpdateError> {
+    todo!()
 }
