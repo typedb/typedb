@@ -9,31 +9,30 @@ use std::{
     ops::Bound,
 };
 
-use serde::{Deserialize, Serialize};
-
 use bytes::Bytes;
 use durability::DurabilityRecordType;
 use encoding::graph::{
     thing::{
         edge::{ThingEdgeHas, ThingEdgeLinks, ThingEdgeRolePlayerIndex},
-        ThingVertex,
         vertex_attribute::AttributeVertex,
         vertex_object::ObjectVertex,
+        ThingVertex,
     },
     type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeIDUInt, TypeVertexEncoding},
     Typed,
 };
 use error::typedb_error;
 use resource::constants::database::STATISTICS_DURABLE_WRITE_CHANGE_PERCENT;
+use serde::{Deserialize, Serialize};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord, UnsequencedDurabilityRecord},
     isolation_manager::CommitType,
     iterator::MVCCReadError,
     key_value::StorageKeyReference,
-    MVCCStorage,
     recovery::commit_recovery::{load_commit_data_from, RecoveryCommitStatus, StorageRecoveryError},
     sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, write::Write},
+    MVCCStorage,
 };
 
 use crate::{
@@ -156,7 +155,9 @@ impl Statistics {
         self.update_writes(&data_commits, storage).map_err(|err| DataRead { source: err })?;
 
         let change_since_last_durable_write = self.total_count as f64 - self.last_durable_write_total_count as f64;
-        if change_since_last_durable_write.abs() / self.last_durable_write_total_count as f64 > STATISTICS_DURABLE_WRITE_CHANGE_PERCENT {
+        if change_since_last_durable_write.abs() / self.last_durable_write_total_count as f64
+            > STATISTICS_DURABLE_WRITE_CHANGE_PERCENT
+        {
             self.durably_write(storage)?;
         }
 
@@ -579,8 +580,8 @@ mod serialise {
     use serde::{
         de,
         de::{MapAccess, SeqAccess, Visitor},
-        Deserialize,
-        Deserializer, ser::SerializeStruct, Serialize, Serializer,
+        ser::SerializeStruct,
+        Deserialize, Deserializer, Serialize, Serializer,
     };
 
     use crate::{
@@ -644,7 +645,7 @@ mod serialise {
             match self {
                 Field::StatisticsVersion => "StatisticsVersion",
                 Field::OpenSequenceNumber => "OpenSequenceNumber",
-                Field::LastDurableWriteTotalCount=> "LastDurableWriteTotalCount",
+                Field::LastDurableWriteTotalCount => "LastDurableWriteTotalCount",
                 Field::TotalCount => "TotalCount",
                 Field::TotalThingCount => "TotalThingCount",
                 Field::TotalEntityCount => "TotalEntityCount",
@@ -842,7 +843,8 @@ mod serialise {
                     let statistics_version = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
                     let open_sequence_number =
                         seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                    let last_durable_write_total_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(2, &self))?;
+                    let last_durable_write_total_count =
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(2, &self))?;
                     let total_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(3, &self))?;
                     let total_thing_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(4, &self))?;
                     let total_entity_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(5, &self))?;
@@ -1180,7 +1182,7 @@ mod serialise {
                         encoding_version: statistics_version
                             .ok_or_else(|| de::Error::missing_field(Field::StatisticsVersion.name()))?,
                         sequence_number: open_sequence_number
-                            .ok_or_else(|| de::Error::missing_field(Field::OpenSequenceNumber.name()))?, 
+                            .ok_or_else(|| de::Error::missing_field(Field::OpenSequenceNumber.name()))?,
                         last_durable_write_total_count: last_durable_write_total_count
                             .ok_or_else(|| de::Error::missing_field(Field::LastDurableWriteTotalCount.name()))?,
                         total_count: total_count.ok_or_else(|| de::Error::missing_field(Field::TotalCount.name()))?,

@@ -22,8 +22,7 @@ use crate::{
         type_::vertex::TypeID,
         Typed,
     },
-    layout::prefix::Prefix,
-    layout::prefix::PrefixID,
+    layout::prefix::{Prefix, PrefixID},
     value::{
         boolean_bytes::BooleanBytes,
         date_bytes::DateBytes,

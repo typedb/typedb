@@ -53,7 +53,7 @@ impl IsolationManager {
         IsolationManager {
             initial_sequence_number: next_sequence_number,
             timeline: Timeline::new(next_sequence_number),
-            highest_validated_sequence_number: AtomicU64::new(next_sequence_number.number() - 1)
+            highest_validated_sequence_number: AtomicU64::new(next_sequence_number.number() - 1),
         }
     }
 
@@ -246,7 +246,7 @@ impl IsolationManager {
     pub(crate) fn watermark(&self) -> SequenceNumber {
         self.timeline.watermark()
     }
-    
+
     pub(crate) fn highest_validated_sequence_number(&self) -> SequenceNumber {
         SequenceNumber::new(self.highest_validated_sequence_number.load(Ordering::SeqCst))
     }
@@ -377,10 +377,7 @@ impl Timeline {
     // The whole of the timeline uses the underlying u64
     fn new(next_sequence_number: SequenceNumber) -> Timeline {
         let windows = VecDeque::from([Arc::new(TimelineWindow::new(next_sequence_number))]);
-        Timeline {
-            windows: RwLock::new(windows),
-            watermark: AtomicU64::new(next_sequence_number.number() - 1),
-        }
+        Timeline { windows: RwLock::new(windows), watermark: AtomicU64::new(next_sequence_number.number() - 1) }
     }
 
     fn may_free_windows(&self) {

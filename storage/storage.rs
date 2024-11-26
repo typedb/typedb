@@ -13,9 +13,9 @@ use std::{
     fs, io,
     path::{Path, PathBuf},
     sync::{atomic::Ordering, Arc},
+    thread::sleep,
+    time::Duration,
 };
-use std::thread::sleep;
-use std::time::Duration;
 
 use ::error::typedb_error;
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
@@ -24,8 +24,7 @@ use iterator::MVCCReadError;
 use keyspace::KeyspaceDeleteError;
 use lending_iterator::LendingIterator;
 use logger::{error, result::ResultExt};
-use resource::constants::snapshot::BUFFER_VALUE_INLINE;
-use resource::constants::storage::WATERMARK_WAIT_INTERVAL_MICROSECONDS;
+use resource::constants::{snapshot::BUFFER_VALUE_INLINE, storage::WATERMARK_WAIT_INTERVAL_MICROSECONDS};
 
 use crate::{
     durability_client::{DurabilityClient, DurabilityClientError},
@@ -203,7 +202,7 @@ impl<Durability> MVCCStorage<Durability> {
         // We can alternatively also block commits from returning until the watermark rises
         // See detailed analysis at https://github.com/typedb/typedb/pull/7254/
         let mut watermark = self.snapshot_watermark();
-        while watermark < target{
+        while watermark < target {
             sleep(Duration::from_micros(WATERMARK_WAIT_INTERVAL_MICROSECONDS));
             watermark = self.snapshot_watermark();
         }
