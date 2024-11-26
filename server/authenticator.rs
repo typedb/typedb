@@ -5,6 +5,9 @@ use tonic::{Request, Status};
 use user::user_manager::UserManager;
 use resource::constants::server::{AUTHENTICATOR_USERNAME_FIELD, AUTHENTICATOR_PASSWORD_FIELD};
 
+const ERROR_INVALID_CREDENTIAL: &str = "Invalid credential supplied";
+const ERROR_CREDENTIAL_NOT_SUPPLIED: &str = "Credential not supplied";
+
 #[derive(Debug)]
 pub struct Authenticator {
     user_manager: Arc<UserManager>,
@@ -27,14 +30,13 @@ impl Authenticator {
                     if password_hash.matches(password) {
                         Ok(req)
                     } else {
-                        Err(Status::unauthenticated("Invalid credential supplied"))
+                        Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL))
                     }
                 }
-                None => Err(Status::unauthenticated("Invalid credential supplied")),
+                None => Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL)),
             },
             _ => {
-                Ok(req)
-                // Err(Status::unauthenticated("credential must be supplied"))
+                Err(Status::unauthenticated(ERROR_CREDENTIAL_NOT_SUPPLIED))
             }
         }
     }
