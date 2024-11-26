@@ -253,7 +253,8 @@ fn annotate_stage(
                 block.conjunction(),
                 annotated_function_signatures,
                 running_value_variable_assigned_types,
-            );
+                variable_registry,
+            )?;
 
             let compiled_expressions = compile_expressions(
                 snapshot,
@@ -516,7 +517,8 @@ fn collect_value_types_of_function_call_assignments(
     conjunction: &Conjunction,
     annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     value_type_annotations: &mut BTreeMap<Variable, ExpressionValueType>,
-) {
+    variable_registry: &VariableRegistry,
+) -> Result<(), AnnotationError> {
     conjunction
         .constraints()
         .iter()
@@ -524,41 +526,50 @@ fn collect_value_types_of_function_call_assignments(
             Constraint::FunctionCallBinding(binding) => Some(binding),
             _ => None,
         })
-        .for_each(|binding| {
+        .try_for_each(|binding| {
             let return_ = &annotated_function_signatures
                 .get_annotated_signature(&binding.function_call().function_id())
                 .unwrap()
                 .returned;
-            zip(binding.assigned(), return_.iter()).for_each(|(var, annotation)| match &annotation {
+            zip(binding.assigned(), return_.iter()).try_for_each(|(var, annotation)| match &annotation {
                 FunctionParameterAnnotation::Value(value_type) => {
-                    debug_assert!(!value_type_annotations.contains_key(&var.as_variable().unwrap()));
+                    if value_type_annotations.contains_key(&var.as_variable().unwrap()) {
+                        let assign_variable =
+                            variable_registry.get_variable_name(var.as_variable().unwrap()).map(String::clone);
+                        return Err(AnnotationError::ExpressionCompilation {
+                            source: Box::new(ExpressionCompileError::MultipleAssignmentsForSingleVariable {
+                                assign_variable,
+                            }),
+                        });
+                    }
                     value_type_annotations
                         .insert(var.as_variable().unwrap(), ExpressionValueType::Single(value_type.clone()));
+                    Ok(())
                 }
-                FunctionParameterAnnotation::Concept(_) => {}
+                FunctionParameterAnnotation::Concept(_) => Ok(()),
             })
-        });
-    conjunction.nested_patterns().iter().for_each(|nested| match nested {
-        NestedPattern::Disjunction(disjunction) => disjunction.conjunctions().iter().for_each(|inner| {
+        })?;
+    conjunction.nested_patterns().iter().try_for_each(|nested| match nested {
+        NestedPattern::Disjunction(disjunction) => disjunction.conjunctions().iter().try_for_each(|inner| {
             collect_value_types_of_function_call_assignments(
                 inner,
                 annotated_function_signatures,
                 value_type_annotations,
-            );
+                variable_registry,
+            )
         }),
-        NestedPattern::Negation(negation) => {
-            collect_value_types_of_function_call_assignments(
-                negation.conjunction(),
-                annotated_function_signatures,
-                value_type_annotations,
-            );
-        }
-        NestedPattern::Optional(optional) => {
-            collect_value_types_of_function_call_assignments(
-                optional.conjunction(),
-                annotated_function_signatures,
-                value_type_annotations,
-            );
-        }
-    })
+        NestedPattern::Negation(negation) => collect_value_types_of_function_call_assignments(
+            negation.conjunction(),
+            annotated_function_signatures,
+            value_type_annotations,
+            variable_registry,
+        ),
+        NestedPattern::Optional(optional) => collect_value_types_of_function_call_assignments(
+            optional.conjunction(),
+            annotated_function_signatures,
+            value_type_annotations,
+            variable_registry,
+        ),
+    })?;
+    Ok(())
 }
