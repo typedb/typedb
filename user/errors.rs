@@ -7,13 +7,13 @@ typedb_error!(
 );
 
 typedb_error!(
-    pub UserUpdateError(component = "User update", prefix = "USC") {
+    pub UserUpdateError(component = "User update", prefix = "USU") {
         Unexpected(1, "An unexpected error has occurred in the process of updating a user"),
     }
 );
 
 typedb_error!(
-    pub UserDeleteError(component = "User delete", prefix = "USC") {
+    pub UserDeleteError(component = "User delete", prefix = "USD") {
         Unexpected(1, "An unexpected error has occurred in the process of deleting a user"),
     }
 );
