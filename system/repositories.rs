@@ -40,14 +40,17 @@ pub mod user_repository {
     };
 
     pub fn list(tx: TransactionRead<WALClient>) -> Vec<User> {
-        let query = parse_query("match (user: $u, password: $p) isa user-password; $u has name $n;").unwrap();
+        let unexpected_error_msg = "An unexpected error occurred when acquiring the list of users";
+        let query = parse_query("match (user: $u, password: $p) isa user-password; $u has name $n;")
+            .expect(unexpected_error_msg);
         let (tx, result) = execute_read_pipeline(tx, &query.into_pipeline());
-        let rows = result.unwrap();
+        let rows = result.expect(unexpected_error_msg);
         let users = rows.iter().map(|row| User::new(get_string(&tx, &row, "n"))).collect();
         users
     }
 
     pub fn get(tx: TransactionRead<WALClient>, username: &str) -> Option<(User, Credential)> {
+        let unexpected_error_msg = "An unexpected error occurred when attempting to retrieve a user";
         let query = parse_query(
             format!(
                 "match
@@ -57,11 +60,11 @@ pub mod user_repository {
             )
             .as_str(),
         )
-        .unwrap();
+        .expect(unexpected_error_msg);
         let (tx, result) = execute_read_pipeline(tx, &query.into_pipeline());
-        let mut rows: Vec<HashMap<String, VariableValue>> = result.unwrap();
+        let mut rows: Vec<HashMap<String, VariableValue>> = result.expect(unexpected_error_msg);
         if !rows.is_empty() {
-            let row = rows.pop().unwrap();
+            let row = rows.pop().expect(unexpected_error_msg);
             let hash = get_string(&tx, &row, "h");
             Some((User::new(username.to_string()), Credential::PasswordType { password_hash: PasswordHash::new(hash) }))
         } else {
@@ -77,6 +80,7 @@ pub mod user_repository {
         user: &User,
         credential: &Credential,
     ) -> Arc<WriteSnapshot<WALClient>> {
+        let unexpected_error_msg = "An unexpected error occurred when attempting to create a new user";
         let query = match credential {
             Credential::PasswordType { password_hash: PasswordHash { value: hash } } => {
                 let uuid = Uuid::new_v4().to_string();
@@ -91,7 +95,7 @@ pub mod user_repository {
                     )
                     .as_str(),
                 )
-                .unwrap()
+                .expect(unexpected_error_msg)
             }
         };
         let (_, snapshot) =
@@ -126,6 +130,7 @@ pub mod user_repository {
         function_manager: &FunctionManager,
         username: &str,
     ) -> Arc<WriteSnapshot<WALClient>> {
+        let unexpected_error_msg = "An unexpected error occurred when attempting to delete a user";
         let query = parse_query(
             format!(
                 "match $up isa user-password, links (user: $u, password: $p);
@@ -135,7 +140,7 @@ pub mod user_repository {
             )
             .as_str(),
         )
-        .unwrap();
+        .expect(unexpected_error_msg);
         let (_, snapshot) =
             execute_write_pipeline(snapshot, type_manager, thing_manager, function_manager, &query.into_pipeline());
         snapshot
