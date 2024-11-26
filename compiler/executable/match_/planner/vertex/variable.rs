@@ -32,15 +32,16 @@ impl VariableVertex {
     const SELECTIVITY_MIN: f64 = 0.000001;
     pub(crate) const OUTPUT_SIZE_MIN: f64 = 1.0;
 
-    pub(super) fn is_valid(&self, index: VertexId, ordered: &[VertexId], graph: &Graph<'_>) -> bool {
-        let VertexId::Variable(index) = index else { unreachable!("variable with incompatible index: {index:?}") };
-        match self {
-            Self::Input(_) => true, // always valid: comes from the enclosing scope
-
-            Self::Type(inner) => inner.is_valid(index, ordered, graph),
-            Self::Thing(inner) => inner.is_valid(index, ordered, graph),
-            Self::Value(inner) => inner.is_valid(index, ordered, graph),
-        }
+    pub(super) fn is_valid(&self, ordered: &[VertexId], graph: &Graph<'_>) -> bool {
+        // let VertexId::Variable(index) = index else { unreachable!("variable with incompatible index: {index:?}") };
+        // match self {
+        //     Self::Input(_) => true, // always valid: comes from the enclosing scope
+        //
+        //     Self::Type(inner) => inner.is_valid(index, ordered, graph),
+        //     Self::Thing(inner) => inner.is_valid(index, ordered, graph),
+        //     Self::Value(inner) => inner.is_valid(index, ordered, graph),
+        // }
+        false
     }
 
     pub(crate) fn expected_output_size(&self, inputs: &[VertexId]) -> f64 {

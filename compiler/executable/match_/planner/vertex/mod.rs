@@ -51,39 +51,26 @@ pub(super) enum PlannerVertex<'a> {
 }
 
 impl PlannerVertex<'_> {
-    pub(super) fn is_valid(&self, index: VertexId, ordered: &[VertexId], graph: &Graph<'_>) -> bool {
-        let is_valid = match self {
-            Self::Variable(inner) => inner.is_valid(index, ordered, graph),
-            Self::Is(inner) => inner.is_valid(index, ordered, graph),
-            Self::Constraint(inner) => inner.is_valid(index, ordered, graph),
-
-            Self::Comparison(inner) => inner.is_valid(index, ordered, graph),
-
-            Self::Expression(inner) => inner.is_valid(index, ordered, graph),
-
+    pub(super) fn is_valid(&self, vertex_plan: &[VertexId], graph: &Graph<'_>) -> bool {
+        match self {
+            Self::Variable(inner) => inner.is_valid(vertex_plan, graph),
+            Self::Constraint(inner) => inner.is_valid(vertex_plan, graph),
+            Self::Is(inner) => inner.is_valid(vertex_plan, graph),
+            Self::Comparison(inner) => inner.is_valid(vertex_plan, graph),
+            Self::Expression(inner) => inner.is_valid(vertex_plan, graph),
             Self::FunctionCall(FunctionCallPlanner { arguments, .. }) => {
-                arguments.iter().all(|&arg| ordered.contains(&VertexId::Variable(arg)))
+                arguments.iter().all(|&arg| vertex_plan.contains(&VertexId::Variable(arg)))
             }
-
-            Self::Negation(inner) => inner.is_valid(index, ordered, graph),
-            Self::Disjunction(inner) => inner.is_valid(index, ordered, graph),
-        };
-        if !is_valid {
-            return false;
+            Self::Negation(inner) => inner.is_valid(vertex_plan, graph),
+            Self::Disjunction(inner) => inner.is_valid(vertex_plan, graph),
         }
-        let mut ordered = ordered.to_owned();
-        ordered.push(index);
-        self.variables().all(|var| {
-            ordered.contains(&VertexId::Variable(var))
-                || graph.elements()[&VertexId::Variable(var)].is_valid(VertexId::Variable(var), &ordered, graph)
-        })
     }
 
     pub(super) fn variables(&self) -> Box<dyn Iterator<Item = VariableVertexId> + '_> {
         match self {
             Self::Variable(_) => Box::new(iter::empty()),
-            Self::Is(inner) => Box::new(inner.variables()),
             Self::Constraint(inner) => inner.variables(),
+            Self::Is(inner) => Box::new(inner.variables()),
             Self::Comparison(inner) => Box::new(inner.variables()),
             Self::Expression(inner) => Box::new(inner.variables()),
             Self::FunctionCall(inner) => Box::new(inner.variables()),
@@ -256,7 +243,7 @@ impl<'a> ExpressionPlanner<'a> {
         Self { inputs, output, cost, expression }
     }
 
-    fn is_valid(&self, _index: VertexId, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+    fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
         self.inputs.iter().all(|&input| ordered.contains(&VertexId::Variable(input)))
     }
 
@@ -319,7 +306,7 @@ impl<'a> IsPlanner<'a> {
         Self { is, lhs: variable_index[&lhs], rhs: variable_index[&rhs] }
     }
 
-    fn is_valid(&self, _index: VertexId, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+    fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
         ordered.contains(&VertexId::Variable(self.lhs)) || ordered.contains(&VertexId::Variable(self.rhs))
     }
 
@@ -359,7 +346,7 @@ impl<'a> ComparisonPlanner<'a> {
         }
     }
 
-    fn is_valid(&self, _index: VertexId, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+    fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
         if let Input::Variable(lhs) = self.lhs {
             if !ordered.contains(&VertexId::Variable(lhs)) {
                 return false;
@@ -400,7 +387,7 @@ impl<'a> NegationPlanner<'a> {
         Self { plan, shared_variables }
     }
 
-    fn is_valid(&self, _index: VertexId, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+    fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
         self.variables().all(|var| ordered.contains(&VertexId::Variable(var)))
     }
 
@@ -436,7 +423,7 @@ impl<'a> DisjunctionPlanner<'a> {
         Self { input_variables: Vec::new(), shared_variables, builder }
     }
 
-    fn is_valid(&self, _index: VertexId, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+    fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
         self.input_variables.iter().all(|&var| ordered.contains(&VertexId::Variable(var)))
     }
 

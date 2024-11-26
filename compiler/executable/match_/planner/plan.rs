@@ -534,115 +534,119 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         }
     }
 
-    fn initialise_greedy_ordering(&self) -> Vec<VertexId> {
-        let mut open_set: HashSet<VertexId> = chain!(
-            self.graph.variable_to_pattern.keys().map(|&variable_id| VertexId::Variable(variable_id)),
-            self.graph.pattern_to_variable.keys().map(|&pattern_id| VertexId::Pattern(pattern_id))
-        )
-        .collect();
+    fn initialise_greedy_ordering(&self) -> (Vec<VertexId>, HashMap<PatternVertexId,Direction>) {
+        let mut remaining_vertices: HashSet<VertexId> = self.graph.pattern_to_variable.keys()
+            .map(|&pattern_id| VertexId::Pattern(pattern_id))
+            .collect();
+        let mut vertex_plan = Vec::with_capacity(self.graph.element_count());
+        let mut constraint_directions = HashMap::new();
+        let mut plan_cost: f64 = 0.0;
 
-        let mut ordering = Vec::with_capacity(self.graph.element_count());
         for v in self.input_variables() {
-            ordering.push(VertexId::Variable(v));
-            open_set.remove(&VertexId::Variable(v));
+            vertex_plan.push(VertexId::Variable(v));
+            remaining_vertices.remove(&VertexId::Variable(v));
         }
 
-        let mut produced_at_this_stage: HashSet<VariableVertexId> = HashSet::new();
-        let mut sort_variable: Option<VariableVertexId> = None;
+        let mut step_produced_variables: HashSet<VariableVertexId> = HashSet::new();
+        let mut step_start_index: usize = 0;
+        let mut step_sort_variable: Option<VariableVertexId> = None;
+        let mut step_cost: f64 = 0.0;
 
-        macro_rules! commit_variables {
+        macro_rules! finalize_step {
             () => {{
-                if let Some(var) = sort_variable.take().map(VertexId::Variable) {
-                    ordering.push(var);
-                    open_set.remove(&var);
+                if let Some(var) = step_sort_variable.take().map(VertexId::Variable) {
+                    vertex_plan.push(var);
+                    remaining_vertices.remove(&var);
                 }
-                for var in produced_at_this_stage.drain().map(VertexId::Variable) {
-                    if !ordering.contains(&var) {
-                        ordering.push(var);
-                        open_set.remove(&var);
+                for var in step_produced_variables.drain().map(VertexId::Variable) {
+                    if !vertex_plan.contains(&var) {
+                        vertex_plan.push(var);
+                        remaining_vertices.remove(&var);
                     }
                 }
+                step_start_index = vertex_plan.len();
             }};
         }
 
-        // println!("Starting greedy ordering for graph {:?}", self.graph);
+        println!("Starting greedy ordering for graph {:#?}", self.graph);
 
-        while !open_set.is_empty() {
-            // println!("Choosing next plan element...");
-            let (next, _cost) = open_set
+        while !remaining_vertices.is_empty() {
+            println!("Choosing next plan element...");
+            let (next, _cost) = remaining_vertices
                 .iter()
-                .filter(|&&elem| self.graph.elements[&elem].is_valid(elem, &ordering, &self.graph))
+                .filter(|&&elem| self.graph.elements[&elem].is_valid(&vertex_plan, &self.graph))
                 .map(|&elem| {
-                    let cost = self.calculate_marginal_cost(&ordering, elem, sort_variable);
-                    // useful when debugging
+                    let cost = self.calculate_marginal_cost(&vertex_plan, elem, step_sort_variable);
                     let _graph_element = &self.graph.elements[&elem];
-                    // println!("  Choice {:?}, cost: {cost}", _graph_element);
+                    println!("  Choice {:?}, cost: {cost}", _graph_element);
 
                     (elem, cost)
                 })
                 .min_by(|(_, lhs_cost), (_, rhs_cost)| lhs_cost.total_cmp(rhs_cost))
                 .unwrap();
             let element = &self.graph.elements[&next];
-            // println!("--> Chose {:?}, cost: {_cost}", element);
+            println!("--> Chose {:?}, cost: {_cost}", element);
 
             if element.is_variable() {
-                commit_variables!();
+                finalize_step!();
             } else if element.is_constraint() {
                 // TODO: deal with the case where constraint variables intersect with more than one produced variable
-                if let Ok(var) = element.variables().filter(|var| produced_at_this_stage.contains(var)).exactly_one() {
+                if let Ok(var) = element.variables().filter(|var| step_produced_variables.contains(var)).exactly_one() {
                     // Note: this code is unreachable in since the greedy planner will always choose the immediatedly produced variables
-                    let prev = &self.graph.elements[ordering.last().unwrap()];
+                    let prev = &self.graph.elements[vertex_plan.last().unwrap()];
                     let next_constraint = &element.as_constraint().unwrap();
                     let prev_constraint = &prev.as_constraint().unwrap();
                     if next_constraint.can_sort_on(var)
                         && prev_constraint.can_sort_on(var)
-                        && sort_variable.is_none()
+                        && step_sort_variable.is_none()
                     {
-                        sort_variable = Some(var);
+                        step_sort_variable = Some(var);
                     } else if !(next_constraint.can_sort_on(var))
-                        || !(sort_variable == Some(var)) {
-                        commit_variables!()
+                        || !(step_sort_variable == Some(var)) {
+                        finalize_step!()
                     }
                 } else {
-                    commit_variables!()
+                    finalize_step!()
                 }
                 // At this point, either sort var is set, or we have committed all variables (i.e. produced var is empty)
 
-                produced_at_this_stage
-                    .extend(element.variables().filter(|&var| !ordering.contains(&VertexId::Variable(var))));
+                step_produced_variables
+                    .extend(element.variables().filter(|&var| !vertex_plan.contains(&VertexId::Variable(var))));
 
-                if sort_variable.is_none() {
+                if step_sort_variable.is_none() {
                     let constraint = element.as_constraint().unwrap();
                     if constraint.unbound_direction(&self.graph) == Direction::Canonical {
                         if let Some(candidate_sort_variable) = constraint.variables().next() {
-                            if produced_at_this_stage.contains(&candidate_sort_variable) {
-                                sort_variable = Some(candidate_sort_variable);
+                            if step_produced_variables.contains(&candidate_sort_variable) {
+                                step_sort_variable = Some(candidate_sort_variable);
                             }
                         }
                     } else {
                         if let Some(candidate_sort_variable) = constraint.variables().nth(1) {
-                            if produced_at_this_stage.contains(&candidate_sort_variable) {
-                                sort_variable = Some(candidate_sort_variable);
+                            if step_produced_variables.contains(&candidate_sort_variable) {
+                                step_sort_variable = Some(candidate_sort_variable);
                             }
                         }
                     }
                 }
 
-                ordering.push(next);
-                open_set.remove(&next);
+                constraint_directions.insert(next.as_pattern_id().unwrap(), element.as_constraint().unwrap().unbound_direction(&self.graph));
+                vertex_plan.push(next);
+                remaining_vertices.remove(&next);
             } else {
-                commit_variables!();
-                ordering.push(next);
-                open_set.remove(&next);
+                finalize_step!();
+                vertex_plan.push(next);
+                remaining_vertices.remove(&next);
                 for var in element.variables().map(VertexId::Variable) {
-                    if !ordering.contains(&var) {
-                        ordering.push(var);
-                        open_set.remove(&var);
+                    if !vertex_plan.contains(&var) {
+                        vertex_plan.push(var);
+                        remaining_vertices.remove(&var);
                     }
                 }
             }
         }
-        ordering
+        println!("Finished greedy ordering: {:#?}", vertex_plan);
+        (vertex_plan, constraint_directions)
     }
 
     fn calculate_marginal_cost(
@@ -659,7 +663,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     }
 
     pub(super) fn plan(self) -> ConjunctionPlan<'a> {
-        let ordering = self.initialise_greedy_ordering();
+        let (ordering, _) = self.initialise_greedy_ordering();
         let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
 
         let cost = ordering
