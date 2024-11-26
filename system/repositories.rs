@@ -1,23 +1,5 @@
 // TODO: read from a file at compile time
-pub const SCHEMA: &str = "
-define
-    attribute name value string;
-    attribute uuid value string;
-    attribute hash value string;
-
-    entity user,
-        owns uuid @card(1),
-        owns name @card(1),
-        plays user-password:user;
-
-    entity password,
-        owns hash @card(1),
-        plays user-password:password;
-
-    relation user-password,
-        relates user @card(1),
-        relates password @card(1);
-";
+pub const SCHEMA: &str = include_str!("schema.tql");
 
 pub mod user_repository {
     use std::{collections::HashMap, sync::Arc};

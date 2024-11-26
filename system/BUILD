@@ -26,7 +26,8 @@ rust_library(
         "@vaticle_typeql//rust:typeql",
         "@crates//:pwhash",
         "@crates//:uuid",
-    ]
+    ],
+    data = ["schema.tql"]
 )
 
 checkstyle_test(
