@@ -39,6 +39,7 @@ rust_test(
     ],
     data = ["@typedb_behaviour//query/functions:recursion.feature"],
     crate_features = ["bazel"],
+    env = {"RUST_MIN_STACK" : "40960000"}
 )
 
 rust_test(
