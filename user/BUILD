@@ -19,6 +19,7 @@ rust_library(
         "//database",
         "//executor",
         "//query",
+        "//resource",
         "//storage",
         "//system",
         "@vaticle_typeql//rust:typeql",

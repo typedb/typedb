@@ -15,6 +15,12 @@ pub mod server {
     pub const DEFAULT_PREFETCH_SIZE: u64 = 32;
     pub const DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS: u64 = Duration::from_secs(10).as_millis() as u64;
     pub const DEFAULT_TRANSACTION_PARALLEL: bool = true;
+
+    pub const AUTHENTICATOR_USERNAME_FIELD: &str = "username";
+    pub const AUTHENTICATOR_PASSWORD_FIELD: &str = "password";
+
+    pub const DEFAULT_USER_NAME: &str = "admin";
+    pub const DEFAULT_USER_PASSWORD: &str = "password";
 }
 
 pub mod traversal {

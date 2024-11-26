@@ -28,9 +28,9 @@ rust_library(
         "//function",
         "//ir",
         "//query",
+        "//resource",
         "//storage",
         "//system",
-        "//resource",
 
         "@vaticle_typeql//rust:typeql",
         "@vaticle_typedb_protocol//grpc/rust:typedb_protocol",
