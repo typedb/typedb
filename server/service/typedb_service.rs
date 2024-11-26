@@ -41,7 +41,7 @@ use crate::service::{
 pub(crate) struct TypeDBService {
     address: SocketAddr,
     database_manager: Arc<DatabaseManager>,
-    user_manager: Arc<UserManager>, // map of connection ID to ConnectionService
+    user_manager: Arc<UserManager>,
 }
 
 impl TypeDBService {
