@@ -99,7 +99,8 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             .flat_map(|constraint| constraint.vertices())
             .filter(|vertex| !vertex.is_parameter())
             .unique()
-            .all(|vertex| graph.vertices.contains_key(vertex)));
+            .all(|vertex| vertex.is_parameter() ||  graph.vertices.contains_key(vertex))
+        );
 
         Ok(graph)
     }
