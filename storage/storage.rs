@@ -12,7 +12,7 @@ use std::{
     error::Error,
     fs, io,
     path::{Path, PathBuf},
-    sync::{atomic::Ordering, Arc},
+    sync::{Arc, atomic::Ordering},
     thread::sleep,
     time::Duration,
 };
@@ -31,17 +31,17 @@ use crate::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
     isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
     iterator::MVCCRangeIterator,
-    key_range::{KeyRange, RangeStart},
+    key_range::{KeyRange},
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{
-        iterator::KeyspaceRangeIterator, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, Keyspaces,
+        iterator::KeyspaceRangeIterator, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, Keyspaces, KeyspaceSet,
     },
     recovery::{
         checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
         commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
     },
     sequence_number::SequenceNumber,
-    snapshot::{write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot},
+    snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, write::Write, WriteSnapshot},
 };
 
 pub mod durability_client;
@@ -354,7 +354,7 @@ impl<Durability> MVCCStorage<Durability> {
     {
         let key = key.into();
         let mut iterator = self.iterate_range(
-            &KeyRange::new_within(RangeStart::Inclusive(StorageKey::<0>::Reference(key)), false),
+            &KeyRange::new_within(StorageKey::<0>::Reference(key), false),
             open_sequence_number,
         );
         loop {
@@ -598,10 +598,10 @@ mod tests {
         durability_client::{DurabilityClient, WALClient},
         isolation_manager::{CommitRecord, CommitType},
         key_value::StorageKeyArray,
-        keyspace::{KeyspaceId, KeyspaceSet, Keyspaces},
+        keyspace::{KeyspaceId, Keyspaces, KeyspaceSet},
+        MVCCStorage,
         snapshot::buffer::OperationsBuffer,
         write_batches::WriteBatches,
-        MVCCStorage,
     };
 
     macro_rules! test_keyspace_set {

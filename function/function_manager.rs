@@ -228,7 +228,7 @@ impl FunctionReader {
     ) -> Result<Vec<SchemaFunction>, FunctionReadError> {
         snapshot
             .iterate_range(&KeyRange::new_within(
-                RangeStart::Inclusive(DefinitionKey::build_prefix(FunctionDefinition::PREFIX)),
+                DefinitionKey::build_prefix(FunctionDefinition::PREFIX),
                 DefinitionKey::FIXED_WIDTH_ENCODING,
             ))
             .collect_cloned_vec(|key, value| {

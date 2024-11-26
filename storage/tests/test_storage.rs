@@ -185,7 +185,7 @@ fn get_put_iterate() {
     let prefix = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((TestKeyspaceSet::Keyspace1, [0x1]));
     let items: Vec<(ByteArray<BUFFER_VALUE_INLINE>, ByteArray<128>)> = storage
         .iterate_keyspace_range(KeyRange::new_within(
-            RangeStart::Inclusive(StorageKey::<BUFFER_VALUE_INLINE>::Reference(StorageKeyReference::from(&prefix))),
+            StorageKey::<BUFFER_VALUE_INLINE>::Reference(StorageKeyReference::from(&prefix)),
             false,
         ))
         .map_static::<(ByteArray<BUFFER_VALUE_INLINE>, ByteArray<128>), _>(|res| {

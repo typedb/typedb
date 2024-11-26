@@ -267,11 +267,11 @@ impl<'a> ThingEdgeHasReverse<'a> {
 
     pub fn prefix_from_attribute_to_type_range(
         from: AttributeVertex<'_>,
-        range_start: TypeVertex<'_>,
+        range_start: RangeStart<TypeVertex<'_>>,
         range_end: RangeEnd<TypeVertex<'_>>,
     ) -> KeyRange<StorageKey<'static, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM_TO_TYPE }>> {
         KeyRange::new_fixed_width(
-            RangeStart::Inclusive(Self::prefix_from_attribute_to_type(from.clone(), range_start)),
+            range_start.map(|vertex| Self::prefix_from_attribute_to_type(from.clone(), vertex.as_reference())),
             range_end.map(|vertex| Self::prefix_from_attribute_to_type(from, vertex.as_reference())),
         )
     }

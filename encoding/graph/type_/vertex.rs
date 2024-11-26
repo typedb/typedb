@@ -32,7 +32,7 @@ impl<'a> TypeVertex<'a> {
     pub(crate) const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
     pub const FIXED_WIDTH_ENCODING: bool = true;
 
-    pub(crate) const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH;
+    pub const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH;
     pub(crate) const LENGTH_PREFIX: usize = PrefixID::LENGTH;
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> TypeVertex<'a> {

@@ -189,10 +189,12 @@ impl WriteBuffer {
         } else {
             Bound::Excluded(&*exclusive_end_bytes)
         };
+        let start_as_bound = Self::range_start_as_bound(range_start);
+        let start_bytes = start_as_bound.as_ref().map(|bytes| bytes.as_ref());
         // TODO: we shouldn't have to copy now that we use single-writer semantics
         BufferRangeIterator::new(
             self.writes
-                .range::<[u8], _>((range_start.as_bound().map(|bytes| &**bytes), end))
+                .range::<[u8], _>((start_bytes, end))
                 .map(|(key, val)| (StorageKeyArray::new_raw(self.keyspace_id, key.clone()), val.clone()))
                 .collect::<Vec<_>>(),
         )
@@ -207,9 +209,23 @@ impl WriteBuffer {
         } else {
             Bound::Excluded(&*exclusive_end_bytes)
         };
+        let start_as_bound = Self::range_start_as_bound(range_start);
+        let start_bytes = start_as_bound.as_ref().map(|bytes| bytes.as_ref());
         self.writes
-            .range::<[u8], _>((range_start.as_bound().map(|bytes| &**bytes), end))
+            .range::<[u8], _>((start_bytes, end))
             .any(|(_, write)| !write.is_delete())
+    }
+
+    fn range_start_as_bound<const INLINE: usize>(range_start: RangeStart<Bytes<'_, INLINE>>) -> Bound<Bytes<'_, INLINE>> {
+        match range_start {
+            RangeStart::Inclusive(bytes) => Bound::Included(bytes),
+            RangeStart::ExcludeFirstWithPrefix(bytes) => Bound::Excluded(bytes),
+            RangeStart::ExcludePrefix(bytes) => {
+                let mut cloned = bytes.clone().into_array();
+                cloned.increment().unwrap();
+                Bound::Included(Bytes::Array(cloned))
+            }
+        }
     }
 
     fn compute_exclusive_end<const INLINE: usize>(

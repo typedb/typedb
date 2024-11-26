@@ -7,6 +7,8 @@
 #![deny(unused_must_use)]
 
 use std::{borrow::Cow, collections::HashMap};
+use std::ops::{Bound, Range};
+use itertools::Itertools;
 
 use concept::{
     error::ConceptReadError,
@@ -26,6 +28,7 @@ use concept::{
         Ordering, OwnerAPI, PlayerAPI,
     },
 };
+use concept::type_::object_type::ObjectType;
 use encoding::{
     error::EncodingError,
     graph::definition::definition_key::DefinitionKey,
@@ -41,6 +44,7 @@ use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, WritableSnapshot, WriteSnapshot},
 };
+use storage::key_range::{KeyRange, RangeEnd, RangeStart};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
@@ -212,6 +216,145 @@ fn has() {
         let person_1 = people.first().unwrap();
         let retrieved_attributes_count = person_1.get_has_unordered(&snapshot, &thing_manager).count();
         assert_eq!(retrieved_attributes_count, 2);
+    }
+}
+
+#[test]
+fn get_has_reverse_in_range() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
+    let age_label = Label::build("age");
+    let name_label = Label::build("name");
+    let person_label = Label::build("person");
+    let company_label = Label::build("company");
+
+    let age_value_10: i64 = 10;
+    let age_value_11: i64 = 11;
+    let inlineable_name: &str = "TypeDB";
+    let uninlinable_name: &str = "TypeDB Incorporated In America";
+
+    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+        let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
+        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
+        age_type
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                AttributeTypeAnnotation::Independent(AnnotationIndependent),
+            )
+            .unwrap();
+        let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
+        name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
+        name_type
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                AttributeTypeAnnotation::Independent(AnnotationIndependent),
+            )
+            .unwrap();
+
+        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
+        let person_owns_age = person_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Unordered)
+            .unwrap();
+        person_owns_age.set_annotation(&mut snapshot, &type_manager, &thing_manager, OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None))).unwrap();
+        let person_owns_name = person_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered)
+            .unwrap();
+        person_owns_name.set_annotation(&mut snapshot, &type_manager, &thing_manager, OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None))).unwrap();
+
+        let company_type = type_manager.create_entity_type(&mut snapshot, &company_label).unwrap();
+        let company_owns_age = company_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Unordered)
+            .unwrap();
+        company_owns_age.set_annotation(&mut snapshot, &type_manager, &thing_manager, OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None))).unwrap();
+        let company_owns_name = company_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered)
+            .unwrap();
+        company_owns_name.set_annotation(&mut snapshot, &type_manager, &thing_manager, OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None))).unwrap();
+
+        let person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
+        let company_1= thing_manager.create_entity(&mut snapshot, company_type.clone()).unwrap();
+        let age_10 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age_value_10)).unwrap();
+        let age_11 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age_value_11)).unwrap();
+        let name_inline = thing_manager
+            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed(inlineable_name)))
+            .unwrap();
+        let name_hashed = thing_manager
+            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed(uninlinable_name)))
+            .unwrap();
+
+        person_1.set_has_unordered(&mut snapshot, &thing_manager, age_10.clone()).unwrap();
+        person_1.set_has_unordered(&mut snapshot, &thing_manager, age_11.clone()).unwrap();
+        person_1.set_has_unordered(&mut snapshot, &thing_manager, name_inline.clone()).unwrap();
+        person_1.set_has_unordered(&mut snapshot, &thing_manager, name_hashed.clone()).unwrap();
+
+        company_1.set_has_unordered(&mut snapshot, &thing_manager, age_10).unwrap();
+        company_1.set_has_unordered(&mut snapshot, &thing_manager, age_11).unwrap();
+        company_1.set_has_unordered(&mut snapshot, &thing_manager, name_inline).unwrap();
+        company_1.set_has_unordered(&mut snapshot, &thing_manager, name_hashed).unwrap();
+        thing_manager.finalise(&mut snapshot).unwrap();
+    }
+    snapshot.commit().unwrap();
+
+    {
+        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+        let person_type = type_manager.get_entity_type(&snapshot, &person_label).unwrap().unwrap();
+        let company_type = type_manager.get_entity_type(&snapshot, &company_label).unwrap().unwrap();
+        let age_type = type_manager.get_attribute_type(&snapshot, &age_label).unwrap().unwrap();
+        let name_type = type_manager.get_attribute_type(&snapshot, &name_label).unwrap().unwrap();
+
+        let age_owners_start_value_inclusive = thing_manager.get_has_reverse_in_range(
+            &snapshot,
+            age_type.clone(),
+            &(Bound::Included(Value::Long(age_value_10)), Bound::Unbounded),
+            &(
+                Bound::Included(ObjectType::Entity(person_type.clone())),
+                Bound::Unbounded
+            )
+        ).unwrap();
+        assert_eq!(age_owners_start_value_inclusive.count(), 4);
+        
+        let age_owners_start_value_exclusive = thing_manager.get_has_reverse_in_range(
+            &snapshot,
+            age_type.clone(),
+            &(Bound::Excluded(Value::Long(age_value_10)), Bound::Unbounded),
+            &(
+                Bound::Included(ObjectType::Entity(person_type.clone())),
+                Bound::Unbounded
+            )
+        ).unwrap();
+        assert_eq!(age_owners_start_value_exclusive.count(), 2);
+        
+        let age_owners_start_value_inclusive_end_value_exclusive = thing_manager.get_has_reverse_in_range(
+            &snapshot,
+            age_type.clone(),
+            &(Bound::Included(Value::Long(age_value_10)), Bound::Excluded(Value::Long(age_value_11))),
+            &(
+                Bound::Included(ObjectType::Entity(person_type.clone())),
+                Bound::Unbounded
+            )
+        ).unwrap();
+        assert_eq!(age_owners_start_value_inclusive_end_value_exclusive.count(), 2);
+        
+        let age_owners_start_value_excluded_end_value_exclusive = thing_manager.get_has_reverse_in_range(
+            &snapshot,
+            age_type.clone(),
+            &(Bound::Excluded(Value::Long(age_value_10)), Bound::Excluded(Value::Long(age_value_11))),
+            &(
+                Bound::Included(ObjectType::Entity(person_type.clone())),
+                Bound::Unbounded
+            )
+        ).unwrap();
+        assert_eq!(age_owners_start_value_excluded_end_value_exclusive.count(), 0);
     }
 }
 

@@ -6,7 +6,7 @@
 
 use std::{cmp::Ordering, error::Error, fmt, sync::Arc};
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use lending_iterator::{LendingIterator, Peekable, Seekable};
 
 use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};

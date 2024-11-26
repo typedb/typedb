@@ -75,10 +75,10 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
     {
         let tail_byte_index = key_without_tail_byte.length();
         let mut iter = snapshot.iterate_range(&KeyRange::new_within(
-            RangeStart::Inclusive(StorageKey::<BUFFER_KEY_INLINE>::new_ref(
+            StorageKey::<BUFFER_KEY_INLINE>::new_ref(
                 Self::KEYSPACE,
                 key_without_tail_byte,
-            )),
+            ),
             Self::FIXED_WIDTH_KEYS,
         ));
         let mut next = iter.next().transpose()?;

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::Bound, fmt::Debug};
+use std::{fmt::Debug};
 
 use primitive::prefix::Prefix;
 
@@ -29,8 +29,8 @@ impl<T: Prefix> KeyRange<T> {
         Self { start, end: RangeEnd::Unbounded, fixed_width_keys: false }
     }
 
-    pub fn new_within(prefix_inclusive: RangeStart<T>, fixed_width_keys: bool) -> Self {
-        Self { start: prefix_inclusive, end: RangeEnd::WithinStartAsPrefix, fixed_width_keys }
+    pub fn new_within(prefix: T, fixed_width_keys: bool) -> Self {
+        Self { start: RangeStart::Inclusive(prefix), end: RangeEnd::WithinStartAsPrefix, fixed_width_keys }
     }
 
     pub fn start(&self) -> &RangeStart<T> {
@@ -70,44 +70,44 @@ where
     T: Ord + Debug,
 {
     Inclusive(T),
-    Exclusive(T),
+    ExcludeFirstWithPrefix(T),
+    ExcludePrefix(T),
 }
 
 impl<T> RangeStart<T>
 where
     T: Ord + Debug,
 {
-    pub(crate) fn is_exclusive(&self) -> bool {
-        matches!(self, Self::Exclusive(_))
-    }
 
     pub fn map<'a: 'b, 'b, U: Ord + Debug + 'b>(&'a self, mapper: impl FnOnce(&'a T) -> U) -> RangeStart<U> {
         match self {
             Self::Inclusive(end) => RangeStart::Inclusive(mapper(end)),
-            Self::Exclusive(end) => RangeStart::Exclusive(mapper(end)),
+            Self::ExcludeFirstWithPrefix(end) => RangeStart::ExcludeFirstWithPrefix(mapper(end)),
+            Self::ExcludePrefix(end) => RangeStart::ExcludePrefix(mapper(end)),
         }
     }
 
     pub fn get_value(&self) -> &T {
         match self {
-            Self::Inclusive(value) | Self::Exclusive(value) => value,
+            Self::Inclusive(value) | Self::ExcludeFirstWithPrefix(value) | Self::ExcludePrefix(value) => value,
         }
     }
-
-    pub fn as_bound(&self) -> Bound<&T> {
-        match self {
-            RangeStart::Inclusive(start) => Bound::Included(start),
-            RangeStart::Exclusive(start) => Bound::Excluded(start),
-        }
-    }
+    // 
+    // pub fn as_bound(&self) -> Bound<&T> {
+    //     match self {
+    //         RangeStart::Inclusive(start) => Bound::Included(start),
+    //         RangeStart::Exclusive(start) => Bound::Excluded(start),
+    //     }
+    // }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RangeEnd<T>
-where
+pub enum RangeEnd<T> where
     T: Ord + Debug,
 {
+    // WARNING: only to be used with RangeStart::Inclusive
     WithinStartAsPrefix,
+    
     EndPrefixInclusive(T),
     EndPrefixExclusive(T),
     Unbounded,

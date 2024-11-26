@@ -71,7 +71,7 @@ fn populate_storage(storage: Arc<MVCCStorage<WALClient>>, keyspace: TestKeyspace
     let snapshot = storage.open_snapshot_read();
     let prefix: StorageKey<'_, 48> =
         StorageKey::Reference(StorageKeyReference::new(keyspace, ByteReference::new(&[0_u8])));
-    let iterator = snapshot.iterate_range(KeyRange::new_within(RangeStart::Inclusive(prefix), false));
+    let iterator = snapshot.iterate_range(&KeyRange::new_within(prefix, false));
     let count = iterator.collect_cloned_vec(|_, _| ((), ())).unwrap().len();
     println!("Keys confirmed to be written: {}", count);
     count
