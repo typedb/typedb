@@ -20,7 +20,7 @@ pub mod server {
 }
 
 pub mod database {
-    pub const QUERY_PLAN_CACHE_FLUSH_STATISTICS_CHANGE_PERCENT: f64 = 0.1;
+    pub const QUERY_PLAN_CACHE_FLUSH_STATISTICS_CHANGE_PERCENT: f64 = 0.05;
     pub const QUERY_PLAN_CACHE_SIZE: u64 = 100;
 }
 
