@@ -25,6 +25,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use error::typedb_error;
+use function::{function_manager::FunctionManager, FunctionError};
 use ir::{translation::tokens::translate_annotation, LiteralParseError};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
@@ -73,11 +74,12 @@ pub(crate) fn execute(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
+    function_manager: &FunctionManager,
     define: Define,
 ) -> Result<(), DefineError> {
     process_struct_definitions(snapshot, type_manager, &define.definables)?;
     process_type_definitions(snapshot, type_manager, thing_manager, &define.definables)?;
-    process_function_definitions(snapshot, type_manager, &define.definables)?;
+    process_function_definitions(snapshot, function_manager, &define.definables)?;
     Ok(())
 }
 
@@ -126,11 +128,15 @@ fn process_type_definitions(
 
 fn process_function_definitions(
     snapshot: &mut impl WritableSnapshot,
-    type_manager: &TypeManager,
+    function_manager: &FunctionManager,
     definables: &[Definable],
 ) -> Result<(), DefineError> {
-    filter_variants!(Definable::Function : definables)
-        .try_for_each(|function| define_function(snapshot, type_manager, function))?;
+    let functions = filter_variants!(Definable::Function: definables);
+    if functions.clone().next().is_some() {
+        function_manager
+            .define_functions(snapshot, functions)
+            .map_err(|typedb_source| DefineError::FunctionDefinition { typedb_source })?;
+    }
     Ok(())
 }
 
@@ -884,14 +890,6 @@ fn define_plays_annotations<'a>(
     Ok(())
 }
 
-fn define_function(
-    _snapshot: &impl WritableSnapshot,
-    _type_manager: &TypeManager,
-    _declaration: &Function,
-) -> Result<(), DefineError> {
-    Err(DefineError::Unimplemented { description: "Function definition.".to_string() })
-}
-
 fn check_can_and_need_define_sub<'a, T: TypeAPI<'a>>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
@@ -1168,6 +1166,11 @@ typedb_error!(
             declaration: TypeQLCapability,
             left_kind: Kind,
             right_kind: Kind
+        ),
+        FunctionDefinition(
+            28,
+            "An error occurred by defining the function",
+            ( typedb_source: FunctionError )
         ),
     }
 );

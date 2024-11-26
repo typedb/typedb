@@ -15,7 +15,12 @@ use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCS
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
-fn define_schema(storage: Arc<MVCCStorage<WALClient>>, type_manager: &TypeManager, thing_manager: &ThingManager) {
+fn define_schema(
+    storage: Arc<MVCCStorage<WALClient>>,
+    type_manager: &TypeManager,
+    thing_manager: &ThingManager,
+    function_manager: &FunctionManager,
+) {
     let mut snapshot = storage.clone().open_snapshot_schema();
     let query_manager = QueryManager::new(None);
 
@@ -27,7 +32,7 @@ fn define_schema(storage: Arc<MVCCStorage<WALClient>>, type_manager: &TypeManage
       entity person owns name @card(0..), owns age, plays friendship:friend @card(0..);
     "#;
     let schema_query = typeql::parse_query(query_str).unwrap().into_schema();
-    query_manager.execute_schema(&mut snapshot, type_manager, thing_manager, schema_query).unwrap();
+    query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, function_manager, schema_query).unwrap();
     snapshot.commit().unwrap();
 }
 
@@ -54,7 +59,7 @@ fn fetch() {
     setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
-    define_schema(storage.clone(), type_manager.as_ref(), thing_manager.as_ref());
+    define_schema(storage.clone(), type_manager.as_ref(), thing_manager.as_ref(), &function_manager);
     insert_data(
         storage.clone(),
         type_manager.as_ref(),

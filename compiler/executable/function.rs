@@ -63,7 +63,7 @@ pub(crate) fn compile_function(
     function: AnnotatedFunction,
     is_tabled: FunctionTablingType,
 ) -> Result<ExecutableFunction, ExecutableCompilationError> {
-    let AnnotatedFunction { variable_registry, parameter_registry, arguments, stages, return_ } = function;
+    let AnnotatedFunction { variable_registry, parameter_registry, arguments, stages, return_, .. } = function;
     let (argument_positions, executable_stages) = compile_pipeline_stages(
         statistics,
         &variable_registry,

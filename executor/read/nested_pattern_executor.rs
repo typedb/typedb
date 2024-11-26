@@ -99,4 +99,12 @@ impl NestedPatternExecutor {
             parameter_registry,
         })
     }
+
+    pub(super) fn reset(&mut self) {
+        match self {
+            NestedPatternExecutor::Disjunction(inner) => inner.branches.iter_mut().for_each(|branch| branch.reset()),
+            NestedPatternExecutor::Negation(inner) => inner.inner.reset(),
+            NestedPatternExecutor::InlinedFunction(inner) => inner.inner.reset(),
+        }
+    }
 }

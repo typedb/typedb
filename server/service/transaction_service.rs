@@ -720,12 +720,19 @@ impl TransactionService {
                 transaction_options,
             } = schema_transaction;
             let mut snapshot = Arc::into_inner(snapshot).unwrap();
-            let (snapshot, type_manager, thing_manager, query_manager, result) = spawn_blocking(move || {
-                let result = query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, query);
-                (snapshot, type_manager, thing_manager, query_manager, result)
-            })
-            .await
-            .unwrap();
+            let (snapshot, type_manager, thing_manager, query_manager, function_manager, result) =
+                spawn_blocking(move || {
+                    let result = query_manager.execute_schema(
+                        &mut snapshot,
+                        &type_manager,
+                        &thing_manager,
+                        &function_manager,
+                        query,
+                    );
+                    (snapshot, type_manager, thing_manager, query_manager, function_manager, result)
+                })
+                .await
+                .unwrap();
 
             let transaction = TransactionSchema::from(
                 snapshot,

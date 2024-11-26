@@ -15,7 +15,7 @@ use concept::{
     },
 };
 use error::typedb_error;
-use function::{function_manager::FunctionManager, FunctionError};
+use function::{function_cache::FunctionCache, function_manager::FunctionManager, FunctionError};
 use options::TransactionOptions;
 use query::query_manager::QueryManager;
 use storage::{
@@ -320,6 +320,15 @@ impl<D: DurabilityClient> TransactionSchema<D> {
                 TypeCache::new(self.database.storage.clone(), sequence_number)
                     .map_err(|typedb_source| TypeCacheUpdateError { typedb_source })?,
             );
+            let type_manager = TypeManager::new(
+                self.database.definition_key_generator.clone(),
+                self.database.type_vertex_generator.clone(),
+                Some(schema.type_cache.clone()),
+            );
+            schema.function_cache = Arc::new(
+                FunctionCache::new(self.database.storage.clone(), &type_manager, sequence_number)
+                    .map_err(|typedb_source| SchemaCommitError::FunctionError { typedb_source })?,
+            )
         }
 
         // replace statistics

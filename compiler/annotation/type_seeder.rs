@@ -29,16 +29,13 @@ use ir::{
         variable_category::VariableCategory,
         Scope, ScopeId, Vertex,
     },
-    pipeline::{block::BlockContext, function_signature::FunctionID, VariableRegistry},
+    pipeline::{block::BlockContext, VariableRegistry},
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
-    function::{
-        AnnotatedFunction, AnnotatedFunctions, AnnotatedUnindexedFunctions, FunctionParameterAnnotation,
-        IndexedAnnotatedFunctions,
-    },
+    function::{AnnotatedFunctionSignatures, FunctionParameterAnnotation},
     match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations},
     TypeInferenceError,
 };
@@ -46,8 +43,7 @@ use crate::annotation::{
 pub struct TypeGraphSeedingContext<'this, Snapshot: ReadableSnapshot> {
     snapshot: &'this Snapshot,
     type_manager: &'this TypeManager,
-    schema_functions: &'this IndexedAnnotatedFunctions,
-    local_functions: Option<&'this AnnotatedUnindexedFunctions>,
+    function_annotations: &'this dyn AnnotatedFunctionSignatures,
     variable_registry: &'this VariableRegistry,
 }
 
@@ -55,26 +51,10 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     pub(crate) fn new(
         snapshot: &'this Snapshot,
         type_manager: &'this TypeManager,
-        schema_functions: &'this IndexedAnnotatedFunctions,
-        local_functions: Option<&'this AnnotatedUnindexedFunctions>,
+        function_annotations: &'this dyn AnnotatedFunctionSignatures,
         variable_registry: &'this VariableRegistry,
     ) -> Self {
-        TypeGraphSeedingContext { snapshot, type_manager, schema_functions, local_functions, variable_registry }
-    }
-
-    fn get_annotated_function(&self, function_id: FunctionID) -> Option<&AnnotatedFunction> {
-        match function_id {
-            FunctionID::Schema(definition_key) => {
-                debug_assert!(self.schema_functions.get_function(definition_key.clone()).is_some());
-                self.schema_functions.get_function(definition_key.clone())
-            }
-            FunctionID::Preamble(index) => {
-                debug_assert!(
-                    self.local_functions.is_none() || self.local_functions.unwrap().get_function(index).is_some()
-                );
-                self.local_functions?.get_function(index)
-            }
-        }
+        TypeGraphSeedingContext { snapshot, type_manager, function_annotations, variable_registry }
     }
 
     pub(crate) fn create_graph<'graph>(
@@ -115,7 +95,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         }
 
         // Seed vertices in root & disjunctions
-        self.seed_vertex_annotations_from_type_and_function_return(graph)?;
+        self.seed_vertex_annotations_from_type_and_called_function_signatures(graph)?;
 
         let mut some_vertex_was_directly_annotated = true;
         while some_vertex_was_directly_annotated {
@@ -214,7 +194,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     }
 
     // Phase 1: Collect all type & function return annotations
-    fn seed_vertex_annotations_from_type_and_function_return(
+    fn seed_vertex_annotations_from_type_and_called_function_signatures(
         &self,
         graph: &mut TypeInferenceGraph<'_>,
     ) -> Result<(), TypeInferenceError> {
@@ -242,7 +222,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             }
         }
         for nested_graph in graph.nested_disjunctions.iter_mut().flat_map(|nested| &mut nested.disjunction) {
-            self.seed_vertex_annotations_from_type_and_function_return(nested_graph)?;
+            self.seed_vertex_annotations_from_type_and_called_function_signatures(nested_graph)?;
         }
         Ok(())
     }
@@ -301,7 +281,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     ) -> Result<bool, Box<ConceptReadError>> {
         let unannotated_var = self.local_variables(context, graph.conjunction.scope_id()).find(|&var| {
             let vertex = Vertex::Variable(var);
-            !graph.vertices.contains_key(&vertex)
+            self.variable_registry.get_variable_category(var).unwrap_or(VariableCategory::Value)
+                != VariableCategory::Value
+                && !graph.vertices.contains_key(&vertex)
         });
         if let Some(var) = unannotated_var {
             let annotations = self.get_unbounded_type_annotations(
@@ -750,15 +732,29 @@ impl UnaryConstraint for FunctionCallBinding<Variable> {
         seeder: &TypeGraphSeedingContext<'_, Snapshot>,
         graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
-        if let Some(annotated_function) = seeder.get_annotated_function(self.function_call().function_id()) {
+        if let Some(annotated_function_signature) =
+            seeder.function_annotations.get_annotated_signature(&self.function_call().function_id())
+        {
             for (assigned_variable, return_annotation) in
-                zip(self.assigned(), annotated_function.return_.annotations().iter())
+                zip(self.assigned(), annotated_function_signature.returned.iter())
             {
                 if let FunctionParameterAnnotation::Concept(types) = return_annotation {
                     graph_vertices.add_or_intersect(assigned_variable, Cow::Borrowed(types));
                 }
             }
-            //TODO: add annotations from function input arguments
+            let args_by_position: Vec<Variable> = self
+                .function_call()
+                .call_id_mapping()
+                .iter()
+                .map(|(var, index)| (index, var))
+                .sorted()
+                .map(|(_, var)| var.clone())
+                .collect();
+            for (arg_var, arg_annotations) in zip(args_by_position, &annotated_function_signature.arguments) {
+                if let FunctionParameterAnnotation::Concept(types) = arg_annotations {
+                    graph_vertices.add_or_intersect(&Vertex::Variable(arg_var.clone()), Cow::Borrowed(&types));
+                }
+            }
         }
         Ok(())
     }
@@ -1620,7 +1616,7 @@ pub mod tests {
     use storage::snapshot::CommittableSnapshot;
 
     use crate::annotation::{
-        function::IndexedAnnotatedFunctions,
+        function::EmptyAnnotatedFunctionSignatures,
         match_inference::{TypeInferenceGraph, VertexAnnotations},
         tests::{
             managers,
@@ -1700,12 +1696,11 @@ pub mod tests {
         };
 
         let snapshot = storage.clone().open_snapshot_write();
-        let empty_function_cache = IndexedAnnotatedFunctions::empty();
+        let empty_function_cache = EmptyAnnotatedFunctionSignatures;
         let seeder = TypeGraphSeedingContext::new(
             &snapshot,
             &type_manager,
             &empty_function_cache,
-            None,
             &translation_context.variable_registry,
         );
         let graph = seeder.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
@@ -1755,12 +1750,11 @@ pub mod tests {
         };
 
         let snapshot = storage.clone().open_snapshot_write();
-        let empty_function_cache = IndexedAnnotatedFunctions::empty();
+        let empty_function_cache = EmptyAnnotatedFunctionSignatures;
         let seeder = TypeGraphSeedingContext::new(
             &snapshot,
             &type_manager,
             &empty_function_cache,
-            None,
             &translation_context.variable_registry,
         );
         let graph = seeder.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
@@ -1888,12 +1882,11 @@ pub mod tests {
             };
 
             let snapshot = storage.clone().open_snapshot_write();
-            let empty_function_cache = IndexedAnnotatedFunctions::empty();
+            let empty_function_cache = EmptyAnnotatedFunctionSignatures;
             let seeder = TypeGraphSeedingContext::new(
                 &snapshot,
                 &type_manager,
                 &empty_function_cache,
-                None,
                 &translation_context.variable_registry,
             );
             let graph = seeder.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();

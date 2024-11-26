@@ -8,7 +8,9 @@ use std::collections::HashSet;
 
 use crate::{
     batch::FixedBatch,
-    read::{pattern_executor::PatternExecutor, step_executor::StepExecutors},
+    read::{
+        nested_pattern_executor::NestedPatternExecutor, pattern_executor::PatternExecutor, step_executor::StepExecutors,
+    },
     row::MaybeOwnedRow,
 };
 
@@ -54,6 +56,10 @@ impl StreamModifierExecutor {
             Self::Distinct { inner, .. } => inner,
             Self::Last { inner, .. } => inner,
         }
+    }
+
+    pub(crate) fn reset(&mut self) {
+        self.get_inner().reset()
     }
 }
 

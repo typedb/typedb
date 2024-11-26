@@ -97,7 +97,7 @@ fn setup_common(schema: &str) -> Context {
 
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(schema).unwrap().into_schema();
-    query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, define).unwrap();
+    query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, define).unwrap();
     snapshot.commit().unwrap();
 
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new(0))));
@@ -271,7 +271,7 @@ fn function_compiles() {
     {
         let query = r#"
             with
-            fun get_ages($p_arg: person) -> { age }:
+            fun get_ages($p_arg: person) -> { long }:
             match
                 $p_arg has age $age_return;
             reduce $age_sum = sum($age_return);
@@ -318,7 +318,7 @@ fn function_binary() {
     }
 }
 
-#[ignore] // TODO: Re-enable when the CONSTANT_CONCEPT_LIMIT assert is fixed
+// Note: Fails in cargo because of a stack overflow. Bazel sets a larger stack size
 #[test]
 fn quadratic_reachability_in_tree() {
     let custom_schema = r#"define
@@ -382,7 +382,7 @@ fn quadratic_reachability_in_tree() {
     }
 }
 
-#[ignore] // TODO: Re-enable when the CONSTANT_CONCEPT_LIMIT assert is fixed
+// Note: Fails in cargo because of a stack overflow. Bazel sets a larger stack size
 #[test]
 fn linear_reachability_in_tree() {
     let custom_schema = r#"define
@@ -476,7 +476,7 @@ fn fibonacci() {
     {
         let query = r#"
             with
-            fun ith_fibonacci_number($i: long) -> { long }:
+            fun ith_fibonacci_number($i: long) -> { number }:
             match
                 $ret isa number;
                 { $i == 1; $ret == 1; $ret isa number; } or
@@ -492,10 +492,11 @@ fn fibonacci() {
 
             match
                 $f_7 = ith_fibonacci_number(7);
+                $as_value = $f_7;
         "#;
         let (rows, positions) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 1);
-        let f_7_position = *positions.get("f_7").unwrap();
-        assert_eq!(rows[0].get(f_7_position).as_value().clone().unwrap_long(), 13);
+        let answer_position = positions.get("as_value").unwrap().clone();
+        assert_eq!(rows[0].get(answer_position).as_value().clone().unwrap_long(), 13);
     }
 }

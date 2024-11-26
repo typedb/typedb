@@ -73,10 +73,22 @@ typedb_error!(
             name: String,
             index: usize
         ),
-        ReturnReduce(
+        CouldNotResolveReturnType(
             5,
+            "An error occurred when trying to resolve the type at return index: {index}.",
+            index: usize,
+            source: TypeInferenceError
+        ),
+        ReturnReduce(
+            6,
             "Error analysing return reduction.",
             ( typedb_source : Box<AnnotationError> )
+        ),
+        SignatureReturnMismatch(
+            7,
+            "The types inferred for the return statement of function \"{function_name}\" did not match those declared in the signature. Mismatching index: {mismatching_index}",
+            function_name: String,
+            mismatching_index: usize
         ),
     }
 );

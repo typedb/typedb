@@ -57,13 +57,17 @@ pub(super) fn add_statement(
         }
         typeql::Statement::Assignment(Assignment { lhs, rhs, .. }) => {
             let assigned = assignment_pattern_to_variables(constraints, lhs)?;
-            let [assigned] = *assigned else {
-                return Err(Box::new(RepresentationError::ExpressionAssignmentMustOneVariable {
-                    assigned_count: assigned.len(),
-                }));
-            };
-            let expression = build_expression(function_index, constraints, rhs)?;
-            constraints.add_assignment(assigned, expression)?;
+            if let typeql::Expression::Function(FunctionCall { name: FunctionName::Identifier(id), args, .. }) = rhs {
+                add_user_defined_function_call(function_index, constraints, id.as_str(), assigned, args)?;
+            } else {
+                let [assigned] = *assigned else {
+                    return Err(Box::new(RepresentationError::ExpressionAssignmentMustOneVariable {
+                        assigned_count: assigned.len(),
+                    }));
+                };
+                let expression = build_expression(function_index, constraints, rhs)?;
+                constraints.add_assignment(assigned, expression)?;
+            }
         }
         typeql::Statement::Thing(thing) => add_thing_statement(function_index, constraints, thing)?,
         typeql::Statement::AttributeValue(attribute_value) => {
@@ -494,7 +498,7 @@ fn add_typeql_iterable_binding(
 
 // Helpers
 pub(super) fn add_function_call_binding_user(
-    function_index: &impl FunctionSignatureIndex,
+    function_index: &(impl FunctionSignatureIndex + std::fmt::Debug),
     constraints: &mut ConstraintsBuilder<'_, '_>,
     assigned: Vec<Variable>,
     function_name: &str,

@@ -152,6 +152,30 @@ features = {}
 	name = "test_define"
 
 [[test]]
+	path = "tests/behaviour/query/functions/definition.rs"
+	name = "test_definition"
+
+[[test]]
+	path = "tests/behaviour/query/functions/recursion.rs"
+	name = "test_recursion"
+
+[[test]]
+	path = "tests/behaviour/query/functions/basic.rs"
+	name = "test_basic"
+
+[[test]]
+	path = "tests/behaviour/query/functions/structure.rs"
+	name = "test_structure"
+
+[[test]]
+	path = "tests/behaviour/query/functions/signature.rs"
+	name = "test_signature"
+
+[[test]]
+	path = "tests/behaviour/query/functions/usage.rs"
+	name = "test_usage"
+
+[[test]]
 	path = "tests/behaviour/debug/debug.rs"
 	name = "test_debug"
 
