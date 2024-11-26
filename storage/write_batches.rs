@@ -33,18 +33,16 @@ impl WriteBatches {
                 let write_batch = write_batches[index].insert(WriteBatch::default());
                 for (key, write) in writes {
                     match write {
-                        Write::Insert { value } => write_batch
-                            .put(MVCCKey::build(key.bytes(), seq, StorageOperation::Insert).bytes(), value.bytes()),
+                        Write::Insert { value } => {
+                            write_batch.put(MVCCKey::build(key, seq, StorageOperation::Insert).bytes(), value)
+                        }
                         Write::Put { value, reinsert, .. } => {
                             if reinsert.load(Ordering::SeqCst) {
-                                write_batch.put(
-                                    MVCCKey::build(key.bytes(), seq, StorageOperation::Insert).bytes(),
-                                    value.bytes(),
-                                )
+                                write_batch.put(MVCCKey::build(key, seq, StorageOperation::Insert).bytes(), value)
                             }
                         }
                         Write::Delete => {
-                            write_batch.put(MVCCKey::build(key.bytes(), seq, StorageOperation::Delete).bytes(), [])
+                            write_batch.put(MVCCKey::build(key, seq, StorageOperation::Delete).bytes(), [])
                         }
                     }
                 }

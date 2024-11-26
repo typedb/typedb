@@ -6,7 +6,7 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    slice,
+    fmt, slice,
 };
 
 use answer::variable::Variable;
@@ -23,6 +23,7 @@ use crate::{
 
 #[derive(Clone, Debug)]
 pub struct MatchExecutable {
+    executable_id: u64,
     pub(crate) steps: Vec<ExecutionStep>,
     variable_positions: HashMap<Variable, VariablePosition>,
     variable_positions_index: Vec<Variable>,
@@ -30,11 +31,16 @@ pub struct MatchExecutable {
 
 impl MatchExecutable {
     pub fn new(
+        executable_id: u64,
         steps: Vec<ExecutionStep>,
         variable_positions: HashMap<Variable, VariablePosition>,
         variable_positions_index: Vec<Variable>,
     ) -> Self {
-        Self { steps, variable_positions, variable_positions_index }
+        Self { executable_id, steps, variable_positions, variable_positions_index }
+    }
+
+    pub fn executable_id(&self) -> u64 {
+        self.executable_id
     }
 
     pub fn steps(&self) -> &[ExecutionStep] {
@@ -51,6 +57,16 @@ impl MatchExecutable {
 
     pub fn variable_positions_index(&self) -> &[Variable] {
         &self.variable_positions_index
+    }
+}
+
+impl fmt::Display for MatchExecutable {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Match executable plan:")?;
+        for (i, step) in self.steps().iter().enumerate() {
+            write!(f, "\n  {i}: {step}")?;
+        }
+        Ok(())
     }
 }
 
@@ -107,13 +123,28 @@ impl ExecutionStep {
     }
 }
 
+impl fmt::Display for ExecutionStep {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ExecutionStep::Intersection(step) => write!(f, "{step}"),
+            ExecutionStep::UnsortedJoin(step) => write!(f, "{step}"),
+            ExecutionStep::Assignment(step) => write!(f, "{step}"),
+            ExecutionStep::Check(step) => write!(f, "{step}"),
+            ExecutionStep::Disjunction(step) => write!(f, "{step}"),
+            ExecutionStep::Negation(step) => write!(f, "{step}"),
+            ExecutionStep::Optional(step) => write!(f, "{step}"),
+            ExecutionStep::FunctionCall(step) => write!(f, "{step}"),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct IntersectionStep {
     pub sort_variable: ExecutorVariable,
     pub instructions: Vec<(ConstraintInstruction<ExecutorVariable>, VariableModes)>,
     new_variables: Vec<VariablePosition>,
     pub output_width: u32,
-    input_variables: Vec<VariablePosition>,
+    bound_variables: Vec<VariablePosition>,
     pub selected_variables: Vec<VariablePosition>,
 }
 
@@ -125,7 +156,7 @@ impl IntersectionStep {
         named_variables: &HashSet<ExecutorVariable>,
         output_width: u32,
     ) -> Self {
-        let mut input_variables = Vec::with_capacity(instructions.len() * 2);
+        let mut bound_variables = Vec::with_capacity(instructions.len() * 2);
         let mut new_variables = Vec::with_capacity(instructions.len() * 2);
         instructions.iter().for_each(|instruction| {
             instruction.new_variables_foreach(|var| {
@@ -137,8 +168,8 @@ impl IntersectionStep {
             });
             instruction.input_variables_foreach(|var| {
                 let var = var.as_position().unwrap();
-                if !input_variables.contains(&var) {
-                    input_variables.push(var)
+                if !bound_variables.contains(&var) {
+                    bound_variables.push(var)
                 }
             });
         });
@@ -150,7 +181,7 @@ impl IntersectionStep {
                 (instruction, variable_modes)
             })
             .collect();
-        Self { sort_variable, instructions, new_variables, output_width, input_variables, selected_variables }
+        Self { sort_variable, instructions, new_variables, output_width, bound_variables, selected_variables }
     }
 
     fn new_variables(&self) -> &[VariablePosition] {
@@ -162,12 +193,26 @@ impl IntersectionStep {
     }
 }
 
+impl fmt::Display for IntersectionStep {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Sorted Iterator Intersection [bound_vars={:?}, output_size={}, sort_by={}]",
+            &self.bound_variables, self.output_width, self.sort_variable
+        )?;
+        for (instruction, modes) in &self.instructions {
+            write!(f, "\n      {instruction} with ({modes})")?;
+        }
+        Ok(())
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct UnsortedJoinStep {
     pub iterate_instruction: ConstraintInstruction<ExecutorVariable>,
     pub check_instructions: Vec<ConstraintInstruction<ExecutorVariable>>,
     new_variables: Vec<VariablePosition>,
-    input_variables: Vec<VariablePosition>,
+    bound_variables: Vec<VariablePosition>,
     selected_variables: Vec<VariablePosition>,
     pub output_width: u32,
 }
@@ -179,7 +224,7 @@ impl UnsortedJoinStep {
         selected_variables: &[VariablePosition],
         output_width: u32,
     ) -> Self {
-        let mut input_variables = Vec::with_capacity(check_instructions.len() * 2);
+        let mut bound_variables = Vec::with_capacity(check_instructions.len() * 2);
         let mut new_variables = Vec::with_capacity(5);
         iterate_instruction.new_variables_foreach(|var| {
             if let Some(var) = var.as_position() {
@@ -190,15 +235,15 @@ impl UnsortedJoinStep {
         });
         iterate_instruction.input_variables_foreach(|var| {
             let var = var.as_position().unwrap();
-            if !input_variables.contains(&var) {
-                input_variables.push(var)
+            if !bound_variables.contains(&var) {
+                bound_variables.push(var)
             }
         });
         check_instructions.iter().for_each(|instruction| {
             instruction.input_variables_foreach(|var| {
                 let var = var.as_position().unwrap();
-                if !input_variables.contains(&var) {
-                    input_variables.push(var)
+                if !bound_variables.contains(&var) {
+                    bound_variables.push(var)
                 }
             })
         });
@@ -206,7 +251,7 @@ impl UnsortedJoinStep {
             iterate_instruction,
             check_instructions,
             new_variables,
-            input_variables,
+            bound_variables,
             selected_variables: selected_variables.to_owned(),
             output_width,
         }
@@ -218,6 +263,15 @@ impl UnsortedJoinStep {
 
     fn output_width(&self) -> u32 {
         todo!()
+    }
+}
+
+impl fmt::Display for UnsortedJoinStep {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Unsorted Iterate [bound_vars={:?}, output_size={:?}]", &self.bound_variables, self.output_width)?;
+        write!(f, "\n      {}", &self.iterate_instruction)?;
+        // TODO: do we need these at all?
+        write!(f, "\n      {:?}", &self.check_instructions)
     }
 }
 
@@ -253,6 +307,14 @@ impl AssignmentStep {
     }
 }
 
+impl fmt::Display for AssignmentStep {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Assignment [inputs={:?}, output_size={}]", &self.input_positions, self.output_width)?;
+        // TODO: Display expression
+        write!(f, "\n      {:?}", &self.expression)
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct CheckStep {
     pub check_instructions: Vec<CheckInstruction<ExecutorVariable>>,
@@ -274,6 +336,16 @@ impl CheckStep {
     }
 }
 
+impl fmt::Display for CheckStep {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Check")?;
+        for check in &self.check_instructions {
+            write!(f, "\n      {}", check)?;
+        }
+        Ok(())
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct DisjunctionStep {
     pub branches: Vec<MatchExecutable>,
@@ -288,6 +360,18 @@ impl DisjunctionStep {
 
     pub fn output_width(&self) -> u32 {
         self.output_width
+    }
+}
+
+impl fmt::Display for DisjunctionStep {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Disjunction [output_size={}]", self.output_width)?;
+        for branch in &self.branches {
+            write!(f, "\n      --- Start branch ---")?;
+            write!(f, "{}", branch)?;
+            write!(f, "\n      --- End branch ---")?;
+        }
+        Ok(())
     }
 }
 
@@ -308,6 +392,29 @@ impl NegationStep {
     }
 }
 
+impl fmt::Display for NegationStep {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Negation")?;
+        write!(f, "      --- Start negation ---")?;
+        write!(f, "\n {}", &self.negation)?;
+        write!(f, "\n      --- End negation ---")
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct OptionalStep {
+    pub optional: MatchExecutable,
+}
+
+impl fmt::Display for OptionalStep {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Optional")?;
+        write!(f, "\n      --- Start negation ---")?;
+        write!(f, "\n {}", &self.optional)?;
+        write!(f, "\n      --- End negation ---")
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct FunctionCallStep {
     // TODO: Deduplication, selection counting etc.
@@ -323,9 +430,14 @@ impl FunctionCallStep {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct OptionalStep {
-    pub optional: MatchExecutable,
+impl fmt::Display for FunctionCallStep {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(
+            f,
+            "Function Call [fn_id={}, assigned={:?}, arguments={:?}, output_size={}]",
+            self.function_id, &self.assigned, &self.arguments, self.output_width
+        )
+    }
 }
 
 pub trait InstructionAPI<ID: IrID> {

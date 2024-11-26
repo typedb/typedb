@@ -23,7 +23,7 @@ pub(crate) fn encode_document(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
-) -> Result<typedb_protocol::ConceptDocument, ConceptReadError> {
+) -> Result<typedb_protocol::ConceptDocument, Box<ConceptReadError>> {
     Ok(typedb_protocol::ConceptDocument {
         root: Some(encode_node(document.root, snapshot, type_manager, thing_manager, parameters)?),
     })
@@ -35,7 +35,7 @@ fn encode_node(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
-) -> Result<typedb_protocol::concept_document::Node, ConceptReadError> {
+) -> Result<typedb_protocol::concept_document::Node, Box<ConceptReadError>> {
     match node {
         DocumentNode::List(list) => Ok(typedb_protocol::concept_document::Node {
             node: Some(typedb_protocol::concept_document::node::Node::List(encode_list(
@@ -72,12 +72,12 @@ fn encode_map(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
-) -> Result<typedb_protocol::concept_document::node::Map, ConceptReadError> {
+) -> Result<typedb_protocol::concept_document::node::Map, Box<ConceptReadError>> {
     let encoded_map = match map {
         DocumentMap::UserKeys(map) => {
             let mut encoded_map = HashMap::with_capacity(map.len());
             for (key, value) in map.into_iter() {
-                let key_name = parameters.fetch_key(key).unwrap();
+                let key_name = parameters.fetch_key(key).expect("Expected key in parameters to get its name");
                 let encoded_value = encode_node(value, snapshot, type_manager, thing_manager, parameters)?;
                 encoded_map.insert(key_name.to_owned(), encoded_value);
             }
@@ -102,7 +102,7 @@ fn encode_list(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
-) -> Result<typedb_protocol::concept_document::node::List, ConceptReadError> {
+) -> Result<typedb_protocol::concept_document::node::List, Box<ConceptReadError>> {
     let encoded_list = list
         .list
         .into_iter()
@@ -116,7 +116,7 @@ fn encode_leaf(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
-) -> Result<typedb_protocol::concept_document::node::Leaf, ConceptReadError> {
+) -> Result<typedb_protocol::concept_document::node::Leaf, Box<ConceptReadError>> {
     match leaf {
         DocumentLeaf::Empty => Ok(typedb_protocol::concept_document::node::Leaf {
             leaf: Some(typedb_protocol::concept_document::node::leaf::Leaf::Empty(

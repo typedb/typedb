@@ -18,7 +18,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::thing_manager::ThingManager,
-    type_::{type_manager::TypeManager, TypeAPI},
+    type_::TypeAPI,
     ConceptStatus,
 };
 
@@ -35,7 +35,7 @@ pub trait ThingAPI<'a>: Sized + Clone {
     type Vertex<'b>: ThingVertex<'b>;
     type Owned: ThingAPI<'static>;
 
-    const PREFIX_RANGE: (Prefix, Prefix);
+    const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix);
 
     fn new(vertex: Self::Vertex<'a>) -> Self;
 
@@ -51,7 +51,7 @@ pub trait ThingAPI<'a>: Sized + Clone {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<(), ConceptReadError>;
+    ) -> Result<(), Box<ConceptReadError>>;
 
     // TODO: implementers could cache the status in a OnceCell if we do many operations on the same Thing at once
     fn get_status(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> ConceptStatus;
@@ -60,13 +60,9 @@ pub trait ThingAPI<'a>: Sized + Clone {
         self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<(), ConceptWriteError>;
+    ) -> Result<(), Box<ConceptWriteError>>;
 
-    fn prefix_for_type(
-        type_: Self::TypeAPI<'_>,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<Prefix, ConceptReadError>;
+    fn prefix_for_type(type_: Self::TypeAPI<'_>) -> Prefix;
 }
 
 pub trait HKInstance: for<'a> Hkt<HktSelf<'a>: ThingAPI<'a>> {}
@@ -79,7 +75,7 @@ pub(crate) fn decode_attribute_ids(
     let chunk_size = AttributeID::value_type_encoding_length(value_type_category);
     let chunks_iter = bytes.chunks_exact(chunk_size);
     debug_assert!(chunks_iter.remainder().is_empty());
-    chunks_iter.map(move |chunk| AttributeID::new(value_type_category, chunk))
+    chunks_iter.map(AttributeID::new)
 }
 
 pub(crate) fn encode_attribute_ids(

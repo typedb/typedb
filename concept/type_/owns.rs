@@ -56,7 +56,7 @@ impl<'a> Owns<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         type_manager.get_is_key(snapshot, self.clone().into_owned())
     }
 
@@ -64,7 +64,7 @@ impl<'a> Owns<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
         type_manager.get_capability_abstract_constraint(snapshot, self.clone().into_owned())
     }
 
@@ -72,7 +72,7 @@ impl<'a> Owns<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
         type_manager.get_owns_distinct_constraints(snapshot, self.clone().into_owned())
     }
 
@@ -80,7 +80,7 @@ impl<'a> Owns<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         Ok(!self.get_constraints_distinct(snapshot, type_manager)?.is_empty())
     }
 
@@ -88,7 +88,7 @@ impl<'a> Owns<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
         type_manager.get_unique_constraint(snapshot, self.clone().into_owned())
     }
 
@@ -96,7 +96,7 @@ impl<'a> Owns<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
         type_manager.get_owns_regex_constraints(snapshot, self.clone().into_owned())
     }
 
@@ -104,7 +104,7 @@ impl<'a> Owns<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
         type_manager.get_owns_range_constraints(snapshot, self.clone().into_owned())
     }
 
@@ -112,7 +112,7 @@ impl<'a> Owns<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
         type_manager.get_owns_values_constraints(snapshot, self.clone().into_owned())
     }
 
@@ -122,7 +122,7 @@ impl<'a> Owns<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         annotation: OwnsAnnotation,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         match annotation {
             OwnsAnnotation::Distinct(_) => {
                 type_manager.set_owns_annotation_distinct(snapshot, thing_manager, self.clone().into_owned())?
@@ -158,7 +158,7 @@ impl<'a> Owns<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         annotation_category: AnnotationCategory,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let owns_annotation = OwnsAnnotation::try_getting_default(annotation_category)
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match owns_annotation {
@@ -191,7 +191,7 @@ impl<'a> Owns<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Ordering, ConceptReadError> {
+    ) -> Result<Ordering, Box<ConceptReadError>> {
         type_manager.get_owns_ordering(snapshot, self.clone().into_owned())
     }
 
@@ -201,7 +201,7 @@ impl<'a> Owns<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         ordering: Ordering,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.set_owns_ordering(snapshot, thing_manager, self.clone().into_owned(), ordering)
     }
 
@@ -265,7 +265,7 @@ impl<'a> Capability<'a> for Owns<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         let is_abstract = self.get_constraint_abstract(snapshot, type_manager)?.is_some();
         debug_assert!(!is_abstract, "Abstractness of owns is not implemented! Take care of validation");
         Ok(is_abstract)
@@ -275,7 +275,7 @@ impl<'a> Capability<'a> for Owns<'a> {
         &'this self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<OwnsAnnotation>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'this, HashSet<OwnsAnnotation>>, Box<ConceptReadError>> {
         type_manager.get_owns_annotations_declared(snapshot, self.clone().into_owned())
     }
 
@@ -283,7 +283,7 @@ impl<'a> Capability<'a> for Owns<'a> {
         &'this self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<CapabilityConstraint<Owns<'static>>>>, ConceptReadError>
+    ) -> Result<MaybeOwns<'this, HashSet<CapabilityConstraint<Owns<'static>>>>, Box<ConceptReadError>>
     where
         'a: 'static,
     {
@@ -294,7 +294,7 @@ impl<'a> Capability<'a> for Owns<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
         type_manager.get_owns_cardinality_constraints(snapshot, self.clone().into_owned())
     }
 
@@ -302,7 +302,7 @@ impl<'a> Capability<'a> for Owns<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<AnnotationCardinality, ConceptReadError> {
+    ) -> Result<AnnotationCardinality, Box<ConceptReadError>> {
         type_manager.get_capability_cardinality(snapshot, self.clone().into_owned().into_owned())
     }
 }

@@ -6,7 +6,7 @@
 
 use std::{
     collections::{BTreeMap, HashMap},
-    fmt::{Debug, Display, Formatter},
+    fmt,
 };
 
 use bytes::{byte_reference::ByteReference, Bytes};
@@ -38,8 +38,7 @@ use crate::{
         HKInstance, ThingAPI,
     },
     type_::{
-        attribute_type::AttributeType, object_type::ObjectType, role_type::RoleType, type_manager::TypeManager,
-        ObjectTypeAPI, Ordering, OwnerAPI,
+        attribute_type::AttributeType, object_type::ObjectType, role_type::RoleType, ObjectTypeAPI, Ordering, OwnerAPI,
     },
     ConceptStatus,
 };
@@ -91,7 +90,7 @@ impl<'a> ThingAPI<'a> for Object<'a> {
     type TypeAPI<'b> = ObjectType<'b>;
     type Vertex<'b> = ObjectVertex<'b>;
     type Owned = Object<'static>;
-    const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::VertexEntity, Prefix::VertexRelation);
+    const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix) = (Prefix::VertexEntity, Prefix::VertexRelation);
 
     fn new(object_vertex: Self::Vertex<'a>) -> Self {
         match object_vertex.prefix() {
@@ -133,7 +132,7 @@ impl<'a> ThingAPI<'a> for Object<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         match self {
             Object::Entity(entity) => entity.set_required(snapshot, thing_manager),
             Object::Relation(relation) => relation.set_required(snapshot, thing_manager),
@@ -151,26 +150,22 @@ impl<'a> ThingAPI<'a> for Object<'a> {
         self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         match self {
             Object::Entity(entity) => entity.delete(snapshot, thing_manager),
             Object::Relation(relation) => relation.delete(snapshot, thing_manager),
         }
     }
 
-    fn prefix_for_type(
-        type_: Self::TypeAPI<'_>,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<Prefix, ConceptReadError> {
+    fn prefix_for_type(type_: Self::TypeAPI<'_>) -> Prefix {
         match type_ {
-            ObjectType::Entity(entity) => Entity::prefix_for_type(entity, snapshot, type_manager),
-            ObjectType::Relation(relation) => Relation::prefix_for_type(relation, snapshot, type_manager),
+            ObjectType::Entity(entity) => Entity::prefix_for_type(entity),
+            ObjectType::Relation(relation) => Relation::prefix_for_type(relation),
         }
     }
 }
 
-pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + Clone + Debug {
+pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + Clone + fmt::Debug {
     fn type_(&self) -> impl ObjectTypeAPI<'static>;
 
     fn into_owned_object(self) -> Object<'static>;
@@ -181,7 +176,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         thing_manager.has_attribute_with_value(snapshot, self, attribute_type, value)
     }
 
@@ -190,7 +185,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         attribute: Attribute<'_>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         thing_manager.has_attribute(snapshot, self, attribute)
     }
 
@@ -207,7 +202,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<HasAttributeIterator, ConceptReadError> {
+    ) -> HasAttributeIterator {
         thing_manager.get_has_from_thing_to_type_unordered(snapshot, self, attribute_type)
     }
 
@@ -216,7 +211,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Vec<Attribute<'static>>, ConceptReadError> {
+    ) -> Result<Vec<Attribute<'static>>, Box<ConceptReadError>> {
         thing_manager.get_has_from_thing_to_type_ordered(snapshot, self, attribute_type)
     }
 
@@ -225,7 +220,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
         attribute_types_defining_range: impl Iterator<Item = AttributeType<'static>>,
-    ) -> Result<HasIterator, ConceptReadError> {
+    ) -> Result<HasIterator, Box<ConceptReadError>> {
         thing_manager.get_has_from_thing_to_type_range_unordered(snapshot, self, attribute_types_defining_range)
     }
 
@@ -234,7 +229,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         attribute: Attribute<'_>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_owner_exists_to_set_has(snapshot, thing_manager, self)
             .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
@@ -249,7 +244,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         let owns = self.type_().try_get_owns_attribute(snapshot, thing_manager.type_manager(), attribute.type_())?;
         match owns.get_ordering(snapshot, thing_manager.type_manager())? {
             Ordering::Unordered => (),
-            Ordering::Ordered => return Err(ConceptWriteError::SetHasUnorderedOwnsOrdered {}),
+            Ordering::Ordered => return Err(Box::new(ConceptWriteError::SetHasUnorderedOwnsOrdered {})),
         }
 
         OperationTimeValidation::validate_owns_is_not_abstract(snapshot, thing_manager, self, attribute.type_())
@@ -263,7 +258,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         attribute: Attribute<'_>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_owner_exists_to_unset_has(snapshot, thing_manager, self)
             .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
@@ -278,7 +273,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         let owns = self.type_().try_get_owns_attribute(snapshot, thing_manager.type_manager(), attribute.type_())?;
         match owns.get_ordering(snapshot, thing_manager.type_manager())? {
             Ordering::Unordered => (),
-            Ordering::Ordered => return Err(ConceptWriteError::UnsetHasUnorderedOwnsOrdered {}),
+            Ordering::Ordered => return Err(Box::new(ConceptWriteError::UnsetHasUnorderedOwnsOrdered {})),
         }
 
         thing_manager.unset_has(snapshot, self, attribute);
@@ -291,7 +286,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
         new_attributes: Vec<Attribute<'_>>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_owner_exists_to_set_has(snapshot, thing_manager, self)
             .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
@@ -306,7 +301,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         let owns =
             self.type_().try_get_owns_attribute(snapshot, thing_manager.type_manager(), attribute_type.clone())?;
         match owns.get_ordering(snapshot, thing_manager.type_manager())? {
-            Ordering::Unordered => return Err(ConceptWriteError::SetHasOrderedOwnsUnordered {}),
+            Ordering::Unordered => return Err(Box::new(ConceptWriteError::SetHasOrderedOwnsUnordered {})),
             Ordering::Ordered => (),
         }
 
@@ -356,7 +351,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         attribute_type: AttributeType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_owner_exists_to_unset_has(snapshot, thing_manager, self)
             .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
@@ -372,7 +367,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             self.type_().try_get_owns_attribute(snapshot, thing_manager.type_manager(), attribute_type.clone())?;
         let ordering = owns.get_ordering(snapshot, thing_manager.type_manager())?;
         match ordering {
-            Ordering::Unordered => Err(ConceptWriteError::UnsetHasOrderedOwnsUnordered {}),
+            Ordering::Unordered => Err(Box::new(ConceptWriteError::UnsetHasOrderedOwnsUnordered {})),
             Ordering::Ordered => {
                 for attribute in self.get_has_type_ordered(snapshot, thing_manager, attribute_type.clone())? {
                     thing_manager.unset_has(snapshot, self, attribute);
@@ -387,7 +382,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         &'a self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
-    ) -> impl for<'x> LendingIterator<Item<'x> = Result<Relation<'x>, ConceptReadError>> {
+    ) -> impl for<'x> LendingIterator<Item<'x> = Result<Relation<'x>, Box<ConceptReadError>>> {
         thing_manager.get_relations_player(snapshot, self)
     }
 
@@ -396,7 +391,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         snapshot: &impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
         role_type: RoleType<'static>,
-    ) -> impl for<'x> LendingIterator<Item<'x> = Result<(Relation<'x>, u64), ConceptReadError>> {
+    ) -> impl for<'x> LendingIterator<Item<'x> = Result<(Relation<'x>, u64), Box<ConceptReadError>>> {
         thing_manager.get_relations_player_role(snapshot, self, role_type)
     }
 
@@ -412,7 +407,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<HashMap<AttributeType<'static>, u64>, ConceptReadError> {
+    ) -> Result<HashMap<AttributeType<'static>, u64>, Box<ConceptReadError>> {
         let mut counts = HashMap::new();
         let mut has_iter = self.get_has_unordered(snapshot, thing_manager);
         while let Some((attribute, count)) = has_iter.next().transpose()? {
@@ -426,7 +421,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<HashMap<RoleType<'static>, u64>, ConceptReadError> {
+    ) -> Result<HashMap<RoleType<'static>, u64>, Box<ConceptReadError>> {
         let mut counts = HashMap::new();
         let mut relation_role_iter = self.get_relations_roles(snapshot, thing_manager);
         while let Some((_, role_type, count)) = relation_role_iter.next().transpose()? {
@@ -465,11 +460,11 @@ impl<'a> PartialOrd for Object<'a> {
     }
 }
 
-impl<'a> Display for Object<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<'a> fmt::Display for Object<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Object::Entity(entity) => Display::fmt(entity, f),
-            Object::Relation(relation) => Display::fmt(relation, f),
+            Object::Entity(entity) => fmt::Display::fmt(entity, f),
+            Object::Relation(relation) => fmt::Display::fmt(relation, f),
         }
     }
 }

@@ -25,18 +25,18 @@ use typeql::query::stage::Stage;
 
 #[derive(Debug)]
 pub enum PatternDefitionOrExpressionCompileError {
-    PatternDefinition { source: RepresentationError },
-    ExpressionCompilation { source: ExpressionCompileError },
+    PatternDefinition { source: Box<RepresentationError> },
+    ExpressionCompilation { source: Box<ExpressionCompileError> },
 }
 
-impl From<RepresentationError> for PatternDefitionOrExpressionCompileError {
-    fn from(value: RepresentationError) -> Self {
+impl From<Box<RepresentationError>> for PatternDefitionOrExpressionCompileError {
+    fn from(value: Box<RepresentationError>) -> Self {
         Self::PatternDefinition { source: value }
     }
 }
 
-impl From<ExpressionCompileError> for PatternDefitionOrExpressionCompileError {
-    fn from(value: ExpressionCompileError) -> Self {
+impl From<Box<ExpressionCompileError>> for PatternDefitionOrExpressionCompileError {
+    fn from(value: Box<ExpressionCompileError>) -> Self {
         Self::ExpressionCompilation { source: value }
     }
 }
@@ -50,12 +50,18 @@ fn compile_expression_via_match(
 > {
     let query = format!("match $x = {}; select $x;", s);
     let mut translation_context = TranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
     if let Stage::Match(match_) = typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.first().unwrap() {
-        let block =
-            translate_match(&mut translation_context, &HashMapFunctionSignatureIndex::empty(), match_)?.finish();
+        let block = translate_match(
+            &mut translation_context,
+            &mut value_parameters,
+            &HashMapFunctionSignatureIndex::empty(),
+            match_,
+        )?
+        .finish()?;
         let variable_mapping = variable_types
             .keys()
-            .map(|name| ((*name).to_owned(), translation_context.get_variable(*name).unwrap()))
+            .map(|&name| (name.to_owned(), translation_context.get_variable(name).unwrap()))
             .collect::<HashMap<_, _>>();
         let variable_types_mapped = variable_types
             .into_iter()
@@ -69,9 +75,9 @@ fn compile_expression_via_match(
         let compiled = ExpressionCompilationContext::compile(
             expression_binding.expression(),
             &variable_types_mapped,
-            &translation_context.parameters,
+            &value_parameters,
         )?;
-        Ok((variable_mapping, compiled, translation_context.parameters))
+        Ok((variable_mapping, compiled, value_parameters))
     } else {
         unreachable!();
     }
@@ -174,6 +180,7 @@ fn test_ops_long_double() {
             let result = evaluate_expression(&expr, HashMap::new(), &params).unwrap();
             assert_eq!(as_value!(result), Value::Double(16.0));
         }
+
         {
             let (_, expr, params) = compile_expression_via_match("12.0e0 - 4.0e0", HashMap::new()).unwrap();
             let result = evaluate_expression(&expr, HashMap::new(), &params).unwrap();
@@ -245,12 +252,11 @@ fn test_functions() {
         assert_eq!(as_value!(result), Value::Long(4));
     }
 
-    assert!(matches!(
-        compile_expression_via_match("round(3.5e0, 4.5e0)", HashMap::new()),
-        Err(PatternDefitionOrExpressionCompileError::PatternDefinition {
-            source: RepresentationError::ExpressionBuiltinArgumentCountMismatch { .. }
-        })
-    ));
+    let err = compile_expression_via_match("round(3.5e0, 4.5e0)", HashMap::new()).unwrap_err();
+    let PatternDefitionOrExpressionCompileError::PatternDefinition { source } = err else {
+        panic!("wrong error type");
+    };
+    assert!(matches!(*source, RepresentationError::ExpressionBuiltinArgumentCountMismatch { .. }));
 }
 
 #[test]

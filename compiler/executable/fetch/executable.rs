@@ -16,34 +16,46 @@ use crate::{
     executable::{
         function::{compile_function, ExecutableFunction, FunctionTablingType},
         match_::planner::function_plan::ExecutableFunctionRegistry,
+        next_executable_id,
         pipeline::{compile_stages_and_fetch, ExecutableStage},
         ExecutableCompilationError,
     },
     VariablePosition,
 };
 
+#[derive(Debug)]
 pub struct ExecutableFetch {
+    pub executable_id: u64,
     pub object_instruction: FetchObjectInstruction,
 }
 
+impl ExecutableFetch {
+    fn new(object_instruction: FetchObjectInstruction) -> Self {
+        Self { executable_id: next_executable_id(), object_instruction }
+    }
+}
+
+#[derive(Debug)]
 pub enum FetchSomeInstruction {
     SingleVar(VariablePosition),
     SingleAttribute(VariablePosition, AttributeType<'static>),
-    SingleFunction(ExecutableFunction),
+    SingleFunction(ExecutableFunction, HashMap<Variable, VariablePosition>),
 
     Object(Box<FetchObjectInstruction>),
 
-    ListFunction(ExecutableFunction),
+    ListFunction(ExecutableFunction, HashMap<Variable, VariablePosition>),
     ListSubFetch(ExecutableFetchListSubFetch),
     ListAttributesAsList(VariablePosition, AttributeType<'static>),
     ListAttributesFromList(VariablePosition, AttributeType<'static>),
 }
 
+#[derive(Debug)]
 pub enum FetchObjectInstruction {
     Entries(HashMap<ParameterID, FetchSomeInstruction>),
     Attributes(VariablePosition),
 }
 
+#[derive(Debug)]
 pub struct ExecutableFetchListSubFetch {
     pub variable_registry: Arc<VariableRegistry>,
     pub input_position_mapping: HashMap<VariablePosition, VariablePosition>,
@@ -58,7 +70,7 @@ pub fn compile_fetch(
     variable_positions: &HashMap<Variable, VariablePosition>,
 ) -> Result<ExecutableFetch, FetchCompilationError> {
     let compiled = compile_object(statistics, available_functions, fetch.object, variable_positions)?;
-    Ok(ExecutableFetch { object_instruction: compiled })
+    Ok(ExecutableFetch::new(compiled))
 }
 
 fn compile_object(
@@ -109,7 +121,7 @@ fn compile_some(
                 .map_err(|err| FetchCompilationError::AnonymousFunctionCompilation {
                 typedb_source: Box::new(err),
             })?;
-            Ok(FetchSomeInstruction::SingleFunction(compiled))
+            Ok(FetchSomeInstruction::SingleFunction(compiled, variable_positions.clone()))
         }
         AnnotatedFetchSome::Object(object) => {
             let compiled = compile_object(statistics, available_functions, *object, variable_positions)?;
@@ -120,14 +132,13 @@ fn compile_some(
                 .map_err(|err| FetchCompilationError::AnonymousFunctionCompilation {
                 typedb_source: Box::new(err),
             })?;
-            Ok(FetchSomeInstruction::ListFunction(compiled))
+            Ok(FetchSomeInstruction::ListFunction(compiled, variable_positions.clone()))
         }
         AnnotatedFetchSome::ListSubFetch(sub_fetch) => {
             let AnnotatedFetchListSubFetch { variable_registry, input_variables, stages, fetch } = sub_fetch;
-            let registry = Arc::new(variable_registry);
             let (input_positions, compiled_stages, compiled_fetch) = compile_stages_and_fetch(
                 statistics,
-                registry.clone(),
+                &variable_registry,
                 available_functions,
                 stages,
                 Some(fetch),
@@ -144,7 +155,7 @@ fn compile_some(
                 .collect();
 
             Ok(FetchSomeInstruction::ListSubFetch(ExecutableFetchListSubFetch {
-                variable_registry: registry,
+                variable_registry: Arc::new(variable_registry),
                 input_position_mapping: input_position_remapping,
                 stages: compiled_stages,
                 fetch: compiled_fetch.unwrap(),

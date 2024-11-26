@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{hash_map, HashMap, HashSet},
-    sync::Arc,
-};
+use std::collections::{hash_map, HashMap, HashSet};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -16,16 +13,18 @@ use itertools::Itertools;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
-    executable::match_::{
-        instructions::{CheckInstruction, ConstraintInstruction},
-        planner::{
-            function_plan::ExecutableFunctionRegistry,
-            match_executable::{
-                AssignmentStep, CheckStep, DisjunctionStep, ExecutionStep, FunctionCallStep, IntersectionStep,
-                MatchExecutable, NegationStep,
+    executable::{
+        match_::{
+            instructions::{CheckInstruction, ConstraintInstruction},
+            planner::{
+                match_executable::{
+                    AssignmentStep, CheckStep, DisjunctionStep, ExecutionStep, FunctionCallStep, IntersectionStep,
+                    MatchExecutable, NegationStep,
+                },
+                plan::plan_conjunction,
             },
-            plan::plan_conjunction,
         },
+        next_executable_id,
     },
     ExecutorVariable, VariablePosition,
 };
@@ -38,8 +37,9 @@ mod vertex;
 pub fn compile(
     block: &Block,
     input_variables: &HashMap<Variable, VariablePosition>,
+    selected_variables: &Vec<Variable>,
     type_annotations: &TypeAnnotations,
-    variable_registry: Arc<VariableRegistry>,
+    variable_registry: &VariableRegistry,
     expressions: &HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &Statistics,
 ) -> MatchExecutable {
@@ -55,11 +55,11 @@ pub fn compile(
         block_context,
         input_variables,
         type_annotations,
-        &variable_registry,
+        variable_registry,
         expressions,
         statistics,
     )
-    .lower(variable_registry.variable_names().keys().copied(), &assigned_identities, &variable_registry)
+    .lower(input_variables.keys().copied(), selected_variables.clone(), &assigned_identities, variable_registry)
     .finish(variable_registry)
 }
 
@@ -183,7 +183,7 @@ impl StepBuilder {
         self,
         index: &HashMap<Variable, ExecutorVariable>,
         named_variables: &HashSet<ExecutorVariable>,
-        variable_registry: Arc<VariableRegistry>,
+        variable_registry: &VariableRegistry,
     ) -> ExecutionStep {
         let selected_variables = self
             .selected_variables
@@ -221,7 +221,7 @@ impl StepBuilder {
             ),
             StepInstructionsBuilder::Disjunction(DisjunctionBuilder { branches }) => {
                 ExecutionStep::Disjunction(DisjunctionStep::new(
-                    branches.into_iter().map(|builder| builder.finish(variable_registry.clone())).collect(),
+                    branches.into_iter().map(|builder| builder.finish(variable_registry)).collect(),
                     selected_variables,
                     output_width,
                 ))
@@ -240,7 +240,7 @@ impl StepBuilder {
 #[derive(Debug)]
 struct MatchExecutableBuilder {
     selected_variables: Vec<Variable>,
-    current_outputs: Vec<Variable>,
+    current_outputs: HashSet<Variable>,
     produced_so_far: HashSet<Variable>,
 
     steps: Vec<StepBuilder>,
@@ -252,9 +252,14 @@ struct MatchExecutableBuilder {
 }
 
 impl MatchExecutableBuilder {
-    fn new(assigned_positions: &HashMap<Variable, ExecutorVariable>, selected_variables: Vec<Variable>) -> Self {
+    fn new(
+        assigned_positions: &HashMap<Variable, ExecutorVariable>,
+        selected_variables: Vec<Variable>,
+        input_variables: Vec<Variable>,
+    ) -> Self {
         let index = assigned_positions.clone();
-        let current_outputs = index.keys().copied().collect();
+        let produced_so_far = HashSet::from_iter(input_variables.iter().copied());
+        let current_outputs = produced_so_far.clone();
         let reverse_index = index.iter().map(|(&var, &pos)| (pos, var)).collect();
         let next_position = assigned_positions
             .values()
@@ -266,7 +271,7 @@ impl MatchExecutableBuilder {
         Self {
             selected_variables,
             current_outputs,
-            produced_so_far: HashSet::new(),
+            produced_so_far,
             steps: Vec::new(),
             current: None,
             reverse_index,
@@ -292,7 +297,7 @@ impl MatchExecutableBuilder {
 
         if self.current.is_none() {
             self.current = Some(Box::new(StepBuilder {
-                selected_variables: self.current_outputs.clone(),
+                selected_variables: Vec::from_iter(self.current_outputs.iter().copied()),
                 builder: StepInstructionsBuilder::Intersection(IntersectionBuilder::new()),
             }));
         }
@@ -307,29 +312,60 @@ impl MatchExecutableBuilder {
     }
 
     fn push_check(&mut self, variables: &[Variable], check: CheckInstruction<ExecutorVariable>) {
-        if let Some(intersection) = self.current.as_mut().and_then(|b| b.builder.as_intersection_mut()) {
-            for instruction in intersection.instructions.iter_mut().rev() {
-                let mut is_producer = false;
-                instruction.new_variables_foreach(|var| is_producer |= variables.contains(&self.reverse_index[&var]));
-                if is_producer {
-                    instruction.add_check(check);
-                    self.current.as_mut().unwrap().selected_variables = self.current_outputs.clone();
-                    return;
-                }
-            }
+        // if it is a comparison or IID (TODO) we can inline the check into previous instructions
+        if self.inline_as_optimisation(variables, &check) {
+            return;
         }
+
         // all variables are inputs
         if self.current.as_ref().is_some_and(|builder| !builder.builder.is_check()) {
             self.finish_one();
         }
         if self.current.is_none() {
             self.current = Some(Box::new(StepBuilder {
-                selected_variables: self.current_outputs.clone(),
+                selected_variables: Vec::from_iter(self.current_outputs.iter().copied()),
                 builder: StepInstructionsBuilder::Check(CheckBuilder::default()),
             }))
         }
         let current = self.current.as_mut().unwrap().builder.as_check_mut().unwrap();
         current.instructions.push(check);
+    }
+
+    /// inject the check as an optimisation into previously built steps
+    fn inline_as_optimisation(&mut self, variables: &[Variable], check: &CheckInstruction<ExecutorVariable>) -> bool {
+        if !matches!(check, CheckInstruction::Comparison { .. } | CheckInstruction::Iid { .. }) {
+            // TODO: inject IID check as well
+            return false;
+        }
+
+        let mut inlined = false;
+        let mut added_to_current = false;
+        let steps_count = self.steps.len();
+        for (i, step) in self.steps.iter_mut().chain(self.current.as_mut().map(|box_| box_.as_mut())).enumerate() {
+            // TODO: we may be able to inject into non-intersection steps as well? For now, we know intersection steps are always sorted
+            if let StepInstructionsBuilder::Intersection(intersection) = &mut step.builder {
+                let mut is_added = false;
+                for instruction in intersection.instructions.iter_mut() {
+                    // if any check variable is produced and all other variables are available
+                    let any_produced = variables.iter().any(|var| instruction.is_new_variable(self.index[var]));
+                    let all_available = variables.iter().all(|var| {
+                        instruction.is_new_variable(self.index[var]) || instruction.is_input_variable(self.index[var])
+                    });
+                    if any_produced && all_available {
+                        instruction.add_check(check.clone());
+                        is_added = true;
+                    }
+                }
+                inlined |= is_added;
+                if is_added && i == steps_count {
+                    added_to_current = true;
+                }
+            }
+        }
+        if added_to_current {
+            self.current.as_mut().unwrap().selected_variables = Vec::from_iter(self.current_outputs.iter().copied());
+        }
+        inlined
     }
 
     fn push_step(&mut self, variable_positions: &HashMap<Variable, ExecutorVariable>, mut step: StepBuilder) {
@@ -342,7 +378,7 @@ impl MatchExecutableBuilder {
             }
         }
         self.produced_so_far.extend(self.current_outputs.iter().copied());
-        step.selected_variables = self.current_outputs.clone();
+        step.selected_variables = Vec::from_iter(self.current_outputs.iter().copied());
 
         self.steps.push(step);
     }
@@ -356,10 +392,10 @@ impl MatchExecutableBuilder {
     }
 
     fn register_output(&mut self, var: Variable) {
+        self.current_outputs.insert(var);
         if let hash_map::Entry::Vacant(entry) = self.index.entry(var) {
             entry.insert(ExecutorVariable::RowPosition(self.next_output));
             self.reverse_index.insert(ExecutorVariable::RowPosition(self.next_output), var);
-            self.current_outputs.push(var);
             self.next_output.position += 1;
         }
     }
@@ -367,24 +403,24 @@ impl MatchExecutableBuilder {
     fn register_internal(&mut self, var: Variable) {
         if let hash_map::Entry::Vacant(entry) = self.index.entry(var) {
             entry.insert(ExecutorVariable::Internal(var));
-            self.reverse_index.insert(ExecutorVariable::Internal(var), var);
+            self.reverse_index.insert(ExecutorVariable::new_internal(var), var);
         }
     }
 
     fn remove_output(&mut self, var: Variable) {
         if !self.selected_variables.contains(&var) {
-            self.current_outputs.retain(|v| v != &var);
+            self.current_outputs.remove(&var);
         }
     }
 
     fn finish_one(&mut self) {
         if let Some(mut current) = self.current.take() {
-            current.selected_variables = self.current_outputs.clone();
+            current.selected_variables = Vec::from_iter(self.current_outputs.iter().copied());
             self.steps.push(*current);
         }
     }
 
-    fn finish(mut self, variable_registry: Arc<VariableRegistry>) -> MatchExecutable {
+    fn finish(mut self, variable_registry: &VariableRegistry) -> MatchExecutable {
         self.finish_one();
         let named_variables = self
             .index
@@ -394,7 +430,7 @@ impl MatchExecutableBuilder {
         let steps = self
             .steps
             .into_iter()
-            .map(|builder| builder.finish(&self.index, &named_variables, variable_registry.clone()))
+            .map(|builder| builder.finish(&self.index, &named_variables, variable_registry))
             .collect();
         let variable_positions_index = self
             .reverse_index
@@ -404,6 +440,7 @@ impl MatchExecutableBuilder {
             .map(|(_, &v)| v)
             .collect();
         MatchExecutable::new(
+            next_executable_id(),
             steps,
             self.index.into_iter().filter_map(|(var, id)| Some((var, id.as_position()?))).collect(),
             variable_positions_index,

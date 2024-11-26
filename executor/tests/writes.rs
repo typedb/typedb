@@ -31,11 +31,15 @@ use executor::{
         stage::{ExecutionContext, StageAPI, StageIterator},
         PipelineExecutionError,
     },
+    profile::QueryProfile,
     row::MaybeOwnedRow,
     write::WriteError,
     ExecutionInterrupt,
 };
-use ir::{pipeline::function_signature::HashMapFunctionSignatureIndex, translation::TranslationContext};
+use ir::{
+    pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
+    translation::TranslationContext,
+};
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::{
     durability_client::WALClient,
@@ -96,7 +100,7 @@ fn setup_schema(storage: Arc<MVCCStorage<WALClient>>) {
 }
 
 struct ShimStage<Snapshot> {
-    rows: Vec<Result<MaybeOwnedRow<'static>, PipelineExecutionError>>,
+    rows: Vec<Result<MaybeOwnedRow<'static>, Box<PipelineExecutionError>>>,
     context: ExecutionContext<Snapshot>,
 }
 
@@ -109,15 +113,15 @@ impl<Snapshot> ShimStage<Snapshot> {
 
 struct ShimIterator(
     AsNarrowingIterator<
-        vec::IntoIter<Result<MaybeOwnedRow<'static>, PipelineExecutionError>>,
-        Result<AsHkt![MaybeOwnedRow<'_>], PipelineExecutionError>,
+        vec::IntoIter<Result<MaybeOwnedRow<'static>, Box<PipelineExecutionError>>>,
+        Result<AsHkt![MaybeOwnedRow<'_>], Box<PipelineExecutionError>>,
     >,
 );
 
 impl StageIterator for ShimIterator {}
 
 impl LendingIterator for ShimIterator {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.0.next()
@@ -130,8 +134,10 @@ impl<Snapshot> StageAPI<Snapshot> for ShimStage<Snapshot> {
     fn into_iterator(
         self,
         _: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
-    {
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         Ok((ShimIterator(AsNarrowingIterator::new(self.rows)), self.context))
     }
 }
@@ -143,14 +149,17 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     query_str: &str,
     input_row_var_names: &[&str],
     input_rows: Vec<Vec<VariableValue<'static>>>,
-) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), WriteError> {
+) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), Box<WriteError>> {
     let mut translation_context = TranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
     let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_insert();
-    let block = ir::translation::writes::translate_insert(&mut translation_context, &typeql_insert).unwrap();
+    let block =
+        ir::translation::writes::translate_insert(&mut translation_context, &mut value_parameters, &typeql_insert)
+            .unwrap();
     let input_row_format = input_row_var_names
         .iter()
         .enumerate()
-        .map(|(i, v)| (translation_context.get_variable(*v).unwrap(), VariablePosition::new(i as u32)))
+        .map(|(i, v)| (translation_context.get_variable(v).unwrap(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
     let variable_registry = &translation_context.variable_registry;
@@ -171,7 +180,6 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let variable_registry = Arc::new(translation_context.variable_registry);
 
     let insert_plan = compiler::executable::insert::executable::compile(
-        variable_registry,
         block.conjunction().constraints(),
         &input_row_format,
         &entry_annotations,
@@ -186,19 +194,24 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let snapshot = Arc::new(snapshot);
     let initial = ShimStage::new(
         input_rows,
-        ExecutionContext { snapshot, thing_manager, parameters: Arc::new(translation_context.parameters) },
+        ExecutionContext {
+            snapshot,
+            thing_manager,
+            parameters: Arc::new(value_parameters),
+            profile: Arc::new(QueryProfile::new(false)),
+        },
     );
     let insert_executor = InsertStageExecutor::new(Arc::new(insert_plan), initial);
     let (output_iter, context) =
-        insert_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match err {
-            PipelineExecutionError::WriteError { typedb_source } => typedb_source,
+        insert_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match *err {
+            PipelineExecutionError::WriteError { typedb_source } => typedb_source.clone(),
             _ => unreachable!(),
         })?;
     let output_rows = output_iter
         .map_static(|res| res.map(|row| row.into_owned()))
         .into_iter()
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|err| match err {
+        .map_err(|err| match *err {
             PipelineExecutionError::WriteError { typedb_source } => typedb_source,
             _ => unreachable!(),
         })?;
@@ -213,8 +226,9 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     delete_str: &str,
     input_row_var_names: &[&str],
     input_rows: Vec<Vec<VariableValue<'static>>>,
-) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), WriteError> {
+) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), Box<WriteError>> {
     let mut translation_context = TranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
     let entry_annotations = {
         let typeql_match = typeql::parse_query(mock_match_string_for_annotations)
             .unwrap()
@@ -225,11 +239,13 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
             .into_match();
         let block = ir::translation::match_::translate_match(
             &mut translation_context,
+            &mut value_parameters,
             &HashMapFunctionSignatureIndex::empty(),
             &typeql_match,
         )
         .unwrap()
-        .finish();
+        .finish()
+        .unwrap();
         let variable_registry = &translation_context.variable_registry;
         let previous_stage_variable_annotations = &BTreeMap::new();
         let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
@@ -248,11 +264,12 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
 
     let typeql_delete = typeql::parse_query(delete_str).unwrap().into_pipeline().stages.pop().unwrap().into_delete();
     let (block, deleted_concepts) =
-        ir::translation::writes::translate_delete(&mut translation_context, &typeql_delete).unwrap();
+        ir::translation::writes::translate_delete(&mut translation_context, &mut value_parameters, &typeql_delete)
+            .unwrap();
     let input_row_format = input_row_var_names
         .iter()
         .enumerate()
-        .map(|(i, v)| (translation_context.get_variable(*v).unwrap(), VariablePosition::new(i as u32)))
+        .map(|(i, v)| (translation_context.get_variable(v).unwrap(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
     let delete_plan = compiler::executable::delete::executable::compile(
@@ -266,11 +283,16 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     let snapshot = Arc::new(snapshot);
     let initial = ShimStage::new(
         input_rows,
-        ExecutionContext { snapshot, thing_manager, parameters: Arc::new(translation_context.parameters) },
+        ExecutionContext {
+            snapshot,
+            thing_manager,
+            parameters: Arc::new(value_parameters),
+            profile: Arc::new(QueryProfile::new(false)),
+        },
     );
     let delete_executor = DeleteStageExecutor::new(Arc::new(delete_plan), initial);
     let (output_iter, context) =
-        delete_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match err {
+        delete_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match *err {
             PipelineExecutionError::WriteError { typedb_source } => typedb_source,
             _ => unreachable!(),
         })?;
@@ -278,7 +300,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
         .map_static(|res| res.map(|row| row.into_owned()))
         .into_iter()
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|err| match err {
+        .map_err(|err| match *err {
             PipelineExecutionError::WriteError { typedb_source } => typedb_source,
             _ => unreachable!(),
         })?;
@@ -473,7 +495,6 @@ fn test_has_with_input_rows() {
         .as_thing()
         .as_object()
         .get_has_type_unordered(&snapshot, &thing_manager, age_type.clone())
-        .unwrap()
         .map_static(|result| result.unwrap().0.clone().into_owned())
         .collect::<Vec<_>>();
     assert_eq!(a10.as_thing().as_attribute(), age_of_p10[0]);

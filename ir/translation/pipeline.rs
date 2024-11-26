@@ -4,11 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::iter::empty;
+use std::{iter::empty, mem};
 
 use answer::variable::Variable;
 use primitive::either::Either;
 use storage::snapshot::ReadableSnapshot;
+use structural_equality::StructuralEquality;
 use typeql::query::stage::{Operator as TypeQLOperator, Stage as TypeQLStage, Stage};
 
 use crate::{
@@ -45,6 +46,7 @@ pub struct TranslatedPipeline {
 impl TranslatedPipeline {
     pub(crate) fn new(
         translation_context: TranslationContext,
+        value_parameters: ParameterRegistry,
         translated_preamble: Vec<Function>,
         translated_fetch: Option<FetchObject>,
         translated_stages: Vec<TranslatedStage>,
@@ -54,7 +56,7 @@ impl TranslatedPipeline {
             translated_stages,
             translated_fetch,
             variable_registry: translation_context.variable_registry,
-            value_parameters: translation_context.parameters,
+            value_parameters,
         }
     }
 }
@@ -77,15 +79,54 @@ pub enum TranslatedStage {
 impl TranslatedStage {
     pub fn variables(&self) -> Box<dyn Iterator<Item = Variable> + '_> {
         match self {
-            TranslatedStage::Match { block }
-            | TranslatedStage::Insert { block }
-            | TranslatedStage::Delete { block, .. } => Box::new(block.variables()),
-            TranslatedStage::Select(select) => Box::new(select.variables.iter().cloned()),
-            TranslatedStage::Sort(sort) => Box::new(sort.variables.iter().map(|sort_var| sort_var.variable())),
-            TranslatedStage::Offset(_) => Box::new(empty()),
-            TranslatedStage::Limit(_) => Box::new(empty()),
-            TranslatedStage::Require(require) => Box::new(require.variables.iter().cloned()),
-            TranslatedStage::Reduce(reduce) => Box::new(reduce.within_group.iter().cloned()),
+            Self::Match { block } | Self::Insert { block } | Self::Delete { block, .. } => Box::new(block.variables()),
+            Self::Select(select) => Box::new(select.variables.iter().cloned()),
+            Self::Sort(sort) => Box::new(sort.variables.iter().map(|sort_var| sort_var.variable())),
+            Self::Offset(_) => Box::new(empty()),
+            Self::Limit(_) => Box::new(empty()),
+            Self::Require(require) => Box::new(require.variables.iter().cloned()),
+            Self::Reduce(reduce) => Box::new(reduce.within_group.iter().cloned()),
+        }
+    }
+}
+
+impl StructuralEquality for TranslatedStage {
+    fn hash(&self) -> u64 {
+        mem::discriminant(self).hash()
+            ^ match self {
+                Self::Match { block } => block.hash(),
+                Self::Insert { block } => block.hash(),
+                Self::Delete { block, .. } => block.hash(),
+                Self::Select(select) => select.hash(),
+                Self::Sort(sort) => sort.hash(),
+                Self::Offset(offset) => offset.hash(),
+                Self::Limit(limit) => limit.hash(),
+                Self::Require(require) => require.hash(),
+                Self::Reduce(reduce) => reduce.hash(),
+            }
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Match { block }, Self::Match { block: other_block }) => block.equals(other_block),
+            (Self::Insert { block }, Self::Insert { block: other_block }) => block.equals(other_block),
+            (Self::Delete { block, .. }, Self::Delete { block: other_block, .. }) => block.equals(other_block),
+            (Self::Select(select), Self::Select(other_select)) => select.equals(other_select),
+            (Self::Sort(sort), Self::Sort(other_sort)) => sort.equals(other_sort),
+            (Self::Offset(offset), Self::Offset(other_offset)) => offset.equals(other_offset),
+            (Self::Limit(limit), Self::Limit(other_limit)) => limit.equals(other_limit),
+            (Self::Require(require), Self::Require(other_require)) => require.equals(other_require),
+            (Self::Reduce(reduce), Self::Reduce(other_reduce)) => reduce.equals(other_reduce),
+            // note: this style forces updating the match when the variants change
+            (Self::Match { .. }, _)
+            | (Self::Insert { .. }, _)
+            | (Self::Delete { .. }, _)
+            | (Self::Select { .. }, _)
+            | (Self::Sort { .. }, _)
+            | (Self::Offset { .. }, _)
+            | (Self::Limit { .. }, _)
+            | (Self::Require { .. }, _)
+            | (Self::Reduce { .. }, _) => false,
         }
     }
 }
@@ -94,7 +135,7 @@ pub fn translate_pipeline(
     snapshot: &impl ReadableSnapshot,
     all_function_signatures: &impl FunctionSignatureIndex,
     query: &typeql::query::Pipeline,
-) -> Result<TranslatedPipeline, RepresentationError> {
+) -> Result<TranslatedPipeline, Box<RepresentationError>> {
     // all_function_signatures contains the preambles already!
     let translated_preamble = query
         .preambles
@@ -104,15 +145,21 @@ pub fn translate_pipeline(
         .map_err(|source| RepresentationError::FunctionRepresentation { typedb_source: source })?;
 
     let mut translation_context = TranslationContext::new();
-    let (translated_stages, translated_fetch) =
-        translate_pipeline_stages(snapshot, all_function_signatures, &mut translation_context, &query.stages)?;
+    let mut value_parameters = ParameterRegistry::new();
+    let (translated_stages, translated_fetch) = translate_pipeline_stages(
+        snapshot,
+        all_function_signatures,
+        &mut translation_context,
+        &mut value_parameters,
+        &query.stages,
+    )?;
 
     Ok(TranslatedPipeline {
         translated_preamble,
         translated_stages,
         translated_fetch,
         variable_registry: translation_context.variable_registry,
-        value_parameters: translation_context.parameters,
+        value_parameters,
     })
 }
 
@@ -120,16 +167,18 @@ pub(crate) fn translate_pipeline_stages(
     snapshot: &impl ReadableSnapshot,
     all_function_signatures: &impl FunctionSignatureIndex,
     translation_context: &mut TranslationContext,
+    value_parameters: &mut ParameterRegistry,
     stages: &[Stage],
-) -> Result<(Vec<TranslatedStage>, Option<FetchObject>), RepresentationError> {
+) -> Result<(Vec<TranslatedStage>, Option<FetchObject>), Box<RepresentationError>> {
     let mut translated_stages: Vec<TranslatedStage> = Vec::with_capacity(stages.len());
     for (i, stage) in stages.iter().enumerate() {
-        let translated = translate_stage(snapshot, translation_context, all_function_signatures, stage)?;
+        let translated =
+            translate_stage(snapshot, translation_context, value_parameters, all_function_signatures, stage)?;
         match translated {
             Either::First(stage) => translated_stages.push(stage),
             Either::Second(fetch) => {
                 if i != stages.len() - 1 {
-                    return Err(RepresentationError::NonTerminalFetch { declaration: stage.clone() });
+                    return Err(Box::new(RepresentationError::NonTerminalFetch { declaration: stage.clone() }));
                 } else {
                     return Ok((translated_stages, Some(fetch)));
                 }
@@ -142,20 +191,24 @@ pub(crate) fn translate_pipeline_stages(
 fn translate_stage(
     snapshot: &impl ReadableSnapshot,
     translation_context: &mut TranslationContext,
+    value_parameters: &mut ParameterRegistry,
     all_function_signatures: &impl FunctionSignatureIndex,
     typeql_stage: &TypeQLStage,
-) -> Result<Either<TranslatedStage, FetchObject>, RepresentationError> {
+) -> Result<Either<TranslatedStage, FetchObject>, Box<RepresentationError>> {
     match typeql_stage {
-        TypeQLStage::Match(match_) => translate_match(translation_context, all_function_signatures, match_)
-            .map(|builder| Either::First(TranslatedStage::Match { block: builder.finish() })),
-        TypeQLStage::Insert(insert) => {
-            translate_insert(translation_context, insert).map(|block| Either::First(TranslatedStage::Insert { block }))
+        TypeQLStage::Match(match_) => {
+            translate_match(translation_context, value_parameters, all_function_signatures, match_)
+                .and_then(|builder| Ok(Either::First(TranslatedStage::Match { block: builder.finish()? })))
         }
-        TypeQLStage::Delete(delete) => translate_delete(translation_context, delete)
+        TypeQLStage::Insert(insert) => translate_insert(translation_context, value_parameters, insert)
+            .map(|block| Either::First(TranslatedStage::Insert { block })),
+        TypeQLStage::Delete(delete) => translate_delete(translation_context, value_parameters, delete)
             .map(|(block, deleted_variables)| Either::First(TranslatedStage::Delete { block, deleted_variables })),
-        TypeQLStage::Fetch(fetch) => translate_fetch(snapshot, translation_context, all_function_signatures, fetch)
-            .map(Either::Second)
-            .map_err(|err| RepresentationError::FetchRepresentation { typedb_source: err }),
+        TypeQLStage::Fetch(fetch) => {
+            translate_fetch(snapshot, translation_context, value_parameters, all_function_signatures, fetch)
+                .map(Either::Second)
+                .map_err(|err| Box::new(RepresentationError::FetchRepresentation { typedb_source: err }))
+        }
         TypeQLStage::Operator(modifier) => match modifier {
             TypeQLOperator::Select(select) => translate_select(translation_context, select)
                 .map(|filter| Either::First(TranslatedStage::Select(filter))),
@@ -172,6 +225,6 @@ fn translate_stage(
             TypeQLOperator::Require(require) => translate_require(translation_context, require)
                 .map(|require| Either::First(TranslatedStage::Require(require))),
         },
-        _ => Err(RepresentationError::UnrecognisedClause { declaration: typeql_stage.clone() }),
+        _ => Err(Box::new(RepresentationError::UnrecognisedClause { declaration: typeql_stage.clone() })),
     }
 }

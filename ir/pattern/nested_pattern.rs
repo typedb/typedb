@@ -4,7 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt;
+use std::{fmt, mem};
+
+use structural_equality::StructuralEquality;
 
 use crate::pattern::{disjunction::Disjunction, negation::Negation, optional::Optional};
 
@@ -55,6 +57,27 @@ impl NestedPattern {
         match self {
             NestedPattern::Optional(optional) => Some(optional),
             _ => None,
+        }
+    }
+}
+
+impl StructuralEquality for NestedPattern {
+    fn hash(&self) -> u64 {
+        mem::discriminant(self).hash()
+            ^ match self {
+                NestedPattern::Disjunction(inner) => inner.hash(),
+                NestedPattern::Negation(inner) => inner.hash(),
+                NestedPattern::Optional(inner) => inner.hash(),
+            }
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Disjunction(inner), Self::Disjunction(other_inner)) => inner.equals(other_inner),
+            (Self::Negation(inner), Self::Negation(other_inner)) => inner.equals(other_inner),
+            (Self::Optional(inner), Self::Optional(other_inner)) => inner.equals(other_inner),
+            // note: this style forces updating the match when the variants change
+            (Self::Disjunction { .. }, _) | (Self::Negation { .. }, _) | (Self::Optional { .. }, _) => false,
         }
     }
 }

@@ -29,7 +29,6 @@ pub mod writes;
 pub struct TranslationContext {
     pub variable_registry: VariableRegistry, // TODO: Unpub
     visible_variables: HashMap<String, Variable>,
-    pub parameters: ParameterRegistry,
 }
 
 impl Default for TranslationContext {
@@ -40,11 +39,7 @@ impl Default for TranslationContext {
 
 impl TranslationContext {
     pub fn new() -> Self {
-        Self {
-            parameters: ParameterRegistry::new(),
-            variable_registry: VariableRegistry::new(),
-            visible_variables: HashMap::new(),
-        }
+        Self { variable_registry: VariableRegistry::new(), visible_variables: HashMap::new() }
     }
 
     pub fn new_with_function_arguments(input_variables: Vec<(String, VariableCategory)>) -> (Self, Vec<Variable>) {
@@ -56,12 +51,15 @@ impl TranslationContext {
             visible_variables.insert(name.clone(), variable);
             variables.push(variable);
         }
-        let this = Self { parameters: ParameterRegistry::new(), variable_registry, visible_variables };
+        let this = Self { variable_registry, visible_variables };
         (this, variables)
     }
 
-    pub fn new_block_builder_context(&mut self) -> BlockBuilderContext<'_> {
-        let Self { variable_registry, visible_variables, parameters } = self;
+    pub fn new_block_builder_context<'a>(
+        &'a mut self,
+        parameters: &'a mut ParameterRegistry,
+    ) -> BlockBuilderContext<'a> {
+        let Self { variable_registry, visible_variables } = self;
         BlockBuilderContext::new(variable_registry, visible_variables, parameters)
     }
 
@@ -78,7 +76,7 @@ impl TranslationContext {
             is_optional,
             reducer,
         );
-        self.visible_variables.insert(name.to_owned(), variable.clone());
+        self.visible_variables.insert(name.to_owned(), variable);
         variable
     }
 

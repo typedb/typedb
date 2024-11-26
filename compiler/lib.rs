@@ -5,9 +5,8 @@
  */
 
 #![deny(elided_lifetimes_in_paths)]
-#![allow(clippy::result_large_err)]
 
-use std::fmt;
+use std::{fmt, fmt::Formatter};
 
 use answer::variable::Variable;
 use ir::pattern::IrID;
@@ -23,7 +22,7 @@ macro_rules! filter_variants {
 }
 pub(crate) use filter_variants;
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, PartialOrd, Ord)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub enum ExecutorVariable {
     RowPosition(VariablePosition),
     Internal(Variable),
@@ -69,8 +68,17 @@ impl ExecutorVariable {
     }
 }
 
-impl fmt::Display for ExecutorVariable {
+impl fmt::Debug for ExecutorVariable {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ExecutorVariable::RowPosition(position) => write!(f, "{position}"),
+            ExecutorVariable::Internal(var) => write!(f, "__{var}__"),
+        }
+    }
+}
+
+impl fmt::Display for ExecutorVariable {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(self, f)
     }
 }
@@ -94,7 +102,7 @@ impl VariablePosition {
 
 impl fmt::Debug for VariablePosition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "P_{}", self.position)
+        write!(f, "p{}", self.position)
     }
 }
 

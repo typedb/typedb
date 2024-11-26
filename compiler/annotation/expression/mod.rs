@@ -4,14 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    error::Error,
-    fmt::{Debug, Display, Formatter},
-};
+use std::{error::Error, fmt};
 
 use concept::error::ConceptReadError;
 use encoding::value::value_type::ValueTypeCategory;
-use ir::pattern::{expression::Operator, variable_category::VariableCategory};
+use ir::{
+    pattern::{expression::Operator, variable_category::VariableCategory},
+    RepresentationError,
+};
 
 pub mod block_compiler;
 pub mod compiled_expression;
@@ -60,11 +60,14 @@ pub enum ExpressionCompileError {
         derived_category: VariableCategory,
         existing_category: VariableCategory,
     },
+    Representation {
+        source: Box<RepresentationError>,
+    },
 }
 
-impl Display for ExpressionCompileError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        Debug::fmt(self, f)
+impl fmt::Display for ExpressionCompileError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
     }
 }
 
@@ -82,6 +85,7 @@ impl Error for ExpressionCompileError {
             | Self::VariableHasNoValueType { .. }
             | Self::VariableMustBeValueOrAttribute { .. }
             | Self::DerivedConflictingVariableCategory { .. }
+            | Self::Representation { .. }
             | Self::UnsupportedArgumentsForBuiltin
             | Self::ListIndexMustBeLong
             | Self::HeterogenousValuesInList

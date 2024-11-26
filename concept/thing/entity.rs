@@ -27,7 +27,7 @@ use crate::{
         thing_manager::ThingManager,
         HKInstance, ThingAPI,
     },
-    type_::{entity_type::EntityType, type_manager::TypeManager, ObjectTypeAPI, Ordering, OwnerAPI},
+    type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
 
@@ -70,7 +70,7 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
     type Vertex<'b> = ObjectVertex<'b>;
     type TypeAPI<'b> = EntityType<'b>;
     type Owned = Entity<'static>;
-    const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::VertexEntity, Prefix::VertexEntity);
+    const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix) = (Prefix::VertexEntity, Prefix::VertexEntity);
 
     fn new(vertex: ObjectVertex<'a>) -> Self {
         debug_assert_eq!(vertex.prefix(), Prefix::VertexEntity);
@@ -97,7 +97,7 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         if matches!(self.get_status(snapshot, thing_manager), ConceptStatus::Persisted) {
             thing_manager.lock_existing_object(snapshot, self.as_reference());
         }
@@ -112,7 +112,7 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         for attr in self
             .get_has_unordered(snapshot, thing_manager)
             .map_static(|res| res.map(|(k, _)| k.into_owned()))
@@ -140,12 +140,8 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         Ok(())
     }
 
-    fn prefix_for_type(
-        _type: Self::TypeAPI<'_>,
-        _snapshot: &impl ReadableSnapshot,
-        _type_manager: &TypeManager,
-    ) -> Result<Prefix, ConceptReadError> {
-        Ok(Prefix::VertexEntity)
+    fn prefix_for_type(_type: Self::TypeAPI<'_>) -> Prefix {
+        Prefix::VertexEntity
     }
 }
 

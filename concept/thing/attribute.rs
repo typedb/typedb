@@ -7,7 +7,7 @@
 use std::{
     cmp::Ordering,
     collections::HashSet,
-    fmt::{Display, Formatter},
+    fmt,
     hash::{Hash, Hasher},
     sync::{Arc, OnceLock},
 };
@@ -15,7 +15,7 @@ use std::{
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
     graph::{
-        thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex, ThingVertex},
+        thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex},
         type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
         Typed,
     },
@@ -35,7 +35,7 @@ use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{object::Object, thing_manager::ThingManager, HKInstance, ThingAPI},
-    type_::{attribute_type::AttributeType, type_manager::TypeManager, ObjectTypeAPI},
+    type_::{attribute_type::AttributeType, ObjectTypeAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
 
@@ -44,8 +44,6 @@ pub struct Attribute<'a> {
     vertex: AttributeVertex<'a>,
     value: OnceLock<Arc<Value<'static>>>,
 }
-
-impl<'a> Attribute<'a> {}
 
 impl<'a> Attribute<'a> {
     pub fn type_(&self) -> AttributeType<'static> {
@@ -60,7 +58,7 @@ impl<'a> Attribute<'a> {
         &'a self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<Value<'_>, ConceptReadError> {
+    ) -> Result<Value<'a>, Box<ConceptReadError>> {
         if self.value.get().is_none() {
             let value = thing_manager.get_attribute_value(snapshot, self)?;
             let _ = self.value.set(Arc::new(value));
@@ -113,7 +111,7 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
     type Vertex<'b> = AttributeVertex<'b>;
     type TypeAPI<'b> = AttributeType<'b>;
     type Owned = Attribute<'static>;
-    const PREFIX_RANGE: (Prefix, Prefix) = (Prefix::ATTRIBUTE_MIN, Prefix::ATTRIBUTE_MAX);
+    const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix) = (Prefix::VertexAttribute, Prefix::VertexAttribute);
 
     fn new(vertex: Self::Vertex<'a>) -> Self {
         Attribute { vertex, value: OnceLock::new() }
@@ -139,7 +137,7 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<(), Box<ConceptReadError>> {
         match self.type_().get_value_type_without_source(snapshot, thing_manager.type_manager())? {
             Some(value_type) => match value_type {
                 | ValueType::Boolean
@@ -168,7 +166,7 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let owners = self
             .get_owners(snapshot, thing_manager)
             .map_static(|res| res.map(|(key, _)| key.into_owned()))
@@ -181,16 +179,8 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         Ok(())
     }
 
-    fn prefix_for_type(
-        type_: Self::TypeAPI<'_>,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<Prefix, ConceptReadError> {
-        let value_type = type_.get_value_type_without_source(snapshot, type_manager)?;
-        match value_type {
-            Some(value_type) => Ok(Self::Vertex::value_type_category_to_prefix_type(value_type.category())),
-            None => Err(ConceptReadError::CorruptMissingMandatoryValueType),
-        }
+    fn prefix_for_type(_type: Self::TypeAPI<'_>) -> Prefix {
+        Prefix::VertexAttribute
     }
 }
 
@@ -222,18 +212,18 @@ impl<'a> Ord for Attribute<'a> {
 
 pub struct AttributeIterator<AllAttributesIterator>
 where
-    AllAttributesIterator: for<'a> LendingIterator<Item<'a> = Result<Attribute<'a>, ConceptReadError>>,
+    AllAttributesIterator: for<'a> LendingIterator<Item<'a> = Result<Attribute<'a>, Box<ConceptReadError>>>,
 {
     independent_attribute_types: Arc<HashSet<AttributeType<'static>>>,
     attributes_iterator: Option<Peekable<AllAttributesIterator>>,
     has_reverse_iterator_buffer: Option<BufferRangeIterator>,
     has_reverse_iterator_storage: Option<SnapshotRangeIterator>,
-    state: State<ConceptReadError>,
+    state: State<Box<ConceptReadError>>,
 }
 
 impl<AllAttributesIterator> AttributeIterator<AllAttributesIterator>
 where
-    AllAttributesIterator: for<'a> LendingIterator<Item<'a> = Result<Attribute<'a>, ConceptReadError>>,
+    AllAttributesIterator: for<'a> LendingIterator<Item<'a> = Result<Attribute<'a>, Box<ConceptReadError>>>,
 {
     pub(crate) fn new(
         attributes_iterator: AllAttributesIterator,
@@ -264,7 +254,7 @@ where
         todo!()
     }
 
-    fn iter_next(&mut self) -> Option<Result<Attribute<'_>, ConceptReadError>> {
+    fn iter_next(&mut self) -> Option<Result<Attribute<'_>, Box<ConceptReadError>>> {
         match &self.state {
             State::Init | State::ItemUsed => {
                 self.find_next_state();
@@ -330,12 +320,12 @@ where
     fn has_owner(
         has_reverse_iterator: &mut SnapshotRangeIterator,
         attribute_vertex: AttributeVertex<'_>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute_vertex.as_reference());
         has_reverse_iterator.seek(has_reverse_prefix.as_reference());
         match has_reverse_iterator.peek() {
             None => Ok(false),
-            Some(Err(err)) => Err(ConceptReadError::SnapshotIterate { source: err.clone() }),
+            Some(Err(err)) => Err(Box::new(ConceptReadError::SnapshotIterate { source: err.clone() })),
             Some(Ok((bytes, _))) => {
                 let edge = ThingEdgeHasReverse::new(Bytes::Reference(bytes.byte_ref()));
                 let edge_from = edge.from();
@@ -353,7 +343,7 @@ where
     fn has_any_writes(
         has_reverse_iterator: &mut BufferRangeIterator,
         attribute_vertex: AttributeVertex<'_>,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute_vertex.as_reference());
         has_reverse_iterator.seek(has_reverse_prefix.bytes());
         Ok(has_reverse_iterator.peek().is_some())
@@ -362,9 +352,9 @@ where
 
 impl<Iterator> LendingIterator for AttributeIterator<Iterator>
 where
-    Iterator: for<'a> LendingIterator<Item<'a> = Result<Attribute<'a>, ConceptReadError>>,
+    Iterator: for<'a> LendingIterator<Item<'a> = Result<Attribute<'a>, Box<ConceptReadError>>>,
 {
-    type Item<'a> = Result<Attribute<'a>, ConceptReadError>;
+    type Item<'a> = Result<Attribute<'a>, Box<ConceptReadError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.iter_next()
@@ -385,8 +375,8 @@ edge_iterator!(
     storage_key_to_owner
 );
 
-impl<'a> Display for Attribute<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<'a> fmt::Display for Attribute<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "[Attribute-{}:{}:{}]",

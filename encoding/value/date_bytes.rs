@@ -6,25 +6,28 @@
 
 use chrono::{Datelike, NaiveDate};
 
-use super::primitive_encoding::{decode_i32, encode_i32};
-use crate::graph::thing::vertex_attribute::AttributeIDLength;
+use crate::{
+    graph::thing::vertex_attribute::{InlineEncodableAttributeID, ValueEncodingLength},
+    value::{
+        primitive_encoding::{decode_i32, encode_i32},
+        value_type::ValueType,
+    },
+};
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct DateBytes {
-    bytes: [u8; Self::LENGTH],
+    bytes: [u8; Self::ENCODED_LENGTH],
 }
 
 impl DateBytes {
-    pub(crate) const LENGTH: usize = AttributeIDLength::Short.length();
-
     const DAYS_LENGTH: usize = i32::BITS as usize / 8;
 
-    pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
+    pub fn new(bytes: [u8; Self::ENCODED_LENGTH]) -> Self {
         Self { bytes }
     }
 
     pub fn build(date: NaiveDate) -> Self {
-        let mut bytes = [0; Self::LENGTH];
+        let mut bytes = [0; Self::ENCODED_LENGTH];
         bytes[..Self::DAYS_LENGTH].copy_from_slice(&encode_i32(date.num_days_from_ce()));
         Self { bytes }
     }
@@ -34,7 +37,21 @@ impl DateBytes {
         NaiveDate::from_num_days_from_ce_opt(days).unwrap()
     }
 
-    pub fn bytes(&self) -> [u8; Self::LENGTH] {
+    pub fn bytes(&self) -> [u8; Self::ENCODED_LENGTH] {
         self.bytes
+    }
+}
+
+impl InlineEncodableAttributeID for DateBytes {
+    const ENCODED_LENGTH: usize = ValueEncodingLength::Short.length();
+    const VALUE_TYPE: ValueType = ValueType::Date;
+
+    fn bytes_ref(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    fn read(bytes: &[u8]) -> Self {
+        debug_assert!(bytes.len() == Self::ENCODED_LENGTH);
+        DateBytes::new(bytes.try_into().unwrap())
     }
 }

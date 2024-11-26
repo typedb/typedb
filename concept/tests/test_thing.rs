@@ -15,9 +15,10 @@ use concept::{
         entity::Entity,
         object::{Object, ObjectAPI},
         relation::Relation,
+        ThingAPI,
     },
     type_::{
-        annotation::{AnnotationCardinality, AnnotationDistinct, AnnotationIndependent},
+        annotation::{AnnotationCardinality, AnnotationDistinct, AnnotationIndependent, AnnotationUnique},
         attribute_type::AttributeTypeAnnotation,
         owns::OwnsAnnotation,
         relates::RelatesAnnotation,
@@ -326,18 +327,12 @@ fn attribute_cleanup_on_concurrent_detach() {
             .unwrap()
             .map_static(|result| result.unwrap().into_owned())
             .collect();
-        let age = ages
-            .iter_mut()
-            .filter_map(|attr| {
-                if attr.get_value(&snapshot_2, &thing_manager).unwrap().unwrap_long() == age_value {
-                    Some(attr.as_reference())
-                } else {
-                    None
-                }
-            })
-            .next()
+        let age_position = ages
+            .iter()
+            .position(|attr| attr.get_value(&snapshot_2, &thing_manager).unwrap().unwrap_long() == age_value)
             .unwrap();
-        alice.unset_has_unordered(&mut snapshot_2, &thing_manager, age).unwrap();
+        ages.remove(age_position);
+        alice.set_has_ordered(&mut snapshot_2, &thing_manager, age_type, ages).unwrap();
 
         let finalise_result = thing_manager.finalise(&mut snapshot_2);
         assert!(finalise_result.is_ok());
@@ -490,11 +485,11 @@ fn role_player_distinct() {
 }
 
 #[test]
-fn role_player_duplicates() {
+fn role_player_duplicates_unordered() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    let list_label = Label::build("list");
+    let collection_label = Label::build("collection");
     let entry_role_label = "entry";
     let owner_role_label = "owner";
     let resource_label = Label::build("resource");
@@ -503,12 +498,12 @@ fn role_player_duplicates() {
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-        let list_type = type_manager.create_relation_type(&mut snapshot, &list_label).unwrap();
-        list_type
+        let collection_type = type_manager.create_relation_type(&mut snapshot, &collection_label).unwrap();
+        collection_type
             .create_relates(&mut snapshot, &type_manager, &thing_manager, entry_role_label, Ordering::Unordered)
             .unwrap();
         let entry_relates =
-            list_type.get_relates_role_name(&snapshot, &type_manager, entry_role_label).unwrap().unwrap();
+            collection_type.get_relates_role_name(&snapshot, &type_manager, entry_role_label).unwrap().unwrap();
         entry_relates
             .set_annotation(
                 &mut snapshot,
@@ -518,11 +513,12 @@ fn role_player_duplicates() {
             )
             .unwrap();
         let entry_type = entry_relates.role();
-        list_type
+        collection_type
             .create_relates(&mut snapshot, &type_manager, &thing_manager, owner_role_label, Ordering::Unordered)
             .unwrap();
+
         let owner_type =
-            list_type.get_relates_role_name(&snapshot, &type_manager, owner_role_label).unwrap().unwrap().role();
+            collection_type.get_relates_role_name(&snapshot, &type_manager, owner_role_label).unwrap().unwrap().role();
 
         let resource_type = type_manager.create_entity_type(&mut snapshot, &resource_label).unwrap();
         let group_type = type_manager.create_entity_type(&mut snapshot, &group_label).unwrap();
@@ -532,19 +528,193 @@ fn role_player_duplicates() {
         let group_1 = thing_manager.create_entity(&mut snapshot, group_type.clone()).unwrap();
         let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type.clone()).unwrap();
 
-        let list_1 = thing_manager.create_relation(&mut snapshot, list_type.clone()).unwrap();
-        list_1
+        let collection_1 = thing_manager.create_relation(&mut snapshot, collection_type.clone()).unwrap();
+        collection_1
             .add_player(&mut snapshot, &thing_manager, owner_type.clone(), Object::Entity(group_1.as_reference()))
             .unwrap();
-        list_1
+        collection_1
             .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
             .unwrap();
-        list_1
+        collection_1
             .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
             .unwrap();
 
         let player_counts: u64 =
-            list_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
+            collection_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
+        assert_eq!(player_counts, 2);
+
+        let group_relations_count: u64 = group_1
+            .get_relations_roles(&snapshot, &thing_manager)
+            .map_static(|res| {
+                let (_, _, count) = res.unwrap();
+                count
+            })
+            .into_iter()
+            .sum();
+        assert_eq!(group_relations_count, 1);
+        let resource_relations_count: u64 = resource_1
+            .get_relations_roles(&snapshot, &thing_manager)
+            .map_static(|res| {
+                let (_, _, count) = res.unwrap();
+                count
+            })
+            .into_iter()
+            .sum();
+        assert_eq!(resource_relations_count, 1);
+
+        let group_1_indexed_count: u64 = group_1
+            .get_indexed_players(&snapshot, &thing_manager)
+            .map_static(|res| {
+                let (_, _, _, count) = res.unwrap();
+                count
+            })
+            .into_iter()
+            .sum();
+        assert_eq!(group_1_indexed_count, 1);
+        let resource_1_indexed_count: u64 = resource_1
+            .get_indexed_players(&snapshot, &thing_manager)
+            .map_static(|res| {
+                let (_, _, _, count) = res.unwrap();
+                count
+            })
+            .into_iter()
+            .sum();
+        assert_eq!(resource_1_indexed_count, 1);
+
+        let group_relations_count: u64 = group_1
+            .get_relations_roles(&snapshot, &thing_manager)
+            .map_static(|res| {
+                let (_, _, count) = res.unwrap();
+                count
+            })
+            .into_iter()
+            .sum();
+        assert_eq!(group_relations_count, 1);
+
+        let finalise_result = thing_manager.finalise(&mut snapshot);
+        assert!(finalise_result.is_ok());
+    }
+    snapshot.commit().unwrap();
+    {
+        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let entities: Vec<Entity<'static>> =
+            thing_manager.get_entities(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
+        assert_eq!(entities.len(), 2);
+        let relations: Vec<Relation<'static>> =
+            thing_manager.get_relations(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
+        assert_eq!(relations.len(), 1);
+
+        let collection_1 = relations.first().unwrap();
+        let player_counts: u64 =
+            collection_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
+        assert_eq!(player_counts, 2);
+
+        let group_1 = entities
+            .iter()
+            .find(|entity| entity.type_() == type_manager.get_entity_type(&snapshot, &group_label).unwrap().unwrap())
+            .unwrap();
+
+        let resource_1 = entities
+            .iter()
+            .find(|entity| entity.type_() == type_manager.get_entity_type(&snapshot, &resource_label).unwrap().unwrap())
+            .unwrap();
+
+        let group_relations_count: u64 = group_1
+            .get_relations_roles(&snapshot, &thing_manager)
+            .map_static(|res| {
+                let (_, _, count) = res.unwrap();
+                count
+            })
+            .into_iter()
+            .sum();
+        assert_eq!(group_relations_count, 1);
+        let resource_relations_count: u64 = resource_1
+            .get_relations_roles(&snapshot, &thing_manager)
+            .map_static(|res| {
+                let (_, _, count) = res.unwrap();
+                count
+            })
+            .into_iter()
+            .sum();
+        assert_eq!(resource_relations_count, 1);
+
+        let group_1_indexed_count: u64 = group_1
+            .get_indexed_players(&snapshot, &thing_manager)
+            .map_static(|res| {
+                let (_, _, _, count) = res.unwrap();
+                count
+            })
+            .into_iter()
+            .sum();
+        assert_eq!(group_1_indexed_count, 1);
+        let resource_1_indexed_count: u64 = resource_1
+            .get_indexed_players(&snapshot, &thing_manager)
+            .map_static(|res| {
+                let (_, _, _, count) = res.unwrap();
+                count
+            })
+            .into_iter()
+            .sum();
+        assert_eq!(resource_1_indexed_count, 1);
+    }
+}
+
+#[test]
+fn role_player_duplicates_ordered_default_card() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
+    let collection_label = Label::build("collection");
+    let entry_role_label = "entry";
+    let owner_role_label = "owner";
+    let resource_label = Label::build("resource");
+    let group_label = Label::build("group");
+
+    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let collection_type = type_manager.create_relation_type(&mut snapshot, &collection_label).unwrap();
+        let entry_relates = collection_type
+            .create_relates(&mut snapshot, &type_manager, &thing_manager, entry_role_label, Ordering::Ordered)
+            .unwrap();
+        entry_relates
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, Some(4))), // must be small to allow index to kick in
+            )
+            .unwrap();
+        let entry_type = entry_relates.role();
+        // This relates card is default!
+        collection_type
+            .create_relates(&mut snapshot, &type_manager, &thing_manager, owner_role_label, Ordering::Ordered)
+            .unwrap();
+        let owner_type =
+            collection_type.get_relates_role_name(&snapshot, &type_manager, owner_role_label).unwrap().unwrap().role();
+
+        let resource_type = type_manager.create_entity_type(&mut snapshot, &resource_label).unwrap();
+        let group_type = type_manager.create_entity_type(&mut snapshot, &group_label).unwrap();
+        resource_type.set_plays(&mut snapshot, &type_manager, &thing_manager, entry_type.clone()).unwrap();
+        group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type.clone()).unwrap();
+
+        let group_1 = thing_manager.create_entity(&mut snapshot, group_type.clone()).unwrap();
+        let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type.clone()).unwrap();
+
+        let collection_1 = thing_manager.create_relation(&mut snapshot, collection_type.clone()).unwrap();
+        collection_1
+            .add_player(&mut snapshot, &thing_manager, owner_type.clone(), Object::Entity(group_1.as_reference()))
+            .unwrap();
+        collection_1
+            .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
+            .unwrap();
+        collection_1
+            .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
+            .unwrap();
+
+        let player_counts: u64 =
+            collection_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
         assert_eq!(player_counts, 3);
 
         let group_relations_count: u64 = group_1
@@ -574,7 +744,7 @@ fn role_player_duplicates() {
             })
             .into_iter()
             .sum();
-        assert_eq!(group_1_indexed_count, 2);
+        assert_eq!(group_1_indexed_count, 0, "// Default card.end for ordered is INF -> indexing is OFF -> expected 0");
         let resource_1_indexed_count: u64 = resource_1
             .get_indexed_players(&snapshot, &thing_manager)
             .map_static(|res| {
@@ -583,7 +753,10 @@ fn role_player_duplicates() {
             })
             .into_iter()
             .sum();
-        assert_eq!(resource_1_indexed_count, 2);
+        assert_eq!(
+            resource_1_indexed_count, 0,
+            "// Default card.end for ordered is INF -> indexing is OFF -> expected 0"
+        );
 
         let group_relations_count: u64 = group_1
             .get_relations_roles(&snapshot, &thing_manager)
@@ -609,9 +782,9 @@ fn role_player_duplicates() {
             thing_manager.get_relations(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
         assert_eq!(relations.len(), 1);
 
-        let list_1 = relations.first().unwrap();
+        let collection_1 = relations.first().unwrap();
         let player_counts: u64 =
-            list_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
+            collection_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
         assert_eq!(player_counts, 3);
 
         let group_1 = entities
@@ -651,7 +824,7 @@ fn role_player_duplicates() {
             })
             .into_iter()
             .sum();
-        assert_eq!(group_1_indexed_count, 2);
+        assert_eq!(group_1_indexed_count, 0, "// Default card.end for ordered is INF -> indexing is OFF -> expected 0");
         let resource_1_indexed_count: u64 = resource_1
             .get_indexed_players(&snapshot, &thing_manager)
             .map_static(|res| {
@@ -660,12 +833,196 @@ fn role_player_duplicates() {
             })
             .into_iter()
             .sum();
-        assert_eq!(resource_1_indexed_count, 2);
+        assert_eq!(
+            resource_1_indexed_count, 0,
+            "// Default card.end for ordered is INF -> indexing is OFF -> expected 0"
+        );
     }
 }
 
 #[test]
-fn attribute_string_write_read() {
+fn role_player_duplicates_ordered_small_card() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
+    let collection_label = Label::build("collection");
+    let entry_role_label = "entry";
+    let owner_role_label = "owner";
+    let resource_label = Label::build("resource");
+    let group_label = Label::build("group");
+
+    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let collection_type = type_manager.create_relation_type(&mut snapshot, &collection_label).unwrap();
+        let entry_relates = collection_type
+            .create_relates(&mut snapshot, &type_manager, &thing_manager, entry_role_label, Ordering::Ordered)
+            .unwrap();
+        entry_relates
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, Some(4))), // must be small to allow index to kick in
+            )
+            .unwrap();
+        let entry_type = entry_relates.role();
+        let owner_relates = collection_type
+            .create_relates(&mut snapshot, &type_manager, &thing_manager, owner_role_label, Ordering::Ordered)
+            .unwrap();
+        owner_relates
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, Some(2))), // must be small to allow index to kick in
+            )
+            .unwrap();
+        let owner_type =
+            collection_type.get_relates_role_name(&snapshot, &type_manager, owner_role_label).unwrap().unwrap().role();
+
+        let resource_type = type_manager.create_entity_type(&mut snapshot, &resource_label).unwrap();
+        let group_type = type_manager.create_entity_type(&mut snapshot, &group_label).unwrap();
+        resource_type.set_plays(&mut snapshot, &type_manager, &thing_manager, entry_type.clone()).unwrap();
+        group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type.clone()).unwrap();
+
+        let group_1 = thing_manager.create_entity(&mut snapshot, group_type.clone()).unwrap();
+        let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type.clone()).unwrap();
+
+        let collection_1 = thing_manager.create_relation(&mut snapshot, collection_type.clone()).unwrap();
+        collection_1
+            .add_player(&mut snapshot, &thing_manager, owner_type.clone(), Object::Entity(group_1.as_reference()))
+            .unwrap();
+        collection_1
+            .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
+            .unwrap();
+        collection_1
+            .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
+            .unwrap();
+
+        let player_counts: u64 =
+            collection_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
+        assert_eq!(player_counts, 3);
+
+        let group_relations_count: u64 = group_1
+            .get_relations_roles(&snapshot, &thing_manager)
+            .map_static(|res| {
+                let (_, _, count) = res.unwrap();
+                count
+            })
+            .into_iter()
+            .sum();
+        assert_eq!(group_relations_count, 1);
+        let resource_relations_count: u64 = resource_1
+            .get_relations_roles(&snapshot, &thing_manager)
+            .map_static(|res| {
+                let (_, _, count) = res.unwrap();
+                count
+            })
+            .into_iter()
+            .sum();
+        assert_eq!(resource_relations_count, 2);
+
+        let group_1_indexed_count: u64 = group_1
+            .get_indexed_players(&snapshot, &thing_manager)
+            .map_static(|res| {
+                let (_, _, _, count) = res.unwrap();
+                count
+            })
+            .into_iter()
+            .sum();
+        assert_eq!(group_1_indexed_count, 2, "Expected index to work");
+        let resource_1_indexed_count: u64 = resource_1
+            .get_indexed_players(&snapshot, &thing_manager)
+            .map_static(|res| {
+                let (_, _, _, count) = res.unwrap();
+                count
+            })
+            .into_iter()
+            .sum();
+        assert_eq!(resource_1_indexed_count, 2, "Expected index to work");
+
+        let group_relations_count: u64 = group_1
+            .get_relations_roles(&snapshot, &thing_manager)
+            .map_static(|res| {
+                let (_, _, count) = res.unwrap();
+                count
+            })
+            .into_iter()
+            .sum();
+        assert_eq!(group_relations_count, 1);
+
+        let finalise_result = thing_manager.finalise(&mut snapshot);
+        assert!(finalise_result.is_ok());
+    }
+    snapshot.commit().unwrap();
+    {
+        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let entities: Vec<Entity<'static>> =
+            thing_manager.get_entities(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
+        assert_eq!(entities.len(), 2);
+        let relations: Vec<Relation<'static>> =
+            thing_manager.get_relations(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
+        assert_eq!(relations.len(), 1);
+
+        let collection_1 = relations.first().unwrap();
+        let player_counts: u64 =
+            collection_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
+        assert_eq!(player_counts, 3);
+
+        let group_1 = entities
+            .iter()
+            .find(|entity| entity.type_() == type_manager.get_entity_type(&snapshot, &group_label).unwrap().unwrap())
+            .unwrap();
+
+        let resource_1 = entities
+            .iter()
+            .find(|entity| entity.type_() == type_manager.get_entity_type(&snapshot, &resource_label).unwrap().unwrap())
+            .unwrap();
+
+        let group_relations_count: u64 = group_1
+            .get_relations_roles(&snapshot, &thing_manager)
+            .map_static(|res| {
+                let (_, _, count) = res.unwrap();
+                count
+            })
+            .into_iter()
+            .sum();
+        assert_eq!(group_relations_count, 1);
+        let resource_relations_count: u64 = resource_1
+            .get_relations_roles(&snapshot, &thing_manager)
+            .map_static(|res| {
+                let (_, _, count) = res.unwrap();
+                count
+            })
+            .into_iter()
+            .sum();
+        assert_eq!(resource_relations_count, 2);
+
+        let group_1_indexed_count: u64 = group_1
+            .get_indexed_players(&snapshot, &thing_manager)
+            .map_static(|res| {
+                let (_, _, _, count) = res.unwrap();
+                count
+            })
+            .into_iter()
+            .sum();
+        assert_eq!(group_1_indexed_count, 2, "Expected index to work");
+        let resource_1_indexed_count: u64 = resource_1
+            .get_indexed_players(&snapshot, &thing_manager)
+            .map_static(|res| {
+                let (_, _, _, count) = res.unwrap();
+                count
+            })
+            .into_iter()
+            .sum();
+        assert_eq!(resource_1_indexed_count, 2, "Expected index to work");
+    }
+}
+
+#[test]
+fn attribute_string_write_read_delete() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -686,6 +1043,7 @@ fn attribute_string_write_read() {
             )
             .unwrap();
 
+        thing_manager.finalise(&mut snapshot).unwrap();
         snapshot.commit().unwrap();
         attr_type
     };
@@ -698,6 +1056,7 @@ fn attribute_string_write_read() {
         thing_manager
             .create_attribute(&mut snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
             .unwrap();
+        thing_manager.finalise(&mut snapshot).unwrap();
         snapshot.commit().unwrap();
     };
 
@@ -716,9 +1075,10 @@ fn attribute_string_write_read() {
         assert!(attr_values.contains(&short_string));
         assert!(attr_values.contains(&long_string));
     }
-    // read them back by value
+
+    // read them back by value and delete
     {
-        let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let read_short_string = thing_manager
             .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
             .unwrap()
@@ -729,6 +1089,123 @@ fn attribute_string_write_read() {
             .unwrap()
             .unwrap();
         assert_eq!(long_string, read_long_string.get_value(&snapshot, &thing_manager).unwrap().unwrap_string());
+
+        read_short_string.delete(&mut snapshot, &thing_manager).unwrap();
+        read_long_string.delete(&mut snapshot, &thing_manager).unwrap();
+        thing_manager.finalise(&mut snapshot).unwrap();
+        snapshot.commit().unwrap();
+    }
+
+    // read them back by value with None results
+    {
+        let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let read_short_string = thing_manager
+            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
+            .unwrap();
+        assert_eq!(None, read_short_string);
+        let read_long_string = thing_manager
+            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
+            .unwrap();
+        assert_eq!(None, read_long_string);
+    }
+}
+
+#[test]
+fn attribute_string_write_read_delete_with_has() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let owner_label = Label::build("test_owner");
+    let attr_label = Label::build("test_string_attr");
+    let short_string = "short".to_owned();
+    let long_string = "this string is 33 characters long".to_owned();
+    let (owner_type, attr_type) = {
+        let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let owner_type = type_manager.create_entity_type(&mut snapshot, &owner_label).unwrap();
+        let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label).unwrap();
+        attr_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
+        let owns = owner_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, attr_type.clone(), Ordering::Unordered)
+            .unwrap();
+        owns.set_annotation(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None)),
+        )
+        .unwrap();
+        owns.set_annotation(&mut snapshot, &type_manager, &thing_manager, OwnsAnnotation::Unique(AnnotationUnique))
+            .unwrap();
+
+        thing_manager.finalise(&mut snapshot).unwrap();
+        snapshot.commit().unwrap();
+        (owner_type, attr_type)
+    };
+
+    {
+        let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let owner = thing_manager.create_entity(&mut snapshot, owner_type.clone()).unwrap();
+        let short_attr = thing_manager
+            .create_attribute(&mut snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
+            .unwrap();
+        let long_attr = thing_manager
+            .create_attribute(&mut snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
+            .unwrap();
+        owner.set_has_unordered(&mut snapshot, &thing_manager, short_attr).unwrap();
+        owner.set_has_unordered(&mut snapshot, &thing_manager, long_attr).unwrap();
+        thing_manager.finalise(&mut snapshot).unwrap();
+        snapshot.commit().unwrap();
+    };
+
+    // read them back by type
+    {
+        let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let attrs: Vec<Attribute<'static>> = thing_manager
+            .get_attributes_in(&snapshot, attr_type.clone())
+            .unwrap()
+            .map_static(|result| result.unwrap().into_owned())
+            .collect();
+        let attr_values: Vec<String> = attrs
+            .into_iter()
+            .map(|attr| (*attr.get_value(&snapshot, &thing_manager).unwrap().unwrap_string()).to_owned())
+            .collect();
+        assert!(attr_values.contains(&short_string));
+        assert!(attr_values.contains(&long_string));
+    }
+
+    // read them back by value and delete
+    {
+        let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let read_short_string = thing_manager
+            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
+            .unwrap()
+            .unwrap();
+        assert_eq!(short_string, read_short_string.get_value(&snapshot, &thing_manager).unwrap().unwrap_string());
+        let read_long_string = thing_manager
+            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
+            .unwrap()
+            .unwrap();
+        assert_eq!(long_string, read_long_string.get_value(&snapshot, &thing_manager).unwrap().unwrap_string());
+
+        read_short_string.delete(&mut snapshot, &thing_manager).unwrap();
+        read_long_string.delete(&mut snapshot, &thing_manager).unwrap();
+
+        thing_manager.finalise(&mut snapshot).unwrap();
+        snapshot.commit().unwrap();
+    }
+
+    // read them back by value with None results
+    {
+        let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let read_short_string = thing_manager
+            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
+            .unwrap();
+        assert_eq!(None, read_short_string);
+        let read_long_string = thing_manager
+            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
+            .unwrap();
+        assert_eq!(None, read_long_string);
     }
 }
 
@@ -762,6 +1239,7 @@ fn attribute_struct_write_read() {
         attr_type
             .set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Struct(struct_key.clone()))
             .unwrap();
+        thing_manager.finalise(&mut snapshot).unwrap();
         snapshot.commit().unwrap();
         struct_key
     };
@@ -781,6 +1259,7 @@ fn attribute_struct_write_read() {
         let attr_instance = thing_manager
             .create_attribute(&mut snapshot, attr_type, Value::Struct(Cow::Owned(struct_value.clone())))
             .unwrap();
+        thing_manager.finalise(&mut snapshot).unwrap();
         snapshot.commit().unwrap();
         (attr_instance, struct_value)
     };
@@ -919,20 +1398,22 @@ fn attribute_struct_errors() {
         let snapshot = storage.clone().open_snapshot_write();
         let struct_def = type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap();
         assert!(matches!(
-            type_manager.resolve_struct_field(&snapshot, &["non-existant"], struct_def.clone()),
-            Err(ConceptReadError::Encoding { source: EncodingError::StructFieldUnresolvable { .. } })
+            *type_manager.resolve_struct_field(&snapshot, &["non-existant"], struct_def.clone()).unwrap_err(),
+            ConceptReadError::Encoding { source: EncodingError::StructFieldUnresolvable { .. } }
         ));
         assert!(matches!(
-            type_manager.resolve_struct_field(
-                &snapshot,
-                &["f_nested", "nested_string", "but-strings-arent-structs"],
-                struct_def.clone()
-            ),
-            Err(ConceptReadError::Encoding { source: EncodingError::IndexingIntoNonStructField { .. } })
+            *type_manager
+                .resolve_struct_field(
+                    &snapshot,
+                    &["f_nested", "nested_string", "but-strings-arent-structs"],
+                    struct_def.clone()
+                )
+                .unwrap_err(),
+            ConceptReadError::Encoding { source: EncodingError::IndexingIntoNonStructField { .. } }
         ));
         assert!(matches!(
-            type_manager.resolve_struct_field(&snapshot, &[], struct_def.clone()),
-            Err(ConceptReadError::Encoding { source: EncodingError::StructPathIncomplete { .. } })
+            *type_manager.resolve_struct_field(&snapshot, &[], struct_def.clone()).unwrap_err(),
+            ConceptReadError::Encoding { source: EncodingError::StructPathIncomplete { .. } }
         ));
     };
 

@@ -54,7 +54,7 @@ impl<'a> Plays<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         annotation: PlaysAnnotation,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         match annotation {
             PlaysAnnotation::Cardinality(cardinality) => type_manager.set_plays_annotation_cardinality(
                 snapshot,
@@ -72,7 +72,7 @@ impl<'a> Plays<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         annotation_category: AnnotationCategory,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         let plays_annotation = PlaysAnnotation::try_getting_default(annotation_category)
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match plays_annotation {
@@ -87,7 +87,7 @@ impl<'a> Plays<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<CapabilityConstraint<Plays<'static>>>, ConceptReadError> {
+    ) -> Result<Option<CapabilityConstraint<Plays<'static>>>, Box<ConceptReadError>> {
         type_manager.get_capability_abstract_constraint(snapshot, self.clone().into_owned())
     }
 
@@ -141,7 +141,7 @@ impl<'a> Capability<'a> for Plays<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         let is_abstract = self.get_constraint_abstract(snapshot, type_manager)?.is_some();
         debug_assert!(!is_abstract, "Abstractness of plays is not implemented! Take care of validation");
         Ok(is_abstract)
@@ -151,7 +151,7 @@ impl<'a> Capability<'a> for Plays<'a> {
         &'this self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<PlaysAnnotation>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'this, HashSet<PlaysAnnotation>>, Box<ConceptReadError>> {
         type_manager.get_plays_annotations_declared(snapshot, self.clone().into_owned())
     }
 
@@ -159,7 +159,7 @@ impl<'a> Capability<'a> for Plays<'a> {
         &'this self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<CapabilityConstraint<Plays<'static>>>>, ConceptReadError>
+    ) -> Result<MaybeOwns<'this, HashSet<CapabilityConstraint<Plays<'static>>>>, Box<ConceptReadError>>
     where
         'a: 'static,
     {
@@ -170,7 +170,7 @@ impl<'a> Capability<'a> for Plays<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<CapabilityConstraint<Plays<'static>>>, ConceptReadError> {
+    ) -> Result<HashSet<CapabilityConstraint<Plays<'static>>>, Box<ConceptReadError>> {
         type_manager.get_plays_cardinality_constraints(snapshot, self.clone().into_owned())
     }
 
@@ -178,7 +178,7 @@ impl<'a> Capability<'a> for Plays<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<AnnotationCardinality, ConceptReadError> {
+    ) -> Result<AnnotationCardinality, Box<ConceptReadError>> {
         type_manager.get_capability_cardinality(snapshot, self.clone().into_owned())
     }
 }

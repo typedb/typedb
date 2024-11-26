@@ -25,6 +25,7 @@ use crate::{
     error::ReadExecutionError,
     instruction::{iterator::TupleIterator, Checker, InstructionExecutor},
     pipeline::stage::ExecutionContext,
+    profile::StepProfile,
     read::{
         expression_executor::{evaluate_expression, ExpressionValue},
         step_executor::StepExecutors,
@@ -40,9 +41,9 @@ pub(crate) enum ImmediateExecutor {
     Assignment(AssignExecutor),
 }
 
-impl Into<StepExecutors> for ImmediateExecutor {
-    fn into(self) -> StepExecutors {
-        StepExecutors::Immediate(self)
+impl From<ImmediateExecutor> for StepExecutors {
+    fn from(val: ImmediateExecutor) -> Self {
+        StepExecutors::Immediate(val)
     }
 }
 
@@ -51,7 +52,8 @@ impl ImmediateExecutor {
         step: &IntersectionStep,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-    ) -> Result<Self, ConceptReadError> {
+        profile: Arc<StepProfile>,
+    ) -> Result<Self, Box<ConceptReadError>> {
         let IntersectionStep { sort_variable, instructions, selected_variables, output_width, .. } = step;
 
         let executor = IntersectionExecutor::new(
@@ -61,18 +63,29 @@ impl ImmediateExecutor {
             selected_variables.clone(),
             snapshot,
             thing_manager,
+            profile,
         )?;
         Ok(Self::SortedJoin(executor))
     }
 
-    pub(crate) fn new_unsorted_join(step: &UnsortedJoinStep) -> Result<Self, ConceptReadError> {
+    pub(crate) fn new_unsorted_join(
+        step: &UnsortedJoinStep,
+        step_profile: Arc<StepProfile>,
+    ) -> Result<Self, Box<ConceptReadError>> {
         let UnsortedJoinStep { iterate_instruction, check_instructions, output_width, .. } = step;
-        let executor =
-            UnsortedJoinExecutor::new(iterate_instruction.clone(), check_instructions.clone(), *output_width);
+        let executor = UnsortedJoinExecutor::new(
+            iterate_instruction.clone(),
+            check_instructions.clone(),
+            *output_width,
+            step_profile,
+        );
         Ok(Self::UnsortedJoin(executor))
     }
 
-    pub(crate) fn new_assignment(step: &AssignmentStep) -> Result<Self, ConceptReadError> {
+    pub(crate) fn new_assignment(
+        step: &AssignmentStep,
+        step_profile: Arc<StepProfile>,
+    ) -> Result<Self, Box<ConceptReadError>> {
         let AssignmentStep { expression, input_positions, unbound, selected_variables, output_width } = step;
         Ok(Self::Assignment(AssignExecutor::new(
             expression.clone(),
@@ -80,12 +93,18 @@ impl ImmediateExecutor {
             *unbound,
             selected_variables.clone(),
             *output_width,
+            step_profile,
         )))
     }
 
-    pub(crate) fn new_check(step: &CheckStep) -> Result<Self, ConceptReadError> {
+    pub(crate) fn new_check(step: &CheckStep, step_profile: Arc<StepProfile>) -> Result<Self, Box<ConceptReadError>> {
         let CheckStep { check_instructions, selected_variables, output_width } = step;
-        Ok(Self::Check(CheckExecutor::new(check_instructions.clone(), selected_variables.clone(), *output_width)))
+        Ok(Self::Check(CheckExecutor::new(
+            check_instructions.clone(),
+            selected_variables.clone(),
+            *output_width,
+            step_profile,
+        )))
     }
 
     pub(crate) fn prepare(
@@ -132,6 +151,8 @@ pub(super) struct IntersectionExecutor {
     intersection_multiplicity: u64,
 
     output: Option<FixedBatch>,
+
+    profile: Arc<StepProfile>,
 }
 
 impl IntersectionExecutor {
@@ -142,7 +163,8 @@ impl IntersectionExecutor {
         select_variables: Vec<VariablePosition>,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
-    ) -> Result<Self, ConceptReadError> {
+        profile: Arc<StepProfile>,
+    ) -> Result<Self, Box<ConceptReadError>> {
         let instruction_count = instructions.len();
         let executors: Vec<InstructionExecutor> = instructions
             .into_iter()
@@ -162,6 +184,7 @@ impl IntersectionExecutor {
             intersection_row: vec![VariableValue::Empty; output_width as usize],
             intersection_multiplicity: 1,
             output: None,
+            profile,
         })
     }
 
@@ -191,6 +214,7 @@ impl IntersectionExecutor {
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<(), ReadExecutionError> {
+        let measurement = self.profile.start_measurement();
         if self.compute_next_row(context)? {
             // don't allocate batch until 1 answer is confirmed
             let mut batch = FixedBatch::new(self.output_width);
@@ -200,14 +224,19 @@ impl IntersectionExecutor {
             }
             self.output = Some(batch);
         }
+        measurement.end(&self.profile, 1, self.output.as_ref().map(|batch| batch.len()).unwrap_or(0) as u64);
         Ok(())
     }
 
     fn write_next_row_into(&mut self, row: &mut Row<'_>) {
         if self.cartesian_iterator.is_active() {
-            self.cartesian_iterator.write_into(row)
+            self.cartesian_iterator.write_into(row, &self.outputs_selected);
         } else {
-            row.copy_from(&self.intersection_row, self.intersection_multiplicity);
+            row.set_multiplicity(self.intersection_multiplicity);
+            for &position in &self.outputs_selected.selected {
+                let value = self.intersection_row[position.as_usize()].clone();
+                row.set(position, value);
+            }
         }
     }
 
@@ -242,6 +271,7 @@ impl IntersectionExecutor {
                     return Ok(true);
                 } else {
                     self.iterators.clear();
+                    self.cartesian_iterator.clear();
                     let _ = self.input.as_mut().unwrap().next().unwrap().map_err(|err| err.clone());
                     if self.input.as_mut().unwrap().peek().is_some() {
                         self.may_create_intersection_iterators(context)?;
@@ -388,7 +418,12 @@ impl IntersectionExecutor {
 
         let input_row = self.input.as_mut().unwrap().peek().unwrap().as_ref().map_err(|&err| err.clone())?;
         for &position in &self.outputs_selected {
-            if position.as_usize() < input_row.len() && !input_row.get(position).is_empty() {
+            // note: some input variable positions are re-used across stages, so we should only copy
+            //       inputs into the output row if it is not already populated by the intersection
+            if position.as_usize() < input_row.len()
+                && !input_row.get(position).is_empty()
+                && row.get(position).is_empty()
+            {
                 row.set(position, input_row.get(position).clone().into_owned())
             }
         }
@@ -455,6 +490,10 @@ impl CartesianIterator {
         self.is_active
     }
 
+    fn clear(&mut self) {
+        self.iterators.iter_mut().for_each(|iter| drop(iter.take()));
+    }
+
     fn activate(
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
@@ -491,7 +530,7 @@ impl CartesianIterator {
                         let next_value_cmp = iter
                             .advance_until_index_is(iter.first_unbound_index(), source_intersection_value)
                             .map_err(|err| ReadExecutionError::ConceptRead { source: err })?;
-                        debug_assert!(next_value_cmp.is_some() && next_value_cmp.unwrap().is_eq());
+                        debug_assert_eq!(next_value_cmp, Some(std::cmp::Ordering::Equal));
                         iter
                     }
                 };
@@ -552,10 +591,16 @@ impl CartesianIterator {
         Ok(reopened)
     }
 
-    fn write_into(&mut self, row: &mut Row<'_>) {
+    fn write_into(&mut self, row: &mut Row<'_>, outputs_selected: &SelectedPositions) {
         for &executor_index in &self.cartesian_executor_indices {
             let iterator = self.iterators[executor_index].as_mut().unwrap();
-            iterator.write_values(row)
+            iterator.write_values(row);
+        }
+        for pos in (0..self.intersection_source.len() as u32)
+            .map(VariablePosition::new)
+            .filter(|i| !outputs_selected.selected.contains(i))
+        {
+            row.unset(pos);
         }
         for (index, value) in self.intersection_source.iter().enumerate() {
             if *row.get(VariablePosition::new(index as u32)) == VariableValue::Empty {
@@ -572,6 +617,7 @@ pub(super) struct UnsortedJoinExecutor {
 
     output_width: u32,
     output: Option<FixedBatch>,
+    profile: Arc<StepProfile>,
 }
 
 impl UnsortedJoinExecutor {
@@ -579,8 +625,9 @@ impl UnsortedJoinExecutor {
         iterate: ConstraintInstruction<ExecutorVariable>,
         checks: Vec<ConstraintInstruction<ExecutorVariable>>,
         total_vars: u32,
+        profile: Arc<StepProfile>,
     ) -> Self {
-        Self { iterate, checks, output_width: total_vars, output: None }
+        Self { iterate, checks, output_width: total_vars, output: None, profile }
     }
 
     fn prepare(
@@ -605,6 +652,7 @@ pub(super) struct AssignExecutor {
     output: ExecutorVariable,
     selected_variables: Vec<VariablePosition>,
     output_width: u32,
+    profile: Arc<StepProfile>,
 
     prepared_input: Option<FixedBatch>,
 }
@@ -616,8 +664,9 @@ impl AssignExecutor {
         output: ExecutorVariable,
         selected_variables: Vec<VariablePosition>,
         output_width: u32,
+        profile: Arc<StepProfile>,
     ) -> Self {
-        Self { expression, inputs, output, selected_variables, output_width, prepared_input: None }
+        Self { expression, inputs, output, selected_variables, output_width, profile, prepared_input: None }
     }
 
     fn prepare(
@@ -637,10 +686,9 @@ impl AssignExecutor {
         if self.prepared_input.is_none() {
             return Ok(None);
         }
-
+        let measurement = self.profile.start_measurement();
         let mut input = Peekable::new(FixedBatchRowIterator::new(Ok(self.prepared_input.take().unwrap())));
         debug_assert!(input.peek().is_some());
-
         let mut output = FixedBatch::new(self.output_width);
 
         while !output.is_full() {
@@ -649,8 +697,13 @@ impl AssignExecutor {
             let input_variables = self
                 .inputs
                 .iter()
-                .map(|&pos| (pos, ExpressionValue::try_from_value(input_row.get(pos).to_owned(), context).unwrap()))
-                .collect();
+                .map(|&pos| {
+                    let value = input_row.get(pos).to_owned();
+                    let expression_value = ExpressionValue::try_from_value(value, context)
+                        .map_err(|source| ReadExecutionError::ExpressionEvaluate { source })?;
+                    Ok((pos, expression_value))
+                })
+                .try_collect()?;
             let output_value = evaluate_expression(&self.expression, input_variables, &context.parameters)
                 .map_err(|err| ReadExecutionError::ExpressionEvaluate { source: err })?;
             output.append(|mut row| {
@@ -665,6 +718,7 @@ impl AssignExecutor {
                 }
             })
         }
+        measurement.end(&self.profile, 1, output.len() as u64);
 
         if output.is_empty() {
             Ok(None)
@@ -678,7 +732,8 @@ pub(super) struct CheckExecutor {
     checker: Checker<()>,
     selected_variables: Vec<VariablePosition>,
     output_width: u32,
-    input: Option<FixedBatch>, // TODO: Do I need this? I added it in the rebase
+    input: Option<FixedBatch>,
+    profile: Arc<StepProfile>,
 }
 
 impl CheckExecutor {
@@ -686,9 +741,10 @@ impl CheckExecutor {
         checks: Vec<CheckInstruction<ExecutorVariable>>,
         selected_variables: Vec<VariablePosition>,
         output_width: u32,
+        profile: Arc<StepProfile>,
     ) -> Self {
         let checker = Checker::new(checks, HashMap::new());
-        Self { checker, selected_variables, output_width, input: None }
+        Self { checker, selected_variables, output_width, input: None, profile }
     }
 
     fn prepare(
@@ -708,7 +764,7 @@ impl CheckExecutor {
         let Some(input_batch) = self.input.take() else {
             return Ok(None);
         };
-
+        let measurement = self.profile.start_measurement();
         let mut input = Peekable::new(FixedBatchRowIterator::new(Ok(input_batch)));
         debug_assert!(input.peek().is_some());
 
@@ -727,7 +783,7 @@ impl CheckExecutor {
                 })
             }
         }
-
+        measurement.end(&self.profile, 1, output.len() as u64);
         if output.is_empty() {
             Ok(None)
         } else {

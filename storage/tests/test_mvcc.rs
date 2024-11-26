@@ -28,11 +28,8 @@ use storage::{
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
 };
 use test_utils::{create_tmp_dir, init_logging};
-
-use self::TestKeyspaceSet::Keyspace;
-use crate::test_common::create_storage;
-
-mod test_common;
+use test_utils_storage::{create_storage, test_keyspace_set};
+use TestKeyspaceSet::Keyspace;
 
 test_keyspace_set! {
     Keyspace => 0: "keyspace",
@@ -49,13 +46,13 @@ fn test_commit_increments_watermark() {
     init_logging();
     let storage_path = create_tmp_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
-    let wm_initial = storage.read_watermark();
+    let wm_initial = storage.snapshot_watermark();
     let mut snapshot_0 = storage.clone().open_snapshot_write();
     let key_1 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
     snapshot_0.put_val(key_1.clone(), ByteArray::copy(&VALUE_1));
     snapshot_0.commit().unwrap();
 
-    assert_eq!(wm_initial.number() + 1, storage.read_watermark().number());
+    assert_eq!(wm_initial.number() + 1, storage.snapshot_watermark().number());
 }
 
 #[test]
@@ -71,31 +68,31 @@ fn test_reading_snapshots() {
     snapshot_write_0.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_0));
     snapshot_write_0.commit().unwrap();
 
-    let watermark_0 = storage.read_watermark();
+    let watermark_0 = storage.snapshot_watermark();
 
     let snapshot_read_0 = storage.clone().open_snapshot_read();
-    assert_eq!(snapshot_read_0.get::<128>(key_1.as_reference()).unwrap().unwrap().bytes(), VALUE_0);
+    assert_eq!(*snapshot_read_0.get::<128>(key_1.as_reference()).unwrap().unwrap(), VALUE_0);
 
     let mut snapshot_write_1 = storage.clone().open_snapshot_write();
     snapshot_write_1.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));
     let snapshot_read_01 = storage.clone().open_snapshot_read();
-    assert_eq!(snapshot_read_0.get::<128>(key_1.as_reference()).unwrap().unwrap().bytes(), VALUE_0);
-    assert_eq!(snapshot_read_01.get::<128>(key_1.as_reference()).unwrap().unwrap().bytes(), VALUE_0);
+    assert_eq!(*snapshot_read_0.get::<128>(key_1.as_reference()).unwrap().unwrap(), VALUE_0);
+    assert_eq!(*snapshot_read_01.get::<128>(key_1.as_reference()).unwrap().unwrap(), VALUE_0);
 
     let result_write_1 = snapshot_write_1.commit();
     assert!(result_write_1.is_ok());
 
     let snapshot_read_1 = storage.clone().open_snapshot_read();
-    assert_eq!(snapshot_read_0.get::<128>(key_1.as_reference()).unwrap().unwrap().bytes(), VALUE_0);
-    assert_eq!(snapshot_read_01.get::<128>(key_1.as_reference()).unwrap().unwrap().bytes(), VALUE_0);
-    assert_eq!(snapshot_read_1.get::<128>(key_1.as_reference()).unwrap().unwrap().bytes(), VALUE_1);
+    assert_eq!(*snapshot_read_0.get::<128>(key_1.as_reference()).unwrap().unwrap(), VALUE_0);
+    assert_eq!(*snapshot_read_01.get::<128>(key_1.as_reference()).unwrap().unwrap(), VALUE_0);
+    assert_eq!(*snapshot_read_1.get::<128>(key_1.as_reference()).unwrap().unwrap(), VALUE_1);
     snapshot_read_1.close_resources();
     snapshot_read_01.close_resources();
     snapshot_read_0.close_resources();
 
     // Read from further in the past.
     let snapshot_read_02 = storage.open_snapshot_read_at(watermark_0);
-    assert_eq!(snapshot_read_02.get::<128>(key_1.as_reference()).unwrap().unwrap().bytes(), VALUE_0);
+    assert_eq!(*snapshot_read_02.get::<128>(key_1.as_reference()).unwrap().unwrap(), VALUE_0);
     snapshot_read_02.close_resources();
 }
 
@@ -113,7 +110,7 @@ fn test_conflicting_update_fails() {
     snapshot_write_0.put_val(key_1.clone().into_owned_array(), ByteArray::copy(&VALUE_0));
     snapshot_write_0.commit().unwrap();
 
-    let watermark_after_initial_write = storage.read_watermark();
+    let watermark_after_initial_write = storage.snapshot_watermark();
 
     {
         let mut snapshot_write_11 = storage.clone().open_snapshot_write();
@@ -146,14 +143,14 @@ fn test_open_snapshot_write_at() {
     let key_1: &StorageKey<'_, 48> =
         &StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_1)));
 
-    let watermark_init = storage.read_watermark();
+    let watermark_init = storage.snapshot_watermark();
 
     let mut snapshot_write_0 = storage.clone().open_snapshot_write();
     snapshot_write_0.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_0));
     snapshot_write_0.commit().unwrap();
 
     let snapshot_read_0 = storage.clone().open_snapshot_read();
-    assert_eq!(snapshot_read_0.get::<128>(key_1.as_reference()).unwrap().unwrap().bytes(), VALUE_0);
+    assert_eq!(*snapshot_read_0.get::<128>(key_1.as_reference()).unwrap().unwrap(), VALUE_0);
     snapshot_read_0.close_resources();
 
     let mut snapshot_write_1 = storage.clone().open_snapshot_write_at(watermark_init);
@@ -161,6 +158,6 @@ fn test_open_snapshot_write_at() {
     snapshot_write_1.commit().unwrap();
 
     let snapshot_read_1 = storage.open_snapshot_read();
-    assert_eq!(snapshot_read_1.get::<128>(key_1.as_reference()).unwrap().unwrap().bytes(), VALUE_0); // FIXME: value overwrite currently unsupported
+    assert_eq!(*snapshot_read_1.get::<128>(key_1.as_reference()).unwrap().unwrap(), VALUE_0); // FIXME: value overwrite currently unsupported
     snapshot_read_1.close_resources();
 }

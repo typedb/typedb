@@ -15,10 +15,7 @@ use storage::{
     MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging};
-
-use crate::test_common::{checkpoint_storage, create_storage, load_storage};
-
-mod test_common;
+use test_utils_storage::{checkpoint_storage, create_storage, load_storage, test_keyspace_set};
 
 #[test]
 fn wal_and_checkpoint_ok() {
@@ -37,14 +34,14 @@ fn wal_and_checkpoint_ok() {
         snapshot.put(key_world.clone());
         snapshot.commit().unwrap();
 
-        (checkpoint_storage(&storage), storage.read_watermark())
+        (checkpoint_storage(&storage), storage.snapshot_watermark())
     };
 
     {
         let storage =
             load_storage::<TestKeyspaceSet>(&storage_path, WAL::load(&storage_path).unwrap(), Some(checkpoint))
                 .unwrap();
-        assert_eq!(watermark, storage.read_watermark());
+        assert_eq!(watermark, storage.snapshot_watermark());
         let snapshot = storage.open_snapshot_read();
         assert!(snapshot.get_mapped(StorageKeyReference::from(&key_hello), |_| true).unwrap().is_some());
     };
@@ -79,12 +76,12 @@ fn wal_and_no_checkpoint_ok() {
         snapshot.put(key_world.clone());
         snapshot.commit().unwrap();
 
-        storage.read_watermark()
+        storage.snapshot_watermark()
     };
 
     {
         let storage = load_storage::<TestKeyspaceSet>(&storage_path, WAL::load(&storage_path).unwrap(), None).unwrap();
-        assert_eq!(watermark, storage.read_watermark());
+        assert_eq!(watermark, storage.snapshot_watermark());
         let snapshot = storage.open_snapshot_read();
         assert!(snapshot.get_mapped(StorageKeyReference::from(&key_hello), |_| true).unwrap().is_some());
     }

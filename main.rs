@@ -13,6 +13,8 @@ use server::parameters::config::Config;
 
 #[tokio::main]
 async fn main() {
+    setup_abort_on_panic();
+
     print_ascii_logo(); // very important
     initialise_logging_global();
 
@@ -33,4 +35,14 @@ fn get_configuration() -> Config {
 
 fn print_ascii_logo() {
     println!("{ASCII_LOGO}");
+}
+
+fn setup_abort_on_panic() {
+    std::panic::set_hook({
+        let default_panic = std::panic::take_hook();
+        Box::new(move |info| {
+            default_panic(info);
+            std::process::exit(1);
+        })
+    });
 }

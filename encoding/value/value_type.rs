@@ -4,11 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    fmt,
-    fmt::{Display, Formatter},
-    ops::Range,
-};
+use std::{fmt, mem, ops::Range};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
@@ -16,6 +12,7 @@ use serde::{
     de::{self, Unexpected, Visitor},
     Deserialize, Deserializer, Serialize, Serializer,
 };
+use structural_equality::StructuralEquality;
 
 use crate::{
     graph::{definition::definition_key::DefinitionKey, type_::property::TypeVertexPropertyEncoding},
@@ -24,7 +21,7 @@ use crate::{
 };
 
 // We can support Prefix::ATTRIBUTE_MAX - Prefix::ATTRIBUTE_MIN different built-in value types
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum ValueType {
     Boolean,
     Long,
@@ -101,10 +98,63 @@ impl ValueType {
             _ => false,
         }
     }
+
+    // we can approximately cast any numerical type to any other numerical type
+    pub fn is_approximately_castable_to(&self, other: &Self) -> bool {
+        if self == other {
+            return true;
+        }
+        match self {
+            ValueType::Long => other == &ValueType::Double || other == &ValueType::Decimal,
+            ValueType::Decimal => other == &ValueType::Double || other == &ValueType::Long,
+            ValueType::Double => other == &ValueType::Decimal || other == &ValueType::Long,
+            // TODO: we will have to decide if we consider date datatypes to be approximately castable to each other
+            ValueType::Date => other == &ValueType::DateTime,
+            _ => false,
+        }
+    }
 }
 
-impl Display for ValueType {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl StructuralEquality for ValueType {
+    fn hash(&self) -> u64 {
+        mem::discriminant(self).hash()
+            & match self {
+                ValueType::Struct(key) => (key.definition_id().as_uint() as usize).hash(),
+                _ => 0,
+            }
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Boolean, Self::Boolean) => true,
+            (Self::Long, Self::Long) => true,
+            (Self::Double, Self::Double) => true,
+            (Self::Decimal, Self::Decimal) => true,
+            (Self::Date, Self::Date) => true,
+            (Self::DateTime, Self::DateTime) => true,
+            (Self::DateTimeTZ, Self::DateTimeTZ) => true,
+            (Self::Duration, Self::Duration) => true,
+            (Self::String, Self::String) => true,
+            (Self::Struct(key), Self::Struct(other_key)) => {
+                (key.definition_id().as_uint() as usize).equals(&(other_key.definition_id().as_uint() as usize))
+            }
+            // note: this style forces updating the match when the variants change
+            (Self::Boolean { .. }, _)
+            | (Self::Long { .. }, _)
+            | (Self::Double { .. }, _)
+            | (Self::Decimal { .. }, _)
+            | (Self::Date { .. }, _)
+            | (Self::DateTime { .. }, _)
+            | (Self::DateTimeTZ { .. }, _)
+            | (Self::Duration { .. }, _)
+            | (Self::String { .. }, _)
+            | (Self::Struct { .. }, _) => false,
+        }
+    }
+}
+
+impl fmt::Display for ValueType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.category().name())
     }
 }
@@ -124,7 +174,7 @@ pub enum ValueTypeCategory {
 }
 
 impl ValueTypeCategory {
-    pub fn to_bytes(&self) -> [u8; ValueTypeBytes::CATEGORY_LENGTH] {
+    pub const fn to_bytes(&self) -> [u8; ValueTypeBytes::CATEGORY_LENGTH] {
         match self {
             Self::Boolean => [0],
             Self::Long => [1],
@@ -201,7 +251,7 @@ impl ValueTypeCategory {
             ValueTypeCategory::Decimal => "decimal",
             ValueTypeCategory::Date => "date",
             ValueTypeCategory::DateTime => "datetime",
-            ValueTypeCategory::DateTimeTZ => "datetime_tz",
+            ValueTypeCategory::DateTimeTZ => "datetime-tz",
             ValueTypeCategory::Duration => "duration",
             ValueTypeCategory::String => "string",
             ValueTypeCategory::Struct => "struct",
@@ -209,8 +259,8 @@ impl ValueTypeCategory {
     }
 }
 
-impl Display for ValueTypeCategory {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for ValueTypeCategory {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.name())
     }
 }
@@ -221,7 +271,7 @@ pub struct ValueTypeBytes {
 }
 
 impl ValueTypeBytes {
-    const CATEGORY_LENGTH: usize = 1;
+    pub const CATEGORY_LENGTH: usize = 1;
     const TAIL_LENGTH: usize = DefinitionKey::LENGTH;
     const LENGTH: usize = Self::CATEGORY_LENGTH + Self::TAIL_LENGTH;
     const RANGE_CATEGORY: Range<usize> = 0..Self::CATEGORY_LENGTH;

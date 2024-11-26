@@ -72,7 +72,7 @@ pub mod tests {
             block::Block,
             function::{Function, FunctionBody, ReturnOperation},
             function_signature::{FunctionID, FunctionSignature},
-            VariableRegistry,
+            ParameterRegistry, VariableRegistry,
         },
         translation::{pipeline::TranslatedStage, TranslationContext},
     };
@@ -110,7 +110,9 @@ pub mod tests {
         let type_player_1 = Type::Relation(RelationType::build_from_type_id(TypeID::build(2)));
 
         let mut translation_context = TranslationContext::new();
-        let dummy = Block::builder(translation_context.new_block_builder_context()).finish();
+        let mut value_parameters = ParameterRegistry::new();
+        let dummy =
+            Block::builder(translation_context.new_block_builder_context(&mut value_parameters)).finish().unwrap();
         let constraint1 = Constraint::Links(Links::new(var_relation, var_player, var_role_type));
         let constraint2 = Constraint::Links(Links::new(var_relation, var_player, var_role_type));
         let nested1 = TypeInferenceGraph {
@@ -218,7 +220,7 @@ pub mod tests {
         assert_eq!(expected_annotations.vertex_annotations(), type_annotations.vertex_annotations());
         assert_eq!(expected_annotations.constraint_annotations(), type_annotations.constraint_annotations());
     }
-    //
+
     #[test]
     fn test_functions() {
         let (_tmp_dir, storage) = setup_storage();
@@ -226,17 +228,20 @@ pub mod tests {
 
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, _), (type_fears, _, _)) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
-        let object_types = [type_animal.clone(), type_cat.clone(), type_dog.clone(), type_fears.clone()];
+        let concrete_object_types = [type_cat.clone(), type_dog.clone(), type_fears.clone()];
 
-        let (with_no_cache, with_local_cache, with_schema_cache) = [
+        let (with_no_cache, with_local_cache, _with_schema_cache) = [
             FunctionID::Preamble(0),
             FunctionID::Preamble(0),
             FunctionID::Schema(DefinitionKey::build(Prefix::DefinitionFunction, DefinitionID::build(0))),
         ]
         .iter()
         .map(|function_id| {
+            // with fun fn_test() -> animal: match $called_animal isa cat, has $called_name; return { $called_animal };
+            // match $animal = fn_test();
             let mut function_context = TranslationContext::new();
-            let mut builder = Block::builder(function_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(function_context.new_block_builder_context(&mut value_parameters));
             let mut f_conjunction = builder.conjunction_mut();
             let f_var_animal = f_conjunction.get_or_declare_variable("called_animal").unwrap();
             let f_var_animal_type = f_conjunction.get_or_declare_variable("called_animal_type").unwrap();
@@ -244,12 +249,14 @@ pub mod tests {
             f_conjunction.constraints_mut().add_label(f_var_animal_type, LABEL_CAT.clone()).unwrap();
             f_conjunction.constraints_mut().add_isa(IsaKind::Subtype, f_var_animal, f_var_animal_type.into()).unwrap();
             f_conjunction.constraints_mut().add_has(f_var_animal, f_var_name).unwrap();
-            let function_block = builder.finish();
+            let function_block = builder.finish().unwrap();
             let f_ir = Function::new(
                 "fn_test",
                 function_context,
+                value_parameters,
                 vec![],
                 Some(vec![]),
+                None,
                 FunctionBody::new(
                     vec![TranslatedStage::Match { block: function_block }],
                     ReturnOperation::Stream(vec![f_var_animal]),
@@ -257,7 +264,8 @@ pub mod tests {
             );
 
             let mut entry_context = TranslationContext::new();
-            let mut builder = Block::builder(entry_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(entry_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
 
@@ -271,7 +279,7 @@ pub mod tests {
                 .constraints_mut()
                 .add_function_binding(vec![var_animal], &callee_signature, vec![], "test_fn")
                 .unwrap();
-            let entry = builder.finish();
+            let entry = builder.finish().unwrap();
             (entry, entry_context, f_ir)
         })
         .collect_tuple()
@@ -281,6 +289,7 @@ pub mod tests {
 
         {
             // Local inference only
+            // match $animal = fn_test();
             let (entry, entry_context, _) = with_no_cache;
             let var_animal = var_from_registry(&entry_context.variable_registry, "animal").unwrap();
             let annotations_without_schema_cache = infer_types(
@@ -295,12 +304,13 @@ pub mod tests {
             .unwrap();
             assert_eq!(
                 *annotations_without_schema_cache.vertex_annotations(),
-                BTreeMap::from([(var_animal.into(), Arc::new(BTreeSet::from(object_types.clone())))])
+                BTreeMap::from([(var_animal.into(), Arc::new(BTreeSet::from(concrete_object_types.clone())))])
             );
         }
 
         {
-            // As preamble function
+            // Inference for preamble function
+            // with fun fn_test() -> animal: match $called_animal isa cat, has $called_name; return { $called_animal };
             let (entry, entry_context, mut f_ir) = with_local_cache;
 
             let f_annotations =
@@ -317,11 +327,14 @@ pub mod tests {
                 &BTreeMap::from([
                     (f_var_animal.into(), Arc::new(BTreeSet::from([type_cat.clone()]))),
                     (f_var_animal_type.into(), Arc::new(BTreeSet::from([type_cat.clone()]))),
-                    (f_var_name.into(), Arc::new(BTreeSet::from([type_catname.clone(), type_name.clone()]))),
+                    (f_var_name.into(), Arc::new(BTreeSet::from([type_catname.clone()]))),
                     (Vertex::Label(LABEL_CAT), Arc::new(BTreeSet::from([type_cat.clone()]))),
                 ])
             );
 
+            // Inference with inference of function cached
+            // with fun fn_test() -> animal: match $called_animal isa cat, has $called_name; return { $called_animal };
+            // match $animal = fn_test();
             let var_animal = var_from_registry(&entry_context.variable_registry, "animal").unwrap();
             let local_cache = AnnotatedUnindexedFunctions::new(vec![f_annotations]);
             let variable_registry = &entry_context.variable_registry;
@@ -429,14 +442,15 @@ pub mod tests {
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
-        let all_animals = BTreeSet::from([type_animal.clone(), type_cat.clone(), type_dog.clone()]);
-        let all_names = BTreeSet::from([type_name.clone(), type_catname.clone(), type_dogname.clone()]);
+        let all_concrete_animals = BTreeSet::from([type_cat.clone(), type_dog.clone()]);
+        let all_concrete_names = BTreeSet::from([type_catname.clone(), type_dogname.clone()]);
 
         {
             // Case 1: $a isa cat, has name $n;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -450,7 +464,7 @@ pub mod tests {
             conjunction.constraints_mut().add_label(var_name_type, LABEL_NAME.clone()).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
@@ -467,7 +481,7 @@ pub mod tests {
                 conjunction: block.conjunction(),
                 vertices: VertexAnnotations::from([
                     (var_animal.into(), BTreeSet::from([type_cat.clone()])),
-                    (var_name.into(), BTreeSet::from([type_catname.clone(), type_name.clone()])),
+                    (var_name.into(), BTreeSet::from([type_catname.clone()])),
                     (var_animal_type.into(), BTreeSet::from([type_cat.clone()])),
                     (var_name_type.into(), BTreeSet::from([type_name.clone()])),
                     (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat.clone()])),
@@ -484,13 +498,13 @@ pub mod tests {
                         &constraints[2],
                         var_name.into(),
                         var_name_type.into(),
-                        vec![(type_catname.clone(), type_name.clone()), (type_name.clone(), type_name.clone())],
+                        vec![(type_catname.clone(), type_name.clone())],
                     ),
                     expected_edge(
                         &constraints[4],
                         var_animal.into(),
                         var_name.into(),
-                        vec![(type_cat.clone(), type_name.clone()), (type_cat.clone(), type_catname.clone())],
+                        vec![(type_cat.clone(), type_catname.clone())],
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
@@ -498,6 +512,8 @@ pub mod tests {
                 nested_optionals: Vec::new(),
             };
 
+            assert_eq!(expected_graph.vertices, graph.vertices);
+            assert_eq!(expected_graph.edges, graph.edges);
             assert_eq!(expected_graph, graph);
         }
 
@@ -505,7 +521,8 @@ pub mod tests {
             // Case 2: $a isa animal, has cat-name $n;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -519,7 +536,7 @@ pub mod tests {
             conjunction.constraints_mut().add_label(var_name_type, LABEL_CATNAME.clone()).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
 
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
@@ -574,7 +591,8 @@ pub mod tests {
             // Case 3: $a isa cat, has dog-name $n;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -588,7 +606,7 @@ pub mod tests {
             conjunction.constraints_mut().add_label(var_name_type, LABEL_DOGNAME.clone()).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
             let err = compute_type_inference_graph(
                 &snapshot,
                 &block,
@@ -605,11 +623,12 @@ pub mod tests {
 
         {
             // Case 4: $a isa animal, has name $n; // Just to be sure
-            let types_a = all_animals.clone();
-            let types_n = all_names.clone();
+            let types_a = all_concrete_animals.clone();
+            let types_n = all_concrete_names.clone();
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -623,7 +642,7 @@ pub mod tests {
             conjunction.constraints_mut().add_label(var_name_type, LABEL_NAME.clone()).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
@@ -651,39 +670,26 @@ pub mod tests {
                         &constraints[0],
                         var_animal.into(),
                         var_animal_type.into(),
-                        vec![
-                            (type_cat.clone(), type_animal.clone()),
-                            (type_dog.clone(), type_animal.clone()),
-                            (type_animal.clone(), type_animal.clone()),
-                        ],
+                        vec![(type_cat.clone(), type_animal.clone()), (type_dog.clone(), type_animal.clone())],
                     ),
                     expected_edge(
                         &constraints[2],
                         var_name.into(),
                         var_name_type.into(),
-                        vec![
-                            (type_catname.clone(), type_name.clone()),
-                            (type_dogname.clone(), type_name.clone()),
-                            (type_name.clone(), type_name.clone()),
-                        ],
+                        vec![(type_catname.clone(), type_name.clone()), (type_dogname.clone(), type_name.clone())],
                     ),
                     expected_edge(
                         &constraints[4],
                         var_animal.into(),
                         var_name.into(),
-                        vec![
-                            (type_cat.clone(), type_catname.clone()),
-                            (type_cat.clone(), type_name.clone()),
-                            (type_dog.clone(), type_dogname.clone()),
-                            (type_dog.clone(), type_name.clone()),
-                            (type_animal.clone(), type_name.clone()),
-                        ],
+                        vec![(type_cat.clone(), type_catname.clone()), (type_dog.clone(), type_dogname.clone())],
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
                 nested_negations: Vec::new(),
                 nested_optionals: Vec::new(),
             };
+            assert_eq!(expected_graph.edges, graph.edges);
             assert_eq!(expected_graph, graph);
         }
     }
@@ -698,7 +704,8 @@ pub mod tests {
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
         let mut translation_context = TranslationContext::new();
-        let mut builder = Block::builder(translation_context.new_block_builder_context());
+        let mut value_parameters = ParameterRegistry::new();
+        let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
         let mut conjunction = builder.conjunction_mut();
         let (var_animal, var_name, var_name_type) = ["animal", "name", "name_type"]
             .into_iter()
@@ -706,7 +713,7 @@ pub mod tests {
             .collect_tuple()
             .unwrap();
 
-        // Case 1: {$a isa cat;} or {$a isa dog;} $a has name $n;
+        // Case 1: {$a isa cat;} or {$a isa dog;}; $a has name $n;
         conjunction.constraints_mut().add_label(var_name_type, Label::build("name")).unwrap();
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
         conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
@@ -725,7 +732,7 @@ pub mod tests {
 
         let (b1_var_animal_type, b2_var_animal_type) = (b1_var_animal_type, b2_var_animal_type);
 
-        let block = builder.finish();
+        let block = builder.finish().unwrap();
 
         let snapshot = storage.clone().open_snapshot_write();
         let graph = compute_type_inference_graph(
@@ -785,7 +792,7 @@ pub mod tests {
             conjunction,
             vertices: VertexAnnotations::from([
                 (var_animal.into(), BTreeSet::from([type_cat.clone(), type_dog.clone()])),
-                (var_name.into(), BTreeSet::from([type_name.clone(), type_catname.clone(), type_dogname.clone()])),
+                (var_name.into(), BTreeSet::from([type_catname.clone(), type_dogname.clone()])),
                 (var_name_type.into(), BTreeSet::from([type_name.clone()])),
                 (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name.clone()])),
             ]),
@@ -794,22 +801,13 @@ pub mod tests {
                     &conjunction.constraints()[1],
                     var_name.into(),
                     var_name_type.into(),
-                    vec![
-                        (type_name.clone(), type_name.clone()),
-                        (type_catname.clone(), type_name.clone()),
-                        (type_dogname.clone(), type_name.clone()),
-                    ],
+                    vec![(type_catname.clone(), type_name.clone()), (type_dogname.clone(), type_name.clone())],
                 ),
                 expected_edge(
                     &conjunction.constraints()[2],
                     var_animal.into(),
                     var_name.into(),
-                    vec![
-                        (type_cat.clone(), type_catname.clone()),
-                        (type_cat.clone(), type_name.clone()),
-                        (type_dog.clone(), type_dogname.clone()),
-                        (type_dog.clone(), type_name.clone()),
-                    ],
+                    vec![(type_cat.clone(), type_catname.clone()), (type_dog.clone(), type_dogname.clone())],
                 ),
             ],
             nested_disjunctions: vec![NestedTypeInferenceGraphDisjunction {
@@ -835,7 +833,8 @@ pub mod tests {
         // Case 1: $a has $n;
         let snapshot = storage.clone().open_snapshot_write();
         let mut translation_context = TranslationContext::new();
-        let mut builder = Block::builder(translation_context.new_block_builder_context());
+        let mut value_parameters = ParameterRegistry::new();
+        let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
         let mut conjunction = builder.conjunction_mut();
         let (var_animal, var_name) = ["animal", "name"]
             .into_iter()
@@ -845,7 +844,7 @@ pub mod tests {
 
         conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
-        let block = builder.finish();
+        let block = builder.finish().unwrap();
         let conjunction = block.conjunction();
         let constraints = conjunction.constraints();
         let graph = compute_type_inference_graph(
@@ -862,20 +861,14 @@ pub mod tests {
         let expected_graph = TypeInferenceGraph {
             conjunction,
             vertices: VertexAnnotations::from([
-                (var_animal.into(), BTreeSet::from([type_animal.clone(), type_cat.clone(), type_dog.clone()])),
-                (var_name.into(), BTreeSet::from([type_name.clone(), type_catname.clone(), type_dogname.clone()])),
+                (var_animal.into(), BTreeSet::from([type_cat.clone(), type_dog.clone()])),
+                (var_name.into(), BTreeSet::from([type_catname.clone(), type_dogname.clone()])),
             ]),
             edges: vec![expected_edge(
                 &constraints[0],
                 var_animal.into(),
                 var_name.into(),
-                vec![
-                    (type_animal.clone(), type_name.clone()),
-                    (type_cat.clone(), type_catname.clone()),
-                    (type_cat.clone(), type_name.clone()),
-                    (type_dog.clone(), type_dogname.clone()),
-                    (type_dog.clone(), type_name.clone()),
-                ],
+                vec![(type_cat.clone(), type_catname.clone()), (type_dog.clone(), type_dogname.clone())],
             )],
             nested_disjunctions: Vec::new(),
             nested_negations: Vec::new(),
@@ -896,7 +889,8 @@ pub mod tests {
         // With roles specified
         let snapshot = storage.clone().open_snapshot_write();
         let mut translation_context = TranslationContext::new();
-        let mut builder = Block::builder(translation_context.new_block_builder_context());
+        let mut value_parameters = ParameterRegistry::new();
+        let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
         let mut conjunction = builder.conjunction_mut();
         let (
             var_has_fear,
@@ -938,7 +932,7 @@ pub mod tests {
             .unwrap();
         conjunction.constraints_mut().add_label(var_role_is_feared_type, LABEL_IS_FEARED.clone()).unwrap();
 
-        let block = builder.finish();
+        let block = builder.finish().unwrap();
 
         let conjunction = block.conjunction();
 
@@ -1032,14 +1026,15 @@ pub mod tests {
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
-        let all_animals = BTreeSet::from([type_animal.clone(), type_cat.clone(), type_dog.clone()]);
-        let all_names = BTreeSet::from([type_name.clone(), type_catname.clone(), type_dogname.clone()]);
+        let all_concrete_animals = BTreeSet::from([type_cat.clone(), type_dog.clone()]);
+        let all_concrete_names = BTreeSet::from([type_catname.clone(), type_dogname.clone()]);
 
         {
             // Case 1: $a isa $at; $at label cat; $n isa! $nt; $at owns $nt;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_owned_type) =
                 ["animal", "name", "animal_type", "name_type"]
@@ -1053,7 +1048,7 @@ pub mod tests {
             conjunction.constraints_mut().add_isa(IsaKind::Exact, var_name, var_owned_type.into()).unwrap();
             conjunction.constraints_mut().add_owns(var_animal_type.into(), var_owned_type.into()).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
@@ -1070,9 +1065,9 @@ pub mod tests {
                 conjunction: block.conjunction(),
                 vertices: VertexAnnotations::from([
                     (var_animal.into(), BTreeSet::from([type_cat.clone()])),
-                    (var_name.into(), BTreeSet::from([type_name.clone(), type_catname.clone()])),
+                    (var_name.into(), BTreeSet::from([type_catname.clone()])),
                     (var_animal_type.into(), BTreeSet::from([type_cat.clone()])),
-                    (var_owned_type.into(), BTreeSet::from([type_name.clone(), type_catname.clone()])),
+                    (var_owned_type.into(), BTreeSet::from([type_catname.clone()])),
                     (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat.clone()])),
                 ]),
                 edges: vec![
@@ -1086,13 +1081,13 @@ pub mod tests {
                         &constraints[2],
                         var_name.into(),
                         var_owned_type.into(),
-                        vec![(type_catname.clone(), type_catname.clone()), (type_name.clone(), type_name.clone())],
+                        vec![(type_catname.clone(), type_catname.clone())],
                     ),
                     expected_edge(
                         &constraints[3],
                         var_animal_type.into(),
                         var_owned_type.into(),
-                        vec![(type_cat.clone(), type_catname.clone()), (type_cat.clone(), type_name.clone())],
+                        vec![(type_cat.clone(), type_catname.clone())],
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
@@ -1108,7 +1103,8 @@ pub mod tests {
             let snapshot = storage.clone().open_snapshot_write();
 
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_owner_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -1121,7 +1117,7 @@ pub mod tests {
             conjunction.constraints_mut().add_label(var_name_type, LABEL_CATNAME.clone()).unwrap();
             conjunction.constraints_mut().add_owns(var_owner_type.into(), var_name_type.into()).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
 
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
@@ -1175,7 +1171,8 @@ pub mod tests {
             // Case 3: $a isa $at; $at type cat; $n isa $nt; $nt type dogname; $at owns $nt;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -1189,7 +1186,7 @@ pub mod tests {
             conjunction.constraints_mut().add_label(var_name_type, LABEL_DOGNAME.clone()).unwrap();
             conjunction.constraints_mut().add_owns(var_animal_type.into(), var_name_type.into()).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
             // We manually compute the graph so we can confirm it decays to empty annotations everywhere
             let mut graph = TypeGraphSeedingContext::new(
@@ -1227,11 +1224,12 @@ pub mod tests {
 
         {
             // Case 4: $a isa! $at; $n isa! $nt; $at owns $nt;
-            let types_a = all_animals.clone();
-            let types_n = all_names.clone();
+            let types_a = all_concrete_animals.clone();
+            let types_n = all_concrete_names.clone();
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
@@ -1243,7 +1241,7 @@ pub mod tests {
             conjunction.constraints_mut().add_isa(IsaKind::Exact, var_name, var_name_type.into()).unwrap();
             conjunction.constraints_mut().add_owns(var_animal_type.into(), var_name_type.into()).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
@@ -1269,11 +1267,7 @@ pub mod tests {
                         &constraints[0],
                         var_animal.into(),
                         var_animal_type.into(),
-                        vec![
-                            (type_cat.clone(), type_cat.clone()),
-                            (type_dog.clone(), type_dog.clone()),
-                            (type_animal.clone(), type_animal.clone()),
-                        ],
+                        vec![(type_cat.clone(), type_cat.clone()), (type_dog.clone(), type_dog.clone())],
                     ),
                     expected_edge(
                         &constraints[1],
@@ -1282,20 +1276,13 @@ pub mod tests {
                         vec![
                             (type_catname.clone(), type_catname.clone()),
                             (type_dogname.clone(), type_dogname.clone()),
-                            (type_name.clone(), type_name.clone()),
                         ],
                     ),
                     expected_edge(
                         &constraints[2],
                         var_animal_type.into(),
                         var_name_type.into(),
-                        vec![
-                            (type_cat.clone(), type_name.clone()),
-                            (type_cat.clone(), type_catname.clone()),
-                            (type_dog.clone(), type_name.clone()),
-                            (type_dog.clone(), type_dogname.clone()),
-                            (type_animal.clone(), type_name.clone()),
-                        ],
+                        vec![(type_cat.clone(), type_catname.clone()), (type_dog.clone(), type_dogname.clone())],
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
@@ -1316,14 +1303,15 @@ pub mod tests {
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
-        let all_animals = BTreeSet::from([type_animal.clone(), type_cat.clone(), type_dog.clone()]);
-        let all_names = BTreeSet::from([type_name.clone(), type_catname.clone(), type_dogname.clone()]);
+        let all_concrete_animals = BTreeSet::from([type_cat.clone(), type_dog.clone()]);
+        let all_concrete_names = BTreeSet::from([type_catname.clone(), type_dogname.clone()]);
 
         {
             // Case 1: $a isa cat, has name $n;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let [var_animal, var_name] =
                 ["animal", "name"].map(|name| conjunction.get_or_declare_variable(name).unwrap());
@@ -1332,7 +1320,7 @@ pub mod tests {
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_NAME)).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
@@ -1349,7 +1337,7 @@ pub mod tests {
                 conjunction: block.conjunction(),
                 vertices: VertexAnnotations::from([
                     (var_animal.into(), BTreeSet::from([type_cat.clone()])),
-                    (var_name.into(), BTreeSet::from([type_catname.clone(), type_name.clone()])),
+                    (var_name.into(), BTreeSet::from([type_catname.clone()])),
                     (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat.clone()])),
                     (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name.clone()])),
                 ]),
@@ -1364,13 +1352,13 @@ pub mod tests {
                         &constraints[1],
                         var_name.into(),
                         Vertex::Label(LABEL_NAME),
-                        vec![(type_catname.clone(), type_name.clone()), (type_name.clone(), type_name.clone())],
+                        vec![(type_catname.clone(), type_name.clone())],
                     ),
                     expected_edge(
                         &constraints[2],
                         var_animal.into(),
                         var_name.into(),
-                        vec![(type_cat.clone(), type_name.clone()), (type_cat.clone(), type_catname.clone())],
+                        vec![(type_cat.clone(), type_catname.clone())],
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
@@ -1387,7 +1375,8 @@ pub mod tests {
             // Case 2: $a isa animal, has cat-name $n;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let [var_animal, var_name] =
                 ["animal", "name"].map(|name| conjunction.get_or_declare_variable(name).unwrap());
@@ -1396,7 +1385,7 @@ pub mod tests {
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_CATNAME)).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
 
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
@@ -1449,7 +1438,8 @@ pub mod tests {
             // Case 3: $a isa cat, has dog-name $n;
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let [var_animal, var_name] =
                 ["animal", "name"].map(|name| conjunction.get_or_declare_variable(name).unwrap());
@@ -1458,7 +1448,7 @@ pub mod tests {
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_DOGNAME)).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
             let err = compute_type_inference_graph(
                 &snapshot,
                 &block,
@@ -1474,11 +1464,12 @@ pub mod tests {
 
         {
             // Case 4: $a isa animal, has name $n; // Just to be sure
-            let types_a = all_animals.clone();
-            let types_n = all_names.clone();
+            let types_a = all_concrete_animals.clone();
+            let types_n = all_concrete_names.clone();
             let snapshot = storage.clone().open_snapshot_write();
             let mut translation_context = TranslationContext::new();
-            let mut builder = Block::builder(translation_context.new_block_builder_context());
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
             let [var_animal, var_name] =
                 ["animal", "name"].map(|name| conjunction.get_or_declare_variable(name).unwrap());
@@ -1487,7 +1478,7 @@ pub mod tests {
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_NAME)).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
-            let block = builder.finish();
+            let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
@@ -1513,40 +1504,27 @@ pub mod tests {
                         &constraints[0],
                         var_animal.into(),
                         Vertex::Label(LABEL_ANIMAL),
-                        vec![
-                            (type_cat.clone(), type_animal.clone()),
-                            (type_dog.clone(), type_animal.clone()),
-                            (type_animal.clone(), type_animal.clone()),
-                        ],
+                        vec![(type_cat.clone(), type_animal.clone()), (type_dog.clone(), type_animal.clone())],
                     ),
                     expected_edge(
                         &constraints[1],
                         var_name.into(),
                         Vertex::Label(LABEL_NAME),
-                        vec![
-                            (type_catname.clone(), type_name.clone()),
-                            (type_dogname.clone(), type_name.clone()),
-                            (type_name.clone(), type_name.clone()),
-                        ],
+                        vec![(type_catname.clone(), type_name.clone()), (type_dogname.clone(), type_name.clone())],
                     ),
                     expected_edge(
                         &constraints[2],
                         var_animal.into(),
                         var_name.into(),
-                        vec![
-                            (type_cat.clone(), type_catname.clone()),
-                            (type_cat.clone(), type_name.clone()),
-                            (type_dog.clone(), type_dogname.clone()),
-                            (type_dog.clone(), type_name.clone()),
-                            (type_animal.clone(), type_name.clone()),
-                        ],
+                        vec![(type_cat.clone(), type_catname.clone()), (type_dog.clone(), type_dogname.clone())],
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
                 nested_negations: Vec::new(),
                 nested_optionals: Vec::new(),
             };
-            assert_eq!(expected_graph, graph);
+            assert_eq!(expected_graph.vertices, graph.vertices);
+            assert_eq!(expected_graph.edges, graph.edges);
         }
     }
 }

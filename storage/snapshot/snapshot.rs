@@ -27,6 +27,19 @@ use crate::{
     MVCCStorage, StorageCommitError,
 };
 
+macro_rules! get_mapped_method {
+    ($method_name:ident, $get_func:ident) => {
+        fn $method_name<T>(
+            &self,
+            key: StorageKeyReference<'_>,
+            mut mapper: impl FnMut(ByteReference<'_>) -> T,
+        ) -> Result<Option<T>, SnapshotGetError> {
+            let value = self.$get_func::<BUFFER_VALUE_INLINE>(key)?;
+            Ok(value.map(|bytes| mapper(bytes.as_ref())))
+        }
+    };
+}
+
 pub trait ReadableSnapshot {
     fn open_sequence_number(&self) -> SequenceNumber;
 
@@ -35,14 +48,14 @@ pub trait ReadableSnapshot {
         key: StorageKeyReference<'_>,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError>;
 
-    fn get_mapped<T>(
+    get_mapped_method!(get_mapped, get);
+
+    fn get_last_existing<const INLINE_BYTES: usize>(
         &self,
         key: StorageKeyReference<'_>,
-        mut mapper: impl FnMut(ByteReference<'_>) -> T,
-    ) -> Result<Option<T>, SnapshotGetError> {
-        let value = self.get::<BUFFER_VALUE_INLINE>(key)?;
-        Ok(value.map(|bytes| mapper(bytes.as_ref())))
-    }
+    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError>;
+
+    get_mapped_method!(get_last_existing_mapped, get_last_existing);
 
     fn contains(&self, key: StorageKeyReference<'_>) -> Result<bool, SnapshotGetError> {
         Ok(self.get_mapped(key, |_| ())?.is_some())
@@ -136,7 +149,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
         let keyspace_id = key.keyspace_id();
         let writes = self.operations().writes_in(keyspace_id);
         match writes.get(key.bytes()) {
-            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(ByteArray::copy(value.bytes())),
+            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(ByteArray::copy(value)),
             Some(Write::Delete) => {
                 Err(SnapshotGetError::ExpectedRequiredKeyToExist { key: StorageKey::Array(key.into_owned_array()) })
             }
@@ -213,6 +226,13 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         self.storage.get(key, self.open_sequence_number).map_err(|error| SnapshotGetError::MVCCRead { source: error })
     }
 
+    fn get_last_existing<const INLINE_BYTES: usize>(
+        &self,
+        key: StorageKeyReference<'_>,
+    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
+        self.get(key)
+    }
+
     fn iterate_range<'this, const PS: usize>(
         &'this self,
         range: KeyRange<StorageKey<'this, PS>>,
@@ -241,7 +261,7 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         &'this self,
         _: KeyRange<StorageKey<'this, PS>>,
     ) -> BufferRangeIterator {
-        BufferRangeIterator::empty()
+        BufferRangeIterator::new_empty()
     }
 
     fn iterate_storage_range<'this, const PS: usize>(
@@ -292,11 +312,24 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         let writes = self.operations().writes_in(key.keyspace_id());
         match writes.get(key.bytes()) {
-            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => {
-                Ok(Some(ByteArray::copy(value.bytes())))
-            }
+            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
             Some(Write::Delete) => Ok(None),
             None => self
+                .storage
+                .get(key, self.open_sequence_number)
+                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
+        }
+    }
+
+    /// Get the last existing Value for the key, returning an empty Option if it did not exist
+    fn get_last_existing<const INLINE_BYTES: usize>(
+        &self,
+        key: StorageKeyReference<'_>,
+    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
+        let writes = self.operations().writes_in(key.keyspace_id());
+        match writes.get(key.bytes()) {
+            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
+            Some(Write::Delete) | None => self
                 .storage
                 .get(key, self.open_sequence_number)
                 .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
@@ -309,7 +342,7 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
     ) -> SnapshotRangeIterator {
         let buffered_iterator = self
             .operations
-            .writes_in(range.start().keyspace_id())
+            .writes_in(range.start().get_value().keyspace_id())
             .iterate_range(range.clone().map(|k| k.into_bytes(), |fixed| fixed));
         let storage_iterator = self.storage.iterate_range(range, self.open_sequence_number);
         SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
@@ -322,7 +355,7 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
     ) -> bool {
         let buffered = self
             .operations
-            .writes_in(range.start().keyspace_id())
+            .writes_in(range.start().get_value().keyspace_id())
             .any_not_deleted_in_range(range.clone().map(|k| k.into_bytes(), |fixed| fixed));
         buffered || (!buffered_only && self.iterate_range(range).next().is_some())
     }
@@ -342,10 +375,10 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         debug_assert!(range
             .end()
             .get_value()
-            .map(|end| end.keyspace_id() == range.start().keyspace_id())
+            .map(|end| end.keyspace_id() == range.start().get_value().keyspace_id())
             .unwrap_or(true));
         self.operations()
-            .writes_in(range.start().keyspace_id())
+            .writes_in(range.start().get_value().keyspace_id())
             .iterate_range(range.map(|k| k.into_bytes(), |fixed| fixed))
     }
 
@@ -428,11 +461,24 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         let writes = self.operations().writes_in(key.keyspace_id());
         match writes.get(key.bytes()) {
-            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => {
-                Ok(Some(ByteArray::copy(value.bytes())))
-            }
+            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
             Some(Write::Delete) => Ok(None),
             None => self
+                .storage
+                .get(key, self.open_sequence_number)
+                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
+        }
+    }
+
+    /// Get the last existing Value for the key, returning an empty Option if it did not exist
+    fn get_last_existing<const INLINE_BYTES: usize>(
+        &self,
+        key: StorageKeyReference<'_>,
+    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
+        let writes = self.operations().writes_in(key.keyspace_id());
+        match writes.get(key.bytes()) {
+            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
+            Some(Write::Delete) | None => self
                 .storage
                 .get(key, self.open_sequence_number)
                 .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
@@ -445,7 +491,7 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     ) -> SnapshotRangeIterator {
         let buffered_iterator = self
             .operations
-            .writes_in(range.start().keyspace_id())
+            .writes_in(range.start().get_value().keyspace_id())
             .iterate_range(range.clone().map(|k| k.into_bytes(), |fixed| fixed));
         let storage_iterator = self.storage.iterate_range(range, self.open_sequence_number);
         SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
@@ -458,7 +504,7 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     ) -> bool {
         let buffered = self
             .operations
-            .writes_in(range.start().keyspace_id())
+            .writes_in(range.start().get_value().keyspace_id())
             .any_not_deleted_in_range(range.clone().map(|k| k.into_bytes(), |fixed| fixed));
         buffered || (!buffered_only && self.iterate_range(range).next().is_some())
     }
@@ -478,10 +524,10 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         debug_assert!(range
             .end()
             .get_value()
-            .map(|end| end.keyspace_id() == range.start().keyspace_id())
+            .map(|end| end.keyspace_id() == range.start().get_value().keyspace_id())
             .unwrap_or(true));
         self.operations()
-            .writes_in(range.start().keyspace_id())
+            .writes_in(range.start().get_value().keyspace_id())
             .iterate_range(range.map(|k| k.into_bytes(), |fixed| fixed))
     }
 
@@ -536,6 +582,8 @@ typedb_error!(
 pub enum SnapshotGetError {
     MVCCRead { source: MVCCReadError },
     ExpectedRequiredKeyToExist { key: StorageKey<'static, BUFFER_KEY_INLINE> },
+    // for tests:
+    MockError {},
 }
 
 impl fmt::Display for SnapshotGetError {
@@ -549,6 +597,7 @@ impl Error for SnapshotGetError {
         match self {
             Self::MVCCRead { source, .. } => Some(source),
             SnapshotGetError::ExpectedRequiredKeyToExist { .. } => None,
+            SnapshotGetError::MockError { .. } => None,
         }
     }
 }

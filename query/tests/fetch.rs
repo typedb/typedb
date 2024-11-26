@@ -10,14 +10,14 @@ use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManag
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use executor::ExecutionInterrupt;
 use function::function_manager::FunctionManager;
-use query::query_manager::QueryManager;
+use query::{query_cache::QueryCache, query_manager::QueryManager};
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
 fn define_schema(storage: Arc<MVCCStorage<WALClient>>, type_manager: &TypeManager, thing_manager: &ThingManager) {
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let query_manager = QueryManager::new();
+    let query_manager = QueryManager::new(None);
 
     let query_str = r#"
     define
@@ -27,7 +27,7 @@ fn define_schema(storage: Arc<MVCCStorage<WALClient>>, type_manager: &TypeManage
       entity person owns name @card(0..), owns age, plays friendship:friend @card(0..);
     "#;
     let schema_query = typeql::parse_query(query_str).unwrap().into_schema();
-    query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, schema_query).unwrap();
+    query_manager.execute_schema(&mut snapshot, type_manager, thing_manager, schema_query).unwrap();
     snapshot.commit().unwrap();
 }
 
@@ -38,13 +38,13 @@ fn insert_data(
     function_manager: &FunctionManager,
     query_string: &str,
 ) {
-    let mut snapshot = storage.clone().open_snapshot_write();
-    let query_manager = QueryManager::new();
+    let snapshot = storage.clone().open_snapshot_write();
+    let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new(0))));
     let query = typeql::parse_query(query_string).unwrap().into_pipeline();
     let pipeline =
         query_manager.prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, &query).unwrap();
     let (iterator, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
-    let mut snapshot = Arc::into_inner(context.snapshot).unwrap();
+    let snapshot = Arc::into_inner(context.snapshot).unwrap();
     snapshot.commit().unwrap();
 }
 
@@ -74,7 +74,7 @@ fn fetch() {
     "#,
     );
 
-    // TODO: uncomment the match-returns, and expression fetching when we
+    // TODO: uncomment commented features once they are introduced
     let query = typeql::parse_query(
         r#"
 match
@@ -85,23 +85,17 @@ fetch {
     "single type": $t,
     "single attr": $a,
     "single-card attributes": $x.age,
-#    "single value expression": $a + 1,
-#    "single answer block": (
-#        match
-#        $x has name $name;
-#        return first $name;
-#    ),
-#    "reduce answer block": (
-#        match
-#        $x has name $name;
-#        return count($name);
-#    ),
-#    "list positional return block": [
-#        match
-#        $x has name $n,
-#            has age $a;
-#        return { $n, $a };
-#    ],
+    "single value expression": $a + 1,
+    "single answer block": (
+        match
+        $x has name $name;
+        return first $name;
+    ),
+    "reduce answer block": (
+        match
+        $x has name $name, has age $age;
+        return count($name);
+    ),
     "list pipeline": [
         match
         $x has name $n,
@@ -111,7 +105,7 @@ fetch {
         };
     ],
     "list higher-card attributes": [ $x.name ],
-#    "list attributes": $x.name[],
+#    "list attributes": $x.name[], # TODO: Uncomment when it's implemented
     "all attributes": { $x.* }
 };"#,
     )
@@ -119,7 +113,7 @@ fetch {
 
     let pipeline = query.into_pipeline();
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let pipeline = QueryManager::new()
+    let pipeline = QueryManager::new(Some(Arc::new(QueryCache::new(0))))
         .prepare_read_pipeline(snapshot.clone(), &type_manager, thing_manager.clone(), &function_manager, &pipeline)
         .unwrap();
 
@@ -129,74 +123,3 @@ fetch {
         println!("{}", document.unwrap());
     }
 }
-
-//
-// #[test]
-// fn insert_match_insert_pipeline() {
-//     let (_tmp_dir, storage) = setup_storage();
-//     let (type_manager, thing_manager, function_manager) = load_managers(storage.clone());
-//     let mut statistics = Statistics::new(SequenceNumber::new(0));
-//     statistics.may_synchronise(&storage).unwrap();
-//
-//     define_schema(&storage, &type_manager, &thing_manager);
-//     let query_manager = QueryManager::new();
-//     let mut snapshot = storage.clone().open_snapshot_write();
-//     let query = typeql::parse_query(
-//         r#"
-//         insert
-//             $p1 isa person, has name "John";
-//             $p2 isa person, has name "James";
-//         match
-//             $p_either isa person; $n isa name;
-//         insert
-//              $p_either has $n;
-//     "#,
-//     )
-//     .unwrap()
-//     .into_pipeline();
-//     query_manager
-//         .prepare_write_pipeline(
-//             snapshot,
-//             &type_manager,
-//             thing_manager,
-//             &function_manager,
-//             &statistics,
-//             &IndexedAnnotatedFunctions::empty(),
-//             &query,
-//         )
-//         .unwrap();
-// }
-//
-// #[test]
-// fn insert_insert_pipeline() {
-//     let (_tmp_dir, storage) = setup_storage();
-//     let (type_manager, thing_manager, function_manager) = load_managers(storage.clone());
-//     let mut statistics = Statistics::new(SequenceNumber::new(0));
-//     statistics.may_synchronise(&storage).unwrap();
-//
-//     define_schema(&storage, &type_manager, &thing_manager);
-//     let query_manager = QueryManager::new();
-//     let mut snapshot = storage.clone().open_snapshot_write();
-//     let query = typeql::parse_query(
-//         r#"
-//         insert
-//             $p1 isa person, has name "John";
-//             $p2 isa person, has name "James";
-//         insert
-//             (friend: $p1, friend: $p2) isa friendship;
-//     "#,
-//     )
-//     .unwrap()
-//     .into_pipeline();
-//     query_manager
-//         .prepare_write_pipeline(
-//             snapshot,
-//             &type_manager,
-//             thing_manager,
-//             &function_manager,
-//             &statistics,
-//             &IndexedAnnotatedFunctions::empty(),
-//             &query,
-//         )
-//         .unwrap();
-// }

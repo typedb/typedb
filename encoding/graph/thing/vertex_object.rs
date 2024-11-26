@@ -4,11 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    fmt::{Display, Formatter},
-    mem,
-    ops::Range,
-};
+use std::{fmt, mem, ops::Range};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::HexBytesFormatter, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
@@ -39,18 +35,30 @@ impl<'a> ObjectVertex<'a> {
 
     pub fn build_entity(type_id: TypeID, object_id: ObjectID) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::VertexEntity.prefix_id().bytes());
-        array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
-        array.bytes_mut()[Self::range_object_id()].copy_from_slice(&object_id.bytes());
+        array[Self::RANGE_PREFIX].copy_from_slice(&Prefix::VertexEntity.prefix_id().bytes());
+        array[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
+        array[Self::range_object_id()].copy_from_slice(&object_id.bytes());
         ObjectVertex { bytes: Bytes::Array(array) }
     }
 
     pub fn build_relation(type_id: TypeID, object_id: ObjectID) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::VertexRelation.prefix_id().bytes());
-        array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
-        array.bytes_mut()[Self::range_object_id()].copy_from_slice(&object_id.bytes());
+        array[Self::RANGE_PREFIX].copy_from_slice(&Prefix::VertexRelation.prefix_id().bytes());
+        array[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
+        array[Self::range_object_id()].copy_from_slice(&object_id.bytes());
         ObjectVertex { bytes: Bytes::Array(array) }
+    }
+
+    pub fn try_from_bytes(bytes: &'a [u8]) -> Option<Self> {
+        if bytes.len() != Self::LENGTH {
+            return None;
+        }
+        let prefix = &bytes[..1];
+        if prefix != Prefix::VertexEntity.prefix_id().bytes() && prefix != Prefix::VertexRelation.prefix_id().bytes() {
+            return None;
+        }
+        // all byte patterns beyond the prefix are valid for object vertices
+        Some(Self::new(Bytes::reference(bytes)))
     }
 
     pub fn is_entity_vertex(storage_key: StorageKeyReference<'_>) -> bool {
@@ -77,7 +85,7 @@ impl<'a> ObjectVertex<'a> {
     }
 
     pub fn object_id(&self) -> ObjectID {
-        ObjectID::new(self.bytes.bytes()[Self::range_object_id()].try_into().unwrap())
+        ObjectID::new(self.bytes[Self::range_object_id()].try_into().unwrap())
     }
 
     pub(crate) fn length(&self) -> usize {
@@ -150,8 +158,8 @@ impl ObjectID {
     }
 }
 
-impl Display for ObjectID {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for ObjectID {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", &HexBytesFormatter::borrowed(&self.bytes()))
     }
 }

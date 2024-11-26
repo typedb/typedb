@@ -7,7 +7,7 @@
 use std::{cmp::Ordering, error::Error, fmt, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
-use lending_iterator::{LendingIterator, Seekable};
+use lending_iterator::{LendingIterator, Peekable, Seekable};
 
 use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};
 use crate::{
@@ -18,9 +18,9 @@ use crate::{
 };
 
 pub(crate) struct MVCCRangeIterator {
-    storage_name: String,
+    storage_name: Arc<String>,
     keyspace_id: KeyspaceId,
-    iterator: KeyspaceRangeIterator,
+    iterator: Peekable<KeyspaceRangeIterator>,
     open_sequence_number: SequenceNumber,
 
     last_visible_key: Option<ByteArray<MVCC_KEY_INLINE_SIZE>>,
@@ -37,13 +37,12 @@ impl MVCCRangeIterator {
         range: KeyRange<StorageKey<'_, PS>>,
         open_sequence_number: SequenceNumber,
     ) -> Self {
-        debug_assert!(!range.start().bytes().is_empty());
-        let keyspace = storage.get_keyspace(range.start().keyspace_id());
+        let keyspace = storage.get_keyspace(range.start().get_value().keyspace_id());
         let iterator = keyspace.iterate_range(range.map(|key| key.into_bytes(), |fixed_width| fixed_width));
         MVCCRangeIterator {
-            storage_name: storage.name().to_owned(),
+            storage_name: storage.name(),
             keyspace_id: keyspace.id(),
-            iterator,
+            iterator: Peekable::new(iterator),
             open_sequence_number,
             last_visible_key: None,
             item: None,
@@ -103,7 +102,7 @@ impl LendingIterator for MVCCRangeIterator {
                 Ok(kv) => kv,
                 Err(error) => {
                     return Some(Err(MVCCReadError::Keyspace {
-                        storage_name: self.storage_name.to_owned(),
+                        storage_name: self.storage_name.clone(),
                         source: Arc::new(error.clone()),
                     }))
                 }
@@ -137,7 +136,7 @@ impl Seekable<[u8]> for MVCCRangeIterator {
 
 #[derive(Debug, Clone)]
 pub enum MVCCReadError {
-    Keyspace { storage_name: String, source: Arc<KeyspaceError> },
+    Keyspace { storage_name: Arc<String>, source: Arc<KeyspaceError> },
 }
 
 impl fmt::Display for MVCCReadError {

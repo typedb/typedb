@@ -4,9 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt;
+use std::{
+    fmt,
+    hash::{DefaultHasher, Hasher},
+};
 
 use answer::variable::Variable;
+use structural_equality::StructuralEquality;
 
 use crate::{
     pattern::{
@@ -74,6 +78,19 @@ impl Scope for Conjunction {
     }
 }
 
+impl StructuralEquality for Conjunction {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.constraints().hash_into(&mut hasher);
+        self.nested_patterns().hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.constraints().equals(other.constraints()) && self.nested_patterns().equals(other.nested_patterns())
+    }
+}
+
 impl fmt::Display for Conjunction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let current_width = f.width().unwrap_or(0);
@@ -130,11 +147,11 @@ impl<'cx, 'reg> ConjunctionBuilder<'cx, 'reg> {
         Optional::new_builder(self.context, optional)
     }
 
-    pub fn get_or_declare_variable(&mut self, name: &str) -> Result<Variable, RepresentationError> {
+    pub fn get_or_declare_variable(&mut self, name: &str) -> Result<Variable, Box<RepresentationError>> {
         self.context.get_or_declare_variable(name, self.conjunction.scope_id)
     }
 
-    pub fn declare_variable_anonymous(&mut self) -> Result<Variable, RepresentationError> {
+    pub fn declare_variable_anonymous(&mut self) -> Result<Variable, Box<RepresentationError>> {
         self.context.create_anonymous_variable(self.conjunction.scope_id)
     }
 }

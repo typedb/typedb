@@ -20,6 +20,10 @@ pub enum ExpressionOpCode {
     CastLeftLongToDouble,
     CastRightLongToDouble,
 
+    CastUnaryDecimalToDouble,
+    CastLeftDecimalToDouble,
+    CastRightDecimalToDouble,
+
     // Operators
     OpLongAddLong,
     OpDoubleAddDouble,

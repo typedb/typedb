@@ -12,7 +12,6 @@ use std::{
     collections::{HashMap, VecDeque},
     error::Error,
     fmt,
-    fmt::{Display, Formatter},
     io::Read,
     sync::{
         atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering},
@@ -40,6 +39,7 @@ use crate::{
 pub(crate) struct IsolationManager {
     initial_sequence_number: SequenceNumber,
     timeline: Timeline,
+    highest_validated_sequence_number: AtomicU64,
 }
 
 impl fmt::Display for IsolationManager {
@@ -53,6 +53,7 @@ impl IsolationManager {
         IsolationManager {
             initial_sequence_number: next_sequence_number,
             timeline: Timeline::new(next_sequence_number),
+            highest_validated_sequence_number: AtomicU64::new(next_sequence_number.number() - 1),
         }
     }
 
@@ -106,7 +107,8 @@ impl IsolationManager {
         let isolation_conflict = self.validate_all_concurrent(sequence_number, &commit_record, durability_client)?;
         if isolation_conflict.is_none() {
             window.set_validated(sequence_number);
-            // We can't increment watermark here till the status is "applied"
+            // We can't increment watermark here till the status is "applied", but we do update the latest validated number
+            self.highest_validated_sequence_number.fetch_max(sequence_number.number(), Ordering::SeqCst);
         } else {
             window.set_aborted(sequence_number);
             self.timeline.may_increment_watermark(sequence_number);
@@ -245,6 +247,10 @@ impl IsolationManager {
         self.timeline.watermark()
     }
 
+    pub(crate) fn highest_validated_sequence_number(&self) -> SequenceNumber {
+        SequenceNumber::new(self.highest_validated_sequence_number.load(Ordering::SeqCst))
+    }
+
     pub fn reset(&mut self) {
         self.timeline = Timeline::new(self.initial_sequence_number)
     }
@@ -322,8 +328,8 @@ pub enum IsolationConflict {
     ExclusiveLock,
 }
 
-impl Display for IsolationConflict {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for IsolationConflict {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             IsolationConflict::DeletingRequiredKey => write!(f, "Transaction data a concurrent commit requires."),
             IsolationConflict::RequireDeletedKey => write!(f, "Transaction uses data a concurrent commit deletes."),
@@ -721,7 +727,7 @@ impl CommitRecord {
             let predecessor_writes = pred_write_buffer.writes();
 
             for (key, write) in writes.iter() {
-                if let Some(predecessor_write) = predecessor_writes.get(key.bytes()) {
+                if let Some(predecessor_write) = predecessor_writes.get(key) {
                     match (predecessor_write, write) {
                         (Write::Insert { .. } | Write::Put { .. }, Write::Put { reinsert, .. }) => {
                             puts_to_update.push(DependentPut::Inserted { reinsert: reinsert.clone() });

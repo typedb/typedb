@@ -31,7 +31,7 @@ use executor::{
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use pprof::ProfilerGuard;
-use query::{error::QueryError, query_manager::QueryManager};
+use query::{error::QueryError, query_cache::QueryCache, query_manager::QueryManager};
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot},
@@ -96,27 +96,24 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     snapshot: Snapshot,
     type_manager: &TypeManager,
     thing_manager: Arc<ThingManager>,
+    query_manager: QueryManager,
     query_str: &str,
 ) -> Result<(Vec<HashMap<String, VariableValue<'static>>>, Snapshot), (QueryError, Snapshot)> {
     let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline();
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
 
-    let qm = QueryManager::new();
-    let pipeline = qm
+    let pipeline = query_manager
         .prepare_write_pipeline(snapshot, type_manager, thing_manager, &function_manager, &typeql_insert)
         .map_err(|(snapshot, err)| (err, snapshot))?;
     let outputs = pipeline.rows_positions().unwrap().clone();
     let (iter, ctx) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(typedb_source, ctx)| {
-            (QueryError::WritePipelineExecutionError { typedb_source }, Arc::into_inner(ctx.snapshot).unwrap())
+            (QueryError::WritePipelineExecution { typedb_source }, Arc::into_inner(ctx.snapshot).unwrap())
         })?;
-    let mut batch = match iter.collect_owned() {
+    let batch = match iter.collect_owned() {
         Ok(batch) => batch,
         Err(typedb_source) => {
-            return Err((
-                QueryError::WritePipelineExecutionError { typedb_source },
-                Arc::into_inner(ctx.snapshot).unwrap(),
-            ));
+            return Err((QueryError::WritePipelineExecution { typedb_source }, Arc::into_inner(ctx.snapshot).unwrap()));
         }
     };
     let mut collected = Vec::with_capacity(batch.len());
@@ -124,7 +121,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     while let Some(row) = row_iterator.next() {
         let mut translated_row = HashMap::with_capacity(outputs.len());
         for (name, pos) in &outputs {
-            translated_row.insert(name.clone(), row.get(pos.clone()).clone().into_owned());
+            translated_row.insert(name.clone(), row.get(*pos).clone().into_owned());
         }
         collected.push(translated_row);
     }
@@ -148,7 +145,8 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), Some(storage.read_watermark()));
+    let (type_manager, thing_manager) = load_managers(storage.clone(), Some(storage.snapshot_watermark()));
+    let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new(0))));
 
     group.bench_function("insert_queries", |b| {
         b.iter(|| {
@@ -158,6 +156,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                 snapshot,
                 &type_manager,
                 thing_manager.clone(),
+                query_manager.clone(),
                 &format!("insert $p isa person, has age {age};"),
             )
             .unwrap();

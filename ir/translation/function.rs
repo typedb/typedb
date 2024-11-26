@@ -19,7 +19,7 @@ use crate::{
     pipeline::{
         function::{Function, FunctionBody, ReturnOperation},
         function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex},
-        FunctionRepresentationError,
+        FunctionRepresentationError, ParameterRegistry,
     },
     translation::{pipeline::translate_pipeline_stages, reduce::build_reducer, TranslationContext},
 };
@@ -34,6 +34,7 @@ pub fn translate_typeql_function(
         function_index,
         function.signature.ident.as_str(),
         &function.signature.args,
+        &function.signature.output,
         &function.block,
         Some(function),
     )
@@ -44,6 +45,7 @@ pub fn translate_function_from(
     function_index: &impl FunctionSignatureIndex,
     name: &str,
     args: &[Argument],
+    output: &Output,
     block: &FunctionBlock,
     declaration: Option<&typeql::Function>,
 ) -> Result<Function, FunctionRepresentationError> {
@@ -53,7 +55,8 @@ pub fn translate_function_from(
         .map(|arg| (arg.var.name().unwrap().to_owned(), type_any_to_category_and_optionality(&arg.type_).0))
         .collect::<Vec<_>>();
     let (mut context, arguments) = TranslationContext::new_with_function_arguments(arg_names_and_categories);
-    let body = translate_function_block(snapshot, function_index, &mut context, block)?;
+    let mut value_parameters = ParameterRegistry::new();
+    let body = translate_function_block(snapshot, function_index, &mut context, &mut value_parameters, block)?;
 
     // Check for unused arguments
     for arg in args {
@@ -64,20 +67,22 @@ pub fn translate_function_from(
             }
         })?;
     }
-    Ok(Function::new(name, context, arguments, Some(argument_labels), body))
+    Ok(Function::new(name, context, value_parameters, arguments, Some(argument_labels), Some(output.clone()), body))
 }
 
 pub(crate) fn translate_function_block(
     snapshot: &impl ReadableSnapshot,
     function_index: &impl FunctionSignatureIndex,
     context: &mut TranslationContext,
+    value_parameters: &mut ParameterRegistry,
     function_block: &FunctionBlock,
 ) -> Result<FunctionBody, FunctionRepresentationError> {
-    let (stages, fetch) = translate_pipeline_stages(snapshot, function_index, context, &function_block.stages)
-        .map_err(|err| FunctionRepresentationError::BlockDefinition {
-            declaration: function_block.clone(),
-            typedb_source: Box::new(err),
-        })?;
+    let (stages, fetch) =
+        translate_pipeline_stages(snapshot, function_index, context, value_parameters, &function_block.stages)
+            .map_err(|err| FunctionRepresentationError::BlockDefinition {
+                declaration: function_block.clone(),
+                typedb_source: err,
+            })?;
 
     if fetch.is_some() {
         return Err(FunctionRepresentationError::IllegalFetch { declaration: function_block.clone() });
@@ -189,7 +194,7 @@ fn build_return_reduce(
                 let reducer = build_reducer(context, typeql_reducer).map_err(|err| {
                     FunctionRepresentationError::ReturnReduction {
                         declaration: reduction.clone(),
-                        typedb_source: Box::new(err.clone()),
+                        typedb_source: err.clone(),
                     }
                 })?;
                 reducers.push(reducer);

@@ -7,7 +7,6 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 #![allow(unused_variables)]
-#![allow(clippy::result_large_err)]
 
 use std::{error::Error, fmt};
 
@@ -162,13 +161,19 @@ typedb_error!(
         FetchRepresentation(
             23,
             "Error building representation of fetch clause.",
-            ( typedb_source : FetchRepresentationError )
+            ( typedb_source : Box<FetchRepresentationError> )
         ),
         NonTerminalFetch(
             24,
             "Fetch clauses must be the final clause in a query pipeline.\nSource:\n{declaration}",
             declaration: typeql::query::stage::Stage
         ),
+        UnboundVariable(
+            25,
+            "Invalid query containing unbound concept variable {variable}",
+            variable: String
+        ),
+        ScopedValueTypeName(26, "Value type names cannot have scopes. Provided illegal name: '{scope}:{name}'.", scope: String, name: String),
     }
 );
 
@@ -179,6 +184,7 @@ pub enum LiteralParseError {
     InvalidDate { year: i32, month: u32, day: u32 },
     InvalidTime { hour: u32, minute: u32, second: u32, nano: u32 },
     CannotUnescapeString { literal: StringLiteral, source: typeql::Error },
+    CannotUnescapeRegexString { literal: StringLiteral, source: typeql::Error },
     TimeZoneLookup { name: String },
     FixedOffset { value: String },
 }
@@ -197,6 +203,7 @@ impl Error for LiteralParseError {
             LiteralParseError::InvalidDate { .. } => None,
             LiteralParseError::InvalidTime { .. } => None,
             LiteralParseError::CannotUnescapeString { source, .. } => Some(source),
+            LiteralParseError::CannotUnescapeRegexString { source, .. } => Some(source),
             LiteralParseError::TimeZoneLookup { .. } => None,
             LiteralParseError::FixedOffset { .. } => None,
         }

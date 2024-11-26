@@ -2,16 +2,28 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_test")
+load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 package(default_visibility = ["//visibility:public",])
+
+rust_library(
+    name = "test_utils_storage",
+    srcs = glob(["test_utils_storage/*.rs"]),
+    crate_root = "test_utils_storage/lib.rs",
+    deps = [
+        "//common/logger",
+        "//common/bytes",
+        "//durability",
+        "//storage",
+        "//resource",
+    ]
+)
 
 rust_test(
     name = "test_storage",
     crate_root = "test_storage.rs",
     srcs = glob([
         "test_storage.rs",
-        "test_common/*.rs",
     ]),
     deps = [
         "//common/bytes",
@@ -22,6 +34,7 @@ rust_test(
         "//durability",
         "//resource",
         "//util/test:test_utils",
+        ":test_utils_storage",
 
         "@crates//:itertools",
         "@crates//:rand",
@@ -34,7 +47,6 @@ rust_test(
     crate_root = "test_snapshot.rs",
     srcs = glob([
         "test_snapshot.rs",
-        "test_common/*.rs",
     ]),
     deps = [
         "//common/bytes",
@@ -45,6 +57,8 @@ rust_test(
         "//resource",
         "//storage",
         "//util/test:test_utils",
+        ":test_utils_storage",
+
         "@crates//:rand",
         "@crates//:tracing",
     ]
@@ -55,7 +69,6 @@ rust_test(
     crate_root = "test_recovery.rs",
     srcs = glob([
         "test_recovery.rs",
-        "test_common/*.rs",
     ]),
     deps = [
         "//common/bytes",
@@ -65,6 +78,7 @@ rust_test(
         "//durability",
         "//resource",
         "//util/test:test_utils",
+        ":test_utils_storage",
 
         "@crates//:itertools",
         "@crates//:rand",
@@ -78,7 +92,6 @@ rust_test(
     crate_root = "test_mvcc.rs",
     srcs = glob([
         "test_mvcc.rs",
-        "test_common/*.rs",
     ]),
     deps = [
         "//common/bytes",
@@ -88,6 +101,8 @@ rust_test(
         "//durability",
         "//resource",
         "//util/test:test_utils",
+        ":test_utils_storage",
+
         "@crates//:rand",
         "@crates//:tracing",
     ]
@@ -98,7 +113,6 @@ rust_test(
     crate_root = "test_isolation.rs",
     srcs = glob([
         "test_isolation.rs",
-        "test_common/*.rs",
     ]),
     deps = [
         "//common/bytes",
@@ -109,6 +123,7 @@ rust_test(
         "//resource",
         "//storage",
         "//util/test:test_utils",
+        ":test_utils_storage",
 
         "@crates//:rand",
         "@crates//:tracing",

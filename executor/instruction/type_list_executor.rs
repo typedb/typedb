@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, iter, vec};
+use std::{collections::HashMap, fmt, iter, vec};
 
 use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::TypeListInstruction, ExecutorVariable};
@@ -38,11 +38,12 @@ pub(crate) struct TypeListExecutor {
 pub(super) type TypeFilterFn = FilterFn<Type>;
 
 pub(super) type TypeTupleIterator<I> = NarrowingTupleIterator<
-    Map<TryFilter<I, Box<TypeFilterFn>, Type, ConceptReadError>, TypeToTupleFn, AdHocHkt<TupleResult<'static>>>,
+    Map<TryFilter<I, Box<TypeFilterFn>, Type, Box<ConceptReadError>>, TypeToTupleFn, AdHocHkt<TupleResult<'static>>>,
 >;
 
-pub(crate) type TypeIterator =
-    TypeTupleIterator<AsLendingIterator<iter::Map<vec::IntoIter<Type>, fn(Type) -> Result<Type, ConceptReadError>>>>;
+pub(crate) type TypeIterator = TypeTupleIterator<
+    AsLendingIterator<iter::Map<vec::IntoIter<Type>, fn(Type) -> Result<Type, Box<ConceptReadError>>>>,
+>;
 
 type TypeVariableValueExtractor = for<'a> fn(&'a Type) -> VariableValue<'a>;
 pub(super) const EXTRACT_TYPE: TypeVariableValueExtractor = |ty| VariableValue::Type(ty.clone());
@@ -71,12 +72,22 @@ impl TypeListExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
-    ) -> Result<TupleIterator, ConceptReadError> {
+    ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter_for_row: Box<TypeFilterFn> = self.checker.filter_for_row(context, &row);
         let iterator = self.types.clone().into_iter().map(Ok as _);
         let as_tuples: TypeIterator = NarrowingTupleIterator(
             AsLendingIterator::new(iterator).try_filter::<_, TypeFilterFn, Type, _>(filter_for_row).map(type_to_tuple),
         );
         Ok(TupleIterator::Type(SortedTupleIterator::new(as_tuples, self.tuple_positions.clone(), &self.variable_modes)))
+    }
+}
+
+impl fmt::Display for TypeListExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Type [")?;
+        for type_ in &self.types {
+            write!(f, "{}, ", type_)?;
+        }
+        writeln!(f, "], variable modes={:?}", &self.variable_modes)
     }
 }

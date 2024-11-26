@@ -6,47 +6,55 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
+    fmt,
     sync::Arc,
 };
 
-use answer::{variable::Variable, variable_value::VariableValue, Type};
+use answer::{variable::Variable, Type};
 use ir::pattern::{
-    constraint::{Has, Isa, Links},
+    constraint::{Has, Iid, Isa, Links},
     IrID,
 };
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
-    executable::match_::instructions::{CheckInstruction, Inputs},
+    executable::match_::instructions::{CheckInstruction, DisplayVec, Inputs},
 };
 
 #[derive(Debug, Clone)]
-pub struct ConstantInstruction<ID> {
-    pub value: VariableValue<'static>,
-    pub var: ID,
+pub struct IidInstruction<ID> {
+    pub iid: Iid<ID>,
+    pub types: Arc<BTreeSet<Type>>,
     pub checks: Vec<CheckInstruction<ID>>,
 }
 
-impl ConstantInstruction<Variable> {
-    pub fn new(value: VariableValue<'static>, var: Variable) -> Self {
-        Self { value, var, checks: Vec::new() }
+impl IidInstruction<Variable> {
+    pub fn new(iid: Iid<Variable>, type_annotations: &TypeAnnotations) -> Self {
+        let types = type_annotations.vertex_annotations_of(iid.var()).unwrap().clone();
+        Self { iid, types, checks: Vec::new() }
     }
 }
 
-impl<ID> ConstantInstruction<ID> {
+impl<ID> IidInstruction<ID> {
     pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
         self.checks.push(check)
     }
 }
 
-impl<ID: IrID> ConstantInstruction<ID> {
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> ConstantInstruction<T> {
-        let Self { value, var, checks } = self;
-        ConstantInstruction {
-            value,
-            var: mapping[&var],
+impl<ID: IrID> IidInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> IidInstruction<T> {
+        let Self { iid, types, checks } = self;
+        IidInstruction {
+            iid: iid.map(mapping),
+            types,
             checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }
+    }
+}
+
+impl<ID: IrID> fmt::Display for IidInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{}] filter {}", &self.iid, DisplayVec::new(&self.checks))
     }
 }
 
@@ -54,14 +62,15 @@ impl<ID: IrID> ConstantInstruction<ID> {
 pub struct IsaInstruction<ID> {
     pub isa: Isa<ID>,
     pub inputs: Inputs<ID>,
-    types: Arc<BTreeSet<Type>>,
+    pub instance_type_to_types: Arc<BTreeMap<Type, Vec<Type>>>,
     pub checks: Vec<CheckInstruction<ID>>,
 }
 
 impl IsaInstruction<Variable> {
     pub fn new(isa: Isa<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let types = type_annotations.vertex_annotations_of(isa.type_()).unwrap().clone();
-        Self { isa, inputs, types, checks: Vec::new() }
+        let isa_annotations = type_annotations.constraint_annotations_of(isa.clone().into()).unwrap();
+        let instance_to_types = isa_annotations.as_left_right().left_to_right().clone();
+        Self { isa, inputs, instance_type_to_types: instance_to_types, checks: Vec::new() }
     }
 }
 
@@ -69,21 +78,23 @@ impl<ID> IsaInstruction<ID> {
     pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
         self.checks.push(check)
     }
-
-    pub fn types(&self) -> &Arc<BTreeSet<Type>> {
-        &self.types
-    }
 }
 
 impl<ID: IrID> IsaInstruction<ID> {
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> IsaInstruction<T> {
-        let Self { isa, inputs, types, checks } = self;
+        let Self { isa, inputs, instance_type_to_types: instance_to_types, checks } = self;
         IsaInstruction {
             isa: isa.map(mapping),
             inputs: inputs.map(mapping),
-            types,
+            instance_type_to_types: instance_to_types,
             checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }
+    }
+}
+
+impl<ID: IrID> fmt::Display for IsaInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{}] filter {}", &self.isa, DisplayVec::new(&self.checks))
     }
 }
 
@@ -91,16 +102,15 @@ impl<ID: IrID> IsaInstruction<ID> {
 pub struct IsaReverseInstruction<ID> {
     pub isa: Isa<ID>,
     pub inputs: Inputs<ID>,
-    types: Arc<BTreeSet<Type>>,
-    thing_types: Arc<BTreeSet<Type>>,
+    pub type_to_instance_types: Arc<BTreeMap<Type, Vec<Type>>>,
     pub checks: Vec<CheckInstruction<ID>>,
 }
 
 impl IsaReverseInstruction<Variable> {
     pub fn new(isa: Isa<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let types = type_annotations.vertex_annotations_of(isa.type_()).unwrap().clone();
-        let thing_types = type_annotations.vertex_annotations_of(isa.thing()).unwrap().clone();
-        Self { isa, inputs, types, thing_types, checks: Vec::new() }
+        let isa_annotations = type_annotations.constraint_annotations_of(isa.clone().into()).unwrap();
+        let type_to_instance_types = isa_annotations.as_left_right().right_to_left();
+        Self { isa, inputs, type_to_instance_types, checks: Vec::new() }
     }
 }
 
@@ -108,26 +118,23 @@ impl<ID> IsaReverseInstruction<ID> {
     pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
         self.checks.push(check)
     }
-
-    pub fn thing_types(&self) -> &Arc<BTreeSet<Type>> {
-        &self.thing_types
-    }
-
-    pub fn types(&self) -> &Arc<BTreeSet<Type>> {
-        &self.types
-    }
 }
 
 impl<ID: IrID> IsaReverseInstruction<ID> {
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> IsaReverseInstruction<T> {
-        let Self { isa, inputs, types, thing_types, checks } = self;
+        let Self { isa, inputs, type_to_instance_types, checks } = self;
         IsaReverseInstruction {
             isa: isa.map(mapping),
             inputs: inputs.map(mapping),
-            types,
-            thing_types,
+            type_to_instance_types,
             checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }
+    }
+}
+
+impl<ID: IrID> fmt::Display for IsaReverseInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Reverse[{}] filter {}", &self.isa, DisplayVec::new(&self.checks))
     }
 }
 
@@ -142,8 +149,9 @@ pub struct HasInstruction<ID> {
 
 impl HasInstruction<Variable> {
     pub fn new(has: Has<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let edge_annotations = type_annotations.constraint_annotations_of(has.clone().into()).unwrap().as_left_right();
-        let owner_to_attribute_types = edge_annotations.left_to_right();
+        let constraint_annotations =
+            type_annotations.constraint_annotations_of(has.clone().into()).unwrap().as_left_right();
+        let owner_to_attribute_types = constraint_annotations.left_to_right();
         let attribute_types = type_annotations.vertex_annotations_of(has.attribute()).unwrap().clone();
         Self { has, inputs, owner_to_attribute_types, attribute_types, checks: Vec::new() }
     }
@@ -173,6 +181,12 @@ impl<ID: IrID> HasInstruction<ID> {
             attribute_types,
             checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }
+    }
+}
+
+impl<ID: IrID> fmt::Display for HasInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{}] filter {}", &self.has, DisplayVec::new(&self.checks))
     }
 }
 
@@ -218,6 +232,12 @@ impl<ID: IrID> HasReverseInstruction<ID> {
             owner_types,
             checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }
+    }
+}
+
+impl<ID: IrID> fmt::Display for HasReverseInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Reverse[{}] filter {}", &self.has, DisplayVec::new(&self.checks))
     }
 }
 
@@ -274,6 +294,12 @@ impl<ID: IrID> LinksInstruction<ID> {
     }
 }
 
+impl<ID: IrID> fmt::Display for LinksInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{}] filter {}", &self.links, DisplayVec::new(&self.checks))
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct LinksReverseInstruction<ID> {
     pub links: Links<ID>,
@@ -324,5 +350,11 @@ impl<ID: IrID> LinksReverseInstruction<ID> {
             relation_types,
             checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }
+    }
+}
+
+impl<ID: IrID> fmt::Display for LinksReverseInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Reverse[{}] filter {}", &self.links, DisplayVec::new(&self.checks))
     }
 }

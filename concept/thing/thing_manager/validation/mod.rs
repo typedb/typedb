@@ -19,7 +19,7 @@ pub(crate) mod validation;
 
 typedb_error!(
     pub DataValidationError(component = "Data validation", prefix = "DVL") {
-        ConceptRead(1, "Data validation failed due to concept read error.", ( source: ConceptReadError)),
+        ConceptRead(1, "Data validation failed due to concept read error.", ( source: Box<ConceptReadError>)),
         CannotAddOwnerInstanceForNotOwnedAttributeType(
             2,
             "Type '{owner}' cannot own attribute type '{attribute}'.",
@@ -42,19 +42,19 @@ typedb_error!(
             5,
             "Constraint on entity type '{entity_type}' was violated.",
             entity_type: Label<'static>,
-            (source: ConstraintError)
+            (typedb_source: Box<ConstraintError>)
         ),
         RelationTypeConstraintViolated(
             6,
             "Constraint on relation type '{relation_type}' was violated.",
             relation_type: Label<'static>,
-            (source: ConstraintError)
+            (typedb_source: Box<ConstraintError>)
         ),
         AttributeTypeConstraintViolated(
             7,
             "Constraint on attribute type '{attribute_type}' was violated.",
             attribute_type: Label<'static>,
-            (source: ConstraintError)
+            (typedb_source: Box<ConstraintError>)
         ),
         KeyConstraintViolatedCard(
             8,
@@ -64,7 +64,7 @@ typedb_error!(
             attribute_type: Label<'static>,
             attribute_count: u64,
             constraint_source: Owns<'static>,
-            (source: ConstraintError)
+            (typedb_source: Box<ConstraintError>)
         ),
         KeyConstraintViolatedUniqueness(
             9,
@@ -74,7 +74,7 @@ typedb_error!(
             attribute_type: Label<'static>,
             value: Value<'static>,
             constraint_source: Owns<'static>,
-            (source: ConstraintError)
+            (typedb_source: Box<ConstraintError>)
         ),
         OwnsConstraintViolated(
             10,
@@ -82,8 +82,8 @@ typedb_error!(
             owner_iid: HexBytesFormatter<'static>,
             owner_type: Label<'static>,
             attribute_type: Label<'static>,
-            // constraint_source: Owns<'static>,
-            (source: ConstraintError)
+            // constraint_source: Owns<'static>
+            (typedb_source: Box<ConstraintError>)
         ),
         RelatesConstraintViolated(
             11,
@@ -93,7 +93,7 @@ typedb_error!(
             role_type: Label<'static>,
             // player_iid: HexBytesFormatter<'static>,
             // constraint_source: Relates<'static>,
-            (source: ConstraintError)
+            (typedb_source: Box<ConstraintError>)
         ),
         PlaysConstraintViolated(
             12,
@@ -103,7 +103,7 @@ typedb_error!(
             role_type: Label<'static>,
             // relation: Option<Relation<'static>>,
             // constraint_source: Plays<'static>,
-            (source: ConstraintError)
+            (typedb_source: Box<ConstraintError>)
         ),
         UniqueValueTaken(
             13,

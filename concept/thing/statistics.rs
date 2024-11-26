@@ -22,6 +22,7 @@ use encoding::graph::{
     Typed,
 };
 use error::typedb_error;
+use resource::constants::database::STATISTICS_DURABLE_WRITE_CHANGE_PERCENT;
 use serde::{Deserialize, Serialize};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord, UnsequencedDurabilityRecord},
@@ -51,6 +52,9 @@ type StatisticsEncodingVersion = u64;
 pub struct Statistics {
     encoding_version: StatisticsEncodingVersion,
     pub sequence_number: SequenceNumber,
+    pub last_durable_write_total_count: u64,
+
+    pub total_count: u64,
 
     pub total_thing_count: u64,
     pub total_entity_count: u64,
@@ -85,6 +89,8 @@ impl Statistics {
         Statistics {
             encoding_version: Self::ENCODING_VERSION,
             sequence_number,
+            last_durable_write_total_count: 0,
+            total_count: 0,
             total_thing_count: 0,
             total_entity_count: 0,
             total_relation_count: 0,
@@ -108,7 +114,7 @@ impl Statistics {
     pub fn may_synchronise(&mut self, storage: &MVCCStorage<impl DurabilityClient>) -> Result<(), StatisticsError> {
         use StatisticsError::{DataRead, ReloadCommitData};
 
-        let storage_watermark = storage.read_watermark();
+        let storage_watermark = storage.snapshot_watermark();
         debug_assert!(self.sequence_number <= storage_watermark);
         if self.sequence_number == storage_watermark {
             return Ok(());
@@ -143,18 +149,25 @@ impl Statistics {
                         self.update_writes(&commits, storage).map_err(|err| DataRead { source: err })?;
                     }
                 }
-            } else {
-                unreachable!("Only open validated records as snapshots.")
             }
         }
 
         self.update_writes(&data_commits, storage).map_err(|err| DataRead { source: err })?;
+
+        let change_since_last_durable_write = self.total_count as f64 - self.last_durable_write_total_count as f64;
+        if change_since_last_durable_write.abs() / self.last_durable_write_total_count as f64
+            > STATISTICS_DURABLE_WRITE_CHANGE_PERCENT
+        {
+            self.durably_write(storage)?;
+        }
+
         Ok(())
     }
 
     pub fn durably_write(&mut self, storage: &MVCCStorage<impl DurabilityClient>) -> Result<(), StatisticsError> {
         use StatisticsError::DurablyWrite;
         storage.durability().unsequenced_write(self).map_err(|err| DurablyWrite { typedb_source: err })?;
+        self.last_durable_write_total_count = self.total_count;
         Ok(())
     }
 
@@ -163,12 +176,14 @@ impl Statistics {
         commits: &BTreeMap<SequenceNumber, CommittedWrites>,
         storage: &MVCCStorage<D>,
     ) -> Result<(), MVCCReadError> {
+        let mut total_delta = 0;
         for (sequence_number, writes) in commits {
-            self.update_write(*sequence_number, writes, commits, storage)?
+            total_delta += self.update_write(*sequence_number, writes, commits, storage)?;
         }
         if let Some((&last_sequence_number, _)) = commits.last_key_value() {
             self.sequence_number = last_sequence_number;
         }
+        self.total_count = self.total_count.checked_add_signed(total_delta).unwrap();
         Ok(())
     }
 
@@ -178,7 +193,8 @@ impl Statistics {
         writes: &CommittedWrites,
         commits: &BTreeMap<SequenceNumber, CommittedWrites>,
         storage: &MVCCStorage<D>,
-    ) -> Result<(), MVCCReadError> {
+    ) -> Result<i64, MVCCReadError> {
+        let mut total_delta = 0;
         for (key, write) in writes.operations.iterate_writes() {
             let key_reference = StorageKeyReference::from(&key);
             let delta = write_to_delta(
@@ -192,15 +208,18 @@ impl Statistics {
             if ObjectVertex::is_entity_vertex(key_reference) {
                 let type_ = Entity::new(ObjectVertex::new(Bytes::Reference(key_reference.byte_ref()))).type_();
                 self.update_entities(type_, delta);
+                total_delta += delta;
             } else if ObjectVertex::is_relation_vertex(key_reference) {
                 let type_ = Relation::new(ObjectVertex::new(Bytes::Reference(key_reference.byte_ref()))).type_();
                 self.update_relations(type_, delta);
+                total_delta += delta;
             } else if AttributeVertex::is_attribute_vertex(key_reference) {
                 let type_ = Attribute::new(AttributeVertex::new(Bytes::Reference(key_reference.byte_ref()))).type_();
                 self.update_attributes(type_, delta);
             } else if ThingEdgeHas::is_has(key_reference) {
                 let edge = ThingEdgeHas::new(Bytes::Reference(key_reference.byte_ref()));
-                self.update_has(Object::new(edge.from()).type_(), Attribute::new(edge.to()).type_(), delta)
+                self.update_has(Object::new(edge.from()).type_(), Attribute::new(edge.to()).type_(), delta);
+                total_delta += delta;
             } else if ThingEdgeLinks::is_links(key_reference) {
                 let edge = ThingEdgeLinks::new(Bytes::Reference(key_reference.byte_ref()));
                 let role_type = RoleType::build_from_type_id(edge.role_id());
@@ -209,16 +228,19 @@ impl Statistics {
                     role_type,
                     Relation::new(edge.from()).type_(),
                     delta,
-                )
+                );
+                total_delta += delta;
             } else if ThingEdgeRolePlayerIndex::is_index(key_reference) {
                 let edge = ThingEdgeRolePlayerIndex::new(Bytes::Reference(key_reference.byte_ref()));
-                self.update_indexed_player(Object::new(edge.from()).type_(), Object::new(edge.to()).type_(), delta)
+                self.update_indexed_player(Object::new(edge.from()).type_(), Object::new(edge.to()).type_(), delta);
+                // note: don't update total count based on index
             } else if EntityType::is_decodable_from_key(key_reference) {
                 let type_ = EntityType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
                 if matches!(write, Write::Delete) {
                     self.entity_counts.remove(&type_);
                     self.clear_object_type(ObjectType::Entity(type_));
                 }
+                // note: don't update total count based on type updates
             } else if RelationType::is_decodable_from_key(key_reference) {
                 let type_ = RelationType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
                 if matches!(write, Write::Delete) {
@@ -227,6 +249,7 @@ impl Statistics {
                     let as_object_type = ObjectType::Relation(type_);
                     self.clear_object_type(as_object_type.clone());
                 }
+                // note: don't update total count based on type updates
             } else if AttributeType::is_decodable_from_key(key_reference) {
                 let type_ = AttributeType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
                 if matches!(write, Write::Delete) {
@@ -237,6 +260,7 @@ impl Statistics {
                     }
                     self.has_attribute_counts.retain(|_, map| !map.is_empty());
                 }
+                // note: don't update total count based on type updates
             } else if RoleType::is_decodable_from_key(key_reference) {
                 let type_ = RoleType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
                 if matches!(write, Write::Delete) {
@@ -250,9 +274,10 @@ impl Statistics {
                     }
                     self.relation_role_counts.retain(|_, map| !map.is_empty());
                 }
+                // note: don't update total count based on type updates
             }
         }
-        Ok(())
+        Ok(total_delta)
     }
 
     fn clear_object_type(&mut self, object_type: ObjectType<'static>) {
@@ -355,6 +380,7 @@ impl Statistics {
 
     pub fn reset(&mut self, sequence_number: SequenceNumber) {
         self.sequence_number = sequence_number;
+        self.total_count = 0;
         self.total_thing_count = 0;
         self.total_entity_count = 0;
         self.total_relation_count = 0;
@@ -569,6 +595,8 @@ mod serialise {
     enum Field {
         StatisticsVersion,
         OpenSequenceNumber,
+        LastDurableWriteTotalCount,
+        TotalCount,
         TotalThingCount,
         TotalEntityCount,
         TotalRelationCount,
@@ -589,9 +617,11 @@ mod serialise {
     }
 
     impl Field {
-        const NAMES: [&'static str; 19] = [
+        const NAMES: [&'static str; 21] = [
             Self::StatisticsVersion.name(),
             Self::OpenSequenceNumber.name(),
+            Self::LastDurableWriteTotalCount.name(),
+            Self::TotalCount.name(),
             Self::TotalThingCount.name(),
             Self::TotalEntityCount.name(),
             Self::TotalRelationCount.name(),
@@ -615,6 +645,8 @@ mod serialise {
             match self {
                 Field::StatisticsVersion => "StatisticsVersion",
                 Field::OpenSequenceNumber => "OpenSequenceNumber",
+                Field::LastDurableWriteTotalCount => "LastDurableWriteTotalCount",
+                Field::TotalCount => "TotalCount",
                 Field::TotalThingCount => "TotalThingCount",
                 Field::TotalEntityCount => "TotalEntityCount",
                 Field::TotalRelationCount => "TotalRelationCount",
@@ -639,6 +671,8 @@ mod serialise {
             match string {
                 "StatisticsVersion" => Some(Field::StatisticsVersion),
                 "OpenSequenceNumber" => Some(Field::OpenSequenceNumber),
+                "LastDurableWriteTotalCount" => Some(Field::LastDurableWriteTotalCount),
+                "TotalCount" => Some(Field::TotalCount),
                 "TotalThingCount" => Some(Field::TotalThingCount),
                 "TotalEntityCount" => Some(Field::TotalEntityCount),
                 "TotalRelationCount" => Some(Field::TotalRelationCount),
@@ -670,7 +704,9 @@ mod serialise {
             state.serialize_field(Field::StatisticsVersion.name(), &self.encoding_version)?;
 
             state.serialize_field(Field::OpenSequenceNumber.name(), &self.sequence_number)?;
+            state.serialize_field(Field::LastDurableWriteTotalCount.name(), &self.last_durable_write_total_count)?;
 
+            state.serialize_field(Field::TotalCount.name(), &self.total_count)?;
             state.serialize_field(Field::TotalThingCount.name(), &self.total_thing_count)?;
             state.serialize_field(Field::TotalEntityCount.name(), &self.total_entity_count)?;
             state.serialize_field(Field::TotalRelationCount.name(), &self.total_relation_count)?;
@@ -807,46 +843,49 @@ mod serialise {
                     let statistics_version = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
                     let open_sequence_number =
                         seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                    let total_thing_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(2, &self))?;
-                    let total_entity_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(3, &self))?;
+                    let last_durable_write_total_count =
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(2, &self))?;
+                    let total_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(3, &self))?;
+                    let total_thing_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(4, &self))?;
+                    let total_entity_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(5, &self))?;
                     let total_relation_count =
-                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(4, &self))?;
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(6, &self))?;
                     let total_attribute_count =
-                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(5, &self))?;
-                    let total_role_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(6, &self))?;
-                    let total_has_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(7, &self))?;
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(7, &self))?;
+                    let total_role_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(8, &self))?;
+                    let total_has_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(9, &self))?;
                     let encoded_entity_counts =
-                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(8, &self))?;
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(10, &self))?;
                     let entity_counts = into_entity_map(encoded_entity_counts);
                     let encoded_relation_counts =
-                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(9, &self))?;
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(11, &self))?;
                     let relation_counts = into_relation_map(encoded_relation_counts);
                     let encoded_attribute_counts =
-                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(10, &self))?;
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(12, &self))?;
                     let attribute_counts = into_attribute_map(encoded_attribute_counts);
                     let encoded_role_counts =
-                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(11, &self))?;
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(13, &self))?;
                     let role_counts = into_role_map(encoded_role_counts);
                     let encoded_has_attribute_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
-                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(12, &self))?;
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(14, &self))?;
                     let has_attribute_counts = encoded_has_attribute_counts
                         .into_iter()
                         .map(|(type_1, map)| (type_1.into_object_type(), into_attribute_map(map)))
                         .collect();
                     let encoded_attribute_owner_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
-                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(13, &self))?;
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(15, &self))?;
                     let attribute_owner_counts = encoded_attribute_owner_counts
                         .into_iter()
                         .map(|(type_1, map)| (type_1.into_attribute_type(), into_object_map(map)))
                         .collect();
                     let encoded_role_player_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
-                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(14, &self))?;
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(16, &self))?;
                     let role_player_counts = encoded_role_player_counts
                         .into_iter()
                         .map(|(type_1, map)| (type_1.into_object_type(), into_role_map(map)))
                         .collect();
                     let encoded_relation_role_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
-                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(15, &self))?;
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(17, &self))?;
                     let relation_role_counts = encoded_relation_role_counts
                         .into_iter()
                         .map(|(type_1, map)| (type_1.into_relation_type(), into_role_map(map)))
@@ -854,7 +893,7 @@ mod serialise {
                     let encoded_relation_role_player_counts: HashMap<
                         SerialisableType,
                         HashMap<SerialisableType, HashMap<SerialisableType, u64>>,
-                    > = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(16, &self))?;
+                    > = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(18, &self))?;
                     let relation_role_player_counts = encoded_relation_role_player_counts
                         .into_iter()
                         .map(|(type_1, map)| {
@@ -869,7 +908,7 @@ mod serialise {
                     let encoded_player_role_relation_counts: HashMap<
                         SerialisableType,
                         HashMap<SerialisableType, HashMap<SerialisableType, u64>>,
-                    > = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(17, &self))?;
+                    > = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(19, &self))?;
                     let player_role_relation_counts = encoded_player_role_relation_counts
                         .into_iter()
                         .map(|(type_1, map)| {
@@ -882,7 +921,7 @@ mod serialise {
                         })
                         .collect();
                     let encoded_links_index_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
-                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(18, &self))?;
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(20, &self))?;
                     let links_index_counts = encoded_links_index_counts
                         .into_iter()
                         .map(|(type_1, map)| (type_1.into_object_type(), into_object_map(map)))
@@ -890,6 +929,8 @@ mod serialise {
                     Ok(Statistics {
                         encoding_version: statistics_version,
                         sequence_number: open_sequence_number,
+                        last_durable_write_total_count,
+                        total_count,
                         total_thing_count,
                         total_entity_count,
                         total_relation_count,
@@ -916,6 +957,8 @@ mod serialise {
                 {
                     let mut statistics_version = None;
                     let mut open_sequence_number = None;
+                    let mut last_durable_write_total_count = None;
+                    let mut total_count = None;
                     let mut total_thing_count = None;
                     let mut total_entity_count = None;
                     let mut total_relation_count = None;
@@ -946,6 +989,18 @@ mod serialise {
                                     return Err(de::Error::duplicate_field(Field::OpenSequenceNumber.name()));
                                 }
                                 open_sequence_number = Some(map.next_value()?);
+                            }
+                            Field::LastDurableWriteTotalCount => {
+                                if total_count.is_some() {
+                                    return Err(de::Error::duplicate_field(Field::LastDurableWriteTotalCount.name()));
+                                }
+                                last_durable_write_total_count = Some(map.next_value()?);
+                            }
+                            Field::TotalCount => {
+                                if total_count.is_some() {
+                                    return Err(de::Error::duplicate_field(Field::TotalCount.name()));
+                                }
+                                total_count = Some(map.next_value()?);
                             }
                             Field::TotalThingCount => {
                                 if total_thing_count.is_some() {
@@ -1128,6 +1183,9 @@ mod serialise {
                             .ok_or_else(|| de::Error::missing_field(Field::StatisticsVersion.name()))?,
                         sequence_number: open_sequence_number
                             .ok_or_else(|| de::Error::missing_field(Field::OpenSequenceNumber.name()))?,
+                        last_durable_write_total_count: last_durable_write_total_count
+                            .ok_or_else(|| de::Error::missing_field(Field::LastDurableWriteTotalCount.name()))?,
+                        total_count: total_count.ok_or_else(|| de::Error::missing_field(Field::TotalCount.name()))?,
                         total_thing_count: total_thing_count
                             .ok_or_else(|| de::Error::missing_field(Field::TotalThingCount.name()))?,
                         total_entity_count: total_entity_count

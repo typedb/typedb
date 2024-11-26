@@ -37,7 +37,7 @@ where
     T: Hkt,
     for<'a> <T as Hkt>::HktSelf<'a>: ThingAPI<'a>,
 {
-    type Item<'a> = Result<T::HktSelf<'a>, ConceptReadError>;
+    type Item<'a> = Result<T::HktSelf<'a>, Box<ConceptReadError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.snapshot_iterator.as_mut()?.next().map(|result| {
@@ -45,7 +45,7 @@ where
                 .map(|(storage_key, _value_bytes)| {
                     T::HktSelf::new(<T::HktSelf<'_> as ThingAPI<'_>>::Vertex::new(storage_key.into_bytes()))
                 })
-                .map_err(|error| SnapshotIterate { source: error })
+                .map_err(|error| Box::new(SnapshotIterate { source: error }))
         })
     }
 }
@@ -73,13 +73,13 @@ macro_rules! concept_iterator {
         }
 
         impl ::lending_iterator::LendingIterator for $name {
-            type Item<'a> = Result<$concept_type<'a>, $crate::error::ConceptReadError>;
+            type Item<'a> = Result<$concept_type<'a>, Box<$crate::error::ConceptReadError>>;
             fn next(&mut self) -> Option<Self::Item<'_>> {
                 use $crate::error::ConceptReadError::SnapshotIterate;
                 self.snapshot_iterator.as_mut()?.next().map(|result| {
                     result
                         .map(|(storage_key, _value_bytes)| $map_fn(storage_key))
-                        .map_err(|error| SnapshotIterate { source: error })
+                        .map_err(|error| Box::new(SnapshotIterate { source: error }))
                 })
             }
         }
@@ -103,7 +103,7 @@ macro_rules! edge_iterator {
                 $name { snapshot_iterator: None }
             }
 
-            pub fn peek<$lt>(&$lt mut self) -> Option<Result<$mapped_type, $crate::error::ConceptReadError>> {
+            pub fn peek<$lt>(&$lt mut self) -> Option<Result<$mapped_type, Box<$crate::error::ConceptReadError>>> {
                 use $crate::error::ConceptReadError::SnapshotIterate;
                 self.snapshot_iterator.as_mut()?.peek().map(|result| {
                     result
@@ -113,7 +113,7 @@ macro_rules! edge_iterator {
                                 ::bytes::Bytes::Reference(value_bytes),
                             )
                         })
-                        .map_err(|error| SnapshotIterate { source: error })
+                        .map_err(|error| Box::new(SnapshotIterate { source: error }))
                 })
             }
 
@@ -123,13 +123,13 @@ macro_rules! edge_iterator {
         }
 
         impl ::lending_iterator::LendingIterator for $name {
-            type Item<$lt> = Result<$mapped_type, $crate::error::ConceptReadError>;
+            type Item<$lt> = Result<$mapped_type, Box<$crate::error::ConceptReadError>>;
             fn next(&mut self) -> Option<Self::Item<'_>> {
                 use $crate::error::ConceptReadError::SnapshotIterate;
                 self.snapshot_iterator.as_mut()?.next().map(|result| {
                     result
                         .map(|(storage_key, value_bytes)| $map_fn(storage_key, value_bytes))
-                        .map_err(|error| SnapshotIterate { source: error })
+                        .map_err(|error| Box::new(SnapshotIterate { source: error }))
                 })
             }
 

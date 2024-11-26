@@ -8,15 +8,19 @@ use std::{borrow::Cow, str::FromStr};
 
 use chrono::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime};
 use chrono_tz::Tz;
+use concept::type_::annotation::AnnotationRegex;
 use encoding::value::{
     decimal_value::Decimal,
     duration_value::{Duration, MONTHS_PER_YEAR, NANOS_PER_HOUR, NANOS_PER_MINUTE, NANOS_PER_SEC},
     timezone::TimeZone,
     value::Value,
 };
-use typeql::value::{
-    BooleanLiteral, DateFragment, DateTimeLiteral, DateTimeTZLiteral, DurationLiteral, IntegerLiteral, Literal, Sign,
-    SignedDecimalLiteral, SignedIntegerLiteral, StringLiteral, TimeFragment, ValueLiteral,
+use typeql::{
+    annotation::Regex,
+    value::{
+        BooleanLiteral, DateFragment, DateTimeLiteral, DateTimeTZLiteral, DurationLiteral, IntegerLiteral, Literal,
+        Sign, SignedDecimalLiteral, SignedIntegerLiteral, StringLiteral, TimeFragment, ValueLiteral,
+    },
 };
 
 use crate::LiteralParseError;
@@ -242,6 +246,16 @@ impl FromTypeQLLiteral for String {
     }
 }
 
+impl FromTypeQLLiteral for AnnotationRegex {
+    type TypeQLLiteral = Regex;
+
+    fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<AnnotationRegex, LiteralParseError> {
+        Ok(AnnotationRegex::new(literal.regex.unescape_regex().map_err(|err| {
+            LiteralParseError::CannotUnescapeRegexString { literal: literal.regex.clone(), source: err }
+        })?))
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use encoding::value::{
@@ -252,21 +266,25 @@ pub mod tests {
 
     use crate::{
         pattern::expression::Expression,
-        pipeline::function_signature::HashMapFunctionSignatureIndex,
+        pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
         translation::{match_::translate_match, TranslationContext},
         RepresentationError,
     };
 
-    fn parse_value_via_typeql_expression(s: &str) -> Result<Value<'static>, RepresentationError> {
+    fn parse_value_via_typeql_expression(s: &str) -> Result<Value<'static>, Box<RepresentationError>> {
         let query = format!("match $x = {}; select $x;", s);
         if let Stage::Match(match_) =
             typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.first().unwrap()
         {
             let mut context = TranslationContext::new();
-            let block = translate_match(&mut context, &HashMapFunctionSignatureIndex::empty(), match_)?.finish();
+            let mut value_parameters = ParameterRegistry::new();
+            let block =
+                translate_match(&mut context, &mut value_parameters, &HashMapFunctionSignatureIndex::empty(), match_)?
+                    .finish()
+                    .unwrap();
             let x = block.conjunction().constraints()[0].as_expression_binding().unwrap().expression().get_root();
             match *x {
-                Expression::Constant(id) => Ok(context.parameters.value_unchecked(id).to_owned()),
+                Expression::Constant(id) => Ok(value_parameters.value_unchecked(id).to_owned()),
                 _ => unreachable!(),
             }
         } else {

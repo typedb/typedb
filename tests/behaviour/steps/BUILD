@@ -4,7 +4,7 @@
 
 package(default_visibility = ["//tests/behaviour:__subpackages__"])
 
-load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_library")
 
 rust_library(
@@ -30,7 +30,7 @@ rust_library(
         "//durability:durability",
         "//util/test:test_utils",
 
-        "@vaticle_typeql//rust:typeql",
+        "@typeql//rust:typeql",
 
         "@crates//:chrono",
         "@crates//:chrono-tz",
@@ -38,6 +38,7 @@ rust_library(
         "@crates//:futures",
         "@crates//:itertools",
         "@crates//:macro_rules_attribute",
+        "@crates//:serde_json",
     ],
 )
 

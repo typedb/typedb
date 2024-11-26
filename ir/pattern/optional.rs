@@ -4,9 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt::{Display, Formatter};
+use std::fmt;
 
 use answer::variable::Variable;
+use structural_equality::StructuralEquality;
 
 use crate::{
     pattern::{
@@ -48,8 +49,18 @@ impl Scope for Optional {
     }
 }
 
-impl Display for Optional {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl StructuralEquality for Optional {
+    fn hash(&self) -> u64 {
+        self.conjunction.hash()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.conjunction.equals(&other.conjunction)
+    }
+}
+
+impl fmt::Display for Optional {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }

@@ -10,7 +10,7 @@ use crate::keyspace::KeyspaceError;
 
 #[derive(Debug)]
 pub struct MVCCStorageError {
-    pub storage_name: String,
+    pub storage_name: Arc<String>,
     pub kind: MVCCStorageErrorKind,
 }
 

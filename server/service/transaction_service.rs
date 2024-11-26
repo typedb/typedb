@@ -18,7 +18,9 @@ use compiler::VariablePosition;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
     database_manager::DatabaseManager,
-    transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
+    transaction::{
+        DataCommitError, SchemaCommitError, TransactionError, TransactionRead, TransactionSchema, TransactionWrite,
+    },
 };
 use error::typedb_error;
 use executor::{
@@ -204,10 +206,7 @@ enum StreamingCondition {
 impl StreamingCondition {
     fn continue_(&self, iteration: usize) -> bool {
         match self {
-            StreamingCondition::Count(count) => {
-                let result = iteration < *count;
-                result
-            }
+            StreamingCondition::Count(count) => iteration < *count,
             StreamingCondition::Duration(start_time, limit_millis) => {
                 (Instant::now().duration_since(*start_time).as_millis() as usize) < *limit_millis
             }
@@ -348,11 +347,9 @@ impl TransactionService {
             }
             (true, typedb_protocol::transaction::req::Req::StreamReq(stream_req)) => {
                 match self.handle_stream_continue(request_id, stream_req).await {
-                    None => return Ok(Continue(())),
+                    None => Ok(Continue(())),
                     Some(query_response) => {
-                        return Ok(
-                            Self::respond_query_response(&self.response_sender, request_id, query_response).await
-                        );
+                        Ok(Self::respond_query_response(&self.response_sender, request_id, query_response).await)
                     }
                 }
             }
@@ -428,14 +425,20 @@ impl TransactionService {
 
         let transaction = match transaction_type {
             typedb_protocol::transaction::Type::Read => {
-                Transaction::Read(TransactionRead::open(database, transaction_options))
+                Transaction::Read(TransactionRead::open(database, transaction_options).map_err(|typedb_source| {
+                    TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
+                })?)
             }
             typedb_protocol::transaction::Type::Write => {
-                Transaction::Write(TransactionWrite::open(database, transaction_options))
+                Transaction::Write(TransactionWrite::open(database, transaction_options).map_err(|typedb_source| {
+                    TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
+                })?)
             }
-            typedb_protocol::transaction::Type::Schema => {
-                Transaction::Schema(TransactionSchema::open(database, transaction_options))
-            }
+            typedb_protocol::transaction::Type::Schema => Transaction::Schema(
+                TransactionSchema::open(database, transaction_options).map_err(|typedb_source| {
+                    TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
+                })?,
+            ),
         };
         self.transaction = Some(transaction);
         self.is_open = true;
@@ -477,8 +480,8 @@ impl TransactionService {
             })
             .await
             .unwrap(),
-            Transaction::Schema(transaction) => transaction.commit().map_err(|err| {
-                TransactionServiceError::SchemaCommitFailed { source: err }.into_error_message().into_status()
+            Transaction::Schema(transaction) => transaction.commit().map_err(|typedb_source| {
+                TransactionServiceError::SchemaCommitFailed { typedb_source }.into_error_message().into_status()
             }),
         }
     }
@@ -564,8 +567,13 @@ impl TransactionService {
 
     async fn finish_running_write_query_no_transmit(&mut self, interrupt: InterruptType) -> Result<(), Status> {
         if let Some((req_id, worker)) = self.running_write_query.take() {
-            let (transaction, _) = worker.await.unwrap();
+            let (transaction, result) = worker.await.unwrap();
             self.transaction = Some(transaction);
+
+            if let Err(err) = result {
+                return Err(err.into_error_message().into_status());
+            }
+
             // transmission of interrupt signal is ok if it fails
             match Self::respond_query_response(
                 &self.response_sender,
@@ -672,7 +680,7 @@ impl TransactionService {
 
                 // schema queries are handled immediately so there is a query response or a fatal Status
                 let response = self.handle_query_schema(schema_query).await?;
-                return Ok(Self::respond_query_response(&self.response_sender, req_id, response).await);
+                Ok(Self::respond_query_response(&self.response_sender, req_id, response).await)
             }
             Query::Pipeline(pipeline) => {
                 #[allow(clippy::collapsible_else_if)]
@@ -707,16 +715,29 @@ impl TransactionService {
                 type_manager,
                 thing_manager,
                 function_manager,
+                query_manager,
                 database,
                 transaction_options,
             } = schema_transaction;
             let mut snapshot = Arc::into_inner(snapshot).unwrap();
-            let (snapshot, type_manager, thing_manager, result) = spawn_blocking(move || {
-                let result = QueryManager::new().execute_schema(&mut snapshot, &type_manager, &thing_manager, query);
-                (snapshot, type_manager, thing_manager, result)
+            let (snapshot, type_manager, thing_manager, query_manager, result) = spawn_blocking(move || {
+                let result = query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, query);
+                (snapshot, type_manager, thing_manager, query_manager, result)
             })
             .await
             .unwrap();
+
+            let transaction = TransactionSchema::from(
+                snapshot,
+                type_manager,
+                thing_manager,
+                function_manager,
+                query_manager,
+                database,
+                transaction_options,
+            );
+            self.transaction = Some(Transaction::Schema(transaction));
+
             let message_ok_done =
                 result.map(|_| query_res_ok_done(typedb_protocol::query::Type::Schema)).map_err(|err| {
                     TransactionServiceError::TxnAbortSchemaQueryFailed { typedb_source: err }
@@ -724,15 +745,6 @@ impl TransactionService {
                         .into_status()
                 })?;
 
-            let transaction = TransactionSchema::from(
-                snapshot,
-                type_manager,
-                thing_manager,
-                function_manager,
-                database,
-                transaction_options,
-            );
-            self.transaction = Some(Transaction::Schema(transaction));
             Ok(ImmediateQueryResponse::ok(message_ok_done))
         } else {
             Ok(ImmediateQueryResponse::non_fatal_err(TransactionServiceError::SchemaQueryRequiresSchemaTransaction {}))
@@ -806,6 +818,7 @@ impl TransactionService {
                     type_manager,
                     thing_manager,
                     function_manager,
+                    query_manager,
                     database,
                     transaction_options,
                 } = schema_transaction;
@@ -815,6 +828,7 @@ impl TransactionService {
                     &type_manager,
                     thing_manager.clone(),
                     &function_manager,
+                    &query_manager,
                     &pipeline,
                     interrupt,
                 );
@@ -824,6 +838,7 @@ impl TransactionService {
                     type_manager,
                     thing_manager,
                     function_manager,
+                    query_manager,
                     database,
                     transaction_options,
                 ));
@@ -835,6 +850,7 @@ impl TransactionService {
                     type_manager,
                     thing_manager,
                     function_manager,
+                    query_manager,
                     database,
                     transaction_options,
                 } = write_transaction;
@@ -844,6 +860,7 @@ impl TransactionService {
                     &type_manager,
                     thing_manager.clone(),
                     &function_manager,
+                    &query_manager,
                     &pipeline,
                     interrupt,
                 );
@@ -853,6 +870,7 @@ impl TransactionService {
                     type_manager,
                     thing_manager,
                     function_manager,
+                    query_manager,
                     database,
                     transaction_options,
                 ));
@@ -871,16 +889,12 @@ impl TransactionService {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
+        query_manager: &QueryManager,
         pipeline: &typeql::query::Pipeline,
         interrupt: ExecutionInterrupt,
     ) -> (Snapshot, Result<(StreamQueryOutputDescriptor, Batch), QueryError>) {
-        let result = QueryManager::new().prepare_write_pipeline(
-            snapshot,
-            type_manager,
-            thing_manager,
-            function_manager,
-            pipeline,
-        );
+        let result =
+            query_manager.prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, pipeline);
         let (query_output_descriptor, pipeline) = match result {
             Ok(pipeline) => {
                 let named_outputs = pipeline.rows_positions().unwrap();
@@ -890,23 +904,26 @@ impl TransactionService {
             Err((snapshot, err)) => return (snapshot, Err(err)),
         };
 
-        let (iterator, snapshot) = match pipeline.into_rows_iterator(interrupt) {
-            Ok((iterator, ExecutionContext { snapshot, .. })) => (iterator, snapshot),
+        let (iterator, snapshot, query_profile) = match pipeline.into_rows_iterator(interrupt) {
+            Ok((iterator, ExecutionContext { snapshot, profile, .. })) => (iterator, snapshot, profile),
             Err((err, ExecutionContext { snapshot, .. })) => {
                 return (
                     Arc::into_inner(snapshot).unwrap(),
-                    Err(QueryError::WritePipelineExecutionError { typedb_source: err }),
+                    Err(QueryError::WritePipelineExecution { typedb_source: err }),
                 );
             }
         };
 
-        match iterator.collect_owned() {
+        let result = match iterator.collect_owned() {
             Ok(batch) => (Arc::into_inner(snapshot).unwrap(), Ok((query_output_descriptor, batch))),
-            Err(err) => (
-                Arc::into_inner(snapshot).unwrap(),
-                Err(QueryError::WritePipelineExecutionError { typedb_source: err }),
-            ),
+            Err(err) => {
+                (Arc::into_inner(snapshot).unwrap(), Err(QueryError::WritePipelineExecution { typedb_source: err }))
+            }
+        };
+        if query_profile.is_enabled() {
+            event!(Level::INFO, "Write query completed.\n{}", query_profile);
         }
+        result
     }
 
     // Write query is already executed, but for simplicity, we convert it to something that conform to the same API as the read path
@@ -965,18 +982,20 @@ impl TransactionService {
         debug_assert!(
             self.request_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some()
         );
-        let mut interrupt = self.query_interrupt_receiver.clone();
+        let interrupt = self.query_interrupt_receiver.clone();
         with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
             let snapshot = transaction.snapshot.clone();
             let type_manager = transaction.type_manager.clone();
             let thing_manager = transaction.thing_manager.clone();
             let function_manager = transaction.function_manager.clone();
+            let query_manager = transaction.query_manager.clone();
             spawn_blocking(move || {
                 let pipeline = Self::prepare_read_query_in(
                     snapshot.clone(),
                     &type_manager,
                     thing_manager.clone(),
                     &function_manager,
+                    &query_manager,
                     &pipeline,
                 );
 
@@ -996,19 +1015,19 @@ impl TransactionService {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
     ) {
-        if pipeline.has_fetch() {
+        let query_profile = if pipeline.has_fetch() {
             let initial_response = StreamQueryResponse::init_ok_documents(Read);
             Self::submit_response_sync(sender, initial_response);
-            let (mut iterator, context) =
+            let (iterator, context) =
                 unwrap_or_execute_and_return!(pipeline.into_documents_iterator(interrupt.clone()), |(err, _)| {
                     Self::submit_response_sync(
                         sender,
-                        StreamQueryResponse::done_err(QueryError::ReadPipelineExecutionError { typedb_source: err }),
+                        StreamQueryResponse::done_err(QueryError::ReadPipelineExecution { typedb_source: err }),
                     );
                 });
 
             let parameters = context.parameters;
-            while let Some(next) = iterator.next() {
+            for next in iterator {
                 if let Some(interrupt) = interrupt.check() {
                     Self::submit_response_sync(
                         sender,
@@ -1022,7 +1041,7 @@ impl TransactionService {
                 });
 
                 let encoded_document =
-                    encode_document(document, snapshot.as_ref(), &type_manager, &thing_manager, &parameters);
+                    encode_document(document, snapshot.as_ref(), type_manager, &thing_manager, &parameters);
                 match encoded_document {
                     Ok(encoded_document) => {
                         Self::submit_response_sync(sender, StreamQueryResponse::next_document(encoded_document))
@@ -1036,17 +1055,18 @@ impl TransactionService {
                     }
                 }
             }
+            context.profile
         } else {
             let named_outputs = pipeline.rows_positions().unwrap();
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
             let initial_response = StreamQueryResponse::init_ok_rows(&descriptor, Read);
             Self::submit_response_sync(sender, initial_response);
 
-            let (mut iterator, _) =
+            let (mut iterator, context) =
                 unwrap_or_execute_and_return!(pipeline.into_rows_iterator(interrupt.clone()), |(err, _)| {
                     Self::submit_response_sync(
                         sender,
-                        StreamQueryResponse::done_err(QueryError::ReadPipelineExecutionError { typedb_source: err }),
+                        StreamQueryResponse::done_err(QueryError::ReadPipelineExecution { typedb_source: err }),
                     );
                 });
 
@@ -1063,7 +1083,7 @@ impl TransactionService {
                     Self::submit_response_sync(sender, StreamQueryResponse::done_err(err));
                 });
 
-                let encoded_row = encode_row(row, &descriptor, snapshot.as_ref(), &type_manager, &thing_manager);
+                let encoded_row = encode_row(row, &descriptor, snapshot.as_ref(), type_manager, &thing_manager);
                 match encoded_row {
                     Ok(encoded_row) => Self::submit_response_sync(sender, StreamQueryResponse::next_row(encoded_row)),
                     Err(err) => {
@@ -1075,8 +1095,12 @@ impl TransactionService {
                     }
                 }
             }
+            context.profile
+        };
+        if query_profile.is_enabled() {
+            event!(Level::INFO, "Read query done (including network request time).\n{}", query_profile);
         }
-        Self::submit_response_sync(&sender, StreamQueryResponse::done_ok())
+        Self::submit_response_sync(sender, StreamQueryResponse::done_ok())
     }
 
     fn prepare_read_query_in<Snapshot: ReadableSnapshot + 'static>(
@@ -1084,9 +1108,10 @@ impl TransactionService {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
+        query_manager: &QueryManager,
         pipeline: &typeql::query::Pipeline,
     ) -> Result<Pipeline<Snapshot, ReadPipelineStage<Snapshot>>, QueryError> {
-        QueryManager::new().prepare_read_pipeline(snapshot, type_manager, thing_manager, function_manager, pipeline)
+        query_manager.prepare_read_pipeline(snapshot, type_manager, thing_manager, function_manager, pipeline)
     }
 
     fn submit_response_sync(sender: &Sender<StreamQueryResponse>, response: StreamQueryResponse) {
@@ -1405,23 +1430,23 @@ typedb_error!(
         DatabaseNotFound(1, "Database '{name}' not found.", name: String),
         CannotCommitReadTransaction(2, "Read transactions cannot be committed."),
         CannotRollbackReadTransaction(3, "Read transactions cannot be rolled back, since they never contain writes."),
-        // TODO: these should be typedb_source
-        DataCommitFailed(4, "Data transaction commit failed.", ( typedb_source: DataCommitError )),
-        SchemaCommitFailed(5, "Schema transaction commit failed.", ( source : SchemaCommitError )),
-        QueryParseFailed(6, "Query parsing failed.", ( typedb_source: typeql::Error )),
-        SchemaQueryRequiresSchemaTransaction(7, "Schema modification queries require schema transactions."),
-        WriteQueryRequiresSchemaOrWriteTransaction(8, "Data modification queries require either write or schema transactions."),
-        TxnAbortSchemaQueryFailed(9, "Aborting transaction due to failed schema query.", ( typedb_source : QueryError )),
-        NoOpenTransaction(10, "Operation failed - no open transaction."),
-        QueryInterrupted(11, "Execution interrupted by to a concurrent {interrupt}.", interrupt: InterruptType),
+        TransactionFailed(4, "Transaction failed.", ( typedb_source: TransactionError )),
+        DataCommitFailed(5, "Data transaction commit failed.", ( typedb_source: DataCommitError )),
+        SchemaCommitFailed(6, "Schema transaction commit failed.", ( typedb_source : SchemaCommitError )),
+        QueryParseFailed(7, "Query parsing failed.", ( typedb_source: typeql::Error )),
+        SchemaQueryRequiresSchemaTransaction(8, "Schema modification queries require schema transactions."),
+        WriteQueryRequiresSchemaOrWriteTransaction(9, "Data modification queries require either write or schema transactions."),
+        TxnAbortSchemaQueryFailed(10, "Aborting transaction due to failed schema query.", ( typedb_source : QueryError )),
+        NoOpenTransaction(11, "Operation failed - no open transaction."),
+        QueryInterrupted(12, "Execution interrupted by to a concurrent {interrupt}.", interrupt: InterruptType),
         QueryStreamNotFound(
-            12,
+            13,
             r#"
             Query stream with id '{query_request_id}' was not found in the transaction.
             The stream could have already finished, or the transaction could be closed, committed, rolled back (or this is a bug).
             "#,
             query_request_id: Uuid
         ),
-        ServiceClosingFailedQueueCleanup(13, "The operation failed since the service is closing."),
+        ServiceClosingFailedQueueCleanup(14, "The operation failed since the service is closing."),
     }
 );

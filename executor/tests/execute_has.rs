@@ -15,15 +15,18 @@ use compiler::{
         function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         match_inference::infer_types,
     },
-    executable::match_::{
-        instructions::{
-            thing::{HasInstruction, HasReverseInstruction, IsaReverseInstruction},
-            ConstraintInstruction, Inputs,
+    executable::{
+        match_::{
+            instructions::{
+                thing::{HasInstruction, HasReverseInstruction, IsaInstruction},
+                ConstraintInstruction, Inputs,
+            },
+            planner::{
+                function_plan::ExecutableFunctionRegistry,
+                match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
+            },
         },
-        planner::{
-            function_plan::ExecutableFunctionRegistry,
-            match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
-        },
+        next_executable_id,
     },
     ExecutorVariable, VariablePosition,
 };
@@ -33,10 +36,14 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, profile::QueryProfile,
+    row::MaybeOwnedRow, ExecutionInterrupt,
 };
-use ir::{pattern::constraint::IsaKind, pipeline::block::Block, translation::TranslationContext};
+use ir::{
+    pattern::constraint::IsaKind,
+    pipeline::{block::Block, ParameterRegistry},
+    translation::TranslationContext,
+};
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
@@ -123,7 +130,8 @@ fn traverse_has_unbounded_sorted_from() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.new_block_builder_context());
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_age_type = conjunction.get_or_declare_variable("age_type").unwrap();
@@ -137,7 +145,7 @@ fn traverse_has_unbounded_sorted_from() {
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age, var_age_type.into()).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.clone()).unwrap();
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -178,7 +186,7 @@ fn traverse_has_unbounded_sorted_from() {
         &named_variables,
         2,
     ))];
-    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
+    let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(snapshot);
@@ -188,14 +196,16 @@ fn traverse_has_unbounded_sorted_from() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
     assert_eq!(rows.len(), 7);
 
     for row in rows {
@@ -218,7 +228,8 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.new_block_builder_context());
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_name_type = conjunction.get_or_declare_variable("name_type").unwrap();
@@ -239,7 +250,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.clone()).unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
@@ -271,8 +282,8 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     let steps = vec![
         ExecutionStep::Intersection(IntersectionStep::new(
             mapping[&var_person_1],
-            vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_person_1, Inputs::None([]), &entry_annotations).map(&mapping),
+            vec![ConstraintInstruction::Isa(
+                IsaInstruction::new(isa_person_1, Inputs::None([]), &entry_annotations).map(&mapping),
             )],
             vec![variable_positions[&var_person_1]],
             &named_variables,
@@ -293,7 +304,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
             3,
         )),
     ];
-    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
+    let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(snapshot);
@@ -303,14 +314,16 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
     assert_eq!(rows.len(), 3); // $person-1 is $person-2, one per name
 
     for row in rows {
@@ -332,7 +345,8 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     // IR
 
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.new_block_builder_context());
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_age_type = conjunction.get_or_declare_variable("age_type").unwrap();
@@ -352,7 +366,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.clone()).unwrap();
 
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -399,7 +413,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
         &named_variables,
         3,
     ))];
-    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
+    let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(snapshot);
@@ -409,14 +423,16 @@ fn traverse_has_unbounded_sorted_from_intersect() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
     assert_eq!(rows.len(), 7);
 
     for row in rows {
@@ -438,7 +454,8 @@ fn traverse_has_unbounded_sorted_to_merged() {
     // IR
 
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.new_block_builder_context());
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_person = conjunction.get_or_declare_variable("person").unwrap();
@@ -446,7 +463,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
     let has_attribute = conjunction.constraints_mut().add_has(var_person, var_attribute).unwrap().clone();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -487,7 +504,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
         &named_variables,
         2,
     ))];
-    let executable = MatchExecutable::new(steps, variable_positions.clone(), row_vars);
+    let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions.clone(), row_vars);
 
     // Executor
     let snapshot = Arc::new(snapshot);
@@ -497,14 +514,16 @@ fn traverse_has_unbounded_sorted_to_merged() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
 
     // person 1 - has age 1, has age 2, has age 3, has name 1, has name 2 => 5 answers
     // person 2 - has age 1, has age 4, has age 5 => 3 answers
@@ -540,7 +559,8 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     // IR
 
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.new_block_builder_context());
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_age_type = conjunction.get_or_declare_variable("age_type").unwrap();
@@ -555,7 +575,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.clone()).unwrap();
 
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -596,7 +616,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
         &named_variables,
         2,
     ))];
-    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
+    let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(snapshot);
@@ -606,14 +626,16 @@ fn traverse_has_reverse_unbounded_sorted_from() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| err.clone())).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.clone().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
     assert_eq!(rows.len(), 7);
 
     for row in rows {

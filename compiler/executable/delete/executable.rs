@@ -13,15 +13,18 @@ use ir::pattern::{constraint::Constraint, Vertex};
 use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::{
-        delete::instructions::{ConnectionInstruction, Has, RolePlayer, ThingInstruction},
+        delete::instructions::{ConnectionInstruction, Has, Links, ThingInstruction},
         insert::{
             executable::collect_role_type_bindings, get_thing_source, ThingSource, TypeSource, WriteCompilationError,
         },
+        next_executable_id,
     },
     VariablePosition,
 };
 
+#[derive(Debug)]
 pub struct DeleteExecutable {
+    pub executable_id: u64,
     pub concept_instructions: Vec<ThingInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
     pub output_row_schema: Vec<Option<Variable>>,
@@ -33,7 +36,7 @@ pub fn compile(
     type_annotations: &TypeAnnotations,
     constraints: &[Constraint<Variable>],
     deleted_concepts: &[Variable],
-) -> Result<DeleteExecutable, WriteCompilationError> {
+) -> Result<DeleteExecutable, Box<WriteCompilationError>> {
     let named_role_types = collect_role_type_bindings(constraints, type_annotations)?;
     let mut connection_deletes = Vec::new();
     for constraint in constraints {
@@ -68,8 +71,9 @@ pub fn compile(
                     Vertex::Label(_) => unreachable!("expected role name, found label in a `links` constraint"),
                     Vertex::Parameter(_) => unreachable!(),
                 };
-                connection_deletes.push(ConnectionInstruction::RolePlayer(RolePlayer { relation, player, role }));
+                connection_deletes.push(ConnectionInstruction::Links(Links { relation, player, role }));
             }
+            Constraint::Iid(_) => todo!("should we be able to delete by IID?"),
             | Constraint::Isa(_)
             | Constraint::Kind(_)
             | Constraint::Label(_)
@@ -78,8 +82,10 @@ pub fn compile(
             | Constraint::Relates(_)
             | Constraint::Plays(_)
             | Constraint::ExpressionBinding(_)
+            | Constraint::Is(_)
             | Constraint::Comparison(_)
             | Constraint::Sub(_)
+            | Constraint::Value(_)
             | Constraint::FunctionCallBinding(_) => {
                 unreachable!()
             }
@@ -89,7 +95,7 @@ pub fn compile(
     let mut concept_deletes = Vec::new();
     for &variable in deleted_concepts {
         let Some(input_position) = input_variables.get(&variable) else {
-            return Err(WriteCompilationError::DeletedThingWasNotInInput { variable });
+            return Err(Box::new(WriteCompilationError::DeletedThingWasNotInInput { variable }));
         };
         if type_annotations
             .vertex_annotations_of(&Vertex::Variable(variable))
@@ -97,7 +103,7 @@ pub fn compile(
             .iter()
             .any(|type_| type_.kind() == Kind::Role)
         {
-            return Err(WriteCompilationError::IllegalRoleDelete { variable });
+            return Err(Box::new(WriteCompilationError::IllegalRoleDelete { variable }));
         } else {
             concept_deletes.push(ThingInstruction { thing: ThingSource(*input_position) });
         };
@@ -117,6 +123,7 @@ pub fn compile(
     }
 
     Ok(DeleteExecutable {
+        executable_id: next_executable_id(),
         connection_instructions: connection_deletes,
         concept_instructions: concept_deletes,
         output_row_schema,

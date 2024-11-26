@@ -7,13 +7,15 @@
 #![allow(clippy::large_enum_variant)]
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeSet, HashMap, HashSet},
+    fmt,
     ops::Deref,
+    sync::Arc,
 };
 
-use answer::Type;
+use answer::{variable::Variable, Type};
 use ir::pattern::{
-    constraint::{Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, IsaKind, SubKind},
+    constraint::{Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Is, IsaKind, SubKind},
     IrID, ParameterID, Vertex,
 };
 use itertools::Itertools;
@@ -26,7 +28,7 @@ use crate::{
 pub mod thing;
 pub mod type_;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub enum VariableMode {
     Input,
     Output,
@@ -48,6 +50,17 @@ impl VariableMode {
     }
 }
 
+impl fmt::Display for VariableMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            VariableMode::Input => write!(f, "input"),
+            VariableMode::Output => write!(f, "output"),
+            VariableMode::Count => write!(f, "count"),
+            VariableMode::Check => write!(f, "check"),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct VariableModes {
     modes: HashMap<ExecutorVariable, VariableMode>,
@@ -64,7 +77,7 @@ impl VariableModes {
         named: &HashSet<ExecutorVariable>,
     ) -> Self {
         let mut modes = Self::new();
-        instruction.ids_foreach(|var| {
+        instruction.used_variables_foreach(|var| {
             let var_mode = match var {
                 ExecutorVariable::Internal(_) => {
                     VariableMode::new(instruction.is_input_variable(var), false, named.contains(&var))
@@ -96,8 +109,24 @@ impl VariableModes {
     }
 }
 
+impl fmt::Display for VariableModes {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for (key, group) in &self.modes.iter().sorted_by_key(|(_, value)| *value).group_by(|(_, value)| *value) {
+            write!(f, "{key}s=")?;
+            for (var, _) in group {
+                write!(f, "{}, ", var)?;
+            }
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum ConstraintInstruction<ID> {
+    Is(IsInstruction<ID>),
+
+    Iid(thing::IidInstruction<ID>),
+
     TypeList(type_::TypeListInstruction<ID>),
 
     // sub -> super
@@ -157,8 +186,20 @@ impl<ID: IrID> ConstraintInstruction<ID> {
         found
     }
 
-    pub fn ids_foreach(&self, mut apply: impl FnMut(ID)) {
+    pub fn is_new_variable(&self, var: ID) -> bool {
+        let mut found = false;
+        self.new_variables_foreach(|v| {
+            if v == var {
+                found = true;
+            }
+        });
+        found
+    }
+
+    pub fn used_variables_foreach(&self, mut apply: impl FnMut(ID)) {
         match self {
+            Self::Is(IsInstruction { is, .. }) => is.ids_foreach(|var, _| apply(var)),
+            Self::Iid(thing::IidInstruction { iid, .. }) => iid.ids_foreach(|var, _| apply(var)),
             &Self::TypeList(type_::TypeListInstruction { type_var, .. }) => apply(type_var),
             Self::Sub(type_::SubInstruction { sub, .. })
             | Self::SubReverse(type_::SubReverseInstruction { sub, .. }) => sub.ids_foreach(|var, _| apply(var)),
@@ -191,7 +232,9 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub(crate) fn input_variables_foreach(&self, apply: impl FnMut(ID)) {
         match self {
+            Self::Iid(_) => (),
             Self::TypeList(_) => (),
+            | Self::Is(IsInstruction { inputs, .. })
             | Self::Sub(type_::SubInstruction { inputs, .. })
             | Self::SubReverse(type_::SubReverseInstruction { inputs, .. })
             | Self::Owns(type_::OwnsInstruction { inputs, .. })
@@ -216,6 +259,12 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub(crate) fn new_variables_foreach(&self, mut apply: impl FnMut(ID)) {
         match self {
+            Self::Is(IsInstruction { is, inputs, .. }) => is.ids_foreach(|var, _| {
+                if !inputs.contains(var) {
+                    apply(var)
+                }
+            }),
+            Self::Iid(thing::IidInstruction { iid, .. }) => iid.ids_foreach(|var, _| apply(var)),
             &Self::TypeList(type_::TypeListInstruction { type_var, .. }) => apply(type_var),
             Self::Sub(type_::SubInstruction { sub, inputs, .. })
             | Self::SubReverse(type_::SubReverseInstruction { sub, inputs, .. }) => sub.ids_foreach(|var, _| {
@@ -276,6 +325,8 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
         match self {
+            Self::Is(inner) => inner.add_check(check),
+            Self::Iid(inner) => inner.add_check(check),
             Self::TypeList(inner) => inner.add_check(check),
             Self::Sub(inner) => inner.add_check(check),
             Self::SubReverse(inner) => inner.add_check(check),
@@ -299,6 +350,8 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> ConstraintInstruction<T> {
         match self {
+            Self::Is(inner) => ConstraintInstruction::Is(inner.map(mapping)),
+            Self::Iid(inner) => ConstraintInstruction::Iid(inner.map(mapping)),
             Self::TypeList(inner) => ConstraintInstruction::TypeList(inner.map(mapping)),
             Self::Sub(inner) => ConstraintInstruction::Sub(inner.map(mapping)),
             Self::SubReverse(inner) => ConstraintInstruction::SubReverse(inner.map(mapping)),
@@ -324,6 +377,8 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 impl<ID: IrID + Copy> InstructionAPI<ID> for ConstraintInstruction<ID> {
     fn constraint(&self) -> Constraint<ID> {
         match self {
+            Self::Is(IsInstruction { is, .. }) => is.clone().into(),
+            Self::Iid(thing::IidInstruction { iid, .. }) => iid.clone().into(),
             Self::TypeList(_) => todo!(), // TODO underlying constraint?
             Self::Sub(type_::SubInstruction { sub, .. })
             | Self::SubReverse(type_::SubReverseInstruction { sub, .. }) => sub.clone().into(),
@@ -343,6 +398,69 @@ impl<ID: IrID + Copy> InstructionAPI<ID> for ConstraintInstruction<ID> {
             Self::ComparisonCheck(cmp) => cmp.clone().into(),
             Self::ExpressionBinding(binding) => binding.clone().into(),
         }
+    }
+}
+
+impl<ID: IrID> fmt::Display for ConstraintInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ConstraintInstruction::Is(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::Iid(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::TypeList(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::Sub(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::SubReverse(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::Owns(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::OwnsReverse(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::Relates(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::RelatesReverse(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::Plays(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::PlaysReverse(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::Isa(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::IsaReverse(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::Has(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::HasReverse(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::Links(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::LinksReverse(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::FunctionCallBinding(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::ComparisonCheck(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::ExpressionBinding(instruction) => write!(f, "{instruction}"),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct IsInstruction<ID> {
+    pub is: Is<ID>,
+    pub inputs: Inputs<ID>,
+    pub checks: Vec<CheckInstruction<ID>>,
+}
+
+impl IsInstruction<Variable> {
+    pub(crate) fn new(is: Is<Variable>, inputs: Inputs<Variable>) -> Self {
+        Self { is, inputs, checks: Vec::new() }
+    }
+}
+
+impl<ID> IsInstruction<ID> {
+    pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
+        self.checks.push(check)
+    }
+}
+
+impl<ID: IrID> IsInstruction<ID> {
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> IsInstruction<T> {
+        let Self { is, inputs, checks } = self;
+        IsInstruction {
+            is: is.map(mapping),
+            inputs: inputs.map(mapping),
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
+        }
+    }
+}
+
+impl<ID: IrID> fmt::Display for IsInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} filter {}", &self.is, DisplayVec::new(&self.checks))
     }
 }
 
@@ -429,9 +547,20 @@ impl<ID: IrID> CheckVertex<ID> {
     }
 }
 
-#[derive(Debug, Clone)]
+impl<ID: IrID> fmt::Display for CheckVertex<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            CheckVertex::Variable(var) => write!(f, "{var}"),
+            CheckVertex::Type(type_) => write!(f, "{type_}"),
+            CheckVertex::Parameter(param) => write!(f, "{param}"),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub enum CheckInstruction<ID> {
-    TypeList { type_var: ID, types: Vec<Type> },
+    TypeList { type_var: ID, types: Arc<BTreeSet<Type>> },
+    Iid { var: ID, iid: ParameterID },
 
     Sub { sub_kind: SubKind, subtype: CheckVertex<ID>, supertype: CheckVertex<ID> },
     Owns { owner: CheckVertex<ID>, attribute: CheckVertex<ID> },
@@ -442,13 +571,15 @@ pub enum CheckInstruction<ID> {
     Has { owner: CheckVertex<ID>, attribute: CheckVertex<ID> },
     Links { relation: CheckVertex<ID>, player: CheckVertex<ID>, role: CheckVertex<ID> },
 
+    Is { lhs: ID, rhs: ID },
     Comparison { lhs: CheckVertex<ID>, rhs: CheckVertex<ID>, comparator: Comparator },
 }
 
 impl<ID: IrID> CheckInstruction<ID> {
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> CheckInstruction<T> {
         match self {
-            Self::TypeList { type_var: var, types } => CheckInstruction::TypeList { type_var: mapping[&var], types },
+            Self::TypeList { type_var, types } => CheckInstruction::TypeList { type_var: mapping[&type_var], types },
+            Self::Iid { var, iid } => CheckInstruction::Iid { var: mapping[&var], iid },
             Self::Sub { sub_kind: kind, subtype, supertype } => CheckInstruction::Sub {
                 sub_kind: kind,
                 subtype: subtype.map(mapping),
@@ -474,10 +605,57 @@ impl<ID: IrID> CheckInstruction<ID> {
                 player: player.map(mapping),
                 role: role.map(mapping),
             },
+            Self::Is { lhs, rhs } => CheckInstruction::Is { lhs: mapping[&lhs], rhs: mapping[&rhs] },
             Self::Comparison { lhs, rhs, comparator } => {
                 CheckInstruction::Comparison { lhs: lhs.map(mapping), rhs: rhs.map(mapping), comparator }
             }
         }
+    }
+}
+
+impl<ID: IrID> fmt::Display for CheckInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Check[")?;
+        match self {
+            Self::TypeList { type_var, types } => {
+                write!(f, "{type_var} type (")?;
+                for type_ in types.as_ref() {
+                    write!(f, "{type_}, ")?;
+                }
+                write!(f, ")")?;
+            }
+            Self::Iid { var, iid } => {
+                write!(f, "{var} {} {iid}", typeql::token::Keyword::IID)?;
+            }
+            Self::Sub { sub_kind, subtype, supertype } => {
+                write!(f, "{subtype} {}{} {supertype}", typeql::token::Keyword::Sub, sub_kind)?;
+            }
+            Self::Owns { owner, attribute } => {
+                write!(f, "{owner} {} {attribute}", typeql::token::Keyword::Owns)?;
+            }
+            Self::Relates { relation, role_type } => {
+                write!(f, "{relation} {} {role_type}", typeql::token::Keyword::Relates)?;
+            }
+            Self::Plays { player, role_type } => {
+                write!(f, "{player} {} {role_type}", typeql::token::Keyword::Plays)?;
+            }
+            Self::Isa { isa_kind, type_, thing } => {
+                write!(f, "{thing} {}{} {type_}", typeql::token::Keyword::Isa, isa_kind)?;
+            }
+            Self::Has { owner, attribute } => {
+                write!(f, "{owner} {} {attribute}", typeql::token::Keyword::Has)?;
+            }
+            Self::Links { relation, player, role } => {
+                write!(f, "{relation} {} ({role}:{player})", typeql::token::Keyword::Links)?;
+            }
+            Self::Is { lhs, rhs } => {
+                write!(f, "{lhs} {} {rhs}", typeql::token::Keyword::Is)?;
+            }
+            Self::Comparison { lhs, rhs, comparator } => {
+                write!(f, "{lhs} {comparator} {rhs}")?;
+            }
+        }
+        write!(f, "] ")
     }
 }
 
@@ -511,5 +689,29 @@ impl<ID> Deref for Inputs<ID> {
             Inputs::Single(ids) => ids,
             Inputs::Dual(ids) => ids,
         }
+    }
+}
+
+struct DisplayVec<'a, T: fmt::Display> {
+    vec: &'a Vec<T>,
+}
+
+impl<'a, T: fmt::Display> DisplayVec<'a, T> {
+    fn new(vec: &'a Vec<T>) -> Self {
+        Self { vec }
+    }
+}
+
+impl<'a, T: fmt::Display> fmt::Display for DisplayVec<'a, T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[")?;
+        for (i, element) in self.vec.iter().enumerate() {
+            if i != self.vec.len() - 1 {
+                write!(f, "{}, ", element)?;
+            } else {
+                write!(f, "{}", element)?;
+            }
+        }
+        write!(f, "]")
     }
 }

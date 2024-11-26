@@ -216,6 +216,7 @@
         * [**Case REL_PATT**](#case-rel_patt)
         * [**Case DIRECT_REL_PATT**](#case-direct_rel_patt)
         * [**Case PLAYS_PATT**](#case-plays_patt)
+        * [**Case VALUE_PATT**](#case-value_patt)
         * [**Case DIRECT_PLAYS_PATT**](#case-direct_plays_patt)
         * [**Case OWNS_PATT**](#case-owns_patt)
         * [**Case DIRECT_OWNS_PATT**](#case-direct_owns_patt)
@@ -235,14 +236,14 @@
         * [Values](#values-3)
             * [**Cases VALUE_VALUES_PATT and OWNS_VALUES_PATT**](#cases-value_values_patt-and-owns_values_patt)
     * [... Element statements](#-element-statements)
-            * [**Case ISA_PATT**](#case-isa_patt)
-            * [**Case ANON_ISA_PATT**](#case-anon_isa_patt)
-            * [**Case DIRECT_ISA_PATT**](#case-direct_isa_patt)
-            * [**Case LINKS_PATT**](#case-links_patt)
-            * [**Case DIRECT_LINKS_PATT**](#case-direct_links_patt)
-            * [**Case HAS_PATT**](#case-has_patt)
-            * [**Case DIRECT_HAS_PATT**](#case-direct_has_patt)
-            * [**Case IS_PATT**](#case-is_patt)
+        * [**Case ISA_PATT**](#case-isa_patt)
+        * [**Case ANON_ISA_PATT**](#case-anon_isa_patt)
+        * [**Case DIRECT_ISA_PATT**](#case-direct_isa_patt)
+        * [**Case LINKS_PATT**](#case-links_patt)
+        * [**Case DIRECT_LINKS_PATT**](#case-direct_links_patt)
+        * [**Case HAS_PATT**](#case-has_patt)
+        * [**Case DIRECT_HAS_PATT**](#case-direct_has_patt)
+        * [**Case IS_PATT**](#case-is_patt)
     * [... Expression and list statements](#-expression-and-list-statements)
         * [Grammar](#grammar)
         * [(Theory) Typed evaluation of expressions](#theory-typed-evaluation-of-expressions)
@@ -1536,9 +1537,9 @@ _Remark_ the following can be said in less space, but we chose the more principl
 
 * 🔶 `let $x, $y?, ..., $w = F($a, <EXPR_b>, ...)>` is satisfied if the following pattern is satisfied:
     ```
-    let $_b = <EXPR2>;
+    let $_b = <EXPR_b>;
     ...
-    let $x, $y?, ..., $w in F($a, $_2, ...)
+    let $x, $y?, ..., $w in F($a, $_b, ...)
     ```
 
 _System property_
@@ -1586,16 +1587,18 @@ _Remark_: `sub!` is convenient, but could actually be expressed with `sub`, `not
     * or if $`\diamond(r(A) : \mathbf{Rel}(r(I)))`$
 
 * ✅ `$A relates $I as $J` is satisfied if 
-    * $`r(A) : \mathbf{Rel}(r(I))`$, $`B : \mathbf{Rel}(r(J))`$, $`A \leq B`$, $`r(I) \leq r(J)`$.
-    * either the first or the second statement (or both) can be abstract $`\diamond(...)`$.
+    * $`r(A) : \mathbf{Rel}(r(I))`$ or $`\diamond(r(A) : \mathbf{Rel}(r(I)))`$ 
+    * there exists $`B : \mathbf{Rel}(r(J))`$ or $`\diamond(B : \mathbf{Rel}(r(J)))`$
+    * $`A \leq B`$ and $`r(I) \leq r(J)`$.
 
 * 🔶 `$A relates $I[]` is satisfied if $`r(A) : \mathbf{Rel}(r([I]))`$ and
     * either if $`r(A) : \mathbf{Rel}([r(I)])`$
     * or if $`\diamond(r(A) : \mathbf{Rel}([r(I)]))`$
 
 * 🔶 `$A relates $I[] as $J[]` is satisfied if 
-    * $`r(A) : \mathbf{Rel}(r([I]))`$, $`B : \mathbf{Rel}(r([J]))`$, $`A \leq B`$, $`r(I) \leq r(J)`$.
-    * either the first or the second statement (or both) can be abstract $`\diamond(...)`$.
+    * $`r(A) : \mathbf{Rel}(r([I]))`$ or $`\diamond(r(A) : \mathbf{Rel}(r([I]))`$
+    * there exists $`B : \mathbf{Rel}(r([J]))`$ or $`\diamond(B : \mathbf{Rel}(r([J])))`$ 
+    * $`A \leq B`$ and $`r(I) \leq r(J)`$.
 
 ### **Case DIRECT_REL_PATT**
 
@@ -1603,9 +1606,17 @@ _Remark_: `sub!` is convenient, but could actually be expressed with `sub`, `not
     * $`r(A) : \mathbf{Rel}(r(I))`$ and **not** $`r(A) \lneq B : \mathbf{Rel}(r(I))`$
     * or if $`\diamond(r(A) : \mathbf{Rel}(r(I)))`$ and **not** $`\diamond(r(A) \lneq B : \mathbf{Rel}(r(I)))`$
 
+* 🔮 `$A relates(!) $I as! $J` is satisfied if `$A relates(!) $I` and 
+    * there exists $`B : \mathbf{Rel}(r(J))`$ or $`\diamond(B : \mathbf{Rel}(r(J)))`$
+    * $`A <_! B`$ and $`r(I) <_! r(J)`$
+
 * 🔮 `$A relates! $I[]` is satisfied if 
     * $`r(A) : \mathbf{Rel}(r([I]))`$ and **not** $`r(A) \lneq r(B) : \mathbf{Rel}(r([I]))`$
     * or if $`\diamond(r(A) : \mathbf{Rel}(r([I])))`$ and **not** $`\diamond(r(A) \lneq r(B) : \mathbf{Rel}(r([I])))`$
+
+* 🔮 `$A relates $I[] as! $J[]` is satisfied if `$A relates(!) $I[]` and
+    * there exists $`B : \mathbf{Rel}(r([J]))`$ or $`\diamond(B : \mathbf{Rel}(r([J])))`$ 
+    * $`A <_! B`$ and $`r(I) <_! r(J)`$
 
 ### **Case PLAYS_PATT**
 
@@ -1618,6 +1629,10 @@ _Remark_: `sub!` is convenient, but could actually be expressed with `sub`, `not
 * 🔮 `$A plays! $I` is satisfied if $`r(A) <_! r(I)`$
     * $`A <_! r(I)`$
     * _(to match `@abstract` for `plays!` must use annotation, see **PLAYS_ABSTRACT_PATT**)_
+
+### **Case VALUE_PATT**
+
+* ✅ `$A value $V` is satisfied if $`r(A) \leq A'$ and $\mathrm{val} : A' \to r(V)$
 
 ### **Case OWNS_PATT**
 
@@ -1720,7 +1735,7 @@ _To discuss: the usefulness of constraint patterns seems overall low, could thin
 * 🔮 `$B relates $I[] @distinct` is satisfied if $`r(B) : \mathbf{Rel}(r([I]))`$, $`B \leq B'`$ and schema directly contains `B' relates r($I)[] @distinct`.
 * 🔮 `$B relates! $I[] @distinct` is satisfied if schema directly contains `r($B) relates r($I)[] @distinct`.
 
-### Values
+### Values constraints
 
 #### **Cases VALUE_VALUES_PATT and OWNS_VALUES_PATT**
 * cannot match `@values/@regex/@range` (STICKY: there's just not much point to do so ... rather have normalized schema dump)
@@ -1847,7 +1862,7 @@ as follows:
 
 #### Value expressions
 
-* 🔶 The _value expresssions_ `VAL_EXPR` is evaluated as follows:
+* 🔶 The _value expressions_ `VAL_EXPR` is evaluated as follows:
     * **Substitute** all vars `$x` by `r($x)`
     * If `r($x)` isa attribute instance, **replace** by `val(r($x))`
     * $`v_r(expr)`$ is the result of evaluating all operations with their **usual semantics** 
@@ -1864,7 +1879,7 @@ _Remark_. Struct values are semantically considered up to reordering their compo
 
 #### List expressions
 
-* 🔶 The _list expresssions_ `LIST_EXPR` is evaluated as follows:
+* 🔶 The _list expressions_ `LIST_EXPR` is evaluated as follows:
     * Substitute all vars `$x` by `r($x)`
     * (**Do not replace** attributes!)
     * $`v_r(expr)`$ is the result of concatenation and sublist operations with their **usual semantics**
@@ -2177,23 +2192,24 @@ _System property_:
 _System property_:
 
 1. ✅ _Idempotency_. If $`a :_! r(A)`$ with $`\mathsf{val}(a) = \mathsf{val}(b)`$ then we equate $`a = b`$ (this actually follows from the "Attribute identity rule", see "Type system").
-1. 🔶 _Capability check_. Must have $`T(x) \leq B <_! O_{r(A)}`$ **non-abstractly**, i.e. $`\diamond (B <_! O_{r(A)})`$ is not true for the minimal choice of $`B`$ satisfying the former
+1. 🔶 _Capability check_. Must have $`T(x) \leq B <_! O_{r(A)}`$ **non-abstractly**, i.e. $`\diamond (B <_! O_{r(A)})`$ is not true for the minimal choice of $`B`$ satisfying  $`T(x) \leq B <_! O_{r(A)}`$
 1. 🔶 _Type check_. Must have $`T(y) \leq r(A)`$ **or** $`T(y) = V`$ where $`\mathsf{val} : r(A) \to V`$ (similarly for `<EXPR>`)
 
 _Remark_: ⛔ Previously we had the constraint that we cannot add $`r(y) :_! A(r(x) : O_A)`$ if there exists any subtype $`B \lneq A`$.
 
 #### **Case HAS_LIST_INS**
-* 🔶 `$x has $A[] <LIST_EXPR>` adds new $`l = [l_1, l_2, ...] :_! [r(A)](r(x) : O_{r(A)[]})`$ and $`l_i :_! r(A)(r(x) : O_{r(A)})`$ where
-    * $`l`$ has the same length as $`[v_1,v_2, ...] = v_r(list\_expr)`$
-    * if $`v_i`$ is an attribute instance, add new cast $`\mathsf{val}(l_i) = \mathsf{val}(v_i)`$ 
-    * if $`v_i`$ is a value, add new cast $`\mathsf{val}(l_i) = v_i`$ 
+* 🔶 `$x has $A[] <LIST_EXPR>` adds new list $`l = [l_1, l_2, ...] :_! [r(A)](r(x) : O_{r(A)[]})`$ **and** new attributes $`l_i :_! r(A)(r(x) : O_{r(A)})`$ where
+    * denote by $`[v_1,v_2, ...] = v_r(list\_expr)`$ the evaluation of the list expression (relative to crow $`r`$)
+    * the list $`l`$ has the same length as $`[v_1,v_2, ...] = v_r(list\_expr)`$
+        * if $`v_i`$ is an attribute instance, we add new cast $`\mathsf{val}(l_i) = \mathsf{val}(v_i)`$ 
+        * if $`v_i`$ is a value, we add new cast $`\mathsf{val}(l_i) = v_i`$ 
 
 _System property_:
 
-1. ✅ _Idempotency_. Idempotency is automatic (since lists are identified by their list elements).
-1. 🔶 _System cardinality bound: **1 list per owner**_. We cannot have $`k :_! r(A)(r(x) : O_{r(A)})`$ with $`k \neq l`$. (Users should use "Update" instead!)
-1. 🔶 _Capability check_. Must have $`T(x) \leq B <_! O_{r(A)}`$ **non-abstractly**, i.e. $`\diamond (B <_! O_{r(A)})`$ is not true for the minimal choice of $`B`$ satisfying the former
-1. 🔶 _Type check_.For each list element, must have $`T(l_i) \leq r(A)`$ or $`T(l_i) = V`$ where $`\mathsf{val} : A \to V`$
+1. ✅ _Idempotency_. Idempotency is automatic for (since lists are identified by their list elements) and enforced for new attributes as before.
+1. 🔶 _System cardinality bound: **1 list per owner**_. We cannot have any $`k : [r(A)](r(x) : O_{r(A)[]})`$ with $`k \neq l`$. (Users should use "Update" instead!)
+1. 🔶 _Capability check_. Must have $`T(x) \leq B <_! O_{r(A)[]}`$ **non-abstractly**, i.e. $`\diamond (B <_! O_{r(A)[]})`$ is not true for the minimal choice of $`B`$ satisfying $`T(x) \leq B <_! O_{r(A)[]}`$
+1. 🔶 _Type check_. For each list element, must have $`T(v_i) \leq r(A)`$ or $`T(v_i) = V`$ where $`\mathsf{val} : A \to V`$
 
 ### Optional inserts
 

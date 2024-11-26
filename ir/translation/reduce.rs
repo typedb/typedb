@@ -12,7 +12,7 @@ use typeql::{
 use crate::{
     pattern::variable_category::VariableCategory,
     pipeline::{
-        reduce::{Reduce, Reducer},
+        reduce::{AssignedReduction, Reduce, Reducer},
         VariableRegistry,
     },
     translation::TranslationContext,
@@ -22,18 +22,14 @@ use crate::{
 pub fn translate_reduce(
     context: &mut TranslationContext,
     typeql_reduce: &typeql::query::stage::Reduce,
-) -> Result<Reduce, RepresentationError> {
+) -> Result<Reduce, Box<RepresentationError>> {
     let mut reductions = Vec::with_capacity(typeql_reduce.reduce_assignments.len());
     for reduce_assign in &typeql_reduce.reduce_assignments {
         let reducer = build_reducer(context, &reduce_assign.reducer)?;
         let (category, is_optional) = resolve_category_optionality(&reducer, &context.variable_registry);
-        let assigned_var = context.register_reduced_variable(
-            reduce_assign.variable.name().unwrap(),
-            category,
-            is_optional,
-            reducer.clone(),
-        );
-        reductions.push((assigned_var, reducer));
+        let assigned_var =
+            context.register_reduced_variable(reduce_assign.variable.name().unwrap(), category, is_optional, reducer);
+        reductions.push(AssignedReduction::new(assigned_var, reducer));
     }
 
     let group = match &typeql_reduce.within_group {
@@ -75,24 +71,24 @@ fn resolve_category_optionality(reduce: &Reducer, variable_registry: &VariableRe
 pub(crate) fn build_reducer(
     context: &TranslationContext,
     reduce_value: &TypeQLReducer,
-) -> Result<Reducer, RepresentationError> {
+) -> Result<Reducer, Box<RepresentationError>> {
     match reduce_value {
         TypeQLReducer::Count(count) => match &count.variable {
             None => Ok(Reducer::Count),
             Some(typeql_var) => match context.get_variable(typeql_var.name().unwrap()) {
-                None => Err(RepresentationError::ReduceVariableNotAvailable {
+                None => Err(Box::new(RepresentationError::ReduceVariableNotAvailable {
                     variable_name: typeql_var.name().unwrap().to_owned(),
                     declaration: reduce_value.clone(),
-                }),
+                })),
                 Some(var) => Ok(Reducer::CountVar(var)),
             },
         },
         TypeQLReducer::Stat(stat) => {
             let Some(var) = context.get_variable(stat.variable.name().unwrap()) else {
-                return Err(RepresentationError::ReduceVariableNotAvailable {
+                return Err(Box::new(RepresentationError::ReduceVariableNotAvailable {
                     variable_name: stat.variable.name().unwrap().to_owned(),
                     declaration: reduce_value.clone(),
-                });
+                }));
             };
             match &stat.reduce_operator {
                 TypeQLReduceOperator::Sum => Ok(Reducer::Sum(var)),

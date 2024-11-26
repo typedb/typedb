@@ -7,7 +7,8 @@
 use std::{collections::HashMap, error::Error, fmt, sync::Arc};
 
 use answer::variable::Variable;
-use encoding::value::value::Value;
+use bytes::byte_array::ByteArray;
+use encoding::{graph::thing::THING_VERTEX_MAX_LENGTH, value::value::Value};
 use error::typedb_error;
 use itertools::Itertools;
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
@@ -53,7 +54,7 @@ impl Error for FunctionReadError {
     }
 }
 
-typedb_error!(
+typedb_error! {
     pub FunctionRepresentationError(component = "Function representation", prefix = "FNR") {
         FunctionArgumentUnused(
             1,
@@ -91,7 +92,7 @@ typedb_error!(
             declaration: FunctionBlock
         ),
     }
-);
+}
 
 #[derive(Debug, Clone)]
 pub struct VariableRegistry {
@@ -112,17 +113,21 @@ impl VariableRegistry {
     }
 
     fn register_variable_named(&mut self, name: String) -> Variable {
-        let variable = self.allocate_variable();
+        let variable = self.allocate_variable(false);
         self.variable_names.insert(variable, name);
         variable
     }
 
     fn register_anonymous_variable(&mut self) -> Variable {
-        self.allocate_variable()
+        self.allocate_variable(true)
     }
 
-    fn allocate_variable(&mut self) -> Variable {
-        let variable = Variable::new(self.variable_id_allocator);
+    fn allocate_variable(&mut self, anonymous: bool) -> Variable {
+        let variable = if anonymous {
+            Variable::new_anonymous(self.variable_id_allocator)
+        } else {
+            Variable::new(self.variable_id_allocator)
+        };
         self.variable_id_allocator += 1;
         variable
     }
@@ -132,7 +137,7 @@ impl VariableRegistry {
         variable: Variable,
         category: VariableCategory,
         source: Constraint<Variable>,
-    ) -> Result<(), RepresentationError> {
+    ) -> Result<(), Box<RepresentationError>> {
         self.set_variable_category(variable, category, VariableCategorySource::Constraint(source))
     }
 
@@ -141,7 +146,7 @@ impl VariableRegistry {
         variable: Variable,
         category: VariableCategory,
         source: VariableCategorySource,
-    ) -> Result<(), RepresentationError> {
+    ) -> Result<(), Box<RepresentationError>> {
         let existing_category = self.variable_categories.get_mut(&variable);
         match existing_category {
             None => {
@@ -151,7 +156,7 @@ impl VariableRegistry {
             Some((existing_category, existing_source)) => {
                 let narrowest = existing_category.narrowest(category);
                 match narrowest {
-                    None => Err(RepresentationError::VariableCategoryMismatch {
+                    None => Err(Box::new(RepresentationError::VariableCategoryMismatch {
                         variable_name: self
                             .variable_names
                             .get(&variable)
@@ -161,7 +166,7 @@ impl VariableRegistry {
                         // category_1_source: source,
                         category_2: *existing_category,
                         // category_2_source: existing_source.clone(),
-                    }),
+                    })),
                     Some(narrowed) => {
                         if narrowed == *existing_category {
                             Ok(())
@@ -191,8 +196,8 @@ impl VariableRegistry {
         &self.variable_names
     }
 
-    pub fn get_variable_name(&self, variable: &Variable) -> Option<&String> {
-        self.variable_names.get(variable)
+    pub fn get_variable_name(&self, variable: Variable) -> Option<&String> {
+        self.variable_names.get(&variable)
     }
 
     pub fn get_variable_category(&self, variable: Variable) -> Option<VariableCategory> {
@@ -260,10 +265,11 @@ pub enum VariableCategorySource {
     Argument,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct ParameterRegistry {
-    fetch_key_registry: HashMap<ParameterID, String>,
     value_registry: HashMap<ParameterID, Value<'static>>,
+    iid_registry: HashMap<ParameterID, ByteArray<THING_VERTEX_MAX_LENGTH>>,
+    fetch_key_registry: HashMap<ParameterID, String>,
 }
 
 impl ParameterRegistry {
@@ -272,14 +278,21 @@ impl ParameterRegistry {
     }
 
     pub(crate) fn register_value(&mut self, value: Value<'static>) -> ParameterID {
-        let id = ParameterID { id: self.value_registry.len() };
+        let id = ParameterID::Value(self.value_registry.len());
         let _prev = self.value_registry.insert(id, value);
         debug_assert_eq!(_prev, None);
         id
     }
 
+    pub(crate) fn register_iid(&mut self, iid: ByteArray<THING_VERTEX_MAX_LENGTH>) -> ParameterID {
+        let id = ParameterID::Iid(self.iid_registry.len());
+        let _prev = self.iid_registry.insert(id, iid);
+        debug_assert_eq!(_prev, None);
+        id
+    }
+
     pub(crate) fn register_fetch_key(&mut self, key: String) -> ParameterID {
-        let id = ParameterID { id: self.fetch_key_registry.len() };
+        let id = ParameterID::FetchKey(self.fetch_key_registry.len());
         let _prev = self.fetch_key_registry.insert(id, key);
         debug_assert_eq!(_prev, None);
         id
@@ -291,6 +304,10 @@ impl ParameterRegistry {
 
     pub fn value_unchecked(&self, id: ParameterID) -> &Value<'static> {
         self.value_registry.get(&id).unwrap()
+    }
+
+    pub fn iid(&self, id: ParameterID) -> Option<&ByteArray<THING_VERTEX_MAX_LENGTH>> {
+        self.iid_registry.get(&id)
     }
 
     pub fn fetch_key(&self, id: ParameterID) -> Option<&String> {

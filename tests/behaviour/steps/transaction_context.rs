@@ -26,7 +26,7 @@ impl fmt::Debug for ActiveTransaction {
 
 macro_rules! with_read_tx {
     ($context:ident, |$tx:ident| $expr:expr) => {
-        match $context.active_transaction.as_ref().unwrap() {
+        match $context.active_transaction.as_ref().expect("No active transaction found") {
             $crate::transaction_context::ActiveTransaction::Read($tx) => $expr,
             $crate::transaction_context::ActiveTransaction::Write($tx) => $expr,
             $crate::transaction_context::ActiveTransaction::Schema($tx) => $expr,
@@ -69,6 +69,7 @@ macro_rules! with_write_tx_deconstructed {
         $type_manager:ident,
         $thing_manager:ident,
         $function_manager:ident,
+        $query_manager:ident,
         $database:ident,
         $transaction_options:ident $(,)?
      | $expr:expr) => {
@@ -81,6 +82,7 @@ macro_rules! with_write_tx_deconstructed {
                 type_manager: $type_manager,
                 thing_manager: $thing_manager,
                 function_manager: $function_manager,
+                query_manager: $query_manager,
                 database: $database,
                 transaction_options: $transaction_options,
             }) => {
@@ -91,6 +93,7 @@ macro_rules! with_write_tx_deconstructed {
                         type_manager: $type_manager,
                         thing_manager: $thing_manager,
                         function_manager: $function_manager,
+                        query_manager: $query_manager,
                         database: $database,
                         transaction_options: $transaction_options,
                     },
@@ -102,6 +105,7 @@ macro_rules! with_write_tx_deconstructed {
                 type_manager: $type_manager,
                 thing_manager: $thing_manager,
                 function_manager: $function_manager,
+                query_manager: $query_manager,
                 database: $database,
                 transaction_options: $transaction_options,
             }) => {
@@ -112,6 +116,7 @@ macro_rules! with_write_tx_deconstructed {
                         type_manager: $type_manager,
                         thing_manager: $thing_manager,
                         function_manager: $function_manager,
+                        query_manager: $query_manager,
                         database: $database,
                         transaction_options: $transaction_options,
                     },

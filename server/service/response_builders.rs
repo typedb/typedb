@@ -68,7 +68,7 @@ pub(crate) mod database_manager {
 
     pub(crate) fn database_replicas(name: String, server_address: &SocketAddr) -> typedb_protocol::DatabaseReplicas {
         typedb_protocol::DatabaseReplicas {
-            name: name,
+            name,
             replicas: Vec::from([typedb_protocol::database_replicas::Replica {
                 address: server_address.to_string(),
                 primary: true,

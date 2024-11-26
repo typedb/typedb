@@ -4,29 +4,30 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use super::{
-    decimal_value::Decimal,
-    primitive_encoding::{decode_i64, decode_u64, encode_i64, encode_u64},
+use crate::{
+    graph::thing::vertex_attribute::{InlineEncodableAttributeID, ValueEncodingLength},
+    value::{
+        decimal_value::Decimal,
+        primitive_encoding::{decode_i64, decode_u64, encode_i64, encode_u64},
+        value_type::ValueType,
+    },
 };
-use crate::graph::thing::vertex_attribute::AttributeIDLength;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct DecimalBytes {
-    bytes: [u8; Self::LENGTH],
+    bytes: [u8; Self::ENCODED_LENGTH],
 }
 
 impl DecimalBytes {
-    pub(crate) const LENGTH: usize = AttributeIDLength::Long.length();
-
     const INTEGER_LENGTH: usize = i64::BITS as usize / 8;
     const FRACTIONAL_LENGTH: usize = u64::BITS as usize / 8;
 
-    pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
+    pub fn new(bytes: [u8; Self::ENCODED_LENGTH]) -> Self {
         Self { bytes }
     }
 
     pub fn build(fixed: Decimal) -> Self {
-        let mut bytes = [0; Self::LENGTH];
+        let mut bytes = [0; Self::ENCODED_LENGTH];
         bytes[..Self::INTEGER_LENGTH].copy_from_slice(&encode_i64(fixed.integer_part()));
         bytes[Self::INTEGER_LENGTH..][..Self::FRACTIONAL_LENGTH].copy_from_slice(&encode_u64(fixed.fractional_part()));
         Self { bytes }
@@ -38,7 +39,21 @@ impl DecimalBytes {
         Decimal::new(integer, fractional)
     }
 
-    pub fn bytes(&self) -> [u8; Self::LENGTH] {
+    pub fn bytes(&self) -> [u8; Self::ENCODED_LENGTH] {
         self.bytes
+    }
+}
+
+impl InlineEncodableAttributeID for DecimalBytes {
+    const ENCODED_LENGTH: usize = ValueEncodingLength::Long.length();
+    const VALUE_TYPE: ValueType = ValueType::Decimal;
+
+    fn bytes_ref(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    fn read(bytes: &[u8]) -> Self {
+        debug_assert!(bytes.len() == Self::ENCODED_LENGTH);
+        DecimalBytes::new(bytes.try_into().unwrap())
     }
 }

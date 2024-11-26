@@ -4,25 +4,22 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashMap,
-    fmt::{Debug, Formatter},
-    sync::Arc,
-};
+use std::{collections::HashMap, fmt, sync::Arc};
 
 use encoding::graph::definition::definition_key::DefinitionKey;
 use ir::pipeline::function_signature::FunctionID;
 
 use crate::executable::function::ExecutableFunction;
 
+#[derive(Clone)]
 pub struct ExecutableFunctionRegistry {
     // Keep this abstraction in case we introduce function plan caching.
     schema_functions: Arc<HashMap<DefinitionKey<'static>, ExecutableFunction>>,
     preamble_functions: HashMap<usize, ExecutableFunction>,
 }
 
-impl Debug for ExecutableFunctionRegistry {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Debug for ExecutableFunctionRegistry {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("ExecutableFunctionRegistry { omitted }")
     }
 }
@@ -44,10 +41,5 @@ impl ExecutableFunctionRegistry {
             FunctionID::Schema(id) => self.schema_functions.get(id).unwrap(),
             FunctionID::Preamble(id) => self.preamble_functions.get(id).unwrap(),
         }
-    }
-
-    // TODO: Find all references, update them and remove this.
-    pub fn TODO__empty() -> Self {
-        Self::empty()
     }
 }

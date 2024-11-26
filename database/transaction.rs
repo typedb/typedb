@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fmt, sync::Arc};
+use std::sync::{mpsc::RecvTimeoutError, Arc};
 
 use concept::{
     error::ConceptWriteError,
@@ -17,6 +17,7 @@ use concept::{
 use error::typedb_error;
 use function::{function_manager::FunctionManager, FunctionError};
 use options::TransactionOptions;
+use query::query_manager::QueryManager;
 use storage::{
     durability_client::DurabilityClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
@@ -30,12 +31,13 @@ pub struct TransactionRead<D> {
     pub type_manager: Arc<TypeManager>,
     pub thing_manager: Arc<ThingManager>,
     pub function_manager: Arc<FunctionManager>,
+    pub query_manager: Arc<QueryManager>,
     _database: Arc<Database<D>>,
     transaction_options: TransactionOptions,
 }
 
 impl<D: DurabilityClient> TransactionRead<D> {
-    pub fn open(database: Arc<Database<D>>, transaction_options: TransactionOptions) -> Self {
+    pub fn open(database: Arc<Database<D>>, transaction_options: TransactionOptions) -> Result<Self, TransactionError> {
         // TODO: when we implement constructor `open_at`, to open a transaction in the past by
         //      time/sequence number, we need to check whether
         //       the statistics that is available is "too far" ahead of the version we're opening (100-1000?)
@@ -58,17 +60,19 @@ impl<D: DurabilityClient> TransactionRead<D> {
             database.definition_key_generator.clone(),
             Some(schema.function_cache.clone()),
         ));
+        let query_manager = Arc::new(QueryManager::new(Some(database.query_cache.clone())));
 
         drop(schema);
 
-        Self {
+        Ok(Self {
             snapshot: Arc::new(snapshot),
             type_manager,
             thing_manager,
             function_manager,
+            query_manager,
             _database: database,
             transaction_options,
-        }
+        })
     }
 
     pub fn snapshot(&self) -> &ReadSnapshot<D> {
@@ -88,13 +92,14 @@ pub struct TransactionWrite<D> {
     pub type_manager: Arc<TypeManager>,
     pub thing_manager: Arc<ThingManager>,
     pub function_manager: Arc<FunctionManager>,
+    pub query_manager: Arc<QueryManager>,
     pub database: Arc<Database<D>>,
     pub transaction_options: TransactionOptions,
 }
 
 impl<D: DurabilityClient> TransactionWrite<D> {
-    pub fn open(database: Arc<Database<D>>, transaction_options: TransactionOptions) -> Self {
-        database.reserve_write_transaction(transaction_options.schema_lock_acquire_timeout_millis);
+    pub fn open(database: Arc<Database<D>>, transaction_options: TransactionOptions) -> Result<Self, TransactionError> {
+        database.reserve_write_transaction(transaction_options.schema_lock_acquire_timeout_millis)?;
 
         let schema = database.schema.read().unwrap();
         let snapshot: WriteSnapshot<D> = database.storage.clone().open_snapshot_write();
@@ -112,16 +117,18 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             database.definition_key_generator.clone(),
             Some(schema.function_cache.clone()),
         ));
+        let query_manager = Arc::new(QueryManager::new(Some(database.query_cache.clone())));
         drop(schema);
 
-        Self {
+        Ok(Self {
             snapshot: Arc::new(snapshot),
             type_manager,
             thing_manager,
             function_manager,
+            query_manager,
             database,
             transaction_options,
-        }
+        })
     }
 
     pub fn from(
@@ -129,10 +136,11 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         type_manager: Arc<TypeManager>,
         thing_manager: Arc<ThingManager>,
         function_manager: Arc<FunctionManager>,
+        query_manager: Arc<QueryManager>,
         database: Arc<Database<D>>,
         transaction_options: TransactionOptions,
     ) -> Self {
-        Self { snapshot, type_manager, thing_manager, function_manager, database, transaction_options }
+        Self { snapshot, type_manager, thing_manager, function_manager, query_manager, database, transaction_options }
     }
 
     pub fn commit(self) -> Result<(), DataCommitError> {
@@ -171,7 +179,7 @@ typedb_error!(
     pub DataCommitError(component = "Data commit", prefix = "DCT") {
         SnapshotInUse(1, "Failed to commit since the transaction snapshot is still in use."),
         ConceptWriteErrors(2, "Data commit error.", source: Vec<ConceptWriteError> ),
-        ConceptWriteErrorsFirst(3, "Data commit error.", ( typedb_source : ConceptWriteError )),
+        ConceptWriteErrorsFirst(3, "Data commit error.", ( typedb_source : Box<ConceptWriteError> )),
         SnapshotError(4, "Snapshot error.", ( typedb_source: SnapshotError )),
     }
 );
@@ -197,13 +205,14 @@ pub struct TransactionSchema<D> {
     pub type_manager: Arc<TypeManager>,
     pub thing_manager: Arc<ThingManager>,
     pub function_manager: Arc<FunctionManager>,
+    pub query_manager: Arc<QueryManager>,
     pub database: Arc<Database<D>>,
     pub transaction_options: TransactionOptions,
 }
 
 impl<D: DurabilityClient> TransactionSchema<D> {
-    pub fn open(database: Arc<Database<D>>, transaction_options: TransactionOptions) -> Self {
-        database.reserve_schema_transaction(transaction_options.schema_lock_acquire_timeout_millis);
+    pub fn open(database: Arc<Database<D>>, transaction_options: TransactionOptions) -> Result<Self, TransactionError> {
+        database.reserve_schema_transaction(transaction_options.schema_lock_acquire_timeout_millis)?;
 
         let snapshot: SchemaSnapshot<D> = database.storage.clone().open_snapshot_schema();
         let type_manager = Arc::new(TypeManager::new(
@@ -220,14 +229,17 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             )
         };
         let function_manager = Arc::new(FunctionManager::new(database.definition_key_generator.clone(), None));
-        Self {
+        let query_manager = Arc::new(QueryManager::new(None));
+
+        Ok(Self {
             snapshot: Arc::new(snapshot),
             type_manager,
             thing_manager: Arc::new(thing_manager),
             function_manager,
+            query_manager,
             database,
             transaction_options,
-        }
+        })
     }
 
     pub fn from(
@@ -235,6 +247,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         type_manager: Arc<TypeManager>,
         thing_manager: Arc<ThingManager>,
         function_manager: Arc<FunctionManager>,
+        query_manager: Arc<QueryManager>,
         database: Arc<Database<D>>,
         transaction_options: TransactionOptions,
     ) -> Self {
@@ -243,6 +256,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             type_manager,
             thing_manager,
             function_manager,
+            query_manager,
             database,
             transaction_options,
         }
@@ -256,17 +270,27 @@ impl<D: DurabilityClient> TransactionSchema<D> {
     }
 
     fn try_commit(self) -> Result<(), SchemaCommitError> {
-        use SchemaCommitError::{ConceptWrite, Statistics, TypeCacheUpdate};
+        use SchemaCommitError::{
+            ConceptWriteErrorsFirst, FunctionError, SnapshotError, StatisticsError, TypeCacheUpdateError,
+        };
         let mut snapshot = Arc::into_inner(self.snapshot).expect("Failed to unwrap Arc<Snapshot>");
-        self.type_manager.validate(&snapshot).map_err(|errors| ConceptWrite { errors })?;
+        self.type_manager.validate(&snapshot).map_err(|errs| {
+            // TODO: send all the errors, not just the first,
+            // when we can print the stacktraces of multiple errors, not just a single one
+            ConceptWriteErrorsFirst { typedb_source: Box::new(errs.into_iter().next().unwrap()) }
+        })?;
 
-        self.thing_manager.finalise(&mut snapshot).map_err(|errors| ConceptWrite { errors })?;
+        self.thing_manager.finalise(&mut snapshot).map_err(|errs| {
+            // TODO: send all the errors, not just the first,
+            // when we can print the stacktraces of multiple errors, not just a single one
+            ConceptWriteErrorsFirst { typedb_source: errs.into_iter().next().unwrap() }
+        })?;
         drop(self.thing_manager);
 
         let function_manager = Arc::into_inner(self.function_manager).expect("Failed to unwrap Arc<FunctionManager>");
         function_manager
             .finalise(&snapshot, &self.type_manager)
-            .map_err(|source| SchemaCommitError::FunctionError { source })?;
+            .map_err(|typedb_source| FunctionError { typedb_source })?;
 
         let type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap Arc<TypeManager>");
         drop(type_manager);
@@ -279,24 +303,33 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         let mut thing_statistics = (*schema.thing_statistics).clone();
 
         // 1. synchronise statistics
-        thing_statistics.may_synchronise(&self.database.storage).map_err(|error| Statistics { source: error })?;
+        thing_statistics
+            .may_synchronise(&self.database.storage)
+            .map_err(|typedb_source| StatisticsError { typedb_source })?;
         // 2. flush statistics to WAL, guaranteeing a version of statistics is in WAL before schema can change
-        thing_statistics.durably_write(&self.database.storage).map_err(|error| Statistics { source: error })?;
+        thing_statistics
+            .durably_write(&self.database.storage)
+            .map_err(|typedb_source| StatisticsError { typedb_source })?;
 
-        let sequence_number = snapshot.commit().map_err(|err| SchemaCommitError::SnapshotError { source: err })?;
+        let sequence_number = snapshot.commit().map_err(|typedb_source| SnapshotError { typedb_source })?;
 
         // `None` means empty commit
         if let Some(sequence_number) = sequence_number {
             // replace Schema cache
             schema.type_cache = Arc::new(
                 TypeCache::new(self.database.storage.clone(), sequence_number)
-                    .map_err(|error| TypeCacheUpdate { source: error })?,
+                    .map_err(|typedb_source| TypeCacheUpdateError { typedb_source })?,
             );
         }
 
         // replace statistics
-        thing_statistics.may_synchronise(&self.database.storage).map_err(|error| Statistics { source: error })?;
+        thing_statistics
+            .may_synchronise(&self.database.storage)
+            .map_err(|typedb_source| StatisticsError { typedb_source })?;
+        let total_count = thing_statistics.total_count;
         schema.thing_statistics = Arc::new(thing_statistics);
+
+        self.database.query_cache.force_reset(total_count);
 
         *schema_commit_guard = schema;
         Ok(())
@@ -314,25 +347,21 @@ impl<D: DurabilityClient> TransactionSchema<D> {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum SchemaCommitError {
-    ConceptWrite { errors: Vec<ConceptWriteError> },
-    TypeCacheUpdate { source: TypeCacheCreateError },
-    Statistics { source: StatisticsError },
-    FunctionError { source: FunctionError },
-    SnapshotError { source: SnapshotError },
-}
-
-impl fmt::Display for SchemaCommitError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+// TODO: Same issue with ConceptWriteErrors vs ErrorsFirst as for DataCommitError
+typedb_error!(
+    pub SchemaCommitError(component = "Schema commit", prefix = "SCT") {
+        ConceptWriteErrors(1, "Schema commit error.", source: Vec<ConceptWriteError> ),
+        ConceptWriteErrorsFirst(2, "Schema commit error.", ( typedb_source : Box<ConceptWriteError> )),
+        TypeCacheUpdateError(3, "TypeCache update error.", ( typedb_source: TypeCacheCreateError )),
+        StatisticsError(4, "Statistics error.", ( typedb_source: StatisticsError )),
+        FunctionError(5, "Function error.", ( typedb_source: FunctionError )),
+        SnapshotError(6, "Snapshot error.", ( typedb_source: SnapshotError )),
     }
-}
+);
 
-impl Error for SchemaCommitError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        todo!()
+typedb_error!(
+    pub TransactionError(component = "Transaction", prefix = "TXN") {
+        Timeout(1, "Transaction timeout.", source: RecvTimeoutError),
+        WriteExclusivityTimeout(2, "Transaction timeout due to an exclusive write access requested by this or a concurrent transaction."),
     }
-}
-
-// TODO: TypeDB Error
+);

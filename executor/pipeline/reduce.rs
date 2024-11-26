@@ -40,14 +40,21 @@ where
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
-    {
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         let Self { previous, executable, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
+
+        let profile = context.profile.profile_stage(|| String::from("Reduce"), executable.executable_id);
+        let step_profile = profile.extend_or_get(0, || String::from("Reduction"));
+        let measurement = step_profile.start_measurement();
         let rows = match reduce_iterator(&context, executable, previous_iterator) {
             Ok(rows) => rows,
             Err(err) => return Err((err, context)),
         };
+        measurement.end(&step_profile, 1, rows.len() as u64);
         Ok((WrittenRowsIterator::new(rows), context))
     }
 }
@@ -56,11 +63,11 @@ fn reduce_iterator<Snapshot: ReadableSnapshot>(
     context: &ExecutionContext<Snapshot>,
     executable: Arc<ReduceExecutable>,
     iterator: impl StageIterator,
-) -> Result<Batch, PipelineExecutionError> {
+) -> Result<Batch, Box<PipelineExecutionError>> {
     let mut iterator = iterator;
-    let mut grouped_reducer = GroupedReducer::new(executable);
+    let mut grouped_reducer = GroupedReducer::new(executable.reduce_rows_executable.clone());
     while let Some(result) = iterator.next() {
-        grouped_reducer.accept(&result?, &context)?;
+        grouped_reducer.accept(&result?, context)?;
     }
     Ok(grouped_reducer.finalise())
 }

@@ -15,24 +15,27 @@ use compiler::{
         function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         match_inference::infer_types,
     },
-    executable::match_::{
-        instructions::{thing::IsaInstruction, CheckInstruction, CheckVertex, ConstraintInstruction, Inputs},
-        planner::{
-            function_plan::ExecutableFunctionRegistry,
-            match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
+    executable::{
+        match_::{
+            instructions::{thing::IsaInstruction, CheckInstruction, CheckVertex, ConstraintInstruction, Inputs},
+            planner::{
+                function_plan::ExecutableFunctionRegistry,
+                match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
+            },
         },
+        next_executable_id,
     },
     ExecutorVariable, VariablePosition,
 };
 use concept::type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, profile::QueryProfile,
+    row::MaybeOwnedRow, ExecutionInterrupt,
 };
 use ir::{
     pattern::constraint::{Comparator, IsaKind},
-    pipeline::block::Block,
+    pipeline::{block::Block, ParameterRegistry},
     translation::TranslationContext,
 };
 use lending_iterator::LendingIterator;
@@ -79,7 +82,8 @@ fn attribute_equality() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.new_block_builder_context());
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let var_age_a = conjunction.get_or_declare_variable("a").unwrap();
     let var_age_b = conjunction.get_or_declare_variable("b").unwrap();
@@ -92,7 +96,7 @@ fn attribute_equality() {
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age_b, var_age_type_b.into()).unwrap().clone();
     conjunction.constraints_mut().add_label(var_age_type_a, AGE_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type_b, AGE_LABEL.clone()).unwrap();
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -149,7 +153,7 @@ fn attribute_equality() {
         )),
     ];
 
-    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
+    let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -159,14 +163,15 @@ fn attribute_equality() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> =
+        iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| Box::new(err.clone()))).collect();
     assert_eq!(rows.len(), 5);
 
     for row in rows {

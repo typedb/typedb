@@ -44,8 +44,10 @@ where
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
-    {
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         let Self { previous, executable, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
         // accumulate once, then we will operate in-place
@@ -53,7 +55,13 @@ where
             Ok(batch) => batch,
             Err(err) => return Err((err, context)),
         };
-        Ok((SortStageIterator::from_unsorted(batch, &executable), context))
+        let batch_len = batch.len();
+        let profile = context.profile.profile_stage(|| String::from("Sort"), executable.executable_id);
+        let step_profile = profile.extend_or_get(1, || String::from("Sort execution"));
+        let measurement = step_profile.start_measurement();
+        let sorted_iterator = SortStageIterator::from_unsorted(batch, &executable);
+        measurement.end(&step_profile, 1, batch_len as u64);
+        Ok((sorted_iterator, context))
     }
 }
 
@@ -98,7 +106,7 @@ impl SortStageIterator {
 }
 
 impl LendingIterator for SortStageIterator {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         if self.next_index_index < self.unsorted.len() {
@@ -135,8 +143,10 @@ where
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
-    {
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         let Self { offset_executable, previous, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
         Ok((OffsetStageIterator::new(previous_iterator, offset_executable.offset), context))
@@ -160,7 +170,7 @@ impl<PreviousIterator> LendingIterator for OffsetStageIterator<PreviousIterator>
 where
     PreviousIterator: StageIterator,
 {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         while self.remaining > 0 {
@@ -197,8 +207,10 @@ where
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
-    {
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         let Self { limit_executable, previous, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
         Ok((LimitStageIterator::new(previous_iterator, limit_executable.limit), context))
@@ -222,7 +234,7 @@ impl<PreviousIterator> LendingIterator for LimitStageIterator<PreviousIterator>
 where
     PreviousIterator: StageIterator,
 {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         if self.remaining > 0 {
@@ -256,8 +268,10 @@ where
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
-    {
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         let Self { previous, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
         Ok((SelectStageIterator::new(previous_iterator), context))
@@ -280,7 +294,7 @@ impl<PreviousIterator> LendingIterator for SelectStageIterator<PreviousIterator>
 where
     PreviousIterator: StageIterator,
 {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.previous.next()
@@ -309,8 +323,10 @@ where
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
-    {
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         let Self { require_executable, previous, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
         Ok((RequireStageIterator::new(previous_iterator, require_executable), context))
@@ -334,7 +350,7 @@ impl<PreviousIterator> LendingIterator for RequireStageIterator<PreviousIterator
 where
     PreviousIterator: StageIterator,
 {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         loop {

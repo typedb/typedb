@@ -15,15 +15,18 @@ use compiler::{
         function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         match_inference::infer_types,
     },
-    executable::match_::{
-        instructions::{
-            thing::{IsaReverseInstruction, LinksInstruction, LinksReverseInstruction},
-            ConstraintInstruction, Inputs,
+    executable::{
+        match_::{
+            instructions::{
+                thing::{IsaInstruction, LinksInstruction, LinksReverseInstruction},
+                ConstraintInstruction, Inputs,
+            },
+            planner::{
+                function_plan::ExecutableFunctionRegistry,
+                match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
+            },
         },
-        planner::{
-            function_plan::ExecutableFunctionRegistry,
-            match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
-        },
+        next_executable_id,
     },
     ExecutorVariable, VariablePosition,
 };
@@ -36,10 +39,14 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, profile::QueryProfile,
+    row::MaybeOwnedRow, ExecutionInterrupt,
 };
-use ir::{pattern::constraint::IsaKind, pipeline::block::Block, translation::TranslationContext};
+use ir::{
+    pattern::constraint::IsaKind,
+    pipeline::{block::Block, ParameterRegistry},
+    translation::TranslationContext,
+};
 use lending_iterator::LendingIterator;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -181,7 +188,8 @@ fn traverse_links_unbounded_sorted_from() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.new_block_builder_context());
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
@@ -210,7 +218,7 @@ fn traverse_links_unbounded_sorted_from() {
     conjunction.constraints_mut().add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_group_type, MEMBERSHIP_GROUP_LABEL.clone()).unwrap();
 
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
@@ -268,7 +276,7 @@ fn traverse_links_unbounded_sorted_from() {
         3,
     ))];
 
-    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
+    let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -278,14 +286,16 @@ fn traverse_links_unbounded_sorted_from() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
     assert_eq!(rows.len(), 2);
 
     for row in rows {
@@ -307,7 +317,8 @@ fn traverse_links_unbounded_sorted_to() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.new_block_builder_context());
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -328,7 +339,7 @@ fn traverse_links_unbounded_sorted_to() {
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.clone()).unwrap();
 
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
@@ -371,7 +382,7 @@ fn traverse_links_unbounded_sorted_to() {
         2,
     ))];
 
-    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
+    let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -381,14 +392,16 @@ fn traverse_links_unbounded_sorted_to() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
     assert_eq!(rows.len(), 2);
 
     for row in rows {
@@ -410,7 +423,8 @@ fn traverse_links_bounded_relation() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.new_block_builder_context());
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -435,7 +449,7 @@ fn traverse_links_bounded_relation() {
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.clone()).unwrap();
 
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -472,8 +486,8 @@ fn traverse_links_bounded_relation() {
     let steps = vec![
         ExecutionStep::Intersection(IntersectionStep::new(
             mapping[&var_membership],
-            vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_membership, Inputs::None([]), &entry_annotations).map(&mapping),
+            vec![ConstraintInstruction::Isa(
+                IsaInstruction::new(isa_membership, Inputs::None([]), &entry_annotations).map(&mapping),
             )],
             vec![variable_positions[&var_membership]],
             &named_variables,
@@ -491,7 +505,7 @@ fn traverse_links_bounded_relation() {
         )),
     ];
 
-    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
+    let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -501,14 +515,16 @@ fn traverse_links_bounded_relation() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
     assert_eq!(rows.len(), 2);
 
     for row in rows {
@@ -530,7 +546,8 @@ fn traverse_links_bounded_relation_player() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.new_block_builder_context());
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -556,7 +573,7 @@ fn traverse_links_bounded_relation_player() {
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.clone()).unwrap();
 
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -593,8 +610,8 @@ fn traverse_links_bounded_relation_player() {
     let steps = vec![
         ExecutionStep::Intersection(IntersectionStep::new(
             mapping[&var_membership],
-            vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_membership, Inputs::None([]), &entry_annotations).map(&mapping),
+            vec![ConstraintInstruction::Isa(
+                IsaInstruction::new(isa_membership, Inputs::None([]), &entry_annotations).map(&mapping),
             )],
             vec![variable_positions[&var_membership]],
             &named_variables,
@@ -602,8 +619,8 @@ fn traverse_links_bounded_relation_player() {
         )),
         ExecutionStep::Intersection(IntersectionStep::new(
             mapping[&var_person],
-            vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
+            vec![ConstraintInstruction::Isa(
+                IsaInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
             )],
             vec![variable_positions[&var_membership], variable_positions[&var_person]],
             &named_variables,
@@ -625,7 +642,7 @@ fn traverse_links_bounded_relation_player() {
         )),
     ];
 
-    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
+    let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -635,14 +652,16 @@ fn traverse_links_bounded_relation_player() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
     assert_eq!(rows.len(), 2);
 
     for row in rows {
@@ -663,7 +682,8 @@ fn traverse_links_reverse_unbounded_sorted_from() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.new_block_builder_context());
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -684,7 +704,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.clone()).unwrap();
 
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -729,7 +749,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
         2,
     ))];
 
-    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
+    let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -739,14 +759,16 @@ fn traverse_links_reverse_unbounded_sorted_from() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
     assert_eq!(rows.len(), 2);
 
     for row in rows {
@@ -768,7 +790,8 @@ fn traverse_links_reverse_unbounded_sorted_to() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.new_block_builder_context());
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -789,7 +812,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.clone()).unwrap();
 
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -834,7 +857,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
         2,
     ))];
 
-    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
+    let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -844,14 +867,16 @@ fn traverse_links_reverse_unbounded_sorted_to() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
     assert_eq!(rows.len(), 2);
 
     for row in rows {
@@ -873,7 +898,8 @@ fn traverse_links_reverse_bounded_player() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.new_block_builder_context());
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -895,7 +921,7 @@ fn traverse_links_reverse_bounded_player() {
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.clone()).unwrap();
 
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -932,8 +958,8 @@ fn traverse_links_reverse_bounded_player() {
     let steps = vec![
         ExecutionStep::Intersection(IntersectionStep::new(
             mapping[&var_person],
-            vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
+            vec![ConstraintInstruction::Isa(
+                IsaInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
             )],
             vec![variable_positions[&var_person]],
             &named_variables,
@@ -951,7 +977,7 @@ fn traverse_links_reverse_bounded_player() {
         )),
     ];
 
-    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
+    let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -961,14 +987,16 @@ fn traverse_links_reverse_bounded_player() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
     assert_eq!(rows.len(), 2);
 
     for row in rows {
@@ -990,7 +1018,8 @@ fn traverse_links_reverse_bounded_player_relation() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.new_block_builder_context());
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
@@ -1016,7 +1045,7 @@ fn traverse_links_reverse_bounded_player_relation() {
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.clone()).unwrap();
 
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -1053,8 +1082,8 @@ fn traverse_links_reverse_bounded_player_relation() {
     let steps = vec![
         ExecutionStep::Intersection(IntersectionStep::new(
             mapping[&var_person],
-            vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
+            vec![ConstraintInstruction::Isa(
+                IsaInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
             )],
             vec![variable_positions[&var_person]],
             &named_variables,
@@ -1062,8 +1091,8 @@ fn traverse_links_reverse_bounded_player_relation() {
         )),
         ExecutionStep::Intersection(IntersectionStep::new(
             mapping[&var_membership],
-            vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_membership, Inputs::None([]), &entry_annotations).map(&mapping),
+            vec![ConstraintInstruction::Isa(
+                IsaInstruction::new(isa_membership, Inputs::None([]), &entry_annotations).map(&mapping),
             )],
             vec![variable_positions[&var_person], variable_positions[&var_membership]],
             &named_variables,
@@ -1085,7 +1114,7 @@ fn traverse_links_reverse_bounded_player_relation() {
         )),
     ];
 
-    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
+    let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -1095,14 +1124,16 @@ fn traverse_links_reverse_bounded_player_relation() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
     assert_eq!(rows.len(), 2);
 
     for row in rows {

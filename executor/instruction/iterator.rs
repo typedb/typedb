@@ -13,7 +13,7 @@ use compiler::{
 };
 use concept::error::ConceptReadError;
 use itertools::zip_eq;
-use lending_iterator::{LendingIterator, Peekable};
+use lending_iterator::{adaptors::Inspect, LendingIterator, Peekable};
 
 use crate::{
     instruction::{
@@ -25,14 +25,10 @@ use crate::{
             HasReverseBoundedSortedOwner, HasReverseUnboundedSortedAttribute, HasReverseUnboundedSortedOwnerMerged,
             HasReverseUnboundedSortedOwnerSingle,
         },
-        isa_executor::{
-            IsaBoundedSortedType, IsaUnboundedSortedThingMerged, IsaUnboundedSortedThingSingle,
-            IsaUnboundedSortedTypeMerged, IsaUnboundedSortedTypeSingle,
-        },
-        isa_reverse_executor::{
-            IsaReverseBoundedSortedThing, IsaReverseUnboundedSortedThingMerged, IsaReverseUnboundedSortedThingSingle,
-            IsaReverseUnboundedSortedTypeMerged, IsaReverseUnboundedSortedTypeSingle,
-        },
+        iid_executor::IidIterator,
+        is_executor::IsIterator,
+        isa_executor::{IsaBoundedSortedType, IsaUnboundedSortedThing},
+        isa_reverse_executor::{IsaReverseBoundedSortedThing, IsaReverseUnboundedSortedType},
         links_executor::{
             LinksBoundedRelationPlayer, LinksBoundedRelationSortedPlayer, LinksUnboundedSortedPlayerMerged,
             LinksUnboundedSortedPlayerSingle, LinksUnboundedSortedRelation,
@@ -49,7 +45,7 @@ use crate::{
         relates_executor::{RelatesBoundedSortedRole, RelatesUnboundedSortedRelation},
         relates_reverse_executor::{RelatesReverseBoundedSortedRelation, RelatesReverseUnboundedSortedRole},
         sub_executor::{SubBoundedSortedSuper, SubUnboundedSortedSub},
-        sub_reverse_executor::{SubReverseBoundedSortedSuper, SubReverseUnboundedSortedSub},
+        sub_reverse_executor::{SubReverseBoundedSortedSub, SubReverseUnboundedSortedSuper},
         tuple::{Tuple, TupleIndex, TuplePositions, TupleResult},
         type_list_executor::TypeIterator,
     },
@@ -98,13 +94,15 @@ macro_rules! dispatch_tuple_iterator {
 dispatch_tuple_iterator! {
 #[allow(clippy::large_enum_variant)]
 pub(crate) enum TupleIterator {
+    Is(SortedTupleIterator<IsIterator>),
+    Iid(SortedTupleIterator<IidIterator>),
     Type(SortedTupleIterator<TypeIterator>),
 
     SubUnbounded(SortedTupleIterator<SubUnboundedSortedSub>),
     SubBounded(SortedTupleIterator<SubBoundedSortedSuper>),
 
-    SubReverseUnbounded(SortedTupleIterator<SubReverseUnboundedSortedSub>),
-    SubReverseBounded(SortedTupleIterator<SubReverseBoundedSortedSuper>),
+    SubReverseUnbounded(SortedTupleIterator<SubReverseUnboundedSortedSuper>),
+    SubReverseBounded(SortedTupleIterator<SubReverseBoundedSortedSub>),
 
     OwnsUnbounded(SortedTupleIterator<OwnsUnboundedSortedOwner>),
     OwnsBounded(SortedTupleIterator<OwnsBoundedSortedAttribute>),
@@ -124,16 +122,10 @@ pub(crate) enum TupleIterator {
     PlaysReverseUnbounded(SortedTupleIterator<PlaysReverseUnboundedSortedRole>),
     PlaysReverseBounded(SortedTupleIterator<PlaysReverseBoundedSortedPlayer>),
 
-    IsaUnboundedSingle(SortedTupleIterator<IsaUnboundedSortedThingSingle>),
-    IsaUnboundedMerged(SortedTupleIterator<IsaUnboundedSortedThingMerged>),
-    IsaUnboundedInvertedSingle(SortedTupleIterator<IsaUnboundedSortedTypeSingle>),
-    IsaUnboundedInvertedMerged(SortedTupleIterator<IsaUnboundedSortedTypeMerged>),
+    IsaUnbounded(SortedTupleIterator<IsaUnboundedSortedThing>),
     IsaBounded(SortedTupleIterator<IsaBoundedSortedType>),
 
-    IsaReverseUnboundedSingle(SortedTupleIterator<IsaReverseUnboundedSortedTypeSingle>),
-    IsaReverseUnboundedMerged(SortedTupleIterator<IsaReverseUnboundedSortedTypeMerged>),
-    IsaReverseUnboundedInvertedSingle(SortedTupleIterator<IsaReverseUnboundedSortedThingSingle>),
-    IsaReverseUnboundedInvertedMerged(SortedTupleIterator<IsaReverseUnboundedSortedThingMerged>),
+    IsaReverseUnbounded(SortedTupleIterator<IsaReverseUnboundedSortedType>),
     IsaReverseBounded(SortedTupleIterator<IsaReverseBoundedSortedThing>),
 
     HasUnbounded(SortedTupleIterator<HasUnboundedSortedOwner>),
@@ -161,15 +153,15 @@ pub(crate) enum TupleIterator {
 
 impl {
     pub(crate) fn write_values(&mut self, row: &mut Row<'_>);
-    pub(crate) fn peek(&mut self) -> Option<&Result<Tuple<'_>, ConceptReadError>>;
-    pub(crate) fn advance_past(&mut self) -> Result<usize, ConceptReadError> ;
+    pub(crate) fn peek(&mut self) -> Option<&Result<Tuple<'_>, Box<ConceptReadError>>>;
+    pub(crate) fn advance_past(&mut self) -> Result<usize, Box<ConceptReadError>>;
     fn skip_until_value(
         &mut self,
         index: TupleIndex,
         value: &VariableValue<'_>,
-    ) -> Result<Option<Ordering>, ConceptReadError> ;
-    pub(crate) fn advance_single(&mut self) -> Result<(), ConceptReadError> ;
-    pub(crate) fn peek_first_unbound_value(&mut self) -> Option<Result<&VariableValue<'_>, ConceptReadError>> ;
+    ) -> Result<Option<Ordering>, Box<ConceptReadError>>;
+    pub(crate) fn advance_single(&mut self) -> Result<(), Box<ConceptReadError>>;
+    pub(crate) fn peek_first_unbound_value(&mut self) -> Option<Result<&VariableValue<'_>, Box<ConceptReadError>>>;
     pub(crate) fn first_unbound_index(&self) -> TupleIndex ;
 }
 }
@@ -179,7 +171,7 @@ impl TupleIterator {
         &mut self,
         index: TupleIndex,
         value: &VariableValue<'_>,
-    ) -> Result<Option<Ordering>, ConceptReadError> {
+    ) -> Result<Option<Ordering>, Box<ConceptReadError>> {
         self.skip_until_value(index, value)
     }
 }
@@ -187,18 +179,18 @@ impl TupleIterator {
 pub(crate) trait TupleIteratorAPI {
     fn write_values(&mut self, row: &mut Row<'_>);
 
-    fn peek(&mut self) -> Option<&Result<Tuple<'_>, ConceptReadError>>;
+    fn peek(&mut self) -> Option<&Result<Tuple<'_>, Box<ConceptReadError>>>;
 
     /// Advance the iterator past the current answer, and return the number duplicate answers were skipped
-    fn advance_past(&mut self) -> Result<usize, ConceptReadError>;
+    fn advance_past(&mut self) -> Result<usize, Box<ConceptReadError>>;
 
-    fn advance_single(&mut self) -> Result<(), ConceptReadError>;
+    fn advance_single(&mut self) -> Result<(), Box<ConceptReadError>>;
 
     fn positions(&self) -> &TuplePositions;
 }
 
 pub(crate) struct SortedTupleIterator<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> {
-    iterator: Peekable<Iterator>,
+    iterator: Peekable<Inspect<Iterator, Box<dyn FnMut(&TupleResult<'_>)>>>,
     positions: TuplePositions,
     tuple_length: usize,
     first_unbound: TupleIndex,
@@ -238,6 +230,24 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleI
         let first_unbound = first_unbound(variable_modes, &tuple_positions);
         let last_enumerated = last_enumerated(variable_modes, &tuple_positions);
         let last_enumerated_or_counted = last_enumerated_or_counted(variable_modes, &tuple_positions);
+
+        let iterator = iterator.inspect({
+            let mut prev: Option<Tuple<'static>> = None;
+            Box::new(move |item: &TupleResult<'_>| {
+                #[cfg(debug_assertions)]
+                if let Ok(tuple) = item {
+                    if let Some(prev) = &prev {
+                        debug_assert!(
+                            prev <= tuple,
+                            "{prev:?} <= {tuple:?}: sortedness check fail in {}",
+                            std::any::type_name::<Self>()
+                        );
+                    }
+                    prev = Some(tuple.clone().into_owned());
+                }
+            }) as _
+        });
+
         Self {
             iterator: Peekable::new(iterator),
             tuple_length: tuple_positions.len(),
@@ -252,7 +262,7 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleI
         self.first_unbound
     }
 
-    fn count_until_enumerated_changes(&mut self) -> Result<usize, ConceptReadError> {
+    fn count_until_enumerated_changes(&mut self) -> Result<usize, Box<ConceptReadError>> {
         let Some(last_enumerated) = self.last_enumerated else {
             unreachable!("this should only be called if the tuple contains enumerated variables")
         };
@@ -279,7 +289,7 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleI
         }
     }
 
-    fn skip_until_changes(&mut self, change_width: usize) -> Result<(), ConceptReadError> {
+    fn skip_until_changes(&mut self, change_width: usize) -> Result<(), Box<ConceptReadError>> {
         // TODO: this should be optimisable with seek(to peek[index].increment())
         debug_assert!(self.peek().is_some());
 
@@ -314,7 +324,7 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleI
         &mut self,
         index: TupleIndex,
         target: &VariableValue<'_>,
-    ) -> Result<Option<Ordering>, ConceptReadError> {
+    ) -> Result<Option<Ordering>, Box<ConceptReadError>> {
         // TODO: this should use seek if index == self.first_unbound()
         loop {
             let peek = self.peek();
@@ -333,11 +343,14 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleI
         }
     }
 
-    fn peek_first_unbound_value(&mut self) -> Option<Result<&VariableValue<'_>, ConceptReadError>> {
+    fn peek_first_unbound_value(&mut self) -> Option<Result<&VariableValue<'_>, Box<ConceptReadError>>> {
         self.peek_current_value_at(self.first_unbound)
     }
 
-    fn peek_current_value_at(&mut self, index: TupleIndex) -> Option<Result<&VariableValue<'_>, ConceptReadError>> {
+    fn peek_current_value_at(
+        &mut self,
+        index: TupleIndex,
+    ) -> Option<Result<&VariableValue<'_>, Box<ConceptReadError>>> {
         self.peek()
             .map(|result| result.as_ref().map(|tuple| &tuple.values()[index as usize]).map_err(|err| err.clone()))
     }
@@ -379,11 +392,11 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> TupleIterato
         }
     }
 
-    fn peek(&mut self) -> Option<&Result<Tuple<'_>, ConceptReadError>> {
+    fn peek(&mut self) -> Option<&Result<Tuple<'_>, Box<ConceptReadError>>> {
         self.iterator.peek()
     }
 
-    fn advance_past(&mut self) -> Result<usize, ConceptReadError> {
+    fn advance_past(&mut self) -> Result<usize, Box<ConceptReadError>> {
         debug_assert!(self.peek().is_some());
 
         let past_enumerated_or_counted_index = self.last_enumerated_or_counted.map_or(0, |i| i as usize + 1);
@@ -407,7 +420,7 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> TupleIterato
         }
     }
 
-    fn advance_single(&mut self) -> Result<(), ConceptReadError> {
+    fn advance_single(&mut self) -> Result<(), Box<ConceptReadError>> {
         let _ = self.iterator.next().unwrap()?;
         Ok(())
     }

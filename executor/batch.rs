@@ -11,7 +11,7 @@ use std::{
 };
 
 use answer::variable_value::VariableValue;
-use itertools::{Chunk, Chunks, Itertools};
+use itertools::Itertools;
 use lending_iterator::LendingIterator;
 
 use crate::{
@@ -125,12 +125,12 @@ impl IntoIterator for FixedBatch {
 }
 
 pub struct FixedBatchRowIterator {
-    batch: Result<FixedBatch, ReadExecutionError>,
+    batch: Result<FixedBatch, Box<ReadExecutionError>>,
     index: u32,
 }
 
 impl FixedBatchRowIterator {
-    pub(crate) fn new(batch: Result<FixedBatch, ReadExecutionError>) -> Self {
+    pub(crate) fn new(batch: Result<FixedBatch, Box<ReadExecutionError>>) -> Self {
         Self { batch, index: 0 }
     }
 

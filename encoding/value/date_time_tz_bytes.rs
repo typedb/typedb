@@ -6,21 +6,21 @@
 
 use chrono::DateTime;
 
-use super::{date_time_bytes::DateTimeBytes, timezone::TimeZone};
-use crate::graph::thing::vertex_attribute::AttributeIDLength;
+use crate::{
+    graph::thing::vertex_attribute::{InlineEncodableAttributeID, ValueEncodingLength},
+    value::{date_time_bytes::DateTimeBytes, timezone::TimeZone, value_type::ValueType},
+};
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct DateTimeTZBytes {
-    bytes: [u8; Self::LENGTH],
+    bytes: [u8; Self::ENCODED_LENGTH],
 }
 
 impl DateTimeTZBytes {
-    pub(crate) const LENGTH: usize = AttributeIDLength::Long.length();
-
     const DATE_TIME_LENGTH: usize = (i64::BITS + u32::BITS) as usize / 8;
     const TZ_LENGTH: usize = u32::BITS as usize / 8;
 
-    pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
+    pub fn new(bytes: [u8; Self::ENCODED_LENGTH]) -> Self {
         Self { bytes }
     }
 
@@ -36,7 +36,21 @@ impl DateTimeTZBytes {
         date_time.and_utc().with_timezone(&tz)
     }
 
-    pub fn bytes(&self) -> [u8; Self::LENGTH] {
+    pub fn bytes(&self) -> [u8; Self::ENCODED_LENGTH] {
         self.bytes
+    }
+}
+
+impl InlineEncodableAttributeID for DateTimeTZBytes {
+    const ENCODED_LENGTH: usize = ValueEncodingLength::Long.length();
+    const VALUE_TYPE: ValueType = ValueType::DateTimeTZ;
+
+    fn bytes_ref(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    fn read(bytes: &[u8]) -> Self {
+        debug_assert!(bytes.len() == Self::ENCODED_LENGTH);
+        DateTimeTZBytes::new(bytes.try_into().unwrap())
     }
 }

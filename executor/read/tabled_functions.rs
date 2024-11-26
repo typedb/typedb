@@ -5,20 +5,19 @@
  */
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     sync::{Arc, Mutex, RwLock},
 };
 
 use compiler::executable::{function::ExecutableReturn, match_::planner::function_plan::ExecutableFunctionRegistry};
 use ir::pipeline::{function_signature::FunctionID, ParameterRegistry};
-use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::FixedBatch,
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
-    read::{pattern_executor::PatternExecutor, step_executor::create_executors_for_function, SuspendPoint},
+    read::{pattern_executor::PatternExecutor, step_executor::create_executors_for_function, QueryPatternSuspensions},
     row::MaybeOwnedRow,
 };
 
@@ -43,11 +42,11 @@ impl TabledFunctions {
                 &context.snapshot,
                 &context.thing_manager,
                 &self.function_registry,
+                &context.profile,
                 function,
-                &mut HashSet::new(),
             )
             .map_err(|source| ReadExecutionError::ConceptRead { source })?;
-            let pattern_executor = PatternExecutor::new(executors);
+            let pattern_executor = PatternExecutor::new(function.executable_id, executors);
             let width = match &function.returns {
                 ExecutableReturn::Stream(v) => v.len() as u32,
                 _ => todo!(),
@@ -64,6 +63,14 @@ impl TabledFunctions {
         }
         Ok(self.state.get(call_key).unwrap().clone())
     }
+
+    pub(crate) fn iterate_states(&self) -> impl Iterator<Item = Arc<TabledFunctionState>> + '_ {
+        self.state.values().cloned()
+    }
+
+    pub(crate) fn total_table_size(&self) -> usize {
+        self.state.values().map(|state| state.table.read().unwrap().answers.len()).sum()
+    }
 }
 
 pub(crate) struct TabledFunctionState {
@@ -73,9 +80,20 @@ pub(crate) struct TabledFunctionState {
 }
 
 pub(crate) struct TabledFunctionPatternExecutorState {
-    pub(crate) suspend_points: Vec<SuspendPoint>,
+    pub(crate) suspensions: QueryPatternSuspensions,
     pub(crate) pattern_executor: PatternExecutor,
     pub(crate) parameters: Arc<ParameterRegistry>,
+}
+
+impl TabledFunctionPatternExecutorState {
+    pub(crate) fn prepare_to_retry_suspended(&mut self) {
+        debug_assert!(self.pattern_executor.has_empty_control_stack());
+        self.pattern_executor.reset();
+        if !self.suspensions.is_empty() {
+            self.suspensions.prepare_restoring_from_suspending();
+            self.pattern_executor.prepare_to_restore_from_suspension(0);
+        }
+    }
 }
 
 impl TabledFunctionState {
@@ -90,7 +108,7 @@ impl TabledFunctionState {
             table: RwLock::new(AnswerTable { answers: Vec::new(), width: answer_width }),
             executor_state: Mutex::new(TabledFunctionPatternExecutorState {
                 pattern_executor,
-                suspend_points: Vec::new(),
+                suspensions: QueryPatternSuspensions::new(),
                 parameters,
             }),
         }
@@ -116,6 +134,7 @@ pub(crate) struct AnswerTable {
     // TODO: use a better data-structure. XSB has an "answer-trie" though a LinkedHashSet might do.
     answers: Vec<MaybeOwnedRow<'static>>,
     width: u32,
+    // TODO: We need to be able to record the fact that a table is DONE
 }
 
 impl AnswerTable {

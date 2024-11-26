@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
-load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 rust_library(
     name = "database",
@@ -16,12 +16,13 @@ rust_library(
         "//common/options",
         "//common/error",
         "//concept",
+        "//durability",
         "//encoding",
         "//function",
+        "//query",
         "//storage",
-        "//durability",
 
-        "@vaticle_typeql//rust:typeql",
+        "@typeql//rust:typeql",
         "@crates//:itertools",
         "@crates//:rocksdb",
         "@crates//:tracing",

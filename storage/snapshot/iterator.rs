@@ -24,14 +24,19 @@ use crate::{
 };
 
 pub struct SnapshotRangeIterator {
-    storage_iterator: MVCCRangeIterator,
+    storage_iterator: Option<MVCCRangeIterator>,
     buffered_iterator: Option<BufferRangeIterator>,
     ready_item_source: Option<ReadyItemSource>,
 }
 
 impl SnapshotRangeIterator {
     pub(crate) fn new(mvcc_iterator: MVCCRangeIterator, buffered_iterator: Option<BufferRangeIterator>) -> Self {
-        SnapshotRangeIterator { storage_iterator: mvcc_iterator, buffered_iterator, ready_item_source: None }
+        SnapshotRangeIterator { storage_iterator: Some(mvcc_iterator), buffered_iterator, ready_item_source: None }
+    }
+
+    // for testing
+    pub fn new_empty() -> Self {
+        SnapshotRangeIterator { storage_iterator: None, buffered_iterator: None, ready_item_source: None }
     }
 
     pub fn peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
@@ -40,7 +45,7 @@ impl SnapshotRangeIterator {
         }
 
         match self.ready_item_source? {
-            ReadyItemSource::Storage => match self.storage_iterator.peek()? {
+            ReadyItemSource::Storage => match self.storage_iterator.as_mut().unwrap().peek()? {
                 &Ok(ok) => Some(Ok(ok)),
                 Err(error) => Some(Err(Arc::new(SnapshotIteratorError::MVCCRead { source: error.clone() }))),
             },
@@ -54,15 +59,15 @@ impl SnapshotRangeIterator {
                 if let Some(iter) = self.buffered_iterator.as_mut() {
                     iter.seek(key.bytes())
                 }
-                self.storage_iterator.seek(key.bytes());
+                self.storage_iterator.as_mut().unwrap().seek(key.bytes());
                 self.find_next_state();
             }
         }
     }
 
     fn find_next_state(&mut self) {
-        while self.ready_item_source.is_none() {
-            let Some(Ok((storage_key, _storage_value))) = self.storage_iterator.peek() else {
+        while self.ready_item_source.is_none() && self.storage_iterator.is_some() {
+            let Some(Ok((storage_key, _storage_value))) = self.storage_iterator.as_mut().unwrap().peek() else {
                 if let Some(buffered_iterator) = self.buffered_iterator.as_mut() {
                     while let Some((_, Write::Delete)) = buffered_iterator.peek() {
                         // SKIP buffered
@@ -96,7 +101,7 @@ impl SnapshotRangeIterator {
                 Ordering::Equal => {
                     if buffered_write.is_delete() {
                         // SKIP both
-                        self.storage_iterator.next();
+                        self.storage_iterator.as_mut().unwrap().next();
                         self.buffered_iterator.as_mut().map(|iter| iter.next());
                     } else {
                         // ACCEPT both
@@ -114,7 +119,7 @@ impl SnapshotRangeIterator {
     fn advance_and_find_next_state(&mut self) {
         match self.ready_item_source {
             Some(ReadyItemSource::Storage) => {
-                self.storage_iterator.next();
+                self.storage_iterator.as_mut().unwrap().next();
             }
             Some(ReadyItemSource::Buffered) => {
                 assert!(self.buffered_iterator.is_some());
@@ -123,7 +128,7 @@ impl SnapshotRangeIterator {
             Some(ReadyItemSource::Both) => {
                 assert!(self.buffered_iterator.is_some());
                 self.buffered_iterator.as_mut().map(|iter| iter.next());
-                self.storage_iterator.next();
+                self.storage_iterator.as_mut().unwrap().next();
             }
             None => (),
         }
@@ -185,14 +190,14 @@ impl SnapshotRangeIterator {
         &mut self,
     ) -> Option<Result<(StorageKey<'_, BUFFER_KEY_INLINE>, Bytes<'_, BUFFER_VALUE_INLINE>), Arc<SnapshotIteratorError>>>
     {
-        match self.storage_iterator.next()? {
+        match self.storage_iterator.as_mut().unwrap().next()? {
             Ok((key, value)) => Some(Ok((StorageKey::Reference(key), Bytes::Reference(value)))),
             Err(error) => Some(Err(Arc::new(SnapshotIteratorError::MVCCRead { source: error.clone() }))),
         }
     }
 
     fn storage_peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), SnapshotIteratorError>> {
-        match self.storage_iterator.peek()? {
+        match self.storage_iterator.as_mut().unwrap().peek()? {
             &Ok((key, value)) => Some(Ok((key, value))),
             Err(error) => Some(Err(SnapshotIteratorError::MVCCRead { source: error.clone() })),
         }

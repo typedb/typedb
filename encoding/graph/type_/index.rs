@@ -45,16 +45,13 @@ impl<'a, T: Indexable> IdentifierIndex<'a, T> {
     pub fn build(key: T::KeyType<'_>) -> Self {
         let identifier = T::key_type_to_identifier(key);
         let mut array = ByteArray::zeros(identifier.bytes().length() + PrefixID::LENGTH);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&T::INDEX_PREFIX.prefix_id().bytes());
-        array.bytes_mut()[Self::range_identifier(identifier.bytes().length())]
-            .copy_from_slice(identifier.bytes().bytes());
+        array[Self::RANGE_PREFIX].copy_from_slice(&T::INDEX_PREFIX.prefix_id().bytes());
+        array[Self::range_identifier(identifier.bytes().length())].copy_from_slice(identifier.bytes().bytes());
         Self { bytes: Bytes::Array(array), indexed_type: PhantomData }
     }
 
     pub fn identifier(&'a self) -> StringBytes<'a, BUFFER_KEY_INLINE> {
-        StringBytes::new(Bytes::Reference(ByteReference::new(
-            &self.bytes.bytes()[Self::range_identifier(self.identifier_length())],
-        )))
+        StringBytes::new(Bytes::reference(&self.bytes[Self::range_identifier(self.identifier_length())]))
     }
 
     fn identifier_length(&self) -> usize {

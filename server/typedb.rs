@@ -52,7 +52,7 @@ impl Server {
 
     pub async fn serve(mut self) -> Result<(), tonic::transport::Error> {
         let service = typedb_protocol::type_db_server::TypeDbServer::new(self.typedb_service.take().unwrap());
-        println!("Ready...");
+        println!("Ready!");
         let authenticator = Arc::new(Authenticator::new(self.user_manager.clone()));
         tonic::transport::Server::builder()
             .http2_keepalive_interval(Some(GRPC_CONNECTION_KEEPALIVE))

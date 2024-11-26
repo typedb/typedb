@@ -15,7 +15,8 @@ use compiler::{
     VariablePosition,
 };
 use concept::thing::thing_manager::ThingManager;
-use ir::pipeline::{ParameterRegistry, VariableRegistry};
+use error::typedb_error;
+use ir::pipeline::ParameterRegistry;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -44,22 +45,21 @@ pub enum Pipeline<Snapshot: ReadableSnapshot, Nonterminals: StageAPI<Snapshot>> 
 
 impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pipeline<Snapshot, Nonterminals> {
     fn build_with_fetch(
-        variable_registry: &VariableRegistry,
+        variable_names: &HashMap<Variable, String>,
+        executable_functions: Arc<ExecutableFunctionRegistry>,
         last_stage: Nonterminals,
         last_stage_output_positions: HashMap<Variable, VariablePosition>,
         executable_fetch: Option<Arc<ExecutableFetch>>,
     ) -> Self {
         let named_outputs = last_stage_output_positions
             .iter()
-            .filter_map(|(variable, &position)| {
-                variable_registry.variable_names().get(variable).map(|name| (name.clone(), position))
-            })
+            .filter_map(|(variable, &position)| variable_names.get(variable).map(|name| (name.clone(), position)))
             .collect::<HashMap<_, _>>();
 
         match executable_fetch {
             None => Pipeline::Unfetched(last_stage, named_outputs),
             Some(executable) => {
-                let fetch = FetchStageExecutor::new(executable);
+                let fetch = FetchStageExecutor::new(executable, executable_functions);
                 Pipeline::Fetched(last_stage, fetch)
             }
         }
@@ -81,13 +81,13 @@ impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pip
         execution_interrupt: ExecutionInterrupt,
     ) -> Result<
         (Nonterminals::OutputIterator, ExecutionContext<Snapshot>),
-        (PipelineExecutionError, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
         match self {
             Self::Unfetched(nonterminals, _) => nonterminals.into_iterator(execution_interrupt),
             Self::Fetched(nonterminals, _) => {
                 let (_, context) = nonterminals.into_iterator(execution_interrupt)?;
-                Err((PipelineExecutionError::FetchUsedAsRows {}, context))
+                Err((Box::new(PipelineExecutionError::FetchUsedAsRows {}), context))
             }
         }
     }
@@ -96,13 +96,13 @@ impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pip
         self,
         execution_interrupt: ExecutionInterrupt,
     ) -> Result<
-        (impl Iterator<Item = Result<ConceptDocument, PipelineExecutionError>>, ExecutionContext<Snapshot>),
-        (PipelineExecutionError, ExecutionContext<Snapshot>),
+        (impl Iterator<Item = Result<ConceptDocument, Box<PipelineExecutionError>>>, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
         match self {
             Self::Unfetched(nonterminals, _) => {
                 let (_, context) = nonterminals.into_iterator(execution_interrupt)?;
-                Err((PipelineExecutionError::FetchUsedAsRows {}, context))
+                Err((Box::new(PipelineExecutionError::FetchUsedAsRows {}), context))
             }
             Self::Fetched(nonterminals, fetch_executor) => {
                 let (rows_iterator, context) = nonterminals.into_iterator(execution_interrupt.clone())?;
@@ -116,20 +116,20 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
     pub fn build_read_pipeline(
         snapshot: Arc<Snapshot>,
         thing_manager: Arc<ThingManager>,
-        variable_registry: &VariableRegistry,
+        variable_names: &HashMap<Variable, String>,
         executable_functions: Arc<ExecutableFunctionRegistry>,
         executable_stages: &[ExecutableStage],
         executable_fetch: Option<Arc<ExecutableFetch>>,
         parameters: Arc<ParameterRegistry>,
         input: Option<MaybeOwnedRow<'_>>,
-    ) -> Self {
+    ) -> Result<Self, Box<PipelineError>> {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
         let context = ExecutionContext::new(snapshot, thing_manager, parameters);
-        let mut last_stage = ReadPipelineStage::Initial(
+        let mut last_stage = ReadPipelineStage::Initial(Box::new(
             input
                 .map(|row| InitialStage::new_with(context.clone(), row))
                 .unwrap_or_else(|| InitialStage::new_empty(context)),
-        );
+        ));
         for executable_stage in executable_stages {
             match executable_stage {
                 ExecutableStage::Match(match_executable) => {
@@ -139,10 +139,10 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
                     last_stage = ReadPipelineStage::Match(Box::new(match_stage));
                 }
                 ExecutableStage::Insert(_) => {
-                    unreachable!("Insert clause cannot exist in a read pipeline.")
+                    return Err(Box::new(PipelineError::InvalidReadPipelineStage { stage: "Insert".to_string() }))
                 }
                 ExecutableStage::Delete(_) => {
-                    unreachable!("Delete clause cannot exist in a read pipeline.")
+                    return Err(Box::new(PipelineError::InvalidReadPipelineStage { stage: "Delete".to_string() }))
                 }
                 ExecutableStage::Select(select_executable) => {
                     let select_stage = SelectStageExecutor::new(select_executable.clone(), last_stage);
@@ -170,14 +170,20 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
                 }
             }
         }
-        Pipeline::build_with_fetch(variable_registry, last_stage, output_variable_positions, executable_fetch)
+        Ok(Pipeline::build_with_fetch(
+            variable_names,
+            executable_functions.clone(),
+            last_stage,
+            output_variable_positions,
+            executable_fetch,
+        ))
     }
 }
 
 impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage<Snapshot>> {
     pub fn build_write_pipeline(
         snapshot: Snapshot,
-        variable_registry: &VariableRegistry,
+        variable_names: &HashMap<Variable, String>,
         thing_manager: Arc<ThingManager>,
         executable_stages: Vec<ExecutableStage>,
         executable_fetch: Option<Arc<ExecutableFetch>>,
@@ -185,16 +191,15 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
     ) -> Self {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
         let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, parameters);
-        let mut last_stage = WritePipelineStage::Initial(InitialStage::new_empty(context));
+        let mut last_stage = WritePipelineStage::Initial(Box::new(InitialStage::new_empty(context)));
+        // TODO: Receive as an argument from schema
+        let executable_functions = Arc::new(ExecutableFunctionRegistry::empty());
         for executable_stage in executable_stages {
             match executable_stage {
                 ExecutableStage::Match(match_executable) => {
                     // TODO: Pass expressions & functions
-                    let match_stage = MatchStageExecutor::new(
-                        match_executable,
-                        last_stage,
-                        Arc::new(ExecutableFunctionRegistry::empty()),
-                    );
+                    let match_stage =
+                        MatchStageExecutor::new(match_executable, last_stage, executable_functions.clone());
                     last_stage = WritePipelineStage::Match(Box::new(match_stage));
                 }
                 ExecutableStage::Insert(insert_executable) => {
@@ -231,6 +236,18 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
                 }
             }
         }
-        Pipeline::build_with_fetch(variable_registry, last_stage, output_variable_positions, executable_fetch)
+        Pipeline::build_with_fetch(
+            variable_names,
+            executable_functions,
+            last_stage,
+            output_variable_positions,
+            executable_fetch,
+        )
     }
 }
+
+typedb_error!(
+    pub PipelineError(component = "Pipeline", prefix = "PIP") {
+        InvalidReadPipelineStage(1, "{stage} clause cannot exist in a read pipeline.", stage : String),
+    }
+);

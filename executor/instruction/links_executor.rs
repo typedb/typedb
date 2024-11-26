@@ -7,6 +7,7 @@
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet, HashMap},
+    fmt,
     sync::Arc,
 };
 
@@ -26,7 +27,10 @@ use lending_iterator::{
     AsHkt, LendingIterator, Peekable,
 };
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
-use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
+use storage::{
+    key_range::{KeyRange, RangeEnd, RangeStart},
+    snapshot::ReadableSnapshot,
+};
 
 use crate::{
     instruction::{
@@ -59,7 +63,7 @@ pub(crate) struct LinksExecutor {
 }
 
 pub(super) type LinksTupleIterator<I> = Map<
-    TryFilter<I, Box<LinksFilterFn>, (AsHkt![Relation<'_>], AsHkt![RolePlayer<'_>], u64), ConceptReadError>,
+    TryFilter<I, Box<LinksFilterFn>, (AsHkt![Relation<'_>], AsHkt![RolePlayer<'_>], u64), Box<ConceptReadError>>,
     LinksToTupleFn,
     AsHkt![TupleResult<'_>],
 >;
@@ -82,8 +86,8 @@ pub(super) const EXTRACT_ROLE: LinksVariableValueExtractor =
 
 pub(crate) type LinksOrderingFn = for<'a, 'b> fn(
     (
-        &'a Result<(Relation<'a>, RolePlayer<'a>, u64), ConceptReadError>,
-        &'b Result<(Relation<'b>, RolePlayer<'b>, u64), ConceptReadError>,
+        &'a Result<(Relation<'a>, RolePlayer<'a>, u64), Box<ConceptReadError>>,
+        &'b Result<(Relation<'b>, RolePlayer<'b>, u64), Box<ConceptReadError>>,
     ),
 ) -> Ordering;
 
@@ -94,7 +98,7 @@ impl LinksExecutor {
         sort_by: ExecutorVariable,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<Self, ConceptReadError> {
+    ) -> Result<Self, Box<ConceptReadError>> {
         debug_assert!(!variable_modes.all_inputs());
         let relation_player_types = links.relation_to_player_types().clone();
         debug_assert!(!relation_player_types.is_empty());
@@ -129,7 +133,7 @@ impl LinksExecutor {
             for type_ in relation_player_types.keys() {
                 let instances: Vec<Relation<'static>> = thing_manager
                     .get_relations_in(snapshot, type_.as_relation_type())
-                    .map_static(|result| Ok(result?.clone().into_owned()))
+                    .map_static(|result| Ok::<_, Box<_>>(result?.clone().into_owned()))
                     .try_collect()?;
                 cache.extend(instances);
             }
@@ -156,7 +160,7 @@ impl LinksExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
-    ) -> Result<TupleIterator, ConceptReadError> {
+    ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
         let filter_for_row: Box<LinksFilterFn> = Box::new(move |item| match filter(item) {
@@ -171,8 +175,10 @@ impl LinksExecutor {
             TernaryIterateMode::Unbound => {
                 let first_from_type = self.relation_player_types.first_key_value().unwrap().0;
                 let last_key_from_type = self.relation_player_types.last_key_value().unwrap().0;
-                let key_range =
-                    KeyRange::new_inclusive(first_from_type.as_relation_type(), last_key_from_type.as_relation_type());
+                let key_range = KeyRange::new_variable_width(
+                    RangeStart::Inclusive(first_from_type.as_relation_type()),
+                    RangeEnd::EndPrefixInclusive(last_key_from_type.as_relation_type()),
+                );
                 // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
                 let iterator = thing_manager.get_links_by_relation_type_range(snapshot, key_range);
                 let as_tuples: LinksUnboundedSortedRelation = iterator
@@ -188,8 +194,10 @@ impl LinksExecutor {
             TernaryIterateMode::UnboundInverted => {
                 debug_assert!(self.relation_cache.is_some());
                 let (min_player_type, max_player_type) = min_max_types(&*self.player_types);
-                let player_type_range =
-                    KeyRange::new_inclusive(min_player_type.as_object_type(), max_player_type.as_object_type());
+                let player_type_range = KeyRange::new_variable_width(
+                    RangeStart::Inclusive(min_player_type.as_object_type()),
+                    RangeEnd::EndPrefixInclusive(max_player_type.as_object_type()),
+                );
 
                 if let Some([relation]) = self.relation_cache.as_deref() {
                     // no heap allocs needed if there is only 1 iterator
@@ -213,7 +221,7 @@ impl LinksExecutor {
                     let relations = self.relation_cache.as_ref().unwrap().iter();
                     let iterators = relations
                         .map(|relation| {
-                            Ok(Peekable::new(thing_manager.get_links_by_relation_and_player_type_range(
+                            Ok::<_, Box<_>>(Peekable::new(thing_manager.get_links_by_relation_and_player_type_range(
                                 snapshot,
                                 relation.as_reference(),
                                 player_type_range.clone(),
@@ -239,8 +247,10 @@ impl LinksExecutor {
                 let relation = self.links.relation().as_variable().unwrap().as_position().unwrap();
                 debug_assert!(row.len() > relation.as_usize());
                 let (min_player_type, max_player_type) = min_max_types(&*self.player_types);
-                let player_type_range =
-                    KeyRange::new_inclusive(min_player_type.as_object_type(), max_player_type.as_object_type());
+                let player_type_range = KeyRange::new_variable_width(
+                    RangeStart::Inclusive(min_player_type.as_object_type()),
+                    RangeEnd::EndPrefixInclusive(max_player_type.as_object_type()),
+                );
 
                 let iterator = match row.get(relation) {
                     VariableValue::Thing(Thing::Relation(relation)) => thing_manager
@@ -282,6 +292,12 @@ impl LinksExecutor {
     }
 }
 
+impl fmt::Display for LinksExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "[{}], mode={}", &self.links, &self.iterate_mode)
+    }
+}
+
 fn create_links_filter_relations_players_roles(
     relation_to_player: Arc<BTreeMap<Type, Vec<Type>>>,
     player_to_role: Arc<BTreeMap<Type, BTreeSet<Type>>>,
@@ -303,8 +319,8 @@ fn create_links_filter_relations_players_roles(
 
 fn compare_by_player_then_relation(
     pair: (
-        &Result<(Relation<'_>, RolePlayer<'_>, u64), ConceptReadError>,
-        &Result<(Relation<'_>, RolePlayer<'_>, u64), ConceptReadError>,
+        &Result<(Relation<'_>, RolePlayer<'_>, u64), Box<ConceptReadError>>,
+        &Result<(Relation<'_>, RolePlayer<'_>, u64), Box<ConceptReadError>>,
     ),
 ) -> Ordering {
     if let (Ok((rel_1, rp_1, _)), Ok((rel_2, rp_2, _))) = pair {

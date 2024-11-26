@@ -10,6 +10,7 @@ use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManag
 use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use tracing::Level;
 
 use crate::{
     batch::Batch,
@@ -25,6 +26,7 @@ use crate::{
         reduce::ReduceStageExecutor,
         PipelineExecutionError, WrittenRowsIterator,
     },
+    profile::QueryProfile,
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
@@ -34,11 +36,23 @@ pub struct ExecutionContext<Snapshot> {
     pub snapshot: Arc<Snapshot>,
     pub thing_manager: Arc<ThingManager>,
     pub parameters: Arc<ParameterRegistry>,
+    pub profile: Arc<QueryProfile>,
 }
 
 impl<Snapshot> ExecutionContext<Snapshot> {
     pub fn new(snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>, parameters: Arc<ParameterRegistry>) -> Self {
-        Self { snapshot, thing_manager, parameters }
+        // TODO: in the future, we should use a parameter passed either at Query or Transaction time
+        let is_tracing = tracing::enabled!(Level::TRACE);
+        Self { snapshot, thing_manager, parameters, profile: Arc::new(QueryProfile::new(is_tracing)) }
+    }
+
+    pub(crate) fn clone_with_replaced_parameters(&self, parameters: Arc<ParameterRegistry>) -> Self {
+        Self {
+            snapshot: self.snapshot.clone(),
+            thing_manager: self.thing_manager.clone(),
+            parameters,
+            profile: self.profile.clone(),
+        }
     }
 
     pub(crate) fn snapshot(&self) -> &Arc<Snapshot> {
@@ -60,8 +74,13 @@ impl<Snapshot> ExecutionContext<Snapshot> {
 
 impl<Snapshot> Clone for ExecutionContext<Snapshot> {
     fn clone(&self) -> Self {
-        let Self { snapshot, thing_manager, parameters } = self;
-        Self { snapshot: snapshot.clone(), thing_manager: thing_manager.clone(), parameters: parameters.clone() }
+        let Self { snapshot, thing_manager, parameters, profile } = self;
+        Self {
+            snapshot: snapshot.clone(),
+            thing_manager: thing_manager.clone(),
+            parameters: parameters.clone(),
+            profile: profile.clone(),
+        }
     }
 }
 
@@ -71,13 +90,16 @@ pub trait StageAPI<Snapshot> {
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>;
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    >;
 }
 
 pub trait StageIterator:
-    for<'a> LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>> + Sized
+    for<'a> LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>> + Sized
 {
-    fn collect_owned(mut self) -> Result<Batch, PipelineExecutionError> {
+    fn collect_owned(mut self) -> Result<Batch, Box<PipelineExecutionError>> {
         // specific iterators can optimise this by not iterating + collecting!
         let first = self.next();
         let mut batch = match first {
@@ -98,7 +120,7 @@ pub trait StageIterator:
 }
 
 pub enum ReadPipelineStage<Snapshot: ReadableSnapshot + 'static> {
-    Initial(InitialStage<Snapshot>),
+    Initial(Box<InitialStage<Snapshot>>),
     Match(Box<MatchStageExecutor<ReadPipelineStage<Snapshot>>>),
     Select(Box<SelectStageExecutor<ReadPipelineStage<Snapshot>>>),
     Sort(Box<SortStageExecutor<ReadPipelineStage<Snapshot>>>),
@@ -109,7 +131,7 @@ pub enum ReadPipelineStage<Snapshot: ReadableSnapshot + 'static> {
 }
 
 pub enum ReadStageIterator<Snapshot: ReadableSnapshot + 'static> {
-    Initial(InitialIterator),
+    Initial(Box<InitialIterator>),
     Match(Box<MatchStageIterator<Snapshot, ReadStageIterator<Snapshot>>>),
     Sort(SortStageIterator),
     Limit(Box<LimitStageIterator<ReadStageIterator<Snapshot>>>),
@@ -125,12 +147,14 @@ impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineSt
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
-    {
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         match self {
             ReadPipelineStage::Initial(stage) => {
                 let (iterator, snapshot) = stage.into_iterator(interrupt)?;
-                Ok((ReadStageIterator::Initial(iterator), snapshot))
+                Ok((ReadStageIterator::Initial(Box::new(iterator)), snapshot))
             }
             ReadPipelineStage::Match(stage) => {
                 let (iterator, snapshot) = stage.into_iterator(interrupt)?;
@@ -165,7 +189,7 @@ impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineSt
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for ReadStageIterator<Snapshot> {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         match self {
@@ -182,7 +206,7 @@ impl<Snapshot: ReadableSnapshot + 'static> LendingIterator for ReadStageIterator
 }
 
 impl<Snapshot: ReadableSnapshot + 'static> StageIterator for ReadStageIterator<Snapshot> {
-    fn collect_owned(self) -> Result<Batch, PipelineExecutionError> {
+    fn collect_owned(self) -> Result<Batch, Box<PipelineExecutionError>> {
         match self {
             ReadStageIterator::Initial(iterator) => iterator.collect_owned(),
             ReadStageIterator::Match(iterator) => iterator.collect_owned(),
@@ -197,7 +221,7 @@ impl<Snapshot: ReadableSnapshot + 'static> StageIterator for ReadStageIterator<S
 }
 
 pub enum WritePipelineStage<Snapshot: WritableSnapshot + 'static> {
-    Initial(InitialStage<Snapshot>),
+    Initial(Box<InitialStage<Snapshot>>),
     Match(Box<MatchStageExecutor<WritePipelineStage<Snapshot>>>),
     Insert(Box<InsertStageExecutor<WritePipelineStage<Snapshot>>>),
     Delete(Box<DeleteStageExecutor<WritePipelineStage<Snapshot>>>),
@@ -215,12 +239,14 @@ impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineS
     fn into_iterator(
         self,
         interrupt: ExecutionInterrupt,
-    ) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (PipelineExecutionError, ExecutionContext<Snapshot>)>
-    {
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         match self {
             WritePipelineStage::Initial(stage) => {
                 let (iterator, context) = stage.into_iterator(interrupt)?;
-                Ok((WriteStageIterator::Initial(iterator), context))
+                Ok((WriteStageIterator::Initial(Box::new(iterator)), context))
             }
             WritePipelineStage::Match(stage) => {
                 let (iterator, context) = stage.into_iterator(interrupt)?;
@@ -263,7 +289,7 @@ impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineS
 }
 
 pub enum WriteStageIterator<Snapshot: WritableSnapshot + 'static> {
-    Initial(InitialIterator),
+    Initial(Box<InitialIterator>),
     Match(Box<MatchStageIterator<Snapshot, WriteStageIterator<Snapshot>>>),
     Write(WrittenRowsIterator),
     Sort(SortStageIterator),
@@ -275,7 +301,7 @@ pub enum WriteStageIterator<Snapshot: WritableSnapshot + 'static> {
 }
 
 impl<Snapshot: WritableSnapshot + 'static> LendingIterator for WriteStageIterator<Snapshot> {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, PipelineExecutionError>;
+    type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         match self {
@@ -293,7 +319,7 @@ impl<Snapshot: WritableSnapshot + 'static> LendingIterator for WriteStageIterato
 }
 
 impl<Snapshot: WritableSnapshot + 'static> StageIterator for WriteStageIterator<Snapshot> {
-    fn collect_owned(self) -> Result<Batch, PipelineExecutionError> {
+    fn collect_owned(self) -> Result<Batch, Box<PipelineExecutionError>> {
         match self {
             WriteStageIterator::Initial(iterator) => iterator.collect_owned(),
             WriteStageIterator::Match(iterator) => iterator.collect_owned(),

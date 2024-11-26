@@ -26,7 +26,7 @@ pub(crate) mod validation;
 
 typedb_error!(
     pub SchemaValidationError(component = "Schema validation", prefix = "SVL") {
-        ConceptRead(1, "Data validation failed due to concept read error.", (source: ConceptReadError)),
+        ConceptRead(1, "Data validation failed due to concept read error.", (source: Box<ConceptReadError>)),
         LabelShouldBeUnique(2, "Label '{label}' should be unique, but is already used by '{existing_kind}'.", label: Label<'static>, existing_kind: Kind),
         StructNameShouldBeUnique(3, "Struct name '{name}' must a unique, unused name.", name: String),
         StructShouldHaveAtLeastOneField(4, "Struct '{name}' should have at least one field.", name: String),
@@ -55,13 +55,13 @@ typedb_error!(
         ValueTypeIsNotCompatibleWithValuesAnnotation(27, "Value type '{value_type:?}' is not compatible with values annotation on '{attribute}'.", attribute: Label<'static>, value_type: Option<ValueType>),
         ValueTypeIsNotKeyableForUniqueConstraintOfKeyAnnotationDeclaredOnOwns(28, "Value type '{value_type:?}' is not keyable for unique constraint of key annotation declared on 'owns' for '{owner}' owning '{attribute}'.", owner: Label<'static>, attribute: Label<'static>, value_type: Option<ValueType>),
         ValueTypeIsNotKeyableForUniqueConstraintOfUniqueAnnotationDeclaredOnOwns(29, "Value type '{value_type:?}' is not keyable for unique constraint of unique annotation declared on 'owns' for '{owner}' owning '{attribute}'.", owner: Label<'static>, attribute: Label<'static>, value_type: Option<ValueType>),
-        CannotSetAnnotationToInterfaceBecauseItsConstraintIsNotNarrowedByItsCapabilityConstraint(30, "Cannot set annotation to interface '{interface}' because its constraint is not narrowed by its capability constraint.", interface: Label<'static>, (source: ConstraintError)),
-        CannotSetAnnotationToCapabilityBecauseItsConstraintDoesNotNarrowItsInterfaceConstraint(31, "Cannot set annotation on capability '{cap}' of '{interface}' on type '{label}' because its constraint does not narrow its interface constraint.", cap: CapabilityKind, interface: Label<'static>, label: Label<'static>, (source: ConstraintError)),
+        CannotSetAnnotationToInterfaceBecauseItsConstraintIsNotNarrowedByItsCapabilityConstraint(30, "Cannot set annotation to interface '{interface}' because its constraint is not narrowed by its capability constraint.", interface: Label<'static>, (typedb_source: Box<ConstraintError>)),
+        CannotSetAnnotationToCapabilityBecauseItsConstraintDoesNotNarrowItsInterfaceConstraint(31, "Cannot set annotation on capability '{cap}' of '{interface}' on type '{label}' because its constraint does not narrow its interface constraint.", cap: CapabilityKind, interface: Label<'static>, label: Label<'static>, (typedb_source: Box<ConstraintError>)),
         InvalidCardinalityArguments(32, "Invalid arguments for cardinality annotation '{card}'.", card: AnnotationCardinality),
         InvalidRegexArguments(33, "Invalid arguments for regex annotation '{regex}'.", regex: AnnotationRegex),
         InvalidRangeArgumentsForValueType(34, "Invalid arguments for range annotation '{range}' for value type '{value_type:?}'.", range: AnnotationRange, value_type: Option<ValueType>),
         InvalidValuesArgumentsForValueType(35, "Invalid arguments for values annotation '{values}' for value type '{value_type:?}'.", values: AnnotationValues, value_type: Option<ValueType>),
-        SubtypeConstraintDoesNotNarrowSupertypeConstraint(36, "Subtype constraint on '{subtype}' does not narrow supertype constraint on '{supertype}'.", subtype: Label<'static>, supertype: Label<'static>, (source: ConstraintError)),
+        SubtypeConstraintDoesNotNarrowSupertypeConstraint(36, "Subtype constraint on '{subtype}' does not narrow supertype constraint on '{supertype}'.", subtype: Label<'static>, supertype: Label<'static>, (typedb_source: Box<ConstraintError>)),
         CannotUnsetInheritedOwns(37, "Cannot unset inherited 'owns' constraint from '{supertype}' for '{supertype}'.", supertype: Label<'static>, subtype: Label<'static>),
         CannotUnsetInheritedPlays(38, "Cannot unset inherited 'plays' constraint from '{supertype}' for '{subtype}'.", supertype: Label<'static>, subtype: Label<'static>),
         CannotUnsetInheritedValueType(39, "Cannot unset inherited value type '{value_type}' for '{subtype}'.", value_type: ValueType, subtype: Label<'static>),
@@ -92,37 +92,37 @@ typedb_error!(
         CannotAcquireCapabilityAsExistingInstancesViolateItsConstraint(
             55,
             "Cannot add new schema as existing instances would violate the addition.",
-            (typedb_source: DataValidationError)
+            (typedb_source: Box<DataValidationError>)
         ),
         CannotSetAnnotationForCapabilityAsExistingInstancesViolateItsConstraint(
             56,
             "Cannot set annotation as existing instances would violate the new constraint.",
-            ( typedb_source: DataValidationError)
+            ( typedb_source: Box<DataValidationError>)
         ),
         CannotChangeSupertypeAsUpdatedCapabilityConstraintIsViolatedByExistingInstances(
             57,
             "Cannot change supertype as the schema constraints would not be compatible with existing instances.",
-            (typedb_source: DataValidationError)
+            (typedb_source: Box<DataValidationError>)
         ),
         CannotChangeInterfaceTypeSupertypeAsUpdatedCapabilityConstraintIsViolatedByExistingInstances(
             58,
             "Cannot change schema as it would result in schema constraint that are compatible with existing instances.",
-            ( typedb_source: DataValidationError)
+            ( typedb_source: Box<DataValidationError>)
         ),
         CannotUnsetInterfaceTypeSupertypeAsUpdatedCapabilityConstraintIsViolatedByExistingInstances(
             59,
             "Cannot remove schema element as the result would not be compatible with existing instances.",
-            ( typedb_source : DataValidationError)
+            ( typedb_source : Box<DataValidationError> )
         ),
         CannotSetAnnotationAsExistingInstancesViolateItsConstraint(
             60,
             "Cannot set annotation as the result would not be compatible with existing instances.",
-            (typedb_source:  DataValidationError)
+            (typedb_source: Box<DataValidationError> )
         ),
         CannotChangeSupertypeAsUpdatedConstraintIsViolatedByExistingInstances(
             61,
             "Cannot change superty as the resulting schema constraints would be not be compatible with existing instances.",
-            ( typedb_source: DataValidationError)
+            ( typedb_source: Box<DataValidationError>)
         ),
     }
 );

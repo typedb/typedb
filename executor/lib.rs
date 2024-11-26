@@ -6,12 +6,8 @@
 
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
-#![allow(clippy::result_large_err)]
 
-use std::{
-    fmt::{Display, Formatter},
-    slice,
-};
+use std::{fmt, slice};
 
 use compiler::VariablePosition;
 use tokio::sync::broadcast::error::TryRecvError;
@@ -22,6 +18,7 @@ pub mod error;
 pub(crate) mod instruction;
 pub mod match_executor;
 pub mod pipeline;
+pub mod profile;
 pub mod read;
 pub(crate) mod reduce_executor;
 pub mod row;
@@ -29,6 +26,7 @@ pub mod write;
 
 // TODO: use a bit-vec, since we have a continuously allocated range of positions
 // ---> for now, using a byte vec, which is 8x wasteful and on the heap!
+#[derive(Debug)]
 pub(crate) struct SelectedPositions {
     selected: Vec<VariablePosition>,
 }
@@ -58,8 +56,8 @@ pub enum InterruptType {
     SchemaQueryExecution,
 }
 
-impl Display for InterruptType {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for InterruptType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             InterruptType::TransactionClosed => write!(f, "transaction close"),
             InterruptType::TransactionCommitted => write!(f, "transaction commit"),

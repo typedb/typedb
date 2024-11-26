@@ -4,9 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashSet;
+use std::{collections::HashSet, mem};
 
 use answer::variable::Variable;
+use structural_equality::StructuralEquality;
 
 #[derive(Debug, Clone)]
 pub enum Operator {
@@ -25,6 +26,16 @@ pub struct Select {
 impl Select {
     pub(crate) fn new(variables: HashSet<Variable>) -> Self {
         Self { variables }
+    }
+}
+
+impl StructuralEquality for Select {
+    fn hash(&self) -> u64 {
+        self.variables.hash()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.variables.equals(&other.variables)
     }
 }
 
@@ -47,6 +58,16 @@ impl Sort {
     }
 }
 
+impl StructuralEquality for Sort {
+    fn hash(&self) -> u64 {
+        self.variables.hash()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.variables.equals(&other.variables)
+    }
+}
+
 #[derive(Copy, Clone, Debug)]
 pub enum SortVariable {
     Ascending(Variable),
@@ -58,6 +79,21 @@ impl SortVariable {
         match *self {
             SortVariable::Ascending(var) => var,
             SortVariable::Descending(var) => var,
+        }
+    }
+}
+
+impl StructuralEquality for SortVariable {
+    fn hash(&self) -> u64 {
+        mem::discriminant(self).hash() ^ self.variable().hash()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Ascending(var), Self::Ascending(other_var)) => var == other_var,
+            (Self::Descending(var), Self::Descending(other_var)) => var == other_var,
+            // note: this style forces updating the match when the variants change
+            (Self::Ascending { .. }, _) | (Self::Descending { .. }, _) => false,
         }
     }
 }
@@ -77,6 +113,16 @@ impl Offset {
     }
 }
 
+impl StructuralEquality for Offset {
+    fn hash(&self) -> u64 {
+        self.offset.hash()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.offset.equals(&other.offset)
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 pub struct Limit {
     limit: u64,
@@ -92,6 +138,16 @@ impl Limit {
     }
 }
 
+impl StructuralEquality for Limit {
+    fn hash(&self) -> u64 {
+        self.limit.hash()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.limit.equals(&other.limit)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Require {
     pub variables: HashSet<Variable>,
@@ -100,5 +156,15 @@ pub struct Require {
 impl Require {
     pub(crate) fn new(variables: HashSet<Variable>) -> Self {
         Self { variables }
+    }
+}
+
+impl StructuralEquality for Require {
+    fn hash(&self) -> u64 {
+        self.variables.hash()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.variables.equals(&other.variables)
     }
 }

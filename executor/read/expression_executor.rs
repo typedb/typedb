@@ -13,8 +13,9 @@ use compiler::annotation::expression::{
         binary::{Binary, BinaryExpression, MathRemainderLong},
         list_operations::{ListConstructor, ListIndex, ListIndexRange},
         load_cast::{
-            CastBinaryLeft, CastBinaryRight, CastLeftLongToDouble, CastRightLongToDouble, CastUnary,
-            CastUnaryLongToDouble, ImplicitCast, LoadConstant, LoadVariable,
+            CastBinaryLeft, CastBinaryRight, CastLeftDecimalToDouble, CastLeftLongToDouble, CastRightDecimalToDouble,
+            CastRightLongToDouble, CastUnary, CastUnaryDecimalToDouble, CastUnaryLongToDouble, ImplicitCast,
+            LoadConstant, LoadVariable,
         },
         op_codes::ExpressionOpCode,
         operators,
@@ -153,6 +154,10 @@ fn evaluate_instruction(
         ExpressionOpCode::CastUnaryLongToDouble => CastUnaryLongToDouble::evaluate(state),
         ExpressionOpCode::CastLeftLongToDouble => CastLeftLongToDouble::evaluate(state),
         ExpressionOpCode::CastRightLongToDouble => CastRightLongToDouble::evaluate(state),
+
+        ExpressionOpCode::CastUnaryDecimalToDouble => CastUnaryDecimalToDouble::evaluate(state),
+        ExpressionOpCode::CastLeftDecimalToDouble => CastLeftDecimalToDouble::evaluate(state),
+        ExpressionOpCode::CastRightDecimalToDouble => CastRightDecimalToDouble::evaluate(state),
 
         ExpressionOpCode::OpLongAddLong => operators::OpLongAddLong::evaluate(state),
         ExpressionOpCode::OpLongSubtractLong => operators::OpLongSubtractLong::evaluate(state),

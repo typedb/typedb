@@ -147,7 +147,7 @@ You can download TypeDB from the [GitHub Releases](https://github.com/typedb/typ
 Check our [Installation guide](https://typedb.com/docs/typedb/2.x/installation) to get started.
 
 
-### Compiling TypeDB Core from source
+### Compiling TypeDB Core from source using Bazel
 
 > Note: You DO NOT NEED to compile TypeDB from the source if you just want to use TypeDB. See the _"Download and Run 
 > TypeDB Core"_ section above.
@@ -173,6 +173,13 @@ Check our [Installation guide](https://typedb.com/docs/typedb/2.x/installation) 
    - snappy: `brew install snappy`
    - jemalloc: `brew install jemalloc`
 
+### Compiling TypeDB Core from source using Cargo
+
+**For macs:**
+
+Install prerequisites:
+1. Rustup
+2. `brew install protoc`
 
 ## Resources
 

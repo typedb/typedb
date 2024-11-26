@@ -6,9 +6,8 @@
 
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
-#![allow(clippy::result_large_err)]
 
-use std::fmt;
+use std::{collections::BTreeSet, fmt};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use concept::{
@@ -73,7 +72,7 @@ impl Type {
         &'a self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'a TypeManager,
-    ) -> Result<MaybeOwns<'a, Label<'static>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'a, Label<'static>>, Box<ConceptReadError>> {
         match self {
             Type::Entity(entity) => entity.get_label(snapshot, type_manager),
             Type::Relation(relation) => relation.get_label(snapshot, type_manager),
@@ -149,7 +148,7 @@ impl Type {
         supertype: &Self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         if self.kind() != supertype.kind() || self == supertype {
             return Ok(false);
         }
@@ -170,7 +169,7 @@ impl Type {
         supertype: &Self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         if self.kind() != supertype.kind() {
             return Ok(false);
         }
@@ -191,6 +190,35 @@ impl Type {
                 Ok(role.get_subtypes_transitive(snapshot, type_manager)?.contains(&self.as_role_type()))
             }
         }
+    }
+
+    pub fn is_abstract(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<bool, Box<ConceptReadError>> {
+        match self {
+            Type::Entity(entity) => entity.is_abstract(snapshot, type_manager),
+            Type::Relation(relation) => relation.is_abstract(snapshot, type_manager),
+            Type::Attribute(attribute) => attribute.is_abstract(snapshot, type_manager),
+            Type::RoleType(role) => role.is_abstract(snapshot, type_manager),
+        }
+    }
+
+    pub fn try_retain(
+        annotations: &mut BTreeSet<Self>,
+        predicate: impl Fn(&Self) -> Result<bool, Box<ConceptReadError>>,
+    ) -> Result<(), Box<ConceptReadError>> {
+        let mut to_be_removed = Vec::new();
+        for annotation in annotations.iter() {
+            if !predicate(annotation)? {
+                to_be_removed.push(annotation.clone());
+            }
+        }
+        for annotation in to_be_removed.iter() {
+            annotations.remove(annotation);
+        }
+        Ok(())
     }
 }
 

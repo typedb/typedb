@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 package(default_visibility = ["//visibility:public"])
 
@@ -17,6 +17,7 @@ rust_library(
     ], exclude=["tests/**"]),
     deps = [
         "//answer",
+        "//common/bytes",
         "//common/error",
         "//common/lending_iterator",
         "//common/logger",
@@ -27,7 +28,7 @@ rust_library(
         "//resource",
         "//storage",
 
-        "@vaticle_typeql//rust:typeql",
+        "@typeql//rust:typeql",
 
         "@crates//:itertools",
         "@crates//:tracing",

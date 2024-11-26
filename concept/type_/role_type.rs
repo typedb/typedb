@@ -6,7 +6,7 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    fmt::{Display, Formatter},
+    fmt,
     sync::Arc,
 };
 
@@ -94,7 +94,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<bool, ConceptReadError> {
+    ) -> Result<bool, Box<ConceptReadError>> {
         self.get_relates_root(snapshot, type_manager)?.is_abstract(snapshot, type_manager)
     }
 
@@ -103,7 +103,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.delete_role_type(snapshot, thing_manager, self.into_owned())
     }
 
@@ -111,7 +111,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, Label<'static>>, Box<ConceptReadError>> {
         type_manager.get_role_type_label(snapshot, self.clone().into_owned())
     }
 
@@ -119,7 +119,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Arc<Label<'static>>, ConceptReadError> {
+    ) -> Result<Arc<Label<'static>>, Box<ConceptReadError>> {
         type_manager.get_role_type_label_arc(snapshot, self.clone().into_owned())
     }
 
@@ -127,7 +127,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<RoleType<'static>>, ConceptReadError> {
+    ) -> Result<Option<RoleType<'static>>, Box<ConceptReadError>> {
         type_manager.get_role_type_supertype(snapshot, self.clone().into_owned())
     }
 
@@ -135,7 +135,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<RoleType<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, Vec<RoleType<'static>>>, Box<ConceptReadError>> {
         type_manager.get_role_type_supertypes(snapshot, self.clone().into_owned())
     }
 
@@ -143,7 +143,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<RoleType<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<RoleType<'static>>>, Box<ConceptReadError>> {
         type_manager.get_role_type_subtypes(snapshot, self.clone().into_owned())
     }
 
@@ -151,7 +151,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<RoleType<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, Vec<RoleType<'static>>>, Box<ConceptReadError>> {
         type_manager.get_role_type_subtypes_transitive(snapshot, self.clone().into_owned())
     }
 }
@@ -164,7 +164,7 @@ impl<'a> KindAPI<'a> for RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<RoleTypeAnnotation>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<RoleTypeAnnotation>>, Box<ConceptReadError>> {
         type_manager.get_role_type_annotations_declared(snapshot, self.clone().into_owned())
     }
 
@@ -172,7 +172,7 @@ impl<'a> KindAPI<'a> for RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<RoleType<'static>>>>, ConceptReadError>
+    ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<RoleType<'static>>>>, Box<ConceptReadError>>
     where
         'a: 'static,
     {
@@ -186,7 +186,7 @@ impl<'a> RoleType<'a> {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         name: &str,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.set_role_type_name(snapshot, self.clone().into_owned(), name)
     }
 
@@ -194,7 +194,7 @@ impl<'a> RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Ordering, ConceptReadError> {
+    ) -> Result<Ordering, Box<ConceptReadError>> {
         type_manager.get_role_type_ordering(snapshot, self.clone().into_owned())
     }
 
@@ -204,7 +204,7 @@ impl<'a> RoleType<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         ordering: Ordering,
-    ) -> Result<(), ConceptWriteError> {
+    ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.set_role_ordering(snapshot, thing_manager, self.clone().into_owned(), ordering)
     }
 
@@ -219,7 +219,7 @@ impl<'a> RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Relates<'static>, ConceptReadError> {
+    ) -> Result<Relates<'static>, Box<ConceptReadError>> {
         type_manager.get_role_type_relates_root(snapshot, self.clone().into_owned())
     }
 
@@ -227,7 +227,7 @@ impl<'a> RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Relates<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<Relates<'static>>>, Box<ConceptReadError>> {
         type_manager.get_role_type_relates(snapshot, self.clone().into_owned())
     }
 
@@ -235,7 +235,7 @@ impl<'a> RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<RelationType<'static>, Relates<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashMap<RelationType<'static>, Relates<'static>>>, Box<ConceptReadError>> {
         type_manager.get_role_type_relation_types(snapshot, self.clone().into_owned())
     }
 
@@ -244,7 +244,7 @@ impl<'a> RoleType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
         relation_type: RelationType<'static>,
-    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Relates<'static>>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Relates<'static>>>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_related_role_type_constraints(snapshot, relation_type, self.clone().into_owned())
     }
 }
@@ -255,7 +255,7 @@ impl<'a> RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, Box<ConceptReadError>> {
         type_manager.get_role_type_plays(snapshot, self.clone().into_owned())
     }
 
@@ -263,7 +263,7 @@ impl<'a> RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<ObjectType<'static>, Plays<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashMap<ObjectType<'static>, Plays<'static>>>, Box<ConceptReadError>> {
         type_manager.get_role_type_player_types(snapshot, self.clone().into_owned())
     }
 
@@ -272,7 +272,7 @@ impl<'a> RoleType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
         player_type: ObjectType<'static>,
-    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays<'static>>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays<'static>>>>, Box<ConceptReadError>> {
         match player_type {
             ObjectType::Entity(entity_type) => type_manager.get_entity_type_played_role_type_constraints(
                 snapshot,
@@ -288,8 +288,8 @@ impl<'a> RoleType<'a> {
     }
 }
 
-impl<'a> Display for RoleType<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<'a> fmt::Display for RoleType<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[RoleType:{}]", self.vertex.type_id_())
     }
 }

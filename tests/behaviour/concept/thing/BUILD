@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_test")
 
 rust_test(
@@ -12,7 +12,7 @@ rust_test(
         "//tests/behaviour/steps:steps",
         "@crates//:tokio",
     ],
-    data = ["@vaticle_typedb_behaviour//concept/thing:attribute.feature"],
+    data = ["@typedb_behaviour//concept/thing:attribute.feature"],
     crate_features = ["bazel"],
 )
 
@@ -23,7 +23,7 @@ rust_test(
         "//tests/behaviour/steps:steps",
         "@crates//:tokio",
     ],
-    data = ["@vaticle_typedb_behaviour//concept/thing:entity.feature"],
+    data = ["@typedb_behaviour//concept/thing:entity.feature"],
     crate_features = ["bazel"],
 )
 
@@ -34,7 +34,7 @@ rust_test(
         "//tests/behaviour/steps:steps",
         "@crates//:tokio",
     ],
-    data = ["@vaticle_typedb_behaviour//concept/thing:has.feature"],
+    data = ["@typedb_behaviour//concept/thing:has.feature"],
     crate_features = ["bazel"],
 )
 
@@ -45,7 +45,7 @@ rust_test(
         "//tests/behaviour/steps:steps",
         "@crates//:tokio",
     ],
-    data = ["@vaticle_typedb_behaviour//concept/thing:relation.feature"],
+    data = ["@typedb_behaviour//concept/thing:relation.feature"],
     crate_features = ["bazel"],
 )
 
@@ -56,7 +56,7 @@ rust_test(
         "//tests/behaviour/steps:steps",
         "@crates//:tokio",
     ],
-    data = ["@vaticle_typedb_behaviour//concept/thing:roleplayer.feature"],
+    data = ["@typedb_behaviour//concept/thing:roleplayer.feature"],
     crate_features = ["bazel"],
 )
 

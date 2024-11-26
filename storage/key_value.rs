@@ -78,6 +78,12 @@ impl<'bytes, const S: usize> StorageKey<'bytes, S> {
             StorageKey::Reference(reference) => StorageKeyArray::from(reference),
         }
     }
+
+    pub fn resize_to<const NEW_INLINE_SIZE: usize>(&self) -> StorageKey<'static, NEW_INLINE_SIZE> {
+        let array = ByteArray::copy(self.bytes());
+        let storage_key = StorageKeyArray::new_raw(self.keyspace_id(), array);
+        StorageKey::Array(storage_key)
+    }
 }
 
 impl<'bytes, const SZ: usize> PartialEq<Self> for StorageKey<'bytes, SZ> {
@@ -127,7 +133,7 @@ impl<const SZ: usize> StorageKeyArray<SZ> {
         Self::new_raw(keyspace.id(), array)
     }
 
-    pub(crate) fn new_raw(keyspace_id: KeyspaceId, array: ByteArray<SZ>) -> Self {
+    pub fn new_raw(keyspace_id: KeyspaceId, array: ByteArray<SZ>) -> Self {
         Self { keyspace_id, byte_array: array }
     }
 
@@ -136,11 +142,11 @@ impl<const SZ: usize> StorageKeyArray<SZ> {
     }
 
     pub fn length(&self) -> usize {
-        self.byte_array.length()
+        self.byte_array.len()
     }
 
     pub fn bytes(&self) -> &[u8] {
-        self.byte_array.bytes()
+        &self.byte_array
     }
 
     pub fn byte_array(&self) -> &ByteArray<SZ> {

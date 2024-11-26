@@ -2,12 +2,12 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_test", "rust_binary")
 package(default_visibility = ["//visibility:public",])
 
 # To run this via Bazel, Criterion must be provided the --bench argument:
-#   bazel run --compilation_mode=opt //executor/benches:bench_insert_queries -- --bench
+#   bazel run --compilation_mode=opt //query/benches:bench_insert_queries -- --bench
 rust_test(
     name = "bench_insert_queries",
     srcs = glob([
@@ -31,7 +31,7 @@ rust_test(
         "//encoding/tests:test_utils_encoding",
         "//util/test:test_utils",
 
-        "@vaticle_typeql//rust:typeql",
+        "@typeql//rust:typeql",
 
         "@crates//:criterion",
         "@crates//:rand",
@@ -66,7 +66,7 @@ rust_test(
         "//encoding/tests:test_utils_encoding",
 
 
-        "@vaticle_typeql//rust:typeql",
+        "@typeql//rust:typeql",
 
         "@crates//:criterion",
         "@crates//:rand",

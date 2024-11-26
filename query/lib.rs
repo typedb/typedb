@@ -6,12 +6,12 @@
 
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
-#![allow(clippy::result_large_err)]
 
 mod definable_resolution;
 mod definable_status;
 mod define;
 pub mod error;
+pub mod query_cache;
 pub mod query_manager;
 mod redefine;
 mod undefine;

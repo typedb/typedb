@@ -36,7 +36,7 @@ fn define_struct<Snapshot: WritableSnapshot>(
     let index_key = NameToStructDefinitionIndex::build(definition.name.as_str());
     snapshot.put_val(
         index_key.into_storage_key().into_owned_array(),
-        ByteArray::copy(definition_key.clone().into_bytes().bytes()),
+        ByteArray::copy(&definition_key.clone().into_bytes()),
     );
     definition_key
 }

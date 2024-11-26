@@ -26,9 +26,15 @@ async fn server_open_transaction_for_database(
 ) -> ActiveTransaction {
     let database = server.database_manager().database(database_name).unwrap();
     match tx_name.as_str() {
-        "read" => ActiveTransaction::Read(TransactionRead::open(database, TransactionOptions::default())),
-        "write" => ActiveTransaction::Write(TransactionWrite::open(database, TransactionOptions::default())),
-        "schema" => ActiveTransaction::Schema(TransactionSchema::open(database, TransactionOptions::default())),
+        "read" => ActiveTransaction::Read(
+            TransactionRead::open(database, TransactionOptions::default()).expect("Read transaction"),
+        ),
+        "write" => ActiveTransaction::Write(
+            TransactionWrite::open(database, TransactionOptions::default()).expect("Write transaction"),
+        ),
+        "schema" => ActiveTransaction::Schema(
+            TransactionSchema::open(database, TransactionOptions::default()).expect("Schema transaction"),
+        ),
         _ => unreachable!("Unrecognised transaction type"),
     }
 }
@@ -119,26 +125,36 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
                 match error {
                     DataCommitError::ConceptWriteErrors { source: errors, .. } => {
                         for error in errors {
-                            may_error.check_concept_write_without_read_errors::<()>(&Err(error))
+                            may_error.check_concept_write_without_read_errors::<()>(&Err(Box::new(error)));
                         }
                     }
                     DataCommitError::ConceptWriteErrorsFirst { typedb_source } => {
-                        may_error.check_concept_write_without_read_errors::<()>(&Err(typedb_source))
+                        may_error.check_concept_write_without_read_errors::<()>(&Err(typedb_source));
                     }
                     DataCommitError::SnapshotInUse { .. } | DataCommitError::SnapshotError { .. } => {
-                        panic!("Unexpected write commit error: {:?}", error)
+                        panic!("Unexpected write commit error: {:?}", error);
                     }
                 }
             }
         }
         ActiveTransaction::Schema(tx) => {
             if let Some(error) = may_error.check(tx.commit()) {
-                if let SchemaCommitError::ConceptWrite { errors, .. } = error {
-                    for error in errors {
-                        may_error.check_concept_write_without_read_errors::<()>(&Err(error))
+                match error {
+                    SchemaCommitError::ConceptWriteErrors { source: errors, .. } => {
+                        for error in errors {
+                            may_error.check_concept_write_without_read_errors::<()>(&Err(Box::new(error)));
+                        }
                     }
-                } else {
-                    panic!("Unexpected schema commit error: {:?}", error)
+                    SchemaCommitError::ConceptWriteErrorsFirst { typedb_source } => {
+                        may_error.check_concept_write_without_read_errors::<()>(&Err(typedb_source));
+                    }
+
+                    SchemaCommitError::TypeCacheUpdateError { .. }
+                    | SchemaCommitError::StatisticsError { .. }
+                    | SchemaCommitError::FunctionError { .. }
+                    | SchemaCommitError::SnapshotError { .. } => {
+                        panic!("Unexpected schema commit error: {:?}", error);
+                    }
                 }
             }
         }

@@ -156,6 +156,10 @@ impl AnnotationCardinality {
         self == &Self::unchecked()
     }
 
+    pub fn is_bounded_to_one(&self) -> bool {
+        self.end() == Some(1)
+    }
+
     pub fn valid(&self) -> bool {
         match self.end_inclusive {
             Some(end_inclusive) if self.start_inclusive > end_inclusive => false,
@@ -919,7 +923,7 @@ mod serialize_annotation {
             | ValueTypeCategory::DateTime
             | ValueTypeCategory::DateTimeTZ
             | ValueTypeCategory::Duration
-            | ValueTypeCategory::String => value.encode_bytes::<AD_HOC_BYTES_INLINE>().bytes().to_owned(),
+            | ValueTypeCategory::String => value.encode_bytes::<AD_HOC_BYTES_INLINE>().to_vec(),
             ValueTypeCategory::Struct => unreachable!("Structs are not supported in annotation serialization"),
         }
     }
@@ -1187,7 +1191,7 @@ mod serialize_annotation {
                 | Value::DateTime(_)
                 | Value::DateTimeTZ(_)
                 | Value::String(_)
-                | Value::Duration(_) => value.encode_bytes::<AD_HOC_BYTES_INLINE>().bytes().to_owned(),
+                | Value::Duration(_) => value.encode_bytes::<AD_HOC_BYTES_INLINE>().to_vec(),
                 Value::Struct(_) => unreachable!("Can't use struct for AnnotationValues"),
             })
             .collect()

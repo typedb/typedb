@@ -51,11 +51,11 @@ where
         Some(R::VALUE_TYPE_CATEGORY)
     }
 
-    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompileError> {
+    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), Box<ExpressionCompileError>> {
         let a2 = builder.pop_type_single()?.category();
         let a1 = builder.pop_type_single()?.category();
         if (a1, a2) != (T1::VALUE_TYPE_CATEGORY, T2::VALUE_TYPE_CATEGORY) {
-            Err(ExpressionCompileError::InternalUnexpectedValueType)?;
+            Err(Box::new(ExpressionCompileError::InternalUnexpectedValueType))?;
         }
         builder.push_type_single(R::VALUE_TYPE_CATEGORY.try_into_value_type().unwrap());
         builder.append_instruction(Self::OP_CODE);

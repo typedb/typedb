@@ -24,14 +24,17 @@ use crate::{
     },
     executable::{
         match_::planner::function_plan::ExecutableFunctionRegistry,
+        next_executable_id,
         pipeline::{compile_pipeline_stages, ExecutableStage},
-        reduce::ReduceInstruction,
+        reduce::ReduceRowsExecutable,
         ExecutableCompilationError,
     },
     VariablePosition,
 };
 
+#[derive(Debug, Clone)]
 pub struct ExecutableFunction {
+    pub executable_id: u64,
     pub executable_stages: Vec<ExecutableStage>,
     pub argument_positions: HashMap<Variable, VariablePosition>,
     pub returns: ExecutableReturn,
@@ -40,11 +43,12 @@ pub struct ExecutableFunction {
     // pub plan_cost: f64, // TODO: Where do we fit this in?
 }
 
+#[derive(Debug, Clone)]
 pub enum ExecutableReturn {
     Stream(Vec<VariablePosition>),
     Single(SingleSelector, Vec<VariablePosition>),
     Check,
-    Reduce(Vec<ReduceInstruction<VariablePosition>>),
+    Reduce(Arc<ReduceRowsExecutable>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -62,14 +66,16 @@ pub(crate) fn compile_function(
     let AnnotatedFunction { variable_registry, parameter_registry, arguments, stages, return_ } = function;
     let (argument_positions, executable_stages) = compile_pipeline_stages(
         statistics,
-        Arc::new(variable_registry),
+        &variable_registry,
         schema_functions,
         stages,
         arguments.into_iter(),
+        &return_.referenced_variables(),
     )?;
 
     let returns = compile_return_operation(&executable_stages, return_)?;
     Ok(ExecutableFunction {
+        executable_id: next_executable_id(),
         executable_stages,
         argument_positions,
         returns,
@@ -93,9 +99,11 @@ fn compile_return_operation(
         }
         | AnnotatedFunctionReturn::ReduceCheck {} => Ok(ExecutableReturn::Check),
         | AnnotatedFunctionReturn::ReduceReducer { instructions } => {
-            let positional_reducers =
-                instructions.into_iter().map(|reducer| reducer.map(&variable_positions)).collect();
-            Ok(ExecutableReturn::Reduce(positional_reducers))
+            let reductions = instructions.into_iter().map(|reducer| reducer.map(&variable_positions)).collect();
+            Ok(ExecutableReturn::Reduce(Arc::new(ReduceRowsExecutable {
+                reductions,
+                input_group_positions: Vec::new(),
+            })))
         }
     }
 }
@@ -105,7 +113,7 @@ pub fn determine_tabling_requirements(
 ) -> HashMap<FunctionID, FunctionTablingType> {
     let mut cycle_detection: HashMap<FunctionID, TablingRequirement> =
         functions.keys().map(|function_id| (function_id.clone(), TablingRequirement::Unexplored)).collect();
-    for (function_id, _) in functions {
+    for function_id in functions.keys() {
         if cycle_detection[function_id] == TablingRequirement::Unexplored {
             determine_tabling_requirements_impl(functions, &mut cycle_detection, function_id)
         }

@@ -16,6 +16,7 @@ use ir::{
     pipeline::{
         block::Block,
         function_signature::{FunctionID, FunctionSignature},
+        ParameterRegistry,
     },
     translation::TranslationContext,
 };
@@ -47,7 +48,8 @@ use ir::{
 #[test]
 fn build_with_functions() {
     let mut context = TranslationContext::new();
-    let mut builder = Block::builder(context.new_block_builder_context());
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
 
     let var_person = conjunction.get_or_declare_variable("person").unwrap();
@@ -73,7 +75,7 @@ fn build_with_functions() {
         .constraints_mut()
         .add_function_binding(vec![var_count, var_mean], &function_signature, vec![var_person], "test_fn")
         .unwrap();
-    let block = builder.finish();
+    let block = builder.finish().unwrap();
     println!("{}", block.conjunction());
 
     // TODO: incomplete, since we don't have the called function IR

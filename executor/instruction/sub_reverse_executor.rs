@@ -6,17 +6,14 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet},
+    fmt,
     sync::Arc,
     vec,
 };
 
 use answer::Type;
 use compiler::{executable::match_::instructions::type_::SubReverseInstruction, ExecutorVariable};
-use concept::{
-    error::ConceptReadError,
-    type_::{type_manager::TypeManager, TypeAPI},
-};
-use ir::pattern::constraint::SubKind;
+use concept::error::ConceptReadError;
 use itertools::Itertools;
 use lending_iterator::{higher_order::AdHocHkt, AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
@@ -43,10 +40,10 @@ pub(crate) struct SubReverseExecutor {
     checker: Checker<AdHocHkt<(Type, Type)>>,
 }
 
-pub(super) type SubReverseUnboundedSortedSub =
-    SubTupleIterator<AsLendingIterator<vec::IntoIter<Result<(Type, Type), ConceptReadError>>>>;
-pub(super) type SubReverseBoundedSortedSuper =
-    SubTupleIterator<AsLendingIterator<vec::IntoIter<Result<(Type, Type), ConceptReadError>>>>;
+pub(super) type SubReverseUnboundedSortedSuper =
+    SubTupleIterator<AsLendingIterator<vec::IntoIter<Result<(Type, Type), Box<ConceptReadError>>>>>;
+pub(super) type SubReverseBoundedSortedSub =
+    SubTupleIterator<AsLendingIterator<vec::IntoIter<Result<(Type, Type), Box<ConceptReadError>>>>>;
 
 pub(super) type SubFilterFn = FilterFn<(Type, Type)>;
 
@@ -102,7 +99,7 @@ impl SubReverseExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
-    ) -> Result<TupleIterator, ConceptReadError> {
+    ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
         let filter_for_row: Box<SubFilterFn> = Box::new(move |item| match filter(item) {
@@ -117,7 +114,7 @@ impl SubReverseExecutor {
                     .iter()
                     .flat_map(|(sup, subs)| subs.iter().map(|sub| Ok((sub.clone(), sup.clone()))))
                     .collect_vec();
-                let as_tuples: SubReverseUnboundedSortedSub = NarrowingTupleIterator(
+                let as_tuples: SubReverseUnboundedSortedSuper = NarrowingTupleIterator(
                     AsLendingIterator::new(sub_with_super)
                         .try_filter::<_, SubFilterFn, (Type, Type), _>(filter_for_row)
                         .map(sub_to_tuple_super_sub),
@@ -135,10 +132,9 @@ impl SubReverseExecutor {
 
             BinaryIterateMode::BoundFrom => {
                 let supertype = type_from_row_or_annotations(self.sub.supertype(), row, self.super_to_subtypes.keys());
-                let type_manager = context.type_manager();
-                let subtypes = get_subtypes(&**context.snapshot(), type_manager, &supertype, self.sub.sub_kind())?;
-                let sub_with_super = subtypes.into_iter().map(|sub| Ok((sub, supertype.clone()))).collect_vec(); // TODO cache this
-                let as_tuples: SubReverseBoundedSortedSuper = NarrowingTupleIterator(
+                let subtypes = self.super_to_subtypes.get(&supertype).unwrap_or(const { &Vec::new() });
+                let sub_with_super = subtypes.iter().map(|sub| Ok((sub.clone(), supertype.clone()))).collect_vec(); // TODO cache this
+                let as_tuples: SubReverseBoundedSortedSub = NarrowingTupleIterator(
                     AsLendingIterator::new(sub_with_super)
                         .try_filter::<_, SubFilterFn, (Type, Type), _>(filter_for_row)
                         .map(sub_to_tuple_sub_super),
@@ -153,56 +149,10 @@ impl SubReverseExecutor {
     }
 }
 
-pub(super) fn get_subtypes(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    supertype: &Type,
-    sub_kind: SubKind,
-) -> Result<Vec<Type>, ConceptReadError> {
-    let mut subtypes = match sub_kind {
-        SubKind::Exact => match supertype {
-            Type::Entity(type_) => {
-                let subtypes = type_.get_subtypes(snapshot, type_manager)?;
-                subtypes.iter().cloned().map(Type::Entity).collect_vec()
-            }
-            Type::Relation(type_) => {
-                let subtypes = type_.get_subtypes(snapshot, type_manager)?;
-                subtypes.iter().cloned().map(Type::Relation).collect_vec()
-            }
-            Type::Attribute(type_) => {
-                let subtypes = type_.get_subtypes(snapshot, type_manager)?;
-                subtypes.iter().cloned().map(Type::Attribute).collect_vec()
-            }
-            Type::RoleType(type_) => {
-                let subtypes = type_.get_subtypes(snapshot, type_manager)?;
-                subtypes.iter().cloned().map(Type::RoleType).collect_vec()
-            }
-        },
-        SubKind::Subtype => {
-            let mut subtypes = match supertype {
-                Type::Entity(type_) => {
-                    let subtypes = type_.get_subtypes_transitive(snapshot, type_manager)?;
-                    subtypes.iter().cloned().map(Type::Entity).collect_vec()
-                }
-                Type::Relation(type_) => {
-                    let subtypes = type_.get_subtypes_transitive(snapshot, type_manager)?;
-                    subtypes.iter().cloned().map(Type::Relation).collect_vec()
-                }
-                Type::Attribute(type_) => {
-                    let subtypes = type_.get_subtypes_transitive(snapshot, type_manager)?;
-                    subtypes.iter().cloned().map(Type::Attribute).collect_vec()
-                }
-                Type::RoleType(type_) => {
-                    let subtypes = type_.get_subtypes_transitive(snapshot, type_manager)?;
-                    subtypes.iter().cloned().map(Type::RoleType).collect_vec()
-                }
-            };
-            subtypes.push(supertype.clone());
-            subtypes
-        }
-    };
-    subtypes.sort();
-    Ok(subtypes)
+impl fmt::Display for SubReverseExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Reverse[{}], mode={}", &self.sub, &self.iterate_mode)
+    }
 }
 
 fn create_sub_filter_super_sub(super_to_subtypes: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<SubFilterFn> {

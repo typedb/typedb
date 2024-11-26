@@ -7,6 +7,7 @@
 use std::collections::{HashMap, HashSet};
 
 use answer::variable::Variable;
+use structural_equality::StructuralEquality;
 
 use crate::{
     pattern::{
@@ -65,6 +66,17 @@ impl Scope for Block {
     }
 }
 
+impl StructuralEquality for Block {
+    fn hash(&self) -> u64 {
+        self.conjunction().hash()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.conjunction().equals(other.conjunction())
+    }
+}
+
+#[derive(Debug)]
 pub struct BlockBuilder<'reg> {
     context: BlockBuilderContext<'reg>,
     conjunction: Conjunction,
@@ -75,10 +87,10 @@ impl<'reg> BlockBuilder<'reg> {
         Self { conjunction: Conjunction::new(ScopeId::ROOT), context }
     }
 
-    pub fn finish(self) -> Block {
-        let Self { conjunction, context: block_context_builder } = self;
-        let BlockBuilderContext { block_context, .. } = block_context_builder;
-        Block { conjunction, block_context }
+    pub fn finish(self) -> Result<Block, Box<RepresentationError>> {
+        let Self { conjunction, context: BlockBuilderContext { block_context, variable_registry, .. } } = self;
+        validate_conjunction(&conjunction, variable_registry)?;
+        Ok(Block { conjunction, block_context })
     }
 
     pub fn conjunction_mut(&mut self) -> ConjunctionBuilder<'_, 'reg> {
@@ -90,7 +102,24 @@ impl<'reg> BlockBuilder<'reg> {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+fn validate_conjunction(
+    conjunction: &Conjunction,
+    variable_registry: &VariableRegistry,
+) -> Result<(), Box<RepresentationError>> {
+    let unbound =
+        conjunction.referenced_variables().find(|&variable| match variable_registry.get_variable_category(variable) {
+            Some(VariableCategory::AttributeOrValue) | None => true,
+            _ => false,
+        });
+    match unbound {
+        Some(variable) => Err(Box::new(RepresentationError::UnboundVariable {
+            variable: variable_registry.get_variable_name(variable).cloned().unwrap_or(String::new()),
+        })),
+        None => Ok(()),
+    }
+}
+
+#[derive(Debug, Clone, Default, Eq, PartialEq)]
 pub struct BlockContext {
     variable_declaration: HashMap<Variable, ScopeId>,
     scope_parents: HashMap<ScopeId, ScopeId>,
@@ -121,7 +150,7 @@ impl BlockContext {
         var: Variable,
         var_name: &str,
         scope: ScopeId,
-    ) -> Result<(), RepresentationError> {
+    ) -> Result<(), Box<RepresentationError>> {
         debug_assert!(self.variable_declaration.contains_key(&var));
         self.add_referenced_variable(var);
         let existing_scope = self.variable_declaration.get_mut(&var).unwrap();
@@ -133,7 +162,7 @@ impl BlockContext {
             *existing_scope = scope;
             Ok(())
         } else {
-            Err(RepresentationError::DisjointVariableReuse { name: var_name.to_string() })
+            Err(Box::new(RepresentationError::DisjointVariableReuse { name: var_name.to_string() }))
         }
     }
 
@@ -228,7 +257,7 @@ impl<'a> BlockBuilderContext<'a> {
         &mut self,
         name: &str,
         scope: ScopeId,
-    ) -> Result<Variable, RepresentationError> {
+    ) -> Result<Variable, Box<RepresentationError>> {
         match self.variable_names_index.get(name) {
             None => {
                 let variable = self.variable_registry.register_variable_named(name.to_string());
@@ -243,7 +272,7 @@ impl<'a> BlockBuilderContext<'a> {
         }
     }
 
-    pub(crate) fn create_anonymous_variable(&mut self, scope: ScopeId) -> Result<Variable, RepresentationError> {
+    pub(crate) fn create_anonymous_variable(&mut self, scope: ScopeId) -> Result<Variable, Box<RepresentationError>> {
         let variable = self.variable_registry.register_anonymous_variable();
         self.block_context.add_variable_declaration(variable, scope);
         Ok(variable)
@@ -271,7 +300,7 @@ impl<'a> BlockBuilderContext<'a> {
         variable: Variable,
         category: VariableCategory,
         source: Constraint<Variable>,
-    ) -> Result<(), RepresentationError> {
+    ) -> Result<(), Box<RepresentationError>> {
         self.variable_registry.set_variable_category(variable, category, VariableCategorySource::Constraint(source))
     }
 

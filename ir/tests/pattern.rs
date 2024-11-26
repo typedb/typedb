@@ -5,7 +5,7 @@
  */
 
 use ir::{
-    pipeline::function_signature::HashMapFunctionSignatureIndex,
+    pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
     translation::{match_::translate_match, TranslationContext},
     RepresentationError,
 };
@@ -23,7 +23,11 @@ fn build_conjunction_constraints() {
     eprintln!("{:#}\n", match_); // TODO
     eprintln!(
         "{}\n",
-        translate_match(&mut TranslationContext::new(), &empty_function_index, match_).unwrap().finish().conjunction()
+        translate_match(&mut TranslationContext::new(), &mut ParameterRegistry::new(), &empty_function_index, match_)
+            .unwrap()
+            .finish()
+            .unwrap()
+            .conjunction()
     );
 
     let query = "match
@@ -38,7 +42,11 @@ fn build_conjunction_constraints() {
     eprintln!("{:#}\n", match_); // TODO
     eprintln!(
         "{}\n",
-        translate_match(&mut TranslationContext::new(), &empty_function_index, match_).unwrap().finish().conjunction()
+        translate_match(&mut TranslationContext::new(), &mut ParameterRegistry::new(), &empty_function_index, match_)
+            .unwrap()
+            .finish()
+            .unwrap()
+            .conjunction()
     );
 
     let query = "match
@@ -55,7 +63,11 @@ fn build_conjunction_constraints() {
     eprintln!("{:#}\n", match_); // TODO
     eprintln!(
         "{}\n",
-        translate_match(&mut TranslationContext::new(), &empty_function_index, match_).unwrap().finish().conjunction()
+        translate_match(&mut TranslationContext::new(), &mut ParameterRegistry::new(), &empty_function_index, match_)
+            .unwrap()
+            .finish()
+            .unwrap()
+            .conjunction()
     );
 
     // let mut block = FunctionalBlock::new();
@@ -84,10 +96,10 @@ fn variable_category_mismatch() {
     let parsed = typeql::parse_query(query).unwrap();
     let typeql::Query::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else { unreachable!() };
     let Stage::Match(match_) = stages.first().unwrap() else { unreachable!() };
-    assert!(matches!(
-        translate_match(&mut TranslationContext::new(), &empty_function_index, match_),
-        Err(RepresentationError::VariableCategoryMismatch { .. })
-    ));
+    let mut context = TranslationContext::new();
+    let mut parameters = ParameterRegistry::new();
+    let translated = translate_match(&mut context, &mut parameters, &empty_function_index, match_);
+    assert!(matches!(translated.unwrap_err().as_ref(), &RepresentationError::VariableCategoryMismatch { .. }));
 
     // let mut block = FunctionalBlock::new();
     // let conjunction = block.conjunction_mut();
@@ -120,7 +132,15 @@ fn variable_category_narrowing() {
     eprintln!("{}\n", match_); // TODO
     eprintln!("{:#}\n", match_); // TODO
     let mut context = TranslationContext::new();
-    eprintln!("{}\n", translate_match(&mut context, &empty_function_index, match_).unwrap().finish().conjunction());
+    let mut value_parameters = ParameterRegistry::new();
+    eprintln!(
+        "{}\n",
+        translate_match(&mut context, &mut value_parameters, &empty_function_index, match_)
+            .unwrap()
+            .finish()
+            .unwrap()
+            .conjunction()
+    );
 
     // let mut block = FunctionalBlock::new();
     // let conjunction = block.conjunction_mut();

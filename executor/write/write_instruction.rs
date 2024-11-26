@@ -62,7 +62,7 @@ pub trait AsWriteInstruction {
         thing_manager: &ThingManager,
         parameters: &ParameterRegistry,
         row: &mut Row<'_>,
-    ) -> Result<(), WriteError>;
+    ) -> Result<(), Box<WriteError>>;
 }
 
 // Implementation
@@ -73,7 +73,7 @@ impl AsWriteInstruction for PutAttribute {
         thing_manager: &ThingManager,
         parameters: &ParameterRegistry,
         row: &mut Row<'_>,
-    ) -> Result<(), WriteError> {
+    ) -> Result<(), Box<WriteError>> {
         let attribute_type = try_unwrap_as!(answer::Type::Attribute: get_type(row, &self.type_)).unwrap();
         let inserted = thing_manager
             .create_attribute(snapshot, attribute_type.clone(), get_value(row, parameters, self.value).clone())
@@ -91,7 +91,7 @@ impl AsWriteInstruction for PutObject {
         thing_manager: &ThingManager,
         _parameters: &ParameterRegistry,
         row: &mut Row<'_>,
-    ) -> Result<(), WriteError> {
+    ) -> Result<(), Box<WriteError>> {
         let inserted = match get_type(row, &self.type_) {
             Type::Entity(entity_type) => {
                 let inserted = thing_manager
@@ -120,7 +120,7 @@ impl AsWriteInstruction for compiler::executable::insert::instructions::Has {
         thing_manager: &ThingManager,
         _parameters: &ParameterRegistry,
         row: &mut Row<'_>,
-    ) -> Result<(), WriteError> {
+    ) -> Result<(), Box<WriteError>> {
         let owner_thing = get_thing(row, &self.owner);
         let attribute = get_thing(row, &self.attribute);
         owner_thing
@@ -131,14 +131,14 @@ impl AsWriteInstruction for compiler::executable::insert::instructions::Has {
     }
 }
 
-impl AsWriteInstruction for compiler::executable::insert::instructions::RolePlayer {
+impl AsWriteInstruction for compiler::executable::insert::instructions::Links {
     fn execute(
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         _parameters: &ParameterRegistry,
         row: &mut Row<'_>,
-    ) -> Result<(), WriteError> {
+    ) -> Result<(), Box<WriteError>> {
         let relation_thing = try_unwrap_as!(answer::Thing::Relation : get_thing(row, &self.relation)).unwrap();
         let player_thing = get_thing(row, &self.player).as_object();
         let role_type = try_unwrap_as!(answer::Type::RoleType : get_type(row, &self.role)).unwrap();
@@ -156,7 +156,7 @@ impl AsWriteInstruction for compiler::executable::delete::instructions::ThingIns
         thing_manager: &ThingManager,
         _parameters: &ParameterRegistry,
         row: &mut Row<'_>,
-    ) -> Result<(), WriteError> {
+    ) -> Result<(), Box<WriteError>> {
         let thing = get_thing(row, &self.thing).clone();
         match thing {
             Thing::Entity(entity) => {
@@ -188,30 +188,30 @@ impl AsWriteInstruction for compiler::executable::delete::instructions::Has {
         thing_manager: &ThingManager,
         _parameters: &ParameterRegistry,
         row: &mut Row<'_>,
-    ) -> Result<(), WriteError> {
+    ) -> Result<(), Box<WriteError>> {
         // TODO: Lists
         let attribute = get_thing(row, &self.attribute).as_attribute();
         let owner = get_thing(row, &self.owner).as_object();
         owner
             .unset_has_unordered(snapshot, thing_manager, attribute)
-            .map_err(|source| WriteError::ConceptWrite { typedb_source: source })
+            .map_err(|source| Box::new(WriteError::ConceptWrite { typedb_source: source }))
     }
 }
 
-impl AsWriteInstruction for compiler::executable::delete::instructions::RolePlayer {
+impl AsWriteInstruction for compiler::executable::delete::instructions::Links {
     fn execute(
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         _parameters: &ParameterRegistry,
         row: &mut Row<'_>,
-    ) -> Result<(), WriteError> {
+    ) -> Result<(), Box<WriteError>> {
         // TODO: Lists
         let Object::Relation(relation) = get_thing(row, &self.relation).as_object() else { unreachable!() };
         let player = get_thing(row, &self.relation).as_object();
         let answer::Type::RoleType(role_type) = get_type(row, &self.role) else { unreachable!() };
         relation
             .remove_player_single(snapshot, thing_manager, role_type.clone(), player)
-            .map_err(|source| WriteError::ConceptWrite { typedb_source: source })
+            .map_err(|source| Box::new(WriteError::ConceptWrite { typedb_source: source }))
     }
 }

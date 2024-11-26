@@ -15,12 +15,15 @@ use compiler::{
         function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
         match_inference::infer_types,
     },
-    executable::match_::{
-        instructions::{thing::HasInstruction, ConstraintInstruction, Inputs},
-        planner::{
-            function_plan::ExecutableFunctionRegistry,
-            match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
+    executable::{
+        match_::{
+            instructions::{thing::HasInstruction, ConstraintInstruction, Inputs},
+            planner::{
+                function_plan::ExecutableFunctionRegistry,
+                match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
+            },
         },
+        next_executable_id,
     },
     ExecutorVariable, VariablePosition,
 };
@@ -30,10 +33,14 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, profile::QueryProfile,
+    row::MaybeOwnedRow, ExecutionInterrupt,
 };
-use ir::{pattern::constraint::IsaKind, pipeline::block::Block, translation::TranslationContext};
+use ir::{
+    pattern::constraint::IsaKind,
+    pipeline::{block::Block, ParameterRegistry},
+    translation::TranslationContext,
+};
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
@@ -153,7 +160,8 @@ fn anonymous_vars_not_enumerated_or_counted() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.new_block_builder_context());
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_attribute_type = conjunction.declare_variable_anonymous().unwrap();
@@ -163,7 +171,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type.into()).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let entry_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
@@ -206,7 +214,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
         &named_variables,
         1,
     ))];
-    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
+    let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars);
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -217,14 +225,16 @@ fn anonymous_vars_not_enumerated_or_counted() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
 
     // person1, <something>
     // person2, <something>
@@ -253,7 +263,8 @@ fn unselected_named_vars_counted() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.new_block_builder_context());
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_attribute_type = conjunction.get_or_declare_variable("attr_type").unwrap();
@@ -263,7 +274,7 @@ fn unselected_named_vars_counted() {
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type.into()).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let entry_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
@@ -307,7 +318,7 @@ fn unselected_named_vars_counted() {
         1,
     ))];
 
-    let executable = MatchExecutable::new(steps, variable_positions, row_vars);
+    let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars);
 
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
@@ -318,14 +329,16 @@ fn unselected_named_vars_counted() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
 
     // 7x person 1, <something>
     // 3x person 2, <something>
@@ -354,7 +367,8 @@ fn cartesian_named_counted_checked() {
 
     // IR
     let mut translation_context = TranslationContext::new();
-    let mut builder = Block::builder(translation_context.new_block_builder_context());
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
     let var_name_type = conjunction.declare_variable_anonymous().unwrap();
@@ -375,7 +389,7 @@ fn cartesian_named_counted_checked() {
     conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_email_type, EMAIL_LABEL.clone()).unwrap();
-    let entry = builder.finish();
+    let entry = builder.finish().unwrap();
 
     let entry_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
@@ -431,7 +445,7 @@ fn cartesian_named_counted_checked() {
         2,
     ))];
 
-    let match_executable = MatchExecutable::new(steps, variable_positions, row_vars);
+    let match_executable = MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars);
 
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
@@ -442,14 +456,16 @@ fn cartesian_named_counted_checked() {
         &thing_manager,
         MaybeOwnedRow::empty(),
         Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
     )
     .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, ReadExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| err.clone())).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
 
     // 2x person 1, age_1, <name something>, <email something>
     // 2x person 1, age_2, <name something>, <email something>

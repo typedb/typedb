@@ -17,7 +17,7 @@ use crate::{
 pub fn translate_select(
     context: &mut TranslationContext,
     typeql_select: &typeql::query::stage::modifier::Select,
-) -> Result<Select, RepresentationError> {
+) -> Result<Select, Box<RepresentationError>> {
     let selected_variables = typeql_select
         .variables
         .iter()
@@ -37,7 +37,7 @@ pub fn translate_select(
 pub fn translate_sort(
     context: &mut TranslationContext,
     sort: &typeql::query::stage::modifier::Sort,
-) -> Result<Sort, RepresentationError> {
+) -> Result<Sort, Box<RepresentationError>> {
     let sort_on = sort
         .ordered_variables
         .iter()
@@ -60,25 +60,25 @@ pub fn translate_sort(
 pub fn translate_offset(
     context: &mut TranslationContext,
     offset: &typeql::query::stage::modifier::Offset,
-) -> Result<Offset, RepresentationError> {
-    u64::from_typeql_literal(&offset.offset)
-        .map(Offset::new)
-        .map_err(|source| RepresentationError::LiteralParseError { literal: offset.offset.value.clone(), source })
+) -> Result<Offset, Box<RepresentationError>> {
+    u64::from_typeql_literal(&offset.offset).map(Offset::new).map_err(|source| {
+        Box::new(RepresentationError::LiteralParseError { literal: offset.offset.value.clone(), source })
+    })
 }
 
 pub fn translate_limit(
     context: &mut TranslationContext,
     limit: &typeql::query::stage::modifier::Limit,
-) -> Result<Limit, RepresentationError> {
-    u64::from_typeql_literal(&limit.limit)
-        .map(Limit::new)
-        .map_err(|source| RepresentationError::LiteralParseError { literal: limit.limit.value.clone(), source })
+) -> Result<Limit, Box<RepresentationError>> {
+    u64::from_typeql_literal(&limit.limit).map(Limit::new).map_err(|source| {
+        Box::new(RepresentationError::LiteralParseError { literal: limit.limit.value.clone(), source })
+    })
 }
 
 pub fn translate_require(
     context: &mut TranslationContext,
     typeql_require: &typeql::query::pipeline::stage::modifier::Require,
-) -> Result<Require, RepresentationError> {
+) -> Result<Require, Box<RepresentationError>> {
     let required_variables = typeql_require
         .variables
         .iter()

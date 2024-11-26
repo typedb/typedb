@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashSet, sync::Arc};
+use std::sync::Arc;
 
 use compiler::{
     executable::{
@@ -13,24 +13,29 @@ use compiler::{
             function_plan::ExecutableFunctionRegistry,
             match_executable::{ExecutionStep, MatchExecutable},
         },
+        next_executable_id,
         pipeline::ExecutableStage,
     },
     VariablePosition,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use ir::pipeline::function_signature::FunctionID;
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
+use typeql::schema::definable::function::SingleSelector;
 
-use crate::read::{
-    collecting_stage_executor::CollectingStageExecutor, immediate_executor::ImmediateExecutor,
-    nested_pattern_executor::NestedPatternExecutor, pattern_executor::PatternExecutor,
-    tabled_call_executor::TabledCallExecutor,
+use crate::{
+    profile::QueryProfile,
+    read::{
+        collecting_stage_executor::CollectingStageExecutor, immediate_executor::ImmediateExecutor,
+        nested_pattern_executor::NestedPatternExecutor, pattern_executor::PatternExecutor,
+        stream_modifier::StreamModifierExecutor, tabled_call_executor::TabledCallExecutor,
+    },
 };
 
-pub(super) enum StepExecutors {
+pub enum StepExecutors {
     Immediate(ImmediateExecutor),
     Nested(NestedPatternExecutor),
+    StreamModifier(StreamModifierExecutor),
     CollectingStage(CollectingStageExecutor),
     TabledCall(TabledCallExecutor),
     ReshapeForReturn(Vec<VariablePosition>),
@@ -44,7 +49,7 @@ impl StepExecutors {
         }
     }
 
-    pub(crate) fn unwrap_branch(&mut self) -> &mut NestedPatternExecutor {
+    pub(crate) fn unwrap_nested(&mut self) -> &mut NestedPatternExecutor {
         match self {
             StepExecutors::Nested(step) => step,
             _ => panic!("bad unwrap"),
@@ -55,6 +60,13 @@ impl StepExecutors {
         match self {
             StepExecutors::TabledCall(step) => step,
             _ => unreachable!(),
+        }
+    }
+
+    pub(crate) fn unwrap_stream_modifier(&mut self) -> &mut StreamModifierExecutor {
+        match self {
+            StepExecutors::StreamModifier(step) => step,
+            _ => panic!("bad unwrap"),
         }
     }
 
@@ -77,40 +89,56 @@ pub(crate) fn create_executors_for_match(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
+    query_profile: &QueryProfile,
     match_executable: &MatchExecutable,
-    tmp__recursion_validation: &mut HashSet<FunctionID>,
-) -> Result<Vec<StepExecutors>, ConceptReadError> {
+) -> Result<Vec<StepExecutors>, Box<ConceptReadError>> {
+    let stage_profile = query_profile.profile_stage(|| String::from("Match"), match_executable.executable_id());
     let mut steps = Vec::with_capacity(match_executable.steps().len());
-    for step in match_executable.steps() {
+    for (index, step) in match_executable.steps().iter().enumerate() {
         match step {
             ExecutionStep::Intersection(inner) => {
-                let step = ImmediateExecutor::new_intersection(inner, snapshot, thing_manager)?;
+                let step_profile = stage_profile.extend_or_get(index, || format!("{}", inner));
+                let step = ImmediateExecutor::new_intersection(inner, snapshot, thing_manager, step_profile)?;
                 steps.push(step.into());
             }
             ExecutionStep::UnsortedJoin(inner) => {
-                let step = ImmediateExecutor::new_unsorted_join(inner)?;
+                let step_profile = stage_profile.extend_or_get(index, || format!("{}", inner));
+                let step = ImmediateExecutor::new_unsorted_join(inner, step_profile)?;
                 steps.push(step.into());
             }
             ExecutionStep::Assignment(inner) => {
-                let step = ImmediateExecutor::new_assignment(inner)?;
+                let step_profile = stage_profile.extend_or_get(index, || format!("{}", inner));
+                let step = ImmediateExecutor::new_assignment(inner, step_profile)?;
                 steps.push(step.into());
             }
             ExecutionStep::Check(inner) => {
-                let step = ImmediateExecutor::new_check(inner)?;
+                let step_profile = stage_profile.extend_or_get(index, || format!("{}", inner));
+                let step = ImmediateExecutor::new_check(inner, step_profile)?;
                 steps.push(step.into());
             }
             ExecutionStep::Negation(negation_step) => {
-                // I shouldn't need to pass recursive here since it's stratified
+                // NOTE: still create the profile so each step has an entry in the profile, even if unused
+                let _step_profile = stage_profile.extend_or_get(index, || format!("{}", negation_step));
                 let inner = create_executors_for_match(
                     snapshot,
                     thing_manager,
                     function_registry,
+                    query_profile,
                     &negation_step.negation,
-                    tmp__recursion_validation,
                 )?;
-                steps.push(NestedPatternExecutor::new_negation(PatternExecutor::new(inner)).into())
+                // I shouldn't need to pass recursive here since it's stratified
+                steps.push(
+                    NestedPatternExecutor::new_negation(PatternExecutor::new(
+                        negation_step.negation.executable_id(),
+                        inner,
+                    ))
+                    .into(),
+                )
             }
             ExecutionStep::FunctionCall(function_call) => {
+                // NOTE: still create the profile so each step has an entry in the profile, even if unused
+                let _step_profile = stage_profile.extend_or_get(index, || format!("{}", function_call));
+
                 let function = function_registry.get(function_call.function_id.clone());
                 if function.is_tabled == FunctionTablingType::Tabled {
                     let executor = TabledCallExecutor::new(
@@ -121,21 +149,14 @@ pub(crate) fn create_executors_for_match(
                     );
                     steps.push(StepExecutors::TabledCall(executor))
                 } else {
-                    if tmp__recursion_validation.contains(&function_call.function_id) {
-                        // TODO: This validation can be removed once planning correctly identifies those to be tabled.
-                        unreachable!("Something that should have been tabled has not been tabled.")
-                    } else {
-                        tmp__recursion_validation.insert(function_call.function_id.clone());
-                    }
                     let inner_executors = create_executors_for_function(
                         snapshot,
                         thing_manager,
                         function_registry,
+                        query_profile,
                         function,
-                        tmp__recursion_validation,
                     )?;
-                    let inner = PatternExecutor::new(inner_executors);
-                    tmp__recursion_validation.remove(&function_call.function_id);
+                    let inner = PatternExecutor::new(function.executable_id, inner_executors);
                     let step = NestedPatternExecutor::new_inlined_function(
                         inner,
                         function_call,
@@ -145,6 +166,9 @@ pub(crate) fn create_executors_for_match(
                 }
             }
             ExecutionStep::Disjunction(step) => {
+                // NOTE: still create the profile so each step has an entry in the profile, even if unused
+                let _step_profile = stage_profile.extend_or_get(index, || format!("{}", step));
+
                 // I shouldn't need to pass recursive here since it's stratified
                 let branches = step
                     .branches
@@ -154,10 +178,10 @@ pub(crate) fn create_executors_for_match(
                             snapshot,
                             thing_manager,
                             function_registry,
-                            &branch_executable,
-                            tmp__recursion_validation,
+                            query_profile,
+                            branch_executable,
                         )?;
-                        Ok(PatternExecutor::new(executors))
+                        Ok::<_, Box<_>>(PatternExecutor::new(branch_executable.executable_id(), executors))
                     })
                     .try_collect()?;
                 let inner_step = NestedPatternExecutor::new_disjunction(
@@ -167,10 +191,10 @@ pub(crate) fn create_executors_for_match(
                 )
                 .into();
                 // Hack: wrap it in a distinct
-                let step =
-                    StepExecutors::CollectingStage(CollectingStageExecutor::new_distinct(PatternExecutor::new(vec![
-                        inner_step,
-                    ])));
+                let step = StepExecutors::StreamModifier(StreamModifierExecutor::new_distinct(
+                    PatternExecutor::new(next_executable_id(), vec![inner_step]),
+                    step.output_width,
+                ));
                 steps.push(step);
             }
             ExecutionStep::Optional(_) => todo!(),
@@ -183,45 +207,62 @@ pub(crate) fn create_executors_for_function(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
+    query_profile: &QueryProfile,
     executable_function: &ExecutableFunction,
-    tmp__recursion_validation: &mut HashSet<FunctionID>,
-) -> Result<Vec<StepExecutors>, ConceptReadError> {
+) -> Result<Vec<StepExecutors>, Box<ConceptReadError>> {
     let executable_stages = &executable_function.executable_stages;
     let mut steps = create_executors_for_pipeline_stages(
         snapshot,
         thing_manager,
         function_registry,
+        query_profile,
         executable_stages,
         executable_stages.len() - 1,
-        tmp__recursion_validation,
     )?;
-
-    // TODO: Add table writing step.
     match &executable_function.returns {
         ExecutableReturn::Stream(positions) => {
             steps.push(StepExecutors::ReshapeForReturn(positions.clone()));
+            Ok(steps)
         }
-        _ => todo!(),
+        ExecutableReturn::Single(selector, positions) => {
+            steps.push(StepExecutors::ReshapeForReturn(positions.clone()));
+            let step = match selector {
+                SingleSelector::First => {
+                    StreamModifierExecutor::new_first(PatternExecutor::new(executable_function.executable_id, steps))
+                }
+                SingleSelector::Last => {
+                    StreamModifierExecutor::new_last(PatternExecutor::new(executable_function.executable_id, steps))
+                }
+            };
+            Ok(vec![step.into()])
+        }
+        ExecutableReturn::Check => todo!("ExecutableReturn::Check"),
+        ExecutableReturn::Reduce(executable) => {
+            let step = CollectingStageExecutor::new_reduce(
+                PatternExecutor::new(executable_function.executable_id, steps),
+                executable.clone(),
+            );
+            Ok(vec![StepExecutors::CollectingStage(step)])
+        }
     }
-    Ok(steps)
 }
 
 pub(super) fn create_executors_for_pipeline_stages(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
+    query_profile: &QueryProfile,
     executable_stages: &Vec<ExecutableStage>,
     at_index: usize,
-    tmp_recursion_validation: &mut HashSet<FunctionID>,
-) -> Result<Vec<StepExecutors>, ConceptReadError> {
+) -> Result<Vec<StepExecutors>, Box<ConceptReadError>> {
     let mut previous_stage_steps = if at_index > 0 {
         create_executors_for_pipeline_stages(
             snapshot,
             thing_manager,
             function_registry,
+            query_profile,
             executable_stages,
             at_index - 1,
-            tmp_recursion_validation,
         )?
     } else {
         vec![]
@@ -233,32 +274,40 @@ pub(super) fn create_executors_for_pipeline_stages(
                 snapshot,
                 thing_manager,
                 function_registry,
+                query_profile,
                 match_executable,
-                tmp_recursion_validation,
             )?;
             previous_stage_steps.append(&mut match_stages);
             Ok(previous_stage_steps)
         }
         ExecutableStage::Select(_) => todo!(),
         ExecutableStage::Offset(offset_executable) => {
-            let step =
-                NestedPatternExecutor::new_offset(PatternExecutor::new(previous_stage_steps), offset_executable.offset);
+            let step = StreamModifierExecutor::new_offset(
+                // TODO: not sure if these are correct new executable IDs or should be different?
+                PatternExecutor::new(next_executable_id(), previous_stage_steps),
+                offset_executable.offset,
+            );
             Ok(vec![step.into()])
         }
         ExecutableStage::Limit(limit_executable) => {
-            let step =
-                NestedPatternExecutor::new_limit(PatternExecutor::new(previous_stage_steps), limit_executable.limit);
+            let step = StreamModifierExecutor::new_limit(
+                PatternExecutor::new(next_executable_id(), previous_stage_steps),
+                limit_executable.limit,
+            );
             Ok(vec![step.into()])
         }
         ExecutableStage::Require(_) => todo!(),
         ExecutableStage::Sort(sort_executable) => {
-            let step = CollectingStageExecutor::new_sort(PatternExecutor::new(previous_stage_steps), sort_executable);
+            let step = CollectingStageExecutor::new_sort(
+                PatternExecutor::new(next_executable_id(), previous_stage_steps),
+                sort_executable,
+            );
             Ok(vec![StepExecutors::CollectingStage(step)])
         }
-        ExecutableStage::Reduce(reduce_executable) => {
+        ExecutableStage::Reduce(reduce_stage_executable) => {
             let step = CollectingStageExecutor::new_reduce(
-                PatternExecutor::new(previous_stage_steps),
-                reduce_executable.clone(),
+                PatternExecutor::new(next_executable_id(), previous_stage_steps),
+                reduce_stage_executable.reduce_rows_executable.clone(),
             );
             Ok(vec![StepExecutors::CollectingStage(step)])
         }

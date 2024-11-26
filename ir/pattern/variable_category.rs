@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt::{Display, Formatter};
+use std::fmt;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum VariableCategory {
@@ -16,6 +16,7 @@ pub enum VariableCategory {
     Thing,
     Object,
 
+    AttributeOrValue,
     Attribute,
     Value,
 
@@ -49,15 +50,21 @@ impl VariableCategory {
 
             (Self::Thing, Self::Thing) => Some(Self::Thing),
             (Self::Thing, Self::Object) | (Self::Object, Self::Thing) => Some(Self::Object),
+            (Self::Thing, Self::AttributeOrValue) | (Self::AttributeOrValue, Self::Thing) => Some(Self::Attribute),
             (Self::Thing, Self::Attribute) | (Self::Attribute, Self::Thing) => Some(Self::Attribute),
-            (Self::Thing, Self::Value) | (Self::Value, Self::Thing) => Some(Self::Attribute),
             (_, Self::Thing) | (Self::Thing, _) => None,
 
             (Self::Object, Self::Object) => Some(Self::Object),
             (_, Self::Object) | (Self::Object, _) => None,
 
+            (Self::AttributeOrValue, Self::AttributeOrValue) => Some(Self::AttributeOrValue),
+            (Self::AttributeOrValue, Self::Attribute) | (Self::Attribute, Self::AttributeOrValue) => {
+                Some(Self::Attribute)
+            }
+            (Self::AttributeOrValue, Self::Value) | (Self::Value, Self::AttributeOrValue) => Some(Self::Value),
+            (Self::AttributeOrValue, _) | (_, Self::AttributeOrValue) => None,
+
             (Self::Attribute, Self::Attribute) => Some(Self::Attribute),
-            (Self::Value, Self::Attribute) | (Self::Attribute, Self::Value) => Some(Self::Attribute),
             (_, Self::Attribute) | (Self::Attribute, _) => None,
 
             (Self::Value, Self::Value) => Some(Self::Value),
@@ -80,10 +87,18 @@ impl VariableCategory {
             (_, Self::ValueList) | (Self::ValueList, _) => None,
         }
     }
+
+    pub fn is_category_type(&self) -> bool {
+        self.narrowest(Self::Type) == Some(*self)
+    }
+
+    pub fn is_category_thing(&self) -> bool {
+        self.narrowest(Self::Thing) == Some(*self)
+    }
 }
 
-impl Display for VariableCategory {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for VariableCategory {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
@@ -94,8 +109,8 @@ pub enum VariableOptionality {
     Optional,
 }
 
-impl Display for VariableOptionality {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for VariableOptionality {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             VariableOptionality::Required => {
                 write!(f, "req")

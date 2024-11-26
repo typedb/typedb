@@ -26,7 +26,7 @@ pub trait ExpressionInstruction: Sized {
 pub trait CompilableExpression: ExpressionInstruction {
     fn return_value_category(&self) -> Option<ValueTypeCategory>;
 
-    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), ExpressionCompileError>;
+    fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), Box<ExpressionCompileError>>;
 }
 
 pub(crate) fn check_operation<T>(checked_operation_result: Option<T>) -> Result<T, ExpressionEvaluationError> {
@@ -44,8 +44,13 @@ pub enum ExpressionEvaluationError {
 }
 
 impl fmt::Debug for ExpressionEvaluationError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // TODO: Convert to `typedb_error!`
+        match self {
+            ExpressionEvaluationError::CheckedOperationFailed => f.write_str("CheckedOperationFailed"),
+            ExpressionEvaluationError::CastFailed => f.write_str("CastFailed"),
+            ExpressionEvaluationError::ListIndexOutOfRange => f.write_str("ListIndexOutOfRange"),
+        }
     }
 }
 

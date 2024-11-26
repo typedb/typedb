@@ -4,17 +4,24 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt, ops::Deref};
+use std::{
+    collections::HashMap,
+    fmt,
+    hash::{DefaultHasher, Hasher},
+    mem,
+    ops::Deref,
+};
 
 use answer::variable::Variable;
 use itertools::Itertools;
+use structural_equality::StructuralEquality;
 
 use crate::{
     pattern::{
         expression::{ExpressionDefinitionError, ExpressionTree},
         function_call::FunctionCall,
         variable_category::VariableCategory,
-        IrID, ScopeId, Vertex,
+        IrID, ParameterID, ScopeId, ValueType, Vertex,
     },
     pipeline::{block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry},
     RepresentationError,
@@ -70,6 +77,16 @@ impl Constraints {
     }
 }
 
+impl StructuralEquality for Constraints {
+    fn hash(&self) -> u64 {
+        self.constraints().hash()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.constraints().equals(other.constraints())
+    }
+}
+
 impl fmt::Display for Constraints {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for constraint in &self.constraints {
@@ -94,7 +111,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         variable: Variable,
         label: encoding::value::label::Label<'static>,
-    ) -> Result<&Label<Variable>, RepresentationError> {
+    ) -> Result<&Label<Variable>, Box<RepresentationError>> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let type_ = Label::new(variable, label);
         self.context.set_variable_category(variable, VariableCategory::Type, type_.clone().into())?;
@@ -106,7 +123,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         variable: Variable,
         name: &str,
-    ) -> Result<&RoleName<Variable>, RepresentationError> {
+    ) -> Result<&RoleName<Variable>, Box<RepresentationError>> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let role_name = RoleName::new(variable, name.to_owned());
         self.context.set_variable_category(variable, VariableCategory::RoleType, role_name.clone().into())?;
@@ -118,7 +135,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         kind: typeql::token::Kind,
         variable: Variable,
-    ) -> Result<&Kind<Variable>, RepresentationError> {
+    ) -> Result<&Kind<Variable>, Box<RepresentationError>> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let category = match kind {
             typeql::token::Kind::Entity => VariableCategory::ThingType,
@@ -137,7 +154,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         kind: SubKind,
         subtype: Vertex<Variable>,
         supertype: Vertex<Variable>,
-    ) -> Result<&Sub<Variable>, RepresentationError> {
+    ) -> Result<&Sub<Variable>, Box<RepresentationError>> {
         let subtype_var = subtype.as_variable();
         let supertype_var = supertype.as_variable();
         let sub = Sub::new(kind, subtype, supertype);
@@ -156,12 +173,18 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         Ok(as_ref.as_sub().unwrap())
     }
 
+    pub fn add_is(&mut self, left: Variable, right: Variable) -> Result<&Is<Variable>, Box<RepresentationError>> {
+        let is = Is::new(left, right);
+        let constraint = self.constraints.add_constraint(is);
+        Ok(constraint.as_is().unwrap())
+    }
+
     pub fn add_isa(
         &mut self,
         kind: IsaKind,
         thing: Variable,
         type_: Vertex<Variable>,
-    ) -> Result<&Isa<Variable>, RepresentationError> {
+    ) -> Result<&Isa<Variable>, Box<RepresentationError>> {
         let type_var = type_.as_variable();
         let isa = Isa::new(kind, thing, type_);
 
@@ -177,7 +200,21 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         Ok(constraint.as_isa().unwrap())
     }
 
-    pub fn add_has(&mut self, owner: Variable, attribute: Variable) -> Result<&Has<Variable>, RepresentationError> {
+    pub fn add_iid(&mut self, var: Variable, iid: ParameterID) -> Result<&Iid<Variable>, Box<RepresentationError>> {
+        let iid = Iid::new(var, iid);
+
+        debug_assert!(self.context.is_variable_available(self.constraints.scope, var));
+        self.context.set_variable_category(var, VariableCategory::Thing, iid.clone().into())?;
+
+        let constraint = self.constraints.add_constraint(iid);
+        Ok(constraint.as_iid().unwrap())
+    }
+
+    pub fn add_has(
+        &mut self,
+        owner: Variable,
+        attribute: Variable,
+    ) -> Result<&Has<Variable>, Box<RepresentationError>> {
         let has = Has::new(owner, attribute);
 
         debug_assert!(self.context.is_variable_available(self.constraints.scope, owner));
@@ -195,7 +232,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         relation: Variable,
         player: Variable,
         role_type: Variable,
-    ) -> Result<&Links<Variable>, RepresentationError> {
+    ) -> Result<&Links<Variable>, Box<RepresentationError>> {
         let links = Constraint::from(Links::new(relation, player, role_type));
 
         debug_assert!(
@@ -218,24 +255,19 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         lhs: Vertex<Variable>,
         rhs: Vertex<Variable>,
         comparator: Comparator,
-    ) -> Result<&Comparison<Variable>, RepresentationError> {
+    ) -> Result<&Comparison<Variable>, Box<RepresentationError>> {
         let lhs_var = lhs.as_variable();
         let rhs_var = rhs.as_variable();
         let comparison = Comparison::new(lhs, rhs, comparator);
 
         if let Some(lhs) = lhs_var {
             debug_assert!(self.context.is_variable_available(self.constraints.scope, lhs));
-            self.context.set_variable_category(lhs, VariableCategory::Value, comparison.clone().into())?;
+            self.context.set_variable_category(lhs, VariableCategory::AttributeOrValue, comparison.clone().into())?;
         }
-
         if let Some(rhs) = rhs_var {
             debug_assert!(self.context.is_variable_available(self.constraints.scope, rhs));
-            self.context.set_variable_category(rhs, VariableCategory::Value, comparison.clone().into())?;
+            self.context.set_variable_category(rhs, VariableCategory::AttributeOrValue, comparison.clone().into())?;
         }
-
-        // TODO The above lines were the two lines below
-        // self.context.set_variable_category(lhs, VariableCategory::AttributeOrValue, comparison.clone().into())?;
-        // self.context.set_variable_category(rhs, VariableCategory::AttributeOrValue, comparison.clone().into())?;
 
         let as_ref = self.constraints.add_constraint(comparison);
         Ok(as_ref.as_comparison().unwrap())
@@ -247,7 +279,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         callee_signature: &FunctionSignature,
         arguments: Vec<Variable>,
         function_name: &str, // for errors
-    ) -> Result<&FunctionCallBinding<Variable>, RepresentationError> {
+    ) -> Result<&FunctionCallBinding<Variable>, Box<RepresentationError>> {
         let function_call = self.create_function_call(&assigned, callee_signature, arguments, function_name)?;
         let binding = FunctionCallBinding::new(assigned, function_call, callee_signature.return_is_stream);
         for (index, var) in binding.ids_assigned().enumerate() {
@@ -270,7 +302,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         callee_signature: &FunctionSignature,
         arguments: Vec<Variable>,
         function_name: &str, // for errors
-    ) -> Result<FunctionCall<Variable>, RepresentationError> {
+    ) -> Result<FunctionCall<Variable>, Box<RepresentationError>> {
         use RepresentationError::{FunctionCallArgumentCountMismatch, FunctionCallReturnCountMismatch};
         debug_assert!(assigned.iter().all(|var| self.context.is_variable_available(self.constraints.scope, *var)));
         debug_assert!(arguments.iter().all(|var| self.context.is_variable_available(self.constraints.scope, *var)));
@@ -300,12 +332,16 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         variable: Variable,
         expression: ExpressionTree<Variable>,
-    ) -> Result<&ExpressionBinding<Variable>, RepresentationError> {
+    ) -> Result<&ExpressionBinding<Variable>, Box<RepresentationError>> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let binding = ExpressionBinding::new(variable, expression);
         binding.validate(self.context).map_err(|source| RepresentationError::ExpressionDefinitionError { source })?;
-        // WARNING: we can't set a variable category here, since we don't know if the expression will produce a
-        //          Value, a ValueList, or a ThingList! We will know this at compilation time
+
+        let binding = Constraint::from(binding);
+        // WARNING: we don't know if the expression will produce a Value, a ValueList, or a ThingList! We will know this at compilation time
+        // assume Value for now
+        self.context.set_variable_category(variable, VariableCategory::Value, binding.clone())?;
+
         let as_ref = self.constraints.add_constraint(binding);
         Ok(as_ref.as_expression_binding().unwrap())
     }
@@ -314,7 +350,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         owner_type: Vertex<Variable>,
         attribute_type: Vertex<Variable>,
-    ) -> Result<&Owns<Variable>, RepresentationError> {
+    ) -> Result<&Owns<Variable>, Box<RepresentationError>> {
         let owner_type_var = owner_type.as_variable();
         let attribute_type_var = attribute_type.as_variable();
         let owns = Constraint::from(Owns::new(owner_type, attribute_type));
@@ -337,7 +373,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         relation_type: Vertex<Variable>,
         role_type: Vertex<Variable>,
-    ) -> Result<&Relates<Variable>, RepresentationError> {
+    ) -> Result<&Relates<Variable>, Box<RepresentationError>> {
         let relation_type_var = relation_type.as_variable();
         let role_type_var = role_type.as_variable();
         let relates = Constraint::from(Relates::new(relation_type, role_type));
@@ -360,7 +396,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         player_type: Vertex<Variable>,
         role_type: Vertex<Variable>,
-    ) -> Result<&Plays<Variable>, RepresentationError> {
+    ) -> Result<&Plays<Variable>, Box<RepresentationError>> {
         let player_type_var = player_type.as_variable();
         let role_type_var = role_type.as_variable();
         let plays = Constraint::from(Plays::new(player_type, role_type));
@@ -379,11 +415,28 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         Ok(constraint.as_plays().unwrap())
     }
 
-    pub(crate) fn create_anonymous_variable(&mut self) -> Result<Variable, RepresentationError> {
+    pub fn add_value(
+        &mut self,
+        attribute_type: Vertex<Variable>,
+        value_type: ValueType,
+    ) -> Result<&Value<Variable>, Box<RepresentationError>> {
+        let attribute_type_var = attribute_type.as_variable();
+        let value = Constraint::from(Value::new(attribute_type, value_type));
+
+        if let Some(attribute_type) = attribute_type_var {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, attribute_type));
+            self.context.set_variable_category(attribute_type, VariableCategory::AttributeType, value.clone())?;
+        };
+
+        let constraint = self.constraints.add_constraint(value);
+        Ok(constraint.as_value().unwrap())
+    }
+
+    pub(crate) fn create_anonymous_variable(&mut self) -> Result<Variable, Box<RepresentationError>> {
         self.context.create_anonymous_variable(self.constraints.scope)
     }
 
-    pub(crate) fn get_or_declare_variable(&mut self, name: &str) -> Result<Variable, RepresentationError> {
+    pub(crate) fn get_or_declare_variable(&mut self, name: &str) -> Result<Variable, Box<RepresentationError>> {
         self.context.get_or_declare_variable(name, self.constraints.scope)
     }
 
@@ -397,12 +450,14 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub enum Constraint<ID: IrID> {
+pub enum Constraint<ID> {
+    Is(Is<ID>),
     Kind(Kind<ID>),
     Label(Label<ID>),
     RoleName(RoleName<ID>),
     Sub(Sub<ID>),
     Isa(Isa<ID>),
+    Iid(Iid<ID>),
     Links(Links<ID>),
     Has(Has<ID>),
     ExpressionBinding(ExpressionBinding<ID>),
@@ -411,16 +466,19 @@ pub enum Constraint<ID: IrID> {
     Owns(Owns<ID>),
     Relates(Relates<ID>),
     Plays(Plays<ID>),
+    Value(Value<ID>),
 }
 
 impl<ID: IrID> Constraint<ID> {
     pub fn name(&self) -> &str {
         match self {
+            Constraint::Is(_) => typeql::token::Keyword::Is.as_str(),
             Constraint::Kind(kind) => kind.kind.as_str(),
             Constraint::Label(_) => typeql::token::Keyword::Label.as_str(),
             Constraint::RoleName(_) => "role-name",
             Constraint::Sub(_) => typeql::token::Keyword::Sub.as_str(),
             Constraint::Isa(_) => typeql::token::Keyword::Isa.as_str(),
+            Constraint::Iid(_) => typeql::token::Keyword::IID.as_str(),
             Constraint::Links(_) => typeql::token::Keyword::Links.as_str(),
             Constraint::Has(_) => typeql::token::Keyword::Has.as_str(),
             Constraint::ExpressionBinding(_) => typeql::token::Comparator::Eq.as_str(),
@@ -429,16 +487,19 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Owns(_) => typeql::token::Keyword::Owns.as_str(),
             Constraint::Relates(_) => typeql::token::Keyword::Relates.as_str(),
             Constraint::Plays(_) => typeql::token::Keyword::Plays.as_str(),
+            Constraint::Value(_) => typeql::token::Keyword::Value.as_str(),
         }
     }
 
     pub fn ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
         match self {
+            Constraint::Is(is) => Box::new(is.ids()),
             Constraint::Kind(kind) => Box::new(kind.ids()),
             Constraint::Label(label) => Box::new(label.ids()),
             Constraint::RoleName(role_name) => Box::new(role_name.ids()),
             Constraint::Sub(sub) => Box::new(sub.ids()),
             Constraint::Isa(isa) => Box::new(isa.ids()),
+            Constraint::Iid(iid) => Box::new(iid.ids()),
             Constraint::Links(rp) => Box::new(rp.ids()),
             Constraint::Has(has) => Box::new(has.ids()),
             Constraint::ExpressionBinding(binding) => Box::new(binding.ids_assigned()),
@@ -447,16 +508,19 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Owns(owns) => Box::new(owns.ids()),
             Constraint::Relates(relates) => Box::new(relates.ids()),
             Constraint::Plays(plays) => Box::new(plays.ids()),
+            Constraint::Value(value) => Box::new(value.ids()),
         }
     }
 
     pub fn vertices(&self) -> Box<dyn Iterator<Item = &Vertex<ID>> + '_> {
         match self {
+            Constraint::Is(is) => Box::new(is.vertices()),
             Constraint::Kind(kind) => Box::new(kind.vertices()),
             Constraint::Label(label) => Box::new(label.vertices()),
             Constraint::RoleName(role_name) => Box::new(role_name.vertices()),
             Constraint::Sub(sub) => Box::new(sub.vertices()),
             Constraint::Isa(isa) => Box::new(isa.vertices()),
+            Constraint::Iid(iid) => Box::new(iid.vertices()),
             Constraint::Links(rp) => Box::new(rp.vertices()),
             Constraint::Has(has) => Box::new(has.vertices()),
             Constraint::ExpressionBinding(binding) => Box::new(binding.vertices_assigned()),
@@ -465,6 +529,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Owns(owns) => Box::new(owns.vertices()),
             Constraint::Relates(relates) => Box::new(relates.vertices()),
             Constraint::Plays(plays) => Box::new(plays.vertices()),
+            Constraint::Value(value) => Box::new(value.vertices()),
         }
     }
 
@@ -473,11 +538,13 @@ impl<ID: IrID> Constraint<ID> {
         F: FnMut(ID, ConstraintIDSide),
     {
         match self {
+            Self::Is(is) => is.ids_foreach(function),
             Self::Kind(kind) => kind.ids_foreach(function),
             Self::Label(label) => label.ids_foreach(function),
             Self::RoleName(role_name) => role_name.ids_foreach(function),
             Self::Sub(sub) => sub.ids_foreach(function),
             Self::Isa(isa) => isa.ids_foreach(function),
+            Self::Iid(iid) => iid.ids_foreach(function),
             Self::Links(rp) => rp.ids_foreach(function),
             Self::Has(has) => has.ids_foreach(function),
             Self::ExpressionBinding(binding) => binding.ids_foreach(function),
@@ -486,16 +553,19 @@ impl<ID: IrID> Constraint<ID> {
             Self::Owns(owns) => owns.ids_foreach(function),
             Self::Relates(relates) => relates.ids_foreach(function),
             Self::Plays(plays) => plays.ids_foreach(function),
+            Self::Value(value) => value.ids_foreach(function),
         }
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Constraint<T> {
         match self {
+            Self::Is(inner) => Constraint::Is(inner.map(mapping)),
             Self::Kind(inner) => Constraint::Kind(inner.map(mapping)),
             Self::Label(inner) => Constraint::Label(inner.map(mapping)),
             Self::RoleName(inner) => Constraint::RoleName(inner.map(mapping)),
             Self::Sub(inner) => Constraint::Sub(inner.map(mapping)),
             Self::Isa(inner) => Constraint::Isa(inner.map(mapping)),
+            Self::Iid(inner) => Constraint::Iid(inner.map(mapping)),
             Self::Links(inner) => Constraint::Links(inner.map(mapping)),
             Self::Has(inner) => Constraint::Has(inner.map(mapping)),
             Self::ExpressionBinding(inner) => todo!(),
@@ -504,6 +574,7 @@ impl<ID: IrID> Constraint<ID> {
             Self::Owns(inner) => Constraint::Owns(inner.map(mapping)),
             Self::Relates(inner) => Constraint::Relates(inner.map(mapping)),
             Self::Plays(inner) => Constraint::Plays(inner.map(mapping)),
+            Self::Value(inner) => Constraint::Value(inner.map(mapping)),
         }
     }
 
@@ -555,9 +626,23 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
+    pub(crate) fn as_is(&self) -> Option<&Is<ID>> {
+        match self {
+            Constraint::Is(is) => Some(is),
+            _ => None,
+        }
+    }
+
     pub(crate) fn as_isa(&self) -> Option<&Isa<ID>> {
         match self {
             Constraint::Isa(isa) => Some(isa),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn as_iid(&self) -> Option<&Iid<ID>> {
+        match self {
+            Constraint::Iid(iid) => Some(iid),
             _ => None,
         }
     }
@@ -617,24 +702,96 @@ impl<ID: IrID> Constraint<ID> {
             _ => None,
         }
     }
+
+    pub(crate) fn as_value(&self) -> Option<&Value<ID>> {
+        match self {
+            Constraint::Value(value) => Some(value),
+            _ => None,
+        }
+    }
+}
+
+impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
+    fn hash(&self) -> u64 {
+        mem::discriminant(self).hash()
+            ^ match self {
+                Self::Is(inner) => inner.hash(),
+                Self::Kind(inner) => inner.hash(),
+                Self::Label(inner) => inner.hash(),
+                Self::RoleName(inner) => inner.hash(),
+                Self::Sub(inner) => inner.hash(),
+                Self::Isa(inner) => inner.hash(),
+                Self::Iid(inner) => inner.hash(),
+                Self::Links(inner) => inner.hash(),
+                Self::Has(inner) => inner.hash(),
+                Self::ExpressionBinding(inner) => inner.hash(),
+                Self::FunctionCallBinding(inner) => inner.hash(),
+                Self::Comparison(inner) => inner.hash(),
+                Self::Owns(inner) => inner.hash(),
+                Self::Relates(inner) => inner.hash(),
+                Self::Plays(inner) => inner.hash(),
+                Self::Value(inner) => inner.hash(),
+            }
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Is(inner), Self::Is(other_inner)) => inner.equals(other_inner),
+            (Self::Kind(inner), Self::Kind(other_inner)) => inner.equals(other_inner),
+            (Self::Label(inner), Self::Label(other_inner)) => inner.equals(other_inner),
+            (Self::RoleName(inner), Self::RoleName(other_inner)) => inner.equals(other_inner),
+            (Self::Sub(inner), Self::Sub(other_inner)) => inner.equals(other_inner),
+            (Self::Isa(inner), Self::Isa(other_inner)) => inner.equals(other_inner),
+            (Self::Iid(inner), Self::Iid(other_inner)) => inner.equals(other_inner),
+            (Self::Links(inner), Self::Links(other_inner)) => inner.equals(other_inner),
+            (Self::Has(inner), Self::Has(other_inner)) => inner.equals(other_inner),
+            (Self::ExpressionBinding(inner), Self::ExpressionBinding(other_inner)) => inner.equals(other_inner),
+            (Self::FunctionCallBinding(inner), Self::FunctionCallBinding(other_inner)) => inner.equals(other_inner),
+            (Self::Comparison(inner), Self::Comparison(other_inner)) => inner.equals(other_inner),
+            (Self::Owns(inner), Self::Owns(other_inner)) => inner.equals(other_inner),
+            (Self::Relates(inner), Self::Relates(other_inner)) => inner.equals(other_inner),
+            (Self::Plays(inner), Self::Plays(other_inner)) => inner.equals(other_inner),
+            (Self::Value(inner), Self::Value(other_inner)) => inner.equals(other_inner),
+            // note: this style forces updating the match when the variants change
+            (Self::Is { .. }, _)
+            | (Self::Kind { .. }, _)
+            | (Self::Label { .. }, _)
+            | (Self::RoleName { .. }, _)
+            | (Self::Sub { .. }, _)
+            | (Self::Isa { .. }, _)
+            | (Self::Iid { .. }, _)
+            | (Self::Links { .. }, _)
+            | (Self::Has { .. }, _)
+            | (Self::ExpressionBinding { .. }, _)
+            | (Self::FunctionCallBinding { .. }, _)
+            | (Self::Comparison { .. }, _)
+            | (Self::Owns { .. }, _)
+            | (Self::Relates { .. }, _)
+            | (Self::Plays { .. }, _)
+            | (Self::Value { .. }, _) => false,
+        }
+    }
 }
 
 impl<ID: IrID> fmt::Display for Constraint<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Constraint::Kind(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::Label(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::RoleName(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::Sub(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::Isa(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::Links(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::Has(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::ExpressionBinding(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::FunctionCallBinding(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::Comparison(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::Owns(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::Relates(constraint) => fmt::Display::fmt(constraint, f),
-            Constraint::Plays(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Is(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Kind(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Label(constraint) => fmt::Display::fmt(constraint, f),
+            Self::RoleName(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Sub(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Isa(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Iid(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Links(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Has(constraint) => fmt::Display::fmt(constraint, f),
+            Self::ExpressionBinding(constraint) => fmt::Display::fmt(constraint, f),
+            Self::FunctionCallBinding(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Comparison(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Owns(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Relates(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Plays(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Value(constraint) => fmt::Display::fmt(constraint, f),
         }
     }
 }
@@ -692,6 +849,19 @@ impl<ID: IrID> From<Label<ID>> for Constraint<ID> {
     }
 }
 
+impl<ID: StructuralEquality> StructuralEquality for Label<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.type_var.hash_into(&mut hasher);
+        self.type_label.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.type_label.equals(&other.type_var) && self.type_label.equals(&other.type_label)
+    }
+}
+
 impl<ID: IrID> fmt::Display for Label<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // TODO: implement indentation without rewriting it everywhere
@@ -742,6 +912,19 @@ impl<ID: IrID> RoleName<ID> {
 impl<ID: IrID> From<RoleName<ID>> for Constraint<ID> {
     fn from(value: RoleName<ID>) -> Self {
         Constraint::RoleName(value)
+    }
+}
+
+impl<ID: StructuralEquality> StructuralEquality for RoleName<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        hasher.write_u64(StructuralEquality::hash(&self.left));
+        hasher.write_u64(StructuralEquality::hash(self.name.as_str()));
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.left.equals(&other.left) && self.name.as_str().equals(other.name.as_str())
     }
 }
 
@@ -796,13 +979,26 @@ impl<ID: IrID> From<Kind<ID>> for Constraint<ID> {
     }
 }
 
+impl<ID: StructuralEquality> StructuralEquality for Kind<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        hasher.write_u64(StructuralEquality::hash(self.kind.as_str()));
+        hasher.write_u64(StructuralEquality::hash(&self.type_));
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.kind.as_str().equals(other.kind.as_str()) && self.type_.equals(&other.type_)
+    }
+}
+
 impl<ID: IrID> fmt::Display for Kind<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(self, f)
     }
 }
 
-impl<ID: IrID> fmt::Debug for Kind<ID> {
+impl<ID: fmt::Debug> fmt::Debug for Kind<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} {}", self.kind, self.type_)
     }
@@ -819,6 +1015,26 @@ impl From<typeql::statement::type_::SubKind> for SubKind {
         match kind {
             typeql::statement::type_::SubKind::Direct => Self::Exact,
             typeql::statement::type_::SubKind::Transitive => Self::Subtype,
+        }
+    }
+}
+
+impl StructuralEquality for SubKind {
+    fn hash(&self) -> u64 {
+        mem::discriminant(self).hash()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self == other
+    }
+}
+
+impl fmt::Display for SubKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Exact => write!(f, "!"),
+            // This is not a great Display implementation since there is no symbol to read this variant
+            Self::Subtype => write!(f, ""),
         }
     }
 }
@@ -874,9 +1090,88 @@ impl<ID: IrID> From<Sub<ID>> for Constraint<ID> {
     }
 }
 
+impl<ID: StructuralEquality> StructuralEquality for Sub<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        hasher.write_u64(StructuralEquality::hash(&self.kind));
+        hasher.write_u64(StructuralEquality::hash(&self.subtype));
+        hasher.write_u64(StructuralEquality::hash(&self.supertype));
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.kind.equals(&other.kind) && self.subtype.equals(&other.subtype) && self.supertype.equals(&other.supertype)
+    }
+}
+
 impl<ID: IrID> fmt::Display for Sub<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} sub {}", self.subtype, self.supertype)
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Is<ID> {
+    lhs: Vertex<ID>,
+    rhs: Vertex<ID>,
+}
+
+impl<ID: IrID> Is<ID> {
+    fn new(lhs: ID, rhs: ID) -> Self {
+        Self { lhs: Vertex::Variable(lhs), rhs: Vertex::Variable(rhs) }
+    }
+
+    pub fn lhs(&self) -> &Vertex<ID> {
+        &self.lhs
+    }
+
+    pub fn rhs(&self) -> &Vertex<ID> {
+        &self.rhs
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
+        [self.lhs.as_variable(), self.rhs.as_variable()].into_iter().flatten()
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + Sized {
+        [&self.lhs, &self.rhs].into_iter()
+    }
+
+    pub fn ids_foreach<F>(&self, mut function: F)
+    where
+        F: FnMut(ID, ConstraintIDSide),
+    {
+        self.lhs.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
+        self.rhs.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
+    }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Is<T> {
+        Is { lhs: self.lhs.map(mapping), rhs: self.rhs.map(mapping) }
+    }
+}
+
+impl<ID: IrID> From<Is<ID>> for Constraint<ID> {
+    fn from(val: Is<ID>) -> Self {
+        Constraint::Is(val)
+    }
+}
+
+impl<ID: StructuralEquality> StructuralEquality for Is<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.lhs.hash_into(&mut hasher);
+        self.rhs.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.lhs.equals(&other.lhs) && self.rhs.equals(&other.rhs)
+    }
+}
+
+impl<ID: IrID> fmt::Display for Is<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} is {}", self.lhs, self.rhs)
     }
 }
 
@@ -931,9 +1226,23 @@ impl<ID: IrID> From<Isa<ID>> for Constraint<ID> {
     }
 }
 
+impl<ID: StructuralEquality> StructuralEquality for Isa<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.kind.hash_into(&mut hasher);
+        self.thing.hash_into(&mut hasher);
+        self.type_.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.kind.equals(&other.kind) && self.thing.equals(&other.thing) && self.type_.equals(&other.type_)
+    }
+}
+
 impl<ID: IrID> fmt::Display for Isa<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} isa {}", self.thing, self.type_)
+        write!(f, "{} {}{} {}", self.thing, typeql::token::Keyword::Isa, self.kind, self.type_)
     }
 }
 
@@ -949,6 +1258,90 @@ impl From<typeql::statement::thing::isa::IsaKind> for IsaKind {
             typeql::statement::thing::isa::IsaKind::Exact => Self::Exact,
             typeql::statement::thing::isa::IsaKind::Subtype => Self::Subtype,
         }
+    }
+}
+
+impl StructuralEquality for IsaKind {
+    fn hash(&self) -> u64 {
+        mem::discriminant(self).hash()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self == other
+    }
+}
+
+impl fmt::Display for IsaKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Exact => write!(f, "!"),
+            // This is not a great Display implementation since there is no symbol to read this variant
+            Self::Subtype => write!(f, ""),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Iid<ID> {
+    var: Vertex<ID>,
+    iid: Vertex<ID>,
+}
+
+impl<ID: IrID> Iid<ID> {
+    pub fn new(var: ID, iid: ParameterID) -> Self {
+        Self { var: Vertex::Variable(var), iid: Vertex::Parameter(iid) }
+    }
+
+    pub fn var(&self) -> &Vertex<ID> {
+        &self.var
+    }
+
+    pub fn iid(&self) -> &Vertex<ID> {
+        &self.iid
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
+        self.var.as_variable().into_iter()
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + Sized {
+        [&self.var, &self.iid].into_iter()
+    }
+
+    pub fn ids_foreach<F>(&self, mut function: F)
+    where
+        F: FnMut(ID, ConstraintIDSide),
+    {
+        self.var.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
+    }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Iid<T> {
+        Iid { var: self.var.map(mapping), iid: self.iid.map(mapping) }
+    }
+}
+
+impl<ID: IrID> From<Iid<ID>> for Constraint<ID> {
+    fn from(val: Iid<ID>) -> Self {
+        Constraint::Iid(val)
+    }
+}
+
+impl<ID: StructuralEquality> StructuralEquality for Iid<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.var.hash_into(&mut hasher);
+        self.iid.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.var.equals(&other.var) && self.iid.equals(&other.iid)
+    }
+}
+
+impl<ID: IrID> fmt::Display for Iid<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} iid {}", self.var, self.iid)
     }
 }
 
@@ -1012,9 +1405,25 @@ impl<ID: IrID> From<Links<ID>> for Constraint<ID> {
     }
 }
 
+impl<ID: StructuralEquality> StructuralEquality for Links<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.relation.hash_into(&mut hasher);
+        self.player.hash_into(&mut hasher);
+        self.role_type.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.relation.equals(&other.relation)
+            && self.player.equals(&other.player)
+            && self.role_type.equals(&other.role_type)
+    }
+}
+
 impl<ID: IrID> fmt::Display for Links<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} rp {} (role: {})", self.relation, self.player, self.role_type)
+        write!(f, "{} links {} (role: {})", self.relation, self.player, self.role_type)
     }
 }
 
@@ -1061,6 +1470,19 @@ impl<ID: IrID> Has<ID> {
 impl<ID: IrID> From<Has<ID>> for Constraint<ID> {
     fn from(has: Has<ID>) -> Self {
         Constraint::Has(has)
+    }
+}
+
+impl<ID: StructuralEquality> StructuralEquality for Has<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.owner.hash_into(&mut hasher);
+        self.attribute.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.owner.equals(&other.owner) && self.attribute.equals(&other.attribute)
     }
 }
 
@@ -1122,6 +1544,19 @@ impl<ID: IrID> From<ExpressionBinding<ID>> for Constraint<ID> {
     }
 }
 
+impl<ID: StructuralEquality> StructuralEquality for ExpressionBinding<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.left.hash_into(&mut hasher);
+        self.expression.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.left.equals(&other.left) && self.expression.equals(&other.expression)
+    }
+}
+
 impl<ID: IrID> fmt::Display for ExpressionBinding<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} = {}", self.left, self.expression)
@@ -1179,6 +1614,22 @@ impl<ID: IrID> From<FunctionCallBinding<ID>> for Constraint<ID> {
     }
 }
 
+impl<ID: StructuralEquality + Ord> StructuralEquality for FunctionCallBinding<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.assigned.hash_into(&mut hasher);
+        self.function_call.hash_into(&mut hasher);
+        self.is_stream.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.assigned.equals(&other.assigned)
+            && self.function_call.equals(&other.function_call)
+            && self.is_stream.equals(&other.is_stream)
+    }
+}
+
 impl<ID: IrID> fmt::Display for FunctionCallBinding<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.is_stream {
@@ -1232,6 +1683,31 @@ impl From<typeql::token::Comparator> for Comparator {
     }
 }
 
+impl StructuralEquality for Comparator {
+    fn hash(&self) -> u64 {
+        mem::discriminant(self).hash()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self == other
+    }
+}
+
+impl fmt::Display for Comparator {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Equal => write!(f, "{}", typeql::token::Comparator::Eq),
+            Self::NotEqual => write!(f, "{}", typeql::token::Comparator::Neq),
+            Self::Less => write!(f, "{}", typeql::token::Comparator::Lt),
+            Self::Greater => write!(f, "{}", typeql::token::Comparator::Gt),
+            Self::LessOrEqual => write!(f, "{}", typeql::token::Comparator::Lte),
+            Self::GreaterOrEqual => write!(f, "{}", typeql::token::Comparator::Gte),
+            Self::Like => write!(f, "{}", typeql::token::Comparator::Like),
+            Self::Contains => write!(f, "{}", typeql::token::Comparator::Contains),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Comparison<ID> {
     lhs: Vertex<ID>,
@@ -1276,6 +1752,20 @@ impl<ID: IrID> Comparison<ID> {
 impl<ID: IrID> From<Comparison<ID>> for Constraint<ID> {
     fn from(comp: Comparison<ID>) -> Self {
         Constraint::Comparison(comp)
+    }
+}
+
+impl<ID: StructuralEquality> StructuralEquality for Comparison<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.lhs.hash_into(&mut hasher);
+        self.rhs.hash_into(&mut hasher);
+        self.comparator.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.lhs.equals(&other.lhs) && self.rhs.equals(&other.rhs) && self.comparator.equals(&other.comparator)
     }
 }
 
@@ -1331,6 +1821,19 @@ impl<ID: IrID> From<Owns<ID>> for Constraint<ID> {
     }
 }
 
+impl<ID: StructuralEquality> StructuralEquality for Owns<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.owner.hash_into(&mut hasher);
+        self.attribute.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.owner.equals(&other.owner) && self.attribute.equals(&other.attribute)
+    }
+}
+
 impl<ID: IrID> fmt::Display for Owns<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
@@ -1380,6 +1883,19 @@ impl<ID: IrID> Relates<ID> {
 impl<ID: IrID> From<Relates<ID>> for Constraint<ID> {
     fn from(val: Relates<ID>) -> Self {
         Constraint::Relates(val)
+    }
+}
+
+impl<ID: StructuralEquality> StructuralEquality for Relates<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.relation.hash_into(&mut hasher);
+        self.role_type.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.relation.equals(&other.relation) && self.role_type.equals(&other.role_type)
     }
 }
 
@@ -1435,7 +1951,84 @@ impl<ID: IrID> From<Plays<ID>> for Constraint<ID> {
     }
 }
 
+impl<ID: StructuralEquality> StructuralEquality for Plays<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.player.hash_into(&mut hasher);
+        self.role_type.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.player.equals(&other.player) && self.role_type.equals(&other.role_type)
+    }
+}
+
 impl<ID: IrID> fmt::Display for Plays<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Value<ID> {
+    attribute_type: Vertex<ID>,
+    value_type: ValueType,
+}
+
+impl<ID: IrID> Value<ID> {
+    fn new(attribute_type: Vertex<ID>, value_type: ValueType) -> Self {
+        Self { attribute_type, value_type }
+    }
+
+    pub fn attribute_type(&self) -> &Vertex<ID> {
+        &self.attribute_type
+    }
+
+    pub fn value_type(&self) -> &ValueType {
+        &self.value_type
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
+        [self.attribute_type.as_variable()].into_iter().flatten()
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> {
+        [&self.attribute_type].into_iter()
+    }
+
+    pub fn ids_foreach<F>(&self, mut function: F)
+    where
+        F: FnMut(ID, ConstraintIDSide),
+    {
+        self.attribute_type.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
+    }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Value<T> {
+        Value::new(self.attribute_type.map(mapping), self.value_type)
+    }
+}
+
+impl<ID: IrID> From<Value<ID>> for Constraint<ID> {
+    fn from(val: Value<ID>) -> Self {
+        Constraint::Value(val)
+    }
+}
+
+impl<ID: StructuralEquality> StructuralEquality for Value<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.attribute_type.hash_into(&mut hasher);
+        self.value_type.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.attribute_type.equals(&other.attribute_type) && self.value_type.equals(&other.value_type)
+    }
+}
+
+impl<ID: IrID> fmt::Display for Value<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }

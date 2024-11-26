@@ -34,7 +34,7 @@ use crate::{
             r#struct::{StructDefinition, StructDefinitionField},
         },
         thing::{
-            vertex_attribute::{AttributeID, AttributeIDLength, AttributeVertex, StructAttributeID},
+            vertex_attribute::{AttributeID, AttributeVertex, StructAttributeID, ValueEncodingLength},
             vertex_generator::ThingVertexGenerator,
         },
         type_::vertex::{TypeID, TypeVertex},
@@ -44,8 +44,7 @@ use crate::{
     value::{
         boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
-        duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes, value::Value,
-        value_type::ValueTypeCategory, ValueEncodable,
+        duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes, value::Value, ValueEncodable,
     },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
@@ -190,11 +189,10 @@ impl<'a> StructIndexEntry<'a> {
     }
 
     pub fn attribute_vertex(&self) -> AttributeVertex<'static> {
-        let bytes = self.key.key_bytes.bytes();
+        let bytes = &self.key.key_bytes;
         let attribute_type_id = TypeID::new(bytes[StructIndexEntry::ENCODING_TYPEID_RANGE].try_into().unwrap());
-        let attribute_id =
-            AttributeID::new(ValueTypeCategory::Struct, &bytes[(bytes.len() - StructAttributeID::LENGTH)..bytes.len()]);
-        AttributeVertex::build(ValueTypeCategory::Struct, attribute_type_id, attribute_id)
+        let attribute_id = AttributeID::new(&bytes[(bytes.len() - StructAttributeID::LENGTH)..bytes.len()]);
+        AttributeVertex::build(attribute_type_id, attribute_id)
     }
 }
 
@@ -214,7 +212,7 @@ impl StructIndexEntry<'static> {
         value: &Value<'_>,
         attribute: &AttributeVertex<'_>,
     ) -> Result<StructIndexEntry<'static>, Arc<SnapshotIteratorError>> {
-        debug_assert_eq!(Prefix::VertexAttributeStruct, attribute.prefix());
+        debug_assert_eq!(Prefix::VertexAttribute, attribute.prefix());
         let mut buf = Self::build_prefix_typeid_path_value_into_buf(
             snapshot,
             hasher,
@@ -268,7 +266,7 @@ impl StructIndexEntry<'static> {
                 PrefixID::LENGTH +      // ValueTypeCategory of indexed value
                 TypeID::LENGTH +        // TypeID of Attribute being indexed
                 path_to_field.len() +   // Path to the field
-                AttributeIDLength::Long.length() + // Value for the field.
+                ValueEncodingLength::Long.length() + // Value for the field.
                 StructAttributeID::LENGTH, // ID of the attribute being indexed
         );
 
@@ -300,8 +298,8 @@ impl StructIndexEntry<'static> {
 impl<'a> StructIndexEntry<'a> {
     const STRING_FIELD_LENGTH: usize = 17;
     const STRING_FIELD_HASHID_LENGTH: usize = 9;
-    const STRING_FIELD_HASHED_PREFIX_LENGTH: usize = { Self::STRING_FIELD_LENGTH - Self::STRING_FIELD_HASHID_LENGTH };
-    const STRING_FIELD_INLINE_LENGTH: usize = { Self::STRING_FIELD_LENGTH - 1 };
+    const STRING_FIELD_HASHED_PREFIX_LENGTH: usize = Self::STRING_FIELD_LENGTH - Self::STRING_FIELD_HASHID_LENGTH;
+    const STRING_FIELD_INLINE_LENGTH: usize = Self::STRING_FIELD_LENGTH - 1;
 
     fn encode_string_into<const INLINE_SIZE: usize>(
         snapshot: &impl ReadableSnapshot,
@@ -322,7 +320,7 @@ impl<'a> StructIndexEntry<'a> {
                 match Self::find_existing_or_next_disambiguated_hash(
                     snapshot,
                     hasher,
-                    prefix_key,
+                    &prefix_key,
                     string_bytes.bytes().bytes(),
                 )? {
                     Either::First(hash) => hash,
