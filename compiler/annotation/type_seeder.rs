@@ -79,7 +79,11 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             .flat_map(|constraint| constraint.vertices())
             .filter(|vertex| !vertex.is_parameter())
             .unique()
-            .all(|vertex| vertex.is_parameter() || graph.vertices.contains_key(vertex)));
+            .all(|vertex| {
+                graph.vertices.contains_key(vertex) ||
+                    self.variable_registry.get_variable_category(vertex.as_variable().unwrap()).unwrap() == VariableCategory::Value
+            })
+        );
 
         Ok(graph)
     }
