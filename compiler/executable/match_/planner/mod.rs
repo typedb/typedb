@@ -333,7 +333,7 @@ impl MatchExecutableBuilder {
 
     /// inject the check as an optimisation into previously built steps
     fn inline_as_optimisation(&mut self, variables: &[Variable], check: &CheckInstruction<ExecutorVariable>) -> bool {
-        if !matches!(check, &CheckInstruction::Comparison { .. }) {
+        if !matches!(check, CheckInstruction::Comparison { .. } | CheckInstruction::Iid { .. }) {
             // TODO: inject IID check as well
             return false;
         }

@@ -425,6 +425,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     fn register_iid(&mut self, iid: &'a Iid<Variable>) {
         let planner =
             IidPlanner::from_constraint(iid, &self.graph.variable_index, self.type_annotations, self.statistics);
+        // TODO not setting exact bound for the var here as the checker can't currently take advantage of that
+        //      so the cost would be misleading the planner
         self.graph.push_constraint(ConstraintVertex::Iid(planner));
     }
 
