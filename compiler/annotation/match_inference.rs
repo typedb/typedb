@@ -237,7 +237,7 @@ impl<'this> TypeInferenceGraph<'this> {
         });
 
         vertices.into_iter().for_each(|(variable, types)| {
-            vertex_annotations.entry(variable).or_insert_with(|| Arc::new(types.into_iter().collect()));
+            vertex_annotations.entry(variable).or_insert_with(|| Arc::new(types));
         });
 
         chain(
@@ -267,34 +267,22 @@ impl<'this> TypeInferenceEdge<'this> {
         initial_left_to_right: BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
         initial_right_to_left: BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
     ) -> TypeInferenceEdge<'this> {
-        // The final left_to_right & right_to_left sets must be consistent with each other. i.e.
-        //      left_to_right.keys() == union(right_to_left.values()) AND
-        //      right_to_left.keys() == union(left_to_right.values())
+        // The left_to_right & right_to_left sets must be consistent with each other. i.e.
+        //   They must contain the same set of edges.
         // This is a pre-condition to the type-inference loop.
-        let mut left_to_right = initial_left_to_right;
-        let mut right_to_left = initial_right_to_left;
-        let left_types = Self::intersect_first_keys_with_union_of_second_values(&left_to_right, &right_to_left);
-        let right_types = Self::intersect_first_keys_with_union_of_second_values(&right_to_left, &left_to_right);
-        Self::prune_keys_not_in_first_and_values_not_in_second(&mut left_to_right, &left_types, &right_types);
-        Self::prune_keys_not_in_first_and_values_not_in_second(&mut right_to_left, &right_types, &left_types);
-        TypeInferenceEdge { constraint, left, right, left_to_right, right_to_left }
-    }
-
-    fn intersect_first_keys_with_union_of_second_values(
-        keys_from: &BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
-        values_from: &BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
-    ) -> BTreeSet<TypeAnnotation> {
-        values_from.values().flatten().filter(|v| keys_from.contains_key(v)).cloned().collect()
-    }
-
-    fn prune_keys_not_in_first_and_values_not_in_second(
-        prune_from: &mut BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
-        allowed_keys: &BTreeSet<TypeAnnotation>,
-        allowed_values: &BTreeSet<TypeAnnotation>,
-    ) {
-        prune_from.retain(|type_, _| allowed_keys.contains(type_));
-        for v in prune_from.values_mut() {
-            v.retain(|type_| allowed_values.contains(type_));
+        // This is currently true by construction.
+        debug_assert!(initial_left_to_right
+            .iter()
+            .all(|(u, vs)| vs.iter().all(|v| initial_right_to_left.get(v).unwrap().contains(u))));
+        debug_assert!(initial_right_to_left
+            .iter()
+            .all(|(u, vs)| vs.iter().all(|v| initial_left_to_right.get(v).unwrap().contains(u))));
+        TypeInferenceEdge {
+            constraint,
+            left,
+            right,
+            left_to_right: initial_left_to_right,
+            right_to_left: initial_right_to_left,
         }
     }
 
