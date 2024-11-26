@@ -200,6 +200,8 @@ impl<Durability> MVCCStorage<Durability> {
     }
 
     fn wait_for_watermark(&self, target: SequenceNumber) -> SequenceNumber {
+        // We can alternatively also block commits from returning until the watermark rises
+        // See detailed analysis at https://github.com/typedb/typedb/pull/7254/
         let mut watermark = self.snapshot_watermark();
         while watermark < target{
             sleep(Duration::from_micros(WATERMARK_WAIT_INTERVAL_MICROSECONDS));
