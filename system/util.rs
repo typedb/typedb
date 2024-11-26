@@ -110,13 +110,13 @@ pub mod query_util {
     use query::query_manager::QueryManager;
     use storage::{durability_client::WALClient, snapshot::WriteSnapshot};
     use typeql::query::Pipeline;
-
+    use executor::pipeline::PipelineExecutionError;
     use crate::util::answer_util::collect_answer;
 
     pub fn execute_read_pipeline(
         tx: TransactionRead<WALClient>,
         pipeline: &Pipeline,
-    ) -> (TransactionRead<WALClient>, Result<Vec<HashMap<String, VariableValue<'static>>>, ()>) {
+    ) -> (TransactionRead<WALClient>, Result<Vec<HashMap<String, VariableValue<'static>>>, PipelineExecutionError>) {
         let prepared_pipeline = QueryManager {}
             .prepare_read_pipeline(
                 tx.snapshot.clone(),
@@ -132,13 +132,13 @@ pub mod query_util {
         let result_as_batch = match prepared_pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
             Ok((iterator, _)) => iterator.collect_owned(),
             Err((err, _)) => {
-                return (tx, Err(()));
+                return (tx, Err(err));
             }
         };
 
         match result_as_batch {
             Ok(batch) => (tx, Ok(collect_answer(batch, named_outputs))),
-            Err(typedb_source) => (tx, Err(())),
+            Err(err) => (tx, Err(err)),
         }
     }
 
@@ -148,7 +148,7 @@ pub mod query_util {
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
         pipeline: &Pipeline,
-    ) -> (Result<Vec<HashMap<String, VariableValue<'static>>>, ()>, Arc<WriteSnapshot<WALClient>>) {
+    ) -> (Result<Vec<HashMap<String, VariableValue<'static>>>, PipelineExecutionError>, Arc<WriteSnapshot<WALClient>>) {
         let prepared_pipeline = QueryManager::new()
             .prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, pipeline)
             .unwrap();
@@ -159,13 +159,13 @@ pub mod query_util {
             match prepared_pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
                 Ok((iterator, ExecutionContext { snapshot, .. })) => (iterator.collect_owned(), snapshot),
                 Err((err, ExecutionContext { snapshot, .. })) => {
-                    return (Err(()), snapshot);
+                    return (Err(err), snapshot);
                 }
             };
 
         match result_as_batch {
             Ok(batch) => (Ok(collect_answer(batch, named_outputs)), snapshot),
-            Err(typedb_source) => (Err(()), snapshot),
+            Err(err) => (Err(err), snapshot),
         }
     }
 }
