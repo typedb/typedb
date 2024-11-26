@@ -621,7 +621,7 @@ impl ThingManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'_>,
-        range: &impl RangeBounds<Value<'a>>,
+        range: &'a impl RangeBounds<Value<'a>>,
         owner_types_range: &impl RangeBounds<ObjectType<'a>>,
     ) -> Result<HasReverseIterator, Box<ConceptReadError>> {
         if matches!(range.start_bound(), Bound::Unbounded) && matches!(range.end_bound(), Bound::Unbounded) {
@@ -632,61 +632,133 @@ impl ThingManager {
             return Ok(HasReverseIterator::new_empty());
         };
 
-        let Some((range_start, range_end)) = Self::get_value_range(attribute_value_type, range, |value| {
-            let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value(
-                attribute_type.vertex().type_id_(),
-                value,
-                self.vertex_generator.hasher(),
-            );
-            match vertex_or_prefix {
-                Either::First(vertex) => {
-                    let range_start = match owner_types_range.start_bound() {
-                        Bound::Included(start) => start.vertex(),
-                        Bound::Excluded(start) => {
-                            let mut bytes: [u8; TypeVertex::LENGTH] = start.vertex().bytes().bytes().try_into().unwrap();
-                            increment(&mut bytes).unwrap();
-                            TypeVertex::new(Bytes::Array(ByteArray::copy(&bytes)))
-                        },
-                        Bound::Unbounded => {
-                            todo!()
-                        }
-                    };
-                    ThingEdgeHasReverse::prefix_from_attribute_to_type(vertex, range_start)
-                }
-                Either::Second(prefix) => {
-                    ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.as_reference().byte_ref())
-                        .resize_to()
-                }
-            }
-        })?
-        else {
+        let Some((value_lower_bound, value_upper_bound)) = Self::get_value_range(attribute_value_type, range)? else {
             return Ok(HasReverseIterator::new_empty());
         };
 
-        let key_range_start = match range_start {
-            Bound::Included(start) => RangeStart::Inclusive(start),
-            Bound::Excluded(start) => RangeStart::ExcludePrefix(start),
-            Bound::Unbounded => RangeStart::Inclusive(
-                ThingEdgeHasReverse::prefix_from_attribute_type(attribute_type.vertex().type_id_())
-                    .resize_to(),
-            ),
-        };
-        let key_range_end = match range_end {
-            Bound::Included(end) => RangeEnd::EndPrefixInclusive(end),
-            Bound::Excluded(end) => RangeEnd::EndPrefixExclusive(end),
+        let has_range_start = match value_lower_bound {
+            Bound::Included(lower_value) => {
+                let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value(
+                    attribute_type.vertex().type_id_(),
+                    lower_value,
+                    self.vertex_generator.hasher(),
+                );
+                match vertex_or_prefix {
+                    Either::First(vertex) => {
+                        match owner_types_range.start_bound() {
+                            Bound::Included(start) => {
+                                let start_type = start.vertex();
+                                RangeStart::Inclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type(vertex, start_type))
+                            },
+                            Bound::Excluded(start) => {
+                                // increment and treat as included
+                                let mut bytes: [u8; TypeVertex::LENGTH] = start.vertex().bytes().bytes().try_into().unwrap();
+                                increment(&mut bytes).unwrap();
+                                let start_type = TypeVertex::new(Bytes::Array(ByteArray::copy(&bytes)));
+                                RangeStart::Inclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type(vertex, start_type))
+                            },
+                            Bound::Unbounded => {
+                                RangeStart::Inclusive(ThingEdgeHasReverse::prefix_from_attribute(vertex).resize_to())
+                            }
+                        }
+                    }
+                    Either::Second(prefix) => {
+                        // attribute vertex could not be built fully, probably due to not being an inline-valued attribute
+                        RangeStart::Inclusive(
+                            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.as_reference().byte_ref())
+                                .resize_to()
+                        )
+                    }
+                }
+            }
+            Bound::Excluded(lower_value) => {
+                let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value(
+                    attribute_type.vertex().type_id_(),
+                    lower_value,
+                    self.vertex_generator.hasher(),
+                );
+                match vertex_or_prefix {
+                    Either::First(vertex) => {
+                        RangeStart::ExcludePrefix(ThingEdgeHasReverse::prefix_from_attribute(vertex).resize_to())
+                    }
+                    Either::Second(prefix) => {
+                        // attribute vertex could not be built fully, probably due to not being an inline-valued attribute
+                        RangeStart::Inclusive(
+                            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.as_reference().byte_ref())
+                            .resize_to()
+                        )
+                    }
+                }
+            }
             Bound::Unbounded => {
-                let prefix = ThingEdgeHasReverse::prefix_from_attribute_type(attribute_type.vertex().type_id_());
-                let keyspace = prefix.keyspace_id();
-                let mut array = prefix.into_bytes().into_array();
-                array.increment().unwrap();
-                let prefix_key = StorageKey::Array(StorageKeyArray::new_raw(keyspace, array));
-                RangeEnd::EndPrefixExclusive(prefix_key.resize_to())
+                RangeStart::Inclusive(
+                    ThingEdgeHasReverse::prefix_from_attribute_type(attribute_type.vertex().type_id_())
+                    .resize_to()
+                )
+            }
+        };
+
+
+        let has_range_end = match value_upper_bound {
+            Bound::Included(upper_value) => {
+                let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value(
+                    attribute_type.vertex().type_id_(),
+                    upper_value,
+                    self.vertex_generator.hasher(),
+                );
+                match vertex_or_prefix {
+                    Either::First(vertex) => {
+                        match owner_types_range.end_bound() {
+                            Bound::Included(end) => {
+                                let end_type = end.vertex();
+                                RangeEnd::EndPrefixInclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type(vertex, end_type))
+                            },
+                            Bound::Excluded(end) => {
+                                let end_type = end.vertex();
+                                RangeEnd::EndPrefixExclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type(vertex, end_type))
+                            },
+                            Bound::Unbounded => {
+                                RangeEnd::EndPrefixInclusive(ThingEdgeHasReverse::prefix_from_attribute(vertex).resize_to())
+                            }
+                        }
+                    }
+                    Either::Second(prefix) => {
+                        RangeEnd::EndPrefixInclusive(
+                            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.as_reference().byte_ref())
+                                .resize_to()
+                        )
+                    }
+                }
+            }
+            Bound::Excluded(upper_value) => {
+                let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value(
+                    attribute_type.vertex().type_id_(),
+                    upper_value,
+                    self.vertex_generator.hasher(),
+                );
+                match vertex_or_prefix {
+                    Either::First(vertex) => {
+                        RangeEnd::EndPrefixExclusive(ThingEdgeHasReverse::prefix_from_attribute(vertex).resize_to())
+                    }
+                    Either::Second(prefix) => {
+                        RangeEnd::EndPrefixExclusive(
+                            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.as_reference().byte_ref())
+                                .resize_to()
+                        )
+                    }
+                }
+            }
+            Bound::Unbounded => {
+                RangeEnd::EndPrefixInclusive(
+                    ThingEdgeHasReverse::prefix_from_attribute_type(attribute_type.vertex().type_id_())
+                        .resize_to()
+                )
             }
         };
         let key_range = if ThingEdgeHasReverse::FIXED_WIDTH_ENCODING {
-            KeyRange::new_fixed_width(key_range_start, key_range_end)
+            KeyRange::new_fixed_width(has_range_start, has_range_end)
         } else {
-            KeyRange::new_variable_width(key_range_start, key_range_end)
+            KeyRange::new_variable_width(has_range_start, has_range_end)
         };
         Ok(HasReverseIterator::new(snapshot.iterate_range(&key_range)))
     }
