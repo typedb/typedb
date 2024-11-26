@@ -20,8 +20,9 @@ pub mod server {
 }
 
 pub mod database {
-    pub const QUERY_PLAN_CACHE_FLUSH_STATISTICS_CHANGE_PERCENT: f64 = 0.1;
+    pub const QUERY_PLAN_CACHE_FLUSH_STATISTICS_CHANGE_PERCENT: f64 = 0.05;
     pub const QUERY_PLAN_CACHE_SIZE: u64 = 100;
+    pub const STATISTICS_DURABLE_WRITE_CHANGE_PERCENT: f64 = 0.05;
 }
 
 pub mod traversal {
@@ -36,6 +37,7 @@ pub mod snapshot {
 pub mod storage {
     pub const TIMELINE_WINDOW_SIZE: usize = 100;
     pub const WAL_SYNC_INTERVAL_MICROSECONDS: u64 = 1000;
+    pub const WATERMARK_WAIT_INTERVAL_MICROSECONDS: u64 = 50;
 }
 
 pub mod encoding {

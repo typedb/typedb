@@ -46,13 +46,13 @@ fn test_commit_increments_watermark() {
     init_logging();
     let storage_path = create_tmp_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
-    let wm_initial = storage.read_watermark();
+    let wm_initial = storage.snapshot_watermark();
     let mut snapshot_0 = storage.clone().open_snapshot_write();
     let key_1 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
     snapshot_0.put_val(key_1.clone(), ByteArray::copy(&VALUE_1));
     snapshot_0.commit().unwrap();
 
-    assert_eq!(wm_initial.number() + 1, storage.read_watermark().number());
+    assert_eq!(wm_initial.number() + 1, storage.snapshot_watermark().number());
 }
 
 #[test]
@@ -68,7 +68,7 @@ fn test_reading_snapshots() {
     snapshot_write_0.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_0));
     snapshot_write_0.commit().unwrap();
 
-    let watermark_0 = storage.read_watermark();
+    let watermark_0 = storage.snapshot_watermark();
 
     let snapshot_read_0 = storage.clone().open_snapshot_read();
     assert_eq!(*snapshot_read_0.get::<128>(key_1.as_reference()).unwrap().unwrap(), VALUE_0);
@@ -110,7 +110,7 @@ fn test_conflicting_update_fails() {
     snapshot_write_0.put_val(key_1.clone().into_owned_array(), ByteArray::copy(&VALUE_0));
     snapshot_write_0.commit().unwrap();
 
-    let watermark_after_initial_write = storage.read_watermark();
+    let watermark_after_initial_write = storage.snapshot_watermark();
 
     {
         let mut snapshot_write_11 = storage.clone().open_snapshot_write();
@@ -143,7 +143,7 @@ fn test_open_snapshot_write_at() {
     let key_1: &StorageKey<'_, 48> =
         &StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_1)));
 
-    let watermark_init = storage.read_watermark();
+    let watermark_init = storage.snapshot_watermark();
 
     let mut snapshot_write_0 = storage.clone().open_snapshot_write();
     snapshot_write_0.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_0));

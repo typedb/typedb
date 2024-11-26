@@ -114,7 +114,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
-        let schema_cache = Arc::new(TypeCache::new(storage.clone(), storage.read_watermark()).unwrap());
+        let schema_cache = Arc::new(TypeCache::new(storage.clone(), storage.snapshot_watermark()).unwrap());
         let mut statistics = Statistics::new(DurabilitySequenceNumber::MIN);
         statistics.may_synchronise(&storage).unwrap();
         let statistics = Arc::new(statistics);

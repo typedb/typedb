@@ -13,6 +13,8 @@ use std::{
     fs, io,
     path::{Path, PathBuf},
     sync::{atomic::Ordering, Arc},
+    thread::sleep,
+    time::Duration,
 };
 
 use ::error::typedb_error;
@@ -22,7 +24,7 @@ use iterator::MVCCReadError;
 use keyspace::KeyspaceDeleteError;
 use lending_iterator::LendingIterator;
 use logger::{error, result::ResultExt};
-use resource::constants::snapshot::BUFFER_VALUE_INLINE;
+use resource::constants::{snapshot::BUFFER_VALUE_INLINE, storage::WATERMARK_WAIT_INTERVAL_MICROSECONDS};
 
 use crate::{
     durability_client::{DurabilityClient, DurabilityClientError},
@@ -165,42 +167,46 @@ impl<Durability> MVCCStorage<Durability> {
     }
 
     pub fn open_snapshot_write(self: Arc<Self>) -> WriteSnapshot<Durability> {
-        /*
-        How to pick a sequence number:
-
-        TXN 1 - open(0) ---> durably write = 10 PENDING ---> validate ---> write ---> committed. RETURN
-
-        Question: does external consistency make sense for single-node machines?
-        If user opens TXN 10 in thread 1, thread 2... work. User expects if open TXN after TXN 10 returns, we will see it. Otherwise, no expectations.
-        Therefore - we can always use the last committed state safely for happens-before relations.
-
-        For external consistency, we should use the the currently last pending sequence number and wait for it to finish.
-         */
-
-        let open_sequence_number = self.isolation_manager.watermark();
+        // guarantee external consistency: we always await the latest snapshots to finish
+        let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
+        let open_sequence_number = self.wait_for_watermark(possible_sequence_number);
         WriteSnapshot::new(self, open_sequence_number)
     }
 
     pub fn open_snapshot_write_at(self: Arc<Self>, sequence_number: SequenceNumber) -> WriteSnapshot<Durability> {
-        // TODO: Support waiting for watermark to catch up to sequence number when we support causal reading.
-        assert!(sequence_number <= self.read_watermark());
+        // guarantee external consistency: await this sequence number to be behind the watermark
+        self.wait_for_watermark(sequence_number);
         WriteSnapshot::new(self, sequence_number)
     }
 
     pub fn open_snapshot_read(self: Arc<Self>) -> ReadSnapshot<Durability> {
-        let open_sequence_number = self.isolation_manager.watermark();
+        // guarantee external consistency: we always await the latest snapshots to finish
+        let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
+        let open_sequence_number = self.wait_for_watermark(possible_sequence_number);
         ReadSnapshot::new(self, open_sequence_number)
     }
 
     pub fn open_snapshot_read_at(self: Arc<Self>, sequence_number: SequenceNumber) -> ReadSnapshot<Durability> {
-        // TODO: Support waiting for watermark to catch up to sequence number when we support causal reading.
-        assert!(sequence_number <= self.read_watermark());
+        self.wait_for_watermark(sequence_number);
         ReadSnapshot::new(self, sequence_number)
     }
 
     pub fn open_snapshot_schema(self: Arc<Self>) -> SchemaSnapshot<Durability> {
-        let watermark = self.isolation_manager.watermark();
-        SchemaSnapshot::new(self, watermark)
+        // guarantee external consistency: we always await the latest snapshots to finish
+        let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
+        let open_sequence_number = self.wait_for_watermark(possible_sequence_number);
+        SchemaSnapshot::new(self, open_sequence_number)
+    }
+
+    fn wait_for_watermark(&self, target: SequenceNumber) -> SequenceNumber {
+        // We can alternatively also block commits from returning until the watermark rises
+        // See detailed analysis at https://github.com/typedb/typedb/pull/7254/
+        let mut watermark = self.snapshot_watermark();
+        while watermark < target {
+            sleep(Duration::from_micros(WATERMARK_WAIT_INTERVAL_MICROSECONDS));
+            watermark = self.snapshot_watermark();
+        }
+        watermark
     }
 
     fn snapshot_commit(
@@ -304,7 +310,7 @@ impl<Durability> MVCCStorage<Durability> {
     }
 
     pub fn checkpoint(&self, checkpoint: &Checkpoint) -> Result<(), CheckpointCreateError> {
-        checkpoint.add_storage(&self.keyspaces, self.read_watermark())
+        checkpoint.add_storage(&self.keyspaces, self.snapshot_watermark())
     }
 
     pub fn delete_storage(self) -> Result<(), StorageDeleteError>
@@ -368,7 +374,7 @@ impl<Durability> MVCCStorage<Durability> {
         MVCCRangeIterator::new(self, range, open_sequence_number)
     }
 
-    pub fn read_watermark(&self) -> SequenceNumber {
+    pub fn snapshot_watermark(&self) -> SequenceNumber {
         self.isolation_manager.watermark()
     }
 

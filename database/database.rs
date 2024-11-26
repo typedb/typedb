@@ -235,7 +235,7 @@ impl Database<WALClient> {
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator =
             Arc::new(ThingVertexGenerator::load(storage.clone()).map_err(|err| Encoding { source: err })?);
-        let thing_statistics = Arc::new(Statistics::new(storage.read_watermark()));
+        let thing_statistics = Arc::new(Statistics::new(storage.snapshot_watermark()));
 
         let type_cache = Arc::new(
             TypeCache::new(storage.clone(), SequenceNumber::MIN)
@@ -419,7 +419,7 @@ impl Database<WALClient> {
         }
 
         let thing_statistics = Arc::get_mut(&mut locked_schema.thing_statistics).unwrap();
-        thing_statistics.reset(self.storage.read_watermark());
+        thing_statistics.reset(self.storage.snapshot_watermark());
 
         self.query_cache.force_reset(0);
 
@@ -435,7 +435,7 @@ fn make_update_statistics_fn(
     query_cache: Arc<QueryCache>,
 ) -> impl Fn() {
     move || {
-        if storage.read_watermark() > (*schema).read().unwrap().thing_statistics.sequence_number {
+        if storage.snapshot_watermark() > (*schema).read().unwrap().thing_statistics.sequence_number {
             let _schema_txn_guard = schema_txn_lock.read().unwrap(); // prevent Schema txns from opening during statistics update
             let mut thing_statistics = (*schema.read().unwrap().thing_statistics).clone();
             thing_statistics.may_synchronise(&storage).ok();
