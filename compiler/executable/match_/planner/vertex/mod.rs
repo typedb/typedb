@@ -187,7 +187,7 @@ pub(super) trait Costed {
     fn cost(
         &self,
         inputs: &[VertexId],
-        intersection_variable: Option<VariableVertexId>,
+        sort_variable: Option<VariableVertexId>,
         graph: &Graph<'_>,
     ) -> ElementCost;
 }

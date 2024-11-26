@@ -547,11 +547,11 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         }
 
         let mut produced_at_this_stage: HashSet<VariableVertexId> = HashSet::new();
-        let mut intersection_variable: Option<VariableVertexId> = None;
+        let mut sort_variable: Option<VariableVertexId> = None;
 
         macro_rules! commit_variables {
             () => {{
-                if let Some(var) = intersection_variable.take().map(VertexId::Variable) {
+                if let Some(var) = sort_variable.take().map(VertexId::Variable) {
                     ordering.push(var);
                     open_set.remove(&var);
                 }
@@ -569,7 +569,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 .iter()
                 .filter(|&&elem| self.graph.elements[&elem].is_valid(elem, &ordering, &self.graph))
                 .map(|&elem| {
-                    let cost = self.calculate_marginal_cost(&ordering, elem, intersection_variable);
+                    let cost = self.calculate_marginal_cost(&ordering, elem, sort_variable);
                     // useful when debugging
                     let _graph_element = &self.graph.elements[&elem];
                     (elem, cost)
@@ -587,9 +587,9 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                     let prev_constraint = &prev.as_constraint().unwrap();
                     if next_constraint.can_sort_on(var)
                         && prev_constraint.can_sort_on(var)
-                        && (intersection_variable == Some(var) || intersection_variable.is_none())
+                        && (sort_variable == Some(var) || sort_variable.is_none())
                     {
-                        intersection_variable = Some(var);
+                        sort_variable = Some(var);
                     } else {
                         commit_variables!()
                     }
@@ -599,6 +599,23 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
                 produced_at_this_stage
                     .extend(element.variables().filter(|&var| !ordering.contains(&VertexId::Variable(var))));
+
+                if sort_variable.is_none() {
+                    let constraint = element.as_constraint().unwrap();
+                    if constraint.unbound_direction(&self.graph) == Direction::Canonical {
+                        if let Some(candidate_sort_variable) = constraint.variables().next() {
+                            if produced_at_this_stage.contains(&candidate_sort_variable) {
+                                sort_variable = Some(candidate_sort_variable);
+                            }
+                        }
+                    } else {
+                        if let Some(candidate_sort_variable) = constraint.variables().nth(1) {
+                            if produced_at_this_stage.contains(&candidate_sort_variable) {
+                                sort_variable = Some(candidate_sort_variable);
+                            }
+                        }
+                    }
+                }
 
                 ordering.push(next);
                 open_set.remove(&next);
@@ -621,12 +638,12 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         &self,
         prefix: &[VertexId],
         next: VertexId,
-        intersection_variable: Option<VariableVertexId>,
+        sort_variable: Option<VariableVertexId>,
     ) -> f64 {
         assert!(!prefix.contains(&next));
         let planner_vertex = &self.graph.elements[&next];
         let ElementCost { per_input, per_output, branching_factor } =
-            planner_vertex.cost(prefix, intersection_variable, &self.graph);
+            planner_vertex.cost(prefix, sort_variable, &self.graph);
         per_input + branching_factor * per_output
     }
 
@@ -638,8 +655,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             .iter()
             .enumerate()
             .map(|(i, idx)| {
-                let intersection_variable = ordering.get(i + 1).and_then(|vertex| vertex.as_variable_id());
-                self.graph.elements[idx].cost(&ordering[..i], intersection_variable, &self.graph)
+                let sort_variable = ordering.get(i + 1).and_then(|vertex| vertex.as_variable_id());
+                self.graph.elements[idx].cost(&ordering[..i], sort_variable, &self.graph)
             })
             .fold(ElementCost::MEM_SIMPLE_BRANCH_1, |acc, e| acc.chain(e));
 
