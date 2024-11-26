@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use database::Database;
+use resource::constants::server::DEFAULT_USER_NAME;
 use storage::durability_client::WALClient;
 use system::{
     concepts::{Credential, User},
@@ -45,10 +46,7 @@ impl UserManager {
                 );
                 ((), snapshot)
             });
-        commit.map_err(|e| {
-
-            UserCreateError::Unexpected {}
-        })
+        commit.map_err(|e| { UserCreateError::Unexpected {} })
     }
 
     pub fn update(
@@ -74,17 +72,21 @@ impl UserManager {
     }
 
     pub fn delete(&self, username: &str) -> Result<(), UserDeleteError> {
-        let commit =
-            self.transaction_util.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, db, tx_opts| {
-                let snapshot = user_repository::delete(
-                    Arc::into_inner(snapshot).unwrap(),
-                    &type_mgr,
-                    thing_mgr.clone(),
-                    &fn_mgr,
-                    username,
-                );
-                ((), snapshot)
-            });
-        commit.map_err(|e| UserDeleteError::Unexpected {})
+        if username == DEFAULT_USER_NAME {
+            Err(UserDeleteError::DefaultUserCannotBeDeleted {})
+        } else {
+            let commit =
+                self.transaction_util.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, db, tx_opts| {
+                    let snapshot = user_repository::delete(
+                        Arc::into_inner(snapshot).unwrap(),
+                        &type_mgr,
+                        thing_mgr.clone(),
+                        &fn_mgr,
+                        username,
+                    );
+                    ((), snapshot)
+                });
+            commit.map_err(|e| UserDeleteError::Unexpected {})
+        }
     }
 }

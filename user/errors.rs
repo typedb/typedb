@@ -14,6 +14,7 @@ typedb_error!(
 
 typedb_error!(
     pub UserDeleteError(component = "User delete", prefix = "USD") {
-        Unexpected(1, "An unexpected error has occurred in the process of deleting a user"),
+        DefaultUserCannotBeDeleted(1, "Default user cannot be deleted"),
+        Unexpected(2, "An unexpected error has occurred in the process of deleting a user"),
     }
 );
