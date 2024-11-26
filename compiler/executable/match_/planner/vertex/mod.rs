@@ -174,25 +174,31 @@ pub(super) trait Costed {
     fn cost(
         &self,
         inputs: &[VertexId],
-        sort_variable: Option<VariableVertexId>,
+        step_sort_variable: Option<VariableVertexId>,
+        step_start_index: usize,
         graph: &Graph<'_>,
     ) -> ElementCost;
 }
 
 impl Costed for PlannerVertex<'_> {
-    fn cost(&self, inputs: &[VertexId], intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
+    fn cost(&self,
+            inputs: &[VertexId],
+            step_sort_variable: Option<VariableVertexId>,
+            step_start_index: usize,
+            graph: &Graph<'_>
+    ) -> ElementCost {
         match self {
-            Self::Variable(inner) => inner.cost(inputs, intersection, graph),
-            Self::Constraint(inner) => inner.cost(inputs, intersection, graph),
+            Self::Variable(inner) => inner.cost(inputs, step_sort_variable, step_start_index, graph),
+            Self::Constraint(inner) => inner.cost(inputs, step_sort_variable, step_start_index, graph),
 
-            Self::Is(inner) => inner.cost(inputs, intersection, graph),
-            Self::Comparison(inner) => inner.cost(inputs, intersection, graph),
+            Self::Is(inner) => inner.cost(inputs, step_sort_variable, step_start_index, graph),
+            Self::Comparison(inner) => inner.cost(inputs, step_sort_variable, step_start_index, graph),
 
-            Self::Expression(inner) => inner.cost(inputs, intersection, graph),
-            Self::FunctionCall(inner) => inner.cost(inputs, intersection, graph),
+            Self::Expression(inner) => inner.cost(inputs, step_sort_variable, step_start_index, graph),
+            Self::FunctionCall(inner) => inner.cost(inputs, step_sort_variable, step_start_index, graph),
 
-            Self::Negation(inner) => inner.cost(inputs, intersection, graph),
-            Self::Disjunction(inner) => inner.cost(inputs, intersection, graph),
+            Self::Negation(inner) => inner.cost(inputs, step_sort_variable, step_start_index, graph),
+            Self::Disjunction(inner) => inner.cost(inputs, step_sort_variable, step_start_index, graph),
         }
     }
 }
@@ -253,7 +259,12 @@ impl<'a> ExpressionPlanner<'a> {
 }
 
 impl Costed for ExpressionPlanner<'_> {
-    fn cost(&self, _inputs: &[VertexId], _intersection: Option<VariableVertexId>, _graph: &Graph<'_>) -> ElementCost {
+    fn cost(&self,
+            _inputs: &[VertexId],
+            _intersection: Option<VariableVertexId>,
+            _step_start_index: usize,
+            _graph: &Graph<'_>
+    ) -> ElementCost {
         self.cost
     }
 }
@@ -282,7 +293,12 @@ impl<'a> FunctionCallPlanner<'a> {
 }
 
 impl<'a> Costed for FunctionCallPlanner<'a> {
-    fn cost(&self, _inputs: &[VertexId], _intersection: Option<VariableVertexId>, _graph: &Graph<'_>) -> ElementCost {
+    fn cost(&self,
+            _inputs: &[VertexId],
+            _step_sort_variable: Option<VariableVertexId>,
+            _index: usize,
+            _graph: &Graph<'_>
+    ) -> ElementCost {
         self.cost
     }
 }
@@ -320,7 +336,12 @@ impl<'a> IsPlanner<'a> {
 }
 
 impl Costed for IsPlanner<'_> {
-    fn cost(&self, _: &[VertexId], _: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
+    fn cost(&self,
+            _: &[VertexId],
+            _: Option<VariableVertexId>,
+            _: usize,
+            _: &Graph<'_>
+    ) -> ElementCost {
         ElementCost::MEM_SIMPLE_BRANCH_1
     }
 }
@@ -370,7 +391,12 @@ impl<'a> ComparisonPlanner<'a> {
 }
 
 impl Costed for ComparisonPlanner<'_> {
-    fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
+    fn cost(&self,
+            _: &[VertexId],
+            _step_sort_variable: Option<VariableVertexId>,
+            _step_start_index: usize,
+            _: &Graph<'_>
+    ) -> ElementCost {
         ElementCost::MEM_SIMPLE_BRANCH_1
     }
 }
@@ -401,7 +427,12 @@ impl<'a> NegationPlanner<'a> {
 }
 
 impl Costed for NegationPlanner<'_> {
-    fn cost(&self, _inputs: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
+    fn cost(&self,
+            _inputs: &[VertexId],
+            _step_sort_variable: Option<VariableVertexId>,
+            _step_start_index_: usize,
+            _: &Graph<'_>
+    ) -> ElementCost {
         self.plan.cost()
     }
 }
@@ -437,7 +468,12 @@ impl<'a> DisjunctionPlanner<'a> {
 }
 
 impl Costed for DisjunctionPlanner<'_> {
-    fn cost(&self, inputs: &[VertexId], _intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
+    fn cost(&self,
+            inputs: &[VertexId],
+            _step_sort_variable: Option<VariableVertexId>,
+            _step_start_index: usize,
+            graph: &Graph<'_>
+    ) -> ElementCost {
         let input_variables =
             inputs.iter().filter_map(|id| graph.elements()[id].as_variable()).map(|var| var.variable());
         self.builder()

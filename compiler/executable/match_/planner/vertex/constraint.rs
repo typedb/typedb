@@ -88,7 +88,12 @@ impl ConstraintVertex<'_> {
 }
 
 impl Costed for ConstraintVertex<'_> {
-    fn cost(&self, inputs: &[VertexId], intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
+    fn cost(&self,
+            inputs: &[VertexId],
+            step_sort_var: Option<VariableVertexId>,
+            step_start_index: usize,
+            graph: &Graph<'_>
+    ) -> ElementCost {
         match self {
             Self::TypeList(inner) => inner.cost(inputs, intersection, graph),
             Self::Iid(inner) => inner.cost(inputs, intersection, graph),
@@ -211,7 +216,12 @@ impl<'a> TypeListPlanner<'a> {
 }
 
 impl Costed for TypeListPlanner<'_> {
-    fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
+    fn cost(&self,
+            _: &[VertexId],
+            _step_sort_var: Option<VariableVertexId>,
+            _step_start_index: usize,
+            _: &Graph<'_>
+    ) -> ElementCost {
         ElementCost::in_mem_complex_with_branching(self.types.len() as f64)
     }
 }
@@ -306,7 +316,12 @@ impl<'a> IsaPlanner<'a> {
 }
 
 impl Costed for IsaPlanner<'_> {
-    fn cost(&self, inputs: &[VertexId], _intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
+    fn cost(&self,
+            inputs: &[VertexId],
+            _step_sort_var: Option<VariableVertexId>,
+            _step_start_index: usize,
+            graph: &Graph<'_>
+    ) -> ElementCost {
         let thing_id = VertexId::Variable(self.thing);
         let is_thing_bound = inputs.contains(&thing_id);
         let thing = graph.elements()[&thing_id].as_variable().unwrap();
@@ -446,7 +461,12 @@ impl<'a> HasPlanner<'a> {
 }
 
 impl Costed for HasPlanner<'_> {
-    fn cost(&self, inputs: &[VertexId], _intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
+    fn cost(&self,
+            inputs: &[VertexId],
+            _intersection: Option<VariableVertexId>,
+            _step_start_index: usize,
+            graph: &Graph<'_>
+    ) -> ElementCost {
         let owner_id = VertexId::Variable(self.owner);
         let attribute_id = VertexId::Variable(self.attribute);
 
@@ -618,7 +638,12 @@ impl<'a> LinksPlanner<'a> {
 }
 
 impl Costed for LinksPlanner<'_> {
-    fn cost(&self, inputs: &[VertexId], _intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
+    fn cost(&self,
+            inputs: &[VertexId],
+            _intersection: Option<VariableVertexId>,
+            _step_start_index: usize,
+            graph: &Graph<'_>
+    ) -> ElementCost {
         let relation_id = VertexId::Variable(self.relation);
         let player_id = VertexId::Variable(self.player);
 
@@ -691,7 +716,12 @@ impl<'a> SubPlanner<'a> {
 }
 
 impl Costed for SubPlanner<'_> {
-    fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
+    fn cost(&self,
+            _: &[VertexId],
+            _intersection: Option<VariableVertexId>,
+            _step_start_index: usize,
+            _: &Graph<'_>
+    ) -> ElementCost {
         ElementCost::in_mem_complex_with_branching(1.0) // TODO branching
     }
 }
@@ -726,7 +756,12 @@ impl<'a> OwnsPlanner<'a> {
 }
 
 impl Costed for OwnsPlanner<'_> {
-    fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
+    fn cost(&self,
+            _: &[VertexId],
+            _intersection: Option<VariableVertexId>,
+            _step_start_index: usize,
+            _: &Graph<'_>
+    ) -> ElementCost {
         ElementCost::in_mem_complex_with_branching(1.0) // TODO branching
     }
 }
@@ -761,7 +796,12 @@ impl<'a> RelatesPlanner<'a> {
 }
 
 impl Costed for RelatesPlanner<'_> {
-    fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
+    fn cost(&self,
+            _: &[VertexId],
+            _intersection: Option<VariableVertexId>,
+            _step_start_index: usize,
+            _: &Graph<'_>
+    ) -> ElementCost {
         ElementCost::in_mem_complex_with_branching(1.0) // TODO branching
     }
 }
@@ -796,7 +836,12 @@ impl<'a> PlaysPlanner<'a> {
 }
 
 impl Costed for PlaysPlanner<'_> {
-    fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
+    fn cost(&self,
+            _: &[VertexId],
+            _intersection: Option<VariableVertexId>,
+            _step_start_index: usize,
+            _: &Graph<'_>
+    ) -> ElementCost {
         ElementCost::in_mem_complex_with_branching(1.0) // TODO branching
     }
 }

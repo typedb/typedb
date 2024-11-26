@@ -540,7 +540,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             .collect();
         let mut vertex_plan = Vec::with_capacity(self.graph.element_count());
         let mut constraint_directions = HashMap::new();
-        let mut plan_cost: f64 = 0.0;
+        let mut plan_running_cost: f64 = 0.0;
+        let mut plan_running_size: i32 = 0;
 
         for v in self.input_variables() {
             vertex_plan.push(VertexId::Variable(v));
@@ -576,7 +577,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 .iter()
                 .filter(|&&elem| self.graph.elements[&elem].is_valid(&vertex_plan, &self.graph))
                 .map(|&elem| {
-                    let cost = self.calculate_marginal_cost(&vertex_plan, elem, step_sort_variable);
+                    let cost = self.calculate_marginal_cost(&vertex_plan, elem, step_sort_variable, step_start_index);
                     let _graph_element = &self.graph.elements[&elem];
                     println!("  Choice {:?}, cost: {cost}", _graph_element);
 
@@ -651,14 +652,15 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
     fn calculate_marginal_cost(
         &self,
-        prefix: &[VertexId],
+        vertex_plan: &[VertexId],
         next: VertexId,
         sort_variable: Option<VariableVertexId>,
+        step_start_index: usize,
     ) -> f64 {
-        assert!(!prefix.contains(&next));
+        assert!(!vertex_plan.contains(&next));
         let planner_vertex = &self.graph.elements[&next];
         let ElementCost { per_input, per_output, branching_factor } =
-            planner_vertex.cost(prefix, sort_variable, &self.graph);
+            planner_vertex.cost(vertex_plan, sort_variable, step_start_index, &self.graph);
         per_input + branching_factor * per_output
     }
 

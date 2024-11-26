@@ -137,13 +137,19 @@ impl VariableVertex {
 }
 
 impl Costed for VariableVertex {
-    fn cost(&self, inputs: &[VertexId], intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
-        match self {
-            Self::Input(inner) => inner.cost(inputs, intersection, graph),
-            Self::Type(inner) => inner.cost(inputs, intersection, graph),
-            Self::Thing(inner) => inner.cost(inputs, intersection, graph),
-            Self::Value(inner) => inner.cost(inputs, intersection, graph),
-        }
+    fn cost(&self,
+            _inputs: &[VertexId],
+            _step_sort_variable: Option<VariableVertexId>,
+            _step_start_index: usize,
+            _graph: &Graph<'_>
+    ) -> ElementCost {
+        // match self {
+        //     Self::Input(inner) => inner.cost(inputs, step_sort_variable, graph),
+        //     Self::Type(inner) => inner.cost(inputs, step_sort_variable, graph),
+        //     Self::Thing(inner) => inner.cost(inputs, step_sort_variable, graph),
+        //     Self::Value(inner) => inner.cost(inputs, step_sort_variable, graph),
+        // }
+        ElementCost::MEM_SIMPLE_BRANCH_1
     }
 }
 
@@ -165,7 +171,12 @@ impl InputPlanner {
 }
 
 impl Costed for InputPlanner {
-    fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
+    fn cost(&self,
+            _: &[VertexId],
+            _step_sort_variable: Option<VariableVertexId>,
+            _step_start_index: usize,
+            _: &Graph<'_>
+    ) -> ElementCost {
         ElementCost::MEM_SIMPLE_BRANCH_1
     }
 }
@@ -209,7 +220,12 @@ impl TypePlanner {
 }
 
 impl Costed for TypePlanner {
-    fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
+    fn cost(&self,
+            _: &[VertexId],
+            _step_sort_variable: Option<VariableVertexId>,
+            _step_start_index: usize,
+            _: &Graph<'_>
+    ) -> ElementCost {
         ElementCost::in_mem_simple_with_branching(self.unrestricted_expected_size)
     }
 }
@@ -360,24 +376,30 @@ fn branching_for_intersections(intersection_count: usize) -> f64 {
 }
 
 impl Costed for ThingPlanner {
-    fn cost(&self, inputs: &[VertexId], intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
-        match intersection {
-            None => ElementCost::MEM_SIMPLE_BRANCH_1,
-            Some(variable_id) => {
-                let mut intersection_count = 0;
-                for input in inputs {
-                    let input_element = &graph.elements()[input];
-                    if input_element.variables().any(|var| var == variable_id) {
-                        intersection_count += 1;
-                    }
-                }
-                ElementCost {
-                    per_input: ElementCost::IN_MEM_COST_COMPLEX,
-                    per_output: ElementCost::IN_MEM_COST_COMPLEX,
-                    branching_factor: branching_for_intersections(intersection_count),
-                }
-            }
-        }
+    fn cost(&self,
+            inputs: &[VertexId],
+            step_sort_variable: Option<VariableVertexId>,
+            step_start_index: usize,
+            graph: &Graph<'_>
+    ) -> ElementCost {
+        // match step_sort_variable {
+        //     None => ElementCost::MEM_SIMPLE_BRANCH_1,
+        //     Some(variable_id) => {
+        //         let mut intersection_count = 0;
+        //         for input in inputs {
+        //             let input_element = &graph.elements()[input];
+        //             if input_element.variables().any(|var| var == variable_id) {
+        //                 intersection_count += 1;
+        //             }
+        //         }
+        //         ElementCost {
+        //             per_input: ElementCost::IN_MEM_COST_COMPLEX,
+        //             per_output: ElementCost::IN_MEM_COST_COMPLEX,
+        //             branching_factor: branching_for_intersections(intersection_count),
+        //         }
+        //     }
+        // }
+        ElementCost::MEM_SIMPLE_BRANCH_1
     }
 }
 
@@ -455,7 +477,12 @@ impl ValuePlanner {
 }
 
 impl Costed for ValuePlanner {
-    fn cost(&self, inputs: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
+    fn cost(&self,
+            inputs: &[VertexId],
+            _step_sort_variable: Option<VariableVertexId>,
+            _step_start_index: usize,
+            _: &Graph<'_>
+    ) -> ElementCost {
         if inputs.is_empty() {
             ElementCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
         } else {
