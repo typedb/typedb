@@ -153,7 +153,7 @@ build:
         bazel test //tests/behaviour/query/functions:test_structure --test_output=streamed
         bazel test //tests/behaviour/query/functions:test_usage --test_output=streamed
         bazel test //tests/behaviour/query/functions:test_basic --test_output=streamed
-        bazel test //tests/behaviour/query/functions:test_recursive --test_output=streamed
+        bazel test //tests/behaviour/query/functions:test_recursion --test_output=streamed
 
 release:
   filter:
