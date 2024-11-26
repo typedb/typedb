@@ -17,7 +17,10 @@ rust_library(
         "@typeql//rust:typeql",
 
         "@crates//:serde",
-    ]
+    ],
+    proc_macro_deps = [
+        "@crates//:paste",
+    ],
 )
 
 checkstyle_test(

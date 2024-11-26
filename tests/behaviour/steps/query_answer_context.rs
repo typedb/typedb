@@ -32,22 +32,25 @@ macro_rules! with_rows_answer {
 }
 pub(crate) use with_rows_answer;
 
+#[expect(unused_macros, reason = "added for symmetry")]
 macro_rules! with_documents_answer {
     ($context:ident, |$answer:ident| $expr:expr) => {
         let $answer = $context.query_answer.as_ref().unwrap().as_documents();
         $expr
     };
 }
+#[expect(unused_imports, reason = "added for symmetry")]
+pub(crate) use with_documents_answer;
 
 impl QueryAnswer {
-    pub fn as_rows(&self) -> &Vec<HashMap<String, VariableValue<'static>>> {
+    pub fn as_rows(&self) -> &[HashMap<String, VariableValue<'static>>] {
         match self {
             Self::ConceptRows(rows) => rows,
             Self::ConceptDocuments(..) => panic!("Expected ConceptRows, got ConceptDocuments"),
         }
     }
 
-    pub fn as_documents(&self) -> &Vec<ConceptDocument> {
+    pub fn as_documents(&self) -> &[ConceptDocument] {
         match self {
             Self::ConceptRows(..) => {
                 panic!("Expected ConceptDocuments, got ConceptRows")
@@ -56,7 +59,7 @@ impl QueryAnswer {
         }
     }
 
-    pub fn as_documents_parameters(&self) -> &Arc<ParameterRegistry> {
+    pub fn as_documents_parameters(&self) -> &ParameterRegistry {
         match self {
             Self::ConceptRows(..) => {
                 panic!("Expected ConceptDocuments, got ConceptRows")
@@ -93,7 +96,7 @@ impl QueryAnswer {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        parameters: &Arc<ParameterRegistry>,
+        parameters: &ParameterRegistry,
         node: &DocumentNode,
     ) -> JSON {
         match &node {
@@ -116,7 +119,7 @@ impl QueryAnswer {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        parameters: &Arc<ParameterRegistry>,
+        parameters: &ParameterRegistry,
         document_map: &DocumentMap,
     ) -> HashMap<Cow<'static, str>, JSON> {
         match document_map {

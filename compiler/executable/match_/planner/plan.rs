@@ -16,7 +16,7 @@ use ir::{
     pattern::{
         conjunction::Conjunction,
         constraint::{
-            Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Is, Isa, Kind, Label,
+            Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Iid, Is, Isa, Kind, Label,
             Links, Owns, Plays, Relates, RoleName, Sub, Value,
         },
         nested_pattern::NestedPattern,
@@ -32,8 +32,8 @@ use crate::{
     executable::match_::{
         instructions::{
             thing::{
-                HasInstruction, HasReverseInstruction, IsaInstruction, IsaReverseInstruction, LinksInstruction,
-                LinksReverseInstruction,
+                HasInstruction, HasReverseInstruction, IidInstruction, IsaInstruction, IsaReverseInstruction,
+                LinksInstruction, LinksReverseInstruction,
             },
             type_::{
                 OwnsInstruction, OwnsReverseInstruction, PlaysInstruction, PlaysReverseInstruction, RelatesInstruction,
@@ -44,8 +44,8 @@ use crate::{
         planner::{
             vertex::{
                 constraint::{
-                    ConstraintVertex, HasPlanner, IsaPlanner, LinksPlanner, OwnsPlanner, PlaysPlanner, RelatesPlanner,
-                    SubPlanner, TypeListPlanner,
+                    ConstraintVertex, HasPlanner, IidPlanner, IsaPlanner, LinksPlanner, OwnsPlanner, PlaysPlanner,
+                    RelatesPlanner, SubPlanner, TypeListPlanner,
                 },
                 variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
                 ComparisonPlanner, Costed, Direction, DisjunctionPlanner, ElementCost, ExpressionPlanner,
@@ -355,6 +355,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 Constraint::Plays(plays) => self.register_plays(plays),
 
                 Constraint::Isa(isa) => self.register_isa(isa),
+                Constraint::Iid(iid) => self.register_iid(iid),
                 Constraint::Has(has) => self.register_has(has),
                 Constraint::Links(links) => self.register_links(links),
 
@@ -419,6 +420,14 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let planner =
             IsaPlanner::from_constraint(isa, &self.graph.variable_index, self.type_annotations, self.statistics);
         self.graph.push_constraint(ConstraintVertex::Isa(planner));
+    }
+
+    fn register_iid(&mut self, iid: &'a Iid<Variable>) {
+        let planner =
+            IidPlanner::from_constraint(iid, &self.graph.variable_index, self.type_annotations, self.statistics);
+        // TODO not setting exact bound for the var here as the checker can't currently take advantage of that
+        //      so the cost would be misleading the planner
+        self.graph.push_constraint(ConstraintVertex::Iid(planner));
     }
 
     fn register_has(&mut self, has: &'a Has<Variable>) {
@@ -991,6 +1000,13 @@ impl ConjunctionPlan<'_> {
                 match_builder.push_instruction(var, instruction);
             }
 
+            ConstraintVertex::Iid(iid) => {
+                let var = iid.iid().var().as_variable().unwrap();
+                let instruction =
+                    ConstraintInstruction::Iid(IidInstruction::new(iid.iid().clone(), self.type_annotations));
+                match_builder.push_instruction(var, instruction);
+            }
+
             ConstraintVertex::Sub(planner) => {
                 let sub = planner.sub();
                 binary!((with sub_kind) subtype sub supertype, Sub(SubInstruction), SubReverse(SubReverseInstruction))
@@ -1097,6 +1113,12 @@ impl ConjunctionPlan<'_> {
             ConstraintVertex::TypeList(type_list) => {
                 let var = type_list.constraint().var();
                 let instruction = type_list.lower_check();
+                match_builder.push_check(&[var], instruction.map(match_builder.position_mapping()));
+            }
+
+            ConstraintVertex::Iid(iid) => {
+                let var = iid.iid().var().as_variable().unwrap();
+                let instruction = CheckInstruction::Iid { var, iid: iid.iid().iid().as_parameter().unwrap() };
                 match_builder.push_check(&[var], instruction.map(match_builder.position_mapping()));
             }
 

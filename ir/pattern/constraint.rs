@@ -7,7 +7,6 @@
 use std::{
     collections::HashMap,
     fmt,
-    fmt::{Display, Formatter},
     hash::{DefaultHasher, Hasher},
     mem,
     ops::Deref,
@@ -22,7 +21,7 @@ use crate::{
         expression::{ExpressionDefinitionError, ExpressionTree},
         function_call::FunctionCall,
         variable_category::VariableCategory,
-        IrID, ScopeId, ValueType, Vertex,
+        IrID, ParameterID, ScopeId, ValueType, Vertex,
     },
     pipeline::{block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry},
     RepresentationError,
@@ -199,6 +198,16 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
         let constraint = self.constraints.add_constraint(isa);
         Ok(constraint.as_isa().unwrap())
+    }
+
+    pub fn add_iid(&mut self, var: Variable, iid: ParameterID) -> Result<&Iid<Variable>, Box<RepresentationError>> {
+        let iid = Iid::new(var, iid);
+
+        debug_assert!(self.context.is_variable_available(self.constraints.scope, var));
+        self.context.set_variable_category(var, VariableCategory::Thing, iid.clone().into())?;
+
+        let constraint = self.constraints.add_constraint(iid);
+        Ok(constraint.as_iid().unwrap())
     }
 
     pub fn add_has(
@@ -448,6 +457,7 @@ pub enum Constraint<ID> {
     RoleName(RoleName<ID>),
     Sub(Sub<ID>),
     Isa(Isa<ID>),
+    Iid(Iid<ID>),
     Links(Links<ID>),
     Has(Has<ID>),
     ExpressionBinding(ExpressionBinding<ID>),
@@ -468,6 +478,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::RoleName(_) => "role-name",
             Constraint::Sub(_) => typeql::token::Keyword::Sub.as_str(),
             Constraint::Isa(_) => typeql::token::Keyword::Isa.as_str(),
+            Constraint::Iid(_) => typeql::token::Keyword::IID.as_str(),
             Constraint::Links(_) => typeql::token::Keyword::Links.as_str(),
             Constraint::Has(_) => typeql::token::Keyword::Has.as_str(),
             Constraint::ExpressionBinding(_) => typeql::token::Comparator::Eq.as_str(),
@@ -488,6 +499,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::RoleName(role_name) => Box::new(role_name.ids()),
             Constraint::Sub(sub) => Box::new(sub.ids()),
             Constraint::Isa(isa) => Box::new(isa.ids()),
+            Constraint::Iid(iid) => Box::new(iid.ids()),
             Constraint::Links(rp) => Box::new(rp.ids()),
             Constraint::Has(has) => Box::new(has.ids()),
             Constraint::ExpressionBinding(binding) => Box::new(binding.ids_assigned()),
@@ -508,6 +520,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::RoleName(role_name) => Box::new(role_name.vertices()),
             Constraint::Sub(sub) => Box::new(sub.vertices()),
             Constraint::Isa(isa) => Box::new(isa.vertices()),
+            Constraint::Iid(iid) => Box::new(iid.vertices()),
             Constraint::Links(rp) => Box::new(rp.vertices()),
             Constraint::Has(has) => Box::new(has.vertices()),
             Constraint::ExpressionBinding(binding) => Box::new(binding.vertices_assigned()),
@@ -531,6 +544,7 @@ impl<ID: IrID> Constraint<ID> {
             Self::RoleName(role_name) => role_name.ids_foreach(function),
             Self::Sub(sub) => sub.ids_foreach(function),
             Self::Isa(isa) => isa.ids_foreach(function),
+            Self::Iid(iid) => iid.ids_foreach(function),
             Self::Links(rp) => rp.ids_foreach(function),
             Self::Has(has) => has.ids_foreach(function),
             Self::ExpressionBinding(binding) => binding.ids_foreach(function),
@@ -551,6 +565,7 @@ impl<ID: IrID> Constraint<ID> {
             Self::RoleName(inner) => Constraint::RoleName(inner.map(mapping)),
             Self::Sub(inner) => Constraint::Sub(inner.map(mapping)),
             Self::Isa(inner) => Constraint::Isa(inner.map(mapping)),
+            Self::Iid(inner) => Constraint::Iid(inner.map(mapping)),
             Self::Links(inner) => Constraint::Links(inner.map(mapping)),
             Self::Has(inner) => Constraint::Has(inner.map(mapping)),
             Self::ExpressionBinding(inner) => todo!(),
@@ -621,6 +636,13 @@ impl<ID: IrID> Constraint<ID> {
     pub(crate) fn as_isa(&self) -> Option<&Isa<ID>> {
         match self {
             Constraint::Isa(isa) => Some(isa),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn as_iid(&self) -> Option<&Iid<ID>> {
+        match self {
+            Constraint::Iid(iid) => Some(iid),
             _ => None,
         }
     }
@@ -699,6 +721,7 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
                 Self::RoleName(inner) => inner.hash(),
                 Self::Sub(inner) => inner.hash(),
                 Self::Isa(inner) => inner.hash(),
+                Self::Iid(inner) => inner.hash(),
                 Self::Links(inner) => inner.hash(),
                 Self::Has(inner) => inner.hash(),
                 Self::ExpressionBinding(inner) => inner.hash(),
@@ -719,6 +742,7 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
             (Self::RoleName(inner), Self::RoleName(other_inner)) => inner.equals(other_inner),
             (Self::Sub(inner), Self::Sub(other_inner)) => inner.equals(other_inner),
             (Self::Isa(inner), Self::Isa(other_inner)) => inner.equals(other_inner),
+            (Self::Iid(inner), Self::Iid(other_inner)) => inner.equals(other_inner),
             (Self::Links(inner), Self::Links(other_inner)) => inner.equals(other_inner),
             (Self::Has(inner), Self::Has(other_inner)) => inner.equals(other_inner),
             (Self::ExpressionBinding(inner), Self::ExpressionBinding(other_inner)) => inner.equals(other_inner),
@@ -735,6 +759,7 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
             | (Self::RoleName { .. }, _)
             | (Self::Sub { .. }, _)
             | (Self::Isa { .. }, _)
+            | (Self::Iid { .. }, _)
             | (Self::Links { .. }, _)
             | (Self::Has { .. }, _)
             | (Self::ExpressionBinding { .. }, _)
@@ -757,6 +782,7 @@ impl<ID: IrID> fmt::Display for Constraint<ID> {
             Self::RoleName(constraint) => fmt::Display::fmt(constraint, f),
             Self::Sub(constraint) => fmt::Display::fmt(constraint, f),
             Self::Isa(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Iid(constraint) => fmt::Display::fmt(constraint, f),
             Self::Links(constraint) => fmt::Display::fmt(constraint, f),
             Self::Has(constraint) => fmt::Display::fmt(constraint, f),
             Self::ExpressionBinding(constraint) => fmt::Display::fmt(constraint, f),
@@ -1003,8 +1029,8 @@ impl StructuralEquality for SubKind {
     }
 }
 
-impl Display for SubKind {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for SubKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Exact => write!(f, "!"),
             // This is not a great Display implementation since there is no symbol to read this variant
@@ -1216,7 +1242,7 @@ impl<ID: StructuralEquality> StructuralEquality for Isa<ID> {
 
 impl<ID: IrID> fmt::Display for Isa<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} isa {}", self.thing, self.type_)
+        write!(f, "{} {}{} {}", self.thing, typeql::token::Keyword::Isa, self.kind, self.type_)
     }
 }
 
@@ -1245,13 +1271,77 @@ impl StructuralEquality for IsaKind {
     }
 }
 
-impl Display for IsaKind {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for IsaKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Exact => write!(f, "!"),
             // This is not a great Display implementation since there is no symbol to read this variant
             Self::Subtype => write!(f, ""),
         }
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Iid<ID> {
+    var: Vertex<ID>,
+    iid: Vertex<ID>,
+}
+
+impl<ID: IrID> Iid<ID> {
+    pub fn new(var: ID, iid: ParameterID) -> Self {
+        Self { var: Vertex::Variable(var), iid: Vertex::Parameter(iid) }
+    }
+
+    pub fn var(&self) -> &Vertex<ID> {
+        &self.var
+    }
+
+    pub fn iid(&self) -> &Vertex<ID> {
+        &self.iid
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
+        self.var.as_variable().into_iter()
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + Sized {
+        [&self.var, &self.iid].into_iter()
+    }
+
+    pub fn ids_foreach<F>(&self, mut function: F)
+    where
+        F: FnMut(ID, ConstraintIDSide),
+    {
+        self.var.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
+    }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Iid<T> {
+        Iid { var: self.var.map(mapping), iid: self.iid.map(mapping) }
+    }
+}
+
+impl<ID: IrID> From<Iid<ID>> for Constraint<ID> {
+    fn from(val: Iid<ID>) -> Self {
+        Constraint::Iid(val)
+    }
+}
+
+impl<ID: StructuralEquality> StructuralEquality for Iid<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.var.hash_into(&mut hasher);
+        self.iid.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.var.equals(&other.var) && self.iid.equals(&other.iid)
+    }
+}
+
+impl<ID: IrID> fmt::Display for Iid<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} iid {}", self.var, self.iid)
     }
 }
 
@@ -1333,7 +1423,7 @@ impl<ID: StructuralEquality> StructuralEquality for Links<ID> {
 
 impl<ID: IrID> fmt::Display for Links<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} rp {} (role: {})", self.relation, self.player, self.role_type)
+        write!(f, "{} links {} (role: {})", self.relation, self.player, self.role_type)
     }
 }
 
@@ -1603,8 +1693,8 @@ impl StructuralEquality for Comparator {
     }
 }
 
-impl Display for Comparator {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for Comparator {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Equal => write!(f, "{}", typeql::token::Comparator::Eq),
             Self::NotEqual => write!(f, "{}", typeql::token::Comparator::Neq),

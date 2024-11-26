@@ -7,7 +7,7 @@
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet, HashMap},
-    fmt::{Display, Formatter},
+    fmt,
     sync::Arc,
 };
 
@@ -250,8 +250,8 @@ impl HasExecutor {
     }
 }
 
-impl Display for HasExecutor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for HasExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "[{}], mode={}", &self.has, &self.iterate_mode)
     }
 }

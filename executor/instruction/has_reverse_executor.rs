@@ -7,7 +7,7 @@
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet, Bound, HashMap},
-    fmt::{Display, Formatter},
+    fmt,
     sync::{Arc, OnceLock},
     vec,
 };
@@ -247,8 +247,8 @@ impl HasReverseExecutor {
         Ok(AsLendingIterator::new(iterators).flatten())
     }
 }
-impl Display for HasReverseExecutor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for HasReverseExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "Reverse[{}], mode={}", &self.has, &self.iterate_mode)
     }
 }

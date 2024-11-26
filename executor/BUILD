@@ -17,6 +17,7 @@ rust_library(
     ], exclude=["tests/**"]),
     deps = [
         "//answer",
+        "//common/bytes",
         "//common/error",
         "//common/lending_iterator",
         "//common/logger",

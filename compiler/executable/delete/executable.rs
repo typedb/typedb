@@ -73,6 +73,7 @@ pub fn compile(
                 };
                 connection_deletes.push(ConnectionInstruction::Links(Links { relation, player, role }));
             }
+            Constraint::Iid(_) => todo!("should we be able to delete by IID?"),
             | Constraint::Isa(_)
             | Constraint::Kind(_)
             | Constraint::Label(_)

@@ -15,10 +15,13 @@ use compiler::{
 };
 use concept::{
     error::ConceptReadError,
-    thing::{object::ObjectAPI, thing_manager::ThingManager},
+    thing::{object::ObjectAPI, thing_manager::ThingManager, ThingAPI},
     type_::{OwnerAPI, PlayerAPI},
 };
-use encoding::value::{value::Value, ValueEncodable};
+use encoding::{
+    value::{value::Value, ValueEncodable},
+    AsBytes,
+};
 use ir::{
     pattern::{
         constraint::{Comparator, IsaKind, SubKind},
@@ -33,9 +36,9 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
-        has_reverse_executor::HasReverseExecutor, is_executor::IsExecutor, isa_executor::IsaExecutor,
-        isa_reverse_executor::IsaReverseExecutor, iterator::TupleIterator, links_executor::LinksExecutor,
-        links_reverse_executor::LinksReverseExecutor, owns_executor::OwnsExecutor,
+        has_reverse_executor::HasReverseExecutor, iid_executor::IidExecutor, is_executor::IsExecutor,
+        isa_executor::IsaExecutor, isa_reverse_executor::IsaReverseExecutor, iterator::TupleIterator,
+        links_executor::LinksExecutor, links_reverse_executor::LinksReverseExecutor, owns_executor::OwnsExecutor,
         owns_reverse_executor::OwnsReverseExecutor, plays_executor::PlaysExecutor,
         plays_reverse_executor::PlaysReverseExecutor, relates_executor::RelatesExecutor,
         relates_reverse_executor::RelatesReverseExecutor, sub_executor::SubExecutor,
@@ -48,6 +51,7 @@ use crate::{
 mod function_call_binding_executor;
 mod has_executor;
 mod has_reverse_executor;
+mod iid_executor;
 mod is_executor;
 mod isa_executor;
 mod isa_reverse_executor;
@@ -69,6 +73,7 @@ pub(crate) const TYPES_EMPTY: Vec<Type> = Vec::new();
 
 pub(crate) enum InstructionExecutor {
     Is(IsExecutor),
+    Iid(IidExecutor),
     TypeList(TypeListExecutor),
 
     Sub(SubExecutor),
@@ -106,6 +111,7 @@ impl InstructionExecutor {
     ) -> Result<Self, Box<ConceptReadError>> {
         match instruction {
             ConstraintInstruction::Is(is) => Ok(Self::Is(IsExecutor::new(is, variable_modes, sort_by))),
+            ConstraintInstruction::Iid(iid) => Ok(Self::Iid(IidExecutor::new(iid, variable_modes, sort_by))),
             ConstraintInstruction::TypeList(type_) => {
                 Ok(Self::TypeList(TypeListExecutor::new(type_, variable_modes, sort_by)))
             }
@@ -164,6 +170,7 @@ impl InstructionExecutor {
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         match self {
             Self::Is(executor) => executor.get_iterator(context, row),
+            Self::Iid(executor) => executor.get_iterator(context, row),
             Self::TypeList(executor) => executor.get_iterator(context, row),
             Self::Sub(executor) => executor.get_iterator(context, row),
             Self::SubReverse(executor) => executor.get_iterator(context, row),
@@ -186,6 +193,7 @@ impl InstructionExecutor {
     pub(crate) const fn name(&self) -> &'static str {
         match self {
             InstructionExecutor::Is(_) => "is",
+            InstructionExecutor::Iid(_) => "iid",
             InstructionExecutor::Isa(_) => "isa",
             InstructionExecutor::IsaReverse(_) => "isa_reverse",
             InstructionExecutor::Has(_) => "has",
@@ -210,6 +218,7 @@ impl fmt::Display for InstructionExecutor {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             InstructionExecutor::Is(inner) => fmt::Display::fmt(inner, f),
+            InstructionExecutor::Iid(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::TypeList(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::Sub(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::SubReverse(inner) => fmt::Display::fmt(inner, f),
@@ -499,6 +508,29 @@ impl<T: Hkt> Checker<T> {
 
         for check in &self.checks {
             match check {
+                &CheckInstruction::Iid { var, iid } => {
+                    let maybe_var_extractor = self.extractors.get(&var);
+                    let var: BoxExtractor<T> = match maybe_var_extractor {
+                        Some(&subtype) => Box::new(subtype),
+                        None => make_const_extractor(&CheckVertex::Variable(var), row, context),
+                    };
+                    let iid = context.parameters().iid(iid).unwrap().clone();
+                    filters.push(Box::new(move |value| {
+                        let value = var(value);
+                        match value {
+                            VariableValue::Thing(thing) => match thing {
+                                Thing::Entity(entity) => Ok(&*iid == entity.vertex().bytes().bytes()),
+                                Thing::Relation(relation) => Ok(&*iid == relation.vertex().bytes().bytes()),
+                                Thing::Attribute(attribute) => Ok(&*iid == attribute.vertex().bytes().bytes()),
+                            },
+                            VariableValue::Empty => Ok(false),
+                            VariableValue::Type(_) => Ok(false),
+                            VariableValue::Value(_) => Ok(false), // or unreachable?
+                            VariableValue::ThingList(_) | VariableValue::ValueList(_) => todo!(),
+                        }
+                    }))
+                }
+
                 &CheckInstruction::TypeList { type_var, ref types } => {
                     let maybe_type_extractor = self.extractors.get(&type_var);
                     let type_: BoxExtractor<T> = match maybe_type_extractor {

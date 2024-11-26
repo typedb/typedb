@@ -182,6 +182,18 @@ impl ThingManager {
         self.get_instances_in(snapshot, object_type)
     }
 
+    pub fn instance_exists<'a>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        instance: impl ThingAPI<'a>,
+    ) -> Result<bool, Box<ConceptReadError>> {
+        let storage_key = instance.into_vertex().into_storage_key();
+        snapshot
+            .get::<BUFFER_KEY_INLINE>(storage_key.as_reference())
+            .map(|value| value.is_some())
+            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
+    }
+
     pub(crate) fn get_relations_roles<'o>(
         &self,
         snapshot: &impl ReadableSnapshot,

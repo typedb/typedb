@@ -112,11 +112,8 @@ impl<T: StructuralEquality + Hash> StructuralEquality for HashSet<T> {
 impl<K: StructuralEquality + Ord, V: StructuralEquality> StructuralEquality for BTreeMap<K, V> {
     fn hash(&self) -> u64 {
         self.iter().fold(0, |acc, (key, value)| {
-            let mut hasher = DefaultHasher::new();
-            key.hash_into(&mut hasher);
-            value.hash_into(&mut hasher);
             // WARNING: must use XOR or other commutative operator!
-            acc ^ hasher.finish()
+            acc ^ (key, value).hash()
         })
     }
 
@@ -135,12 +132,8 @@ impl<K: StructuralEquality + Ord, V: StructuralEquality> StructuralEquality for 
 impl<K: StructuralEquality + Hash, V: StructuralEquality> StructuralEquality for HashMap<K, V> {
     fn hash(&self) -> u64 {
         self.iter().fold(0, |acc, (key, value)| {
-            // values may generally be in a small rang, so we run them through a hasher first to make the XOR more effective
-            let mut hasher = DefaultHasher::new();
-            key.hash_into(&mut hasher);
-            value.hash_into(&mut hasher);
             // WARNING: must use XOR or other commutative operator!
-            acc ^ hasher.finish()
+            acc ^ (key, value).hash()
         })
     }
 
@@ -197,3 +190,46 @@ impl<T> StructuralEquality for Discriminant<T> {
         self == other
     }
 }
+
+impl<T: StructuralEquality> StructuralEquality for &T {
+    fn hash(&self) -> u64 {
+        T::hash(self)
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        T::equals(self, other)
+    }
+}
+
+macro_rules! tuple_structural_equality {
+    ($($t:ident),+) => {
+        #[allow(non_snake_case)]
+        impl<$($t),+> StructuralEquality for ($($t),+)
+        where $($t: StructuralEquality,)+
+        {
+            fn hash(&self) -> u64 {
+                #[allow(non_snake_case)]
+                let ($($t),+) = self;
+
+                let mut hasher = DefaultHasher::new();
+                $($t.hash_into(&mut hasher);)+
+                hasher.finish()
+            }
+
+            fn equals(&self, other: &Self) -> bool {
+                paste::paste! {
+                    #[allow(non_snake_case)]
+                    let ($($t),+) = self;
+
+                    #[allow(non_snake_case)]
+                    let ($([< other_ $t >]),+) = other;
+
+                    $($t.equals([<other_ $t>])) && +
+                }
+            }
+        }
+    };
+}
+
+tuple_structural_equality! { T, U }
+tuple_structural_equality! { T, U, V }

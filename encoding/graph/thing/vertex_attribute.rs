@@ -23,6 +23,7 @@ use crate::{
         Typed,
     },
     layout::prefix::Prefix,
+    layout::prefix::PrefixID,
     value::{
         boolean_bytes::BooleanBytes,
         date_bytes::DateBytes,
@@ -48,6 +49,7 @@ pub struct AttributeVertex<'a> {
 
 impl<'a> AttributeVertex<'a> {
     pub const PREFIX: Prefix = Prefix::VertexAttribute;
+    pub const MAX_LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH + ValueEncodingLength::LONG_LENGTH;
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes[Self::RANGE_PREFIX] == Self::PREFIX.prefix_id().bytes);
@@ -61,6 +63,13 @@ impl<'a> AttributeVertex<'a> {
         bytes[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         bytes[Self::range_for_attribute_id(attribute_id.length())].copy_from_slice(attribute_id.bytes());
         Self::new(Bytes::Array(bytes))
+    }
+
+    pub fn try_from_bytes(bytes: &'a [u8]) -> Option<Self> {
+        if !Self::is_attribute_bytes(bytes) {
+            return None;
+        }
+        Some(Self::new(Bytes::reference(bytes)))
     }
 
     pub fn build_prefix_for_value(
@@ -89,9 +98,11 @@ impl<'a> AttributeVertex<'a> {
     }
 
     pub fn is_attribute_vertex(storage_key: StorageKeyReference<'_>) -> bool {
-        storage_key.keyspace_id() == Self::KEYSPACE.id()
-            && !storage_key.bytes().is_empty()
-            && storage_key.bytes()[Self::RANGE_PREFIX] == Prefix::VertexAttribute.prefix_id().bytes()
+        storage_key.keyspace_id() == Self::KEYSPACE.id() && Self::is_attribute_bytes(storage_key.bytes())
+    }
+
+    fn is_attribute_bytes(bytes: &[u8]) -> bool {
+        !bytes.is_empty() && bytes[Self::RANGE_PREFIX] == Prefix::VertexAttribute.prefix_id().bytes()
     }
 
     pub fn value_type_category(&self) -> ValueTypeCategory {

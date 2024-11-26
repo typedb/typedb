@@ -12,7 +12,7 @@ use std::{
 
 use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
-use ir::pattern::constraint::{Has, Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, Sub, Value};
+use ir::pattern::constraint::{Has, Iid, Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, Sub, Value};
 use itertools::Itertools;
 
 use crate::{
@@ -32,6 +32,7 @@ use crate::{
 #[derive(Clone, Debug)]
 pub(crate) enum ConstraintVertex<'a> {
     TypeList(TypeListPlanner<'a>),
+    Iid(IidPlanner<'a>),
 
     Isa(IsaPlanner<'a>),
     Has(HasPlanner<'a>),
@@ -51,6 +52,7 @@ impl ConstraintVertex<'_> {
     pub(crate) fn unbound_direction(&self, graph: &Graph<'_>) -> Direction {
         match self {
             Self::TypeList(_) => Direction::Canonical,
+            Self::Iid(_) => Direction::Canonical,
             Self::Isa(_) => Direction::Canonical,
             Self::Has(inner) => inner.unbound_direction(graph),
             Self::Links(inner) => inner.unbound_direction(graph),
@@ -64,6 +66,7 @@ impl ConstraintVertex<'_> {
     pub(crate) fn variables(&self) -> Box<dyn Iterator<Item = VariableVertexId> + '_> {
         match self {
             Self::TypeList(inner) => Box::new(inner.variables()),
+            Self::Iid(inner) => Box::new(inner.variables()),
 
             Self::Isa(inner) => Box::new(inner.variables()),
             Self::Has(inner) => Box::new(inner.variables()),
@@ -88,6 +91,7 @@ impl Costed for ConstraintVertex<'_> {
     fn cost(&self, inputs: &[VertexId], intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
         match self {
             Self::TypeList(inner) => inner.cost(inputs, intersection, graph),
+            Self::Iid(inner) => inner.cost(inputs, intersection, graph),
 
             Self::Isa(inner) => inner.cost(inputs, intersection, graph),
             Self::Has(inner) => inner.cost(inputs, intersection, graph),
@@ -209,6 +213,48 @@ impl<'a> TypeListPlanner<'a> {
 impl Costed for TypeListPlanner<'_> {
     fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
         ElementCost::in_mem_complex_with_branching(self.types.len() as f64)
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct IidPlanner<'a> {
+    iid: &'a Iid<Variable>,
+    var: VariableVertexId,
+}
+
+impl<'a> fmt::Debug for IidPlanner<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("IidPlanner").field("iid", self.iid).finish()
+    }
+}
+
+impl<'a> IidPlanner<'a> {
+    pub(crate) fn from_constraint(
+        iid: &'a Iid<Variable>,
+        variable_index: &HashMap<Variable, VariableVertexId>,
+        _type_annotations: &TypeAnnotations,
+        _statistics: &Statistics,
+    ) -> Self {
+        let var = variable_index[&iid.var().as_variable().unwrap()];
+        Self { iid, var }
+    }
+
+    fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
+        iter::once(self.var)
+    }
+
+    pub(crate) fn iid(&self) -> &Iid<Variable> {
+        self.iid
+    }
+}
+
+impl Costed for IidPlanner<'_> {
+    fn cost(&self, inputs: &[VertexId], _: Option<VariableVertexId>, _graph: &Graph<'_>) -> ElementCost {
+        if inputs.contains(&VertexId::Variable(self.var)) {
+            ElementCost::in_mem_simple_with_branching(0.001) // TODO calculate properly, assuming the IID is originating from the DB
+        } else {
+            ElementCost { per_input: OPEN_ITERATOR_RELATIVE_COST, per_output: 0.0, branching_factor: 1.0 }
+        }
     }
 }
 
@@ -336,7 +382,7 @@ impl<'a> HasPlanner<'a> {
             })
             .sum::<u64>() as f64;
 
-        //  We shold compute that we are doing multiple seeks() and and merge-sorting.
+        //  We should compute that we are doing multiple seeks() and and merge-sorting.
         //  in general, we assume the cardinality is small, so we just open 1 iterator and post-filter
         let unbound_typed_expected_size_canonical = owner_types
             .iter()

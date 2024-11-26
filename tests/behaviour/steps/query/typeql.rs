@@ -8,9 +8,15 @@ use std::{collections::HashMap, str::FromStr, sync::Arc};
 
 use answer::{variable_value::VariableValue, Thing};
 use compiler::VariablePosition;
-use concept::{thing::object::ObjectAPI, type_::TypeAPI};
+use concept::{
+    thing::{object::ObjectAPI, ThingAPI},
+    type_::TypeAPI,
+};
 use cucumber::gherkin::Step;
-use encoding::value::{label::Label, value_type::ValueType, ValueEncodable};
+use encoding::{
+    value::{label::Label, value_type::ValueType, ValueEncodable},
+    AsBytes,
+};
 use executor::{
     batch::Batch,
     pipeline::stage::{ExecutionContext, StageIterator},
@@ -49,7 +55,7 @@ fn row_batch_result_to_answer(
         .collect::<Vec<HashMap<String, VariableValue<'static>>>>()
 }
 
-fn execute_read_query(context: &mut Context, query: typeql::Query) -> Result<QueryAnswer, QueryError> {
+fn execute_read_query(context: &Context, query: typeql::Query) -> Result<QueryAnswer, QueryError> {
     with_read_tx!(context, |tx| {
         let pipeline = tx.query_manager.prepare_read_pipeline(
             tx.snapshot.clone(),
@@ -61,15 +67,9 @@ fn execute_read_query(context: &mut Context, query: typeql::Query) -> Result<Que
         if pipeline.has_fetch() {
             match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {
                 Ok((iterator, ExecutionContext { parameters, .. })) => {
-                    let mut documents = vec![];
-                    for item in iterator {
-                        match item {
-                            Ok(item) => documents.push(item),
-                            Err(err) => {
-                                return Err(QueryError::ReadPipelineExecution { typedb_source: err });
-                            }
-                        }
-                    }
+                    let documents = iterator
+                        .try_collect()
+                        .map_err(|err| QueryError::ReadPipelineExecution { typedb_source: err })?;
                     Ok(QueryAnswer::ConceptDocuments(documents, parameters))
                 }
                 Err((err, _)) => Err(QueryError::ReadPipelineExecution { typedb_source: err }),
@@ -119,27 +119,17 @@ fn execute_write_query(
             Ok(pipeline) => {
                 if pipeline.has_fetch() {
                     match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {
-                        Ok((iterator, ExecutionContext { parameters, snapshot, .. })) => {
-                            let mut documents = vec![];
-                            let mut item_error: Option<BehaviourTestExecutionError> = None;
-                            for item in iterator {
-                                match item {
-                                    Ok(item) => documents.push(item),
-                                    Err(err) => {
-                                        item_error = Some(BehaviourTestExecutionError::Query(
-                                            QueryError::WritePipelineExecution { typedb_source: err },
-                                        ));
-                                    }
+                        Ok((iterator, ExecutionContext { parameters, snapshot, .. })) => (
+                            match iterator.collect() {
+                                Ok(documents) => Ok(QueryAnswer::ConceptDocuments(documents, parameters)),
+                                Err(err) => {
+                                    Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecution {
+                                        typedb_source: err,
+                                    }))
                                 }
-                            }
-                            (
-                                match item_error {
-                                    None => Ok(QueryAnswer::ConceptDocuments(documents, parameters)),
-                                    Some(err) => Err(err),
-                                },
-                                snapshot,
-                            )
-                        }
+                            },
+                            snapshot,
+                        ),
                         Err((err, ExecutionContext { snapshot, .. })) => (
                             Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecution {
                                 typedb_source: err,
@@ -242,14 +232,27 @@ async fn typeql_read_query(context: &mut Context, may_error: params::TypeQLMayEr
     may_error.check_logic(result);
 }
 
-#[apply(generic_step)]
-#[step(expr = r"get answers of typeql read query")]
-async fn get_answers_of_typeql_read_query(context: &mut Context, step: &Step) {
-    let query = typeql::parse_query(step.docstring.as_ref().unwrap().as_str()).unwrap();
+fn record_answers_of_typeql_read_query(context: &mut Context, query: &str) {
+    let query = typeql::parse_query(query).unwrap();
     context.query_answer = match execute_read_query(context, query) {
         Ok(answers) => Some(answers),
         Err(error) => panic!("Unexpected get answers error: {:?}", error),
     }
+}
+
+#[apply(generic_step)]
+#[step(expr = r"get answers of typeql read query")]
+async fn get_answers_of_typeql_read_query(context: &mut Context, step: &Step) {
+    record_answers_of_typeql_read_query(context, step.docstring.as_ref().unwrap().as_str());
+}
+
+#[apply(generic_step)]
+#[step(expr = r"get answers of templated typeql read query")]
+async fn get_answers_of_templated_typeql_read_query(context: &mut Context, step: &Step) {
+    let rows = context.query_answer.as_ref().unwrap().as_rows();
+    let [answer] = rows else { panic!("Expected single answer, found {}", rows.len()) };
+    let templated_query = step.docstring.as_ref().unwrap().as_str();
+    record_answers_of_typeql_read_query(context, &apply_query_template(templated_query, answer));
 }
 
 #[apply(generic_step)]
@@ -454,4 +457,56 @@ async fn answer_contains_document(context: &mut Context, contains_or_doesnt: par
             &format!("\nConcept documents: {:?}\nGiven document: {:?}", documents, expected_document),
         );
     });
+}
+
+#[apply(generic_step)]
+#[step(expr = r"each answer satisfies")]
+async fn each_answer_satisfies(context: &mut Context, step: &Step) {
+    let templated_query = step.docstring().unwrap();
+    for answer in context.query_answer.as_ref().unwrap().as_rows() {
+        let query = typeql::parse_query(&apply_query_template(templated_query, answer)).unwrap();
+        let answer_size = match execute_read_query(context, query) {
+            Ok(answers) => answers.len(),
+            Err(error) => panic!("Unexpected get answers error: {:?}", error),
+        };
+        assert_eq!(answer_size, 1);
+    }
+}
+
+fn apply_query_template(mut template: &str, answer: &HashMap<String, VariableValue<'static>>) -> String {
+    fn split_placeholder(template: &str) -> Option<(&str, &str, &str)> {
+        let (prefix, tail) = template.split_once('<')?;
+        let (placeholder, tail) = tail.split_once('>')?;
+        assert!(
+            placeholder.starts_with("answer.") && placeholder.ends_with(".iid"),
+            "Cannot replace template not based on ID: <{placeholder:?}>"
+        );
+        let var = placeholder.strip_prefix("answer.")?.strip_suffix(".iid")?;
+        Some((prefix, var, tail))
+    }
+
+    let mut buf = String::with_capacity(template.len());
+    while let Some((prefix, var, tail)) = split_placeholder(template) {
+        buf.push_str(prefix);
+
+        let thing = answer.get(var).unwrap().as_thing();
+        let iid = iid_of(thing);
+
+        buf.push_str("0x");
+        for byte in iid {
+            buf.push_str(&format!("{byte:02X}"));
+        }
+
+        template = tail;
+    }
+    buf.push_str(template);
+    buf
+}
+
+fn iid_of(thing: &Thing<'_>) -> Vec<u8> {
+    match thing {
+        Thing::Entity(entity) => entity.vertex().bytes().bytes().to_owned(),
+        Thing::Relation(relation) => relation.vertex().bytes().bytes().to_owned(),
+        Thing::Attribute(attribute) => attribute.vertex().bytes().bytes().to_owned(),
+    }
 }

@@ -6,8 +6,7 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
-    fmt::{Display, Formatter},
-    iter,
+    fmt, iter,
     sync::Arc,
     vec,
 };
@@ -209,8 +208,8 @@ impl PlaysExecutor {
     }
 }
 
-impl Display for PlaysExecutor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for PlaysExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "[{}], mode={}", &self.plays, &self.iterate_mode)
     }
 }
