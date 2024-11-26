@@ -7,7 +7,7 @@ use crate::user_manager::UserManager;
 pub mod errors;
 pub mod user_manager;
 
-pub fn initialise_default_user(user_manager: &Arc<UserManager>) {
+pub fn initialise_default_user(user_manager: &UserManager) {
     if !user_manager.contains("admin") {
         user_manager
             .create(
