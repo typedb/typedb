@@ -23,7 +23,6 @@ impl Server {
         use ServerOpenError::{CouldNotCreateDataDirectory, NotADirectory};
         // let storage_directory = &config.storage.data;
         let storage_directory = &PathBuf::from("/Users/cxdorn/Git/typedb/data");
-        println!("Data dir: {:?}", storage_directory);
 
         if !storage_directory.exists() {
             fs::create_dir_all(storage_directory)
@@ -38,6 +37,7 @@ impl Server {
 
         let typedb_service = TypeDBService::new(&config.server.address, database_manager);
 
+        println!("Storage directory: {:?}", storage_directory);
         Ok(Self { data_directory, typedb_service: Some(typedb_service), config })
     }
 
