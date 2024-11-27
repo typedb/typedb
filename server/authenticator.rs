@@ -42,8 +42,7 @@ impl Authenticator {
                 None => Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL)),
             },
             _ => {
-                // Err(Status::unauthenticated(ERROR_CREDENTIAL_NOT_SUPPLIED)) // TODO: enable
-                Ok(req)
+                Err(Status::unauthenticated(ERROR_CREDENTIAL_NOT_SUPPLIED))
             }
         }
     }
