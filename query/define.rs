@@ -1183,6 +1183,6 @@ typedb_error!(
             "An error occurred by defining the function",
             ( typedb_source: FunctionError )
         ),
-        IllegalKeywordAsIdentifier(29, "A keyword {identifier} used as identifier.", identifier: String),
+        IllegalKeywordAsIdentifier(29, "A keyword \"{identifier}\" was used as identifier.", identifier: typeql::Identifier),
     }
 );

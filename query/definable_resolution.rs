@@ -481,6 +481,6 @@ typedb_error!(
         ExpectedNonOptionalTypeSymbol(15, "Expected a type label or a type[] label, but not an optional type? label.\nSource:\n{declaration}", declaration: TypeRefAny ),
         ExpectedLabelButGotBuiltinValueType(16, "Expected type label got built-in value type name:\nSource:\n{declaration}", declaration: NamedType),
         UnexpectedConceptRead(17, "Unexpected concept read error.", ( source: Box<ConceptReadError> ) ),
-        IllegalKeywordAsIdentifier(18, "A keyword {identifier} used as identifier.", identifier: String),
+        IllegalKeywordAsIdentifier(18, "A keyword \"{identifier}\" was used as identifier.", identifier: typeql::Identifier),
     }
 );

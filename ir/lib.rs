@@ -177,7 +177,7 @@ typedb_error!(
         ReservedKeywordAsIdentifier(
             27,
             "A reserved keyword \"{identifier}\" was used as identifier",
-            identifier: String
+            identifier: typeql::Identifier
         ),
     }
 );
