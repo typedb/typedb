@@ -5,7 +5,7 @@
  */
 
 use std::{error::Error, fmt, fs, io, path::PathBuf, sync::Arc};
-
+use tonic::transport::{Certificate, Identity, ServerTlsConfig};
 use database::{database_manager::DatabaseManager, DatabaseOpenError};
 use resource::constants::server::GRPC_CONNECTION_KEEPALIVE;
 use system::{
@@ -55,12 +55,25 @@ impl Server {
         println!("Ready!");
         let authenticator = Arc::new(Authenticator::new(self.user_manager.clone()));
         tonic::transport::Server::builder()
+            .tls_config(Self::tls_config())?
             .http2_keepalive_interval(Some(GRPC_CONNECTION_KEEPALIVE))
             .layer(tonic::service::interceptor(move |req| authenticator.authenticate(req)))
             .add_service(service)
             .serve(self.config.server.address)
             .await
     }
+
+    fn tls_config() -> ServerTlsConfig {
+        let data_dir = std::path::PathBuf::from_iter(["tls-3"]);
+        let cert = std::fs::read_to_string(data_dir.join("cert.pem")).unwrap();
+        let key = std::fs::read_to_string(data_dir.join("cert.key")).unwrap();
+        let root_ca = std::fs::read_to_string(data_dir.join("root-ca.pem")).unwrap();
+        ServerTlsConfig::new()
+            .client_ca_root(Certificate::from_pem(root_ca))
+            .client_auth_optional(true)
+            .identity(Identity::from_pem(cert, key))
+    }
+
     fn create_storage_directory(storage_directory: &PathBuf) -> Result<(), ServerOpenError> {
         fs::create_dir_all(storage_directory).map_err(|error| ServerOpenError::CouldNotCreateDataDirectory {
             path: storage_directory.to_owned(),
