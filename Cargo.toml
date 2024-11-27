@@ -20,7 +20,7 @@ features = {}
 
 	[dependencies.tokio]
 		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
-		version = "1.40.0"
+		version = "1.41.1"
 		default-features = false
 
 	[dependencies.server]
@@ -162,5 +162,5 @@ features = {}
 
 [workspace]
 	resolver = "2"
-	members = ["database", "answer", "util/test", "util/project", "durability/tests/crash/streamer", "durability/tests/crash/recoverer", "durability/tests/common", "durability", "ir", "tests/behaviour/steps", "encoding/tests", "encoding", "server", "function", "storage/tests", "storage", "common/options", "common/structural_equality", "common/logger", "common/bytes", "common/lending_iterator", "common/primitive", "common/concurrency", "common/iterator", "common/error", "concept/tests", "concept", "executor", "resource", "query", "compiler"]
+	members = ["database", "answer", "util/test", "util/project", "durability/tests/crash/streamer", "durability/tests/crash/recoverer", "durability/tests/common", "durability", "ir", "tests/behaviour/steps", "encoding/tests", "encoding", "server", "user", "function", "storage/tests", "storage", "system", "common/options", "common/structural_equality", "common/logger", "common/bytes", "common/lending_iterator", "common/primitive", "common/concurrency", "common/iterator", "common/error", "concept/tests", "concept", "executor", "resource", "query", "compiler"]
 

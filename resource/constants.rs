@@ -17,6 +17,12 @@ pub mod server {
     pub const DEFAULT_TRANSACTION_PARALLEL: bool = true;
 
     pub const PERF_COUNTERS_ENABLED: bool = true;
+
+    pub const AUTHENTICATOR_USERNAME_FIELD: &str = "username";
+    pub const AUTHENTICATOR_PASSWORD_FIELD: &str = "password";
+
+    pub const DEFAULT_USER_NAME: &str = "admin";
+    pub const DEFAULT_USER_PASSWORD: &str = "password";
 }
 
 pub mod database {

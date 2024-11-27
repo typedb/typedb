@@ -19,6 +19,11 @@ features = {}
 		features = []
 		default-features = false
 
+	[dependencies.pwhash]
+		features = []
+		version = "1.0.0"
+		default-features = false
+
 	[dependencies.storage]
 		path = "../storage"
 		features = []
@@ -36,7 +41,7 @@ features = {}
 
 	[dependencies.uuid]
 		features = ["default", "fast-rng", "rng", "serde", "std", "v4"]
-		version = "1.10.0"
+		version = "1.11.0"
 		default-features = false
 
 	[dependencies.prost]
@@ -82,7 +87,7 @@ features = {}
 
 	[dependencies.tokio]
 		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
-		version = "1.40.0"
+		version = "1.41.1"
 		default-features = false
 
 	[dependencies.tracing]
@@ -92,7 +97,7 @@ features = {}
 
 	[dependencies.typedb-protocol]
 		features = []
-		rev = "8e316bb783a6315c881f3cba54d9afe52fef5edb"
+		rev = "b891ffbd3fe6d8a2f3824b71d050fecc4ed798b5"
 		git = "https://github.com/typedb/typedb-protocol"
 		default-features = false
 
@@ -123,7 +128,12 @@ features = {}
 
 	[dependencies.tonic-types]
 		features = []
-		version = "0.12.2"
+		version = "0.12.3"
+		default-features = false
+
+	[dependencies.system]
+		path = "../system"
+		features = []
 		default-features = false
 
 	[dependencies.answer]
@@ -138,12 +148,17 @@ features = {}
 
 	[dependencies.tonic]
 		features = ["channel", "codegen", "default", "prost", "router", "server", "tls", "tls-native-roots", "tls-roots", "transport"]
-		version = "0.12.2"
+		version = "0.12.3"
 		default-features = false
 
 	[dependencies.chrono]
 		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-targets"]
 		version = "0.4.38"
+		default-features = false
+
+	[dependencies.user]
+		path = "../user"
+		features = []
 		default-features = false
 
 	[dependencies.lending_iterator]
