@@ -62,18 +62,24 @@ impl<'a> ThingEdgeHas<'a> {
         ThingEdgeHas { bytes: Bytes::Array(bytes) }
     }
 
-    pub fn prefix_from_type(
-        type_: TypeVertex<'_>,
-    ) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_TYPE }> {
+    pub fn prefix_from_type(type_: TypeVertex<'_>,) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
         bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         ObjectVertex::write_prefix_from_type_vertex(&mut bytes[Self::range_from_type()], type_);
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
+    
+    pub fn prefix_from_type_parts(
+        type_prefix: Prefix, 
+        type_id: TypeID
+    ) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_TYPE }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
+        bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        ObjectVertex::write_prefix_type(&mut bytes[Self::range_from_type()], ObjectVertex::prefix_for_type(type_prefix), type_id);
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
+    }
 
-    pub fn prefix_from_object(
-        from: ObjectVertex<'_>,
-    ) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
+    pub fn prefix_from_object(from: ObjectVertex<'_>) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT);
         bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes[Self::range_from()].copy_from_slice(from.bytes().bytes());

@@ -17,6 +17,10 @@ pub struct KeyRange<T: Prefix> {
 }
 
 impl<T: Prefix> KeyRange<T> {
+    pub fn new(start: RangeStart<T>, end: RangeEnd<T>, fixed_width_keys: bool) -> Self {
+        Self { start, end, fixed_width_keys }
+    }
+    
     pub fn new_variable_width(start: RangeStart<T>, end: RangeEnd<T>) -> Self {
         Self { start, end, fixed_width_keys: false }
     }

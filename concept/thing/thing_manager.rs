@@ -594,13 +594,24 @@ impl ThingManager {
     pub fn get_has_from_owner_type_range_unordered<'a>(
         &self,
         snapshot: &impl ReadableSnapshot,
-        owner_type_range: &KeyRange<ObjectType<'static>>,
+        owner_type_range: &impl RangeBounds<ObjectType<'static>>,
     ) -> HasIterator {
-        let range = owner_type_range.map(
-            |type_| ThingEdgeHas::prefix_from_type(type_.vertex()), 
-        |_| ThingEdgeHas::FIXED_WIDTH_ENCODING
-        );
-        HasIterator::new(snapshot.iterate_range(&range))
+        let range_start = match owner_type_range.start_bound() {
+            Bound::Included(start_type) => RangeStart::Inclusive(ThingEdgeHas::prefix_from_type(start_type.vertex())),
+            Bound::Excluded(start_type) => RangeStart::ExcludePrefix(ThingEdgeHas::prefix_from_type(start_type.vertex())),
+            Bound::Unbounded => {
+                RangeStart::Inclusive(ThingEdgeHas::prefix_from_type_parts(Prefix::min_object_type_prefix(), TypeID::MIN))
+            }
+        };
+        let range_end = match owner_type_range.end_bound() {
+            Bound::Included(end_type) => RangeEnd::EndPrefixInclusive(ThingEdgeHas::prefix_from_type(end_type.vertex())),
+            Bound::Excluded(end_type) => RangeEnd::EndPrefixExclusive(ThingEdgeHas::prefix_from_type(end_type.vertex())),
+            Bound::Unbounded => {
+                RangeEnd::EndPrefixInclusive(ThingEdgeHas::prefix_from_type_parts(Prefix::max_object_type_prefix(), TypeID::MAX))
+            }
+        };
+        let key_range = KeyRange::new(range_start, range_end, ThingEdgeHas::FIXED_WIDTH_ENCODING);
+        HasIterator::new(snapshot.iterate_range(&key_range))
     }
 
     pub fn get_has_reverse(
@@ -776,11 +787,7 @@ impl ThingManager {
                 )
             }
         };
-        let key_range = if ThingEdgeHasReverse::FIXED_WIDTH_ENCODING {
-            KeyRange::new_fixed_width(has_range_start, has_range_end)
-        } else {
-            KeyRange::new_variable_width(has_range_start, has_range_end)
-        };
+        let key_range = KeyRange::new(has_range_start, has_range_end, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
         Ok(HasReverseIterator::new(snapshot.iterate_range(&key_range)))
     }
 
@@ -863,11 +870,7 @@ impl ThingManager {
                 )
             }
         };
-        let key_range = if ThingEdgeHas::FIXED_WIDTH_ENCODING {
-            KeyRange::new_fixed_width(has_range_start, has_range_end)
-        } else {
-            KeyRange::new_variable_width(has_range_start, has_range_end)
-        };
+        let key_range = KeyRange::new(has_range_start, has_range_end,  ThingEdgeHas::FIXED_WIDTH_ENCODING);
         HasIterator::new(snapshot.iterate_range(&key_range))
     }
 
@@ -966,11 +969,7 @@ impl ThingManager {
                 RangeEnd::EndPrefixInclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type_parts(attribute.vertex(), max_type_prefix, max_type_id))
             }
         };
-        let key_range = if ThingEdgeHasReverse::FIXED_WIDTH_ENCODING {
-            KeyRange::new_fixed_width(range_start, range_end)
-        } else {
-            KeyRange::new_variable_width(range_start, range_end)
-        };
+        let key_range = KeyRange::new(range_start, range_end, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
         HasReverseIterator::new(snapshot.iterate_range(&key_range))
     }
 

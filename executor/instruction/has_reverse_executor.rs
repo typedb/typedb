@@ -177,8 +177,8 @@ impl HasReverseExecutor {
                     &self.attribute_owner_types_range,
                     range,
                 )?
-                .try_filter::<_, HasFilterFn, (Has<'_>, _), _>(filter_for_row)
-                .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
+                    .try_filter::<_, HasFilterFn, (Has<'_>, _), _>(filter_for_row)
+                    .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
                 Ok(TupleIterator::HasReverseUnbounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
