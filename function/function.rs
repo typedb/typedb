@@ -33,7 +33,7 @@ impl<FunctionIDType: FunctionIDAPI> Function<FunctionIDType> {
         let parsed = typeql::parse_definition_function(definition.as_str().as_str())
             .map_err(|source| FunctionError::CommittedFunctionParseError { typedb_source: source })?;
         parsed.signature.ident.as_str_unreserved().map_err(|_| FunctionError::FunctionTranslation {
-            typedb_source: FunctionRepresentationError::ReservedKeywordAsIdentifier {
+            typedb_source: FunctionRepresentationError::IllegalKeywordAsIdentifier {
                 identifier: parsed.signature.ident.as_str_unchecked().to_owned(),
             },
         })?;
