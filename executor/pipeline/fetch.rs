@@ -5,6 +5,7 @@
  */
 
 use std::{collections::HashMap, marker::PhantomData, sync::Arc};
+use std::ops::Bound;
 use itertools::{Itertools, MinMaxResult};
 
 use answer::{variable::Variable, variable_value::VariableValue, Concept, Thing};
@@ -457,7 +458,8 @@ fn execute_attributes_all<'a>(
     let mut iter = object.get_has_unordered(snapshot.as_ref(), &thing_manager);
     let mut map: HashMap<Arc<Label<'static>>, DocumentNode> = HashMap::new();
     while let Some(result) = iter.next() {
-        let (attribute, count) = result.map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
+        let (has, count) = result.map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
+        let attribute = has.attribute();
         let attribute_type = attribute.type_();
         let label = attribute_type
             .get_label_arc(snapshot.as_ref(), thing_manager.type_manager())
@@ -545,13 +547,8 @@ fn prepare_attribute_type_has_iterator<'a>(
         MinMaxResult::OneElement(item) => (item.clone(), item.clone()),
         MinMaxResult::MinMax(min, max) => (min.clone(), max.clone()),
     };
-    let range = KeyRange::new_variable_width(
-        RangeStart::Inclusive(min_type),
-        RangeEnd::EndPrefixInclusive(max_type),
-    );
-    object
-        .get_has_types_range_unordered(snapshot.as_ref(), thing_manager.as_ref(), &range)
-        .map_err(|source| FetchExecutionError::ConceptRead { source })
+    let range = (Bound::Included(min_type), Bound::Included(max_type));
+    Ok(object.get_has_types_range_unordered(snapshot.as_ref(), thing_manager.as_ref(), &range))
 }
 
 fn prepare_single_function_execution<Snapshot: ReadableSnapshot + 'static>(

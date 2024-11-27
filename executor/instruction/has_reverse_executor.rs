@@ -23,6 +23,7 @@ use encoding::value::value::Value;
 use itertools::{Itertools, MinMaxResult};
 use concept::type_::object_type::ObjectType;
 use lending_iterator::{adaptors::Flatten, kmerge::KMergeBy, AsHkt, AsLendingIterator, LendingIterator, Peekable};
+use primitive::Bounds;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
@@ -47,8 +48,8 @@ pub(crate) struct HasReverseExecutor {
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
     attribute_owner_types: Arc<BTreeMap<Type, Vec<Type>>>,
-    attribute_owner_types_range: BTreeMap<AttributeType<'static>, KeyRange<ObjectType<'static>>>,
-    owner_type_range: KeyRange<ObjectType<'static>>,
+    attribute_owner_types_range: BTreeMap<AttributeType<'static>, Bounds<ObjectType<'static>>>,
+    owner_type_range: Bounds<ObjectType<'static>>,
     filter_fn: Arc<HasFilterFn>,
     attribute_cache: OnceLock<Vec<Attribute<'static>>>,
     checker: Checker<(AsHkt![Has<'_>], u64)>,
@@ -84,24 +85,24 @@ impl HasReverseExecutor {
         let owner = has.owner().as_variable().unwrap();
         let attribute = has.attribute().as_variable().unwrap();
 
-        let attribute_owner_types_range: BTreeMap<AttributeType<'static>, KeyRange<ObjectType<'static>>> = attribute_owner_types
+        let attribute_owner_types_range: BTreeMap<AttributeType<'static>, Bounds<ObjectType<'static>>> = attribute_owner_types
             .iter()
             .map(|(type_, owner_types)| {
                 let (min_owner_type, max_owner_type) = min_max_types(&*owner_types);
                 (
                     type_.as_attribute_type(),
-                    KeyRange::new_variable_width(
-                        RangeStart::Inclusive(min_owner_type.as_object_type()),
-                        RangeEnd::EndPrefixInclusive(max_owner_type.as_object_type()),
+                    (
+                        Bound::Included(min_owner_type.as_object_type()),
+                        Bound::Included(max_owner_type.as_object_type()),
                     )
                 )
             })
             .collect();
 
         let (min_owner_type, max_owner_type) = min_max_types(&*owner_types);
-        let owner_type_range = KeyRange::new_variable_width(
-            RangeStart::Inclusive(min_owner_type.as_object_type()),
-            RangeEnd::EndPrefixInclusive(max_owner_type.as_object_type()),
+        let owner_type_range = (
+            Bound::Included(min_owner_type.as_object_type()),
+            Bound::Included(max_owner_type.as_object_type()),
         );
 
         let output_tuple_positions = match iterate_mode {
@@ -251,7 +252,7 @@ impl HasReverseExecutor {
     fn all_has_reverse_chained<'a>(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        attribute_type_owner_range: &BTreeMap<AttributeType<'static>, KeyRange<ObjectType<'static>>>,
+        attribute_type_owner_range: &BTreeMap<AttributeType<'static>, (Bound<ObjectType<'static>>, Bound<ObjectType<'static>>)>,
         attribute_values_range: (Bound<Value<'_>>, Bound<Value<'_>>),
     ) -> Result<MultipleTypeHasReverseIterator, Box<ConceptReadError>> {
         let type_manager = thing_manager.type_manager();

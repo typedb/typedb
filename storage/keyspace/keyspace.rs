@@ -45,7 +45,7 @@ fn db_options() -> Options {
     let mut options = Options::default();
     options.create_if_missing(true);
     options.create_missing_column_families(true);
-    options.enable_statistics();
+    // options.enable_statistics();
     // TODO optimise per-keyspace
     options
 }

@@ -6,7 +6,7 @@
 
 use bytes::util::increment_fixed;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct PrefixID {
     pub(crate) bytes: [u8; PrefixID::LENGTH],
 }

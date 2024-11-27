@@ -10,6 +10,7 @@ use std::{
     fmt,
     sync::Arc,
 };
+use std::ops::Bound;
 
 use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::{executable::match_::instructions::thing::HasInstruction, ExecutorVariable};
@@ -181,9 +182,9 @@ impl HasExecutor {
             BinaryIterateMode::UnboundInverted => {
                 debug_assert!(self.owner_cache.is_some());
                 let (min_attribute_type, max_attribute_type) = min_max_types(&*self.attribute_types);
-                let type_range = KeyRange::new_variable_width(
-                    RangeStart::Inclusive(min_attribute_type.as_attribute_type()),
-                    RangeEnd::EndPrefixInclusive(max_attribute_type.as_attribute_type()),
+                let type_range = (
+                    Bound::Included(min_attribute_type.as_attribute_type()),
+                    Bound::Included(max_attribute_type.as_attribute_type()),
                 );
                 if let Some([owner]) = self.owner_cache.as_deref() {
                     // no heap allocs needed if there is only 1 iterator
@@ -192,7 +193,7 @@ impl HasExecutor {
                         thing_manager,
                         // TODO: this should be just the types owned by the one instance's type in the cache!
                         &type_range,
-                    )?;
+                    );
                     let as_tuples: HasUnboundedSortedAttributeSingle = iterator
                         .try_filter::<_, HasFilterFn, (Has<'_>, _), _>(filter_for_row)
                         .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
@@ -211,7 +212,7 @@ impl HasExecutor {
                                 snapshot,
                                 thing_manager,
                                 &type_range,
-                            )?))
+                            )))
                         })
                         .collect::<Result<Vec<_>, _>>()?;
 
@@ -231,9 +232,9 @@ impl HasExecutor {
             BinaryIterateMode::BoundFrom => {
                 let owner = self.has.owner().as_variable().unwrap().as_position().unwrap();
                 let (min_attribute_type, max_attribute_type) = min_max_types(&*self.attribute_types);
-                let type_range = KeyRange::new_variable_width(
-                    RangeStart::Inclusive(min_attribute_type.as_attribute_type()),
-                    RangeEnd::EndPrefixInclusive(max_attribute_type.as_attribute_type()),
+                let type_range = (
+                    Bound::Included(min_attribute_type.as_attribute_type()),
+                    Bound::Included(max_attribute_type.as_attribute_type()),
                 );
                 debug_assert!(row.len() > owner.as_usize());
                 // TODO: inject value ranges
@@ -242,12 +243,12 @@ impl HasExecutor {
                         snapshot,
                         thing_manager,
                         &type_range,
-                    )?,
+                    ),
                     VariableValue::Thing(Thing::Relation(relation)) => relation.get_has_types_range_unordered(
                         snapshot,
                         thing_manager,
                         &type_range,
-                    )?,
+                    ),
                     _ => unreachable!("Has owner must be an entity or relation."),
                 };
                 let as_tuples: HasBoundedSortedAttribute = iterator

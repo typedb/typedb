@@ -11,44 +11,40 @@ use std::{
     ops::RangeBounds,
     sync::Arc,
 };
+use std::cmp::min;
 
 use bytes::{byte_array::ByteArray, Bytes};
-use encoding::{
-    graph::{
-        thing::{
-            edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeLinks, ThingEdgeRolePlayerIndex},
-            property::{build_object_vertex_property_has_order, build_object_vertex_property_links_order},
-            vertex_attribute::{AttributeID, AttributeVertex},
-            vertex_generator::ThingVertexGenerator,
-            vertex_object::ObjectVertex,
-            ThingVertex,
-        },
-        type_::{
-            property::{TypeVertexProperty, TypeVertexPropertyEncoding},
-            vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
-        },
-        Typed,
+use encoding::{graph::{
+    thing::{
+        edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeLinks, ThingEdgeRolePlayerIndex},
+        property::{build_object_vertex_property_has_order, build_object_vertex_property_links_order},
+        vertex_attribute::{AttributeID, AttributeVertex},
+        vertex_generator::ThingVertexGenerator,
+        vertex_object::ObjectVertex,
+        ThingVertex,
     },
-    layout::{infix::Infix, prefix::Prefix},
-    value::{
-        boolean_bytes::BooleanBytes,
-        date_bytes::DateBytes,
-        date_time_bytes::DateTimeBytes,
-        date_time_tz_bytes::DateTimeTZBytes,
-        decimal_bytes::DecimalBytes,
-        double_bytes::DoubleBytes,
-        duration_bytes::DurationBytes,
-        long_bytes::LongBytes,
-        primitive_encoding::{decode_u64, encode_u64},
-        string_bytes::StringBytes,
-        struct_bytes::StructBytes,
-        value::Value,
-        value_struct::{StructIndexEntry, StructIndexEntryKey, StructValue},
-        value_type::{ValueType, ValueTypeCategory},
-        ValueEncodable,
+    type_::{
+        property::{TypeVertexProperty, TypeVertexPropertyEncoding},
+        vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
     },
-    AsBytes, Keyable,
-};
+    Typed,
+}, layout::{infix::Infix, prefix::Prefix}, value::{
+    boolean_bytes::BooleanBytes,
+    date_bytes::DateBytes,
+    date_time_bytes::DateTimeBytes,
+    date_time_tz_bytes::DateTimeTZBytes,
+    decimal_bytes::DecimalBytes,
+    double_bytes::DoubleBytes,
+    duration_bytes::DurationBytes,
+    long_bytes::LongBytes,
+    primitive_encoding::{decode_u64, encode_u64},
+    string_bytes::StringBytes,
+    struct_bytes::StructBytes,
+    value::Value,
+    value_struct::{StructIndexEntry, StructIndexEntryKey, StructValue},
+    value_type::{ValueType, ValueTypeCategory},
+    ValueEncodable,
+}, AsBytes, Keyable, Prefixed};
 use itertools::{Itertools, MinMaxResult};
 use bytes::util::increment;
 use encoding::graph::type_::vertex::{TypeID, TypeVertex};
@@ -838,16 +834,16 @@ impl ThingManager {
         Ok(iter)
     }
 
-    pub(crate) fn get_has_from_thing_unordered<'this, 'a>(
+    pub(crate) fn get_has_from_thing_unordered<'this, 'snapshot, 'a, 'b>(
         &'this self,
-        snapshot: &'this impl ReadableSnapshot,
-        owner: &'a impl ObjectAPI<'a>,
-        attribute_type_range_hint: &'a impl RangeBounds<AttributeType<'a>>,
-    ) -> HasAttributeIterator {
+        snapshot: &'snapshot impl ReadableSnapshot,
+        owner: &'this impl ObjectAPI<'a>,
+        attribute_type_range_hint: &'this impl RangeBounds<AttributeType<'b>>,
+    ) -> HasIterator where 'a: 'this {
         let start_type_id_inclusive = match attribute_type_range_hint.start_bound() {
             Bound::Included(attribute_type) => attribute_type.vertex().type_id_(),
             Bound::Excluded(attribute_type) => attribute_type.vertex().type_id_().next_type_id(),
-            Bound::Unbounded => TypeID::ZEROS,
+            Bound::Unbounded => TypeID::MIN,
         };
         let has_range_start = RangeStart::Inclusive(ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), start_type_id_inclusive));
         let has_range_end = match attribute_type_range_hint.end_bound() {
@@ -872,7 +868,7 @@ impl ThingManager {
         } else {
             KeyRange::new_variable_width(has_range_start, has_range_end)
         };
-        HasAttributeIterator::new(snapshot.iterate_range(&key_range))
+        HasIterator::new(snapshot.iterate_range(&key_range))
     }
 
     pub(crate) fn get_has_from_thing_to_type_unordered<'this, 'a>(
@@ -936,18 +932,46 @@ impl ThingManager {
         )))
     }
 
-    pub fn get_has_reverse_by_attribute_and_owner_type_range(
+    pub fn get_has_reverse_by_attribute_and_owner_type_range<'a>(
         &self,
         snapshot: &impl ReadableSnapshot,
         attribute: Attribute<'_>,
-        owner_type_range: &KeyRange<ObjectType<'static>>,
+        owner_type_range: &'a impl RangeBounds<ObjectType<'a>>,
     ) -> HasReverseIterator {
-        let prefix = ThingEdgeHasReverse::prefix_from_attribute_to_type_range(
-            attribute.into_vertex(),
-            owner_type_range.start().map(|start| start.vertex()),
-            owner_type_range.end().map(|object_type| object_type.vertex()),
-        );
-        HasReverseIterator::new(snapshot.iterate_range(&prefix))
+        let (type_prefix, range_start_type_id) = match owner_type_range.start_bound() {
+            Bound::Included(owner_start) => (owner_start.vertex().prefix(), owner_start.vertex().type_id_()),
+            Bound::Excluded(owner_start) => (owner_start.vertex().prefix(), owner_start.vertex().type_id_().next_type_id()),
+            Bound::Unbounded => {
+                if Prefix::VertexEntityType.prefix_id() < Prefix::VertexRelationType.prefix_id() {
+                    (Prefix::VertexEntityType, TypeID::MIN)
+                } else {
+                    (Prefix::VertexRelationType, TypeID::MIN)
+                }
+            },
+        };
+        let range_start = RangeStart::Inclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type_parts(attribute.vertex(), type_prefix, range_start_type_id));
+        let range_end = match owner_type_range.end_bound() {
+            Bound::Included(owner_end) => {
+                RangeEnd::EndPrefixInclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type(attribute.vertex(), owner_end.vertex()))
+            }
+            Bound::Excluded(owner_end) => {
+                RangeEnd::EndPrefixExclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type(attribute.vertex(), owner_end.vertex()))
+            }
+            Bound::Unbounded => {
+                let (max_type_prefix, max_type_id) = if Prefix::VertexEntityType.prefix_id() < Prefix::VertexRelationType.prefix_id() {
+                    (Prefix::VertexRelationType, TypeID::MAX)
+                } else {
+                    (Prefix::VertexEntityType, TypeID::MAX)
+                };
+                RangeEnd::EndPrefixInclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type_parts(attribute.vertex(), max_type_prefix, max_type_id))
+            }
+        };
+        let key_range = if ThingEdgeHasReverse::FIXED_WIDTH_ENCODING {
+            KeyRange::new_fixed_width(range_start, range_end)
+        } else {
+            KeyRange::new_variable_width(range_start, range_end)
+        };
+        HasReverseIterator::new(snapshot.iterate_range(&key_range))
     }
 
     pub(crate) fn has_owners(

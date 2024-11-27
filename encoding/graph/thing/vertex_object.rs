@@ -73,15 +73,19 @@ impl<'a> ObjectVertex<'a> {
             && storage_key.bytes()[Self::RANGE_PREFIX] == Prefix::VertexRelation.prefix_id().bytes
     }
 
-    pub(crate) fn build_prefix_from_type_vertex(
+    pub(crate) fn write_prefix_from_type_vertex(
+        bytes: &mut [u8],
         type_vertex: TypeVertex<'_>,
-    ) -> StorageKey<'static, { THING_VERTEX_LENGTH_PREFIX_TYPE }> {
-        let prefix = match type_vertex.prefix() {
+    ) -> usize {
+        Self::write_prefix_type(bytes, Self::prefix_for_type(type_vertex.prefix()), type_vertex.type_id_())
+    }
+
+    pub(crate) fn prefix_for_type( prefix: Prefix ) -> Prefix {
+        match prefix {
             Prefix::VertexEntityType => Prefix::VertexEntity,
             Prefix::VertexRelationType => Prefix::VertexRelation,
             _ => unreachable!(),
-        };
-        Self::build_prefix_type(prefix, type_vertex.type_id_())
+        }
     }
 
     pub fn object_id(&self) -> ObjectID {

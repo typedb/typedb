@@ -195,7 +195,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         &self,
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
-    ) -> HasAttributeIterator {
+    ) -> HasIterator {
         self.get_has_types_range_unordered(
             snapshot, 
             thing_manager, 
@@ -203,16 +203,16 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         )
     }
 
-    fn get_has_types_range_unordered<'b, 'm>(
-        &self,
+    fn get_has_types_range_unordered<'this, 'b, 'c, 'm>(
+        &'this self,
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
-        attribute_type_range: &'b impl RangeBounds<AttributeType<'b>>,
-    ) -> HasAttributeIterator {
+        attribute_type_range: &'this impl RangeBounds<AttributeType<'b>>,
+    ) -> HasIterator where 'a: 'this {
         thing_manager.get_has_from_thing_unordered(snapshot, self, attribute_type_range)
     }
 
-    fn get_has_type_unordered<'m>(
+    fn get_has_type_unordered<'this, 'm>(
         &self,
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
@@ -410,14 +410,14 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
     }
 
     fn get_has_counts(
-        &self,
+        &'a self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<HashMap<AttributeType<'static>, u64>, Box<ConceptReadError>> {
         let mut counts = HashMap::new();
         let mut has_iter = self.get_has_unordered(snapshot, thing_manager);
-        while let Some((attribute, count)) = has_iter.next().transpose()? {
-            let value = counts.entry(attribute.type_()).or_insert(0);
+        while let Some((has, count)) = has_iter.next().transpose()? {
+            let value = counts.entry(has.attribute().type_()).or_insert(0);
             *value += count;
         }
         Ok(counts)

@@ -924,6 +924,7 @@ dependencies = [
  "itertools 0.10.5",
  "lending_iterator",
  "logger",
+ "primitive",
  "query",
  "resource",
  "storage",

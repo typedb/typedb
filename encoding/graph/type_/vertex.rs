@@ -95,7 +95,7 @@ pub struct TypeID {
 pub type TypeIDUInt = u16;
 
 impl TypeID {
-    pub const ZEROS: Self = Self::build(0);
+    pub const MIN: Self = Self::build(0);
     pub const MAX: Self = Self::build(TypeIDUInt::MAX);
     pub(crate) const LENGTH: usize = std::mem::size_of::<TypeIDUInt>();
 

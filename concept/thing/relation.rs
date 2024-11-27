@@ -384,7 +384,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
     ) -> Result<(), Box<ConceptWriteError>> {
         for attr in self
             .get_has_unordered(snapshot, thing_manager)
-            .map_static(|res| res.map(|(key, _value)| key.into_owned()))
+            .map_static(|res| res.map(|(has, _value)| has.attribute().into_owned()))
             .try_collect::<Vec<_>, _>()?
         {
             thing_manager.unset_has(snapshot, &self, attr);

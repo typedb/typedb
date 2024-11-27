@@ -115,8 +115,8 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
         for attr in self
-            .get_has_unordered(snapshot, thing_manager, &(Bound::Unbounded, Bound::Unbounded))
-            .map_static(|res| res.map(|(k, _)| k.into_owned()))
+            .get_has_unordered(snapshot, thing_manager)
+            .map_static(|res| res.map(|(has, _)| has.attribute().into_owned()))
             .try_collect::<Vec<_>, _>()?
         {
             thing_manager.unset_has(snapshot, &self, attr);
