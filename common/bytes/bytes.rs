@@ -15,16 +15,15 @@ use std::{
 use lending_iterator::higher_order::Hkt;
 use primitive::prefix::Prefix;
 
-use crate::{byte_array::ByteArray, byte_reference::ByteReference};
+use crate::byte_array::ByteArray;
 
 pub mod byte_array;
-pub mod byte_reference;
 pub mod util;
 
 #[derive(Debug)]
 pub enum Bytes<'bytes, const ARRAY_INLINE_SIZE: usize> {
     Array(ByteArray<ARRAY_INLINE_SIZE>),
-    Reference(ByteReference<'bytes>),
+    Reference(&'bytes [u8]),
 }
 
 impl<'bytes, const INLINE_SIZE: usize> Clone for Bytes<'bytes, INLINE_SIZE> {
@@ -48,13 +47,13 @@ impl<const ARRAY_INLINE_SIZE: usize> Bytes<'static, ARRAY_INLINE_SIZE> {
 
 impl<'bytes, const ARRAY_INLINE_SIZE: usize> Bytes<'bytes, ARRAY_INLINE_SIZE> {
     pub const fn reference(bytes: &'bytes [u8]) -> Self {
-        Self::Reference(ByteReference::new(bytes))
+        Self::Reference(bytes)
     }
 
     pub fn length(&self) -> usize {
         match self {
             Bytes::Array(array) => array.len(),
-            Bytes::Reference(reference) => reference.length(),
+            Bytes::Reference(reference) => reference.len(),
         }
     }
 
@@ -65,7 +64,7 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> Bytes<'bytes, ARRAY_INLINE_SIZE> {
                 array.truncate(length);
                 Bytes::Array(array)
             }
-            Bytes::Reference(reference) => Bytes::Reference(reference.truncate(length)),
+            Bytes::Reference(reference) => Bytes::Reference(&reference[..length]),
         }
     }
 
@@ -76,7 +75,7 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> Bytes<'bytes, ARRAY_INLINE_SIZE> {
                 array.truncate_range(range);
                 Bytes::Array(array)
             }
-            Bytes::Reference(reference) => Bytes::Reference(reference.into_range(range)),
+            Bytes::Reference(reference) => Bytes::Reference(&reference[range]),
         }
     }
 
@@ -88,14 +87,7 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> Bytes<'bytes, ARRAY_INLINE_SIZE> {
         Bytes::Array(self.into_array())
     }
 
-    pub fn as_reference(&'bytes self) -> ByteReference<'bytes> {
-        match self {
-            Bytes::Array(array) => array.as_ref(),
-            Bytes::Reference(reference) => *reference,
-        }
-    }
-
-    pub fn unwrap_reference(self) -> ByteReference<'bytes> {
+    pub fn unwrap_reference(self) -> &'bytes [u8] {
         if let Bytes::Reference(reference) = self {
             reference
         } else {
@@ -130,7 +122,7 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> Deref for Bytes<'bytes, ARRAY_INLIN
     fn deref(&self) -> &Self::Target {
         match self {
             Bytes::Array(array) => array,
-            Bytes::Reference(reference) => reference.bytes(),
+            Bytes::Reference(reference) => reference,
         }
     }
 }
@@ -179,4 +171,10 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> Prefix for Bytes<'bytes, ARRAY_INLI
 
 impl<const ARRAY_INLINE_SIZE: usize> Hkt for Bytes<'static, ARRAY_INLINE_SIZE> {
     type HktSelf<'a> = Bytes<'a, ARRAY_INLINE_SIZE>;
+}
+
+impl<'a, const ARRAY_INLINE_SIZE: usize> From<Bytes<'a, ARRAY_INLINE_SIZE>> for Vec<u8> {
+    fn from(value: Bytes<'a, ARRAY_INLINE_SIZE>) -> Self {
+        Self::from(&*value)
+    }
 }

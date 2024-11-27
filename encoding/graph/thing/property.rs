@@ -6,7 +6,7 @@
 
 use std::ops::Range;
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::{byte_array::ByteArray, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
@@ -65,7 +65,7 @@ impl<'a> ObjectVertexProperty<'a> {
     fn build(vertex: ObjectVertex<'_>, infix: Infix) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH_NO_SUFFIX);
         array[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        array[Self::range_object_vertex()].copy_from_slice(vertex.bytes().bytes());
+        array[Self::range_object_vertex()].copy_from_slice(&vertex.into_bytes());
         array[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
         ObjectVertexProperty { bytes: Bytes::Array(array) }
     }
@@ -77,7 +77,7 @@ impl<'a> ObjectVertexProperty<'a> {
     ) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH_NO_SUFFIX + suffix.length());
         array[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        array[Self::range_object_vertex()].copy_from_slice(vertex.bytes().bytes());
+        array[Self::range_object_vertex()].copy_from_slice(&vertex.into_bytes());
         array[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
         array[Self::range_suffix(suffix.length())].copy_from_slice(&suffix);
         ObjectVertexProperty { bytes: Bytes::Array(array) }
@@ -87,11 +87,11 @@ impl<'a> ObjectVertexProperty<'a> {
         // TODO: is it better to have a const fn that is a reference to owned memory, or
         //       to always induce a tiny copy have a non-const function?
         const PREFIX_BYTES: [u8; PrefixID::LENGTH] = ObjectVertexProperty::PREFIX.prefix_id().bytes();
-        StorageKey::new_ref(Self::KEYSPACE, ByteReference::new(&PREFIX_BYTES))
+        StorageKey::new_ref(Self::KEYSPACE, &PREFIX_BYTES)
     }
 
     pub fn object_vertex(&'a self) -> ObjectVertex<'a> {
-        ObjectVertex::new(Bytes::reference(&self.bytes().bytes()[Self::range_object_vertex()]))
+        ObjectVertex::new(Bytes::reference(&self.bytes[Self::range_object_vertex()]))
     }
 
     pub fn infix(&self) -> Infix {
@@ -100,13 +100,13 @@ impl<'a> ObjectVertexProperty<'a> {
     }
 
     fn suffix_length(&self) -> usize {
-        self.bytes().length() - Self::LENGTH_NO_SUFFIX
+        self.bytes.len() - Self::LENGTH_NO_SUFFIX
     }
 
-    pub fn suffix(&self) -> Option<ByteReference> {
+    pub fn suffix(&self) -> Option<&[u8]> {
         let suffix_length = self.suffix_length();
         if suffix_length > 0 {
-            Some(ByteReference::new(&self.bytes[Self::range_suffix(self.suffix_length())]))
+            Some(&self.bytes[Self::range_suffix(self.suffix_length())])
         } else {
             None
         }
@@ -126,10 +126,6 @@ impl<'a> ObjectVertexProperty<'a> {
 }
 
 impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for ObjectVertexProperty<'a> {
-    fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_reference()
-    }
-
     fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
         self.bytes
     }

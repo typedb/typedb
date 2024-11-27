@@ -6,7 +6,7 @@
 
 use std::{fmt, hash::Hash};
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::HexBytesFormatter, Bytes};
+use bytes::{byte_array::ByteArray, util::HexBytesFormatter, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_value::{StorageKey, StorageKeyReference},
@@ -23,66 +23,55 @@ use crate::{
 // TODO: we could make all Type constructs contain plain byte arrays, since they will always be 64 bytes (BUFFER_KEY_INLINE), then make Types all Copy
 //       However, we should benchmark this first, since 64 bytes may be better off referenced
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
-pub struct TypeVertex<'a> {
-    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
+pub struct TypeVertex {
+    value: u32,
 }
 
-impl<'a> TypeVertex<'a> {
+impl TypeVertex {
     pub(crate) const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
     pub const FIXED_WIDTH_ENCODING: bool = true;
 
     pub(crate) const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH;
     pub(crate) const LENGTH_PREFIX: usize = PrefixID::LENGTH;
 
-    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> TypeVertex<'a> {
+    pub fn new(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        TypeVertex { bytes }
+        let mut be_bytes = [0; 4];
+        be_bytes[1..].copy_from_slice(&bytes);
+        Self { value: u32::from_be_bytes(be_bytes) }
     }
 
     pub(crate) fn build(prefix: PrefixID, type_id: TypeID) -> Self {
-        let mut array = ByteArray::zeros(Self::LENGTH);
-        array[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
-        array[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
-        TypeVertex { bytes: Bytes::Array(array) }
-    }
-
-    pub fn as_reference<'this: 'a>(&'this self) -> TypeVertex<'this> {
-        Self::new(Bytes::Reference(self.bytes.as_reference()))
-    }
-
-    pub fn into_owned(self) -> TypeVertex<'static> {
-        TypeVertex { bytes: self.bytes.into_owned() }
+        let prefix = (prefix.bytes[0] as u32) << 16;
+        let type_id = u16::from_be_bytes(type_id.bytes) as u32;
+        Self { value: prefix + type_id }
     }
 }
 
-impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {
-    fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_reference()
-    }
-
+impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeVertex {
     fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
-        self.bytes
+        Bytes::Array(ByteArray::copy(&self.value.to_be_bytes()[1..]))
     }
 }
 
-impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {
+impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeVertex {
     fn keyspace(&self) -> EncodingKeyspace {
         Self::KEYSPACE
     }
 }
 
-impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {}
+impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeVertex {}
 
-impl<'a> Typed<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {}
+impl<'a> Typed<'a, BUFFER_KEY_INLINE> for TypeVertex {}
 
-impl<'a> primitive::prefix::Prefix for TypeVertex<'a> {
+impl<'a> primitive::prefix::Prefix for TypeVertex {
     fn starts_with(&self, other: &Self) -> bool {
-        self.bytes.starts_with(&other.bytes)
+        self.value == other.value
     }
 
     fn into_starts_with(self, other: Self) -> bool {
-        self.bytes.as_reference().into_starts_with(other.bytes.as_reference())
+        self.value == other.value
     }
 }
 
@@ -131,15 +120,15 @@ pub(crate) fn build_type_vertex_prefix_key(prefix: Prefix) -> StorageKey<'static
 }
 
 pub trait TypeVertexEncoding<'a>: Sized {
-    fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError>;
+    fn from_vertex(vertex: TypeVertex) -> Result<Self, EncodingError>;
 
     fn from_bytes(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Result<Self, EncodingError> {
         Self::from_vertex(TypeVertex::new(bytes))
     }
 
-    fn vertex(&self) -> TypeVertex<'_>;
+    fn vertex(&self) -> TypeVertex;
 
-    fn into_vertex(self) -> TypeVertex<'a>;
+    fn into_vertex(self) -> TypeVertex;
 }
 
 pub trait PrefixedTypeVertexEncoding<'a>: TypeVertexEncoding<'a> {
@@ -154,7 +143,7 @@ pub trait PrefixedTypeVertexEncoding<'a>: TypeVertexEncoding<'a> {
     }
 
     fn is_decodable_from_key(key: StorageKeyReference<'_>) -> bool {
-        key.keyspace_id() == EncodingKeyspace::Schema.id() && Self::is_decodable_from(Bytes::Reference(key.byte_ref()))
+        key.keyspace_id() == EncodingKeyspace::Schema.id() && Self::is_decodable_from(Bytes::Reference(key.bytes()))
     }
 
     fn is_decodable_from(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {

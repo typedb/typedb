@@ -6,7 +6,7 @@
 
 use std::{fmt, mem, ops::Range};
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::{byte_array::ByteArray, Bytes};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use serde::{
     de::{self, Unexpected, Visitor},
@@ -285,7 +285,7 @@ impl ValueTypeBytes {
         let mut array = [0; Self::LENGTH];
         array[Self::RANGE_CATEGORY].copy_from_slice(&value_type.category().to_bytes());
         if let ValueType::Struct(definition_key) = value_type {
-            array[Self::RANGE_TAIL].copy_from_slice(definition_key.bytes().bytes());
+            array[Self::RANGE_TAIL].copy_from_slice(&definition_key.clone().into_bytes());
         }
         Self { bytes: array }
     }
@@ -314,9 +314,9 @@ impl Serialize for ValueType {
 impl TypeVertexPropertyEncoding<'static> for ValueType {
     const INFIX: Infix = Infix::PropertyValueType;
 
-    fn from_value_bytes(value: ByteReference<'_>) -> Self {
+    fn from_value_bytes(value: &[u8]) -> Self {
         let mut bytes: [u8; ValueTypeBytes::LENGTH] = [0; ValueTypeBytes::LENGTH];
-        bytes.copy_from_slice(&value.bytes()[0..ValueTypeBytes::LENGTH]);
+        bytes.copy_from_slice(&value[0..ValueTypeBytes::LENGTH]);
         ValueTypeBytes::new(bytes).to_value_type()
     }
 
@@ -344,7 +344,7 @@ impl<'de> Deserialize<'de> for ValueType {
                 E: de::Error,
             {
                 if v.len() == ValueTypeBytes::LENGTH {
-                    Ok(ValueType::from_value_bytes(ByteReference::new(v)))
+                    Ok(ValueType::from_value_bytes(v))
                 } else {
                     Err(E::invalid_value(Unexpected::Bytes(v), &self))
                 }

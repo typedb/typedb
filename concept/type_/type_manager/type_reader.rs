@@ -80,16 +80,16 @@ impl TypeReader {
     pub(crate) fn get_roles_by_name(
         snapshot: &impl ReadableSnapshot,
         name: String,
-    ) -> Result<Vec<RoleType<'static>>, Box<ConceptReadError>> {
+    ) -> Result<Vec<RoleType>, Box<ConceptReadError>> {
         let mut name_with_colon = name;
         name_with_colon.push(':');
         let key = LabelToTypeVertexIndex::build(&Label::build(name_with_colon.as_str())).into_storage_key();
         let vec = snapshot
             .iterate_range(KeyRange::new_within(
                 RangeStart::Inclusive(key),
-                IdentifierIndex::<TypeVertex<'static>>::FIXED_WIDTH_ENCODING,
+                IdentifierIndex::<TypeVertex>::FIXED_WIDTH_ENCODING,
             ))
-            .collect_cloned_vec(|_key, value| match RoleType::from_bytes(Bytes::copy(value.bytes())) {
+            .collect_cloned_vec(|_key, value| match RoleType::from_bytes(Bytes::copy(value)) {
                 Err(_) => None,
                 Ok(role_type) => Some(role_type),
             })
@@ -115,7 +115,7 @@ impl TypeReader {
         let bytes = snapshot
             .get::<BUFFER_VALUE_INLINE>(definition_key.clone().into_storage_key().as_reference())
             .map_err(|source| Box::new(ConceptReadError::SnapshotGet { source }))?;
-        Ok(StructDefinition::from_bytes(bytes.unwrap().as_ref()))
+        Ok(StructDefinition::from_bytes(&bytes.unwrap()))
     }
 
     pub(crate) fn get_struct_definitions_all(
@@ -127,15 +127,15 @@ impl TypeReader {
                 StructDefinition::PREFIX.fixed_width_keys(),
             ))
             .collect_cloned_hashmap(|key, value| {
-                (DefinitionKey::new(Bytes::Array(key.byte_ref().into())), StructDefinition::from_bytes(value))
+                (DefinitionKey::new(Bytes::Array(key.bytes().into())), StructDefinition::from_bytes(value))
             })
             .map_err(|source| Box::new(ConceptReadError::SnapshotIterate { source }))
     }
 
     pub(crate) fn get_struct_definition_usages_in_attribute_types(
         snapshot: &impl ReadableSnapshot,
-    ) -> Result<HashMap<DefinitionKey<'static>, HashSet<AttributeType<'static>>>, Box<ConceptReadError>> {
-        let mut usages: HashMap<DefinitionKey<'static>, HashSet<AttributeType<'static>>> = HashMap::new();
+    ) -> Result<HashMap<DefinitionKey<'static>, HashSet<AttributeType>>, Box<ConceptReadError>> {
+        let mut usages: HashMap<DefinitionKey<'static>, HashSet<AttributeType>> = HashMap::new();
 
         let attribute_types = TypeReader::get_attribute_types(snapshot)?;
         for attribute_type in attribute_types {
@@ -174,7 +174,7 @@ impl TypeReader {
 
     pub(crate) fn get_object_types(
         snapshot: &impl ReadableSnapshot,
-    ) -> Result<Vec<ObjectType<'static>>, Box<ConceptReadError>> {
+    ) -> Result<Vec<ObjectType>, Box<ConceptReadError>> {
         let entity_types = Self::get_entity_types(snapshot)?;
         let relation_types = Self::get_relation_types(snapshot)?;
         Ok((entity_types.into_iter().map(ObjectType::Entity))
@@ -184,7 +184,7 @@ impl TypeReader {
 
     pub(crate) fn get_entity_types(
         snapshot: &impl ReadableSnapshot,
-    ) -> Result<Vec<EntityType<'static>>, Box<ConceptReadError>> {
+    ) -> Result<Vec<EntityType>, Box<ConceptReadError>> {
         snapshot
             .iterate_range(KeyRange::new_within(
                 RangeStart::Inclusive(EntityType::prefix_for_kind()),
@@ -196,7 +196,7 @@ impl TypeReader {
 
     pub(crate) fn get_relation_types(
         snapshot: &impl ReadableSnapshot,
-    ) -> Result<Vec<RelationType<'static>>, Box<ConceptReadError>> {
+    ) -> Result<Vec<RelationType>, Box<ConceptReadError>> {
         snapshot
             .iterate_range(KeyRange::new_within(
                 RangeStart::Inclusive(RelationType::prefix_for_kind()),
@@ -208,7 +208,7 @@ impl TypeReader {
 
     pub(crate) fn get_attribute_types(
         snapshot: &impl ReadableSnapshot,
-    ) -> Result<Vec<AttributeType<'static>>, Box<ConceptReadError>> {
+    ) -> Result<Vec<AttributeType>, Box<ConceptReadError>> {
         snapshot
             .iterate_range(KeyRange::new_within(RangeStart::Inclusive(AttributeType::prefix_for_kind()), false))
             .collect_cloned_vec(|key, _| AttributeType::new(TypeVertex::new(Bytes::copy(key.bytes()))))
@@ -217,7 +217,7 @@ impl TypeReader {
 
     pub(crate) fn get_role_types(
         snapshot: &impl ReadableSnapshot,
-    ) -> Result<Vec<RoleType<'static>>, Box<ConceptReadError>> {
+    ) -> Result<Vec<RoleType>, Box<ConceptReadError>> {
         snapshot
             .iterate_range(KeyRange::new_within(
                 RangeStart::Inclusive(RoleType::prefix_for_kind()),
@@ -273,7 +273,7 @@ impl TypeReader {
                 TypeEdge::FIXED_WIDTH_ENCODING,
             ))
             .collect_cloned_hashset(|key, _| {
-                Sub::<T>::decode_reverse_edge(Bytes::Reference(key.byte_ref()).into_owned()).subtype()
+                Sub::<T>::decode_reverse_edge(Bytes::Reference(key.bytes()).into_owned()).subtype()
             })
             .map_err(|error| Box::new(ConceptReadError::SnapshotIterate { source: error }))
     }
@@ -311,7 +311,7 @@ impl TypeReader {
         let owns_prefix = CAP::prefix_for_canonical_edges_from(CAP::ObjectType::new(owner.into_vertex()));
         snapshot
             .iterate_range(KeyRange::new_within(RangeStart::Inclusive(owns_prefix), TypeEdge::FIXED_WIDTH_ENCODING))
-            .collect_cloned_hashset(|key, _| CAP::decode_canonical_edge(Bytes::Reference(key.byte_ref()).into_owned()))
+            .collect_cloned_hashset(|key, _| CAP::decode_canonical_edge(Bytes::Reference(key.bytes()).into_owned()))
             .map_err(|error| Box::new(ConceptReadError::SnapshotIterate { source: error }))
     }
 
@@ -347,7 +347,7 @@ impl TypeReader {
         let owns_prefix = CAP::prefix_for_reverse_edges_from(interface_type);
         snapshot
             .iterate_range(KeyRange::new_within(RangeStart::Inclusive(owns_prefix), TypeEdge::FIXED_WIDTH_ENCODING))
-            .collect_cloned_hashset(|key, _| CAP::decode_reverse_edge(Bytes::Array(key.byte_ref().into())))
+            .collect_cloned_hashset(|key, _| CAP::decode_reverse_edge(Bytes::Array(key.bytes().into())))
             .map_err(|error| Box::new(ConceptReadError::SnapshotIterate { source: error }))
     }
 
@@ -391,10 +391,10 @@ impl TypeReader {
 
     pub(crate) fn get_role_type_relates_root(
         snapshot: &impl ReadableSnapshot,
-        role_type: RoleType<'static>,
-    ) -> Result<Relates<'static>, Box<ConceptReadError>> {
+        role_type: RoleType,
+    ) -> Result<Relates, Box<ConceptReadError>> {
         let mut root_relates = None;
-        let all_relates = Self::get_capabilities_for_interface::<Relates<'static>>(snapshot, role_type)?;
+        let all_relates = Self::get_capabilities_for_interface::<Relates>(snapshot, role_type)?;
         for relates in all_relates.into_iter() {
             if !Self::is_relates_specialising(snapshot, relates.clone())? {
                 debug_assert!(root_relates.is_none());
@@ -406,10 +406,10 @@ impl TypeReader {
 
     pub(crate) fn get_relation_type_relates_root(
         snapshot: &impl ReadableSnapshot,
-        relation_type: RelationType<'static>,
-    ) -> Result<HashSet<Relates<'static>>, Box<ConceptReadError>> {
+        relation_type: RelationType,
+    ) -> Result<HashSet<Relates>, Box<ConceptReadError>> {
         let mut root_relates = HashSet::new();
-        let all_declared_relates = Self::get_capabilities_declared::<Relates<'static>>(snapshot, relation_type)?;
+        let all_declared_relates = Self::get_capabilities_declared::<Relates>(snapshot, relation_type)?;
         for relates in all_declared_relates.into_iter() {
             if !Self::is_relates_specialising(snapshot, relates.clone())? {
                 root_relates.insert(relates);
@@ -420,7 +420,7 @@ impl TypeReader {
 
     pub(crate) fn is_relates_specialising(
         snapshot: &impl ReadableSnapshot,
-        relates: Relates<'static>,
+        relates: Relates,
     ) -> Result<bool, Box<ConceptReadError>> {
         let relation_type_label =
             Self::get_label(snapshot, relates.relation())?.ok_or(ConceptReadError::CorruptMissingLabelOfType)?;
@@ -432,21 +432,21 @@ impl TypeReader {
 
     pub(crate) fn get_value_type_declared(
         snapshot: &impl ReadableSnapshot,
-        type_: AttributeType<'_>,
+        type_: AttributeType,
     ) -> Result<Option<ValueType>, Box<ConceptReadError>> {
         Self::get_type_property_declared::<ValueType>(snapshot, type_)
     }
 
     pub(crate) fn get_value_type(
         snapshot: &impl ReadableSnapshot,
-        type_: AttributeType<'static>,
-    ) -> Result<Option<(ValueType, AttributeType<'static>)>, Box<ConceptReadError>> {
-        Self::get_type_property::<ValueType, AttributeType<'static>>(snapshot, type_)
+        type_: AttributeType,
+    ) -> Result<Option<(ValueType, AttributeType)>, Box<ConceptReadError>> {
+        Self::get_type_property::<ValueType, AttributeType>(snapshot, type_)
     }
 
     pub(crate) fn get_value_type_without_source(
         snapshot: &impl ReadableSnapshot,
-        type_: AttributeType<'static>,
+        type_: AttributeType,
     ) -> Result<Option<ValueType>, Box<ConceptReadError>> {
         Self::get_value_type(snapshot, type_).map(|result| result.map(|(value_type, _)| value_type))
     }
@@ -501,7 +501,7 @@ impl TypeReader {
 
     pub(crate) fn get_type_ordering(
         snapshot: &impl ReadableSnapshot,
-        role_type: RoleType<'_>,
+        role_type: RoleType,
     ) -> Result<Ordering, Box<ConceptReadError>> {
         match Self::get_type_property_declared(snapshot, role_type)? {
             Some(ordering) => Ok(ordering),
@@ -511,7 +511,7 @@ impl TypeReader {
 
     pub(crate) fn get_capability_ordering(
         snapshot: &impl ReadableSnapshot,
-        owns: Owns<'_>,
+        owns: Owns,
     ) -> Result<Ordering, Box<ConceptReadError>> {
         match Self::get_type_edge_property::<Ordering>(snapshot, owns)? {
             Some(ordering) => Ok(ordering),
@@ -533,7 +533,7 @@ impl TypeReader {
                 ),
             ))
             .collect_cloned_hashset(|key, value| {
-                let annotation_key = TypeVertexProperty::new(Bytes::Reference(key.byte_ref()));
+                let annotation_key = TypeVertexProperty::new(Bytes::Reference(key.bytes()));
                 let annotation = match annotation_key.infix() {
                     Infix::PropertyAnnotationAbstract => Annotation::Abstract(AnnotationAbstract),
                     Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct),
@@ -621,7 +621,7 @@ impl TypeReader {
                 ),
             ))
             .collect_cloned_hashset(|key, value| {
-                let annotation_key = TypeEdgeProperty::new(Bytes::Reference(key.byte_ref()));
+                let annotation_key = TypeEdgeProperty::new(Bytes::Reference(key.bytes()));
                 let annotation = match annotation_key.infix() {
                     Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct),
                     Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent),

@@ -71,7 +71,7 @@ macro_rules! with_type_and_value_type {
     };
 }
 
-pub(super) fn get_as_object_type(context: &mut Context, kind: Kind, label: params::Label) -> ObjectType<'static> {
+pub(super) fn get_as_object_type(context: &mut Context, kind: Kind, label: params::Label) -> ObjectType {
     with_read_tx!(context, |tx| {
         match kind {
             Kind::Entity => {

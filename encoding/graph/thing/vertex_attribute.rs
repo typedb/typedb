@@ -6,7 +6,7 @@
 
 use std::{fmt, marker::PhantomData, ops::Range, sync::Arc};
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::HexBytesFormatter, Bytes};
+use bytes::{byte_array::ByteArray, util::HexBytesFormatter, Bytes};
 use primitive::either::Either;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -125,7 +125,7 @@ impl<'a> AttributeVertex<'a> {
     }
 
     pub fn as_reference<'this: 'a>(&'this self) -> AttributeVertex<'this> {
-        Self::new(Bytes::Reference(self.bytes.as_reference()))
+        Self::new(Bytes::Reference(&self.bytes))
     }
 
     pub fn into_owned(self) -> AttributeVertex<'static> {
@@ -134,10 +134,6 @@ impl<'a> AttributeVertex<'a> {
 }
 
 impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {
-    fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_reference()
-    }
-
     fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
         self.bytes
     }
@@ -567,7 +563,7 @@ impl StringAttributeID {
         debug_assert!(Self::is_inlineable(string.as_reference()));
         let [prefix, value_bytes @ ..] = bytes;
         std::slice::from_mut(prefix).copy_from_slice(&ValueTypeCategory::String.to_bytes());
-        value_bytes[..string.length()].copy_from_slice(string.bytes().bytes());
+        value_bytes[..string.length()].copy_from_slice(string.bytes());
         Self::set_tail_inline_length(bytes, string.length() as u8);
     }
 
@@ -624,8 +620,7 @@ impl StringAttributeID {
 
         let mut id_prefix = [0; Self::VALUE_TYPE_LENGTH + Self::HASHED_PREFIX_LENGTH];
         id_prefix[0..Self::VALUE_TYPE_LENGTH].copy_from_slice(&ValueTypeCategory::String.to_bytes());
-        id_prefix[Self::HASHED_PREFIX_RANGE]
-            .copy_from_slice(&string.bytes().bytes()[0..{ Self::HASHED_PREFIX_LENGTH }]);
+        id_prefix[Self::HASHED_PREFIX_RANGE].copy_from_slice(&string.bytes()[0..{ Self::HASHED_PREFIX_LENGTH }]);
 
         // generate full AttributeVertex that we can use to check for existing hashed values in the same type
         let mut attribute_bytes = [0; AttributeVertex::RANGE_TYPE_ID.end + Self::LENGTH];
@@ -634,7 +629,7 @@ impl StringAttributeID {
             snapshot,
             hasher,
             &attribute_bytes[0..prefix_length],
-            string.bytes().bytes(),
+            string.bytes(),
         )?;
         let string_id = match disambiguated_hash {
             Either::First(disambiguated_hash) | Either::Second(disambiguated_hash) => {
@@ -646,7 +641,7 @@ impl StringAttributeID {
                 let mut string_id_bytes = [0; Self::LENGTH];
                 string_id_bytes[0..Self::VALUE_TYPE_LENGTH].copy_from_slice(&ValueTypeCategory::String.to_bytes());
                 string_id_bytes[Self::HASHED_PREFIX_RANGE]
-                    .copy_from_slice(&string.bytes().bytes()[0..Self::HASHED_PREFIX_LENGTH]);
+                    .copy_from_slice(&string.bytes()[0..Self::HASHED_PREFIX_LENGTH]);
                 string_id_bytes[Self::HASHED_DISAMBIGUATED_HASH_RANGE].copy_from_slice(&disambiguated_hash);
                 Self { bytes: string_id_bytes }
             }
@@ -670,9 +665,8 @@ impl StringAttributeID {
             Self::LENGTH
         } else {
             bytes[0..Self::VALUE_TYPE_LENGTH].copy_from_slice(&ValueTypeCategory::String.to_bytes());
-            bytes[Self::HASHED_PREFIX_RANGE]
-                .copy_from_slice(&string.bytes().bytes()[0..{ Self::HASHED_PREFIX_LENGTH }]);
-            let hash_length = Self::write_hash(&mut bytes[Self::HASHED_HASH_RANGE], hasher, string.bytes().bytes());
+            bytes[Self::HASHED_PREFIX_RANGE].copy_from_slice(&string.bytes()[0..{ Self::HASHED_PREFIX_LENGTH }]);
+            let hash_length = Self::write_hash(&mut bytes[Self::HASHED_HASH_RANGE], hasher, string.bytes());
             Self::VALUE_TYPE_LENGTH + Self::HASHED_PREFIX_LENGTH + hash_length
         }
     }
@@ -777,7 +771,7 @@ impl StructAttributeID {
                 attribute_prefix.bytes(),
                 &ValueTypeCategory::Struct.to_bytes(),
             ]),
-            struct_bytes.bytes().bytes(),
+            struct_bytes.bytes(),
         )?;
 
         let (Either::First(disambiguated_hash) | Either::Second(disambiguated_hash)) = existing_or_new;
@@ -805,7 +799,7 @@ impl StructAttributeID {
                 attribute_prefix.bytes(),
                 &ValueTypeCategory::Struct.to_bytes(),
             ]),
-            struct_bytes.bytes().bytes(),
+            struct_bytes.bytes(),
         )?;
 
         match existing_or_new {
@@ -830,7 +824,7 @@ impl StructAttributeID {
         hasher: &impl Fn(&[u8]) -> u64,
         bytes: &mut [u8],
     ) -> usize {
-        Self::write_hash(bytes, hasher, struct_bytes.bytes().bytes())
+        Self::write_hash(bytes, hasher, struct_bytes.bytes())
     }
 
     pub fn get_hash_hash(&self) -> [u8; Self::HASH_LENGTH] {

@@ -49,23 +49,23 @@ use crate::{
     ConceptAPI,
 };
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
-pub struct RoleType<'a> {
-    vertex: TypeVertex<'a>,
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+pub struct RoleType {
+    vertex: TypeVertex,
 }
 
-impl Hkt for RoleType<'static> {
+impl Hkt for RoleType {
     type HktSelf<'a> = Self;
 }
 
-impl<'a> ConceptAPI<'a> for RoleType<'a> {}
+impl<'a> ConceptAPI<'a> for RoleType {}
 
-impl<'a> PrefixedTypeVertexEncoding<'a> for RoleType<'a> {
+impl<'a> PrefixedTypeVertexEncoding<'a> for RoleType {
     const PREFIX: Prefix = Prefix::VertexRoleType;
 }
 
-impl<'a> TypeVertexEncoding<'a> for RoleType<'a> {
-    fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError> {
+impl<'a> TypeVertexEncoding<'a> for RoleType {
+    fn from_vertex(vertex: TypeVertex) -> Result<Self, EncodingError> {
         debug_assert!(Self::PREFIX == Prefix::VertexRoleType);
         if vertex.prefix() != Prefix::VertexRoleType {
             Err(UnexpectedPrefix { expected_prefix: Prefix::VertexRoleType, actual_prefix: vertex.prefix() })
@@ -74,19 +74,19 @@ impl<'a> TypeVertexEncoding<'a> for RoleType<'a> {
         }
     }
 
-    fn vertex(&self) -> TypeVertex<'_> {
-        self.vertex.as_reference()
+    fn vertex(&self) -> TypeVertex {
+        self.vertex
     }
 
-    fn into_vertex(self) -> TypeVertex<'a> {
+    fn into_vertex(self) -> TypeVertex {
         self.vertex
     }
 }
 
-impl<'a> TypeAPI<'a> for RoleType<'a> {
-    type SelfStatic = RoleType<'static>;
+impl<'a> TypeAPI<'a> for RoleType {
+    type SelfStatic = RoleType;
 
-    fn new(vertex: TypeVertex<'a>) -> RoleType<'_> {
+    fn new(vertex: TypeVertex) -> RoleType {
         Self::from_vertex(vertex).unwrap()
     }
 
@@ -127,7 +127,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<RoleType<'static>>, Box<ConceptReadError>> {
+    ) -> Result<Option<RoleType>, Box<ConceptReadError>> {
         type_manager.get_role_type_supertype(snapshot, self.clone().into_owned())
     }
 
@@ -135,7 +135,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<RoleType<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<MaybeOwns<'m, Vec<RoleType>>, Box<ConceptReadError>> {
         type_manager.get_role_type_supertypes(snapshot, self.clone().into_owned())
     }
 
@@ -143,7 +143,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<RoleType<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<MaybeOwns<'m, HashSet<RoleType>>, Box<ConceptReadError>> {
         type_manager.get_role_type_subtypes(snapshot, self.clone().into_owned())
     }
 
@@ -151,12 +151,12 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<RoleType<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<MaybeOwns<'m, Vec<RoleType>>, Box<ConceptReadError>> {
         type_manager.get_role_type_subtypes_transitive(snapshot, self.clone().into_owned())
     }
 }
 
-impl<'a> KindAPI<'a> for RoleType<'a> {
+impl<'a> KindAPI<'a> for RoleType {
     type AnnotationType = RoleTypeAnnotation;
     const KIND: Kind = Kind::Role;
 
@@ -172,7 +172,7 @@ impl<'a> KindAPI<'a> for RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<RoleType<'static>>>>, Box<ConceptReadError>>
+    ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<RoleType>>>, Box<ConceptReadError>>
     where
         'a: 'static,
     {
@@ -180,7 +180,7 @@ impl<'a> KindAPI<'a> for RoleType<'a> {
     }
 }
 
-impl<'a> RoleType<'a> {
+impl<'a> RoleType {
     pub fn set_name(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -208,18 +208,18 @@ impl<'a> RoleType<'a> {
         type_manager.set_role_ordering(snapshot, thing_manager, self.clone().into_owned(), ordering)
     }
 
-    pub fn into_owned(self) -> RoleType<'static> {
-        RoleType { vertex: self.vertex.into_owned() }
+    pub fn into_owned(self) -> RoleType {
+        self
     }
 }
 
 // --- Related API ---
-impl<'a> RoleType<'a> {
+impl<'a> RoleType {
     pub fn get_relates_root(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Relates<'static>, Box<ConceptReadError>> {
+    ) -> Result<Relates, Box<ConceptReadError>> {
         type_manager.get_role_type_relates_root(snapshot, self.clone().into_owned())
     }
 
@@ -227,7 +227,7 @@ impl<'a> RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Relates<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<MaybeOwns<'m, HashSet<Relates>>, Box<ConceptReadError>> {
         type_manager.get_role_type_relates(snapshot, self.clone().into_owned())
     }
 
@@ -235,7 +235,7 @@ impl<'a> RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<RelationType<'static>, Relates<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<MaybeOwns<'m, HashMap<RelationType, Relates>>, Box<ConceptReadError>> {
         type_manager.get_role_type_relation_types(snapshot, self.clone().into_owned())
     }
 
@@ -243,19 +243,19 @@ impl<'a> RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-        relation_type: RelationType<'static>,
-    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Relates<'static>>>>, Box<ConceptReadError>> {
+        relation_type: RelationType,
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Relates>>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_related_role_type_constraints(snapshot, relation_type, self.clone().into_owned())
     }
 }
 
 // --- Played API ---
-impl<'a> RoleType<'a> {
+impl<'a> RoleType {
     pub fn get_plays<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<MaybeOwns<'m, HashSet<Plays>>, Box<ConceptReadError>> {
         type_manager.get_role_type_plays(snapshot, self.clone().into_owned())
     }
 
@@ -263,7 +263,7 @@ impl<'a> RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<ObjectType<'static>, Plays<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<MaybeOwns<'m, HashMap<ObjectType, Plays>>, Box<ConceptReadError>> {
         type_manager.get_role_type_player_types(snapshot, self.clone().into_owned())
     }
 
@@ -271,8 +271,8 @@ impl<'a> RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-        player_type: ObjectType<'static>,
-    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays<'static>>>>, Box<ConceptReadError>> {
+        player_type: ObjectType,
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays>>>, Box<ConceptReadError>> {
         match player_type {
             ObjectType::Entity(entity_type) => type_manager.get_entity_type_played_role_type_constraints(
                 snapshot,
@@ -288,7 +288,7 @@ impl<'a> RoleType<'a> {
     }
 }
 
-impl<'a> fmt::Display for RoleType<'a> {
+impl<'a> fmt::Display for RoleType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[RoleType:{}]", self.vertex.type_id_())
     }
@@ -322,7 +322,7 @@ impl From<RoleTypeAnnotation> for Annotation {
 }
 
 // TODO: can we inline this into the macro invocation?
-fn storage_key_to_role_type(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> RoleType<'_> {
+fn storage_key_to_role_type(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> RoleType {
     RoleType::read_from(storage_key.into_bytes())
 }
 

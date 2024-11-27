@@ -127,7 +127,7 @@ impl FunctionManager {
         for (function, definition) in zip(functions.iter(), definitions.clone()) {
             let index_key = NameToFunctionDefinitionIndex::build(function.name().as_str()).into_storage_key();
             let definition_key = &function.function_id;
-            snapshot.put_val(index_key.into_owned_array(), ByteArray::copy(definition_key.bytes().bytes()));
+            snapshot.put_val(index_key.into_owned_array(), ByteArray::copy(definition_key.bytes()));
             snapshot.put_val(
                 definition_key.clone().into_storage_key().into_owned_array(),
                 FunctionDefinition::build_ref(definition.unparsed.as_str()).into_bytes().into_array(),
@@ -233,7 +233,7 @@ impl FunctionReader {
             ))
             .collect_cloned_vec(|key, value| {
                 SchemaFunction::build(
-                    DefinitionKey::new(Bytes::Reference(key.byte_ref()).into_owned()),
+                    DefinitionKey::new(Bytes::Reference(key.bytes()).into_owned()),
                     FunctionDefinition::new(Bytes::Reference(value).into_owned()),
                 )
                 .unwrap()

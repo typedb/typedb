@@ -10,7 +10,7 @@ use std::{
     fmt,
 };
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::{byte_array::ByteArray, Bytes};
 use resource::constants::encoding::{StructFieldIDUInt, AD_HOC_BYTES_INLINE};
 
 use crate::{
@@ -61,8 +61,12 @@ impl<'a, const INLINE_LENGTH: usize> StructBytes<'a, INLINE_LENGTH> {
         self.bytes.length()
     }
 
+    pub fn bytes(&'a self) -> &'a [u8] {
+        &self.bytes
+    }
+
     pub fn as_reference(&'a self) -> StructBytes<'a, INLINE_LENGTH> {
-        StructBytes { bytes: Bytes::Reference(self.bytes.as_reference()) }
+        StructBytes { bytes: Bytes::Reference(&self.bytes) }
     }
 
     pub fn into_owned(self) -> StructBytes<'static, INLINE_LENGTH> {
@@ -71,10 +75,6 @@ impl<'a, const INLINE_LENGTH: usize> StructBytes<'a, INLINE_LENGTH> {
 }
 
 impl<'a, const INLINE_LENGTH: usize> AsBytes<'a, INLINE_LENGTH> for StructBytes<'a, INLINE_LENGTH> {
-    fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_reference()
-    }
-
     fn into_bytes(self) -> Bytes<'a, INLINE_LENGTH> {
         self.bytes
     }
@@ -97,7 +97,7 @@ fn encode_struct_into<'a>(struct_value: &StructValue<'a>, buf: &mut Vec<u8>) -> 
         match value {
             Value::String(value) => {
                 append_length_as_vle(value.len(), buf)?;
-                buf.extend_from_slice(StringBytes::<0>::build_ref(value.borrow()).bytes().bytes())
+                buf.extend_from_slice(StringBytes::<0>::build_ref(value.borrow()).bytes())
             }
             Value::Struct(value) => encode_struct_into(value.borrow(), buf)?,
             | Value::Boolean(_)

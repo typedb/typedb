@@ -375,7 +375,7 @@ impl ObjectKind {
         self.kind
     }
 
-    pub fn assert(&self, object: &ObjectType<'_>) {
+    pub fn assert(&self, object: &ObjectType) {
         match self.kind {
             TypeDBTypeKind::Entity => assert_matches!(object, ObjectType::Entity(_)),
             TypeDBTypeKind::Relation => assert_matches!(object, ObjectType::Relation(_)),

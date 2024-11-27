@@ -539,7 +539,7 @@ fn define_value_type_annotations<'a>(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
-    attribute_type: AttributeType<'a>,
+    attribute_type: AttributeType,
     attribute_type_label: &Label<'a>,
     typeql_capability: &TypeQLCapability,
     typeql_type: &Type,
@@ -633,7 +633,7 @@ fn define_relates_annotations<'a>(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     relation_label: &Label<'a>,
-    relates: Relates<'a>,
+    relates: Relates,
     typeql_capability: &TypeQLCapability,
 ) -> Result<(), DefineError> {
     for typeql_annotation in &typeql_capability.annotations {
@@ -690,7 +690,7 @@ fn define_relates_specialise(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     relation_label: &Label<'_>,
-    relates: Relates<'static>,
+    relates: Relates,
     typeql_relates: &TypeQLRelates,
 ) -> Result<(), DefineError> {
     if let Some(specialised_label) = &typeql_relates.specialised {
@@ -799,7 +799,7 @@ fn define_owns_annotations<'a>(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     owner_label: &Label<'a>,
-    owns: Owns<'a>,
+    owns: Owns,
     typeql_capability: &TypeQLCapability,
 ) -> Result<(), DefineError> {
     for typeql_annotation in &typeql_capability.annotations {
@@ -876,7 +876,7 @@ fn define_plays_annotations<'a>(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     player_label: &Label<'a>,
-    plays: Plays<'a>,
+    plays: Plays,
     typeql_capability: &TypeQLCapability,
 ) -> Result<(), DefineError> {
     for typeql_annotation in &typeql_capability.annotations {

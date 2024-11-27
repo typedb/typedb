@@ -416,8 +416,8 @@ impl<'a> ValueEncodable for Value<'a> {
             Value::DateTime(_) => ByteArray::copy(&self.encode_date_time().bytes()),
             Value::DateTimeTZ(_) => ByteArray::copy(&self.encode_date_time_tz().bytes()),
             Value::Duration(_) => ByteArray::copy(&self.encode_duration().bytes()),
-            Value::String(_) => ByteArray::copy(self.encode_string::<INLINE_LENGTH>().bytes().bytes()),
-            Value::Struct(_) => ByteArray::copy(self.encode_struct::<INLINE_LENGTH>().bytes().bytes()),
+            Value::String(_) => ByteArray::copy(self.encode_string::<INLINE_LENGTH>().bytes()),
+            Value::Struct(_) => ByteArray::copy(self.encode_struct::<INLINE_LENGTH>().bytes()),
         }
     }
 }

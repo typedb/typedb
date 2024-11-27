@@ -6,7 +6,7 @@
 
 use std::{fmt, mem, ops::Range};
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::HexBytesFormatter, Bytes};
+use bytes::{byte_array::ByteArray, util::HexBytesFormatter, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_value::{StorageKey, StorageKeyReference},
@@ -74,7 +74,7 @@ impl<'a> ObjectVertex<'a> {
     }
 
     pub(crate) fn build_prefix_from_type_vertex(
-        type_vertex: TypeVertex<'_>,
+        type_vertex: TypeVertex,
     ) -> StorageKey<'static, { THING_VERTEX_LENGTH_PREFIX_TYPE }> {
         let prefix = match type_vertex.prefix() {
             Prefix::VertexEntityType => Prefix::VertexEntity,
@@ -93,7 +93,7 @@ impl<'a> ObjectVertex<'a> {
     }
 
     pub fn as_reference<'this: 'a>(&'this self) -> ObjectVertex<'this> {
-        Self::new(Bytes::Reference(self.bytes.as_reference()))
+        Self::new(Bytes::Reference(&self.bytes))
     }
 
     const fn range_object_id() -> Range<usize> {
@@ -106,10 +106,6 @@ impl<'a> ObjectVertex<'a> {
 }
 
 impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {
-    fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_reference()
-    }
-
     fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
         self.bytes
     }

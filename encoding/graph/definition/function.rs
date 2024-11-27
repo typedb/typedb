@@ -9,6 +9,7 @@ use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 
 use crate::{layout::prefix::Prefix, value::string_bytes::StringBytes, AsBytes};
 
+#[derive(Clone, Debug)]
 pub struct FunctionDefinition<'a> {
     bytes: Bytes<'a, BUFFER_VALUE_INLINE>,
 }
@@ -29,7 +30,7 @@ impl<'a> FunctionDefinition<'a> {
     }
 
     pub fn as_str(&self) -> String {
-        StringBytes::<0>::new(Bytes::Reference(self.bytes.as_reference())).as_str().to_owned()
+        StringBytes::<0>::new(Bytes::Reference(&self.bytes)).as_str().to_owned()
     }
 
     pub fn into_bytes(self) -> Bytes<'a, BUFFER_VALUE_INLINE> {

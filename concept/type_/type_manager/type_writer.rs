@@ -41,8 +41,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         struct_definition: StructDefinition,
     ) {
         let index_key = NameToStructDefinitionIndex::build(struct_definition.name.as_str());
-        snapshot
-            .put_val(index_key.into_storage_key().into_owned_array(), ByteArray::copy(definition_key.bytes().bytes()));
+        snapshot.put_val(index_key.into_storage_key().into_owned_array(), ByteArray::copy(definition_key.bytes()));
         snapshot.insert_val(
             definition_key.into_storage_key().into_owned_array(),
             struct_definition.into_bytes().unwrap().into_array(),
@@ -64,17 +63,17 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         Self::storage_put_type_vertex_property(snapshot, type_.clone(), Some(label.clone().into_owned()));
 
         let label_to_vertex_key = LabelToTypeVertexIndex::build(label);
-        let vertex_value = ByteArray::from(type_.into_vertex().bytes());
+        let vertex_value = ByteArray::from(&*type_.into_vertex().into_bytes());
         snapshot.put_val(label_to_vertex_key.into_storage_key().into_owned_array(), vertex_value);
     }
 
     pub(crate) fn storage_delete_vertex(snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
-        snapshot.delete(type_.vertex().as_storage_key().into_owned_array());
+        snapshot.delete(type_.vertex().into_storage_key().into_owned_array());
     }
 
     pub(crate) fn storage_unput_vertex(snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
-        debug_assert!(snapshot.contains(type_.vertex().as_storage_key().as_reference()).unwrap_or(false));
-        snapshot.unput(type_.vertex().as_storage_key().into_owned_array());
+        debug_assert!(snapshot.contains(type_.vertex().into_storage_key().as_reference()).unwrap_or(false));
+        snapshot.unput(type_.vertex().into_storage_key().into_owned_array());
     }
 
     pub(crate) fn storage_unput_edge<EDGE>(snapshot: &mut Snapshot, capability: EDGE)
@@ -101,7 +100,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     pub(crate) fn storage_unput_label<T: TypeAPI<'static>>(snapshot: &mut Snapshot, type_: T, label: &Label<'_>) {
         let label_to_vertex_key = LabelToTypeVertexIndex::build(label);
         Self::storage_unput_type_vertex_property(snapshot, type_.clone(), Some(label.clone().into_owned()));
-        let vertex_value = ByteArray::from(type_.into_vertex().bytes());
+        let vertex_value = ByteArray::from(&*type_.into_vertex().into_bytes());
         snapshot.unput_val(label_to_vertex_key.into_storage_key().into_owned_array(), vertex_value);
     }
 
@@ -132,13 +131,13 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
 
     pub(crate) fn storage_set_value_type(
         snapshot: &mut Snapshot,
-        attribute: AttributeType<'static>,
+        attribute: AttributeType,
         value_type: ValueType,
     ) {
         TypeWriter::storage_put_type_vertex_property(snapshot, attribute, Some(value_type));
     }
 
-    pub(crate) fn storage_unset_value_type(snapshot: &mut Snapshot, attribute: AttributeType<'static>) {
+    pub(crate) fn storage_unset_value_type(snapshot: &mut Snapshot, attribute: AttributeType) {
         TypeWriter::storage_delete_type_vertex_property::<ValueType>(snapshot, attribute);
     }
 
@@ -216,7 +215,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         }
     }
 
-    pub(crate) fn storage_set_owns_ordering(snapshot: &mut Snapshot, owns: Owns<'_>, ordering: Ordering) {
+    pub(crate) fn storage_set_owns_ordering(snapshot: &mut Snapshot, owns: Owns, ordering: Ordering) {
         Self::storage_put_type_edge_property(snapshot, owns, Some(ordering))
     }
 

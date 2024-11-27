@@ -100,7 +100,7 @@ impl CommitTimeValidation {
     fn validate_entity_type(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        type_: EntityType<'static>,
+        type_: EntityType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
         Self::validate_type_constraints(snapshot, type_manager, type_.clone(), validation_errors)?;
@@ -112,7 +112,7 @@ impl CommitTimeValidation {
     fn validate_relation_type(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        type_: RelationType<'static>,
+        type_: RelationType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
         Self::validate_type_constraints(snapshot, type_manager, type_.clone(), validation_errors)?;
@@ -123,7 +123,7 @@ impl CommitTimeValidation {
 
         Self::validate_relates(snapshot, type_manager, type_.clone(), validation_errors)?;
         // TODO: Capabilities constraints narrowing checks are currently disabled
-        // validate_capabilities_cardinalities_narrowing::<Relates<'static>>(
+        // validate_capabilities_cardinalities_narrowing::<Relates>(
         //     snapshot,
         //     type_manager,
         //     type_.clone(),
@@ -139,7 +139,7 @@ impl CommitTimeValidation {
     fn validate_attribute_type(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        type_: AttributeType<'static>,
+        type_: AttributeType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
         let invalid_value_type = produced_errors!(
@@ -171,7 +171,7 @@ impl CommitTimeValidation {
     fn validate_relation_type_role_types(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        relation_type: RelationType<'static>,
+        relation_type: RelationType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
         let relates_declared = relation_type.get_relates_root(snapshot, type_manager)?;
@@ -201,12 +201,12 @@ impl CommitTimeValidation {
     fn validate_object_type(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        type_: ObjectType<'static>,
+        type_: ObjectType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
         Self::validate_owns(snapshot, type_manager, type_.clone(), validation_errors)?;
         // TODO: Capabilities constraints narrowing checks are currently disabled
-        // validate_capabilities_cardinalities_narrowing::<Owns<'static>>(
+        // validate_capabilities_cardinalities_narrowing::<Owns>(
         //     snapshot,
         //     type_manager,
         //     type_.clone().into_owned_object_type(),
@@ -218,7 +218,7 @@ impl CommitTimeValidation {
 
         Self::validate_plays(snapshot, type_manager, type_.clone(), validation_errors)?;
         // TODO: Capabilities constraints narrowing checks are currently disabled
-        // validate_capabilities_cardinalities_narrowing::<Plays<'static>>(
+        // validate_capabilities_cardinalities_narrowing::<Plays>(
         //     snapshot,
         //     type_manager,
         //     type_.clone().into_owned_object_type(),
@@ -234,20 +234,20 @@ impl CommitTimeValidation {
     fn validate_owns(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        type_: ObjectType<'static>,
+        type_: ObjectType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
         let owns_declared = type_.get_owns_declared(snapshot, type_manager)?;
 
         for owns in owns_declared.into_iter() {
-            Self::validate_redundant_capabilities::<Owns<'static>>(
+            Self::validate_redundant_capabilities::<Owns>(
                 snapshot,
                 type_manager,
                 owns.clone(),
                 validation_errors,
             )?;
 
-            Self::validate_capabilities_constraints::<Owns<'static>>(
+            Self::validate_capabilities_constraints::<Owns>(
                 snapshot,
                 type_manager,
                 owns.clone(),
@@ -263,20 +263,20 @@ impl CommitTimeValidation {
     fn validate_plays(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        type_: ObjectType<'static>,
+        type_: ObjectType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
         let plays_declared = type_.get_plays_declared(snapshot, type_manager)?;
 
         for plays in plays_declared.into_iter() {
-            Self::validate_redundant_capabilities::<Plays<'static>>(
+            Self::validate_redundant_capabilities::<Plays>(
                 snapshot,
                 type_manager,
                 plays.clone(),
                 validation_errors,
             )?;
 
-            Self::validate_capabilities_constraints::<Plays<'static>>(
+            Self::validate_capabilities_constraints::<Plays>(
                 snapshot,
                 type_manager,
                 plays.clone(),
@@ -290,7 +290,7 @@ impl CommitTimeValidation {
     fn validate_relates(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        relation_type: RelationType<'static>,
+        relation_type: RelationType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
         let relates_declared = relation_type.get_relates_declared(snapshot, type_manager)?;
@@ -307,7 +307,7 @@ impl CommitTimeValidation {
         for relates in relates_declared.into_iter() {
             Self::validate_specialised_relates(snapshot, type_manager, relates.clone(), validation_errors)?;
 
-            Self::validate_capabilities_constraints::<Relates<'static>>(
+            Self::validate_capabilities_constraints::<Relates>(
                 snapshot,
                 type_manager,
                 relates.clone(),
@@ -321,7 +321,7 @@ impl CommitTimeValidation {
     fn validate_specialised_relates(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        relates: Relates<'static>,
+        relates: Relates,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
         if relates.is_specialising(snapshot, type_manager)? && !relates.is_abstract(snapshot, type_manager)? {
@@ -477,7 +477,7 @@ impl CommitTimeValidation {
     fn validate_relation_type_has_relates(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        relation_type: RelationType<'static>,
+        relation_type: RelationType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
         let relates = relation_type.get_relates(snapshot, type_manager)?;
@@ -494,8 +494,8 @@ impl CommitTimeValidation {
     fn validate_role_is_unique_for_relation_type_hierarchy(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        relation_type: RelationType<'static>,
-        role_type: RoleType<'static>,
+        relation_type: RelationType,
+        role_type: RoleType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
         let role_label = role_type.get_label(snapshot, type_manager)?;
@@ -523,7 +523,7 @@ impl CommitTimeValidation {
     fn validate_type_ordering(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        type_: RoleType<'static>,
+        type_: RoleType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
         if let Some(supertype) = type_.get_supertype(snapshot, type_manager)? {
@@ -539,7 +539,7 @@ impl CommitTimeValidation {
     fn validate_capabilities_ordering(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        object_type: ObjectType<'static>,
+        object_type: ObjectType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
         if let Err(err) =
@@ -553,7 +553,7 @@ impl CommitTimeValidation {
     fn validate_attribute_type_value_type(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
         if let Some(supertype) = attribute_type.get_supertype(snapshot, type_manager)? {

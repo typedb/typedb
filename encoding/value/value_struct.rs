@@ -13,7 +13,7 @@ use std::{
     sync::Arc,
 };
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::{byte_array::ByteArray, Bytes};
 use itertools::Itertools;
 use primitive::either::Either;
 use resource::constants::{
@@ -242,7 +242,7 @@ impl StructIndexEntry<'static> {
         thing_vertex_generator: &ThingVertexGenerator,
         path_to_field: &[StructFieldIDUInt],
         value: &Value<'_>,
-        attribute_type: &TypeVertex<'_>,
+        attribute_type: &TypeVertex,
     ) -> Result<StorageKey<'static, BUFFER_KEY_INLINE>, Arc<SnapshotIteratorError>> {
         let buf = Self::build_prefix_typeid_path_value_into_buf(
             snapshot,
@@ -310,18 +310,18 @@ impl<'a> StructIndexEntry<'a> {
         if Self::is_string_inlineable(string_bytes.as_reference()) {
             let mut inline_bytes: [u8; StructIndexEntry::STRING_FIELD_INLINE_LENGTH] =
                 [0; { StructIndexEntry::STRING_FIELD_INLINE_LENGTH }];
-            inline_bytes[0..string_bytes.bytes().length()].copy_from_slice(string_bytes.bytes().bytes());
+            inline_bytes[0..string_bytes.bytes().len()].copy_from_slice(string_bytes.bytes());
             buf.extend_from_slice(&inline_bytes);
             buf.push(string_bytes.length() as u8);
         } else {
-            buf.extend_from_slice(&string_bytes.bytes().bytes()[0..Self::STRING_FIELD_HASHED_PREFIX_LENGTH]);
+            buf.extend_from_slice(&string_bytes.bytes()[0..Self::STRING_FIELD_HASHED_PREFIX_LENGTH]);
             let prefix_key: Bytes<'_, BUFFER_KEY_INLINE> = Bytes::reference(buf.as_slice());
             let disambiguated_hash_bytes: [u8; StructIndexEntry::STRING_FIELD_HASHID_LENGTH] =
                 match Self::find_existing_or_next_disambiguated_hash(
                     snapshot,
                     hasher,
                     &prefix_key,
-                    string_bytes.bytes().bytes(),
+                    string_bytes.bytes(),
                 )? {
                     Either::First(hash) => hash,
                     Either::Second(hash) => hash,
@@ -342,10 +342,6 @@ impl<'a> HashedID<{ StructIndexEntry::STRING_FIELD_HASHID_LENGTH }> for StructIn
 }
 
 impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for StructIndexEntryKey<'a> {
-    fn bytes(&'a self) -> ByteReference<'a> {
-        self.key_bytes.as_reference()
-    }
-
     fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
         self.key_bytes
     }

@@ -38,15 +38,15 @@ impl ExecutableFetch {
 #[derive(Debug)]
 pub enum FetchSomeInstruction {
     SingleVar(VariablePosition),
-    SingleAttribute(VariablePosition, AttributeType<'static>),
+    SingleAttribute(VariablePosition, AttributeType),
     SingleFunction(ExecutableFunction, HashMap<Variable, VariablePosition>),
 
     Object(Box<FetchObjectInstruction>),
 
     ListFunction(ExecutableFunction, HashMap<Variable, VariablePosition>),
     ListSubFetch(ExecutableFetchListSubFetch),
-    ListAttributesAsList(VariablePosition, AttributeType<'static>),
-    ListAttributesFromList(VariablePosition, AttributeType<'static>),
+    ListAttributesAsList(VariablePosition, AttributeType),
+    ListAttributesFromList(VariablePosition, AttributeType),
 }
 
 #[derive(Debug)]

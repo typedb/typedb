@@ -6,7 +6,7 @@
 
 use std::{collections::HashMap, fmt};
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::Bytes;
 use encoding::{
     graph::{
         thing::{
@@ -37,7 +37,7 @@ use crate::{
         HKInstance, ThingAPI,
     },
     type_::{relation_type::RelationType, role_type::RoleType, ObjectTypeAPI, Ordering, OwnerAPI},
-    ByteReference, ConceptAPI, ConceptStatus,
+    ConceptAPI, ConceptStatus,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -46,7 +46,7 @@ pub struct Relation<'a> {
 }
 
 impl<'a> Relation<'a> {
-    pub fn type_(&self) -> RelationType<'static> {
+    pub fn type_(&self) -> RelationType {
         RelationType::build_from_type_id(self.vertex.type_id_())
     }
 
@@ -72,7 +72,7 @@ impl<'a> Relation<'a> {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         player: &impl ObjectAPI<'o>,
-        role: RoleType<'static>,
+        role: RoleType,
     ) -> Result<bool, Box<ConceptReadError>> {
         thing_manager.has_role_player(snapshot, self.as_reference(), player, role)
     }
@@ -89,7 +89,7 @@ impl<'a> Relation<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        role_type: RoleType<'static>,
+        role_type: RoleType,
     ) -> impl for<'x> LendingIterator<Item<'x> = Result<(RolePlayer<'x>, u64), Box<ConceptReadError>>> {
         thing_manager.get_role_players_role(snapshot, self.as_reference(), role_type)
     }
@@ -98,7 +98,7 @@ impl<'a> Relation<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        role_type: RoleType<'static>,
+        role_type: RoleType,
     ) -> Result<Vec<Object<'_>>, Box<ConceptReadError>> {
         thing_manager.get_role_players_ordered(snapshot, self.as_reference(), role_type)
     }
@@ -107,7 +107,7 @@ impl<'a> Relation<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        role_type: RoleType<'static>,
+        role_type: RoleType,
     ) -> impl for<'x> LendingIterator<Item<'x> = Result<Object<'x>, Box<ConceptReadError>>> {
         self.get_players(snapshot, thing_manager).filter_map::<Result<Object<'_>, _>, _>(move |res| match res {
             Ok((roleplayer, _count)) => (roleplayer.role_type() == role_type).then_some(Ok(roleplayer.player)),
@@ -119,7 +119,7 @@ impl<'a> Relation<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<HashMap<RoleType<'static>, u64>, Box<ConceptReadError>> {
+    ) -> Result<HashMap<RoleType, u64>, Box<ConceptReadError>> {
         let mut counts = HashMap::new();
         let mut rp_iter = self.get_players(snapshot, thing_manager);
         while let Some((role_player, count)) = rp_iter.next().transpose()? {
@@ -139,7 +139,7 @@ impl<'a> Relation<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        role_type: RoleType<'static>,
+        role_type: RoleType,
         player: Object<'_>,
     ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_relation_exists_to_add_player(snapshot, thing_manager, self)
@@ -180,7 +180,7 @@ impl<'a> Relation<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        role_type: RoleType<'static>,
+        role_type: RoleType,
         new_players: Vec<Object<'_>>,
     ) -> Result<(), Box<ConceptWriteError>> {
         match role_type.get_ordering(snapshot, thing_manager.type_manager())? {
@@ -262,7 +262,7 @@ impl<'a> Relation<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        role_type: RoleType<'static>,
+        role_type: RoleType,
         player: Object<'_>,
     ) -> Result<(), Box<ConceptWriteError>> {
         self.remove_player_many(snapshot, thing_manager, role_type, player, 1)
@@ -272,7 +272,7 @@ impl<'a> Relation<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        role_type: RoleType<'static>,
+        role_type: RoleType,
         player: Object<'_>,
         delete_count: u64,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -315,7 +315,7 @@ impl<'a> Relation<'a> {
     }
 
     pub fn next_possible(&self) -> Relation<'static> {
-        let mut bytes = ByteArray::from(self.vertex.bytes());
+        let mut bytes = self.vertex.clone().into_bytes().into_array();
         bytes.increment().unwrap();
         Relation::new(ObjectVertex::new(Bytes::Array(bytes)))
     }
@@ -333,7 +333,7 @@ impl<'a> ConceptAPI<'a> for Relation<'a> {}
 
 impl<'a> ThingAPI<'a> for Relation<'a> {
     type Vertex<'b> = ObjectVertex<'b>;
-    type TypeAPI<'b> = RelationType<'b>;
+    type TypeAPI<'b> = RelationType;
     type Owned = Relation<'static>;
     const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix) = (Prefix::VertexRelation, Prefix::VertexRelation);
 
@@ -358,8 +358,8 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         Relation::new(self.vertex.into_owned())
     }
 
-    fn iid(&self) -> ByteReference<'_> {
-        self.vertex.bytes()
+    fn iid(&self) -> Bytes<'_, BUFFER_KEY_INLINE> {
+        self.vertex.clone().into_bytes()
     }
 
     fn set_required(
@@ -374,7 +374,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
     }
 
     fn get_status(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> ConceptStatus {
-        thing_manager.get_status(snapshot, self.vertex().as_storage_key())
+        thing_manager.get_status(snapshot, self.vertex().into_storage_key())
     }
 
     fn delete(
@@ -454,7 +454,7 @@ impl Hkt for Relation<'static> {
 #[derive(Debug, Eq, PartialEq)]
 pub struct RolePlayer<'a> {
     player: Object<'a>,
-    role_type: RoleType<'static>,
+    role_type: RoleType,
 }
 
 impl<'a> RolePlayer<'a> {
@@ -466,7 +466,7 @@ impl<'a> RolePlayer<'a> {
         self.player
     }
 
-    pub fn role_type(&self) -> RoleType<'static> {
+    pub fn role_type(&self) -> RoleType {
         self.role_type.clone()
     }
 
@@ -482,7 +482,7 @@ fn storage_key_links_edge_to_role_player<'a>(
     let edge = ThingEdgeLinks::new(storage_key.into_bytes());
     let role_type = RoleType::build_from_type_id(edge.role_id());
     let player = Object::new(edge.into_player());
-    (RolePlayer { player, role_type }, decode_value_u64(value.as_reference()))
+    (RolePlayer { player, role_type }, decode_value_u64(&value))
 }
 
 impl Hkt for RolePlayer<'static> {
@@ -498,15 +498,15 @@ edge_iterator!(
 fn storage_key_links_edge_to_relation_role<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
-) -> (Relation<'a>, RoleType<'static>, u64) {
+) -> (Relation<'a>, RoleType, u64) {
     let edge = ThingEdgeLinks::new(storage_key.into_bytes());
     let role_type = RoleType::build_from_type_id(edge.role_id());
-    (Relation::new(edge.into_relation()), role_type, decode_value_u64(value.as_reference()))
+    (Relation::new(edge.into_relation()), role_type, decode_value_u64(&value))
 }
 
 edge_iterator!(
     RelationRoleIterator;
-    'a -> (Relation<'a>, RoleType<'static>, u64);
+    'a -> (Relation<'a>, RoleType, u64);
     storage_key_links_edge_to_relation_role
 );
 
@@ -519,7 +519,7 @@ fn storage_key_links_edge_to_relation_role_player<'a>(
     let role_type = RoleType::build_from_type_id(edge.role_id());
     let player = Object::new(edge.into_player());
     let role_player = RolePlayer { player, role_type };
-    (relation, role_player, decode_value_u64(value.as_reference()))
+    (relation, role_player, decode_value_u64(&value))
 }
 
 edge_iterator!(
@@ -533,22 +533,22 @@ fn storage_key_to_indexed_players<'a>(
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
 ) -> (RolePlayer<'a>, RolePlayer<'a>, Relation<'a>, u64) {
     let from_role_player = RolePlayer {
-        player: Object::new(ThingEdgeRolePlayerIndex::read_from(storage_key.as_reference().byte_ref())),
+        player: Object::new(ThingEdgeRolePlayerIndex::read_from(storage_key.as_reference().bytes())),
         role_type: RoleType::build_from_type_id(ThingEdgeRolePlayerIndex::read_from_role_id(
-            storage_key.as_reference().byte_ref(),
+            storage_key.as_reference().bytes(),
         )),
     };
     let to_role_player = RolePlayer {
-        player: Object::new(ThingEdgeRolePlayerIndex::read_to(storage_key.as_reference().byte_ref())),
+        player: Object::new(ThingEdgeRolePlayerIndex::read_to(storage_key.as_reference().bytes())),
         role_type: RoleType::build_from_type_id(ThingEdgeRolePlayerIndex::read_to_role_id(
-            storage_key.as_reference().byte_ref(),
+            storage_key.as_reference().bytes(),
         )),
     };
     (
         from_role_player,
         to_role_player,
-        Relation::new(ThingEdgeRolePlayerIndex::read_relation(storage_key.as_reference().byte_ref())),
-        decode_value_u64(value.as_reference()),
+        Relation::new(ThingEdgeRolePlayerIndex::read_relation(storage_key.as_reference().bytes())),
+        decode_value_u64(&value),
     )
 }
 

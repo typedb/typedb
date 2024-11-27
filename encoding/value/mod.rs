@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
+use bytes::byte_array::ByteArray;
 
 use self::{
     boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
@@ -32,8 +32,8 @@ pub mod value;
 pub mod value_struct;
 pub mod value_type;
 
-pub fn decode_value_u64(bytes: ByteReference<'_>) -> u64 {
-    primitive_encoding::decode_u64(bytes.bytes().try_into().unwrap())
+pub fn decode_value_u64(bytes: &[u8]) -> u64 {
+    primitive_encoding::decode_u64(bytes.try_into().unwrap())
 }
 
 pub trait ValueEncodable: Clone {

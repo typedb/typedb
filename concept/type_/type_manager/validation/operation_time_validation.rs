@@ -85,9 +85,9 @@ macro_rules! type_or_subtype_without_declared_capability_instances_existence_val
             snapshot: &impl ReadableSnapshot,
             type_manager: &TypeManager,
             thing_manager: &ThingManager,
-            object_type: $object_type<'static>,
-            interface_type: $interface_type<'static>,
-        ) -> Result<Option<$object_type<'static>>, Box<ConceptReadError>> {
+            object_type: $object_type,
+            interface_type: $interface_type,
+        ) -> Result<Option<$object_type>, Box<ConceptReadError>> {
             let mut type_that_has_instances = None;
 
             let mut object_types = VecDeque::new();
@@ -106,7 +106,7 @@ macro_rules! type_or_subtype_without_declared_capability_instances_existence_val
 
                 let subtypes = current_object_type.get_subtypes(snapshot, type_manager)?;
                 for subtype in subtypes.into_iter() {
-                    let subtype_capabilities = TypeReader::get_capabilities_declared::<$capability_type<'static>>(
+                    let subtype_capabilities = TypeReader::get_capabilities_declared::<$capability_type>(
                         snapshot,
                         subtype.clone().into_owned(),
                     )?;
@@ -134,15 +134,15 @@ macro_rules! cannot_unset_capability_with_existing_instances_validation {
             snapshot: &impl ReadableSnapshot,
             type_manager: &TypeManager,
             thing_manager: &ThingManager,
-            object_type: $object_type<'static>,
-            interface_type: $interface_type<'static>,
+            object_type: $object_type,
+            interface_type: $interface_type,
         ) -> Result<(), Box<SchemaValidationError>> {
             if let Some(supertype) = object_type
                 .get_supertype(snapshot, type_manager)
                 .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
             {
                 let supertype_capabilities =
-                    TypeReader::get_capabilities::<$capability_type<'static>>(snapshot, supertype, false)
+                    TypeReader::get_capabilities::<$capability_type>(snapshot, supertype, false)
                         .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
                 if supertype_capabilities.iter().any(|capability| &capability.interface() == &interface_type) {
                     return Ok(());
@@ -183,8 +183,8 @@ macro_rules! cannot_change_supertype_as_capability_with_existing_instances_is_lo
             snapshot: &impl ReadableSnapshot,
             type_manager: &TypeManager,
             thing_manager: &ThingManager,
-            subtype: $object_type<'static>,
-            supertype: Option<$object_type<'static>>,
+            subtype: $object_type,
+            supertype: Option<$object_type>,
         ) -> Result<(), Box<SchemaValidationError>> {
             let lost_capabilities = $get_lost_capabilities_func(snapshot, subtype.clone(), supertype.clone())?;
 
@@ -222,8 +222,8 @@ macro_rules! new_acquired_capability_instances_validation {
             snapshot: &impl ReadableSnapshot,
             type_manager: &TypeManager,
             thing_manager: &ThingManager,
-            capability: $capability_type<'static>,
-            default_constraints: HashSet<CapabilityConstraint<$capability_type<'static>>>,
+            capability: $capability_type,
+            default_constraints: HashSet<CapabilityConstraint<$capability_type>>,
         ) -> Result<(), Box<SchemaValidationError>> {
             let affected_object_types = TypeAPI::chain_types(
                 capability.object(),
@@ -270,7 +270,7 @@ macro_rules! new_annotation_constraints_compatible_with_capability_instances_val
             snapshot: &impl ReadableSnapshot,
             type_manager: &TypeManager,
             thing_manager: &ThingManager,
-            capability: $capability_type<'static>,
+            capability: $capability_type,
             annotation: Annotation,
         ) -> Result<(), Box<SchemaValidationError>> {
             let affected_object_types = TypeAPI::chain_types(
@@ -322,8 +322,8 @@ macro_rules! updated_constraints_compatible_with_capability_instances_on_object_
             snapshot: &impl ReadableSnapshot,
             type_manager: &TypeManager,
             thing_manager: &ThingManager,
-            type_: $object_type<'static>,
-            new_supertype: $object_type<'static>,
+            type_: $object_type,
+            new_supertype: $object_type,
         ) -> Result<(), Box<SchemaValidationError>> {
             let affected_object_types = TypeAPI::chain_types(
                 type_.clone(),
@@ -335,13 +335,13 @@ macro_rules! updated_constraints_compatible_with_capability_instances_on_object_
             )
             .collect();
             let type_capabilities_declared =
-                TypeReader::get_capabilities_declared::<$capability_type<'static>>(snapshot, type_.clone())
+                TypeReader::get_capabilities_declared::<$capability_type>(snapshot, type_.clone())
                     .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
             let type_capabilities =
-                TypeReader::get_capabilities::<$capability_type<'static>>(snapshot, type_.clone(), false)
+                TypeReader::get_capabilities::<$capability_type>(snapshot, type_.clone(), false)
                     .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
             let new_capabilities =
-                TypeReader::get_capabilities::<$capability_type<'static>>(snapshot, new_supertype.clone(), false)
+                TypeReader::get_capabilities::<$capability_type>(snapshot, new_supertype.clone(), false)
                     .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
 
             for new_capability in new_capabilities.into_iter() {
@@ -366,7 +366,7 @@ macro_rules! updated_constraints_compatible_with_capability_instances_on_object_
                 // If the new_capability is not specialised by a declared capability of type_,
                 // ConstraintScope::SingleInstanceOfType constraints should affect type_'s capability
                 // As the actual capabilities for this interface
-                let single_instance_of_type_constraints: HashSet<CapabilityConstraint<$capability_type<'static>>> =
+                let single_instance_of_type_constraints: HashSet<CapabilityConstraint<$capability_type>> =
                     filter_by_scope!(constraints.iter().cloned(), ConstraintScope::SingleInstanceOfType).collect();
                 for constraint in single_instance_of_type_constraints {
                     let affected_interface_type = constraint.source().interface();
@@ -412,7 +412,7 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
             snapshot: &impl ReadableSnapshot,
             type_manager: &TypeManager,
             thing_manager: &ThingManager,
-            interface_type: <$capability_type<'static> as Capability<'static>>::InterfaceType,
+            interface_type: <$capability_type as Capability<'static>>::InterfaceType,
         ) -> Result<(), Box<SchemaValidationError>> {
             let unset_supertype = if let Some(type_) = interface_type
                 .get_supertype(snapshot, type_manager)
@@ -424,8 +424,8 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
             };
 
             let mut objects_with_interface_supertypes_and_constraints: HashMap<
-                <$capability_type<'static> as Capability<'static>>::ObjectType,
-                HashSet<CapabilityConstraint<$capability_type<'static>>>,
+                <$capability_type as Capability<'static>>::ObjectType,
+                HashSet<CapabilityConstraint<$capability_type>>,
             > = HashMap::new();
             collect_object_types_with_interface_type_and_supertypes_constraints(
                 snapshot,
@@ -436,9 +436,9 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
 
             let mut objects_with_interface_subtypes_and_constraints: HashSet<
-                <$capability_type<'static> as Capability<'static>>::ObjectType,
+                <$capability_type as Capability<'static>>::ObjectType,
             > = HashSet::new();
-            collect_object_types_with_interface_type_and_subtypes::<$capability_type<'static>>(
+            collect_object_types_with_interface_type_and_subtypes::<$capability_type>(
                 snapshot,
                 type_manager,
                 interface_type.clone(),
@@ -498,8 +498,8 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
             snapshot: &impl ReadableSnapshot,
             type_manager: &TypeManager,
             thing_manager: &ThingManager,
-            interface_type: <$capability_type<'static> as Capability<'static>>::InterfaceType,
-            interface_supertype: <$capability_type<'static> as Capability<'static>>::InterfaceType,
+            interface_type: <$capability_type as Capability<'static>>::InterfaceType,
+            interface_supertype: <$capability_type as Capability<'static>>::InterfaceType,
         ) -> Result<(), Box<SchemaValidationError>> {
             if let Some(old_supertype) = interface_type
                 .get_supertype(snapshot, type_manager)
@@ -513,8 +513,8 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
             $unset_validation_func(snapshot, type_manager, thing_manager, interface_type.clone())?;
 
             let mut objects_with_interface_supertypes_and_constraints: HashMap<
-                <$capability_type<'static> as Capability<'static>>::ObjectType,
-                HashSet<CapabilityConstraint<$capability_type<'static>>>,
+                <$capability_type as Capability<'static>>::ObjectType,
+                HashSet<CapabilityConstraint<$capability_type>>,
             > = HashMap::new();
             collect_object_types_with_interface_type_and_supertypes_constraints(
                 snapshot,
@@ -529,9 +529,9 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
                 .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
 
             let mut objects_with_interface_subtypes_and_constraints: HashSet<
-                <$capability_type<'static> as Capability<'static>>::ObjectType,
+                <$capability_type as Capability<'static>>::ObjectType,
             > = HashSet::new();
-            collect_object_types_with_interface_type_and_subtypes::<$capability_type<'static>>(
+            collect_object_types_with_interface_type_and_subtypes::<$capability_type>(
                 snapshot,
                 type_manager,
                 interface_type.clone(),
@@ -589,7 +589,7 @@ macro_rules! new_annotation_constraints_compatible_with_type_and_sub_instances_v
             snapshot: &impl ReadableSnapshot,
             type_manager: &TypeManager,
             thing_manager: &ThingManager,
-            type_: $type_<'static>,
+            type_: $type_,
             annotation: Annotation,
         ) -> Result<(), Box<SchemaValidationError>> {
             let constraints = get_checked_constraints(annotation.to_type_constraints(type_.clone()).into_iter());
@@ -620,8 +620,8 @@ macro_rules! updated_constraints_compatible_with_type_and_sub_instances_on_super
             snapshot: &impl ReadableSnapshot,
             type_manager: &TypeManager,
             thing_manager: &ThingManager,
-            type_: $type_<'static>,
-            new_supertype: $type_<'static>,
+            type_: $type_,
+            new_supertype: $type_,
         ) -> Result<(), Box<SchemaValidationError>> {
             let constraints = get_checked_constraints(
                 new_supertype
@@ -746,7 +746,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_no_attribute_subtypes_to_unset_abstractness(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
     ) -> Result<(), Box<SchemaValidationError>> {
         let no_subtypes = attribute_type
             .get_subtypes(snapshot, type_manager)
@@ -765,7 +765,7 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         new_label: &Label<'static>,
     ) -> Result<(), Box<SchemaValidationError>> {
-        if TypeReader::get_labelled_type::<AttributeType<'static>>(snapshot, new_label)
+        if TypeReader::get_labelled_type::<AttributeType>(snapshot, new_label)
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
             .is_some()
         {
@@ -773,7 +773,7 @@ impl OperationTimeValidation {
                 label: new_label.clone(),
                 existing_kind: Kind::Attribute,
             }))
-        } else if TypeReader::get_labelled_type::<RelationType<'static>>(snapshot, new_label)
+        } else if TypeReader::get_labelled_type::<RelationType>(snapshot, new_label)
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
             .is_some()
         {
@@ -781,7 +781,7 @@ impl OperationTimeValidation {
                 label: new_label.clone(),
                 existing_kind: Kind::Relation,
             }))
-        } else if TypeReader::get_labelled_type::<EntityType<'static>>(snapshot, new_label)
+        } else if TypeReader::get_labelled_type::<EntityType>(snapshot, new_label)
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
             .is_some()
         {
@@ -797,7 +797,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_new_role_name_uniqueness(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        relation_type: RelationType<'static>,
+        relation_type: RelationType,
         label: &Label<'static>,
     ) -> Result<(), Box<SchemaValidationError>> {
         let existing_relation_supertypes = relation_type
@@ -821,10 +821,10 @@ impl OperationTimeValidation {
     pub(crate) fn validate_role_names_compatible_with_new_relation_supertype_transitive(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        relation_subtype: RelationType<'static>,
-        relation_supertype: RelationType<'static>,
+        relation_subtype: RelationType,
+        relation_supertype: RelationType,
     ) -> Result<(), Box<SchemaValidationError>> {
-        for_type_and_subtypes_transitive!(snapshot, type_manager, relation_subtype, |type_: RelationType<'static>| {
+        for_type_and_subtypes_transitive!(snapshot, type_manager, relation_subtype, |type_: RelationType| {
             Self::validate_role_names_compatible_with_new_relation_supertype(
                 snapshot,
                 type_manager,
@@ -838,8 +838,8 @@ impl OperationTimeValidation {
     fn validate_role_names_compatible_with_new_relation_supertype(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        relation_subtype: RelationType<'static>,
-        relation_supertype: RelationType<'static>,
+        relation_subtype: RelationType,
+        relation_supertype: RelationType,
     ) -> Result<(), Box<SchemaValidationError>> {
         let relation_supertype_supertypes = relation_supertype
             .get_supertypes_transitive(snapshot, type_manager)
@@ -911,8 +911,8 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        subtype: AttributeType<'static>,
-        supertype: Option<AttributeType<'static>>,
+        subtype: AttributeType,
+        supertype: Option<AttributeType>,
     ) -> Result<(), Box<SchemaValidationError>> {
         let subtype_declared_value_type = subtype
             .get_value_type_declared(snapshot, type_manager)
@@ -961,7 +961,7 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
     ) -> Result<(), Box<SchemaValidationError>> {
         let value_type_with_source = attribute_type
             .get_value_type(snapshot, type_manager)
@@ -1010,7 +1010,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_value_type_compatible_with_abstractness(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         value_type: Option<ValueType>,
         abstract_set: Option<bool>,
     ) -> Result<(), Box<SchemaValidationError>> {
@@ -1037,7 +1037,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_annotation_regex_compatible_value_type(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         value_type: Option<ValueType>,
     ) -> Result<(), Box<SchemaValidationError>> {
         if AnnotationRegex::value_type_valid(value_type.clone()) {
@@ -1053,7 +1053,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_annotation_range_compatible_value_type(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         value_type: Option<ValueType>,
     ) -> Result<(), Box<SchemaValidationError>> {
         if AnnotationRange::value_type_valid(value_type.clone()) {
@@ -1069,7 +1069,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_annotation_values_compatible_value_type(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         value_type: Option<ValueType>,
     ) -> Result<(), Box<SchemaValidationError>> {
         if AnnotationValues::value_type_valid(value_type.clone()) {
@@ -1085,7 +1085,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_type_regex_narrows_supertype_constraints(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         regex: AnnotationRegex,
     ) -> Result<(), Box<SchemaValidationError>> {
         let constraint_description = ConstraintDescription::Regex(regex);
@@ -1124,7 +1124,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_type_range_narrows_supertype_constraints(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         range: AnnotationRange,
     ) -> Result<(), Box<SchemaValidationError>> {
         let constraint_description = ConstraintDescription::Range(range);
@@ -1163,7 +1163,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_type_values_narrows_supertype_constraints(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         values: AnnotationValues,
     ) -> Result<(), Box<SchemaValidationError>> {
         let constraint_description = ConstraintDescription::Values(values);
@@ -1202,7 +1202,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_subtypes_narrow_regex(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         regex: AnnotationRegex,
     ) -> Result<(), Box<SchemaValidationError>> {
         let constraint_description = ConstraintDescription::Regex(regex);
@@ -1240,7 +1240,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_subtypes_narrow_range(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         range: AnnotationRange,
     ) -> Result<(), Box<SchemaValidationError>> {
         let constraint_description = ConstraintDescription::Range(range);
@@ -1278,7 +1278,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_subtypes_narrow_values(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         values: AnnotationValues,
     ) -> Result<(), Box<SchemaValidationError>> {
         let constraint_description = ConstraintDescription::Values(values);
@@ -1316,11 +1316,11 @@ impl OperationTimeValidation {
     pub(crate) fn validate_constraints_on_capabilities_narrow_regex_on_interface_type_transitive(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         type_regex: AnnotationRegex,
     ) -> Result<(), Box<SchemaValidationError>> {
         let constraint_description = ConstraintDescription::Regex(type_regex);
-        for_type_and_subtypes_transitive!(snapshot, type_manager, attribute_type, |type_: AttributeType<'static>| {
+        for_type_and_subtypes_transitive!(snapshot, type_manager, attribute_type, |type_: AttributeType| {
             Self::validate_constraints_on_capabilities_narrow_regex_on_interface_type(
                 snapshot,
                 type_manager,
@@ -1334,7 +1334,7 @@ impl OperationTimeValidation {
     fn validate_constraints_on_capabilities_narrow_regex_on_interface_type(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         type_constraint_description: &ConstraintDescription,
     ) -> Result<(), Box<SchemaValidationError>> {
         let all_owns = attribute_type
@@ -1365,11 +1365,11 @@ impl OperationTimeValidation {
     pub(crate) fn validate_constraints_on_capabilities_narrow_range_on_interface_type_transitive(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         type_range: AnnotationRange,
     ) -> Result<(), Box<SchemaValidationError>> {
         let constraint_description = ConstraintDescription::Range(type_range);
-        for_type_and_subtypes_transitive!(snapshot, type_manager, attribute_type, |type_: AttributeType<'static>| {
+        for_type_and_subtypes_transitive!(snapshot, type_manager, attribute_type, |type_: AttributeType| {
             Self::validate_constraints_on_capabilities_narrow_range_on_interface_type(
                 snapshot,
                 type_manager,
@@ -1383,7 +1383,7 @@ impl OperationTimeValidation {
     fn validate_constraints_on_capabilities_narrow_range_on_interface_type(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         type_constraint_description: &ConstraintDescription,
     ) -> Result<(), Box<SchemaValidationError>> {
         let all_owns = attribute_type
@@ -1414,11 +1414,11 @@ impl OperationTimeValidation {
     pub(crate) fn validate_constraints_on_capabilities_narrow_values_on_interface_type_transitive(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         type_values: AnnotationValues,
     ) -> Result<(), Box<SchemaValidationError>> {
         let constraint_description = ConstraintDescription::Values(type_values);
-        for_type_and_subtypes_transitive!(snapshot, type_manager, attribute_type, |type_: AttributeType<'static>| {
+        for_type_and_subtypes_transitive!(snapshot, type_manager, attribute_type, |type_: AttributeType| {
             Self::validate_constraints_on_capabilities_narrow_values_on_interface_type(
                 snapshot,
                 type_manager,
@@ -1432,7 +1432,7 @@ impl OperationTimeValidation {
     fn validate_constraints_on_capabilities_narrow_values_on_interface_type(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         type_constraint_description: &ConstraintDescription,
     ) -> Result<(), Box<SchemaValidationError>> {
         let all_owns = attribute_type
@@ -1463,7 +1463,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_capability_regex_constraint_narrows_interface_type_constraints(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        owns: Owns<'static>,
+        owns: Owns,
         capability_regex: AnnotationRegex,
     ) -> Result<(), Box<SchemaValidationError>> {
         let capability_constraint_description = ConstraintDescription::Regex(capability_regex);
@@ -1496,7 +1496,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_capability_range_constraint_narrows_interface_type_constraints(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        owns: Owns<'static>,
+        owns: Owns,
         capability_range: AnnotationRange,
     ) -> Result<(), Box<SchemaValidationError>> {
         let capability_constraint_description = ConstraintDescription::Range(capability_range);
@@ -1529,7 +1529,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_capability_values_constraint_narrows_interface_type_constraints(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        owns: Owns<'static>,
+        owns: Owns,
         capability_values: AnnotationValues,
     ) -> Result<(), Box<SchemaValidationError>> {
         let capability_constraint_description = ConstraintDescription::Values(capability_values);
@@ -1733,7 +1733,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_relates_is_not_specialising_to_unset_abstract_annotation(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        relates: Relates<'static>,
+        relates: Relates,
     ) -> Result<(), Box<SchemaValidationError>> {
         if relates
             .is_specialising(snapshot, type_manager)
@@ -1750,8 +1750,8 @@ impl OperationTimeValidation {
     pub(crate) fn validate_relates_specialises_compatible_with_new_supertype_transitive(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        relation_subtype: RelationType<'static>,
-        relation_supertype: Option<RelationType<'static>>,
+        relation_subtype: RelationType,
+        relation_supertype: Option<RelationType>,
     ) -> Result<(), Box<SchemaValidationError>> {
         let supertype_relates = match &relation_supertype {
             None => MaybeOwns::Owned(HashSet::new()),
@@ -1862,7 +1862,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_set_owns_does_not_conflict_with_same_existing_owns_ordering(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        existing_owns: Owns<'static>,
+        existing_owns: Owns,
         new_owns_ordering: Ordering,
     ) -> Result<(), Box<SchemaValidationError>> {
         let existing_ordering = existing_owns
@@ -1882,7 +1882,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_updated_owns_does_not_conflict_with_any_sibling_owns_ordering(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        owns: Owns<'static>,
+        owns: Owns,
         owns_ordering: Ordering,
     ) -> Result<(), Box<SchemaValidationError>> {
         let updated_owns = HashMap::from([(owns.clone(), owns_ordering)]);
@@ -1902,8 +1902,8 @@ impl OperationTimeValidation {
     pub(crate) fn validate_new_attribute_type_supertype_owns_ordering(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
-        new_supertype: AttributeType<'static>,
+        attribute_type: AttributeType,
+        new_supertype: AttributeType,
     ) -> Result<(), Box<SchemaValidationError>> {
         let attribute_type_owners = attribute_type
             .get_owner_types(snapshot, type_manager)
@@ -1948,7 +1948,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_relates_distinct_constraint_ordering(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        relates: Relates<'static>,
+        relates: Relates,
         ordering: Option<Ordering>,
         distinct_set: Option<bool>,
     ) -> Result<(), Box<SchemaValidationError>> {
@@ -1977,7 +1977,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_owns_distinct_constraint_ordering(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        owns: Owns<'static>,
+        owns: Owns,
         ordering: Option<Ordering>,
         distinct_set: Option<bool>,
     ) -> Result<(), Box<SchemaValidationError>> {
@@ -2005,8 +2005,8 @@ impl OperationTimeValidation {
     pub(crate) fn validate_role_supertype_ordering_match(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        subtype_role: RoleType<'static>,
-        supertype_role: RoleType<'static>,
+        subtype_role: RoleType,
+        supertype_role: RoleType,
         set_subtype_role_ordering: Option<Ordering>,
         set_supertype_role_ordering: Option<Ordering>,
     ) -> Result<(), Box<SchemaValidationError>> {
@@ -2072,8 +2072,8 @@ impl OperationTimeValidation {
     pub(crate) fn validate_relates_is_inherited(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        relation_type: RelationType<'static>,
-        role_type: RoleType<'static>,
+        relation_type: RelationType,
+        role_type: RoleType,
     ) -> Result<(), Box<SchemaValidationError>> {
         let super_relation = relation_type
             .get_supertype(snapshot, type_manager)
@@ -2100,8 +2100,8 @@ impl OperationTimeValidation {
     pub(crate) fn validate_specialised_relates_is_not_specialising(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        relation_type: RelationType<'static>,
-        specialised_relates: Relates<'static>,
+        relation_type: RelationType,
+        specialised_relates: Relates,
     ) -> Result<(), Box<SchemaValidationError>> {
         if !specialised_relates
             .is_specialising(snapshot, type_manager)
@@ -2119,7 +2119,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_relates_is_not_specialising_to_manage_annotations(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        relates: Relates<'static>,
+        relates: Relates,
     ) -> Result<(), Box<SchemaValidationError>> {
         if !relates
             .is_specialising(snapshot, type_manager)
@@ -2136,7 +2136,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_value_type_compatible_with_inherited_value_type(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         value_type: ValueType,
     ) -> Result<(), Box<SchemaValidationError>> {
         let inherited_value_type_with_source = attribute_type
@@ -2162,7 +2162,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_subtypes_value_types_compatible_with_new_value_type(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         value_type: ValueType,
     ) -> Result<(), Box<SchemaValidationError>> {
         let subtypes = attribute_type
@@ -2190,17 +2190,17 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         value_type: Option<ValueType>,
     ) -> Result<(), Box<SchemaValidationError>> {
-        let mut affected_sources: HashSet<AttributeType<'static>> = attribute_type
+        let mut affected_sources: HashSet<AttributeType> = attribute_type
             .get_supertypes_transitive(snapshot, type_manager)
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
             .into_iter()
             .cloned()
             .collect();
         affected_sources.insert(attribute_type.clone());
-        for_type_and_subtypes_transitive!(snapshot, type_manager, attribute_type, |type_: AttributeType<'static>| {
+        for_type_and_subtypes_transitive!(snapshot, type_manager, attribute_type, |type_: AttributeType| {
             let type_value_type_with_source = type_
                 .get_value_type(snapshot, type_manager)
                 .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
@@ -2225,7 +2225,7 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         value_type: Option<ValueType>,
     ) -> Result<(), Box<SchemaValidationError>> {
         match value_type {
@@ -2260,8 +2260,8 @@ impl OperationTimeValidation {
     //     snapshot: &impl ReadableSnapshot,
     //     type_manager: &TypeManager,
     //     thing_manager: &ThingManager,
-    //     relation_type: RelationType<'static>,
-    //     new_supertype: RelationType<'static>,
+    //     relation_type: RelationType,
+    //     new_supertype: RelationType,
     // ) -> Result<(), Box<SchemaValidationError>> {
     //     let old_annotation_with_source = type_get_annotation_with_source_by_category(
     //         snapshot,
@@ -2286,7 +2286,7 @@ impl OperationTimeValidation {
     //                         snapshot,
     //                         type_manager,
     //                         relation_type,
-    //                         |type_: RelationType<'static>| {
+    //                         |type_: RelationType| {
     //                             let type_annotation = type_get_annotation_with_source_by_category(
     //                                 snapshot,
     //                                 type_manager,
@@ -2321,8 +2321,8 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        attribute_type: AttributeType<'static>,
-        new_supertype: Option<AttributeType<'static>>,
+        attribute_type: AttributeType,
+        new_supertype: Option<AttributeType>,
     ) -> Result<(), Box<SchemaValidationError>> {
         let subtype_constraint_source = type_get_constraints_closest_source(
             snapshot,
@@ -2352,7 +2352,7 @@ impl OperationTimeValidation {
                         snapshot,
                         type_manager,
                         attribute_type,
-                        |type_: AttributeType<'static>| {
+                        |type_: AttributeType| {
                             let sub_subtype_constraint_source = type_get_constraints_closest_source(
                                 snapshot,
                                 type_manager,
@@ -2400,8 +2400,8 @@ impl OperationTimeValidation {
     pub(crate) fn validate_unset_owns_is_not_inherited(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        owner: ObjectType<'static>,
-        attribute_type: AttributeType<'static>,
+        owner: ObjectType,
+        attribute_type: AttributeType,
     ) -> Result<(), Box<SchemaValidationError>> {
         let all_owns = owner
             .get_owns(snapshot, type_manager)
@@ -2426,8 +2426,8 @@ impl OperationTimeValidation {
     pub(crate) fn validate_unset_plays_is_not_inherited(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        player: ObjectType<'static>,
-        role_type: RoleType<'static>,
+        player: ObjectType,
+        role_type: RoleType,
     ) -> Result<(), Box<SchemaValidationError>> {
         let all_plays = player
             .get_plays(snapshot, type_manager)
@@ -2503,7 +2503,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_owns_value_type_compatible_with_unique_annotation(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        owns: Owns<'static>,
+        owns: Owns,
         value_type: Option<ValueType>,
     ) -> Result<(), Box<SchemaValidationError>> {
         if AnnotationUnique::value_type_valid(value_type.clone()) {
@@ -2522,7 +2522,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_owns_value_type_compatible_with_key_annotation(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        owns: Owns<'static>,
+        owns: Owns,
         value_type: Option<ValueType>,
     ) -> Result<(), Box<SchemaValidationError>> {
         if AnnotationKey::value_type_valid(value_type.clone()) {
@@ -2541,10 +2541,10 @@ impl OperationTimeValidation {
     pub(crate) fn validate_attribute_type_value_type_compatible_with_annotations_transitive(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         value_type: Option<ValueType>,
     ) -> Result<(), Box<SchemaValidationError>> {
-        for_type_and_subtypes_transitive!(snapshot, type_manager, attribute_type, |type_: AttributeType<'static>| {
+        for_type_and_subtypes_transitive!(snapshot, type_manager, attribute_type, |type_: AttributeType| {
             Self::validate_attribute_type_value_type_compatible_with_annotations(
                 snapshot,
                 type_manager,
@@ -2558,7 +2558,7 @@ impl OperationTimeValidation {
     fn validate_attribute_type_value_type_compatible_with_annotations(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         value_type: Option<ValueType>,
     ) -> Result<(), Box<SchemaValidationError>> {
         let annotations = attribute_type
@@ -2603,10 +2603,10 @@ impl OperationTimeValidation {
     pub(crate) fn validate_value_type_compatible_with_all_owns_annotations_transitive(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         value_type: Option<ValueType>,
     ) -> Result<(), Box<SchemaValidationError>> {
-        for_type_and_subtypes_transitive!(snapshot, type_manager, attribute_type, |type_: AttributeType<'static>| {
+        for_type_and_subtypes_transitive!(snapshot, type_manager, attribute_type, |type_: AttributeType| {
             Self::validate_value_type_compatible_with_all_owns_annotations(
                 snapshot,
                 type_manager,
@@ -2620,7 +2620,7 @@ impl OperationTimeValidation {
     fn validate_value_type_compatible_with_all_owns_annotations(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         value_type: Option<ValueType>,
     ) -> Result<(), Box<SchemaValidationError>> {
         let all_owns = attribute_type
@@ -2641,7 +2641,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_owns_value_type_compatible_with_annotations(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        owns: Owns<'static>,
+        owns: Owns,
         value_type: Option<ValueType>,
     ) -> Result<(), Box<SchemaValidationError>> {
         let annotations = owns
@@ -2716,9 +2716,9 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
     ) -> Result<(), Box<SchemaValidationError>> {
-        for_type_and_subtypes_transitive!(snapshot, type_manager, attribute_type, |type_: AttributeType<'static>| {
+        for_type_and_subtypes_transitive!(snapshot, type_manager, attribute_type, |type_: AttributeType| {
             let has_instances = Self::has_instances_of_type(snapshot, type_manager, thing_manager, type_.clone())
                 .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
 
@@ -2737,9 +2737,9 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
     ) -> Result<(), Box<SchemaValidationError>> {
-        for_type_and_subtypes_transitive!(snapshot, type_manager, attribute_type, |type_: AttributeType<'static>| {
+        for_type_and_subtypes_transitive!(snapshot, type_manager, attribute_type, |type_: AttributeType| {
             let has_instances = Self::has_instances_of_type(snapshot, type_manager, thing_manager, type_.clone())
                 .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
 
@@ -2758,7 +2758,7 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        role_type: RoleType<'static>,
+        role_type: RoleType,
     ) -> Result<(), Box<SchemaValidationError>> {
         let has_instances = Self::has_instances_of_type(snapshot, type_manager, thing_manager, role_type.clone())
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
@@ -2776,7 +2776,7 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        owns: Owns<'static>,
+        owns: Owns,
     ) -> Result<(), Box<SchemaValidationError>> {
         let has_instances = Self::has_instances_of_owns(snapshot, thing_manager, owns.owner(), owns.attribute())
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
@@ -2799,7 +2799,7 @@ impl OperationTimeValidation {
     ) -> Result<bool, Box<ConceptReadError>> {
         match T::KIND {
             Kind::Entity => {
-                let entity_type = EntityType::new(type_.vertex().into_owned());
+                let entity_type = EntityType::new(type_.vertex());
                 let mut iterator = thing_manager.get_entities_in(snapshot, entity_type.clone().into_owned());
                 match iterator.next() {
                     None => Ok(false),
@@ -2807,7 +2807,7 @@ impl OperationTimeValidation {
                 }
             }
             Kind::Attribute => {
-                let attribute_type = AttributeType::new(type_.vertex().into_owned());
+                let attribute_type = AttributeType::new(type_.vertex());
                 let mut iterator = thing_manager.get_attributes_in(snapshot, attribute_type.clone().into_owned())?;
                 match iterator.next() {
                     None => Ok(false),
@@ -2815,7 +2815,7 @@ impl OperationTimeValidation {
                 }
             }
             Kind::Relation => {
-                let relation_type = RelationType::new(type_.vertex().into_owned());
+                let relation_type = RelationType::new(type_.vertex());
                 let mut iterator = thing_manager.get_relations_in(snapshot, relation_type.clone().into_owned());
                 match iterator.next() {
                     None => Ok(false),
@@ -2823,7 +2823,7 @@ impl OperationTimeValidation {
                 }
             }
             Kind::Role => {
-                let role_type = RoleType::new(type_.vertex().into_owned());
+                let role_type = RoleType::new(type_.vertex());
                 let relation_type = role_type.get_relates_root(snapshot, type_manager)?.relation();
                 Self::has_instances_of_relates(snapshot, thing_manager, relation_type, role_type)
             }
@@ -2833,8 +2833,8 @@ impl OperationTimeValidation {
     fn has_instances_of_owns<'a>(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        owner_type: ObjectType<'a>,
-        attribute_type: AttributeType<'a>,
+        owner_type: ObjectType,
+        attribute_type: AttributeType,
     ) -> Result<bool, Box<ConceptReadError>> {
         let mut has_instances = false;
 
@@ -2855,8 +2855,8 @@ impl OperationTimeValidation {
     fn has_instances_of_plays<'a>(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        player_type: ObjectType<'a>,
-        role_type: RoleType<'a>,
+        player_type: ObjectType,
+        role_type: RoleType,
     ) -> Result<bool, Box<ConceptReadError>> {
         let mut has_instances = false;
 
@@ -2876,8 +2876,8 @@ impl OperationTimeValidation {
     fn has_instances_of_relates<'a>(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        relation_type: RelationType<'a>,
-        role_type: RoleType<'a>,
+        relation_type: RelationType,
+        role_type: RoleType,
     ) -> Result<bool, Box<ConceptReadError>> {
         let mut has_instances = false;
 
@@ -2898,8 +2898,8 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        entity_types: &HashSet<EntityType<'static>>,
-        constraints: &HashSet<TypeConstraint<EntityType<'static>>>,
+        entity_types: &HashSet<EntityType>,
+        constraints: &HashSet<TypeConstraint<EntityType>>,
     ) -> Result<(), Box<DataValidationError>> {
         if constraints.is_empty() {
             return Ok(());
@@ -2943,8 +2943,8 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        relation_types: &HashSet<RelationType<'static>>,
-        constraints: &HashSet<TypeConstraint<RelationType<'static>>>,
+        relation_types: &HashSet<RelationType>,
+        constraints: &HashSet<TypeConstraint<RelationType>>,
     ) -> Result<(), Box<DataValidationError>> {
         if constraints.is_empty() {
             return Ok(());
@@ -2988,8 +2988,8 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        attribute_types: &HashSet<AttributeType<'static>>,
-        constraints: &HashSet<TypeConstraint<AttributeType<'static>>>,
+        attribute_types: &HashSet<AttributeType>,
+        constraints: &HashSet<TypeConstraint<AttributeType>>,
     ) -> Result<(), Box<DataValidationError>> {
         if constraints.is_empty() {
             return Ok(());
@@ -3073,8 +3073,8 @@ impl OperationTimeValidation {
         _snapshot: &impl ReadableSnapshot,
         _type_manager: &TypeManager,
         _thing_manager: &ThingManager,
-        _role_types: &HashSet<RoleType<'static>>,
-        constraints: &HashSet<TypeConstraint<RoleType<'static>>>,
+        _role_types: &HashSet<RoleType>,
+        constraints: &HashSet<TypeConstraint<RoleType>>,
     ) -> Result<(), Box<DataValidationError>> {
         if constraints.is_empty() {
             return Ok(());
@@ -3151,28 +3151,28 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        object_types: &HashSet<ObjectType<'static>>,
-        attribute_types: &HashSet<AttributeType<'static>>,
-        new_attribute_supertypes: &HashMap<AttributeType<'static>, Option<AttributeType<'static>>>,
-        constraints: &HashSet<CapabilityConstraint<Owns<'static>>>,
+        object_types: &HashSet<ObjectType>,
+        attribute_types: &HashSet<AttributeType>,
+        new_attribute_supertypes: &HashMap<AttributeType, Option<AttributeType>>,
+        constraints: &HashSet<CapabilityConstraint<Owns>>,
     ) -> Result<(), Box<DataValidationError>> {
         if constraints.is_empty() {
             return Ok(());
         }
 
         let cardinality_constraints_iter = filter_by_constraint_category!(constraints.iter(), Cardinality);
-        let abstract_constraints: HashSet<CapabilityConstraint<Owns<'static>>> =
+        let abstract_constraints: HashSet<CapabilityConstraint<Owns>> =
             get_abstract_constraints(constraints.iter().cloned());
-        let distinct_constraints: HashSet<CapabilityConstraint<Owns<'static>>> =
+        let distinct_constraints: HashSet<CapabilityConstraint<Owns>> =
             get_distinct_constraints(constraints.iter().cloned());
-        let regex_constraints: HashSet<CapabilityConstraint<Owns<'static>>> =
+        let regex_constraints: HashSet<CapabilityConstraint<Owns>> =
             get_regex_constraints(constraints.iter().cloned());
-        let range_constraints: HashSet<CapabilityConstraint<Owns<'static>>> =
+        let range_constraints: HashSet<CapabilityConstraint<Owns>> =
             get_range_constraints(constraints.iter().cloned());
-        let values_constraints: HashSet<CapabilityConstraint<Owns<'static>>> =
+        let values_constraints: HashSet<CapabilityConstraint<Owns>> =
             get_values_constraints(constraints.iter().cloned());
         let unique_constraint = {
-            let mut unique_constraint: Option<CapabilityConstraint<Owns<'static>>> = None;
+            let mut unique_constraint: Option<CapabilityConstraint<Owns>> = None;
             for constraint in filter_by_constraint_category!(constraints.iter(), Unique) {
                 match &unique_constraint {
                     None => unique_constraint = Some(constraint.clone()),
@@ -3216,7 +3216,7 @@ impl OperationTimeValidation {
                 .transpose()
                 .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
             {
-                let mut cardinality_constraints_counts: HashMap<CapabilityConstraint<Owns<'static>>, u64> =
+                let mut cardinality_constraints_counts: HashMap<CapabilityConstraint<Owns>, u64> =
                     cardinality_constraints_iter.clone().map(|constraint| (constraint.clone(), 0)).collect();
 
                 // We assume that it's cheaper to open an iterator once and skip all the
@@ -3442,10 +3442,10 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        object_types: &HashSet<ObjectType<'a>>,
-        role_types: &HashSet<RoleType<'a>>,
-        new_role_supertypes: &HashMap<RoleType<'static>, Option<RoleType<'static>>>,
-        constraints: &HashSet<CapabilityConstraint<Plays<'static>>>,
+        object_types: &HashSet<ObjectType>,
+        role_types: &HashSet<RoleType>,
+        new_role_supertypes: &HashMap<RoleType, Option<RoleType>>,
+        constraints: &HashSet<CapabilityConstraint<Plays>>,
     ) -> Result<(), Box<DataValidationError>> {
         if constraints.is_empty() {
             return Ok(());
@@ -3466,7 +3466,7 @@ impl OperationTimeValidation {
                 .transpose()
                 .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
             {
-                let mut cardinality_constraints_counts: HashMap<CapabilityConstraint<Plays<'static>>, u64> =
+                let mut cardinality_constraints_counts: HashMap<CapabilityConstraint<Plays>, u64> =
                     cardinality_constraints_iter.clone().map(|constraint| (constraint.clone(), 0)).collect();
 
                 // We assume that it's cheaper to open an iterator once and skip all the
@@ -3551,10 +3551,10 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        relation_types: &HashSet<RelationType<'a>>,
-        role_types: &HashSet<RoleType<'a>>,
-        new_role_supertypes: &HashMap<RoleType<'static>, Option<RoleType<'static>>>,
-        constraints: &HashSet<CapabilityConstraint<Relates<'static>>>,
+        relation_types: &HashSet<RelationType>,
+        role_types: &HashSet<RoleType>,
+        new_role_supertypes: &HashMap<RoleType, Option<RoleType>>,
+        constraints: &HashSet<CapabilityConstraint<Relates>>,
     ) -> Result<(), Box<DataValidationError>> {
         if constraints.is_empty() {
             return Ok(());
@@ -3578,7 +3578,7 @@ impl OperationTimeValidation {
                 .transpose()
                 .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
             {
-                let mut cardinality_constraints_counts: HashMap<CapabilityConstraint<Relates<'static>>, u64> =
+                let mut cardinality_constraints_counts: HashMap<CapabilityConstraint<Relates>, u64> =
                     cardinality_constraints_iter.clone().map(|constraint| (constraint.clone(), 0)).collect();
 
                 // We assume that it's cheaper to open an iterator once and skip all the
@@ -3767,21 +3767,21 @@ impl OperationTimeValidation {
         validate_lost_owns_do_not_cause_lost_instances_while_changing_supertype,
         CapabilityKind::Owns,
         ObjectType,
-        Self::get_lost_capabilities_if_supertype_is_changed::<Owns<'static>>,
+        Self::get_lost_capabilities_if_supertype_is_changed::<Owns>,
         Self::type_or_subtype_without_declared_capability_that_has_instances_of_owns
     );
     cannot_change_supertype_as_capability_with_existing_instances_is_lost_validation!(
         validate_lost_plays_do_not_cause_lost_instances_while_changing_supertype,
         CapabilityKind::Plays,
         ObjectType,
-        Self::get_lost_capabilities_if_supertype_is_changed::<Plays<'static>>,
+        Self::get_lost_capabilities_if_supertype_is_changed::<Plays>,
         Self::type_or_subtype_without_declared_capability_that_has_instances_of_plays
     );
     cannot_change_supertype_as_capability_with_existing_instances_is_lost_validation!(
         validate_lost_relates_do_not_cause_lost_instances_while_changing_supertype,
         CapabilityKind::Relates,
         RelationType,
-        Self::get_lost_capabilities_if_supertype_is_changed::<Relates<'static>>,
+        Self::get_lost_capabilities_if_supertype_is_changed::<Relates>,
         Self::type_or_subtype_without_declared_capability_that_has_instances_of_relates
     );
 

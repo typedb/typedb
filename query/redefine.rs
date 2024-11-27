@@ -444,7 +444,7 @@ fn redefine_value_type_annotations<'a>(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     anything_redefined: &mut bool,
-    attribute_type: AttributeType<'a>,
+    attribute_type: AttributeType,
     attribute_type_label: &Label<'a>,
     typeql_capability: &Capability,
     typeql_type_declaration: &Type,
@@ -565,7 +565,7 @@ fn redefine_relates_annotations(
     thing_manager: &ThingManager,
     anything_redefined: &mut bool,
     relation_label: &Label<'_>,
-    relates: Relates<'static>,
+    relates: Relates,
     typeql_capability: &Capability,
 ) -> Result<(), RedefineError> {
     for typeql_annotation in &typeql_capability.annotations {
@@ -598,7 +598,7 @@ fn redefine_relates_specialise<'a>(
     thing_manager: &ThingManager,
     anything_redefined: &mut bool,
     relation_label: &Label<'_>,
-    relates: Relates<'static>,
+    relates: Relates,
     typeql_relates: &TypeQLRelates,
 ) -> Result<(), RedefineError> {
     if let Some(specialised_label) = &typeql_relates.specialised {
@@ -739,7 +739,7 @@ fn redefine_owns_annotations(
     thing_manager: &ThingManager,
     anything_redefined: &mut bool,
     owner_label: &Label<'_>,
-    owns: Owns<'static>,
+    owns: Owns,
     typeql_capability: &Capability,
 ) -> Result<(), RedefineError> {
     for typeql_annotation in &typeql_capability.annotations {
@@ -836,7 +836,7 @@ fn redefine_plays_annotations(
     thing_manager: &ThingManager,
     anything_redefined: &mut bool,
     player_label: &Label<'_>,
-    plays: Plays<'static>,
+    plays: Plays,
     typeql_capability: &Capability,
 ) -> Result<(), RedefineError> {
     for typeql_annotation in &typeql_capability.annotations {

@@ -73,7 +73,7 @@ macro_rules! concept_iterator {
         }
 
         impl ::lending_iterator::LendingIterator for $name {
-            type Item<'a> = Result<$concept_type<'a>, Box<$crate::error::ConceptReadError>>;
+            type Item<'a> = Result<$concept_type, Box<$crate::error::ConceptReadError>>;
             fn next(&mut self) -> Option<Self::Item<'_>> {
                 use $crate::error::ConceptReadError::SnapshotIterate;
                 self.snapshot_iterator.as_mut()?.next().map(|result| {

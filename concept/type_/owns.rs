@@ -30,25 +30,25 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct Owns<'a> {
-    owner: ObjectType<'a>,
-    attribute: AttributeType<'a>,
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub struct Owns {
+    owner: ObjectType,
+    attribute: AttributeType,
 }
 
-impl Hkt for Owns<'static> {
-    type HktSelf<'a> = Owns<'a>;
+impl Hkt for Owns {
+    type HktSelf<'a> = Owns;
 }
 
-impl<'a> Owns<'a> {
+impl<'a> Owns {
     pub const DEFAULT_UNORDERED_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, Some(1));
     pub const DEFAULT_ORDERED_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, None);
 
-    pub fn owner(&self) -> ObjectType<'a> {
+    pub fn owner(&self) -> ObjectType {
         self.owner.clone()
     }
 
-    pub fn attribute(&self) -> AttributeType<'static> {
+    pub fn attribute(&self) -> AttributeType {
         self.attribute.clone().into_owned()
     }
 
@@ -64,7 +64,7 @@ impl<'a> Owns<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<Option<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_capability_abstract_constraint(snapshot, self.clone().into_owned())
     }
 
@@ -72,7 +72,7 @@ impl<'a> Owns<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_owns_distinct_constraints(snapshot, self.clone().into_owned())
     }
 
@@ -88,7 +88,7 @@ impl<'a> Owns<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<Option<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_unique_constraint(snapshot, self.clone().into_owned())
     }
 
@@ -96,7 +96,7 @@ impl<'a> Owns<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_owns_regex_constraints(snapshot, self.clone().into_owned())
     }
 
@@ -104,7 +104,7 @@ impl<'a> Owns<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_owns_range_constraints(snapshot, self.clone().into_owned())
     }
 
@@ -112,7 +112,7 @@ impl<'a> Owns<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_owns_values_constraints(snapshot, self.clone().into_owned())
     }
 
@@ -205,8 +205,8 @@ impl<'a> Owns<'a> {
         type_manager.set_owns_ordering(snapshot, thing_manager, self.clone().into_owned(), ordering)
     }
 
-    pub(crate) fn into_owned(self) -> Owns<'static> {
-        Owns { owner: ObjectType::new(self.owner.vertex().into_owned()), attribute: self.attribute.into_owned() }
+    pub(crate) fn into_owned(self) -> Owns {
+        self
     }
 
     pub fn get_default_cardinality(ordering: Ordering) -> AnnotationCardinality {
@@ -224,13 +224,13 @@ impl<'a> Owns<'a> {
     }
 }
 
-impl<'a> TypeEdgeEncoding<'a> for Owns<'a> {
+impl<'a> TypeEdgeEncoding<'a> for Owns {
     const CANONICAL_PREFIX: Prefix = Prefix::EdgeOwns;
     const REVERSE_PREFIX: Prefix = Prefix::EdgeOwnsReverse;
-    type From = ObjectType<'a>;
-    type To = AttributeType<'a>;
+    type From = ObjectType;
+    type To = AttributeType;
 
-    fn from_vertices(from: ObjectType<'a>, to: AttributeType<'a>) -> Self {
+    fn from_vertices(from: ObjectType, to: AttributeType) -> Self {
         Owns::new(from, to)
     }
 
@@ -243,21 +243,21 @@ impl<'a> TypeEdgeEncoding<'a> for Owns<'a> {
     }
 }
 
-impl<'a> Capability<'a> for Owns<'a> {
+impl<'a> Capability<'a> for Owns {
     type AnnotationType = OwnsAnnotation;
-    type ObjectType = ObjectType<'a>;
-    type InterfaceType = AttributeType<'a>;
+    type ObjectType = ObjectType;
+    type InterfaceType = AttributeType;
     const KIND: CapabilityKind = CapabilityKind::Owns;
 
-    fn new(owner_type: ObjectType<'a>, attribute_type: AttributeType<'a>) -> Self {
+    fn new(owner_type: ObjectType, attribute_type: AttributeType) -> Self {
         Owns { owner: owner_type, attribute: attribute_type }
     }
 
-    fn object(&self) -> ObjectType<'a> {
+    fn object(&self) -> ObjectType {
         self.owner.clone()
     }
 
-    fn interface(&self) -> AttributeType<'a> {
+    fn interface(&self) -> AttributeType {
         self.attribute.clone()
     }
 
@@ -283,7 +283,7 @@ impl<'a> Capability<'a> for Owns<'a> {
         &'this self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<CapabilityConstraint<Owns<'static>>>>, Box<ConceptReadError>>
+    ) -> Result<MaybeOwns<'this, HashSet<CapabilityConstraint<Owns>>>, Box<ConceptReadError>>
     where
         'a: 'static,
     {
@@ -294,7 +294,7 @@ impl<'a> Capability<'a> for Owns<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_owns_cardinality_constraints(snapshot, self.clone().into_owned())
     }
 

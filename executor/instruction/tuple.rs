@@ -164,11 +164,10 @@ pub(crate) fn sub_to_tuple_super_sub(result: Result<(Type, Type), Box<ConceptRea
     }
 }
 
-pub(crate) type OwnsToTupleFn =
-    for<'a> fn(Result<(ObjectType<'a>, AttributeType<'a>), Box<ConceptReadError>>) -> TupleResult<'a>;
+pub(crate) type OwnsToTupleFn = fn(Result<(ObjectType, AttributeType), Box<ConceptReadError>>) -> TupleResult<'static>;
 
 pub(crate) fn owns_to_tuple_owner_attribute<'a>(
-    result: Result<(ObjectType<'a>, AttributeType<'a>), Box<ConceptReadError>>,
+    result: Result<(ObjectType, AttributeType), Box<ConceptReadError>>,
 ) -> TupleResult<'a> {
     match result {
         Ok((owner, attribute)) => Ok(Tuple::Pair(
@@ -180,7 +179,7 @@ pub(crate) fn owns_to_tuple_owner_attribute<'a>(
 }
 
 pub(crate) fn owns_to_tuple_attribute_owner<'a>(
-    result: Result<(ObjectType<'a>, AttributeType<'a>), Box<ConceptReadError>>,
+    result: Result<(ObjectType, AttributeType), Box<ConceptReadError>>,
 ) -> TupleResult<'a> {
     match result {
         Ok((owner, attribute)) => Ok(Tuple::Pair(
@@ -191,11 +190,10 @@ pub(crate) fn owns_to_tuple_attribute_owner<'a>(
     }
 }
 
-pub(crate) type RelatesToTupleFn =
-    for<'a> fn(Result<(RelationType<'a>, RoleType<'static>), Box<ConceptReadError>>) -> TupleResult<'a>;
+pub(crate) type RelatesToTupleFn = fn(Result<(RelationType, RoleType), Box<ConceptReadError>>) -> TupleResult<'static>;
 
 pub(crate) fn relates_to_tuple_relation_role<'a>(
-    result: Result<(RelationType<'a>, RoleType<'static>), Box<ConceptReadError>>,
+    result: Result<(RelationType, RoleType), Box<ConceptReadError>>,
 ) -> TupleResult<'a> {
     match result {
         Ok((relation, role)) => Ok(Tuple::Pair(
@@ -207,7 +205,7 @@ pub(crate) fn relates_to_tuple_relation_role<'a>(
 }
 
 pub(crate) fn relates_to_tuple_role_relation<'a>(
-    result: Result<(RelationType<'a>, RoleType<'static>), Box<ConceptReadError>>,
+    result: Result<(RelationType, RoleType), Box<ConceptReadError>>,
 ) -> TupleResult<'a> {
     match result {
         Ok((relation, role)) => Ok(Tuple::Pair(
@@ -218,11 +216,10 @@ pub(crate) fn relates_to_tuple_role_relation<'a>(
     }
 }
 
-pub(crate) type PlaysToTupleFn =
-    for<'a> fn(Result<(ObjectType<'a>, RoleType<'static>), Box<ConceptReadError>>) -> TupleResult<'a>;
+pub(crate) type PlaysToTupleFn = fn(Result<(ObjectType, RoleType), Box<ConceptReadError>>) -> TupleResult<'static>;
 
 pub(crate) fn plays_to_tuple_player_role<'a>(
-    result: Result<(ObjectType<'a>, RoleType<'static>), Box<ConceptReadError>>,
+    result: Result<(ObjectType, RoleType), Box<ConceptReadError>>,
 ) -> TupleResult<'a> {
     match result {
         Ok((player, role)) => Ok(Tuple::Pair(
@@ -234,7 +231,7 @@ pub(crate) fn plays_to_tuple_player_role<'a>(
 }
 
 pub(crate) fn plays_to_tuple_role_player<'a>(
-    result: Result<(ObjectType<'a>, RoleType<'static>), Box<ConceptReadError>>,
+    result: Result<(ObjectType, RoleType), Box<ConceptReadError>>,
 ) -> TupleResult<'a> {
     match result {
         Ok((player, role)) => Ok(Tuple::Pair(

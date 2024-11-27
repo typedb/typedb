@@ -77,7 +77,7 @@ macro_rules! get_type_status {
                 snapshot: &impl ReadableSnapshot,
                 type_manager: &TypeManager,
                 label: &Label<'_>,
-            ) -> Result<DefinableStatus<$type_<'static>>, Box<ConceptReadError>> {
+            ) -> Result<DefinableStatus<$type_>, Box<ConceptReadError>> {
                 let type_opt = type_manager.$get_method(snapshot, label)?;
                 get_some_or_return_does_not_exist!(_ = type_opt);
                 Ok(DefinableStatus::ExistsSame(None))
@@ -214,7 +214,7 @@ pub(crate) fn get_sub_status<'a, T: TypeAPI<'a>>(
 pub(crate) fn get_value_type_status(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    attribute_type: AttributeType<'_>,
+    attribute_type: AttributeType,
     value_type: ValueType,
     status_mode: DefinableStatusMode,
 ) -> Result<DefinableStatus<ValueType>, Box<ConceptReadError>> {
@@ -234,11 +234,11 @@ pub(crate) fn get_value_type_status(
 pub(crate) fn get_relates_status(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    relation_type: RelationType<'static>,
+    relation_type: RelationType,
     role_label: &Label<'_>,
     ordering: Ordering,
     status_mode: DefinableStatusMode,
-) -> Result<DefinableStatus<(Relates<'static>, Ordering)>, Box<ConceptReadError>> {
+) -> Result<DefinableStatus<(Relates, Ordering)>, Box<ConceptReadError>> {
     let existing_relates_opt = match status_mode {
         DefinableStatusMode::Declared => {
             try_resolve_relates_declared(snapshot, type_manager, relation_type, role_label.name.as_str())
@@ -260,11 +260,11 @@ pub(crate) fn get_relates_status(
 pub(crate) fn get_owns_status(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    object_type: ObjectType<'static>,
-    attribute_type: AttributeType<'static>,
+    object_type: ObjectType,
+    attribute_type: AttributeType,
     ordering: Ordering,
     status_mode: DefinableStatusMode,
-) -> Result<DefinableStatus<(Owns<'static>, Ordering)>, Box<ConceptReadError>> {
+) -> Result<DefinableStatus<(Owns, Ordering)>, Box<ConceptReadError>> {
     let existing_owns_opt = match status_mode {
         DefinableStatusMode::Declared => try_resolve_owns_declared(snapshot, type_manager, object_type, attribute_type),
         DefinableStatusMode::Transitive => try_resolve_owns(snapshot, type_manager, object_type, attribute_type),
@@ -282,10 +282,10 @@ pub(crate) fn get_owns_status(
 pub(crate) fn get_plays_status(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    object_type: ObjectType<'static>,
-    role_type: RoleType<'static>,
+    object_type: ObjectType,
+    role_type: RoleType,
     status_mode: DefinableStatusMode,
-) -> Result<DefinableStatus<Plays<'static>>, Box<ConceptReadError>> {
+) -> Result<DefinableStatus<Plays>, Box<ConceptReadError>> {
     let existing_plays_opt = match status_mode {
         DefinableStatusMode::Declared => try_resolve_plays_declared(snapshot, type_manager, object_type, role_type),
         DefinableStatusMode::Transitive => try_resolve_plays(snapshot, type_manager, object_type, role_type),

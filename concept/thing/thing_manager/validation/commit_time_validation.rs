@@ -51,9 +51,9 @@ macro_rules! validate_capability_cardinality_constraint {
             snapshot: &impl ReadableSnapshot,
             thing_manager: &ThingManager,
             object: $object_instance<'_>,
-            interface_types_to_check: HashSet<<$capability_type<'static> as Capability<'static>>::InterfaceType>,
+            interface_types_to_check: HashSet<<$capability_type as Capability<'static>>::InterfaceType>,
         ) -> Result<(), Box<DataValidationError>> {
-            let mut cardinality_constraints: HashSet<CapabilityConstraint<$capability_type<'static>>> = HashSet::new();
+            let mut cardinality_constraints: HashSet<CapabilityConstraint<$capability_type>> = HashSet::new();
             let counts = object
                 .$get_interface_counts_func(snapshot, thing_manager)
                 .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?;
@@ -110,7 +110,7 @@ impl CommitTimeValidation {
         snapshot: &impl WritableSnapshot,
         thing_manager: &ThingManager,
         object: Object<'_>,
-        modified_attribute_types: HashSet<AttributeType<'static>>,
+        modified_attribute_types: HashSet<AttributeType>,
         out_errors: &mut Vec<Box<DataValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
         let cardinality_check = CommitTimeValidation::validate_owns_cardinality_constraint(
@@ -127,7 +127,7 @@ impl CommitTimeValidation {
         snapshot: &impl WritableSnapshot,
         thing_manager: &ThingManager,
         object: Object<'_>,
-        modified_role_types: HashSet<RoleType<'static>>,
+        modified_role_types: HashSet<RoleType>,
         out_errors: &mut Vec<Box<DataValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
         let cardinality_check =
@@ -140,7 +140,7 @@ impl CommitTimeValidation {
         snapshot: &impl WritableSnapshot,
         thing_manager: &ThingManager,
         relation: Relation<'_>,
-        modified_role_types: HashSet<RoleType<'static>>,
+        modified_role_types: HashSet<RoleType>,
         out_errors: &mut Vec<Box<DataValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
         let cardinality_check =

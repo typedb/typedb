@@ -39,14 +39,14 @@ macro_rules! with_object_type {
 }
 pub(crate) use with_object_type;
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
-pub enum ObjectType<'a> {
-    Entity(EntityType<'a>),
-    Relation(RelationType<'a>),
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+pub enum ObjectType {
+    Entity(EntityType),
+    Relation(RelationType),
 }
 
-impl<'a> ObjectType<'a> {
-    pub fn into_owned(self) -> ObjectType<'static> {
+impl<'a> ObjectType {
+    pub fn into_owned(self) -> ObjectType {
         match self {
             Self::Entity(entity_type) => ObjectType::Entity(entity_type.into_owned()),
             Self::Relation(relation_type) => ObjectType::Relation(relation_type.into_owned()),
@@ -54,8 +54,8 @@ impl<'a> ObjectType<'a> {
     }
 }
 
-impl<'a> TypeVertexEncoding<'a> for ObjectType<'a> {
-    fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError> {
+impl<'a> TypeVertexEncoding<'a> for ObjectType {
+    fn from_vertex(vertex: TypeVertex) -> Result<Self, EncodingError> {
         match vertex.prefix() {
             Prefix::VertexEntityType => Ok(ObjectType::Entity(EntityType::new(vertex))),
             Prefix::VertexRelationType => Ok(ObjectType::Relation(RelationType::new(vertex))),
@@ -63,37 +63,37 @@ impl<'a> TypeVertexEncoding<'a> for ObjectType<'a> {
         }
     }
 
-    fn vertex(&self) -> TypeVertex<'_> {
+    fn vertex(&self) -> TypeVertex {
         match self {
             ObjectType::Entity(entity) => entity.vertex(),
             ObjectType::Relation(relation) => relation.vertex(),
         }
     }
 
-    fn into_vertex(self) -> TypeVertex<'a> {
+    fn into_vertex(self) -> TypeVertex {
         with_object_type!(self, |object| { object.into_vertex() })
     }
 }
 
-impl<'a> primitive::prefix::Prefix for ObjectType<'a> {
+impl<'a> primitive::prefix::Prefix for ObjectType {
     fn starts_with(&self, other: &Self) -> bool {
         self.vertex().starts_with(&other.vertex())
     }
 
     fn into_starts_with(self, other: Self) -> bool {
-        self.vertex().as_reference().into_starts_with(other.vertex().as_reference())
+        self.vertex().into_starts_with(other.vertex())
     }
 }
 
-impl<'a> OwnerAPI<'a> for ObjectType<'a> {
+impl<'a> OwnerAPI<'a> for ObjectType {
     fn set_owns(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         ordering: Ordering,
-    ) -> Result<Owns<'static>, Box<ConceptWriteError>> {
+    ) -> Result<Owns, Box<ConceptWriteError>> {
         with_object_type!(self, |object| {
             object.set_owns(snapshot, type_manager, thing_manager, attribute_type, ordering)
         })
@@ -104,7 +104,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
     ) -> Result<(), Box<ConceptWriteError>> {
         with_object_type!(self, |object| { object.unset_owns(snapshot, type_manager, thing_manager, attribute_type) })
     }
@@ -113,7 +113,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<MaybeOwns<'m, HashSet<Owns>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_owns_declared(snapshot, type_manager) })
     }
 
@@ -121,7 +121,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<MaybeOwns<'m, HashSet<Owns>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_owns(snapshot, type_manager) })
     }
 
@@ -129,7 +129,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<MaybeOwns<'m, HashSet<Owns>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_owns_with_specialised(snapshot, type_manager) })
     }
 
@@ -137,8 +137,8 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns<'static>>>>, Box<ConceptReadError>> {
+        attribute_type: AttributeType,
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns>>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| {
             object.get_owned_attribute_type_constraints(snapshot, type_manager, attribute_type)
         })
@@ -148,8 +148,8 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
+        attribute_type: AttributeType,
+    ) -> Result<Option<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| {
             object.get_owned_attribute_type_constraint_abstract(snapshot, type_manager, attribute_type)
         })
@@ -159,8 +159,8 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
+        attribute_type: AttributeType,
+    ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| {
             object.get_owned_attribute_type_constraints_cardinality(snapshot, type_manager, attribute_type)
         })
@@ -170,8 +170,8 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
+        attribute_type: AttributeType,
+    ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| {
             object.get_owned_attribute_type_constraints_distinct(snapshot, type_manager, attribute_type)
         })
@@ -181,8 +181,8 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
+        attribute_type: AttributeType,
+    ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| {
             object.get_owned_attribute_type_constraints_regex(snapshot, type_manager, attribute_type)
         })
@@ -192,8 +192,8 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
+        attribute_type: AttributeType,
+    ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| {
             object.get_owned_attribute_type_constraints_range(snapshot, type_manager, attribute_type)
         })
@@ -203,8 +203,8 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
+        attribute_type: AttributeType,
+    ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| {
             object.get_owned_attribute_type_constraints_values(snapshot, type_manager, attribute_type)
         })
@@ -214,20 +214,20 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
+        attribute_type: AttributeType,
+    ) -> Result<Option<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| {
             object.get_owned_attribute_type_constraint_unique(snapshot, type_manager, attribute_type)
         })
     }
 }
 
-impl<'a> ConceptAPI<'a> for ObjectType<'a> {}
+impl<'a> ConceptAPI<'a> for ObjectType {}
 
-impl<'a> TypeAPI<'a> for ObjectType<'a> {
-    type SelfStatic = RelationType<'static>;
+impl<'a> TypeAPI<'a> for ObjectType {
+    type SelfStatic = RelationType;
 
-    fn new(vertex: TypeVertex<'a>) -> Self {
+    fn new(vertex: TypeVertex) -> Self {
         Self::from_vertex(vertex).unwrap()
     }
 
@@ -268,7 +268,7 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<ObjectType<'static>>, Box<ConceptReadError>> {
+    ) -> Result<Option<ObjectType>, Box<ConceptReadError>> {
         Ok(with_object_type!(self, |object| {
             object.get_supertype(snapshot, type_manager)?.map(|type_| type_.into_owned_object_type())
         }))
@@ -278,7 +278,7 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<ObjectType<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<MaybeOwns<'m, Vec<ObjectType>>, Box<ConceptReadError>> {
         Ok(MaybeOwns::Owned(with_object_type!(self, |object| {
             object
                 .get_supertypes_transitive(snapshot, type_manager)?
@@ -292,7 +292,7 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<ObjectType<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<MaybeOwns<'m, HashSet<ObjectType>>, Box<ConceptReadError>> {
         Ok(MaybeOwns::Owned(with_object_type!(self, |object| {
             object
                 .get_subtypes(snapshot, type_manager)?
@@ -306,7 +306,7 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<ObjectType<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<MaybeOwns<'m, Vec<ObjectType>>, Box<ConceptReadError>> {
         Ok(MaybeOwns::Owned(with_object_type!(self, |object| {
             object
                 .get_subtypes_transitive(snapshot, type_manager)?
@@ -317,24 +317,24 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
     }
 }
 
-impl<'a> ThingTypeAPI<'a> for ObjectType<'a> {
+impl<'a> ThingTypeAPI<'a> for ObjectType {
     type InstanceType<'b> = Object<'b>;
 }
 
-impl<'a> ObjectTypeAPI<'a> for ObjectType<'a> {
-    fn into_owned_object_type(self) -> ObjectType<'static> {
+impl<'a> ObjectTypeAPI<'a> for ObjectType {
+    fn into_owned_object_type(self) -> ObjectType {
         self.into_owned()
     }
 }
 
-impl<'a> PlayerAPI<'a> for ObjectType<'a> {
+impl<'a> PlayerAPI<'a> for ObjectType {
     fn set_plays(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        role_type: RoleType<'static>,
-    ) -> Result<Plays<'static>, Box<ConceptWriteError>> {
+        role_type: RoleType,
+    ) -> Result<Plays, Box<ConceptWriteError>> {
         with_object_type!(self, |object| { object.set_plays(snapshot, type_manager, thing_manager, role_type) })
     }
 
@@ -343,7 +343,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        role_type: RoleType<'static>,
+        role_type: RoleType,
     ) -> Result<(), Box<ConceptWriteError>> {
         with_object_type!(self, |object| { object.unset_plays(snapshot, type_manager, thing_manager, role_type) })
     }
@@ -352,7 +352,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<MaybeOwns<'m, HashSet<Plays>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_plays_declared(snapshot, type_manager) })
     }
 
@@ -360,7 +360,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<MaybeOwns<'m, HashSet<Plays>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_plays(snapshot, type_manager) })
     }
 
@@ -368,7 +368,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<MaybeOwns<'m, HashSet<Plays>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_plays_with_specialised(snapshot, type_manager) })
     }
 
@@ -376,8 +376,8 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-        role_type: RoleType<'static>,
-    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays<'static>>>>, Box<ConceptReadError>> {
+        role_type: RoleType,
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays>>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_played_role_type_constraints(snapshot, type_manager, role_type) })
     }
 
@@ -385,8 +385,8 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        role_type: RoleType<'static>,
-    ) -> Result<Option<CapabilityConstraint<Plays<'static>>>, Box<ConceptReadError>> {
+        role_type: RoleType,
+    ) -> Result<Option<CapabilityConstraint<Plays>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| {
             object.get_played_role_type_constraint_abstract(snapshot, type_manager, role_type)
         })
@@ -396,14 +396,14 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        role_type: RoleType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Plays<'static>>>, Box<ConceptReadError>> {
+        role_type: RoleType,
+    ) -> Result<HashSet<CapabilityConstraint<Plays>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| {
             object.get_played_role_type_constraints_cardinality(snapshot, type_manager, role_type)
         })
     }
 }
 
-impl Hkt for ObjectType<'static> {
-    type HktSelf<'a> = ObjectType<'a>;
+impl Hkt for ObjectType {
+    type HktSelf<'a> = ObjectType;
 }

@@ -6,7 +6,7 @@
 
 use std::fmt;
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::{byte_array::ByteArray, Bytes};
 use logger::result::ResultExt;
 
 use crate::{error::EncodingError, AsBytes};
@@ -46,8 +46,12 @@ impl<'a, const INLINE_LENGTH: usize> StringBytes<'a, INLINE_LENGTH> {
         self.bytes.length()
     }
 
+    pub fn bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+
     pub fn as_reference(&'a self) -> StringBytes<'a, INLINE_LENGTH> {
-        StringBytes { bytes: Bytes::Reference(self.bytes.as_reference()) }
+        StringBytes { bytes: Bytes::Reference(&self.bytes) }
     }
 
     pub fn into_owned(self) -> StringBytes<'static, INLINE_LENGTH> {
@@ -56,10 +60,6 @@ impl<'a, const INLINE_LENGTH: usize> StringBytes<'a, INLINE_LENGTH> {
 }
 
 impl<'a, const INLINE_LENGTH: usize> AsBytes<'a, INLINE_LENGTH> for StringBytes<'a, INLINE_LENGTH> {
-    fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_reference()
-    }
-
     fn into_bytes(self) -> Bytes<'a, INLINE_LENGTH> {
         self.bytes
     }

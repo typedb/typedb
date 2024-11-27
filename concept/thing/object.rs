@@ -9,7 +9,7 @@ use std::{
     fmt,
 };
 
-use bytes::{byte_reference::ByteReference, Bytes};
+use bytes::Bytes;
 use encoding::{
     graph::thing::{
         edge::{ThingEdgeHas, ThingEdgeHasReverse},
@@ -64,7 +64,7 @@ impl<'a> Object<'a> {
         }
     }
 
-    pub fn type_(&self) -> ObjectType<'static> {
+    pub fn type_(&self) -> ObjectType {
         match self {
             Object::Entity(entity) => ObjectType::Entity(entity.type_()),
             Object::Relation(relation) => ObjectType::Relation(relation.type_()),
@@ -87,7 +87,7 @@ impl<'a> Object<'a> {
 }
 
 impl<'a> ThingAPI<'a> for Object<'a> {
-    type TypeAPI<'b> = ObjectType<'b>;
+    type TypeAPI<'b> = ObjectType;
     type Vertex<'b> = ObjectVertex<'b>;
     type Owned = Object<'static>;
     const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix) = (Prefix::VertexEntity, Prefix::VertexRelation);
@@ -121,7 +121,7 @@ impl<'a> ThingAPI<'a> for Object<'a> {
         }
     }
 
-    fn iid(&self) -> ByteReference<'_> {
+    fn iid(&self) -> Bytes<'_, BUFFER_KEY_INLINE> {
         match self {
             Object::Entity(entity) => entity.iid(),
             Object::Relation(relation) => relation.iid(),
@@ -174,7 +174,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         value: Value<'_>,
     ) -> Result<bool, Box<ConceptReadError>> {
         thing_manager.has_attribute_with_value(snapshot, self, attribute_type, value)
@@ -201,7 +201,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         &self,
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
     ) -> HasAttributeIterator {
         thing_manager.get_has_from_thing_to_type_unordered(snapshot, self, attribute_type)
     }
@@ -210,7 +210,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         &self,
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
     ) -> Result<Vec<Attribute<'static>>, Box<ConceptReadError>> {
         thing_manager.get_has_from_thing_to_type_ordered(snapshot, self, attribute_type)
     }
@@ -219,7 +219,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         &self,
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
-        attribute_types_defining_range: impl Iterator<Item = AttributeType<'static>>,
+        attribute_types_defining_range: impl Iterator<Item = AttributeType>,
     ) -> Result<HasIterator, Box<ConceptReadError>> {
         thing_manager.get_has_from_thing_to_type_range_unordered(snapshot, self, attribute_types_defining_range)
     }
@@ -284,7 +284,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         new_attributes: Vec<Attribute<'_>>,
     ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_owner_exists_to_set_has(snapshot, thing_manager, self)
@@ -350,7 +350,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
     ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_owner_exists_to_unset_has(snapshot, thing_manager, self)
             .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
@@ -390,7 +390,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         &'a self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
-        role_type: RoleType<'static>,
+        role_type: RoleType,
     ) -> impl for<'x> LendingIterator<Item<'x> = Result<(Relation<'x>, u64), Box<ConceptReadError>>> {
         thing_manager.get_relations_player_role(snapshot, self, role_type)
     }
@@ -407,7 +407,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<HashMap<AttributeType<'static>, u64>, Box<ConceptReadError>> {
+    ) -> Result<HashMap<AttributeType, u64>, Box<ConceptReadError>> {
         let mut counts = HashMap::new();
         let mut has_iter = self.get_has_unordered(snapshot, thing_manager);
         while let Some((attribute, count)) = has_iter.next().transpose()? {
@@ -421,7 +421,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<HashMap<RoleType<'static>, u64>, Box<ConceptReadError>> {
+    ) -> Result<HashMap<RoleType, u64>, Box<ConceptReadError>> {
         let mut counts = HashMap::new();
         let mut relation_role_iter = self.get_relations_roles(snapshot, thing_manager);
         while let Some((_, role_type, count)) = relation_role_iter.next().transpose()? {
@@ -474,14 +474,14 @@ fn storage_key_has_edge_to_has_attribute<'a>(
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
 ) -> (Attribute<'a>, u64) {
     let edge = ThingEdgeHas::new(storage_key.into_bytes());
-    (Attribute::new(edge.into_to()), decode_value_u64(value.as_reference()))
+    (Attribute::new(edge.into_to()), decode_value_u64(&value))
 }
 
 fn storage_key_has_edge_to_has<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
 ) -> (Has<'a>, u64) {
-    (Has::new_from_edge(ThingEdgeHas::new(storage_key.into_bytes())), decode_value_u64(value.as_reference()))
+    (Has::new_from_edge(ThingEdgeHas::new(storage_key.into_bytes())), decode_value_u64(&value))
 }
 
 fn storage_key_has_reverse_edge_to_has<'a>(
@@ -490,7 +490,7 @@ fn storage_key_has_reverse_edge_to_has<'a>(
 ) -> (Has<'a>, u64) {
     (
         Has::new_from_edge_reverse(ThingEdgeHasReverse::new(storage_key.into_bytes())),
-        decode_value_u64(value.as_reference()),
+        decode_value_u64(&value),
     )
 }
 

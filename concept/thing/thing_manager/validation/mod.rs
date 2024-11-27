@@ -63,7 +63,7 @@ typedb_error!(
             owner_type: Label<'static>,
             attribute_type: Label<'static>,
             attribute_count: u64,
-            constraint_source: Owns<'static>,
+            constraint_source: Owns,
             (typedb_source: Box<ConstraintError>)
         ),
         KeyConstraintViolatedUniqueness(
@@ -73,7 +73,7 @@ typedb_error!(
             owner_type: Label<'static>,
             attribute_type: Label<'static>,
             value: Value<'static>,
-            constraint_source: Owns<'static>,
+            constraint_source: Owns,
             (typedb_source: Box<ConstraintError>)
         ),
         OwnsConstraintViolated(
@@ -82,7 +82,7 @@ typedb_error!(
             owner_iid: HexBytesFormatter<'static>,
             owner_type: Label<'static>,
             attribute_type: Label<'static>,
-            // constraint_source: Owns<'static>
+            // constraint_source: Owns
             (typedb_source: Box<ConstraintError>)
         ),
         RelatesConstraintViolated(
@@ -92,7 +92,7 @@ typedb_error!(
             relation_type: Label<'static>,
             role_type: Label<'static>,
             // player_iid: HexBytesFormatter<'static>,
-            // constraint_source: Relates<'static>,
+            // constraint_source: Relates,
             (typedb_source: Box<ConstraintError>)
         ),
         PlaysConstraintViolated(
@@ -102,7 +102,7 @@ typedb_error!(
             player_type: Label<'static>,
             role_type: Label<'static>,
             // relation: Option<Relation<'static>>,
-            // constraint_source: Plays<'static>,
+            // constraint_source: Plays,
             (typedb_source: Box<ConstraintError>)
         ),
         UniqueValueTaken(

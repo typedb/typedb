@@ -49,7 +49,7 @@ fn get_struct_key(snapshot: &impl ReadableSnapshot, name: String) -> Option<Defi
 
 fn get_struct_definition(snapshot: &impl ReadableSnapshot, definition_key: &DefinitionKey<'_>) -> StructDefinition {
     let bytes = snapshot.get::<BUFFER_VALUE_INLINE>(definition_key.clone().into_storage_key().as_reference()).unwrap();
-    StructDefinition::from_bytes(bytes.unwrap().as_ref())
+    StructDefinition::from_bytes(&bytes.unwrap())
 }
 
 #[test]

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
     graph::thing::{vertex_attribute::AttributeID, vertex_object::ObjectVertex, ThingVertex},
     layout::prefix::Prefix,
@@ -12,7 +12,7 @@ use encoding::{
     AsBytes,
 };
 use lending_iterator::higher_order::Hkt;
-use resource::constants::snapshot::BUFFER_VALUE_INLINE;
+use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -45,7 +45,7 @@ pub trait ThingAPI<'a>: Sized + Clone {
 
     fn into_owned(self) -> Self::Owned;
 
-    fn iid(&self) -> ByteReference<'_>;
+    fn iid(&self) -> Bytes<'_, BUFFER_KEY_INLINE>;
 
     fn set_required(
         &self,
@@ -108,7 +108,7 @@ pub(crate) fn encode_role_players<'a>(
     let size_hint = upper.unwrap_or(lower) * chunk_size;
     let mut bytes = Vec::with_capacity(size_hint);
     for player in players {
-        bytes.extend(player.bytes().bytes());
+        bytes.extend(&*player.into_bytes());
     }
     // TODO allow inline?
     ByteArray::boxed(bytes.into())

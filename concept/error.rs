@@ -109,7 +109,7 @@ pub enum ConceptReadError {
         source: Box<ConstraintError>,
     },
     ValueTypeMismatchWithAttributeType {
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         expected: Option<ValueType>,
         provided: ValueType,
     },

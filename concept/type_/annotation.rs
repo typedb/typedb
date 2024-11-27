@@ -16,7 +16,7 @@ use std::{
     ops::Add,
 };
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
     graph::type_::property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
     layout::infix::Infix,
@@ -682,8 +682,8 @@ macro_rules! empty_type_vertex_property_encoding {
         impl<'a> TypeVertexPropertyEncoding<'a> for $property {
             const INFIX: Infix = Infix::$infix;
 
-            fn from_value_bytes(value: ByteReference<'_>) -> $property {
-                debug_assert!(value.bytes().is_empty());
+            fn from_value_bytes(value: &[u8]) -> $property {
+                debug_assert!(value.is_empty());
                 $property
             }
 
@@ -701,7 +701,7 @@ macro_rules! unreachable_type_vertex_property_encoding {
         impl<'a> TypeVertexPropertyEncoding<'a> for $property {
             const INFIX: Infix = Infix::$infix;
 
-            fn from_value_bytes(_: ByteReference<'_>) -> $property {
+            fn from_value_bytes(_: &[u8]) -> $property {
                 unreachable!("TypeVertexPropertyEncoding is not be implemented for {}", stringify!($property))
             }
 
@@ -724,10 +724,10 @@ empty_type_vertex_property_encoding!(AnnotationCascade, PropertyAnnotationCascad
 impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRegex {
     const INFIX: Infix = Infix::PropertyAnnotationRegex;
 
-    fn from_value_bytes(value: ByteReference<'_>) -> AnnotationRegex {
+    fn from_value_bytes(value: &[u8]) -> AnnotationRegex {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
-        AnnotationRegex::new(std::str::from_utf8(value.bytes()).unwrap().to_owned())
+        AnnotationRegex::new(std::str::from_utf8(value).unwrap().to_owned())
     }
 
     fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
@@ -737,10 +737,10 @@ impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRegex {
 
 impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRange {
     const INFIX: Infix = Infix::PropertyAnnotationRange;
-    fn from_value_bytes(value: ByteReference<'_>) -> Self {
+    fn from_value_bytes(value: &[u8]) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
-        bincode::deserialize(value.bytes()).unwrap()
+        bincode::deserialize(value).unwrap()
     }
 
     fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
@@ -750,10 +750,10 @@ impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRange {
 
 impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationValues {
     const INFIX: Infix = Infix::PropertyAnnotationValues;
-    fn from_value_bytes(value: ByteReference<'_>) -> Self {
+    fn from_value_bytes(value: &[u8]) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
-        bincode::deserialize(value.bytes()).unwrap()
+        bincode::deserialize(value).unwrap()
     }
 
     fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
@@ -766,8 +766,8 @@ macro_rules! empty_type_edge_property_encoder {
         impl<'a> TypeEdgePropertyEncoding<'a> for $property {
             const INFIX: Infix = Infix::$infix;
 
-            fn from_value_bytes(value: ByteReference<'_>) -> $property {
-                debug_assert!(value.bytes().is_empty());
+            fn from_value_bytes(value: &[u8]) -> $property {
+                debug_assert!(value.is_empty());
                 $property
             }
 
@@ -785,7 +785,7 @@ macro_rules! unreachable_type_edge_property_encoder {
         impl<'a> TypeEdgePropertyEncoding<'a> for $property {
             const INFIX: Infix = Infix::$infix;
 
-            fn from_value_bytes(_value: ByteReference<'_>) -> $property {
+            fn from_value_bytes(_value: &[u8]) -> $property {
                 unreachable!("TypeEdgePropertyEncoding is not be implemented for {}", stringify!($property))
             }
 
@@ -806,10 +806,10 @@ empty_type_edge_property_encoder!(AnnotationKey, PropertyAnnotationKey);
 
 impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationCardinality {
     const INFIX: Infix = Infix::PropertyAnnotationCardinality;
-    fn from_value_bytes(value: ByteReference<'_>) -> Self {
+    fn from_value_bytes(value: &[u8]) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
-        bincode::deserialize(value.bytes()).unwrap()
+        bincode::deserialize(value).unwrap()
     }
 
     fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
@@ -819,10 +819,10 @@ impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationCardinality {
 
 impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRegex {
     const INFIX: Infix = Infix::PropertyAnnotationRegex;
-    fn from_value_bytes(value: ByteReference<'_>) -> Self {
+    fn from_value_bytes(value: &[u8]) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
-        AnnotationRegex::new(std::str::from_utf8(value.bytes()).unwrap().to_owned())
+        AnnotationRegex::new(std::str::from_utf8(value).unwrap().to_owned())
     }
 
     fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
@@ -832,10 +832,10 @@ impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRegex {
 
 impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRange {
     const INFIX: Infix = Infix::PropertyAnnotationRange;
-    fn from_value_bytes(value: ByteReference<'_>) -> Self {
+    fn from_value_bytes(value: &[u8]) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
-        bincode::deserialize(value.bytes()).unwrap()
+        bincode::deserialize(value).unwrap()
     }
 
     fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
@@ -845,10 +845,10 @@ impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRange {
 
 impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationValues {
     const INFIX: Infix = Infix::PropertyAnnotationValues;
-    fn from_value_bytes(value: ByteReference<'_>) -> Self {
+    fn from_value_bytes(value: &[u8]) -> Self {
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
-        bincode::deserialize(value.bytes()).unwrap()
+        bincode::deserialize(value).unwrap()
     }
 
     fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {

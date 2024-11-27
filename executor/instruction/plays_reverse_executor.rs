@@ -18,18 +18,18 @@ use concept::{
     type_::{object_type::ObjectType, role_type::RoleType},
 };
 use itertools::Itertools;
-use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
+use lending_iterator::{AsHkt, AsNarrowingIterator};
 use storage::snapshot::ReadableSnapshot;
 
-use super::type_from_row_or_annotations;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         plays_executor::{
-            PlaysFilterFn, PlaysTupleIterator, PlaysVariableValueExtractor, EXTRACT_PLAYER, EXTRACT_ROLE,
+            PlaysFilterFn, PlaysFilterMapFn, PlaysTupleIterator, PlaysVariableValueExtractor, EXTRACT_PLAYER,
+            EXTRACT_ROLE,
         },
-        tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, TuplePositions},
-        BinaryIterateMode, Checker, VariableModes,
+        tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, TuplePositions, TupleResult},
+        type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -43,30 +43,26 @@ pub(crate) struct PlaysReverseExecutor {
     role_player_types: Arc<BTreeMap<Type, Vec<Type>>>,
     player_types: Arc<BTreeSet<Type>>,
     filter_fn: Arc<PlaysFilterFn>,
-    checker: Checker<(AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>])>,
+    checker: Checker<(ObjectType, RoleType)>,
 }
 
-pub(super) type PlaysReverseUnboundedSortedRole = PlaysTupleIterator<
-    AsNarrowingIterator<
+pub(super) type PlaysReverseUnboundedSortedRole = AsNarrowingIterator<
+    PlaysTupleIterator<
         iter::Map<
-            iter::Flatten<vec::IntoIter<BTreeSet<(ObjectType<'static>, RoleType<'static>)>>>,
-            fn(
-                (ObjectType<'static>, RoleType<'static>),
-            ) -> Result<(ObjectType<'static>, RoleType<'static>), Box<ConceptReadError>>,
+            iter::Flatten<vec::IntoIter<BTreeSet<(ObjectType, RoleType)>>>,
+            fn((ObjectType, RoleType)) -> Result<(ObjectType, RoleType), Box<ConceptReadError>>,
         >,
-        Result<(AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>]), Box<ConceptReadError>>,
     >,
+    AsHkt![TupleResult<'_>],
 >;
-pub(super) type PlaysReverseBoundedSortedPlayer = PlaysTupleIterator<
-    AsNarrowingIterator<
+pub(super) type PlaysReverseBoundedSortedPlayer = AsNarrowingIterator<
+    PlaysTupleIterator<
         iter::Map<
-            vec::IntoIter<(ObjectType<'static>, RoleType<'static>)>,
-            fn(
-                (ObjectType<'static>, RoleType<'static>),
-            ) -> Result<(ObjectType<'static>, RoleType<'static>), Box<ConceptReadError>>,
+            vec::IntoIter<(ObjectType, RoleType)>,
+            fn((ObjectType, RoleType)) -> Result<(ObjectType, RoleType), Box<ConceptReadError>>,
         >,
-        Result<(AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>]), Box<ConceptReadError>>,
     >,
+    AsHkt![TupleResult<'_>],
 >;
 
 impl PlaysReverseExecutor {
@@ -98,7 +94,7 @@ impl PlaysReverseExecutor {
             _ => TuplePositions::Pair([player, role_type]),
         };
 
-        let checker = Checker::<(AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>])>::new(
+        let checker = Checker::<(ObjectType, RoleType)>::new(
             checks,
             [(player, EXTRACT_PLAYER), (role_type, EXTRACT_ROLE)]
                 .into_iter()
@@ -125,9 +121,13 @@ impl PlaysReverseExecutor {
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
-        let filter_for_row: Box<PlaysFilterFn> = Box::new(move |item| match filter(item) {
-            Ok(true) => check(item),
-            fail => fail,
+        let filter_for_row: Box<PlaysFilterMapFn> = Box::new(move |item| match filter(&item) {
+            Ok(true) => match check(&item) {
+                Ok(true) | Err(_) => Some(item),
+                Ok(false) => None,
+            },
+            Ok(false) => None,
+            Err(_) => Some(item),
         });
 
         let snapshot = &**context.snapshot();
@@ -147,9 +147,7 @@ impl PlaysReverseExecutor {
                     .try_collect()?;
                 let iterator = plays.into_iter().flatten().map(Ok as _);
                 let as_tuples: PlaysReverseUnboundedSortedRole =
-                    AsNarrowingIterator::<_, Result<(ObjectType<'_>, RoleType<'_>), _>>::new(iterator)
-                        .try_filter::<_, PlaysFilterFn, (ObjectType<'_>, RoleType<'_>), _>(filter_for_row)
-                        .map(plays_to_tuple_role_player);
+                    AsNarrowingIterator::new(iterator.filter_map(filter_for_row).map(plays_to_tuple_role_player as _));
                 Ok(TupleIterator::PlaysReverseUnbounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -172,13 +170,9 @@ impl PlaysReverseExecutor {
                     .into_keys()
                     .map(|object_type| (object_type.clone(), role_type.clone()));
 
-                let iterator = plays.into_iter().sorted_by_key(|(owner, player)| player.clone()).map(Ok as _);
-                let as_tuples: PlaysReverseBoundedSortedPlayer = AsNarrowingIterator::<
-                    _,
-                    Result<(ObjectType<'_>, RoleType<'_>), _>,
-                >::new(iterator)
-                .try_filter::<_, PlaysFilterFn, (AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>]), _>(filter_for_row)
-                .map(plays_to_tuple_player_role);
+                let iterator = plays.into_iter().sorted_by_key(|&(_, player)| player).map(Ok as _);
+                let as_tuples: PlaysReverseBoundedSortedPlayer =
+                    AsNarrowingIterator::new(iterator.filter_map(filter_for_row).map(plays_to_tuple_player_role as _));
                 Ok(TupleIterator::PlaysReverseBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),

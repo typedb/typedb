@@ -8,7 +8,7 @@
 
 use std::ops::Range;
 
-use bytes::{byte_reference::ByteReference, Bytes};
+use bytes::Bytes;
 use storage::{
     key_value::StorageKey,
     keyspace::{KeyspaceId, KeyspaceSet},
@@ -59,28 +59,22 @@ impl KeyspaceSet for EncodingKeyspace {
 }
 
 pub trait AsBytes<'a, const INLINE_SIZE: usize> {
-    fn bytes(&'a self) -> ByteReference<'a>;
-
     fn into_bytes(self) -> Bytes<'a, INLINE_SIZE>;
 }
 
 pub trait Keyable<'a, const INLINE_SIZE: usize>: AsBytes<'a, INLINE_SIZE> + Sized {
     fn keyspace(&self) -> EncodingKeyspace;
 
-    fn as_storage_key(&'a self) -> StorageKey<'a, INLINE_SIZE> {
-        StorageKey::new_ref(self.keyspace(), self.bytes())
-    }
-
     fn into_storage_key(self) -> StorageKey<'a, INLINE_SIZE> {
         StorageKey::new(self.keyspace(), self.into_bytes())
     }
 }
 
-pub trait Prefixed<'a, const INLINE_SIZE: usize>: AsBytes<'a, INLINE_SIZE> {
+pub trait Prefixed<'a, const INLINE_SIZE: usize>: AsBytes<'a, INLINE_SIZE> + Clone {
     const RANGE_PREFIX: Range<usize> = 0..PrefixID::LENGTH;
 
     fn prefix(&'a self) -> Prefix {
-        let bytes = &self.bytes().bytes()[Self::RANGE_PREFIX].try_into().unwrap();
+        let bytes = &self.clone().into_bytes()[Self::RANGE_PREFIX].try_into().unwrap();
         Prefix::from_prefix_id(PrefixID::new(*bytes))
     }
 }

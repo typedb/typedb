@@ -70,7 +70,7 @@ pub(crate) fn named_type_to_label(named_type: &NamedType) -> Result<Label<'stati
     }
 }
 
-pub(crate) fn type_to_object_type(type_: &Type) -> Result<ObjectType<'static>, ()> {
+pub(crate) fn type_to_object_type(type_: &Type) -> Result<ObjectType, ()> {
     Ok(match &type_ {
         Type::Entity(entity_type) => ObjectType::Entity(entity_type.clone()),
         Type::Relation(relation_type) => ObjectType::Relation(relation_type.clone()),
@@ -181,7 +181,7 @@ pub(crate) fn resolve_object_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label<'_>,
-) -> Result<ObjectType<'static>, Box<SymbolResolutionError>> {
+) -> Result<ObjectType, Box<SymbolResolutionError>> {
     match try_resolve_object_type(snapshot, type_manager, label) {
         Ok(Some(object_type)) => Ok(object_type),
         Ok(None) => Err(Box::new(SymbolResolutionError::ObjectTypeNotFound { label: label.clone().into_owned() })),
@@ -193,7 +193,7 @@ pub(crate) fn try_resolve_object_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label<'_>,
-) -> Result<Option<ObjectType<'static>>, Box<ConceptReadError>> {
+) -> Result<Option<ObjectType>, Box<ConceptReadError>> {
     type_manager.get_object_type(snapshot, label)
 }
 
@@ -201,7 +201,7 @@ pub(crate) fn resolve_entity_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label<'_>,
-) -> Result<EntityType<'static>, Box<SymbolResolutionError>> {
+) -> Result<EntityType, Box<SymbolResolutionError>> {
     match try_resolve_entity_type(snapshot, type_manager, label) {
         Ok(Some(entity_type)) => Ok(entity_type),
         Ok(None) => Err(Box::new(SymbolResolutionError::EntityTypeNotFound { label: label.clone().into_owned() })),
@@ -213,7 +213,7 @@ pub(crate) fn try_resolve_entity_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label<'_>,
-) -> Result<Option<EntityType<'static>>, Box<ConceptReadError>> {
+) -> Result<Option<EntityType>, Box<ConceptReadError>> {
     type_manager.get_entity_type(snapshot, label)
 }
 
@@ -221,7 +221,7 @@ pub(crate) fn resolve_relation_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label<'_>,
-) -> Result<RelationType<'static>, Box<SymbolResolutionError>> {
+) -> Result<RelationType, Box<SymbolResolutionError>> {
     match try_resolve_relation_type(snapshot, type_manager, label) {
         Ok(Some(relation_type)) => Ok(relation_type),
         Ok(None) => Err(Box::new(SymbolResolutionError::RelationTypeNotFound { label: label.clone().into_owned() })),
@@ -233,7 +233,7 @@ pub(crate) fn try_resolve_relation_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label<'_>,
-) -> Result<Option<RelationType<'static>>, Box<ConceptReadError>> {
+) -> Result<Option<RelationType>, Box<ConceptReadError>> {
     type_manager.get_relation_type(snapshot, label)
 }
 
@@ -241,7 +241,7 @@ pub(crate) fn resolve_attribute_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label<'_>,
-) -> Result<AttributeType<'static>, Box<SymbolResolutionError>> {
+) -> Result<AttributeType, Box<SymbolResolutionError>> {
     match try_resolve_attribute_type(snapshot, type_manager, label) {
         Ok(Some(attribute_type)) => Ok(attribute_type),
         Ok(None) => Err(Box::new(SymbolResolutionError::AttributeTypeNotFound { label: label.clone().into_owned() })),
@@ -253,7 +253,7 @@ pub(crate) fn try_resolve_attribute_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label<'_>,
-) -> Result<Option<AttributeType<'static>>, Box<ConceptReadError>> {
+) -> Result<Option<AttributeType>, Box<ConceptReadError>> {
     type_manager.get_attribute_type(snapshot, label)
 }
 
@@ -261,7 +261,7 @@ pub(crate) fn resolve_role_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label<'_>,
-) -> Result<RoleType<'static>, Box<SymbolResolutionError>> {
+) -> Result<RoleType, Box<SymbolResolutionError>> {
     match try_resolve_role_type(snapshot, type_manager, label) {
         Ok(Some(role_type)) => Ok(role_type),
         Ok(None) => Err(Box::new(SymbolResolutionError::RoleTypeNotFound { label: label.clone().into_owned() })),
@@ -273,16 +273,16 @@ pub(crate) fn try_resolve_role_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label<'_>,
-) -> Result<Option<RoleType<'static>>, Box<ConceptReadError>> {
+) -> Result<Option<RoleType>, Box<ConceptReadError>> {
     type_manager.get_role_type(snapshot, label)
 }
 
 pub(crate) fn resolve_relates_declared(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    relation_type: RelationType<'static>,
+    relation_type: RelationType,
     role_name: &str,
-) -> Result<Relates<'static>, Box<SymbolResolutionError>> {
+) -> Result<Relates, Box<SymbolResolutionError>> {
     match try_resolve_relates_declared(snapshot, type_manager, relation_type.clone(), role_name) {
         Ok(Some(relates)) => Ok(relates),
         Ok(None) => Err(Box::new(SymbolResolutionError::RelatesNotFound {
@@ -296,18 +296,18 @@ pub(crate) fn resolve_relates_declared(
 pub(crate) fn try_resolve_relates_declared(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    relation_type: RelationType<'static>,
+    relation_type: RelationType,
     role_name: &str,
-) -> Result<Option<Relates<'static>>, Box<ConceptReadError>> {
+) -> Result<Option<Relates>, Box<ConceptReadError>> {
     relation_type.get_relates_role_name_declared(snapshot, type_manager, role_name)
 }
 
 pub(crate) fn resolve_relates(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    relation_type: RelationType<'static>,
+    relation_type: RelationType,
     role_name: &str,
-) -> Result<Relates<'static>, Box<SymbolResolutionError>> {
+) -> Result<Relates, Box<SymbolResolutionError>> {
     match try_resolve_relates(snapshot, type_manager, relation_type.clone(), role_name) {
         Ok(Some(relates)) => Ok(relates),
         Ok(None) => Err(Box::new(SymbolResolutionError::RelatesNotFound {
@@ -321,18 +321,18 @@ pub(crate) fn resolve_relates(
 pub(crate) fn try_resolve_relates(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    relation_type: RelationType<'static>,
+    relation_type: RelationType,
     role_name: &str,
-) -> Result<Option<Relates<'static>>, Box<ConceptReadError>> {
+) -> Result<Option<Relates>, Box<ConceptReadError>> {
     relation_type.get_relates_role_name_with_specialised(snapshot, type_manager, role_name)
 }
 
 pub(crate) fn resolve_owns_declared(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    object_type: ObjectType<'static>,
-    attribute_type: AttributeType<'static>,
-) -> Result<Owns<'static>, Box<SymbolResolutionError>> {
+    object_type: ObjectType,
+    attribute_type: AttributeType,
+) -> Result<Owns, Box<SymbolResolutionError>> {
     match try_resolve_owns_declared(snapshot, type_manager, object_type.clone(), attribute_type.clone()) {
         Ok(Some(owns)) => Ok(owns),
         Ok(None) => Err(Box::new(SymbolResolutionError::OwnsNotFound {
@@ -346,18 +346,18 @@ pub(crate) fn resolve_owns_declared(
 pub(crate) fn try_resolve_owns_declared(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    object_type: ObjectType<'static>,
-    attribute_type: AttributeType<'static>,
-) -> Result<Option<Owns<'static>>, Box<ConceptReadError>> {
+    object_type: ObjectType,
+    attribute_type: AttributeType,
+) -> Result<Option<Owns>, Box<ConceptReadError>> {
     object_type.get_owns_attribute_declared(snapshot, type_manager, attribute_type.clone())
 }
 
 pub(crate) fn resolve_owns(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    object_type: ObjectType<'static>,
-    attribute_type: AttributeType<'static>,
-) -> Result<Owns<'static>, Box<SymbolResolutionError>> {
+    object_type: ObjectType,
+    attribute_type: AttributeType,
+) -> Result<Owns, Box<SymbolResolutionError>> {
     match try_resolve_owns(snapshot, type_manager, object_type.clone(), attribute_type.clone()) {
         Ok(Some(owns)) => Ok(owns),
         Ok(None) => Err(Box::new(SymbolResolutionError::OwnsNotFound {
@@ -371,18 +371,18 @@ pub(crate) fn resolve_owns(
 pub(crate) fn try_resolve_owns(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    object_type: ObjectType<'static>,
-    attribute_type: AttributeType<'static>,
-) -> Result<Option<Owns<'static>>, Box<ConceptReadError>> {
+    object_type: ObjectType,
+    attribute_type: AttributeType,
+) -> Result<Option<Owns>, Box<ConceptReadError>> {
     object_type.get_owns_attribute_with_specialised(snapshot, type_manager, attribute_type.clone())
 }
 
 pub(crate) fn resolve_plays_declared(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    object_type: ObjectType<'static>,
-    role_type: RoleType<'static>,
-) -> Result<Plays<'static>, Box<SymbolResolutionError>> {
+    object_type: ObjectType,
+    role_type: RoleType,
+) -> Result<Plays, Box<SymbolResolutionError>> {
     match try_resolve_plays_declared(snapshot, type_manager, object_type.clone(), role_type.clone()) {
         Ok(Some(plays)) => Ok(plays),
         Ok(None) => Err(Box::new(SymbolResolutionError::PlaysNotFound {
@@ -396,18 +396,18 @@ pub(crate) fn resolve_plays_declared(
 pub(crate) fn try_resolve_plays_declared(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    object_type: ObjectType<'static>,
-    role_type: RoleType<'static>,
-) -> Result<Option<Plays<'static>>, Box<ConceptReadError>> {
+    object_type: ObjectType,
+    role_type: RoleType,
+) -> Result<Option<Plays>, Box<ConceptReadError>> {
     object_type.get_plays_role_declared(snapshot, type_manager, role_type.clone())
 }
 
 pub(crate) fn resolve_plays(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    object_type: ObjectType<'static>,
-    role_type: RoleType<'static>,
-) -> Result<Plays<'static>, Box<SymbolResolutionError>> {
+    object_type: ObjectType,
+    role_type: RoleType,
+) -> Result<Plays, Box<SymbolResolutionError>> {
     match try_resolve_plays(snapshot, type_manager, object_type.clone(), role_type.clone()) {
         Ok(Some(plays)) => Ok(plays),
         Ok(None) => Err(Box::new(SymbolResolutionError::PlaysNotFound {
@@ -421,18 +421,18 @@ pub(crate) fn resolve_plays(
 pub(crate) fn try_resolve_plays(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    object_type: ObjectType<'static>,
-    role_type: RoleType<'static>,
-) -> Result<Option<Plays<'static>>, Box<ConceptReadError>> {
+    object_type: ObjectType,
+    role_type: RoleType,
+) -> Result<Option<Plays>, Box<ConceptReadError>> {
     object_type.get_plays_role_with_specialised(snapshot, type_manager, role_type.clone())
 }
 
 pub(crate) fn resolve_plays_role_label(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    object_type: ObjectType<'static>,
+    object_type: ObjectType,
     label: &Label<'_>,
-) -> Result<Plays<'static>, Box<SymbolResolutionError>> {
+) -> Result<Plays, Box<SymbolResolutionError>> {
     match try_resolve_plays_role_label(snapshot, type_manager, object_type.clone(), label) {
         Ok(Some(plays)) => Ok(plays),
         Ok(None) => Err(Box::new(SymbolResolutionError::PlaysNotFound {
@@ -446,9 +446,9 @@ pub(crate) fn resolve_plays_role_label(
 pub(crate) fn try_resolve_plays_role_label(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    object_type: ObjectType<'static>,
+    object_type: ObjectType,
     label: &Label<'_>,
-) -> Result<Option<Plays<'static>>, Box<ConceptReadError>> {
+) -> Result<Option<Plays>, Box<ConceptReadError>> {
     match label.scope {
         Some(_) => {
             let role_type = try_resolve_role_type(snapshot, type_manager, label)?;

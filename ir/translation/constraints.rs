@@ -5,7 +5,7 @@
  */
 
 use answer::variable::Variable;
-use bytes::byte_array::{ByteArray, ByteArrayInline};
+use bytes::byte_array::ByteArray;
 use encoding::{graph::thing::THING_VERTEX_MAX_LENGTH, value::label::Label};
 use itertools::Itertools;
 use typeql::{
@@ -395,7 +395,7 @@ fn parse_iid(mut iid: &str) -> ByteArray<THING_VERTEX_MAX_LENGTH> {
         bytes[i] = (from_hex(hi) << 4) + from_hex(lo);
     }
     let len = iid.as_bytes().len() / 2;
-    ByteArray::Inline(ByteArrayInline::new(bytes, len))
+    ByteArray::inline(bytes, len)
 }
 
 fn add_typeql_iid(

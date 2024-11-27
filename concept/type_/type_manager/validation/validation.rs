@@ -57,7 +57,7 @@ pub(crate) fn get_opt_label_or_schema_err<'a>(
 pub(crate) fn validate_role_name_uniqueness_non_transitive(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    relation_type: RelationType<'static>,
+    relation_type: RelationType,
     new_label: &Label<'static>,
 ) -> Result<(), Box<SchemaValidationError>> {
     let scoped_label = Label::build_scoped(
@@ -69,7 +69,7 @@ pub(crate) fn validate_role_name_uniqueness_non_transitive(
             .as_str(),
     );
 
-    if TypeReader::get_labelled_type::<RoleType<'static>>(snapshot, &scoped_label)
+    if TypeReader::get_labelled_type::<RoleType>(snapshot, &scoped_label)
         .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
         .is_some()
     {
@@ -123,8 +123,8 @@ pub(crate) fn validate_type_declared_constraints_narrowing_of_supertype_constrai
 pub(crate) fn validate_role_type_supertype_ordering_match(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    subtype: RoleType<'static>,
-    supertype: RoleType<'static>,
+    subtype: RoleType,
+    supertype: RoleType,
     set_subtype_role_ordering: Option<Ordering>,
     set_supertype_role_ordering: Option<Ordering>,
 ) -> Result<(), Box<SchemaValidationError>> {
@@ -152,10 +152,10 @@ pub(crate) fn validate_role_type_supertype_ordering_match(
 pub(crate) fn validate_sibling_owns_ordering_match_for_type(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    owner_type: ObjectType<'static>,
-    new_set_owns_orderings: &HashMap<Owns<'static>, Ordering>,
+    owner_type: ObjectType,
+    new_set_owns_orderings: &HashMap<Owns, Ordering>,
 ) -> Result<(), Box<SchemaValidationError>> {
-    let mut attribute_types_ordering: HashMap<AttributeType<'static>, (AttributeType<'static>, Ordering)> =
+    let mut attribute_types_ordering: HashMap<AttributeType, (AttributeType, Ordering)> =
         HashMap::new();
     let existing_owns = owner_type
         .get_owns_with_specialised(snapshot, type_manager)

@@ -6,7 +6,7 @@
 
 use std::{fmt, ops::Range};
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::{byte_array::ByteArray, Bytes};
 use resource::constants::{encoding::DefinitionIDUInt, snapshot::BUFFER_KEY_INLINE};
 use serde::{
     de::{Error, Visitor},
@@ -21,7 +21,7 @@ use crate::{
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct DefinitionKey<'a> {
-    bytes: Bytes<'a, { BUFFER_KEY_INLINE }>,
+    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
 impl<'a> DefinitionKey<'a> {
@@ -39,7 +39,7 @@ impl<'a> DefinitionKey<'a> {
     }
 
     pub fn definition_id(&self) -> DefinitionID {
-        DefinitionID::new(self.bytes().bytes()[Self::RANGE_DEFINITION_ID].try_into().unwrap())
+        DefinitionID::new(self.bytes[Self::RANGE_DEFINITION_ID].try_into().unwrap())
     }
 
     pub fn build(prefix: Prefix, definition_id: DefinitionID) -> Self {
@@ -58,19 +58,19 @@ impl<'a> DefinitionKey<'a> {
     }
 
     pub fn as_reference<'this: 'a>(&'this self) -> DefinitionKey<'this> {
-        Self::new(Bytes::Reference(self.bytes.as_reference()))
+        Self::new(Bytes::Reference(&self.bytes))
     }
 
     pub fn into_owned(self) -> DefinitionKey<'static> {
         DefinitionKey { bytes: self.bytes.into_owned() }
     }
+
+    pub fn bytes(&self) -> &[u8] {
+        &self.bytes
+    }
 }
 
 impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for DefinitionKey<'a> {
-    fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_reference()
-    }
-
     fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
         self.bytes
     }

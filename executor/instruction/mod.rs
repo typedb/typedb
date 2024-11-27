@@ -358,6 +358,8 @@ fn type_from_row_or_annotations<'a>(
     }
 }
 
+pub(super) type FilterMapFn<T> = dyn Fn(Result<T, Box<ConceptReadError>>) -> Option<Result<T, Box<ConceptReadError>>>;
+
 type FilterFn<T> = dyn for<'a, 'b> FnHktHelper<
     &'a Result<<T as Hkt>::HktSelf<'b>, Box<ConceptReadError>>,
     Result<bool, Box<ConceptReadError>>,
@@ -519,9 +521,9 @@ impl<T: Hkt> Checker<T> {
                         let value = var(value);
                         match value {
                             VariableValue::Thing(thing) => match thing {
-                                Thing::Entity(entity) => Ok(&*iid == entity.vertex().bytes().bytes()),
-                                Thing::Relation(relation) => Ok(&*iid == relation.vertex().bytes().bytes()),
-                                Thing::Attribute(attribute) => Ok(&*iid == attribute.vertex().bytes().bytes()),
+                                Thing::Entity(entity) => Ok(*iid == *entity.vertex().clone().into_bytes()),
+                                Thing::Relation(relation) => Ok(*iid == *relation.vertex().clone().into_bytes()),
+                                Thing::Attribute(attribute) => Ok(*iid == *attribute.vertex().clone().into_bytes()),
                             },
                             VariableValue::Empty => Ok(false),
                             VariableValue::Type(_) => Ok(false),

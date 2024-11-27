@@ -46,14 +46,10 @@ impl KeyspaceRangeIterator {
 
         let continue_condition = match range.end() {
             RangeEnd::WithinStartAsPrefix => {
-                ContinueCondition::ExactPrefix(ByteArray::from(range.start().get_value().as_reference()))
+                ContinueCondition::ExactPrefix(ByteArray::from(&**range.start().get_value()))
             }
-            RangeEnd::EndPrefixInclusive(end) => {
-                ContinueCondition::EndPrefixInclusive(ByteArray::from(end.as_reference()))
-            }
-            RangeEnd::EndPrefixExclusive(end) => {
-                ContinueCondition::EndPrefixExclusive(ByteArray::from(end.as_reference()))
-            }
+            RangeEnd::EndPrefixInclusive(end) => ContinueCondition::EndPrefixInclusive(ByteArray::from(&**end)),
+            RangeEnd::EndPrefixExclusive(end) => ContinueCondition::EndPrefixExclusive(ByteArray::from(&**end)),
             RangeEnd::Unbounded => ContinueCondition::Always,
         };
         KeyspaceRangeIterator { iterator, continue_condition, keyspace_name: keyspace.name() }

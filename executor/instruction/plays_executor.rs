@@ -18,17 +18,14 @@ use concept::{
     type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI, PlayerAPI},
 };
 use itertools::Itertools;
-use lending_iterator::{
-    adaptors::{Map, TryFilter},
-    AsHkt, AsNarrowingIterator, LendingIterator,
-};
+use lending_iterator::{AsHkt, AsNarrowingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, PlaysToTupleFn, TuplePositions, TupleResult},
-        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, VariableModes,
+        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -42,41 +39,34 @@ pub(crate) struct PlaysExecutor {
     player_role_types: Arc<BTreeMap<Type, Vec<Type>>>,
     role_types: Arc<BTreeSet<Type>>,
     filter_fn: Arc<PlaysFilterFn>,
-    checker: Checker<(AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>])>,
+    checker: Checker<(ObjectType, RoleType)>,
 }
 
-pub(super) type PlaysTupleIterator<I> = Map<
-    TryFilter<I, Box<PlaysFilterFn>, (AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>]), Box<ConceptReadError>>,
-    PlaysToTupleFn,
+pub(super) type PlaysTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<PlaysFilterMapFn>>, PlaysToTupleFn>;
+
+pub(super) type PlaysUnboundedSortedPlayer = AsNarrowingIterator<
+    PlaysTupleIterator<
+        iter::Map<
+            iter::Flatten<vec::IntoIter<BTreeSet<(ObjectType, RoleType)>>>,
+            fn((ObjectType, RoleType)) -> Result<(ObjectType, RoleType), Box<ConceptReadError>>,
+        >,
+    >,
+    AsHkt![TupleResult<'_>],
+>;
+pub(super) type PlaysBoundedSortedRole = AsNarrowingIterator<
+    PlaysTupleIterator<
+        iter::Map<
+            vec::IntoIter<(ObjectType, RoleType)>,
+            fn((ObjectType, RoleType)) -> Result<(ObjectType, RoleType), Box<ConceptReadError>>,
+        >,
+    >,
     AsHkt![TupleResult<'_>],
 >;
 
-pub(super) type PlaysUnboundedSortedPlayer = PlaysTupleIterator<
-    AsNarrowingIterator<
-        iter::Map<
-            iter::Flatten<vec::IntoIter<BTreeSet<(ObjectType<'static>, RoleType<'static>)>>>,
-            fn(
-                (ObjectType<'static>, RoleType<'static>),
-            ) -> Result<(ObjectType<'static>, RoleType<'static>), Box<ConceptReadError>>,
-        >,
-        Result<(AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>]), Box<ConceptReadError>>,
-    >,
->;
-pub(super) type PlaysBoundedSortedRole = PlaysTupleIterator<
-    AsNarrowingIterator<
-        iter::Map<
-            vec::IntoIter<(ObjectType<'static>, RoleType<'static>)>,
-            fn(
-                (ObjectType<'static>, RoleType<'static>),
-            ) -> Result<(ObjectType<'static>, RoleType<'static>), Box<ConceptReadError>>,
-        >,
-        Result<(AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>]), Box<ConceptReadError>>,
-    >,
->;
+pub(super) type PlaysFilterFn = FilterFn<(ObjectType, RoleType)>;
+pub(super) type PlaysFilterMapFn = FilterMapFn<(ObjectType, RoleType)>;
 
-pub(super) type PlaysFilterFn = FilterFn<(AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>])>;
-
-pub(super) type PlaysVariableValueExtractor = for<'a> fn(&'a (ObjectType<'_>, RoleType<'_>)) -> VariableValue<'a>;
+pub(super) type PlaysVariableValueExtractor = for<'a> fn(&'a (ObjectType, RoleType)) -> VariableValue<'a>;
 pub(super) const EXTRACT_PLAYER: PlaysVariableValueExtractor =
     |(player, _)| VariableValue::Type(Type::from(player.clone().into_owned()));
 pub(super) const EXTRACT_ROLE: PlaysVariableValueExtractor =
@@ -110,7 +100,7 @@ impl PlaysExecutor {
             _ => TuplePositions::Pair([role_type, player]),
         };
 
-        let checker = Checker::<(AsHkt![ObjectType<'_>], AsHkt![RoleType<'_>])>::new(
+        let checker = Checker::<(ObjectType, RoleType)>::new(
             checks,
             [(player, EXTRACT_PLAYER), (role_type, EXTRACT_ROLE)]
                 .into_iter()
@@ -137,9 +127,13 @@ impl PlaysExecutor {
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
-        let filter_for_row: Box<PlaysFilterFn> = Box::new(move |item| match filter(item) {
-            Ok(true) => check(item),
-            fail => fail,
+        let filter_for_row: Box<PlaysFilterMapFn> = Box::new(move |item| match filter(&item) {
+            Ok(true) => match check(&item) {
+                Ok(true) | Err(_) => Some(item),
+                Ok(false) => None,
+            },
+            Ok(false) => None,
+            Err(_) => Some(item),
         });
 
         let snapshot = &**context.snapshot();
@@ -154,9 +148,7 @@ impl PlaysExecutor {
                     .try_collect()?;
                 let iterator = plays.into_iter().flatten().map(Ok as _);
                 let as_tuples: PlaysUnboundedSortedPlayer =
-                    AsNarrowingIterator::<_, Result<(ObjectType<'_>, RoleType<'_>), _>>::new(iterator)
-                        .try_filter::<_, PlaysFilterFn, (ObjectType<'_>, RoleType<'_>), _>(filter_for_row)
-                        .map(plays_to_tuple_player_role);
+                    AsNarrowingIterator::new(iterator.filter_map(filter_for_row).map(plays_to_tuple_player_role as _));
                 Ok(TupleIterator::PlaysUnbounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -176,9 +168,7 @@ impl PlaysExecutor {
                 let iterator =
                     plays.into_iter().sorted_by_key(|(player, role)| (role.clone(), player.clone())).map(Ok as _);
                 let as_tuples: PlaysBoundedSortedRole =
-                    AsNarrowingIterator::<_, Result<(ObjectType<'_>, RoleType<'_>), _>>::new(iterator)
-                        .try_filter::<_, PlaysFilterFn, (ObjectType<'_>, RoleType<'_>), _>(filter_for_row)
-                        .map(plays_to_tuple_role_player);
+                    AsNarrowingIterator::new(iterator.filter_map(filter_for_row).map(plays_to_tuple_role_player as _));
                 Ok(TupleIterator::PlaysBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -193,7 +183,7 @@ impl PlaysExecutor {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         player: Type,
-    ) -> Result<BTreeSet<(ObjectType<'static>, RoleType<'static>)>, Box<ConceptReadError>> {
+    ) -> Result<BTreeSet<(ObjectType, RoleType)>, Box<ConceptReadError>> {
         let object_type = match player {
             Type::Entity(entity) => entity.into_owned_object_type(),
             Type::Relation(relation) => relation.into_owned_object_type(),

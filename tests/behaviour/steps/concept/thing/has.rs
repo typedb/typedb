@@ -40,7 +40,7 @@ pub(super) fn object_set_has_impl(
 pub(super) fn object_set_has_ordered_impl(
     context: &mut Context,
     object: &Object<'static>,
-    attribute_type: AttributeType<'static>,
+    attribute_type: AttributeType,
     attributes: Vec<Attribute<'static>>,
 ) -> Result<(), Box<ConceptWriteError>> {
     with_write_tx!(context, |tx| object.set_has_ordered(

@@ -32,7 +32,7 @@ use crate::{
     Keyable,
 };
 
-pub type TypeVertexAllocator = SchemaIDAllocator<TypeVertex<'static>>;
+pub type TypeVertexAllocator = SchemaIDAllocator<TypeVertex>;
 pub type DefinitionKeyAllocator = SchemaIDAllocator<DefinitionKey<'static>>;
 
 pub trait SchemaID: Sized {
@@ -103,11 +103,11 @@ impl<'a, T: SchemaID + Keyable<'a, BUFFER_KEY_INLINE>> SchemaIDAllocator<T> {
     }
 }
 
-impl SchemaID for TypeVertex<'static> {
+impl SchemaID for TypeVertex {
     const MIN_ID: u64 = TypeIDUInt::MIN as u64;
     const MAX_ID: u64 = TypeIDUInt::MAX as u64;
 
-    fn object_from_id(prefix: Prefix, id: u64) -> TypeVertex<'static> {
+    fn object_from_id(prefix: Prefix, id: u64) -> TypeVertex {
         debug_assert!((Self::MIN_ID..=Self::MAX_ID).contains(&id));
         TypeVertex::build(prefix.prefix_id(), TypeID::build(id as TypeIDUInt))
     }

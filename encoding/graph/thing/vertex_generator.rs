@@ -85,14 +85,14 @@ impl ThingVertexGenerator {
                 RangeStart::Inclusive(build_type_vertex_prefix_key(Prefix::VertexEntityType)),
                 Prefix::VertexEntityType.fixed_width_keys(),
             ))
-            .collect_cloned_vec(|k, _v| TypeVertex::new(Bytes::Reference(k.byte_ref())).type_id_().as_u16())
+            .collect_cloned_vec(|k, _v| TypeVertex::new(Bytes::Reference(k.bytes())).type_id_().as_u16())
             .map_err(|err| EncodingError::ExistingTypesRead { source: err })?;
         let relation_types = read_snapshot
             .iterate_range(KeyRange::new_within(
                 RangeStart::Inclusive(build_type_vertex_prefix_key(Prefix::VertexRelationType)),
                 Prefix::VertexRelationType.fixed_width_keys(),
             ))
-            .collect_cloned_vec(|k, _v| TypeVertex::new(Bytes::Reference(k.byte_ref())).type_id_().as_u16())
+            .collect_cloned_vec(|k, _v| TypeVertex::new(Bytes::Reference(k.bytes())).type_id_().as_u16())
             .map_err(|err| EncodingError::ExistingTypesRead { source: err })?;
         read_snapshot.close_resources();
 
@@ -103,7 +103,7 @@ impl ThingVertexGenerator {
                 ObjectVertex::build_entity(TypeID::build(type_id), ObjectID::build(u64::MAX)).into_bytes().into_array();
             bytes::util::increment(&mut max_object_id).unwrap();
             let next_storage_key: StorageKey<{ ObjectVertex::LENGTH }> =
-                StorageKey::new_ref(ObjectVertex::KEYSPACE, max_object_id.as_ref());
+                StorageKey::new_ref(ObjectVertex::KEYSPACE, &max_object_id);
             if let Some(prev_vertex) = storage.get_prev_raw(next_storage_key.as_reference(), Self::extract_object_id) {
                 if prev_vertex.prefix() == Prefix::VertexEntity && prev_vertex.type_id_() == TypeID::build(type_id) {
                     entity_ids[type_id as usize].store(prev_vertex.object_id().as_u64() + 1, Ordering::Relaxed);
@@ -116,7 +116,7 @@ impl ThingVertexGenerator {
                 .into_array();
             bytes::util::increment(&mut max_object_id).unwrap();
             let next_storage_key: StorageKey<{ ObjectVertex::LENGTH }> =
-                StorageKey::new_ref(ObjectVertex::KEYSPACE, max_object_id.as_ref());
+                StorageKey::new_ref(ObjectVertex::KEYSPACE, &max_object_id);
             if let Some(prev_vertex) = storage.get_prev_raw(next_storage_key.as_reference(), Self::extract_object_id) {
                 if prev_vertex.prefix() == Prefix::VertexRelation && prev_vertex.type_id_() == TypeID::build(type_id) {
                     relation_ids[type_id as usize].store(prev_vertex.object_id().as_u64() + 1, Ordering::Relaxed);
@@ -145,7 +145,7 @@ impl ThingVertexGenerator {
     {
         let entity_id = self.entity_ids[type_id.as_u16() as usize].fetch_add(1, Ordering::Relaxed);
         let vertex = ObjectVertex::build_entity(type_id, ObjectID::build(entity_id));
-        snapshot.insert(vertex.as_storage_key().into_owned_array());
+        snapshot.insert(vertex.clone().into_storage_key().into_owned_array());
         vertex
     }
 
@@ -155,7 +155,7 @@ impl ThingVertexGenerator {
     {
         let relation_id = self.relation_ids[type_id.as_u16() as usize].fetch_add(1, Ordering::Relaxed);
         let vertex = ObjectVertex::build_relation(type_id, ObjectID::build(relation_id));
-        snapshot.insert(vertex.as_storage_key().into_owned_array());
+        snapshot.insert(vertex.clone().into_storage_key().into_owned_array());
         vertex
     }
 
@@ -170,7 +170,7 @@ impl ThingVertexGenerator {
     {
         let boolean_attribute_id = self.create_attribute_id_boolean(value);
         let vertex = AttributeVertex::build(type_id, AttributeID::Boolean(boolean_attribute_id));
-        snapshot.put(vertex.as_storage_key().into_owned_array());
+        snapshot.put(vertex.clone().into_storage_key().into_owned_array());
         vertex
     }
 
@@ -185,7 +185,7 @@ impl ThingVertexGenerator {
     {
         let long_attribute_id = self.create_attribute_id_long(value);
         let vertex = AttributeVertex::build(type_id, AttributeID::Long(long_attribute_id));
-        snapshot.put(vertex.as_storage_key().into_owned_array());
+        snapshot.put(vertex.clone().into_storage_key().into_owned_array());
         vertex
     }
 
@@ -200,7 +200,7 @@ impl ThingVertexGenerator {
     {
         let double_attribute_id = self.create_attribute_id_double(value);
         let vertex = AttributeVertex::build(type_id, AttributeID::Double(double_attribute_id));
-        snapshot.put(vertex.as_storage_key().into_owned_array());
+        snapshot.put(vertex.clone().into_storage_key().into_owned_array());
         vertex
     }
 
@@ -215,7 +215,7 @@ impl ThingVertexGenerator {
     {
         let decimal_attribute_id = self.create_attribute_id_decimal(value);
         let vertex = AttributeVertex::build(type_id, AttributeID::Decimal(decimal_attribute_id));
-        snapshot.put(vertex.as_storage_key().into_owned_array());
+        snapshot.put(vertex.clone().into_storage_key().into_owned_array());
         vertex
     }
 
@@ -230,7 +230,7 @@ impl ThingVertexGenerator {
     {
         let date_attribute_id = self.create_attribute_id_date(value);
         let vertex = AttributeVertex::build(type_id, AttributeID::Date(date_attribute_id));
-        snapshot.put(vertex.as_storage_key().into_owned_array());
+        snapshot.put(vertex.clone().into_storage_key().into_owned_array());
         vertex
     }
 
@@ -245,7 +245,7 @@ impl ThingVertexGenerator {
     {
         let date_time_attribute_id = self.create_attribute_id_date_time(value);
         let vertex = AttributeVertex::build(type_id, AttributeID::DateTime(date_time_attribute_id));
-        snapshot.put(vertex.as_storage_key().into_owned_array());
+        snapshot.put(vertex.clone().into_storage_key().into_owned_array());
         vertex
     }
 
@@ -260,7 +260,7 @@ impl ThingVertexGenerator {
     {
         let date_time_tz_attribute_id = self.create_attribute_id_date_time_tz(value);
         let vertex = AttributeVertex::build(type_id, AttributeID::DateTimeTZ(date_time_tz_attribute_id));
-        snapshot.put(vertex.as_storage_key().into_owned_array());
+        snapshot.put(vertex.clone().into_storage_key().into_owned_array());
         vertex
     }
 
@@ -275,7 +275,7 @@ impl ThingVertexGenerator {
     {
         let duration_attribute_id = self.create_attribute_id_duration(value);
         let vertex = AttributeVertex::build(type_id, AttributeID::Duration(duration_attribute_id));
-        snapshot.put(vertex.as_storage_key().into_owned_array());
+        snapshot.put(vertex.clone().into_storage_key().into_owned_array());
         vertex
     }
 
@@ -332,7 +332,7 @@ impl ThingVertexGenerator {
     {
         let string_attribute_id = self.create_attribute_id_string(type_id, value.as_reference(), snapshot)?;
         let vertex = AttributeVertex::build(type_id, AttributeID::String(string_attribute_id));
-        snapshot.put_val(vertex.as_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
+        snapshot.put_val(vertex.clone().into_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
         Ok(vertex)
     }
 
@@ -380,7 +380,7 @@ impl ThingVertexGenerator {
     {
         let struct_attribute_id = self.create_attribute_id_struct(type_id, value.as_reference(), snapshot)?;
         let vertex = AttributeVertex::build(type_id, AttributeID::Struct(struct_attribute_id));
-        snapshot.put_val(vertex.as_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
+        snapshot.put_val(vertex.clone().into_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
         Ok(vertex)
     }
 

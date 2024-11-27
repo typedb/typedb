@@ -6,7 +6,7 @@
 
 use std::{cmp::Ordering, error::Error, fmt, sync::Arc};
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
+use bytes::byte_array::ByteArray;
 use lending_iterator::{LendingIterator, Peekable, Seekable};
 
 use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};
@@ -24,7 +24,7 @@ pub(crate) struct MVCCRangeIterator {
     open_sequence_number: SequenceNumber,
 
     last_visible_key: Option<ByteArray<MVCC_KEY_INLINE_SIZE>>,
-    item: Option<Result<(StorageKeyReference<'static>, ByteReference<'static>), MVCCReadError>>,
+    item: Option<Result<(StorageKeyReference<'static>, &'static [u8]), MVCCReadError>>,
 }
 
 impl MVCCRangeIterator {
@@ -49,7 +49,7 @@ impl MVCCRangeIterator {
         }
     }
 
-    pub(crate) fn peek(&mut self) -> Option<&Result<(StorageKeyReference<'_>, ByteReference<'_>), MVCCReadError>> {
+    pub(crate) fn peek(&mut self) -> Option<&Result<(StorageKeyReference<'_>, &[u8]), MVCCReadError>> {
         type Item<'a> = <MVCCRangeIterator as LendingIterator>::Item<'a>;
         if self.item.is_none() {
             self.item = unsafe { std::mem::transmute::<Option<Item<'_>>, Option<Item<'static>>>(self.next()) };
@@ -91,7 +91,7 @@ impl MVCCRangeIterator {
 }
 
 impl LendingIterator for MVCCRangeIterator {
-    type Item<'a> = Result<(StorageKeyReference<'a>, ByteReference<'a>), MVCCReadError>;
+    type Item<'a> = Result<(StorageKeyReference<'a>, &'a [u8]), MVCCReadError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         if let Some(item) = self.item.take() {
@@ -109,7 +109,7 @@ impl LendingIterator for MVCCRangeIterator {
             };
             Some(Ok((
                 StorageKeyReference::new_raw(self.keyspace_id, MVCCKey::wrap_slice(key).into_key().unwrap_reference()),
-                ByteReference::new(value),
+                value,
             )))
         }
     }

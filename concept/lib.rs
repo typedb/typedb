@@ -7,8 +7,6 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use bytes::byte_reference::ByteReference;
-
 pub mod error;
 pub mod iterator;
 pub mod thing;

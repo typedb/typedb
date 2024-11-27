@@ -43,57 +43,57 @@ use crate::type_::{
 
 #[derive(Debug)]
 pub(crate) struct EntityTypeCache {
-    pub(super) common_type_cache: CommonTypeCache<EntityType<'static>>,
+    pub(super) common_type_cache: CommonTypeCache<EntityType>,
     pub(super) object_cache: ObjectCache,
 }
 
 #[derive(Debug)]
 pub(crate) struct RelationTypeCache {
-    pub(super) common_type_cache: CommonTypeCache<RelationType<'static>>,
-    pub(super) relates_root: HashSet<Relates<'static>>,
-    pub(super) relates_declared: HashSet<Relates<'static>>,
-    pub(super) relates: HashSet<Relates<'static>>,
-    pub(super) relates_with_specialised: HashSet<Relates<'static>>,
+    pub(super) common_type_cache: CommonTypeCache<RelationType>,
+    pub(super) relates_root: HashSet<Relates>,
+    pub(super) relates_declared: HashSet<Relates>,
+    pub(super) relates: HashSet<Relates>,
+    pub(super) relates_with_specialised: HashSet<Relates>,
     pub(super) related_role_type_constraints:
-        HashMap<RoleType<'static>, HashSet<CapabilityConstraint<Relates<'static>>>>,
+        HashMap<RoleType, HashSet<CapabilityConstraint<Relates>>>,
     pub(super) object_cache: ObjectCache,
 }
 
 #[derive(Debug)]
 pub(crate) struct RoleTypeCache {
-    pub(super) common_type_cache: CommonTypeCache<RoleType<'static>>,
+    pub(super) common_type_cache: CommonTypeCache<RoleType>,
     pub(super) ordering: Ordering,
-    pub(super) relates_root: Relates<'static>,
-    pub(super) relates: HashSet<Relates<'static>>,
-    pub(super) relation_types: HashMap<RelationType<'static>, Relates<'static>>,
-    pub(super) plays: HashSet<Plays<'static>>,
-    pub(super) player_types: HashMap<ObjectType<'static>, Plays<'static>>,
+    pub(super) relates_root: Relates,
+    pub(super) relates: HashSet<Relates>,
+    pub(super) relation_types: HashMap<RelationType, Relates>,
+    pub(super) plays: HashSet<Plays>,
+    pub(super) player_types: HashMap<ObjectType, Plays>,
 }
 
 #[derive(Debug)]
 pub(crate) struct AttributeTypeCache {
-    pub(super) common_type_cache: CommonTypeCache<AttributeType<'static>>,
+    pub(super) common_type_cache: CommonTypeCache<AttributeType>,
     pub(super) value_type_declared: Option<ValueType>,
-    pub(super) value_type: Option<(ValueType, AttributeType<'static>)>,
-    pub(super) owns: HashSet<Owns<'static>>,
-    pub(super) owner_types: HashMap<ObjectType<'static>, Owns<'static>>,
+    pub(super) value_type: Option<(ValueType, AttributeType)>,
+    pub(super) owns: HashSet<Owns>,
+    pub(super) owner_types: HashMap<ObjectType, Owns>,
 }
 
 #[derive(Debug)]
 pub(crate) struct OwnsCache {
     pub(super) ordering: Ordering,
-    pub(super) common_capability_cache: CommonCapabilityCache<Owns<'static>>,
+    pub(super) common_capability_cache: CommonCapabilityCache<Owns>,
 }
 
 #[derive(Debug)]
 pub(crate) struct PlaysCache {
-    pub(super) common_capability_cache: CommonCapabilityCache<Plays<'static>>,
+    pub(super) common_capability_cache: CommonCapabilityCache<Plays>,
 }
 
 #[derive(Debug)]
 pub(crate) struct RelatesCache {
     pub(super) is_specialising: bool,
-    pub(super) common_capability_cache: CommonCapabilityCache<Relates<'static>>,
+    pub(super) common_capability_cache: CommonCapabilityCache<Relates>,
 }
 
 #[derive(Debug)]
@@ -118,15 +118,15 @@ pub(crate) struct CommonCapabilityCache<CAP: Capability<'static>> {
 
 #[derive(Debug)]
 pub struct ObjectCache {
-    pub(super) owns_declared: HashSet<Owns<'static>>,
-    pub(super) owns: HashSet<Owns<'static>>,
-    pub(super) owns_with_specialised: HashSet<Owns<'static>>,
+    pub(super) owns_declared: HashSet<Owns>,
+    pub(super) owns: HashSet<Owns>,
+    pub(super) owns_with_specialised: HashSet<Owns>,
     pub(super) owned_attribute_type_constraints:
-        HashMap<AttributeType<'static>, HashSet<CapabilityConstraint<Owns<'static>>>>,
-    pub(super) plays_declared: HashSet<Plays<'static>>,
-    pub(super) plays: HashSet<Plays<'static>>,
-    pub(super) plays_with_specialised: HashSet<Plays<'static>>,
-    pub(super) played_role_type_constraints: HashMap<RoleType<'static>, HashSet<CapabilityConstraint<Plays<'static>>>>,
+        HashMap<AttributeType, HashSet<CapabilityConstraint<Owns>>>,
+    pub(super) plays_declared: HashSet<Plays>,
+    pub(super) plays: HashSet<Plays>,
+    pub(super) plays_with_specialised: HashSet<Plays>,
+    pub(super) played_role_type_constraints: HashMap<RoleType, HashSet<CapabilityConstraint<Plays>>>,
 }
 
 impl EntityTypeCache {
@@ -136,7 +136,7 @@ impl EntityTypeCache {
                 RangeStart::Inclusive(EntityType::prefix_for_kind()),
                 EntityType::PREFIX.fixed_width_keys(),
             ))
-            .collect_cloned_hashset(|key, _| EntityType::read_from(Bytes::Reference(key.byte_ref()).into_owned()))
+            .collect_cloned_hashset(|key, _| EntityType::read_from(Bytes::Reference(key.bytes()).into_owned()))
             .unwrap();
         let max_entity_id = entities.iter().map(|e| e.vertex().type_id_().as_u16()).max().unwrap_or(0);
         let mut caches = (0..=max_entity_id).map(|_| None).collect::<Box<[_]>>();
@@ -159,7 +159,7 @@ impl RelationTypeCache {
                 RangeStart::Inclusive(RelationType::prefix_for_kind()),
                 Prefix::VertexRelationType.fixed_width_keys(),
             ))
-            .collect_cloned_hashset(|key, _| RelationType::read_from(Bytes::Reference(key.byte_ref()).into_owned()))
+            .collect_cloned_hashset(|key, _| RelationType::read_from(Bytes::Reference(key.bytes()).into_owned()))
             .unwrap();
         let max_relation_id = relations.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap_or(0);
         let mut caches = (0..=max_relation_id).map(|_| None).collect::<Box<[_]>>();
@@ -168,13 +168,13 @@ impl RelationTypeCache {
             let object_cache = ObjectCache::create(snapshot, relation_type.clone());
             let relates_root = TypeReader::get_relation_type_relates_root(snapshot, relation_type.clone()).unwrap();
             let relates_declared =
-                TypeReader::get_capabilities_declared::<Relates<'static>>(snapshot, relation_type.clone()).unwrap();
+                TypeReader::get_capabilities_declared::<Relates>(snapshot, relation_type.clone()).unwrap();
             let relates =
-                TypeReader::get_capabilities::<Relates<'static>>(snapshot, relation_type.clone(), false).unwrap();
+                TypeReader::get_capabilities::<Relates>(snapshot, relation_type.clone(), false).unwrap();
             let relates_with_specialised =
-                TypeReader::get_capabilities::<Relates<'static>>(snapshot, relation_type.clone(), true).unwrap();
+                TypeReader::get_capabilities::<Relates>(snapshot, relation_type.clone(), true).unwrap();
             let related_role_type_constraints =
-                TypeReader::get_type_capabilities_constraints::<Relates<'static>>(snapshot, relation_type.clone())
+                TypeReader::get_type_capabilities_constraints::<Relates>(snapshot, relation_type.clone())
                     .unwrap();
             let cache = RelationTypeCache {
                 common_type_cache,
@@ -198,7 +198,7 @@ impl AttributeTypeCache {
                 RangeStart::Inclusive(AttributeType::prefix_for_kind()),
                 TypeVertex::FIXED_WIDTH_ENCODING,
             ))
-            .collect_cloned_hashset(|key, _| AttributeType::read_from(Bytes::Reference(key.byte_ref()).into_owned()))
+            .collect_cloned_hashset(|key, _| AttributeType::read_from(Bytes::Reference(key.bytes()).into_owned()))
             .unwrap();
         let max_attribute_id = attributes.iter().map(|a| a.vertex().type_id_().as_u16()).max().unwrap_or(0);
         let mut caches = (0..=max_attribute_id).map(|_| None).collect::<Box<[_]>>();
@@ -207,9 +207,9 @@ impl AttributeTypeCache {
                 common_type_cache: CommonTypeCache::create(snapshot, attribute_type.clone()),
                 value_type_declared: TypeReader::get_value_type_declared(snapshot, attribute_type.clone()).unwrap(),
                 value_type: TypeReader::get_value_type(snapshot, attribute_type.clone()).unwrap(),
-                owns: TypeReader::get_capabilities_for_interface::<Owns<'static>>(snapshot, attribute_type.clone())
+                owns: TypeReader::get_capabilities_for_interface::<Owns>(snapshot, attribute_type.clone())
                     .unwrap(),
-                owner_types: TypeReader::get_object_types_with_capabilities_for_interface::<Owns<'static>>(
+                owner_types: TypeReader::get_object_types_with_capabilities_for_interface::<Owns>(
                     snapshot,
                     attribute_type.clone(),
                 )
@@ -228,7 +228,7 @@ impl RoleTypeCache {
                 RangeStart::Inclusive(RoleType::prefix_for_kind()),
                 TypeVertex::FIXED_WIDTH_ENCODING,
             ))
-            .collect_cloned_hashset(|key, _| RoleType::read_from(Bytes::Reference(key.byte_ref()).into_owned()))
+            .collect_cloned_hashset(|key, _| RoleType::read_from(Bytes::Reference(key.bytes()).into_owned()))
             .unwrap();
         let max_role_id = roles.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap_or(0);
         let mut caches = (0..=max_role_id).map(|_| None).collect::<Box<[_]>>();
@@ -238,16 +238,16 @@ impl RoleTypeCache {
                 common_type_cache: CommonTypeCache::create(snapshot, role_type.clone()),
                 ordering,
                 relates_root: TypeReader::get_role_type_relates_root(snapshot, role_type.clone()).unwrap(),
-                relates: TypeReader::get_capabilities_for_interface::<Relates<'static>>(snapshot, role_type.clone())
+                relates: TypeReader::get_capabilities_for_interface::<Relates>(snapshot, role_type.clone())
                     .unwrap(),
-                relation_types: TypeReader::get_object_types_with_capabilities_for_interface::<Relates<'static>>(
+                relation_types: TypeReader::get_object_types_with_capabilities_for_interface::<Relates>(
                     snapshot,
                     role_type.clone(),
                 )
                 .unwrap(),
-                plays: TypeReader::get_capabilities_for_interface::<Plays<'static>>(snapshot, role_type.clone())
+                plays: TypeReader::get_capabilities_for_interface::<Plays>(snapshot, role_type.clone())
                     .unwrap(),
-                player_types: TypeReader::get_object_types_with_capabilities_for_interface::<Plays<'static>>(
+                player_types: TypeReader::get_object_types_with_capabilities_for_interface::<Plays>(
                     snapshot,
                     role_type.clone(),
                 )
@@ -260,7 +260,7 @@ impl RoleTypeCache {
 }
 
 impl OwnsCache {
-    pub(super) fn create(snapshot: &impl ReadableSnapshot) -> HashMap<Owns<'static>, OwnsCache> {
+    pub(super) fn create(snapshot: &impl ReadableSnapshot) -> HashMap<Owns, OwnsCache> {
         let mut map = HashMap::new();
         let mut it = snapshot.iterate_range(KeyRange::new_within(
             RangeStart::Inclusive(TypeEdge::build_prefix(Prefix::EdgeOwnsReverse)),
@@ -268,8 +268,8 @@ impl OwnsCache {
         ));
         while let Some((key, _)) = it.next().transpose().unwrap() {
             let edge = TypeEdge::new(Bytes::reference(key.bytes()));
-            let attribute = AttributeType::new(edge.from().into_owned());
-            let owner = ObjectType::new(edge.to().into_owned());
+            let attribute = AttributeType::new(edge.from());
+            let owner = ObjectType::new(edge.to());
             let owns = Owns::new(owner, attribute);
             let cache = OwnsCache {
                 ordering: TypeReader::get_capability_ordering(snapshot, owns.clone()).unwrap(),
@@ -282,7 +282,7 @@ impl OwnsCache {
 }
 
 impl PlaysCache {
-    pub(super) fn create(snapshot: &impl ReadableSnapshot) -> HashMap<Plays<'static>, PlaysCache> {
+    pub(super) fn create(snapshot: &impl ReadableSnapshot) -> HashMap<Plays, PlaysCache> {
         let mut map = HashMap::new();
         let mut it = snapshot.iterate_range(KeyRange::new_within(
             RangeStart::Inclusive(TypeEdge::build_prefix(Prefix::EdgePlays)),
@@ -291,8 +291,8 @@ impl PlaysCache {
 
         while let Some((key, _)) = it.next().transpose().unwrap() {
             let edge = TypeEdge::new(Bytes::reference(key.bytes()));
-            let player = ObjectType::new(edge.from().into_owned());
-            let role = RoleType::new(edge.to().into_owned());
+            let player = ObjectType::new(edge.from());
+            let role = RoleType::new(edge.to());
             let plays = Plays::new(player, role);
             let cache = PlaysCache { common_capability_cache: CommonCapabilityCache::create(snapshot, plays.clone()) };
             map.insert(plays.clone(), cache);
@@ -302,7 +302,7 @@ impl PlaysCache {
 }
 
 impl RelatesCache {
-    pub(super) fn create(snapshot: &impl ReadableSnapshot) -> HashMap<Relates<'static>, RelatesCache> {
+    pub(super) fn create(snapshot: &impl ReadableSnapshot) -> HashMap<Relates, RelatesCache> {
         let mut map = HashMap::new();
         let mut it = snapshot.iterate_range(KeyRange::new_within(
             RangeStart::Inclusive(TypeEdge::build_prefix(Prefix::EdgeRelates)),
@@ -311,8 +311,8 @@ impl RelatesCache {
 
         while let Some((key, _)) = it.next().transpose().unwrap() {
             let edge = TypeEdge::new(Bytes::reference(key.bytes()));
-            let relation = RelationType::new(edge.from().into_owned());
-            let role = RoleType::new(edge.to().into_owned());
+            let relation = RelationType::new(edge.from());
+            let role = RoleType::new(edge.to());
             let relates = Relates::new(relation, role);
             let is_specialising = TypeReader::is_relates_specialising(snapshot, relates.clone()).unwrap();
             let cache = RelatesCache {
@@ -370,19 +370,19 @@ impl ObjectCache {
     {
         let object_type = type_.into_owned_object_type();
         let owns_declared =
-            TypeReader::get_capabilities_declared::<Owns<'static>>(snapshot, object_type.clone()).unwrap();
-        let owns = TypeReader::get_capabilities::<Owns<'static>>(snapshot, object_type.clone(), false).unwrap();
+            TypeReader::get_capabilities_declared::<Owns>(snapshot, object_type.clone()).unwrap();
+        let owns = TypeReader::get_capabilities::<Owns>(snapshot, object_type.clone(), false).unwrap();
         let owns_with_specialised =
-            TypeReader::get_capabilities::<Owns<'static>>(snapshot, object_type.clone(), true).unwrap();
+            TypeReader::get_capabilities::<Owns>(snapshot, object_type.clone(), true).unwrap();
         let owned_attribute_type_constraints =
-            TypeReader::get_type_capabilities_constraints::<Owns<'static>>(snapshot, object_type.clone()).unwrap();
+            TypeReader::get_type_capabilities_constraints::<Owns>(snapshot, object_type.clone()).unwrap();
         let plays_declared =
-            TypeReader::get_capabilities_declared::<Plays<'static>>(snapshot, object_type.clone()).unwrap();
-        let plays = TypeReader::get_capabilities::<Plays<'static>>(snapshot, object_type.clone(), false).unwrap();
+            TypeReader::get_capabilities_declared::<Plays>(snapshot, object_type.clone()).unwrap();
+        let plays = TypeReader::get_capabilities::<Plays>(snapshot, object_type.clone(), false).unwrap();
         let plays_with_specialised =
-            TypeReader::get_capabilities::<Plays<'static>>(snapshot, object_type.clone(), true).unwrap();
+            TypeReader::get_capabilities::<Plays>(snapshot, object_type.clone(), true).unwrap();
         let played_role_type_constraints =
-            TypeReader::get_type_capabilities_constraints::<Plays<'static>>(snapshot, object_type.clone()).unwrap();
+            TypeReader::get_type_capabilities_constraints::<Plays>(snapshot, object_type.clone()).unwrap();
 
         ObjectCache {
             owns_declared,

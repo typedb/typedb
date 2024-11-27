@@ -36,7 +36,7 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{object::Object, thing_manager::ThingManager, HKInstance, ThingAPI},
     type_::{attribute_type::AttributeType, ObjectTypeAPI},
-    ByteReference, ConceptAPI, ConceptStatus,
+    ConceptAPI, ConceptStatus,
 };
 
 #[derive(Debug, Clone)]
@@ -46,12 +46,12 @@ pub struct Attribute<'a> {
 }
 
 impl<'a> Attribute<'a> {
-    pub fn type_(&self) -> AttributeType<'static> {
+    pub fn type_(&self) -> AttributeType {
         AttributeType::build_from_type_id(self.vertex.type_id_())
     }
 
-    pub fn iid(&self) -> ByteReference<'_> {
-        self.vertex.bytes()
+    pub fn iid(&self) -> Bytes<'_, BUFFER_KEY_INLINE> {
+        self.vertex.clone().into_bytes()
     }
 
     pub fn get_value(
@@ -91,7 +91,7 @@ impl<'a> Attribute<'a> {
     }
 
     pub fn next_possible(&self) -> Attribute<'static> {
-        let mut bytes = ByteArray::from(self.vertex.bytes());
+        let mut bytes = self.vertex.clone().into_bytes().into_array();
         bytes.increment().unwrap();
         Attribute::new(AttributeVertex::new(Bytes::Array(bytes)))
     }
@@ -109,7 +109,7 @@ impl<'a> ConceptAPI<'a> for Attribute<'a> {}
 
 impl<'a> ThingAPI<'a> for Attribute<'a> {
     type Vertex<'b> = AttributeVertex<'b>;
-    type TypeAPI<'b> = AttributeType<'b>;
+    type TypeAPI<'b> = AttributeType;
     type Owned = Attribute<'static>;
     const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix) = (Prefix::VertexAttribute, Prefix::VertexAttribute);
 
@@ -129,8 +129,8 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         Attribute::new(self.vertex.into_owned())
     }
 
-    fn iid(&self) -> ByteReference<'_> {
-        self.vertex.bytes()
+    fn iid(&self) -> Bytes<'_, BUFFER_KEY_INLINE> {
+        self.vertex.clone().into_bytes()
     }
 
     fn set_required(
@@ -147,7 +147,7 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
                 | ValueType::Date
                 | ValueType::DateTime
                 | ValueType::DateTimeTZ
-                | ValueType::Duration => snapshot.put(self.vertex().as_storage_key().into_owned_array()),
+                | ValueType::Duration => snapshot.put(self.vertex().into_storage_key().into_owned_array()),
                 // ValueTypes with expensive writes
                 | ValueType::String | ValueType::Struct(_) => {
                     thing_manager.lock_existing_attribute(snapshot, self.as_reference())
@@ -159,7 +159,7 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
     }
 
     fn get_status(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> ConceptStatus {
-        thing_manager.get_status(snapshot, self.vertex().as_storage_key())
+        thing_manager.get_status(snapshot, self.vertex().into_storage_key())
     }
 
     fn delete(
@@ -214,7 +214,7 @@ pub struct AttributeIterator<AllAttributesIterator>
 where
     AllAttributesIterator: for<'a> LendingIterator<Item<'a> = Result<Attribute<'a>, Box<ConceptReadError>>>,
 {
-    independent_attribute_types: Arc<HashSet<AttributeType<'static>>>,
+    independent_attribute_types: Arc<HashSet<AttributeType>>,
     attributes_iterator: Option<Peekable<AllAttributesIterator>>,
     has_reverse_iterator_buffer: Option<BufferRangeIterator>,
     has_reverse_iterator_storage: Option<SnapshotRangeIterator>,
@@ -229,7 +229,7 @@ where
         attributes_iterator: AllAttributesIterator,
         has_reverse_iterator_buffer: BufferRangeIterator,
         has_reverse_iterator_storage: SnapshotRangeIterator,
-        independent_attribute_types: Arc<HashSet<AttributeType<'static>>>,
+        independent_attribute_types: Arc<HashSet<AttributeType>>,
     ) -> Self {
         Self {
             independent_attribute_types,
@@ -327,7 +327,7 @@ where
             None => Ok(false),
             Some(Err(err)) => Err(Box::new(ConceptReadError::SnapshotIterate { source: err.clone() })),
             Some(Ok((bytes, _))) => {
-                let edge = ThingEdgeHasReverse::new(Bytes::Reference(bytes.byte_ref()));
+                let edge = ThingEdgeHasReverse::new(Bytes::Reference(bytes.bytes()));
                 let edge_from = edge.from();
                 match edge_from.cmp(&attribute_vertex) {
                     Ordering::Less => {
@@ -366,7 +366,7 @@ fn storage_key_to_owner<'a>(
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
 ) -> (Object<'a>, u64) {
     let edge = ThingEdgeHasReverse::new(storage_key.into_bytes());
-    (Object::new(edge.into_to()), decode_value_u64(value.as_reference()))
+    (Object::new(edge.into_to()), decode_value_u64(&value))
 }
 
 edge_iterator!(

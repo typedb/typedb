@@ -8,7 +8,7 @@
 
 use std::{fs::File, os::raw::c_int, path::Path, sync::Arc};
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
+use bytes::byte_array::ByteArray;
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion};
 use durability::wal::WAL;
 use pprof::ProfilerGuard;
@@ -69,8 +69,7 @@ fn populate_storage(storage: Arc<MVCCStorage<WALClient>>, keyspace: TestKeyspace
     snapshot.commit().unwrap();
     println!("Keys written: {}", key_count);
     let snapshot = storage.open_snapshot_read();
-    let prefix: StorageKey<'_, 48> =
-        StorageKey::Reference(StorageKeyReference::new(keyspace, ByteReference::new(&[0_u8])));
+    let prefix: StorageKey<'_, 48> = StorageKey::Reference(StorageKeyReference::new(keyspace, &[0_u8]));
     let iterator = snapshot.iterate_range(KeyRange::new_within(RangeStart::Inclusive(prefix), false));
     let count = iterator.collect_cloned_vec(|_, _| ((), ())).unwrap().len();
     println!("Keys confirmed to be written: {}", count);

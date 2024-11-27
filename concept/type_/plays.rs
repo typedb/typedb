@@ -28,23 +28,23 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct Plays<'a> {
-    player: ObjectType<'a>,
-    role: RoleType<'a>,
+pub struct Plays {
+    player: ObjectType,
+    role: RoleType,
 }
 
-impl Hkt for Plays<'static> {
-    type HktSelf<'a> = Plays<'a>;
+impl Hkt for Plays {
+    type HktSelf<'a> = Plays;
 }
 
-impl<'a> Plays<'a> {
+impl<'a> Plays {
     pub const DEFAULT_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, None);
 
-    pub fn player(&self) -> ObjectType<'a> {
+    pub fn player(&self) -> ObjectType {
         self.player.clone()
     }
 
-    pub fn role(&self) -> RoleType<'a> {
+    pub fn role(&self) -> RoleType {
         self.role.clone()
     }
 
@@ -87,7 +87,7 @@ impl<'a> Plays<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<CapabilityConstraint<Plays<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<Option<CapabilityConstraint<Plays>>, Box<ConceptReadError>> {
         type_manager.get_capability_abstract_constraint(snapshot, self.clone().into_owned())
     }
 
@@ -95,18 +95,18 @@ impl<'a> Plays<'a> {
         Self::DEFAULT_CARDINALITY
     }
 
-    pub(crate) fn into_owned(self) -> Plays<'static> {
-        Plays { player: ObjectType::new(self.player.vertex().into_owned()), role: self.role.into_owned() }
+    pub(crate) fn into_owned(self) -> Plays {
+        Plays { player: ObjectType::new(self.player.vertex()), role: self.role.into_owned() }
     }
 }
 
-impl<'a> TypeEdgeEncoding<'a> for Plays<'a> {
+impl<'a> TypeEdgeEncoding<'a> for Plays {
     const CANONICAL_PREFIX: Prefix = Prefix::EdgePlays;
     const REVERSE_PREFIX: Prefix = Prefix::EdgePlaysReverse;
-    type From = ObjectType<'a>;
-    type To = RoleType<'a>;
+    type From = ObjectType;
+    type To = RoleType;
 
-    fn from_vertices(player: ObjectType<'a>, role: RoleType<'a>) -> Self {
+    fn from_vertices(player: ObjectType, role: RoleType) -> Self {
         Plays { player, role }
     }
 
@@ -119,21 +119,21 @@ impl<'a> TypeEdgeEncoding<'a> for Plays<'a> {
     }
 }
 
-impl<'a> Capability<'a> for Plays<'a> {
+impl<'a> Capability<'a> for Plays {
     type AnnotationType = PlaysAnnotation;
-    type ObjectType = ObjectType<'a>;
-    type InterfaceType = RoleType<'a>;
+    type ObjectType = ObjectType;
+    type InterfaceType = RoleType;
     const KIND: CapabilityKind = CapabilityKind::Plays;
 
-    fn new(player: ObjectType<'a>, role: RoleType<'a>) -> Self {
+    fn new(player: ObjectType, role: RoleType) -> Self {
         Self { player, role }
     }
 
-    fn object(&self) -> ObjectType<'a> {
+    fn object(&self) -> ObjectType {
         self.player.clone()
     }
 
-    fn interface(&self) -> RoleType<'a> {
+    fn interface(&self) -> RoleType {
         self.role.clone()
     }
 
@@ -159,7 +159,7 @@ impl<'a> Capability<'a> for Plays<'a> {
         &'this self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<CapabilityConstraint<Plays<'static>>>>, Box<ConceptReadError>>
+    ) -> Result<MaybeOwns<'this, HashSet<CapabilityConstraint<Plays>>>, Box<ConceptReadError>>
     where
         'a: 'static,
     {
@@ -170,7 +170,7 @@ impl<'a> Capability<'a> for Plays<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<CapabilityConstraint<Plays<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<HashSet<CapabilityConstraint<Plays>>, Box<ConceptReadError>> {
         type_manager.get_plays_cardinality_constraints(snapshot, self.clone().into_owned())
     }
 

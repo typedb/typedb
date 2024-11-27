@@ -238,7 +238,7 @@ impl HasReverseExecutor {
     fn all_has_reverse_chained<'a>(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        attribute_types: impl Iterator<Item = AttributeType<'a>>,
+        attribute_types: impl Iterator<Item = AttributeType>,
         attribute_values_range: (Bound<Value<'_>>, Bound<Value<'_>>),
     ) -> Result<MultipleTypeHasReverseIterator, Box<ConceptReadError>> {
         let type_manager = thing_manager.type_manager();

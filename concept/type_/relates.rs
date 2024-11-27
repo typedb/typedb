@@ -31,24 +31,24 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct Relates<'a> {
-    relation: RelationType<'a>,
-    role: RoleType<'a>,
+pub struct Relates {
+    relation: RelationType,
+    role: RoleType,
 }
 
-impl Hkt for Relates<'static> {
-    type HktSelf<'a> = Relates<'a>;
+impl Hkt for Relates {
+    type HktSelf<'a> = Relates;
 }
 
-impl<'a> Relates<'a> {
+impl<'a> Relates {
     pub const DEFAULT_UNORDERED_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, Some(1));
     pub const DEFAULT_ORDERED_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, None);
 
-    pub fn relation(&self) -> RelationType<'a> {
+    pub fn relation(&self) -> RelationType {
         self.relation.clone()
     }
 
-    pub fn role(&self) -> RoleType<'a> {
+    pub fn role(&self) -> RoleType {
         self.role.clone()
     }
 
@@ -56,7 +56,7 @@ impl<'a> Relates<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<CapabilityConstraint<Relates<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<Option<CapabilityConstraint<Relates>>, Box<ConceptReadError>> {
         type_manager.get_capability_abstract_constraint(snapshot, self.clone().into_owned())
     }
 
@@ -64,7 +64,7 @@ impl<'a> Relates<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<CapabilityConstraint<Relates<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<HashSet<CapabilityConstraint<Relates>>, Box<ConceptReadError>> {
         type_manager.get_relates_distinct_constraints(snapshot, self.clone().into_owned())
     }
 
@@ -81,7 +81,7 @@ impl<'a> Relates<'a> {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        specialised: Relates<'static>,
+        specialised: Relates,
     ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.set_relates_specialise(snapshot, thing_manager, self.clone().into_owned(), specialised)
     }
@@ -167,18 +167,18 @@ impl<'a> Relates<'a> {
         }
     }
 
-    pub(crate) fn into_owned(self) -> Relates<'static> {
+    pub(crate) fn into_owned(self) -> Relates {
         Relates { relation: self.relation.into_owned(), role: self.role.into_owned() }
     }
 }
 
-impl<'a> TypeEdgeEncoding<'a> for Relates<'a> {
+impl<'a> TypeEdgeEncoding<'a> for Relates {
     const CANONICAL_PREFIX: Prefix = Prefix::EdgeRelates;
     const REVERSE_PREFIX: Prefix = Prefix::EdgeRelatesReverse;
-    type From = RelationType<'a>;
-    type To = RoleType<'a>;
+    type From = RelationType;
+    type To = RoleType;
 
-    fn from_vertices(from: RelationType<'a>, to: RoleType<'a>) -> Self {
+    fn from_vertices(from: RelationType, to: RoleType) -> Self {
         Self::new(from, to)
     }
 
@@ -191,21 +191,21 @@ impl<'a> TypeEdgeEncoding<'a> for Relates<'a> {
     }
 }
 
-impl<'a> Capability<'a> for Relates<'a> {
+impl<'a> Capability<'a> for Relates {
     type AnnotationType = RelatesAnnotation;
-    type ObjectType = RelationType<'a>;
-    type InterfaceType = RoleType<'a>;
+    type ObjectType = RelationType;
+    type InterfaceType = RoleType;
     const KIND: CapabilityKind = CapabilityKind::Relates;
 
-    fn new(relation: RelationType<'a>, role: RoleType<'a>) -> Self {
+    fn new(relation: RelationType, role: RoleType) -> Self {
         Relates { relation, role }
     }
 
-    fn object(&self) -> RelationType<'a> {
+    fn object(&self) -> RelationType {
         self.relation.clone()
     }
 
-    fn interface(&self) -> RoleType<'a> {
+    fn interface(&self) -> RoleType {
         self.role.clone()
     }
 
@@ -229,7 +229,7 @@ impl<'a> Capability<'a> for Relates<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Relates<'static>>>>, Box<ConceptReadError>>
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Relates>>>, Box<ConceptReadError>>
     where
         'a: 'static,
     {
@@ -240,7 +240,7 @@ impl<'a> Capability<'a> for Relates<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<CapabilityConstraint<Relates<'static>>>, Box<ConceptReadError>> {
+    ) -> Result<HashSet<CapabilityConstraint<Relates>>, Box<ConceptReadError>> {
         type_manager.get_relates_cardinality_constraints(snapshot, self.clone().into_owned())
     }
 

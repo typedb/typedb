@@ -29,25 +29,25 @@ use storage::{
 use test_utils::{create_tmp_dir, init_logging};
 use test_utils_encoding::create_core_storage;
 
-pub struct MockEntityType<'a> {
-    vertex: TypeVertex<'a>,
+pub struct MockEntityType {
+    vertex: TypeVertex,
 }
 
-impl<'a> TypeVertexEncoding<'a> for MockEntityType<'a> {
-    fn from_vertex(vertex: TypeVertex<'a>) -> Result<MockEntityType<'a>, EncodingError> {
+impl<'a> TypeVertexEncoding<'a> for MockEntityType {
+    fn from_vertex(vertex: TypeVertex) -> Result<MockEntityType, EncodingError> {
         Ok(MockEntityType { vertex })
     }
 
-    fn vertex(&self) -> TypeVertex<'_> {
-        self.vertex.as_reference()
+    fn vertex(&self) -> TypeVertex {
+        self.vertex
     }
 
-    fn into_vertex(self) -> TypeVertex<'a> {
+    fn into_vertex(self) -> TypeVertex {
         self.vertex
     }
 }
 
-impl<'a> PrefixedTypeVertexEncoding<'a> for MockEntityType<'a> {
+impl<'a> PrefixedTypeVertexEncoding<'a> for MockEntityType {
     const PREFIX: Prefix = Prefix::VertexEntityType;
 }
 
@@ -83,7 +83,7 @@ fn entity_type_vertexes_are_reused() {
         for i in 0..=create_till {
             if i % 2 == 0 {
                 let vertex = MockEntityType::build_from_type_id(TypeID::build(i)).vertex;
-                snapshot.delete(StorageKeyReference::new(vertex.keyspace(), vertex.bytes()).into());
+                snapshot.delete(StorageKeyReference::new(vertex.keyspace(), &*vertex.into_bytes()).into());
                 // TODO: replace with type api call.
             }
         }

@@ -6,7 +6,7 @@
 
 use std::fmt;
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::Bytes;
 use encoding::{
     graph::{
         thing::{vertex_object::ObjectVertex, ThingVertex},
@@ -17,6 +17,7 @@ use encoding::{
     AsBytes, Keyable, Prefixed,
 };
 use lending_iterator::{higher_order::Hkt, LendingIterator};
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -28,7 +29,7 @@ use crate::{
         HKInstance, ThingAPI,
     },
     type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI},
-    ByteReference, ConceptAPI, ConceptStatus,
+    ConceptAPI, ConceptStatus,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
@@ -37,7 +38,7 @@ pub struct Entity<'a> {
 }
 
 impl<'a> Entity<'a> {
-    pub fn type_(&self) -> EntityType<'static> {
+    pub fn type_(&self) -> EntityType {
         EntityType::build_from_type_id(self.vertex.type_id_())
     }
 
@@ -50,7 +51,7 @@ impl<'a> Entity<'a> {
     }
 
     pub fn next_possible(&self) -> Entity<'static> {
-        let mut bytes = ByteArray::from(self.vertex.bytes());
+        let mut bytes = self.vertex.clone().into_bytes().into_array();
         bytes.increment().unwrap();
         Entity::new(ObjectVertex::new(Bytes::Array(bytes)))
     }
@@ -68,7 +69,7 @@ impl<'a> ConceptAPI<'a> for Entity<'a> {}
 
 impl<'a> ThingAPI<'a> for Entity<'a> {
     type Vertex<'b> = ObjectVertex<'b>;
-    type TypeAPI<'b> = EntityType<'b>;
+    type TypeAPI<'b> = EntityType;
     type Owned = Entity<'static>;
     const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix) = (Prefix::VertexEntity, Prefix::VertexEntity);
 
@@ -89,8 +90,8 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         Entity::new(self.vertex.into_owned())
     }
 
-    fn iid(&self) -> ByteReference<'_> {
-        self.vertex.bytes()
+    fn iid(&self) -> Bytes<'_, BUFFER_KEY_INLINE> {
+        self.vertex.clone().into_bytes()
     }
 
     fn set_required(
@@ -105,7 +106,7 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
     }
 
     fn get_status(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> ConceptStatus {
-        thing_manager.get_status(snapshot, self.vertex().as_storage_key())
+        thing_manager.get_status(snapshot, self.vertex().into_storage_key())
     }
 
     fn delete(

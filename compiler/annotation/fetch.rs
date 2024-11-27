@@ -40,15 +40,15 @@ pub struct AnnotatedFetch {
 #[derive(Debug, Clone)]
 pub enum AnnotatedFetchSome {
     SingleVar(Variable),
-    SingleAttribute(Variable, AttributeType<'static>),
+    SingleAttribute(Variable, AttributeType),
     SingleFunction(AnnotatedFunction),
 
     Object(Box<AnnotatedFetchObject>),
 
     ListFunction(AnnotatedFunction),
     ListSubFetch(AnnotatedFetchListSubFetch),
-    ListAttributesAsList(Variable, AttributeType<'static>),
-    ListAttributesFromList(Variable, AttributeType<'static>),
+    ListAttributesAsList(Variable, AttributeType),
+    ListAttributesFromList(Variable, AttributeType),
 }
 
 #[derive(Debug, Clone)]
@@ -262,7 +262,7 @@ fn validate_attribute_owned_and_scalar(
     type_manager: &TypeManager,
     owner: &str,
     owner_types: &BTreeSet<Type>,
-    attribute_type: AttributeType<'static>,
+    attribute_type: AttributeType,
 ) -> Result<(), AnnotationError> {
     for owner_type in owner_types {
         if let kind @ (Kind::Attribute | Kind::Role) = owner_type.kind() {
@@ -304,7 +304,7 @@ fn validate_attribute_owned_and_streamable(
     type_manager: &TypeManager,
     owner: &str,
     owner_type: &Type,
-    attribute_type: AttributeType<'static>,
+    attribute_type: AttributeType,
 ) -> Result<(), AnnotationError> {
     if let kind @ (Kind::Attribute | Kind::Role) = owner_type.kind() {
         return Err(AnnotationError::FetchAttributesCannotBeOwnedByKind {

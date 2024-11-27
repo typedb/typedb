@@ -25,9 +25,10 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         relates_executor::{
-            RelatesFilterFn, RelatesTupleIterator, RelatesVariableValueExtractor, EXTRACT_RELATION, EXTRACT_ROLE,
+            RelatesFilterFn, RelatesFilterMapFn, RelatesTupleIterator, RelatesVariableValueExtractor, EXTRACT_RELATION,
+            EXTRACT_ROLE,
         },
-        tuple::{relates_to_tuple_relation_role, relates_to_tuple_role_relation, TuplePositions},
+        tuple::{relates_to_tuple_relation_role, relates_to_tuple_role_relation, TuplePositions, TupleResult},
         type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
     },
     pipeline::stage::ExecutionContext,
@@ -42,30 +43,26 @@ pub(crate) struct RelatesReverseExecutor {
     role_relation_types: Arc<BTreeMap<Type, Vec<Type>>>,
     relation_types: Arc<BTreeSet<Type>>,
     filter_fn: Arc<RelatesFilterFn>,
-    checker: Checker<(AsHkt![RelationType<'_>], AsHkt![RoleType<'_>])>,
+    checker: Checker<(RelationType, RoleType)>,
 }
 
-pub(super) type RelatesReverseUnboundedSortedRole = RelatesTupleIterator<
-    AsNarrowingIterator<
+pub(super) type RelatesReverseUnboundedSortedRole = AsNarrowingIterator<
+    RelatesTupleIterator<
         iter::Map<
-            iter::Flatten<vec::IntoIter<BTreeSet<(RelationType<'static>, RoleType<'static>)>>>,
-            fn(
-                (RelationType<'static>, RoleType<'static>),
-            ) -> Result<(RelationType<'static>, RoleType<'static>), Box<ConceptReadError>>,
+            iter::Flatten<vec::IntoIter<BTreeSet<(RelationType, RoleType)>>>,
+            fn((RelationType, RoleType)) -> Result<(RelationType, RoleType), Box<ConceptReadError>>,
         >,
-        Result<(RelationType<'static>, RoleType<'static>), Box<ConceptReadError>>,
     >,
+    AsHkt![TupleResult<'_>],
 >;
-pub(super) type RelatesReverseBoundedSortedRelation = RelatesTupleIterator<
-    AsNarrowingIterator<
+pub(super) type RelatesReverseBoundedSortedRelation = AsNarrowingIterator<
+    RelatesTupleIterator<
         iter::Map<
-            vec::IntoIter<(RelationType<'static>, RoleType<'static>)>,
-            fn(
-                (RelationType<'static>, RoleType<'static>),
-            ) -> Result<(RelationType<'static>, RoleType<'static>), Box<ConceptReadError>>,
+            vec::IntoIter<(RelationType, RoleType)>,
+            fn((RelationType, RoleType)) -> Result<(RelationType, RoleType), Box<ConceptReadError>>,
         >,
-        Result<(AsHkt![RelationType<'_>], AsHkt![RoleType<'_>]), Box<ConceptReadError>>,
     >,
+    AsHkt![TupleResult<'_>],
 >;
 
 impl RelatesReverseExecutor {
@@ -96,7 +93,7 @@ impl RelatesReverseExecutor {
             _ => TuplePositions::Pair([relation, role_type]),
         };
 
-        let checker = Checker::<(AsHkt![RelationType<'_>], AsHkt![RoleType<'_>])>::new(
+        let checker = Checker::<(RelationType, RoleType)>::new(
             checks,
             [(relation, EXTRACT_RELATION), (role_type, EXTRACT_ROLE)]
                 .into_iter()
@@ -123,9 +120,13 @@ impl RelatesReverseExecutor {
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
-        let filter_for_row: Box<RelatesFilterFn> = Box::new(move |item| match filter(item) {
-            Ok(true) => check(item),
-            fail => fail,
+        let filter_for_row: Box<RelatesFilterMapFn> = Box::new(move |item| match filter(&item) {
+            Ok(true) => match check(&item) {
+                Ok(true) | Err(_) => Some(item),
+                Ok(false) => None,
+            },
+            Ok(false) => None,
+            Err(_) => Some(item),
         });
 
         let snapshot = &**context.snapshot();
@@ -147,10 +148,9 @@ impl RelatesReverseExecutor {
                     })
                     .try_collect()?;
                 let iterator = relates.into_iter().flatten().map(Ok as _);
-                let as_tuples: RelatesReverseUnboundedSortedRole =
-                    AsNarrowingIterator::<_, Result<(RelationType<'_>, RoleType<'_>), _>>::new(iterator)
-                        .try_filter::<_, RelatesFilterFn, (RelationType<'_>, RoleType<'_>), _>(filter_for_row)
-                        .map(relates_to_tuple_role_relation);
+                let as_tuples: RelatesReverseUnboundedSortedRole = AsNarrowingIterator::new(
+                    iterator.filter_map(filter_for_row).map(relates_to_tuple_role_relation as _),
+                );
                 Ok(TupleIterator::RelatesReverseUnbounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -173,12 +173,9 @@ impl RelatesReverseExecutor {
                     .map(|relation_type| (relation_type.clone(), role_type.clone()));
 
                 let iterator = relates.into_iter().sorted_by_key(|(relation, _)| relation.clone()).map(Ok as _);
-                let as_tuples: RelatesReverseBoundedSortedRelation = AsNarrowingIterator::<
-                    _,
-                    Result<(RelationType<'_>, RoleType<'_>), _>,
-                >::new(iterator)
-                .try_filter::<_, RelatesFilterFn, (AsHkt![RelationType<'_>], AsHkt![RoleType<'_>]), _>(filter_for_row)
-                .map(relates_to_tuple_relation_role);
+                let as_tuples: RelatesReverseBoundedSortedRelation = AsNarrowingIterator::new(
+                    iterator.filter_map(filter_for_row).map(relates_to_tuple_relation_role as _),
+                );
                 Ok(TupleIterator::RelatesReverseBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),

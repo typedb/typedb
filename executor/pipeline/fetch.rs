@@ -200,7 +200,7 @@ fn execute_single_attribute(
     thing_manager: Arc<ThingManager>,
     row: MaybeOwnedRow<'_>,
     position: &VariablePosition,
-    attribute_type: &AttributeType<'static>,
+    attribute_type: &AttributeType,
 ) -> Result<DocumentNode, FetchExecutionError> {
     let variable_value = row.get(*position).as_reference();
     match variable_value {
@@ -407,7 +407,7 @@ fn execute_list_attributes_as_list(
     thing_manager: Arc<ThingManager>,
     row: MaybeOwnedRow<'_>,
     position: &VariablePosition,
-    attribute_type: &AttributeType<'static>,
+    attribute_type: &AttributeType,
 ) -> Result<DocumentNode, FetchExecutionError> {
     let variable_value = row.get(*position).as_reference();
     match variable_value {
@@ -480,7 +480,7 @@ fn execute_attributes_all<'a>(
 
 fn execute_attribute_single<'a>(
     object: impl ObjectAPI<'a>,
-    attribute_type: AttributeType<'static>,
+    attribute_type: AttributeType,
     snapshot: Arc<impl ReadableSnapshot>,
     thing_manager: Arc<ThingManager>,
 ) -> Result<DocumentLeaf, FetchExecutionError> {
@@ -503,7 +503,7 @@ fn execute_attribute_single<'a>(
 
 fn execute_attributes_list<'a>(
     object: impl ObjectAPI<'a>,
-    attribute_type: AttributeType<'static>,
+    attribute_type: AttributeType,
     snapshot: Arc<impl ReadableSnapshot>,
     thing_manager: Arc<ThingManager>,
 ) -> Result<DocumentList, FetchExecutionError> {
@@ -530,7 +530,7 @@ fn execute_attributes_list<'a>(
 
 fn prepare_attribute_type_has_iterator<'a>(
     object: impl ObjectAPI<'a>,
-    attribute_type: AttributeType<'static>,
+    attribute_type: AttributeType,
     snapshot: &Arc<impl ReadableSnapshot>,
     thing_manager: &Arc<ThingManager>,
 ) -> Result<HasIterator, FetchExecutionError> {

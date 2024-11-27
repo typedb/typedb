@@ -6,7 +6,7 @@
 
 use std::sync::Arc;
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
+use bytes::byte_array::ByteArray;
 use lending_iterator::LendingIterator;
 use primitive::either::Either;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
@@ -51,7 +51,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
             value_bytes,
         );
         let hash_bytes = &key_without_tail_byte[key_without_hash.len()..key_without_hash.len() + hash_bytes];
-        match Self::disambiguate(snapshot, key_without_tail_byte.as_ref(), value_bytes)? {
+        match Self::disambiguate(snapshot, &key_without_tail_byte, value_bytes)? {
             Either::First(tail) => Ok(Either::First(Self::concat_hash_and_tail(hash_bytes, tail))),
             Either::Second(tail) => Ok(Either::Second(Self::concat_hash_and_tail(hash_bytes, tail))),
         }
@@ -67,13 +67,13 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
     /// return Either<Existing tail, newly allocated tail>
     fn disambiguate<Snapshot>(
         snapshot: &Snapshot,
-        key_without_tail_byte: ByteReference,
+        key_without_tail_byte: &[u8],
         value_bytes: &[u8],
     ) -> Result<Either<u8, u8>, Arc<SnapshotIteratorError>>
     where
         Snapshot: ReadableSnapshot,
     {
-        let tail_byte_index = key_without_tail_byte.length();
+        let tail_byte_index = key_without_tail_byte.len();
         let mut iter = snapshot.iterate_range(KeyRange::new_within(
             RangeStart::Inclusive(StorageKey::<BUFFER_KEY_INLINE>::new_ref(Self::KEYSPACE, key_without_tail_byte)),
             Self::FIXED_WIDTH_KEYS,

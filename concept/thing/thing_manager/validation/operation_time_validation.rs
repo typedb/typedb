@@ -38,7 +38,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_entity_type_is_not_abstract(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        entity_type: EntityType<'static>,
+        entity_type: EntityType,
     ) -> Result<(), Box<DataValidationError>> {
         if let Some(abstract_constraint) = entity_type
             .get_constraint_abstract(snapshot, thing_manager.type_manager())
@@ -57,7 +57,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_relation_type_is_not_abstract(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        relation_type: RelationType<'static>,
+        relation_type: RelationType,
     ) -> Result<(), Box<DataValidationError>> {
         if let Some(abstract_constraint) = relation_type
             .get_constraint_abstract(snapshot, thing_manager.type_manager())
@@ -76,7 +76,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_attribute_type_is_not_abstract(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
     ) -> Result<(), Box<DataValidationError>> {
         if let Some(abstract_constraint) = attribute_type
             .get_constraint_abstract(snapshot, thing_manager.type_manager())
@@ -96,7 +96,7 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owner: &impl ObjectAPI<'a>,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
     ) -> Result<(), Box<DataValidationError>> {
         if let Some(abstract_constraint) = owner
             .type_()
@@ -118,7 +118,7 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         player: &Object<'_>,
-        role_type: RoleType<'static>,
+        role_type: RoleType,
     ) -> Result<(), Box<DataValidationError>> {
         if let Some(abstract_constraint) = player
             .type_()
@@ -140,7 +140,7 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         relation: &Relation<'_>,
-        role_type: RoleType<'static>,
+        role_type: RoleType,
     ) -> Result<(), Box<DataValidationError>> {
         if let Some(abstract_constraint) = relation
             .type_()
@@ -161,8 +161,8 @@ impl OperationTimeValidation {
     pub(crate) fn validate_object_type_plays_role_type(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        object_type: ObjectType<'static>,
-        role_type: RoleType<'static>,
+        object_type: ObjectType,
+        role_type: RoleType,
     ) -> Result<(), Box<DataValidationError>> {
         let has_plays = object_type
             .get_plays_role(snapshot, &thing_manager.type_manager, role_type.clone())
@@ -181,8 +181,8 @@ impl OperationTimeValidation {
     pub(crate) fn validate_relation_type_relates_role_type(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        relation_type: RelationType<'static>,
-        role_type: RoleType<'static>,
+        relation_type: RelationType,
+        role_type: RoleType,
     ) -> Result<(), Box<DataValidationError>> {
         let has_relates = relation_type
             .get_relates_role(snapshot, &thing_manager.type_manager, role_type.clone())
@@ -202,7 +202,7 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         object_type: impl ObjectTypeAPI<'a>,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
     ) -> Result<(), Box<DataValidationError>> {
         let has_owns = object_type
             .get_owns_attribute(snapshot, &thing_manager.type_manager, attribute_type.clone())
@@ -222,7 +222,7 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         relation: Relation<'_>,
-        role_type: RoleType<'static>,
+        role_type: RoleType,
         players_counts: &HashMap<&Object<'_>, u64>,
     ) -> Result<(), Box<DataValidationError>> {
         let distinct = relation
@@ -249,7 +249,7 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owner: &impl ObjectAPI<'a>,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         attributes_counts: &BTreeMap<&Attribute<'_>, u64>,
     ) -> Result<(), Box<DataValidationError>> {
         let distinct = owner
@@ -274,7 +274,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_attribute_regex_constraints(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         value: Value<'_>,
     ) -> Result<(), Box<DataValidationError>> {
         for constraint in attribute_type
@@ -295,7 +295,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_attribute_range_constraints(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         value: Value<'_>,
     ) -> Result<(), Box<DataValidationError>> {
         for constraint in attribute_type
@@ -316,7 +316,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_attribute_values_constraints(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         value: Value<'_>,
     ) -> Result<(), Box<DataValidationError>> {
         for constraint in attribute_type
@@ -338,7 +338,7 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owner: &impl ObjectAPI<'a>,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         value: Value<'_>,
     ) -> Result<(), Box<DataValidationError>> {
         for constraint in owner
@@ -362,7 +362,7 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owner: &impl ObjectAPI<'a>,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         value: Value<'_>,
     ) -> Result<(), Box<DataValidationError>> {
         for constraint in owner
@@ -386,7 +386,7 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owner: &impl ObjectAPI<'a>,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         value: Value<'_>,
     ) -> Result<(), Box<DataValidationError>> {
         for constraint in owner
@@ -410,7 +410,7 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owner: &impl ObjectAPI<'a>,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         value: Value<'_>,
     ) -> Result<(), Box<DataValidationError>> {
         if let Some(constraint) = owner
@@ -422,14 +422,14 @@ impl OperationTimeValidation {
             let root_owner_subtypes = root_owner_type
                 .get_subtypes_transitive(snapshot, thing_manager.type_manager())
                 .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?;
-            let owner_and_subtypes: HashSet<ObjectType<'static>> =
+            let owner_and_subtypes: HashSet<ObjectType> =
                 TypeAPI::chain_types(root_owner_type.clone(), root_owner_subtypes.into_iter().cloned()).collect();
 
             let root_attribute_type = constraint.source().attribute();
             let root_attribute_subtypes = root_attribute_type
                 .get_subtypes_transitive(snapshot, thing_manager.type_manager())
                 .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?;
-            let attribute_and_subtypes: HashSet<AttributeType<'static>> =
+            let attribute_and_subtypes: HashSet<AttributeType> =
                 TypeAPI::chain_types(root_attribute_type.clone(), root_attribute_subtypes.into_iter().cloned())
                     .collect();
 
@@ -476,7 +476,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_value_type_matches_attribute_type_for_write(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         value_type: ValueType,
         value: Value<'_>,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -512,7 +512,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_value_type_matches_attribute_type_for_read(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         value_type: ValueType,
     ) -> Result<(), Box<ConceptReadError>> {
         let type_value_type = attribute_type.get_value_type_without_source(snapshot, thing_manager.type_manager())?;
@@ -538,7 +538,7 @@ impl OperationTimeValidation {
             Ok(())
         } else {
             Err(Box::new(DataValidationError::SetHasOnDeletedOwner {
-                owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
+                owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid())),
             }))
         }
     }
@@ -555,7 +555,7 @@ impl OperationTimeValidation {
             Ok(())
         } else {
             Err(Box::new(DataValidationError::AddPlayerOnDeletedRelation {
-                relation_iid: HexBytesFormatter::owned(Vec::from(relation.iid().bytes())),
+                relation_iid: HexBytesFormatter::owned(Vec::from(relation.iid())),
             }))
         }
     }
@@ -572,7 +572,7 @@ impl OperationTimeValidation {
             Ok(())
         } else {
             Err(Box::new(DataValidationError::UnsetHasOnDeletedOwner {
-                owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid().bytes())),
+                owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid())),
             }))
         }
     }
@@ -589,7 +589,7 @@ impl OperationTimeValidation {
             Ok(())
         } else {
             Err(Box::new(DataValidationError::RemovePlayerOnDeletedRelation {
-                relation_iid: HexBytesFormatter::owned(Vec::from(relation.iid().bytes())),
+                relation_iid: HexBytesFormatter::owned(Vec::from(relation.iid())),
             }))
         }
     }

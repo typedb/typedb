@@ -6,7 +6,7 @@
 
 use std::ops::Range;
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::{byte_array::ByteArray, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
@@ -38,8 +38,8 @@ impl<'a> TypeEdge<'a> {
     fn build(prefix: Prefix, from: TypeVertex, to: TypeVertex) -> Self {
         let mut bytes = ByteArray::zeros(Self::LENGTH);
         bytes[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
-        bytes[Self::range_from()].copy_from_slice(from.bytes().bytes());
-        bytes[Self::range_to()].copy_from_slice(to.bytes().bytes());
+        bytes[Self::range_from()].copy_from_slice(&from.into_bytes());
+        bytes[Self::range_to()].copy_from_slice(&to.into_bytes());
         Self { bytes: Bytes::Array(bytes) }
     }
 
@@ -60,21 +60,18 @@ impl<'a> TypeEdge<'a> {
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
-    fn build_prefix_from(
-        prefix: Prefix,
-        from: TypeVertex<'_>,
-    ) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM }> {
+    fn build_prefix_from(prefix: Prefix, from: TypeVertex) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM);
         bytes[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
-        bytes[Self::range_from()].copy_from_slice(from.bytes().bytes());
+        bytes[Self::range_from()].copy_from_slice(&from.into_bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
-    pub fn from(&'a self) -> TypeVertex<'a> {
+    pub fn from(&'a self) -> TypeVertex {
         TypeVertex::new(Bytes::reference(&self.bytes[Self::range_from()]))
     }
 
-    pub fn to(&'a self) -> TypeVertex<'a> {
+    pub fn to(&'a self) -> TypeVertex {
         TypeVertex::new(Bytes::reference(&self.bytes[Self::range_to()]))
     }
 
@@ -92,10 +89,6 @@ impl<'a> TypeEdge<'a> {
 }
 
 impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeEdge<'a> {
-    fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_reference()
-    }
-
     fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
         self.bytes
     }
@@ -125,8 +118,8 @@ pub trait TypeEdgeEncoding<'a>: Sized {
         let type_edge = TypeEdge::new(bytes);
         debug_assert_eq!(type_edge.prefix(), Self::CANONICAL_PREFIX);
         Self::from_vertices(
-            Self::From::from_vertex(type_edge.from().into_owned()).unwrap(),
-            Self::To::from_vertex(type_edge.to().into_owned()).unwrap(),
+            Self::From::from_vertex(type_edge.from()).unwrap(),
+            Self::To::from_vertex(type_edge.to()).unwrap(),
         )
     }
 
@@ -134,8 +127,8 @@ pub trait TypeEdgeEncoding<'a>: Sized {
         let type_edge = TypeEdge::new(bytes);
         debug_assert_eq!(type_edge.prefix(), Self::REVERSE_PREFIX);
         Self::from_vertices(
-            Self::From::from_vertex(type_edge.to().into_owned()).unwrap(),
-            Self::To::from_vertex(type_edge.from().into_owned()).unwrap(),
+            Self::From::from_vertex(type_edge.to()).unwrap(),
+            Self::To::from_vertex(type_edge.from()).unwrap(),
         )
     }
 
