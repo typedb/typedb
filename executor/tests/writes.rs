@@ -13,10 +13,7 @@ use std::{
 use answer::variable_value::VariableValue;
 use compiler::{
     self,
-    annotation::{
-        function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-        match_inference::infer_types,
-    },
+    annotation::{function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types},
     VariablePosition,
 };
 use concept::{
@@ -164,16 +161,13 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
 
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
-    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
     let entry_annotations = infer_types(
         &snapshot,
         &block,
         variable_registry,
         &type_manager,
         previous_stage_variable_annotations,
-        annotated_schema_functions,
-        Some(annotated_preamble_functions),
+        &EmptyAnnotatedFunctionSignatures,
     )
     .unwrap();
 
@@ -248,16 +242,13 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
         .unwrap();
         let variable_registry = &translation_context.variable_registry;
         let previous_stage_variable_annotations = &BTreeMap::new();
-        let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
-        let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
         infer_types(
             &snapshot,
             &block,
             variable_registry,
             &type_manager,
             previous_stage_variable_annotations,
-            annotated_schema_functions,
-            Some(annotated_preamble_functions),
+            &EmptyAnnotatedFunctionSignatures,
         )
         .unwrap()
     };

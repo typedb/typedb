@@ -52,7 +52,7 @@ fn setup_common() -> Context {
     "#;
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(schema).unwrap().into_schema();
-    query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, define).unwrap();
+    query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, define).unwrap();
     snapshot.commit().unwrap();
 
     // reload to obtain latest vertex generators and statistics entries

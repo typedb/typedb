@@ -21,7 +21,7 @@ use itertools::chain;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
-    function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+    function::AnnotatedFunctionSignatures,
     type_annotations::{
         ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations, TypeAnnotations,
     },
@@ -104,8 +104,7 @@ pub fn infer_types(
     variable_registry: &VariableRegistry,
     type_manager: &TypeManager,
     previous_stage_variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<TypeAnnotation>>>,
-    schema_functions: &IndexedAnnotatedFunctions,
-    local_function_cache: Option<&AnnotatedUnindexedFunctions>,
+    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
 ) -> Result<TypeAnnotations, TypeInferenceError> {
     let graph = compute_type_inference_graph(
         snapshot,
@@ -113,8 +112,7 @@ pub fn infer_types(
         variable_registry,
         type_manager,
         previous_stage_variable_annotations,
-        schema_functions,
-        local_function_cache,
+        annotated_function_signatures,
     )?;
     // TODO: Throw error when any set becomes empty happens, rather than waiting for the it to propagate
     if graph.vertices.iter().any(|(_, types)| types.is_empty()) {
@@ -140,11 +138,10 @@ pub(crate) fn compute_type_inference_graph<'graph>(
     variable_registry: &VariableRegistry,
     type_manager: &TypeManager,
     previous_stage_variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<TypeAnnotation>>>,
-    schema_functions: &IndexedAnnotatedFunctions,
-    local_function_cache: Option<&AnnotatedUnindexedFunctions>,
+    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
 ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
     let mut graph =
-        TypeGraphSeedingContext::new(snapshot, type_manager, schema_functions, local_function_cache, variable_registry)
+        TypeGraphSeedingContext::new(snapshot, type_manager, annotated_function_signatures, variable_registry)
             .create_graph(block.block_context(), previous_stage_variable_annotations, block.conjunction())?;
     prune_types(&mut graph);
     // TODO: Throw error when any set becomes empty happens, rather than waiting for the it to propagate

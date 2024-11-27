@@ -12,7 +12,7 @@ use std::{
 
 use compiler::{
     annotation::{
-        function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+        function::EmptyAnnotatedFunctionSignatures
         match_inference::infer_types,
     },
     executable::{
@@ -102,16 +102,13 @@ fn attribute_equality() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
-    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
     let entry_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
         &type_manager,
         previous_stage_variable_annotations,
-        annotated_schema_functions,
-        Some(annotated_preamble_functions),
+        &EmptyAnnotatedFunctionSignatures,
     )
     .unwrap();
 

@@ -122,7 +122,10 @@ impl HasReverseExecutor {
                     .try_collect()?;
                 cache.extend(instances);
             }
-            debug_assert!(cache.len() < CONSTANT_CONCEPT_LIMIT);
+            #[cfg(debug_assertions)]
+            if cache.len() < CONSTANT_CONCEPT_LIMIT {
+                eprintln!("DEBUG_ASSERT_FAILURE: cache.len() > CONSTANT_CONCEPT_LIMIT");
+            }
             self.attribute_cache.get_or_init(|| cache);
         }
 

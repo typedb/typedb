@@ -102,7 +102,11 @@ impl fmt::Display for FunctionID {
     }
 }
 
-pub trait FunctionIDAPI: fmt::Debug + Clone + Into<FunctionID> {}
+pub trait FunctionIDAPI:
+    fmt::Debug + Clone + TryFrom<FunctionID> + Into<FunctionID> + std::hash::Hash + Eq + Ord
+{
+}
+
 impl FunctionIDAPI for DefinitionKey<'static> {}
 impl FunctionIDAPI for usize {}
 
@@ -115,6 +119,27 @@ impl From<usize> for FunctionID {
 impl From<DefinitionKey<'static>> for FunctionID {
     fn from(val: DefinitionKey<'static>) -> Self {
         FunctionID::Schema(val)
+    }
+}
+
+impl TryFrom<FunctionID> for usize {
+    type Error = ();
+    fn try_from(value: FunctionID) -> Result<Self, Self::Error> {
+        match value {
+            FunctionID::Schema(_) => Err(()),
+            FunctionID::Preamble(id) => Ok(id),
+        }
+    }
+}
+
+impl TryFrom<FunctionID> for DefinitionKey<'static> {
+    type Error = ();
+
+    fn try_from(value: FunctionID) -> Result<DefinitionKey<'static>, Self::Error> {
+        match value {
+            FunctionID::Schema(id) => Ok(id),
+            FunctionID::Preamble(_) => Err(()),
+        }
     }
 }
 

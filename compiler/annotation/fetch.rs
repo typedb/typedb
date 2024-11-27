@@ -27,9 +27,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
     expression::compiled_expression::ExpressionValueType,
-    function::{
-        annotate_anonymous_function, AnnotatedFunction, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions,
-    },
+    function::{annotate_anonymous_function, AnnotatedFunction, AnnotatedFunctionSignatures},
     pipeline::{annotate_stages_and_fetch, AnnotatedStage},
     AnnotationError,
 };
@@ -73,8 +71,7 @@ pub(crate) fn annotate_fetch(
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
     parameters: &ParameterRegistry,
-    indexed_annotated_functions: &IndexedAnnotatedFunctions,
-    local_functions: Option<&AnnotatedUnindexedFunctions>,
+    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<AnnotatedFetch, AnnotationError> {
@@ -84,8 +81,7 @@ pub(crate) fn annotate_fetch(
         type_manager,
         variable_registry,
         parameters,
-        indexed_annotated_functions,
-        local_functions,
+        annotated_function_signatures,
         input_type_annotations,
         input_value_type_annotations,
     )?;
@@ -98,8 +94,7 @@ fn annotate_object(
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
     parameters: &ParameterRegistry,
-    indexed_annotated_functions: &IndexedAnnotatedFunctions,
-    local_functions: Option<&AnnotatedUnindexedFunctions>,
+    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<AnnotatedFetchObject, AnnotationError> {
@@ -111,8 +106,7 @@ fn annotate_object(
                 type_manager,
                 variable_registry,
                 parameters,
-                indexed_annotated_functions,
-                local_functions,
+                annotated_function_signatures,
                 input_type_annotations,
                 input_value_type_annotations,
             )?;
@@ -128,8 +122,7 @@ fn annotated_object_entries(
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
     parameters: &ParameterRegistry,
-    indexed_annotated_functions: &IndexedAnnotatedFunctions,
-    local_functions: Option<&AnnotatedUnindexedFunctions>,
+    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<HashMap<ParameterID, AnnotatedFetchSome>, AnnotationError> {
@@ -141,8 +134,7 @@ fn annotated_object_entries(
             type_manager,
             variable_registry,
             parameters,
-            indexed_annotated_functions,
-            local_functions,
+            annotated_function_signatures,
             input_type_annotations,
             input_value_type_annotations,
         )
@@ -161,8 +153,7 @@ fn annotate_some(
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
     parameters: &ParameterRegistry,
-    indexed_annotated_functions: &IndexedAnnotatedFunctions,
-    local_functions: Option<&AnnotatedUnindexedFunctions>,
+    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<AnnotatedFetchSome, AnnotationError> {
@@ -192,8 +183,7 @@ fn annotate_some(
                 &mut function,
                 snapshot,
                 type_manager,
-                indexed_annotated_functions,
-                local_functions,
+                annotated_function_signatures,
                 input_type_annotations,
                 input_value_type_annotations,
             )
@@ -207,8 +197,7 @@ fn annotate_some(
                 type_manager,
                 variable_registry,
                 parameters,
-                indexed_annotated_functions,
-                local_functions,
+                annotated_function_signatures,
                 input_type_annotations,
                 input_value_type_annotations,
             )?;
@@ -219,8 +208,7 @@ fn annotate_some(
                 &mut function,
                 snapshot,
                 type_manager,
-                indexed_annotated_functions,
-                local_functions,
+                annotated_function_signatures,
                 input_type_annotations,
                 input_value_type_annotations,
             )
@@ -231,8 +219,7 @@ fn annotate_some(
             let annotated_sub_fetch = annotate_sub_fetch(
                 snapshot,
                 type_manager,
-                indexed_annotated_functions,
-                local_functions,
+                annotated_function_signatures,
                 parameters,
                 sub_fetch,
                 input_type_annotations,
@@ -342,8 +329,7 @@ fn validate_attribute_owned_and_streamable(
 fn annotate_sub_fetch(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    schema_function_annotations: &IndexedAnnotatedFunctions,
-    annotated_preamble: Option<&AnnotatedUnindexedFunctions>,
+    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     parameters: &ParameterRegistry,
     sub_fetch: FetchListSubFetch,
     input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
@@ -354,10 +340,9 @@ fn annotate_sub_fetch(
     let (annotated_stages, annotated_fetch) = annotate_stages_and_fetch(
         snapshot,
         type_manager,
-        schema_function_annotations,
+        annotated_function_signatures,
         &mut variable_registry,
         parameters,
-        annotated_preamble,
         stages,
         Some(fetch),
         input_type_annotations.clone(),
