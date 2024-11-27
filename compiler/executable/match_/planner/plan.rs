@@ -10,7 +10,8 @@ use std::{
     fmt,
     cmp::{Reverse, Ordering},
 };
-
+use std::collections::hash_set::Iter;
+use std::iter::Map;
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::{
@@ -26,7 +27,7 @@ use ir::{
     },
     pipeline::{block::BlockContext, VariableRegistry},
 };
-use itertools::{chain, Itertools};
+use itertools::{all, chain, Itertools};
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -218,6 +219,9 @@ impl<'a> fmt::Debug for ConjunctionPlanBuilder<'a> {
             .finish()
     }
 }
+
+pub const BEAM_WIDTH : usize = 8;
+pub const EXTENSION_WIDTH : usize = 16;
 
 impl<'a> ConjunctionPlanBuilder<'a> {
 
@@ -692,29 +696,43 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     // (When a step has multiple pattern, the first such produced variable is always the join variable)
     // We record directionality information for each pattern in the plan, indicating which prefix index to use for pattern retrieval
 
-    fn select_cheapest_extensions(iter: impl Iterator<Item = WeightedStepExtension>, k: usize) -> Vec<StepExtension> {
+    fn select_k_cheapest<T: Ord>(iter: impl Iterator<Item = T>, k: usize) -> Vec<T> {
         let mut heap = BinaryHeap::new();
         for item in iter {
             if heap.len() < k {
                 heap.push(Reverse(item));
             } else if let Some(Reverse(top)) = heap.peek() {
-                if item.0 < top.0 {
+                if item < *top {
                     heap.pop();
                     heap.push(Reverse(item));
                 }
             }
         }
-        heap.into_iter().map(|Reverse(WeightedStepExtension(cost, ext))| ext).collect()
+        heap.into_iter().map(|Reverse(item)| item).collect()
     }
 
     fn beam_search_planner(&self) -> CompleteCostPlan {
         // Initialize single plan
-        let mut k_best_plans = vec![PartialCostPlan::new(self.graph.pattern_to_variable.keys().copied().collect())];
+        let all_patterns : HashSet<PatternVertexId> = self.graph.pattern_to_variable.keys().copied().collect();
+        let search_depth : usize = all_patterns.len();
+        let beam_width = BEAM_WIDTH;
+        let extension_width = EXTENSION_WIDTH;
+        let mut best_partial_plans = vec![PartialCostPlan::new(all_patterns)];
+
+        for _ in 0..search_depth {
+            let mut new_plans : Vec<PartialCostPlan> = Vec::new();
+            for plan in best_partial_plans.iter() {
+                let k_best_extensions : Vec<WeightedStepExtension> = Self::select_k_cheapest(
+                    plan.find_extensions(&self.graph),
+                    extension_width
+                );
+            }
+        }
         todo!()
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub(super) struct CompleteCostPlan {
     vertex_ordering: Vec<VertexId>,
     pattern_directions: HashMap<PatternVertexId, Direction>,
@@ -722,7 +740,7 @@ pub(super) struct CompleteCostPlan {
     io_ratio: f64,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub(super) struct PartialCostPlan {
     vertex_ordering: Vec<VertexId>,
     pattern_directions: HashMap<PatternVertexId, Direction>,
@@ -733,6 +751,20 @@ pub(super) struct PartialCostPlan {
     ongoing_step_io_ratio: f64,
     ongoing_step_produced_vars: HashSet<VariableVertexId>,
     ongoing_step_join_var: Option<VariableVertexId>,
+}
+
+impl Eq for PartialCostPlan {}
+
+impl PartialOrd for PartialCostPlan {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.cumulative_cost.last().partial_cmp(&other.cumulative_cost.last())
+    }
+}
+
+impl Ord for PartialCostPlan {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.cumulative_cost.last().partial_cmp(&other.cumulative_cost.last()).unwrap_or(Ordering::Greater)
+    }
 }
 
 impl PartialCostPlan {
@@ -749,6 +781,51 @@ impl PartialCostPlan {
             ongoing_step_join_var: None,
         }
     }
+
+    fn find_extensions(&self, graph: &Graph<'_>) -> impl Iterator<Item = WeightedStepExtension> + '_ {
+        self.remaining_patterns
+            .iter()
+            .map(move |&pattern| {
+                let (updated_step_cost,
+                    updated_step_io_ratio,
+                    updated_pattern_direction,
+                    updated_join_var)
+                    = added_pattern_cost_and_direction(
+                    &self.vertex_ordering,
+                    pattern,
+                    self.ongoing_step_cost,
+                    self.ongoing_step_io_ratio,
+                    self.ongoing_step_join_var);
+                let updated_plan_io_ratio = self.io_ratio * updated_step_io_ratio;
+                let heuristic_remaining_cost = updated_plan_io_ratio * remaining_cost_estimate(&self.vertex_ordering, pattern);
+                let updated_total_cost = self.cumulative_cost.last().unwrap()
+                    + updated_step_cost
+                    + heuristic_remaining_cost;
+                WeightedStepExtension(
+                    updated_total_cost,
+                    StepExtension {
+                        pattern_extension: pattern,
+                        pattern_direction: updated_pattern_direction,
+                        step_cost: updated_step_cost,
+                        step_io_ratio: updated_step_io_ratio,
+                        step_join_var: updated_join_var,
+                    })
+            })
+    }
+}
+
+fn remaining_cost_estimate(p0: &Vec<VertexId>, p1: PatternVertexId) -> f64 {
+    todo!()
+}
+
+fn added_pattern_cost_and_direction(
+    p0: &Vec<VertexId>,
+    p1: PatternVertexId,
+    p2: f64,
+    p3: f64,
+    p4: Option<VariableVertexId>
+) -> (f64, f64, Direction, Option<VariableVertexId>) {
+    todo!()
 }
 
 #[derive(Clone, PartialEq)]
@@ -761,7 +838,7 @@ pub(super) struct StepExtension {
 }
 
 #[derive(PartialEq)]
-struct WeightedStepExtension(f64, StepExtension);
+pub(super) struct WeightedStepExtension(f64, StepExtension);
 
 impl Eq for WeightedStepExtension {}
 
