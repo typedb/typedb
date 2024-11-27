@@ -35,6 +35,7 @@ rust_library(
         "@typeql//rust:typeql",
         "@typedb_protocol//grpc/rust:typedb_protocol",
 
+        "@crates//:clap",
         "@crates//:chrono",
         "@crates//:chrono-tz",
         "@crates//:itertools",
