@@ -29,9 +29,9 @@ use function::{function_manager::FunctionManager, FunctionError};
 use ir::{translation::tokens::translate_annotation, LiteralParseError};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
+    common::error::TypeQLError,
     query::schema::Define,
     schema::definable::{
-        function::Function,
         struct_::Field,
         type_::{
             capability::{Owns as TypeQLOwns, Plays as TypeQLPlays, Relates as TypeQLRelates},
@@ -57,6 +57,13 @@ use crate::{
         DefinableStatus, DefinableStatusMode,
     },
 };
+
+fn checked_identifier(identifier: &typeql::Identifier) -> Result<&str, DefineError> {
+    identifier.as_str_unreserved().map_err(|_source| {
+        let TypeQLError::ReservedKeywordAsIdentifier { identifier } = _source else { unreachable!() };
+        DefineError::IllegalKeywordAsIdentifier { identifier }
+    })
+}
 
 macro_rules! verify_empty_annotations_for_capability {
     ($capability:ident, $annotation_error:path) => {
@@ -169,7 +176,7 @@ fn define_struct(
     type_manager: &TypeManager,
     struct_definable: &Struct,
 ) -> Result<(), DefineError> {
-    let name = struct_definable.ident.as_str();
+    let name = checked_identifier(&struct_definable.ident)?;
 
     let definition_status = get_struct_status(snapshot, type_manager, name)
         .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
@@ -191,7 +198,7 @@ fn define_struct_fields(
     type_manager: &TypeManager,
     struct_definable: &Struct,
 ) -> Result<(), DefineError> {
-    let name = struct_definable.ident.as_str();
+    let name = checked_identifier(&struct_definable.ident)?;
     let struct_key = resolve_struct_definition_key(snapshot, type_manager, name)
         .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
 
@@ -199,11 +206,12 @@ fn define_struct_fields(
         let (value_type, optional) = get_struct_field_value_type_optionality(snapshot, type_manager, field)
             .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
 
+        let field_key = checked_identifier(&field.key)?;
         let definition_status = get_struct_field_status(
             snapshot,
             type_manager,
             struct_key.clone(),
-            field.key.as_str(),
+            field_key,
             value_type.clone(),
             optional,
         )
@@ -221,7 +229,7 @@ fn define_struct_fields(
         }
 
         type_manager
-            .create_struct_field(snapshot, struct_key.clone(), field.key.as_str(), value_type, optional)
+            .create_struct_field(snapshot, struct_key.clone(), checked_identifier(&field.key)?, value_type, optional)
             .map_err(|err| DefineError::StructFieldCreateError {
                 typedb_source: err,
                 struct_name: name.to_owned(),
@@ -237,7 +245,7 @@ fn define_type(
     type_declaration: &Type,
     undefined_labels: &mut HashSet<Label<'static>>,
 ) -> Result<(), DefineError> {
-    let label = Label::parse_from(type_declaration.label.ident.as_str());
+    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?);
     let existing =
         try_resolve_typeql_type(snapshot, type_manager, &label).map_err(|err| DefineError::SymbolResolution {
             typedb_source: Box::new(SymbolResolutionError::UnexpectedConceptRead { source: err }),
@@ -288,7 +296,7 @@ fn define_type_annotations(
     thing_manager: &ThingManager,
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
-    let label = Label::parse_from(type_declaration.label.ident.as_str());
+    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?);
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
     for typeql_annotation in &type_declaration.annotations {
@@ -386,7 +394,7 @@ fn define_sub(
     thing_manager: &ThingManager,
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
-    let label = Label::parse_from(type_declaration.label.ident.as_str());
+    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?);
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
 
@@ -394,7 +402,7 @@ fn define_sub(
         let CapabilityBase::Sub(sub) = &capability.base else {
             continue;
         };
-        let supertype_label = Label::parse_from(sub.supertype_label.ident.as_str());
+        let supertype_label = Label::parse_from(checked_identifier(&sub.supertype_label.ident)?);
         let supertype = resolve_typeql_type(snapshot, type_manager, &supertype_label)
             .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
 
@@ -473,7 +481,7 @@ fn define_value_type(
     thing_manager: &ThingManager,
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
-    let label = Label::parse_from(type_declaration.label.ident.as_str());
+    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?);
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
     for capability in &type_declaration.capabilities {
@@ -570,7 +578,7 @@ fn define_relates_with_annotations(
     thing_manager: &ThingManager,
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
-    let label = Label::parse_from(type_declaration.label.ident.as_str());
+    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?);
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
     for capability in &type_declaration.capabilities {
@@ -656,7 +664,7 @@ fn define_relates_specialises(
     thing_manager: &ThingManager,
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
-    let label = Label::parse_from(type_declaration.label.ident.as_str());
+    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?);
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
     for capability in &type_declaration.capabilities {
@@ -686,9 +694,9 @@ fn define_relates_specialise(
     typeql_relates: &TypeQLRelates,
 ) -> Result<(), DefineError> {
     if let Some(specialised_label) = &typeql_relates.specialised {
-        let specialised_relates =
-            resolve_relates(snapshot, type_manager, relates.relation(), specialised_label.ident.as_str())
-                .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
+        let checked_specialised = checked_identifier(&specialised_label.ident)?;
+        let specialised_relates = resolve_relates(snapshot, type_manager, relates.relation(), checked_specialised)
+            .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
 
         let definition_status = get_sub_status(snapshot, type_manager, relates.role(), specialised_relates.role())
             .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
@@ -737,7 +745,7 @@ fn define_owns_with_annotations(
     thing_manager: &ThingManager,
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
-    let label = Label::parse_from(type_declaration.label.ident.as_str());
+    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?);
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
     for capability in &type_declaration.capabilities {
@@ -822,14 +830,17 @@ fn define_plays_with_annotations(
     thing_manager: &ThingManager,
     type_declaration: &Type,
 ) -> Result<(), DefineError> {
-    let label = Label::parse_from(type_declaration.label.ident.as_str());
+    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?);
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
     for capability in &type_declaration.capabilities {
         let CapabilityBase::Plays(plays) = &capability.base else {
             continue;
         };
-        let role_label = Label::build_scoped(plays.role.name.ident.as_str(), plays.role.scope.ident.as_str());
+        let role_label = Label::build_scoped(
+            checked_identifier(&plays.role.name.ident)?,
+            checked_identifier(&plays.role.scope.ident)?,
+        );
         let role_type = resolve_role_type(snapshot, type_manager, &role_label)
             .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
 
@@ -1172,5 +1183,6 @@ typedb_error!(
             "An error occurred by defining the function",
             ( typedb_source: FunctionError )
         ),
+        IllegalKeywordAsIdentifier(29, "A keyword {identifier} used as identifier.", identifier: String),
     }
 );

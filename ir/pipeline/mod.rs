@@ -104,6 +104,11 @@ typedb_error! {
             signature: Signature,
             return_: ReturnStatement
         ),
+        ReservedKeywordAsIdentifier(
+            9,
+            "A reserved keyword \"{identifier}\" was used as function name",
+            identifier: String
+        ),
     }
 }
 

@@ -157,7 +157,7 @@ impl HashMapFunctionSignatureIndex {
     pub fn build<'func>(buffered_typeql: impl Iterator<Item = (FunctionID, &'func typeql::Function)>) -> Self {
         let index = buffered_typeql
             .map(|(function_id, function)| {
-                (function.signature.ident.as_str().to_owned(), build_signature(function_id, function))
+                (function.signature.ident.as_str_unchecked().to_owned(), build_signature(function_id, function))
             })
             .collect();
         Self { index }

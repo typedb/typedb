@@ -27,6 +27,7 @@ use function::{function::SchemaFunction, function_manager::FunctionManager, Func
 use ir::{translation::tokens::translate_annotation, LiteralParseError};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
+    common::error::TypeQLError,
     query::schema::Redefine,
     schema::definable::{
         function::Function,
@@ -68,6 +69,13 @@ macro_rules! verify_no_annotations_for_capability {
             Ok(())
         }
     };
+}
+
+fn checked_identifier(identifier: &typeql::Identifier) -> Result<&str, RedefineError> {
+    identifier.as_str_unreserved().map_err(|_source| {
+        let TypeQLError::ReservedKeywordAsIdentifier { identifier } = _source else { unreachable!() };
+        RedefineError::IllegalKeywordAsIdentifier { identifier }
+    })
 }
 
 pub(crate) fn execute(
@@ -151,7 +159,7 @@ fn redefine_struct_fields(
     anything_redefined: &mut bool,
     struct_definable: &Struct,
 ) -> Result<(), RedefineError> {
-    let name = struct_definable.ident.as_str();
+    let name = checked_identifier(&struct_definable.ident)?;
     let struct_key = resolve_struct_definition_key(snapshot, type_manager, name)
         .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
 
@@ -163,7 +171,7 @@ fn redefine_struct_fields(
             snapshot,
             type_manager,
             struct_key.clone(),
-            field.key.as_str(),
+            checked_identifier(&field.key)?,
             value_type.clone(),
             optional,
         )
@@ -179,16 +187,16 @@ fn redefine_struct_fields(
         }
 
         error_if_anything_redefined_else_set_true(anything_redefined)?;
-        type_manager.delete_struct_field(snapshot, thing_manager, struct_key.clone(), field.key.as_str()).map_err(
-            |err| RedefineError::StructFieldDeleteError {
+        type_manager
+            .delete_struct_field(snapshot, thing_manager, struct_key.clone(), checked_identifier(&field.key)?)
+            .map_err(|err| RedefineError::StructFieldDeleteError {
                 struct_name: name.to_owned(),
                 declaration: field.clone(),
                 typedb_source: err,
-            },
-        )?;
+            })?;
 
         type_manager
-            .create_struct_field(snapshot, struct_key.clone(), field.key.as_str(), value_type, optional)
+            .create_struct_field(snapshot, struct_key.clone(), checked_identifier(&field.key)?, value_type, optional)
             .map_err(|err| RedefineError::StructFieldCreateError {
                 struct_name: name.to_owned(),
                 declaration: field.clone(),
@@ -205,7 +213,7 @@ fn redefine_type_annotations(
     anything_redefined: &mut bool,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
-    let label = Label::parse_from(type_declaration.label.ident.as_str());
+    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?);
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
     for typeql_annotation in &type_declaration.annotations {
@@ -315,7 +323,7 @@ fn redefine_sub(
     anything_redefined: &mut bool,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
-    let label = Label::parse_from(type_declaration.label.ident.as_str());
+    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?);
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
 
@@ -324,7 +332,7 @@ fn redefine_sub(
             continue;
         };
 
-        let supertype_label = Label::parse_from(sub.supertype_label.ident.as_str());
+        let supertype_label = Label::parse_from(checked_identifier(&sub.supertype_label.ident)?);
         let supertype = resolve_typeql_type(snapshot, type_manager, &supertype_label)
             .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
         if type_.kind() != supertype.kind() {
@@ -375,7 +383,7 @@ fn redefine_value_type(
     anything_redefined: &mut bool,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
-    let label = Label::parse_from(type_declaration.label.ident.as_str());
+    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?);
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
     for capability in &type_declaration.capabilities {
@@ -480,7 +488,7 @@ fn redefine_relates(
     anything_redefined: &mut bool,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
-    let label = Label::parse_from(type_declaration.label.ident.as_str());
+    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?);
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
     for capability in &type_declaration.capabilities {
@@ -595,7 +603,7 @@ fn redefine_relates_specialise<'a>(
 ) -> Result<(), RedefineError> {
     if let Some(specialised_label) = &typeql_relates.specialised {
         let specialised_relates =
-            resolve_relates(snapshot, type_manager, relates.relation(), specialised_label.ident.as_str())
+            resolve_relates(snapshot, type_manager, relates.relation(), checked_identifier(&specialised_label.ident)?)
                 .map_err(|typedb_source| RedefineError::DefinitionResolution { typedb_source })?;
 
         let definition_status = get_sub_status(snapshot, type_manager, relates.role(), specialised_relates.role())
@@ -665,7 +673,7 @@ fn redefine_owns(
     anything_redefined: &mut bool,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
-    let label = Label::parse_from(type_declaration.label.ident.as_str());
+    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?);
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
     for capability in &type_declaration.capabilities {
@@ -765,7 +773,7 @@ fn redefine_plays(
     anything_redefined: &mut bool,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
-    let label = Label::parse_from(type_declaration.label.ident.as_str());
+    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?);
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
     for capability in &type_declaration.capabilities {
@@ -773,8 +781,10 @@ fn redefine_plays(
             continue;
         };
 
-        let role_label =
-            Label::build_scoped(typeql_plays.role.name.ident.as_str(), typeql_plays.role.scope.ident.as_str());
+        let role_label = Label::build_scoped(
+            &checked_identifier(&typeql_plays.role.name.ident)?,
+            &checked_identifier(&typeql_plays.role.scope.ident)?,
+        );
         let role_type = resolve_role_type(snapshot, type_manager, &role_label)
             .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
 
@@ -857,7 +867,7 @@ fn redefine_function(
 ) -> Result<SchemaFunction, RedefineError> {
     let function = function_manager.redefine_function(snapshot, function_declaration).map_err(|source| {
         RedefineError::FunctionRedefinition {
-            name: function_declaration.signature.ident.as_str().to_owned(),
+            name: function_declaration.signature.ident.as_str_unchecked().to_owned(),
             typedb_source: Box::new(source),
         }
     })?;
@@ -1225,6 +1235,7 @@ typedb_error!(
             name: String,
             ( typedb_source: Box<FunctionError> )
         ),
+        IllegalKeywordAsIdentifier(37, "A keyword {identifier} used as identifier.", identifier: String),
     }
 );
 

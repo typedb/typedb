@@ -155,7 +155,7 @@ impl FunctionManager {
         definition: &typeql::Function,
     ) -> Result<SchemaFunction, FunctionError> {
         // TODO: Better query time checking. Maybe redefine all functions at once.
-        let definition_key = match self.get_function_key(snapshot, definition.signature.ident.as_str()) {
+        let definition_key = match self.get_function_key(snapshot, definition.signature.ident.as_str_unchecked()) {
             Err(source) => Err(FunctionError::FunctionRetrieval { source }),
             Ok(None) => Err(FunctionError::FunctionNotFound {}),
             Ok(Some(key)) => Ok(key),

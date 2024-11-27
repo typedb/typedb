@@ -22,20 +22,11 @@ use encoding::{
 use error::typedb_error;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
+    common::error::TypeQLError,
     schema::definable::struct_::Field,
     type_::{BuiltinValueType, NamedType, Optional},
     TypeRef, TypeRefAny,
 };
-
-macro_rules! try_unwrap {
-    ($variant:path = $item:expr) => {
-        if let $variant(inner) = $item {
-            Some(inner)
-        } else {
-            None
-        }
-    };
-}
 
 macro_rules! filter_variants {
     ($variant:path : $iterable:expr) => {
@@ -44,16 +35,23 @@ macro_rules! filter_variants {
 }
 pub(crate) use filter_variants;
 
+fn checked_identifier(ident: &typeql::Identifier) -> Result<&str, Box<SymbolResolutionError>> {
+    ident.as_str_unreserved().map_err(|_source| {
+        let TypeQLError::ReservedKeywordAsIdentifier { identifier } = _source else { unreachable!() };
+        Box::new(SymbolResolutionError::IllegalKeywordAsIdentifier { identifier })
+    })
+}
+
 pub(crate) fn type_ref_to_label_and_ordering(
     label: &Label<'_>,
     type_ref: &TypeRefAny,
 ) -> Result<(Label<'static>, Ordering), Box<SymbolResolutionError>> {
     match type_ref {
         TypeRefAny::Type(TypeRef::Named(NamedType::Label(label))) => {
-            Ok((Label::parse_from(label.ident.as_str()), Ordering::Unordered))
+            Ok((Label::parse_from(checked_identifier(&label.ident)?), Ordering::Unordered))
         }
         TypeRefAny::List(typeql::type_::List { inner: TypeRef::Named(NamedType::Label(label)), .. }) => {
-            Ok((Label::parse_from(label.ident.as_str()), Ordering::Ordered))
+            Ok((Label::parse_from(checked_identifier(&label.ident)?), Ordering::Ordered))
         }
         _ => Err(Box::new(SymbolResolutionError::ExpectedNonOptionalTypeSymbol { declaration: type_ref.clone() })),
     }
@@ -61,10 +59,11 @@ pub(crate) fn type_ref_to_label_and_ordering(
 
 pub(crate) fn named_type_to_label(named_type: &NamedType) -> Result<Label<'static>, Box<SymbolResolutionError>> {
     match named_type {
-        NamedType::Label(label) => Ok(Label::build(label.ident.as_str())),
-        NamedType::Role(scoped_label) => {
-            Ok(Label::build_scoped(scoped_label.name.ident.as_str(), scoped_label.scope.ident.as_str()))
-        }
+        NamedType::Label(label) => Ok(Label::build(checked_identifier(&label.ident)?)),
+        NamedType::Role(scoped_label) => Ok(Label::build_scoped(
+            checked_identifier(&scoped_label.name.ident)?,
+            checked_identifier(&scoped_label.scope.ident)?,
+        )),
         NamedType::BuiltinValueType(_) => Err(Box::new(SymbolResolutionError::ExpectedLabelButGotBuiltinValueType {
             declaration: named_type.clone(),
         })),
@@ -139,18 +138,18 @@ pub(crate) fn resolve_value_type(
 ) -> Result<ValueType, Box<SymbolResolutionError>> {
     match field_name {
         NamedType::Label(label) => {
-            let key = try_resolve_struct_definition_key(snapshot, type_manager, label.ident.as_str());
+            let key = try_resolve_struct_definition_key(snapshot, type_manager, checked_identifier(&label.ident)?);
             match key {
                 Ok(Some(key)) => Ok(ValueType::Struct(key)),
-                Ok(None) => {
-                    Err(Box::new(SymbolResolutionError::ValueTypeNotFound { name: label.ident.as_str().to_owned() }))
-                }
+                Ok(None) => Err(Box::new(SymbolResolutionError::ValueTypeNotFound {
+                    name: label.ident.as_str_unchecked().to_owned(),
+                })),
                 Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { source })),
             }
         }
         NamedType::Role(scoped_label) => Err(Box::new(SymbolResolutionError::ScopedValueTypeName {
-            scope: scoped_label.scope.ident.as_str().to_owned(),
-            name: scoped_label.name.ident.as_str().to_owned(),
+            scope: scoped_label.scope.ident.as_str_unchecked().to_owned(),
+            name: scoped_label.name.ident.as_str_unchecked().to_owned(),
         })),
         NamedType::BuiltinValueType(BuiltinValueType { token, .. }) => {
             Ok(ir::translation::tokens::translate_value_type(token))
@@ -482,5 +481,6 @@ typedb_error!(
         ExpectedNonOptionalTypeSymbol(15, "Expected a type label or a type[] label, but not an optional type? label.\nSource:\n{declaration}", declaration: TypeRefAny ),
         ExpectedLabelButGotBuiltinValueType(16, "Expected type label got built-in value type name:\nSource:\n{declaration}", declaration: NamedType),
         UnexpectedConceptRead(17, "Unexpected concept read error.", ( source: Box<ConceptReadError> ) ),
+        IllegalKeywordAsIdentifier(18, "A keyword {identifier} used as identifier.", identifier: String),
     }
 );

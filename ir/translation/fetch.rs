@@ -47,6 +47,7 @@ use crate::{
         function::translate_function_block,
         literal::FromTypeQLLiteral,
         pipeline::{translate_pipeline_stages, TranslatedStage},
+        tokens::checked_identifier,
         TranslationContext,
     },
     RepresentationError,
@@ -146,13 +147,17 @@ fn translate_fetch_list(
                     // built-in functions always return single values, so should not be wrapped in a list (although we could allow it if it's something interesting)
                     Err(Box::new(FetchRepresentationError::BuiltinFunctionInList { declaration: call.clone() }))
                 }
-                FunctionName::Identifier(name) => translate_inline_user_function_call_stream(
-                    parent_context,
-                    value_parameters,
-                    function_index,
-                    call,
-                    name.as_str(),
-                ),
+                FunctionName::Identifier(name) => {
+                    let checked_name = checked_identifier(name)
+                        .map_err(|typedb_source| FetchRepresentationError::SubFetchRepresentation { typedb_source })?;
+                    translate_inline_user_function_call_stream(
+                        parent_context,
+                        value_parameters,
+                        function_index,
+                        call,
+                        checked_name,
+                    )
+                }
             }
         }
         FetchStream::SubQueryFetch(stages) => {
@@ -230,13 +235,17 @@ fn translate_fetch_single(
                 FunctionName::Builtin(_) => {
                     translate_inline_expression_single(parent_context, value_parameters, function_index, expression)
                 }
-                FunctionName::Identifier(name) => translate_inline_user_function_call_single(
-                    parent_context,
-                    value_parameters,
-                    function_index,
-                    call,
-                    name.as_str(),
-                ),
+                FunctionName::Identifier(name) => {
+                    let checked_name = checked_identifier(name)
+                        .map_err(|typedb_source| FetchRepresentationError::SubFetchRepresentation { typedb_source })?;
+                    translate_inline_user_function_call_single(
+                        parent_context,
+                        value_parameters,
+                        function_index,
+                        call,
+                        checked_name,
+                    )
+                }
             },
             Expression::List(_) => {
                 Err(Box::new(FetchRepresentationError::Unimplemented { description: "list expressions".to_string() }))
@@ -274,7 +283,12 @@ fn extract_fetch_attribute(fetch_attribute: &FetchAttribute) -> Result<(bool, &s
     match &fetch_attribute.attribute {
         TypeRefAny::Type(type_ref) => match &type_ref {
             TypeRef::Named(type_) => match type_ {
-                NamedType::Label(label) => Ok((false, label.ident.as_str())),
+                NamedType::Label(label) => {
+                    let checked_label = checked_identifier(&label.ident).map_err(|typedb_source| {
+                        Box::new(FetchRepresentationError::SubFetchRepresentation { typedb_source })
+                    })?;
+                    Ok((false, checked_label))
+                }
                 NamedType::Role(_) | NamedType::BuiltinValueType(_) => {
                     Err(Box::new(InvalidAttributeLabelEncountered { declaration: type_ref.clone() }))
                 }
@@ -283,7 +297,12 @@ fn extract_fetch_attribute(fetch_attribute: &FetchAttribute) -> Result<(bool, &s
         },
         TypeRefAny::List(list) => match &list.inner {
             TypeRef::Named(named_type) => match named_type {
-                NamedType::Label(label) => Ok((true, label.ident.as_str())),
+                NamedType::Label(label) => {
+                    let checked_label = checked_identifier(&label.ident).map_err(|typedb_source| {
+                        Box::new(FetchRepresentationError::SubFetchRepresentation { typedb_source })
+                    })?;
+                    Ok((true, checked_label))
+                }
                 NamedType::Role(_) | NamedType::BuiltinValueType(_) => {
                     Err(Box::new(InvalidAttributeLabelEncountered { declaration: list.inner.clone() }))
                 }
