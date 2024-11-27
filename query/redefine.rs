@@ -592,7 +592,7 @@ fn redefine_relates_annotations(
     Ok(())
 }
 
-fn redefine_relates_specialise<'a>(
+fn redefine_relates_specialise(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,

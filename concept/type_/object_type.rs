@@ -45,7 +45,7 @@ pub enum ObjectType {
     Relation(RelationType),
 }
 
-impl<'a> ObjectType {
+impl ObjectType {
     pub fn into_owned(self) -> ObjectType {
         match self {
             Self::Entity(entity_type) => ObjectType::Entity(entity_type.into_owned()),
@@ -75,7 +75,7 @@ impl<'a> TypeVertexEncoding<'a> for ObjectType {
     }
 }
 
-impl<'a> primitive::prefix::Prefix for ObjectType {
+impl primitive::prefix::Prefix for ObjectType {
     fn starts_with(&self, other: &Self) -> bool {
         self.vertex().starts_with(&other.vertex())
     }

@@ -54,7 +54,7 @@ impl Hkt for EntityType {
     type HktSelf<'a> = EntityType;
 }
 
-impl<'a> EntityType {}
+impl EntityType {}
 
 impl<'a> ConceptAPI<'a> for EntityType {}
 
@@ -187,7 +187,7 @@ impl<'a> ThingTypeAPI<'a> for EntityType {
     type InstanceType<'b> = Entity<'b>;
 }
 
-impl<'a> EntityType {
+impl EntityType {
     pub fn set_label(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -455,7 +455,7 @@ impl<'a> PlayerAPI<'a> for EntityType {
     }
 }
 
-impl<'a> fmt::Display for EntityType {
+impl fmt::Display for EntityType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[EntityType:{}]", self.vertex.type_id_())
     }

@@ -54,7 +54,7 @@ pub struct RelationType {
     vertex: TypeVertex,
 }
 
-impl<'a> RelationType {}
+impl RelationType {}
 
 impl Hkt for RelationType {
     type HktSelf<'a> = RelationType;
@@ -192,7 +192,7 @@ impl<'a> ObjectTypeAPI<'a> for RelationType {
     }
 }
 
-impl<'a> RelationType {
+impl RelationType {
     pub fn set_label(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -473,13 +473,13 @@ impl<'a> RelationType {
     }
 }
 
-impl<'a> fmt::Display for RelationType {
+impl fmt::Display for RelationType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[RelationType:{}]", self.vertex.type_id_())
     }
 }
 
-impl<'a> primitive::prefix::Prefix for RelationType {
+impl primitive::prefix::Prefix for RelationType {
     fn starts_with(&self, other: &Self) -> bool {
         self.vertex().starts_with(&other.vertex())
     }

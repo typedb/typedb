@@ -40,7 +40,7 @@ impl Hkt for Relates {
     type HktSelf<'a> = Relates;
 }
 
-impl<'a> Relates {
+impl Relates {
     pub const DEFAULT_UNORDERED_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, Some(1));
     pub const DEFAULT_ORDERED_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, None);
 

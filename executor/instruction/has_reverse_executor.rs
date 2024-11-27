@@ -235,7 +235,7 @@ impl HasReverseExecutor {
         }
     }
 
-    fn all_has_reverse_chained<'a>(
+    fn all_has_reverse_chained(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         attribute_types: impl Iterator<Item = AttributeType>,

@@ -37,7 +37,7 @@ impl Hkt for Plays {
     type HktSelf<'a> = Plays;
 }
 
-impl<'a> Plays {
+impl Plays {
     pub const DEFAULT_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, None);
 
     pub fn player(&self) -> ObjectType {

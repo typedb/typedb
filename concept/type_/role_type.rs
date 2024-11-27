@@ -180,7 +180,7 @@ impl<'a> KindAPI<'a> for RoleType {
     }
 }
 
-impl<'a> RoleType {
+impl RoleType {
     pub fn set_name(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -214,7 +214,7 @@ impl<'a> RoleType {
 }
 
 // --- Related API ---
-impl<'a> RoleType {
+impl RoleType {
     pub fn get_relates_root(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -250,7 +250,7 @@ impl<'a> RoleType {
 }
 
 // --- Played API ---
-impl<'a> RoleType {
+impl RoleType {
     pub fn get_plays<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -286,7 +286,7 @@ impl<'a> RoleType {
     }
 }
 
-impl<'a> fmt::Display for RoleType {
+impl fmt::Display for RoleType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[RoleType:{}]", self.vertex.type_id_())
     }

@@ -65,7 +65,7 @@ impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeVertex {}
 
 impl<'a> Typed<'a, BUFFER_KEY_INLINE> for TypeVertex {}
 
-impl<'a> primitive::prefix::Prefix for TypeVertex {
+impl primitive::prefix::Prefix for TypeVertex {
     fn starts_with(&self, other: &Self) -> bool {
         self.value == other.value
     }

@@ -2828,7 +2828,7 @@ impl OperationTimeValidation {
         }
     }
 
-    fn has_instances_of_owns<'a>(
+    fn has_instances_of_owns(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owner_type: ObjectType,
@@ -2849,7 +2849,7 @@ impl OperationTimeValidation {
         Ok(has_instances)
     }
 
-    fn has_instances_of_plays<'a>(
+    fn has_instances_of_plays(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         player_type: ObjectType,
@@ -2870,7 +2870,7 @@ impl OperationTimeValidation {
         Ok(has_instances)
     }
 
-    fn has_instances_of_relates<'a>(
+    fn has_instances_of_relates(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         relation_type: RelationType,
@@ -3433,7 +3433,7 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    fn validate_plays_instances_against_constraints<'a>(
+    fn validate_plays_instances_against_constraints(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
@@ -3542,7 +3542,7 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    fn validate_relates_instances_against_constraints<'a>(
+    fn validate_relates_instances_against_constraints(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,

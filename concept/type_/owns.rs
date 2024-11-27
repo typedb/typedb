@@ -40,7 +40,7 @@ impl Hkt for Owns {
     type HktSelf<'a> = Owns;
 }
 
-impl<'a> Owns {
+impl Owns {
     pub const DEFAULT_UNORDERED_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, Some(1));
     pub const DEFAULT_ORDERED_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, None);
 

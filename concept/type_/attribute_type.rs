@@ -49,7 +49,7 @@ pub struct AttributeType {
     vertex: TypeVertex,
 }
 
-impl<'a> AttributeType {}
+impl AttributeType {}
 
 impl Hkt for AttributeType {
     type HktSelf<'a> = AttributeType;
@@ -80,7 +80,7 @@ impl<'a> TypeVertexEncoding<'a> for AttributeType {
     }
 }
 
-impl<'a> primitive::prefix::Prefix for AttributeType {
+impl primitive::prefix::Prefix for AttributeType {
     fn starts_with(&self, other: &Self) -> bool {
         self.vertex().starts_with(&other.vertex())
     }
@@ -191,7 +191,7 @@ impl<'a> ThingTypeAPI<'a> for AttributeType {
     type InstanceType<'b> = Attribute<'b>;
 }
 
-impl<'a> AttributeType {
+impl AttributeType {
     pub fn get_value_type_declared(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -381,14 +381,14 @@ impl<'a> AttributeType {
     }
 }
 
-impl<'a> fmt::Display for AttributeType {
+impl fmt::Display for AttributeType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[AttributeType:{}]", self.vertex.type_id_())
     }
 }
 
 // --- Owned API ---
-impl<'a> AttributeType {
+impl AttributeType {
     pub fn get_owns<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
