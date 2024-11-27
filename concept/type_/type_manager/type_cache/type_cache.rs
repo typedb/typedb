@@ -114,7 +114,7 @@ impl TypeCache {
                     .map(|constraint| constraint.category())
                     .any(|category| category == ConstraintCategory::Independent)
                 {
-                    Some(cache.common_type_cache.type_.clone())
+                    Some(cache.common_type_cache.type_)
                 } else {
                     None
                 }
@@ -126,7 +126,7 @@ impl TypeCache {
             if !role_types_by_name.contains_key(label.name.as_str()) {
                 role_types_by_name.insert(label.name.as_str().to_owned(), Vec::new());
             }
-            role_types_by_name.get_mut(label.name.as_str()).unwrap().push(role_type.clone());
+            role_types_by_name.get_mut(label.name.as_str()).unwrap().push(*role_type);
         }
 
         Ok(TypeCache {
@@ -188,8 +188,8 @@ impl TypeCache {
         self.role_types_index_label.get(label).cloned()
     }
 
-    pub(crate) fn get_roles_by_name(&self, name: &str) -> Option<&Vec<RoleType>> {
-        self.role_types_by_name.get(name)
+    pub(crate) fn get_roles_by_name(&self, name: &str) -> Option<&[RoleType]> {
+        self.role_types_by_name.get(name).map(|v| &**v)
     }
 
     pub(crate) fn get_attribute_type(&self, label: &Label<'_>) -> Option<AttributeType> {
@@ -203,19 +203,19 @@ impl TypeCache {
     }
 
     pub(crate) fn get_entity_types(&self) -> Vec<EntityType> {
-        self.entity_types.iter().flatten().map(|cache| cache.common_type_cache().type_.clone()).collect()
+        self.entity_types.iter().flatten().map(|cache| cache.common_type_cache().type_).collect()
     }
 
     pub(crate) fn get_relation_types(&self) -> Vec<RelationType> {
-        self.relation_types.iter().flatten().map(|cache| cache.common_type_cache().type_.clone()).collect()
+        self.relation_types.iter().flatten().map(|cache| cache.common_type_cache().type_).collect()
     }
 
     pub(crate) fn get_attribute_types(&self) -> Vec<AttributeType> {
-        self.attribute_types.iter().flatten().map(|cache| cache.common_type_cache().type_.clone()).collect()
+        self.attribute_types.iter().flatten().map(|cache| cache.common_type_cache().type_).collect()
     }
 
     pub(crate) fn get_role_types(&self) -> Vec<RoleType> {
-        self.role_types.iter().filter_map(Option::as_ref).map(|cache| cache.common_type_cache().type_.clone()).collect()
+        self.role_types.iter().filter_map(Option::as_ref).map(|cache| cache.common_type_cache().type_).collect()
     }
 
     pub(crate) fn get_supertype<'a, 'this, T, CACHE>(&'this self, type_: T) -> Option<T::SelfStatic>
@@ -289,10 +289,7 @@ impl TypeCache {
         &AttributeType::get_cache(self, attribute_type).owns
     }
 
-    pub(crate) fn get_attribute_type_owner_types(
-        &self,
-        attribute_type: AttributeType,
-    ) -> &HashMap<ObjectType, Owns> {
+    pub(crate) fn get_attribute_type_owner_types(&self, attribute_type: AttributeType) -> &HashMap<ObjectType, Owns> {
         &AttributeType::get_cache(self, attribute_type).owner_types
     }
 
@@ -343,10 +340,7 @@ impl TypeCache {
         &RoleType::get_cache(self, role_type).relates
     }
 
-    pub(crate) fn get_role_type_relation_types(
-        &self,
-        role_type: RoleType,
-    ) -> &HashMap<RelationType, Relates> {
+    pub(crate) fn get_role_type_relation_types(&self, role_type: RoleType) -> &HashMap<RelationType, Relates> {
         &RoleType::get_cache(self, role_type).relation_types
     }
 
@@ -354,10 +348,7 @@ impl TypeCache {
         &RelationType::get_cache(self, relation_type).relates_root
     }
 
-    pub(crate) fn get_relation_type_relates_declared(
-        &self,
-        relation_type: RelationType,
-    ) -> &HashSet<Relates> {
+    pub(crate) fn get_relation_type_relates_declared(&self, relation_type: RelationType) -> &HashSet<Relates> {
         &RelationType::get_cache(self, relation_type).relates_declared
     }
 
@@ -365,10 +356,7 @@ impl TypeCache {
         &RelationType::get_cache(self, relation_type).relates
     }
 
-    pub(crate) fn get_relation_type_relates_with_specialised(
-        &self,
-        relation_type: RelationType,
-    ) -> &HashSet<Relates> {
+    pub(crate) fn get_relation_type_relates_with_specialised(&self, relation_type: RelationType) -> &HashSet<Relates> {
         &RelationType::get_cache(self, relation_type).relates_with_specialised
     }
 
@@ -379,21 +367,15 @@ impl TypeCache {
         &RelationType::get_cache(self, relation_type).related_role_type_constraints
     }
 
-    pub(crate) fn get_relates_annotations_declared<'c>(
-        &'c self,
-        relates: Relates,
-    ) -> &'c HashSet<RelatesAnnotation> {
+    pub(crate) fn get_relates_annotations_declared(&self, relates: Relates) -> &HashSet<RelatesAnnotation> {
         &self.relates.get(&relates).unwrap().common_capability_cache.annotations_declared
     }
 
-    pub(crate) fn get_relates_constraints<'c>(
-        &'c self,
-        relates: Relates,
-    ) -> &'c HashSet<CapabilityConstraint<Relates>> {
+    pub(crate) fn get_relates_constraints(&self, relates: Relates) -> &HashSet<CapabilityConstraint<Relates>> {
         &self.relates.get(&relates).unwrap().common_capability_cache.constraints
     }
 
-    pub(crate) fn get_relates_is_specialising<'c>(&'c self, relates: Relates) -> bool {
+    pub(crate) fn get_relates_is_specialising(&self, relates: Relates) -> bool {
         self.relates.get(&relates).unwrap().is_specialising
     }
 
@@ -401,10 +383,7 @@ impl TypeCache {
         &RoleType::get_cache(self, role_type).plays
     }
 
-    pub(crate) fn get_role_type_player_types(
-        &self,
-        role_type: RoleType,
-    ) -> &HashMap<ObjectType, Plays> {
+    pub(crate) fn get_role_type_player_types(&self, role_type: RoleType) -> &HashMap<ObjectType, Plays> {
         &RoleType::get_cache(self, role_type).player_types
     }
 
@@ -424,10 +403,7 @@ impl TypeCache {
         &T::get_cache(self, type_).object_cache().plays
     }
 
-    pub(crate) fn get_plays_with_specialised<'a, 'this, T, CACHE>(
-        &'this self,
-        type_: T,
-    ) -> &'this HashSet<Plays>
+    pub(crate) fn get_plays_with_specialised<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this HashSet<Plays>
     where
         T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
         CACHE: HasObjectCache + 'this,
@@ -446,21 +422,15 @@ impl TypeCache {
         &T::get_cache(self, type_).object_cache().played_role_type_constraints
     }
 
-    pub(crate) fn get_plays_annotations_declared<'c>(&'c self, plays: Plays) -> &'c HashSet<PlaysAnnotation> {
+    pub(crate) fn get_plays_annotations_declared(&self, plays: Plays) -> &HashSet<PlaysAnnotation> {
         &self.plays.get(&plays).unwrap().common_capability_cache.annotations_declared
     }
 
-    pub(crate) fn get_plays_constraints<'c>(
-        &'c self,
-        plays: Plays,
-    ) -> &'c HashSet<CapabilityConstraint<Plays>> {
+    pub(crate) fn get_plays_constraints(&self, plays: Plays) -> &HashSet<CapabilityConstraint<Plays>> {
         &self.plays.get(&plays).unwrap().common_capability_cache.constraints
     }
 
-    pub(crate) fn get_attribute_type_value_type_declared(
-        &self,
-        attribute_type: AttributeType,
-    ) -> &Option<ValueType> {
+    pub(crate) fn get_attribute_type_value_type_declared(&self, attribute_type: AttributeType) -> &Option<ValueType> {
         &AttributeType::get_cache(self, attribute_type).value_type_declared
     }
 
@@ -471,18 +441,15 @@ impl TypeCache {
         &AttributeType::get_cache(self, attribute_type).value_type
     }
 
-    pub(crate) fn get_owns_annotations_declared<'c>(&'c self, owns: Owns) -> &'c HashSet<OwnsAnnotation> {
+    pub(crate) fn get_owns_annotations_declared(&self, owns: Owns) -> &HashSet<OwnsAnnotation> {
         &self.owns.get(&owns).unwrap().common_capability_cache.annotations_declared
     }
 
-    pub(crate) fn get_owns_constraints<'c>(
-        &'c self,
-        owns: Owns,
-    ) -> &'c HashSet<CapabilityConstraint<Owns>> {
+    pub(crate) fn get_owns_constraints(&self, owns: Owns) -> &HashSet<CapabilityConstraint<Owns>> {
         &self.owns.get(&owns).unwrap().common_capability_cache.constraints
     }
 
-    pub(crate) fn get_owns_ordering<'c>(&'c self, owns: Owns) -> Ordering {
+    pub(crate) fn get_owns_ordering(&self, owns: Owns) -> Ordering {
         self.owns.get(&owns).unwrap().ordering
     }
 

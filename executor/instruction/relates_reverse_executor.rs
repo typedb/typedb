@@ -139,12 +139,9 @@ impl RelatesReverseExecutor {
                     .keys()
                     .map(|role| {
                         let role_type = role.as_role_type();
-                        role_type.get_relation_types(snapshot, type_manager).map(|res| {
-                            res.to_owned()
-                                .keys()
-                                .map(|relation_type| (relation_type.clone(), role_type.clone()))
-                                .collect()
-                        })
+                        role_type
+                            .get_relation_types(snapshot, type_manager)
+                            .map(|res| res.to_owned().keys().map(|relation_type| (*relation_type, role_type)).collect())
                     })
                     .try_collect()?;
                 let iterator = relates.into_iter().flatten().map(Ok as _);
@@ -170,9 +167,9 @@ impl RelatesReverseExecutor {
                     .get_relation_types(snapshot, context.type_manager())?
                     .to_owned()
                     .into_keys()
-                    .map(|relation_type| (relation_type.clone(), role_type.clone()));
+                    .map(|relation_type| (relation_type, role_type));
 
-                let iterator = relates.into_iter().sorted_by_key(|(relation, _)| relation.clone()).map(Ok as _);
+                let iterator = relates.into_iter().sorted_by_key(|(relation, _)| *relation).map(Ok as _);
                 let as_tuples: RelatesReverseBoundedSortedRelation = AsNarrowingIterator::new(
                     iterator.filter_map(filter_for_row).map(relates_to_tuple_relation_role as _),
                 );
@@ -194,8 +191,8 @@ impl fmt::Display for RelatesReverseExecutor {
 
 fn create_relates_filter_relation_role(role_relation_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<RelatesFilterFn> {
     Arc::new(move |result| match result {
-        Ok((relation, role)) => match role_relation_types.get(&Type::RoleType(role.clone().into_owned())) {
-            Some(relation_types) => Ok(relation_types.contains(&Type::from(relation.clone().into_owned()))),
+        Ok((relation, role)) => match role_relation_types.get(&Type::RoleType((*role).into_owned())) {
+            Some(relation_types) => Ok(relation_types.contains(&Type::from((*relation).into_owned()))),
             None => Ok(false),
         },
         Err(err) => Err(err.clone()),
@@ -204,7 +201,7 @@ fn create_relates_filter_relation_role(role_relation_types: Arc<BTreeMap<Type, V
 
 fn create_relates_filter_role(relation_types: Arc<BTreeSet<Type>>) -> Arc<RelatesFilterFn> {
     Arc::new(move |result| match result {
-        Ok((relation, _)) => Ok(relation_types.contains(&Type::from(relation.clone().into_owned()))),
+        Ok((relation, _)) => Ok(relation_types.contains(&Type::from((*relation).into_owned()))),
         Err(err) => Err(err.clone()),
     })
 }

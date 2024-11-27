@@ -88,10 +88,10 @@ fn setup_schema(storage: Arc<MVCCStorage<WALClient>>) {
     let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
-    person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Unordered).unwrap();
-    person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered).unwrap();
-    person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, membership_member_type.clone()).unwrap();
-    group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, membership_group_type.clone()).unwrap();
+    person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
+    person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Unordered).unwrap();
+    person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, membership_member_type).unwrap();
+    group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, membership_group_type).unwrap();
 
     snapshot.commit().unwrap();
 }
@@ -375,7 +375,7 @@ fn relation() {
         .unwrap()
         .role();
     let relations: Vec<Relation<'_>> = thing_manager
-        .get_relations_in(&snapshot, membership_type.clone())
+        .get_relations_in(&snapshot, membership_type)
         .map_static(|item| item.map(|relation| relation.clone().into_owned()))
         .try_collect()
         .unwrap();
@@ -387,12 +387,12 @@ fn relation() {
         })
         .try_collect::<Vec<_>, _>()
         .unwrap();
-    assert!(role_players.iter().any(|(player, role)| {
-        (player.type_().clone(), role.clone()) == (ObjectType::Entity(person_type.clone()), member_role.clone())
-    }));
-    assert!(role_players.iter().any(|(player, role)| {
-        (player.type_().clone(), role.clone()) == (ObjectType::Entity(group_type.clone()), group_role.clone())
-    }));
+    assert!(role_players
+        .iter()
+        .any(|(player, role)| { (player.type_(), *role) == (ObjectType::Entity(person_type), member_role) }));
+    assert!(role_players
+        .iter()
+        .any(|(player, role)| { (player.type_(), *role) == (ObjectType::Entity(group_type), group_role) }));
     snapshot.close_resources();
 }
 
@@ -429,7 +429,7 @@ fn relation_with_inferred_roles() {
         .unwrap()
         .role();
     let relations: Vec<Relation<'_>> = thing_manager
-        .get_relations_in(&snapshot, membership_type.clone())
+        .get_relations_in(&snapshot, membership_type)
         .map_static(|item| item.map(|relation| relation.clone().into_owned()))
         .try_collect()
         .unwrap();
@@ -441,12 +441,12 @@ fn relation_with_inferred_roles() {
         })
         .try_collect::<Vec<_>, _>()
         .unwrap();
-    assert!(role_players.iter().any(|(player, role)| {
-        (player.type_().clone(), role.clone()) == (ObjectType::Entity(person_type.clone()), member_role.clone())
-    }));
-    assert!(role_players.iter().any(|(player, role)| {
-        (player.type_().clone(), role.clone()) == (ObjectType::Entity(group_type.clone()), group_role.clone())
-    }));
+    assert!(role_players
+        .iter()
+        .any(|(player, role)| { (player.type_(), *role) == (ObjectType::Entity(person_type), member_role) }));
+    assert!(role_players
+        .iter()
+        .any(|(player, role)| { (player.type_(), *role) == (ObjectType::Entity(group_type), group_role) }));
     snapshot.close_resources();
 }
 
@@ -485,7 +485,7 @@ fn test_has_with_input_rows() {
     let age_of_p10 = p10
         .as_thing()
         .as_object()
-        .get_has_type_unordered(&snapshot, &thing_manager, age_type.clone())
+        .get_has_type_unordered(&snapshot, &thing_manager, age_type)
         .map_static(|result| result.unwrap().0.clone().into_owned())
         .collect::<Vec<_>>();
     assert_eq!(a10.as_thing().as_attribute(), age_of_p10[0]);

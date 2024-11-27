@@ -171,8 +171,7 @@ pub(crate) fn owns_to_tuple_owner_attribute<'a>(
 ) -> TupleResult<'a> {
     match result {
         Ok((owner, attribute)) => Ok(Tuple::Pair(
-            [Type::from(owner.clone().into_owned()), Type::Attribute(attribute.clone().into_owned())]
-                .map(VariableValue::Type),
+            [Type::from(owner.into_owned()), Type::Attribute(attribute.into_owned())].map(VariableValue::Type),
         )),
         Err(err) => Err(err),
     }
@@ -183,8 +182,7 @@ pub(crate) fn owns_to_tuple_attribute_owner<'a>(
 ) -> TupleResult<'a> {
     match result {
         Ok((owner, attribute)) => Ok(Tuple::Pair(
-            [Type::Attribute(attribute.clone().into_owned()), Type::from(owner.clone().into_owned())]
-                .map(VariableValue::Type),
+            [Type::Attribute(attribute.into_owned()), Type::from(owner.into_owned())].map(VariableValue::Type),
         )),
         Err(err) => Err(err),
     }
@@ -197,8 +195,7 @@ pub(crate) fn relates_to_tuple_relation_role<'a>(
 ) -> TupleResult<'a> {
     match result {
         Ok((relation, role)) => Ok(Tuple::Pair(
-            [Type::Relation(relation.clone().into_owned()), Type::RoleType(role.clone().into_owned())]
-                .map(VariableValue::Type),
+            [Type::Relation(relation.into_owned()), Type::RoleType(role.into_owned())].map(VariableValue::Type),
         )),
         Err(err) => Err(err),
     }
@@ -209,8 +206,7 @@ pub(crate) fn relates_to_tuple_role_relation<'a>(
 ) -> TupleResult<'a> {
     match result {
         Ok((relation, role)) => Ok(Tuple::Pair(
-            [Type::RoleType(role.clone().into_owned()), Type::Relation(relation.clone().into_owned())]
-                .map(VariableValue::Type),
+            [Type::RoleType(role.into_owned()), Type::Relation(relation.into_owned())].map(VariableValue::Type),
         )),
         Err(err) => Err(err),
     }
@@ -223,8 +219,7 @@ pub(crate) fn plays_to_tuple_player_role<'a>(
 ) -> TupleResult<'a> {
     match result {
         Ok((player, role)) => Ok(Tuple::Pair(
-            [Type::from(player.clone().into_owned()), Type::RoleType(role.clone().into_owned())]
-                .map(VariableValue::Type),
+            [Type::from(player.into_owned()), Type::RoleType(role.into_owned())].map(VariableValue::Type),
         )),
         Err(err) => Err(err),
     }
@@ -235,8 +230,7 @@ pub(crate) fn plays_to_tuple_role_player<'a>(
 ) -> TupleResult<'a> {
     match result {
         Ok((player, role)) => Ok(Tuple::Pair(
-            [Type::RoleType(role.clone().into_owned()), Type::from(player.clone().into_owned())]
-                .map(VariableValue::Type),
+            [Type::RoleType(role.into_owned()), Type::from(player.into_owned())].map(VariableValue::Type),
         )),
         Err(err) => Err(err),
     }

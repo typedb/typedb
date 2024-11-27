@@ -192,7 +192,7 @@ impl HasReverseExecutor {
                         Peekable::new(thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
                             snapshot,
                             attribute.as_reference(),
-                            owner_type_range.clone(),
+                            owner_type_range,
                         ))
                     });
 

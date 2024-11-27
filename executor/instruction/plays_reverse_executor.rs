@@ -140,9 +140,9 @@ impl PlaysReverseExecutor {
                     .keys()
                     .map(|role| {
                         let role_type = role.as_role_type();
-                        role_type.get_player_types(snapshot, type_manager).map(|res| {
-                            res.to_owned().keys().map(|object_type| (object_type.clone(), role_type.clone())).collect()
-                        })
+                        role_type
+                            .get_player_types(snapshot, type_manager)
+                            .map(|res| res.to_owned().keys().map(|object_type| (*object_type, role_type)).collect())
                     })
                     .try_collect()?;
                 let iterator = plays.into_iter().flatten().map(Ok as _);
@@ -168,7 +168,7 @@ impl PlaysReverseExecutor {
                     .get_player_types(snapshot, type_manager)?
                     .to_owned()
                     .into_keys()
-                    .map(|object_type| (object_type.clone(), role_type.clone()));
+                    .map(|object_type| (object_type, role_type));
 
                 let iterator = plays.into_iter().sorted_by_key(|&(_, player)| player).map(Ok as _);
                 let as_tuples: PlaysReverseBoundedSortedPlayer =
@@ -191,8 +191,8 @@ impl fmt::Display for PlaysReverseExecutor {
 
 fn create_plays_filter_player_role(role_player_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<PlaysFilterFn> {
     Arc::new(move |result| match result {
-        Ok((player, role)) => match role_player_types.get(&Type::RoleType(role.clone().into_owned())) {
-            Some(player_types) => Ok(player_types.contains(&Type::from(player.clone().into_owned()))),
+        Ok((player, role)) => match role_player_types.get(&Type::RoleType((*role).into_owned())) {
+            Some(player_types) => Ok(player_types.contains(&Type::from((*player).into_owned()))),
             None => Ok(false),
         },
         Err(err) => Err(err.clone()),
@@ -201,7 +201,7 @@ fn create_plays_filter_player_role(role_player_types: Arc<BTreeMap<Type, Vec<Typ
 
 fn create_plays_filter_role(player_types: Arc<BTreeSet<Type>>) -> Arc<PlaysFilterFn> {
     Arc::new(move |result| match result {
-        Ok((player, _)) => Ok(player_types.contains(&Type::from(player.clone().into_owned()))),
+        Ok((player, _)) => Ok(player_types.contains(&Type::from((*player).into_owned()))),
         Err(err) => Err(err.clone()),
     })
 }

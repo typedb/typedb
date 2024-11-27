@@ -20,7 +20,7 @@ use encoding::{
         Typed,
     },
     value::{string_bytes::StringBytes, struct_bytes::StructBytes},
-    AsBytes, EncodingKeyspace,
+    EncodingKeyspace,
 };
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};

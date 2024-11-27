@@ -732,7 +732,7 @@ impl<T: Hkt> Checker<T> {
                                 &*snapshot,
                                 &thing_manager,
                                 &player(value).as_thing().as_object(),
-                                role(value).as_type().as_role_type().clone(),
+                                role(value).as_type().as_role_type(),
                             )
                         }
                     }));

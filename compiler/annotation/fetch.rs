@@ -169,13 +169,7 @@ fn annotate_some(
                     name: attribute,
                 })?;
             let owner_types = input_type_annotations.get(&variable).unwrap();
-            validate_attribute_owned_and_scalar(
-                snapshot,
-                type_manager,
-                variable_name,
-                owner_types,
-                attribute_type.clone(),
-            )?;
+            validate_attribute_owned_and_scalar(snapshot, type_manager, variable_name, owner_types, attribute_type)?;
             Ok(AnnotatedFetchSome::SingleAttribute(variable, attribute_type))
         }
         FetchSome::SingleFunction(mut function) => {
@@ -242,7 +236,7 @@ fn annotate_some(
                     type_manager,
                     variable_name,
                     owner_type,
-                    attribute_type.clone(),
+                    attribute_type,
                 )?;
             }
             Ok(AnnotatedFetchSome::ListAttributesAsList(variable, attribute_type))
@@ -274,7 +268,7 @@ fn validate_attribute_owned_and_scalar(
         }
         let object_type = owner_type.as_object_type();
         if object_type
-            .get_owns_attribute(snapshot, type_manager, attribute_type.clone())
+            .get_owns_attribute(snapshot, type_manager, attribute_type)
             .map_err(|err| AnnotationError::ConceptRead { source: err })?
             .is_none()
         {
@@ -286,7 +280,7 @@ fn validate_attribute_owned_and_scalar(
         }
 
         let is_bounded_to_one = object_type
-            .is_owned_attribute_type_bounded_to_one(snapshot, type_manager, attribute_type.clone())
+            .is_owned_attribute_type_bounded_to_one(snapshot, type_manager, attribute_type)
             .map_err(|err| AnnotationError::ConceptRead { source: err })?;
         if !is_bounded_to_one {
             return Err(AnnotationError::AttributeFetchCardTooHigh {
@@ -316,7 +310,7 @@ fn validate_attribute_owned_and_streamable(
 
     let _ = owner_type
         .as_object_type()
-        .get_owns_attribute(snapshot, type_manager, attribute_type.clone())
+        .get_owns_attribute(snapshot, type_manager, attribute_type)
         .map_err(|err| AnnotationError::ConceptRead { source: err })?
         .ok_or_else(|| AnnotationError::FetchAttributesNotOwned {
             var: owner.to_owned(),

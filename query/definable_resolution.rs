@@ -72,8 +72,8 @@ pub(crate) fn named_type_to_label(named_type: &NamedType) -> Result<Label<'stati
 
 pub(crate) fn type_to_object_type(type_: &Type) -> Result<ObjectType, ()> {
     Ok(match &type_ {
-        Type::Entity(entity_type) => ObjectType::Entity(entity_type.clone()),
-        Type::Relation(relation_type) => ObjectType::Relation(relation_type.clone()),
+        Type::Entity(entity_type) => ObjectType::Entity(*entity_type),
+        Type::Relation(relation_type) => ObjectType::Relation(*relation_type),
         _ => return Err(()),
     }
     .into_owned_object_type())
@@ -283,7 +283,7 @@ pub(crate) fn resolve_relates_declared(
     relation_type: RelationType,
     role_name: &str,
 ) -> Result<Relates, Box<SymbolResolutionError>> {
-    match try_resolve_relates_declared(snapshot, type_manager, relation_type.clone(), role_name) {
+    match try_resolve_relates_declared(snapshot, type_manager, relation_type, role_name) {
         Ok(Some(relates)) => Ok(relates),
         Ok(None) => Err(Box::new(SymbolResolutionError::RelatesNotFound {
             label: relation_type.get_label(snapshot, type_manager).unwrap().to_owned(),
@@ -308,7 +308,7 @@ pub(crate) fn resolve_relates(
     relation_type: RelationType,
     role_name: &str,
 ) -> Result<Relates, Box<SymbolResolutionError>> {
-    match try_resolve_relates(snapshot, type_manager, relation_type.clone(), role_name) {
+    match try_resolve_relates(snapshot, type_manager, relation_type, role_name) {
         Ok(Some(relates)) => Ok(relates),
         Ok(None) => Err(Box::new(SymbolResolutionError::RelatesNotFound {
             label: relation_type.get_label(snapshot, type_manager).unwrap().to_owned(),
@@ -333,7 +333,7 @@ pub(crate) fn resolve_owns_declared(
     object_type: ObjectType,
     attribute_type: AttributeType,
 ) -> Result<Owns, Box<SymbolResolutionError>> {
-    match try_resolve_owns_declared(snapshot, type_manager, object_type.clone(), attribute_type.clone()) {
+    match try_resolve_owns_declared(snapshot, type_manager, object_type, attribute_type) {
         Ok(Some(owns)) => Ok(owns),
         Ok(None) => Err(Box::new(SymbolResolutionError::OwnsNotFound {
             owner_label: object_type.get_label(snapshot, type_manager).unwrap().to_owned(),
@@ -349,7 +349,7 @@ pub(crate) fn try_resolve_owns_declared(
     object_type: ObjectType,
     attribute_type: AttributeType,
 ) -> Result<Option<Owns>, Box<ConceptReadError>> {
-    object_type.get_owns_attribute_declared(snapshot, type_manager, attribute_type.clone())
+    object_type.get_owns_attribute_declared(snapshot, type_manager, attribute_type)
 }
 
 pub(crate) fn resolve_owns(
@@ -358,7 +358,7 @@ pub(crate) fn resolve_owns(
     object_type: ObjectType,
     attribute_type: AttributeType,
 ) -> Result<Owns, Box<SymbolResolutionError>> {
-    match try_resolve_owns(snapshot, type_manager, object_type.clone(), attribute_type.clone()) {
+    match try_resolve_owns(snapshot, type_manager, object_type, attribute_type) {
         Ok(Some(owns)) => Ok(owns),
         Ok(None) => Err(Box::new(SymbolResolutionError::OwnsNotFound {
             owner_label: object_type.get_label(snapshot, type_manager).unwrap().to_owned(),
@@ -374,7 +374,7 @@ pub(crate) fn try_resolve_owns(
     object_type: ObjectType,
     attribute_type: AttributeType,
 ) -> Result<Option<Owns>, Box<ConceptReadError>> {
-    object_type.get_owns_attribute_with_specialised(snapshot, type_manager, attribute_type.clone())
+    object_type.get_owns_attribute_with_specialised(snapshot, type_manager, attribute_type)
 }
 
 pub(crate) fn resolve_plays_declared(
@@ -383,7 +383,7 @@ pub(crate) fn resolve_plays_declared(
     object_type: ObjectType,
     role_type: RoleType,
 ) -> Result<Plays, Box<SymbolResolutionError>> {
-    match try_resolve_plays_declared(snapshot, type_manager, object_type.clone(), role_type.clone()) {
+    match try_resolve_plays_declared(snapshot, type_manager, object_type, role_type) {
         Ok(Some(plays)) => Ok(plays),
         Ok(None) => Err(Box::new(SymbolResolutionError::PlaysNotFound {
             player_label: object_type.get_label(snapshot, type_manager).unwrap().to_owned(),
@@ -399,7 +399,7 @@ pub(crate) fn try_resolve_plays_declared(
     object_type: ObjectType,
     role_type: RoleType,
 ) -> Result<Option<Plays>, Box<ConceptReadError>> {
-    object_type.get_plays_role_declared(snapshot, type_manager, role_type.clone())
+    object_type.get_plays_role_declared(snapshot, type_manager, role_type)
 }
 
 pub(crate) fn resolve_plays(
@@ -408,7 +408,7 @@ pub(crate) fn resolve_plays(
     object_type: ObjectType,
     role_type: RoleType,
 ) -> Result<Plays, Box<SymbolResolutionError>> {
-    match try_resolve_plays(snapshot, type_manager, object_type.clone(), role_type.clone()) {
+    match try_resolve_plays(snapshot, type_manager, object_type, role_type) {
         Ok(Some(plays)) => Ok(plays),
         Ok(None) => Err(Box::new(SymbolResolutionError::PlaysNotFound {
             player_label: object_type.get_label(snapshot, type_manager).unwrap().to_owned(),
@@ -424,7 +424,7 @@ pub(crate) fn try_resolve_plays(
     object_type: ObjectType,
     role_type: RoleType,
 ) -> Result<Option<Plays>, Box<ConceptReadError>> {
-    object_type.get_plays_role_with_specialised(snapshot, type_manager, role_type.clone())
+    object_type.get_plays_role_with_specialised(snapshot, type_manager, role_type)
 }
 
 pub(crate) fn resolve_plays_role_label(
@@ -433,7 +433,7 @@ pub(crate) fn resolve_plays_role_label(
     object_type: ObjectType,
     label: &Label<'_>,
 ) -> Result<Plays, Box<SymbolResolutionError>> {
-    match try_resolve_plays_role_label(snapshot, type_manager, object_type.clone(), label) {
+    match try_resolve_plays_role_label(snapshot, type_manager, object_type, label) {
         Ok(Some(plays)) => Ok(plays),
         Ok(None) => Err(Box::new(SymbolResolutionError::PlaysNotFound {
             player_label: object_type.get_label(snapshot, type_manager).unwrap().to_owned(),

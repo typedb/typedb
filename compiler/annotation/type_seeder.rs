@@ -585,25 +585,25 @@ pub(crate) fn get_type_annotation_and_subtypes_from_label<Snapshot: ReadableSnap
             .get_subtypes_transitive(snapshot, type_manager)
             .map_err(|source| TypeInferenceError::ConceptRead { source })?
             .iter()
-            .map(|t| TypeAnnotation::Entity(t.clone()))
+            .map(|t| TypeAnnotation::Entity(*t))
             .collect(),
         TypeAnnotation::Relation(type_) => type_
             .get_subtypes_transitive(snapshot, type_manager)
             .map_err(|source| TypeInferenceError::ConceptRead { source })?
             .iter()
-            .map(|t| TypeAnnotation::Relation(t.clone()))
+            .map(|t| TypeAnnotation::Relation(*t))
             .collect(),
         TypeAnnotation::Attribute(type_) => type_
             .get_subtypes_transitive(snapshot, type_manager)
             .map_err(|source| TypeInferenceError::ConceptRead { source })?
             .iter()
-            .map(|t| TypeAnnotation::Attribute(t.clone()))
+            .map(|t| TypeAnnotation::Attribute(*t))
             .collect(),
         TypeAnnotation::RoleType(type_) => type_
             .get_subtypes_transitive(snapshot, type_manager)
             .map_err(|source| TypeInferenceError::ConceptRead { source })?
             .iter()
-            .map(|t| TypeAnnotation::RoleType(t.clone()))
+            .map(|t| TypeAnnotation::RoleType(*t))
             .collect(),
     };
     types.insert(type_);
@@ -622,25 +622,25 @@ impl UnaryConstraint for Kind<Variable> {
                 .get_entity_types(seeder.snapshot)
                 .map_err(|source| TypeInferenceError::ConceptRead { source })?
                 .iter()
-                .map(|t| TypeAnnotation::Entity(t.clone()))
+                .map(|t| TypeAnnotation::Entity(*t))
                 .collect(),
             typeql::token::Kind::Relation => type_manager
                 .get_relation_types(seeder.snapshot)
                 .map_err(|source| TypeInferenceError::ConceptRead { source })?
                 .iter()
-                .map(|t| TypeAnnotation::Relation(t.clone()))
+                .map(|t| TypeAnnotation::Relation(*t))
                 .collect(),
             typeql::token::Kind::Attribute => type_manager
                 .get_attribute_types(seeder.snapshot)
                 .map_err(|source| TypeInferenceError::ConceptRead { source })?
                 .iter()
-                .map(|t| TypeAnnotation::Attribute(t.clone()))
+                .map(|t| TypeAnnotation::Attribute(*t))
                 .collect(),
             typeql::token::Kind::Role => type_manager
                 .get_role_types(seeder.snapshot)
                 .map_err(|source| TypeInferenceError::ConceptRead { source })?
                 .iter()
-                .map(|t| TypeAnnotation::RoleType(t.clone()))
+                .map(|t| TypeAnnotation::RoleType(*t))
                 .collect(),
         };
         graph_vertices.add_or_intersect(self.type_(), Cow::Owned(annotations));
@@ -676,12 +676,12 @@ impl UnaryConstraint for RoleName<Variable> {
             .map_err(|source| TypeInferenceError::ConceptRead { source })?;
         if let Some(role_types) = role_types_opt {
             let mut annotations = BTreeSet::new();
-            for role_type in &role_types {
-                annotations.insert(TypeAnnotation::RoleType(role_type.clone()));
+            for role_type in &*role_types {
+                annotations.insert(TypeAnnotation::RoleType(*role_type));
                 let subtypes = role_type
                     .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)
                     .map_err(|source| TypeInferenceError::ConceptRead { source })?;
-                annotations.extend(subtypes.into_iter().map(|subtype| TypeAnnotation::RoleType(subtype.clone())));
+                annotations.extend(subtypes.into_iter().map(|subtype| TypeAnnotation::RoleType(*subtype)));
             }
             graph_vertices.add_or_intersect(self.type_(), Cow::Owned(annotations));
             Ok(())
@@ -866,8 +866,8 @@ impl BinaryConstraint for Has<Variable> {
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
         let owner = match left_type {
-            TypeAnnotation::Entity(entity) => ObjectType::Entity(entity.clone()),
-            TypeAnnotation::Relation(relation) => ObjectType::Relation(relation.clone()),
+            TypeAnnotation::Entity(entity) => ObjectType::Entity(*entity),
+            TypeAnnotation::Relation(relation) => ObjectType::Relation(*relation),
             _ => return Ok(()), // It can't be another type => Do nothing and let type-inference clean it up
         };
         collector.extend(
@@ -889,7 +889,7 @@ impl BinaryConstraint for Has<Variable> {
         };
         collector.extend(
             (attribute.get_owner_types(seeder.snapshot, seeder.type_manager)?.iter())
-                .map(|(owner, _)| TypeAnnotation::from(owner.clone())),
+                .map(|(owner, _)| TypeAnnotation::from(*owner)),
         );
         Ok(())
     }
@@ -911,8 +911,8 @@ impl BinaryConstraint for Owns<Variable> {
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
         let owner = match left_type {
-            TypeAnnotation::Entity(entity) => ObjectType::Entity(entity.clone()),
-            TypeAnnotation::Relation(relation) => ObjectType::Relation(relation.clone()),
+            TypeAnnotation::Entity(entity) => ObjectType::Entity(*entity),
+            TypeAnnotation::Relation(relation) => ObjectType::Relation(*relation),
             _ => {
                 return Ok(());
             } // It can't be another type => Do nothing and let type-inference clean it up
@@ -943,8 +943,8 @@ impl BinaryConstraint for Owns<Variable> {
             .get_owner_types(seeder.snapshot, seeder.type_manager)?
             .iter()
             .map(|(owner, _)| match owner {
-                ObjectType::Entity(entity) => TypeAnnotation::Entity(entity.clone()),
-                ObjectType::Relation(relation) => TypeAnnotation::Relation(relation.clone()),
+                ObjectType::Entity(entity) => TypeAnnotation::Entity(*entity),
+                ObjectType::Relation(relation) => TypeAnnotation::Relation(*relation),
             })
             .for_each(|type_| {
                 collector.insert(type_);
@@ -974,7 +974,7 @@ impl BinaryConstraint for Isa<Variable> {
                     attribute
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Attribute(subtype.clone().into_owned()))
+                        .map(|subtype| TypeAnnotation::Attribute((*subtype).into_owned()))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -983,7 +983,7 @@ impl BinaryConstraint for Isa<Variable> {
                     entity
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Entity(subtype.clone().into_owned()))
+                        .map(|subtype| TypeAnnotation::Entity((*subtype).into_owned()))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -992,7 +992,7 @@ impl BinaryConstraint for Isa<Variable> {
                     relation
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Relation(subtype.clone().into_owned()))
+                        .map(|subtype| TypeAnnotation::Relation((*subtype).into_owned()))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1016,7 +1016,7 @@ impl BinaryConstraint for Isa<Variable> {
                     attribute
                         .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Attribute(subtype.clone().into_owned()))
+                        .map(|subtype| TypeAnnotation::Attribute((*subtype).into_owned()))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1025,7 +1025,7 @@ impl BinaryConstraint for Isa<Variable> {
                     entity
                         .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Entity(subtype.clone().into_owned()))
+                        .map(|subtype| TypeAnnotation::Entity((*subtype).into_owned()))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1034,7 +1034,7 @@ impl BinaryConstraint for Isa<Variable> {
                     relation
                         .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Relation(subtype.clone().into_owned()))
+                        .map(|subtype| TypeAnnotation::Relation((*subtype).into_owned()))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1068,7 +1068,7 @@ impl BinaryConstraint for Sub<Variable> {
                     attribute
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|supertype| TypeAnnotation::Attribute(supertype.clone()))
+                        .map(|supertype| TypeAnnotation::Attribute(*supertype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1077,7 +1077,7 @@ impl BinaryConstraint for Sub<Variable> {
                     entity
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|supertype| TypeAnnotation::Entity(supertype.clone()))
+                        .map(|supertype| TypeAnnotation::Entity(*supertype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1086,7 +1086,7 @@ impl BinaryConstraint for Sub<Variable> {
                     relation
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Relation(subtype.clone()))
+                        .map(|subtype| TypeAnnotation::Relation(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1095,7 +1095,7 @@ impl BinaryConstraint for Sub<Variable> {
                     role_type
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|supertype| TypeAnnotation::RoleType(supertype.clone()))
+                        .map(|supertype| TypeAnnotation::RoleType(*supertype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1141,7 +1141,7 @@ impl BinaryConstraint for Sub<Variable> {
                     attribute
                         .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Attribute(subtype.clone()))
+                        .map(|subtype| TypeAnnotation::Attribute(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1150,7 +1150,7 @@ impl BinaryConstraint for Sub<Variable> {
                     entity
                         .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Entity(subtype.clone()))
+                        .map(|subtype| TypeAnnotation::Entity(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1159,7 +1159,7 @@ impl BinaryConstraint for Sub<Variable> {
                     relation
                         .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Relation(subtype.clone()))
+                        .map(|subtype| TypeAnnotation::Relation(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1168,7 +1168,7 @@ impl BinaryConstraint for Sub<Variable> {
                     role_type
                         .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::RoleType(subtype.clone()))
+                        .map(|subtype| TypeAnnotation::RoleType(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1181,7 +1181,7 @@ impl BinaryConstraint for Sub<Variable> {
                     attribute
                         .get_subtypes(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Attribute(subtype.clone()))
+                        .map(|subtype| TypeAnnotation::Attribute(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1190,7 +1190,7 @@ impl BinaryConstraint for Sub<Variable> {
                     entity
                         .get_subtypes(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Entity(subtype.clone()))
+                        .map(|subtype| TypeAnnotation::Entity(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1199,7 +1199,7 @@ impl BinaryConstraint for Sub<Variable> {
                     relation
                         .get_subtypes(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Relation(subtype.clone()))
+                        .map(|subtype| TypeAnnotation::Relation(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1208,7 +1208,7 @@ impl BinaryConstraint for Sub<Variable> {
                     role_type
                         .get_subtypes(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::RoleType(subtype.clone()))
+                        .map(|subtype| TypeAnnotation::RoleType(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1394,8 +1394,8 @@ impl<'graph> BinaryConstraint for PlayerRoleEdge<'graph> {
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
         let player = match left_type {
-            TypeAnnotation::Entity(entity) => ObjectType::Entity(entity.clone()),
-            TypeAnnotation::Relation(relation) => ObjectType::Relation(relation.clone()),
+            TypeAnnotation::Entity(entity) => ObjectType::Entity(*entity),
+            TypeAnnotation::Relation(relation) => ObjectType::Relation(*relation),
             _ => {
                 return Ok(());
             } // It can't be another type => Do nothing and let type-inference clean it up
@@ -1426,8 +1426,8 @@ impl<'graph> BinaryConstraint for PlayerRoleEdge<'graph> {
             .get_player_types(seeder.snapshot, seeder.type_manager)?
             .keys()
             .map(|player| match player {
-                ObjectType::Entity(entity) => TypeAnnotation::Entity(entity.clone()),
-                ObjectType::Relation(relation) => TypeAnnotation::Relation(relation.clone()),
+                ObjectType::Entity(entity) => TypeAnnotation::Entity(*entity),
+                ObjectType::Relation(relation) => TypeAnnotation::Relation(*relation),
             })
             .for_each(|type_| {
                 collector.insert(type_);
@@ -1452,8 +1452,8 @@ impl BinaryConstraint for Plays<Variable> {
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
         let player = match left_type {
-            TypeAnnotation::Entity(entity) => ObjectType::Entity(entity.clone()),
-            TypeAnnotation::Relation(relation) => ObjectType::Relation(relation.clone()),
+            TypeAnnotation::Entity(entity) => ObjectType::Entity(*entity),
+            TypeAnnotation::Relation(relation) => ObjectType::Relation(*relation),
             _ => {
                 return Ok(());
             } // It can't be another type => Do nothing and let type-inference clean it up
@@ -1484,8 +1484,8 @@ impl BinaryConstraint for Plays<Variable> {
             .get_player_types(seeder.snapshot, seeder.type_manager)?
             .keys()
             .map(|player| match player {
-                ObjectType::Entity(entity) => TypeAnnotation::Entity(entity.clone()),
-                ObjectType::Relation(relation) => TypeAnnotation::Relation(relation.clone()),
+                ObjectType::Entity(entity) => TypeAnnotation::Entity(*entity),
+                ObjectType::Relation(relation) => TypeAnnotation::Relation(*relation),
             })
             .for_each(|type_| {
                 collector.insert(type_);
@@ -1540,7 +1540,7 @@ impl<'graph> BinaryConstraint for RelationRoleEdge<'graph> {
         role_type
             .get_relation_types(seeder.snapshot, seeder.type_manager)?
             .keys()
-            .map(|relation_type| TypeAnnotation::Relation(relation_type.clone()))
+            .map(|relation_type| TypeAnnotation::Relation(*relation_type))
             .for_each(|type_| {
                 collector.insert(type_);
             });
@@ -1594,7 +1594,7 @@ impl BinaryConstraint for Relates<Variable> {
         role_type
             .get_relation_types(seeder.snapshot, seeder.type_manager)?
             .keys()
-            .map(|relation_type| TypeAnnotation::Relation(relation_type.clone()))
+            .map(|relation_type| TypeAnnotation::Relation(*relation_type))
             .for_each(|type_| {
                 collector.insert(type_);
             });
@@ -1783,15 +1783,13 @@ pub mod tests {
             let type_owner = type_manager.create_entity_type(&mut snapshot, &label_owner).unwrap();
             let type_age = type_manager.create_attribute_type(&mut snapshot, &Label::build("age")).unwrap();
             type_age.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
-            type_owner
-                .set_owns(&mut snapshot, &type_manager, &thing_manager, type_age.clone(), Ordering::Unordered)
-                .unwrap();
+            type_owner.set_owns(&mut snapshot, &type_manager, &thing_manager, type_age, Ordering::Unordered).unwrap();
             type_owner
                 .set_owns(
                     &mut snapshot,
                     &type_manager,
                     &thing_manager,
-                    type_catname.as_attribute_type().clone(),
+                    type_catname.as_attribute_type(),
                     Ordering::Unordered,
                 )
                 .unwrap();
@@ -1800,7 +1798,7 @@ pub mod tests {
                     &mut snapshot,
                     &type_manager,
                     &thing_manager,
-                    type_dogname.as_attribute_type().clone(),
+                    type_dogname.as_attribute_type(),
                     Ordering::Unordered,
                 )
                 .unwrap();

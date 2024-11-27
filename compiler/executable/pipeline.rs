@@ -176,7 +176,7 @@ pub(crate) fn compile_pipeline_stages(
     functions: &ExecutableFunctionRegistry,
     annotated_stages: Vec<AnnotatedStage>,
     input_variables: impl Iterator<Item = Variable>,
-    selected_variables: &Vec<Variable>,
+    selected_variables: &[Variable],
 ) -> Result<(HashMap<Variable, VariablePosition>, Vec<ExecutableStage>), ExecutableCompilationError> {
     let mut executable_stages: Vec<ExecutableStage> = Vec::with_capacity(annotated_stages.len());
     let input_variable_positions =
@@ -189,7 +189,7 @@ pub(crate) fn compile_pipeline_stages(
             .cloned()
             .chain(stage.named_referenced_variables(variable_registry))
             .unique()
-            .collect();
+            .collect_vec();
         let executable_stage = match executable_stages.last().map(|stage| stage.output_row_mapping()) {
             Some(row_mapping) => {
                 compile_stage(statistics, variable_registry, functions, &row_mapping, &selected_variables, stage)?
@@ -213,7 +213,7 @@ fn compile_stage(
     variable_registry: &VariableRegistry,
     _functions: &ExecutableFunctionRegistry,
     input_variables: &HashMap<Variable, VariablePosition>,
-    selected_variables: &Vec<Variable>,
+    selected_variables: &[Variable],
     annotated_stage: AnnotatedStage,
 ) -> Result<ExecutableStage, ExecutableCompilationError> {
     match &annotated_stage {

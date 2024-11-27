@@ -140,7 +140,7 @@ impl TypeReader {
         let attribute_types = TypeReader::get_attribute_types(snapshot)?;
         for attribute_type in attribute_types {
             if let Some(ValueType::Struct(definition_key)) =
-                TypeReader::get_value_type_declared(snapshot, attribute_type.clone())?
+                TypeReader::get_value_type_declared(snapshot, attribute_type)?
             {
                 if !usages.contains_key(&definition_key) {
                     usages.insert(definition_key.clone(), HashSet::new());
@@ -172,9 +172,7 @@ impl TypeReader {
         Ok(usages)
     }
 
-    pub(crate) fn get_object_types(
-        snapshot: &impl ReadableSnapshot,
-    ) -> Result<Vec<ObjectType>, Box<ConceptReadError>> {
+    pub(crate) fn get_object_types(snapshot: &impl ReadableSnapshot) -> Result<Vec<ObjectType>, Box<ConceptReadError>> {
         let entity_types = Self::get_entity_types(snapshot)?;
         let relation_types = Self::get_relation_types(snapshot)?;
         Ok((entity_types.into_iter().map(ObjectType::Entity))
@@ -182,9 +180,7 @@ impl TypeReader {
             .collect())
     }
 
-    pub(crate) fn get_entity_types(
-        snapshot: &impl ReadableSnapshot,
-    ) -> Result<Vec<EntityType>, Box<ConceptReadError>> {
+    pub(crate) fn get_entity_types(snapshot: &impl ReadableSnapshot) -> Result<Vec<EntityType>, Box<ConceptReadError>> {
         snapshot
             .iterate_range(KeyRange::new_within(
                 RangeStart::Inclusive(EntityType::prefix_for_kind()),
@@ -215,9 +211,7 @@ impl TypeReader {
             .map_err(|error| Box::new(ConceptReadError::SnapshotIterate { source: error }))
     }
 
-    pub(crate) fn get_role_types(
-        snapshot: &impl ReadableSnapshot,
-    ) -> Result<Vec<RoleType>, Box<ConceptReadError>> {
+    pub(crate) fn get_role_types(snapshot: &impl ReadableSnapshot) -> Result<Vec<RoleType>, Box<ConceptReadError>> {
         snapshot
             .iterate_range(KeyRange::new_within(
                 RangeStart::Inclusive(RoleType::prefix_for_kind()),
@@ -794,7 +788,7 @@ impl TypeReader {
                     ObjectType::new(capability.canonical_from().into_vertex()),
                     AttributeType::new(capability.canonical_to().into_vertex()),
                 );
-                let ordering = Self::get_capability_ordering(snapshot, owns.clone())?;
+                let ordering = Self::get_capability_ordering(snapshot, owns)?;
 
                 for default_constraint in get_owns_default_constraints(capability, ordering) {
                     if !out_constraints

@@ -56,10 +56,10 @@ fn thing_create_iterate() {
         let person_label = Label::build("person");
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
 
-        let _person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
-        let _person_2 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
-        let _person_3 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
-        let _person_4 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
+        let _person_1 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let _person_2 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let _person_3 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let _person_4 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
 
         let finalise_result = thing_manager.finalise(&mut snapshot);
         assert!(finalise_result.is_ok());
@@ -109,12 +109,11 @@ fn attribute_create() {
             )
             .unwrap();
 
-        let age_1 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age_value)).unwrap();
+        let age_1 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(age_value)).unwrap();
         assert_eq!(age_1.get_value(&snapshot, &thing_manager).unwrap(), Value::Long(age_value));
 
-        let name_1 = thing_manager
-            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed(name_value)))
-            .unwrap();
+        let name_1 =
+            thing_manager.create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(name_value))).unwrap();
         assert_eq!(name_1.get_value(&snapshot, &thing_manager).unwrap(), Value::String(Cow::Borrowed(name_value)));
 
         let finalise_result = thing_manager.finalise(&mut snapshot);
@@ -177,17 +176,13 @@ fn has() {
             .unwrap();
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
-        person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Unordered)
-            .unwrap();
-        person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered)
-            .unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Unordered).unwrap();
 
-        let person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
-        let age_1 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age_value)).unwrap();
+        let person_1 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let age_1 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(age_value)).unwrap();
         let name_1 = thing_manager
-            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned(String::from(name_value))))
+            .create_attribute(&mut snapshot, name_type, Value::String(Cow::Owned(String::from(name_value))))
             .unwrap();
 
         person_1.set_has_unordered(&mut snapshot, &thing_manager, age_1).unwrap();
@@ -237,29 +232,27 @@ fn attribute_cleanup_on_concurrent_detach() {
         name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
-        let owns_age = person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Ordered)
-            .unwrap();
+        let owns_age =
+            person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Ordered).unwrap();
         owns_age
             .set_annotation(&mut snapshot, &type_manager, &thing_manager, OwnsAnnotation::Distinct(AnnotationDistinct))
             .unwrap();
 
-        let person_name = person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Ordered)
-            .unwrap();
+        let person_name =
+            person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Ordered).unwrap();
         person_name.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Unordered).unwrap();
 
-        let alice = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
-        let bob = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
-        let age = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age_value)).unwrap();
+        let alice = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let bob = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let age = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(age_value)).unwrap();
         let name_alice = thing_manager
-            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed(name_alice_value)))
+            .create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(name_alice_value)))
             .unwrap();
         let name_bob = thing_manager
-            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned(String::from(name_bob_value))))
+            .create_attribute(&mut snapshot, name_type, Value::String(Cow::Owned(String::from(name_bob_value))))
             .unwrap();
 
-        alice.set_has_ordered(&mut snapshot, &thing_manager, age_type.clone(), vec![age.as_reference()]).unwrap();
+        alice.set_has_ordered(&mut snapshot, &thing_manager, age_type, vec![age.as_reference()]).unwrap();
         alice.set_has_unordered(&mut snapshot, &thing_manager, name_alice).unwrap();
         bob.set_has_ordered(&mut snapshot, &thing_manager, age_type, vec![age.as_reference()]).unwrap();
         bob.set_has_unordered(&mut snapshot, &thing_manager, name_bob).unwrap();
@@ -287,7 +280,7 @@ fn attribute_cleanup_on_concurrent_detach() {
                     .has_attribute_with_value(
                         &snapshot_1,
                         &thing_manager,
-                        name_type.clone(),
+                        name_type,
                         Value::String(Cow::Borrowed(name_bob_value)),
                     )
                     .unwrap()
@@ -315,7 +308,7 @@ fn attribute_cleanup_on_concurrent_detach() {
                     .has_attribute_with_value(
                         &snapshot_2,
                         &thing_manager,
-                        name_type.clone(),
+                        name_type,
                         Value::String(Cow::Borrowed(name_alice_value)),
                     )
                     .unwrap()
@@ -323,7 +316,7 @@ fn attribute_cleanup_on_concurrent_detach() {
             .unwrap();
 
         let mut ages: Vec<Attribute<'static>> = thing_manager
-            .get_attributes_in(&snapshot_2, age_type.clone())
+            .get_attributes_in(&snapshot_2, age_type)
             .unwrap()
             .map_static(|result| result.unwrap().into_owned())
             .collect();
@@ -415,31 +408,31 @@ fn role_player_distinct() {
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
         let company_type = type_manager.create_entity_type(&mut snapshot, &company_label).unwrap();
-        person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, employee_type.clone()).unwrap();
-        company_type.set_plays(&mut snapshot, &type_manager, &thing_manager, employer_type.clone()).unwrap();
+        person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, employee_type).unwrap();
+        company_type.set_plays(&mut snapshot, &type_manager, &thing_manager, employer_type).unwrap();
 
-        let person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
-        let company_1 = thing_manager.create_entity(&mut snapshot, company_type.clone()).unwrap();
-        let company_2 = thing_manager.create_entity(&mut snapshot, company_type.clone()).unwrap();
-        let company_3 = thing_manager.create_entity(&mut snapshot, company_type.clone()).unwrap();
+        let person_1 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let company_1 = thing_manager.create_entity(&mut snapshot, company_type).unwrap();
+        let company_2 = thing_manager.create_entity(&mut snapshot, company_type).unwrap();
+        let company_3 = thing_manager.create_entity(&mut snapshot, company_type).unwrap();
 
-        let employment_1 = thing_manager.create_relation(&mut snapshot, employment_type.clone()).unwrap();
+        let employment_1 = thing_manager.create_relation(&mut snapshot, employment_type).unwrap();
         employment_1
-            .add_player(&mut snapshot, &thing_manager, employee_type.clone(), Object::Entity(person_1.as_reference()))
+            .add_player(&mut snapshot, &thing_manager, employee_type, Object::Entity(person_1.as_reference()))
             .unwrap();
         employment_1
-            .add_player(&mut snapshot, &thing_manager, employer_type.clone(), Object::Entity(company_1.as_reference()))
+            .add_player(&mut snapshot, &thing_manager, employer_type, Object::Entity(company_1.as_reference()))
             .unwrap();
 
-        let employment_2 = thing_manager.create_relation(&mut snapshot, employment_type.clone()).unwrap();
+        let employment_2 = thing_manager.create_relation(&mut snapshot, employment_type).unwrap();
         employment_2
-            .add_player(&mut snapshot, &thing_manager, employee_type.clone(), Object::Entity(person_1.as_reference()))
+            .add_player(&mut snapshot, &thing_manager, employee_type, Object::Entity(person_1.as_reference()))
             .unwrap();
         employment_2
-            .add_player(&mut snapshot, &thing_manager, employer_type.clone(), Object::Entity(company_2.as_reference()))
+            .add_player(&mut snapshot, &thing_manager, employer_type, Object::Entity(company_2.as_reference()))
             .unwrap();
         employment_2
-            .add_player(&mut snapshot, &thing_manager, employer_type.clone(), Object::Entity(company_3.as_reference()))
+            .add_player(&mut snapshot, &thing_manager, employer_type, Object::Entity(company_3.as_reference()))
             .unwrap();
 
         assert_eq!(employment_1.get_players(&snapshot, &thing_manager).count(), 2);
@@ -522,21 +515,21 @@ fn role_player_duplicates_unordered() {
 
         let resource_type = type_manager.create_entity_type(&mut snapshot, &resource_label).unwrap();
         let group_type = type_manager.create_entity_type(&mut snapshot, &group_label).unwrap();
-        resource_type.set_plays(&mut snapshot, &type_manager, &thing_manager, entry_type.clone()).unwrap();
-        group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type.clone()).unwrap();
+        resource_type.set_plays(&mut snapshot, &type_manager, &thing_manager, entry_type).unwrap();
+        group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type).unwrap();
 
-        let group_1 = thing_manager.create_entity(&mut snapshot, group_type.clone()).unwrap();
-        let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type.clone()).unwrap();
+        let group_1 = thing_manager.create_entity(&mut snapshot, group_type).unwrap();
+        let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type).unwrap();
 
-        let collection_1 = thing_manager.create_relation(&mut snapshot, collection_type.clone()).unwrap();
+        let collection_1 = thing_manager.create_relation(&mut snapshot, collection_type).unwrap();
         collection_1
-            .add_player(&mut snapshot, &thing_manager, owner_type.clone(), Object::Entity(group_1.as_reference()))
+            .add_player(&mut snapshot, &thing_manager, owner_type, Object::Entity(group_1.as_reference()))
             .unwrap();
         collection_1
-            .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
+            .add_player(&mut snapshot, &thing_manager, entry_type, Object::Entity(resource_1.as_reference()))
             .unwrap();
         collection_1
-            .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
+            .add_player(&mut snapshot, &thing_manager, entry_type, Object::Entity(resource_1.as_reference()))
             .unwrap();
 
         let player_counts: u64 =
@@ -696,21 +689,21 @@ fn role_player_duplicates_ordered_default_card() {
 
         let resource_type = type_manager.create_entity_type(&mut snapshot, &resource_label).unwrap();
         let group_type = type_manager.create_entity_type(&mut snapshot, &group_label).unwrap();
-        resource_type.set_plays(&mut snapshot, &type_manager, &thing_manager, entry_type.clone()).unwrap();
-        group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type.clone()).unwrap();
+        resource_type.set_plays(&mut snapshot, &type_manager, &thing_manager, entry_type).unwrap();
+        group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type).unwrap();
 
-        let group_1 = thing_manager.create_entity(&mut snapshot, group_type.clone()).unwrap();
-        let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type.clone()).unwrap();
+        let group_1 = thing_manager.create_entity(&mut snapshot, group_type).unwrap();
+        let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type).unwrap();
 
-        let collection_1 = thing_manager.create_relation(&mut snapshot, collection_type.clone()).unwrap();
+        let collection_1 = thing_manager.create_relation(&mut snapshot, collection_type).unwrap();
         collection_1
-            .add_player(&mut snapshot, &thing_manager, owner_type.clone(), Object::Entity(group_1.as_reference()))
+            .add_player(&mut snapshot, &thing_manager, owner_type, Object::Entity(group_1.as_reference()))
             .unwrap();
         collection_1
-            .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
+            .add_player(&mut snapshot, &thing_manager, entry_type, Object::Entity(resource_1.as_reference()))
             .unwrap();
         collection_1
-            .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
+            .add_player(&mut snapshot, &thing_manager, entry_type, Object::Entity(resource_1.as_reference()))
             .unwrap();
 
         let player_counts: u64 =
@@ -883,21 +876,21 @@ fn role_player_duplicates_ordered_small_card() {
 
         let resource_type = type_manager.create_entity_type(&mut snapshot, &resource_label).unwrap();
         let group_type = type_manager.create_entity_type(&mut snapshot, &group_label).unwrap();
-        resource_type.set_plays(&mut snapshot, &type_manager, &thing_manager, entry_type.clone()).unwrap();
-        group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type.clone()).unwrap();
+        resource_type.set_plays(&mut snapshot, &type_manager, &thing_manager, entry_type).unwrap();
+        group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type).unwrap();
 
-        let group_1 = thing_manager.create_entity(&mut snapshot, group_type.clone()).unwrap();
-        let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type.clone()).unwrap();
+        let group_1 = thing_manager.create_entity(&mut snapshot, group_type).unwrap();
+        let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type).unwrap();
 
-        let collection_1 = thing_manager.create_relation(&mut snapshot, collection_type.clone()).unwrap();
+        let collection_1 = thing_manager.create_relation(&mut snapshot, collection_type).unwrap();
         collection_1
-            .add_player(&mut snapshot, &thing_manager, owner_type.clone(), Object::Entity(group_1.as_reference()))
+            .add_player(&mut snapshot, &thing_manager, owner_type, Object::Entity(group_1.as_reference()))
             .unwrap();
         collection_1
-            .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
+            .add_player(&mut snapshot, &thing_manager, entry_type, Object::Entity(resource_1.as_reference()))
             .unwrap();
         collection_1
-            .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
+            .add_player(&mut snapshot, &thing_manager, entry_type, Object::Entity(resource_1.as_reference()))
             .unwrap();
 
         let player_counts: u64 =
@@ -1051,10 +1044,10 @@ fn attribute_string_write_read_delete() {
     {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         thing_manager
-            .create_attribute(&mut snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
+            .create_attribute(&mut snapshot, attr_type, Value::String(Cow::Borrowed(short_string.as_str())))
             .unwrap();
         thing_manager
-            .create_attribute(&mut snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
+            .create_attribute(&mut snapshot, attr_type, Value::String(Cow::Borrowed(long_string.as_str())))
             .unwrap();
         thing_manager.finalise(&mut snapshot).unwrap();
         snapshot.commit().unwrap();
@@ -1064,7 +1057,7 @@ fn attribute_string_write_read_delete() {
     {
         let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let attrs: Vec<Attribute<'static>> = thing_manager
-            .get_attributes_in(&snapshot, attr_type.clone())
+            .get_attributes_in(&snapshot, attr_type)
             .unwrap()
             .map_static(|result| result.unwrap().into_owned())
             .collect();
@@ -1080,12 +1073,12 @@ fn attribute_string_write_read_delete() {
     {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let read_short_string = thing_manager
-            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
+            .get_attribute_with_value(&snapshot, attr_type, Value::String(Cow::Borrowed(short_string.as_str())))
             .unwrap()
             .unwrap();
         assert_eq!(short_string, read_short_string.get_value(&snapshot, &thing_manager).unwrap().unwrap_string());
         let read_long_string = thing_manager
-            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
+            .get_attribute_with_value(&snapshot, attr_type, Value::String(Cow::Borrowed(long_string.as_str())))
             .unwrap()
             .unwrap();
         assert_eq!(long_string, read_long_string.get_value(&snapshot, &thing_manager).unwrap().unwrap_string());
@@ -1100,11 +1093,11 @@ fn attribute_string_write_read_delete() {
     {
         let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let read_short_string = thing_manager
-            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
+            .get_attribute_with_value(&snapshot, attr_type, Value::String(Cow::Borrowed(short_string.as_str())))
             .unwrap();
         assert_eq!(None, read_short_string);
         let read_long_string = thing_manager
-            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
+            .get_attribute_with_value(&snapshot, attr_type, Value::String(Cow::Borrowed(long_string.as_str())))
             .unwrap();
         assert_eq!(None, read_long_string);
     }
@@ -1125,9 +1118,8 @@ fn attribute_string_write_read_delete_with_has() {
         let owner_type = type_manager.create_entity_type(&mut snapshot, &owner_label).unwrap();
         let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label).unwrap();
         attr_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
-        let owns = owner_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, attr_type.clone(), Ordering::Unordered)
-            .unwrap();
+        let owns =
+            owner_type.set_owns(&mut snapshot, &type_manager, &thing_manager, attr_type, Ordering::Unordered).unwrap();
         owns.set_annotation(
             &mut snapshot,
             &type_manager,
@@ -1145,12 +1137,12 @@ fn attribute_string_write_read_delete_with_has() {
 
     {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
-        let owner = thing_manager.create_entity(&mut snapshot, owner_type.clone()).unwrap();
+        let owner = thing_manager.create_entity(&mut snapshot, owner_type).unwrap();
         let short_attr = thing_manager
-            .create_attribute(&mut snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
+            .create_attribute(&mut snapshot, attr_type, Value::String(Cow::Borrowed(short_string.as_str())))
             .unwrap();
         let long_attr = thing_manager
-            .create_attribute(&mut snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
+            .create_attribute(&mut snapshot, attr_type, Value::String(Cow::Borrowed(long_string.as_str())))
             .unwrap();
         owner.set_has_unordered(&mut snapshot, &thing_manager, short_attr).unwrap();
         owner.set_has_unordered(&mut snapshot, &thing_manager, long_attr).unwrap();
@@ -1162,7 +1154,7 @@ fn attribute_string_write_read_delete_with_has() {
     {
         let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let attrs: Vec<Attribute<'static>> = thing_manager
-            .get_attributes_in(&snapshot, attr_type.clone())
+            .get_attributes_in(&snapshot, attr_type)
             .unwrap()
             .map_static(|result| result.unwrap().into_owned())
             .collect();
@@ -1178,12 +1170,12 @@ fn attribute_string_write_read_delete_with_has() {
     {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let read_short_string = thing_manager
-            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
+            .get_attribute_with_value(&snapshot, attr_type, Value::String(Cow::Borrowed(short_string.as_str())))
             .unwrap()
             .unwrap();
         assert_eq!(short_string, read_short_string.get_value(&snapshot, &thing_manager).unwrap().unwrap_string());
         let read_long_string = thing_manager
-            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
+            .get_attribute_with_value(&snapshot, attr_type, Value::String(Cow::Borrowed(long_string.as_str())))
             .unwrap()
             .unwrap();
         assert_eq!(long_string, read_long_string.get_value(&snapshot, &thing_manager).unwrap().unwrap_string());
@@ -1199,11 +1191,11 @@ fn attribute_string_write_read_delete_with_has() {
     {
         let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let read_short_string = thing_manager
-            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
+            .get_attribute_with_value(&snapshot, attr_type, Value::String(Cow::Borrowed(short_string.as_str())))
             .unwrap();
         assert_eq!(None, read_short_string);
         let read_long_string = thing_manager
-            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
+            .get_attribute_with_value(&snapshot, attr_type, Value::String(Cow::Borrowed(long_string.as_str())))
             .unwrap();
         assert_eq!(None, read_long_string);
     }
@@ -1268,7 +1260,7 @@ fn attribute_struct_write_read() {
         let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let attr_type = type_manager.get_attribute_type(&snapshot, &attr_label).unwrap().unwrap();
         let attr_vec: Vec<Attribute<'static>> = thing_manager
-            .get_attributes_in(&snapshot, attr_type.clone())
+            .get_attributes_in(&snapshot, attr_type)
             .unwrap()
             .map_static(|result| result.unwrap().into_owned())
             .collect();
@@ -1280,7 +1272,7 @@ fn attribute_struct_write_read() {
         }
 
         let attr_by_id = thing_manager
-            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::Struct(Cow::Borrowed(&struct_value)))
+            .get_attribute_with_value(&snapshot, attr_type, Value::Struct(Cow::Borrowed(&struct_value)))
             .unwrap()
             .unwrap();
         assert_eq!(attr, attr_by_id);
@@ -1343,7 +1335,7 @@ fn read_attribute_struct_by_field() {
                 HashMap::from([(0, Value::Struct(Cow::Owned(nested_struct_value)))]),
             );
             let attr = thing_manager
-                .create_attribute(&mut snapshot, attr_type.clone(), Value::Struct(Cow::Borrowed(&outer_struct_value)))
+                .create_attribute(&mut snapshot, attr_type, Value::Struct(Cow::Borrowed(&outer_struct_value)))
                 .unwrap();
             attrs.push(attr);
         }
@@ -1353,12 +1345,7 @@ fn read_attribute_struct_by_field() {
                 .resolve_struct_field(&snapshot, &["f_nested", "nested_string"], struct_def.clone())
                 .unwrap();
             let mut attr_by_field_iterator = thing_manager
-                .get_attributes_by_struct_field(
-                    &snapshot,
-                    attr_type.clone(),
-                    field_path,
-                    Value::String(Cow::Borrowed(val)),
-                )
+                .get_attributes_by_struct_field(&snapshot, attr_type, field_path, Value::String(Cow::Borrowed(val)))
                 .unwrap();
             let mut attr_by_field: Vec<Attribute> = Vec::new();
             while let Some(res) = attr_by_field_iterator.next() {

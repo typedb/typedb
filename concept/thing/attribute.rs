@@ -12,7 +12,7 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::Bytes;
 use encoding::{
     graph::{
         thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex},

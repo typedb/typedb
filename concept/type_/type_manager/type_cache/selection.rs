@@ -29,7 +29,7 @@ macro_rules! impl_cache_getter {
     ($cache_type: ty, $inner_type: ident, $member_name: ident) => {
         impl CacheGetter for $inner_type {
             type CacheType = $cache_type;
-            fn get_cache<'cache>(type_cache: &'cache TypeCache, type_: $inner_type) -> &'cache Self::CacheType {
+            fn get_cache(type_cache: &TypeCache, type_: $inner_type) -> &Self::CacheType {
                 use ::encoding::graph::Typed;
                 use encoding::graph::type_::vertex::TypeVertexEncoding;
                 let as_u16 = type_.vertex().type_id_().as_u16();

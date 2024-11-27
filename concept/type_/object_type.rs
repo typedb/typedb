@@ -283,7 +283,7 @@ impl<'a> TypeAPI<'a> for ObjectType {
             object
                 .get_supertypes_transitive(snapshot, type_manager)?
                 .iter()
-                .map(|type_| type_.clone().into_owned_object_type())
+                .map(|type_| (*type_).into_owned_object_type())
                 .collect_vec()
         })))
     }
@@ -294,11 +294,7 @@ impl<'a> TypeAPI<'a> for ObjectType {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<ObjectType>>, Box<ConceptReadError>> {
         Ok(MaybeOwns::Owned(with_object_type!(self, |object| {
-            object
-                .get_subtypes(snapshot, type_manager)?
-                .iter()
-                .map(|type_| type_.clone().into_owned_object_type())
-                .collect()
+            object.get_subtypes(snapshot, type_manager)?.iter().map(|type_| (*type_).into_owned_object_type()).collect()
         })))
     }
 
@@ -311,7 +307,7 @@ impl<'a> TypeAPI<'a> for ObjectType {
             object
                 .get_subtypes_transitive(snapshot, type_manager)?
                 .iter()
-                .map(|type_| type_.clone().into_owned_object_type())
+                .map(|type_| (*type_).into_owned_object_type())
                 .collect_vec()
         })))
     }

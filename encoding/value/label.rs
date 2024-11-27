@@ -14,7 +14,7 @@ use resource::constants::{
 use structural_equality::StructuralEquality;
 
 use crate::{
-    graph::type_::property::TypeVertexPropertyEncoding, layout::infix::Infix, value::string_bytes::StringBytes, AsBytes,
+    graph::type_::property::TypeVertexPropertyEncoding, layout::infix::Infix, value::string_bytes::StringBytes,
 };
 
 #[derive(Clone, Hash, PartialEq, Eq)]

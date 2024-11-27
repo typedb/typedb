@@ -530,7 +530,7 @@ impl ThingManager {
         OperationTimeValidation::validate_value_type_matches_attribute_type_for_read(
             snapshot,
             self,
-            attribute_type.clone(),
+            attribute_type,
             value_type.clone(),
         )?;
 
@@ -804,7 +804,7 @@ impl ThingManager {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute_to_type_range(
             attribute.into_vertex(),
             owner_type_range.start().get_value().vertex(),
-            owner_type_range.end().clone().map(|object_type| object_type.into_vertex()),
+            (*owner_type_range.end()).map(|object_type| object_type.into_vertex()),
         );
         HasReverseIterator::new(snapshot.iterate_range(prefix))
     }
@@ -1046,7 +1046,7 @@ impl ThingManager {
                 let player = Object::new(role_player.player()).into_owned();
                 let role_type = RoleType::build_from_type_id(role_player.role_id()).into_owned();
 
-                self.add_exclusive_lock_for_plays_cardinality_constraint(snapshot, &player, role_type.clone())?;
+                self.add_exclusive_lock_for_plays_cardinality_constraint(snapshot, &player, role_type)?;
                 self.add_exclusive_lock_for_relates_cardinality_constraint(snapshot, &relation, role_type)?;
             }
         }
@@ -1110,7 +1110,7 @@ impl ThingManager {
                     &Infix::PropertyAnnotationCardinality.infix_id().bytes(),
                     &*owner.vertex().clone().into_bytes(),
                     &Prefix::EdgeOwns.prefix_id().bytes(),
-                    &*constraint.source().interface().vertex().clone().into_bytes(),
+                    &*constraint.source().interface().vertex().into_bytes(),
                 ]
                 .into_iter(),
             );
@@ -1138,7 +1138,7 @@ impl ThingManager {
                     &Infix::PropertyAnnotationCardinality.infix_id().bytes(),
                     &*player.vertex().clone().into_bytes(),
                     &Prefix::EdgePlays.prefix_id().bytes(),
-                    &*constraint.source().interface().vertex().clone().into_bytes(),
+                    &*constraint.source().interface().vertex().into_bytes(),
                 ]
                 .into_iter(),
             );
@@ -1166,7 +1166,7 @@ impl ThingManager {
                     &Infix::PropertyAnnotationCardinality.infix_id().bytes(),
                     &*relation.vertex().clone().into_bytes(),
                     &Prefix::EdgeRelates.prefix_id().bytes(),
-                    &*constraint.source().interface().vertex().clone().into_bytes(),
+                    &*constraint.source().interface().vertex().into_bytes(),
                 ]
                 .into_iter(),
             );
@@ -1237,15 +1237,14 @@ impl ThingManager {
                     _ => None,
                 })
             {
-                if !self.type_exists(snapshot, relation_type.clone())? {
+                if !self.type_exists(snapshot, relation_type)? {
                     continue;
                 }
                 let subtypes = relation_type.get_subtypes_transitive(snapshot, self.type_manager())?;
                 once(&relation_type).chain(subtypes.into_iter()).try_for_each(|type_| {
                     let is_cascade = true; // TODO: Always consider cascade now, can be changed later.
                     if is_cascade {
-                        let mut relations: InstanceIterator<Relation<'_>> =
-                            self.get_instances_in(snapshot, type_.clone());
+                        let mut relations: InstanceIterator<Relation<'_>> = self.get_instances_in(snapshot, *type_);
                         while let Some(relation) = relations.next().transpose()? {
                             if !relation.has_players(snapshot, self) {
                                 relation.delete(snapshot, self)?;
@@ -1318,15 +1317,14 @@ impl ThingManager {
                 _ => None,
             })
         {
-            if !self.type_exists(snapshot, attribute_type.clone())? {
+            if !self.type_exists(snapshot, attribute_type)? {
                 continue;
             }
             let subtypes = attribute_type.get_subtypes_transitive(snapshot, self.type_manager())?;
             once(&attribute_type).chain(subtypes.into_iter()).try_for_each(|type_| {
                 let is_independent = type_.is_independent(snapshot, self.type_manager())?;
                 if !is_independent {
-                    let mut attributes: InstanceIterator<Attribute<'_>> =
-                        self.get_instances_in(snapshot, type_.clone());
+                    let mut attributes: InstanceIterator<Attribute<'_>> = self.get_instances_in(snapshot, *type_);
                     while let Some(attribute) = attributes.next().transpose()? {
                         if !attribute.has_owners(snapshot, self) {
                             attribute.delete(snapshot, self)?;
@@ -1472,12 +1470,12 @@ impl ThingManager {
 
             if self.object_exists(snapshot, &relation)? {
                 let updated_role_types = out_relation_role_types.entry(relation.into_owned()).or_default();
-                updated_role_types.insert(role_type.clone());
+                updated_role_types.insert(role_type);
             }
 
             if self.object_exists(snapshot, &player)? {
                 let updated_role_types = out_object_role_types.entry(player.into_owned()).or_default();
-                updated_role_types.insert(role_type.clone());
+                updated_role_types.insert(role_type);
             }
         }
 
@@ -1489,7 +1487,7 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         entity_type: EntityType,
     ) -> Result<Entity<'a>, Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_entity_type_is_not_abstract(snapshot, self, entity_type.clone())
+        OperationTimeValidation::validate_entity_type_is_not_abstract(snapshot, self, entity_type)
             .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         Ok(Entity::new(self.vertex_generator.create_entity(entity_type.vertex().type_id_(), snapshot)))
@@ -1500,7 +1498,7 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         relation_type: RelationType,
     ) -> Result<Relation<'a>, Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_relation_type_is_not_abstract(snapshot, self, relation_type.clone())
+        OperationTimeValidation::validate_relation_type_is_not_abstract(snapshot, self, relation_type)
             .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         Ok(Relation::new(self.vertex_generator.create_relation(relation_type.vertex().type_id_(), snapshot)))
@@ -1512,13 +1510,13 @@ impl ThingManager {
         attribute_type: AttributeType,
         value: Value<'_>,
     ) -> Result<Attribute<'a>, Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_attribute_type_is_not_abstract(snapshot, self, attribute_type.clone())
+        OperationTimeValidation::validate_attribute_type_is_not_abstract(snapshot, self, attribute_type)
             .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         OperationTimeValidation::validate_value_type_matches_attribute_type_for_write(
             snapshot,
             self,
-            attribute_type.clone(),
+            attribute_type,
             value.value_type(),
             value.as_reference(),
         )?;
@@ -1526,7 +1524,7 @@ impl ThingManager {
         OperationTimeValidation::validate_attribute_regex_constraints(
             snapshot,
             self,
-            attribute_type.clone(),
+            attribute_type,
             value.as_reference(),
         )
         .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
@@ -1534,7 +1532,7 @@ impl ThingManager {
         OperationTimeValidation::validate_attribute_range_constraints(
             snapshot,
             self,
-            attribute_type.clone(),
+            attribute_type,
             value.as_reference(),
         )
         .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
@@ -1542,7 +1540,7 @@ impl ThingManager {
         OperationTimeValidation::validate_attribute_values_constraints(
             snapshot,
             self,
-            attribute_type.clone(),
+            attribute_type,
             value.as_reference(),
         )
         .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
@@ -1559,7 +1557,7 @@ impl ThingManager {
         OperationTimeValidation::validate_value_type_matches_attribute_type_for_write(
             snapshot,
             self,
-            attribute_type.clone(),
+            attribute_type,
             value.value_type(),
             value.as_reference(),
         )?;
@@ -1735,7 +1733,7 @@ impl ThingManager {
         OperationTimeValidation::validate_value_type_matches_attribute_type_for_write(
             snapshot,
             self,
-            attribute_type.clone(),
+            attribute_type,
             value.value_type(),
             value.as_reference(),
         )?;
@@ -1753,7 +1751,7 @@ impl ThingManager {
             snapshot,
             self,
             owner,
-            attribute_type.clone(),
+            attribute_type,
             value.as_reference(),
         )
         .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
@@ -1762,7 +1760,7 @@ impl ThingManager {
             snapshot,
             self,
             owner,
-            attribute_type.clone(),
+            attribute_type,
             value.as_reference(),
         )
         .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
@@ -1771,7 +1769,7 @@ impl ThingManager {
             snapshot,
             self,
             owner,
-            attribute_type.clone(),
+            attribute_type,
             value.as_reference(),
         )
         .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
@@ -1861,13 +1859,13 @@ impl ThingManager {
         let count: u64 = 1;
         // must be idempotent, so no lock required -- cannot fail
 
-        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
+        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.into_vertex());
         snapshot.put_val(links.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
 
         let links_reverse = ThingEdgeLinks::build_links_reverse(
             player.clone().into_vertex(),
             relation.clone().into_vertex(),
-            role_type.clone().into_vertex(),
+            role_type.into_vertex(),
         );
         snapshot.put_val(links_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
 
@@ -1904,9 +1902,9 @@ impl ThingManager {
         role_type: RoleType,
         count: u64,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
+        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.into_vertex());
         let links_reverse =
-            ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.clone().into_vertex());
+            ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.into_vertex());
 
         if count == 0 {
             snapshot.delete(links.into_storage_key().into_owned_array());
@@ -1935,7 +1933,7 @@ impl ThingManager {
         player: impl ObjectAPI<'a>,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.clone().into_vertex())
+        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.into_vertex())
             .into_storage_key()
             .into_owned_array();
 
@@ -1978,18 +1976,15 @@ impl ThingManager {
         player: impl ObjectAPI<'a>,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
+        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.into_vertex());
         let count = snapshot
             .get_mapped(links.into_storage_key().as_reference(), |arr| decode_u64(arr.try_into().unwrap()))
             .map_err(|snapshot_err| Box::new(ConceptReadError::SnapshotGet { source: snapshot_err }))?;
 
         #[cfg(debug_assertions)]
         {
-            let links_reverse = ThingEdgeLinks::build_links_reverse(
-                player.vertex(),
-                relation.vertex(),
-                role_type.clone().into_vertex(),
-            );
+            let links_reverse =
+                ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.into_vertex());
             let reverse_count = snapshot
                 .get_mapped(links_reverse.into_storage_key().as_reference(), |arr| decode_u64(arr.try_into().unwrap()))
                 .unwrap();
@@ -2009,18 +2004,15 @@ impl ThingManager {
         role_type: RoleType,
         decrement_count: u64,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
+        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.into_vertex());
         let count = snapshot
             .get_mapped(links.into_storage_key().as_reference(), |arr| decode_u64(arr.try_into().unwrap()))
             .map_err(|snapshot_err| Box::new(ConceptReadError::SnapshotGet { source: snapshot_err }))?;
 
         #[cfg(debug_assertions)]
         {
-            let links_reverse = ThingEdgeLinks::build_links_reverse(
-                player.vertex(),
-                relation.vertex(),
-                role_type.clone().into_vertex(),
-            );
+            let links_reverse =
+                ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.into_vertex());
             let reverse_count = snapshot
                 .get_mapped(links_reverse.into_storage_key().as_reference(), |arr| decode_u64(arr.try_into().unwrap()))
                 .unwrap();

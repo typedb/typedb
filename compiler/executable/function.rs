@@ -167,7 +167,7 @@ pub fn determine_tabling_requirements_impl(
     }
 }
 
-fn all_calls_in_pipeline(stages: &Vec<AnnotatedStage>) -> HashSet<FunctionID> {
+fn all_calls_in_pipeline(stages: &[AnnotatedStage]) -> HashSet<FunctionID> {
     let match_stage_conjunctions = stages.iter().filter_map(|stage| match stage {
         AnnotatedStage::Match { block, .. } => Some(block.conjunction()),
         _ => None,

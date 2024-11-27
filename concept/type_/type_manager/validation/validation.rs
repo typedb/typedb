@@ -129,11 +129,11 @@ pub(crate) fn validate_role_type_supertype_ordering_match(
     set_supertype_role_ordering: Option<Ordering>,
 ) -> Result<(), Box<SchemaValidationError>> {
     let subtype_ordering = set_subtype_role_ordering.unwrap_or(
-        TypeReader::get_type_ordering(snapshot, subtype.clone())
+        TypeReader::get_type_ordering(snapshot, subtype)
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?,
     );
     let supertype_ordering = set_supertype_role_ordering.unwrap_or(
-        TypeReader::get_type_ordering(snapshot, supertype.clone())
+        TypeReader::get_type_ordering(snapshot, supertype)
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?,
     );
 
@@ -155,8 +155,7 @@ pub(crate) fn validate_sibling_owns_ordering_match_for_type(
     owner_type: ObjectType,
     new_set_owns_orderings: &HashMap<Owns, Ordering>,
 ) -> Result<(), Box<SchemaValidationError>> {
-    let mut attribute_types_ordering: HashMap<AttributeType, (AttributeType, Ordering)> =
-        HashMap::new();
+    let mut attribute_types_ordering: HashMap<AttributeType, (AttributeType, Ordering)> = HashMap::new();
     let existing_owns = owner_type
         .get_owns_with_specialised(snapshot, type_manager)
         .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
@@ -180,16 +179,16 @@ pub(crate) fn validate_sibling_owns_ordering_match_for_type(
             .get_supertype_root(snapshot, type_manager)
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
         {
-            root.clone()
+            root
         } else {
-            attribute_type.clone()
+            attribute_type
         };
 
         if let Some((first_subtype, first_ordering)) = attribute_types_ordering.get(&root_attribute_type) {
             if first_ordering != &ordering {
                 return Err(Box::new(SchemaValidationError::OrderingDoesNotMatchWithCapabilityOfSupertypeInterface {
                     super_label: get_label_or_schema_err(snapshot, type_manager, owner_type)?,
-                    label: get_label_or_schema_err(snapshot, type_manager, first_subtype.clone())?,
+                    label: get_label_or_schema_err(snapshot, type_manager, *first_subtype)?,
                     interface: get_label_or_schema_err(snapshot, type_manager, attribute_type)?,
                     found: *first_ordering,
                     expected: ordering,

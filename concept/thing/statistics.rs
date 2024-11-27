@@ -72,10 +72,8 @@ pub struct Statistics {
     pub attribute_owner_counts: HashMap<AttributeType, HashMap<ObjectType, u64>>,
     pub role_player_counts: HashMap<ObjectType, HashMap<RoleType, u64>>,
     pub relation_role_counts: HashMap<RelationType, HashMap<RoleType, u64>>,
-    pub relation_role_player_counts:
-        HashMap<RelationType, HashMap<RoleType, HashMap<ObjectType, u64>>>,
-    pub player_role_relation_counts:
-        HashMap<ObjectType, HashMap<RoleType, HashMap<RelationType, u64>>>,
+    pub relation_role_player_counts: HashMap<RelationType, HashMap<RoleType, HashMap<ObjectType, u64>>>,
+    pub player_role_relation_counts: HashMap<ObjectType, HashMap<RoleType, HashMap<RelationType, u64>>>,
 
     // TODO: adding role types is possible, but won't help with filtering before reading storage since roles are not in the prefix
     pub links_index_counts: HashMap<ObjectType, HashMap<ObjectType, u64>>,
@@ -247,7 +245,7 @@ impl Statistics {
                     self.relation_counts.remove(&type_);
                     self.relation_role_counts.remove(&type_);
                     let as_object_type = ObjectType::Relation(type_);
-                    self.clear_object_type(as_object_type.clone());
+                    self.clear_object_type(as_object_type);
                 }
                 // note: don't update total count based on type updates
             } else if AttributeType::is_decodable_from_key(key_reference) {
@@ -319,7 +317,7 @@ impl Statistics {
 
     fn update_has(&mut self, owner_type: ObjectType, attribute_type: AttributeType, delta: i64) {
         let attribute_count =
-            self.has_attribute_counts.entry(owner_type.clone()).or_default().entry(attribute_type.clone()).or_default();
+            self.has_attribute_counts.entry(owner_type).or_default().entry(attribute_type).or_default();
         *attribute_count = attribute_count.checked_add_signed(delta).unwrap();
         let owner_count = self.attribute_owner_counts.entry(attribute_type).or_default().entry(owner_type).or_default();
         *owner_count = owner_count.checked_add_signed(delta).unwrap();
@@ -333,22 +331,21 @@ impl Statistics {
         relation_type: RelationType,
         delta: i64,
     ) {
-        let role_count = self.role_counts.entry(role_type.clone()).or_default();
+        let role_count = self.role_counts.entry(role_type).or_default();
         *role_count = role_count.checked_add_signed(delta).unwrap();
         self.total_role_count = self.total_role_count.checked_add_signed(delta).unwrap();
-        let role_player_count =
-            self.role_player_counts.entry(player_type.clone()).or_default().entry(role_type.clone()).or_default();
+        let role_player_count = self.role_player_counts.entry(player_type).or_default().entry(role_type).or_default();
         *role_player_count = role_player_count.checked_add_signed(delta).unwrap();
         let relation_role_count =
-            self.relation_role_counts.entry(relation_type.clone()).or_default().entry(role_type.clone()).or_default();
+            self.relation_role_counts.entry(relation_type).or_default().entry(role_type).or_default();
         *relation_role_count = relation_role_count.checked_add_signed(delta).unwrap();
         let relation_role_player_count = self
             .relation_role_player_counts
-            .entry(relation_type.clone())
+            .entry(relation_type)
             .or_default()
-            .entry(role_type.clone())
+            .entry(role_type)
             .or_default()
-            .entry(player_type.clone())
+            .entry(player_type)
             .or_default();
         *relation_role_player_count = relation_role_player_count.checked_add_signed(delta).unwrap();
         let player_role_relation_count = self
@@ -362,14 +359,9 @@ impl Statistics {
         *player_role_relation_count = player_role_relation_count.checked_add_signed(delta).unwrap();
     }
 
-    fn update_indexed_player(
-        &mut self,
-        player_1_type: ObjectType,
-        player_2_type: ObjectType,
-        delta: i64,
-    ) {
+    fn update_indexed_player(&mut self, player_1_type: ObjectType, player_2_type: ObjectType, delta: i64) {
         let player_1_to_2_index_count =
-            self.links_index_counts.entry(player_1_type.clone()).or_default().entry(player_2_type.clone()).or_default();
+            self.links_index_counts.entry(player_1_type).or_default().entry(player_2_type).or_default();
         *player_1_to_2_index_count = player_1_to_2_index_count.checked_add_signed(delta).unwrap();
         if player_1_type != player_2_type {
             let player_2_to_1_index_count =

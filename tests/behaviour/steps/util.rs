@@ -24,7 +24,7 @@ pub(crate) fn iter_table_map(step: &Step) -> impl Iterator<Item = HashMap<&str, 
     rows.iter().map(|row| keys.iter().zip(row).map(|(k, v)| (k.as_str(), v.as_str())).collect())
 }
 
-pub fn list_contains_json(list: &Vec<JSON>, json: &JSON) -> bool {
+pub fn list_contains_json(list: &[JSON], json: &JSON) -> bool {
     list.iter().any(|list_json| jsons_equal_up_to_reorder(list_json, json))
 }
 

@@ -140,10 +140,7 @@ impl OwnsReverseExecutor {
                     .map(|attribute| {
                         let attribute_type = attribute.as_attribute_type();
                         attribute_type.get_owner_types(snapshot, type_manager).map(|res| {
-                            res.to_owned()
-                                .keys()
-                                .map(|object_type| (object_type.clone(), attribute_type.clone()))
-                                .collect()
+                            res.to_owned().keys().map(|object_type| (*object_type, attribute_type)).collect()
                         })
                     })
                     .try_collect()?;
@@ -171,9 +168,9 @@ impl OwnsReverseExecutor {
                     .get_owner_types(snapshot, type_manager)?
                     .to_owned()
                     .into_keys()
-                    .map(|object_type| (object_type.clone(), attribute_type.clone()));
+                    .map(|object_type| (object_type, attribute_type));
 
-                let iterator = owns.sorted_by_key(|(owner, _)| owner.clone()).map(Ok as _);
+                let iterator = owns.sorted_by_key(|(owner, _)| *owner).map(Ok as _);
                 let as_tuples: OwnsReverseBoundedSortedOwner = AsNarrowingIterator::new(
                     iterator.filter_map(filter_for_row).map(owns_to_tuple_owner_attribute as _),
                 );
@@ -196,8 +193,8 @@ impl fmt::Display for OwnsReverseExecutor {
 
 fn create_owns_filter_owner_attribute(attribute_owner_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<OwnsFilterFn> {
     Arc::new(move |result| match result {
-        Ok((owner, attribute)) => match attribute_owner_types.get(&Type::Attribute(attribute.clone().into_owned())) {
-            Some(owner_types) => Ok(owner_types.contains(&Type::from(owner.clone().into_owned()))),
+        Ok((owner, attribute)) => match attribute_owner_types.get(&Type::Attribute((*attribute).into_owned())) {
+            Some(owner_types) => Ok(owner_types.contains(&Type::from((*owner).into_owned()))),
             None => Ok(false),
         },
         Err(err) => Err(err.clone()),
@@ -206,7 +203,7 @@ fn create_owns_filter_owner_attribute(attribute_owner_types: Arc<BTreeMap<Type, 
 
 fn create_owns_filter_attribute(owner_types: Arc<BTreeSet<Type>>) -> Arc<OwnsFilterFn> {
     Arc::new(move |result| match result {
-        Ok((owner, _)) => Ok(owner_types.contains(&Type::from(owner.clone().into_owned()))),
+        Ok((owner, _)) => Ok(owner_types.contains(&Type::from((*owner).into_owned()))),
         Err(err) => Err(err.clone()),
     })
 }

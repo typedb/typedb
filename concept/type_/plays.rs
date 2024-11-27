@@ -41,11 +41,11 @@ impl<'a> Plays {
     pub const DEFAULT_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, None);
 
     pub fn player(&self) -> ObjectType {
-        self.player.clone()
+        self.player
     }
 
     pub fn role(&self) -> RoleType {
-        self.role.clone()
+        self.role
     }
 
     pub fn set_annotation(
@@ -130,11 +130,11 @@ impl<'a> Capability<'a> for Plays {
     }
 
     fn object(&self) -> ObjectType {
-        self.player.clone()
+        self.player
     }
 
     fn interface(&self) -> RoleType {
-        self.role.clone()
+        self.role
     }
 
     fn is_abstract(

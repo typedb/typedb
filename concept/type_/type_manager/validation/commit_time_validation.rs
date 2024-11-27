@@ -103,7 +103,7 @@ impl CommitTimeValidation {
         type_: EntityType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
-        Self::validate_type_constraints(snapshot, type_manager, type_.clone(), validation_errors)?;
+        Self::validate_type_constraints(snapshot, type_manager, type_, validation_errors)?;
         Self::validate_object_type(snapshot, type_manager, type_.into_owned_object_type(), validation_errors)?;
 
         Ok(())
@@ -115,13 +115,13 @@ impl CommitTimeValidation {
         type_: RelationType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
-        Self::validate_type_constraints(snapshot, type_manager, type_.clone(), validation_errors)?;
-        Self::validate_object_type(snapshot, type_manager, type_.clone().into_owned_object_type(), validation_errors)?;
+        Self::validate_type_constraints(snapshot, type_manager, type_, validation_errors)?;
+        Self::validate_object_type(snapshot, type_manager, type_.into_owned_object_type(), validation_errors)?;
 
-        Self::validate_relation_type_has_relates(snapshot, type_manager, type_.clone(), validation_errors)?;
-        Self::validate_relation_type_role_types(snapshot, type_manager, type_.clone(), validation_errors)?;
+        Self::validate_relation_type_has_relates(snapshot, type_manager, type_, validation_errors)?;
+        Self::validate_relation_type_role_types(snapshot, type_manager, type_, validation_errors)?;
 
-        Self::validate_relates(snapshot, type_manager, type_.clone(), validation_errors)?;
+        Self::validate_relates(snapshot, type_manager, type_, validation_errors)?;
         // TODO: Capabilities constraints narrowing checks are currently disabled
         // validate_capabilities_cardinalities_narrowing::<Relates>(
         //     snapshot,
@@ -144,11 +144,11 @@ impl CommitTimeValidation {
     ) -> Result<(), Box<ConceptReadError>> {
         let invalid_value_type = produced_errors!(
             validation_errors,
-            Self::validate_attribute_type_value_type(snapshot, type_manager, type_.clone(), validation_errors)?
+            Self::validate_attribute_type_value_type(snapshot, type_manager, type_, validation_errors)?
         );
 
         if !invalid_value_type {
-            Self::validate_type_constraints(snapshot, type_manager, type_.clone(), validation_errors)?;
+            Self::validate_type_constraints(snapshot, type_manager, type_, validation_errors)?;
         }
 
         Ok(())
@@ -183,16 +183,16 @@ impl CommitTimeValidation {
                 Self::validate_role_is_unique_for_relation_type_hierarchy(
                     snapshot,
                     type_manager,
-                    relation_type.clone(),
-                    role.clone(),
+                    relation_type,
+                    role,
                     validation_errors,
                 )?;
             } else {
                 debug_assert!(relates.relation() != relation_type);
             }
 
-            Self::validate_type_ordering(snapshot, type_manager, role.clone(), validation_errors)?;
-            Self::validate_type_constraints(snapshot, type_manager, role.clone(), validation_errors)?;
+            Self::validate_type_ordering(snapshot, type_manager, role, validation_errors)?;
+            Self::validate_type_constraints(snapshot, type_manager, role, validation_errors)?;
         }
 
         Ok(())
@@ -204,7 +204,7 @@ impl CommitTimeValidation {
         type_: ObjectType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
-        Self::validate_owns(snapshot, type_manager, type_.clone(), validation_errors)?;
+        Self::validate_owns(snapshot, type_manager, type_, validation_errors)?;
         // TODO: Capabilities constraints narrowing checks are currently disabled
         // validate_capabilities_cardinalities_narrowing::<Owns>(
         //     snapshot,
@@ -216,7 +216,7 @@ impl CommitTimeValidation {
         //     validation_errors,
         // )?;
 
-        Self::validate_plays(snapshot, type_manager, type_.clone(), validation_errors)?;
+        Self::validate_plays(snapshot, type_manager, type_, validation_errors)?;
         // TODO: Capabilities constraints narrowing checks are currently disabled
         // validate_capabilities_cardinalities_narrowing::<Plays>(
         //     snapshot,
@@ -240,22 +240,12 @@ impl CommitTimeValidation {
         let owns_declared = type_.get_owns_declared(snapshot, type_manager)?;
 
         for owns in owns_declared.into_iter() {
-            Self::validate_redundant_capabilities::<Owns>(
-                snapshot,
-                type_manager,
-                owns.clone(),
-                validation_errors,
-            )?;
+            Self::validate_redundant_capabilities::<Owns>(snapshot, type_manager, *owns, validation_errors)?;
 
-            Self::validate_capabilities_constraints::<Owns>(
-                snapshot,
-                type_manager,
-                owns.clone(),
-                validation_errors,
-            )?;
+            Self::validate_capabilities_constraints::<Owns>(snapshot, type_manager, *owns, validation_errors)?;
         }
 
-        Self::validate_capabilities_ordering(snapshot, type_manager, type_.clone(), validation_errors)?;
+        Self::validate_capabilities_ordering(snapshot, type_manager, type_, validation_errors)?;
 
         Ok(())
     }
@@ -269,19 +259,9 @@ impl CommitTimeValidation {
         let plays_declared = type_.get_plays_declared(snapshot, type_manager)?;
 
         for plays in plays_declared.into_iter() {
-            Self::validate_redundant_capabilities::<Plays>(
-                snapshot,
-                type_manager,
-                plays.clone(),
-                validation_errors,
-            )?;
+            Self::validate_redundant_capabilities::<Plays>(snapshot, type_manager, plays.clone(), validation_errors)?;
 
-            Self::validate_capabilities_constraints::<Plays>(
-                snapshot,
-                type_manager,
-                plays.clone(),
-                validation_errors,
-            )?;
+            Self::validate_capabilities_constraints::<Plays>(snapshot, type_manager, plays.clone(), validation_errors)?;
         }
 
         Ok(())
@@ -504,14 +484,14 @@ impl CommitTimeValidation {
 
         for supertype in relation_supertypes.into_iter() {
             if let Err(err) =
-                validate_role_name_uniqueness_non_transitive(snapshot, type_manager, supertype.clone(), &role_label)
+                validate_role_name_uniqueness_non_transitive(snapshot, type_manager, *supertype, &role_label)
             {
                 validation_errors.push(err);
             }
         }
         for subtype in relation_subtypes.into_iter() {
             if let Err(err) =
-                validate_role_name_uniqueness_non_transitive(snapshot, type_manager, subtype.clone(), &role_label)
+                validate_role_name_uniqueness_non_transitive(snapshot, type_manager, *subtype, &role_label)
             {
                 validation_errors.push(err);
             }
@@ -564,7 +544,7 @@ impl CommitTimeValidation {
                     if declared_value_type_annotations.is_empty() {
                         validation_errors.push(Box::new(
                             SchemaValidationError::CannotRedeclareInheritedValueTypeWithoutSpecialisation {
-                                label: get_label_or_concept_read_err(snapshot, type_manager, attribute_type.clone())?,
+                                label: get_label_or_concept_read_err(snapshot, type_manager, attribute_type)?,
                                 super_label: get_label_or_concept_read_err(snapshot, type_manager, supertype)?,
                                 value_type: declared_value_type,
                                 // supertype_value_type,

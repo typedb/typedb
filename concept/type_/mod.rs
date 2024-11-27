@@ -282,7 +282,7 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<HashSet<AttributeType>, Box<ConceptReadError>> {
-        Ok(self.get_owns_declared(snapshot, type_manager)?.iter().map(|owns| owns.attribute().clone()).collect())
+        Ok(self.get_owns_declared(snapshot, type_manager)?.iter().map(|owns| owns.attribute()).collect())
     }
 
     fn get_owned_attribute_types(
@@ -290,7 +290,7 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<HashSet<AttributeType>, Box<ConceptReadError>> {
-        Ok(self.get_owns(snapshot, type_manager)?.iter().map(|owns| owns.attribute().clone()).collect())
+        Ok(self.get_owns(snapshot, type_manager)?.iter().map(|owns| owns.attribute()).collect())
     }
 
     fn get_owned_attribute_type_constraint_abstract(
@@ -423,7 +423,7 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<Owns, Box<ConceptReadError>> {
-        let owns = self.get_owns_attribute(snapshot, type_manager, attribute_type.clone())?;
+        let owns = self.get_owns_attribute(snapshot, type_manager, attribute_type)?;
         match owns {
             None => Err(Box::new(ConceptReadError::CannotGetOwnsDoesntExist(
                 self.get_label(snapshot, type_manager)?.clone(),
@@ -474,7 +474,7 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<HashSet<RoleType>, Box<ConceptReadError>> {
-        Ok(self.get_plays_declared(snapshot, type_manager)?.iter().map(|plays| plays.role().clone()).collect())
+        Ok(self.get_plays_declared(snapshot, type_manager)?.iter().map(|plays| plays.role()).collect())
     }
 
     fn get_played_role_types(
@@ -482,7 +482,7 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<HashSet<RoleType>, Box<ConceptReadError>> {
-        Ok(self.get_plays(snapshot, type_manager)?.iter().map(|plays| plays.role().clone()).collect())
+        Ok(self.get_plays(snapshot, type_manager)?.iter().map(|plays| plays.role()).collect())
     }
 
     fn get_played_role_type_constraints<'m>(
@@ -591,7 +591,7 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<Plays, Box<ConceptReadError>> {
-        let plays = self.get_plays_role(snapshot, type_manager, role_type.clone())?;
+        let plays = self.get_plays_role(snapshot, type_manager, role_type)?;
         match plays {
             None => Err(Box::new(ConceptReadError::CannotGetPlaysDoesntExist(
                 self.get_label(snapshot, type_manager)?.clone(),

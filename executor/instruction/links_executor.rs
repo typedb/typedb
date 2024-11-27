@@ -227,7 +227,7 @@ impl LinksExecutor {
                             Ok::<_, Box<_>>(Peekable::new(thing_manager.get_links_by_relation_and_player_type_range(
                                 snapshot,
                                 relation.as_reference(),
-                                player_type_range.clone(),
+                                player_type_range,
                             )))
                         })
                         .collect::<Result<Vec<_>, _>>()?;

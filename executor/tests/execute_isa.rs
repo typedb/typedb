@@ -55,17 +55,17 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     let animal_type = type_manager.create_entity_type(&mut snapshot, &ANIMAL_LABEL).unwrap();
     let dog_type = type_manager.create_entity_type(&mut snapshot, &DOG_LABEL).unwrap();
     let cat_type = type_manager.create_entity_type(&mut snapshot, &CAT_LABEL).unwrap();
-    dog_type.set_supertype(&mut snapshot, &type_manager, &thing_manager, animal_type.clone()).unwrap();
-    cat_type.set_supertype(&mut snapshot, &type_manager, &thing_manager, animal_type.clone()).unwrap();
+    dog_type.set_supertype(&mut snapshot, &type_manager, &thing_manager, animal_type).unwrap();
+    cat_type.set_supertype(&mut snapshot, &type_manager, &thing_manager, animal_type).unwrap();
 
-    let _animal_1 = thing_manager.create_entity(&mut snapshot, animal_type.clone()).unwrap();
-    let _animal_2 = thing_manager.create_entity(&mut snapshot, animal_type.clone()).unwrap();
+    let _animal_1 = thing_manager.create_entity(&mut snapshot, animal_type).unwrap();
+    let _animal_2 = thing_manager.create_entity(&mut snapshot, animal_type).unwrap();
 
-    let _dog_1 = thing_manager.create_entity(&mut snapshot, dog_type.clone()).unwrap();
-    let _dog_2 = thing_manager.create_entity(&mut snapshot, dog_type.clone()).unwrap();
-    let _dog_3 = thing_manager.create_entity(&mut snapshot, dog_type.clone()).unwrap();
+    let _dog_1 = thing_manager.create_entity(&mut snapshot, dog_type).unwrap();
+    let _dog_2 = thing_manager.create_entity(&mut snapshot, dog_type).unwrap();
+    let _dog_3 = thing_manager.create_entity(&mut snapshot, dog_type).unwrap();
 
-    let _cat_1 = thing_manager.create_entity(&mut snapshot, cat_type.clone()).unwrap();
+    let _cat_1 = thing_manager.create_entity(&mut snapshot, cat_type).unwrap();
 
     let finalise_result = thing_manager.finalise(&mut snapshot);
     assert!(finalise_result.is_ok());

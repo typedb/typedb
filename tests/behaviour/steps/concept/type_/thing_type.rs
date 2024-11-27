@@ -77,15 +77,15 @@ pub(super) fn get_as_object_type(context: &mut Context, kind: Kind, label: param
             Kind::Entity => {
                 let type_ =
                     tx.type_manager.get_entity_type(tx.snapshot.as_ref(), &label.into_typedb()).unwrap().unwrap();
-                return ObjectType::Entity(type_);
+                ObjectType::Entity(type_)
             }
             Kind::Relation => {
                 let type_ =
                     tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &label.into_typedb()).unwrap().unwrap();
-                return ObjectType::Relation(type_);
+                ObjectType::Relation(type_)
             }
             _ => unreachable!("Attribute type as ObjectType is deprecated."),
-        };
+        }
     })
 }
 

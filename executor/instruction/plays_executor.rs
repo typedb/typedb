@@ -68,9 +68,9 @@ pub(super) type PlaysFilterMapFn = FilterMapFn<(ObjectType, RoleType)>;
 
 pub(super) type PlaysVariableValueExtractor = for<'a> fn(&'a (ObjectType, RoleType)) -> VariableValue<'a>;
 pub(super) const EXTRACT_PLAYER: PlaysVariableValueExtractor =
-    |(player, _)| VariableValue::Type(Type::from(player.clone().into_owned()));
+    |(player, _)| VariableValue::Type(Type::from((*player).into_owned()));
 pub(super) const EXTRACT_ROLE: PlaysVariableValueExtractor =
-    |(_, role)| VariableValue::Type(Type::RoleType(role.clone().into_owned()));
+    |(_, role)| VariableValue::Type(Type::RoleType((*role).into_owned()));
 
 impl PlaysExecutor {
     pub(crate) fn new(
@@ -165,8 +165,7 @@ impl PlaysExecutor {
                 let type_manager = context.type_manager();
                 let plays = self.get_plays_for_player(snapshot, type_manager, player)?;
 
-                let iterator =
-                    plays.into_iter().sorted_by_key(|(player, role)| (role.clone(), player.clone())).map(Ok as _);
+                let iterator = plays.into_iter().sorted_by_key(|(player, role)| (*role, *player)).map(Ok as _);
                 let as_tuples: PlaysBoundedSortedRole =
                     AsNarrowingIterator::new(iterator.filter_map(filter_for_row).map(plays_to_tuple_role_player as _));
                 Ok(TupleIterator::PlaysBounded(SortedTupleIterator::new(
@@ -193,7 +192,7 @@ impl PlaysExecutor {
         Ok(object_type
             .get_played_role_types(snapshot, type_manager)?
             .into_iter()
-            .map(|role_type| (object_type.clone(), role_type))
+            .map(|role_type| (object_type, role_type))
             .collect())
     }
 }
@@ -206,8 +205,8 @@ impl fmt::Display for PlaysExecutor {
 
 fn create_plays_filter_player_role_type(player_role_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<PlaysFilterFn> {
     Arc::new(move |result| match result {
-        Ok((player, role)) => match player_role_types.get(&Type::from(player.clone().into_owned())) {
-            Some(role_types) => Ok(role_types.contains(&Type::RoleType(role.clone().into_owned()))),
+        Ok((player, role)) => match player_role_types.get(&Type::from((*player).into_owned())) {
+            Some(role_types) => Ok(role_types.contains(&Type::RoleType((*role).into_owned()))),
             None => Ok(false),
         },
         Err(err) => Err(err.clone()),
@@ -216,7 +215,7 @@ fn create_plays_filter_player_role_type(player_role_types: Arc<BTreeMap<Type, Ve
 
 fn create_plays_filter_role_type(role_types: Arc<BTreeSet<Type>>) -> Arc<PlaysFilterFn> {
     Arc::new(move |result| match result {
-        Ok((_, role)) => Ok(role_types.contains(&Type::RoleType(role.clone().into_owned()))),
+        Ok((_, role)) => Ok(role_types.contains(&Type::RoleType((*role).into_owned()))),
         Err(err) => Err(err.clone()),
     })
 }

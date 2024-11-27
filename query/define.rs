@@ -308,7 +308,7 @@ fn define_type_annotations(
                     snapshot,
                     type_manager,
                     &label,
-                    entity.clone(),
+                    entity,
                     annotation.clone(),
                     type_declaration,
                 )? {
@@ -326,7 +326,7 @@ fn define_type_annotations(
                     snapshot,
                     type_manager,
                     &label,
-                    relation.clone(),
+                    relation,
                     annotation.clone(),
                     type_declaration,
                 )? {
@@ -344,7 +344,7 @@ fn define_type_annotations(
                     snapshot,
                     type_manager,
                     &label,
-                    attribute.clone(),
+                    attribute,
                     annotation.clone(),
                     type_declaration,
                 )? {
@@ -408,14 +408,8 @@ fn define_sub(
 
         match (&type_, supertype) {
             (TypeEnum::Entity(type_), TypeEnum::Entity(supertype)) => {
-                let need_define = check_can_and_need_define_sub(
-                    snapshot,
-                    type_manager,
-                    &label,
-                    type_.clone(),
-                    supertype.clone(),
-                    capability,
-                )?;
+                let need_define =
+                    check_can_and_need_define_sub(snapshot, type_manager, &label, *type_, supertype, capability)?;
                 if need_define {
                     type_
                         .set_supertype(snapshot, type_manager, thing_manager, supertype)
@@ -423,14 +417,8 @@ fn define_sub(
                 }
             }
             (TypeEnum::Relation(type_), TypeEnum::Relation(supertype)) => {
-                let need_define = check_can_and_need_define_sub(
-                    snapshot,
-                    type_manager,
-                    &label,
-                    type_.clone(),
-                    supertype.clone(),
-                    capability,
-                )?;
+                let need_define =
+                    check_can_and_need_define_sub(snapshot, type_manager, &label, *type_, supertype, capability)?;
                 if need_define {
                     type_
                         .set_supertype(snapshot, type_manager, thing_manager, supertype)
@@ -438,14 +426,8 @@ fn define_sub(
                 }
             }
             (TypeEnum::Attribute(type_), TypeEnum::Attribute(supertype)) => {
-                let need_define = check_can_and_need_define_sub(
-                    snapshot,
-                    type_manager,
-                    &label,
-                    type_.clone(),
-                    supertype.clone(),
-                    capability,
-                )?;
+                let need_define =
+                    check_can_and_need_define_sub(snapshot, type_manager, &label, *type_, supertype, capability)?;
                 if need_define {
                     type_
                         .set_supertype(snapshot, type_manager, thing_manager, supertype)
@@ -497,7 +479,7 @@ fn define_value_type(
         let definition_status = get_value_type_status(
             snapshot,
             type_manager,
-            attribute_type.clone(),
+            *attribute_type,
             value_type.clone(),
             DefinableStatusMode::Declared,
         )
@@ -526,7 +508,7 @@ fn define_value_type(
             snapshot,
             type_manager,
             thing_manager,
-            attribute_type.clone(),
+            *attribute_type,
             &label,
             capability,
             type_declaration,
@@ -535,12 +517,12 @@ fn define_value_type(
     Ok(())
 }
 
-fn define_value_type_annotations<'a>(
+fn define_value_type_annotations(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     attribute_type: AttributeType,
-    attribute_type_label: &Label<'a>,
+    attribute_type_label: &Label<'_>,
     typeql_capability: &TypeQLCapability,
     typeql_type: &Type,
 ) -> Result<(), DefineError> {
@@ -551,7 +533,7 @@ fn define_value_type_annotations<'a>(
             snapshot,
             type_manager,
             attribute_type_label,
-            attribute_type.clone(),
+            attribute_type,
             annotation.clone(),
             typeql_type,
         )? {
@@ -595,7 +577,7 @@ fn define_relates_with_annotations(
         let definition_status = get_relates_status(
             snapshot,
             type_manager,
-            relation_type.clone(),
+            *relation_type,
             &role_label,
             ordering,
             DefinableStatusMode::Declared,
@@ -628,11 +610,11 @@ fn define_relates_with_annotations(
     Ok(())
 }
 
-fn define_relates_annotations<'a>(
+fn define_relates_annotations(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
-    relation_label: &Label<'a>,
+    relation_label: &Label<'_>,
     relates: Relates,
     typeql_capability: &TypeQLCapability,
 ) -> Result<(), DefineError> {
@@ -677,7 +659,7 @@ fn define_relates_specialises(
 
         let (role_label, _ordering) = type_ref_to_label_and_ordering(&label, &typeql_relates.related)
             .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
-        let relates = resolve_relates_declared(snapshot, type_manager, relation_type.clone(), role_label.name.as_str())
+        let relates = resolve_relates_declared(snapshot, type_manager, *relation_type, role_label.name.as_str())
             .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
 
         define_relates_specialise(snapshot, type_manager, thing_manager, &label, relates, typeql_relates)?;
@@ -763,8 +745,8 @@ fn define_owns_with_annotations(
         let definition_status = get_owns_status(
             snapshot,
             type_manager,
-            object_type.clone(),
-            attribute_type.clone(),
+            object_type,
+            attribute_type,
             ordering,
             DefinableStatusMode::Declared,
         )
@@ -794,11 +776,11 @@ fn define_owns_with_annotations(
     Ok(())
 }
 
-fn define_owns_annotations<'a>(
+fn define_owns_annotations(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
-    owner_label: &Label<'a>,
+    owner_label: &Label<'_>,
     owns: Owns,
     typeql_capability: &TypeQLCapability,
 ) -> Result<(), DefineError> {
@@ -808,7 +790,7 @@ fn define_owns_annotations<'a>(
         if let Some(converted) = capability_convert_and_validate_annotation_definition_need(
             snapshot,
             type_manager,
-            owns.clone(),
+            owns,
             annotation.clone(),
             typeql_capability,
         )? {
@@ -847,14 +829,9 @@ fn define_plays_with_annotations(
         let object_type =
             type_to_object_type(&type_).map_err(|_| err_unsupported_capability(&label, type_.kind(), capability))?;
 
-        let definition_status = get_plays_status(
-            snapshot,
-            type_manager,
-            object_type.clone(),
-            role_type.clone(),
-            DefinableStatusMode::Declared,
-        )
-        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        let definition_status =
+            get_plays_status(snapshot, type_manager, object_type, role_type, DefinableStatusMode::Declared)
+                .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
         let defined = match definition_status {
             DefinableStatus::DoesNotExist => {
                 object_type.set_plays(snapshot, type_manager, thing_manager, role_type).map_err(|source| {
@@ -871,11 +848,11 @@ fn define_plays_with_annotations(
     Ok(())
 }
 
-fn define_plays_annotations<'a>(
+fn define_plays_annotations(
     snapshot: &mut impl WritableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
-    player_label: &Label<'a>,
+    player_label: &Label<'_>,
     plays: Plays,
     typeql_capability: &TypeQLCapability,
 ) -> Result<(), DefineError> {

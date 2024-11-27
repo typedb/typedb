@@ -149,7 +149,7 @@ impl<'a> Relation<'a> {
             snapshot,
             thing_manager,
             self.type_(),
-            role_type.clone(),
+            role_type,
         )
         .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
@@ -157,18 +157,17 @@ impl<'a> Relation<'a> {
             snapshot,
             thing_manager,
             player.type_(),
-            role_type.clone(),
+            role_type,
         )
         .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
-        OperationTimeValidation::validate_relates_is_not_abstract(snapshot, thing_manager, self, role_type.clone())
+        OperationTimeValidation::validate_relates_is_not_abstract(snapshot, thing_manager, self, role_type)
             .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
-        OperationTimeValidation::validate_plays_is_not_abstract(snapshot, thing_manager, &player, role_type.clone())
+        OperationTimeValidation::validate_plays_is_not_abstract(snapshot, thing_manager, &player, role_type)
             .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
-        let distinct =
-            self.type_().is_related_role_type_distinct(snapshot, thing_manager.type_manager(), role_type.clone())?;
+        let distinct = self.type_().is_related_role_type_distinct(snapshot, thing_manager.type_manager(), role_type)?;
         if distinct {
             thing_manager.put_links_unordered(snapshot, self.as_reference(), player.as_reference(), role_type)
         } else {
@@ -195,11 +194,11 @@ impl<'a> Relation<'a> {
             snapshot,
             thing_manager,
             self.type_(),
-            role_type.clone(),
+            role_type,
         )
         .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
-        OperationTimeValidation::validate_relates_is_not_abstract(snapshot, thing_manager, self, role_type.clone())
+        OperationTimeValidation::validate_relates_is_not_abstract(snapshot, thing_manager, self, role_type)
             .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
         let mut new_counts = HashMap::<_, u64>::new();
@@ -208,11 +207,11 @@ impl<'a> Relation<'a> {
                 snapshot,
                 thing_manager,
                 player.type_(),
-                role_type.clone(),
+                role_type,
             )
             .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
-            OperationTimeValidation::validate_plays_is_not_abstract(snapshot, thing_manager, player, role_type.clone())
+            OperationTimeValidation::validate_plays_is_not_abstract(snapshot, thing_manager, player, role_type)
                 .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
             *new_counts.entry(player).or_default() += 1;
@@ -222,13 +221,13 @@ impl<'a> Relation<'a> {
             snapshot,
             thing_manager,
             self.as_reference(),
-            role_type.clone(),
+            role_type,
             &new_counts,
         )
         .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
         // 1. get owned list
-        let old_players = thing_manager.get_role_players_ordered(snapshot, self.as_reference(), role_type.clone())?;
+        let old_players = thing_manager.get_role_players_ordered(snapshot, self.as_reference(), role_type)?;
 
         let mut old_counts = HashMap::<_, u64>::new();
         for player in &old_players {
@@ -238,19 +237,13 @@ impl<'a> Relation<'a> {
         // 2. Delete existing but no-longer necessary has, and add new ones, with the correct counts (!)
         for player in old_counts.keys() {
             if !new_counts.contains_key(player) {
-                thing_manager.unset_links(snapshot, self.as_reference(), player.as_reference(), role_type.clone())?;
+                thing_manager.unset_links(snapshot, self.as_reference(), player.as_reference(), role_type)?;
             }
         }
 
         for (player, count) in new_counts {
             // Don't skip unchanged count to ensure that locks are placed correctly
-            thing_manager.set_links_count(
-                snapshot,
-                self.as_reference(),
-                player.as_reference(),
-                role_type.clone(),
-                count,
-            )?;
+            thing_manager.set_links_count(snapshot, self.as_reference(), player.as_reference(), role_type, count)?;
         }
 
         // 3. Overwrite owned list
@@ -283,7 +276,7 @@ impl<'a> Relation<'a> {
             snapshot,
             thing_manager,
             self.type_(),
-            role_type.clone(),
+            role_type,
         )
         .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
@@ -291,15 +284,14 @@ impl<'a> Relation<'a> {
             snapshot,
             thing_manager,
             player.type_(),
-            role_type.clone(),
+            role_type,
         )
         .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
-        OperationTimeValidation::validate_relates_is_not_abstract(snapshot, thing_manager, self, role_type.clone())
+        OperationTimeValidation::validate_relates_is_not_abstract(snapshot, thing_manager, self, role_type)
             .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
-        let distinct =
-            self.type_().is_related_role_type_distinct(snapshot, thing_manager.type_manager(), role_type.clone())?;
+        let distinct = self.type_().is_related_role_type_distinct(snapshot, thing_manager.type_manager(), role_type)?;
         if distinct {
             debug_assert_eq!(delete_count, 1);
             thing_manager.unset_links(snapshot, self.as_reference(), player.as_reference(), role_type)
@@ -467,7 +459,7 @@ impl<'a> RolePlayer<'a> {
     }
 
     pub fn role_type(&self) -> RoleType {
-        self.role_type.clone()
+        self.role_type
     }
 
     pub fn into_owned(self) -> RolePlayer<'static> {

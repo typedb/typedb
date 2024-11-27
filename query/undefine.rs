@@ -274,7 +274,7 @@ fn undefine_capability_annotation(
                 .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
             let attribute_type = resolve_attribute_type(snapshot, type_manager, &attr_label)
                 .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
-            let owns = resolve_owns_declared(snapshot, type_manager, object_type.clone(), attribute_type.clone())
+            let owns = resolve_owns_declared(snapshot, type_manager, object_type, attribute_type)
                 .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
 
             let owns_definition_status = get_owns_status(
@@ -304,7 +304,7 @@ fn undefine_capability_annotation(
             check_can_and_need_undefine_capability_annotation(
                 snapshot,
                 type_manager,
-                owns.clone(),
+                owns,
                 annotation_category,
                 annotation_undefinable,
             )?;
@@ -338,9 +338,8 @@ fn undefine_capability_annotation(
                 .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
             let (role_label, ordering) = type_ref_to_label_and_ordering(&label, &typeql_relates.related)
                 .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
-            let relates =
-                resolve_relates_declared(snapshot, type_manager, relation_type.clone(), role_label.name.as_str())
-                    .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
+            let relates = resolve_relates_declared(snapshot, type_manager, relation_type, role_label.name.as_str())
+                .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
 
             let relates_definition_status = get_relates_status(
                 snapshot,
@@ -385,13 +384,9 @@ fn undefine_capability_annotation(
 
             let attribute_type = resolve_attribute_type(snapshot, type_manager, &label)
                 .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
-            let definition_status = get_type_annotation_category_status(
-                snapshot,
-                type_manager,
-                attribute_type.clone(),
-                annotation_category,
-            )
-            .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+            let definition_status =
+                get_type_annotation_category_status(snapshot, type_manager, attribute_type, annotation_category)
+                    .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
             match definition_status {
                 DefinableStatus::ExistsSame(_) => {
                     attribute_type.unset_annotation(snapshot, type_manager, annotation_category)
@@ -500,8 +495,8 @@ fn undefine_type_capability_sub(
                 snapshot,
                 type_manager,
                 type_label,
-                type_.clone(),
-                supertype.clone(),
+                *type_,
+                supertype,
                 capability_undefinable,
             )?;
             if need_undefine {
@@ -515,8 +510,8 @@ fn undefine_type_capability_sub(
                 snapshot,
                 type_manager,
                 type_label,
-                type_.clone(),
-                supertype.clone(),
+                *type_,
+                supertype,
                 capability_undefinable,
             )?;
             if need_undefine {
@@ -530,8 +525,8 @@ fn undefine_type_capability_sub(
                 snapshot,
                 type_manager,
                 type_label,
-                type_.clone(),
-                supertype.clone(),
+                *type_,
+                supertype,
                 capability_undefinable,
             )?;
             if need_undefine {
@@ -584,15 +579,9 @@ fn undefine_type_capability_owns(
     let object_type = type_to_object_type(&type_)
         .map_err(|_| err_unsupported_capability(type_label, type_.kind(), capability_undefinable))?;
 
-    let definition_status = get_owns_status(
-        snapshot,
-        type_manager,
-        object_type.clone(),
-        attribute_type.clone(),
-        ordering,
-        DefinableStatusMode::Transitive,
-    )
-    .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+    let definition_status =
+        get_owns_status(snapshot, type_manager, object_type, attribute_type, ordering, DefinableStatusMode::Transitive)
+            .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
     match definition_status {
         DefinableStatus::ExistsSame(_) => object_type
             .unset_owns(snapshot, type_manager, thing_manager, attribute_type)
@@ -632,14 +621,9 @@ fn undefine_type_capability_plays(
     let object_type = type_to_object_type(&type_)
         .map_err(|_| err_unsupported_capability(type_label, type_.kind(), capability_undefinable))?;
 
-    let definition_status = get_plays_status(
-        snapshot,
-        type_manager,
-        object_type.clone(),
-        role_type.clone(),
-        DefinableStatusMode::Transitive,
-    )
-    .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+    let definition_status =
+        get_plays_status(snapshot, type_manager, object_type, role_type, DefinableStatusMode::Transitive)
+            .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
     match definition_status {
         DefinableStatus::ExistsSame(_) => object_type
             .unset_plays(snapshot, type_manager, thing_manager, role_type)
@@ -673,7 +657,7 @@ fn undefine_type_capability_relates(
     let definition_status = get_relates_status(
         snapshot,
         type_manager,
-        relation_type.clone(),
+        *relation_type,
         &role_label,
         ordering,
         DefinableStatusMode::Transitive,
@@ -721,7 +705,7 @@ fn undefine_type_capability_value_type(
     let definition_status = get_value_type_status(
         snapshot,
         type_manager,
-        attribute_type.clone(),
+        *attribute_type,
         value_type.clone(),
         DefinableStatusMode::Transitive,
     )
@@ -766,7 +750,7 @@ fn undefine_type_annotation(
                 snapshot,
                 type_manager,
                 &label,
-                entity_type.clone(),
+                entity_type,
                 annotation_category,
                 annotation_undefinable,
             )?;
@@ -777,7 +761,7 @@ fn undefine_type_annotation(
                 snapshot,
                 type_manager,
                 &label,
-                relation_type.clone(),
+                relation_type,
                 annotation_category,
                 annotation_undefinable,
             )?;
@@ -793,7 +777,7 @@ fn undefine_type_annotation(
                 snapshot,
                 type_manager,
                 &label,
-                attribute_type.clone(),
+                attribute_type,
                 annotation_category,
                 annotation_undefinable,
             )?;

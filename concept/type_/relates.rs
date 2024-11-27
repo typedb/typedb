@@ -45,11 +45,11 @@ impl<'a> Relates {
     pub const DEFAULT_ORDERED_CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, None);
 
     pub fn relation(&self) -> RelationType {
-        self.relation.clone()
+        self.relation
     }
 
     pub fn role(&self) -> RoleType {
-        self.role.clone()
+        self.role
     }
 
     pub fn get_constraint_abstract(
@@ -202,11 +202,11 @@ impl<'a> Capability<'a> for Relates {
     }
 
     fn object(&self) -> RelationType {
-        self.relation.clone()
+        self.relation
     }
 
     fn interface(&self) -> RoleType {
-        self.role.clone()
+        self.role
     }
 
     fn is_abstract(

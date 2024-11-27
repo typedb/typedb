@@ -129,11 +129,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         Ok(())
     }
 
-    pub(crate) fn storage_set_value_type(
-        snapshot: &mut Snapshot,
-        attribute: AttributeType,
-        value_type: ValueType,
-    ) {
+    pub(crate) fn storage_set_value_type(snapshot: &mut Snapshot, attribute: AttributeType, value_type: ValueType) {
         TypeWriter::storage_put_type_vertex_property(snapshot, attribute, Some(value_type));
     }
 

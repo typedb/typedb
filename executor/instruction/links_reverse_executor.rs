@@ -207,7 +207,7 @@ impl LinksReverseExecutor {
                                 thing_manager.get_links_reverse_by_player_and_relation_type_range(
                                     snapshot,
                                     relation.as_reference(),
-                                    relation_type_range.clone(),
+                                    relation_type_range,
                                 ),
                             ))
                         })

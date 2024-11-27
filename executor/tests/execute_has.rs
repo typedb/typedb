@@ -71,34 +71,32 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
 
     const CARDINALITY_ANY: OwnsAnnotation = OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None));
 
-    let person_owns_age = person_type
-        .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Unordered)
-        .unwrap();
+    let person_owns_age =
+        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
     person_owns_age.set_annotation(&mut snapshot, &type_manager, &thing_manager, CARDINALITY_ANY).unwrap();
 
-    let person_owns_name = person_type
-        .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered)
-        .unwrap();
+    let person_owns_name =
+        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Unordered).unwrap();
     person_owns_name.set_annotation(&mut snapshot, &type_manager, &thing_manager, CARDINALITY_ANY).unwrap();
 
-    let person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
-    let person_2 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
-    let person_3 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
+    let person_1 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+    let person_2 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+    let person_3 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
 
-    let age_1 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(10)).unwrap();
-    let age_2 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(11)).unwrap();
-    let age_3 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(12)).unwrap();
-    let age_4 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(13)).unwrap();
-    let age_5 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(14)).unwrap();
+    let age_1 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(10)).unwrap();
+    let age_2 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(11)).unwrap();
+    let age_3 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(12)).unwrap();
+    let age_4 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(13)).unwrap();
+    let age_5 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(14)).unwrap();
 
     let name_1 = thing_manager
-        .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned("Abby".to_string())))
+        .create_attribute(&mut snapshot, name_type, Value::String(Cow::Owned("Abby".to_string())))
         .unwrap();
     let name_2 = thing_manager
-        .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned("Bobby".to_string())))
+        .create_attribute(&mut snapshot, name_type, Value::String(Cow::Owned("Bobby".to_string())))
         .unwrap();
     let name_3 = thing_manager
-        .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned("Candice".to_string())))
+        .create_attribute(&mut snapshot, name_type, Value::String(Cow::Owned("Candice".to_string())))
         .unwrap();
 
     person_1.set_has_unordered(&mut snapshot, &thing_manager, age_1.clone()).unwrap();

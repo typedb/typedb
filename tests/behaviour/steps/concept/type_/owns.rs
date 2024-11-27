@@ -115,8 +115,7 @@ pub async fn get_owns_set_annotation(
     with_schema_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns =
-            object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type.clone()).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
         let value_type = attr_type.get_value_type_without_source(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         let res = owns.set_annotation(
             Arc::get_mut(&mut tx.snapshot).unwrap(),

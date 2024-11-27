@@ -76,7 +76,7 @@ impl AsWriteInstruction for PutAttribute {
     ) -> Result<(), Box<WriteError>> {
         let attribute_type = try_unwrap_as!(answer::Type::Attribute: get_type(row, &self.type_)).unwrap();
         let inserted = thing_manager
-            .create_attribute(snapshot, attribute_type.clone(), get_value(row, parameters, self.value).clone())
+            .create_attribute(snapshot, *attribute_type, get_value(row, parameters, self.value).clone())
             .map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
         let ThingSource(write_to) = &self.write_to;
         row.set(*write_to, VariableValue::Thing(Thing::Attribute(inserted)));
@@ -95,13 +95,13 @@ impl AsWriteInstruction for PutObject {
         let inserted = match get_type(row, &self.type_) {
             Type::Entity(entity_type) => {
                 let inserted = thing_manager
-                    .create_entity(snapshot, entity_type.clone())
+                    .create_entity(snapshot, *entity_type)
                     .map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
                 Thing::Entity(inserted)
             }
             Type::Relation(relation_type) => {
                 let inserted = thing_manager
-                    .create_relation(snapshot, relation_type.clone())
+                    .create_relation(snapshot, *relation_type)
                     .map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
                 Thing::Relation(inserted)
             }
@@ -143,7 +143,7 @@ impl AsWriteInstruction for compiler::executable::insert::instructions::Links {
         let player_thing = get_thing(row, &self.player).as_object();
         let role_type = try_unwrap_as!(answer::Type::RoleType : get_type(row, &self.role)).unwrap();
         relation_thing
-            .add_player(snapshot, thing_manager, role_type.clone(), player_thing)
+            .add_player(snapshot, thing_manager, *role_type, player_thing)
             .map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
         Ok(())
     }
@@ -211,7 +211,7 @@ impl AsWriteInstruction for compiler::executable::delete::instructions::Links {
         let player = get_thing(row, &self.relation).as_object();
         let answer::Type::RoleType(role_type) = get_type(row, &self.role) else { unreachable!() };
         relation
-            .remove_player_single(snapshot, thing_manager, role_type.clone(), player)
+            .remove_player_single(snapshot, thing_manager, *role_type, player)
             .map_err(|source| Box::new(WriteError::ConceptWrite { typedb_source: source }))
     }
 }

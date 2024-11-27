@@ -294,18 +294,17 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             snapshot,
             thing_manager,
             self.type_(),
-            attribute_type.clone(),
+            attribute_type,
         )
         .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
-        let owns =
-            self.type_().try_get_owns_attribute(snapshot, thing_manager.type_manager(), attribute_type.clone())?;
+        let owns = self.type_().try_get_owns_attribute(snapshot, thing_manager.type_manager(), attribute_type)?;
         match owns.get_ordering(snapshot, thing_manager.type_manager())? {
             Ordering::Unordered => return Err(Box::new(ConceptWriteError::SetHasOrderedOwnsUnordered {})),
             Ordering::Ordered => (),
         }
 
-        OperationTimeValidation::validate_owns_is_not_abstract(snapshot, thing_manager, self, attribute_type.clone())
+        OperationTimeValidation::validate_owns_is_not_abstract(snapshot, thing_manager, self, attribute_type)
             .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         let mut new_counts = BTreeMap::<_, u64>::new();
@@ -317,14 +316,13 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             snapshot,
             thing_manager,
             self,
-            attribute_type.clone(),
+            attribute_type,
             &new_counts,
         )
         .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
         // 1. get owned list
-        let old_attributes =
-            thing_manager.get_has_from_thing_to_type_ordered(snapshot, self, attribute_type.clone())?;
+        let old_attributes = thing_manager.get_has_from_thing_to_type_ordered(snapshot, self, attribute_type)?;
 
         let mut old_counts = BTreeMap::<_, u64>::new();
         for attr in &old_attributes {
@@ -359,17 +357,16 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             snapshot,
             thing_manager,
             self.type_(),
-            attribute_type.clone(),
+            attribute_type,
         )
         .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
-        let owns =
-            self.type_().try_get_owns_attribute(snapshot, thing_manager.type_manager(), attribute_type.clone())?;
+        let owns = self.type_().try_get_owns_attribute(snapshot, thing_manager.type_manager(), attribute_type)?;
         let ordering = owns.get_ordering(snapshot, thing_manager.type_manager())?;
         match ordering {
             Ordering::Unordered => Err(Box::new(ConceptWriteError::UnsetHasOrderedOwnsUnordered {})),
             Ordering::Ordered => {
-                for attribute in self.get_has_type_ordered(snapshot, thing_manager, attribute_type.clone())? {
+                for attribute in self.get_has_type_ordered(snapshot, thing_manager, attribute_type)? {
                     thing_manager.unset_has(snapshot, self, attribute);
                 }
                 thing_manager.unset_has_ordered(snapshot, self, attribute_type);
@@ -488,10 +485,7 @@ fn storage_key_has_reverse_edge_to_has<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
 ) -> (Has<'a>, u64) {
-    (
-        Has::new_from_edge_reverse(ThingEdgeHasReverse::new(storage_key.into_bytes())),
-        decode_value_u64(&value),
-    )
+    (Has::new_from_edge_reverse(ThingEdgeHasReverse::new(storage_key.into_bytes())), decode_value_u64(&value))
 }
 
 edge_iterator!(

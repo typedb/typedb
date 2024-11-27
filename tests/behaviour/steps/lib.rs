@@ -191,7 +191,7 @@ impl Context {
         self.active_concurrent_transactions = txs;
     }
 
-    pub fn get_concurrent_transactions(&self) -> &Vec<ActiveTransaction> {
+    pub fn get_concurrent_transactions(&self) -> &[ActiveTransaction] {
         &self.active_concurrent_transactions
     }
 

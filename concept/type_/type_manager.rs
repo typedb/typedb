@@ -5,6 +5,7 @@
  */
 
 use std::{
+    borrow::Cow,
     collections::{HashMap, HashSet},
     sync::Arc,
 };
@@ -519,15 +520,15 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         name: &str,
-    ) -> Result<Option<MaybeOwns<'_, Vec<RoleType>>>, Box<ConceptReadError>> {
+    ) -> Result<Option<Cow<'_, [RoleType]>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
-            Ok(cache.get_roles_by_name(name).map(MaybeOwns::Borrowed))
+            Ok(cache.get_roles_by_name(name).map(Cow::Borrowed))
         } else {
             let roles = TypeReader::get_roles_by_name(snapshot, name.to_owned())?;
             if roles.is_empty() {
                 Ok(None)
             } else {
-                Ok(Some(MaybeOwns::Owned(roles)))
+                Ok(Some(Cow::Owned(roles)))
             }
         }
     }
@@ -540,7 +541,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_declared(entity_type)))
         } else {
-            let owns = TypeReader::get_capabilities_declared(snapshot, entity_type.clone())?;
+            let owns = TypeReader::get_capabilities_declared(snapshot, entity_type)?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
@@ -553,7 +554,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_declared(relation_type)))
         } else {
-            let owns = TypeReader::get_capabilities_declared(snapshot, relation_type.clone())?;
+            let owns = TypeReader::get_capabilities_declared(snapshot, relation_type)?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
@@ -564,9 +565,9 @@ impl TypeManager {
         attribute_type: AttributeType,
     ) -> Result<MaybeOwns<'_, HashSet<Owns>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_attribute_type_owns(attribute_type.clone())))
+            Ok(MaybeOwns::Borrowed(cache.get_attribute_type_owns(attribute_type)))
         } else {
-            let plays = TypeReader::get_capabilities_for_interface::<Owns>(snapshot, attribute_type.clone())?;
+            let plays = TypeReader::get_capabilities_for_interface::<Owns>(snapshot, attribute_type)?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
@@ -577,12 +578,9 @@ impl TypeManager {
         attribute_type: AttributeType,
     ) -> Result<MaybeOwns<'_, HashMap<ObjectType, Owns>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_attribute_type_owner_types(attribute_type.clone())))
+            Ok(MaybeOwns::Borrowed(cache.get_attribute_type_owner_types(attribute_type)))
         } else {
-            let owns = TypeReader::get_object_types_with_capabilities_for_interface::<Owns>(
-                snapshot,
-                attribute_type.clone(),
-            )?;
+            let owns = TypeReader::get_object_types_with_capabilities_for_interface::<Owns>(snapshot, attribute_type)?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
@@ -595,7 +593,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_relation_type_relates_root(relation_type)))
         } else {
-            let relates = TypeReader::get_relation_type_relates_root(snapshot, relation_type.clone())?;
+            let relates = TypeReader::get_relation_type_relates_root(snapshot, relation_type)?;
             Ok(MaybeOwns::Owned(relates))
         }
     }
@@ -608,7 +606,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_relation_type_relates_declared(relation_type)))
         } else {
-            let relates = TypeReader::get_capabilities_declared::<Relates>(snapshot, relation_type.clone())?;
+            let relates = TypeReader::get_capabilities_declared::<Relates>(snapshot, relation_type)?;
             Ok(MaybeOwns::Owned(relates))
         }
     }
@@ -621,7 +619,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_relation_type_relates(relation_type)))
         } else {
-            let relates = TypeReader::get_capabilities::<Relates>(snapshot, relation_type.clone(), false)?;
+            let relates = TypeReader::get_capabilities::<Relates>(snapshot, relation_type, false)?;
             Ok(MaybeOwns::Owned(relates))
         }
     }
@@ -634,7 +632,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_relation_type_relates_with_specialised(relation_type)))
         } else {
-            let relates = TypeReader::get_capabilities::<Relates>(snapshot, relation_type.clone(), true)?;
+            let relates = TypeReader::get_capabilities::<Relates>(snapshot, relation_type, true)?;
             Ok(MaybeOwns::Owned(relates))
         }
     }
@@ -645,9 +643,9 @@ impl TypeManager {
         role_type: RoleType,
     ) -> Result<MaybeOwns<'_, HashSet<Plays>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_role_type_plays(role_type.clone())))
+            Ok(MaybeOwns::Borrowed(cache.get_role_type_plays(role_type)))
         } else {
-            let plays = TypeReader::get_capabilities_for_interface::<Plays>(snapshot, role_type.clone())?;
+            let plays = TypeReader::get_capabilities_for_interface::<Plays>(snapshot, role_type)?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
@@ -658,12 +656,9 @@ impl TypeManager {
         role_type: RoleType,
     ) -> Result<MaybeOwns<'_, HashMap<ObjectType, Plays>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_role_type_player_types(role_type.clone())))
+            Ok(MaybeOwns::Borrowed(cache.get_role_type_player_types(role_type)))
         } else {
-            let plays = TypeReader::get_object_types_with_capabilities_for_interface::<Plays>(
-                snapshot,
-                role_type.clone(),
-            )?;
+            let plays = TypeReader::get_object_types_with_capabilities_for_interface::<Plays>(snapshot, role_type)?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
@@ -688,7 +683,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_role_type_relates_root(role_type).clone())
         } else {
-            let relates = TypeReader::get_role_type_relates_root(snapshot, role_type.clone())?;
+            let relates = TypeReader::get_role_type_relates_root(snapshot, role_type)?;
             Ok(relates)
         }
     }
@@ -701,7 +696,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_role_type_relates(role_type)))
         } else {
-            let relates = TypeReader::get_capabilities_for_interface::<Relates>(snapshot, role_type.clone())?;
+            let relates = TypeReader::get_capabilities_for_interface::<Relates>(snapshot, role_type)?;
             Ok(MaybeOwns::Owned(relates))
         }
     }
@@ -712,12 +707,9 @@ impl TypeManager {
         role_type: RoleType,
     ) -> Result<MaybeOwns<'_, HashMap<RelationType, Relates>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_role_type_relation_types(role_type.clone())))
+            Ok(MaybeOwns::Borrowed(cache.get_role_type_relation_types(role_type)))
         } else {
-            let relates = TypeReader::get_object_types_with_capabilities_for_interface::<Relates>(
-                snapshot,
-                role_type.clone(),
-            )?;
+            let relates = TypeReader::get_object_types_with_capabilities_for_interface::<Relates>(snapshot, role_type)?;
             Ok(MaybeOwns::Owned(relates))
         }
     }
@@ -730,8 +722,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns(entity_type)))
         } else {
-            let owns =
-                TypeReader::get_capabilities::<Owns>(snapshot, entity_type.into_owned_object_type(), false)?;
+            let owns = TypeReader::get_capabilities::<Owns>(snapshot, entity_type.into_owned_object_type(), false)?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
@@ -744,8 +735,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_with_specialised(entity_type)))
         } else {
-            let owns =
-                TypeReader::get_capabilities::<Owns>(snapshot, entity_type.into_owned_object_type(), true)?;
+            let owns = TypeReader::get_capabilities::<Owns>(snapshot, entity_type.into_owned_object_type(), true)?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
@@ -758,8 +748,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns(relation_type)))
         } else {
-            let owns =
-                TypeReader::get_capabilities::<Owns>(snapshot, relation_type.into_owned_object_type(), false)?;
+            let owns = TypeReader::get_capabilities::<Owns>(snapshot, relation_type.into_owned_object_type(), false)?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
@@ -772,8 +761,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_with_specialised(relation_type)))
         } else {
-            let owns =
-                TypeReader::get_capabilities::<Owns>(snapshot, relation_type.into_owned_object_type(), true)?;
+            let owns = TypeReader::get_capabilities::<Owns>(snapshot, relation_type.into_owned_object_type(), true)?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
@@ -804,7 +792,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_declared(entity_type)))
         } else {
-            let plays = TypeReader::get_capabilities_declared(snapshot, entity_type.clone())?;
+            let plays = TypeReader::get_capabilities_declared(snapshot, entity_type)?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
@@ -817,8 +805,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays(entity_type)))
         } else {
-            let plays =
-                TypeReader::get_capabilities::<Plays>(snapshot, entity_type.into_owned_object_type(), false)?;
+            let plays = TypeReader::get_capabilities::<Plays>(snapshot, entity_type.into_owned_object_type(), false)?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
@@ -831,8 +818,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_with_specialised(entity_type)))
         } else {
-            let plays =
-                TypeReader::get_capabilities::<Plays>(snapshot, entity_type.into_owned_object_type(), true)?;
+            let plays = TypeReader::get_capabilities::<Plays>(snapshot, entity_type.into_owned_object_type(), true)?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
@@ -845,7 +831,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_declared(relation_type)))
         } else {
-            let plays = TypeReader::get_capabilities_declared(snapshot, relation_type.clone())?;
+            let plays = TypeReader::get_capabilities_declared(snapshot, relation_type)?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
@@ -858,11 +844,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays(relation_type)))
         } else {
-            let plays = TypeReader::get_capabilities::<Plays>(
-                snapshot,
-                relation_type.into_owned_object_type(),
-                false,
-            )?;
+            let plays = TypeReader::get_capabilities::<Plays>(snapshot, relation_type.into_owned_object_type(), false)?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
@@ -875,8 +857,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_with_specialised(relation_type)))
         } else {
-            let plays =
-                TypeReader::get_capabilities::<Plays>(snapshot, relation_type.into_owned_object_type(), true)?;
+            let plays = TypeReader::get_capabilities::<Plays>(snapshot, relation_type.into_owned_object_type(), true)?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
@@ -1018,7 +999,7 @@ impl TypeManager {
         object_type: ObjectType,
         attribute_type: AttributeType,
     ) -> Result<Option<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
-        let owns_declared = object_type.get_owns_attribute_declared(snapshot, self, attribute_type.clone())?;
+        let owns_declared = object_type.get_owns_attribute_declared(snapshot, self, attribute_type)?;
         Ok(if let Some(owns_declared) = owns_declared {
             let constraints = object_type.get_owned_attribute_type_constraints(snapshot, self, attribute_type)?;
             get_abstract_constraint(owns_declared, constraints.iter())
@@ -1033,7 +1014,7 @@ impl TypeManager {
         object_type: ObjectType,
         role_type: RoleType,
     ) -> Result<Option<CapabilityConstraint<Plays>>, Box<ConceptReadError>> {
-        let plays_declared = object_type.get_plays_role_declared(snapshot, self, role_type.clone())?;
+        let plays_declared = object_type.get_plays_role_declared(snapshot, self, role_type)?;
         Ok(if let Some(plays_declared) = plays_declared {
             let constraints = object_type.get_played_role_type_constraints(snapshot, self, role_type)?;
             get_abstract_constraint(plays_declared, constraints.iter())
@@ -1048,7 +1029,7 @@ impl TypeManager {
         relation_type: RelationType,
         role_type: RoleType,
     ) -> Result<Option<CapabilityConstraint<Relates>>, Box<ConceptReadError>> {
-        let relates_declared = relation_type.get_relates_role_declared(snapshot, self, role_type.clone())?;
+        let relates_declared = relation_type.get_relates_role_declared(snapshot, self, role_type)?;
         Ok(if let Some(relates_declared) = relates_declared {
             let constraints = relation_type.get_related_role_type_constraints(snapshot, self, role_type)?;
             get_abstract_constraint(relates_declared, constraints.iter())
@@ -1147,7 +1128,7 @@ impl TypeManager {
             let mut independent = HashSet::new();
             for type_ in self.get_attribute_types(snapshot)?.into_iter() {
                 if type_.is_independent(snapshot, self)? {
-                    independent.insert(type_.clone());
+                    independent.insert(type_);
                 }
             }
             Ok(Arc::new(independent))
@@ -1252,7 +1233,7 @@ impl TypeManager {
             .map_err(|err| ConceptWriteError::Encoding { source: err })?;
         let entity = EntityType::new(type_vertex);
 
-        TypeWriter::storage_put_label(snapshot, entity.clone(), label);
+        TypeWriter::storage_put_label(snapshot, entity, label);
         Ok(entity)
     }
 
@@ -1270,7 +1251,7 @@ impl TypeManager {
             .map_err(|err| ConceptWriteError::Encoding { source: err })?;
         let relation = RelationType::new(type_vertex);
 
-        TypeWriter::storage_put_label(snapshot, relation.clone(), label);
+        TypeWriter::storage_put_label(snapshot, relation, label);
         Ok(relation)
     }
 
@@ -1285,7 +1266,7 @@ impl TypeManager {
         OperationTimeValidation::validate_new_role_name_uniqueness(
             snapshot,
             self,
-            relation_type.clone().into_owned(),
+            relation_type.into_owned(),
             &label.clone().into_owned(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -1300,12 +1281,12 @@ impl TypeManager {
             .map_err(|err| ConceptWriteError::Encoding { source: err })?;
         let role_type = RoleType::new(type_vertex);
 
-        TypeWriter::storage_put_label(snapshot, role_type.clone(), label);
-        TypeWriter::storage_put_type_vertex_property(snapshot, role_type.clone(), Some(ordering));
+        TypeWriter::storage_put_label(snapshot, role_type, label);
+        TypeWriter::storage_put_type_vertex_property(snapshot, role_type, Some(ordering));
 
-        if let Err(relates_err) = self.set_relates(snapshot, thing_manager, relation_type, role_type.clone(), false) {
-            TypeWriter::storage_unput_type_vertex_property(snapshot, role_type.clone(), Some(ordering));
-            TypeWriter::storage_unput_label(snapshot, role_type.clone(), label);
+        if let Err(relates_err) = self.set_relates(snapshot, thing_manager, relation_type, role_type, false) {
+            TypeWriter::storage_unput_type_vertex_property(snapshot, role_type, Some(ordering));
+            TypeWriter::storage_unput_label(snapshot, role_type, label);
             TypeWriter::storage_unput_vertex(snapshot, role_type);
             Err(relates_err)
         } else {
@@ -1321,7 +1302,7 @@ impl TypeManager {
         role_type: RoleType,
         is_specialising: bool,
     ) -> Result<Relates, Box<ConceptWriteError>> {
-        let relates = Relates::new(relation_type.clone(), role_type.clone());
+        let relates = Relates::new(relation_type, role_type);
         let exists = relation_type.get_relates(snapshot, self)?.contains(&relates);
 
         if !exists && !is_specialising {
@@ -1363,7 +1344,7 @@ impl TypeManager {
             .map_err(|err| ConceptWriteError::Encoding { source: err })?;
         let attribute_type = AttributeType::new(type_vertex);
 
-        TypeWriter::storage_put_label(snapshot, attribute_type.clone(), label);
+        TypeWriter::storage_put_label(snapshot, attribute_type, label);
         Ok(attribute_type)
     }
 
@@ -1372,11 +1353,11 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         object_type: ObjectType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        for owns in TypeReader::get_capabilities_declared::<Owns>(snapshot, object_type.clone())? {
+        for owns in TypeReader::get_capabilities_declared::<Owns>(snapshot, object_type)? {
             self.unset_owns_unchecked(snapshot, owns)?;
         }
 
-        for plays in TypeReader::get_capabilities_declared::<Plays>(snapshot, object_type.clone())? {
+        for plays in TypeReader::get_capabilities_declared::<Plays>(snapshot, object_type)? {
             self.unset_plays_unchecked(snapshot, plays)?;
         }
 
@@ -1404,9 +1385,9 @@ impl TypeManager {
         thing_manager: &ThingManager,
         entity_type: EntityType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        self.validate_delete_type(snapshot, thing_manager, entity_type.clone())?;
+        self.validate_delete_type(snapshot, thing_manager, entity_type)?;
 
-        self.delete_object_type_capabilities_unchecked(snapshot, entity_type.clone().into_owned_object_type())?;
+        self.delete_object_type_capabilities_unchecked(snapshot, entity_type.into_owned_object_type())?;
         self.delete_type(snapshot, entity_type)
     }
 
@@ -1416,14 +1397,13 @@ impl TypeManager {
         thing_manager: &ThingManager,
         relation_type: RelationType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        self.validate_delete_type(snapshot, thing_manager, relation_type.clone())?;
+        self.validate_delete_type(snapshot, thing_manager, relation_type)?;
 
-        let declared_relates =
-            TypeReader::get_capabilities_declared::<Relates>(snapshot, relation_type.clone())?;
+        let declared_relates = TypeReader::get_capabilities_declared::<Relates>(snapshot, relation_type)?;
         for relates in declared_relates.iter() {
             self.delete_role_type(snapshot, thing_manager, relates.role())?;
         }
-        self.delete_object_type_capabilities_unchecked(snapshot, relation_type.clone().into_owned_object_type())?;
+        self.delete_object_type_capabilities_unchecked(snapshot, relation_type.into_owned_object_type())?;
         self.delete_type(snapshot, relation_type)
     }
 
@@ -1433,13 +1413,13 @@ impl TypeManager {
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        self.validate_delete_type(snapshot, thing_manager, attribute_type.clone())?;
+        self.validate_delete_type(snapshot, thing_manager, attribute_type)?;
 
-        for owns in TypeReader::get_capabilities_for_interface::<Owns>(snapshot, attribute_type.clone())? {
+        for owns in TypeReader::get_capabilities_for_interface::<Owns>(snapshot, attribute_type)? {
             self.unset_owns_unchecked(snapshot, owns)?;
         }
 
-        self.unset_value_type_unchecked(snapshot, attribute_type.clone())?;
+        self.unset_value_type_unchecked(snapshot, attribute_type)?;
         self.delete_type(snapshot, attribute_type)
     }
 
@@ -1449,7 +1429,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        self.validate_delete_type(snapshot, thing_manager, role_type.clone())?;
+        self.validate_delete_type(snapshot, thing_manager, role_type)?;
 
         let relates = role_type.get_relates_root(snapshot, self)?;
 
@@ -1467,7 +1447,7 @@ impl TypeManager {
             self,
             thing_manager,
             relates.relation(),
-            role_type.clone(),
+            role_type,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1507,7 +1487,7 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         owns: Owns,
     ) -> Result<(), Box<ConceptWriteError>> {
-        TypeWriter::storage_delete_type_edge_property::<Ordering>(snapshot, owns.clone());
+        TypeWriter::storage_delete_type_edge_property::<Ordering>(snapshot, owns);
         self.unset_capability(snapshot, owns)
     }
 
@@ -1567,13 +1547,13 @@ impl TypeManager {
         relation_type: RelationType,
         label: &Label<'_>,
     ) -> Result<(), Box<ConceptWriteError>> {
-        debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, relation_type.clone()).is_ok());
+        debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, relation_type).is_ok());
 
         OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        TypeWriter::storage_delete_label(snapshot, relation_type.clone());
-        TypeWriter::storage_put_label(snapshot, relation_type.clone(), label);
+        TypeWriter::storage_delete_label(snapshot, relation_type);
+        TypeWriter::storage_put_label(snapshot, relation_type, label);
 
         let relates = self.get_relation_type_relates_declared(snapshot, relation_type)?;
         for relate in &relates {
@@ -1589,9 +1569,9 @@ impl TypeManager {
         role_type: RoleType,
         name: &str,
     ) -> Result<(), Box<ConceptWriteError>> {
-        debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, role_type.clone()).is_ok());
+        debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, role_type).is_ok());
 
-        let old_label = TypeReader::get_label(snapshot, role_type.clone())?.unwrap();
+        let old_label = TypeReader::get_label(snapshot, role_type)?.unwrap();
         debug_assert!(old_label.scope().is_some());
 
         let new_label = Label::build_scoped(name, old_label.scope().unwrap().as_str());
@@ -1605,7 +1585,7 @@ impl TypeManager {
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        TypeWriter::storage_delete_label(snapshot, role_type.clone());
+        TypeWriter::storage_delete_label(snapshot, role_type);
         TypeWriter::storage_put_label(snapshot, role_type, &new_label);
         Ok(())
     }
@@ -1616,14 +1596,14 @@ impl TypeManager {
         role_type: RoleType,
         scope: &str,
     ) -> Result<(), Box<ConceptWriteError>> {
-        debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, role_type.clone()).is_ok());
+        debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, role_type).is_ok());
 
-        let old_label = TypeReader::get_label(snapshot, role_type.clone())?.unwrap();
+        let old_label = TypeReader::get_label(snapshot, role_type)?.unwrap();
         debug_assert!(old_label.scope().is_some());
 
         let new_label = Label::build_scoped(old_label.name().as_str(), scope);
 
-        TypeWriter::storage_delete_label(snapshot, role_type.clone());
+        TypeWriter::storage_delete_label(snapshot, role_type);
         TypeWriter::storage_put_label(snapshot, role_type, &new_label);
         Ok(())
     }
@@ -1635,12 +1615,12 @@ impl TypeManager {
         attribute_type: AttributeType,
         value_type: ValueType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, attribute_type.clone()).is_ok());
+        debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, attribute_type).is_ok());
 
         OperationTimeValidation::validate_value_type_compatible_with_inherited_value_type(
             snapshot,
             self,
-            attribute_type.clone(),
+            attribute_type,
             value_type.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -1648,7 +1628,7 @@ impl TypeManager {
         OperationTimeValidation::validate_subtypes_value_types_compatible_with_new_value_type(
             snapshot,
             self,
-            attribute_type.clone(),
+            attribute_type,
             value_type.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -1656,7 +1636,7 @@ impl TypeManager {
         OperationTimeValidation::validate_attribute_type_value_type_compatible_with_annotations_transitive(
             snapshot,
             self,
-            attribute_type.clone(),
+            attribute_type,
             Some(value_type.clone()),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -1664,7 +1644,7 @@ impl TypeManager {
         OperationTimeValidation::validate_value_type_compatible_with_all_owns_annotations_transitive(
             snapshot,
             self,
-            attribute_type.clone(),
+            attribute_type,
             Some(value_type.clone()),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -1675,7 +1655,7 @@ impl TypeManager {
                     snapshot,
                     self,
                     thing_manager,
-                    attribute_type.clone(),
+                    attribute_type,
                 )
                 .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
             }
@@ -1692,13 +1672,8 @@ impl TypeManager {
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_value_type_can_be_unset(
-            snapshot,
-            self,
-            thing_manager,
-            attribute_type.clone(),
-        )
-        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_value_type_can_be_unset(snapshot, self, thing_manager, attribute_type)
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         self.unset_value_type_unchecked(snapshot, attribute_type)
     }
@@ -1771,19 +1746,16 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            subtype.clone(),
-            Some(supertype.clone()),
+            subtype,
+            Some(supertype),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        OperationTimeValidation::validate_attribute_type_supertype_is_abstract(snapshot, self, supertype.clone())
+        OperationTimeValidation::validate_attribute_type_supertype_is_abstract(snapshot, self, supertype)
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         OperationTimeValidation::validate_new_attribute_type_supertype_owns_ordering(
-            snapshot,
-            self,
-            subtype.clone(),
-            supertype.clone(),
+            snapshot, self, subtype, supertype,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1791,8 +1763,8 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            subtype.clone(),
-            Some(supertype.clone()),
+            subtype,
+            Some(supertype),
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1800,8 +1772,8 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            subtype.clone(),
-            supertype.clone(),
+            subtype,
+            supertype,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1809,8 +1781,8 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            subtype.clone(),
-            supertype.clone(),
+            subtype,
+            supertype,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1827,7 +1799,7 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            subtype.clone(),
+            subtype,
             None, // supertype
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -1836,7 +1808,7 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            subtype.clone(),
+            subtype,
             None, // supertype
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -1846,7 +1818,7 @@ impl TypeManager {
         >(
             snapshot,
             self,
-            subtype.clone(),
+            subtype,
             None, // supertype is unset
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -1855,7 +1827,7 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            subtype.clone(),
+            subtype,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1876,8 +1848,8 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            object_subtype.clone(),
-            Some(object_supertype.clone()),
+            object_subtype,
+            Some(object_supertype),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1885,8 +1857,8 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            object_subtype.clone(),
-            object_supertype.clone(),
+            object_subtype,
+            object_supertype,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1894,8 +1866,8 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            object_subtype.clone(),
-            Some(object_supertype.clone()),
+            object_subtype,
+            Some(object_supertype),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1917,13 +1889,13 @@ impl TypeManager {
         thing_manager: &ThingManager,
         subtype: ObjectType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let object_subtype = subtype.clone().into_owned_object_type();
+        let object_subtype = subtype.into_owned_object_type();
 
         OperationTimeValidation::validate_lost_owns_do_not_cause_lost_instances_while_changing_supertype(
             snapshot,
             self,
             thing_manager,
-            object_subtype.clone(),
+            object_subtype,
             None, // supertype
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -1932,7 +1904,7 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            object_subtype.clone(),
+            object_subtype,
             None, // supertype
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -1951,8 +1923,8 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            subtype.clone(),
-            supertype.clone(),
+            subtype,
+            supertype,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1976,10 +1948,7 @@ impl TypeManager {
         supertype: RelationType,
     ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_role_names_compatible_with_new_relation_supertype_transitive(
-            snapshot,
-            self,
-            subtype.clone(),
-            supertype.clone(),
+            snapshot, self, subtype, supertype,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1987,16 +1956,16 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            subtype.clone(),
-            supertype.clone(),
+            subtype,
+            supertype,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         OperationTimeValidation::validate_relates_specialises_compatible_with_new_supertype_transitive(
             snapshot,
             self,
-            subtype.clone(),
-            Some(supertype.clone()),
+            subtype,
+            Some(supertype),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2014,8 +1983,8 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            subtype.clone(),
-            Some(supertype.clone()),
+            subtype,
+            Some(supertype),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2023,8 +1992,8 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            subtype.clone(),
-            supertype.clone(),
+            subtype,
+            supertype,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2038,10 +2007,7 @@ impl TypeManager {
         subtype: RelationType,
     ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_relates_specialises_compatible_with_new_supertype_transitive(
-            snapshot,
-            self,
-            subtype.clone(),
-            None, // supertype
+            snapshot, self, subtype, None, // supertype
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2049,7 +2015,7 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            subtype.clone(),
+            subtype,
             None, // supertype
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -2067,31 +2033,22 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         // TODO: When we introduce abstract owns, take care of extra validation of having
         // abstract - concrete - abstract - concrete - abstract for owner - subowner - subsubowner - ...
-        let owns = Owns::new(ObjectType::new(owner.clone().into_vertex()), attribute.clone());
+        let owns = Owns::new(ObjectType::new(owner.into_vertex()), attribute);
         let exists = owner.get_owns(snapshot, self)?.contains(&owns);
 
         if exists {
             OperationTimeValidation::validate_set_owns_does_not_conflict_with_same_existing_owns_ordering(
-                snapshot,
-                self,
-                owns.clone(),
-                ordering,
+                snapshot, self, owns, ordering,
             )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
         } else {
             OperationTimeValidation::validate_updated_owns_does_not_conflict_with_any_sibling_owns_ordering(
-                snapshot,
-                self,
-                owns.clone(),
-                ordering,
+                snapshot, self, owns, ordering,
             )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
             OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_capabilities(
-                snapshot,
-                self,
-                owns.clone(),
-                true,
+                snapshot, self, owns, true,
             )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2099,13 +2056,13 @@ impl TypeManager {
                 snapshot,
                 self,
                 thing_manager,
-                owns.clone().into_owned(),
-                get_owns_default_constraints(owns.clone(), ordering),
+                owns.into_owned(),
+                get_owns_default_constraints(owns, ordering),
             )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
         }
 
-        TypeWriter::storage_put_edge(snapshot, owns.clone());
+        TypeWriter::storage_put_edge(snapshot, owns);
         TypeWriter::storage_put_type_edge_property(snapshot, owns, Some(ordering));
         Ok(())
     }
@@ -2117,20 +2074,12 @@ impl TypeManager {
         owner: ObjectType,
         attribute_type: AttributeType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_unset_owns_is_not_inherited(
-            snapshot,
-            self,
-            owner.clone(),
-            attribute_type.clone(),
-        )
-        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_unset_owns_is_not_inherited(snapshot, self, owner, attribute_type)
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        if let Some(owns) = owner.get_owns_attribute_declared(snapshot, self, attribute_type.clone())? {
+        if let Some(owns) = owner.get_owns_attribute_declared(snapshot, self, attribute_type)? {
             OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_capabilities(
-                snapshot,
-                self,
-                owns.clone(),
-                false,
+                snapshot, self, owns, false,
             )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2138,12 +2087,12 @@ impl TypeManager {
                 snapshot,
                 self,
                 thing_manager,
-                owner.clone(),
-                attribute_type.clone(),
+                owner,
+                attribute_type,
             )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-            self.unset_owns_unchecked(snapshot, owns.clone())?;
+            self.unset_owns_unchecked(snapshot, owns)?;
         }
         Ok(())
     }
@@ -2157,7 +2106,7 @@ impl TypeManager {
     ) -> Result<Plays, Box<ConceptWriteError>> {
         // TODO: When we introduce abstract plays, take care of extra validation of having
         // abstract - concrete - abstract - concrete - abstract for owner - subowner - subsubowner - ...
-        let plays = Plays::new(ObjectType::new(player.clone().into_vertex()), role);
+        let plays = Plays::new(ObjectType::new(player.into_vertex()), role);
         let exists = player.get_plays(snapshot, self)?.contains(&plays);
 
         if !exists {
@@ -2190,15 +2139,10 @@ impl TypeManager {
         player: ObjectType,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_unset_plays_is_not_inherited(
-            snapshot,
-            self,
-            player.clone(),
-            role_type.clone(),
-        )
-        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_unset_plays_is_not_inherited(snapshot, self, player, role_type)
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        if let Some(plays) = player.get_plays_role_declared(snapshot, self, role_type.clone())? {
+        if let Some(plays) = player.get_plays_role_declared(snapshot, self, role_type)? {
             OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_capabilities(
                 snapshot,
                 self,
@@ -2211,8 +2155,8 @@ impl TypeManager {
                 snapshot,
                 self,
                 thing_manager,
-                player.clone(),
-                role_type.clone(),
+                player,
+                role_type,
             )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2229,29 +2173,15 @@ impl TypeManager {
         ordering: Ordering,
     ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_updated_owns_does_not_conflict_with_any_sibling_owns_ordering(
-            snapshot,
-            self,
-            owns.clone(),
-            ordering,
+            snapshot, self, owns, ordering,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        OperationTimeValidation::validate_owns_distinct_constraint_ordering(
-            snapshot,
-            self,
-            owns.clone(),
-            Some(ordering),
-            None,
-        )
-        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_owns_distinct_constraint_ordering(snapshot, self, owns, Some(ordering), None)
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        OperationTimeValidation::validate_no_owns_instances_to_set_ordering(
-            snapshot,
-            self,
-            thing_manager,
-            owns.clone(),
-        )
-        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_no_owns_instances_to_set_ordering(snapshot, self, thing_manager, owns)
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         TypeWriter::storage_set_owns_ordering(snapshot, owns, ordering);
         Ok(())
@@ -2268,7 +2198,7 @@ impl TypeManager {
             OperationTimeValidation::validate_role_supertype_ordering_match(
                 snapshot,
                 self,
-                role_type.clone(),
+                role_type,
                 role_supertype,
                 Some(ordering),
                 None, // read supertype ordering from storage
@@ -2280,15 +2210,15 @@ impl TypeManager {
             OperationTimeValidation::validate_role_supertype_ordering_match(
                 snapshot,
                 self,
-                role_subtype.clone(),
-                role_type.clone(),
+                *role_subtype,
+                role_type,
                 None, // read subtype ordering from storage
                 Some(ordering),
             )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
         }
 
-        for relates in self.get_role_type_relates(snapshot, role_type.clone().into_owned())?.into_iter() {
+        for relates in self.get_role_type_relates(snapshot, role_type.into_owned())?.into_iter() {
             OperationTimeValidation::validate_relates_distinct_constraint_ordering(
                 snapshot,
                 self,
@@ -2299,13 +2229,8 @@ impl TypeManager {
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
         }
 
-        OperationTimeValidation::validate_no_role_instances_to_set_ordering(
-            snapshot,
-            self,
-            thing_manager,
-            role_type.clone(),
-        )
-        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_no_role_instances_to_set_ordering(snapshot, self, thing_manager, role_type)
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         TypeWriter::storage_put_type_vertex_property(snapshot, role_type, Some(ordering));
         Ok(())
@@ -2319,12 +2244,12 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Abstract(AnnotationAbstract);
 
-        self.validate_set_type_annotation_general(snapshot, entity_type.clone(), annotation.clone())?;
+        self.validate_set_type_annotation_general(snapshot, entity_type, annotation.clone())?;
 
         OperationTimeValidation::validate_type_supertype_abstractness_to_set_abstract_annotation(
             snapshot,
             self,
-            entity_type.clone(),
+            entity_type,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2332,7 +2257,7 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            entity_type.clone(),
+            entity_type,
             annotation.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -2348,12 +2273,12 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Abstract(AnnotationAbstract);
 
-        self.validate_set_type_annotation_general(snapshot, relation_type.clone(), annotation.clone())?;
+        self.validate_set_type_annotation_general(snapshot, relation_type, annotation.clone())?;
 
         OperationTimeValidation::validate_type_supertype_abstractness_to_set_abstract_annotation(
             snapshot,
             self,
-            relation_type.clone(),
+            relation_type,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2361,7 +2286,7 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            relation_type.clone(),
+            relation_type,
             annotation.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -2377,12 +2302,12 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Abstract(AnnotationAbstract);
 
-        self.validate_set_type_annotation_general(snapshot, attribute_type.clone(), annotation.clone())?;
+        self.validate_set_type_annotation_general(snapshot, attribute_type, annotation.clone())?;
 
         OperationTimeValidation::validate_type_supertype_abstractness_to_set_abstract_annotation(
             snapshot,
             self,
-            attribute_type.clone(),
+            attribute_type,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2390,7 +2315,7 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            attribute_type.clone(),
+            attribute_type,
             annotation.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -2419,17 +2344,13 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         attribute_type: AttributeType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_no_attribute_subtypes_to_unset_abstractness(
-            snapshot,
-            self,
-            attribute_type.clone(),
-        )
-        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_no_attribute_subtypes_to_unset_abstractness(snapshot, self, attribute_type)
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         OperationTimeValidation::validate_value_type_compatible_with_abstractness(
             snapshot,
             self,
-            attribute_type.clone(),
+            attribute_type,
             attribute_type.get_value_type_without_source(snapshot, self)?,
             Some(false),
         )
@@ -2535,14 +2456,14 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Independent(AnnotationIndependent);
 
-        self.validate_set_type_annotation_general(snapshot, attribute_type.clone(), annotation.clone())?;
+        self.validate_set_type_annotation_general(snapshot, attribute_type, annotation.clone())?;
 
         // It won't validate anything, but placing this call here helps maintain the validation consistency
         OperationTimeValidation::validate_new_annotation_constraints_compatible_with_attribute_type_and_sub_instances(
             snapshot,
             self,
             thing_manager,
-            attribute_type.clone(),
+            attribute_type,
             annotation.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -2622,11 +2543,7 @@ impl TypeManager {
         supertype: RoleType,
     ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_role_supertype_ordering_match(
-            snapshot,
-            self,
-            subtype.clone(),
-            supertype.clone(),
-            None, // read ordering from storage
+            snapshot, self, subtype, supertype, None, // read ordering from storage
             None, // read ordering from storage
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -2635,8 +2552,8 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            subtype.clone(),
-            supertype.clone(),
+            subtype,
+            supertype,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2644,8 +2561,8 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            subtype.clone(),
-            supertype.clone(),
+            subtype,
+            supertype,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2653,8 +2570,8 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            subtype.clone(),
-            supertype.clone(),
+            subtype,
+            supertype,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2685,10 +2602,7 @@ impl TypeManager {
         OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_interface_type_supertype::<
             Relates,
         >(
-            snapshot,
-            self,
-            role_type.clone(),
-            None, // supertype is unset
+            snapshot, self, role_type, None, // supertype is unset
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2697,7 +2611,7 @@ impl TypeManager {
         >(
             snapshot,
             self,
-            role_type.clone(),
+            role_type,
             None, // supertype is unset
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -2706,7 +2620,7 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            role_type.clone(),
+            role_type,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2714,7 +2628,7 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            role_type.clone(),
+            role_type,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2729,22 +2643,16 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Distinct(AnnotationDistinct);
 
-        self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
+        self.validate_set_capability_annotation_general(snapshot, owns, annotation.clone())?;
 
-        OperationTimeValidation::validate_owns_distinct_constraint_ordering(
-            snapshot,
-            self,
-            owns.clone(),
-            None,
-            Some(true),
-        )
-        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_owns_distinct_constraint_ordering(snapshot, self, owns, None, Some(true))
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         OperationTimeValidation::validate_new_annotation_constraints_compatible_with_owns_instances(
             snapshot,
             self,
             thing_manager,
-            owns.clone(),
+            owns,
             annotation.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -2824,12 +2732,12 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Unique(AnnotationUnique);
 
-        self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
+        self.validate_set_capability_annotation_general(snapshot, owns, annotation.clone())?;
 
         OperationTimeValidation::validate_owns_value_type_compatible_with_unique_annotation(
             snapshot,
             self,
-            owns.clone(),
+            owns,
             owns.attribute().get_value_type_without_source(snapshot, self)?,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -2838,7 +2746,7 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            owns.clone(),
+            owns,
             annotation.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -2863,27 +2771,23 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Key(AnnotationKey);
 
-        self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
+        self.validate_set_capability_annotation_general(snapshot, owns, annotation.clone())?;
 
         OperationTimeValidation::validate_owns_value_type_compatible_with_key_annotation(
             snapshot,
             self,
-            owns.clone(),
+            owns,
             owns.attribute().get_value_type_without_source(snapshot, self)?,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        self.validate_updated_capability_cardinality_against_schema(
-            snapshot,
-            owns.clone(),
-            AnnotationKey::CARDINALITY,
-        )?;
+        self.validate_updated_capability_cardinality_against_schema(snapshot, owns, AnnotationKey::CARDINALITY)?;
 
         OperationTimeValidation::validate_new_annotation_constraints_compatible_with_owns_instances(
             snapshot,
             self,
             thing_manager,
-            owns.clone(),
+            owns,
             annotation.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -2899,21 +2803,17 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Key;
 
-        if self.get_owns_annotation_declared_by_category(snapshot, owns.clone(), annotation_category)?.is_some() {
+        if self.get_owns_annotation_declared_by_category(snapshot, owns, annotation_category)?.is_some() {
             let updated_cardinality = Owns::get_default_cardinality(owns.get_ordering(snapshot, self)?);
 
             if updated_cardinality != owns.get_cardinality(snapshot, self)? {
-                self.validate_updated_capability_cardinality_against_schema(
-                    snapshot,
-                    owns.clone(),
-                    updated_cardinality,
-                )?;
+                self.validate_updated_capability_cardinality_against_schema(snapshot, owns, updated_cardinality)?;
 
                 OperationTimeValidation::validate_new_annotation_constraints_compatible_with_owns_instances(
                     snapshot,
                     self,
                     thing_manager,
-                    owns.clone(),
+                    owns,
                     Annotation::Cardinality(updated_cardinality),
                 )
                 .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -2932,14 +2832,14 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Cardinality(cardinality);
 
-        self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
-        self.validate_updated_capability_cardinality_against_schema(snapshot, owns.clone(), cardinality)?;
+        self.validate_set_capability_annotation_general(snapshot, owns, annotation.clone())?;
+        self.validate_updated_capability_cardinality_against_schema(snapshot, owns, cardinality)?;
 
         OperationTimeValidation::validate_new_annotation_constraints_compatible_with_owns_instances(
             snapshot,
             self,
             thing_manager,
-            owns.clone(),
+            owns,
             annotation.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -2955,21 +2855,17 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Cardinality;
 
-        if self.get_owns_annotation_declared_by_category(snapshot, owns.clone(), annotation_category)?.is_some() {
+        if self.get_owns_annotation_declared_by_category(snapshot, owns, annotation_category)?.is_some() {
             let updated_cardinality = Owns::get_default_cardinality(owns.get_ordering(snapshot, self)?);
 
             if updated_cardinality != owns.get_cardinality(snapshot, self)? {
-                self.validate_updated_capability_cardinality_against_schema(
-                    snapshot,
-                    owns.clone(),
-                    updated_cardinality,
-                )?;
+                self.validate_updated_capability_cardinality_against_schema(snapshot, owns, updated_cardinality)?;
 
                 OperationTimeValidation::validate_new_annotation_constraints_compatible_with_owns_instances(
                     snapshot,
                     self,
                     thing_manager,
-                    owns.clone(),
+                    owns,
                     Annotation::Cardinality(updated_cardinality),
                 )
                 .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -3115,12 +3011,12 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Regex(regex.clone());
 
-        self.validate_set_type_annotation_general(snapshot, attribute_type.clone(), annotation.clone())?;
+        self.validate_set_type_annotation_general(snapshot, attribute_type, annotation.clone())?;
 
         OperationTimeValidation::validate_annotation_regex_compatible_value_type(
             snapshot,
             self,
-            attribute_type.clone(),
+            attribute_type,
             attribute_type.get_value_type_without_source(snapshot, self)?,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -3131,7 +3027,7 @@ impl TypeManager {
         OperationTimeValidation::validate_constraints_on_capabilities_narrow_regex_on_interface_type_transitive(
             snapshot,
             self,
-            attribute_type.clone(),
+            attribute_type,
             regex.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -3139,19 +3035,19 @@ impl TypeManager {
         OperationTimeValidation::validate_type_regex_narrows_supertype_constraints(
             snapshot,
             self,
-            attribute_type.clone(),
+            attribute_type,
             regex.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        OperationTimeValidation::validate_subtypes_narrow_regex(snapshot, self, attribute_type.clone(), regex.clone())
+        OperationTimeValidation::validate_subtypes_narrow_regex(snapshot, self, attribute_type, regex.clone())
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         OperationTimeValidation::validate_new_annotation_constraints_compatible_with_attribute_type_and_sub_instances(
             snapshot,
             self,
             thing_manager,
-            attribute_type.clone(),
+            attribute_type,
             annotation.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -3177,7 +3073,7 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Regex(regex.clone());
 
-        self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
+        self.validate_set_capability_annotation_general(snapshot, owns, annotation.clone())?;
 
         OperationTimeValidation::validate_annotation_regex_compatible_value_type(
             snapshot,
@@ -3193,7 +3089,7 @@ impl TypeManager {
         OperationTimeValidation::validate_capability_regex_constraint_narrows_interface_type_constraints(
             snapshot,
             self,
-            owns.clone(),
+            owns,
             regex.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -3202,7 +3098,7 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            owns.clone(),
+            owns,
             annotation.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -3262,14 +3158,14 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Range(range.clone());
 
-        self.validate_set_type_annotation_general(snapshot, attribute_type.clone(), annotation.clone())?;
+        self.validate_set_type_annotation_general(snapshot, attribute_type, annotation.clone())?;
 
         let type_value_type = attribute_type.get_value_type_without_source(snapshot, self)?;
 
         OperationTimeValidation::validate_annotation_range_compatible_value_type(
             snapshot,
             self,
-            attribute_type.clone(),
+            attribute_type,
             type_value_type.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -3280,7 +3176,7 @@ impl TypeManager {
         OperationTimeValidation::validate_constraints_on_capabilities_narrow_range_on_interface_type_transitive(
             snapshot,
             self,
-            attribute_type.clone(),
+            attribute_type,
             range.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -3288,12 +3184,12 @@ impl TypeManager {
         OperationTimeValidation::validate_type_range_narrows_supertype_constraints(
             snapshot,
             self,
-            attribute_type.clone(),
+            attribute_type,
             range.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        OperationTimeValidation::validate_subtypes_narrow_range(snapshot, self, attribute_type.clone(), range.clone())
+        OperationTimeValidation::validate_subtypes_narrow_range(snapshot, self, attribute_type, range.clone())
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         // TODO: Maybe for the future: check if compatible with existing VALUES annotation
@@ -3302,7 +3198,7 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            attribute_type.clone(),
+            attribute_type,
             annotation.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -3328,7 +3224,7 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Range(range.clone());
 
-        self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
+        self.validate_set_capability_annotation_general(snapshot, owns, annotation.clone())?;
 
         let attribute_value_type = owns.attribute().get_value_type_without_source(snapshot, self)?;
 
@@ -3346,7 +3242,7 @@ impl TypeManager {
         OperationTimeValidation::validate_capability_range_constraint_narrows_interface_type_constraints(
             snapshot,
             self,
-            owns.clone(),
+            owns,
             range.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -3357,7 +3253,7 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            owns.clone(),
+            owns,
             annotation.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -3383,14 +3279,14 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Values(values.clone());
 
-        self.validate_set_type_annotation_general(snapshot, attribute_type.clone(), annotation.clone())?;
+        self.validate_set_type_annotation_general(snapshot, attribute_type, annotation.clone())?;
 
         let type_value_type = attribute_type.get_value_type_without_source(snapshot, self)?;
 
         OperationTimeValidation::validate_annotation_values_compatible_value_type(
             snapshot,
             self,
-            attribute_type.clone(),
+            attribute_type,
             type_value_type.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -3401,7 +3297,7 @@ impl TypeManager {
         OperationTimeValidation::validate_constraints_on_capabilities_narrow_values_on_interface_type_transitive(
             snapshot,
             self,
-            attribute_type.clone(),
+            attribute_type,
             values.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -3409,18 +3305,13 @@ impl TypeManager {
         OperationTimeValidation::validate_type_values_narrows_supertype_constraints(
             snapshot,
             self,
-            attribute_type.clone(),
+            attribute_type,
             values.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        OperationTimeValidation::validate_subtypes_narrow_values(
-            snapshot,
-            self,
-            attribute_type.clone(),
-            values.clone(),
-        )
-        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_subtypes_narrow_values(snapshot, self, attribute_type, values.clone())
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         // TODO: Maybe for the future: check if compatible with existing RANGE annotation
 
@@ -3428,7 +3319,7 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            attribute_type.clone(),
+            attribute_type,
             annotation.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -3454,7 +3345,7 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Values(values.clone());
 
-        self.validate_set_capability_annotation_general(snapshot, owns.clone(), annotation.clone())?;
+        self.validate_set_capability_annotation_general(snapshot, owns, annotation.clone())?;
 
         let attribute_value_type = owns.attribute().get_value_type_without_source(snapshot, self)?;
 
@@ -3472,7 +3363,7 @@ impl TypeManager {
         OperationTimeValidation::validate_capability_values_constraint_narrows_interface_type_constraints(
             snapshot,
             self,
-            owns.clone(),
+            owns,
             values.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -3483,7 +3374,7 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            owns.clone(),
+            owns,
             annotation.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
