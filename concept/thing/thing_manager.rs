@@ -51,7 +51,7 @@ use encoding::{
 };
 use itertools::{Itertools, MinMaxResult};
 use bytes::util::increment;
-use encoding::graph::type_::vertex::TypeVertex;
+use encoding::graph::type_::vertex::{TypeID, TypeVertex};
 use lending_iterator::{AsHkt, LendingIterator};
 use primitive::either::Either;
 use resource::constants::{
@@ -595,7 +595,7 @@ impl ThingManager {
         Ok(has_exists)
     }
 
-    pub fn get_has_from_owner_type_range_unordered(
+    pub fn get_has_from_owner_type_range_unordered<'a>(
         &self,
         snapshot: &impl ReadableSnapshot,
         owner_type_range: &KeyRange<ObjectType<'static>>,
@@ -838,15 +838,41 @@ impl ThingManager {
         Ok(iter)
     }
 
-    pub(crate) fn get_has_from_thing_unordered<'a>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        owner: &impl ObjectAPI<'a>,
+    pub(crate) fn get_has_from_thing_unordered<'this, 'a>(
+        &'this self,
+        snapshot: &'this impl ReadableSnapshot,
+        owner: &'a impl ObjectAPI<'a>,
+        attribute_type_range_hint: &'a impl RangeBounds<AttributeType<'a>>,
     ) -> HasAttributeIterator {
-        let prefix = ThingEdgeHas::prefix_from_object(owner.vertex());
-        HasAttributeIterator::new(
-            snapshot.iterate_range(&KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING)),
-        )
+        let start_type_id_inclusive = match attribute_type_range_hint.start_bound() {
+            Bound::Included(attribute_type) => attribute_type.vertex().type_id_(),
+            Bound::Excluded(attribute_type) => attribute_type.vertex().type_id_().next_type_id(),
+            Bound::Unbounded => TypeID::ZEROS,
+        };
+        let has_range_start = RangeStart::Inclusive(ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), start_type_id_inclusive));
+        let has_range_end = match attribute_type_range_hint.end_bound() {
+            Bound::Included(attribute_type) => {
+                RangeEnd::EndPrefixInclusive(
+                    ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), attribute_type.vertex().type_id_())
+                )
+            },
+            Bound::Excluded(attribute_type) => {
+                RangeEnd::EndPrefixExclusive(
+                    ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), attribute_type.vertex().type_id_())
+                )
+            }
+            Bound::Unbounded => {
+                RangeEnd::EndPrefixInclusive(
+                    ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), TypeID::MAX)
+                )
+            }
+        };
+        let key_range = if ThingEdgeHas::FIXED_WIDTH_ENCODING {
+            KeyRange::new_fixed_width(has_range_start, has_range_end)
+        } else {
+            KeyRange::new_variable_width(has_range_start, has_range_end)
+        };
+        HasAttributeIterator::new(snapshot.iterate_range(&key_range))
     }
 
     pub(crate) fn get_has_from_thing_to_type_unordered<'this, 'a>(
@@ -883,19 +909,6 @@ impl ThingManager {
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
             .unwrap_or_else(Vec::new);
         Ok(attributes)
-    }
-
-    pub(crate) fn get_has_from_thing_to_type_range_unordered<'this, 'a>(
-        &'this self,
-        snapshot: &'this impl ReadableSnapshot,
-        owner: &impl ObjectAPI<'a>,
-        attribute_type_range: &KeyRange<AttributeType<'static>>,
-    ) -> Result<HasIterator, Box<ConceptReadError>> {
-        let mapped_range = attribute_type_range.map(
-            |attribute_type| ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), attribute_type.vertex().type_id_()),
-            |_| ThingEdgeHas::FIXED_WIDTH_ENCODING
-        );
-        Ok(HasIterator::new(snapshot.iterate_range(&mapped_range)))
     }
 
     pub(crate) fn get_owners(

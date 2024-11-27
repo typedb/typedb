@@ -5,6 +5,7 @@
  */
 
 use std::fmt;
+use std::ops::{Bound, RangeBounds};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
@@ -114,7 +115,7 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
         for attr in self
-            .get_has_unordered(snapshot, thing_manager)
+            .get_has_unordered(snapshot, thing_manager, &(Bound::Unbounded, Bound::Unbounded))
             .map_static(|res| res.map(|(k, _)| k.into_owned()))
             .try_collect::<Vec<_>, _>()?
         {

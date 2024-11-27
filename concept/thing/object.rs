@@ -8,6 +8,7 @@ use std::{
     collections::{BTreeMap, HashMap},
     fmt,
 };
+use std::ops::{Bound, RangeBounds};
 
 use bytes::{byte_reference::ByteReference, Bytes};
 use encoding::{
@@ -190,12 +191,25 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         thing_manager.has_attribute(snapshot, self, attribute)
     }
 
-    fn get_has_unordered<'m>(
+    fn get_has_unordered<'m, 'b>(
         &self,
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
     ) -> HasAttributeIterator {
-        thing_manager.get_has_from_thing_unordered(snapshot, self)
+        self.get_has_types_range_unordered(
+            snapshot, 
+            thing_manager, 
+            &(Bound::<AttributeType<'b>>::Unbounded, Bound::Unbounded)
+        )
+    }
+
+    fn get_has_types_range_unordered<'b, 'm>(
+        &self,
+        snapshot: &'m impl ReadableSnapshot,
+        thing_manager: &'m ThingManager,
+        attribute_type_range: &'b impl RangeBounds<AttributeType<'b>>,
+    ) -> HasAttributeIterator {
+        thing_manager.get_has_from_thing_unordered(snapshot, self, attribute_type_range)
     }
 
     fn get_has_type_unordered<'m>(
@@ -214,15 +228,6 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         attribute_type: AttributeType<'static>,
     ) -> Result<Vec<Attribute<'static>>, Box<ConceptReadError>> {
         thing_manager.get_has_from_thing_to_type_ordered(snapshot, self, attribute_type)
-    }
-
-    fn get_has_types_range_unordered<'m>(
-        &self,
-        snapshot: &'m impl ReadableSnapshot,
-        thing_manager: &'m ThingManager,
-        attribute_type_range: &KeyRange<AttributeType<'static>>,
-    ) -> Result<HasIterator, Box<ConceptReadError>> {
-        thing_manager.get_has_from_thing_to_type_range_unordered(snapshot, self, attribute_type_range)
     }
 
     fn set_has_unordered(

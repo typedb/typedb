@@ -95,14 +95,15 @@ pub struct TypeID {
 pub type TypeIDUInt = u16;
 
 impl TypeID {
+    pub const ZEROS: Self = Self::build(0);
+    pub const MAX: Self = Self::build(TypeIDUInt::MAX);
     pub(crate) const LENGTH: usize = std::mem::size_of::<TypeIDUInt>();
 
     pub fn new(bytes: [u8; TypeID::LENGTH]) -> TypeID {
         TypeID { bytes }
     }
 
-    pub fn build(id: TypeIDUInt) -> Self {
-        debug_assert_eq!(std::mem::size_of_val(&id), TypeID::LENGTH);
+    pub const fn build(id: TypeIDUInt) -> Self {
         TypeID { bytes: id.to_be_bytes() }
     }
 
@@ -112,6 +113,10 @@ impl TypeID {
 
     pub fn bytes(&self) -> [u8; TypeID::LENGTH] {
         self.bytes
+    }
+    
+    pub fn next_type_id(&self) -> Self {
+        Self::build(self.as_u16() + 1)
     }
 }
 
