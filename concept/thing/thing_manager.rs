@@ -617,12 +617,18 @@ impl ThingManager {
         Ok(HasReverseIterator::new(snapshot.iterate_range(&range)))
     }
 
+    /// Given an attribute type, and a range of values, return an iterator of Has where the owners satisfy this range (best effort)
+    /// For inlineable values, this range will be fully respected, and for large values, it is an approximation and should still be checked afterward
+    /// The Owner types range hint is useful in particular when 1 Inlinable Value is provided, allowing constructing the exact
+    /// range [att type][att vertex][start owner type] --> [att type][att vertex][end owner type]
+    /// However, it is in general only a hint used to constrain the start prefix and end of the range. When multiple values are matched,
+    /// the Has's returned will likely contain Owner types _not_ in the indicated range.
     pub fn get_has_reverse_in_range<'a>(
         &self,
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'_>,
         range: &'a impl RangeBounds<Value<'a>>,
-        owner_types_range: &impl RangeBounds<ObjectType<'a>>,
+        owner_types_range_hint: &impl RangeBounds<ObjectType<'a>>,
     ) -> Result<HasReverseIterator, Box<ConceptReadError>> {
         if matches!(range.start_bound(), Bound::Unbounded) && matches!(range.end_bound(), Bound::Unbounded) {
             return self.get_has_reverse(snapshot, attribute_type);
@@ -645,7 +651,7 @@ impl ThingManager {
                 );
                 match vertex_or_prefix {
                     Either::First(vertex) => {
-                        match owner_types_range.start_bound() {
+                        match owner_types_range_hint.start_bound() {
                             Bound::Included(start) => {
                                 let start_type = start.vertex();
                                 RangeStart::Inclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type(vertex, start_type))
@@ -679,14 +685,34 @@ impl ThingManager {
                 );
                 match vertex_or_prefix {
                     Either::First(vertex) => {
-                        RangeStart::ExcludePrefix(ThingEdgeHasReverse::prefix_from_attribute(vertex).resize_to())
+                        // trick: increment the vertex, since it is complete, then concat the next type - this will help
+                        // with hitting the bloom filters
+                        let storage_key = vertex.into_storage_key();
+                        let mut byte_array = storage_key.into_owned_array().into_byte_array();
+                        byte_array.increment().unwrap();
+                        let next_attribute = AttributeVertex::new(Bytes::Array(byte_array));
+                        match owner_types_range_hint.start_bound() {
+                            Bound::Included(start) => {
+                                let start_type = start.vertex();
+                                RangeStart::Inclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type(next_attribute, start_type))
+                            },
+                            Bound::Excluded(start) => {
+                                // increment and treat as included
+                                let mut bytes: [u8; TypeVertex::LENGTH] = start.vertex().bytes().bytes().try_into().unwrap();
+                                increment(&mut bytes).unwrap();
+                                let start_type = TypeVertex::new(Bytes::Array(ByteArray::copy(&bytes)));
+                                RangeStart::Inclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type(next_attribute, start_type))
+                            },
+                            Bound::Unbounded => {
+                                RangeStart::Inclusive(ThingEdgeHasReverse::prefix_from_attribute(next_attribute).resize_to())
+                            }
+                        }
                     }
                     Either::Second(prefix) => {
-                        // attribute vertex could not be built fully, probably due to not being an inline-valued attribute
-                        RangeStart::Inclusive(
-                            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.as_reference().byte_ref())
-                            .resize_to()
-                        )
+                        // since this is not a complete vertex, and only a prefix, we shouldn't make assumptions about incrementing
+                        // to get to value + 1 in sort order
+                        RangeStart::Inclusive(ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.as_reference().byte_ref())
+                            .resize_to())
                     }
                 }
             }
@@ -698,7 +724,6 @@ impl ThingManager {
             }
         };
 
-
         let has_range_end = match value_upper_bound {
             Bound::Included(upper_value) => {
                 let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value(
@@ -708,7 +733,7 @@ impl ThingManager {
                 );
                 match vertex_or_prefix {
                     Either::First(vertex) => {
-                        match owner_types_range.end_bound() {
+                        match owner_types_range_hint.end_bound() {
                             Bound::Included(end) => {
                                 let end_type = end.vertex();
                                 RangeEnd::EndPrefixInclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type(vertex, end_type))

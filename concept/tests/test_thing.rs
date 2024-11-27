@@ -322,7 +322,7 @@ fn get_has_reverse_in_range() {
             )
         ).unwrap();
         assert_eq!(age_owners_start_value_inclusive.count(), 4);
-        
+
         let age_owners_start_value_exclusive = thing_manager.get_has_reverse_in_range(
             &snapshot,
             age_type.clone(),
@@ -333,7 +333,7 @@ fn get_has_reverse_in_range() {
             )
         ).unwrap();
         assert_eq!(age_owners_start_value_exclusive.count(), 2);
-        
+
         let age_owners_start_value_inclusive_end_value_exclusive = thing_manager.get_has_reverse_in_range(
             &snapshot,
             age_type.clone(),
@@ -344,7 +344,7 @@ fn get_has_reverse_in_range() {
             )
         ).unwrap();
         assert_eq!(age_owners_start_value_inclusive_end_value_exclusive.count(), 2);
-        
+
         let age_owners_start_value_excluded_end_value_exclusive = thing_manager.get_has_reverse_in_range(
             &snapshot,
             age_type.clone(),
@@ -355,6 +355,42 @@ fn get_has_reverse_in_range() {
             )
         ).unwrap();
         assert_eq!(age_owners_start_value_excluded_end_value_exclusive.count(), 0);
+
+        let age_owners_start_value_included_start_type_excluded = thing_manager.get_has_reverse_in_range(
+            &snapshot,
+            age_type.clone(),
+            &(Bound::Included(Value::Long(age_value_10)), Bound::Unbounded),
+            &(
+                Bound::Excluded(ObjectType::Entity(person_type.clone())),
+                Bound::Unbounded
+            )
+        ).unwrap();
+        // should skip age10-person, and return age10-company + age11-person + age11-company
+        assert_eq!(age_owners_start_value_included_start_type_excluded.count(), 3);
+
+        let age_owners_start_value_excluded_start_type_excluded = thing_manager.get_has_reverse_in_range(
+            &snapshot,
+            age_type.clone(),
+            &(Bound::Excluded(Value::Long(age_value_10)), Bound::Unbounded),
+            &(
+                Bound::Excluded(ObjectType::Entity(person_type.clone())),
+                Bound::Unbounded
+            )
+        ).unwrap();
+        // should skip age10-person, age10-company, and the impl should be able to work out the next prefix is age(10+1)-(person+1), and return only age11-company
+        assert_eq!(age_owners_start_value_excluded_start_type_excluded.count(), 1);
+
+        let age_owners_end_value_included_end_type_excluded = thing_manager.get_has_reverse_in_range(
+            &snapshot,
+            age_type.clone(),
+            &(Bound::Unbounded, Bound::Included(Value::Long(age_value_11))),
+            &(
+                Bound::Excluded(ObjectType::Entity(person_type.clone())),
+                Bound::Excluded(ObjectType::Entity(company_type.clone())),
+            )
+        ).unwrap();
+        // should construct open start age* (making Excluded person type irrelevant), and end before age11-company, returning only 
+        
     }
 }
 
