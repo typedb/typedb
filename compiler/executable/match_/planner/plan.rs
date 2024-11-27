@@ -6,8 +6,9 @@
 
 use std::{
     any::type_name_of_val,
-    collections::{HashMap, HashSet},
+    collections::{HashMap, HashSet, BinaryHeap},
     fmt,
+    cmp::{Reverse, Ordering},
 };
 
 use answer::variable::Variable;
@@ -273,9 +274,9 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 | VariableCategory::AttributeType
                 | VariableCategory::RoleType => self.register_type_var(variable),
 
-                | VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
-                    self.register_thing_var(variable)
-                }
+                | VariableCategory::Thing
+                | VariableCategory::Object
+                | VariableCategory::Attribute => self.register_thing_var(variable),
 
                 VariableCategory::Value => self.register_value_var(variable),
 
@@ -673,7 +674,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             .enumerate()
             .map(|(i, idx)| {
                 let sort_variable = ordering.get(i + 1).and_then(|vertex| vertex.as_variable_id());
-                self.graph.elements[idx].cost(&ordering[..i], sort_variable, &self.graph)
+                self.graph.elements[idx].cost(&ordering[..i], sort_variable, 0, &self.graph)
             })
             .fold(ElementCost::MEM_SIMPLE_BRANCH_1, |acc, e| acc.chain(e));
 
@@ -681,14 +682,108 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
         ConjunctionPlan { shared_variables, graph, type_annotations, ordering, element_to_order, cost }
     }
+
+    // New approach to planning:
+    //
+    // In our pattern graph, vertices are variables and patterns; edges indicate which patterns contain which variables.
+    // A plan is an ordering of patterns and variable vertices, indicate in which order we retrieve stored patterns
+    // Multiple patterns may be retrieved in the same step if there is a variable on which they can be joined.
+    // Each step may "produce" solutions for zero of more variables, which is recorded by appending these variables
+    // (When a step has multiple pattern, the first such produced variable is always the join variable)
+    // We record directionality information for each pattern in the plan, indicating which prefix index to use for pattern retrieval
+
+    fn select_cheapest_extensions(iter: impl Iterator<Item = WeightedStepExtension>, k: usize) -> Vec<StepExtension> {
+        let mut heap = BinaryHeap::new();
+        for item in iter {
+            if heap.len() < k {
+                heap.push(Reverse(item));
+            } else if let Some(Reverse(top)) = heap.peek() {
+                if item.0 < top.0 {
+                    heap.pop();
+                    heap.push(Reverse(item));
+                }
+            }
+        }
+        heap.into_iter().map(|Reverse(WeightedStepExtension(cost, ext))| ext).collect()
+    }
+
+    fn beam_search_planner(&self) -> CompleteCostPlan {
+        // Initialize single plan
+        let mut k_best_plans = vec![PartialCostPlan::new(self.graph.pattern_to_variable.keys().copied().collect())];
+        todo!()
+    }
 }
+
+#[derive(Clone)]
+pub(super) struct CompleteCostPlan {
+    vertex_ordering: Vec<VertexId>,
+    pattern_directions: HashMap<PatternVertexId, Direction>,
+    cumulative_cost: Vec<f64>,
+    io_ratio: f64,
+}
+
+#[derive(Clone)]
+pub(super) struct PartialCostPlan {
+    vertex_ordering: Vec<VertexId>,
+    pattern_directions: HashMap<PatternVertexId, Direction>,
+    cumulative_cost: Vec<f64>,
+    io_ratio: f64,
+    remaining_patterns: HashSet<PatternVertexId>,
+    ongoing_step_cost: f64,
+    ongoing_step_io_ratio: f64,
+    ongoing_step_produced_vars: HashSet<VariableVertexId>,
+    ongoing_step_join_var: Option<VariableVertexId>,
+}
+
+impl PartialCostPlan {
+    fn new(remaining_patterns : HashSet<PatternVertexId>) -> Self {
+        Self {
+            vertex_ordering: Vec::new(),
+            pattern_directions: HashMap::new(),
+            cumulative_cost: Vec::new(),
+            io_ratio: 1.0,
+            remaining_patterns,
+            ongoing_step_cost: 0.0,
+            ongoing_step_io_ratio: 1.0,
+            ongoing_step_produced_vars: HashSet::new(),
+            ongoing_step_join_var: None,
+        }
+    }
+}
+
+#[derive(Clone, PartialEq)]
+pub(super) struct StepExtension {
+    pattern_extension: PatternVertexId,
+    pattern_direction: Direction,
+    step_cost: f64,
+    step_io_ratio: f64,
+    step_join_var: Option<VariableVertexId>,
+}
+
+#[derive(PartialEq)]
+struct WeightedStepExtension(f64, StepExtension);
+
+impl Eq for WeightedStepExtension {}
+
+impl PartialOrd for WeightedStepExtension {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.0.partial_cmp(&other.0)
+    }
+}
+
+impl Ord for WeightedStepExtension {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0.partial_cmp(&other.0).unwrap_or(Ordering::Greater)
+    }
+}
+
 
 #[derive(Clone)]
 pub(super) struct ConjunctionPlan<'a> {
     shared_variables: Vec<Variable>,
     graph: Graph<'a>,
     type_annotations: &'a TypeAnnotations,
-    ordering: Vec<VertexId>,
+    ordering: Vec<VertexId>, //TODO: replace with the CostPlan
     element_to_order: HashMap<VertexId, usize>,
     cost: ElementCost,
 }
