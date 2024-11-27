@@ -303,6 +303,7 @@ pub(crate) mod user_manager {
     }
 
     fn new_user(user: User) -> typedb_protocol::User {
-        typedb_protocol::User { name: user.name, credential: None }
+        typedb_protocol::User { name: user.name, password: Some("".to_string()) }
+        // typedb_protocol::User { name: user.name, credential: None }
     }
 }

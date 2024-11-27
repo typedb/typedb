@@ -33,23 +33,25 @@ pub mod transaction_util {
 
         pub fn schema_transaction<T>(
             &self,
-            fn_: impl Fn(QueryManager, &mut SchemaSnapshot<WALClient>, &TypeManager, &ThingManager, &FunctionManager) -> T,
+            fn_: impl Fn(&mut SchemaSnapshot<WALClient>, &TypeManager, &ThingManager, &FunctionManager, &QueryManager) -> T,
         ) -> Result<T, SchemaCommitError> {
             let TransactionSchema {
                 snapshot,
                 type_manager,
                 thing_manager,
                 function_manager,
+                query_manager,
                 database,
                 transaction_options,
-            } = TransactionSchema::open(self.database.clone(), TransactionOptions::default());
+            } = TransactionSchema::open(self.database.clone(), TransactionOptions::default()).unwrap(); // TODO
             let mut snapshot: SchemaSnapshot<WALClient> = Arc::into_inner(snapshot).unwrap();
-            let result = fn_(QueryManager::new(), &mut snapshot, &type_manager, &thing_manager, &function_manager);
+            let result = fn_(&mut snapshot, &type_manager, &thing_manager, &function_manager, &query_manager);
             let tx = TransactionSchema::from(
                 snapshot,
                 type_manager,
                 thing_manager,
                 function_manager,
+                query_manager,
                 database,
                 transaction_options,
             );
@@ -58,7 +60,7 @@ pub mod transaction_util {
 
         pub fn read_transaction<T>(&self, fn_: impl Fn(TransactionRead<WALClient>) -> T) -> T {
             let tx: TransactionRead<WALClient> =
-                TransactionRead::open(self.database.clone(), TransactionOptions::default());
+                TransactionRead::open(self.database.clone(), TransactionOptions::default()).unwrap(); // TODO
             fn_(tx)
         }
 
@@ -69,6 +71,7 @@ pub mod transaction_util {
                 Arc<TypeManager>,
                 Arc<ThingManager>,
                 Arc<FunctionManager>,
+                Arc<QueryManager>,
                 Arc<Database<WALClient>>,
                 TransactionOptions,
             ) -> (T, Arc<WriteSnapshot<WALClient>>),
@@ -78,14 +81,16 @@ pub mod transaction_util {
                 type_manager,
                 thing_manager,
                 function_manager,
+                query_manager,
                 database,
                 transaction_options,
-            } = TransactionWrite::open(self.database.clone(), TransactionOptions::default());
+            } = TransactionWrite::open(self.database.clone(), TransactionOptions::default()).unwrap(); // TODO
             let (rows, snapshot) = fn_(
                 snapshot,
                 type_manager.clone(),
                 thing_manager.clone(),
                 function_manager.clone(),
+                query_manager.clone(),
                 database.clone(),
                 transaction_options,
             );
@@ -94,6 +99,7 @@ pub mod transaction_util {
                 type_manager,
                 thing_manager,
                 function_manager,
+                query_manager,
                 database,
                 TransactionOptions::default(),
             );
@@ -122,8 +128,8 @@ pub mod query_util {
     pub fn execute_read_pipeline(
         tx: TransactionRead<WALClient>,
         pipeline: &Pipeline,
-    ) -> (TransactionRead<WALClient>, Result<Vec<HashMap<String, VariableValue<'static>>>, PipelineExecutionError>) {
-        let prepared_pipeline = QueryManager {}
+    ) -> (TransactionRead<WALClient>, Result<Vec<HashMap<String, VariableValue<'static>>>, Box<PipelineExecutionError>>) {
+        let prepared_pipeline = tx.query_manager
             .prepare_read_pipeline(
                 tx.snapshot.clone(),
                 &tx.type_manager,
@@ -153,9 +159,10 @@ pub mod query_util {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
+        query_manager: &QueryManager,
         pipeline: &Pipeline,
-    ) -> (Result<Vec<HashMap<String, VariableValue<'static>>>, PipelineExecutionError>, Arc<WriteSnapshot<WALClient>>) {
-        let prepared_pipeline = QueryManager::new()
+    ) -> (Result<Vec<HashMap<String, VariableValue<'static>>>, Box<PipelineExecutionError>>, Arc<WriteSnapshot<WALClient>>) {
+        let prepared_pipeline = query_manager
             .prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, pipeline)
             .unwrap();
 

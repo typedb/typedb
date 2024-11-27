@@ -41,12 +41,13 @@ impl UserManager {
 
     pub fn create(&self, user: &User, credential: &Credential) -> Result<(), UserCreateError> {
         let commit =
-            self.transaction_util.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, db, tx_opts| {
+            self.transaction_util.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, db, tx_opts| {
                 let snapshot = user_repository::create(
                     Arc::into_inner(snapshot).unwrap(),
                     &type_mgr,
                     thing_mgr.clone(),
                     &fn_mgr,
+                    &query_mgr,
                     user,
                     credential,
                 );
@@ -62,7 +63,7 @@ impl UserManager {
         credential: &Option<Credential>,
     ) -> Result<(), UserUpdateError> {
         let commit =
-            self.transaction_util.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, db, tx_opts| {
+            self.transaction_util.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, db, tx_opts| {
                 let snapshot = user_repository::update(
                     Arc::into_inner(snapshot).unwrap(),
                     &type_mgr,
@@ -82,12 +83,13 @@ impl UserManager {
             Err(UserDeleteError::DefaultUserCannotBeDeleted {})
         } else {
             let commit =
-                self.transaction_util.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, db, tx_opts| {
+                self.transaction_util.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, db, tx_opts| {
                     let snapshot = user_repository::delete(
                         Arc::into_inner(snapshot).unwrap(),
                         &type_mgr,
                         thing_mgr.clone(),
                         &fn_mgr,
+                        &query_mgr,
                         username,
                     );
                     ((), snapshot)

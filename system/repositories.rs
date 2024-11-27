@@ -17,7 +17,7 @@ pub mod user_repository {
     use thing_manager::ThingManager;
     use typeql::parse_query;
     use uuid::Uuid;
-
+    use query::query_manager::QueryManager;
     use crate::{
         concepts::{Credential, PasswordHash, User},
         util::{
@@ -64,6 +64,7 @@ pub mod user_repository {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
+        query_manager: &QueryManager,
         user: &User,
         credential: &Credential,
     ) -> Arc<WriteSnapshot<WALClient>> {
@@ -86,7 +87,7 @@ pub mod user_repository {
             }
         };
         let (_, snapshot) =
-            execute_write_pipeline(snapshot, type_manager, thing_manager, function_manager, &query.into_pipeline());
+            execute_write_pipeline(snapshot, type_manager, thing_manager, function_manager, query_manager, &query.into_pipeline());
         snapshot
     }
 
@@ -115,6 +116,7 @@ pub mod user_repository {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
+        query_manager: &QueryManager,
         username: &str,
     ) -> Arc<WriteSnapshot<WALClient>> {
         let unexpected_error_msg = "An unexpected error occurred when attempting to delete a user";
@@ -129,7 +131,7 @@ pub mod user_repository {
         )
         .expect(unexpected_error_msg);
         let (_, snapshot) =
-            execute_write_pipeline(snapshot, type_manager, thing_manager, function_manager, &query.into_pipeline());
+            execute_write_pipeline(snapshot, type_manager, thing_manager, function_manager, query_manager, &query.into_pipeline());
         snapshot
     }
 }

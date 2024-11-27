@@ -14,18 +14,9 @@ pub fn users_create_req(
 ) -> Result<(User, Credential), UserCreateError> {
     let message = request.into_inner();
     match message.user {
-        Some(typedb_protocol::User {
-            name: username,
-            credential:
-                Some(typedb_protocol::Credential {
-                    credential:
-                        Some(typedb_protocol::credential::Credential::Password(typedb_protocol::credential::Password {
-                            value: Some(password),
-                        })),
-                }),
-        }) => {
+        Some(typedb_protocol::User { name: username, password: Some(password) }) => {
             let user = User::new(username);
-            let credential = Credential::new_password_type(PasswordHash::from_password(password.as_str()));
+            let credential = Credential::new_password(password.as_str());
             Ok((user, credential))
         }
         _ => {

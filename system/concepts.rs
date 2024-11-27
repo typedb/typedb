@@ -23,8 +23,8 @@ pub enum Credential {
 }
 
 impl Credential {
-    pub fn new_password_type(password_hash: PasswordHash) -> Credential {
-        Credential::PasswordType { password_hash }
+    pub fn new_password(password: &str) -> Self {
+        Self::PasswordType { password_hash: PasswordHash::from_password(password) }
     }
 }
 
