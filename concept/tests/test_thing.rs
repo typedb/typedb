@@ -389,8 +389,8 @@ fn get_has_reverse_in_range() {
                 Bound::Excluded(ObjectType::Entity(company_type.clone())),
             )
         ).unwrap();
-        // should construct open start age* (making Excluded person type irrelevant), and end before age11-company, returning only 
-        
+        // should construct open start age* (making Excluded person type irrelevant), and end before age11-company, returning only age10-person + age10-company + age11-person
+        assert_eq!(age_owners_end_value_included_end_type_excluded.count(), 3);
     }
 }
 
