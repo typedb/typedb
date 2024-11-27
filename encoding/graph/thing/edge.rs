@@ -435,15 +435,23 @@ impl<'a> ThingEdgeLinks<'a> {
         bytes[Self::RANGE_FROM].copy_from_slice(relation.bytes().bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
-
+    
     pub fn prefix_from_relation_player_type(
         relation: ObjectVertex<'_>,
         player_type: TypeVertex<'_>,
     ) -> StorageKey<'static, { ThingEdgeLinks::LENGTH_PREFIX_FROM_TO_TYPE }> {
+        Self::prefix_from_relation_player_type_parts(relation, player_type.prefix(), player_type.type_id_())
+    }
+
+    pub fn prefix_from_relation_player_type_parts(
+        relation: ObjectVertex<'_>,
+        player_type_prefix: Prefix,
+        player_type_id: TypeID,
+    ) -> StorageKey<'static, { ThingEdgeLinks::LENGTH_PREFIX_FROM_TO_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TO_TYPE);
         bytes[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes[Self::RANGE_FROM].copy_from_slice(relation.bytes().bytes());
-        ObjectVertex::write_prefix_from_type_vertex(&mut bytes[Self::range_to_type()], player_type);
+        ObjectVertex::write_prefix_type(&mut bytes[Self::range_to_type()], ObjectVertex::prefix_for_type(player_type_prefix), player_type_id);
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 

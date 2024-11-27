@@ -55,14 +55,14 @@ impl<'a> Object<'a> {
     pub fn unwrap_entity(self) -> Entity<'a> {
         match self {
             Self::Entity(entity) => entity,
-            Self::Relation(relation) => panic!("called `Object::unwrap_entity()` on a `Relation` value: {relation:?}"),
+            Self::Relation(_) => panic!("called `Object::unwrap_entity()` on a `Relation` value: {relation:?}"),
         }
     }
 
     pub fn unwrap_relation(self) -> Relation<'a> {
         match self {
             Self::Relation(relation) => relation,
-            Self::Entity(entity) => panic!("called `Object::unwrap_relation()` on an `Entity` value: {entity:?}"),
+            Self::Entity(_) => panic!("called `Object::unwrap_relation()` on an `Entity` value: {entity:?}"),
         }
     }
 
@@ -410,7 +410,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
     }
 
     fn get_has_counts(
-        &'a self,
+        &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<HashMap<AttributeType<'static>, u64>, Box<ConceptReadError>> {

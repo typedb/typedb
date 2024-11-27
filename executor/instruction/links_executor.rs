@@ -10,6 +10,8 @@ use std::{
     fmt,
     sync::Arc,
 };
+use std::cmp::max;
+use std::ops::Bound;
 
 use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::{executable::match_::instructions::thing::LinksInstruction, ExecutorVariable};
@@ -21,11 +23,14 @@ use concept::{
     },
 };
 use itertools::{Itertools, MinMaxResult};
+use concept::type_::object_type::ObjectType;
+use concept::type_::relation_type::RelationType;
 use lending_iterator::{
     adaptors::{Map, TryFilter},
     kmerge::KMergeBy,
     AsHkt, LendingIterator, Peekable,
 };
+use primitive::Bounds;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
@@ -54,6 +59,8 @@ pub(crate) struct LinksExecutor {
     tuple_positions: TuplePositions,
 
     relation_player_types: Arc<BTreeMap<Type, Vec<Type>>>, // vecs are in sorted order
+    relation_type_range: Bounds<RelationType<'static>>,
+    player_type_range: Bounds<ObjectType<'static>>,
     player_types: Arc<BTreeSet<Type>>,
 
     filter_fn: Arc<LinksFilterFn>,
@@ -128,6 +135,15 @@ impl LinksExecutor {
             HashMap::from([(relation, EXTRACT_RELATION), (player, EXTRACT_PLAYER), (role_type, EXTRACT_ROLE)]),
         );
 
+        let relation_type_range = (
+            Bound::Included(relation_player_types.first_key_value().unwrap().0.as_relation_type()),
+            Bound::Included(relation_player_types.last_key_value().unwrap().0.as_relation_type()),
+        );
+        let (min_player_type, max_player_type) = min_max_types(&*relation_player_types.values());
+        let player_type_range = (
+            Bound::Included(min_player_type.as_object_type()),
+            Bound::Included(max_player_type.as_object_type()),
+        );
         let relation_cache = if iterate_mode == TernaryIterateMode::UnboundInverted {
             let mut cache = Vec::new();
             for type_ in relation_player_types.keys() {
@@ -153,6 +169,8 @@ impl LinksExecutor {
             tuple_positions: output_tuple_positions,
             relation_player_types,
             player_types,
+            relation_type_range,
+            player_type_range,
             filter_fn,
             relation_cache,
             checker,
@@ -176,14 +194,8 @@ impl LinksExecutor {
 
         match self.iterate_mode {
             TernaryIterateMode::Unbound => {
-                let first_from_type = self.relation_player_types.first_key_value().unwrap().0;
-                let last_key_from_type = self.relation_player_types.last_key_value().unwrap().0;
-                let key_range = KeyRange::new_variable_width(
-                    RangeStart::Inclusive(first_from_type.as_relation_type()),
-                    RangeEnd::EndPrefixInclusive(last_key_from_type.as_relation_type()),
-                );
                 // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
-                let iterator = thing_manager.get_links_by_relation_type_range(snapshot, &key_range);
+                let iterator = thing_manager.get_links_by_relation_type_range(snapshot, &self.relation_type_range);
                 let as_tuples: LinksUnboundedSortedRelation = iterator
                     .try_filter::<_, LinksFilterFn, (Relation<'_>, RolePlayer<'_>, _), _>(filter_for_row)
                     .map(links_to_tuple_relation_player_role);
@@ -196,19 +208,13 @@ impl LinksExecutor {
 
             TernaryIterateMode::UnboundInverted => {
                 debug_assert!(self.relation_cache.is_some());
-                let (min_player_type, max_player_type) = min_max_types(&*self.player_types);
-                let player_type_range = KeyRange::new_variable_width(
-                    RangeStart::Inclusive(min_player_type.as_object_type()),
-                    RangeEnd::EndPrefixInclusive(max_player_type.as_object_type()),
-                );
-
                 if let Some([relation]) = self.relation_cache.as_deref() {
                     // no heap allocs needed if there is only 1 iterator
                     let iterator = thing_manager.get_links_by_relation_and_player_type_range(
                         snapshot,
                         relation.as_reference(),
                         // TODO: this should be just the types owned by the one instance's type in the cache!
-                        &player_type_range,
+                        &self.player_type_range,
                     );
                     let as_tuples: LinksUnboundedSortedPlayerSingle = iterator
                         .try_filter::<_, LinksFilterFn, (Relation<'_>, RolePlayer<'_>, _), _>(filter_for_row)
@@ -227,7 +233,7 @@ impl LinksExecutor {
                             Ok::<_, Box<_>>(Peekable::new(thing_manager.get_links_by_relation_and_player_type_range(
                                 snapshot,
                                 relation.as_reference(),
-                                &player_type_range.clone(),
+                                &self.player_type_range,
                             )))
                         })
                         .collect::<Result<Vec<_>, _>>()?;
@@ -249,18 +255,12 @@ impl LinksExecutor {
             TernaryIterateMode::BoundFrom => {
                 let relation = self.links.relation().as_variable().unwrap().as_position().unwrap();
                 debug_assert!(row.len() > relation.as_usize());
-                let (min_player_type, max_player_type) = min_max_types(&*self.player_types);
-                let player_type_range = KeyRange::new_variable_width(
-                    RangeStart::Inclusive(min_player_type.as_object_type()),
-                    RangeEnd::EndPrefixInclusive(max_player_type.as_object_type()),
-                );
-
                 let iterator = match row.get(relation) {
                     VariableValue::Thing(Thing::Relation(relation)) => thing_manager
                         .get_links_by_relation_and_player_type_range(
                             snapshot,
                             relation.as_reference(),
-                            &player_type_range,
+                            &self.player_type_range,
                         ),
                     _ => unreachable!("Links relation must be a relation."),
                 };
