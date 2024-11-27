@@ -1192,6 +1192,6 @@ typedb_error!(
             name: String,
             ( typedb_source: Box<FunctionError> )
         ),
-        IllegalKeywordAsIdentifier(37, "A keyword \"{identifier}\" was used as identifier.", identifier: typeql::Identifier),
+        IllegalKeywordAsIdentifier(37, "The reserved keyword \"{identifier}\" cannot be used as an identifier.", identifier: typeql::Identifier),
     }
 );

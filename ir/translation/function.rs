@@ -45,7 +45,7 @@ pub fn translate_function_from(
     declaration: Option<&typeql::Function>,
 ) -> Result<Function, FunctionRepresentationError> {
     let checked_name = &signature.ident.as_str_unreserved().map_err(|_source| {
-        FunctionRepresentationError::ReservedKeywordAsIdentifier {
+        FunctionRepresentationError::IllegalKeywordAsIdentifier {
             identifier: signature.ident.as_str_unchecked().to_owned(),
         }
     })?;
