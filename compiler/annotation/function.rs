@@ -505,7 +505,7 @@ fn get_annotations_from_labels(
             let types = type_seeder::get_type_annotation_and_subtypes_from_label(
                 snapshot,
                 type_manager,
-                &Label::build(label.ident.as_str()),
+                &Label::build(label.ident.as_str_unchecked()),
             )?;
             Ok(FunctionParameterAnnotation::Concept(types))
         }

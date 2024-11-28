@@ -174,6 +174,11 @@ typedb_error!(
             variable: String
         ),
         ScopedValueTypeName(26, "Value type names cannot have scopes. Provided illegal name: '{scope}:{name}'.", scope: String, name: String),
+        ReservedKeywordAsIdentifier(
+            27,
+            "A reserved keyword \"{identifier}\" was used as identifier",
+            identifier: typeql::Identifier
+        ),
     }
 );
 

@@ -104,6 +104,11 @@ typedb_error! {
             signature: Signature,
             return_: ReturnStatement
         ),
+        IllegalKeywordAsIdentifier(
+            9,
+            "The reserved keyword \"{identifier}\" cannot be used as function name",
+            identifier: String
+        ),
     }
 }
 

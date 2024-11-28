@@ -9,11 +9,11 @@ use concept::type_::annotation::{
     AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
 };
 use encoding::{graph::type_::Kind, value::value_type::ValueType};
-use typeql::{annotation::CardinalityRange, token};
+use typeql::{annotation::CardinalityRange, common::error::TypeQLError, token};
 
 use crate::{
     translation::literal::{translate_literal, FromTypeQLLiteral},
-    LiteralParseError,
+    LiteralParseError, RepresentationError,
 };
 
 pub fn translate_annotation(typeql_kind: &typeql::Annotation) -> Result<Annotation, LiteralParseError> {
@@ -87,4 +87,11 @@ pub fn translate_value_type(typeql_value_type: &token::ValueType) -> ValueType {
         token::ValueType::Long => ValueType::Long,
         token::ValueType::String => ValueType::String,
     }
+}
+
+pub(crate) fn checked_identifier(ident: &typeql::Identifier) -> Result<&str, Box<RepresentationError>> {
+    ident.as_str_unreserved().map_err(|_source| {
+        let TypeQLError::ReservedKeywordAsIdentifier { identifier } = _source else { unreachable!() };
+        Box::new(RepresentationError::ReservedKeywordAsIdentifier { identifier })
+    })
 }

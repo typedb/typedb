@@ -5,7 +5,7 @@
  */
 
 use encoding::graph::definition::{definition_key::DefinitionKey, function::FunctionDefinition};
-use ir::pipeline::function_signature::FunctionIDAPI;
+use ir::pipeline::{function_signature::FunctionIDAPI, FunctionRepresentationError};
 
 use crate::FunctionError;
 
@@ -24,7 +24,7 @@ impl<FunctionIDType: FunctionIDAPI> Function<FunctionIDType> {
     }
 
     pub fn name(&self) -> String {
-        self.parsed.signature.ident.as_str().to_owned()
+        self.parsed.signature.ident.as_str_unchecked().to_owned()
     }
 }
 
@@ -32,6 +32,11 @@ impl<FunctionIDType: FunctionIDAPI> Function<FunctionIDType> {
     pub(crate) fn build(function_id: FunctionIDType, definition: FunctionDefinition) -> Result<Self, FunctionError> {
         let parsed = typeql::parse_definition_function(definition.as_str().as_str())
             .map_err(|source| FunctionError::CommittedFunctionParseError { typedb_source: source })?;
+        parsed.signature.ident.as_str_unreserved().map_err(|_| FunctionError::FunctionTranslation {
+            typedb_source: FunctionRepresentationError::IllegalKeywordAsIdentifier {
+                identifier: parsed.signature.ident.as_str_unchecked().to_owned(),
+            },
+        })?;
         Ok(Self { function_id, parsed, compiled: None })
     }
 }

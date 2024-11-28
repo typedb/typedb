@@ -24,6 +24,7 @@ use crate::{
     translation::{
         constraints::{register_typeql_var, split_out_inline_expressions},
         literal::translate_literal,
+        tokens::checked_identifier,
     },
     RepresentationError,
 };
@@ -37,11 +38,7 @@ pub(super) fn add_typeql_expression(
         let id = register_typeql_literal(constraints, literal)?;
         Ok(Vertex::Parameter(id))
     } else if let typeql::Expression::Variable(var) = rhs {
-        let variable = match var {
-            typeql::Variable::Named { ident, optional, .. } => constraints.get_or_declare_variable(ident.as_str())?,
-            typeql::Variable::Anonymous { optional, .. } => constraints.create_anonymous_variable()?,
-        };
-        Ok(Vertex::Variable(variable))
+        Ok(Vertex::Variable(register_typeql_var(constraints, var)?))
     } else {
         let expression = build_expression(function_index, constraints, rhs)?;
         let variable = constraints.create_anonymous_variable()?;
@@ -155,7 +152,7 @@ fn build_function(
             add_user_defined_function_call(
                 function_index,
                 constraints,
-                identifier.as_str(),
+                checked_identifier(identifier)?,
                 vec![assign],
                 &function_call.args,
             )?;

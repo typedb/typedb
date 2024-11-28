@@ -29,7 +29,7 @@ use crate::{
     translation::{
         expression::{add_typeql_expression, add_user_defined_function_call, build_expression},
         literal::translate_literal,
-        tokens::translate_value_type,
+        tokens::{checked_identifier, translate_value_type},
     },
     RepresentationError,
 };
@@ -58,7 +58,7 @@ pub(super) fn add_statement(
         typeql::Statement::Assignment(Assignment { lhs, rhs, .. }) => {
             let assigned = assignment_pattern_to_variables(constraints, lhs)?;
             if let typeql::Expression::Function(FunctionCall { name: FunctionName::Identifier(id), args, .. }) = rhs {
-                add_user_defined_function_call(function_index, constraints, id.as_str(), assigned, args)?;
+                add_user_defined_function_call(function_index, constraints, id.as_str_unchecked(), assigned, args)?;
             } else {
                 let [assigned] = *assigned else {
                     return Err(Box::new(RepresentationError::ExpressionAssignmentMustOneVariable {
@@ -138,7 +138,8 @@ fn add_type_statement(
                     let &Vertex::Variable(var) = &type_ else {
                         return Err(Box::new(RepresentationError::LabelWithLabel { declaration: label.clone() }));
                     };
-                    constraints.add_label(var, Label::build(label.ident.as_str()))?;
+                    let as_label = register_type_label(constraints, &label)?;
+                    constraints.add_label(var, as_label)?;
                 }
                 typeql::statement::type_::LabelConstraint::Scoped(scoped_label) => {
                     let &Vertex::Variable(var) = &type_ else {
@@ -146,10 +147,8 @@ fn add_type_statement(
                             declaration: scoped_label.clone(),
                         }));
                     };
-                    constraints.add_label(
-                        var,
-                        Label::build_scoped(scoped_label.name.ident.as_str(), scoped_label.scope.ident.as_str()),
-                    )?;
+                    let as_label = register_type_scoped_label(constraints, &scoped_label)?;
+                    constraints.add_label(var, as_label)?;
                 }
             },
             typeql::statement::type_::ConstraintBase::ValueType(value_type) => {
@@ -188,7 +187,7 @@ pub(crate) fn register_typeql_var(
 ) -> Result<Variable, Box<RepresentationError>> {
     match var {
         typeql::Variable::Named { ident, optional, .. } => {
-            let var = constraints.get_or_declare_variable(ident.as_str())?;
+            let var = constraints.get_or_declare_variable(ident.as_str_unchecked())?;
             Ok(var)
         }
         typeql::Variable::Anonymous { optional, .. } => {
@@ -214,7 +213,7 @@ fn register_typeql_type(
     type_: &typeql::TypeRef,
 ) -> Result<Vertex<Variable>, Box<RepresentationError>> {
     match type_ {
-        typeql::TypeRef::Named(NamedType::Label(label)) => Ok(Vertex::Label(Label::build(label.ident.as_str()))),
+        typeql::TypeRef::Named(NamedType::Label(label)) => Ok(Vertex::Label(register_type_label(constraints, &label)?)),
         typeql::TypeRef::Named(NamedType::Role(scoped_label)) => {
             Ok(Vertex::Label(register_type_scoped_label(constraints, scoped_label)?))
         }
@@ -254,14 +253,16 @@ fn register_type_scoped_label(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     scoped_label: &ScopedLabel,
 ) -> Result<Label<'static>, Box<RepresentationError>> {
-    Ok(Label::build_scoped(scoped_label.name.ident.as_str(), scoped_label.scope.ident.as_str()))
+    let checked_scope = checked_identifier(&scoped_label.scope.ident)?;
+    let checked_name = checked_identifier(&scoped_label.name.ident)?;
+    Ok(Label::build_scoped(checked_name, checked_scope))
 }
 
 fn register_type_label(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     label: &typeql::Label,
 ) -> Result<Label<'static>, Box<RepresentationError>> {
-    Ok(Label::build(label.ident.as_str()))
+    Ok(Label::build(checked_identifier(&label.ident)?))
 }
 
 fn register_type_role_name_var(
@@ -269,7 +270,7 @@ fn register_type_role_name_var(
     label: &typeql::Label,
 ) -> Result<Variable, Box<RepresentationError>> {
     let variable = constraints.create_anonymous_variable()?;
-    constraints.add_role_name(variable, label.ident.as_str())?;
+    constraints.add_role_name(variable, checked_identifier(&label.ident)?)?;
     Ok(variable)
 }
 
@@ -279,10 +280,10 @@ fn register_typeql_value_type(
 ) -> Result<ValueType, Box<RepresentationError>> {
     match &value_type.value_type {
         NamedType::Role(scoped_label) => Err(Box::new(RepresentationError::ScopedValueTypeName {
-            scope: scoped_label.scope.ident.as_str().to_owned(),
-            name: scoped_label.name.ident.as_str().to_owned(),
+            scope: scoped_label.scope.ident.as_str_unchecked().to_owned(),
+            name: scoped_label.name.ident.as_str_unchecked().to_owned(),
         })),
-        NamedType::Label(label) => Ok(ValueType::Struct(label.ident.as_str().to_owned())),
+        NamedType::Label(label) => Ok(ValueType::Struct(checked_identifier(&label.ident)?.to_owned())),
         NamedType::BuiltinValueType(BuiltinValueType { token, .. }) => {
             Ok(ValueType::Builtin(translate_value_type(token)))
         }
@@ -482,7 +483,7 @@ fn add_typeql_iterable_binding(
 ) -> Result<(), Box<RepresentationError>> {
     match rhs {
         typeql::Expression::Function(FunctionCall { name: FunctionName::Identifier(identifier), args, .. }) => {
-            add_user_defined_function_call(function_index, constraints, identifier.as_str(), assigned, args)
+            add_user_defined_function_call(function_index, constraints, checked_identifier(identifier)?, assigned, args)
         }
         typeql::Expression::Function(FunctionCall { name: FunctionName::Builtin(_), .. }) => {
             todo!("builtin function returning list (e.g. list(stream_func()))")

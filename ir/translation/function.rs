@@ -24,6 +24,7 @@ use crate::{
     translation::{
         pipeline::{translate_pipeline_stages, TranslatedStage},
         reduce::build_reducer,
+        tokens::checked_identifier,
         TranslationContext,
     },
 };
@@ -43,6 +44,11 @@ pub fn translate_function_from(
     block: &FunctionBlock,
     declaration: Option<&typeql::Function>,
 ) -> Result<Function, FunctionRepresentationError> {
+    let checked_name = &signature.ident.as_str_unreserved().map_err(|_source| {
+        FunctionRepresentationError::IllegalKeywordAsIdentifier {
+            identifier: signature.ident.as_str_unchecked().to_owned(),
+        }
+    })?;
     let argument_labels = signature.args.iter().map(|arg| arg.type_.clone()).collect();
     let arg_names_and_categories = signature
         .args
@@ -83,7 +89,7 @@ pub fn translate_function_from(
         });
     }
     Ok(Function::new(
-        signature.ident.as_str(),
+        checked_name,
         context,
         value_parameters,
         arguments,

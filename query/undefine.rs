@@ -24,7 +24,7 @@ use function::{function_manager::FunctionManager, FunctionError};
 use ir::{translation::tokens::translate_annotation_category, LiteralParseError};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
-    common::token::Keyword,
+    common::{error::TypeQLError, token::Keyword},
     query::schema::Undefine,
     schema::{
         definable::type_::{
@@ -53,7 +53,15 @@ use crate::{
         get_sub_status, get_type_annotation_category_status, get_value_type_status, DefinableStatus,
         DefinableStatusMode,
     },
+    redefine::RedefineError,
 };
+
+fn checked_identifier(identifier: &typeql::Identifier) -> Result<&str, UndefineError> {
+    identifier.as_str_unreserved().map_err(|_source| {
+        let TypeQLError::ReservedKeywordAsIdentifier { identifier } = _source else { unreachable!() };
+        UndefineError::IllegalKeywordAsIdentifier { identifier }
+    })
+}
 
 pub(crate) fn execute(
     snapshot: &mut impl WritableSnapshot,
@@ -152,7 +160,7 @@ fn undefine_function(
     function_manager: &FunctionManager,
     function_undefinable: &Function,
 ) -> Result<(), UndefineError> {
-    let name = function_undefinable.ident.as_str();
+    let name = checked_identifier(&function_undefinable.ident)?;
     function_manager.undefine_function(snapshot, name).map_err(|source| UndefineError::FunctionUndefinition {
         name: name.to_owned(),
         typedb_source: Box::new(source),
@@ -165,7 +173,7 @@ fn undefine_specialise(
     thing_manager: &ThingManager,
     specialise_undefinable: &Specialise,
 ) -> Result<(), UndefineError> {
-    let label = Label::parse_from(specialise_undefinable.type_.ident.as_str());
+    let label = Label::parse_from(checked_identifier(&specialise_undefinable.type_.ident)?);
     let relation_type = resolve_relation_type(snapshot, type_manager, &label)
         .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
 
@@ -173,9 +181,13 @@ fn undefine_specialise(
         .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
     let relates = resolve_relates_declared(snapshot, type_manager, relation_type, role_label.name.as_str())
         .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
-    let specialised_relates =
-        resolve_relates(snapshot, type_manager, relates.relation(), specialise_undefinable.specialised.ident.as_str())
-            .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
+    let specialised_relates = resolve_relates(
+        snapshot,
+        type_manager,
+        relates.relation(),
+        checked_identifier(&specialise_undefinable.specialised.ident)?,
+    )
+    .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
 
     let definition_status = get_sub_status(snapshot, type_manager, relates.role(), specialised_relates.role())
         .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
@@ -241,7 +253,7 @@ fn undefine_capability_annotation(
     thing_manager: &ThingManager,
     annotation_undefinable: &AnnotationCapability,
 ) -> Result<(), UndefineError> {
-    let label = Label::parse_from(annotation_undefinable.type_.ident.as_str());
+    let label = Label::parse_from(checked_identifier(&annotation_undefinable.type_.ident)?);
     let annotation_category = translate_annotation_category(annotation_undefinable.annotation_category);
 
     match &annotation_undefinable.capability {
@@ -302,8 +314,10 @@ fn undefine_capability_annotation(
         CapabilityBase::Plays(typeql_plays) => {
             let object_type = resolve_object_type(snapshot, type_manager, &label)
                 .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
-            let role_label =
-                Label::build_scoped(typeql_plays.role.name.ident.as_str(), typeql_plays.role.scope.ident.as_str());
+            let role_label = Label::build_scoped(
+                checked_identifier(&typeql_plays.role.name.ident)?,
+                checked_identifier(&typeql_plays.role.scope.ident)?,
+            );
             let role_type = resolve_role_type(snapshot, type_manager, &role_label)
                 .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
             let plays = resolve_plays_declared(snapshot, type_manager, object_type, role_type)
@@ -405,7 +419,7 @@ fn undefine_type_capability(
     thing_manager: &ThingManager,
     capability_undefinable: &CapabilityType,
 ) -> Result<(), UndefineError> {
-    let label = Label::parse_from(capability_undefinable.type_.ident.as_str());
+    let label = Label::parse_from(checked_identifier(&capability_undefinable.type_.ident)?);
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
 
@@ -476,7 +490,7 @@ fn undefine_type_capability_sub(
     sub: &TypeQLSub,
     capability_undefinable: &CapabilityType,
 ) -> Result<(), UndefineError> {
-    let supertype_label = Label::parse_from(sub.supertype_label.ident.as_str());
+    let supertype_label = Label::parse_from(checked_identifier(&sub.supertype_label.ident)?);
     let supertype = resolve_typeql_type(snapshot, type_manager, &supertype_label)
         .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
 
@@ -610,7 +624,8 @@ fn undefine_type_capability_plays(
     plays: &TypeQLPlays,
     capability_undefinable: &CapabilityType,
 ) -> Result<(), UndefineError> {
-    let role_label = Label::build_scoped(plays.role.name.ident.as_str(), plays.role.scope.ident.as_str());
+    let role_label =
+        Label::build_scoped(checked_identifier(&plays.role.name.ident)?, checked_identifier(&plays.role.scope.ident)?);
     let role_type = resolve_role_type(snapshot, type_manager, &role_label)
         .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
 
@@ -740,7 +755,7 @@ fn undefine_type_annotation(
     type_manager: &TypeManager,
     annotation_undefinable: &AnnotationType,
 ) -> Result<(), UndefineError> {
-    let label = Label::parse_from(annotation_undefinable.type_.ident.as_str());
+    let label = Label::parse_from(checked_identifier(&annotation_undefinable.type_.ident)?);
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
     let annotation_category = translate_annotation_category(annotation_undefinable.annotation_category);
@@ -800,7 +815,7 @@ fn undefine_type(
     thing_manager: &ThingManager,
     label_undefinable: &TypeQLLabel,
 ) -> Result<(), UndefineError> {
-    let label = Label::parse_from(label_undefinable.ident.as_str());
+    let label = Label::parse_from(checked_identifier(&label_undefinable.ident)?);
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
 
@@ -823,7 +838,7 @@ fn undefine_struct(
     thing_manager: &ThingManager,
     struct_undefinable: &Struct,
 ) -> Result<(), UndefineError> {
-    let name = struct_undefinable.ident.as_str();
+    let name = checked_identifier(&struct_undefinable.ident)?;
     let struct_key = resolve_struct_definition_key(snapshot, type_manager, name)
         .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
 
@@ -1177,5 +1192,6 @@ typedb_error!(
             name: String,
             ( typedb_source: Box<FunctionError> )
         ),
+        IllegalKeywordAsIdentifier(37, "The reserved keyword \"{identifier}\" cannot be used as an identifier.", identifier: typeql::Identifier),
     }
 );

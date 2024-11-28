@@ -47,8 +47,8 @@ insert
         $c2 isa node, has name "c2";
         $c3 isa node, has name "c3";
 
-        (from: $c1, to: $c2) isa edge;
-        (from: $c2, to: $c3) isa edge;
+        (start: $c1, end: $c2) isa edge;
+        (start: $c2, end: $c3) isa edge;
 
         # Tree
         $t1 isa node, has name "t1";
@@ -59,9 +59,9 @@ insert
         $t6 isa node, has name "t6";
         $t7 isa node, has name "t7";
 
-        (from: $t1, to: $t2) isa edge; (from: $t1, to: $t3) isa edge;
-        (from: $t2, to: $t4) isa edge; (from: $t2, to: $t5) isa edge;
-        (from: $t3, to: $t6) isa edge; (from: $t3, to: $t7) isa edge;
+        (start: $t1, end: $t2) isa edge; (start: $t1, end: $t3) isa edge;
+        (start: $t2, end: $t4) isa edge; (start: $t2, end: $t5) isa edge;
+        (start: $t3, end: $t6) isa edge; (start: $t3, end: $t7) isa edge;
 
         # Figure of 8? or of an ant.
         #    (e1)->-.  .-(e3)->-.  .->-(e5)->-.
@@ -78,13 +78,13 @@ insert
         $e8 isa node, has name "e8";
         $e9 isa node, has name "e9";
 
-        (from: $e1, to: $e2) isa edge; (from: $e2, to: $e3) isa edge;
-        (from: $e3, to: $e4) isa edge; (from: $e4, to: $e5) isa edge;
+        (start: $e1, end: $e2) isa edge; (start: $e2, end: $e3) isa edge;
+        (start: $e3, end: $e4) isa edge; (start: $e4, end: $e5) isa edge;
 
-        (from: $e5, to: $e6) isa edge; (from: $e6, to: $e7) isa edge;
+        (start: $e5, end: $e6) isa edge; (start: $e6, end: $e7) isa edge;
 
-        (from: $e7, to: $e4) isa edge; (from: $e4, to: $e8) isa edge;
-        (from: $e8, to: $e2) isa edge; (from: $e2, to: $e9) isa edge;
+        (start: $e7, end: $e4) isa edge; (start: $e4, end: $e8) isa edge;
+        (start: $e8, end: $e2) isa edge; (start: $e2, end: $e9) isa edge;
 "#;
 
 fn setup_common(schema: &str) -> Context {
@@ -323,8 +323,8 @@ fn function_binary() {
 fn quadratic_reachability_in_tree() {
     let custom_schema = r#"define
         attribute name value string;
-        entity node, owns name @card(0..), plays edge:from, plays edge:to;
-        relation edge, relates from, relates to;
+        entity node, owns name @card(0..), plays edge:start, plays edge:end;
+        relation edge, relates start, relates end;
     "#;
     let context = setup_common(custom_schema);
 
@@ -332,16 +332,16 @@ fn quadratic_reachability_in_tree() {
     assert_eq!(1, rows.len());
     let query_template = r#"
             with
-            fun reachable($from: node) -> { node }:
+            fun reachable($start: node) -> { node }:
             match
                 $return-me has name $name;
-                { (from: $from, to: $middle) isa edge; $indirect in reachable($middle); $indirect has name $name; } or
-                { (from: $from, to: $direct) isa edge; $direct has name $name; }; # Do we have is yet?
+                { (start: $start, end: $middle) isa edge; $indirect in reachable($middle); $indirect has name $name; } or
+                { (start: $start, end: $direct) isa edge; $direct has name $name; }; # Do we have is yet?
             return { $return-me };
 
             match
-                $from isa node, has name "<<NODE_NAME>>";
-                $to in reachable($from);
+                $start isa node, has name "<<NODE_NAME>>";
+                $to in reachable($start);
         "#;
     let placeholder_start_node = "<<NODE_NAME>>";
     {
@@ -387,8 +387,8 @@ fn quadratic_reachability_in_tree() {
 fn linear_reachability_in_tree() {
     let custom_schema = r#"define
         attribute name value string;
-        entity node, owns name @card(0..), plays edge:from, plays edge:to;
-        relation edge, relates from, relates to;
+        entity node, owns name @card(0..), plays edge:start, plays edge:end;
+        relation edge, relates start, relates end;
     "#;
     let context = setup_common(custom_schema);
     let (rows, _positions) = run_write_query(&context, REACHABILITY_DATA).unwrap();
@@ -397,16 +397,16 @@ fn linear_reachability_in_tree() {
     let placeholder_start_node = "<<NODE_NAME>>";
     let query_template = r#"
             with
-            fun reachable($from: node) -> { node }:
+            fun reachable($start: node) -> { node }:
             match
                 $return-me has name $name;
-                { $middle in reachable($from); (from: $middle, to: $indirect) isa edge; $indirect has name $name; } or
-                { (from: $from, to: $direct) isa edge; $direct has name $name; }; # Do we have is yet?
+                { $middle in reachable($start); (start: $middle, end: $indirect) isa edge; $indirect has name $name; } or
+                { (start: $start, end: $direct) isa edge; $direct has name $name; }; # Do we have is yet?
             return { $return-me };
 
             match
-                $from isa node, has name "<<NODE_NAME>>";
-                $to in reachable($from);
+                $start isa node, has name "<<NODE_NAME>>";
+                $to in reachable($start);
         "#;
 
     {
