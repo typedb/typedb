@@ -16,6 +16,8 @@ use storage::durability_client::WALClient;
 
 use crate::{database::DatabaseCreateError, Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError};
 
+pub const INTERNAL_DATABASE_PREFIX: &str = "_";
+
 #[derive(Debug)]
 pub struct DatabaseManager {
     data_directory: PathBuf,
@@ -44,10 +46,17 @@ impl DatabaseManager {
 
     pub fn create_database(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError> {
         let name = name.as_ref();
+        if Self::is_internal_database(name) {
+            return Err(DatabaseCreateError::InternalDatabaseCreationProhibited {})
+        }
         if !typeql::common::identifier::is_valid_identifier(name) {
             return Err(DatabaseCreateError::InvalidName { name: name.to_owned() });
         }
+        self.create_database_unrestricted(name)
+    }
 
+    pub fn create_database_unrestricted(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError> {
+        let name = name.as_ref();
         self.databases
             .write()
             .unwrap()
@@ -57,6 +66,10 @@ impl DatabaseManager {
     }
 
     pub fn delete_database(&self, name: impl AsRef<str>) -> Result<(), DatabaseDeleteError> {
+        if !Self::is_internal_database(name.as_ref()) {
+            return Err(DatabaseDeleteError::InternalDatabaseDeletionProhibited {})
+        }
+
         // TODO: this is a partial implementation, only single threaded and without cooperative transaction shutdown
         // remove from map to make DB unavailable
         let mut databases = self.databases.write().unwrap();
@@ -115,10 +128,28 @@ impl DatabaseManager {
     }
 
     pub fn database(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
+        if Self::is_internal_database(name) {
+            return None
+        }
+        self.database_unrestricted(name)
+    }
+
+    pub fn database_unrestricted(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
         self.databases.read().unwrap().get(name).cloned()
     }
 
     pub fn database_names(&self) -> Vec<String> {
-        self.databases.read().unwrap().keys().cloned().collect()
+        self.databases.read().unwrap().keys().cloned()
+            .filter(|db| Self::is_user_database(db))
+            .collect()
     }
+
+    pub fn is_user_database(name: &str) -> bool {
+        !Self::is_internal_database(name)
+    }
+
+    pub fn is_internal_database(name: &str) -> bool {
+        name.starts_with(INTERNAL_DATABASE_PREFIX)
+    }
+
 }

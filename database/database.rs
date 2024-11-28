@@ -467,6 +467,7 @@ typedb_error!(
 typedb_error!(
     pub DatabaseCreateError(component = "Database create", prefix = "DBC") {
         InvalidName(1, "Cannot create database since '{name}' is not a valid database name.", name: String),
+        InternalDatabaseCreationProhibited(2, "Creating an internal database is prohibited"),
     }
 );
 
@@ -476,6 +477,7 @@ typedb_error!(
         InUse(2, "Cannot delete database since it is in use."),
         StorageDelete(3, "Error while deleting storage resources.", ( typedb_source: StorageDeleteError )),
         DirectoryDelete(4, "Error deleting directory.", ( source: Arc<io::Error> )),
+        InternalDatabaseDeletionProhibited(5, "Deleting an internal database is prohibited"),
     }
 );
 
