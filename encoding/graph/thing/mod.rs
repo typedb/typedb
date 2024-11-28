@@ -50,8 +50,7 @@ pub trait ThingVertex<'a>:
     fn build_prefix_type(prefix: Prefix, type_id: TypeID) -> StorageKey<'static, THING_VERTEX_LENGTH_PREFIX_TYPE> {
         debug_assert!(matches!(prefix, Prefix::VertexEntity | Prefix::VertexRelation | Prefix::VertexAttribute));
         let mut array = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE);
-        array[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
-        array[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
+        Self::write_prefix_type(array.as_mut(), prefix, type_id);
         StorageKey::new(Self::KEYSPACE, Bytes::Array(array))
     }
 
