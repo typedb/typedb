@@ -36,6 +36,7 @@ rust_binary(
         "//server",
 
         "@crates//:tokio",
+        "@crates//:clap"
     ],
 )
 

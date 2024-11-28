@@ -38,6 +38,11 @@ features = {}
 		features = []
 		default-features = false
 
+	[dependencies.clap]
+		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
+		version = "4.5.21"
+		default-features = false
+
 	[dependencies.logger]
 		path = "./common/logger"
 		features = []

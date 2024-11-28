@@ -5,16 +5,16 @@
  */
 
 use std::{error::Error, fmt, fs, io, path::PathBuf, sync::Arc};
-
+use tonic::transport::{Certificate, Identity, ServerTlsConfig};
 use database::{database_manager::DatabaseManager, DatabaseOpenError};
 use resource::constants::server::GRPC_CONNECTION_KEEPALIVE;
 use system::{
-    concepts::{Credential, PasswordHash, User},
     initialise_system_database,
 };
 use user::{initialise_default_user, user_manager::UserManager};
 
 use crate::{authenticator::Authenticator, parameters::config::Config, service::typedb_service::TypeDBService};
+use crate::parameters::config::EncryptionConfig;
 
 #[derive(Debug)]
 pub struct Server {
@@ -54,13 +54,30 @@ impl Server {
         let service = typedb_protocol::type_db_server::TypeDbServer::new(self.typedb_service.take().unwrap());
         println!("Ready!");
         let authenticator = Arc::new(Authenticator::new(self.user_manager.clone()));
-        tonic::transport::Server::builder()
-            .http2_keepalive_interval(Some(GRPC_CONNECTION_KEEPALIVE))
+        Self::create_tonic_server(&self.config.server.encryption)
             .layer(tonic::service::interceptor(move |req| authenticator.authenticate(req)))
             .add_service(service)
             .serve(self.config.server.address)
             .await
     }
+
+    fn create_tonic_server(encryption_config: &EncryptionConfig) -> tonic::transport::Server {
+        let mut tonic_server = tonic::transport::Server::builder();
+        if encryption_config.enabled {
+            let cert = fs::read_to_string(encryption_config.cert.clone().unwrap()).unwrap();
+            let cert_key = fs::read_to_string(encryption_config.cert_key.clone().unwrap()).unwrap();
+            let mut tls_config = ServerTlsConfig::new().identity(Identity::from_pem(cert, cert_key));
+            if encryption_config.root_ca.is_some() {
+                let root_ca = fs::read_to_string(encryption_config.root_ca.clone().unwrap()).unwrap();
+                tls_config = tls_config
+                    .client_ca_root(Certificate::from_pem(root_ca))
+                    .client_auth_optional(true)
+            }
+            tonic_server = tonic_server.tls_config(tls_config).unwrap();
+        }
+        tonic_server.http2_keepalive_interval(Some(GRPC_CONNECTION_KEEPALIVE))
+    }
+
     fn create_storage_directory(storage_directory: &PathBuf) -> Result<(), ServerOpenError> {
         fs::create_dir_all(storage_directory).map_err(|error| ServerOpenError::CouldNotCreateDataDirectory {
             path: storage_directory.to_owned(),
