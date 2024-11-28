@@ -28,6 +28,7 @@ use crate::{
         },
     },
 };
+use crate::executable::match_::planner::vertex::CombinedCost;
 
 #[derive(Clone, Debug)]
 pub(crate) enum ConstraintVertex<'a> {
@@ -106,6 +107,25 @@ impl Costed for ConstraintVertex<'_> {
             Self::Owns(inner) => inner.cost(inputs, intersection, graph),
             Self::Relates(inner) => inner.cost(inputs, intersection, graph),
             Self::Plays(inner) => inner.cost(inputs, intersection, graph),
+        }
+    }
+
+    fn cost_and_direction(
+        &self,
+        vertex_ordering: &[VertexId],
+        graph: &Graph<'_>
+    ) -> (CombinedCost, Direction) {
+        match self {
+            Self::TypeList(inner) => inner.cost_and_direction(vertex_ordering, graph),
+
+            Self::Isa(inner) => inner.cost_and_direction(vertex_ordering, graph),
+            Self::Has(inner) => inner.cost_and_direction(vertex_ordering, graph),
+            Self::Links(inner) => inner.cost_and_direction(vertex_ordering, graph),
+
+            Self::Sub(inner) => inner.cost_and_direction(vertex_ordering, graph),
+            Self::Owns(inner) => inner.cost_and_direction(vertex_ordering, graph),
+            Self::Relates(inner) => inner.cost_and_direction(vertex_ordering, graph),
+            Self::Plays(inner) => inner.cost_and_direction(vertex_ordering, graph),
         }
     }
 }
@@ -223,6 +243,13 @@ impl Costed for TypeListPlanner<'_> {
             _: &Graph<'_>
     ) -> ElementCost {
         ElementCost::in_mem_complex_with_branching(self.types.len() as f64)
+    }
+
+    fn cost_and_direction(&self,
+                          vertex_ordering: &[VertexId],
+                          graph: &Graph<'_>
+    ) -> (CombinedCost, Direction) {
+        (CombinedCost::in_mem_complex_with_ratio(self.types.len() as f64), Direction::Canonical)
     }
 }
 
@@ -358,7 +385,7 @@ impl Costed for IsaPlanner<'_> {
             (false, false) => self.expected_output_size(graph, inputs),
         };
 
-        ElementCost { per_input, per_output, branching_factor }
+        ElementCost { per_input, per_output, io_ratio: branching_factor }
     }
 }
 
@@ -503,7 +530,7 @@ impl Costed for HasPlanner<'_> {
             (false, false) => self.expected_output_size(graph, inputs),
         };
 
-        ElementCost { per_input, per_output, branching_factor }
+        ElementCost { per_input, per_output, io_ratio: branching_factor }
     }
 }
 
@@ -680,7 +707,7 @@ impl Costed for LinksPlanner<'_> {
             (false, false) => self.expected_output_size(graph, inputs),
         };
 
-        ElementCost { per_input, per_output, branching_factor }
+        ElementCost { per_input, per_output, io_ratio: branching_factor }
     }
 }
 

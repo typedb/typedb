@@ -17,6 +17,7 @@ use crate::{
         vertex::{Costed, ElementCost, Input},
     },
 };
+use crate::executable::match_::planner::vertex::{CombinedCost, Direction};
 
 #[derive(Clone, Debug)]
 pub(crate) enum VariableVertex {
@@ -150,6 +151,22 @@ impl Costed for VariableVertex {
         //     Self::Value(inner) => inner.cost(inputs, step_sort_variable, graph),
         // }
         ElementCost::MEM_SIMPLE_BRANCH_1
+    }
+
+    fn cost_and_direction(&self,
+                          vertex_ordering: &[VertexId],
+                          graph: &Graph<'_>
+    ) -> (CombinedCost, Direction) {
+        let var_set : Vec<Variable> = vertex_ordering
+            .iter()
+            .map(|id| graph.elements().get(id).unwrap().as_variable().unwrap().variable())
+            .collect();
+        let total_size = if var_set.contains(&self.variable()) {
+            self.expected_output_size(vertex_ordering)
+        } else {
+            1.0
+        };
+        (CombinedCost::in_mem_simple_with_ratio(total_size), Direction::Canonical)
     }
 }
 
@@ -484,9 +501,9 @@ impl Costed for ValuePlanner {
             _: &Graph<'_>
     ) -> ElementCost {
         if inputs.is_empty() {
-            ElementCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
+            ElementCost { per_input: 0.0, per_output: 0.0, io_ratio: 1.0 }
         } else {
-            ElementCost { per_input: f64::INFINITY, per_output: 0.0, branching_factor: f64::INFINITY }
+            ElementCost { per_input: f64::INFINITY, per_output: 0.0, io_ratio: f64::INFINITY }
         }
     }
 }

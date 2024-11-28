@@ -59,6 +59,7 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
+use crate::executable::match_::planner::vertex::CombinedCost;
 
 pub(crate) fn plan_conjunction<'a>(
     conjunction: &'a Conjunction,
@@ -472,12 +473,14 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             })
             .collect();
         // TODO: Use the real cost when we have function planning
-        let element_cost = ElementCost { per_input: 1.0, per_output: 1.0, branching_factor: 1.0 };
+        let element_cost = ElementCost { per_input: 1.0, per_output: 1.0, io_ratio: 1.0 };
+        let combined_cost = CombinedCost { cost: 1.0, io_ratio: 1.0 };
         self.graph.push_function_call(FunctionCallPlanner::from_constraint(
             call_binding,
             arguments,
             return_vars,
             element_cost,
+            combined_cost
         ));
     }
 
@@ -664,7 +667,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     ) -> f64 {
         assert!(!vertex_plan.contains(&next));
         let planner_vertex = &self.graph.elements[&next];
-        let ElementCost { per_input, per_output, branching_factor } =
+        let ElementCost { per_input, per_output, io_ratio: branching_factor } =
             planner_vertex.cost(vertex_plan, sort_variable, step_start_index, &self.graph);
         per_input + branching_factor * per_output
     }
@@ -696,6 +699,9 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     // (When a step has multiple pattern, the first such produced variable is always the join variable)
     // We record directionality information for each pattern in the plan, indicating which prefix index to use for pattern retrieval
 
+    // TODO: add inputs to new plan
+    // TODO: complete beam
+
     fn select_k_cheapest<T: Ord>(iter: impl Iterator<Item = T>, k: usize) -> Vec<T> {
         let mut heap = BinaryHeap::new();
         for item in iter {
@@ -717,138 +723,281 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let search_depth : usize = all_patterns.len();
         let beam_width = BEAM_WIDTH;
         let extension_width = EXTENSION_WIDTH;
-        let mut best_partial_plans = vec![PartialCostPlan::new(all_patterns)];
+        let mut best_partial_plans = vec![PartialCostPlan::new(
+            all_patterns,
+            self.input_variables()
+        )];
 
         for _ in 0..search_depth {
             let mut new_plans : Vec<PartialCostPlan> = Vec::new();
             for plan in best_partial_plans.iter() {
-                let k_best_extensions : Vec<WeightedStepExtension> = Self::select_k_cheapest(
-                    plan.find_extensions(&self.graph),
+                let best_extensions : Vec<CostedStepExtension> = Self::select_k_cheapest(
+                    plan.get_costed_extensions(&self.graph),
                     extension_width
                 );
+                for CostedStepExtension(_, extension) in best_extensions {
+                    if extension.step_join_var.is_some()
+                        && (plan.ongoing_step_join_var.is_none()
+                            || plan.ongoing_step_join_var == extension.step_join_var) {
+                        new_plans.push(plan.clone_and_extend_with_continued_step(extension, &self.graph));
+                    } else {
+                        new_plans.push(plan.clone_and_extend_with_new_step(extension, &self.graph));
+                    }
+                }
             }
+            best_partial_plans = Self::select_k_cheapest(
+                new_plans.into_iter(),
+                beam_width
+            );
         }
-        todo!()
+        let best_plan = best_partial_plans.into_iter().min_by(
+            |a, b| a.cumulative_cost.cost.partial_cmp(&b.cumulative_cost.cost).unwrap_or(Ordering::Equal)
+        ).unwrap();
+        best_plan.into_complete_plan()
     }
 }
 
 #[derive(Clone, PartialEq)]
 pub(super) struct CompleteCostPlan {
-    vertex_ordering: Vec<VertexId>,
+    vertex_ordering: Vec<VertexId>, // TODO: should be a Vec<Vec<VertexId>>
     pattern_directions: HashMap<PatternVertexId, Direction>,
-    cumulative_cost: Vec<f64>,
-    io_ratio: f64,
+    cumulative_cost: CombinedCost,
 }
 
 #[derive(Clone, PartialEq)]
 pub(super) struct PartialCostPlan {
-    vertex_ordering: Vec<VertexId>,
-    pattern_directions: HashMap<PatternVertexId, Direction>,
-    cumulative_cost: Vec<f64>,
-    io_ratio: f64,
+    vertex_ordering: Vec<VertexId>, // TODO: Could be a linked list? (add all "produced_vars" field)
+    pattern_directions: HashMap<PatternVertexId, Direction>, // TODO: same?
+    cumulative_cost: CombinedCost,
     remaining_patterns: HashSet<PatternVertexId>,
-    ongoing_step_cost: f64,
-    ongoing_step_io_ratio: f64,
+    ongoing_step_cost: CombinedCost,
     ongoing_step_produced_vars: HashSet<VariableVertexId>,
     ongoing_step_join_var: Option<VariableVertexId>,
+}
+
+impl PartialCostPlan {
+    fn new(
+        remaining_patterns : HashSet<PatternVertexId>,
+        inputs: impl Iterator<Item=VariableVertexId> + Sized
+    ) -> Self {
+        let mut vertex_ordering = Vec::new();
+        for v in inputs {
+            vertex_ordering.push(VertexId::Variable(v));
+        }
+        Self {
+            vertex_ordering: Vec::new(),
+            pattern_directions: HashMap::new(),
+            cumulative_cost: CombinedCost::NOOP,
+            remaining_patterns,
+            ongoing_step_cost: CombinedCost::NOOP,
+            ongoing_step_produced_vars: HashSet::new(),
+            ongoing_step_join_var: None,
+        }
+    }
+
+    fn get_costed_extensions<'a>(&'a self, graph: &'a Graph<'a>) -> impl Iterator<Item=CostedStepExtension> + '_ {
+        self.remaining_patterns
+            .iter()
+            .filter(|&&extending_pattern|
+                graph.elements[&VertexId::Pattern(extending_pattern)]
+                .is_valid(&self.vertex_ordering, graph)
+            ).map(move |&extending_pattern| {
+                let (extended_step_cost,
+                    extended_pattern_direction,
+                    extended_join_var)
+                    = self.compute_extension_cost(
+                    graph,
+                    extending_pattern
+                );
+                let completion_cost = self.cumulative_cost
+                    .chain(extended_step_cost)
+                    .chain(self.heuristic_plan_completion_cost(graph, extending_pattern));
+                CostedStepExtension(
+                    completion_cost.cost,
+                    StepExtension {
+                        pattern_extension: extending_pattern,
+                        pattern_direction: extended_pattern_direction,
+                        step_cost: extended_step_cost,
+                        step_join_var: extended_join_var,
+                    }
+                )
+            }
+        )
+    }
+
+    fn compute_extension_cost(
+        &self,
+        graph: &Graph<'_>,
+        pattern: PatternVertexId,
+    ) -> (CombinedCost, Direction, Option<VariableVertexId>) {
+        let mut updated_join_var: Option<VariableVertexId> = None;
+        let planner = &graph.elements[&VertexId::Pattern(pattern)];
+        let (updated_cost, updated_pattern_direction) = match planner {
+            PlannerVertex::Constraint(constraint) => {
+                let mut get_join_cost = false;
+
+                // There are two cases where we can get the join cost:
+                if let Ok(candidate_join_var) = constraint.variables()
+                        .filter(|var| self.ongoing_step_produced_vars.contains(var))
+                        .exactly_one() {
+                    if self.ongoing_step_join_var.is_none() {
+                        updated_join_var = Some(candidate_join_var);
+                        get_join_cost = true;
+                    } else if self.ongoing_step_join_var == Some(candidate_join_var) {
+                        updated_join_var = self.ongoing_step_join_var;
+                        get_join_cost = true;
+                    }
+                }
+
+                if get_join_cost {
+                    let total_join_size = graph.elements[&VertexId::Variable(updated_join_var.unwrap())]
+                        .as_variable().unwrap().expected_output_size(&self.vertex_ordering);
+                    let ( constraint_cost, constraint_direction) = constraint.cost_and_direction(
+                        &self.vertex_ordering,
+                        graph,
+                    );
+                    (self.cumulative_cost.join(constraint_cost, total_join_size), constraint_direction)
+                } else {
+                    constraint.cost_and_direction(&self.vertex_ordering, graph)
+                }
+            }
+            planner_vertex=> planner_vertex.cost_and_direction(&self.vertex_ordering, graph),
+        };
+        (updated_cost, updated_pattern_direction, updated_join_var)
+    }
+
+    fn heuristic_plan_completion_cost(
+        &self,
+        graph: &Graph<'_>,
+        pattern: PatternVertexId,
+    ) -> CombinedCost {
+        CombinedCost::NOOP
+    }
+
+    fn clone_and_extend_with_continued_step(
+        &self,
+        extension : StepExtension,
+        graph: &Graph<'_>
+    ) -> PartialCostPlan {
+        let mut new_vertex_ordering = self.vertex_ordering.clone();
+        new_vertex_ordering.push(VertexId::Pattern(extension.pattern_extension));
+
+        let mut new_pattern_directions = self.pattern_directions.clone();
+        new_pattern_directions.insert(extension.pattern_extension, extension.pattern_direction);
+
+        let mut new_remaining_patterns = self.remaining_patterns.clone();
+        new_remaining_patterns.remove(&extension.pattern_extension);
+        
+        let mut new_produced_vars = self.ongoing_step_produced_vars.clone();
+        new_produced_vars.extend(
+            graph.pattern_to_variable[&extension.pattern_extension]
+                .iter()
+                .copied()
+                .filter(|&var| !self.vertex_ordering.contains(&VertexId::Variable(var)))
+        );
+
+        PartialCostPlan {
+            vertex_ordering: new_vertex_ordering,
+            pattern_directions: new_pattern_directions,
+            remaining_patterns: self.remaining_patterns.clone(),
+            cumulative_cost: self.cumulative_cost,
+            ongoing_step_cost: extension.step_cost,
+            ongoing_step_produced_vars: new_produced_vars,
+            ongoing_step_join_var: extension.step_join_var,
+        }
+    }
+
+    fn clone_and_extend_with_new_step(
+        &self,
+        extension : StepExtension,
+        graph: &Graph<'_>
+    ) -> PartialCostPlan {
+        let mut new_vertex_ordering = self.vertex_ordering.clone();
+        if let Some(var) = self.ongoing_step_join_var.clone() {
+            new_vertex_ordering.push(VertexId::Variable(var));
+        }
+        for var in self.ongoing_step_produced_vars.clone() {
+            new_vertex_ordering.push(VertexId::Variable(var));
+        }
+        // Start new step
+        new_vertex_ordering.push(VertexId::Pattern(extension.pattern_extension));
+
+        let mut new_pattern_directions = self.pattern_directions.clone();
+        new_pattern_directions.insert(extension.pattern_extension, extension.pattern_direction);
+
+        let mut new_remaining_patterns = self.remaining_patterns.clone();
+        new_remaining_patterns.remove(&extension.pattern_extension);
+
+        let mut new_produced_vars = HashSet::new();
+        new_produced_vars.extend(
+            graph.pattern_to_variable[&extension.pattern_extension]
+                .iter()
+                .copied()
+                .filter(|&var| !self.vertex_ordering.contains(&VertexId::Variable(var)))
+        );
+
+        PartialCostPlan {
+            vertex_ordering: new_vertex_ordering,
+            pattern_directions: new_pattern_directions,
+            remaining_patterns: new_remaining_patterns,
+            cumulative_cost: self.cumulative_cost.chain(self.ongoing_step_cost),
+            ongoing_step_cost: extension.step_cost,
+            ongoing_step_produced_vars: new_produced_vars,
+            ongoing_step_join_var: extension.step_join_var,
+        }
+    }
+
+    fn into_complete_plan(&self) -> CompleteCostPlan {
+        let mut complete_vertex_ordering = self.vertex_ordering.clone();
+        if let Some(var) = self.ongoing_step_join_var.clone() {
+            complete_vertex_ordering.push(VertexId::Variable(var));
+        }
+        for var in self.ongoing_step_produced_vars.clone() {
+            complete_vertex_ordering.push(VertexId::Variable(var));
+        }
+
+        CompleteCostPlan {
+            vertex_ordering: complete_vertex_ordering,
+            pattern_directions: self.pattern_directions.clone(),
+            cumulative_cost: self.cumulative_cost.chain(self.ongoing_step_cost),
+        }
+    }
 }
 
 impl Eq for PartialCostPlan {}
 
 impl PartialOrd for PartialCostPlan {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.cumulative_cost.last().partial_cmp(&other.cumulative_cost.last())
+        self.cumulative_cost.cost.partial_cmp(&other.cumulative_cost.cost)
     }
 }
 
 impl Ord for PartialCostPlan {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.cumulative_cost.last().partial_cmp(&other.cumulative_cost.last()).unwrap_or(Ordering::Greater)
+        self.cumulative_cost.cost.partial_cmp(&other.cumulative_cost.cost).unwrap_or(Ordering::Greater)
     }
-}
-
-impl PartialCostPlan {
-    fn new(remaining_patterns : HashSet<PatternVertexId>) -> Self {
-        Self {
-            vertex_ordering: Vec::new(),
-            pattern_directions: HashMap::new(),
-            cumulative_cost: Vec::new(),
-            io_ratio: 1.0,
-            remaining_patterns,
-            ongoing_step_cost: 0.0,
-            ongoing_step_io_ratio: 1.0,
-            ongoing_step_produced_vars: HashSet::new(),
-            ongoing_step_join_var: None,
-        }
-    }
-
-    fn find_extensions(&self, graph: &Graph<'_>) -> impl Iterator<Item = WeightedStepExtension> + '_ {
-        self.remaining_patterns
-            .iter()
-            .map(move |&pattern| {
-                let (updated_step_cost,
-                    updated_step_io_ratio,
-                    updated_pattern_direction,
-                    updated_join_var)
-                    = added_pattern_cost_and_direction(
-                    &self.vertex_ordering,
-                    pattern,
-                    self.ongoing_step_cost,
-                    self.ongoing_step_io_ratio,
-                    self.ongoing_step_join_var);
-                let updated_plan_io_ratio = self.io_ratio * updated_step_io_ratio;
-                let heuristic_remaining_cost = updated_plan_io_ratio * remaining_cost_estimate(&self.vertex_ordering, pattern);
-                let updated_total_cost = self.cumulative_cost.last().unwrap()
-                    + updated_step_cost
-                    + heuristic_remaining_cost;
-                WeightedStepExtension(
-                    updated_total_cost,
-                    StepExtension {
-                        pattern_extension: pattern,
-                        pattern_direction: updated_pattern_direction,
-                        step_cost: updated_step_cost,
-                        step_io_ratio: updated_step_io_ratio,
-                        step_join_var: updated_join_var,
-                    })
-            })
-    }
-}
-
-fn remaining_cost_estimate(p0: &Vec<VertexId>, p1: PatternVertexId) -> f64 {
-    todo!()
-}
-
-fn added_pattern_cost_and_direction(
-    p0: &Vec<VertexId>,
-    p1: PatternVertexId,
-    p2: f64,
-    p3: f64,
-    p4: Option<VariableVertexId>
-) -> (f64, f64, Direction, Option<VariableVertexId>) {
-    todo!()
 }
 
 #[derive(Clone, PartialEq)]
 pub(super) struct StepExtension {
     pattern_extension: PatternVertexId,
     pattern_direction: Direction,
-    step_cost: f64,
-    step_io_ratio: f64,
+    step_cost: CombinedCost,
     step_join_var: Option<VariableVertexId>,
 }
 
 #[derive(PartialEq)]
-pub(super) struct WeightedStepExtension(f64, StepExtension);
+pub(super) struct CostedStepExtension(f64, StepExtension);
 
-impl Eq for WeightedStepExtension {}
+impl Eq for CostedStepExtension {}
 
-impl PartialOrd for WeightedStepExtension {
+impl PartialOrd for CostedStepExtension {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.0.partial_cmp(&other.0)
     }
 }
 
-impl Ord for WeightedStepExtension {
+impl Ord for CostedStepExtension {
     fn cmp(&self, other: &Self) -> Ordering {
         self.0.partial_cmp(&other.0).unwrap_or(Ordering::Greater)
     }
@@ -1377,6 +1526,10 @@ impl ConjunctionPlan<'_> {
 
     pub(super) fn cost(&self) -> ElementCost {
         self.cost
+    }
+
+    pub(super) fn combined_cost(&self) -> CombinedCost {
+        todo!()
     }
 
     pub(super) fn shared_variables(&self) -> &[Variable] {
