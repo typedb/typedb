@@ -85,10 +85,7 @@ impl TypeReader {
         name_with_colon.push(':');
         let key = LabelToTypeVertexIndex::build(&Label::build(name_with_colon.as_str())).into_storage_key();
         let vec = snapshot
-            .iterate_range(&KeyRange::new_within(
-                key,
-                IdentifierIndex::<TypeVertex<'static>>::FIXED_WIDTH_ENCODING,
-            ))
+            .iterate_range(&KeyRange::new_within(key, IdentifierIndex::<TypeVertex<'static>>::FIXED_WIDTH_ENCODING))
             .collect_cloned_vec(|_key, value| match RoleType::from_bytes(Bytes::copy(value.bytes())) {
                 Err(_) => None,
                 Ok(role_type) => Some(role_type),
@@ -186,10 +183,7 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
     ) -> Result<Vec<EntityType<'static>>, Box<ConceptReadError>> {
         snapshot
-            .iterate_range(&KeyRange::new_within(
-                EntityType::prefix_for_kind(),
-                EntityType::PREFIX.fixed_width_keys(),
-            ))
+            .iterate_range(&KeyRange::new_within(EntityType::prefix_for_kind(), EntityType::PREFIX.fixed_width_keys()))
             .collect_cloned_vec(|key, _| EntityType::new(TypeVertex::new(Bytes::copy(key.bytes()))))
             .map_err(|error| Box::new(ConceptReadError::SnapshotIterate { source: error }))
     }
@@ -219,10 +213,7 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
     ) -> Result<Vec<RoleType<'static>>, Box<ConceptReadError>> {
         snapshot
-            .iterate_range(&KeyRange::new_within(
-                RoleType::prefix_for_kind(),
-                RoleType::PREFIX.fixed_width_keys(),
-            ))
+            .iterate_range(&KeyRange::new_within(RoleType::prefix_for_kind(), RoleType::PREFIX.fixed_width_keys()))
             .collect_cloned_vec(|key, _| RoleType::new(TypeVertex::new(Bytes::copy(key.bytes()))))
             .map_err(|error| Box::new(ConceptReadError::SnapshotIterate { source: error }))
     }

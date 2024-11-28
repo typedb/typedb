@@ -211,12 +211,12 @@ impl WriteBuffer {
         };
         let start_as_bound = Self::range_start_as_bound(range_start);
         let start_bytes = start_as_bound.as_ref().map(|bytes| bytes.as_ref());
-        self.writes
-            .range::<[u8], _>((start_bytes, end))
-            .any(|(_, write)| !write.is_delete())
+        self.writes.range::<[u8], _>((start_bytes, end)).any(|(_, write)| !write.is_delete())
     }
 
-    fn range_start_as_bound<const INLINE: usize>(range_start: RangeStart<Bytes<'_, INLINE>>) -> Bound<Bytes<'_, INLINE>> {
+    fn range_start_as_bound<const INLINE: usize>(
+        range_start: RangeStart<Bytes<'_, INLINE>>,
+    ) -> Bound<Bytes<'_, INLINE>> {
         match range_start {
             RangeStart::Inclusive(bytes) => Bound::Included(bytes),
             RangeStart::ExcludeFirstWithPrefix(bytes) => Bound::Excluded(bytes),

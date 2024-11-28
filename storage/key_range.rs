@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt::Debug};
+use std::fmt::Debug;
 
 use primitive::prefix::Prefix;
 
@@ -20,7 +20,7 @@ impl<T: Prefix> KeyRange<T> {
     pub fn new(start: RangeStart<T>, end: RangeEnd<T>, fixed_width_keys: bool) -> Self {
         Self { start, end, fixed_width_keys }
     }
-    
+
     pub fn new_variable_width(start: RangeStart<T>, end: RangeEnd<T>) -> Self {
         Self { start, end, fixed_width_keys: false }
     }
@@ -82,7 +82,6 @@ impl<T> RangeStart<T>
 where
     T: Ord + Debug,
 {
-
     pub fn map<'a: 'b, 'b, U: Ord + Debug + 'b>(&'a self, mapper: impl FnOnce(&'a T) -> U) -> RangeStart<U> {
         match self {
             Self::Inclusive(end) => RangeStart::Inclusive(mapper(end)),
@@ -96,7 +95,7 @@ where
             Self::Inclusive(value) | Self::ExcludeFirstWithPrefix(value) | Self::ExcludePrefix(value) => value,
         }
     }
-    // 
+    //
     // pub fn as_bound(&self) -> Bound<&T> {
     //     match self {
     //         RangeStart::Inclusive(start) => Bound::Included(start),
@@ -106,12 +105,13 @@ where
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RangeEnd<T> where
+pub enum RangeEnd<T>
+where
     T: Ord + Debug,
 {
     // WARNING: only to be used with RangeStart::Inclusive
     WithinStartAsPrefix,
-    
+
     EndPrefixInclusive(T),
     EndPrefixExclusive(T),
     Unbounded,
@@ -121,7 +121,7 @@ impl<T> RangeEnd<T>
 where
     T: Ord + Debug,
 {
-    pub fn map<'a: 'b, 'b, U: Ord + Debug + 'b >(&'a self, mapper: impl FnOnce(&'a T) -> U) -> RangeEnd<U> {
+    pub fn map<'a: 'b, 'b, U: Ord + Debug + 'b>(&'a self, mapper: impl FnOnce(&'a T) -> U) -> RangeEnd<U> {
         match self {
             RangeEnd::WithinStartAsPrefix => RangeEnd::WithinStartAsPrefix,
             RangeEnd::EndPrefixInclusive(end) => RangeEnd::EndPrefixInclusive(mapper(end)),

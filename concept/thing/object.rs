@@ -7,8 +7,8 @@
 use std::{
     collections::{BTreeMap, HashMap},
     fmt,
+    ops::{Bound, RangeBounds},
 };
-use std::ops::{Bound, RangeBounds};
 
 use bytes::{byte_reference::ByteReference, Bytes};
 use encoding::{
@@ -26,7 +26,6 @@ use storage::{
     key_value::StorageKey,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
-use storage::key_range::KeyRange;
 
 use crate::{
     edge_iterator,
@@ -197,9 +196,9 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         thing_manager: &'m ThingManager,
     ) -> HasIterator {
         self.get_has_types_range_unordered(
-            snapshot, 
-            thing_manager, 
-            &(Bound::<AttributeType<'b>>::Unbounded, Bound::Unbounded)
+            snapshot,
+            thing_manager,
+            &(Bound::<AttributeType<'b>>::Unbounded, Bound::Unbounded),
         )
     }
 
@@ -208,7 +207,10 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
         attribute_type_range: &'this impl RangeBounds<AttributeType<'b>>,
-    ) -> HasIterator where 'a: 'this {
+    ) -> HasIterator
+    where
+        'a: 'this,
+    {
         thing_manager.get_has_from_thing_unordered(snapshot, self, attribute_type_range)
     }
 

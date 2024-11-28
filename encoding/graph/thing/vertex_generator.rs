@@ -11,7 +11,7 @@ use std::sync::{
 
 use bytes::{byte_array::ByteArray, Bytes};
 use storage::{
-    key_range::{KeyRange, RangeStart},
+    key_range::KeyRange,
     key_value::StorageKey,
     snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot, WritableSnapshot},
     MVCCKey, MVCCStorage,

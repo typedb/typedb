@@ -248,14 +248,18 @@ impl AttributeID {
             ValueTypeCategory::DateTime => (DateTimeAttributeID::write(value.encode_date_time(), bytes), true),
             ValueTypeCategory::DateTimeTZ => (DateTimeTZAttributeID::write(value.encode_date_time_tz(), bytes), true),
             ValueTypeCategory::Duration => (DurationAttributeID::write(value.encode_duration(), bytes), true),
-            ValueTypeCategory::String => {
-                (StringAttributeID::write_deterministic_prefix(value.encode_string::<64>(), large_value_hasher, bytes), false)
-            }
-            ValueTypeCategory::Struct => (StructAttributeID::write_hashed_id_deterministic_prefix(
-                value.encode_struct::<64>(),
-                large_value_hasher,
-                bytes,
-            ), false),
+            ValueTypeCategory::String => (
+                StringAttributeID::write_deterministic_prefix(value.encode_string::<64>(), large_value_hasher, bytes),
+                false,
+            ),
+            ValueTypeCategory::Struct => (
+                StructAttributeID::write_hashed_id_deterministic_prefix(
+                    value.encode_struct::<64>(),
+                    large_value_hasher,
+                    bytes,
+                ),
+                false,
+            ),
         }
     }
 

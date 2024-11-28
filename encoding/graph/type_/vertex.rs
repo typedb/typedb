@@ -114,11 +114,11 @@ impl TypeID {
     pub fn bytes(&self) -> [u8; TypeID::LENGTH] {
         self.bytes
     }
-    
+
     pub fn next_type_id(&self) -> Option<Self> {
         self.as_u16().checked_add(1).map(|next| Self::build(next))
     }
-    
+
     pub fn prev_type_id(&self) -> Option<Self> {
         self.as_u16().checked_sub(1).map(|next| Self::build(next))
     }

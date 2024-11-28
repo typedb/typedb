@@ -8,9 +8,9 @@ use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet, HashMap},
     fmt,
+    ops::Bound,
     sync::Arc,
 };
-use std::ops::Bound;
 
 use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::{executable::match_::instructions::thing::HasInstruction, ExecutorVariable};
@@ -21,9 +21,8 @@ use concept::{
         object::{HasIterator, Object, ObjectAPI},
         thing_manager::ThingManager,
     },
+    type_::{attribute_type::AttributeType, object_type::ObjectType},
 };
-use concept::type_::attribute_type::AttributeType;
-use concept::type_::object_type::ObjectType;
 use lending_iterator::{
     adaptors::{Map, TryFilter},
     kmerge::KMergeBy,
@@ -31,14 +30,12 @@ use lending_iterator::{
 };
 use primitive::Bounds;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
-use storage::{
-    key_range::{KeyRange, RangeEnd, RangeStart},
-    snapshot::ReadableSnapshot,
-};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
+        min_max_types,
         tuple::{
             has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, HasToTupleFn, Tuple, TuplePositions,
             TupleResult,
@@ -48,7 +45,6 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::min_max_types;
 
 pub(crate) struct HasExecutor {
     has: ir::pattern::constraint::Has<ExecutorVariable>,
@@ -179,7 +175,7 @@ impl HasExecutor {
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
                 // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
-                
+
                 // TODO: in the HasReverse case, we look up N iterators (one per type) and link them - here we scan and post-filter
                 //        we should determine which strategy we want long-term
                 let as_tuples: HasUnboundedSortedOwner = thing_manager
@@ -242,16 +238,12 @@ impl HasExecutor {
                 debug_assert!(row.len() > owner.as_usize());
                 // TODO: inject value ranges
                 let iterator = match row.get(owner) {
-                    VariableValue::Thing(Thing::Entity(entity)) => entity.get_has_types_range_unordered(
-                        snapshot,
-                        thing_manager,
-                        &self.attribute_type_range,
-                    ),
-                    VariableValue::Thing(Thing::Relation(relation)) => relation.get_has_types_range_unordered(
-                        snapshot,
-                        thing_manager,
-                        &self.attribute_type_range,
-                    ),
+                    VariableValue::Thing(Thing::Entity(entity)) => {
+                        entity.get_has_types_range_unordered(snapshot, thing_manager, &self.attribute_type_range)
+                    }
+                    VariableValue::Thing(Thing::Relation(relation)) => {
+                        relation.get_has_types_range_unordered(snapshot, thing_manager, &self.attribute_type_range)
+                    }
                     _ => unreachable!("Has owner must be an entity or relation."),
                 };
                 let as_tuples: HasBoundedSortedAttribute = iterator

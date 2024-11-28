@@ -10,6 +10,5 @@ pub mod either;
 pub mod maybe_owns;
 pub mod prefix;
 
-
 // a type that implements RangeBounds<T>
 pub type Bounds<T> = (Bound<T>, Bound<T>);

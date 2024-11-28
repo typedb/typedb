@@ -4,9 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, marker::PhantomData, sync::Arc};
-use std::ops::Bound;
-use itertools::{Itertools, MinMaxResult};
+use std::{collections::HashMap, marker::PhantomData, ops::Bound, sync::Arc};
 
 use answer::{variable::Variable, variable_value::VariableValue, Concept, Thing};
 use compiler::{
@@ -31,8 +29,8 @@ use concept::{
 use encoding::value::label::Label;
 use error::typedb_error;
 use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
+use itertools::{Itertools, MinMaxResult};
 use lending_iterator::LendingIterator;
-use storage::key_range::{KeyRange, RangeEnd, RangeStart};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{

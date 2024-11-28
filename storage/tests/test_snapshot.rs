@@ -175,10 +175,7 @@ fn snapshot_read_buffered_delete_of_persisted_key() {
             2,
             snapshot
                 .iterate_range(&KeyRange::new_within(
-                    StorageKey::Array(StorageKeyArray::new(
-                        Keyspace,
-                        ByteArray::inline([0x0], 1)
-                    )),
+                    StorageKey::Array(StorageKeyArray::new(Keyspace, ByteArray::inline([0x0], 1))),
                     false
                 ))
                 .count()
@@ -189,10 +186,7 @@ fn snapshot_read_buffered_delete_of_persisted_key() {
             1,
             snapshot
                 .iterate_range(&KeyRange::new_within(
-                    StorageKey::Array(StorageKeyArray::new(
-                        Keyspace,
-                        ByteArray::inline([0x0], 1)
-                    )),
+                    StorageKey::Array(StorageKeyArray::new(Keyspace, ByteArray::inline([0x0], 1))),
                     false
                 ))
                 .count()

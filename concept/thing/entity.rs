@@ -5,7 +5,6 @@
  */
 
 use std::fmt;
-use std::ops::{Bound, RangeBounds};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{

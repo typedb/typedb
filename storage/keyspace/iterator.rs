@@ -11,10 +11,9 @@ use lending_iterator::{LendingIterator, Seekable};
 use rocksdb::DB;
 
 use crate::{
-    key_range::{KeyRange, RangeEnd},
+    key_range::{KeyRange, RangeEnd, RangeStart},
     keyspace::{raw_iterator, raw_iterator::DBIterator, Keyspace, KeyspaceError},
 };
-use crate::key_range::RangeStart;
 
 pub struct KeyspaceRangeIterator {
     iterator: DBIterator,

@@ -54,7 +54,7 @@ pub trait ThingVertex<'a>:
         array[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         StorageKey::new(Self::KEYSPACE, Bytes::Array(array))
     }
-    
+
     fn write_prefix_type(bytes: &mut [u8], prefix: Prefix, type_id: TypeID) -> usize {
         debug_assert!(bytes.len() >= THING_VERTEX_LENGTH_PREFIX_TYPE);
         bytes[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());

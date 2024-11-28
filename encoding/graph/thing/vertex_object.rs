@@ -8,14 +8,11 @@ use std::{fmt, mem, ops::Range};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::HexBytesFormatter, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::{
-    key_value::{StorageKey, StorageKeyReference},
-    keyspace::KeyspaceSet,
-};
+use storage::{key_value::StorageKeyReference, keyspace::KeyspaceSet};
 
 use crate::{
     graph::{
-        thing::{ThingVertex, THING_VERTEX_LENGTH_PREFIX_TYPE},
+        thing::ThingVertex,
         type_::vertex::{TypeID, TypeVertex},
         Typed,
     },
@@ -73,14 +70,11 @@ impl<'a> ObjectVertex<'a> {
             && storage_key.bytes()[Self::RANGE_PREFIX] == Prefix::VertexRelation.prefix_id().bytes
     }
 
-    pub(crate) fn write_prefix_from_type_vertex(
-        bytes: &mut [u8],
-        type_vertex: TypeVertex<'_>,
-    ) -> usize {
+    pub(crate) fn write_prefix_from_type_vertex(bytes: &mut [u8], type_vertex: TypeVertex<'_>) -> usize {
         Self::write_prefix_type(bytes, Self::prefix_for_type(type_vertex.prefix()), type_vertex.type_id_())
     }
 
-    pub(crate) const fn prefix_for_type( prefix: Prefix ) -> Prefix {
+    pub(crate) const fn prefix_for_type(prefix: Prefix) -> Prefix {
         match prefix {
             Prefix::VertexEntityType => Prefix::VertexEntity,
             Prefix::VertexRelationType => Prefix::VertexRelation,

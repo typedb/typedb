@@ -857,7 +857,6 @@ fn get_vertex_value<'a>(
     }
 }
 
-
 fn min_max_types<'a>(types: impl IntoIterator<Item = &'a Type>) -> (Type, Type) {
     match types.into_iter().minmax() {
         MinMaxResult::NoElements => unreachable!("Empty type iterator"),

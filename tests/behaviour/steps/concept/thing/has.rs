@@ -225,7 +225,8 @@ async fn object_get_has_is_empty(
         object
             .get_has_unordered(tx.snapshot.as_ref(), &tx.thing_manager)
             .map_static(|res| {
-                let (attribute, _count) = res.unwrap();
+                let (has, _count) = res.unwrap();
+                let attribute = has.attribute();
                 attribute.into_owned()
             })
             .collect::<Vec<_>>()
@@ -250,7 +251,8 @@ async fn object_get_has(
         object
             .get_has_unordered(tx.snapshot.as_ref(), &tx.thing_manager)
             .map_static(|res| {
-                let (attribute, _count) = res.unwrap();
+                let (has, _count) = res.unwrap();
+                let attribute = has.attribute();
                 attribute.into_owned()
             })
             .collect::<Vec<_>>()

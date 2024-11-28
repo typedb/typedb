@@ -17,30 +17,26 @@ use compiler::{executable::match_::instructions::thing::HasReverseInstruction, E
 use concept::{
     error::ConceptReadError,
     thing::{attribute::Attribute, has::Has, object::HasReverseIterator, thing_manager::ThingManager},
-    type_::attribute_type::AttributeType,
+    type_::{attribute_type::AttributeType, object_type::ObjectType},
 };
 use encoding::value::value::Value;
-use itertools::{Itertools, MinMaxResult};
-use concept::type_::object_type::ObjectType;
+use itertools::Itertools;
 use lending_iterator::{adaptors::Flatten, kmerge::KMergeBy, AsHkt, AsLendingIterator, LendingIterator, Peekable};
 use primitive::Bounds;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
-use storage::{
-    key_range::{KeyRange, RangeEnd, RangeStart},
-    snapshot::ReadableSnapshot,
-};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
         has_executor::{HasFilterFn, HasOrderingFn, HasTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
         iterator::{SortedTupleIterator, TupleIterator},
+        min_max_types,
         tuple::{has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, Tuple, TuplePositions},
         BinaryIterateMode, Checker, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::min_max_types;
 
 pub(crate) struct HasReverseExecutor {
     has: ir::pattern::constraint::Has<ExecutorVariable>,
@@ -85,25 +81,24 @@ impl HasReverseExecutor {
         let owner = has.owner().as_variable().unwrap();
         let attribute = has.attribute().as_variable().unwrap();
 
-        let attribute_owner_types_range: BTreeMap<AttributeType<'static>, Bounds<ObjectType<'static>>> = attribute_owner_types
-            .iter()
-            .map(|(type_, owner_types)| {
-                let (min_owner_type, max_owner_type) = min_max_types(&*owner_types);
-                (
-                    type_.as_attribute_type(),
+        let attribute_owner_types_range: BTreeMap<AttributeType<'static>, Bounds<ObjectType<'static>>> =
+            attribute_owner_types
+                .iter()
+                .map(|(type_, owner_types)| {
+                    let (min_owner_type, max_owner_type) = min_max_types(&*owner_types);
                     (
-                        Bound::Included(min_owner_type.as_object_type()),
-                        Bound::Included(max_owner_type.as_object_type()),
+                        type_.as_attribute_type(),
+                        (
+                            Bound::Included(min_owner_type.as_object_type()),
+                            Bound::Included(max_owner_type.as_object_type()),
+                        ),
                     )
-                )
-            })
-            .collect();
+                })
+                .collect();
 
         let (min_owner_type, max_owner_type) = min_max_types(&*owner_types);
-        let owner_type_range = (
-            Bound::Included(min_owner_type.as_object_type()),
-            Bound::Included(max_owner_type.as_object_type()),
-        );
+        let owner_type_range =
+            (Bound::Included(min_owner_type.as_object_type()), Bound::Included(max_owner_type.as_object_type()));
 
         let output_tuple_positions = match iterate_mode {
             BinaryIterateMode::Unbound => TuplePositions::Pair([Some(attribute), Some(owner)]),
@@ -171,14 +166,10 @@ impl HasReverseExecutor {
                     Some(row.as_reference()),
                     self.has.attribute().as_variable().unwrap(),
                 )?;
-                let as_tuples: HasTupleIterator<MultipleTypeHasReverseIterator> = Self::all_has_reverse_chained(
-                    snapshot,
-                    thing_manager,
-                    &self.attribute_owner_types_range,
-                    range,
-                )?
-                    .try_filter::<_, HasFilterFn, (Has<'_>, _), _>(filter_for_row)
-                    .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
+                let as_tuples: HasTupleIterator<MultipleTypeHasReverseIterator> =
+                    Self::all_has_reverse_chained(snapshot, thing_manager, &self.attribute_owner_types_range, range)?
+                        .try_filter::<_, HasFilterFn, (Has<'_>, _), _>(filter_for_row)
+                        .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
                 Ok(TupleIterator::HasReverseUnbounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -252,7 +243,10 @@ impl HasReverseExecutor {
     fn all_has_reverse_chained<'a>(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        attribute_type_owner_range: &BTreeMap<AttributeType<'static>, (Bound<ObjectType<'static>>, Bound<ObjectType<'static>>)>,
+        attribute_type_owner_range: &BTreeMap<
+            AttributeType<'static>,
+            (Bound<ObjectType<'static>>, Bound<ObjectType<'static>>),
+        >,
         attribute_values_range: (Bound<Value<'_>>, Bound<Value<'_>>),
     ) -> Result<MultipleTypeHasReverseIterator, Box<ConceptReadError>> {
         let type_manager = thing_manager.type_manager();
@@ -263,7 +257,12 @@ impl HasReverseExecutor {
                 attribute_type.get_value_type(snapshot, type_manager).is_ok_and(|vt| vt.is_some())
             })
             .map(|(attribute_type, owner_types)| {
-                thing_manager.get_has_reverse_in_range(snapshot, attribute_type.clone(), &attribute_values_range, owner_types)
+                thing_manager.get_has_reverse_in_range(
+                    snapshot,
+                    attribute_type.clone(),
+                    &attribute_values_range,
+                    owner_types,
+                )
             })
             .try_collect()?;
         Ok(AsLendingIterator::new(iterators).flatten())

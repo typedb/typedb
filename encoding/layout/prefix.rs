@@ -153,7 +153,7 @@ impl Prefix {
            IndexValueToStruct => [190], false
            // Reserved: 200-255
     );
-    
+
     pub fn max_object_type_prefix() -> Prefix {
         if Prefix::VertexEntityType.prefix_id() < Prefix::VertexRelationType.prefix_id() {
             Prefix::VertexEntityType
@@ -161,7 +161,7 @@ impl Prefix {
             Prefix::VertexRelationType
         }
     }
-    
+
     pub fn min_object_type_prefix() -> Prefix {
         if Prefix::VertexEntityType.prefix_id() < Prefix::VertexRelationType.prefix_id() {
             Prefix::VertexRelationType

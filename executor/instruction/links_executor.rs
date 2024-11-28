@@ -8,10 +8,9 @@ use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet, HashMap},
     fmt,
+    ops::Bound,
     sync::Arc,
 };
-use std::cmp::max;
-use std::ops::Bound;
 
 use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::{executable::match_::instructions::thing::LinksInstruction, ExecutorVariable};
@@ -21,10 +20,9 @@ use concept::{
         relation::{LinksIterator, Relation, RolePlayer},
         thing_manager::ThingManager,
     },
+    type_::{object_type::ObjectType, relation_type::RelationType},
 };
 use itertools::{Itertools, MinMaxResult};
-use concept::type_::object_type::ObjectType;
-use concept::type_::relation_type::RelationType;
 use lending_iterator::{
     adaptors::{Map, TryFilter},
     kmerge::KMergeBy,
@@ -32,10 +30,7 @@ use lending_iterator::{
 };
 use primitive::Bounds;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
-use storage::{
-    key_range::{KeyRange, RangeEnd, RangeStart},
-    snapshot::ReadableSnapshot,
-};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
@@ -61,7 +56,6 @@ pub(crate) struct LinksExecutor {
     relation_player_types: Arc<BTreeMap<Type, Vec<Type>>>, // vecs are in sorted order
     relation_type_range: Bounds<RelationType<'static>>,
     player_type_range: Bounds<ObjectType<'static>>,
-    player_types: Arc<BTreeSet<Type>>,
 
     filter_fn: Arc<LinksFilterFn>,
     relation_cache: Option<Vec<Relation<'static>>>,
@@ -140,10 +134,8 @@ impl LinksExecutor {
             Bound::Included(relation_player_types.last_key_value().unwrap().0.as_relation_type()),
         );
         let (min_player_type, max_player_type) = min_max_types(player_types.iter());
-        let player_type_range = (
-            Bound::Included(min_player_type.as_object_type()),
-            Bound::Included(max_player_type.as_object_type()),
-        );
+        let player_type_range =
+            (Bound::Included(min_player_type.as_object_type()), Bound::Included(max_player_type.as_object_type()));
         let relation_cache = if iterate_mode == TernaryIterateMode::UnboundInverted {
             let mut cache = Vec::new();
             for type_ in relation_player_types.keys() {
@@ -168,7 +160,6 @@ impl LinksExecutor {
             variable_modes,
             tuple_positions: output_tuple_positions,
             relation_player_types,
-            player_types,
             relation_type_range,
             player_type_range,
             filter_fn,
