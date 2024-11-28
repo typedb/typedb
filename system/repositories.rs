@@ -37,9 +37,9 @@ pub mod user_repository {
         users
     }
 
-    pub fn get(tx: TransactionRead<WALClient>, username: &str) -> Result<Option<(User, Credential)>, QueryError> {
+    pub fn get(tx: TransactionRead<WALClient>, username: &str) -> Result<Option<(User, Credential)>, SystemDBError> {
         if !is_valid_typeql_value(username) {
-            return Err(QueryError::IllegalQueryInput {});
+            return Err(SystemDBError::IllegalQueryInput {});
         }
         let unexpected_error_msg = "An unexpected error occurred when attempting to retrieve a user";
         let query = parse_query(
@@ -71,9 +71,9 @@ pub mod user_repository {
         query_manager: &QueryManager,
         user: &User,
         credential: &Credential,
-    ) -> (Result<(), QueryError>, Arc<WriteSnapshot<WALClient>>) {
+    ) -> (Result<(), SystemDBError>, Arc<WriteSnapshot<WALClient>>) {
         if !is_valid_typeql_value(&user.name) {
-            return (Err(QueryError::IllegalQueryInput {}), Arc::new(snapshot));
+            return (Err(SystemDBError::IllegalQueryInput {}), Arc::new(snapshot));
         }
         let unexpected_error_msg = "An unexpected error occurred when attempting to create a new user";
         let query = match credential {
@@ -125,9 +125,9 @@ pub mod user_repository {
         function_manager: &FunctionManager,
         query_manager: &QueryManager,
         username: &str,
-    ) -> (Result<(), QueryError>, Arc<WriteSnapshot<WALClient>>) {
+    ) -> (Result<(), SystemDBError>, Arc<WriteSnapshot<WALClient>>) {
         if !is_valid_typeql_value(username) {
-            return (Err(QueryError::IllegalQueryInput {}), Arc::new(snapshot));
+            return (Err(SystemDBError::IllegalQueryInput {}), Arc::new(snapshot));
         }
         let unexpected_error_msg = "An unexpected error occurred when attempting to delete a user";
         let query = parse_query(
@@ -150,7 +150,7 @@ pub mod user_repository {
     }
 
     typedb_error!(
-        pub QueryError(component = "System database", prefix = "SDB") {
+        pub SystemDBError(component = "System database", prefix = "SDB") {
             IllegalQueryInput(1, "The specified input contains one or more illegal character(s)"),
         }
     );
