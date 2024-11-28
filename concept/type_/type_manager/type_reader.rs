@@ -291,7 +291,7 @@ impl TypeReader {
         Ok(subtypes_transitive)
     }
 
-    pub(crate) fn get_label<'a>(
+    pub(crate) fn get_label(
         snapshot: &impl ReadableSnapshot,
         type_: impl TypeAPI,
     ) -> Result<Option<Label>, Box<ConceptReadError>> {
@@ -444,7 +444,7 @@ impl TypeReader {
         Self::get_value_type(snapshot, type_).map(|result| result.map(|(value_type, _)| value_type))
     }
 
-    pub(crate) fn get_type_property_declared<'a, PROPERTY>(
+    pub(crate) fn get_type_property_declared<PROPERTY>(
         snapshot: &impl ReadableSnapshot,
         type_: impl TypeVertexEncoding,
     ) -> Result<Option<PROPERTY>, Box<ConceptReadError>>
@@ -477,7 +477,7 @@ impl TypeReader {
         Ok(None)
     }
 
-    pub(crate) fn get_type_edge_property<'a, PROPERTY>(
+    pub(crate) fn get_type_edge_property<PROPERTY>(
         snapshot: &impl ReadableSnapshot,
         edge: impl TypeEdgeEncoding,
     ) -> Result<Option<PROPERTY>, Box<ConceptReadError>>

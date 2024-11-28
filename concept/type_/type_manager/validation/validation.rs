@@ -23,7 +23,7 @@ use crate::{
     },
 };
 
-pub(crate) fn get_label_or_concept_read_err<'a>(
+pub(crate) fn get_label_or_concept_read_err(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     type_: impl TypeAPI,
@@ -34,7 +34,7 @@ pub(crate) fn get_label_or_concept_read_err<'a>(
         .map_err(|_| Box::new(ConceptReadError::CorruptMissingLabelOfType))
 }
 
-pub(crate) fn get_label_or_schema_err<'a>(
+pub(crate) fn get_label_or_schema_err(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     type_: impl TypeAPI,
@@ -43,7 +43,7 @@ pub(crate) fn get_label_or_schema_err<'a>(
         .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))
 }
 
-pub(crate) fn get_opt_label_or_schema_err<'a>(
+pub(crate) fn get_opt_label_or_schema_err(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     type_: Option<impl TypeAPI>,

@@ -2661,7 +2661,7 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_no_instances_to_delete<'a>(
+    pub(crate) fn validate_no_instances_to_delete(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
@@ -2758,7 +2758,7 @@ impl OperationTimeValidation {
         }
     }
 
-    fn has_instances_of_type<'a, T: KindAPI>(
+    fn has_instances_of_type<T: KindAPI>(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,

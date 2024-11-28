@@ -81,7 +81,7 @@ impl TypeVertexEncoding for EntityType {
     }
 }
 
-impl<'a> TypeAPI for EntityType {
+impl TypeAPI for EntityType {
     fn new(vertex: TypeVertex) -> EntityType {
         Self::from_vertex(vertex).unwrap()
     }
@@ -152,13 +152,13 @@ impl<'a> TypeAPI for EntityType {
     }
 }
 
-impl<'a> ObjectTypeAPI for EntityType {
+impl ObjectTypeAPI for EntityType {
     fn into_owned_object_type(self) -> ObjectType {
         ObjectType::Entity(self.into_owned())
     }
 }
 
-impl<'a> KindAPI for EntityType {
+impl KindAPI for EntityType {
     type AnnotationType = EntityTypeAnnotation;
     const KIND: Kind = Kind::Entity;
 

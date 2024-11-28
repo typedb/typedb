@@ -443,7 +443,7 @@ fn execute_object_attributes(
     }
 }
 
-fn execute_attributes_all<'a>(
+fn execute_attributes_all(
     object: impl ObjectAPI,
     snapshot: Arc<impl ReadableSnapshot>,
     thing_manager: Arc<ThingManager>,
@@ -474,7 +474,7 @@ fn execute_attributes_all<'a>(
     Ok(DocumentNode::Map(DocumentMap::GeneratedKeys(map)))
 }
 
-fn execute_attribute_single<'a>(
+fn execute_attribute_single(
     object: impl ObjectAPI,
     attribute_type: AttributeType,
     snapshot: Arc<impl ReadableSnapshot>,
@@ -497,7 +497,7 @@ fn execute_attribute_single<'a>(
     Ok(DocumentLeaf::Empty)
 }
 
-fn execute_attributes_list<'a>(
+fn execute_attributes_list(
     object: impl ObjectAPI,
     attribute_type: AttributeType,
     snapshot: Arc<impl ReadableSnapshot>,
@@ -524,7 +524,7 @@ fn execute_attributes_list<'a>(
     Ok(list)
 }
 
-fn prepare_attribute_type_has_iterator<'a>(
+fn prepare_attribute_type_has_iterator(
     object: impl ObjectAPI,
     attribute_type: AttributeType,
     snapshot: &Arc<impl ReadableSnapshot>,

@@ -100,7 +100,7 @@ impl Plays {
     }
 }
 
-impl<'a> TypeEdgeEncoding for Plays {
+impl TypeEdgeEncoding for Plays {
     const CANONICAL_PREFIX: Prefix = Prefix::EdgePlays;
     const REVERSE_PREFIX: Prefix = Prefix::EdgePlaysReverse;
     type From = ObjectType;

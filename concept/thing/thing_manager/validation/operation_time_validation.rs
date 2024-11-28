@@ -91,7 +91,7 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_owns_is_not_abstract<'a>(
+    pub(crate) fn validate_owns_is_not_abstract(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owner: impl ObjectAPI,
@@ -197,7 +197,7 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_object_type_owns_attribute_type<'a>(
+    pub(crate) fn validate_object_type_owns_attribute_type(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         object_type: impl ObjectTypeAPI,
@@ -244,7 +244,7 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_owns_distinct_constraint<'a>(
+    pub(crate) fn validate_owns_distinct_constraint(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owner: impl ObjectAPI,
@@ -333,7 +333,7 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_has_regex_constraints<'a>(
+    pub(crate) fn validate_has_regex_constraints(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owner: impl ObjectAPI,
@@ -357,7 +357,7 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_has_range_constraints<'a>(
+    pub(crate) fn validate_has_range_constraints(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owner: impl ObjectAPI,
@@ -381,7 +381,7 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_has_values_constraints<'a>(
+    pub(crate) fn validate_has_values_constraints(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owner: impl ObjectAPI,
@@ -405,7 +405,7 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_has_unique_constraint<'a>(
+    pub(crate) fn validate_has_unique_constraint(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owner: impl ObjectAPI,
@@ -511,7 +511,7 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_owner_exists_to_set_has<'a>(
+    pub(crate) fn validate_owner_exists_to_set_has(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owner: impl ObjectAPI,
@@ -545,7 +545,7 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_owner_exists_to_unset_has<'a>(
+    pub(crate) fn validate_owner_exists_to_unset_has(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owner: impl ObjectAPI,

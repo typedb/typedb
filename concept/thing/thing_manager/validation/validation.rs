@@ -27,7 +27,7 @@ use crate::{
     },
 };
 
-pub(crate) fn get_label_or_data_err<'a>(
+pub(crate) fn get_label_or_data_err(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     type_: impl TypeAPI,

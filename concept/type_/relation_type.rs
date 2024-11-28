@@ -156,7 +156,7 @@ impl TypeAPI for RelationType {
     }
 }
 
-impl<'a> KindAPI for RelationType {
+impl KindAPI for RelationType {
     type AnnotationType = RelationTypeAnnotation;
     const KIND: Kind = Kind::Relation;
 
@@ -181,7 +181,7 @@ impl ThingTypeAPI for RelationType {
     type InstanceType = Relation;
 }
 
-impl<'a> ObjectTypeAPI for RelationType {
+impl ObjectTypeAPI for RelationType {
     fn into_owned_object_type(self) -> ObjectType {
         ObjectType::Relation(self.into_owned())
     }

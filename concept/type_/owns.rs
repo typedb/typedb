@@ -26,7 +26,7 @@ use crate::{
         constraint::CapabilityConstraint,
         object_type::ObjectType,
         type_manager::TypeManager,
-        Capability, Ordering, TypeAPI,
+        Capability, Ordering,
     },
 };
 

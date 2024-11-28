@@ -277,7 +277,7 @@ pub enum Thing {
     Attribute(Attribute),
 }
 
-impl<'a> Thing {
+impl Thing {
     pub fn type_(&self) -> Type {
         match self {
             Thing::Entity(entity) => Type::Entity(entity.type_()),
@@ -321,7 +321,7 @@ impl Hkt for Thing {
     type HktSelf<'a> = Thing;
 }
 
-impl<'a> From<Object> for Thing {
+impl From<Object> for Thing {
     fn from(object: Object) -> Self {
         match object {
             Object::Entity(entity) => Thing::Entity(entity),
@@ -330,25 +330,25 @@ impl<'a> From<Object> for Thing {
     }
 }
 
-impl<'a> From<Entity> for Thing {
+impl From<Entity> for Thing {
     fn from(entity: Entity) -> Self {
         Thing::Entity(entity)
     }
 }
 
-impl<'a> From<Relation> for Thing {
+impl From<Relation> for Thing {
     fn from(relation: Relation) -> Self {
         Thing::Relation(relation)
     }
 }
 
-impl<'a> From<Attribute> for Thing {
+impl From<Attribute> for Thing {
     fn from(attribute: Attribute) -> Self {
         Self::Attribute(attribute)
     }
 }
 
-impl<'a> fmt::Display for Thing {
+impl fmt::Display for Thing {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Thing::Entity(entity) => write!(f, "{}", entity),

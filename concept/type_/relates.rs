@@ -169,7 +169,7 @@ impl Relates {
     }
 }
 
-impl<'a> TypeEdgeEncoding for Relates {
+impl TypeEdgeEncoding for Relates {
     const CANONICAL_PREFIX: Prefix = Prefix::EdgeRelates;
     const REVERSE_PREFIX: Prefix = Prefix::EdgeRelatesReverse;
     type From = RelationType;

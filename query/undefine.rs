@@ -833,7 +833,7 @@ fn undefine_struct(
     })
 }
 
-fn check_can_and_need_undefine_sub<'a, T: TypeAPI>(
+fn check_can_and_need_undefine_sub<T: TypeAPI>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label,
@@ -870,7 +870,7 @@ fn check_can_and_need_undefine_sub<'a, T: TypeAPI>(
     }
 }
 
-fn check_can_and_need_undefine_type_annotation<'a, T: KindAPI>(
+fn check_can_and_need_undefine_type_annotation<T: KindAPI>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label,
@@ -891,7 +891,7 @@ fn check_can_and_need_undefine_type_annotation<'a, T: KindAPI>(
     }
 }
 
-fn check_can_and_need_undefine_capability_annotation<'a, CAP: Capability>(
+fn check_can_and_need_undefine_capability_annotation<CAP: Capability>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     capability: CAP,

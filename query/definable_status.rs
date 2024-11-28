@@ -158,7 +158,7 @@ pub(crate) fn get_type_annotation_category_status<T: KindAPI>(
     Ok(DefinableStatus::DoesNotExist)
 }
 
-pub(crate) fn get_capability_annotation_status<'a, CAP: Capability>(
+pub(crate) fn get_capability_annotation_status<CAP: Capability>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     capability: &CAP,
@@ -179,7 +179,7 @@ pub(crate) fn get_capability_annotation_status<'a, CAP: Capability>(
     Ok(DefinableStatus::DoesNotExist)
 }
 
-pub(crate) fn get_capability_annotation_category_status<'a, CAP: Capability>(
+pub(crate) fn get_capability_annotation_category_status<CAP: Capability>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     capability: &CAP,
@@ -195,7 +195,7 @@ pub(crate) fn get_capability_annotation_category_status<'a, CAP: Capability>(
     Ok(DefinableStatus::DoesNotExist)
 }
 
-pub(crate) fn get_sub_status<'a, T: TypeAPI>(
+pub(crate) fn get_sub_status<T: TypeAPI>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     type_: T,

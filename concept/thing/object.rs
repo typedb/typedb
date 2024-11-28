@@ -49,7 +49,7 @@ pub enum Object {
     Relation(Relation),
 }
 
-impl<'a> Object {
+impl Object {
     pub fn unwrap_entity(self) -> Entity {
         match self {
             Self::Entity(entity) => entity,
@@ -424,19 +424,19 @@ impl Hkt for Object {
     type HktSelf<'a> = Object;
 }
 
-impl<'a> Ord for Object {
+impl Ord for Object {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.vertex().cmp(&other.vertex())
     }
 }
 
-impl<'a> PartialOrd for Object {
+impl PartialOrd for Object {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<'a> fmt::Display for Object {
+impl fmt::Display for Object {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Object::Entity(entity) => fmt::Display::fmt(entity, f),

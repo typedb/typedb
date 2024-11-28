@@ -907,7 +907,7 @@ fn check_can_and_need_define_sub<T: TypeAPI>(
     }
 }
 
-fn type_convert_and_validate_annotation_definition_need<'a, T: KindAPI>(
+fn type_convert_and_validate_annotation_definition_need<T: KindAPI>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label,
@@ -933,7 +933,7 @@ fn type_convert_and_validate_annotation_definition_need<'a, T: KindAPI>(
     }
 }
 
-fn capability_convert_and_validate_annotation_definition_need<'a, CAP: Capability>(
+fn capability_convert_and_validate_annotation_definition_need<CAP: Capability>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     capability: CAP,

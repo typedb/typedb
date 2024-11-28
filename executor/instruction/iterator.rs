@@ -326,8 +326,7 @@ impl<It: Iterator<Item = TupleResult<'static>>> SortedTupleIterator<It> {
     ) -> Result<Option<Ordering>, Box<ConceptReadError>> {
         // TODO: this should use seek if index == self.first_unbound()
         loop {
-            let peek = self.peek();
-            match peek {
+            match self.peek() {
                 None => return Ok(None),
                 Some(Ok(tuple)) => {
                     let value = &tuple.values()[index as usize];

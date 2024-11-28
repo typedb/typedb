@@ -726,7 +726,7 @@ impl<T> Checker<T> {
                             relation(value).as_thing().as_relation().has_role_player(
                                 &*snapshot,
                                 &thing_manager,
-                                &player(value).as_thing().as_object(),
+                                player(value).as_thing().as_object(),
                                 role(value).as_type().as_role_type(),
                             )
                         }

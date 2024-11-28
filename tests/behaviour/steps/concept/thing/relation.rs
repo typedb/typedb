@@ -138,7 +138,7 @@ async fn relation_get_players_ordered(
         );
         let role_type = relates.unwrap().unwrap().role();
         let players = relation.get_players_ordered(tx.snapshot.as_ref(), &tx.thing_manager, role_type).unwrap();
-        players.into_iter().map(Object::into_owned).collect()
+        players.into_iter().collect()
     });
     context.object_lists.insert(players_var.name, players);
 }
@@ -161,7 +161,7 @@ async fn relation_get_players_ordered_is(
         );
         let role_type = relates.unwrap().unwrap().role();
         let players = relation.get_players_ordered(tx.snapshot.as_ref(), &tx.thing_manager, role_type).unwrap();
-        players.into_iter().map(Object::into_owned).collect_vec()
+        players.into_iter().collect_vec()
     });
     let players =
         player_vars.names.into_iter().map(|name| context.objects[&name].as_ref().unwrap().object.clone()).collect_vec();
@@ -193,8 +193,8 @@ async fn relation_get_players_contains(
     let players = with_read_tx!(context, |tx| {
         relation
             .get_players(tx.snapshot.as_ref(), &tx.thing_manager)
-            .map_static(|result| (result.unwrap().0.player().into_owned()))
-            .collect::<Vec<_>>()
+            .map(|result| (result.unwrap().0.player()))
+            .collect_vec()
     });
     let player = &context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object;
     contains_or_doesnt.check(slice::from_ref(player), &players);
@@ -217,7 +217,7 @@ async fn relation_get_players_contains_table(
             let (rp, _count) = res.unwrap();
             vec.push((
                 rp.role_type().get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().name().as_str().to_owned(),
-                rp.player().into_owned(),
+                rp.player(),
             ));
         }
         vec
@@ -255,8 +255,8 @@ async fn relation_get_players_for_role_empty(
             .role();
         relation
             .get_players_role_type(tx.snapshot.as_ref(), &tx.thing_manager, role_type)
-            .map_static(|res| res.unwrap().into_owned())
-            .collect::<Vec<_>>()
+            .map(|res| res.unwrap())
+            .collect_vec()
     });
 
     is_empty_or_not.check(actuals.is_empty());
@@ -281,8 +281,8 @@ async fn relation_get_players_for_role_contains(
             .role();
         relation
             .get_players_role_type(tx.snapshot.as_ref(), &tx.thing_manager, role_type)
-            .map_static(|res| res.unwrap().into_owned())
-            .collect::<Vec<_>>()
+            .map(|res| res.unwrap())
+            .collect_vec()
     });
     let player = &context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object;
     contains_or_doesnt.check(slice::from_ref(player), &players);
@@ -300,10 +300,7 @@ async fn object_get_relations_contain(
     let player = &context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object;
     object_kind.assert(&player.type_());
     let relations = with_read_tx!(context, |tx| {
-        player
-            .get_relations(tx.snapshot.as_ref(), &tx.thing_manager)
-            .map_static(|rel| rel.unwrap().into_owned())
-            .collect::<Vec<_>>()
+        player.get_relations(tx.snapshot.as_ref(), &tx.thing_manager).map(|rel| rel.unwrap()).collect_vec()
     });
     let Object::Relation(relation) = &context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object else {
         panic!()
@@ -339,8 +336,8 @@ async fn object_get_relations_of_type_with_role_contain(
             .role();
         player
             .get_relations_by_role(tx.snapshot.as_ref(), &tx.thing_manager, role_type)
-            .map_static(|res| res.map(|(relation, _count)| relation.into_owned()).unwrap())
-            .collect::<Vec<_>>()
+            .map(|res| res.unwrap().0)
+            .collect_vec()
     });
     let Object::Relation(relation) = &context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object else {
         panic!()

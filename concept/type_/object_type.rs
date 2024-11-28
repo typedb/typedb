@@ -311,11 +311,11 @@ impl TypeAPI for ObjectType {
     }
 }
 
-impl<'a> ThingTypeAPI for ObjectType {
+impl ThingTypeAPI for ObjectType {
     type InstanceType = Object;
 }
 
-impl<'a> ObjectTypeAPI for ObjectType {
+impl ObjectTypeAPI for ObjectType {
     fn into_owned_object_type(self) -> ObjectType {
         self.into_owned()
     }

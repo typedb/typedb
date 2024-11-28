@@ -11,6 +11,7 @@ use concept::{
     thing::{object::Object, ThingAPI},
     type_::{object_type::ObjectType, TypeAPI},
 };
+use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
 use test_utils::assert_matches;
@@ -30,7 +31,7 @@ use crate::{
 fn object_create_instance_impl(
     context: &mut Context,
     object_type_label: params::Label,
-) -> Result<Object<'static>, Box<ConceptWriteError>> {
+) -> Result<Object, Box<ConceptWriteError>> {
     with_write_tx!(context, |tx| {
         let object_type =
             tx.type_manager.get_object_type(tx.snapshot.as_ref(), &object_type_label.into_typedb()).unwrap().unwrap();
@@ -140,11 +141,8 @@ async fn object_is_deleted(
     let object = &context.objects[&var.name].as_ref().unwrap().object;
     object_kind.assert(&object.type_());
     let object_type = object.type_();
-    let objects: Vec<Object<'static>> = with_read_tx!(context, |tx| {
-        tx.thing_manager
-            .get_objects_in(tx.snapshot.as_ref(), object_type)
-            .map_static(|result| result.unwrap().clone().into_owned())
-            .collect()
+    let objects: Vec<Object> = with_read_tx!(context, |tx| {
+        tx.thing_manager.get_objects_in(tx.snapshot.as_ref(), object_type).map(|result| result.unwrap()).collect()
     });
     check_boolean!(is_deleted, !objects.contains(object));
 }
@@ -225,11 +223,8 @@ async fn object_instances_contain(
     with_read_tx!(context, |tx| {
         let object_type =
             tx.type_manager.get_object_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
-        let actuals: Vec<Object<'static>> = tx
-            .thing_manager
-            .get_objects_in(tx.snapshot.as_ref(), object_type)
-            .map_static(|result| result.unwrap().clone().into_owned())
-            .collect();
+        let actuals: Vec<Object> =
+            tx.thing_manager.get_objects_in(tx.snapshot.as_ref(), object_type).map(|result| result.unwrap()).collect();
         containment.check(std::slice::from_ref(object), &actuals);
     });
 }
@@ -248,11 +243,11 @@ async fn attribute_owners_contains(
     let actuals = with_read_tx!(context, |tx| {
         attribute
             .get_owners(tx.snapshot.as_ref(), &tx.thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (attribute, _count) = res.unwrap();
-                attribute.into_owned()
+                attribute
             })
-            .collect::<Vec<_>>()
+            .collect_vec()
     });
     contains_or_doesnt.check(std::slice::from_ref(&object), &actuals)
 }

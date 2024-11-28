@@ -83,7 +83,7 @@ impl TypeVertexEncoding for RoleType {
     }
 }
 
-impl<'a> TypeAPI for RoleType {
+impl TypeAPI for RoleType {
     fn new(vertex: TypeVertex) -> RoleType {
         Self::from_vertex(vertex).unwrap()
     }
@@ -154,7 +154,7 @@ impl<'a> TypeAPI for RoleType {
     }
 }
 
-impl<'a> KindAPI for RoleType {
+impl KindAPI for RoleType {
     type AnnotationType = RoleTypeAnnotation;
     const KIND: Kind = Kind::Role;
 

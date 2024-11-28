@@ -154,7 +154,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         snapshot.delete(capability.to_reverse_type_edge().into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_insert_type_vertex_property<'a, P>(
+    pub(crate) fn storage_insert_type_vertex_property<P>(
         snapshot: &mut Snapshot,
         vertex: impl TypeVertexEncoding,
         property_opt: Option<P>,
@@ -170,7 +170,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         }
     }
 
-    pub(crate) fn storage_put_type_vertex_property<'a, P>(
+    pub(crate) fn storage_put_type_vertex_property<P>(
         snapshot: &mut Snapshot,
         vertex: impl TypeVertexEncoding,
         property_opt: Option<P>,
@@ -186,14 +186,14 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         }
     }
 
-    pub(crate) fn storage_delete_type_vertex_property<'a, P>(snapshot: &mut Snapshot, vertex: impl TypeVertexEncoding)
+    pub(crate) fn storage_delete_type_vertex_property<P>(snapshot: &mut Snapshot, vertex: impl TypeVertexEncoding)
     where
         P: TypeVertexPropertyEncoding,
     {
         snapshot.delete(P::build_key(vertex).into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_unput_type_vertex_property<'a, P>(
+    pub(crate) fn storage_unput_type_vertex_property<P>(
         snapshot: &mut Snapshot,
         vertex: impl TypeVertexEncoding,
         property_opt: Option<P>,
@@ -213,7 +213,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         Self::storage_put_type_edge_property(snapshot, owns, Some(ordering))
     }
 
-    pub(crate) fn storage_insert_type_edge_property<'a, P>(
+    pub(crate) fn storage_insert_type_edge_property<P>(
         snapshot: &mut Snapshot,
         edge: impl TypeEdgeEncoding,
         property_opt: Option<P>,
@@ -229,7 +229,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         }
     }
 
-    pub(crate) fn storage_put_type_edge_property<'a, P>(
+    pub(crate) fn storage_put_type_edge_property<P>(
         snapshot: &mut Snapshot,
         edge: impl TypeEdgeEncoding,
         property_opt: Option<P>,
@@ -245,7 +245,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         }
     }
 
-    pub(crate) fn storage_delete_type_edge_property<'a, P>(snapshot: &mut Snapshot, edge: impl TypeEdgeEncoding)
+    pub(crate) fn storage_delete_type_edge_property<P>(snapshot: &mut Snapshot, edge: impl TypeEdgeEncoding)
     where
         P: TypeEdgePropertyEncoding,
     {

@@ -72,7 +72,7 @@ impl Relation {
         self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        player: &impl ObjectAPI,
+        player: impl ObjectAPI,
         role: RoleType,
     ) -> Result<bool, Box<ConceptReadError>> {
         thing_manager.has_role_player(snapshot, self, player, role)
@@ -425,7 +425,7 @@ pub struct RolePlayer {
     role_type: RoleType,
 }
 
-impl<'a> RolePlayer {
+impl RolePlayer {
     pub fn player(self) -> Object {
         self.player
     }
@@ -510,7 +510,7 @@ edge_iterator!(
     storage_key_to_indexed_players
 );
 
-impl<'a> fmt::Display for Relation {
+impl fmt::Display for Relation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[Relation:{}:{}]", self.type_().vertex().type_id_(), self.vertex.object_id())
     }

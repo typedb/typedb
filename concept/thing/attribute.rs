@@ -184,21 +184,21 @@ impl Hkt for Attribute {
     type HktSelf<'a> = Attribute;
 }
 
-impl<'a> PartialEq<Self> for Attribute {
+impl PartialEq<Self> for Attribute {
     fn eq(&self, other: &Self) -> bool {
         self.vertex().eq(&other.vertex())
     }
 }
 
-impl<'a> Eq for Attribute {}
+impl Eq for Attribute {}
 
-impl<'a> PartialOrd<Self> for Attribute {
+impl PartialOrd<Self> for Attribute {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<'a> Ord for Attribute {
+impl Ord for Attribute {
     fn cmp(&self, other: &Self) -> Ordering {
         self.vertex.cmp(&other.vertex())
     }
@@ -367,7 +367,7 @@ edge_iterator!(
     storage_key_to_owner
 );
 
-impl<'a> fmt::Display for Attribute {
+impl fmt::Display for Attribute {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -379,7 +379,7 @@ impl<'a> fmt::Display for Attribute {
     }
 }
 
-impl<'a> Hash for Attribute {
+impl Hash for Attribute {
     fn hash<H: Hasher>(&self, state: &mut H) {
         Hash::hash(&self.vertex, state)
     }

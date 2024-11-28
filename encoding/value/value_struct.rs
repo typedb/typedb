@@ -125,7 +125,7 @@ impl<'a> StructValue<'a> {
         Ok(acc)
     }
 
-    fn create_index_entries_recursively<'b>(
+    fn create_index_entries_recursively(
         snapshot: &impl WritableSnapshot,
         hasher: &impl Fn(&[u8]) -> u64,
         attribute: &AttributeVertex,

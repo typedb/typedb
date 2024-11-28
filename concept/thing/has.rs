@@ -52,7 +52,7 @@ impl Hkt for Has {
     type HktSelf<'a> = Has;
 }
 
-impl<'a> fmt::Display for Has {
+impl fmt::Display for Has {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} has {}", self.owner(), self.attribute())
     }

@@ -868,7 +868,7 @@ fn redefine_function(
     Ok(function)
 }
 
-fn check_can_redefine_sub<'a, T: TypeAPI>(
+fn check_can_redefine_sub<T: TypeAPI>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label,
@@ -901,7 +901,7 @@ fn check_can_redefine_sub<'a, T: TypeAPI>(
     }
 }
 
-fn type_convert_and_validate_annotation_redefinition_need<'a, T: KindAPI>(
+fn type_convert_and_validate_annotation_redefinition_need<T: KindAPI>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label,
@@ -937,7 +937,7 @@ fn type_convert_and_validate_annotation_redefinition_need<'a, T: KindAPI>(
     }
 }
 
-fn capability_convert_and_validate_annotation_redefinition_need<'a, CAP: concept::type_::Capability>(
+fn capability_convert_and_validate_annotation_redefinition_need<CAP: concept::type_::Capability>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     label: &Label,

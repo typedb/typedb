@@ -509,7 +509,7 @@ impl ThingManager {
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))
     }
 
-    pub(crate) fn has_attribute_with_value<'a>(
+    pub(crate) fn has_attribute_with_value(
         &self,
         snapshot: &impl ReadableSnapshot,
         owner: impl ObjectAPI,
@@ -544,7 +544,7 @@ impl ThingManager {
         Ok(has_exists)
     }
 
-    pub(crate) fn has_attribute<'a>(
+    pub(crate) fn has_attribute(
         &self,
         snapshot: &impl ReadableSnapshot,
         owner: impl ObjectAPI,
@@ -686,7 +686,7 @@ impl ThingManager {
         Ok(iter)
     }
 
-    pub(crate) fn get_has_from_thing_unordered<'a>(
+    pub(crate) fn get_has_from_thing_unordered(
         &self,
         snapshot: &impl ReadableSnapshot,
         owner: impl ObjectAPI,
@@ -844,7 +844,7 @@ impl ThingManager {
         LinksIterator::new(snapshot.iterate_range(range))
     }
 
-    pub fn get_links_by_relation_and_player<'a>(
+    pub fn get_links_by_relation_and_player(
         &self,
         snapshot: &impl ReadableSnapshot,
         relation: Relation,
@@ -871,7 +871,7 @@ impl ThingManager {
         LinksIterator::new(snapshot.iterate_range(range))
     }
 
-    pub fn get_links_reverse_by_player_and_relation_type_range<'a>(
+    pub fn get_links_reverse_by_player_and_relation_type_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         player: impl ObjectAPI,
@@ -884,11 +884,11 @@ impl ThingManager {
         LinksIterator::new(snapshot.iterate_range(range))
     }
 
-    pub(crate) fn has_role_player<'a>(
+    pub(crate) fn has_role_player(
         &self,
         snapshot: &impl ReadableSnapshot,
         relation: Relation,
-        player: &impl ObjectAPI,
+        player: impl ObjectAPI,
         role_type: RoleType,
     ) -> Result<bool, Box<ConceptReadError>> {
         let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.vertex());
@@ -988,7 +988,7 @@ impl ThingManager {
 }
 
 impl ThingManager {
-    pub(crate) fn lock_existing_object<'a>(&self, snapshot: &mut impl WritableSnapshot, object: impl ObjectAPI) {
+    pub(crate) fn lock_existing_object(&self, snapshot: &mut impl WritableSnapshot, object: impl ObjectAPI) {
         snapshot.unmodifiable_lock_add(object.vertex().into_storage_key().into_owned_array())
     }
 
@@ -1033,7 +1033,7 @@ impl ThingManager {
         Ok(())
     }
 
-    fn add_exclusive_lock_for_unique_constraint<'a>(
+    fn add_exclusive_lock_for_unique_constraint(
         &self,
         snapshot: &mut impl WritableSnapshot,
         owner: &Object,
@@ -1461,7 +1461,7 @@ impl ThingManager {
         Ok(())
     }
 
-    pub fn create_entity<'a>(
+    pub fn create_entity(
         &self,
         snapshot: &mut impl WritableSnapshot,
         entity_type: EntityType,
@@ -1472,7 +1472,7 @@ impl ThingManager {
         Ok(Entity::new(self.vertex_generator.create_entity(entity_type.vertex().type_id_(), snapshot)))
     }
 
-    pub fn create_relation<'a>(
+    pub fn create_relation(
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation_type: RelationType,
@@ -1483,7 +1483,7 @@ impl ThingManager {
         Ok(Relation::new(self.vertex_generator.create_relation(relation_type.vertex().type_id_(), snapshot)))
     }
 
-    pub fn create_attribute<'a>(
+    pub fn create_attribute(
         &self,
         snapshot: &mut impl WritableSnapshot,
         attribute_type: AttributeType,
@@ -1527,7 +1527,7 @@ impl ThingManager {
         self.put_attribute(snapshot, attribute_type, value)
     }
 
-    pub(crate) fn put_attribute<'a>(
+    pub(crate) fn put_attribute(
         &self,
         snapshot: &mut impl WritableSnapshot,
         attribute_type: AttributeType,
@@ -1790,7 +1790,7 @@ impl ThingManager {
         }
     }
 
-    pub(crate) fn set_has_ordered<'a>(
+    pub(crate) fn set_has_ordered(
         &self,
         snapshot: &mut impl WritableSnapshot,
         owner: impl ObjectAPI,
@@ -1813,7 +1813,7 @@ impl ThingManager {
         Ok(())
     }
 
-    pub(crate) fn unset_has_ordered<'a>(
+    pub(crate) fn unset_has_ordered(
         &self,
         snapshot: &mut impl WritableSnapshot,
         owner: impl ObjectAPI,
@@ -1823,7 +1823,7 @@ impl ThingManager {
         snapshot.delete(order_property.into_storage_key().into_owned_array())
     }
 
-    pub(crate) fn put_links_unordered<'a>(
+    pub(crate) fn put_links_unordered(
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation: Relation,
@@ -1864,7 +1864,7 @@ impl ThingManager {
         Ok(())
     }
 
-    pub(crate) fn set_links_count<'a>(
+    pub(crate) fn set_links_count(
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation: Relation,
@@ -1938,7 +1938,7 @@ impl ThingManager {
 
     /// Add a player to a relation that supports duplicates
     /// Caller must provide a lock that prevents race conditions on the player counts on the relation
-    pub(crate) fn increment_links_count<'a>(
+    pub(crate) fn increment_links_count(
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation: Relation,
@@ -1965,7 +1965,7 @@ impl ThingManager {
 
     /// Remove a player from a relation that supports duplicates
     /// Caller must provide a lock that prevents race conditions on the player counts on the relation
-    pub(crate) fn decrement_links_count<'a>(
+    pub(crate) fn decrement_links_count(
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation: Relation,
@@ -2000,7 +2000,7 @@ impl ThingManager {
 
     /// Clean up all parts of a relation index to do with a specific role player
     /// after the player has been deleted.
-    pub(crate) fn relation_index_player_deleted<'a>(
+    pub(crate) fn relation_index_player_deleted(
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation: Relation,
