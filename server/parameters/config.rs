@@ -9,6 +9,7 @@ use std::{
     path::{Path, PathBuf},
     str::FromStr,
 };
+use resource::constants::server::DEFAULT_ADDRESS;
 
 #[derive(Debug)]
 pub struct Config {
@@ -29,7 +30,7 @@ impl Config {
             .unwrap_or(std::env::current_dir().unwrap());
         Self {
             server: ServerConfig {
-                address: SocketAddr::from_str("0.0.0.0:1729").unwrap(),
+                address: SocketAddr::from_str(DEFAULT_ADDRESS).unwrap(),
                 encryption: EncryptionConfig::disabled()
             },
             storage: StorageConfig { data: typedb_dir_or_current.join(PathBuf::from_str("server/data").unwrap()) },

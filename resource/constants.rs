@@ -21,6 +21,7 @@ pub mod server {
     pub const AUTHENTICATOR_USERNAME_FIELD: &str = "username";
     pub const AUTHENTICATOR_PASSWORD_FIELD: &str = "password";
 
+    pub const DEFAULT_ADDRESS: &str = "0.0.0.0:1729";
     pub const DEFAULT_USER_NAME: &str = "admin";
     pub const DEFAULT_USER_PASSWORD: &str = "password";
 }
