@@ -80,7 +80,7 @@ impl<'a> ObjectVertex<'a> {
         Self::write_prefix_type(bytes, Self::prefix_for_type(type_vertex.prefix()), type_vertex.type_id_())
     }
 
-    pub(crate) fn prefix_for_type( prefix: Prefix ) -> Prefix {
+    pub(crate) const fn prefix_for_type( prefix: Prefix ) -> Prefix {
         match prefix {
             Prefix::VertexEntityType => Prefix::VertexEntity,
             Prefix::VertexRelationType => Prefix::VertexRelation,

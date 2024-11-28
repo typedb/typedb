@@ -11,6 +11,7 @@ use std::{
     ops::RangeBounds,
     sync::Arc,
 };
+use std::any::Any;
 use std::cmp::min;
 
 use bytes::{byte_array::ByteArray, Bytes};
@@ -847,13 +848,18 @@ impl ThingManager {
         owner: &'this impl ObjectAPI<'a>,
         attribute_type_range_hint: &'this impl RangeBounds<AttributeType<'b>>,
     ) -> HasIterator where 'a: 'this {
-        let start_type_id_inclusive = match attribute_type_range_hint.start_bound() {
-            Bound::Included(attribute_type) => attribute_type.vertex().type_id_(),
-            Bound::Excluded(attribute_type) => attribute_type.vertex().type_id_().next_type_id(),
-            Bound::Unbounded => TypeID::MIN,
+        let range_start = match attribute_type_range_hint.start_bound() {
+            Bound::Included(attribute_type) => {
+                RangeStart::Inclusive(ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), attribute_type.vertex().type_id_()))
+            },
+            Bound::Excluded(attribute_type) => {
+                RangeStart::ExcludePrefix(ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), attribute_type.vertex().type_id_()))
+            },
+            Bound::Unbounded => {
+                RangeStart::Inclusive(ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), TypeID::MIN))
+            },
         };
-        let has_range_start = RangeStart::Inclusive(ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), start_type_id_inclusive));
-        let has_range_end = match attribute_type_range_hint.end_bound() {
+        let range_end = match attribute_type_range_hint.end_bound() {
             Bound::Included(attribute_type) => {
                 RangeEnd::EndPrefixInclusive(
                     ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), attribute_type.vertex().type_id_())
@@ -870,7 +876,7 @@ impl ThingManager {
                 )
             }
         };
-        let key_range = KeyRange::new(has_range_start, has_range_end,  ThingEdgeHas::FIXED_WIDTH_ENCODING);
+        let key_range = KeyRange::new(range_start, range_end, ThingEdgeHas::FIXED_WIDTH_ENCODING);
         HasIterator::new(snapshot.iterate_range(&key_range))
     }
 
@@ -941,12 +947,17 @@ impl ThingManager {
         attribute: Attribute<'_>,
         owner_type_range: &'a impl RangeBounds<ObjectType<'a>>,
     ) -> HasReverseIterator {
-        let (type_prefix, range_start_type_id) = match owner_type_range.start_bound() {
-            Bound::Included(owner_start) => (owner_start.vertex().prefix(), owner_start.vertex().type_id_()),
-            Bound::Excluded(owner_start) => (owner_start.vertex().prefix(), owner_start.vertex().type_id_().next_type_id()),
-            Bound::Unbounded => (Prefix::min_object_type_prefix(), TypeID::MIN),
+        let range_start = match owner_type_range.start_bound() {
+            Bound::Included(owner_start) => {
+                RangeStart::Inclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type(attribute.vertex(), owner_start.vertex()))
+            },
+            Bound::Excluded(owner_start) => {
+                RangeStart::ExcludePrefix(ThingEdgeHasReverse::prefix_from_attribute_to_type(attribute.vertex(), owner_start.vertex()))
+            },
+            Bound::Unbounded => {
+                RangeStart::Inclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type_parts(attribute.vertex(), Prefix::min_object_type_prefix(), TypeID::MIN))
+            }
         };
-        let range_start = RangeStart::Inclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type_parts(attribute.vertex(), type_prefix, range_start_type_id));
         let range_end = match owner_type_range.end_bound() {
             Bound::Included(owner_end) => {
                 RangeEnd::EndPrefixInclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type(attribute.vertex(), owner_end.vertex()))
@@ -993,11 +1004,29 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         relation_type_range: &impl RangeBounds<RelationType<'static>>,
     ) -> LinksIterator {
-        let range = relation_type_range.map(
-            |type_| ThingEdgeLinks::prefix_from_relation_type(type_.vertex()),
-            |_| ThingEdgeLinks::FIXED_WIDTH_ENCODING,
-        );
-        LinksIterator::new(snapshot.iterate_range(&range))
+        let range_start = match relation_type_range.start_bound() {
+            Bound::Included(start_type) => {
+                RangeStart::Inclusive(ThingEdgeLinks::prefix_from_relation_type(start_type.vertex().type_id_()))
+            }
+            Bound::Excluded(start_type) => {
+                RangeStart::ExcludePrefix(ThingEdgeLinks::prefix_from_relation_type(start_type.vertex().type_id_()))
+            }
+            Bound::Unbounded => {
+                RangeStart::Inclusive(ThingEdgeLinks::prefix_from_relation_type(TypeID::MIN))
+            }
+        };
+        let range_end = match relation_type_range.end_bound() {
+            Bound::Included(end_type) => {
+                RangeEnd::EndPrefixInclusive(ThingEdgeLinks::prefix_from_relation_type(end_type.vertex().type_id_()))
+            }
+            Bound::Excluded(end_type) => {
+                RangeEnd::EndPrefixExclusive(ThingEdgeLinks::prefix_from_relation_type(end_type.vertex().type_id_()))
+            }
+            Bound::Unbounded => {
+                RangeEnd::EndPrefixInclusive(ThingEdgeLinks::prefix_from_relation_type(TypeID::MAX))
+            }
+        };
+        LinksIterator::new(snapshot.iterate_range(&KeyRange::new(range_start, range_end, ThingEdgeLinks::FIXED_WIDTH_ENCODING)))
     }
 
     pub fn get_links_by_relation_and_player_type_range(
@@ -1033,7 +1062,7 @@ impl ThingManager {
                     relation.vertex(),
                     Prefix::max_object_type_prefix(),
                     TypeID::MAX
-                )) 
+                ))
             }
         };
         let key_range = KeyRange::new(range_start, range_end, ThingEdgeLinks::FIXED_WIDTH_ENCODING);

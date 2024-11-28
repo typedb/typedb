@@ -139,7 +139,7 @@ impl LinksExecutor {
             Bound::Included(relation_player_types.first_key_value().unwrap().0.as_relation_type()),
             Bound::Included(relation_player_types.last_key_value().unwrap().0.as_relation_type()),
         );
-        let (min_player_type, max_player_type) = min_max_types(&*relation_player_types.values());
+        let (min_player_type, max_player_type) = min_max_types(player_types.iter());
         let player_type_range = (
             Bound::Included(min_player_type.as_object_type()),
             Bound::Included(max_player_type.as_object_type()),
