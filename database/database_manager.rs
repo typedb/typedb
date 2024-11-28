@@ -16,7 +16,12 @@ use storage::durability_client::WALClient;
 
 use crate::{database::DatabaseCreateError, Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError};
 
-pub const INTERNAL_DATABASE_PREFIX: &str = "_";
+#[macro_export]
+macro_rules! internal_database_prefix {
+    () => {
+        "_"
+    };
+}
 
 #[derive(Debug)]
 pub struct DatabaseManager {
@@ -149,7 +154,7 @@ impl DatabaseManager {
     }
 
     pub fn is_internal_database(name: &str) -> bool {
-        name.starts_with(INTERNAL_DATABASE_PREFIX)
+        name.starts_with(internal_database_prefix!())
     }
 
 }
