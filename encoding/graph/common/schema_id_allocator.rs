@@ -33,7 +33,7 @@ use crate::{
 };
 
 pub type TypeVertexAllocator = SchemaIDAllocator<TypeVertex>;
-pub type DefinitionKeyAllocator = SchemaIDAllocator<DefinitionKey<'static>>;
+pub type DefinitionKeyAllocator = SchemaIDAllocator<DefinitionKey>;
 
 pub trait SchemaID: Sized {
     const MIN_ID: u64;
@@ -51,7 +51,7 @@ pub struct SchemaIDAllocator<T: SchemaID> {
     phantom: PhantomData<T>,
 }
 
-impl<'a, T: SchemaID + Keyable<'a, BUFFER_KEY_INLINE>> SchemaIDAllocator<T> {
+impl<T: SchemaID + Keyable<BUFFER_KEY_INLINE>> SchemaIDAllocator<T> {
     pub fn new(prefix: Prefix) -> Self {
         Self { last_allocated_type_id: AtomicU64::new(0), prefix, phantom: PhantomData }
     }
@@ -128,7 +128,7 @@ impl SchemaID for TypeVertex {
     }
 }
 
-impl SchemaID for DefinitionKey<'static> {
+impl SchemaID for DefinitionKey {
     const MIN_ID: u64 = DefinitionIDUInt::MIN as u64;
     const MAX_ID: u64 = DefinitionIDUInt::MAX as u64;
 

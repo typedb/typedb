@@ -43,21 +43,21 @@ use crate::{
     ConceptStatus,
 };
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub enum Object<'a> {
-    Entity(Entity<'a>),
-    Relation(Relation<'a>),
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+pub enum Object {
+    Entity(Entity),
+    Relation(Relation),
 }
 
-impl<'a> Object<'a> {
-    pub fn unwrap_entity(self) -> Entity<'a> {
+impl<'a> Object {
+    pub fn unwrap_entity(self) -> Entity {
         match self {
             Self::Entity(entity) => entity,
             Self::Relation(relation) => panic!("called `Object::unwrap_entity()` on a `Relation` value: {relation:?}"),
         }
     }
 
-    pub fn unwrap_relation(self) -> Relation<'a> {
+    pub fn unwrap_relation(self) -> Relation {
         match self {
             Self::Relation(relation) => relation,
             Self::Entity(entity) => panic!("called `Object::unwrap_relation()` on an `Entity` value: {entity:?}"),
@@ -70,29 +70,15 @@ impl<'a> Object<'a> {
             Object::Relation(relation) => ObjectType::Relation(relation.type_()),
         }
     }
-
-    pub fn as_reference(&self) -> Object<'_> {
-        match self {
-            Object::Entity(entity) => Object::Entity(entity.as_reference()),
-            Object::Relation(relation) => Object::Relation(relation.as_reference()),
-        }
-    }
-
-    pub fn into_owned(self) -> Object<'static> {
-        match self {
-            Object::Entity(entity) => Object::Entity(entity.into_owned()),
-            Object::Relation(relation) => Object::Relation(relation.into_owned()),
-        }
-    }
 }
 
-impl<'a> ThingAPI<'a> for Object<'a> {
-    type TypeAPI<'b> = ObjectType;
-    type Vertex<'b> = ObjectVertex<'b>;
-    type Owned = Object<'static>;
+impl ThingAPI for Object {
+    type TypeAPI = ObjectType;
+    type Vertex = ObjectVertex;
+    type Owned = Object;
     const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix) = (Prefix::VertexEntity, Prefix::VertexRelation);
 
-    fn new(object_vertex: Self::Vertex<'a>) -> Self {
+    fn new(object_vertex: Self::Vertex) -> Self {
         match object_vertex.prefix() {
             Prefix::VertexEntity => Object::Entity(Entity::new(object_vertex)),
             Prefix::VertexRelation => Object::Relation(Relation::new(object_vertex)),
@@ -100,17 +86,10 @@ impl<'a> ThingAPI<'a> for Object<'a> {
         }
     }
 
-    fn vertex(&self) -> Self::Vertex<'_> {
+    fn vertex(&self) -> Self::Vertex {
         match self {
             Object::Entity(entity) => entity.vertex(),
             Object::Relation(relation) => relation.vertex(),
-        }
-    }
-
-    fn into_vertex(self) -> ObjectVertex<'a> {
-        match self {
-            Object::Entity(entity) => entity.into_vertex(),
-            Object::Relation(relation) => relation.into_vertex(),
         }
     }
 
@@ -157,7 +136,7 @@ impl<'a> ThingAPI<'a> for Object<'a> {
         }
     }
 
-    fn prefix_for_type(type_: Self::TypeAPI<'_>) -> Prefix {
+    fn prefix_for_type(type_: Self::TypeAPI) -> Prefix {
         match type_ {
             ObjectType::Entity(entity) => Entity::prefix_for_type(entity),
             ObjectType::Relation(relation) => Relation::prefix_for_type(relation),
@@ -165,13 +144,13 @@ impl<'a> ThingAPI<'a> for Object<'a> {
     }
 }
 
-pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + Clone + fmt::Debug {
-    fn type_(&self) -> impl ObjectTypeAPI<'static>;
+pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
+    fn type_(&self) -> impl ObjectTypeAPI;
 
-    fn into_owned_object(self) -> Object<'static>;
+    fn into_owned_object(self) -> Object;
 
     fn has_attribute_with_value(
-        &self,
+        self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
@@ -181,16 +160,16 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
     }
 
     fn has_attribute(
-        &self,
+        self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        attribute: Attribute<'_>,
+        attribute: Attribute,
     ) -> Result<bool, Box<ConceptReadError>> {
         thing_manager.has_attribute(snapshot, self, attribute)
     }
 
     fn get_has_unordered<'m>(
-        &self,
+        self,
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
     ) -> HasAttributeIterator {
@@ -198,7 +177,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
     }
 
     fn get_has_type_unordered<'m>(
-        &self,
+        self,
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
         attribute_type: AttributeType,
@@ -207,16 +186,16 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
     }
 
     fn get_has_type_ordered<'m>(
-        &self,
+        self,
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
         attribute_type: AttributeType,
-    ) -> Result<Vec<Attribute<'static>>, Box<ConceptReadError>> {
+    ) -> Result<Vec<Attribute>, Box<ConceptReadError>> {
         thing_manager.get_has_from_thing_to_type_ordered(snapshot, self, attribute_type)
     }
 
     fn get_has_types_range_unordered<'m>(
-        &self,
+        self,
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
         attribute_types_defining_range: impl Iterator<Item = AttributeType>,
@@ -225,10 +204,10 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
     }
 
     fn set_has_unordered(
-        &self,
+        self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        attribute: Attribute<'_>,
+        attribute: &Attribute,
     ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_owner_exists_to_set_has(snapshot, thing_manager, self)
             .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
@@ -254,10 +233,10 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
     }
 
     fn unset_has_unordered(
-        &self,
+        self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        attribute: Attribute<'_>,
+        attribute: &Attribute,
     ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_owner_exists_to_unset_has(snapshot, thing_manager, self)
             .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
@@ -281,11 +260,11 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
     }
 
     fn set_has_ordered(
-        &self,
+        self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
-        new_attributes: Vec<Attribute<'_>>,
+        new_attributes: Vec<Attribute>,
     ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_owner_exists_to_set_has(snapshot, thing_manager, self)
             .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
@@ -332,7 +311,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
         // 2. Delete existing but no-longer necessary has, and add new ones, with the correct counts (!)
         for attr in old_counts.keys() {
             if !new_counts.contains_key(attr) {
-                thing_manager.unset_has(snapshot, self, attr.as_reference());
+                thing_manager.unset_has(snapshot, self, attr);
             }
         }
         for (attr, count) in new_counts {
@@ -345,7 +324,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
     }
 
     fn unset_has_ordered(
-        &self,
+        self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
@@ -367,7 +346,7 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
             Ordering::Unordered => Err(Box::new(ConceptWriteError::UnsetHasOrderedOwnsUnordered {})),
             Ordering::Ordered => {
                 for attribute in self.get_has_type_ordered(snapshot, thing_manager, attribute_type)? {
-                    thing_manager.unset_has(snapshot, self, attribute);
+                    thing_manager.unset_has(snapshot, self, &attribute);
                 }
                 thing_manager.unset_has_ordered(snapshot, self, attribute_type);
                 Ok(())
@@ -376,24 +355,24 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
     }
 
     fn get_relations<'m>(
-        &'a self,
+        self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
-    ) -> impl for<'x> LendingIterator<Item<'x> = Result<Relation<'x>, Box<ConceptReadError>>> {
+    ) -> impl Iterator<Item = Result<Relation, Box<ConceptReadError>>> {
         thing_manager.get_relations_player(snapshot, self)
     }
 
     fn get_relations_by_role<'m>(
-        &'a self,
+        self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
         role_type: RoleType,
-    ) -> impl for<'x> LendingIterator<Item<'x> = Result<(Relation<'x>, u64), Box<ConceptReadError>>> {
+    ) -> impl Iterator<Item = Result<(Relation, u64), Box<ConceptReadError>>> {
         thing_manager.get_relations_player_role(snapshot, self, role_type)
     }
 
     fn get_relations_roles<'m>(
-        &self,
+        self,
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
     ) -> RelationRoleIterator {
@@ -429,35 +408,35 @@ pub trait ObjectAPI<'a>: for<'b> ThingAPI<'a, Vertex<'b> = ObjectVertex<'b>> + C
     }
 }
 
-impl<'a> ObjectAPI<'a> for Object<'a> {
-    fn type_(&self) -> impl ObjectTypeAPI<'static> {
+impl ObjectAPI for Object {
+    fn type_(&self) -> impl ObjectTypeAPI {
         self.type_()
     }
 
-    fn into_owned_object(self) -> Object<'static> {
+    fn into_owned_object(self) -> Object {
         self.into_owned()
     }
 }
 
-impl HKInstance for Object<'static> {}
+impl HKInstance for Object {}
 
-impl Hkt for Object<'static> {
-    type HktSelf<'a> = Object<'a>;
+impl Hkt for Object {
+    type HktSelf<'a> = Object;
 }
 
-impl<'a> Ord for Object<'a> {
+impl<'a> Ord for Object {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.vertex().cmp(&other.vertex())
     }
 }
 
-impl<'a> PartialOrd for Object<'a> {
+impl<'a> PartialOrd for Object {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<'a> fmt::Display for Object<'a> {
+impl<'a> fmt::Display for Object {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Object::Entity(entity) => fmt::Display::fmt(entity, f),
@@ -469,39 +448,39 @@ impl<'a> fmt::Display for Object<'a> {
 fn storage_key_has_edge_to_has_attribute<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
-) -> (Attribute<'a>, u64) {
+) -> (Attribute, u64) {
     let edge = ThingEdgeHas::new(storage_key.into_bytes());
-    (Attribute::new(edge.into_to()), decode_value_u64(&value))
+    (Attribute::new(edge.to()), decode_value_u64(&value))
 }
 
 fn storage_key_has_edge_to_has<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
-) -> (Has<'a>, u64) {
+) -> (Has, u64) {
     (Has::new_from_edge(ThingEdgeHas::new(storage_key.into_bytes())), decode_value_u64(&value))
 }
 
 fn storage_key_has_reverse_edge_to_has<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
-) -> (Has<'a>, u64) {
+) -> (Has, u64) {
     (Has::new_from_edge_reverse(ThingEdgeHasReverse::new(storage_key.into_bytes())), decode_value_u64(&value))
 }
 
 edge_iterator!(
     HasAttributeIterator;
-    'a -> (Attribute<'a>, u64);
+    (Attribute, u64);
     storage_key_has_edge_to_has_attribute
 );
 
 edge_iterator!(
     HasIterator;
-    'a -> (Has<'a>, u64);
+    (Has, u64);
     storage_key_has_edge_to_has
 );
 
 edge_iterator!(
     HasReverseIterator;
-    'a -> (Has<'a>, u64);
+    (Has, u64);
     storage_key_has_reverse_edge_to_has
 );

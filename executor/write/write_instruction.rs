@@ -36,7 +36,7 @@ fn get_type<'a>(input: &'a Row<'_>, source: &'a TypeSource) -> &'a answer::Type 
     }
 }
 
-fn get_thing<'a>(input: &'a Row<'a>, source: &ThingSource) -> &'a answer::Thing<'a> {
+fn get_thing<'a>(input: &'a Row<'a>, source: &ThingSource) -> &'a answer::Thing {
     let ThingSource(position) = source;
     input.get(*position).as_thing()
 }

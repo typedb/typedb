@@ -86,7 +86,7 @@ pub struct AnnotatedFunctionSignature {
 }
 
 pub type AnnotatedPreambleFunctions = Vec<AnnotatedFunction>;
-pub type AnnotatedSchemaFunctions = HashMap<DefinitionKey<'static>, AnnotatedFunction>;
+pub type AnnotatedSchemaFunctions = HashMap<DefinitionKey, AnnotatedFunction>;
 
 trait GetAnnotatedSignature {
     fn get_annotated_signature(&self) -> &AnnotatedFunctionSignature;
@@ -110,12 +110,12 @@ pub trait AnnotatedFunctionSignatures {
 
 #[derive(Debug)]
 pub struct AnnotatedFunctionSignaturesImpl<'a, T1: GetAnnotatedSignature, T2: GetAnnotatedSignature> {
-    schema_functions: &'a HashMap<DefinitionKey<'static>, T1>,
+    schema_functions: &'a HashMap<DefinitionKey, T1>,
     local_functions: &'a Vec<T2>,
 }
 
 impl<'a, T1: GetAnnotatedSignature, T2: GetAnnotatedSignature> AnnotatedFunctionSignaturesImpl<'a, T1, T2> {
-    pub(crate) fn new(schema_functions: &'a HashMap<DefinitionKey<'static>, T1>, local_functions: &'a Vec<T2>) -> Self {
+    pub(crate) fn new(schema_functions: &'a HashMap<DefinitionKey, T1>, local_functions: &'a Vec<T2>) -> Self {
         Self { schema_functions, local_functions }
     }
 
@@ -139,7 +139,7 @@ impl<'a, T1: GetAnnotatedSignature, T2: GetAnnotatedSignature> AnnotatedFunction
 }
 
 pub fn annotate_stored_functions<'a>(
-    functions: &mut HashMap<DefinitionKey<'static>, Function>,
+    functions: &mut HashMap<DefinitionKey, Function>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
 ) -> Result<AnnotatedSchemaFunctions, Box<FunctionAnnotationError>> {

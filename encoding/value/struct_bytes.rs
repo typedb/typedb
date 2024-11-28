@@ -74,9 +74,9 @@ impl<'a, const INLINE_LENGTH: usize> StructBytes<'a, INLINE_LENGTH> {
     }
 }
 
-impl<'a, const INLINE_LENGTH: usize> AsBytes<'a, INLINE_LENGTH> for StructBytes<'a, INLINE_LENGTH> {
-    fn into_bytes(self) -> Bytes<'a, INLINE_LENGTH> {
-        self.bytes
+impl<'a, const INLINE_LENGTH: usize> AsBytes<INLINE_LENGTH> for StructBytes<'a, INLINE_LENGTH> {
+    fn to_bytes(self) -> Bytes<'static, INLINE_LENGTH> {
+        Bytes::copy(&self.bytes)
     }
 }
 

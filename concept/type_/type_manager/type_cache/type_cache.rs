@@ -35,7 +35,7 @@ use crate::type_::{
         selection::{CacheGetter, HasCommonTypeCache, HasObjectCache},
         struct_definition_cache::StructDefinitionCache,
     },
-    KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+    KindAPI, Ordering, OwnerAPI, PlayerAPI,
 };
 
 // TODO: could/should we slab allocate the schema cache?
@@ -55,11 +55,11 @@ pub struct TypeCache {
 
     struct_definitions: Box<[Option<StructDefinitionCache>]>,
 
-    entity_types_index_label: HashMap<Arc<Label<'static>>, EntityType>,
-    relation_types_index_label: HashMap<Arc<Label<'static>>, RelationType>,
-    role_types_index_label: HashMap<Arc<Label<'static>>, RoleType>,
-    attribute_types_index_label: HashMap<Arc<Label<'static>>, AttributeType>,
-    struct_definition_index_by_name: HashMap<String, DefinitionKey<'static>>,
+    entity_types_index_label: HashMap<Arc<Label>, EntityType>,
+    relation_types_index_label: HashMap<Arc<Label>, RelationType>,
+    role_types_index_label: HashMap<Arc<Label>, RoleType>,
+    attribute_types_index_label: HashMap<Arc<Label>, AttributeType>,
+    struct_definition_index_by_name: HashMap<String, DefinitionKey>,
 
     role_types_by_name: HashMap<String, Vec<RoleType>>,
     // specific caches to simplify architectures
@@ -151,19 +151,19 @@ impl TypeCache {
         })
     }
 
-    fn build_label_to_type_index<T: KindAPI<'static>, Cache: HasCommonTypeCache<T>>(
+    fn build_label_to_type_index<T: KindAPI, Cache: HasCommonTypeCache<T>>(
         type_cache_array: &[Option<Cache>],
-    ) -> HashMap<Arc<Label<'static>>, T> {
+    ) -> HashMap<Arc<Label>, T> {
         type_cache_array
             .iter()
             .flatten()
-            .map(|cache| (cache.common_type_cache().label.clone(), cache.common_type_cache().type_.clone()))
+            .map(|cache| (cache.common_type_cache().label.clone(), cache.common_type_cache().type_))
             .collect()
     }
 
     fn build_name_to_struct_definition_index(
         struct_cache_array: &[Option<StructDefinitionCache>],
-    ) -> HashMap<String, DefinitionKey<'static>> {
+    ) -> HashMap<String, DefinitionKey> {
         struct_cache_array
             .iter()
             .flatten()
@@ -171,20 +171,20 @@ impl TypeCache {
             .collect()
     }
 
-    pub(crate) fn get_object_type(&self, label: &Label<'_>) -> Option<ObjectType> {
+    pub(crate) fn get_object_type(&self, label: &Label) -> Option<ObjectType> {
         (self.get_entity_type(label).map(ObjectType::Entity))
             .or_else(|| self.get_relation_type(label).map(ObjectType::Relation))
     }
 
-    pub(crate) fn get_entity_type(&self, label: &Label<'_>) -> Option<EntityType> {
+    pub(crate) fn get_entity_type(&self, label: &Label) -> Option<EntityType> {
         self.entity_types_index_label.get(label).cloned()
     }
 
-    pub(crate) fn get_relation_type(&self, label: &Label<'_>) -> Option<RelationType> {
+    pub(crate) fn get_relation_type(&self, label: &Label) -> Option<RelationType> {
         self.relation_types_index_label.get(label).cloned()
     }
 
-    pub(crate) fn get_role_type(&self, label: &Label<'_>) -> Option<RoleType> {
+    pub(crate) fn get_role_type(&self, label: &Label) -> Option<RoleType> {
         self.role_types_index_label.get(label).cloned()
     }
 
@@ -192,7 +192,7 @@ impl TypeCache {
         self.role_types_by_name.get(name).map(|v| &**v)
     }
 
-    pub(crate) fn get_attribute_type(&self, label: &Label<'_>) -> Option<AttributeType> {
+    pub(crate) fn get_attribute_type(&self, label: &Label) -> Option<AttributeType> {
         self.attribute_types_index_label.get(label).cloned()
     }
 
@@ -218,50 +218,50 @@ impl TypeCache {
         self.role_types.iter().filter_map(Option::as_ref).map(|cache| cache.common_type_cache().type_).collect()
     }
 
-    pub(crate) fn get_supertype<'a, 'this, T, CACHE>(&'this self, type_: T) -> Option<T::SelfStatic>
+    pub(crate) fn get_supertype<'a, 'this, T, CACHE>(&'this self, type_: T) -> Option<T>
     where
-        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
-        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
+        T: KindAPI + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T> + 'this,
     {
-        Some(T::get_cache(self, type_).common_type_cache().supertype.as_ref()?.clone())
+        Some(*T::get_cache(self, type_).common_type_cache().supertype.as_ref()?)
     }
 
-    pub(crate) fn get_supertypes_transitive<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Vec<T::SelfStatic>
+    pub(crate) fn get_supertypes_transitive<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Vec<T>
     where
-        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
-        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
+        T: KindAPI + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T> + 'this,
     {
         &T::get_cache(self, type_).common_type_cache().supertypes_transitive
     }
 
-    pub(crate) fn get_subtypes<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this HashSet<T::SelfStatic>
+    pub(crate) fn get_subtypes<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this HashSet<T>
     where
-        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
-        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
+        T: KindAPI + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T> + 'this,
     {
         &T::get_cache(self, type_).common_type_cache().subtypes
     }
 
-    pub(crate) fn get_subtypes_transitive<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Vec<T::SelfStatic>
+    pub(crate) fn get_subtypes_transitive<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Vec<T>
     where
-        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
-        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
+        T: KindAPI + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T> + 'this,
     {
         &T::get_cache(self, type_).common_type_cache().subtypes_transitive
     }
 
-    pub(crate) fn get_label<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Label<'static>
+    pub(crate) fn get_label<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Label
     where
-        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
-        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
+        T: KindAPI + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T> + 'this,
     {
         &T::get_cache(self, type_).common_type_cache().label
     }
 
-    pub(crate) fn get_label_owned<'a, 'this, T, CACHE>(&'this self, type_: T) -> Arc<Label<'static>>
+    pub(crate) fn get_label_owned<'a, 'this, T, CACHE>(&'this self, type_: T) -> Arc<Label>
     where
-        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
-        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
+        T: KindAPI + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T> + 'this,
     {
         T::get_cache(self, type_).common_type_cache().label.clone()
     }
@@ -269,17 +269,17 @@ impl TypeCache {
     pub(crate) fn get_annotations_declared<'a, 'this, T, CACHE>(
         &'this self,
         type_: T,
-    ) -> &HashSet<<<T as TypeAPI<'a>>::SelfStatic as KindAPI<'static>>::AnnotationType>
+    ) -> &HashSet<<T as KindAPI>::AnnotationType>
     where
-        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
-        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
+        T: KindAPI + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T> + 'this,
     {
         &T::get_cache(self, type_).common_type_cache().annotations_declared
     }
 
     pub(crate) fn get_constraints<'this, T, CACHE>(&'this self, type_: T) -> &HashSet<TypeConstraint<T>>
     where
-        T: KindAPI<'static> + CacheGetter<CacheType = CACHE>,
+        T: KindAPI + CacheGetter<CacheType = CACHE>,
         CACHE: HasCommonTypeCache<T> + 'this,
     {
         &T::get_cache(self, type_).common_type_cache().constraints
@@ -295,7 +295,7 @@ impl TypeCache {
 
     pub(crate) fn get_owns_declared<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Owns>
     where
-        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        T: OwnerAPI + PlayerAPI + CacheGetter<CacheType = CACHE>,
         CACHE: HasObjectCache + 'this,
     {
         &T::get_cache(self, type_).object_cache().owns_declared
@@ -303,7 +303,7 @@ impl TypeCache {
 
     pub(crate) fn get_owns<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Owns>
     where
-        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        T: OwnerAPI + PlayerAPI + CacheGetter<CacheType = CACHE>,
         CACHE: HasObjectCache + 'this,
     {
         &T::get_cache(self, type_).object_cache().owns
@@ -311,7 +311,7 @@ impl TypeCache {
 
     pub(crate) fn get_owns_with_specialised<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Owns>
     where
-        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        T: OwnerAPI + PlayerAPI + CacheGetter<CacheType = CACHE>,
         CACHE: HasObjectCache + 'this,
     {
         &T::get_cache(self, type_).object_cache().owns_with_specialised
@@ -322,7 +322,7 @@ impl TypeCache {
         type_: T,
     ) -> &'this HashMap<AttributeType, HashSet<CapabilityConstraint<Owns>>>
     where
-        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        T: OwnerAPI + PlayerAPI + CacheGetter<CacheType = CACHE>,
         CACHE: HasObjectCache + 'this,
     {
         &T::get_cache(self, type_).object_cache().owned_attribute_type_constraints
@@ -389,7 +389,7 @@ impl TypeCache {
 
     pub(crate) fn get_plays_declared<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Plays>
     where
-        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        T: OwnerAPI + PlayerAPI + CacheGetter<CacheType = CACHE>,
         CACHE: HasObjectCache + 'this,
     {
         &T::get_cache(self, type_).object_cache().plays_declared
@@ -397,7 +397,7 @@ impl TypeCache {
 
     pub(crate) fn get_plays<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this HashSet<Plays>
     where
-        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        T: OwnerAPI + PlayerAPI + CacheGetter<CacheType = CACHE>,
         CACHE: HasObjectCache + 'this,
     {
         &T::get_cache(self, type_).object_cache().plays
@@ -405,7 +405,7 @@ impl TypeCache {
 
     pub(crate) fn get_plays_with_specialised<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this HashSet<Plays>
     where
-        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        T: OwnerAPI + PlayerAPI + CacheGetter<CacheType = CACHE>,
         CACHE: HasObjectCache + 'this,
     {
         &T::get_cache(self, type_).object_cache().plays_with_specialised
@@ -416,7 +416,7 @@ impl TypeCache {
         type_: T,
     ) -> &'this HashMap<RoleType, HashSet<CapabilityConstraint<Plays>>>
     where
-        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        T: OwnerAPI + PlayerAPI + CacheGetter<CacheType = CACHE>,
         CACHE: HasObjectCache + 'this,
     {
         &T::get_cache(self, type_).object_cache().played_role_type_constraints
@@ -453,11 +453,11 @@ impl TypeCache {
         self.owns.get(&owns).unwrap().ordering
     }
 
-    pub(crate) fn get_struct_definition_key(&self, label: &str) -> Option<DefinitionKey<'static>> {
+    pub(crate) fn get_struct_definition_key(&self, label: &str) -> Option<DefinitionKey> {
         self.struct_definition_index_by_name.get(label).cloned()
     }
 
-    pub(crate) fn get_struct_definition(&self, definition_key: DefinitionKey<'static>) -> &StructDefinition {
+    pub(crate) fn get_struct_definition(&self, definition_key: DefinitionKey) -> &StructDefinition {
         &self.struct_definitions[definition_key.definition_id().as_uint() as usize].as_ref().unwrap().definition
     }
 

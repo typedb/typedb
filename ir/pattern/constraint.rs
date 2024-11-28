@@ -110,7 +110,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
     pub fn add_label(
         &mut self,
         variable: Variable,
-        label: encoding::value::label::Label<'static>,
+        label: encoding::value::label::Label,
     ) -> Result<&Label<Variable>, Box<RepresentationError>> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let type_ = Label::new(variable, label);
@@ -810,7 +810,7 @@ pub struct Label<ID> {
 }
 
 impl<ID: IrID> Label<ID> {
-    fn new(left: ID, type_label: encoding::value::label::Label<'static>) -> Self {
+    fn new(left: ID, type_label: encoding::value::label::Label) -> Self {
         let type_label = Vertex::Label(type_label);
         Self { type_var: Vertex::Variable(left), type_label }
     }

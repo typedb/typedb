@@ -21,7 +21,7 @@ use encoding::{
         },
         type_::index::NameToFunctionDefinitionIndex,
     },
-    AsBytes, Keyable,
+    Keyable,
 };
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern},
@@ -170,7 +170,7 @@ impl FunctionManager {
         for (function, definition) in zip(functions.iter(), [definition].iter()) {
             let index_key = NameToFunctionDefinitionIndex::build(function.name().as_str()).into_storage_key();
             let definition_key = &function.function_id;
-            snapshot.put_val(index_key.into_owned_array(), ByteArray::copy(definition_key.bytes().bytes()));
+            snapshot.put_val(index_key.into_owned_array(), ByteArray::copy(definition_key.bytes()));
             snapshot.put_val(
                 definition_key.clone().into_storage_key().into_owned_array(),
                 FunctionDefinition::build_ref(definition.unparsed.as_str()).into_bytes().into_array(),
@@ -184,7 +184,7 @@ impl FunctionManager {
         snapshot: &impl ReadableSnapshot,
         functions: &[SchemaFunction],
         function_index: &impl FunctionSignatureIndex,
-    ) -> Result<HashMap<DefinitionKey<'static>, ir::pipeline::function::Function>, FunctionError> {
+    ) -> Result<HashMap<DefinitionKey, ir::pipeline::function::Function>, FunctionError> {
         functions
             .iter()
             .map(|function| {
@@ -199,7 +199,7 @@ impl FunctionManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         name: &str,
-    ) -> Result<Option<DefinitionKey<'static>>, FunctionReadError> {
+    ) -> Result<Option<DefinitionKey>, FunctionReadError> {
         if let Some(cache) = &self.function_cache {
             Ok(cache.get_function_key(name))
         } else {
@@ -210,7 +210,7 @@ impl FunctionManager {
     pub fn get_function(
         &self,
         snapshot: &impl ReadableSnapshot,
-        definition_key: DefinitionKey<'static>,
+        definition_key: DefinitionKey,
     ) -> Result<MaybeOwns<SchemaFunction>, FunctionReadError> {
         if let Some(cache) = &self.function_cache {
             Ok(MaybeOwns::Borrowed(cache.get_function(definition_key).unwrap()))
@@ -244,7 +244,7 @@ impl FunctionReader {
     pub(crate) fn get_function_key(
         snapshot: &impl ReadableSnapshot,
         name: &str,
-    ) -> Result<Option<DefinitionKey<'static>>, FunctionReadError> {
+    ) -> Result<Option<DefinitionKey>, FunctionReadError> {
         let index_key = NameToFunctionDefinitionIndex::build(name);
         let bytes_opt = snapshot
             .get(index_key.into_storage_key().as_reference())
@@ -254,7 +254,7 @@ impl FunctionReader {
 
     pub(crate) fn get_function(
         snapshot: &impl ReadableSnapshot,
-        definition_key: DefinitionKey<'static>,
+        definition_key: DefinitionKey,
     ) -> Result<SchemaFunction, FunctionReadError> {
         snapshot
             .get::<BUFFER_VALUE_INLINE>(definition_key.clone().into_storage_key().as_reference())

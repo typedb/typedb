@@ -60,9 +60,9 @@ impl Hkt for RelationType {
     type HktSelf<'a> = RelationType;
 }
 
-impl<'a> ConceptAPI<'a> for RelationType {}
+impl ConceptAPI for RelationType {}
 
-impl<'a> TypeVertexEncoding<'a> for RelationType {
+impl TypeVertexEncoding for RelationType {
     fn from_vertex(vertex: TypeVertex) -> Result<Self, EncodingError> {
         debug_assert!(Self::PREFIX == VertexRelationType);
         if vertex.prefix() != Prefix::VertexRelationType {
@@ -81,13 +81,11 @@ impl<'a> TypeVertexEncoding<'a> for RelationType {
     }
 }
 
-impl<'a> PrefixedTypeVertexEncoding<'a> for RelationType {
+impl PrefixedTypeVertexEncoding for RelationType {
     const PREFIX: Prefix = VertexRelationType;
 }
 
-impl<'a> TypeAPI<'a> for RelationType {
-    type SelfStatic = RelationType;
-
+impl TypeAPI for RelationType {
     fn new(vertex: TypeVertex) -> RelationType {
         Self::from_vertex(vertex).unwrap()
     }
@@ -113,7 +111,7 @@ impl<'a> TypeAPI<'a> for RelationType {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Label<'static>>, Box<ConceptReadError>> {
+    ) -> Result<MaybeOwns<'m, Label>, Box<ConceptReadError>> {
         type_manager.get_relation_type_label(snapshot, (*self).into_owned())
     }
 
@@ -121,7 +119,7 @@ impl<'a> TypeAPI<'a> for RelationType {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Arc<Label<'static>>, Box<ConceptReadError>> {
+    ) -> Result<Arc<Label>, Box<ConceptReadError>> {
         type_manager.get_relation_type_label_arc(snapshot, (*self).into_owned())
     }
 
@@ -158,7 +156,7 @@ impl<'a> TypeAPI<'a> for RelationType {
     }
 }
 
-impl<'a> KindAPI<'a> for RelationType {
+impl<'a> KindAPI for RelationType {
     type AnnotationType = RelationTypeAnnotation;
     const KIND: Kind = Kind::Relation;
 
@@ -171,22 +169,19 @@ impl<'a> KindAPI<'a> for RelationType {
     }
 
     fn get_constraints<'m>(
-        &self,
+        self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<RelationType>>>, Box<ConceptReadError>>
-    where
-        'a: 'static,
-    {
-        type_manager.get_relation_type_constraints(snapshot, (*self).into_owned())
+    ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<RelationType>>>, Box<ConceptReadError>> {
+        type_manager.get_relation_type_constraints(snapshot, self)
     }
 }
 
-impl<'a> ThingTypeAPI<'a> for RelationType {
-    type InstanceType<'b> = Relation<'b>;
+impl ThingTypeAPI for RelationType {
+    type InstanceType = Relation;
 }
 
-impl<'a> ObjectTypeAPI<'a> for RelationType {
+impl<'a> ObjectTypeAPI for RelationType {
     fn into_owned_object_type(self) -> ObjectType {
         ObjectType::Relation(self.into_owned())
     }
@@ -197,7 +192,7 @@ impl RelationType {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
-        label: &Label<'_>,
+        label: &Label,
     ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.set_relation_type_label(snapshot, (*self).into_owned(), label)
     }
@@ -489,7 +484,7 @@ impl primitive::prefix::Prefix for RelationType {
     }
 }
 
-impl<'a> OwnerAPI<'a> for RelationType {
+impl OwnerAPI for RelationType {
     fn set_owns(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -619,7 +614,7 @@ impl<'a> OwnerAPI<'a> for RelationType {
     }
 }
 
-impl<'a> PlayerAPI<'a> for RelationType {
+impl PlayerAPI for RelationType {
     fn set_plays(
         &self,
         snapshot: &mut impl WritableSnapshot,

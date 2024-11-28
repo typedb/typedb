@@ -18,7 +18,7 @@ use encoding::value::{timezone::TimeZone, value::Value, value_type::ValueType};
 use storage::snapshot::ReadableSnapshot;
 
 pub(crate) fn encode_thing_concept(
-    thing: &Thing<'_>,
+    thing: &Thing,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
@@ -49,7 +49,7 @@ pub(crate) fn encode_thing_concept(
 }
 
 pub(crate) fn encode_entity(
-    entity: &Entity<'_>,
+    entity: &Entity,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     include_thing_types: bool,
@@ -65,7 +65,7 @@ pub(crate) fn encode_entity(
 }
 
 pub(crate) fn encode_relation(
-    relation: &Relation<'_>,
+    relation: &Relation,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     include_thing_types: bool,
@@ -81,7 +81,7 @@ pub(crate) fn encode_relation(
 }
 
 pub(crate) fn encode_attribute(
-    attribute: &Attribute<'_>,
+    attribute: &Attribute,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,

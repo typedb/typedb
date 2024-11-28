@@ -477,13 +477,7 @@ impl CheckVertex<ExecutorVariable> {
             Vertex::Variable(var) => Self::Variable(var),
             Vertex::Parameter(param) => Self::Parameter(param),
             Vertex::Label(label) => Self::Type(
-                type_annotations
-                    .vertex_annotations_of(&Vertex::Label(label))
-                    .unwrap()
-                    .iter()
-                    .exactly_one()
-                    .unwrap()
-                    .clone(),
+                *type_annotations.vertex_annotations_of(&Vertex::Label(label)).unwrap().iter().exactly_one().unwrap(),
             ),
         }
     }

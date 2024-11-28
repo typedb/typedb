@@ -50,8 +50,8 @@ macro_rules! validate_capability_cardinality_constraint {
         pub(crate) fn $func_name(
             snapshot: &impl ReadableSnapshot,
             thing_manager: &ThingManager,
-            object: $object_instance<'_>,
-            interface_types_to_check: HashSet<<$capability_type as Capability<'static>>::InterfaceType>,
+            object: $object_instance,
+            interface_types_to_check: HashSet<<$capability_type as Capability>::InterfaceType>,
         ) -> Result<(), Box<DataValidationError>> {
             let mut cardinality_constraints: HashSet<CapabilityConstraint<$capability_type>> = HashSet::new();
             let counts = object
@@ -88,14 +88,7 @@ macro_rules! validate_capability_cardinality_constraint {
                     TypeAPI::chain_types(source_interface_type.clone(), sub_interface_types.into_iter().cloned())
                         .filter_map(|interface_type| counts.get(&interface_type))
                         .sum();
-                $check_func(
-                    snapshot,
-                    thing_manager.type_manager(),
-                    &constraint,
-                    object.as_reference(),
-                    source_interface_type,
-                    count,
-                )?;
+                $check_func(snapshot, thing_manager.type_manager(), &constraint, object, source_interface_type, count)?;
             }
 
             Ok(())
@@ -109,7 +102,7 @@ impl CommitTimeValidation {
     pub(crate) fn validate_object_has(
         snapshot: &impl WritableSnapshot,
         thing_manager: &ThingManager,
-        object: Object<'_>,
+        object: Object,
         modified_attribute_types: HashSet<AttributeType>,
         out_errors: &mut Vec<Box<DataValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
@@ -126,7 +119,7 @@ impl CommitTimeValidation {
     pub(crate) fn validate_object_links(
         snapshot: &impl WritableSnapshot,
         thing_manager: &ThingManager,
-        object: Object<'_>,
+        object: Object,
         modified_role_types: HashSet<RoleType>,
         out_errors: &mut Vec<Box<DataValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
@@ -139,7 +132,7 @@ impl CommitTimeValidation {
     pub(crate) fn validate_relation_links(
         snapshot: &impl WritableSnapshot,
         thing_manager: &ThingManager,
-        relation: Relation<'_>,
+        relation: Relation,
         modified_role_types: HashSet<RoleType>,
         out_errors: &mut Vec<Box<DataValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {

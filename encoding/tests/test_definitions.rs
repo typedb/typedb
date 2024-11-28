@@ -26,7 +26,7 @@ fn define_struct<Snapshot: WritableSnapshot>(
     snapshot: &mut Snapshot,
     definition_key_generator: &DefinitionKeyGenerator,
     definition: StructDefinition,
-) -> DefinitionKey<'static> {
+) -> DefinitionKey {
     let definition_key = definition_key_generator.create_struct(snapshot).unwrap();
     // Store definition
     snapshot.put_val(
@@ -34,20 +34,18 @@ fn define_struct<Snapshot: WritableSnapshot>(
         definition.clone().into_bytes().unwrap().into_array(),
     );
     let index_key = NameToStructDefinitionIndex::build(definition.name.as_str());
-    snapshot.put_val(
-        index_key.into_storage_key().into_owned_array(),
-        ByteArray::copy(&definition_key.clone().into_bytes()),
-    );
+    snapshot
+        .put_val(index_key.into_storage_key().into_owned_array(), ByteArray::copy(&definition_key.clone().to_bytes()));
     definition_key
 }
 
-fn get_struct_key(snapshot: &impl ReadableSnapshot, name: String) -> Option<DefinitionKey<'static>> {
+fn get_struct_key(snapshot: &impl ReadableSnapshot, name: String) -> Option<DefinitionKey> {
     let index_key = NameToStructDefinitionIndex::build(name.as_str());
     let bytes = snapshot.get(index_key.into_storage_key().as_reference()).unwrap();
     bytes.map(|value| DefinitionKey::new(Bytes::Array(value)))
 }
 
-fn get_struct_definition(snapshot: &impl ReadableSnapshot, definition_key: &DefinitionKey<'_>) -> StructDefinition {
+fn get_struct_definition(snapshot: &impl ReadableSnapshot, definition_key: &DefinitionKey) -> StructDefinition {
     let bytes = snapshot.get::<BUFFER_VALUE_INLINE>(definition_key.clone().into_storage_key().as_reference()).unwrap();
     StructDefinition::from_bytes(&bytes.unwrap())
 }

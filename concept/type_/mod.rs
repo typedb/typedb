@@ -82,12 +82,10 @@ macro_rules! get_with_specialised {
 }
 pub(crate) use get_with_specialised;
 
-pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone + Hash + Eq + 'a {
-    type SelfStatic: KindAPI<'static> + 'static;
-
+pub trait TypeAPI: ConceptAPI + TypeVertexEncoding + Copy + Sized + Hash + Eq {
     fn new(vertex: TypeVertex) -> Self;
 
-    fn read_from(b: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
+    fn read_from(b: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         Self::from_bytes(b).unwrap()
     }
 
@@ -108,13 +106,13 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Label<'static>>, Box<ConceptReadError>>;
+    ) -> Result<MaybeOwns<'m, Label>, Box<ConceptReadError>>;
 
     fn get_label_arc(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Arc<Label<'static>>, Box<ConceptReadError>>;
+    ) -> Result<Arc<Label>, Box<ConceptReadError>>;
 
     fn get_supertype(
         &self,
@@ -154,7 +152,7 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
         type_manager: &TypeManager,
         other: Self,
     ) -> Result<bool, Box<ConceptReadError>> {
-        Ok(other.get_supertype(snapshot, type_manager)?.eq(&Some(self.clone())))
+        Ok(other.get_supertype(snapshot, type_manager)?.eq(&Some(*self)))
     }
 
     fn is_supertype_transitive_of(
@@ -207,7 +205,7 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
     }
 }
 
-pub trait KindAPI<'a>: TypeAPI<'a> {
+pub trait KindAPI: TypeAPI {
     type AnnotationType: Hash + Eq + Clone + TryFrom<Annotation, Error = AnnotationError> + Into<Annotation>;
     const KIND: Kind;
 
@@ -217,24 +215,22 @@ pub trait KindAPI<'a>: TypeAPI<'a> {
         type_manager: &'this TypeManager,
     ) -> Result<MaybeOwns<'this, HashSet<Self::AnnotationType>>, Box<ConceptReadError>>;
 
-    fn get_constraints<'this>(
-        &'this self,
+    fn get_constraints<'a>(
+        self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<TypeConstraint<Self>>>, Box<ConceptReadError>>
-    where
-        'a: 'static;
+        type_manager: &'a TypeManager,
+    ) -> Result<MaybeOwns<'a, HashSet<TypeConstraint<Self>>>, Box<ConceptReadError>>;
 }
 
-pub trait ObjectTypeAPI<'a>: TypeAPI<'a> + OwnerAPI<'a> + ThingTypeAPI<'a> {
+pub trait ObjectTypeAPI: TypeAPI + OwnerAPI + ThingTypeAPI {
     fn into_owned_object_type(self) -> ObjectType;
 }
 
-pub trait ThingTypeAPI<'a>: TypeAPI<'a> {
-    type InstanceType<'b>: ThingAPI<'b>;
+pub trait ThingTypeAPI: TypeAPI {
+    type InstanceType: ThingAPI;
 }
 
-pub trait OwnerAPI<'a>: TypeAPI<'a> {
+pub trait OwnerAPI: TypeAPI {
     fn set_owns(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -434,7 +430,7 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
     }
 }
 
-pub trait PlayerAPI<'a>: TypeAPI<'a> {
+pub trait PlayerAPI: TypeAPI {
     fn set_plays(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -573,7 +569,7 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         let mut result: Option<Plays> = None;
         for plays in self.get_plays(snapshot, type_manager)?.into_iter() {
             if plays.role().get_label(snapshot, type_manager)?.name.as_str() == role_name {
-                result = Some(plays.clone());
+                result = Some(*plays);
                 break;
             }
         }
@@ -621,36 +617,36 @@ impl fmt::Display for Ordering {
     }
 }
 
-impl<'a> TypeVertexPropertyEncoding<'a> for Ordering {
+impl TypeVertexPropertyEncoding for Ordering {
     const INFIX: Infix = Infix::PropertyOrdering;
 
     fn from_value_bytes(value: &[u8]) -> Ordering {
         bincode::deserialize(value).unwrap()
     }
 
-    fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
         Some(Bytes::copy(bincode::serialize(self).unwrap().as_slice()))
     }
 }
 
-impl<'a> TypeEdgePropertyEncoding<'a> for Ordering {
+impl TypeEdgePropertyEncoding for Ordering {
     const INFIX: Infix = Infix::PropertyOrdering;
 
     fn from_value_bytes(value: &[u8]) -> Ordering {
         bincode::deserialize(value).unwrap()
     }
 
-    fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
         Some(Bytes::copy(bincode::serialize(self).unwrap().as_slice()))
     }
 }
 
-pub trait Capability<'a>:
-    TypeEdgeEncoding<'a, From = Self::ObjectType, To = Self::InterfaceType> + Sized + Clone + Hash + Eq + 'a
+pub trait Capability:
+    TypeEdgeEncoding<From = Self::ObjectType, To = Self::InterfaceType> + Sized + Copy + Hash + Eq + 'static
 {
     type AnnotationType: Hash + Eq + Clone + TryFrom<Annotation, Error = AnnotationError> + Into<Annotation>;
-    type ObjectType: TypeAPI<'a>;
-    type InterfaceType: KindAPI<'a>;
+    type ObjectType: TypeAPI;
+    type InterfaceType: KindAPI;
     const KIND: CapabilityKind;
 
     fn new(object_type: Self::ObjectType, attribute_type: Self::InterfaceType) -> Self;
@@ -671,21 +667,17 @@ pub trait Capability<'a>:
         type_manager: &'this TypeManager,
     ) -> Result<MaybeOwns<'this, HashSet<Self::AnnotationType>>, Box<ConceptReadError>>;
 
-    fn get_constraints<'this>(
-        &'this self,
+    fn get_constraints<'a>(
+        self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<CapabilityConstraint<Self>>>, Box<ConceptReadError>>
-    where
-        'a: 'static;
+        type_manager: &'a TypeManager,
+    ) -> Result<MaybeOwns<'a, HashSet<CapabilityConstraint<Self>>>, Box<ConceptReadError>>;
 
     fn get_cardinality_constraints(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<CapabilityConstraint<Self>>, Box<ConceptReadError>>
-    where
-        'a: 'static;
+    ) -> Result<HashSet<CapabilityConstraint<Self>>, Box<ConceptReadError>>;
 
     fn get_cardinality(
         &self,

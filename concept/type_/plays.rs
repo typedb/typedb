@@ -27,7 +27,7 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct Plays {
     player: ObjectType,
     role: RoleType,
@@ -59,7 +59,7 @@ impl Plays {
             PlaysAnnotation::Cardinality(cardinality) => type_manager.set_plays_annotation_cardinality(
                 snapshot,
                 thing_manager,
-                self.clone().into_owned(),
+                (*self).into_owned(),
                 cardinality,
             )?,
         }
@@ -77,7 +77,7 @@ impl Plays {
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match plays_annotation {
             PlaysAnnotation::Cardinality(_) => {
-                type_manager.unset_plays_annotation_cardinality(snapshot, thing_manager, self.clone().into_owned())?
+                type_manager.unset_plays_annotation_cardinality(snapshot, thing_manager, (*self).into_owned())?
             }
         }
         Ok(())
@@ -88,7 +88,7 @@ impl Plays {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Option<CapabilityConstraint<Plays>>, Box<ConceptReadError>> {
-        type_manager.get_capability_abstract_constraint(snapshot, self.clone().into_owned())
+        type_manager.get_capability_abstract_constraint(snapshot, (*self).into_owned())
     }
 
     pub fn get_default_cardinality() -> AnnotationCardinality {
@@ -100,7 +100,7 @@ impl Plays {
     }
 }
 
-impl<'a> TypeEdgeEncoding<'a> for Plays {
+impl<'a> TypeEdgeEncoding for Plays {
     const CANONICAL_PREFIX: Prefix = Prefix::EdgePlays;
     const REVERSE_PREFIX: Prefix = Prefix::EdgePlaysReverse;
     type From = ObjectType;
@@ -119,7 +119,7 @@ impl<'a> TypeEdgeEncoding<'a> for Plays {
     }
 }
 
-impl<'a> Capability<'a> for Plays {
+impl Capability for Plays {
     type AnnotationType = PlaysAnnotation;
     type ObjectType = ObjectType;
     type InterfaceType = RoleType;
@@ -152,18 +152,15 @@ impl<'a> Capability<'a> for Plays {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
     ) -> Result<MaybeOwns<'this, HashSet<PlaysAnnotation>>, Box<ConceptReadError>> {
-        type_manager.get_plays_annotations_declared(snapshot, self.clone().into_owned())
+        type_manager.get_plays_annotations_declared(snapshot, (*self).into_owned())
     }
 
-    fn get_constraints<'this>(
-        &'this self,
+    fn get_constraints<'a>(
+        self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<CapabilityConstraint<Plays>>>, Box<ConceptReadError>>
-    where
-        'a: 'static,
-    {
-        type_manager.get_plays_constraints(snapshot, self.clone().into_owned())
+        type_manager: &'a TypeManager,
+    ) -> Result<MaybeOwns<'a, HashSet<CapabilityConstraint<Plays>>>, Box<ConceptReadError>> {
+        type_manager.get_plays_constraints(snapshot, self.into_owned())
     }
 
     fn get_cardinality_constraints(
@@ -171,7 +168,7 @@ impl<'a> Capability<'a> for Plays {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<HashSet<CapabilityConstraint<Plays>>, Box<ConceptReadError>> {
-        type_manager.get_plays_cardinality_constraints(snapshot, self.clone().into_owned())
+        type_manager.get_plays_cardinality_constraints(snapshot, (*self).into_owned())
     }
 
     fn get_cardinality(
@@ -179,7 +176,7 @@ impl<'a> Capability<'a> for Plays {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<AnnotationCardinality, Box<ConceptReadError>> {
-        type_manager.get_capability_cardinality(snapshot, self.clone().into_owned())
+        type_manager.get_capability_cardinality(snapshot, (*self).into_owned())
     }
 }
 

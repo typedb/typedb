@@ -389,14 +389,14 @@ impl<'a> ValueEncodable for Value<'a> {
         }
     }
 
-    fn encode_string<const INLINE_LENGTH: usize>(&self) -> StringBytes<'_, INLINE_LENGTH> {
+    fn encode_string<const INLINE_LENGTH: usize>(&self) -> StringBytes<INLINE_LENGTH> {
         match self {
             Value::String(str) => StringBytes::build_ref(str),
             _ => panic!("Cannot encode non-String as StringBytes"),
         }
     }
 
-    fn encode_struct<const INLINE_LENGTH: usize>(&self) -> StructBytes<'static, INLINE_LENGTH> {
+    fn encode_struct<const INLINE_LENGTH: usize>(&self) -> StructBytes<INLINE_LENGTH> {
         match self {
             Value::Struct(struct_) => StructBytes::build(struct_),
             _ => panic!("Cannot encode non-Struct as StructBytes"),

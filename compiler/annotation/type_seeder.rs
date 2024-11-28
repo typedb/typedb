@@ -555,7 +555,7 @@ trait UnaryConstraint {
 pub(crate) fn get_type_annotation_from_label<Snapshot: ReadableSnapshot>(
     snapshot: &Snapshot,
     type_manager: &TypeManager,
-    label_value: &encoding::value::label::Label<'static>,
+    label_value: &encoding::value::label::Label,
 ) -> Result<Option<TypeAnnotation>, Box<ConceptReadError>> {
     if let Some(t) = type_manager.get_attribute_type(snapshot, label_value)?.map(TypeAnnotation::Attribute) {
         Ok(Some(t))
@@ -573,7 +573,7 @@ pub(crate) fn get_type_annotation_from_label<Snapshot: ReadableSnapshot>(
 pub(crate) fn get_type_annotation_and_subtypes_from_label<Snapshot: ReadableSnapshot>(
     snapshot: &Snapshot,
     type_manager: &TypeManager,
-    label_value: &encoding::value::label::Label<'static>,
+    label_value: &encoding::value::label::Label,
 ) -> Result<BTreeSet<TypeAnnotation>, TypeInferenceError> {
     let type_opt = get_type_annotation_from_label(snapshot, type_manager, label_value)
         .map_err(|source| TypeInferenceError::ConceptRead { source })?;
@@ -1000,7 +1000,7 @@ impl BinaryConstraint for Isa<Variable> {
                 TypeAnnotation::RoleType(_) => unreachable!("Cannot get instances of role types."),
             }
         }
-        collector.insert(left_type.clone());
+        collector.insert(*left_type);
         Ok(())
     }
 
@@ -1042,7 +1042,7 @@ impl BinaryConstraint for Isa<Variable> {
                 TypeAnnotation::RoleType(_) => unreachable!("Cannot get instances of role types."),
             }
         }
-        collector.insert(right_type.clone());
+        collector.insert(*right_type);
         Ok(())
     }
 }
@@ -1101,7 +1101,7 @@ impl BinaryConstraint for Sub<Variable> {
                         });
                 }
             }
-            collector.insert(left_type.clone());
+            collector.insert(*left_type);
         } else {
             match left_type {
                 TypeAnnotation::Attribute(attribute) => {
@@ -1174,7 +1174,7 @@ impl BinaryConstraint for Sub<Variable> {
                         });
                 }
             }
-            collector.insert(right_type.clone());
+            collector.insert(*right_type);
         } else {
             match right_type {
                 TypeAnnotation::Attribute(attribute) => {
@@ -1234,7 +1234,7 @@ impl BinaryConstraint for Is<Variable> {
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
-        collector.insert(left_type.clone());
+        collector.insert(*left_type);
         Ok(())
     }
 
@@ -1244,7 +1244,7 @@ impl BinaryConstraint for Is<Variable> {
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
-        collector.insert(right_type.clone());
+        collector.insert(*right_type);
         Ok(())
     }
 }
@@ -1667,32 +1667,22 @@ pub mod tests {
         let expected_graph = TypeInferenceGraph {
             conjunction,
             vertices: VertexAnnotations::from([
-                (var_animal.into(), BTreeSet::from([type_cat.clone()])),
-                (var_name.into(), BTreeSet::from([type_catname.clone(), type_dogname.clone()])),
-                (var_animal_type.into(), BTreeSet::from([type_cat.clone()])),
-                (var_name_type.into(), BTreeSet::from([type_name.clone()])),
-                (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat.clone()])),
-                (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name.clone()])),
+                (var_animal.into(), BTreeSet::from([type_cat])),
+                (var_name.into(), BTreeSet::from([type_catname, type_dogname])),
+                (var_animal_type.into(), BTreeSet::from([type_cat])),
+                (var_name_type.into(), BTreeSet::from([type_name])),
+                (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat])),
+                (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name])),
             ]),
             edges: vec![
-                expected_edge(
-                    &constraints[0],
-                    var_animal.into(),
-                    var_animal_type.into(),
-                    vec![(type_cat.clone(), type_cat.clone())],
-                ),
+                expected_edge(&constraints[0], var_animal.into(), var_animal_type.into(), vec![(type_cat, type_cat)]),
                 expected_edge(
                     &constraints[2],
                     var_name.into(),
                     var_name_type.into(),
-                    vec![(type_catname.clone(), type_name.clone()), (type_dogname.clone(), type_name.clone())],
+                    vec![(type_catname, type_name), (type_dogname, type_name)],
                 ),
-                expected_edge(
-                    &constraints[4],
-                    var_animal.into(),
-                    var_name.into(),
-                    vec![(type_cat.clone(), type_catname.clone())],
-                ),
+                expected_edge(&constraints[4], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
             ],
             nested_disjunctions: vec![],
             nested_negations: vec![],
@@ -1739,14 +1729,14 @@ pub mod tests {
         let mut expected_graph = TypeInferenceGraph {
             conjunction,
             vertices: VertexAnnotations::from([
-                (var_animal.into(), BTreeSet::from([type_cat.clone(), type_dog.clone()])),
-                (var_name.into(), BTreeSet::from([type_catname.clone(), type_dogname.clone()])),
+                (var_animal.into(), BTreeSet::from([type_cat, type_dog])),
+                (var_name.into(), BTreeSet::from([type_catname, type_dogname])),
             ]),
             edges: vec![expected_edge(
                 &constraints[0],
                 var_animal.into(),
                 var_name.into(),
-                vec![(type_cat.clone(), type_catname.clone()), (type_dog.clone(), type_dogname.clone())],
+                vec![(type_cat, type_catname), (type_dog, type_dogname)],
             )],
             nested_disjunctions: vec![],
             nested_negations: vec![],
@@ -1764,7 +1754,7 @@ pub mod tests {
         let graph = seeder.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
         if expected_graph != graph {
             // We need this because of non-determinism
-            expected_graph.vertices.get_mut(&var_animal.into()).unwrap().insert(type_fears.clone());
+            expected_graph.vertices.get_mut(&var_animal.into()).unwrap().insert(type_fears);
             assert_eq!(expected_graph, graph)
         }
     }
@@ -1826,9 +1816,9 @@ pub mod tests {
             let block = builder.finish().unwrap();
             let conjunction = block.conjunction();
 
-            let types_x = BTreeSet::from([type_owner.clone()]);
-            let types_a = BTreeSet::from([type_age.clone(), type_catname.clone(), type_dogname.clone()]);
-            let types_b = BTreeSet::from([type_age.clone(), type_catname.clone(), type_dogname.clone()]);
+            let types_x = BTreeSet::from([type_owner]);
+            let types_a = BTreeSet::from([type_age, type_catname, type_dogname]);
+            let types_b = BTreeSet::from([type_age, type_catname, type_dogname]);
             let constraints = conjunction.constraints();
             let expected_graph = TypeInferenceGraph {
                 conjunction,
@@ -1843,38 +1833,30 @@ pub mod tests {
                         &constraints[0],
                         var_x.into(),
                         Vertex::Label(label_owner),
-                        vec![(type_owner.clone(), type_owner.clone())],
+                        vec![(type_owner, type_owner)],
                     ),
                     expected_edge(
                         &constraints[1],
                         var_x.into(),
                         var_a.into(),
-                        vec![
-                            (type_owner.clone(), type_age.clone()),
-                            (type_owner.clone(), type_catname.clone()),
-                            (type_owner.clone(), type_dogname.clone()),
-                        ],
+                        vec![(type_owner, type_age), (type_owner, type_catname), (type_owner, type_dogname)],
                     ),
                     expected_edge(
                         &constraints[2],
                         var_x.into(),
                         var_b.into(),
-                        vec![
-                            (type_owner.clone(), type_age.clone()),
-                            (type_owner.clone(), type_catname.clone()),
-                            (type_owner.clone(), type_dogname.clone()),
-                        ],
+                        vec![(type_owner, type_age), (type_owner, type_catname), (type_owner, type_dogname)],
                     ),
                     expected_edge(
                         &constraints[3],
                         var_a.into(),
                         var_b.into(),
                         vec![
-                            (type_age.clone(), type_age.clone()),
-                            (type_catname.clone(), type_catname.clone()),
-                            (type_catname.clone(), type_dogname.clone()),
-                            (type_dogname.clone(), type_catname.clone()),
-                            (type_dogname.clone(), type_dogname.clone()),
+                            (type_age, type_age),
+                            (type_catname, type_catname),
+                            (type_catname, type_dogname),
+                            (type_dogname, type_catname),
+                            (type_dogname, type_dogname),
                         ],
                     ),
                 ],

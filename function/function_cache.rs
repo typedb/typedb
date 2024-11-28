@@ -20,7 +20,7 @@ use crate::{
 
 #[derive(Debug)]
 pub struct FunctionCache {
-    parsed_functions: HashMap<DefinitionKey<'static>, SchemaFunction>,
+    parsed_functions: HashMap<DefinitionKey, SchemaFunction>,
     annotated_functions: Arc<AnnotatedSchemaFunctions>,
     index: HashMapFunctionSignatureIndex,
 }
@@ -62,14 +62,14 @@ impl FunctionCache {
         })
     }
 
-    pub(crate) fn get_function_key(&self, name: &str) -> Option<DefinitionKey<'static>> {
+    pub(crate) fn get_function_key(&self, name: &str) -> Option<DefinitionKey> {
         self.index
             .get_function_signature(name)
             .unwrap()
             .map(|signature| signature.function_id().as_definition_key().unwrap().clone())
     }
 
-    pub(crate) fn get_function(&self, definition_key: DefinitionKey<'static>) -> Option<&SchemaFunction> {
+    pub(crate) fn get_function(&self, definition_key: DefinitionKey) -> Option<&SchemaFunction> {
         self.parsed_functions.get(&definition_key)
     }
 
@@ -77,7 +77,7 @@ impl FunctionCache {
         self.annotated_functions.clone()
     }
 
-    pub(crate) fn get_annotated_function(&self, definition_key: DefinitionKey<'static>) -> Option<&AnnotatedFunction> {
+    pub(crate) fn get_annotated_function(&self, definition_key: DefinitionKey) -> Option<&AnnotatedFunction> {
         self.annotated_functions.get(&definition_key)
     }
 }

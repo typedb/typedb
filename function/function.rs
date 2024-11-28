@@ -9,7 +9,7 @@ use ir::pipeline::{function_signature::FunctionIDAPI, FunctionRepresentationErro
 
 use crate::FunctionError;
 
-pub type SchemaFunction = Function<DefinitionKey<'static>>;
+pub type SchemaFunction = Function<DefinitionKey>;
 
 #[derive(Debug)]
 pub struct Function<FunctionIDType: FunctionIDAPI> {

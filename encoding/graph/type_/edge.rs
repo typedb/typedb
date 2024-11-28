@@ -16,12 +16,14 @@ use crate::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct TypeEdge<'a> {
-    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
+pub struct TypeEdge {
+    prefix: Prefix,
+    from: TypeVertex,
+    to: TypeVertex,
 }
 
-impl<'a> TypeEdge<'a> {
+impl TypeEdge {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
     pub const FIXED_WIDTH_ENCODING: bool = true;
 
@@ -30,22 +32,21 @@ impl<'a> TypeEdge<'a> {
     pub const LENGTH_PREFIX_FROM: usize = PrefixID::LENGTH + TypeVertex::LENGTH;
     const LENGTH_PREFIX_FROM_PREFIX: usize = PrefixID::LENGTH + TypeVertex::LENGTH_PREFIX;
 
-    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
+    pub fn new(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        TypeEdge { bytes }
+        let prefix = Prefix::from_prefix_id(PrefixID::new(bytes[Self::INDEX_PREFIX]));
+        let from = TypeVertex::new(bytes.clone().into_range(Self::range_from()));
+        let to = TypeVertex::new(bytes.clone().into_range(Self::range_to()));
+        Self { prefix, from, to }
     }
 
     fn build(prefix: Prefix, from: TypeVertex, to: TypeVertex) -> Self {
-        let mut bytes = ByteArray::zeros(Self::LENGTH);
-        bytes[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
-        bytes[Self::range_from()].copy_from_slice(&from.into_bytes());
-        bytes[Self::range_to()].copy_from_slice(&to.into_bytes());
-        Self { bytes: Bytes::Array(bytes) }
+        Self { prefix, from, to }
     }
 
     pub fn build_prefix(prefix: Prefix) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX);
-        bytes[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
+        bytes[Self::INDEX_PREFIX] = prefix.prefix_id().byte;
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
@@ -54,33 +55,33 @@ impl<'a> TypeEdge<'a> {
         from_prefix: Prefix,
     ) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM_PREFIX }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_PREFIX);
-        bytes[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
-        bytes[Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeVertex::LENGTH_PREFIX]
-            .copy_from_slice(&from_prefix.prefix_id().bytes());
+        bytes[Self::INDEX_PREFIX] = prefix.prefix_id().byte;
+        bytes[Self::INDEX_PREFIX + 1..Self::INDEX_PREFIX + 1 + TypeVertex::LENGTH_PREFIX]
+            .copy_from_slice(&from_prefix.prefix_id().to_bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
     fn build_prefix_from(prefix: Prefix, from: TypeVertex) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM);
-        bytes[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
-        bytes[Self::range_from()].copy_from_slice(&from.into_bytes());
+        bytes[Self::INDEX_PREFIX] = prefix.prefix_id().byte;
+        bytes[Self::range_from()].copy_from_slice(&from.to_bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
-    pub fn from(&'a self) -> TypeVertex {
-        TypeVertex::new(Bytes::reference(&self.bytes[Self::range_from()]))
+    pub fn from(self) -> TypeVertex {
+        self.from
     }
 
-    pub fn to(&'a self) -> TypeVertex {
-        TypeVertex::new(Bytes::reference(&self.bytes[Self::range_to()]))
+    pub fn to(self) -> TypeVertex {
+        self.to
     }
 
-    pub fn prefix(&self) -> Prefix {
-        Prefix::from_prefix_id(PrefixID::new(self.bytes[Self::RANGE_PREFIX].try_into().unwrap()))
+    pub fn prefix(self) -> Prefix {
+        self.prefix
     }
 
     const fn range_from() -> Range<usize> {
-        Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeVertex::LENGTH
+        Self::INDEX_PREFIX + 1..Self::INDEX_PREFIX + 1 + TypeVertex::LENGTH
     }
 
     const fn range_to() -> Range<usize> {
@@ -88,33 +89,37 @@ impl<'a> TypeEdge<'a> {
     }
 }
 
-impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeEdge<'a> {
-    fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
-        self.bytes
+impl AsBytes<BUFFER_KEY_INLINE> for TypeEdge {
+    fn to_bytes(self) -> Bytes<'static, BUFFER_KEY_INLINE> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH);
+        bytes[Self::INDEX_PREFIX] = self.prefix.prefix_id().byte;
+        bytes[Self::range_from()].copy_from_slice(&self.from.to_bytes());
+        bytes[Self::range_to()].copy_from_slice(&self.to.to_bytes());
+        Bytes::Array(bytes)
     }
 }
 
-impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeEdge<'a> {}
+impl Prefixed<BUFFER_KEY_INLINE> for TypeEdge {}
 
-impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeEdge<'a> {
+impl Keyable<BUFFER_KEY_INLINE> for TypeEdge {
     fn keyspace(&self) -> EncodingKeyspace {
         Self::KEYSPACE
     }
 }
 
-pub trait TypeEdgeEncoding<'a>: Sized {
+pub trait TypeEdgeEncoding: Sized {
     const CANONICAL_PREFIX: Prefix;
     const REVERSE_PREFIX: Prefix;
 
-    type From: TypeVertexEncoding<'a>;
-    type To: TypeVertexEncoding<'a>;
+    type From: TypeVertexEncoding;
+    type To: TypeVertexEncoding;
 
     fn from_vertices(from: Self::From, to: Self::To) -> Self;
 
     fn canonical_from(&self) -> Self::From;
     fn canonical_to(&self) -> Self::To;
 
-    fn decode_canonical_edge(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
+    fn decode_canonical_edge(bytes: Bytes<'static, BUFFER_KEY_INLINE>) -> Self {
         let type_edge = TypeEdge::new(bytes);
         debug_assert_eq!(type_edge.prefix(), Self::CANONICAL_PREFIX);
         Self::from_vertices(
@@ -132,19 +137,19 @@ pub trait TypeEdgeEncoding<'a>: Sized {
         )
     }
 
-    fn to_canonical_type_edge(&self) -> TypeEdge<'a> {
+    fn to_canonical_type_edge(&self) -> TypeEdge {
         TypeEdge::build(Self::CANONICAL_PREFIX, self.canonical_from().into_vertex(), self.canonical_to().into_vertex())
     }
 
-    fn to_reverse_type_edge(&self) -> TypeEdge<'a> {
+    fn to_reverse_type_edge(&self) -> TypeEdge {
         TypeEdge::build(Self::REVERSE_PREFIX, self.canonical_to().into_vertex(), self.canonical_from().into_vertex())
     }
 
-    fn prefix_for_canonical_edges_from(from: Self::From) -> StorageKey<'a, { TypeEdge::LENGTH_PREFIX_FROM }> {
+    fn prefix_for_canonical_edges_from(from: Self::From) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM }> {
         TypeEdge::build_prefix_from(Self::CANONICAL_PREFIX, from.into_vertex())
     }
 
-    fn prefix_for_reverse_edges_from(from: Self::To) -> StorageKey<'a, { TypeEdge::LENGTH_PREFIX_FROM }> {
+    fn prefix_for_reverse_edges_from(from: Self::To) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM }> {
         TypeEdge::build_prefix_from(Self::REVERSE_PREFIX, from.into_vertex())
     }
 

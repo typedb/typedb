@@ -214,17 +214,17 @@ pub mod tests {
             snapshot::{CommittableSnapshot, WritableSnapshot},
         };
 
-        pub(crate) const LABEL_ANIMAL: Label<'_> = Label::new_static("animal");
-        pub(crate) const LABEL_CAT: Label<'_> = Label::new_static("cat");
-        pub(crate) const LABEL_DOG: Label<'_> = Label::new_static("dog");
+        pub(crate) const LABEL_ANIMAL: Label = Label::new_static("animal");
+        pub(crate) const LABEL_CAT: Label = Label::new_static("cat");
+        pub(crate) const LABEL_DOG: Label = Label::new_static("dog");
 
-        pub(crate) const LABEL_NAME: Label<'_> = Label::new_static("name");
-        pub(crate) const LABEL_CATNAME: Label<'_> = Label::new_static("cat-name");
-        pub(crate) const LABEL_DOGNAME: Label<'_> = Label::new_static("dog-name");
+        pub(crate) const LABEL_NAME: Label = Label::new_static("name");
+        pub(crate) const LABEL_CATNAME: Label = Label::new_static("cat-name");
+        pub(crate) const LABEL_DOGNAME: Label = Label::new_static("dog-name");
 
-        pub(crate) const LABEL_FEARS: Label<'_> = Label::new_static("fears");
-        pub(crate) const LABEL_HAS_FEAR: Label<'_> = Label::new_static_scoped("has-fear", "fears", "fears:has-fear");
-        pub(crate) const LABEL_IS_FEARED: Label<'_> = Label::new_static_scoped("is-feared", "fears", "fears:is-feared");
+        pub(crate) const LABEL_FEARS: Label = Label::new_static("fears");
+        pub(crate) const LABEL_HAS_FEAR: Label = Label::new_static_scoped("has-fear", "fears", "fears:has-fear");
+        pub(crate) const LABEL_IS_FEARED: Label = Label::new_static_scoped("is-feared", "fears", "fears:is-feared");
 
         pub(crate) fn setup_types<Snapshot: WritableSnapshot + CommittableSnapshot<WALClient>>(
             snapshot_: Snapshot,

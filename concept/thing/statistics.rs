@@ -28,7 +28,7 @@ use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord, UnsequencedDurabilityRecord},
     isolation_manager::CommitType,
     iterator::MVCCReadError,
-    key_value::StorageKeyReference,
+    key_value::StorageKeyArray,
     recovery::commit_recovery::{load_commit_data_from, RecoveryCommitStatus, StorageRecoveryError},
     sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, write::Write},
@@ -194,32 +194,25 @@ impl Statistics {
     ) -> Result<i64, MVCCReadError> {
         let mut total_delta = 0;
         for (key, write) in writes.operations.iterate_writes() {
-            let key_reference = StorageKeyReference::from(&key);
-            let delta = write_to_delta(
-                key_reference,
-                &write,
-                writes.open_sequence_number,
-                commit_sequence_number,
-                commits,
-                storage,
-            )?;
-            if ObjectVertex::is_entity_vertex(key_reference) {
-                let type_ = Entity::new(ObjectVertex::new(Bytes::Reference(key_reference.bytes()))).type_();
+            let delta =
+                write_to_delta(&key, &write, writes.open_sequence_number, commit_sequence_number, commits, storage)?;
+            if ObjectVertex::is_entity_vertex(&key) {
+                let type_ = Entity::new(ObjectVertex::new(Bytes::copy(key.bytes()))).type_();
                 self.update_entities(type_, delta);
                 total_delta += delta;
-            } else if ObjectVertex::is_relation_vertex(key_reference) {
-                let type_ = Relation::new(ObjectVertex::new(Bytes::Reference(key_reference.bytes()))).type_();
+            } else if ObjectVertex::is_relation_vertex(&key) {
+                let type_ = Relation::new(ObjectVertex::new(Bytes::copy(key.bytes()))).type_();
                 self.update_relations(type_, delta);
                 total_delta += delta;
-            } else if AttributeVertex::is_attribute_vertex(key_reference) {
-                let type_ = Attribute::new(AttributeVertex::new(Bytes::Reference(key_reference.bytes()))).type_();
+            } else if AttributeVertex::is_attribute_vertex(&key) {
+                let type_ = Attribute::new(AttributeVertex::new(Bytes::copy(key.bytes()))).type_();
                 self.update_attributes(type_, delta);
-            } else if ThingEdgeHas::is_has(key_reference) {
-                let edge = ThingEdgeHas::new(Bytes::Reference(key_reference.bytes()));
+            } else if ThingEdgeHas::is_has(&key) {
+                let edge = ThingEdgeHas::new(Bytes::Reference(key.bytes()));
                 self.update_has(Object::new(edge.from()).type_(), Attribute::new(edge.to()).type_(), delta);
                 total_delta += delta;
-            } else if ThingEdgeLinks::is_links(key_reference) {
-                let edge = ThingEdgeLinks::new(Bytes::Reference(key_reference.bytes()));
+            } else if ThingEdgeLinks::is_links(&key) {
+                let edge = ThingEdgeLinks::new(Bytes::Reference(key.bytes()));
                 let role_type = RoleType::build_from_type_id(edge.role_id());
                 self.update_role_player(
                     Object::new(edge.to()).type_(),
@@ -228,19 +221,19 @@ impl Statistics {
                     delta,
                 );
                 total_delta += delta;
-            } else if ThingEdgeRolePlayerIndex::is_index(key_reference) {
-                let edge = ThingEdgeRolePlayerIndex::new(Bytes::Reference(key_reference.bytes()));
+            } else if ThingEdgeRolePlayerIndex::is_index(&key) {
+                let edge = ThingEdgeRolePlayerIndex::new(Bytes::Reference(key.bytes()));
                 self.update_indexed_player(Object::new(edge.from()).type_(), Object::new(edge.to()).type_(), delta);
                 // note: don't update total count based on index
-            } else if EntityType::is_decodable_from_key(key_reference) {
-                let type_ = EntityType::read_from(Bytes::Reference(key_reference.bytes()).into_owned());
+            } else if EntityType::is_decodable_from_key(&key) {
+                let type_ = EntityType::read_from(Bytes::Reference(key.bytes()).into_owned());
                 if matches!(write, Write::Delete) {
                     self.entity_counts.remove(&type_);
                     self.clear_object_type(ObjectType::Entity(type_));
                 }
                 // note: don't update total count based on type updates
-            } else if RelationType::is_decodable_from_key(key_reference) {
-                let type_ = RelationType::read_from(Bytes::Reference(key_reference.bytes()).into_owned());
+            } else if RelationType::is_decodable_from_key(&key) {
+                let type_ = RelationType::read_from(Bytes::Reference(key.bytes()).into_owned());
                 if matches!(write, Write::Delete) {
                     self.relation_counts.remove(&type_);
                     self.relation_role_counts.remove(&type_);
@@ -248,8 +241,8 @@ impl Statistics {
                     self.clear_object_type(as_object_type);
                 }
                 // note: don't update total count based on type updates
-            } else if AttributeType::is_decodable_from_key(key_reference) {
-                let type_ = AttributeType::read_from(Bytes::Reference(key_reference.bytes()).into_owned());
+            } else if AttributeType::is_decodable_from_key(&key) {
+                let type_ = AttributeType::read_from(Bytes::Reference(key.bytes()).into_owned());
                 if matches!(write, Write::Delete) {
                     self.attribute_counts.remove(&type_);
                     self.attribute_owner_counts.remove(&type_);
@@ -259,8 +252,8 @@ impl Statistics {
                     self.has_attribute_counts.retain(|_, map| !map.is_empty());
                 }
                 // note: don't update total count based on type updates
-            } else if RoleType::is_decodable_from_key(key_reference) {
-                let type_ = RoleType::read_from(Bytes::Reference(key_reference.bytes()).into_owned());
+            } else if RoleType::is_decodable_from_key(&key) {
+                let type_ = RoleType::read_from(Bytes::Reference(key.bytes()).into_owned());
                 if matches!(write, Write::Delete) {
                     self.role_counts.remove(&type_);
                     for map in self.role_player_counts.values_mut() {
@@ -392,7 +385,7 @@ impl Statistics {
 }
 
 fn write_to_delta<D>(
-    write_key: StorageKeyReference<'_>,
+    write_key: &StorageKeyArray<40>,
     write: &Write,
     open_sequence_number: SequenceNumber,
     commit_sequence_number: SequenceNumber,

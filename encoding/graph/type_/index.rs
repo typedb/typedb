@@ -20,39 +20,42 @@ use crate::{
 };
 
 pub trait Indexable: Clone {
-    type KeyType<'a>;
+    type KeyType: ?Sized;
     const INDEX_PREFIX: Prefix;
-    fn key_type_to_identifier(key: Self::KeyType<'_>) -> StringBytes<'_, BUFFER_KEY_INLINE>;
+    fn key_type_to_identifier(key: &Self::KeyType) -> StringBytes<BUFFER_KEY_INLINE>;
 }
 
 #[derive(Clone, Debug)]
-pub struct IdentifierIndex<'a, T: Indexable> {
-    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
+pub struct IdentifierIndex<T: Indexable> {
+    bytes: Bytes<'static, BUFFER_KEY_INLINE>,
     indexed_type: PhantomData<T>,
 }
 
-impl<'a, T: Indexable> IdentifierIndex<'a, T> {
+impl<T: Indexable> IdentifierIndex<T> {
     pub const FIXED_WIDTH_ENCODING: bool = false;
 
-    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
+    pub fn new(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes.length() >= PrefixID::LENGTH);
-        Self { bytes, indexed_type: PhantomData }
+        Self { bytes: Bytes::copy(&bytes), indexed_type: PhantomData }
     }
 
     pub fn build_prefix() -> Self {
-        Self { bytes: Bytes::Array(ByteArray::copy(&T::INDEX_PREFIX.prefix_id().bytes())), indexed_type: PhantomData }
+        Self {
+            bytes: Bytes::Array(ByteArray::copy(&T::INDEX_PREFIX.prefix_id().to_bytes())),
+            indexed_type: PhantomData,
+        }
     }
 
-    pub fn build(key: T::KeyType<'_>) -> Self {
+    pub fn build(key: &T::KeyType) -> Self {
         let identifier = T::key_type_to_identifier(key);
         let mut array = ByteArray::zeros(identifier.bytes().len() + PrefixID::LENGTH);
-        array[Self::RANGE_PREFIX].copy_from_slice(&T::INDEX_PREFIX.prefix_id().bytes());
+        array[Self::INDEX_PREFIX] = T::INDEX_PREFIX.prefix_id().byte;
         array[Self::range_identifier(identifier.bytes().len())].copy_from_slice(identifier.bytes());
         Self { bytes: Bytes::Array(array), indexed_type: PhantomData }
     }
 
-    pub fn identifier(&'a self) -> StringBytes<'a, BUFFER_KEY_INLINE> {
-        StringBytes::new(Bytes::reference(&self.bytes[Self::range_identifier(self.identifier_length())]))
+    pub fn identifier(&self) -> StringBytes<BUFFER_KEY_INLINE> {
+        StringBytes::new(Bytes::copy(&self.bytes[Self::range_identifier(self.identifier_length())]))
     }
 
     fn identifier_length(&self) -> usize {
@@ -60,33 +63,33 @@ impl<'a, T: Indexable> IdentifierIndex<'a, T> {
     }
 
     fn range_identifier(identifier_length: usize) -> Range<usize> {
-        Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + identifier_length
+        Self::INDEX_PREFIX + 1..Self::INDEX_PREFIX + 1 + identifier_length
     }
 }
 
-impl<'a, T: Indexable> AsBytes<'a, BUFFER_KEY_INLINE> for IdentifierIndex<'a, T> {
-    fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
+impl<T: Indexable> AsBytes<BUFFER_KEY_INLINE> for IdentifierIndex<T> {
+    fn to_bytes(self) -> Bytes<'static, BUFFER_KEY_INLINE> {
         self.bytes
     }
 }
 
-impl<'a, T: Indexable> Keyable<'a, BUFFER_KEY_INLINE> for IdentifierIndex<'a, T> {
+impl<T: Indexable> Keyable<BUFFER_KEY_INLINE> for IdentifierIndex<T> {
     fn keyspace(&self) -> EncodingKeyspace {
         EncodingKeyspace::Schema
     }
 }
 
-impl<'a, T: Indexable> Prefixed<'a, BUFFER_KEY_INLINE> for IdentifierIndex<'a, T> {}
+impl<T: Indexable> Prefixed<BUFFER_KEY_INLINE> for IdentifierIndex<T> {}
 
 // Specialisations
-pub type LabelToTypeVertexIndex<'a> = IdentifierIndex<'a, TypeVertex>;
+pub type LabelToTypeVertexIndex = IdentifierIndex<TypeVertex>;
 impl Indexable for TypeVertex {
-    type KeyType<'b> = &'b Label<'b>;
+    type KeyType = Label;
     const INDEX_PREFIX: Prefix = Prefix::IndexLabelToType;
 
-    fn key_type_to_identifier(key: Self::KeyType<'_>) -> StringBytes<'_, BUFFER_KEY_INLINE> {
+    fn key_type_to_identifier(key: &Self::KeyType) -> StringBytes<BUFFER_KEY_INLINE> {
         if let Some(scope) = &key.scope {
-            let mut vec = Vec::with_capacity(key.name.length() + 1 + scope.length());
+            let mut vec = Vec::with_capacity(key.name.len() + 1 + scope.len());
             vec.extend_from_slice(key.name.bytes());
             vec.push(b':');
             vec.extend_from_slice(scope.bytes());
@@ -97,23 +100,23 @@ impl Indexable for TypeVertex {
     }
 }
 
-pub type NameToStructDefinitionIndex<'a> = IdentifierIndex<'a, StructDefinition>;
+pub type NameToStructDefinitionIndex = IdentifierIndex<StructDefinition>;
 impl Indexable for StructDefinition {
-    type KeyType<'b> = &'b str;
+    type KeyType = str;
     const INDEX_PREFIX: Prefix = Prefix::IndexNameToDefinitionStruct;
 
-    fn key_type_to_identifier(key: Self::KeyType<'_>) -> StringBytes<'_, BUFFER_KEY_INLINE> {
+    fn key_type_to_identifier(key: &Self::KeyType) -> StringBytes<BUFFER_KEY_INLINE> {
         StringBytes::build_owned(key)
     }
 }
 
-pub type NameToFunctionDefinitionIndex<'a> = IdentifierIndex<'a, FunctionDefinition<'a>>;
-impl<'a> Indexable for FunctionDefinition<'a> {
-    type KeyType<'b> = &'b str;
+pub type NameToFunctionDefinitionIndex = IdentifierIndex<FunctionDefinition>;
+impl Indexable for FunctionDefinition {
+    type KeyType = str;
 
     const INDEX_PREFIX: Prefix = Prefix::IndexNameToDefinitionFunction;
 
-    fn key_type_to_identifier(key: Self::KeyType<'_>) -> StringBytes<'_, BUFFER_KEY_INLINE> {
+    fn key_type_to_identifier(key: &Self::KeyType) -> StringBytes<BUFFER_KEY_INLINE> {
         StringBytes::build_owned(key)
     }
 }

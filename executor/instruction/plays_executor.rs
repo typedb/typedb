@@ -18,7 +18,6 @@ use concept::{
     type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI, PlayerAPI},
 };
 use itertools::Itertools;
-use lending_iterator::{AsHkt, AsNarrowingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -44,23 +43,17 @@ pub(crate) struct PlaysExecutor {
 
 pub(super) type PlaysTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<PlaysFilterMapFn>>, PlaysToTupleFn>;
 
-pub(super) type PlaysUnboundedSortedPlayer = AsNarrowingIterator<
-    PlaysTupleIterator<
-        iter::Map<
-            iter::Flatten<vec::IntoIter<BTreeSet<(ObjectType, RoleType)>>>,
-            fn((ObjectType, RoleType)) -> Result<(ObjectType, RoleType), Box<ConceptReadError>>,
-        >,
+pub(super) type PlaysUnboundedSortedPlayer = PlaysTupleIterator<
+    iter::Map<
+        iter::Flatten<vec::IntoIter<BTreeSet<(ObjectType, RoleType)>>>,
+        fn((ObjectType, RoleType)) -> Result<(ObjectType, RoleType), Box<ConceptReadError>>,
     >,
-    AsHkt![TupleResult<'_>],
 >;
-pub(super) type PlaysBoundedSortedRole = AsNarrowingIterator<
-    PlaysTupleIterator<
-        iter::Map<
-            vec::IntoIter<(ObjectType, RoleType)>,
-            fn((ObjectType, RoleType)) -> Result<(ObjectType, RoleType), Box<ConceptReadError>>,
-        >,
+pub(super) type PlaysBoundedSortedRole = PlaysTupleIterator<
+    iter::Map<
+        vec::IntoIter<(ObjectType, RoleType)>,
+        fn((ObjectType, RoleType)) -> Result<(ObjectType, RoleType), Box<ConceptReadError>>,
     >,
-    AsHkt![TupleResult<'_>],
 >;
 
 pub(super) type PlaysFilterFn = FilterFn<(ObjectType, RoleType)>;
@@ -148,7 +141,7 @@ impl PlaysExecutor {
                     .try_collect()?;
                 let iterator = plays.into_iter().flatten().map(Ok as _);
                 let as_tuples: PlaysUnboundedSortedPlayer =
-                    AsNarrowingIterator::new(iterator.filter_map(filter_for_row).map(plays_to_tuple_player_role as _));
+                    iterator.filter_map(filter_for_row).map(plays_to_tuple_player_role as _);
                 Ok(TupleIterator::PlaysUnbounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -165,9 +158,9 @@ impl PlaysExecutor {
                 let type_manager = context.type_manager();
                 let plays = self.get_plays_for_player(snapshot, type_manager, player)?;
 
-                let iterator = plays.into_iter().sorted_by_key(|(player, role)| (*role, *player)).map(Ok as _);
+                let iterator = plays.into_iter().sorted_by_key(|&(player, role)| (role, player)).map(Ok as _);
                 let as_tuples: PlaysBoundedSortedRole =
-                    AsNarrowingIterator::new(iterator.filter_map(filter_for_row).map(plays_to_tuple_role_player as _));
+                    iterator.filter_map(filter_for_row).map(plays_to_tuple_role_player as _);
                 Ok(TupleIterator::PlaysBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),

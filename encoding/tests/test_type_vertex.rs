@@ -33,7 +33,7 @@ pub struct MockEntityType {
     vertex: TypeVertex,
 }
 
-impl<'a> TypeVertexEncoding<'a> for MockEntityType {
+impl TypeVertexEncoding for MockEntityType {
     fn from_vertex(vertex: TypeVertex) -> Result<MockEntityType, EncodingError> {
         Ok(MockEntityType { vertex })
     }
@@ -47,7 +47,7 @@ impl<'a> TypeVertexEncoding<'a> for MockEntityType {
     }
 }
 
-impl<'a> PrefixedTypeVertexEncoding<'a> for MockEntityType {
+impl PrefixedTypeVertexEncoding for MockEntityType {
     const PREFIX: Prefix = Prefix::VertexEntityType;
 }
 
@@ -83,7 +83,7 @@ fn entity_type_vertexes_are_reused() {
         for i in 0..=create_till {
             if i % 2 == 0 {
                 let vertex = MockEntityType::build_from_type_id(TypeID::build(i)).vertex;
-                snapshot.delete(StorageKeyReference::new(vertex.keyspace(), &vertex.into_bytes()).into());
+                snapshot.delete(StorageKeyReference::new(vertex.keyspace(), &vertex.to_bytes()).into());
                 // TODO: replace with type api call.
             }
         }

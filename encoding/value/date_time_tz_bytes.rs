@@ -11,7 +11,7 @@ use crate::{
     value::{date_time_bytes::DateTimeBytes, timezone::TimeZone, value_type::ValueType},
 };
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DateTimeTZBytes {
     bytes: [u8; Self::ENCODED_LENGTH],
 }

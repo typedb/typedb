@@ -35,7 +35,7 @@ pub enum ValueType {
 
     String,
 
-    Struct(DefinitionKey<'static>),
+    Struct(DefinitionKey),
 }
 
 impl ValueType {
@@ -285,7 +285,7 @@ impl ValueTypeBytes {
         let mut array = [0; Self::LENGTH];
         array[Self::RANGE_CATEGORY].copy_from_slice(&value_type.category().to_bytes());
         if let ValueType::Struct(definition_key) = value_type {
-            array[Self::RANGE_TAIL].copy_from_slice(&definition_key.clone().into_bytes());
+            array[Self::RANGE_TAIL].copy_from_slice(&definition_key.clone().to_bytes());
         }
         Self { bytes: array }
     }
@@ -311,7 +311,7 @@ impl Serialize for ValueType {
     }
 }
 
-impl TypeVertexPropertyEncoding<'static> for ValueType {
+impl TypeVertexPropertyEncoding for ValueType {
     const INFIX: Infix = Infix::PropertyValueType;
 
     fn from_value_bytes(value: &[u8]) -> Self {

@@ -30,11 +30,11 @@ use crate::{
 pub(crate) fn get_label_or_data_err<'a>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    type_: impl TypeAPI<'a>,
-) -> Result<Label<'static>, Box<DataValidationError>> {
+    type_: impl TypeAPI,
+) -> Result<Label, Box<DataValidationError>> {
     type_
         .get_label(snapshot, type_manager)
-        .map(|label| label.clone().into_owned())
+        .map(|label| label.clone())
         .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))
 }
 
@@ -67,7 +67,7 @@ macro_rules! create_data_validation_capability_abstractness_error_methods {
         $(
             pub(crate) fn $method_name(
                 constraint: &CapabilityConstraint<$capability_type>,
-                $object: $object_decl<'_>,
+                $object: $object_decl,
                 snapshot: &impl ReadableSnapshot,
                 type_manager: &TypeManager,
             ) -> Box<DataValidationError> {
@@ -94,7 +94,7 @@ impl DataValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Owns>,
-        owner: Object<'_>,
+        owner: Object,
         attribute_type: AttributeType,
         count: u64,
     ) -> Result<(), Box<DataValidationError>> {
@@ -108,11 +108,7 @@ impl DataValidation {
                 Box::new(DataValidationError::KeyConstraintViolatedCard {
                     owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid())),
                     owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().to_owned(),
-                    attribute_type: attribute_type
-                        .get_label(snapshot, type_manager)
-                        .unwrap()
-                        .as_reference()
-                        .into_owned(),
+                    attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().clone(),
                     attribute_count: count,
                     constraint_source,
                     typedb_source,
@@ -121,11 +117,7 @@ impl DataValidation {
                 Box::new(DataValidationError::OwnsConstraintViolated {
                     owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid())),
                     owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().to_owned(),
-                    attribute_type: attribute_type
-                        .get_label(snapshot, type_manager)
-                        .unwrap()
-                        .as_reference()
-                        .into_owned(),
+                    attribute_type: attribute_type.get_label(snapshot, type_manager).unwrap().clone(),
                     // constraint_source,
                     typedb_source,
                 })
@@ -137,12 +129,12 @@ impl DataValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Plays>,
-        player: Object<'_>,
+        player: Object,
         role_type: RoleType,
         count: u64,
     ) -> Result<(), Box<DataValidationError>> {
         constraint.validate_cardinality(count).map_err(|typedb_source| {
-            let player = player.clone().into_owned();
+            let player = player.into_owned();
             Box::new(DataValidationError::PlaysConstraintViolated {
                 player_iid: HexBytesFormatter::owned(Vec::from(player.iid())),
                 player_type: player.type_().get_label(snapshot, type_manager).unwrap().to_owned(),
@@ -157,12 +149,12 @@ impl DataValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Relates>,
-        relation: Relation<'_>,
+        relation: Relation,
         role_type: RoleType,
         count: u64,
     ) -> Result<(), Box<DataValidationError>> {
         constraint.validate_cardinality(count).map_err(|typedb_source| {
-            let relation = relation.clone().into_owned();
+            let relation = relation.into_owned();
             Box::new(DataValidationError::RelatesConstraintViolated {
                 relation_iid: HexBytesFormatter::owned(Vec::from(relation.iid())),
                 relation_type: relation.type_().get_label(snapshot, type_manager).unwrap().to_owned(),
@@ -225,7 +217,7 @@ impl DataValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Owns>,
-        owner: Object<'_>,
+        owner: Object,
         attribute_type: AttributeType,
         value: Value<'_>,
     ) -> Result<(), Box<DataValidationError>> {
@@ -244,7 +236,7 @@ impl DataValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Owns>,
-        owner: Object<'_>,
+        owner: Object,
         attribute_type: AttributeType,
         value: Value<'_>,
     ) -> Result<(), Box<DataValidationError>> {
@@ -263,7 +255,7 @@ impl DataValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Owns>,
-        owner: Object<'_>,
+        owner: Object,
         attribute_type: AttributeType,
         value: Value<'_>,
     ) -> Result<(), Box<DataValidationError>> {
@@ -282,8 +274,8 @@ impl DataValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Owns>,
-        owner: Object<'_>,
-        attribute: Attribute<'_>,
+        owner: Object,
+        attribute: Attribute,
         count: u64,
     ) -> Result<(), Box<DataValidationError>> {
         debug_assert!(constraint.description().unwrap_distinct().is_ok());
@@ -291,12 +283,7 @@ impl DataValidation {
             Box::new(DataValidationError::OwnsConstraintViolated {
                 owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid())),
                 owner_type: owner.type_().get_label(snapshot, type_manager).unwrap().to_owned(),
-                attribute_type: attribute
-                    .type_()
-                    .get_label(snapshot, type_manager)
-                    .unwrap()
-                    .as_reference()
-                    .into_owned(),
+                attribute_type: attribute.type_().get_label(snapshot, type_manager).unwrap().clone(),
                 // constraint_source: constraint.source(),
                 typedb_source,
             })
@@ -307,9 +294,9 @@ impl DataValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Relates>,
-        relation: Relation<'_>,
+        relation: Relation,
         role_type: RoleType,
-        _player: Object<'_>,
+        _player: Object,
         count: u64,
     ) -> Result<(), Box<DataValidationError>> {
         debug_assert!(constraint.description().unwrap_distinct().is_ok());
@@ -340,7 +327,7 @@ impl DataValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Owns>,
-        owner: Object<'_>,
+        owner: Object,
         attribute_type: AttributeType,
         value: Value<'_>,
     ) -> Box<DataValidationError> {

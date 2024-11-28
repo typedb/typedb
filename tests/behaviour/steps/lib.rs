@@ -45,16 +45,16 @@ mod thing_util {
 
     #[derive(Debug)]
     pub struct ObjectWithKey {
-        pub object: Object<'static>,
-        pub key: Option<Attribute<'static>>,
+        pub object: Object,
+        pub key: Option<Attribute>,
     }
 
     impl ObjectWithKey {
-        pub fn new_with_key(object: Object<'static>, key: Attribute<'static>) -> Self {
+        pub fn new_with_key(object: Object, key: Attribute) -> Self {
             Self { object, key: Some(key) }
         }
 
-        pub fn new(object: Object<'static>) -> Self {
+        pub fn new(object: Object) -> Self {
             Self { object, key: None }
         }
     }
@@ -110,9 +110,9 @@ pub struct Context {
 
     query_answer: Option<QueryAnswer>,
     objects: HashMap<String, Option<ObjectWithKey>>,
-    object_lists: HashMap<String, Vec<Object<'static>>>,
-    attributes: HashMap<String, Option<Attribute<'static>>>,
-    attribute_lists: HashMap<String, Vec<Attribute<'static>>>,
+    object_lists: HashMap<String, Vec<Object>>,
+    attributes: HashMap<String, Option<Attribute>>,
+    attribute_lists: HashMap<String, Vec<Attribute>>,
 }
 
 impl Context {

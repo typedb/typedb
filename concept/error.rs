@@ -99,9 +99,9 @@ pub enum ConceptReadError {
     CorruptFoundHasWithoutOwns,
     CorruptFoundLinksWithoutPlays,
     CorruptFoundLinksWithoutRelates,
-    CannotGetOwnsDoesntExist(Label<'static>, Label<'static>),
-    CannotGetPlaysDoesntExist(Label<'static>, Label<'static>),
-    CannotGetRelatesDoesntExist(Label<'static>, Label<'static>),
+    CannotGetOwnsDoesntExist(Label, Label),
+    CannotGetPlaysDoesntExist(Label, Label),
+    CannotGetRelatesDoesntExist(Label, Label),
     Annotation {
         source: AnnotationError,
     },

@@ -39,20 +39,20 @@ fn generate_string_attribute_vertex() {
     // 1: vertex for short string that is stored inline
     {
         let short_string = "Hello";
-        let short_string_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(short_string);
+        let short_string_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(short_string);
         let vertex = thing_vertex_generator
             .create_attribute_string(type_id, short_string_bytes.as_reference(), &mut snapshot)
             .unwrap();
         let vertex_id = vertex.attribute_id().unwrap_string();
         assert!(vertex_id.is_inline());
-        assert_eq!(vertex_id.get_inline_length() as usize, short_string_bytes.length());
+        assert_eq!(vertex_id.get_inline_length() as usize, short_string_bytes.len());
         assert_eq!(vertex_id.get_inline_id_value().bytes(), short_string_bytes.bytes());
     }
 
     // 2: vertex for long string that does not exist beforehand with default hasher
     {
         let string = "Hello world, this is a long attribute string to be encoded.";
-        let string_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(string);
+        let string_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(string);
         let vertex = thing_vertex_generator
             .create_attribute_string(type_id, string_bytes.as_reference(), &mut snapshot)
             .unwrap();
@@ -72,7 +72,7 @@ fn generate_string_attribute_vertex() {
 
     {
         let string = "Hello world, this is a long attribute string to be encoded with a constant hash.";
-        let string_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(string);
+        let string_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(string);
         let vertex = thing_vertex_generator
             .create_attribute_string(type_id, string_bytes.as_reference(), &mut snapshot)
             .unwrap();
@@ -84,7 +84,7 @@ fn generate_string_attribute_vertex() {
         assert_eq!(vertex_id.get_hash_disambiguator(), 0u8);
         {
             let string_collide = "Hello world, this is using the same prefix and will collide.";
-            let string_collide_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(string_collide);
+            let string_collide_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(string_collide);
             let collide_vertex = thing_vertex_generator
                 .create_attribute_string(type_id, string_collide_bytes.as_reference(), &mut snapshot)
                 .unwrap();
@@ -103,7 +103,7 @@ fn generate_string_attribute_vertex() {
         }
         {
             let string_collide = "Hello world, this is using the same prefix and will collide AGAIN!.";
-            let string_collide_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(string_collide);
+            let string_collide_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(string_collide);
             let collide_vertex = thing_vertex_generator
                 .create_attribute_string(type_id, string_collide_bytes.as_reference(), &mut snapshot)
                 .unwrap();

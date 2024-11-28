@@ -252,7 +252,7 @@ fn register_typeql_role_type(
 fn register_type_scoped_label(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     scoped_label: &ScopedLabel,
-) -> Result<Label<'static>, Box<RepresentationError>> {
+) -> Result<Label, Box<RepresentationError>> {
     let checked_scope = checked_identifier(&scoped_label.scope.ident)?;
     let checked_name = checked_identifier(&scoped_label.name.ident)?;
     Ok(Label::build_scoped(checked_name, checked_scope))
@@ -261,7 +261,7 @@ fn register_type_scoped_label(
 fn register_type_label(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     label: &typeql::Label,
-) -> Result<Label<'static>, Box<RepresentationError>> {
+) -> Result<Label, Box<RepresentationError>> {
     Ok(Label::build(checked_identifier(&label.ident)?))
 }
 

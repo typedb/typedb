@@ -56,13 +56,13 @@ impl Hkt for EntityType {
 
 impl EntityType {}
 
-impl<'a> ConceptAPI<'a> for EntityType {}
+impl ConceptAPI for EntityType {}
 
-impl<'a> PrefixedTypeVertexEncoding<'a> for EntityType {
+impl PrefixedTypeVertexEncoding for EntityType {
     const PREFIX: Prefix = VertexEntityType;
 }
 
-impl<'a> TypeVertexEncoding<'a> for EntityType {
+impl TypeVertexEncoding for EntityType {
     fn from_vertex(vertex: TypeVertex) -> Result<Self, EncodingError> {
         debug_assert!(Self::PREFIX == VertexEntityType);
         if vertex.prefix() != Prefix::VertexEntityType {
@@ -81,8 +81,7 @@ impl<'a> TypeVertexEncoding<'a> for EntityType {
     }
 }
 
-impl<'a> TypeAPI<'a> for EntityType {
-    type SelfStatic = EntityType;
+impl<'a> TypeAPI for EntityType {
     fn new(vertex: TypeVertex) -> EntityType {
         Self::from_vertex(vertex).unwrap()
     }
@@ -108,7 +107,7 @@ impl<'a> TypeAPI<'a> for EntityType {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Label<'static>>, Box<ConceptReadError>> {
+    ) -> Result<MaybeOwns<'m, Label>, Box<ConceptReadError>> {
         type_manager.get_entity_type_label(snapshot, (*self).into_owned())
     }
 
@@ -116,7 +115,7 @@ impl<'a> TypeAPI<'a> for EntityType {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Arc<Label<'static>>, Box<ConceptReadError>> {
+    ) -> Result<Arc<Label>, Box<ConceptReadError>> {
         type_manager.get_entity_type_label_arc(snapshot, (*self).into_owned())
     }
 
@@ -153,13 +152,13 @@ impl<'a> TypeAPI<'a> for EntityType {
     }
 }
 
-impl<'a> ObjectTypeAPI<'a> for EntityType {
+impl<'a> ObjectTypeAPI for EntityType {
     fn into_owned_object_type(self) -> ObjectType {
         ObjectType::Entity(self.into_owned())
     }
 }
 
-impl<'a> KindAPI<'a> for EntityType {
+impl<'a> KindAPI for EntityType {
     type AnnotationType = EntityTypeAnnotation;
     const KIND: Kind = Kind::Entity;
 
@@ -172,19 +171,16 @@ impl<'a> KindAPI<'a> for EntityType {
     }
 
     fn get_constraints<'m>(
-        &self,
+        self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<EntityType>>>, Box<ConceptReadError>>
-    where
-        'a: 'static,
-    {
-        type_manager.get_entity_type_constraints(snapshot, (*self).into_owned())
+    ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<EntityType>>>, Box<ConceptReadError>> {
+        type_manager.get_entity_type_constraints(snapshot, self)
     }
 }
 
-impl<'a> ThingTypeAPI<'a> for EntityType {
-    type InstanceType<'b> = Entity<'b>;
+impl ThingTypeAPI for EntityType {
+    type InstanceType = Entity;
 }
 
 impl EntityType {
@@ -192,7 +188,7 @@ impl EntityType {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
-        label: &Label<'_>,
+        label: &Label,
     ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.set_label(snapshot, (*self).into_owned(), label)
     }
@@ -261,7 +257,7 @@ impl EntityType {
     }
 }
 
-impl<'a> OwnerAPI<'a> for EntityType {
+impl OwnerAPI for EntityType {
     fn set_owns(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -382,7 +378,7 @@ impl<'a> OwnerAPI<'a> for EntityType {
     }
 }
 
-impl<'a> PlayerAPI<'a> for EntityType {
+impl PlayerAPI for EntityType {
     fn set_plays(
         &self,
         snapshot: &mut impl WritableSnapshot,

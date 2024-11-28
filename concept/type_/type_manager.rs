@@ -76,7 +76,7 @@ macro_rules! get_type_methods {
     )*) => {
         $(
             pub fn $method_name(
-                &self, snapshot: &impl ReadableSnapshot, label: &Label<'_>
+                &self, snapshot: &impl ReadableSnapshot, label: &Label
             ) -> Result<Option<$output_type>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(label))
@@ -188,7 +188,7 @@ macro_rules! get_type_label_methods {
         $(
             pub(crate) fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_
-            ) -> Result<MaybeOwns<'_, Label<'static>>, Box<ConceptReadError>> {
+            ) -> Result<MaybeOwns<'_, Label>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
@@ -206,7 +206,7 @@ macro_rules! get_type_label_arc_methods {
         $(
             pub(crate) fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_
-            ) -> Result<Arc<Label<'static>>, Box<ConceptReadError>> {
+            ) -> Result<Arc<Label>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(type_))
                 } else {
@@ -282,7 +282,7 @@ macro_rules! get_type_capability_constraints_methods {
                 &self,
                 snapshot: &impl ReadableSnapshot,
                 $type_: $type_decl,
-                interface_type: <$capability as Capability<'static>>::InterfaceType,
+                interface_type: <$capability as Capability>::InterfaceType,
             ) -> Result<MaybeOwns<'_, HashSet<CapabilityConstraint<$capability>>>, Box<ConceptReadError>> {
                  if let Some(cache) = &self.type_cache {
                      Ok(match cache.$cache_method($type_).get(&interface_type) {
@@ -363,8 +363,8 @@ macro_rules! get_type_capability_filtered_constraints_methods {
             pub(crate) fn $method_name(
                 &self,
                 snapshot: &impl ReadableSnapshot,
-                object_type: <$capability as Capability<'static>>::ObjectType,
-                interface_type: <$capability as Capability<'static>>::InterfaceType,
+                object_type: <$capability as Capability>::ObjectType,
+                interface_type: <$capability as Capability>::InterfaceType,
             ) -> Result<HashSet<CapabilityConstraint<$capability>>, Box<ConceptReadError>> {
                 Ok($filtering_method(object_type.$get_constraints_method(snapshot, self, interface_type)?.into_iter().cloned()))
             }
@@ -389,7 +389,7 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         name: &str,
-    ) -> Result<Option<DefinitionKey<'static>>, Box<ConceptReadError>> {
+    ) -> Result<Option<DefinitionKey>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_struct_definition_key(name))
         } else {
@@ -400,7 +400,7 @@ impl TypeManager {
     pub fn get_struct_definition(
         &self,
         snapshot: &impl ReadableSnapshot,
-        definition_key: DefinitionKey<'static>,
+        definition_key: DefinitionKey,
     ) -> Result<MaybeOwns<'_, StructDefinition>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_struct_definition(definition_key.clone())))
@@ -681,7 +681,7 @@ impl TypeManager {
         role_type: RoleType,
     ) -> Result<Relates, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
-            Ok(cache.get_role_type_relates_root(role_type).clone())
+            Ok(*cache.get_role_type_relates_root(role_type))
         } else {
             let relates = TypeReader::get_role_type_relates_root(snapshot, role_type)?;
             Ok(relates)
@@ -975,22 +975,22 @@ impl TypeManager {
         fn get_type_owns_values_constraints() -> Owns = get_owned_attribute_type_constraints + get_values_constraints;
     }
 
-    pub(crate) fn get_type_abstract_constraint<T: KindAPI<'static>>(
+    pub(crate) fn get_type_abstract_constraint<T: KindAPI>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_: T,
     ) -> Result<Option<TypeConstraint<T>>, Box<ConceptReadError>> {
         let constraints = type_.get_constraints(snapshot, self)?;
-        Ok(get_abstract_constraint(type_.clone(), constraints.iter()))
+        Ok(get_abstract_constraint(type_, constraints.iter()))
     }
 
-    pub(crate) fn get_capability_abstract_constraint<CAP: Capability<'static>>(
+    pub(crate) fn get_capability_abstract_constraint<CAP: Capability>(
         &self,
         snapshot: &impl ReadableSnapshot,
         capability: CAP,
     ) -> Result<Option<CapabilityConstraint<CAP>>, Box<ConceptReadError>> {
         let constraints = capability.get_constraints(snapshot, self)?;
-        Ok(get_abstract_constraint(capability.clone(), constraints.iter()))
+        Ok(get_abstract_constraint(capability, constraints.iter()))
     }
 
     pub(crate) fn get_type_owns_abstract_constraint(
@@ -1057,7 +1057,7 @@ impl TypeManager {
         ))
     }
 
-    pub(crate) fn get_capability_cardinality<CAP: Capability<'static>>(
+    pub(crate) fn get_capability_cardinality<CAP: Capability>(
         &self,
         snapshot: &impl ReadableSnapshot,
         capability: CAP,
@@ -1076,20 +1076,20 @@ impl TypeManager {
     ) -> Result<AnnotationCardinality, Box<ConceptReadError>> {
         match relates.is_specialising(snapshot, self)? {
             true => {
-                debug_assert!(self.get_capability_cardinality_constraint(snapshot, relates.clone())?.is_none());
+                debug_assert!(self.get_capability_cardinality_constraint(snapshot, relates)?.is_none());
                 self.get_capability_cardinality(snapshot, relates.role().get_relates_root(snapshot, self)?)
             }
             false => self.get_capability_cardinality(snapshot, relates),
         }
     }
 
-    fn get_capability_cardinality_constraint<CAP: Capability<'static>>(
+    fn get_capability_cardinality_constraint<CAP: Capability>(
         &self,
         snapshot: &impl ReadableSnapshot,
         capability: CAP,
     ) -> Result<Option<CapabilityConstraint<CAP>>, Box<ConceptReadError>> {
         let constraints = capability.get_constraints(snapshot, self)?;
-        Ok(get_cardinality_constraint(capability.clone(), constraints.iter()))
+        Ok(get_cardinality_constraint(capability, constraints.iter()))
     }
 
     pub(crate) fn get_is_key(
@@ -1158,7 +1158,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         name: String,
-    ) -> Result<DefinitionKey<'static>, Box<ConceptWriteError>> {
+    ) -> Result<DefinitionKey, Box<ConceptWriteError>> {
         OperationTimeValidation::validate_struct_name_uniqueness(snapshot, &name)
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1174,7 +1174,7 @@ impl TypeManager {
     pub fn create_struct_field(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        definition_key: DefinitionKey<'static>,
+        definition_key: DefinitionKey,
         field_name: &str,
         value_type: ValueType,
         is_optional: bool,
@@ -1192,7 +1192,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         _thing_manager: &ThingManager,
-        definition_key: DefinitionKey<'static>,
+        definition_key: DefinitionKey,
         field_name: &str,
     ) -> Result<(), Box<ConceptWriteError>> {
         // TODO: Somehow check instances?
@@ -1208,7 +1208,7 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         _thing_manager: &ThingManager,
-        definition_key: &DefinitionKey<'static>,
+        definition_key: &DefinitionKey,
     ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_deleted_struct_is_not_used_in_schema(snapshot, definition_key)
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -1222,9 +1222,9 @@ impl TypeManager {
     pub fn create_entity_type(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        label: &Label<'_>,
+        label: &Label,
     ) -> Result<EntityType, Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
+        OperationTimeValidation::validate_label_uniqueness(snapshot, label)
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         let type_vertex = self
@@ -1240,9 +1240,9 @@ impl TypeManager {
     pub fn create_relation_type(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        label: &Label<'_>,
+        label: &Label,
     ) -> Result<RelationType, Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
+        OperationTimeValidation::validate_label_uniqueness(snapshot, label)
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         let type_vertex = self
@@ -1259,17 +1259,12 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        label: &Label<'_>,
+        label: &Label,
         relation_type: RelationType,
         ordering: Ordering,
     ) -> Result<RoleType, Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_new_role_name_uniqueness(
-            snapshot,
-            self,
-            relation_type.into_owned(),
-            &label.clone().into_owned(),
-        )
-        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_new_role_name_uniqueness(snapshot, self, relation_type.into_owned(), label)
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         // Capabilities can have default values for annotations (e.g. @card(1..X)),
         // and they can contradict the absence of data for their object types.
@@ -1307,10 +1302,7 @@ impl TypeManager {
 
         if !exists && !is_specialising {
             OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_capabilities(
-                snapshot,
-                self,
-                relates.clone(),
-                true, // new relates is set
+                snapshot, self, relates, true, // new relates is set
             )
             .map_err(|typedb_source| Box::new(ConceptWriteError::SchemaValidation { typedb_source }))?;
 
@@ -1320,22 +1312,22 @@ impl TypeManager {
                 snapshot,
                 self,
                 thing_manager,
-                relates.clone().into_owned(),
-                get_relates_default_constraints(relates.clone(), ordering, false),
+                relates.into_owned(),
+                get_relates_default_constraints(relates, ordering, false),
             )
             .map_err(|typedb_source| Box::new(ConceptWriteError::SchemaValidation { typedb_source }))?;
         }
 
-        TypeWriter::storage_put_edge(snapshot, relates.clone());
+        TypeWriter::storage_put_edge(snapshot, relates);
         Ok(relates)
     }
 
     pub fn create_attribute_type(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        label: &Label<'_>,
+        label: &Label,
     ) -> Result<AttributeType, Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
+        OperationTimeValidation::validate_label_uniqueness(snapshot, label)
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         let type_vertex = self
@@ -1368,9 +1360,9 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
-        type_: impl KindAPI<'static>,
+        type_: impl KindAPI,
     ) -> Result<(), Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, self, type_.clone())
+        OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, self, type_)
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         OperationTimeValidation::validate_no_instances_to_delete(snapshot, self, thing_manager, type_)
@@ -1434,10 +1426,7 @@ impl TypeManager {
         let relates = role_type.get_relates_root(snapshot, self)?;
 
         OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_capabilities(
-            snapshot,
-            self,
-            relates.clone(),
-            false,
+            snapshot, self, relates, false,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1463,7 +1452,7 @@ impl TypeManager {
             self.unset_plays_unchecked(snapshot, plays)?;
         }
 
-        self.unset_relates_unchecked(snapshot, relates.clone())?;
+        self.unset_relates_unchecked(snapshot, relates)?;
         TypeWriter::storage_delete_type_vertex_property::<Ordering>(snapshot, relates.role());
         self.delete_type(snapshot, relates.role())
     }
@@ -1471,13 +1460,13 @@ impl TypeManager {
     fn delete_type(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        type_: impl KindAPI<'static>,
+        type_: impl KindAPI,
     ) -> Result<(), Box<ConceptWriteError>> {
-        for annotation in TypeReader::get_type_annotations_declared(snapshot, type_.clone())? {
-            self.unset_type_annotation(snapshot, type_.clone(), annotation.into().category())?;
+        for annotation in TypeReader::get_type_annotations_declared(snapshot, type_)? {
+            self.unset_type_annotation(snapshot, type_, annotation.into().category())?;
         }
-        self.unset_supertype(snapshot, type_.clone())?;
-        TypeWriter::storage_delete_label(snapshot, type_.clone());
+        self.unset_supertype(snapshot, type_)?;
+        TypeWriter::storage_delete_label(snapshot, type_);
         TypeWriter::storage_delete_vertex(snapshot, type_);
         Ok(())
     }
@@ -1510,33 +1499,33 @@ impl TypeManager {
     fn unset_capability(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        capability: impl Capability<'static>,
+        capability: impl Capability,
     ) -> Result<(), Box<ConceptWriteError>> {
-        for annotation in TypeReader::get_capability_annotations_declared(snapshot, capability.clone())? {
-            self.unset_capability_annotation(snapshot, capability.clone(), annotation.clone().into().category())?;
+        for annotation in TypeReader::get_capability_annotations_declared(snapshot, capability)? {
+            self.unset_capability_annotation(snapshot, capability, annotation.clone().into().category())?;
         }
-        TypeWriter::storage_delete_edge(snapshot, capability.clone());
+        TypeWriter::storage_delete_edge(snapshot, capability);
         Ok(())
     }
 
-    pub(crate) fn set_label<T: KindAPI<'static>>(
+    pub(crate) fn set_label<T: KindAPI>(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_: T,
-        label: &Label<'_>,
+        label: &Label,
     ) -> Result<(), Box<ConceptWriteError>> {
-        debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, type_.clone()).is_ok());
+        debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, type_).is_ok());
 
         match T::KIND {
             Kind::Entity | Kind::Attribute => {
-                OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
+                OperationTimeValidation::validate_label_uniqueness(snapshot, label)
                     .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
             }
             Kind::Relation => unreachable!("Use set_relation_type_label instead"),
             Kind::Role => unreachable!("Use set_name instead"),
         }
 
-        TypeWriter::storage_delete_label(snapshot, type_.clone());
+        TypeWriter::storage_delete_label(snapshot, type_);
         TypeWriter::storage_put_label(snapshot, type_, label);
         Ok(())
     }
@@ -1545,11 +1534,11 @@ impl TypeManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation_type: RelationType,
-        label: &Label<'_>,
+        label: &Label,
     ) -> Result<(), Box<ConceptWriteError>> {
         debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, relation_type).is_ok());
 
-        OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
+        OperationTimeValidation::validate_label_uniqueness(snapshot, label)
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         TypeWriter::storage_delete_label(snapshot, relation_type);
@@ -1577,13 +1566,8 @@ impl TypeManager {
         let new_label = Label::build_scoped(name, old_label.scope().unwrap().as_str());
         let relation_type = role_type.get_relates_root(snapshot, self)?.relation();
 
-        OperationTimeValidation::validate_new_role_name_uniqueness(
-            snapshot,
-            self,
-            relation_type,
-            &new_label.clone().into_owned(),
-        )
-        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_new_role_name_uniqueness(snapshot, self, relation_type, &new_label)
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         TypeWriter::storage_delete_label(snapshot, role_type);
         TypeWriter::storage_put_label(snapshot, role_type, &new_label);
@@ -1690,48 +1674,42 @@ impl TypeManager {
         Ok(())
     }
 
-    fn set_supertype<K: KindAPI<'static>>(
+    fn set_supertype<K: KindAPI>(
         &self,
         snapshot: &mut impl WritableSnapshot,
         subtype: K,
         supertype: K,
     ) -> Result<(), Box<ConceptWriteError>> {
         debug_assert! {
-            OperationTimeValidation::validate_type_exists(snapshot, subtype.clone()).is_ok() &&
-                OperationTimeValidation::validate_type_exists(snapshot, supertype.clone()).is_ok()
+            OperationTimeValidation::validate_type_exists(snapshot, subtype).is_ok() &&
+                OperationTimeValidation::validate_type_exists(snapshot, supertype).is_ok()
         };
 
-        OperationTimeValidation::validate_sub_does_not_create_cycle(snapshot, self, subtype.clone(), supertype.clone())
+        OperationTimeValidation::validate_sub_does_not_create_cycle(snapshot, self, subtype, supertype)
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         OperationTimeValidation::validate_type_supertype_abstractness_to_change_supertype(
-            snapshot,
-            self,
-            subtype.clone(),
-            supertype.clone(),
+            snapshot, self, subtype, supertype,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         OperationTimeValidation::validate_type_declared_constraints_narrowing_of_supertype_constraints(
-            snapshot,
-            self,
-            subtype.clone(),
-            supertype.clone(),
+            snapshot, self, subtype, supertype,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        self.unset_supertype(snapshot, subtype.clone())?;
-        TypeWriter::storage_put_supertype(snapshot, subtype.clone(), supertype.clone());
+        self.unset_supertype(snapshot, subtype)?;
+        TypeWriter::storage_put_supertype(snapshot, subtype, supertype);
         Ok(())
     }
 
-    fn unset_supertype<T: TypeAPI<'static>>(
+    fn unset_supertype<T: TypeAPI>(
         &self,
         snapshot: &mut impl WritableSnapshot,
         subtype: T,
     ) -> Result<(), Box<ConceptWriteError>> {
-        debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, subtype.clone()).is_ok());
-        TypeWriter::storage_may_delete_supertype(snapshot, subtype.clone())?;
+        debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, subtype).is_ok());
+        TypeWriter::storage_may_delete_supertype(snapshot, subtype)?;
         Ok(())
     }
 
@@ -1834,15 +1812,15 @@ impl TypeManager {
         self.unset_supertype(snapshot, subtype)
     }
 
-    pub(crate) fn set_object_type_supertype<T: ObjectTypeAPI<'static> + KindAPI<'static>>(
+    pub(crate) fn set_object_type_supertype<T: ObjectTypeAPI + KindAPI>(
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         subtype: T,
         supertype: T,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let object_subtype = subtype.clone().into_owned_object_type();
-        let object_supertype = supertype.clone().into_owned_object_type();
+        let object_subtype = subtype.into_owned_object_type();
+        let object_supertype = supertype.into_owned_object_type();
 
         OperationTimeValidation::validate_lost_owns_do_not_cause_lost_instances_while_changing_supertype(
             snapshot,
@@ -2111,10 +2089,7 @@ impl TypeManager {
 
         if !exists {
             OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_capabilities(
-                snapshot,
-                self,
-                plays.clone(),
-                true,
+                snapshot, self, plays, true,
             )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2122,13 +2097,13 @@ impl TypeManager {
                 snapshot,
                 self,
                 thing_manager,
-                plays.clone().into_owned(),
-                get_plays_default_constraints(plays.clone()),
+                plays.into_owned(),
+                get_plays_default_constraints(plays),
             )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
         }
 
-        TypeWriter::storage_put_edge(snapshot, plays.clone());
+        TypeWriter::storage_put_edge(snapshot, plays);
         Ok(plays)
     }
 
@@ -2144,10 +2119,7 @@ impl TypeManager {
 
         if let Some(plays) = player.get_plays_role_declared(snapshot, self, role_type)? {
             OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_capabilities(
-                snapshot,
-                self,
-                plays.clone(),
-                false,
+                snapshot, self, plays, false,
             )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2160,7 +2132,7 @@ impl TypeManager {
             )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-            self.unset_plays_unchecked(snapshot, plays.clone())?;
+            self.unset_plays_unchecked(snapshot, plays)?;
         }
         Ok(())
     }
@@ -2222,7 +2194,7 @@ impl TypeManager {
             OperationTimeValidation::validate_relates_distinct_constraint_ordering(
                 snapshot,
                 self,
-                relates.clone(),
+                *relates,
                 Some(ordering),
                 None,
             )
@@ -2362,16 +2334,12 @@ impl TypeManager {
     fn unset_type_annotation_abstract(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        type_: impl KindAPI<'static>,
+        type_: impl KindAPI,
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Abstract;
 
-        OperationTimeValidation::validate_no_abstract_subtypes_to_unset_abstract_annotation(
-            snapshot,
-            self,
-            type_.clone(),
-        )
-        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_no_abstract_subtypes_to_unset_abstract_annotation(snapshot, self, type_)
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         self.unset_type_annotation(snapshot, type_, annotation_category)
     }
@@ -2387,14 +2355,12 @@ impl TypeManager {
 
         if is_manual {
             OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(
-                snapshot,
-                self,
-                relates.clone(),
+                snapshot, self, relates,
             )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
         }
 
-        self.validate_set_capability_annotation_general(snapshot, relates.clone(), annotation.clone())?;
+        self.validate_set_capability_annotation_general(snapshot, relates, annotation.clone())?;
 
         if !relates.is_specialising(snapshot, self)? {
             OperationTimeValidation::validate_type_supertype_abstractness_to_set_abstract_annotation(
@@ -2409,7 +2375,7 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            relates.clone(),
+            relates,
             annotation.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -2424,12 +2390,8 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Abstract;
 
-        OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(
-            snapshot,
-            self,
-            relates.clone(),
-        )
-        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(snapshot, self, relates)
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         OperationTimeValidation::validate_no_abstract_subtypes_to_unset_abstract_annotation(
             snapshot,
@@ -2439,9 +2401,7 @@ impl TypeManager {
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         OperationTimeValidation::validate_relates_is_not_specialising_to_unset_abstract_annotation(
-            snapshot,
-            self,
-            relates.clone(),
+            snapshot, self, relates,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2474,7 +2434,7 @@ impl TypeManager {
     pub(crate) fn unset_annotation_independent(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        type_: impl KindAPI<'static>,
+        type_: impl KindAPI,
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Independent;
         self.unset_type_annotation(snapshot, type_, annotation_category)
@@ -2494,7 +2454,7 @@ impl TypeManager {
             snapshot,
             self,
             relates.relation(),
-            specialised.clone(),
+            specialised,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2668,19 +2628,15 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Distinct(AnnotationDistinct);
 
-        OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(
-            snapshot,
-            self,
-            relates.clone(),
-        )
-        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(snapshot, self, relates)
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        self.validate_set_capability_annotation_general(snapshot, relates.clone(), annotation.clone())?;
+        self.validate_set_capability_annotation_general(snapshot, relates, annotation.clone())?;
 
         OperationTimeValidation::validate_relates_distinct_constraint_ordering(
             snapshot,
             self,
-            relates.clone(),
+            relates,
             None,
             Some(true),
         )
@@ -2690,7 +2646,7 @@ impl TypeManager {
             snapshot,
             self,
             thing_manager,
-            relates.clone(),
+            relates,
             annotation.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -2714,12 +2670,8 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Distinct;
 
-        OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(
-            snapshot,
-            self,
-            relates.clone(),
-        )
-        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(snapshot, self, relates)
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         self.unset_capability_annotation(snapshot, relates, annotation_category)
     }
@@ -2884,14 +2836,14 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Cardinality(cardinality);
 
-        self.validate_set_capability_annotation_general(snapshot, plays.clone(), annotation.clone())?;
-        self.validate_updated_capability_cardinality_against_schema(snapshot, plays.clone(), cardinality)?;
+        self.validate_set_capability_annotation_general(snapshot, plays, annotation.clone())?;
+        self.validate_updated_capability_cardinality_against_schema(snapshot, plays, cardinality)?;
 
         OperationTimeValidation::validate_new_annotation_constraints_compatible_with_plays_instances(
             snapshot,
             self,
             thing_manager,
-            plays.clone(),
+            plays,
             annotation.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -2907,21 +2859,17 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Cardinality;
 
-        if self.get_plays_annotation_declared_by_category(snapshot, plays.clone(), annotation_category)?.is_some() {
+        if self.get_plays_annotation_declared_by_category(snapshot, plays, annotation_category)?.is_some() {
             let updated_cardinality = Plays::get_default_cardinality();
 
             if updated_cardinality != plays.get_cardinality(snapshot, self)? {
-                self.validate_updated_capability_cardinality_against_schema(
-                    snapshot,
-                    plays.clone(),
-                    updated_cardinality,
-                )?;
+                self.validate_updated_capability_cardinality_against_schema(snapshot, plays, updated_cardinality)?;
 
                 OperationTimeValidation::validate_new_annotation_constraints_compatible_with_plays_instances(
                     snapshot,
                     self,
                     thing_manager,
-                    plays.clone(),
+                    plays,
                     Annotation::Cardinality(updated_cardinality),
                 )
                 .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -2940,21 +2888,17 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation = Annotation::Cardinality(cardinality);
 
-        OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(
-            snapshot,
-            self,
-            relates.clone(),
-        )
-        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(snapshot, self, relates)
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        self.validate_set_capability_annotation_general(snapshot, relates.clone(), annotation.clone())?;
-        self.validate_updated_capability_cardinality_against_schema(snapshot, relates.clone(), cardinality)?;
+        self.validate_set_capability_annotation_general(snapshot, relates, annotation.clone())?;
+        self.validate_updated_capability_cardinality_against_schema(snapshot, relates, cardinality)?;
 
         OperationTimeValidation::validate_new_annotation_constraints_compatible_with_relates_instances(
             snapshot,
             self,
             thing_manager,
-            relates.clone(),
+            relates,
             annotation.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -2970,29 +2914,21 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Cardinality;
 
-        OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(
-            snapshot,
-            self,
-            relates.clone(),
-        )
-        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_relates_is_not_specialising_to_manage_annotations(snapshot, self, relates)
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        if self.get_relates_annotation_declared_by_category(snapshot, relates.clone(), annotation_category)?.is_some() {
+        if self.get_relates_annotation_declared_by_category(snapshot, relates, annotation_category)?.is_some() {
             let updated_cardinality =
                 Relates::get_default_cardinality_for_non_specialising(relates.role().get_ordering(snapshot, self)?);
 
             if updated_cardinality != relates.get_cardinality(snapshot, self)? {
-                self.validate_updated_capability_cardinality_against_schema(
-                    snapshot,
-                    relates.clone(),
-                    updated_cardinality,
-                )?;
+                self.validate_updated_capability_cardinality_against_schema(snapshot, relates, updated_cardinality)?;
 
                 OperationTimeValidation::validate_new_annotation_constraints_compatible_with_relates_instances(
                     snapshot,
                     self,
                     thing_manager,
-                    relates.clone(),
+                    relates,
                     Annotation::Cardinality(updated_cardinality),
                 )
                 .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -3209,7 +3145,7 @@ impl TypeManager {
     pub(crate) fn unset_annotation_range(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        type_: impl KindAPI<'static>,
+        type_: impl KindAPI,
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Range;
         self.unset_type_annotation(snapshot, type_, annotation_category)
@@ -3330,7 +3266,7 @@ impl TypeManager {
     pub(crate) fn unset_annotation_values(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        type_: impl KindAPI<'static>,
+        type_: impl KindAPI,
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Values;
         self.unset_type_annotation(snapshot, type_, annotation_category)
@@ -3394,7 +3330,7 @@ impl TypeManager {
     fn set_type_annotation(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        type_: impl KindAPI<'static>,
+        type_: impl KindAPI,
         annotation: Annotation,
     ) -> Result<(), Box<ConceptWriteError>> {
         storage_save_annotation!(snapshot, type_, annotation, TypeWriter::storage_put_type_vertex_property);
@@ -3404,7 +3340,7 @@ impl TypeManager {
     fn set_capability_annotation(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        capability: impl Capability<'static>,
+        capability: impl Capability,
         annotation: Annotation,
     ) -> Result<(), Box<ConceptWriteError>> {
         storage_save_annotation!(snapshot, capability, annotation, TypeWriter::storage_put_type_edge_property);
@@ -3414,7 +3350,7 @@ impl TypeManager {
     fn unset_type_annotation(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        type_: impl KindAPI<'static>,
+        type_: impl KindAPI,
         annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
         storage_delete_annotation!(
@@ -3430,7 +3366,7 @@ impl TypeManager {
     fn unset_capability_annotation(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        capability: impl Capability<'static>,
+        capability: impl Capability,
         annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
         storage_delete_annotation!(
@@ -3446,16 +3382,13 @@ impl TypeManager {
     fn validate_set_type_annotation_general(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        type_: impl KindAPI<'static>,
+        type_: impl KindAPI,
         annotation: Annotation,
     ) -> Result<(), Box<ConceptWriteError>> {
         let category = annotation.category();
 
         OperationTimeValidation::validate_declared_type_annotation_is_compatible_with_declared_annotations(
-            snapshot,
-            self,
-            type_.clone(),
-            category,
+            snapshot, self, type_, category,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -3465,7 +3398,7 @@ impl TypeManager {
     fn validate_updated_capability_cardinality_against_schema(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        capability: impl Capability<'static>,
+        capability: impl Capability,
         cardinality: AnnotationCardinality,
     ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_cardinality_arguments(cardinality)
@@ -3474,7 +3407,7 @@ impl TypeManager {
         OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_cardinality(
             snapshot,
             self,
-            capability.clone(),
+            capability,
             cardinality,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -3485,16 +3418,13 @@ impl TypeManager {
     fn validate_set_capability_annotation_general(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        capability: impl Capability<'static>,
+        capability: impl Capability,
         annotation: Annotation,
     ) -> Result<(), Box<ConceptWriteError>> {
         let category = annotation.category();
 
         OperationTimeValidation::validate_declared_capability_annotation_is_compatible_with_declared_annotations(
-            snapshot,
-            self,
-            capability.clone(),
-            category,
+            snapshot, self, capability, category,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 

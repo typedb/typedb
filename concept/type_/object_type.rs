@@ -54,7 +54,7 @@ impl ObjectType {
     }
 }
 
-impl<'a> TypeVertexEncoding<'a> for ObjectType {
+impl TypeVertexEncoding for ObjectType {
     fn from_vertex(vertex: TypeVertex) -> Result<Self, EncodingError> {
         match vertex.prefix() {
             Prefix::VertexEntityType => Ok(ObjectType::Entity(EntityType::new(vertex))),
@@ -85,7 +85,7 @@ impl primitive::prefix::Prefix for ObjectType {
     }
 }
 
-impl<'a> OwnerAPI<'a> for ObjectType {
+impl OwnerAPI for ObjectType {
     fn set_owns(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -222,11 +222,9 @@ impl<'a> OwnerAPI<'a> for ObjectType {
     }
 }
 
-impl<'a> ConceptAPI<'a> for ObjectType {}
+impl ConceptAPI for ObjectType {}
 
-impl<'a> TypeAPI<'a> for ObjectType {
-    type SelfStatic = RelationType;
-
+impl TypeAPI for ObjectType {
     fn new(vertex: TypeVertex) -> Self {
         Self::from_vertex(vertex).unwrap()
     }
@@ -252,7 +250,7 @@ impl<'a> TypeAPI<'a> for ObjectType {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Label<'static>>, Box<ConceptReadError>> {
+    ) -> Result<MaybeOwns<'m, Label>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_label(snapshot, type_manager) })
     }
 
@@ -260,7 +258,7 @@ impl<'a> TypeAPI<'a> for ObjectType {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Arc<Label<'static>>, Box<ConceptReadError>> {
+    ) -> Result<Arc<Label>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_label_arc(snapshot, type_manager) })
     }
 
@@ -313,17 +311,17 @@ impl<'a> TypeAPI<'a> for ObjectType {
     }
 }
 
-impl<'a> ThingTypeAPI<'a> for ObjectType {
-    type InstanceType<'b> = Object<'b>;
+impl<'a> ThingTypeAPI for ObjectType {
+    type InstanceType = Object;
 }
 
-impl<'a> ObjectTypeAPI<'a> for ObjectType {
+impl<'a> ObjectTypeAPI for ObjectType {
     fn into_owned_object_type(self) -> ObjectType {
         self.into_owned()
     }
 }
 
-impl<'a> PlayerAPI<'a> for ObjectType {
+impl PlayerAPI for ObjectType {
     fn set_plays(
         &self,
         snapshot: &mut impl WritableSnapshot,

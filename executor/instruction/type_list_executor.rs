@@ -10,19 +10,13 @@ use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::TypeListInstruction, ExecutorVariable};
 use concept::error::ConceptReadError;
 use itertools::Itertools;
-use lending_iterator::{
-    adaptors::{Map, TryFilter},
-    higher_order::AdHocHkt,
-    AsLendingIterator, LendingIterator,
-};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        sub_executor::NarrowingTupleIterator,
-        tuple::{type_to_tuple, TuplePositions, TupleResult, TypeToTupleFn},
-        Checker, FilterFn, VariableModes,
+        tuple::{type_to_tuple, TuplePositions, TypeToTupleFn},
+        Checker, FilterFn, FilterMapFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -36,14 +30,12 @@ pub(crate) struct TypeListExecutor {
 }
 
 pub(super) type TypeFilterFn = FilterFn<Type>;
+pub(super) type TypeFilterMapFn = FilterMapFn<Type>;
 
-pub(super) type TypeTupleIterator<I> = NarrowingTupleIterator<
-    Map<TryFilter<I, Box<TypeFilterFn>, Type, Box<ConceptReadError>>, TypeToTupleFn, AdHocHkt<TupleResult<'static>>>,
->;
+pub(super) type TypeTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<TypeFilterMapFn>>, TypeToTupleFn>;
 
-pub(crate) type TypeIterator = TypeTupleIterator<
-    AsLendingIterator<iter::Map<vec::IntoIter<Type>, fn(Type) -> Result<Type, Box<ConceptReadError>>>>,
->;
+pub(crate) type TypeIterator =
+    TypeTupleIterator<iter::Map<vec::IntoIter<Type>, fn(Type) -> Result<Type, Box<ConceptReadError>>>>;
 
 type TypeVariableValueExtractor = for<'a> fn(&'a Type) -> VariableValue<'a>;
 pub(super) const EXTRACT_TYPE: TypeVariableValueExtractor = |ty| VariableValue::Type(ty.clone());
@@ -73,11 +65,13 @@ impl TypeListExecutor {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
-        let filter_for_row: Box<TypeFilterFn> = self.checker.filter_for_row(context, &row);
+        let check = self.checker.filter_for_row(context, &row);
+        let filter_for_row: Box<TypeFilterMapFn> = Box::new(move |item| match check(&item) {
+            Ok(true) | Err(_) => Some(item),
+            Ok(false) => None,
+        });
         let iterator = self.types.clone().into_iter().map(Ok as _);
-        let as_tuples: TypeIterator = NarrowingTupleIterator(
-            AsLendingIterator::new(iterator).try_filter::<_, TypeFilterFn, Type, _>(filter_for_row).map(type_to_tuple),
-        );
+        let as_tuples: TypeIterator = iterator.filter_map(filter_for_row).map(type_to_tuple);
         Ok(TupleIterator::Type(SortedTupleIterator::new(as_tuples, self.tuple_positions.clone(), &self.variable_modes)))
     }
 }

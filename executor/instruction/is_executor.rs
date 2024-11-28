@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt};
+use std::{collections::HashMap, fmt, iter};
 
 use answer::variable_value::VariableValue;
 use compiler::{
@@ -13,17 +13,13 @@ use compiler::{
 };
 use concept::error::ConceptReadError;
 use ir::pattern::constraint::Is;
-use lending_iterator::{
-    adaptors::{Map, TryFilter},
-    AsHkt, LendingIterator,
-};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{Tuple, TuplePositions, TupleResult},
-        Checker, FilterFn, VariableModes,
+        Checker, FilterFn, FilterMapFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -34,28 +30,24 @@ pub(crate) struct IsExecutor {
     input: VariablePosition,
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
-    checker: Checker<AsHkt![VariableValue<'_>]>,
+    checker: Checker<VariableValue<'static>>,
 }
 
-pub(crate) type IsToTupleFn = for<'a> fn(Result<VariableValue<'a>, Box<ConceptReadError>>) -> TupleResult<'a>;
+pub(crate) type IsToTupleFn = fn(Result<VariableValue<'static>, Box<ConceptReadError>>) -> TupleResult<'static>;
 
-pub(super) type IsTupleIterator<I> = Map<
-    TryFilter<I, Box<IsFilterFn>, AsHkt![VariableValue<'_>], Box<ConceptReadError>>,
-    IsToTupleFn,
-    AsHkt![TupleResult<'_>],
->;
+pub(super) type IsTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<IsFilterMapFn>>, IsToTupleFn>;
 
-pub(super) type IsFilterFn = FilterFn<AsHkt![VariableValue<'_>]>;
+pub(super) type IsFilterFn = FilterFn<VariableValue<'static>>;
+pub(super) type IsFilterMapFn = FilterMapFn<VariableValue<'static>>;
 
-pub(crate) type IsIterator =
-    IsTupleIterator<lending_iterator::Once<Result<AsHkt![VariableValue<'_>], Box<ConceptReadError>>>>;
+pub(crate) type IsIterator = IsTupleIterator<iter::Once<Result<VariableValue<'static>, Box<ConceptReadError>>>>;
 
 type IsVariableValueExtractor = for<'a, 'b> fn(&'a VariableValue<'b>) -> VariableValue<'a>;
 
 pub(super) const EXTRACT_LHS: IsVariableValueExtractor = |lhs| lhs.as_reference();
 pub(super) const EXTRACT_RHS: IsVariableValueExtractor = |rhs| rhs.as_reference();
 
-fn is_to_tuple(result: Result<VariableValue<'_>, Box<ConceptReadError>>) -> TupleResult<'_> {
+fn is_to_tuple(result: Result<VariableValue<'static>, Box<ConceptReadError>>) -> TupleResult<'static> {
     match result {
         Ok(value) => Ok(Tuple::Pair([value.clone(), value])),
         Err(err) => Err(err),
@@ -90,18 +82,14 @@ impl IsExecutor {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
-        let filter_for_row: Box<IsFilterFn> = self.checker.filter_for_row(context, &row);
+        let check = self.checker.filter_for_row(context, &row);
+        let filter_for_row: Box<IsFilterMapFn> = Box::new(move |item| match check(&item) {
+            Ok(true) | Err(_) => Some(item),
+            Ok(false) => None,
+        });
+
         let input: VariableValue<'static> = row.get(self.input).clone().into_owned();
-
-        fn as_tuples<T: for<'a> LendingIterator<Item<'a> = Result<VariableValue<'a>, Box<ConceptReadError>>>>(
-            it: T,
-        ) -> Map<T, IsToTupleFn, AsHkt![TupleResult<'_>]> {
-            it.map::<TupleResult<'_>, IsToTupleFn>(is_to_tuple)
-        }
-
-        let iterator = lending_iterator::once(Ok(input));
-        let as_tuples = as_tuples(iterator.try_filter::<_, IsFilterFn, VariableValue<'_>, _>(filter_for_row));
-
+        let as_tuples: IsIterator = iter::once(Ok(input)).filter_map(filter_for_row).map(is_to_tuple);
         Ok(TupleIterator::Is(SortedTupleIterator::new(as_tuples, self.tuple_positions.clone(), &self.variable_modes)))
     }
 }

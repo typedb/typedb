@@ -36,7 +36,7 @@ pub mod variable_value;
 #[derive(Debug, PartialEq, Clone)]
 pub enum Concept<'a> {
     Type(Type),
-    Thing(Thing<'a>),
+    Thing(Thing),
     Value(Value<'a>),
 }
 
@@ -50,7 +50,7 @@ impl<'a> fmt::Display for Concept<'a> {
     }
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Type {
     Entity(EntityType),
     Relation(RelationType),
@@ -72,7 +72,7 @@ impl Type {
         &'a self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'a TypeManager,
-    ) -> Result<MaybeOwns<'a, Label<'static>>, Box<ConceptReadError>> {
+    ) -> Result<MaybeOwns<'a, Label>, Box<ConceptReadError>> {
         match self {
             Type::Entity(entity) => entity.get_label(snapshot, type_manager),
             Type::Relation(relation) => relation.get_label(snapshot, type_manager),
@@ -121,22 +121,22 @@ impl Type {
     pub fn next_possible(&self) -> Self {
         match self {
             Type::Entity(entity) => {
-                let mut bytes = ByteArray::from(&*entity.vertex().into_bytes());
+                let mut bytes = ByteArray::from(&*entity.vertex().to_bytes());
                 bytes.increment().unwrap();
                 Self::Entity(EntityType::new(TypeVertex::new(Bytes::Array(bytes))))
             }
             Type::Relation(relation) => {
-                let mut bytes = ByteArray::from(&*relation.vertex().into_bytes());
+                let mut bytes = ByteArray::from(&*relation.vertex().to_bytes());
                 bytes.increment().unwrap();
                 Self::Relation(RelationType::new(TypeVertex::new(Bytes::Array(bytes))))
             }
             Type::Attribute(attribute) => {
-                let mut bytes = ByteArray::from(&*attribute.vertex().into_bytes());
+                let mut bytes = ByteArray::from(&*attribute.vertex().to_bytes());
                 bytes.increment().unwrap();
                 Self::Attribute(AttributeType::new(TypeVertex::new(Bytes::Array(bytes))))
             }
             Type::RoleType(role) => {
-                let mut bytes = ByteArray::from(&*role.vertex().into_bytes());
+                let mut bytes = ByteArray::from(&*role.vertex().to_bytes());
                 bytes.increment().unwrap();
                 Self::RoleType(RoleType::new(TypeVertex::new(Bytes::Array(bytes))))
             }
@@ -212,7 +212,7 @@ impl Type {
         let mut to_be_removed = Vec::new();
         for annotation in annotations.iter() {
             if !predicate(annotation)? {
-                to_be_removed.push(annotation.clone());
+                to_be_removed.push(*annotation);
             }
         }
         for annotation in to_be_removed.iter() {
@@ -270,14 +270,14 @@ impl fmt::Display for Type {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub enum Thing<'a> {
-    Entity(Entity<'a>),
-    Relation(Relation<'a>),
-    Attribute(Attribute<'a>),
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub enum Thing {
+    Entity(Entity),
+    Relation(Relation),
+    Attribute(Attribute),
 }
 
-impl<'a> Thing<'a> {
+impl<'a> Thing {
     pub fn type_(&self) -> Type {
         match self {
             Thing::Entity(entity) => Type::Entity(entity.type_()),
@@ -286,53 +286,29 @@ impl<'a> Thing<'a> {
         }
     }
 
-    pub fn as_object(&self) -> Object<'_> {
-        match self {
-            Thing::Entity(entity) => Object::Entity(entity.as_reference()),
-            Thing::Relation(relation) => Object::Relation(relation.as_reference()),
+    pub fn as_object(&self) -> Object {
+        match *self {
+            Thing::Entity(entity) => Object::Entity(entity),
+            Thing::Relation(relation) => Object::Relation(relation),
             _ => panic!("Thing is not an Object."),
         }
     }
 
-    pub fn as_relation(&self) -> Relation<'_> {
-        match self {
-            Thing::Relation(relation) => relation.as_reference(),
+    pub fn as_relation(&self) -> Relation {
+        match *self {
+            Thing::Relation(relation) => relation,
             _ => panic!("Thing is not an relation."),
         }
     }
 
-    pub fn as_attribute(&self) -> Attribute<'_> {
+    pub fn as_attribute(&self) -> &Attribute {
         match self {
-            Thing::Attribute(attribute) => attribute.as_reference(),
+            Thing::Attribute(attribute) => attribute,
             _ => panic!("Thing is not an Attribute."),
         }
     }
 
-    pub fn as_reference(&self) -> Thing<'_> {
-        match self {
-            Thing::Entity(entity) => Thing::Entity(entity.as_reference()),
-            Thing::Relation(relation) => Thing::Relation(relation.as_reference()),
-            Thing::Attribute(attribute) => Thing::Attribute(attribute.as_reference()),
-        }
-    }
-
-    pub fn to_owned(&self) -> Thing<'static> {
-        match self {
-            Thing::Entity(entity) => Thing::Entity(entity.as_reference().into_owned()),
-            Thing::Relation(relation) => Thing::Relation(relation.as_reference().into_owned()),
-            Thing::Attribute(attribute) => Thing::Attribute(attribute.as_reference().into_owned()),
-        }
-    }
-
-    pub fn into_owned(self) -> Thing<'static> {
-        match self {
-            Thing::Entity(entity) => Thing::Entity(entity.into_owned()),
-            Thing::Relation(relation) => Thing::Relation(relation.into_owned()),
-            Thing::Attribute(attribute) => Thing::Attribute(attribute.into_owned()),
-        }
-    }
-
-    pub fn next_possible(&self) -> Thing<'static> {
+    pub fn next_possible(&self) -> Thing {
         match self {
             Thing::Entity(entity) => Thing::Entity(entity.next_possible()),
             Thing::Relation(relation) => Thing::Relation(relation.next_possible()),
@@ -341,12 +317,12 @@ impl<'a> Thing<'a> {
     }
 }
 
-impl Hkt for Thing<'static> {
-    type HktSelf<'a> = Thing<'a>;
+impl Hkt for Thing {
+    type HktSelf<'a> = Thing;
 }
 
-impl<'a> From<Object<'a>> for Thing<'a> {
-    fn from(object: Object<'a>) -> Self {
+impl<'a> From<Object> for Thing {
+    fn from(object: Object) -> Self {
         match object {
             Object::Entity(entity) => Thing::Entity(entity),
             Object::Relation(relation) => Thing::Relation(relation),
@@ -354,25 +330,25 @@ impl<'a> From<Object<'a>> for Thing<'a> {
     }
 }
 
-impl<'a> From<Entity<'a>> for Thing<'a> {
-    fn from(entity: Entity<'a>) -> Self {
+impl<'a> From<Entity> for Thing {
+    fn from(entity: Entity) -> Self {
         Thing::Entity(entity)
     }
 }
 
-impl<'a> From<Relation<'a>> for Thing<'a> {
-    fn from(relation: Relation<'a>) -> Self {
+impl<'a> From<Relation> for Thing {
+    fn from(relation: Relation) -> Self {
         Thing::Relation(relation)
     }
 }
 
-impl<'a> From<Attribute<'a>> for Thing<'a> {
-    fn from(attribute: Attribute<'a>) -> Self {
+impl<'a> From<Attribute> for Thing {
+    fn from(attribute: Attribute) -> Self {
         Self::Attribute(attribute)
     }
 }
 
-impl<'a> fmt::Display for Thing<'a> {
+impl<'a> fmt::Display for Thing {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Thing::Entity(entity) => write!(f, "{}", entity),

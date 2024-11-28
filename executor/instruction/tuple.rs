@@ -236,71 +236,70 @@ pub(crate) fn plays_to_tuple_role_player<'a>(
     }
 }
 
-pub(crate) type IsaToTupleFn = for<'a> fn(Result<(Thing<'a>, Type), Box<ConceptReadError>>) -> TupleResult<'a>;
+pub(crate) type IsaToTupleFn = fn(Result<(Thing, Type), Box<ConceptReadError>>) -> TupleResult<'static>;
 
-pub(crate) fn isa_to_tuple_thing_type(result: Result<(Thing<'_>, Type), Box<ConceptReadError>>) -> TupleResult<'_> {
+pub(crate) fn isa_to_tuple_thing_type(result: Result<(Thing, Type), Box<ConceptReadError>>) -> TupleResult<'static> {
     match result {
         Ok((thing, type_)) => Ok(Tuple::Pair([VariableValue::Thing(thing), VariableValue::Type(type_)])),
         Err(err) => Err(err),
     }
 }
 
-pub(crate) fn isa_to_tuple_type_thing(result: Result<(Thing<'_>, Type), Box<ConceptReadError>>) -> TupleResult<'_> {
+pub(crate) fn isa_to_tuple_type_thing(result: Result<(Thing, Type), Box<ConceptReadError>>) -> TupleResult<'static> {
     match result {
         Ok((thing, type_)) => Ok(Tuple::Pair([VariableValue::Type(type_), VariableValue::Thing(thing)])),
         Err(err) => Err(err),
     }
 }
 
-pub(crate) type HasToTupleFn = for<'a> fn(Result<(Has<'a>, u64), Box<ConceptReadError>>) -> TupleResult<'a>;
+pub(crate) type HasToTupleFn = fn(Result<(Has, u64), Box<ConceptReadError>>) -> TupleResult<'static>;
 
-pub(crate) fn has_to_tuple_owner_attribute(result: Result<(Has<'_>, u64), Box<ConceptReadError>>) -> TupleResult<'_> {
+pub(crate) fn has_to_tuple_owner_attribute(result: Result<(Has, u64), Box<ConceptReadError>>) -> TupleResult<'static> {
     let (has, _count) = result?;
     let (owner, attribute) = has.into_owner_attribute();
     Ok(Tuple::Pair([VariableValue::Thing(owner.into()), VariableValue::Thing(attribute.into())]))
 }
 
-pub(crate) fn has_to_tuple_attribute_owner(result: Result<(Has<'_>, u64), Box<ConceptReadError>>) -> TupleResult<'_> {
+pub(crate) fn has_to_tuple_attribute_owner(result: Result<(Has, u64), Box<ConceptReadError>>) -> TupleResult<'static> {
     let (has, _count) = result?;
     let (owner, attribute) = has.into_owner_attribute();
     Ok(Tuple::Pair([VariableValue::Thing(attribute.into()), VariableValue::Thing(owner.into())]))
 }
 
-pub(crate) type LinksToTupleFn =
-    for<'a> fn(Result<(Relation<'a>, RolePlayer<'a>, u64), Box<ConceptReadError>>) -> TupleResult<'a>;
+pub(crate) type LinksToTupleFn = fn(Result<(Relation, RolePlayer, u64), Box<ConceptReadError>>) -> TupleResult<'static>;
 
-pub(crate) fn links_to_tuple_relation_player_role<'a>(
-    result: Result<(Relation<'a>, RolePlayer<'a>, u64), Box<ConceptReadError>>,
-) -> TupleResult<'a> {
+pub(crate) fn links_to_tuple_relation_player_role(
+    result: Result<(Relation, RolePlayer, u64), Box<ConceptReadError>>,
+) -> TupleResult<'static> {
     let (rel, rp, _count) = result?;
     let role_type = rp.role_type();
     Ok(Tuple::Triple([
         VariableValue::Thing(rel.into()),
-        VariableValue::Thing(rp.into_player().into()),
+        VariableValue::Thing(rp.player().into()),
         VariableValue::Type(role_type.into()),
     ]))
 }
 
-pub(crate) fn links_to_tuple_player_relation_role<'a>(
-    result: Result<(Relation<'a>, RolePlayer<'a>, u64), Box<ConceptReadError>>,
-) -> TupleResult<'a> {
+pub(crate) fn links_to_tuple_player_relation_role(
+    result: Result<(Relation, RolePlayer, u64), Box<ConceptReadError>>,
+) -> TupleResult<'static> {
     let (rel, rp, _count) = result?;
     let role_type = rp.role_type();
     Ok(Tuple::Triple([
-        VariableValue::Thing(rp.into_player().into()),
+        VariableValue::Thing(rp.player().into()),
         VariableValue::Thing(rel.into()),
         VariableValue::Type(role_type.into()),
     ]))
 }
 
-pub(crate) fn links_to_tuple_role_relation_player<'a>(
-    result: Result<(Relation<'a>, RolePlayer<'a>, u64), Box<ConceptReadError>>,
-) -> TupleResult<'a> {
+pub(crate) fn links_to_tuple_role_relation_player(
+    result: Result<(Relation, RolePlayer, u64), Box<ConceptReadError>>,
+) -> TupleResult<'static> {
     let (rel, rp, _count) = result?;
     let role_type = rp.role_type();
     Ok(Tuple::Triple([
         VariableValue::Type(role_type.into()),
         VariableValue::Thing(rel.into()),
-        VariableValue::Thing(rp.into_player().into()),
+        VariableValue::Thing(rp.player().into()),
     ]))
 }

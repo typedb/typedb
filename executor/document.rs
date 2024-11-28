@@ -51,7 +51,7 @@ impl fmt::Display for DocumentNode {
 #[derive(Debug, Clone)]
 pub enum DocumentMap {
     UserKeys(HashMap<ParameterID, DocumentNode>),
-    GeneratedKeys(HashMap<Arc<Label<'static>>, DocumentNode>),
+    GeneratedKeys(HashMap<Arc<Label>, DocumentNode>),
 }
 
 impl fmt::Display for DocumentMap {

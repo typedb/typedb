@@ -26,19 +26,19 @@ use crate::{
 pub(crate) fn get_label_or_concept_read_err<'a>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    type_: impl TypeAPI<'a>,
-) -> Result<Label<'static>, Box<ConceptReadError>> {
+    type_: impl TypeAPI,
+) -> Result<Label, Box<ConceptReadError>> {
     type_
         .get_label(snapshot, type_manager)
-        .map(|label| label.clone().into_owned())
+        .map(|label| label.clone())
         .map_err(|_| Box::new(ConceptReadError::CorruptMissingLabelOfType))
 }
 
 pub(crate) fn get_label_or_schema_err<'a>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    type_: impl TypeAPI<'a>,
-) -> Result<Label<'static>, Box<SchemaValidationError>> {
+    type_: impl TypeAPI,
+) -> Result<Label, Box<SchemaValidationError>> {
     get_label_or_concept_read_err(snapshot, type_manager, type_)
         .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))
 }
@@ -46,8 +46,8 @@ pub(crate) fn get_label_or_schema_err<'a>(
 pub(crate) fn get_opt_label_or_schema_err<'a>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    type_: Option<impl TypeAPI<'a>>,
-) -> Result<Option<Label<'static>>, Box<SchemaValidationError>> {
+    type_: Option<impl TypeAPI>,
+) -> Result<Option<Label>, Box<SchemaValidationError>> {
     Ok(match type_ {
         None => None,
         Some(type_) => Some(get_label_or_schema_err(snapshot, type_manager, type_)?),
@@ -58,7 +58,7 @@ pub(crate) fn validate_role_name_uniqueness_non_transitive(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     relation_type: RelationType,
-    new_label: &Label<'static>,
+    new_label: &Label,
 ) -> Result<(), Box<SchemaValidationError>> {
     let scoped_label = Label::build_scoped(
         new_label.name.as_str(),
@@ -82,7 +82,7 @@ pub(crate) fn validate_role_name_uniqueness_non_transitive(
     }
 }
 
-pub(crate) fn validate_type_declared_constraints_narrowing_of_supertype_constraints<T: KindAPI<'static>>(
+pub(crate) fn validate_type_declared_constraints_narrowing_of_supertype_constraints<T: KindAPI>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     subtype: T,
@@ -99,11 +99,11 @@ pub(crate) fn validate_type_declared_constraints_narrowing_of_supertype_constrai
         for supertype_constraint in supertype_constraints.iter() {
             supertype_constraint.validate_narrowed_by_any_type(&subtype_constraint.description()).map_err(
                 |typedb_source| {
-                    let subtype_label = match get_label_or_schema_err(snapshot, type_manager, subtype.clone()) {
+                    let subtype_label = match get_label_or_schema_err(snapshot, type_manager, subtype) {
                         Ok(label) => label,
                         Err(err) => return err,
                     };
-                    let supertype_label = match get_label_or_schema_err(snapshot, type_manager, supertype.clone()) {
+                    let supertype_label = match get_label_or_schema_err(snapshot, type_manager, supertype) {
                         Ok(label) => label,
                         Err(err) => return err,
                     };
@@ -202,7 +202,7 @@ pub(crate) fn validate_sibling_owns_ordering_match_for_type(
     Ok(())
 }
 
-pub(crate) fn validate_type_supertype_abstractness<T: KindAPI<'static>>(
+pub(crate) fn validate_type_supertype_abstractness<T: KindAPI>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     subtype: T,
@@ -243,7 +243,7 @@ pub(crate) fn validate_type_supertype_abstractness<T: KindAPI<'static>>(
 
 // TODO: This validation can be resurrected (and all the other capabilities constraints validations as well)
 // but it should be rewritten so all the constraints are queried for each separate CAP::ObjectType! (and they have to be validated separately)
-// pub fn validate_capabilities_cardinalities_narrowing<CAP: Capability<'static>>(
+// pub fn validate_capabilities_cardinalities_narrowing<CAP: Capability>(
 //     snapshot: &impl ReadableSnapshot,
 //     type_manager: &TypeManager,
 //     type_: CAP::ObjectType,

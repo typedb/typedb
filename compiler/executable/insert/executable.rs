@@ -90,7 +90,7 @@ fn add_inserted_concepts(
         }
 
         let type_ = if let Some(type_) = type_bindings.get(isa.type_()) {
-            TypeSource::Constant(type_.clone())
+            TypeSource::Constant(*type_)
         } else {
             match isa.type_() {
                 Vertex::Variable(var) if input_variables.contains_key(var) => {
@@ -179,12 +179,12 @@ fn add_role_players(
 
         let role = match (input_variables.get(&role_variable), named_role_types.get(&role_variable)) {
             (Some(&input), None) => TypeSource::InputVariable(input),
-            (None, Some(type_)) => TypeSource::Constant(type_.clone()),
+            (None, Some(type_)) => TypeSource::Constant(*type_),
             (None, None) => {
                 // TODO: Do we want to support inserts with unspecified role-types?
                 let annotations = type_annotations.vertex_annotations_of(&Vertex::Variable(role_variable)).unwrap();
                 if annotations.len() == 1 {
-                    TypeSource::Constant(annotations.iter().find(|_| true).unwrap().clone())
+                    TypeSource::Constant(*annotations.iter().find(|_| true).unwrap())
                 } else {
                     return Err(Box::new(WriteCompilationError::CouldNotUniquelyDetermineRoleType {
                         variable: role_variable,
@@ -268,11 +268,11 @@ fn collect_type_bindings(
                 seen.insert(label.type_());
             }
 
-            Ok((label.type_().clone(), type_.clone()))
+            Ok((label.type_().clone(), *type_))
         })
         .chain(constraints.iter().flat_map(|con| con.vertices().filter(|v| v.is_label())).map(|label| {
             let type_ = type_annotations.vertex_annotations_of(label).unwrap().iter().exactly_one().unwrap();
-            Ok((label.clone(), type_.clone()))
+            Ok((label.clone(), *type_))
         }))
         .collect()
 }
@@ -300,7 +300,7 @@ pub(crate) fn collect_role_type_bindings(
                 seen.insert(variable);
             }
 
-            Ok((variable, type_.clone()))
+            Ok((variable, *type_))
         })
         .collect()
 }

@@ -540,31 +540,25 @@ impl Annotation {
         }
     }
 
-    pub fn to_type_constraints<T: KindAPI<'static>>(&self, source: T) -> HashSet<TypeConstraint<T>> {
+    pub fn to_type_constraints<T: KindAPI>(&self, source: T) -> HashSet<TypeConstraint<T>> {
         self.clone().into_type_constraints(source)
     }
 
-    pub fn to_capability_constraints<CAP: Capability<'static>>(
-        &self,
-        source: CAP,
-    ) -> HashSet<CapabilityConstraint<CAP>> {
+    pub fn to_capability_constraints<CAP: Capability>(&self, source: CAP) -> HashSet<CapabilityConstraint<CAP>> {
         self.clone().into_capability_constraints(source)
     }
 
-    pub fn into_type_constraints<T: KindAPI<'static>>(self, source: T) -> HashSet<TypeConstraint<T>> {
+    pub fn into_type_constraints<T: KindAPI>(self, source: T) -> HashSet<TypeConstraint<T>> {
         ConstraintDescription::from_annotation(self)
             .into_iter()
-            .map(|description| TypeConstraint::new(description.clone(), source.clone()))
+            .map(|description| TypeConstraint::new(description.clone(), source))
             .collect()
     }
 
-    pub fn into_capability_constraints<CAP: Capability<'static>>(
-        self,
-        source: CAP,
-    ) -> HashSet<CapabilityConstraint<CAP>> {
+    pub fn into_capability_constraints<CAP: Capability>(self, source: CAP) -> HashSet<CapabilityConstraint<CAP>> {
         ConstraintDescription::from_annotation(self)
             .into_iter()
-            .map(|description| CapabilityConstraint::new(description.clone(), source.clone()))
+            .map(|description| CapabilityConstraint::new(description.clone(), source))
             .collect()
     }
 }
@@ -679,7 +673,7 @@ where
 
 macro_rules! empty_type_vertex_property_encoding {
     ($property:ident, $infix:ident) => {
-        impl<'a> TypeVertexPropertyEncoding<'a> for $property {
+        impl TypeVertexPropertyEncoding for $property {
             const INFIX: Infix = Infix::$infix;
 
             fn from_value_bytes(value: &[u8]) -> $property {
@@ -687,7 +681,7 @@ macro_rules! empty_type_vertex_property_encoding {
                 $property
             }
 
-            fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+            fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
                 None
             }
         }
@@ -698,14 +692,14 @@ macro_rules! empty_type_vertex_property_encoding {
 // otherwise we'd need to write "unreachable"s on every caller's side
 macro_rules! unreachable_type_vertex_property_encoding {
     ($property:ident, $infix:ident) => {
-        impl<'a> TypeVertexPropertyEncoding<'a> for $property {
+        impl TypeVertexPropertyEncoding for $property {
             const INFIX: Infix = Infix::$infix;
 
             fn from_value_bytes(_: &[u8]) -> $property {
                 unreachable!("TypeVertexPropertyEncoding is not be implemented for {}", stringify!($property))
             }
 
-            fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+            fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
                 unreachable!("TypeVertexPropertyEncoding is not be implemented for {}", stringify!($property))
             }
         }
@@ -721,7 +715,7 @@ empty_type_vertex_property_encoding!(AnnotationAbstract, PropertyAnnotationAbstr
 empty_type_vertex_property_encoding!(AnnotationIndependent, PropertyAnnotationIndependent);
 empty_type_vertex_property_encoding!(AnnotationCascade, PropertyAnnotationCascade);
 
-impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRegex {
+impl TypeVertexPropertyEncoding for AnnotationRegex {
     const INFIX: Infix = Infix::PropertyAnnotationRegex;
 
     fn from_value_bytes(value: &[u8]) -> AnnotationRegex {
@@ -730,12 +724,12 @@ impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRegex {
         AnnotationRegex::new(std::str::from_utf8(value).unwrap().to_owned())
     }
 
-    fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
         Some(Bytes::Array(ByteArray::copy(self.regex().as_bytes())))
     }
 }
 
-impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRange {
+impl TypeVertexPropertyEncoding for AnnotationRange {
     const INFIX: Infix = Infix::PropertyAnnotationRange;
     fn from_value_bytes(value: &[u8]) -> Self {
         // TODO this .unwrap() should be handled as an error
@@ -743,12 +737,12 @@ impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRange {
         bincode::deserialize(value).unwrap()
     }
 
-    fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
         Some(Bytes::copy(bincode::serialize(self).unwrap().as_slice()))
     }
 }
 
-impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationValues {
+impl TypeVertexPropertyEncoding for AnnotationValues {
     const INFIX: Infix = Infix::PropertyAnnotationValues;
     fn from_value_bytes(value: &[u8]) -> Self {
         // TODO this .unwrap() should be handled as an error
@@ -756,14 +750,14 @@ impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationValues {
         bincode::deserialize(value).unwrap()
     }
 
-    fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
         Some(Bytes::copy(bincode::serialize(self).unwrap().as_slice()))
     }
 }
 
 macro_rules! empty_type_edge_property_encoder {
     ($property:ident, $infix:ident) => {
-        impl<'a> TypeEdgePropertyEncoding<'a> for $property {
+        impl TypeEdgePropertyEncoding for $property {
             const INFIX: Infix = Infix::$infix;
 
             fn from_value_bytes(value: &[u8]) -> $property {
@@ -771,7 +765,7 @@ macro_rules! empty_type_edge_property_encoder {
                 $property
             }
 
-            fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+            fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
                 None
             }
         }
@@ -782,14 +776,14 @@ macro_rules! empty_type_edge_property_encoder {
 // otherwise we'd need to write "unreachable"s on every caller's side
 macro_rules! unreachable_type_edge_property_encoder {
     ($property:ident, $infix:ident) => {
-        impl<'a> TypeEdgePropertyEncoding<'a> for $property {
+        impl TypeEdgePropertyEncoding for $property {
             const INFIX: Infix = Infix::$infix;
 
             fn from_value_bytes(_value: &[u8]) -> $property {
                 unreachable!("TypeEdgePropertyEncoding is not be implemented for {}", stringify!($property))
             }
 
-            fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+            fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
                 unreachable!("TypeEdgePropertyEncoding is not be implemented for {}", stringify!($property))
             }
         }
@@ -804,7 +798,7 @@ empty_type_edge_property_encoder!(AnnotationDistinct, PropertyAnnotationDistinct
 empty_type_edge_property_encoder!(AnnotationUnique, PropertyAnnotationUnique);
 empty_type_edge_property_encoder!(AnnotationKey, PropertyAnnotationKey);
 
-impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationCardinality {
+impl TypeEdgePropertyEncoding for AnnotationCardinality {
     const INFIX: Infix = Infix::PropertyAnnotationCardinality;
     fn from_value_bytes(value: &[u8]) -> Self {
         // TODO this .unwrap() should be handled as an error
@@ -812,12 +806,12 @@ impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationCardinality {
         bincode::deserialize(value).unwrap()
     }
 
-    fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
         Some(Bytes::copy(bincode::serialize(self).unwrap().as_slice()))
     }
 }
 
-impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRegex {
+impl TypeEdgePropertyEncoding for AnnotationRegex {
     const INFIX: Infix = Infix::PropertyAnnotationRegex;
     fn from_value_bytes(value: &[u8]) -> Self {
         // TODO this .unwrap() should be handled as an error
@@ -825,12 +819,12 @@ impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRegex {
         AnnotationRegex::new(std::str::from_utf8(value).unwrap().to_owned())
     }
 
-    fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
         Some(Bytes::Array(ByteArray::copy(self.regex().as_bytes())))
     }
 }
 
-impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRange {
+impl TypeEdgePropertyEncoding for AnnotationRange {
     const INFIX: Infix = Infix::PropertyAnnotationRange;
     fn from_value_bytes(value: &[u8]) -> Self {
         // TODO this .unwrap() should be handled as an error
@@ -838,12 +832,12 @@ impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRange {
         bincode::deserialize(value).unwrap()
     }
 
-    fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
         Some(Bytes::copy(bincode::serialize(self).unwrap().as_slice()))
     }
 }
 
-impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationValues {
+impl TypeEdgePropertyEncoding for AnnotationValues {
     const INFIX: Infix = Infix::PropertyAnnotationValues;
     fn from_value_bytes(value: &[u8]) -> Self {
         // TODO this .unwrap() should be handled as an error
@@ -851,7 +845,7 @@ impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationValues {
         bincode::deserialize(value).unwrap()
     }
 
-    fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
         Some(Bytes::copy(bincode::serialize(self).unwrap().as_slice()))
     }
 }

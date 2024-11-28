@@ -506,9 +506,9 @@ fn apply_query_template(mut template: &str, answer: &HashMap<String, VariableVal
 
 fn iid_of(thing: &Thing<'_>) -> Vec<u8> {
     match thing {
-        Thing::Entity(entity) => entity.vertex().into_bytes().into(),
-        Thing::Relation(relation) => relation.vertex().into_bytes().into(),
-        Thing::Attribute(attribute) => attribute.vertex().into_bytes().into(),
+        Thing::Entity(entity) => entity.vertex().to_bytes().into(),
+        Thing::Relation(relation) => relation.vertex().to_bytes().into(),
+        Thing::Attribute(attribute) => attribute.vertex().to_bytes().into(),
     }
 }
 

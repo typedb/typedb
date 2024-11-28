@@ -1182,7 +1182,7 @@ fn define_struct(
     type_manager: &TypeManager,
     name: String,
     definitions: HashMap<String, (ValueType, bool)>,
-) -> DefinitionKey<'static> {
+) -> DefinitionKey {
     let struct_key = type_manager.create_struct(snapshot, name).unwrap();
     for (name, (value_type, optional)) in definitions {
         type_manager.create_struct_field(snapshot, struct_key.clone(), &name, value_type, optional).unwrap();

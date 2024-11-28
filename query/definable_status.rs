@@ -76,7 +76,7 @@ macro_rules! get_type_status {
             pub(crate) fn $method_name(
                 snapshot: &impl ReadableSnapshot,
                 type_manager: &TypeManager,
-                label: &Label<'_>,
+                label: &Label,
             ) -> Result<DefinableStatus<$type_>, Box<ConceptReadError>> {
                 let type_opt = type_manager.$get_method(snapshot, label)?;
                 get_some_or_return_does_not_exist!(_ = type_opt);
@@ -96,7 +96,7 @@ pub(crate) fn get_struct_status(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     name: &str,
-) -> Result<DefinableStatus<DefinitionKey<'static>>, Box<ConceptReadError>> {
+) -> Result<DefinableStatus<DefinitionKey>, Box<ConceptReadError>> {
     let definition_key_opt = try_resolve_struct_definition_key(snapshot, type_manager, name)?;
     get_some_or_return_does_not_exist!(_ = definition_key_opt);
     Ok(DefinableStatus::ExistsSame(None))
@@ -105,7 +105,7 @@ pub(crate) fn get_struct_status(
 pub(crate) fn get_struct_field_status(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    definition_key: DefinitionKey<'static>,
+    definition_key: DefinitionKey,
     field_key: &str,
     value_type: ValueType,
     optional: bool,
@@ -121,7 +121,7 @@ pub(crate) fn get_struct_field_status(
     }
 }
 
-pub(crate) fn get_type_annotation_status<'a, T: KindAPI<'a>>(
+pub(crate) fn get_type_annotation_status<T: KindAPI>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     type_: T,
@@ -142,7 +142,7 @@ pub(crate) fn get_type_annotation_status<'a, T: KindAPI<'a>>(
     Ok(DefinableStatus::DoesNotExist)
 }
 
-pub(crate) fn get_type_annotation_category_status<'a, T: KindAPI<'a>>(
+pub(crate) fn get_type_annotation_category_status<T: KindAPI>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     type_: T,
@@ -158,7 +158,7 @@ pub(crate) fn get_type_annotation_category_status<'a, T: KindAPI<'a>>(
     Ok(DefinableStatus::DoesNotExist)
 }
 
-pub(crate) fn get_capability_annotation_status<'a, CAP: Capability<'a>>(
+pub(crate) fn get_capability_annotation_status<'a, CAP: Capability>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     capability: &CAP,
@@ -179,7 +179,7 @@ pub(crate) fn get_capability_annotation_status<'a, CAP: Capability<'a>>(
     Ok(DefinableStatus::DoesNotExist)
 }
 
-pub(crate) fn get_capability_annotation_category_status<'a, CAP: Capability<'a>>(
+pub(crate) fn get_capability_annotation_category_status<'a, CAP: Capability>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     capability: &CAP,
@@ -195,7 +195,7 @@ pub(crate) fn get_capability_annotation_category_status<'a, CAP: Capability<'a>>
     Ok(DefinableStatus::DoesNotExist)
 }
 
-pub(crate) fn get_sub_status<'a, T: TypeAPI<'a>>(
+pub(crate) fn get_sub_status<'a, T: TypeAPI>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     type_: T,
@@ -235,7 +235,7 @@ pub(crate) fn get_relates_status(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     relation_type: RelationType,
-    role_label: &Label<'_>,
+    role_label: &Label,
     ordering: Ordering,
     status_mode: DefinableStatusMode,
 ) -> Result<DefinableStatus<(Relates, Ordering)>, Box<ConceptReadError>> {

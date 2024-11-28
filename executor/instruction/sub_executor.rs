@@ -6,7 +6,7 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet},
-    fmt,
+    fmt, iter,
     sync::Arc,
     vec,
 };
@@ -15,18 +15,13 @@ use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::SubInstruction, ExecutorVariable};
 use concept::error::ConceptReadError;
 use itertools::Itertools;
-use lending_iterator::{
-    adaptors::{Map, TryFilter},
-    higher_order::AdHocHkt,
-    AsLendingIterator, LendingIterator,
-};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, SubToTupleFn, TuplePositions, TupleResult},
-        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, VariableModes,
+        tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, SubToTupleFn, TuplePositions},
+        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -40,40 +35,20 @@ pub(crate) struct SubExecutor {
     sub_to_supertypes: Arc<BTreeMap<Type, Vec<Type>>>,
     supertypes: Arc<BTreeSet<Type>>,
     filter_fn: Arc<SubFilterFn>,
-    checker: Checker<AdHocHkt<(Type, Type)>>,
+    checker: Checker<(Type, Type)>,
 }
 
-pub(super) type SubTupleIterator<I> = NarrowingTupleIterator<
-    Map<
-        TryFilter<I, Box<SubFilterFn>, (Type, Type), Box<ConceptReadError>>,
-        SubToTupleFn,
-        AdHocHkt<TupleResult<'static>>,
-    >,
->;
+pub(super) type SubTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<SubFilterMapFn>>, SubToTupleFn>;
 
-pub(super) type SubUnboundedSortedSub =
-    SubTupleIterator<AsLendingIterator<vec::IntoIter<Result<(Type, Type), Box<ConceptReadError>>>>>;
-pub(super) type SubBoundedSortedSuper =
-    SubTupleIterator<AsLendingIterator<vec::IntoIter<Result<(Type, Type), Box<ConceptReadError>>>>>;
+pub(super) type SubUnboundedSortedSub = SubTupleIterator<vec::IntoIter<Result<(Type, Type), Box<ConceptReadError>>>>;
+pub(super) type SubBoundedSortedSuper = SubTupleIterator<vec::IntoIter<Result<(Type, Type), Box<ConceptReadError>>>>;
 
 pub(super) type SubFilterFn = FilterFn<(Type, Type)>;
+pub(super) type SubFilterMapFn = FilterMapFn<(Type, Type)>;
 
 type SubVariableValueExtractor = fn(&(Type, Type)) -> VariableValue<'_>;
 pub(super) const EXTRACT_SUB: SubVariableValueExtractor = |(sub, _)| VariableValue::Type(sub.clone());
 pub(super) const EXTRACT_SUPER: SubVariableValueExtractor = |(_, sup)| VariableValue::Type(sup.clone());
-
-pub(crate) struct NarrowingTupleIterator<I>(pub I);
-
-impl<I> LendingIterator for NarrowingTupleIterator<I>
-where
-    I: for<'a> LendingIterator<Item<'a> = TupleResult<'static>>,
-{
-    type Item<'a> = TupleResult<'a>;
-
-    fn next(&mut self) -> Option<Self::Item<'_>> {
-        self.0.next()
-    }
-}
 
 impl SubExecutor {
     pub(crate) fn new(
@@ -103,7 +78,7 @@ impl SubExecutor {
             _ => TuplePositions::Pair([supertype, subtype]),
         };
 
-        let checker = Checker::<AdHocHkt<(Type, Type)>>::new(
+        let checker = Checker::<(Type, Type)>::new(
             checks,
             [(subtype, EXTRACT_SUB), (supertype, EXTRACT_SUPER)]
                 .into_iter()
@@ -130,9 +105,13 @@ impl SubExecutor {
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
-        let filter_for_row: Box<SubFilterFn> = Box::new(move |item| match filter(item) {
-            Ok(true) => check(item),
-            fail => fail,
+        let filter_for_row: Box<SubFilterMapFn> = Box::new(move |item| match filter(&item) {
+            Ok(true) => match check(&item) {
+                Ok(true) | Err(_) => Some(item),
+                Ok(false) => None,
+            },
+            Ok(false) => None,
+            Err(_) => Some(item),
         });
 
         match self.iterate_mode {
@@ -142,11 +121,8 @@ impl SubExecutor {
                     .iter()
                     .flat_map(|(sub, supers)| supers.iter().map(|sup| Ok((sub.clone(), sup.clone()))))
                     .collect_vec();
-                let as_tuples: SubUnboundedSortedSub = NarrowingTupleIterator(
-                    AsLendingIterator::new(sub_with_super)
-                        .try_filter::<_, SubFilterFn, (Type, Type), _>(filter_for_row)
-                        .map(sub_to_tuple_sub_super),
-                );
+                let as_tuples: SubUnboundedSortedSub =
+                    sub_with_super.into_iter().filter_map(filter_for_row).map(sub_to_tuple_sub_super);
                 Ok(TupleIterator::SubUnbounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -163,11 +139,8 @@ impl SubExecutor {
                 let supertypes = self.sub_to_supertypes.get(&subtype).unwrap_or(const { &Vec::new() });
                 let sub_with_super = supertypes.iter().map(|sup| Ok((subtype.clone(), sup.clone()))).collect_vec(); // TODO cache this
 
-                let as_tuples: SubBoundedSortedSuper = NarrowingTupleIterator(
-                    AsLendingIterator::new(sub_with_super)
-                        .try_filter::<_, SubFilterFn, (Type, Type), _>(filter_for_row)
-                        .map(sub_to_tuple_super_sub),
-                );
+                let as_tuples: SubBoundedSortedSuper =
+                    sub_with_super.into_iter().filter_map(filter_for_row).map(sub_to_tuple_super_sub);
                 Ok(TupleIterator::SubBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),

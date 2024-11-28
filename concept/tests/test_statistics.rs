@@ -105,14 +105,14 @@ fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: &ThingMa
 
     let mut statistics = Statistics::new(snapshot.open_sequence_number());
 
-    let mut entity_iter = thing_manager.get_entities(&snapshot);
-    while let Some(entity) = entity_iter.next() {
+    let entity_iter = thing_manager.get_entities(&snapshot);
+    for entity in entity_iter {
         let entity = entity.unwrap();
         statistics.total_entity_count += 1;
         *statistics.entity_counts.entry(entity.type_()).or_default() += 1;
         let owner_type = entity.type_().into_owned_object_type();
-        let mut has_iter = entity.get_has_unordered(&snapshot, thing_manager);
-        while let Some(has) = has_iter.next() {
+        let has_iter = entity.get_has_unordered(&snapshot, thing_manager);
+        for has in has_iter {
             let (attribute, count) = has.unwrap();
             *statistics.has_attribute_counts.entry(owner_type).or_default().entry(attribute.type_()).or_default() +=
                 count;
@@ -121,23 +121,23 @@ fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: &ThingMa
         }
     }
 
-    let mut relation_iter = thing_manager.get_relations(&snapshot);
-    while let Some(relation) = relation_iter.next() {
+    let relation_iter = thing_manager.get_relations(&snapshot);
+    for relation in relation_iter {
         let relation = relation.unwrap();
         statistics.total_relation_count += 1;
         *statistics.relation_counts.entry(relation.type_()).or_default() += 1;
         let owner_type = relation.type_().into_owned_object_type();
-        let mut has_iter = relation.get_has_unordered(&snapshot, thing_manager);
-        while let Some(has) = has_iter.next() {
+        let has_iter = relation.get_has_unordered(&snapshot, thing_manager);
+        for has in has_iter {
             let (attribute, count) = has.unwrap();
             *statistics.has_attribute_counts.entry(owner_type).or_default().entry(attribute.type_()).or_default() +=
                 count;
             *statistics.attribute_owner_counts.entry(attribute.type_()).or_default().entry(owner_type).or_default() +=
                 count;
         }
-        let mut relates_iter = relation.get_players(&snapshot, thing_manager);
+        let relates_iter = relation.get_players(&snapshot, thing_manager);
         let mut this_relation_players = BTreeMap::<_, u64>::new();
-        while let Some(relates) = relates_iter.next() {
+        for relates in relates_iter {
             let (roleplayer, count) = relates.unwrap();
             let role = roleplayer.role_type();
             let player = roleplayer.player();
@@ -174,8 +174,8 @@ fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: &ThingMa
         }
     }
 
-    let mut attribute_iter = thing_manager.get_attributes(&snapshot).unwrap();
-    while let Some(attribute) = attribute_iter.next() {
+    let attribute_iter = thing_manager.get_attributes(&snapshot).unwrap();
+    for attribute in attribute_iter {
         let attribute = attribute.unwrap();
         statistics.total_attribute_count += 1;
         *statistics.attribute_counts.entry(attribute.type_()).or_default() += 1;
@@ -229,12 +229,12 @@ fn delete_twice() {
     let create_commit_seq = snapshot.commit().unwrap().unwrap();
 
     let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
-    person.clone().delete(&mut snapshot, &thing_manager).unwrap();
+    person.delete(&mut snapshot, &thing_manager).unwrap();
     thing_manager.finalise(&mut snapshot).unwrap();
     snapshot.commit().unwrap().unwrap();
 
     let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
-    person.clone().delete(&mut snapshot, &thing_manager).unwrap();
+    person.delete(&mut snapshot, &thing_manager).unwrap();
     thing_manager.finalise(&mut snapshot).unwrap();
     snapshot.commit().unwrap().unwrap();
 
@@ -264,7 +264,7 @@ fn put_has_twice() {
     let create_commit_seq = snapshot.commit().unwrap().unwrap();
 
     let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
-    person.set_has_unordered(&mut snapshot, &thing_manager, name.as_reference()).unwrap();
+    person.set_has_unordered(&mut snapshot, &thing_manager, &name).unwrap();
     thing_manager.finalise(&mut snapshot).unwrap();
     snapshot.commit().unwrap().unwrap();
 
@@ -272,7 +272,7 @@ fn put_has_twice() {
     synchronised.may_synchronise(&storage).unwrap();
 
     let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
-    person.set_has_unordered(&mut snapshot, &thing_manager, name.as_reference()).unwrap();
+    person.set_has_unordered(&mut snapshot, &thing_manager, &name).unwrap();
     thing_manager.finalise(&mut snapshot).unwrap();
     snapshot.commit().unwrap_err(); // Can't concurrently modify the same 'has'
 

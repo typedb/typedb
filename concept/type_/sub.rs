@@ -8,23 +8,23 @@ use encoding::{graph::type_::edge::TypeEdgeEncoding, layout::prefix::Prefix};
 
 use crate::type_::TypeAPI;
 
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct Sub<T> {
     subtype: T,
     supertype: T,
 }
 
-impl<'a, T: TypeAPI<'a>> Sub<T> {
-    pub(crate) fn subtype(&self) -> T {
-        self.subtype.clone()
+impl<T: TypeAPI> Sub<T> {
+    pub(crate) fn subtype(self) -> T {
+        self.subtype
     }
 
-    pub(crate) fn supertype(&self) -> T {
-        self.supertype.clone()
+    pub(crate) fn supertype(self) -> T {
+        self.supertype
     }
 }
 
-impl<'a, T: TypeAPI<'a>> TypeEdgeEncoding<'a> for Sub<T> {
+impl<T: TypeAPI> TypeEdgeEncoding for Sub<T> {
     const CANONICAL_PREFIX: Prefix = Prefix::EdgeSub;
     const REVERSE_PREFIX: Prefix = Prefix::EdgeSubReverse;
     type From = T;

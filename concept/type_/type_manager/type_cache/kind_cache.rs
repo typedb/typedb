@@ -96,9 +96,9 @@ pub(crate) struct RelatesCache {
 }
 
 #[derive(Debug)]
-pub(crate) struct CommonTypeCache<T: KindAPI<'static>> {
+pub(crate) struct CommonTypeCache<T: KindAPI> {
     pub(super) type_: T,
-    pub(super) label: Arc<Label<'static>>,
+    pub(super) label: Arc<Label>,
     pub(super) annotations_declared: HashSet<T::AnnotationType>,
     pub(super) constraints: HashSet<TypeConstraint<T>>,
     // TODO: Should these all be sets instead of vec?
@@ -109,7 +109,7 @@ pub(crate) struct CommonTypeCache<T: KindAPI<'static>> {
 }
 
 #[derive(Debug)]
-pub(crate) struct CommonCapabilityCache<CAP: Capability<'static>> {
+pub(crate) struct CommonCapabilityCache<CAP: Capability> {
     pub(super) capability: CAP,
     pub(super) annotations_declared: HashSet<CAP::AnnotationType>,
     pub(super) constraints: HashSet<CapabilityConstraint<CAP>>,
@@ -284,8 +284,8 @@ impl PlaysCache {
             let player = ObjectType::new(edge.from());
             let role = RoleType::new(edge.to());
             let plays = Plays::new(player, role);
-            let cache = PlaysCache { common_capability_cache: CommonCapabilityCache::create(snapshot, plays.clone()) };
-            map.insert(plays.clone(), cache);
+            let cache = PlaysCache { common_capability_cache: CommonCapabilityCache::create(snapshot, plays) };
+            map.insert(plays, cache);
         }
         map
     }
@@ -304,29 +304,29 @@ impl RelatesCache {
             let relation = RelationType::new(edge.from());
             let role = RoleType::new(edge.to());
             let relates = Relates::new(relation, role);
-            let is_specialising = TypeReader::is_relates_specialising(snapshot, relates.clone()).unwrap();
+            let is_specialising = TypeReader::is_relates_specialising(snapshot, relates).unwrap();
             let cache = RelatesCache {
                 is_specialising,
-                common_capability_cache: CommonCapabilityCache::create(snapshot, relates.clone()),
+                common_capability_cache: CommonCapabilityCache::create(snapshot, relates),
             };
-            map.insert(relates.clone(), cache);
+            map.insert(relates, cache);
         }
         map
     }
 }
 
-impl<T: KindAPI<'static, SelfStatic = T>> CommonTypeCache<T> {
+impl<T: KindAPI> CommonTypeCache<T> {
     fn create<Snapshot>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T>
     where
         Snapshot: ReadableSnapshot,
     {
-        let label = Arc::new(TypeReader::get_label(snapshot, type_.clone()).unwrap().unwrap());
-        let annotations_declared = TypeReader::get_type_annotations_declared(snapshot, type_.clone()).unwrap();
-        let constraints = TypeReader::get_type_constraints(snapshot, type_.clone()).unwrap();
-        let supertype = TypeReader::get_supertype(snapshot, type_.clone()).unwrap();
-        let supertypes_transitive = TypeReader::get_supertypes_transitive(snapshot, type_.clone()).unwrap();
-        let subtypes = TypeReader::get_subtypes(snapshot, type_.clone()).unwrap();
-        let subtypes_transitive = TypeReader::get_subtypes_transitive(snapshot, type_.clone()).unwrap();
+        let label = Arc::new(TypeReader::get_label(snapshot, type_).unwrap().unwrap());
+        let annotations_declared = TypeReader::get_type_annotations_declared(snapshot, type_).unwrap();
+        let constraints = TypeReader::get_type_constraints(snapshot, type_).unwrap();
+        let supertype = TypeReader::get_supertype(snapshot, type_).unwrap();
+        let supertypes_transitive = TypeReader::get_supertypes_transitive(snapshot, type_).unwrap();
+        let subtypes = TypeReader::get_subtypes(snapshot, type_).unwrap();
+        let subtypes_transitive = TypeReader::get_subtypes_transitive(snapshot, type_).unwrap();
         CommonTypeCache {
             type_,
             label,
@@ -340,14 +340,13 @@ impl<T: KindAPI<'static, SelfStatic = T>> CommonTypeCache<T> {
     }
 }
 
-impl<CAP: Capability<'static>> CommonCapabilityCache<CAP> {
+impl<CAP: Capability> CommonCapabilityCache<CAP> {
     fn create<Snapshot>(snapshot: &Snapshot, capability: CAP) -> CommonCapabilityCache<CAP>
     where
         Snapshot: ReadableSnapshot,
     {
-        let annotations_declared =
-            TypeReader::get_capability_annotations_declared(snapshot, capability.clone()).unwrap();
-        let constraints = TypeReader::get_capability_constraints(snapshot, capability.clone()).unwrap();
+        let annotations_declared = TypeReader::get_capability_annotations_declared(snapshot, capability).unwrap();
+        let constraints = TypeReader::get_capability_constraints(snapshot, capability).unwrap();
         CommonCapabilityCache { capability, annotations_declared, constraints }
     }
 }
@@ -356,7 +355,7 @@ impl ObjectCache {
     fn create<Snapshot, T>(snapshot: &Snapshot, type_: T) -> ObjectCache
     where
         Snapshot: ReadableSnapshot,
-        T: KindAPI<'static> + ObjectTypeAPI<'static> + PlayerAPI<'static>,
+        T: KindAPI + ObjectTypeAPI + PlayerAPI,
     {
         let object_type = type_.into_owned_object_type();
         let owns_declared = TypeReader::get_capabilities_declared::<Owns>(snapshot, object_type).unwrap();

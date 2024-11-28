@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::BTreeMap, fmt, iter, option, sync::Arc, vec};
+use std::{collections::BTreeMap, fmt, iter, sync::Arc, vec};
 
 use answer::{Thing, Type};
 use compiler::{executable::match_::instructions::thing::IsaReverseInstruction, ExecutorVariable};
@@ -19,16 +19,12 @@ use concept::{
 };
 use ir::pattern::constraint::{Isa, IsaKind};
 use itertools::Itertools;
-use lending_iterator::{
-    adaptors::{Chain, Flatten, Map, Zip},
-    AsHkt, AsLendingIterator, LendingIterator,
-};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
         isa_executor::{
-            AttributeEraseFn, IsaFilterFn, IsaTupleIterator, MapToThing, ObjectEraseFn, EXTRACT_THING, EXTRACT_TYPE,
+            AttributeEraseFn, IsaFilterMapFn, IsaTupleIterator, ObjectEraseFn, EXTRACT_THING, EXTRACT_TYPE,
         },
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, TuplePositions},
@@ -44,29 +40,23 @@ pub(crate) struct IsaReverseExecutor {
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
     type_to_instance_types: Arc<BTreeMap<Type, Vec<Type>>>,
-    checker: Checker<(AsHkt![Thing<'_>], Type)>,
+    checker: Checker<(Thing, Type)>,
 }
 
 pub(crate) type IsaReverseBoundedSortedThing = IsaTupleIterator<MultipleTypeIsaIterator>;
 pub(crate) type IsaReverseUnboundedSortedType = IsaTupleIterator<MultipleTypeIsaIterator>;
 
-type MultipleTypeIsaObjectIterator = Flatten<
-    AsLendingIterator<vec::IntoIter<ThingWithType<MapToThing<InstanceIterator<AsHkt![Object<'_>]>, ObjectEraseFn>>>>,
->;
-type MultipleTypeIsaAttributeIterator = Flatten<
-    AsLendingIterator<
-        vec::IntoIter<
-            ThingWithType<MapToThing<AttributeIterator<InstanceIterator<AsHkt![Attribute<'_>]>>, AttributeEraseFn>>,
-        >,
-    >,
+type MultipleTypeIsaObjectIterator =
+    iter::Flatten<vec::IntoIter<ThingWithType<iter::Map<InstanceIterator<Object>, ObjectEraseFn>>>>;
+type MultipleTypeIsaAttributeIterator = iter::Flatten<
+    vec::IntoIter<ThingWithType<iter::Map<AttributeIterator<InstanceIterator<Attribute>>, AttributeEraseFn>>>,
 >;
 
-pub(super) type MultipleTypeIsaIterator = Chain<MultipleTypeIsaObjectIterator, MultipleTypeIsaAttributeIterator>;
+pub(super) type MultipleTypeIsaIterator = iter::Chain<MultipleTypeIsaObjectIterator, MultipleTypeIsaAttributeIterator>;
 
-type ThingWithType<I> = Map<
-    Zip<I, AsLendingIterator<iter::Cycle<option::IntoIter<Type>>>>,
-    for<'a> fn((Result<Thing<'a>, Box<ConceptReadError>>, Type)) -> Result<(Thing<'a>, Type), Box<ConceptReadError>>,
-    Result<(AsHkt![Thing<'_>], Type), Box<ConceptReadError>>,
+type ThingWithType<I> = iter::Map<
+    iter::Zip<I, iter::Repeat<Type>>,
+    fn((Result<Thing, Box<ConceptReadError>>, Type)) -> Result<(Thing, Type), Box<ConceptReadError>>,
 >;
 
 impl IsaReverseExecutor {
@@ -88,7 +78,7 @@ impl IsaReverseExecutor {
             _ => TuplePositions::Pair([thing, type_]),
         };
 
-        let checker = Checker::<(Thing<'_>, Type)>::new(
+        let checker = Checker::<(Thing, Type)>::new(
             checks,
             [(thing, EXTRACT_THING), (type_, EXTRACT_TYPE)]
                 .into_iter()
@@ -111,7 +101,12 @@ impl IsaReverseExecutor {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
-        let filter_for_row = self.checker.filter_for_row(context, &row);
+        let check = self.checker.filter_for_row(context, &row);
+        let filter_for_row: Box<IsaFilterMapFn> = Box::new(move |item| match check(&item) {
+            Ok(true) | Err(_) => Some(item),
+            Ok(false) => None,
+        });
+
         let snapshot = &**context.snapshot();
         let thing_manager = context.thing_manager();
         match self.iterate_mode {
@@ -123,9 +118,8 @@ impl IsaReverseExecutor {
                     self.type_to_instance_types.as_ref(),
                     self.isa.isa_kind(),
                 )?;
-                let as_tuples: IsaReverseUnboundedSortedType = thing_iter
-                    .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
-                    .map(isa_to_tuple_type_thing);
+                let as_tuples: IsaReverseUnboundedSortedType =
+                    thing_iter.filter_map(filter_for_row).map(isa_to_tuple_type_thing);
                 Ok(TupleIterator::IsaReverseUnbounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -145,13 +139,11 @@ impl IsaReverseExecutor {
                     self.isa.isa_kind(),
                 )?;
                 let as_tuples: IsaReverseBoundedSortedThing = iterator
-                    .try_filter::<Box<IsaFilterFn>, IsaFilterFn, (Thing<'_>, Type), _>(Box::new(
-                        move |res: &_| match res {
-                            Ok((_, ty)) if ty == &type_ => filter_for_row(res),
-                            Ok(_) => Ok(false),
-                            Err(err) => Err(err.clone()),
-                        },
-                    ))
+                    .filter_map(Box::new(move |res| match res {
+                        Ok((_, ty)) if ty == type_ => filter_for_row(res),
+                        Ok(_) => None,
+                        Err(err) => Some(Err(err)),
+                    }) as _)
                     .map(isa_to_tuple_thing_type);
                 Ok(TupleIterator::IsaReverseBounded(SortedTupleIterator::new(
                     as_tuples,
@@ -169,13 +161,10 @@ impl fmt::Display for IsaReverseExecutor {
     }
 }
 
-fn with_type<I: for<'a> LendingIterator<Item<'a> = Result<Thing<'a>, Box<ConceptReadError>>>>(
-    iter: I,
-    type_: Type,
-) -> ThingWithType<I> {
-    iter.zip(AsLendingIterator::new(Some(type_).into_iter().cycle())).map(|(thing_res, ty)| match thing_res {
+fn with_type<I: Iterator<Item = Result<Thing, Box<ConceptReadError>>>>(iter: I, type_: Type) -> ThingWithType<I> {
+    iter.zip(iter::repeat(type_)).map(|(thing_res, ty)| match thing_res {
         Ok(thing) => Ok((thing, ty)),
-        Err(err) => Err(err.clone()),
+        Err(err) => Err(err),
     })
 }
 
@@ -190,7 +179,7 @@ pub(super) fn instances_of_types_chained<'a>(
     let (attribute_types, object_types) =
         types.into_iter().partition::<Vec<_>, _>(|type_| matches!(type_, Type::Attribute(_)));
 
-    let object_iters: Vec<_> = object_types
+    let object_iters: Vec<ThingWithType<iter::Map<InstanceIterator<Object>, ObjectEraseFn>>> = object_types
         .into_iter()
         .flat_map(|type_| {
             let returned_types = if matches!(isa_kind, IsaKind::Subtype) {
@@ -208,7 +197,7 @@ pub(super) fn instances_of_types_chained<'a>(
             })
         })
         .try_collect()?;
-    let object_iter: MultipleTypeIsaObjectIterator = AsLendingIterator::new(object_iters).flatten();
+    let object_iter: MultipleTypeIsaObjectIterator = object_iters.into_iter().flatten();
 
     // TODO: don't unwrap inside the operators
     let attribute_iters: Vec<_> = attribute_types
@@ -230,7 +219,7 @@ pub(super) fn instances_of_types_chained<'a>(
             })
         })
         .try_collect()?;
-    let attribute_iter: MultipleTypeIsaAttributeIterator = AsLendingIterator::new(attribute_iters).flatten();
+    let attribute_iter: MultipleTypeIsaAttributeIterator = attribute_iters.into_iter().flatten();
 
     let thing_iter: MultipleTypeIsaIterator = object_iter.chain(attribute_iter);
     Ok(thing_iter)

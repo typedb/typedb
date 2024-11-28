@@ -11,7 +11,6 @@ use encoding::{
     value::value_type::ValueTypeCategory,
     AsBytes,
 };
-use lending_iterator::higher_order::Hkt;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -30,18 +29,16 @@ pub mod relation;
 pub mod statistics;
 pub mod thing_manager;
 
-pub trait ThingAPI<'a>: Sized + Clone {
-    type TypeAPI<'b>: TypeAPI<'b>;
-    type Vertex<'b>: ThingVertex<'b>;
-    type Owned: ThingAPI<'static>;
+pub trait ThingAPI: Sized + Clone {
+    type TypeAPI: TypeAPI;
+    type Vertex: ThingVertex;
+    type Owned: ThingAPI;
 
     const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix);
 
-    fn new(vertex: Self::Vertex<'a>) -> Self;
+    fn new(vertex: Self::Vertex) -> Self;
 
-    fn vertex(&self) -> Self::Vertex<'_>;
-
-    fn into_vertex(self) -> Self::Vertex<'a>;
+    fn vertex(&self) -> Self::Vertex;
 
     fn into_owned(self) -> Self::Owned;
 
@@ -62,10 +59,10 @@ pub trait ThingAPI<'a>: Sized + Clone {
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>>;
 
-    fn prefix_for_type(type_: Self::TypeAPI<'_>) -> Prefix;
+    fn prefix_for_type(type_: Self::TypeAPI) -> Prefix;
 }
 
-pub trait HKInstance: for<'a> Hkt<HktSelf<'a>: ThingAPI<'a>> {}
+pub trait HKInstance: ThingAPI {}
 
 // TODO: where do these belong? They're encodings of values we store for keys
 pub(crate) fn decode_attribute_ids(
@@ -93,22 +90,20 @@ pub(crate) fn encode_attribute_ids(
     ByteArray::boxed(bytes.into())
 }
 
-pub(crate) fn decode_role_players(bytes: &[u8]) -> impl Iterator<Item = ObjectVertex<'_>> + '_ {
+pub(crate) fn decode_role_players(bytes: &[u8]) -> impl Iterator<Item = ObjectVertex> + '_ {
     let chunk_size = ObjectVertex::LENGTH;
     let chunks_iter = bytes.chunks_exact(chunk_size);
     debug_assert!(chunks_iter.remainder().is_empty());
     chunks_iter.map(move |chunk| ObjectVertex::new(Bytes::reference(chunk)))
 }
 
-pub(crate) fn encode_role_players<'a>(
-    players: impl Iterator<Item = ObjectVertex<'a>>,
-) -> ByteArray<BUFFER_VALUE_INLINE> {
+pub(crate) fn encode_role_players<'a>(players: impl Iterator<Item = ObjectVertex>) -> ByteArray<BUFFER_VALUE_INLINE> {
     let chunk_size = ObjectVertex::LENGTH;
     let (lower, upper) = players.size_hint();
     let size_hint = upper.unwrap_or(lower) * chunk_size;
     let mut bytes = Vec::with_capacity(size_hint);
     for player in players {
-        bytes.extend(&*player.into_bytes());
+        bytes.extend(&*player.to_bytes());
     }
     // TODO allow inline?
     ByteArray::boxed(bytes.into())

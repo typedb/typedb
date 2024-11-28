@@ -20,15 +20,12 @@ use concept::{
     },
 };
 use itertools::Itertools;
-use lending_iterator::{AsHkt, AsNarrowingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{
-            owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, OwnsToTupleFn, TuplePositions, TupleResult,
-        },
+        tuple::{owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, OwnsToTupleFn, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
@@ -48,23 +45,17 @@ pub(crate) struct OwnsExecutor {
 
 pub(super) type OwnsTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<OwnsFilterMapFn>>, OwnsToTupleFn>;
 
-pub(super) type OwnsUnboundedSortedOwner = AsNarrowingIterator<
-    OwnsTupleIterator<
-        iter::Map<
-            iter::Flatten<vec::IntoIter<BTreeSet<(ObjectType, AttributeType)>>>,
-            fn((ObjectType, AttributeType)) -> Result<(ObjectType, AttributeType), Box<ConceptReadError>>,
-        >,
+pub(super) type OwnsUnboundedSortedOwner = OwnsTupleIterator<
+    iter::Map<
+        iter::Flatten<vec::IntoIter<BTreeSet<(ObjectType, AttributeType)>>>,
+        fn((ObjectType, AttributeType)) -> Result<(ObjectType, AttributeType), Box<ConceptReadError>>,
     >,
-    AsHkt![TupleResult<'_>],
 >;
-pub(super) type OwnsBoundedSortedAttribute = AsNarrowingIterator<
-    OwnsTupleIterator<
-        iter::Map<
-            vec::IntoIter<(ObjectType, AttributeType)>,
-            fn((ObjectType, AttributeType)) -> Result<(ObjectType, AttributeType), Box<ConceptReadError>>,
-        >,
+pub(super) type OwnsBoundedSortedAttribute = OwnsTupleIterator<
+    iter::Map<
+        vec::IntoIter<(ObjectType, AttributeType)>,
+        fn((ObjectType, AttributeType)) -> Result<(ObjectType, AttributeType), Box<ConceptReadError>>,
     >,
-    AsHkt![TupleResult<'_>],
 >;
 
 pub(super) type OwnsFilterFn = FilterFn<(ObjectType, AttributeType)>;
@@ -151,9 +142,8 @@ impl OwnsExecutor {
                     .map(|owner| self.get_owns_for_owner(snapshot, type_manager, owner.clone()))
                     .try_collect()?;
                 let iterator = owns.into_iter().flatten().map(Ok as _);
-                let as_tuples: OwnsUnboundedSortedOwner = AsNarrowingIterator::new(
-                    iterator.filter_map(filter_for_row).map(owns_to_tuple_owner_attribute as _),
-                );
+                let as_tuples: OwnsUnboundedSortedOwner =
+                    iterator.filter_map(filter_for_row).map(owns_to_tuple_owner_attribute as _);
                 Ok(TupleIterator::OwnsUnbounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -171,9 +161,8 @@ impl OwnsExecutor {
                 let owns = self.get_owns_for_owner(snapshot, type_manager, owner)?;
 
                 let iterator = owns.into_iter().sorted_by_key(|(owner, attribute)| (*attribute, *owner)).map(Ok as _);
-                let as_tuples: OwnsBoundedSortedAttribute = AsNarrowingIterator::new(
-                    iterator.filter_map(filter_for_row).map(owns_to_tuple_attribute_owner as _),
-                );
+                let as_tuples: OwnsBoundedSortedAttribute =
+                    iterator.filter_map(filter_for_row).map(owns_to_tuple_attribute_owner as _);
                 Ok(TupleIterator::OwnsBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),

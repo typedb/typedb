@@ -30,7 +30,7 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct Relates {
     relation: RelationType,
     role: RoleType,
@@ -57,7 +57,7 @@ impl Relates {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Option<CapabilityConstraint<Relates>>, Box<ConceptReadError>> {
-        type_manager.get_capability_abstract_constraint(snapshot, self.clone().into_owned())
+        type_manager.get_capability_abstract_constraint(snapshot, (*self).into_owned())
     }
 
     pub fn get_constraints_distinct(
@@ -65,7 +65,7 @@ impl Relates {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<HashSet<CapabilityConstraint<Relates>>, Box<ConceptReadError>> {
-        type_manager.get_relates_distinct_constraints(snapshot, self.clone().into_owned())
+        type_manager.get_relates_distinct_constraints(snapshot, (*self).into_owned())
     }
 
     pub fn is_distinct(
@@ -83,7 +83,7 @@ impl Relates {
         thing_manager: &ThingManager,
         specialised: Relates,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.set_relates_specialise(snapshot, thing_manager, self.clone().into_owned(), specialised)
+        type_manager.set_relates_specialise(snapshot, thing_manager, (*self).into_owned(), specialised)
     }
 
     pub fn unset_specialise(
@@ -92,7 +92,7 @@ impl Relates {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.unset_relates_specialise(snapshot, thing_manager, self.clone().into_owned())
+        type_manager.unset_relates_specialise(snapshot, thing_manager, (*self).into_owned())
     }
 
     pub fn is_specialising(
@@ -100,7 +100,7 @@ impl Relates {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<bool, Box<ConceptReadError>> {
-        type_manager.get_relates_is_specialising(snapshot, self.clone().into_owned())
+        type_manager.get_relates_is_specialising(snapshot, (*self).into_owned())
     }
 
     pub fn set_annotation(
@@ -111,19 +111,16 @@ impl Relates {
         annotation: RelatesAnnotation,
     ) -> Result<(), Box<ConceptWriteError>> {
         match annotation {
-            RelatesAnnotation::Abstract(_) => type_manager.set_relates_annotation_abstract(
-                snapshot,
-                thing_manager,
-                self.clone().into_owned(),
-                true,
-            )?,
+            RelatesAnnotation::Abstract(_) => {
+                type_manager.set_relates_annotation_abstract(snapshot, thing_manager, (*self).into_owned(), true)?
+            }
             RelatesAnnotation::Distinct(_) => {
-                type_manager.set_relates_annotation_distinct(snapshot, thing_manager, self.clone().into_owned())?
+                type_manager.set_relates_annotation_distinct(snapshot, thing_manager, (*self).into_owned())?
             }
             RelatesAnnotation::Cardinality(cardinality) => type_manager.set_relates_annotation_cardinality(
                 snapshot,
                 thing_manager,
-                self.clone().into_owned(),
+                (*self).into_owned(),
                 cardinality,
             )?,
         };
@@ -141,13 +138,13 @@ impl Relates {
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match relates_annotation {
             RelatesAnnotation::Abstract(_) => {
-                type_manager.unset_relates_annotation_abstract(snapshot, self.clone().into_owned())?
+                type_manager.unset_relates_annotation_abstract(snapshot, (*self).into_owned())?
             }
             RelatesAnnotation::Distinct(_) => {
-                type_manager.unset_relates_annotation_distinct(snapshot, self.clone().into_owned())?
+                type_manager.unset_relates_annotation_distinct(snapshot, (*self).into_owned())?
             }
             RelatesAnnotation::Cardinality(_) => {
-                type_manager.unset_relates_annotation_cardinality(snapshot, thing_manager, self.clone().into_owned())?
+                type_manager.unset_relates_annotation_cardinality(snapshot, thing_manager, (*self).into_owned())?
             }
         }
         Ok(())
@@ -172,7 +169,7 @@ impl Relates {
     }
 }
 
-impl<'a> TypeEdgeEncoding<'a> for Relates {
+impl<'a> TypeEdgeEncoding for Relates {
     const CANONICAL_PREFIX: Prefix = Prefix::EdgeRelates;
     const REVERSE_PREFIX: Prefix = Prefix::EdgeRelatesReverse;
     type From = RelationType;
@@ -191,7 +188,7 @@ impl<'a> TypeEdgeEncoding<'a> for Relates {
     }
 }
 
-impl<'a> Capability<'a> for Relates {
+impl Capability for Relates {
     type AnnotationType = RelatesAnnotation;
     type ObjectType = RelationType;
     type InterfaceType = RoleType;
@@ -222,18 +219,15 @@ impl<'a> Capability<'a> for Relates {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<RelatesAnnotation>>, Box<ConceptReadError>> {
-        type_manager.get_relates_annotations_declared(snapshot, self.clone().into_owned())
+        type_manager.get_relates_annotations_declared(snapshot, (*self).into_owned())
     }
 
     fn get_constraints<'m>(
-        &self,
+        self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Relates>>>, Box<ConceptReadError>>
-    where
-        'a: 'static,
-    {
-        type_manager.get_relates_constraints(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Relates>>>, Box<ConceptReadError>> {
+        type_manager.get_relates_constraints(snapshot, self.into_owned())
     }
 
     fn get_cardinality_constraints(
@@ -241,7 +235,7 @@ impl<'a> Capability<'a> for Relates {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<HashSet<CapabilityConstraint<Relates>>, Box<ConceptReadError>> {
-        type_manager.get_relates_cardinality_constraints(snapshot, self.clone().into_owned())
+        type_manager.get_relates_cardinality_constraints(snapshot, (*self).into_owned())
     }
 
     fn get_cardinality(
@@ -249,7 +243,7 @@ impl<'a> Capability<'a> for Relates {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<AnnotationCardinality, Box<ConceptReadError>> {
-        type_manager.get_relates_cardinality(snapshot, self.clone().into_owned())
+        type_manager.get_relates_cardinality(snapshot, (*self).into_owned())
     }
 }
 

@@ -55,13 +55,13 @@ impl Hkt for AttributeType {
     type HktSelf<'a> = AttributeType;
 }
 
-impl<'a> ConceptAPI<'a> for AttributeType {}
+impl ConceptAPI for AttributeType {}
 
-impl<'a> PrefixedTypeVertexEncoding<'a> for AttributeType {
+impl PrefixedTypeVertexEncoding for AttributeType {
     const PREFIX: Prefix = VertexAttributeType;
 }
 
-impl<'a> TypeVertexEncoding<'a> for AttributeType {
+impl TypeVertexEncoding for AttributeType {
     fn from_vertex(vertex: TypeVertex) -> Result<Self, EncodingError> {
         debug_assert!(Self::PREFIX == VertexAttributeType);
         if vertex.prefix() != Prefix::VertexAttributeType {
@@ -90,9 +90,7 @@ impl primitive::prefix::Prefix for AttributeType {
     }
 }
 
-impl<'a> TypeAPI<'a> for AttributeType {
-    type SelfStatic = AttributeType;
-
+impl TypeAPI for AttributeType {
     fn new(vertex: TypeVertex) -> AttributeType {
         Self::from_vertex(vertex).unwrap()
     }
@@ -118,7 +116,7 @@ impl<'a> TypeAPI<'a> for AttributeType {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Label<'static>>, Box<ConceptReadError>> {
+    ) -> Result<MaybeOwns<'m, Label>, Box<ConceptReadError>> {
         type_manager.get_attribute_type_label(snapshot, (*self).into_owned())
     }
 
@@ -126,7 +124,7 @@ impl<'a> TypeAPI<'a> for AttributeType {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Arc<Label<'static>>, Box<ConceptReadError>> {
+    ) -> Result<Arc<Label>, Box<ConceptReadError>> {
         type_manager.get_attribute_type_label_arc(snapshot, (*self).into_owned())
     }
 
@@ -163,7 +161,7 @@ impl<'a> TypeAPI<'a> for AttributeType {
     }
 }
 
-impl<'a> KindAPI<'a> for AttributeType {
+impl KindAPI for AttributeType {
     type AnnotationType = AttributeTypeAnnotation;
     const KIND: Kind = Kind::Attribute;
 
@@ -176,19 +174,16 @@ impl<'a> KindAPI<'a> for AttributeType {
     }
 
     fn get_constraints<'m>(
-        &self,
+        self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<AttributeType>>>, Box<ConceptReadError>>
-    where
-        'a: 'static,
-    {
-        type_manager.get_attribute_type_constraints(snapshot, (*self).into_owned())
+    ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<AttributeType>>>, Box<ConceptReadError>> {
+        type_manager.get_attribute_type_constraints(snapshot, self)
     }
 }
 
-impl<'a> ThingTypeAPI<'a> for AttributeType {
-    type InstanceType<'b> = Attribute<'b>;
+impl ThingTypeAPI for AttributeType {
+    type InstanceType = Attribute;
 }
 
 impl AttributeType {
@@ -253,7 +248,7 @@ impl AttributeType {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
-        label: &Label<'_>,
+        label: &Label,
     ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.set_label(snapshot, (*self).into_owned(), label)
     }

@@ -18,16 +18,12 @@ use concept::{
     type_::{relation_type::RelationType, role_type::RoleType, type_manager::TypeManager},
 };
 use itertools::Itertools;
-use lending_iterator::{AsHkt, AsNarrowingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{
-            relates_to_tuple_relation_role, relates_to_tuple_role_relation, RelatesToTupleFn, TuplePositions,
-            TupleResult,
-        },
+        tuple::{relates_to_tuple_relation_role, relates_to_tuple_role_relation, RelatesToTupleFn, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
@@ -47,23 +43,17 @@ pub(crate) struct RelatesExecutor {
 
 pub(super) type RelatesTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<RelatesFilterMapFn>>, RelatesToTupleFn>;
 
-pub(super) type RelatesUnboundedSortedRelation = AsNarrowingIterator<
-    RelatesTupleIterator<
-        iter::Map<
-            iter::Flatten<vec::IntoIter<BTreeSet<(RelationType, RoleType)>>>,
-            fn((RelationType, RoleType)) -> Result<(RelationType, RoleType), Box<ConceptReadError>>,
-        >,
+pub(super) type RelatesUnboundedSortedRelation = RelatesTupleIterator<
+    iter::Map<
+        iter::Flatten<vec::IntoIter<BTreeSet<(RelationType, RoleType)>>>,
+        fn((RelationType, RoleType)) -> Result<(RelationType, RoleType), Box<ConceptReadError>>,
     >,
-    AsHkt![TupleResult<'_>],
 >;
-pub(super) type RelatesBoundedSortedRole = AsNarrowingIterator<
-    RelatesTupleIterator<
-        iter::Map<
-            vec::IntoIter<(RelationType, RoleType)>,
-            fn((RelationType, RoleType)) -> Result<(RelationType, RoleType), Box<ConceptReadError>>,
-        >,
+pub(super) type RelatesBoundedSortedRole = RelatesTupleIterator<
+    iter::Map<
+        vec::IntoIter<(RelationType, RoleType)>,
+        fn((RelationType, RoleType)) -> Result<(RelationType, RoleType), Box<ConceptReadError>>,
     >,
-    AsHkt![TupleResult<'_>],
 >;
 
 pub(super) type RelatesFilterFn = FilterFn<(RelationType, RoleType)>;
@@ -150,9 +140,8 @@ impl RelatesExecutor {
                     .map(|relation| self.get_relates_for_relation(snapshot, type_manager, relation.clone()))
                     .try_collect()?;
                 let iterator = relates.into_iter().flatten().map(Ok as _);
-                let as_tuples: RelatesUnboundedSortedRelation = AsNarrowingIterator::new(
-                    iterator.filter_map(filter_for_row).map(relates_to_tuple_relation_role as _),
-                );
+                let as_tuples: RelatesUnboundedSortedRelation =
+                    iterator.filter_map(filter_for_row).map(relates_to_tuple_relation_role as _);
                 Ok(TupleIterator::RelatesUnbounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -172,9 +161,8 @@ impl RelatesExecutor {
 
                 let iterator =
                     relates.iter().cloned().sorted_by_key(|(relation, role)| (*role, *relation)).map(Ok as _);
-                let as_tuples: RelatesBoundedSortedRole = AsNarrowingIterator::new(
-                    iterator.filter_map(filter_for_row).map(relates_to_tuple_role_relation as _),
-                );
+                let as_tuples: RelatesBoundedSortedRole =
+                    iterator.filter_map(filter_for_row).map(relates_to_tuple_role_relation as _);
                 Ok(TupleIterator::RelatesBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),

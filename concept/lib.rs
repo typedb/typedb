@@ -12,7 +12,7 @@ pub mod iterator;
 pub mod thing;
 pub mod type_;
 
-pub trait ConceptAPI<'a>: Eq + PartialEq {}
+pub trait ConceptAPI: Eq + PartialEq + 'static {}
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum ConceptStatus {

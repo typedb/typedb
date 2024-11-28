@@ -18,7 +18,6 @@ use concept::{
     type_::{attribute_type::AttributeType, object_type::ObjectType},
 };
 use itertools::Itertools;
-use lending_iterator::{AsHkt, AsNarrowingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -28,7 +27,7 @@ use crate::{
             OwnsFilterFn, OwnsFilterMapFn, OwnsTupleIterator, OwnsVariableValueExtractor, EXTRACT_ATTRIBUTE,
             EXTRACT_OWNER,
         },
-        tuple::{owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, TuplePositions, TupleResult},
+        tuple::{owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
     },
     pipeline::stage::ExecutionContext,
@@ -46,23 +45,17 @@ pub(crate) struct OwnsReverseExecutor {
     checker: Checker<(ObjectType, AttributeType)>,
 }
 
-pub(super) type OwnsReverseUnboundedSortedAttribute = AsNarrowingIterator<
-    OwnsTupleIterator<
-        iter::Map<
-            iter::Flatten<vec::IntoIter<BTreeSet<(ObjectType, AttributeType)>>>,
-            fn((ObjectType, AttributeType)) -> Result<(ObjectType, AttributeType), Box<ConceptReadError>>,
-        >,
+pub(super) type OwnsReverseUnboundedSortedAttribute = OwnsTupleIterator<
+    iter::Map<
+        iter::Flatten<vec::IntoIter<BTreeSet<(ObjectType, AttributeType)>>>,
+        fn((ObjectType, AttributeType)) -> Result<(ObjectType, AttributeType), Box<ConceptReadError>>,
     >,
-    AsHkt![TupleResult<'_>],
 >;
-pub(super) type OwnsReverseBoundedSortedOwner = AsNarrowingIterator<
-    OwnsTupleIterator<
-        iter::Map<
-            vec::IntoIter<(ObjectType, AttributeType)>,
-            fn((ObjectType, AttributeType)) -> Result<(ObjectType, AttributeType), Box<ConceptReadError>>,
-        >,
+pub(super) type OwnsReverseBoundedSortedOwner = OwnsTupleIterator<
+    iter::Map<
+        vec::IntoIter<(ObjectType, AttributeType)>,
+        fn((ObjectType, AttributeType)) -> Result<(ObjectType, AttributeType), Box<ConceptReadError>>,
     >,
-    AsHkt![TupleResult<'_>],
 >;
 
 impl OwnsReverseExecutor {
@@ -145,9 +138,8 @@ impl OwnsReverseExecutor {
                     })
                     .try_collect()?;
                 let iterator = owns.into_iter().flatten().map(Ok as _);
-                let as_tuples: OwnsReverseUnboundedSortedAttribute = AsNarrowingIterator::new(
-                    iterator.filter_map(filter_for_row).map(owns_to_tuple_attribute_owner as _),
-                );
+                let as_tuples: OwnsReverseUnboundedSortedAttribute =
+                    iterator.filter_map(filter_for_row).map(owns_to_tuple_attribute_owner as _);
                 Ok(TupleIterator::OwnsReverseUnbounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -171,9 +163,8 @@ impl OwnsReverseExecutor {
                     .map(|object_type| (object_type, attribute_type));
 
                 let iterator = owns.sorted_by_key(|(owner, _)| *owner).map(Ok as _);
-                let as_tuples: OwnsReverseBoundedSortedOwner = AsNarrowingIterator::new(
-                    iterator.filter_map(filter_for_row).map(owns_to_tuple_owner_attribute as _),
-                );
+                let as_tuples: OwnsReverseBoundedSortedOwner =
+                    iterator.filter_map(filter_for_row).map(owns_to_tuple_owner_attribute as _);
 
                 Ok(TupleIterator::OwnsReverseBounded(SortedTupleIterator::new(
                     as_tuples,

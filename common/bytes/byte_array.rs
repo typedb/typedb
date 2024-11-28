@@ -46,6 +46,17 @@ impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
         }
     }
 
+    pub const fn copy_inline(bytes: &[u8]) -> ByteArray<INLINE_BYTES> {
+        assert!(bytes.len() <= INLINE_BYTES);
+        let mut inline = [0; INLINE_BYTES];
+        let mut i = 0;
+        while i < bytes.len() {
+            inline[i] = bytes[i];
+            i += 1;
+        }
+        ByteArray::Inline { bytes: inline, len: bytes.len() as u8 }
+    }
+
     pub fn copy_concat<const N: usize>(slices: [&[u8]; N]) -> ByteArray<INLINE_BYTES> {
         let length: usize = slices.iter().map(|slice| slice.len()).sum();
         if length <= INLINE_BYTES {

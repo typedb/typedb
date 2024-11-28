@@ -58,13 +58,13 @@ impl Hkt for RoleType {
     type HktSelf<'a> = Self;
 }
 
-impl<'a> ConceptAPI<'a> for RoleType {}
+impl ConceptAPI for RoleType {}
 
-impl<'a> PrefixedTypeVertexEncoding<'a> for RoleType {
+impl PrefixedTypeVertexEncoding for RoleType {
     const PREFIX: Prefix = Prefix::VertexRoleType;
 }
 
-impl<'a> TypeVertexEncoding<'a> for RoleType {
+impl TypeVertexEncoding for RoleType {
     fn from_vertex(vertex: TypeVertex) -> Result<Self, EncodingError> {
         debug_assert!(Self::PREFIX == Prefix::VertexRoleType);
         if vertex.prefix() != Prefix::VertexRoleType {
@@ -83,9 +83,7 @@ impl<'a> TypeVertexEncoding<'a> for RoleType {
     }
 }
 
-impl<'a> TypeAPI<'a> for RoleType {
-    type SelfStatic = RoleType;
-
+impl<'a> TypeAPI for RoleType {
     fn new(vertex: TypeVertex) -> RoleType {
         Self::from_vertex(vertex).unwrap()
     }
@@ -111,7 +109,7 @@ impl<'a> TypeAPI<'a> for RoleType {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Label<'static>>, Box<ConceptReadError>> {
+    ) -> Result<MaybeOwns<'m, Label>, Box<ConceptReadError>> {
         type_manager.get_role_type_label(snapshot, (*self).into_owned())
     }
 
@@ -119,7 +117,7 @@ impl<'a> TypeAPI<'a> for RoleType {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Arc<Label<'static>>, Box<ConceptReadError>> {
+    ) -> Result<Arc<Label>, Box<ConceptReadError>> {
         type_manager.get_role_type_label_arc(snapshot, (*self).into_owned())
     }
 
@@ -156,7 +154,7 @@ impl<'a> TypeAPI<'a> for RoleType {
     }
 }
 
-impl<'a> KindAPI<'a> for RoleType {
+impl<'a> KindAPI for RoleType {
     type AnnotationType = RoleTypeAnnotation;
     const KIND: Kind = Kind::Role;
 
@@ -169,14 +167,11 @@ impl<'a> KindAPI<'a> for RoleType {
     }
 
     fn get_constraints<'m>(
-        &self,
+        self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<RoleType>>>, Box<ConceptReadError>>
-    where
-        'a: 'static,
-    {
-        type_manager.get_role_type_constraints(snapshot, (*self).into_owned())
+    ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<RoleType>>>, Box<ConceptReadError>> {
+        type_manager.get_role_type_constraints(snapshot, self)
     }
 }
 

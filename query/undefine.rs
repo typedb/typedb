@@ -481,7 +481,7 @@ fn undefine_type_capability_sub(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     type_: TypeEnum,
-    type_label: &Label<'static>,
+    type_label: &Label,
     sub: &TypeQLSub,
     capability_undefinable: &CapabilityType,
 ) -> Result<(), UndefineError> {
@@ -555,7 +555,7 @@ fn undefine_type_capability_alias(
     _type_manager: &TypeManager,
     _thing_manager: &ThingManager,
     _type_: TypeEnum,
-    _type_label: &Label<'static>,
+    _type_label: &Label,
     _alias: &TypeQLAlias,
     _capability_undefinable: &CapabilityType,
 ) -> Result<(), UndefineError> {
@@ -567,7 +567,7 @@ fn undefine_type_capability_owns(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     type_: TypeEnum,
-    type_label: &Label<'static>,
+    type_label: &Label,
     owns: &TypeQLOwns,
     capability_undefinable: &CapabilityType,
 ) -> Result<(), UndefineError> {
@@ -609,7 +609,7 @@ fn undefine_type_capability_plays(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     type_: TypeEnum,
-    type_label: &Label<'static>,
+    type_label: &Label,
     plays: &TypeQLPlays,
     capability_undefinable: &CapabilityType,
 ) -> Result<(), UndefineError> {
@@ -643,7 +643,7 @@ fn undefine_type_capability_relates(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     type_: TypeEnum,
-    type_label: &Label<'static>,
+    type_label: &Label,
     relates: &TypeQLRelates,
     capability_undefinable: &CapabilityType,
 ) -> Result<(), UndefineError> {
@@ -692,7 +692,7 @@ fn undefine_type_capability_value_type(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     type_: TypeEnum,
-    type_label: &Label<'static>,
+    type_label: &Label,
     value_type: &TypeQLValueType,
     capability_undefinable: &CapabilityType,
 ) -> Result<(), UndefineError> {
@@ -717,14 +717,14 @@ fn undefine_type_capability_value_type(
             })
         }
         DefinableStatus::DoesNotExist => Err(UndefineError::AttributeTypeValueTypeNotDefined {
-            type_: type_label.clone().into_owned(),
+            type_: type_label.clone(),
             key: Keyword::Value,
             value_type,
             declaration: capability_undefinable.clone(),
         }),
         DefinableStatus::ExistsDifferent(existing_value_type) => {
             Err(UndefineError::AttributeTypeValueTypeDefinedButDifferent {
-                type_: type_label.clone().into_owned(),
+                type_: type_label.clone(),
                 key: Keyword::Value,
                 value_type,
                 existing_value_type,
@@ -833,10 +833,10 @@ fn undefine_struct(
     })
 }
 
-fn check_can_and_need_undefine_sub<'a, T: TypeAPI<'a>>(
+fn check_can_and_need_undefine_sub<'a, T: TypeAPI>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    label: &Label<'a>,
+    label: &Label,
     type_: T,
     supertype: T,
     declaration: &CapabilityType,
@@ -846,37 +846,34 @@ fn check_can_and_need_undefine_sub<'a, T: TypeAPI<'a>>(
     match definition_status {
         DefinableStatus::ExistsSame(_) => Ok(true),
         DefinableStatus::DoesNotExist => Err(UndefineError::TypeSubNotDefined {
-            type_: label.clone().into_owned(),
+            type_: label.clone(),
             key: Keyword::Sub,
             supertype: supertype
                 .get_label(snapshot, type_manager)
                 .map_err(|source| UndefineError::UnexpectedConceptRead { source })?
-                .clone()
-                .into_owned(),
+                .clone(),
             declaration: declaration.clone(),
         }),
         DefinableStatus::ExistsDifferent(existing) => Err(UndefineError::TypeSubDefinedButDifferent {
-            type_: label.clone().into_owned(),
+            type_: label.clone(),
             key: Keyword::Sub,
             supertype: supertype
                 .get_label(snapshot, type_manager)
                 .map_err(|source| UndefineError::UnexpectedConceptRead { source })?
-                .clone()
-                .into_owned(),
+                .clone(),
             existing_supertype: existing
                 .get_label(snapshot, type_manager)
                 .map_err(|source| UndefineError::UnexpectedConceptRead { source })?
-                .clone()
-                .into_owned(),
+                .clone(),
             declaration: declaration.clone(),
         }),
     }
 }
 
-fn check_can_and_need_undefine_type_annotation<'a, T: KindAPI<'a>>(
+fn check_can_and_need_undefine_type_annotation<'a, T: KindAPI>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    label: &Label<'a>,
+    label: &Label,
     type_: T,
     annotation_category: AnnotationCategory,
     declaration: &AnnotationType,
@@ -887,14 +884,14 @@ fn check_can_and_need_undefine_type_annotation<'a, T: KindAPI<'a>>(
         DefinableStatus::ExistsSame(_) => Ok(true),
         DefinableStatus::ExistsDifferent(_) => unreachable!("Annotation categories cannot differ"),
         DefinableStatus::DoesNotExist => Err(UndefineError::TypeAnnotationNotDefined {
-            type_: label.clone().into_owned(),
+            type_: label.clone(),
             annotation: annotation_category,
             declaration: declaration.clone(),
         }),
     }
 }
 
-fn check_can_and_need_undefine_capability_annotation<'a, CAP: Capability<'a>>(
+fn check_can_and_need_undefine_capability_annotation<'a, CAP: Capability>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     capability: CAP,
@@ -915,22 +912,22 @@ fn check_can_and_need_undefine_capability_annotation<'a, CAP: Capability<'a>>(
 }
 
 fn err_capability_kind_mismatch(
-    left: &Label<'static>,
-    right: &Label<'static>,
+    left: &Label,
+    right: &Label,
     capability: &CapabilityType,
     left_kind: Kind,
     right_kind: Kind,
 ) -> UndefineError {
     UndefineError::CapabilityKindMismatch {
-        left: left.clone().into_owned(),
-        right: right.clone().into_owned(),
+        left: left.clone(),
+        right: right.clone(),
         declaration: capability.clone(),
         left_kind,
         right_kind,
     }
 }
 
-fn err_unsupported_capability(label: &Label<'static>, kind: Kind, capability: &CapabilityType) -> UndefineError {
+fn err_unsupported_capability(label: &Label, kind: Kind, capability: &CapabilityType) -> UndefineError {
     UndefineError::TypeCannotHaveCapability { type_: label.to_owned(), kind, capability: capability.clone() }
 }
 
@@ -951,7 +948,7 @@ typedb_error!(
         TypeDeleteError(
             7,
             "Error removing type '{label}'.\nSource:\n{declaration}",
-            label: Label<'static>,
+            label: Label,
             declaration: TypeQLLabel,
             ( typedb_source: Box<ConceptWriteError> )
         ),
@@ -987,14 +984,14 @@ typedb_error!(
         UnsetValueTypeError(
             13,
             "Undefining '{label}' to have value type '{value_type}' failed.",
-            label: Label<'static>,
+            label: Label,
             value_type: ValueType,
             ( typedb_source: Box<ConceptWriteError> )
         ),
         UnsetTypeAnnotationError(
             14,
             "Undefining '{label}' to have annotation '{annotation_category}' failed.\nSource:\n{declaration}",
-            label: Label<'static>,
+            label: Label,
             annotation_category: AnnotationCategory,
             declaration: AnnotationType,
             ( typedb_source: Box<ConceptWriteError> )
@@ -1009,49 +1006,49 @@ typedb_error!(
         UnsetRelatesSpecialiseError(
             16,
             "For relation type '{type_}', undefining `relates as' failed.\nSource:\n{declaration}",
-            type_: Label<'static>,
+            type_: Label,
             declaration: Specialise,
             ( typedb_source: Box<ConceptWriteError> )
         ),
         TypeCannotHaveCapability(
             17,
             "Invalid undefine - the type '{type_}' of kind '{kind}', which cannot have: '{capability}'. Maybe you wanted to undefine something else?",
-            type_: Label<'static>,
+            type_: Label,
             kind: Kind,
             capability: CapabilityType
         ),
         TypeSubNotDefined(
             18,
             "Undefining '{key} {supertype}' for type '{type_}' failed since there is no defined '{type_} {key} {supertype}'.\nSource:\n{declaration}",
-            type_: Label<'static>,
+            type_: Label,
             key: Keyword,
-            supertype: Label<'static>,
+            supertype: Label,
             declaration: CapabilityType
         ),
         TypeSubDefinedButDifferent(
             19,
             "Undefining '{key} {supertype}' for type '{type_}' failed since there is no defined '{type_} {key} {supertype}', while {type_}'s defined '{key}' is '{existing_supertype}'.\nSource:\n{declaration}",
-            type_: Label<'static>,
+            type_: Label,
             key: Keyword,
-            supertype: Label<'static>,
-            existing_supertype: Label<'static>,
+            supertype: Label,
+            existing_supertype: Label,
             declaration: CapabilityType
         ),
         OwnsNotDefined(
             20,
             "Undefining '{key} {attribute}{ordering}' for type '{type_}' failed since there is no defined '{type_} {key} {attribute}{ordering}'.\nSource:\n{declaration}",
-            type_: Label<'static>,
+            type_: Label,
             key: Keyword,
-            attribute: Label<'static>,
+            attribute: Label,
             ordering: Ordering,
             declaration: CapabilityType
         ),
         OwnsDefinedButDifferent(
             21,
             "Undefining '{key} {attribute}{ordering}' for type '{type_}' failed since there is no defined '{type_} {key} {attribute}{ordering}', while {type_}'s defined '{key}' is '{attribute}{existing_ordering}'.\nSource:\n{declaration}",
-            type_: Label<'static>,
+            type_: Label,
             key: Keyword,
-            attribute: Label<'static>,
+            attribute: Label,
             ordering: Ordering,
             existing_ordering: Ordering,
             declaration: CapabilityType
@@ -1059,10 +1056,10 @@ typedb_error!(
         OwnsOfAnnotationDefinedButDifferent(
             22,
             "Undefining annotation '{annotation}' of `{key} {attribute}{ordering}` for type '{type_}' failed since there is no defined '{type_} {key} {attribute}{ordering}', while {type_}'s defined '{key}' is '{attribute}{existing_ordering}'.\nSource:\n{declaration}",
-            type_: Label<'static>,
+            type_: Label,
             key: Keyword,
             annotation: AnnotationCategory,
-            attribute: Label<'static>,
+            attribute: Label,
             ordering: Ordering,
             existing_ordering: Ordering,
             declaration: AnnotationCapability
@@ -1070,18 +1067,18 @@ typedb_error!(
         RelatesNotDefined(
             23,
             "Undefining '{key} {role}{ordering}' for type '{type_}' failed since there is no defined '{type_} {key} {role}{ordering}'.\nSource:\n{declaration}",
-            type_: Label<'static>,
+            type_: Label,
             key: Keyword,
-            role: Label<'static>,
+            role: Label,
             ordering: Ordering,
             declaration: CapabilityType
         ),
         RelatesDefinedButDifferent(
             24,
             "Undefining '{key} {role}{ordering}' for type '{type_}' failed since there is no defined '{type_} {key} {role}{ordering}', while {type_}'s defined '{key}' is '{role}{existing_ordering}'.\nSource:\n{declaration}",
-            type_: Label<'static>,
+            type_: Label,
             key: Keyword,
-            role: Label<'static>,
+            role: Label,
             ordering: Ordering,
             existing_ordering: Ordering,
             declaration: CapabilityType
@@ -1089,10 +1086,10 @@ typedb_error!(
         RelatesOfAnnotationDefinedButDifferent(
             25,
             "Undefining annotation '{annotation}' of `{key} {role}{ordering}` for type '{type_}' failed since there is no defined '{type_} {key} {role}{ordering}', while {type_}'s defined '{key}' is '{role}{existing_ordering}'.\nSource:\n{declaration}",
-            type_: Label<'static>,
+            type_: Label,
             key: Keyword,
             annotation: AnnotationCategory,
-            role: Label<'static>,
+            role: Label,
             ordering: Ordering,
             existing_ordering: Ordering,
             declaration: AnnotationCapability
@@ -1100,15 +1097,15 @@ typedb_error!(
         PlaysNotDefined(
             26,
             "Undefining '{key} {role}' for type '{type_}' failed since there is no defined '{type_} {key} {role}'.\nSource:\n{declaration}",
-            type_: Label<'static>,
+            type_: Label,
             key: Keyword,
-            role: Label<'static>,
+            role: Label,
             declaration: CapabilityType
         ),
         AttributeTypeValueTypeNotDefined(
             27,
             "Undefining '{key} {value_type}' for type '{type_}' failed since there is no defined '{type_} {key} {value_type}'.\nSource:\n{declaration}",
-            type_: Label<'static>,
+            type_: Label,
             key: Keyword,
             value_type: ValueType,
             declaration: CapabilityType
@@ -1116,7 +1113,7 @@ typedb_error!(
         AttributeTypeValueTypeDefinedButDifferent(
             28,
             "Undefining '{key} {value_type}' for type '{type_}' failed since there is no defined '{type_} {key} {value_type}', while {type_}'s defined '{key}' is '{existing_value_type}'.\nSource:\n{declaration}",
-            type_: Label<'static>,
+            type_: Label,
             key: Keyword,
             value_type: ValueType,
             existing_value_type: ValueType,
@@ -1125,7 +1122,7 @@ typedb_error!(
         RelatesSpecialiseNotDefined(
             29,
             "Undefining '{as_key} {specialised_role_name}' for '{type_} {relates_key} {specialising_role_name}' failed since there is no defined '{type_} {relates_key} {specialising_role_name} {as_key} {specialised_role_name}'.\nSource:\n{declaration}",
-            type_: Label<'static>,
+            type_: Label,
             relates_key: Keyword,
             as_key: Keyword,
             specialising_role_name: String,
@@ -1135,7 +1132,7 @@ typedb_error!(
         RelatesSpecialiseDefinedButDifferent(
             30,
             "Undefining '{as_key} {specialised_role_name}' for '{type_} {relates_key} {specialising_role_name}' failed since there is no defined '{type_} {relates_key} {specialising_role_name} {as_key} {specialised_role_name}', while there is a defined specialisation '{type_} {relates_key} {specialising_role_name} {as_key} {existing_specialised_role_name}'.\nSource:\n{declaration}",
-            type_: Label<'static>,
+            type_: Label,
             relates_key: Keyword,
             as_key: Keyword,
             specialising_role_name: String,
@@ -1146,7 +1143,7 @@ typedb_error!(
         TypeAnnotationNotDefined(
             31,
             "Undefining annotation '{annotation}' for type '{type_}' failed since there is no defined '{type_} {annotation}'.\nSource:\n{declaration}",
-            type_: Label<'static>,
+            type_: Label,
             annotation: AnnotationCategory,
             declaration: AnnotationType
         ),
@@ -1164,8 +1161,8 @@ typedb_error!(
         CapabilityKindMismatch(
             34,
             "Undefining failed because the left type '{left}' is of kind '{left_kind}' isn't the same kind as the right type '{right}' which has kind '{right_kind}'. Maybe you wanted to undefine something else?\nSource:\n{declaration}",
-            left: Label<'static>,
-            right: Label<'static>,
+            left: Label,
+            right: Label,
             declaration: CapabilityType,
             left_kind: Kind,
             right_kind: Kind

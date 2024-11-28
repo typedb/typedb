@@ -11,7 +11,7 @@ use crate::type_::type_manager::type_reader::TypeReader;
 
 #[derive(Debug)]
 pub struct StructDefinitionCache {
-    pub(super) definition_key: DefinitionKey<'static>,
+    pub(super) definition_key: DefinitionKey,
     pub(super) definition: StructDefinition,
 }
 

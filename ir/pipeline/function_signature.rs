@@ -18,7 +18,7 @@ use crate::{
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum FunctionID {
-    Schema(DefinitionKey<'static>),
+    Schema(DefinitionKey),
     Preamble(usize),
 }
 
@@ -46,7 +46,7 @@ impl FunctionSignature {
 }
 
 impl FunctionID {
-    pub fn as_definition_key(&self) -> Option<DefinitionKey<'static>> {
+    pub fn as_definition_key(&self) -> Option<DefinitionKey> {
         if let FunctionID::Schema(definition_key) = self {
             Some(definition_key.clone())
         } else {
@@ -107,7 +107,7 @@ pub trait FunctionIDAPI:
 {
 }
 
-impl FunctionIDAPI for DefinitionKey<'static> {}
+impl FunctionIDAPI for DefinitionKey {}
 impl FunctionIDAPI for usize {}
 
 impl From<usize> for FunctionID {
@@ -116,8 +116,8 @@ impl From<usize> for FunctionID {
     }
 }
 
-impl From<DefinitionKey<'static>> for FunctionID {
-    fn from(val: DefinitionKey<'static>) -> Self {
+impl From<DefinitionKey> for FunctionID {
+    fn from(val: DefinitionKey) -> Self {
         FunctionID::Schema(val)
     }
 }
@@ -132,10 +132,10 @@ impl TryFrom<FunctionID> for usize {
     }
 }
 
-impl TryFrom<FunctionID> for DefinitionKey<'static> {
+impl TryFrom<FunctionID> for DefinitionKey {
     type Error = ();
 
-    fn try_from(value: FunctionID) -> Result<DefinitionKey<'static>, Self::Error> {
+    fn try_from(value: FunctionID) -> Result<DefinitionKey, Self::Error> {
         match value {
             FunctionID::Schema(id) => Ok(id),
             FunctionID::Preamble(_) => Err(()),

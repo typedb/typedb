@@ -137,7 +137,7 @@ impl<const SZ: usize> StorageKeyArray<SZ> {
         Self { keyspace_id, byte_array: array }
     }
 
-    pub(crate) fn keyspace_id(&self) -> KeyspaceId {
+    pub fn keyspace_id(&self) -> KeyspaceId {
         self.keyspace_id
     }
 

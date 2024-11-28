@@ -216,7 +216,7 @@ impl Owns {
     }
 }
 
-impl<'a> TypeEdgeEncoding<'a> for Owns {
+impl TypeEdgeEncoding for Owns {
     const CANONICAL_PREFIX: Prefix = Prefix::EdgeOwns;
     const REVERSE_PREFIX: Prefix = Prefix::EdgeOwnsReverse;
     type From = ObjectType;
@@ -235,7 +235,7 @@ impl<'a> TypeEdgeEncoding<'a> for Owns {
     }
 }
 
-impl<'a> Capability<'a> for Owns {
+impl Capability for Owns {
     type AnnotationType = OwnsAnnotation;
     type ObjectType = ObjectType;
     type InterfaceType = AttributeType;
@@ -271,15 +271,12 @@ impl<'a> Capability<'a> for Owns {
         type_manager.get_owns_annotations_declared(snapshot, (*self).into_owned())
     }
 
-    fn get_constraints<'this>(
-        &'this self,
+    fn get_constraints<'a>(
+        self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'this TypeManager,
-    ) -> Result<MaybeOwns<'this, HashSet<CapabilityConstraint<Owns>>>, Box<ConceptReadError>>
-    where
-        'a: 'static,
-    {
-        type_manager.get_owns_constraints(snapshot, (*self).into_owned())
+        type_manager: &'a TypeManager,
+    ) -> Result<MaybeOwns<'a, HashSet<CapabilityConstraint<Owns>>>, Box<ConceptReadError>> {
+        type_manager.get_owns_constraints(snapshot, self)
     }
 
     fn get_cardinality_constraints(

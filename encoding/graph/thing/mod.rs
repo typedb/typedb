@@ -33,25 +33,23 @@ const fn max(lhs: usize, rhs: usize) -> usize {
 
 pub const THING_VERTEX_MAX_LENGTH: usize = max(ObjectVertex::LENGTH, AttributeVertex::MAX_LENGTH);
 
-pub trait ThingVertex<'a>:
-    Prefixed<'a, BUFFER_KEY_INLINE> + Typed<'a, BUFFER_KEY_INLINE> + Keyable<'a, BUFFER_KEY_INLINE>
-{
+pub trait ThingVertex: Prefixed<BUFFER_KEY_INLINE> + Typed<BUFFER_KEY_INLINE> + Keyable<BUFFER_KEY_INLINE> {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
 
-    fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self;
+    fn new(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self;
 
     fn build_prefix_prefix(prefix: Prefix) -> StorageKey<'static, { PrefixID::LENGTH }> {
         debug_assert!(matches!(prefix, Prefix::VertexEntity | Prefix::VertexRelation | Prefix::VertexAttribute));
         let mut array = ByteArray::zeros(PrefixID::LENGTH);
-        array[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
+        array[Self::INDEX_PREFIX] = prefix.prefix_id().byte;
         StorageKey::new(Self::KEYSPACE, Bytes::Array(array))
     }
 
     fn build_prefix_type(prefix: Prefix, type_id: TypeID) -> StorageKey<'static, THING_VERTEX_LENGTH_PREFIX_TYPE> {
         debug_assert!(matches!(prefix, Prefix::VertexEntity | Prefix::VertexRelation | Prefix::VertexAttribute));
         let mut array = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE);
-        array[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
-        array[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
+        array[Self::INDEX_PREFIX] = prefix.prefix_id().byte;
+        array[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.to_bytes());
         StorageKey::new(Self::KEYSPACE, Bytes::Array(array))
     }
 }

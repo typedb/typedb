@@ -12,7 +12,7 @@ use crate::type_::{
     KindAPI,
 };
 
-pub(crate) trait HasCommonTypeCache<T: KindAPI<'static>> {
+pub(crate) trait HasCommonTypeCache<T: KindAPI> {
     fn common_type_cache(&self) -> &CommonTypeCache<T>;
 }
 

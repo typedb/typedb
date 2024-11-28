@@ -75,8 +75,8 @@ fn write_entity_attributes(
         let name = thing_manager
             .create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(&random_string)))
             .unwrap();
-        person.set_has_unordered(&mut snapshot, &thing_manager, age).unwrap();
-        person.set_has_unordered(&mut snapshot, &thing_manager, name).unwrap();
+        person.set_has_unordered(&mut snapshot, &thing_manager, &age).unwrap();
+        person.set_has_unordered(&mut snapshot, &thing_manager, &name).unwrap();
     }
 
     snapshot.commit().unwrap();

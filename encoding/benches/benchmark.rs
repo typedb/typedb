@@ -25,7 +25,7 @@ fn vertex_generation<D>(
     thing_vertex_generator: Arc<ThingVertexGenerator>,
     type_id: TypeID,
     write_snapshot: &mut WriteSnapshot<D>,
-) -> ObjectVertex<'static> {
+) -> ObjectVertex {
     thing_vertex_generator.create_entity(type_id, write_snapshot)
 }
 
