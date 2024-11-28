@@ -32,14 +32,21 @@ impl Authenticator {
         let password_metadata = metadata.get(AUTHENTICATOR_PASSWORD_FIELD).map(|u| u.to_str());
         match (username_metadata, password_metadata) {
             (Some(Ok(username)), Some(Ok(password))) => match self.user_manager.get(username) {
-                Some((_, Credential::PasswordType { password_hash })) => {
-                    if password_hash.matches(password) {
-                        Ok(req)
-                    } else {
-                        Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL))
+                Ok(get_result) => {
+                    match get_result {
+                        Some((_, Credential::PasswordType { password_hash })) => {
+                            if password_hash.matches(password) {
+                                Ok(req)
+                            } else {
+                                Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL))
+                            }
+                        }
+                        None => Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL)),
                     }
                 }
-                None => Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL)),
+                Err(_) => {
+                    Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL))
+                }
             },
             _ => {
                 Err(Status::unauthenticated(ERROR_CREDENTIAL_NOT_SUPPLIED))

@@ -8,7 +8,7 @@ pub const SCHEMA: &str = include_str!("schema.tql");
 
 pub mod user_repository {
     use std::{collections::HashMap, sync::Arc};
-
+    use typeql::common::identifier::is_valid_identifier;
     use answer::variable_value::VariableValue;
     use concept::{thing::thing_manager, type_::type_manager::TypeManager};
     use database::transaction::{TransactionRead, TransactionWrite};
@@ -25,6 +25,7 @@ pub mod user_repository {
             query_util::{execute_read_pipeline, execute_write_pipeline},
         },
     };
+    use error::typedb_error;
 
     pub fn list(tx: TransactionRead<WALClient>) -> Vec<User> {
         let unexpected_error_msg = "An unexpected error occurred when acquiring the list of users";
@@ -36,7 +37,10 @@ pub mod user_repository {
         users
     }
 
-    pub fn get(tx: TransactionRead<WALClient>, username: &str) -> Option<(User, Credential)> {
+    pub fn get(tx: TransactionRead<WALClient>, username: &str) -> Result<Option<(User, Credential)>, SystemDBError> {
+        if !is_valid_typeql_value(username) {
+            return Err(SystemDBError::IllegalQueryInput {});
+        }
         let unexpected_error_msg = "An unexpected error occurred when attempting to retrieve a user";
         let query = parse_query(
             format!(
@@ -53,9 +57,9 @@ pub mod user_repository {
         if !rows.is_empty() {
             let row = rows.pop().expect(unexpected_error_msg);
             let hash = get_string(&tx, &row, "h");
-            Some((User::new(username.to_string()), Credential::PasswordType { password_hash: PasswordHash::new(hash) }))
+            Ok(Some((User::new(username.to_string()), Credential::PasswordType { password_hash: PasswordHash::new(hash) })))
         } else {
-            None
+            Ok(None)
         }
     }
 
@@ -67,7 +71,10 @@ pub mod user_repository {
         query_manager: &QueryManager,
         user: &User,
         credential: &Credential,
-    ) -> Arc<WriteSnapshot<WALClient>> {
+    ) -> (Result<(), SystemDBError>, Arc<WriteSnapshot<WALClient>>) {
+        if !is_valid_typeql_value(&user.name) {
+            return (Err(SystemDBError::IllegalQueryInput {}), Arc::new(snapshot));
+        }
         let unexpected_error_msg = "An unexpected error occurred when attempting to create a new user";
         let query = match credential {
             Credential::PasswordType { password_hash: PasswordHash { value: hash } } => {
@@ -88,7 +95,7 @@ pub mod user_repository {
         };
         let (_, snapshot) =
             execute_write_pipeline(snapshot, type_manager, thing_manager, function_manager, query_manager, &query.into_pipeline());
-        snapshot
+        (Ok(()), snapshot)
     }
 
     pub fn update(
@@ -118,7 +125,10 @@ pub mod user_repository {
         function_manager: &FunctionManager,
         query_manager: &QueryManager,
         username: &str,
-    ) -> Arc<WriteSnapshot<WALClient>> {
+    ) -> (Result<(), SystemDBError>, Arc<WriteSnapshot<WALClient>>) {
+        if !is_valid_typeql_value(username) {
+            return (Err(SystemDBError::IllegalQueryInput {}), Arc::new(snapshot));
+        }
         let unexpected_error_msg = "An unexpected error occurred when attempting to delete a user";
         let query = parse_query(
             format!(
@@ -132,6 +142,16 @@ pub mod user_repository {
         .expect(unexpected_error_msg);
         let (_, snapshot) =
             execute_write_pipeline(snapshot, type_manager, thing_manager, function_manager, query_manager, &query.into_pipeline());
-        snapshot
+        (Ok(()), snapshot)
     }
+
+    pub fn is_valid_typeql_value(value: &str) -> bool {
+        is_valid_identifier(value)
+    }
+
+    typedb_error!(
+        pub SystemDBError(component = "System database", prefix = "SDB") {
+            IllegalQueryInput(1, "The specified input contains one or more illegal character(s)"),
+        }
+    );
 }

@@ -167,10 +167,16 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         request: Request<typedb_protocol::user_manager::get::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::get::Res>, Status> {
         let get_req = request.into_inner();
-        let user = self.user_manager.get(get_req.name.as_str());
-        match user {
-            Some((u, _)) => Ok(Response::new(users_get_res(u))),
-            None => Err(ServiceError::UserDoesNotExist { name: get_req.name }.into_error_message().into_status()),
+        match self.user_manager.get(get_req.name.as_str()) {
+            Ok(get_result) => {
+                match get_result {
+                    Some((user, _)) => Ok(Response::new(users_get_res(user))),
+                    None => Err(ServiceError::UserDoesNotExist { name: get_req.name }.into_error_message().into_status()),
+                }
+            }
+            Err(user_get_error) => {
+                Err(user_get_error.into_error_message().into_status())
+            }
         }
     }
 
@@ -187,8 +193,9 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         request: Request<typedb_protocol::user_manager::contains::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::contains::Res>, Status> {
         let contains_req = request.into_inner();
-        let contains = self.user_manager.contains(contains_req.name.as_str());
-        Ok(Response::new(users_contains_res(contains)))
+        self.user_manager.contains(contains_req.name.as_str())
+            .map(|contains| Response::new(users_contains_res(contains)))
+            .map_err(|err| err.into_error_message().into_status())
     }
 
     async fn users_create(

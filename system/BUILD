@@ -19,6 +19,7 @@ rust_library(
         "//compiler",
         "//concept",
         "//database",
+        "//common/error",
         "//executor",
         "//function",
         "//query",

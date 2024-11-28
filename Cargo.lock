@@ -3134,6 +3134,7 @@ dependencies = [
  "compiler",
  "concept",
  "database",
+ "error",
  "executor",
  "function",
  "lending_iterator",
