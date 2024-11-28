@@ -84,7 +84,7 @@ pub mod transaction_util {
                 query_manager,
                 database,
                 transaction_options,
-            } = TransactionWrite::open(self.database.clone(), TransactionOptions::default()).unwrap(); // TODO
+            } = TransactionWrite::open(self.database.clone(), TransactionOptions::default()).unwrap();
             let (rows, snapshot) = fn_(
                 snapshot,
                 type_manager.clone(),

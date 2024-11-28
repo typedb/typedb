@@ -7,6 +7,7 @@
 use std::sync::Arc;
 
 use database::Database;
+
 use resource::constants::server::DEFAULT_USER_NAME;
 use storage::durability_client::WALClient;
 use system::{
@@ -15,7 +16,7 @@ use system::{
     util::transaction_util::TransactionUtil,
 };
 
-use crate::errors::{UserCreateError, UserDeleteError, UserUpdateError};
+use crate::errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateError};
 
 #[derive(Debug)]
 pub struct UserManager {
@@ -31,18 +32,20 @@ impl UserManager {
         self.transaction_util.read_transaction(|tx| user_repository::list(tx))
     }
 
-    pub fn get(&self, username: &str) -> Option<(User, Credential)> {
-        self.transaction_util.read_transaction(|tx| user_repository::get(tx, username))
+    pub fn get(&self, username: &str) -> Result<Option<(User, Credential)>, UserGetError> {
+        self.transaction_util.read_transaction(|tx|
+            user_repository::get(tx, username).map_err(|e| UserGetError::QueryExecutionError {})
+        )
     }
 
-    pub fn contains(&self, username: &str) -> bool {
-        self.get(username).is_some()
+    pub fn contains(&self, username: &str) -> Result<bool, UserGetError> {
+        self.get(username).map(|opt| opt.is_some())
     }
 
     pub fn create(&self, user: &User, credential: &Credential) -> Result<(), UserCreateError> {
-        let commit =
+        let create_result =
             self.transaction_util.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, db, tx_opts| {
-                let snapshot = user_repository::create(
+                 user_repository::create(
                     Arc::into_inner(snapshot).unwrap(),
                     &type_mgr,
                     thing_mgr.clone(),
@@ -50,10 +53,13 @@ impl UserManager {
                     &query_mgr,
                     user,
                     credential,
-                );
-                ((), snapshot)
+                )
             });
-        commit.map_err(|e| { UserCreateError::Unexpected {} })
+        match create_result {
+            Ok(Ok(())) => { Ok(()) }
+            Ok(Err(_)) => { Err( UserCreateError::QueryExecutionError {}) }
+            Err(_) => { Err(UserCreateError::QueryExecutionError {}) }
+        }
     }
 
     pub fn update(
@@ -80,21 +86,23 @@ impl UserManager {
 
     pub fn delete(&self, username: &str) -> Result<(), UserDeleteError> {
         if username == DEFAULT_USER_NAME {
-            Err(UserDeleteError::DefaultUserCannotBeDeleted {})
-        } else {
-            let commit =
-                self.transaction_util.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, db, tx_opts| {
-                    let snapshot = user_repository::delete(
-                        Arc::into_inner(snapshot).unwrap(),
-                        &type_mgr,
-                        thing_mgr.clone(),
-                        &fn_mgr,
-                        &query_mgr,
-                        username,
-                    );
-                    ((), snapshot)
-                });
-            commit.map_err(|e| UserDeleteError::Unexpected {})
+            return Err(UserDeleteError::DefaultUserCannotBeDeleted {})
+        }
+        let delete_result =
+            self.transaction_util.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, db, tx_opts| {
+                user_repository::delete(
+                    Arc::into_inner(snapshot).unwrap(),
+                    &type_mgr,
+                    thing_mgr.clone(),
+                    &fn_mgr,
+                    &query_mgr,
+                    username,
+                )
+            });
+        match delete_result {
+            Ok(Ok(())) => { Ok(()) }
+            Ok(Err(_)) => { Err( UserDeleteError::QueryExecutionError {}) }
+            Err(_) => { Err(UserDeleteError::QueryExecutionError {}) }
         }
     }
 }
