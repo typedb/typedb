@@ -146,25 +146,21 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
         .unwrap();
 
     membership_1
-        .add_player(&mut snapshot, &thing_manager, membership_member_type, person_1.clone().into_owned_object())
+        .add_player(&mut snapshot, &thing_manager, membership_member_type, person_1.into_owned_object())
         .unwrap();
-    membership_1
-        .add_player(&mut snapshot, &thing_manager, membership_group_type, group_1.clone().into_owned_object())
-        .unwrap();
+    membership_1.add_player(&mut snapshot, &thing_manager, membership_group_type, group_1.into_owned_object()).unwrap();
     membership_2
-        .add_player(&mut snapshot, &thing_manager, membership_member_type, person_3.clone().into_owned_object())
+        .add_player(&mut snapshot, &thing_manager, membership_member_type, person_3.into_owned_object())
         .unwrap();
-    membership_2
-        .add_player(&mut snapshot, &thing_manager, membership_group_type, group_2.clone().into_owned_object())
-        .unwrap();
+    membership_2.add_player(&mut snapshot, &thing_manager, membership_group_type, group_2.into_owned_object()).unwrap();
 
-    person_1.set_has_unordered(&mut snapshot, &thing_manager, age_1.as_reference()).unwrap();
-    person_1.set_has_unordered(&mut snapshot, &thing_manager, age_2.as_reference()).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_1).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_2).unwrap();
 
-    person_2.set_has_unordered(&mut snapshot, &thing_manager, age_1.as_reference()).unwrap();
+    person_2.set_has_unordered(&mut snapshot, &thing_manager, &age_1).unwrap();
 
-    person_3.set_has_unordered(&mut snapshot, &thing_manager, name_1.as_reference()).unwrap();
-    person_3.set_has_unordered(&mut snapshot, &thing_manager, name_2.as_reference()).unwrap();
+    person_3.set_has_unordered(&mut snapshot, &thing_manager, &name_1).unwrap();
+    person_3.set_has_unordered(&mut snapshot, &thing_manager, &name_2).unwrap();
 
     let finalise_result = thing_manager.finalise(&mut snapshot);
     assert!(finalise_result.is_ok(), "{:?}", finalise_result.unwrap_err());

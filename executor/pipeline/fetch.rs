@@ -448,9 +448,9 @@ fn execute_attributes_all<'a>(
     snapshot: Arc<impl ReadableSnapshot>,
     thing_manager: Arc<ThingManager>,
 ) -> Result<DocumentNode, FetchExecutionError> {
-    let mut iter = object.get_has_unordered(snapshot.as_ref(), &thing_manager);
+    let iter = object.get_has_unordered(snapshot.as_ref(), &thing_manager);
     let mut map: HashMap<Arc<Label>, DocumentNode> = HashMap::new();
-    while let Some(result) = iter.next() {
+    for result in iter {
         let (attribute, count) = result.map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
         let attribute_type = attribute.type_();
         let label = attribute_type
@@ -480,9 +480,9 @@ fn execute_attribute_single<'a>(
     snapshot: Arc<impl ReadableSnapshot>,
     thing_manager: Arc<ThingManager>,
 ) -> Result<DocumentLeaf, FetchExecutionError> {
-    let mut iter = prepare_attribute_type_has_iterator(object, attribute_type, &snapshot, &thing_manager)?;
+    let iter = prepare_attribute_type_has_iterator(object, attribute_type, &snapshot, &thing_manager)?;
 
-    while let Some(result) = iter.next() {
+    for result in iter {
         let (has, count) = result.map_err(|source| FetchExecutionError::ConceptRead { source })?;
         let attribute = has.attribute();
         let suitable = attribute
@@ -504,9 +504,9 @@ fn execute_attributes_list<'a>(
     thing_manager: Arc<ThingManager>,
 ) -> Result<DocumentList, FetchExecutionError> {
     let mut list = DocumentList::new();
-    let mut iter = prepare_attribute_type_has_iterator(object, attribute_type, &snapshot, &thing_manager)?;
+    let iter = prepare_attribute_type_has_iterator(object, attribute_type, &snapshot, &thing_manager)?;
 
-    while let Some(result) = iter.next() {
+    for result in iter {
         let (has, count) = result.map_err(|source| FetchExecutionError::ConceptRead { source })?;
         let attribute = has.attribute();
         let suitable = attribute

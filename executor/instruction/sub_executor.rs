@@ -47,8 +47,8 @@ pub(super) type SubFilterFn = FilterFn<(Type, Type)>;
 pub(super) type SubFilterMapFn = FilterMapFn<(Type, Type)>;
 
 type SubVariableValueExtractor = fn(&(Type, Type)) -> VariableValue<'_>;
-pub(super) const EXTRACT_SUB: SubVariableValueExtractor = |(sub, _)| VariableValue::Type(sub.clone());
-pub(super) const EXTRACT_SUPER: SubVariableValueExtractor = |(_, sup)| VariableValue::Type(sup.clone());
+pub(super) const EXTRACT_SUB: SubVariableValueExtractor = |(sub, _)| VariableValue::Type(*sub);
+pub(super) const EXTRACT_SUPER: SubVariableValueExtractor = |(_, sup)| VariableValue::Type(*sup);
 
 impl SubExecutor {
     pub(crate) fn new(
@@ -119,7 +119,7 @@ impl SubExecutor {
                 let sub_with_super = self
                     .sub_to_supertypes
                     .iter()
-                    .flat_map(|(sub, supers)| supers.iter().map(|sup| Ok((sub.clone(), sup.clone()))))
+                    .flat_map(|(sub, supers)| supers.iter().map(|sup| Ok((*sub, *sup))))
                     .collect_vec();
                 let as_tuples: SubUnboundedSortedSub =
                     sub_with_super.into_iter().filter_map(filter_for_row).map(sub_to_tuple_sub_super);
@@ -137,7 +137,7 @@ impl SubExecutor {
             BinaryIterateMode::BoundFrom => {
                 let subtype = type_from_row_or_annotations(self.sub.subtype(), row, self.sub_to_supertypes.keys());
                 let supertypes = self.sub_to_supertypes.get(&subtype).unwrap_or(const { &Vec::new() });
-                let sub_with_super = supertypes.iter().map(|sup| Ok((subtype.clone(), sup.clone()))).collect_vec(); // TODO cache this
+                let sub_with_super = supertypes.iter().map(|sup| Ok((subtype, *sup))).collect_vec(); // TODO cache this
 
                 let as_tuples: SubBoundedSortedSuper =
                     sub_with_super.into_iter().filter_map(filter_for_row).map(sub_to_tuple_super_sub);

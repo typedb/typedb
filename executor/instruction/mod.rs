@@ -516,9 +516,9 @@ impl<T> Checker<T> {
                         let value = var(value);
                         match value {
                             VariableValue::Thing(thing) => match thing {
-                                Thing::Entity(entity) => Ok(*iid == *entity.vertex().clone().to_bytes()),
-                                Thing::Relation(relation) => Ok(*iid == *relation.vertex().clone().to_bytes()),
-                                Thing::Attribute(attribute) => Ok(*iid == *attribute.vertex().clone().to_bytes()),
+                                Thing::Entity(entity) => Ok(*iid == *entity.vertex().to_bytes()),
+                                Thing::Relation(relation) => Ok(*iid == *relation.vertex().to_bytes()),
+                                Thing::Attribute(attribute) => Ok(*iid == *attribute.vertex().to_bytes()),
                             },
                             VariableValue::Empty => Ok(false),
                             VariableValue::Type(_) => Ok(false),
@@ -847,7 +847,7 @@ fn get_vertex_value<'a>(
                 unreachable!("Comparator check variables must have been recorded in the row.")
             }
         },
-        CheckVertex::Type(type_) => VariableValue::Type(type_.clone()),
+        CheckVertex::Type(type_) => VariableValue::Type(*type_),
         CheckVertex::Parameter(parameter_id) => {
             VariableValue::Value(parameters.value_unchecked(*parameter_id).as_reference())
         }

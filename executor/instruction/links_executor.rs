@@ -317,7 +317,7 @@ fn compare_by_player_then_relation(
 fn min_max_types<'a>(types: impl IntoIterator<Item = &'a Type>) -> (Type, Type) {
     match types.into_iter().minmax() {
         MinMaxResult::NoElements => unreachable!("Empty type iterator"),
-        MinMaxResult::OneElement(item) => (item.clone(), item.clone()),
-        MinMaxResult::MinMax(min, max) => (min.clone(), max.clone()),
+        MinMaxResult::OneElement(item) => (*item, *item),
+        MinMaxResult::MinMax(min, max) => (*min, *max),
     }
 }

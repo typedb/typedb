@@ -99,18 +99,18 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
         .create_attribute(&mut snapshot, name_type, Value::String(Cow::Owned("Candice".to_string())))
         .unwrap();
 
-    person_1.set_has_unordered(&mut snapshot, &thing_manager, age_1.clone()).unwrap();
-    person_1.set_has_unordered(&mut snapshot, &thing_manager, age_2.clone()).unwrap();
-    person_1.set_has_unordered(&mut snapshot, &thing_manager, age_3.clone()).unwrap();
-    person_1.set_has_unordered(&mut snapshot, &thing_manager, name_1.clone()).unwrap();
-    person_1.set_has_unordered(&mut snapshot, &thing_manager, name_2.clone()).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_1).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_2).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_3).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, &name_1).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, &name_2).unwrap();
 
-    person_2.set_has_unordered(&mut snapshot, &thing_manager, age_5.clone()).unwrap();
-    person_2.set_has_unordered(&mut snapshot, &thing_manager, age_4.clone()).unwrap();
-    person_2.set_has_unordered(&mut snapshot, &thing_manager, age_1.clone()).unwrap();
+    person_2.set_has_unordered(&mut snapshot, &thing_manager, &age_5).unwrap();
+    person_2.set_has_unordered(&mut snapshot, &thing_manager, &age_4).unwrap();
+    person_2.set_has_unordered(&mut snapshot, &thing_manager, &age_1).unwrap();
 
-    person_3.set_has_unordered(&mut snapshot, &thing_manager, age_4.clone()).unwrap();
-    person_3.set_has_unordered(&mut snapshot, &thing_manager, name_3.clone()).unwrap();
+    person_3.set_has_unordered(&mut snapshot, &thing_manager, &age_4).unwrap();
+    person_3.set_has_unordered(&mut snapshot, &thing_manager, &name_3).unwrap();
 
     let finalise_result = thing_manager.finalise(&mut snapshot);
     assert!(finalise_result.is_ok());

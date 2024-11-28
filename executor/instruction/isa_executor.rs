@@ -208,7 +208,7 @@ pub(super) fn instances_of_all_types_chained(
     let object_iters: Vec<_> = object_types
         .into_iter()
         .map(|(type_, types)| {
-            let returned_types = if matches!(isa_kind, IsaKind::Subtype) { types.clone() } else { vec![type_.clone()] };
+            let returned_types = if matches!(isa_kind, IsaKind::Subtype) { types.clone() } else { vec![*type_] };
             Ok::<_, Box<_>>(with_types(
                 thing_manager
                     .get_objects_in(snapshot, type_.as_object_type())
@@ -228,7 +228,7 @@ pub(super) fn instances_of_all_types_chained(
             type_.as_attribute_type().get_value_type(snapshot, type_manager).is_ok_and(|vt| vt.is_some())
         })
         .map(|(type_, types)| {
-            let returned_types = if matches!(isa_kind, IsaKind::Subtype) { types.clone() } else { vec![type_.clone()] };
+            let returned_types = if matches!(isa_kind, IsaKind::Subtype) { types.clone() } else { vec![*type_] };
             Ok::<_, Box<_>>(with_types(
                 thing_manager
                     .get_attributes_in_range(snapshot, type_.as_attribute_type(), &instance_values_range)?

@@ -123,20 +123,20 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
         .create_attribute(&mut snapshot, email_type, Value::String(Cow::Owned("xyz@email.com".to_string())))
         .unwrap();
 
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, _age_1.clone()).unwrap();
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, _age_2.clone()).unwrap();
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, _age_3.clone()).unwrap();
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, _name_1.clone()).unwrap();
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, _name_2.clone()).unwrap();
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, _email_1.clone()).unwrap();
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, _email_2.clone()).unwrap();
+    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_age_1).unwrap();
+    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_age_2).unwrap();
+    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_age_3).unwrap();
+    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_name_1).unwrap();
+    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_name_2).unwrap();
+    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_email_1).unwrap();
+    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_email_2).unwrap();
 
-    _person_2.set_has_unordered(&mut snapshot, &thing_manager, _age_5.clone()).unwrap();
-    _person_2.set_has_unordered(&mut snapshot, &thing_manager, _age_4.clone()).unwrap();
-    _person_2.set_has_unordered(&mut snapshot, &thing_manager, _age_1.clone()).unwrap();
+    _person_2.set_has_unordered(&mut snapshot, &thing_manager, &_age_5).unwrap();
+    _person_2.set_has_unordered(&mut snapshot, &thing_manager, &_age_4).unwrap();
+    _person_2.set_has_unordered(&mut snapshot, &thing_manager, &_age_1).unwrap();
 
-    _person_3.set_has_unordered(&mut snapshot, &thing_manager, _age_4.clone()).unwrap();
-    _person_3.set_has_unordered(&mut snapshot, &thing_manager, _name_3.clone()).unwrap();
+    _person_3.set_has_unordered(&mut snapshot, &thing_manager, &_age_4).unwrap();
+    _person_3.set_has_unordered(&mut snapshot, &thing_manager, &_name_3).unwrap();
 
     let finalise_result = thing_manager.finalise(&mut snapshot);
     assert!(finalise_result.is_ok());

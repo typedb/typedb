@@ -185,14 +185,14 @@ pub(super) fn instances_of_types_chained<'a>(
             let returned_types = if matches!(isa_kind, IsaKind::Subtype) {
                 type_to_instance_types.get(type_).unwrap_or(&TYPES_EMPTY).clone()
             } else {
-                vec![type_.clone()]
+                vec![*type_]
             };
             returned_types.into_iter().map(move |subtype| {
                 Ok::<_, Box<_>>(with_type(
                     thing_manager
                         .get_objects_in(snapshot, subtype.as_object_type())
                         .map((|res| res.map(Thing::from)) as ObjectEraseFn),
-                    type_.clone(),
+                    *type_,
                 ))
             })
         })
@@ -207,14 +207,14 @@ pub(super) fn instances_of_types_chained<'a>(
             let returned_types = if matches!(isa_kind, IsaKind::Subtype) {
                 type_to_instance_types.get(type_).unwrap_or(&TYPES_EMPTY).clone()
             } else {
-                vec![type_.clone()]
+                vec![*type_]
             };
             returned_types.into_iter().map(move |_subtype| {
                 Ok::<_, Box<_>>(with_type(
                     thing_manager
                         .get_attributes_in(snapshot, type_.as_attribute_type())?
                         .map((|res| res.map(Thing::Attribute)) as AttributeEraseFn),
-                    type_.clone(),
+                    *type_,
                 ))
             })
         })

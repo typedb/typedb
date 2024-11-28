@@ -513,8 +513,7 @@ fn role_player_duplicates_unordered() {
         collection_1.add_player(&mut snapshot, &thing_manager, entry_type, Object::Entity(resource_1)).unwrap();
         collection_1.add_player(&mut snapshot, &thing_manager, entry_type, Object::Entity(resource_1)).unwrap();
 
-        let player_counts: u64 =
-            collection_1.get_players(&snapshot, &thing_manager).map(|res| res.unwrap().1).into_iter().sum();
+        let player_counts: u64 = collection_1.get_players(&snapshot, &thing_manager).map(|res| res.unwrap().1).sum();
         assert_eq!(player_counts, 2);
 
         let group_relations_count: u64 = group_1
@@ -540,7 +539,6 @@ fn role_player_duplicates_unordered() {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_1_indexed_count, 1);
         let resource_1_indexed_count: u64 = resource_1
@@ -549,7 +547,6 @@ fn role_player_duplicates_unordered() {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(resource_1_indexed_count, 1);
 
@@ -559,7 +556,6 @@ fn role_player_duplicates_unordered() {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_relations_count, 1);
 
@@ -578,8 +574,7 @@ fn role_player_duplicates_unordered() {
         assert_eq!(relations.len(), 1);
 
         let collection_1 = relations.first().unwrap();
-        let player_counts: u64 =
-            collection_1.get_players(&snapshot, &thing_manager).map(|res| res.unwrap().1).into_iter().sum();
+        let player_counts: u64 = collection_1.get_players(&snapshot, &thing_manager).map(|res| res.unwrap().1).sum();
         assert_eq!(player_counts, 2);
 
         let group_1 = entities
@@ -598,7 +593,6 @@ fn role_player_duplicates_unordered() {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_relations_count, 1);
         let resource_relations_count: u64 = resource_1
@@ -607,7 +601,6 @@ fn role_player_duplicates_unordered() {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(resource_relations_count, 1);
 
@@ -617,7 +610,6 @@ fn role_player_duplicates_unordered() {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_1_indexed_count, 1);
         let resource_1_indexed_count: u64 = resource_1
@@ -626,7 +618,6 @@ fn role_player_duplicates_unordered() {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(resource_1_indexed_count, 1);
     }
@@ -679,8 +670,7 @@ fn role_player_duplicates_ordered_default_card() {
         collection_1.add_player(&mut snapshot, &thing_manager, entry_type, Object::Entity(resource_1)).unwrap();
         collection_1.add_player(&mut snapshot, &thing_manager, entry_type, Object::Entity(resource_1)).unwrap();
 
-        let player_counts: u64 =
-            collection_1.get_players(&snapshot, &thing_manager).map(|res| res.unwrap().1).into_iter().sum();
+        let player_counts: u64 = collection_1.get_players(&snapshot, &thing_manager).map(|res| res.unwrap().1).sum();
         assert_eq!(player_counts, 3);
 
         let group_relations_count: u64 = group_1
@@ -689,7 +679,6 @@ fn role_player_duplicates_ordered_default_card() {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_relations_count, 1);
         let resource_relations_count: u64 = resource_1
@@ -698,7 +687,6 @@ fn role_player_duplicates_ordered_default_card() {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(resource_relations_count, 2);
 
@@ -708,7 +696,6 @@ fn role_player_duplicates_ordered_default_card() {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_1_indexed_count, 0, "// Default card.end for ordered is INF -> indexing is OFF -> expected 0");
         let resource_1_indexed_count: u64 = resource_1
@@ -717,7 +704,6 @@ fn role_player_duplicates_ordered_default_card() {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(
             resource_1_indexed_count, 0,
@@ -730,7 +716,6 @@ fn role_player_duplicates_ordered_default_card() {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_relations_count, 1);
 
@@ -749,8 +734,7 @@ fn role_player_duplicates_ordered_default_card() {
         assert_eq!(relations.len(), 1);
 
         let collection_1 = relations.first().unwrap();
-        let player_counts: u64 =
-            collection_1.get_players(&snapshot, &thing_manager).map(|res| res.unwrap().1).into_iter().sum();
+        let player_counts: u64 = collection_1.get_players(&snapshot, &thing_manager).map(|res| res.unwrap().1).sum();
         assert_eq!(player_counts, 3);
 
         let group_1 = entities
@@ -769,7 +753,6 @@ fn role_player_duplicates_ordered_default_card() {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_relations_count, 1);
         let resource_relations_count: u64 = resource_1
@@ -778,7 +761,6 @@ fn role_player_duplicates_ordered_default_card() {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(resource_relations_count, 2);
 
@@ -788,7 +770,6 @@ fn role_player_duplicates_ordered_default_card() {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_1_indexed_count, 0, "// Default card.end for ordered is INF -> indexing is OFF -> expected 0");
         let resource_1_indexed_count: u64 = resource_1
@@ -797,7 +778,6 @@ fn role_player_duplicates_ordered_default_card() {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(
             resource_1_indexed_count, 0,
@@ -860,8 +840,7 @@ fn role_player_duplicates_ordered_small_card() {
         collection_1.add_player(&mut snapshot, &thing_manager, entry_type, Object::Entity(resource_1)).unwrap();
         collection_1.add_player(&mut snapshot, &thing_manager, entry_type, Object::Entity(resource_1)).unwrap();
 
-        let player_counts: u64 =
-            collection_1.get_players(&snapshot, &thing_manager).map(|res| res.unwrap().1).into_iter().sum();
+        let player_counts: u64 = collection_1.get_players(&snapshot, &thing_manager).map(|res| res.unwrap().1).sum();
         assert_eq!(player_counts, 3);
 
         let group_relations_count: u64 = group_1
@@ -870,7 +849,6 @@ fn role_player_duplicates_ordered_small_card() {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_relations_count, 1);
         let resource_relations_count: u64 = resource_1
@@ -879,7 +857,6 @@ fn role_player_duplicates_ordered_small_card() {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(resource_relations_count, 2);
 
@@ -889,7 +866,6 @@ fn role_player_duplicates_ordered_small_card() {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_1_indexed_count, 2, "Expected index to work");
         let resource_1_indexed_count: u64 = resource_1
@@ -898,7 +874,6 @@ fn role_player_duplicates_ordered_small_card() {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(resource_1_indexed_count, 2, "Expected index to work");
 
@@ -908,7 +883,6 @@ fn role_player_duplicates_ordered_small_card() {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_relations_count, 1);
 
@@ -927,8 +901,7 @@ fn role_player_duplicates_ordered_small_card() {
         assert_eq!(relations.len(), 1);
 
         let collection_1 = relations.first().unwrap();
-        let player_counts: u64 =
-            collection_1.get_players(&snapshot, &thing_manager).map(|res| res.unwrap().1).into_iter().sum();
+        let player_counts: u64 = collection_1.get_players(&snapshot, &thing_manager).map(|res| res.unwrap().1).sum();
         assert_eq!(player_counts, 3);
 
         let group_1 = entities
@@ -947,7 +920,6 @@ fn role_player_duplicates_ordered_small_card() {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_relations_count, 1);
         let resource_relations_count: u64 = resource_1
@@ -956,7 +928,6 @@ fn role_player_duplicates_ordered_small_card() {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(resource_relations_count, 2);
 
@@ -966,7 +937,6 @@ fn role_player_duplicates_ordered_small_card() {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_1_indexed_count, 2, "Expected index to work");
         let resource_1_indexed_count: u64 = resource_1
@@ -975,7 +945,6 @@ fn role_player_duplicates_ordered_small_card() {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(resource_1_indexed_count, 2, "Expected index to work");
     }
@@ -1311,11 +1280,11 @@ fn read_attribute_struct_by_field() {
             let field_path = type_manager
                 .resolve_struct_field(&snapshot, &["f_nested", "nested_string"], struct_def.clone())
                 .unwrap();
-            let mut attr_by_field_iterator = thing_manager
+            let attr_by_field_iterator = thing_manager
                 .get_attributes_by_struct_field(&snapshot, attr_type, field_path, Value::String(Cow::Borrowed(val)))
                 .unwrap();
             let mut attr_by_field: Vec<Attribute> = Vec::new();
-            while let Some(res) = attr_by_field_iterator.next() {
+            for res in attr_by_field_iterator {
                 attr_by_field.push(res.as_ref().unwrap().clone().into_owned());
             }
             assert_eq!(1, attr_by_field.len());

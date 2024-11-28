@@ -38,7 +38,7 @@ pub(crate) type TypeIterator =
     TypeTupleIterator<iter::Map<vec::IntoIter<Type>, fn(Type) -> Result<Type, Box<ConceptReadError>>>>;
 
 type TypeVariableValueExtractor = for<'a> fn(&'a Type) -> VariableValue<'a>;
-pub(super) const EXTRACT_TYPE: TypeVariableValueExtractor = |ty| VariableValue::Type(ty.clone());
+pub(super) const EXTRACT_TYPE: TypeVariableValueExtractor = |ty| VariableValue::Type(*ty);
 
 impl TypeListExecutor {
     pub(crate) fn new(

@@ -55,7 +55,11 @@ impl Label {
     }
 
     pub const fn new_static(name: &'static str) -> Label {
-        Label { name: StringBytes::build_static_ref(name), scope: None, scoped_name: StringBytes::build_static_ref(name) }
+        Label {
+            name: StringBytes::build_static_ref(name),
+            scope: None,
+            scoped_name: StringBytes::build_static_ref(name),
+        }
     }
 
     pub const fn new_static_scoped(name: &'static str, scope: &'static str, scoped_name: &'static str) -> Label {

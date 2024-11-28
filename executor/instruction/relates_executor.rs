@@ -137,7 +137,7 @@ impl RelatesExecutor {
                 let relates: Vec<_> = self
                     .relation_role_types
                     .keys()
-                    .map(|relation| self.get_relates_for_relation(snapshot, type_manager, relation.clone()))
+                    .map(|relation| self.get_relates_for_relation(snapshot, type_manager, *relation))
                     .try_collect()?;
                 let iterator = relates.into_iter().flatten().map(Ok as _);
                 let as_tuples: RelatesUnboundedSortedRelation =

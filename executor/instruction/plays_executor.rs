@@ -23,7 +23,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, PlaysToTupleFn, TuplePositions, TupleResult},
+        tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, PlaysToTupleFn, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
@@ -137,7 +137,7 @@ impl PlaysExecutor {
                 let plays: Vec<_> = self
                     .player_role_types
                     .keys()
-                    .map(|player| self.get_plays_for_player(snapshot, type_manager, player.clone()))
+                    .map(|player| self.get_plays_for_player(snapshot, type_manager, *player))
                     .try_collect()?;
                 let iterator = plays.into_iter().flatten().map(Ok as _);
                 let as_tuples: PlaysUnboundedSortedPlayer =

@@ -219,7 +219,7 @@ fn redefine_type_annotations(
     for typeql_annotation in &type_declaration.annotations {
         let annotation =
             translate_annotation(typeql_annotation).map_err(|source| RedefineError::LiteralParseError { source })?;
-        match type_.clone() {
+        match type_ {
             TypeEnum::Entity(entity) => {
                 if let Some(converted) = type_convert_and_validate_annotation_redefinition_need(
                     snapshot,
@@ -543,7 +543,7 @@ fn redefine_relates(
             thing_manager,
             anything_redefined,
             &label,
-            relates.clone(),
+            relates,
             capability,
         )?;
         redefine_relates_specialise(
@@ -575,7 +575,7 @@ fn redefine_relates_annotations(
             snapshot,
             type_manager,
             relation_label,
-            relates.clone(),
+            relates,
             annotation.clone(),
             typeql_capability,
         )? {
@@ -839,7 +839,7 @@ fn redefine_plays_annotations(
             snapshot,
             type_manager,
             player_label,
-            plays.clone(),
+            plays,
             annotation.clone(),
             typeql_capability,
         )? {
@@ -876,7 +876,7 @@ fn check_can_redefine_sub<'a, T: TypeAPI>(
     new_supertype: T,
     capability: &Capability,
 ) -> Result<(), RedefineError> {
-    let definition_status = get_sub_status(snapshot, type_manager, type_, new_supertype.clone())
+    let definition_status = get_sub_status(snapshot, type_manager, type_, new_supertype)
         .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => Err(RedefineError::TypeSubNotDefined {

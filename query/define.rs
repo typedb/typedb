@@ -302,7 +302,7 @@ fn define_type_annotations(
     for typeql_annotation in &type_declaration.annotations {
         let annotation =
             translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
-        match type_.clone() {
+        match type_ {
             TypeEnum::Entity(entity) => {
                 if let Some(converted) = type_convert_and_validate_annotation_definition_need(
                     snapshot,
@@ -605,7 +605,7 @@ fn define_relates_with_annotations(
             }
         };
 
-        define_relates_annotations(snapshot, type_manager, thing_manager, &label, defined.clone(), capability)?;
+        define_relates_annotations(snapshot, type_manager, thing_manager, &label, defined, capability)?;
     }
     Ok(())
 }
@@ -624,7 +624,7 @@ fn define_relates_annotations(
         if let Some(converted) = capability_convert_and_validate_annotation_definition_need(
             snapshot,
             type_manager,
-            relates.clone(),
+            relates,
             annotation.clone(),
             typeql_capability,
         )? {
@@ -843,7 +843,7 @@ fn define_plays_with_annotations(
             DefinableStatus::ExistsDifferent(_) => unreachable!("Plays cannot differ"),
         };
 
-        define_plays_annotations(snapshot, type_manager, thing_manager, &label, defined.clone(), capability)?;
+        define_plays_annotations(snapshot, type_manager, thing_manager, &label, defined, capability)?;
     }
     Ok(())
 }
@@ -862,7 +862,7 @@ fn define_plays_annotations(
         if let Some(converted) = capability_convert_and_validate_annotation_definition_need(
             snapshot,
             type_manager,
-            plays.clone(),
+            plays,
             annotation.clone(),
             typeql_capability,
         )? {
@@ -886,7 +886,7 @@ fn check_can_and_need_define_sub<T: TypeAPI>(
     new_supertype: T,
     capability: &TypeQLCapability,
 ) -> Result<bool, DefineError> {
-    let definition_status = get_sub_status(snapshot, type_manager, type_, new_supertype.clone())
+    let definition_status = get_sub_status(snapshot, type_manager, type_, new_supertype)
         .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => Ok(true),

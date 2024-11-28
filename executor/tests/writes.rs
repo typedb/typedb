@@ -37,6 +37,7 @@ use ir::{
     pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
     translation::TranslationContext,
 };
+use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::{
     durability_client::WALClient,
@@ -374,18 +375,12 @@ fn relation() {
         .unwrap()
         .unwrap()
         .role();
-    let relations: Vec<Relation<'_>> = thing_manager
-        .get_relations_in(&snapshot, membership_type)
-        .map_static(|item| item.map(|relation| relation.clone().into_owned()))
-        .try_collect()
-        .unwrap();
+    let relations: Vec<Relation> = thing_manager.get_relations_in(&snapshot, membership_type).try_collect().unwrap();
     assert_eq!(1, relations.len());
     let role_players = relations[0]
         .get_players(&snapshot, &thing_manager)
-        .map_static(|item| {
-            item.map(|(roleplayer, _)| (roleplayer.player().into_owned(), roleplayer.role_type().into_owned()))
-        })
-        .try_collect::<Vec<_>, _>()
+        .map(|item| item.map(|(roleplayer, _)| (roleplayer.player(), roleplayer.role_type())))
+        .try_collect::<_, Vec<_>, _>()
         .unwrap();
     assert!(role_players
         .iter()
@@ -428,18 +423,12 @@ fn relation_with_inferred_roles() {
         .unwrap()
         .unwrap()
         .role();
-    let relations: Vec<Relation<'_>> = thing_manager
-        .get_relations_in(&snapshot, membership_type)
-        .map_static(|item| item.map(|relation| relation.clone().into_owned()))
-        .try_collect()
-        .unwrap();
+    let relations: Vec<Relation> = thing_manager.get_relations_in(&snapshot, membership_type).try_collect().unwrap();
     assert_eq!(1, relations.len());
     let role_players = relations[0]
         .get_players(&snapshot, &thing_manager)
-        .map_static(|item| {
-            item.map(|(roleplayer, _)| (roleplayer.player().into_owned(), roleplayer.role_type().into_owned()))
-        })
-        .try_collect::<Vec<_>, _>()
+        .map(|item| item.map(|(roleplayer, _)| (roleplayer.player(), roleplayer.role_type())))
+        .try_collect::<_, Vec<_>, _>()
         .unwrap();
     assert!(role_players
         .iter()
@@ -486,15 +475,15 @@ fn test_has_with_input_rows() {
         .as_thing()
         .as_object()
         .get_has_type_unordered(&snapshot, &thing_manager, age_type)
-        .map_static(|result| result.unwrap().0.clone().into_owned())
+        .map(|result| result.unwrap().0.clone().into_owned())
         .collect::<Vec<_>>();
-    assert_eq!(a10.as_thing().as_attribute(), age_of_p10[0]);
+    assert_eq!(a10.as_thing().as_attribute(), &age_of_p10[0]);
     let owner_of_a10 = a10
         .as_thing()
         .as_attribute()
         .get_owners(&snapshot, &thing_manager)
-        .map_static(|result| result.unwrap().0.clone().into_owned())
-        .collect::<Vec<_>>();
+        .map(|result| result.unwrap().0)
+        .collect_vec();
     assert_eq!(p10.as_thing().as_object(), owner_of_a10[0]);
     snapshot.close_resources();
 }

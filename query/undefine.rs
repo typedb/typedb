@@ -326,7 +326,7 @@ fn undefine_capability_annotation(
             check_can_and_need_undefine_capability_annotation(
                 snapshot,
                 type_manager,
-                plays.clone(),
+                plays,
                 annotation_category,
                 annotation_undefinable,
             )?;
@@ -368,7 +368,7 @@ fn undefine_capability_annotation(
             check_can_and_need_undefine_capability_annotation(
                 snapshot,
                 type_manager,
-                relates.clone(),
+                relates,
                 annotation_category,
                 annotation_undefinable,
             )?;
@@ -841,7 +841,7 @@ fn check_can_and_need_undefine_sub<'a, T: TypeAPI>(
     supertype: T,
     declaration: &CapabilityType,
 ) -> Result<bool, UndefineError> {
-    let definition_status = get_sub_status(snapshot, type_manager, type_, supertype.clone())
+    let definition_status = get_sub_status(snapshot, type_manager, type_, supertype)
         .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
     match definition_status {
         DefinableStatus::ExistsSame(_) => Ok(true),

@@ -1602,7 +1602,7 @@ impl ThingManager {
                 )
             }
             Value::String(string) => {
-                let encoded_string: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_owned(&string);
+                let encoded_string: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(&string);
                 self.vertex_generator
                     .create_attribute_string(attribute_type.vertex().type_id_(), encoded_string, snapshot)
                     .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?

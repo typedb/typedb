@@ -139,7 +139,7 @@ impl OwnsExecutor {
                 let owns: Vec<_> = self
                     .owner_attribute_types
                     .keys()
-                    .map(|owner| self.get_owns_for_owner(snapshot, type_manager, owner.clone()))
+                    .map(|owner| self.get_owns_for_owner(snapshot, type_manager, *owner))
                     .try_collect()?;
                 let iterator = owns.into_iter().flatten().map(Ok as _);
                 let as_tuples: OwnsUnboundedSortedOwner =

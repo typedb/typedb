@@ -113,7 +113,7 @@ impl SubReverseExecutor {
                 let sub_with_super = self
                     .super_to_subtypes
                     .iter()
-                    .flat_map(|(sup, subs)| subs.iter().map(|sub| Ok((sub.clone(), sup.clone()))))
+                    .flat_map(|(sup, subs)| subs.iter().map(|sub| Ok((*sub, *sup))))
                     .collect_vec();
                 let as_tuples: SubReverseUnboundedSortedSuper =
                     sub_with_super.into_iter().filter_map(filter_for_row).map(sub_to_tuple_super_sub);
@@ -131,7 +131,7 @@ impl SubReverseExecutor {
             BinaryIterateMode::BoundFrom => {
                 let supertype = type_from_row_or_annotations(self.sub.supertype(), row, self.super_to_subtypes.keys());
                 let subtypes = self.super_to_subtypes.get(&supertype).unwrap_or(const { &Vec::new() });
-                let sub_with_super = subtypes.iter().map(|sub| Ok((sub.clone(), supertype.clone()))).collect_vec(); // TODO cache this
+                let sub_with_super = subtypes.iter().map(|sub| Ok((*sub, supertype))).collect_vec(); // TODO cache this
                 let as_tuples: SubReverseBoundedSortedSub =
                     sub_with_super.into_iter().filter_map(filter_for_row).map(sub_to_tuple_sub_super);
                 Ok(TupleIterator::SubReverseBounded(SortedTupleIterator::new(

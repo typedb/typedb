@@ -409,13 +409,9 @@ pub mod tests {
         let mut left_to_right = BTreeMap::new();
         let mut right_to_left = BTreeMap::new();
         for (l, r) in left_right_type_pairs {
-            if !left_to_right.contains_key(&l) {
-                left_to_right.insert(l, BTreeSet::new());
-            }
+            left_to_right.entry(l).or_insert_with(BTreeSet::new);
             left_to_right.get_mut(&l).unwrap().insert(r);
-            if !right_to_left.contains_key(&r) {
-                right_to_left.insert(r, BTreeSet::new());
-            }
+            right_to_left.entry(r).or_insert_with(BTreeSet::new);
             right_to_left.get_mut(&r).unwrap().insert(l);
         }
         TypeInferenceEdge { constraint, left, right, left_to_right, right_to_left }
