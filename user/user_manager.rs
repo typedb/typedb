@@ -34,7 +34,7 @@ impl UserManager {
 
     pub fn get(&self, username: &str) -> Result<Option<(User, Credential)>, UserGetError> {
         self.transaction_util.read_transaction(|tx|
-            user_repository::get(tx, username).map_err(|e| UserGetError::QueryExecutionError {})
+            user_repository::get(tx, username).map_err(|_query_error| UserGetError::IllegalUsername {})
         )
     }
 
@@ -57,8 +57,8 @@ impl UserManager {
             });
         match create_result {
             Ok(Ok(())) => { Ok(()) }
-            Ok(Err(_)) => { Err( UserCreateError::QueryExecutionError {}) }
-            Err(_) => { Err(UserCreateError::QueryExecutionError {}) }
+            Ok(Err(_query_error)) => { Err( UserCreateError::IllegalUsername {}) }
+            Err(_) => { Err(UserCreateError::IllegalUsername {}) }
         }
     }
 
@@ -101,8 +101,8 @@ impl UserManager {
             });
         match delete_result {
             Ok(Ok(())) => { Ok(()) }
-            Ok(Err(_)) => { Err( UserDeleteError::QueryExecutionError {}) }
-            Err(_) => { Err(UserDeleteError::QueryExecutionError {}) }
+            Ok(Err(_query_error)) => { Err( UserDeleteError::IllegalUsername {}) }
+            Err(_commit_error) => { Err(UserDeleteError::Unexpected {}) }
         }
     }
 }

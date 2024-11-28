@@ -8,13 +8,13 @@ use error::typedb_error;
 
 typedb_error!(
     pub UserGetError(component = "User create", prefix = "USC") {
-        QueryExecutionError(1, "User get query could not be executed"),
+        IllegalUsername(1, "Supplied username contains illegal character(s)"),
     }
 );
 
 typedb_error!(
     pub UserCreateError(component = "User create", prefix = "USC") {
-        QueryExecutionError(1, "User create query could not be executed"),
+        IllegalUsername(1, "Supplied username contains illegal character(s)"),
         Unexpected(2, "An unexpected error has occurred in the process of creating a new user"),
     }
 );
@@ -28,7 +28,7 @@ typedb_error!(
 typedb_error!(
     pub UserDeleteError(component = "User delete", prefix = "USD") {
         DefaultUserCannotBeDeleted(1, "Default user cannot be deleted"),
-        QueryExecutionError(2, "User delete query could not be executed"),
+        IllegalUsername(2, "Supplied username contains illegal character(s)"),
         Unexpected(3, "An unexpected error has occurred in the process of deleting a user"),
     }
 );
