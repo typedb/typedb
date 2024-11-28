@@ -58,7 +58,7 @@ impl UserManager {
         match create_result {
             Ok(Ok(())) => { Ok(()) }
             Ok(Err(_query_error)) => { Err( UserCreateError::IllegalUsername {}) }
-            Err(_) => { Err(UserCreateError::IllegalUsername {}) }
+            Err(_commit_error) => { Err(UserCreateError::Unexpected {}) }
         }
     }
 
