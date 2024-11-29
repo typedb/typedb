@@ -263,6 +263,7 @@ impl StructIndexEntry<'static> {
     ) -> Result<Vec<u8>, Arc<SnapshotIteratorError>> {
         let mut buf: Vec<u8> = Vec::with_capacity(
             PrefixID::LENGTH +  // Prefix::IndexValueToStruct
+                // TODO: remove Category since we now encode the value category in the StructAttributeID
                 PrefixID::LENGTH +      // ValueTypeCategory of indexed value
                 TypeID::LENGTH +        // TypeID of Attribute being indexed
                 path_to_field.len() +   // Path to the field

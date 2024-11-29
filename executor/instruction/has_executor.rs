@@ -236,7 +236,7 @@ impl HasExecutor {
             BinaryIterateMode::BoundFrom => {
                 let owner = self.has.owner().as_variable().unwrap().as_position().unwrap();
                 debug_assert!(row.len() > owner.as_usize());
-                // TODO: inject value ranges
+                // TODO: inject value ranges, though less important since we assume not too many attributes will be owned
                 let iterator = match row.get(owner) {
                     VariableValue::Thing(Thing::Entity(entity)) => {
                         entity.get_has_types_range_unordered(snapshot, thing_manager, &self.attribute_type_range)
