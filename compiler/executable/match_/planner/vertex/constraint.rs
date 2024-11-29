@@ -96,17 +96,17 @@ impl Costed for ConstraintVertex<'_> {
             graph: &Graph<'_>
     ) -> ElementCost {
         match self {
-            Self::TypeList(inner) => inner.cost(inputs, intersection, graph),
-            Self::Iid(inner) => inner.cost(inputs, intersection, graph),
+            Self::TypeList(inner) => inner.cost(inputs, step_sort_var, step_start_index, graph),
+            Self::Iid(inner) => inner.cost(inputs, step_sort_var, step_start_index, graph),
 
-            Self::Isa(inner) => inner.cost(inputs, intersection, graph),
-            Self::Has(inner) => inner.cost(inputs, intersection, graph),
-            Self::Links(inner) => inner.cost(inputs, intersection, graph),
+            Self::Isa(inner) => inner.cost(inputs, step_sort_var, step_start_index, graph),
+            Self::Has(inner) => inner.cost(inputs, step_sort_var, step_start_index, graph),
+            Self::Links(inner) => inner.cost(inputs, step_sort_var, step_start_index, graph),
 
-            Self::Sub(inner) => inner.cost(inputs, intersection, graph),
-            Self::Owns(inner) => inner.cost(inputs, intersection, graph),
-            Self::Relates(inner) => inner.cost(inputs, intersection, graph),
-            Self::Plays(inner) => inner.cost(inputs, intersection, graph),
+            Self::Sub(inner) => inner.cost(inputs, step_sort_var, step_start_index, graph),
+            Self::Owns(inner) => inner.cost(inputs, step_sort_var, step_start_index, graph),
+            Self::Relates(inner) => inner.cost(inputs, step_sort_var, step_start_index, graph),
+            Self::Plays(inner) => inner.cost(inputs, step_sort_var, step_start_index, graph),
         }
     }
 
@@ -117,6 +117,7 @@ impl Costed for ConstraintVertex<'_> {
     ) -> (CombinedCost, CostMetaData) {
         match self {
             Self::TypeList(inner) => inner.cost_and_metadata(vertex_ordering, graph),
+            Self::Iid(inner) => inner.cost_and_metadata(vertex_ordering, graph),
 
             Self::Isa(inner) => inner.cost_and_metadata(vertex_ordering, graph),
             Self::Has(inner) => inner.cost_and_metadata(vertex_ordering, graph),
@@ -286,12 +287,16 @@ impl<'a> IidPlanner<'a> {
 }
 
 impl Costed for IidPlanner<'_> {
-    fn cost(&self, inputs: &[VertexId], _: Option<VariableVertexId>, _graph: &Graph<'_>) -> ElementCost {
+    fn cost(&self, inputs: &[VertexId], _: Option<VariableVertexId>, _: usize, _graph: &Graph<'_>) -> ElementCost {
         if inputs.contains(&VertexId::Variable(self.var)) {
             ElementCost::in_mem_simple_with_branching(0.001) // TODO calculate properly, assuming the IID is originating from the DB
         } else {
-            ElementCost { per_input: OPEN_ITERATOR_RELATIVE_COST, per_output: 0.0, branching_factor: 1.0 }
+            ElementCost { per_input: OPEN_ITERATOR_RELATIVE_COST, per_output: 0.0, io_ratio: 1.0 }
         }
+    }
+
+    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
+        todo!()
     }
 }
 
