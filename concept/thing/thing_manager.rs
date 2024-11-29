@@ -1187,7 +1187,7 @@ impl ThingManager {
                 ))
                 .filter_map(|(key, write)| (!matches!(write, Write::Delete)).then_some(key))
             {
-                let relation = Relation::new(ObjectVertex::new(Bytes::reference(key.bytes())));
+                let relation = Relation::new(ObjectVertex::new(key.bytes()));
                 if !relation.has_players(snapshot, self) {
                     relation.delete(snapshot, self)?;
                     any_deleted = true;
@@ -1271,7 +1271,7 @@ impl ThingManager {
                 _ => None,
             })
         {
-            let attribute = Attribute::new(AttributeVertex::new(Bytes::reference(key.bytes())));
+            let attribute = Attribute::new(AttributeVertex::new(key.bytes()));
             let is_independent = attribute.type_().is_independent(snapshot, self.type_manager())?;
             if !is_independent && !attribute.has_owners(snapshot, self) {
                 self.unput_attribute(snapshot, attribute)?;
@@ -1387,7 +1387,7 @@ impl ThingManager {
                 Write::Put { .. } => unreachable!("Encountered a Put for an entity"),
             })
         {
-            let object = Object::new(ObjectVertex::new(Bytes::reference(key.bytes()))).into_owned();
+            let object = Object::new(ObjectVertex::new(key.bytes())).into_owned();
             match &object {
                 Object::Entity(_) => {}
                 Object::Relation(relation) => {

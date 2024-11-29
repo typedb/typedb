@@ -135,7 +135,7 @@ impl ThingVertexGenerator {
     }
 
     fn extract_object_id(k: &MVCCKey<'_>, _: &[u8]) -> ObjectVertex {
-        ObjectVertex::new(Bytes::Array(ByteArray::copy(k.key())))
+        ObjectVertex::new(k.key())
     }
 
     pub fn create_entity<Snapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex

@@ -53,7 +53,7 @@ impl ObjectVertex {
         }
 
         // all byte patterns beyond the prefix are valid for object vertices
-        Some(Self::new(Bytes::copy(bytes)))
+        Some(Self::new(bytes))
     }
 
     pub fn is_entity_vertex(storage_key: &StorageKeyArray<BUFFER_KEY_INLINE>) -> bool {
@@ -113,8 +113,8 @@ impl Prefixed<BUFFER_KEY_INLINE> for ObjectVertex {}
 impl Typed<BUFFER_KEY_INLINE> for ObjectVertex {}
 
 impl ThingVertex for ObjectVertex {
-    fn new(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> ObjectVertex {
-        debug_assert_eq!(bytes.length(), Self::LENGTH);
+    fn new(bytes: &[u8]) -> ObjectVertex {
+        debug_assert_eq!(bytes.len(), Self::LENGTH);
         let prefix = Prefix::from_prefix_id(PrefixID { byte: bytes[0] });
         let type_id = TypeID::new(bytes[Self::RANGE_TYPE_ID].try_into().unwrap());
         let object_id = ObjectID::new(bytes[Self::range_object_id()].try_into().unwrap());

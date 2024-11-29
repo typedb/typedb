@@ -94,7 +94,7 @@ pub(crate) fn decode_role_players(bytes: &[u8]) -> impl Iterator<Item = ObjectVe
     let chunk_size = ObjectVertex::LENGTH;
     let chunks_iter = bytes.chunks_exact(chunk_size);
     debug_assert!(chunks_iter.remainder().is_empty());
-    chunks_iter.map(move |chunk| ObjectVertex::new(Bytes::reference(chunk)))
+    chunks_iter.map(move |chunk| ObjectVertex::new(chunk))
 }
 
 pub(crate) fn encode_role_players(players: impl Iterator<Item = ObjectVertex>) -> ByteArray<BUFFER_VALUE_INLINE> {

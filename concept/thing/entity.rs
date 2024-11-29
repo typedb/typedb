@@ -54,7 +54,7 @@ impl Entity {
     pub fn next_possible(&self) -> Entity {
         let mut bytes = self.vertex.to_bytes().into_array();
         bytes.increment().unwrap();
-        Entity::new(ObjectVertex::new(Bytes::Array(bytes)))
+        Entity::new(ObjectVertex::new(&bytes))
     }
 
     pub fn into_owned(self) -> Entity {

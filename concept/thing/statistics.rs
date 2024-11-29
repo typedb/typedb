@@ -197,15 +197,15 @@ impl Statistics {
             let delta =
                 write_to_delta(&key, &write, writes.open_sequence_number, commit_sequence_number, commits, storage)?;
             if ObjectVertex::is_entity_vertex(&key) {
-                let type_ = Entity::new(ObjectVertex::new(Bytes::copy(key.bytes()))).type_();
+                let type_ = Entity::new(ObjectVertex::new(key.bytes())).type_();
                 self.update_entities(type_, delta);
                 total_delta += delta;
             } else if ObjectVertex::is_relation_vertex(&key) {
-                let type_ = Relation::new(ObjectVertex::new(Bytes::copy(key.bytes()))).type_();
+                let type_ = Relation::new(ObjectVertex::new(key.bytes())).type_();
                 self.update_relations(type_, delta);
                 total_delta += delta;
             } else if AttributeVertex::is_attribute_vertex(&key) {
-                let type_ = Attribute::new(AttributeVertex::new(Bytes::copy(key.bytes()))).type_();
+                let type_ = Attribute::new(AttributeVertex::new(key.bytes())).type_();
                 self.update_attributes(type_, delta);
             } else if ThingEdgeHas::is_has(&key) {
                 let edge = ThingEdgeHas::new(Bytes::Reference(key.bytes()));

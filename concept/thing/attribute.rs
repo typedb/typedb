@@ -95,7 +95,7 @@ impl<'a> Attribute {
     pub fn next_possible(&self) -> Attribute {
         let mut bytes = self.vertex.to_bytes().into_array();
         bytes.increment().unwrap();
-        Attribute::new(AttributeVertex::new(Bytes::Array(bytes)))
+        Attribute::new(AttributeVertex::new(&bytes))
     }
 
     pub fn as_reference(&self) -> Attribute {
