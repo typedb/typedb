@@ -17,7 +17,7 @@ use crate::{
         vertex::{Costed, ElementCost, Input},
     },
 };
-use crate::executable::match_::planner::vertex::{CombinedCost, Direction};
+use crate::executable::match_::planner::vertex::{CombinedCost, CostMetaData, Direction};
 
 #[derive(Clone, Debug)]
 pub(crate) enum VariableVertex {
@@ -153,10 +153,10 @@ impl Costed for VariableVertex {
         ElementCost::MEM_SIMPLE_BRANCH_1
     }
 
-    fn cost_and_direction(&self,
-                          vertex_ordering: &[VertexId],
-                          graph: &Graph<'_>
-    ) -> (CombinedCost, Direction) {
+    fn cost_and_metadata(&self,
+                         vertex_ordering: &[VertexId],
+                         graph: &Graph<'_>
+    ) -> (CombinedCost, CostMetaData) {
         let var_set : Vec<Variable> = vertex_ordering
             .iter()
             .map(|id| graph.elements().get(id).unwrap().as_variable().unwrap().variable())
@@ -166,7 +166,7 @@ impl Costed for VariableVertex {
         } else {
             1.0
         };
-        (CombinedCost::in_mem_simple_with_ratio(total_size), Direction::Canonical)
+        (CombinedCost::in_mem_simple_with_ratio(total_size), CostMetaData::None)
     }
 }
 

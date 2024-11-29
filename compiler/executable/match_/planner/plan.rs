@@ -59,7 +59,7 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
-use crate::executable::match_::planner::vertex::CombinedCost;
+use crate::executable::match_::planner::vertex::{CombinedCost, CostMetaData};
 
 pub(crate) fn plan_conjunction<'a>(
     conjunction: &'a Conjunction,
@@ -760,14 +760,14 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 #[derive(Clone, PartialEq)]
 pub(super) struct CompleteCostPlan {
     vertex_ordering: Vec<VertexId>, // TODO: should be a Vec<Vec<VertexId>>
-    pattern_directions: HashMap<PatternVertexId, Direction>,
+    pattern_metadata: HashMap<PatternVertexId, CostMetaData>,
     cumulative_cost: CombinedCost,
 }
 
 #[derive(Clone, PartialEq)]
 pub(super) struct PartialCostPlan {
     vertex_ordering: Vec<VertexId>, // TODO: Could be a linked list? (add all "produced_vars" field)
-    pattern_directions: HashMap<PatternVertexId, Direction>, // TODO: same?
+    pattern_metadata: HashMap<PatternVertexId, CostMetaData>, // TODO: same?
     cumulative_cost: CombinedCost,
     remaining_patterns: HashSet<PatternVertexId>,
     ongoing_step_cost: CombinedCost,
@@ -786,7 +786,7 @@ impl PartialCostPlan {
         }
         Self {
             vertex_ordering: Vec::new(),
-            pattern_directions: HashMap::new(),
+            pattern_metadata: HashMap::new(),
             cumulative_cost: CombinedCost::NOOP,
             remaining_patterns,
             ongoing_step_cost: CombinedCost::NOOP,
@@ -803,7 +803,7 @@ impl PartialCostPlan {
                 .is_valid(&self.vertex_ordering, graph)
             ).map(move |&extending_pattern| {
                 let (extended_step_cost,
-                    extended_pattern_direction,
+                    meta_data,
                     extended_join_var)
                     = self.compute_extension_cost(
                     graph,
@@ -816,7 +816,7 @@ impl PartialCostPlan {
                     completion_cost.cost,
                     StepExtension {
                         pattern_extension: extending_pattern,
-                        pattern_direction: extended_pattern_direction,
+                        pattern_metadata: meta_data,
                         step_cost: extended_step_cost,
                         step_join_var: extended_join_var,
                     }
@@ -829,10 +829,10 @@ impl PartialCostPlan {
         &self,
         graph: &Graph<'_>,
         pattern: PatternVertexId,
-    ) -> (CombinedCost, Direction, Option<VariableVertexId>) {
+    ) -> (CombinedCost, CostMetaData, Option<VariableVertexId>) {
         let mut updated_join_var: Option<VariableVertexId> = None;
         let planner = &graph.elements[&VertexId::Pattern(pattern)];
-        let (updated_cost, updated_pattern_direction) = match planner {
+        let (updated_cost, extension_metadata) = match planner {
             PlannerVertex::Constraint(constraint) => {
                 let mut get_join_cost = false;
 
@@ -852,18 +852,18 @@ impl PartialCostPlan {
                 if get_join_cost {
                     let total_join_size = graph.elements[&VertexId::Variable(updated_join_var.unwrap())]
                         .as_variable().unwrap().expected_output_size(&self.vertex_ordering);
-                    let ( constraint_cost, constraint_direction) = constraint.cost_and_direction(
+                    let ( constraint_cost, meta_data) = constraint.cost_and_metadata(
                         &self.vertex_ordering,
                         graph,
                     );
-                    (self.cumulative_cost.join(constraint_cost, total_join_size), constraint_direction)
+                    (self.cumulative_cost.join(constraint_cost, total_join_size), meta_data)
                 } else {
-                    constraint.cost_and_direction(&self.vertex_ordering, graph)
+                    constraint.cost_and_metadata(&self.vertex_ordering, graph)
                 }
             }
-            planner_vertex=> planner_vertex.cost_and_direction(&self.vertex_ordering, graph),
+            planner_vertex=> planner_vertex.cost_and_metadata(&self.vertex_ordering, graph),
         };
-        (updated_cost, updated_pattern_direction, updated_join_var)
+        (updated_cost, extension_metadata, updated_join_var)
     }
 
     fn heuristic_plan_completion_cost(
@@ -882,8 +882,8 @@ impl PartialCostPlan {
         let mut new_vertex_ordering = self.vertex_ordering.clone();
         new_vertex_ordering.push(VertexId::Pattern(extension.pattern_extension));
 
-        let mut new_pattern_directions = self.pattern_directions.clone();
-        new_pattern_directions.insert(extension.pattern_extension, extension.pattern_direction);
+        let mut new_pattern_metadata = self.pattern_metadata.clone();
+        new_pattern_metadata.insert(extension.pattern_extension, extension.pattern_metadata);
 
         let mut new_remaining_patterns = self.remaining_patterns.clone();
         new_remaining_patterns.remove(&extension.pattern_extension);
@@ -898,7 +898,7 @@ impl PartialCostPlan {
 
         PartialCostPlan {
             vertex_ordering: new_vertex_ordering,
-            pattern_directions: new_pattern_directions,
+            pattern_metadata: new_pattern_metadata,
             remaining_patterns: self.remaining_patterns.clone(),
             cumulative_cost: self.cumulative_cost,
             ongoing_step_cost: extension.step_cost,
@@ -922,8 +922,8 @@ impl PartialCostPlan {
         // Start new step
         new_vertex_ordering.push(VertexId::Pattern(extension.pattern_extension));
 
-        let mut new_pattern_directions = self.pattern_directions.clone();
-        new_pattern_directions.insert(extension.pattern_extension, extension.pattern_direction);
+        let mut new_pattern_metadata = self.pattern_metadata.clone();
+        new_pattern_metadata.insert(extension.pattern_extension, extension.pattern_metadata);
 
         let mut new_remaining_patterns = self.remaining_patterns.clone();
         new_remaining_patterns.remove(&extension.pattern_extension);
@@ -938,7 +938,7 @@ impl PartialCostPlan {
 
         PartialCostPlan {
             vertex_ordering: new_vertex_ordering,
-            pattern_directions: new_pattern_directions,
+            pattern_metadata: new_pattern_metadata,
             remaining_patterns: new_remaining_patterns,
             cumulative_cost: self.cumulative_cost.chain(self.ongoing_step_cost),
             ongoing_step_cost: extension.step_cost,
@@ -958,7 +958,7 @@ impl PartialCostPlan {
 
         CompleteCostPlan {
             vertex_ordering: complete_vertex_ordering,
-            pattern_directions: self.pattern_directions.clone(),
+            pattern_metadata: self.pattern_metadata.clone(),
             cumulative_cost: self.cumulative_cost.chain(self.ongoing_step_cost),
         }
     }
@@ -981,7 +981,7 @@ impl Ord for PartialCostPlan {
 #[derive(Clone, PartialEq)]
 pub(super) struct StepExtension {
     pattern_extension: PatternVertexId,
-    pattern_direction: Direction,
+    pattern_metadata: CostMetaData,
     step_cost: CombinedCost,
     step_join_var: Option<VariableVertexId>,
 }
@@ -1002,7 +1002,6 @@ impl Ord for CostedStepExtension {
         self.0.partial_cmp(&other.0).unwrap_or(Ordering::Greater)
     }
 }
-
 
 #[derive(Clone)]
 pub(super) struct ConjunctionPlan<'a> {

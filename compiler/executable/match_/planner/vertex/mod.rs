@@ -240,11 +240,11 @@ pub(super) trait Costed {
         graph: &Graph<'_>,
     ) -> ElementCost;
 
-    fn cost_and_direction(
+    fn cost_and_metadata(
         &self,
         vertex_ordering: &[VertexId],
         graph: &Graph<'_>,
-    ) -> (CombinedCost, Direction);
+    ) -> (CombinedCost, CostMetaData);
 }
 
 impl Costed for PlannerVertex<'_> {
@@ -269,25 +269,34 @@ impl Costed for PlannerVertex<'_> {
         }
     }
 
-    fn cost_and_direction(
+    fn cost_and_metadata(
         &self,
         vertex_ordering: &[VertexId],
         graph: &Graph<'_>,
-    ) -> (CombinedCost, Direction) {
+    ) -> (CombinedCost, CostMetaData) {
         match self {
-            Self::Variable(vertex) => vertex.cost_and_direction(vertex_ordering, graph),
-            Self::Constraint(vertex) => vertex.cost_and_direction(vertex_ordering, graph),
+            Self::Variable(vertex) => vertex.cost_and_metadata(vertex_ordering, graph),
+            Self::Constraint(vertex) => vertex.cost_and_metadata(vertex_ordering, graph),
 
-            Self::Is(planner) => planner.cost_and_direction(vertex_ordering, graph),
-            Self::Comparison(planner) => planner.cost_and_direction(vertex_ordering, graph),
+            Self::Is(planner) => planner.cost_and_metadata(vertex_ordering, graph),
+            Self::Comparison(planner) => planner.cost_and_metadata(vertex_ordering, graph),
 
-            Self::Expression(planner) => planner.cost_and_direction(vertex_ordering, graph),
-            Self::FunctionCall(planner) => planner.cost_and_direction(vertex_ordering, graph),
+            Self::Expression(planner) => planner.cost_and_metadata(vertex_ordering, graph),
+            Self::FunctionCall(planner) => planner.cost_and_metadata(vertex_ordering, graph),
 
-            Self::Negation(planner) => planner.cost_and_direction(vertex_ordering, graph),
-            Self::Disjunction(planner) => planner.cost_and_direction(vertex_ordering, graph),
+            Self::Negation(planner) => planner.cost_and_metadata(vertex_ordering, graph),
+            Self::Disjunction(planner) => planner.cost_and_metadata(vertex_ordering, graph),
         }
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CostMetaData {
+    Direction(Direction), // Cheapest direction of individual constraints
+    // Pushdown(Pushdown), // Pushdown constraints from function calls if they are very selective
+    // Split(Split), // Split negation into disjunctions if one part expensive and low selectivity
+    // Sort(Binding), // Produce sorted iterator for var with binding (easy e.g. for monotone functions)
+    None,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -357,12 +366,12 @@ impl Costed for ExpressionPlanner<'_> {
         self.cost
     }
 
-    fn cost_and_direction(
+    fn cost_and_metadata(
         &self,
         vertex_ordering: &[VertexId],
         graph: &Graph<'_>,
-    ) -> (CombinedCost, Direction) {
-        (self.combined_cost, Direction::Canonical)
+    ) -> (CombinedCost, CostMetaData) {
+        (self.combined_cost, CostMetaData::None)
     }
 }
 
@@ -401,11 +410,11 @@ impl<'a> Costed for FunctionCallPlanner<'a> {
         self.cost
     }
 
-    fn cost_and_direction(&self,
-                          vertex_ordering: &[VertexId],
-                          graph: &Graph<'_>
-    ) -> (CombinedCost, Direction) {
-        (self.combined_cost, Direction::Canonical)
+    fn cost_and_metadata(&self,
+                         vertex_ordering: &[VertexId],
+                         graph: &Graph<'_>
+    ) -> (CombinedCost, CostMetaData) {
+        (self.combined_cost, CostMetaData::None)
     }
 }
 
@@ -451,11 +460,11 @@ impl Costed for IsPlanner<'_> {
         ElementCost::MEM_SIMPLE_BRANCH_1
     }
 
-    fn cost_and_direction(&self,
-                          vertex_ordering: &[VertexId],
-                          graph: &Graph<'_>
-    ) -> (CombinedCost, Direction) {
-        (CombinedCost::MEM_COMPLEX_BRANCH_1, Direction::Canonical)
+    fn cost_and_metadata(&self,
+                         vertex_ordering: &[VertexId],
+                         graph: &Graph<'_>
+    ) -> (CombinedCost, CostMetaData) {
+        (CombinedCost::MEM_COMPLEX_BRANCH_1, CostMetaData::None)
     }
 }
 
@@ -513,11 +522,11 @@ impl Costed for ComparisonPlanner<'_> {
         ElementCost::MEM_SIMPLE_BRANCH_1
     }
 
-    fn cost_and_direction(&self,
-                          vertex_ordering: &[VertexId],
-                          graph: &Graph<'_>
-    ) -> (CombinedCost, Direction) {
-        (CombinedCost::MEM_COMPLEX_BRANCH_1, Direction::Canonical)
+    fn cost_and_metadata(&self,
+                         vertex_ordering: &[VertexId],
+                         graph: &Graph<'_>
+    ) -> (CombinedCost, CostMetaData) {
+        (CombinedCost::MEM_COMPLEX_BRANCH_1, CostMetaData::None)
     }
 }
 
@@ -556,12 +565,12 @@ impl Costed for NegationPlanner<'_> {
         self.plan.cost()
     }
 
-    fn cost_and_direction(&self,
-                          vertex_ordering: &[VertexId],
-                          graph: &Graph<'_>
-    ) -> (CombinedCost, Direction) {
+    fn cost_and_metadata(&self,
+                         vertex_ordering: &[VertexId],
+                         graph: &Graph<'_>
+    ) -> (CombinedCost, CostMetaData) {
         // (self.plan.combined_cost(), Direction::Canonical)
-        (CombinedCost::NOOP, Direction::Canonical) // Todo: update when switching plans
+        (CombinedCost::NOOP, CostMetaData::None) // Todo: update when switching plans
     }
 }
 
@@ -611,10 +620,10 @@ impl Costed for DisjunctionPlanner<'_> {
             .fold(ElementCost::EMPTY, ElementCost::combine_parallel)
     }
 
-    fn cost_and_direction(&self,
-                          vertex_ordering: &[VertexId],
-                          graph: &Graph<'_>
-    ) -> (CombinedCost, Direction) {
+    fn cost_and_metadata(&self,
+                         vertex_ordering: &[VertexId],
+                         graph: &Graph<'_>
+    ) -> (CombinedCost, CostMetaData) {
         let input_variables = vertex_ordering.iter().filter_map(|id| graph.elements()[id].as_variable()).map(|var| var.variable());
         let (cost) = self.builder()
             .branches()
@@ -623,7 +632,7 @@ impl Costed for DisjunctionPlanner<'_> {
             .fold(CombinedCost::NOOP, |(acc_cost), (cost)| {
                 acc_cost.combine_parallel(cost)
             });
-        (cost, Direction::Canonical)
+        (cost, CostMetaData::None)
     }
 }
 

@@ -28,7 +28,7 @@ use crate::{
         },
     },
 };
-use crate::executable::match_::planner::vertex::CombinedCost;
+use crate::executable::match_::planner::vertex::{CombinedCost, CostMetaData};
 
 #[derive(Clone, Debug)]
 pub(crate) enum ConstraintVertex<'a> {
@@ -110,22 +110,22 @@ impl Costed for ConstraintVertex<'_> {
         }
     }
 
-    fn cost_and_direction(
+    fn cost_and_metadata(
         &self,
         vertex_ordering: &[VertexId],
         graph: &Graph<'_>
-    ) -> (CombinedCost, Direction) {
+    ) -> (CombinedCost, CostMetaData) {
         match self {
-            Self::TypeList(inner) => inner.cost_and_direction(vertex_ordering, graph),
+            Self::TypeList(inner) => inner.cost_and_metadata(vertex_ordering, graph),
 
-            Self::Isa(inner) => inner.cost_and_direction(vertex_ordering, graph),
-            Self::Has(inner) => inner.cost_and_direction(vertex_ordering, graph),
-            Self::Links(inner) => inner.cost_and_direction(vertex_ordering, graph),
+            Self::Isa(inner) => inner.cost_and_metadata(vertex_ordering, graph),
+            Self::Has(inner) => inner.cost_and_metadata(vertex_ordering, graph),
+            Self::Links(inner) => inner.cost_and_metadata(vertex_ordering, graph),
 
-            Self::Sub(inner) => inner.cost_and_direction(vertex_ordering, graph),
-            Self::Owns(inner) => inner.cost_and_direction(vertex_ordering, graph),
-            Self::Relates(inner) => inner.cost_and_direction(vertex_ordering, graph),
-            Self::Plays(inner) => inner.cost_and_direction(vertex_ordering, graph),
+            Self::Sub(inner) => inner.cost_and_metadata(vertex_ordering, graph),
+            Self::Owns(inner) => inner.cost_and_metadata(vertex_ordering, graph),
+            Self::Relates(inner) => inner.cost_and_metadata(vertex_ordering, graph),
+            Self::Plays(inner) => inner.cost_and_metadata(vertex_ordering, graph),
         }
     }
 }
@@ -245,11 +245,11 @@ impl Costed for TypeListPlanner<'_> {
         ElementCost::in_mem_complex_with_branching(self.types.len() as f64)
     }
 
-    fn cost_and_direction(&self,
-                          vertex_ordering: &[VertexId],
-                          graph: &Graph<'_>
-    ) -> (CombinedCost, Direction) {
-        (CombinedCost::in_mem_complex_with_ratio(self.types.len() as f64), Direction::Canonical)
+    fn cost_and_metadata(&self,
+                         vertex_ordering: &[VertexId],
+                         graph: &Graph<'_>
+    ) -> (CombinedCost, CostMetaData) {
+        (CombinedCost::in_mem_complex_with_ratio(self.types.len() as f64), CostMetaData::Direction(Direction::Canonical))
     }
 }
 
