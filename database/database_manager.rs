@@ -71,14 +71,15 @@ impl DatabaseManager {
     }
 
     pub fn delete_database(&self, name: impl AsRef<str>) -> Result<(), DatabaseDeleteError> {
-        if !Self::is_internal_database(name.as_ref()) {
+        let name = name.as_ref();
+        if Self::is_internal_database(name) {
             return Err(DatabaseDeleteError::InternalDatabaseDeletionProhibited {})
         }
 
         // TODO: this is a partial implementation, only single threaded and without cooperative transaction shutdown
         // remove from map to make DB unavailable
         let mut databases = self.databases.write().unwrap();
-        let db = databases.remove(name.as_ref());
+        let db = databases.remove(name);
         match db {
             None => return Err(DatabaseDeleteError::DoesNotExist {}),
             Some(db) => {
@@ -86,7 +87,7 @@ impl DatabaseManager {
                     Ok(unwrapped) => unwrapped.delete()?,
                     Err(arc) => {
                         // failed to delete since it's in use - let's re-insert for now instead of losing the reference
-                        databases.insert(name.as_ref().to_owned(), arc);
+                        databases.insert(name.to_owned(), arc);
                         return Err(DatabaseDeleteError::InUse {});
                     }
                 }
