@@ -183,6 +183,10 @@ impl CombinedCost {
         cost: 0.0,
         io_ratio: 1.0,
     };
+    pub const INFINITY: Self = Self {
+        cost: f64::INFINITY,
+        io_ratio: 0.0,
+    };
     pub const MEM_SIMPLE_BRANCH_1: Self = Self {
         cost: CombinedCost::IN_MEM_COST_SIMPLE,
         io_ratio: 1.0,

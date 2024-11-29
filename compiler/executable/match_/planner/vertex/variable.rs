@@ -52,16 +52,16 @@ impl VariableVertex {
             Self::Thing(inner) => inner.unrestricted_expected_size,
             Self::Value(_) => 1.0,
         };
-        f64::max(unrestricted_size * self.selectivity(inputs), Self::OUTPUT_SIZE_MIN)
+        f64::max(unrestricted_size * self.restriction_based_selectivity(inputs), Self::OUTPUT_SIZE_MIN)
     }
 
-    pub(crate) fn selectivity(&self, inputs: &[VertexId]) -> f64 {
+    pub(crate) fn restriction_based_selectivity(&self, inputs: &[VertexId]) -> f64 {
         // the fraction of possible actual outputs (based on type information) when restricted (for example, by comparators)
         match self {
             VariableVertex::Input(_) => Self::RESTRICTION_NONE,
-            VariableVertex::Type(inner) => inner.selectivity(inputs),
-            VariableVertex::Thing(inner) => inner.selectivity(inputs),
-            VariableVertex::Value(inner) => inner.selectivity(inputs),
+            VariableVertex::Type(inner) => inner.restriction_based_selectivity(inputs),
+            VariableVertex::Thing(inner) => inner.restriction_based_selectivity(inputs),
+            VariableVertex::Value(inner) => inner.restriction_based_selectivity(inputs),
         }
     }
 
@@ -196,6 +196,10 @@ impl Costed for InputPlanner {
     ) -> ElementCost {
         ElementCost::MEM_SIMPLE_BRANCH_1
     }
+
+    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
+        (CombinedCost::MEM_SIMPLE_BRANCH_1, CostMetaData::None)
+    }
 }
 
 #[derive(Clone)]
@@ -230,7 +234,7 @@ impl TypePlanner {
         }
     }
 
-    fn selectivity(&self, _inputs: &[VertexId]) -> f64 {
+    fn restriction_based_selectivity(&self, _inputs: &[VertexId]) -> f64 {
         // TODO: if we incorporate, say, annotations, we could add some selectivity here
         VariableVertex::RESTRICTION_NONE
     }
@@ -244,6 +248,10 @@ impl Costed for TypePlanner {
             _: &Graph<'_>
     ) -> ElementCost {
         ElementCost::in_mem_simple_with_branching(self.unrestricted_expected_size)
+    }
+
+    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
+        (CombinedCost::in_mem_simple_with_ratio(self.unrestricted_expected_size), CostMetaData::None)
     }
 }
 
@@ -344,7 +352,7 @@ impl ThingPlanner {
         }
     }
 
-    fn selectivity(&self, inputs: &[VertexId]) -> f64 {
+    fn restriction_based_selectivity(&self, inputs: &[VertexId]) -> f64 {
         // decrease selectivity whenever we have any matching restrictions
         let bias: f64 = 2.0;
         let selectivity = if self
@@ -418,6 +426,10 @@ impl Costed for ThingPlanner {
         // }
         ElementCost::MEM_SIMPLE_BRANCH_1
     }
+
+    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
+        (CombinedCost::MEM_SIMPLE_BRANCH_1, CostMetaData::None)
+    }
 }
 
 #[derive(Clone)]
@@ -476,7 +488,7 @@ impl ValuePlanner {
         self.restriction_value_above.insert(other);
     }
 
-    fn selectivity(&self, inputs: &[VertexId]) -> f64 {
+    fn restriction_based_selectivity(&self, inputs: &[VertexId]) -> f64 {
         // since there's no "expected size" of a value variable (we will always assign exactly 1 value)
         // we arbitrarily set some thresholds for selectivity of predicates
         let mut selectivity = VariableVertex::RESTRICTION_NONE;
@@ -505,6 +517,10 @@ impl Costed for ValuePlanner {
         } else {
             ElementCost { per_input: f64::INFINITY, per_output: 0.0, io_ratio: f64::INFINITY }
         }
+    }
+
+    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
+        (CombinedCost::MEM_SIMPLE_BRANCH_1, CostMetaData::None) // TODO: don't understand the above implementation
     }
 }
 
