@@ -13,20 +13,20 @@ use std::{fmt::format, sync::Arc};
 use database::{database_manager::DatabaseManager, Database};
 use storage::durability_client::WALClient;
 use typeql;
-
+use database::internal_database_prefix;
 use crate::{repositories::SCHEMA, util::transaction_util::TransactionUtil};
 
-const SYSTEM_DB: &str = "system";
+const SYSTEM_DB: &'static str = concat!(internal_database_prefix!(), "system");
 
 pub fn initialise_system_database(database_manager: &DatabaseManager) -> Arc<Database<WALClient>> {
-    match database_manager.database(SYSTEM_DB) {
+    match database_manager.database_unrestricted(SYSTEM_DB) {
         Some(db) => db,
         None => {
             database_manager
-                .create_database(SYSTEM_DB)
+                .create_database_unrestricted(SYSTEM_DB)
                 .expect(format!("Unable to create the {} database.", SYSTEM_DB).as_str());
             let db = database_manager
-                .database(SYSTEM_DB)
+                .database_unrestricted(SYSTEM_DB)
                 .expect(format!("The {} database could not be found.", SYSTEM_DB).as_str());
             let tx_util = TransactionUtil::new(db.clone());
             tx_util
