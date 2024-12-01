@@ -30,7 +30,7 @@ pub mod user_repository {
 
     pub fn list(tx: TransactionRead<WALClient>) -> Vec<User> {
         let unexpected_error_msg = "An unexpected error occurred when acquiring the list of users";
-        let query = parse_query("match (user: $u, password: $p) isa user-password; $u has name $n;")
+        let query = parse_query("match (user: $u, credentials: $p) isa user-credentials; $u has name $n;")
             .expect(unexpected_error_msg);
         let (tx, result) = execute_read_pipeline(tx, &query.into_pipeline());
         let rows = result.expect(unexpected_error_msg);
@@ -46,7 +46,7 @@ pub mod user_repository {
         let query = parse_query(
             format!(
                 "match
-                (user: $u, password: $p) isa user-password;
+                (user: $u, credentials: $p) isa user-credentials;
                 $u has name '{username}';
                 $p has hash $h;"
             )
@@ -74,21 +74,23 @@ pub mod user_repository {
         function_manager: &FunctionManager,
         query_manager: &QueryManager,
         user: &User,
-        credential: &Credential,
+        credentials: &Credential,
     ) -> (Result<(), SystemDBError>, Arc<WriteSnapshot<WALClient>>) {
         if !is_valid_typeql_value(&user.name) {
             return (Err(SystemDBError::IllegalQueryInput {}), Arc::new(snapshot));
         }
         let unexpected_error_msg = "An unexpected error occurred when attempting to create a new user";
-        let query = match credential {
+        let query = match credentials {
             Credential::PasswordType { password_hash: PasswordHash { value: hash } } => {
-                let uuid = Uuid::new_v4().to_string();
+                let user_uuid = Uuid::new_v4().to_string();
+                let cred_uuid = Uuid::new_v4().to_string();
                 parse_query(
                     format!(
-                        "insert $u isa user, has uuid '{uuid}', has name '{name}';
-                        $p isa password, has hash '{hash}';
-                        (user: $u, password: $p) isa user-password;",
-                        uuid = uuid,
+                        "insert $u isa user, has uuid '{user_uuid}', has name '{name}';
+                        $p isa password, has uuid '{cred_uuid}', has hash '{hash}';
+                        (user: $u, credentials: $p) isa user-credentials;",
+                        user_uuid = user_uuid,
+                        cred_uuid = cred_uuid,
                         name = user.name,
                         hash = hash
                     )
@@ -123,7 +125,7 @@ pub mod user_repository {
         match credential {
             Some(Credential::PasswordType { password_hash: PasswordHash { value: hash } }) => {
                 let query = parse_query(format!(
-                    "match (user: $u, password: $p) isa user-password; $u has name '{username}'; $p has hash $h; delete has $h of $p; insert $p has hash '{password_hash}';"
+                    "match (user: $u, credentials: $p) isa user-credentials; $u has name '{username}'; $p has hash $h; delete has $h of $p; insert $p has hash '{password_hash}';"
                 , username = username, password_hash = hash).as_str()).expect(unexpected_error_msg);
                 let (_, snapshot) = execute_write_pipeline(
                     snapshot,
@@ -153,9 +155,9 @@ pub mod user_repository {
         let unexpected_error_msg = "An unexpected error occurred when attempting to delete a user";
         let query = parse_query(
             format!(
-                "match $up isa user-password, links (user: $u, password: $p);
+                "match $uc isa user-credentials, links (user: $u, credentials: $p);
                 $u isa user, has name '{username}';
-                delete $u; $p; $up;",
+                delete $u; $p; $uc;",
                 username = username
             )
             .as_str(),
