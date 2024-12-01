@@ -29,7 +29,7 @@ pub mod user_repository {
 
     pub fn list(tx: TransactionRead<WALClient>) -> Vec<User> {
         let unexpected_error_msg = "An unexpected error occurred when acquiring the list of users";
-        let query = parse_query("match (user: $u, password: $p) isa user-password; $u has name $n;")
+        let query = parse_query("match (user: $u, credential: $p) isa user-credential; $u has name $n;")
             .expect(unexpected_error_msg);
         let (tx, result) = execute_read_pipeline(tx, &query.into_pipeline());
         let rows = result.expect(unexpected_error_msg);
@@ -45,7 +45,7 @@ pub mod user_repository {
         let query = parse_query(
             format!(
                 "match
-                (user: $u, password: $p) isa user-password;
+                (user: $u, credential: $p) isa user-credential;
                 $u has name '{username}';
                 $p has hash $h;"
             )
@@ -83,7 +83,7 @@ pub mod user_repository {
                     format!(
                         "insert $u isa user, has uuid '{uuid}', has name '{name}';
                         $p isa password, has hash '{hash}';
-                        (user: $u, password: $p) isa user-password;",
+                        (user: $u, credential: $p) isa user-credential;",
                         uuid = uuid,
                         name = user.name,
                         hash = hash
@@ -132,9 +132,9 @@ pub mod user_repository {
         let unexpected_error_msg = "An unexpected error occurred when attempting to delete a user";
         let query = parse_query(
             format!(
-                "match $up isa user-password, links (user: $u, password: $p);
+                "match $uc isa user-credential, links (user: $u, credential: $p);
                 $u isa user, has name '{username}';
-                delete $u; $p; $up;",
+                delete $u; $p; $uc;",
                 username = username
             )
             .as_str(),

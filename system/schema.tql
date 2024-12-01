@@ -10,12 +10,15 @@ define
     entity user,
         owns uuid @card(1),
         owns name @card(1),
-        plays user-password:user;
+        plays user-credential:user;
 
-    entity password,
-        owns hash @card(1),
-        plays user-password:password;
+    entity credential,
+        owns uuid @card(1),
+        plays user-credential:credential;;
 
-    relation user-password,
+    entity password, sub credential,
+        owns hash @card(1);
+
+    relation user-credential,
         relates user @card(1),
-        relates password @card(1);
+        relates credential @card(1..);
