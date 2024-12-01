@@ -12,7 +12,6 @@ use user::user_manager::UserManager;
 use resource::constants::server::{AUTHENTICATOR_USERNAME_FIELD, AUTHENTICATOR_PASSWORD_FIELD};
 
 const ERROR_INVALID_CREDENTIAL: &str = "Invalid credential supplied";
-const ERROR_CREDENTIAL_NOT_SUPPLIED: &str = "Credential not supplied";
 
 #[derive(Debug)]
 pub struct Authenticator {
@@ -49,7 +48,7 @@ impl Authenticator {
                 }
             },
             _ => {
-                Err(Status::unauthenticated(ERROR_CREDENTIAL_NOT_SUPPLIED))
+                Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL))
             }
         }
     }
