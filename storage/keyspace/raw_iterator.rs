@@ -74,19 +74,9 @@ impl LendingIterator for DBIterator {
 
 impl Seekable<[u8]> for DBIterator {
     fn seek(&mut self, key: &[u8]) {
-        if let Some(item) = self.peek() {
-            match compare_key(item, key) {
-                Ordering::Less => {
-                    self.item.take();
-                    self.iterator.seek(key);
-                    self.item = peek_item(&self.iterator); // repopulate `item` to prevent advancing the underlying iterator
-                }
-                Ordering::Equal => (),
-                Ordering::Greater => {
-                    // TODO: seeking backward could be a no-op or an error or illegal state??
-                }
-            }
-        }
+        self.item.take();
+        self.iterator.seek(key);
+        self.item = peek_item(&self.iterator); // repopulate `item` to prevent advancing the underlying iterator
     }
 
     fn compare_key(&self, item: &Self::Item<'_>, key: &[u8]) -> Ordering {
