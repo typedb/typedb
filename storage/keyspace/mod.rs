@@ -6,7 +6,7 @@
 
 pub(crate) use keyspace::{Keyspace, KeyspaceCheckpointError, KeyspaceError, Keyspaces, KEYSPACE_MAXIMUM_COUNT};
 pub use keyspace::{KeyspaceDeleteError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, KeyspaceValidationError};
-use rocksdb::DBRawIterator;
+use rocksdb::{DB, DBRawIterator};
 
 use crate::snapshot::pool::{PoolRecycleGuard, Poolable, SinglePool};
 
@@ -14,23 +14,22 @@ pub mod iterator;
 mod keyspace;
 mod raw_iterator;
 
-impl<'a> Poolable for DBRawIterator<'a> {}
+impl Poolable for DBRawIterator<'static> {}
 
-pub(crate) struct IteratorPool<'snapshot> {
-    pools_per_keyspace: [SinglePool<DBRawIterator<'snapshot>>; KEYSPACE_MAXIMUM_COUNT],
+pub struct IteratorPool {
+    pools_per_keyspace: [SinglePool<DBRawIterator<'static>>; KEYSPACE_MAXIMUM_COUNT],
 }
-impl<'snapshot> IteratorPool<'snapshot> {
-    pub(crate) fn new() -> Self {
+impl IteratorPool {
+    pub fn new() -> Self {
         let pools_per_keyspace = std::array::from_fn(|i| {
             SinglePool::new()
-            // let pool: fn(&Keyspace) -> DBRawIterator<'a> = SinglePool::new(Self::create_iterator);
-            // pool
         });
         Self { pools_per_keyspace }
     }
-    fn get_iterator(&self, keyspace: &'snapshot Keyspace) -> PoolRecycleGuard<'_, DBRawIterator<'snapshot>> {
+    fn get_iterator(&self, keyspace: &Keyspace) -> PoolRecycleGuard<DBRawIterator<'static>> {
         self.pools_per_keyspace[keyspace.id().0 as usize].get_or_create(|| {
-            keyspace.kv_storage.raw_iterator_opt(keyspace.new_read_options()) // It is safe to read later RocksDB snapshots since our MVCC will
+            let kv_storage: &'static DB = unsafe { std::mem::transmute(&keyspace.kv_storage) };
+            kv_storage.raw_iterator_opt(keyspace.new_read_options()) // It is safe to read later RocksDB snapshots since our MVCC will
         })
     }
 }

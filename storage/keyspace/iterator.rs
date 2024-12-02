@@ -14,6 +14,7 @@ use crate::{
     key_range::{KeyRange, RangeEnd, RangeStart},
     keyspace::{raw_iterator, raw_iterator::DBIterator, Keyspace, KeyspaceError},
 };
+use crate::keyspace::IteratorPool;
 
 pub struct KeyspaceRangeIterator {
     iterator: DBIterator,
@@ -31,6 +32,7 @@ enum ContinueCondition {
 impl KeyspaceRangeIterator {
     pub(crate) fn new<'a, const INLINE_BYTES: usize>(
         keyspace: &'a Keyspace,
+        iterpool: &IteratorPool,
         range: &KeyRange<Bytes<'a, INLINE_BYTES>>,
     ) -> Self {
         // TODO: if self.has_prefix_extractor_for(prefix), we can enable bloom filters
@@ -48,7 +50,7 @@ impl KeyspaceRangeIterator {
 
         let read_opts = keyspace.new_read_options();
         let kv_storage: &'static DB = unsafe { std::mem::transmute(&keyspace.kv_storage) };
-        let mut iterator = DBIterator::new_from(kv_storage.raw_iterator_opt(read_opts), start_prefix.as_ref());
+        let mut iterator = DBIterator::new_from(iterpool.get_iterator(keyspace), start_prefix.as_ref());
         if matches!(range.start(), RangeStart::ExcludeFirstWithPrefix(_)) {
             Self::may_skip_start(&mut iterator, range.start().get_value());
         }

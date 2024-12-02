@@ -5,25 +5,33 @@
  */
 
 use std::{ops::Deref, sync::Mutex};
+use std::ops::DerefMut;
+use std::sync::Arc;
 
 pub trait Poolable {}
 
+#[derive(Debug)]
 pub struct SinglePool<T: Poolable> {
-    pool: Mutex<Vec<T>>,
+    pool: Arc<Mutex<Vec<T>>>,
+}
+impl<T: Poolable> Clone for SinglePool<T> {
+    fn clone(&self) -> Self {
+        Self { pool: self.pool.clone() }
+    }
 }
 
 impl<T: Poolable> SinglePool<T> {
     pub fn new() -> Self {
-        Self { pool: Mutex::new(Vec::new()) }
+        Self { pool: Arc::new(Mutex::new(Vec::new())) }
     }
 
-    pub fn get_or_create(&self, default: impl FnOnce() -> T) -> PoolRecycleGuard<'_, T> {
+    pub fn get_or_create(&self, default: impl FnOnce() -> T) -> PoolRecycleGuard<T> {
         let mut unlocked = self.pool.try_lock().unwrap();
         if let Some(item) = unlocked.pop() {
-            PoolRecycleGuard { item: Some(item), pool: self }
+            PoolRecycleGuard { item: Some(item), pool: self.clone() }
         } else {
             drop(unlocked);
-            PoolRecycleGuard { item: Some(default()), pool: self }
+            PoolRecycleGuard { item: Some(default()), pool: self.clone() }
         }
     }
 
@@ -33,12 +41,12 @@ impl<T: Poolable> SinglePool<T> {
     }
 }
 
-pub struct PoolRecycleGuard<'pool, T: Poolable> {
+pub struct PoolRecycleGuard<T: Poolable> {
     item: Option<T>,
-    pool: &'pool SinglePool<T>,
+    pool: SinglePool<T>,
 }
 
-impl<'pool, T: Poolable> Deref for PoolRecycleGuard<'pool, T> {
+impl<T: Poolable> Deref for PoolRecycleGuard<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -46,7 +54,15 @@ impl<'pool, T: Poolable> Deref for PoolRecycleGuard<'pool, T> {
     }
 }
 
-impl<'pool, T: Poolable> Drop for PoolRecycleGuard<'pool, T> {
+
+impl<T: Poolable> DerefMut for PoolRecycleGuard<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.item.as_mut().unwrap()
+    }
+}
+
+
+impl<T: Poolable> Drop for PoolRecycleGuard<T> {
     fn drop(&mut self) {
         debug_assert!(self.item.is_some());
         let item = self.item.take().unwrap();

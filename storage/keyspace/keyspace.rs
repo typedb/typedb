@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use bytes::util::MB;
 use resource::constants::storage::ROCKSDB_CACHE_SIZE_MB;
 
-use super::iterator;
+use super::{iterator, IteratorPool};
 use crate::{key_range::KeyRange, write_batches::WriteBatches};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -235,9 +235,10 @@ impl Keyspace {
     // TODO: we should benchmark using iterator pools, which would require changing prefix/range on read options
     pub(crate) fn iterate_range<const PREFIX_INLINE_SIZE: usize>(
         &self,
+        iterpool: &IteratorPool,
         range: &KeyRange<Bytes<'_, PREFIX_INLINE_SIZE>>,
     ) -> iterator::KeyspaceRangeIterator {
-        iterator::KeyspaceRangeIterator::new(self, range)
+        iterator::KeyspaceRangeIterator::new(self, iterpool, range)
     }
 
     pub(crate) fn write(&self, write_batch: WriteBatch) -> Result<(), KeyspaceError> {

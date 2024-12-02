@@ -8,20 +8,21 @@ use std::{cmp::Ordering, mem::transmute};
 
 use lending_iterator::{LendingIterator, Seekable};
 use rocksdb::DBRawIterator;
+use crate::snapshot::pool::PoolRecycleGuard;
 
 type KeyValue<'a> = Result<(&'a [u8], &'a [u8]), rocksdb::Error>;
 
 /// SAFETY NOTE: `'static` here represents that the `DBIterator` owns the data.
 /// The item's lifetime is in fact invalidated when `iterator` is advanced.
 pub(super) struct DBIterator {
-    iterator: DBRawIterator<'static>,
+    iterator: PoolRecycleGuard<DBRawIterator<'static>>,
     // NOTE: when item is empty, that means that the kv pair the Rocks iterator _is currently pointing to_
     //       has been yielded to the user, and the underlying iterator needs to be advanced before peeking
     item: Option<KeyValue<'static>>,
 }
 
 impl DBIterator {
-    pub(super) fn new_from(mut iterator: DBRawIterator<'static>, start: &[u8]) -> Self {
+    pub(super) fn new_from(mut iterator: PoolRecycleGuard<DBRawIterator<'static>>, start: &[u8]) -> Self {
         iterator.seek(start);
         let item = peek_item(&iterator);
         Self { iterator, item }
