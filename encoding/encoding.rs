@@ -29,31 +29,61 @@ pub mod value;
 
 #[derive(Clone, Copy, Debug)]
 pub enum EncodingKeyspace {
-    Schema,
-    Data, // TODO: partition into sub-keyspaces for write optimisation
+    /// Keyspace optimised for 11 byte prefix seeks:
+    /// mostly Short Attribute Vertices that are Put (12 bytes)
+    /// also existence/IID checks for Object vertices (11 bytes)
+    /// also schema (default KS)
+    /// Ordered Object Properties prefix: [1: prefix][11: object][1: ordered property] (13 bytes)
+    DefaultOptimisedPrefix11,
 
-          // ThingVertex
-          // ThingEdgeShortPrefix
-          // ThingEdgeLongPrefix
-          // Metadata -- statistics
+    /// Keyspace optimised for 15 byte prefix seeks:
+    /// Links & Links Reverse prefix:  [1: prefix][11: from][3: to type]
+    /// Has prefix:  [1: prefix][11: from][3: to type]
+    OptimisedPrefix15,
+
+    /// Keyspace optimised for 16 byte prefix seeks:
+    /// Has Reverse prefix for Short attribute vertices: [1: prefix][12: from][3: to type]
+    OptimisedPrefix16,
+
+    /// Keyspace optimised for 17 byte prefix seeks:
+    /// Long Attribute Vertices existence checks have 21 bytes [1: prefix][2: type][18: ID + category], but could still benefit from a 17 byte bloom prefix
+    /// LinksIndex prefix: [1: prefix][11: player 1][2: rel type id][3: player 2 type]
+    OptimisedPrefix17,
+
+
+    /// Keyspace optimised for 25 byte prefix seeks:
+    /// Has Reverse prefix for Long attribute vertices: [1: prefix][21: from][3: to type]
+    OptimisedPrefix25,
 }
 
 impl KeyspaceSet for EncodingKeyspace {
     fn iter() -> impl Iterator<Item = Self> {
-        [Self::Schema, Self::Data].into_iter()
+        [
+            Self::DefaultOptimisedPrefix11,
+            Self::OptimisedPrefix15,
+            Self::OptimisedPrefix16,
+            Self::OptimisedPrefix17,
+            Self::OptimisedPrefix25,
+        ].into_iter()
     }
 
     fn id(&self) -> KeyspaceId {
         match self {
-            Self::Schema => KeyspaceId(0x0),
-            Self::Data => KeyspaceId(0x1),
+            EncodingKeyspace::DefaultOptimisedPrefix11 => KeyspaceId(0x0),
+            EncodingKeyspace::OptimisedPrefix15 => KeyspaceId(0x1),
+            EncodingKeyspace::OptimisedPrefix16 => KeyspaceId(0x2),
+            EncodingKeyspace::OptimisedPrefix17 => KeyspaceId(0x3),
+            EncodingKeyspace::OptimisedPrefix25 => KeyspaceId(0x4),
         }
     }
 
     fn name(&self) -> &'static str {
         match self {
-            Self::Schema => "schema",
-            Self::Data => "data",
+            EncodingKeyspace::DefaultOptimisedPrefix11 => "OptimisedPrefix11",
+            EncodingKeyspace::OptimisedPrefix15 => "OptimisedPrefix15",
+            EncodingKeyspace::OptimisedPrefix16 => "OptimisedPrefix16",
+            EncodingKeyspace::OptimisedPrefix17 => "OptimisedPrefix17",
+            EncodingKeyspace::OptimisedPrefix25 => "OptimisedPrefix25",
         }
     }
 }

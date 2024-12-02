@@ -338,7 +338,7 @@ impl<'a> StructIndexEntry<'a> {
 }
 
 impl<'a> HashedID<{ StructIndexEntry::STRING_FIELD_HASHID_LENGTH }> for StructIndexEntry<'a> {
-    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::DefaultOptimisedPrefix11;
     const FIXED_WIDTH_KEYS: bool = { Prefix::IndexValueToStruct.fixed_width_keys() };
 }
 

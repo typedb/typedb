@@ -22,7 +22,7 @@ pub struct TypeEdge<'a> {
 }
 
 impl<'a> TypeEdge<'a> {
-    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::DefaultOptimisedPrefix11;
     pub const FIXED_WIDTH_ENCODING: bool = true;
 
     pub(crate) const LENGTH: usize = PrefixID::LENGTH + 2 * TypeVertex::LENGTH;

@@ -28,7 +28,7 @@ pub struct TypeVertexProperty<'a> {
 }
 
 impl<'a> TypeVertexProperty<'a> {
-    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::DefaultOptimisedPrefix11;
     const PREFIX: Prefix = Prefix::PropertyTypeVertex;
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
 
@@ -146,7 +146,7 @@ pub struct TypeEdgeProperty<'a> {
 }
 
 impl<'a> TypeEdgeProperty<'a> {
-    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::DefaultOptimisedPrefix11;
     const PREFIX: Prefix = Prefix::PropertyTypeEdge;
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
 
