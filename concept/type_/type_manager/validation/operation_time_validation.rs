@@ -3259,7 +3259,7 @@ impl OperationTimeValidation {
                                 type_manager,
                                 distinct_constraint,
                                 object,
-                                attribute.as_reference(),
+                                &attribute,
                                 count,
                             )?;
                             break;

@@ -70,9 +70,7 @@ impl<'a> Attribute {
 
     pub fn has_owners(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> bool {
         match self.get_status(snapshot, thing_manager) {
-            ConceptStatus::Put | ConceptStatus::Persisted => {
-                thing_manager.has_owners(snapshot, self.as_reference(), false)
-            }
+            ConceptStatus::Put | ConceptStatus::Persisted => thing_manager.has_owners(snapshot, self, false),
             ConceptStatus::Inserted | ConceptStatus::Deleted => {
                 unreachable!("Attributes are expected to always have a PUT status.")
             }
@@ -80,7 +78,7 @@ impl<'a> Attribute {
     }
 
     pub fn get_owners(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> AttributeOwnerIterator {
-        thing_manager.get_owners(snapshot, self.as_reference())
+        thing_manager.get_owners(snapshot, self)
     }
 
     pub fn get_owners_by_type(
@@ -89,21 +87,13 @@ impl<'a> Attribute {
         thing_manager: &ThingManager,
         owner_type: impl ObjectTypeAPI,
     ) -> AttributeOwnerIterator {
-        thing_manager.get_owners_by_type(snapshot, self.as_reference(), owner_type)
+        thing_manager.get_owners_by_type(snapshot, self, owner_type)
     }
 
     pub fn next_possible(&self) -> Attribute {
         let mut bytes = self.vertex.to_bytes().into_array();
         bytes.increment().unwrap();
         Attribute::new(AttributeVertex::new(&bytes))
-    }
-
-    pub fn as_reference(&self) -> Attribute {
-        Attribute { vertex: self.vertex.as_reference(), value: self.value.clone() }
-    }
-
-    pub fn into_owned(self) -> Attribute {
-        Attribute::new(self.vertex.into_owned())
     }
 }
 
@@ -124,7 +114,7 @@ impl ThingAPI for Attribute {
     }
 
     fn into_owned(self) -> Self::Owned {
-        Attribute::new(self.vertex.into_owned())
+        Attribute::new(self.vertex)
     }
 
     fn iid(&self) -> Bytes<'_, BUFFER_KEY_INLINE> {
@@ -147,9 +137,7 @@ impl ThingAPI for Attribute {
                 | ValueType::DateTimeTZ
                 | ValueType::Duration => snapshot.put(self.vertex().into_storage_key().into_owned_array()),
                 // ValueTypes with expensive writes
-                | ValueType::String | ValueType::Struct(_) => {
-                    thing_manager.lock_existing_attribute(snapshot, self.as_reference())
-                }
+                | ValueType::String | ValueType::Struct(_) => thing_manager.lock_existing_attribute(snapshot, self),
             },
             None => panic!("Attribute instances must have a value type"),
         }
@@ -313,7 +301,7 @@ where
         has_reverse_iterator: &mut SnapshotRangeIterator,
         attribute_vertex: AttributeVertex,
     ) -> Result<bool, Box<ConceptReadError>> {
-        let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute_vertex.as_reference());
+        let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute_vertex);
         has_reverse_iterator.seek(has_reverse_prefix.as_reference());
         match has_reverse_iterator.peek() {
             None => Ok(false),
@@ -336,7 +324,7 @@ where
         has_reverse_iterator: &mut BufferRangeIterator,
         attribute_vertex: AttributeVertex,
     ) -> Result<bool, Box<ConceptReadError>> {
-        let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute_vertex.as_reference());
+        let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute_vertex);
         has_reverse_iterator.seek(has_reverse_prefix.bytes());
         Ok(has_reverse_iterator.peek().is_some())
     }

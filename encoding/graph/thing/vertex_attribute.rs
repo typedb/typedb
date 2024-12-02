@@ -118,14 +118,6 @@ impl AttributeVertex {
     pub(crate) fn len(&self) -> usize {
         PrefixID::LENGTH + TypeID::LENGTH + self.attribute_id.len()
     }
-
-    pub fn as_reference(&self) -> AttributeVertex {
-        *self
-    }
-
-    pub fn into_owned(self) -> AttributeVertex {
-        self
-    }
 }
 
 impl AsBytes<BUFFER_KEY_INLINE> for AttributeVertex {

@@ -256,14 +256,14 @@ impl OperationTimeValidation {
             .get_owned_attribute_type_constraints_distinct(snapshot, thing_manager.type_manager(), attribute_type)
             .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?;
         if let Some(distinct_constraint) = distinct.into_iter().next() {
-            for (attribute, count) in attributes_counts {
+            for (&attribute, &count) in attributes_counts {
                 DataValidation::validate_owns_distinct_constraint(
                     snapshot,
                     thing_manager.type_manager(),
                     &distinct_constraint,
                     owner.into_owned_object(),
-                    attribute.as_reference(),
-                    *count,
+                    attribute,
+                    count,
                 )?;
             }
         }

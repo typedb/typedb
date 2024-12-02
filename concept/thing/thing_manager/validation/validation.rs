@@ -275,7 +275,7 @@ impl DataValidation {
         type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Owns>,
         owner: Object,
-        attribute: Attribute,
+        attribute: &Attribute,
         count: u64,
     ) -> Result<(), Box<DataValidationError>> {
         debug_assert!(constraint.description().unwrap_distinct().is_ok());

@@ -697,7 +697,7 @@ impl<T> Checker<T> {
                             owner(value).as_thing().as_object().has_attribute(
                                 &*snapshot,
                                 &thing_manager,
-                                attribute(value).as_thing().as_attribute().as_reference(),
+                                attribute(value).as_thing().as_attribute(),
                             )
                         }
                     }));

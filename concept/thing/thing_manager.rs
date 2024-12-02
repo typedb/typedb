@@ -548,7 +548,7 @@ impl ThingManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         owner: impl ObjectAPI,
-        attribute: Attribute,
+        attribute: &Attribute,
     ) -> Result<bool, Box<ConceptReadError>> {
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
         let has_exists = snapshot
@@ -758,7 +758,7 @@ impl ThingManager {
         Ok(HasIterator::new(snapshot.iterate_range(range)))
     }
 
-    pub(crate) fn get_owners(&self, snapshot: &impl ReadableSnapshot, attribute: Attribute) -> AttributeOwnerIterator {
+    pub(crate) fn get_owners(&self, snapshot: &impl ReadableSnapshot, attribute: &Attribute) -> AttributeOwnerIterator {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute.vertex());
         AttributeOwnerIterator::new(snapshot.iterate_range(KeyRange::new_within(
             RangeStart::Inclusive(prefix),
@@ -769,7 +769,7 @@ impl ThingManager {
     pub(crate) fn get_owners_by_type(
         &self,
         snapshot: &impl ReadableSnapshot,
-        attribute: Attribute,
+        attribute: &Attribute,
         owner_type: impl ObjectTypeAPI,
     ) -> AttributeOwnerIterator {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute_to_type(attribute.vertex(), owner_type.vertex());
@@ -796,7 +796,7 @@ impl ThingManager {
     pub(crate) fn has_owners(
         &self,
         snapshot: &impl ReadableSnapshot,
-        attribute: Attribute,
+        attribute: &Attribute,
         buffered_only: bool,
     ) -> bool {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute.vertex());
@@ -992,7 +992,7 @@ impl ThingManager {
         snapshot.unmodifiable_lock_add(object.vertex().into_storage_key().into_owned_array())
     }
 
-    pub(crate) fn lock_existing_attribute(&self, snapshot: &mut impl WritableSnapshot, attribute: Attribute) {
+    pub(crate) fn lock_existing_attribute(&self, snapshot: &mut impl WritableSnapshot, attribute: &Attribute) {
         snapshot.unmodifiable_lock_add(attribute.vertex().into_storage_key().into_owned_array())
     }
 
@@ -1274,7 +1274,7 @@ impl ThingManager {
             let attribute = Attribute::new(AttributeVertex::new(key.bytes()));
             let is_independent = attribute.type_().is_independent(snapshot, self.type_manager())?;
             if !is_independent && !attribute.has_owners(snapshot, self) {
-                self.unput_attribute(snapshot, attribute)?;
+                self.unput_attribute(snapshot, &attribute)?;
             }
         }
 
@@ -1676,7 +1676,7 @@ impl ThingManager {
     pub(crate) fn unput_attribute(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        attribute: Attribute,
+        attribute: &Attribute,
     ) -> Result<(), Box<ConceptWriteError>> {
         let value = match attribute
             .get_value(snapshot, self)
@@ -1694,7 +1694,7 @@ impl ThingManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         owner: impl ObjectAPI,
-        attribute: Attribute,
+        attribute: &Attribute,
     ) -> Result<(), Box<ConceptWriteError>> {
         self.set_has_count(snapshot, owner, attribute, 1)
     }
@@ -1703,7 +1703,7 @@ impl ThingManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         owner: impl ObjectAPI,
-        attribute: Attribute,
+        attribute: &Attribute,
         count: u64,
     ) -> Result<(), Box<ConceptWriteError>> {
         let attribute_type = attribute.type_();

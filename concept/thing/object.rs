@@ -163,7 +163,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        attribute: Attribute,
+        attribute: &Attribute,
     ) -> Result<bool, Box<ConceptReadError>> {
         thing_manager.has_attribute(snapshot, self, attribute)
     }
@@ -229,7 +229,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         OperationTimeValidation::validate_owns_is_not_abstract(snapshot, thing_manager, self, attribute.type_())
             .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
 
-        thing_manager.set_has_unordered(snapshot, self, attribute.as_reference())
+        thing_manager.set_has_unordered(snapshot, self, attribute)
     }
 
     fn unset_has_unordered(
@@ -316,7 +316,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         }
         for (attr, count) in new_counts {
             // Don't skip unchanged count to ensure that locks are placed correctly
-            thing_manager.set_has_count(snapshot, self, attr.as_reference(), count)?;
+            thing_manager.set_has_count(snapshot, self, attr, count)?;
         }
 
         // 3. Overwrite owned list

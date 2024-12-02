@@ -329,7 +329,7 @@ impl<'a> ValueEncodable for Value<'a> {
             Value::DateTimeTZ(_) => ValueType::DateTimeTZ,
             Value::Duration(_) => ValueType::Duration,
             Value::String(_) => ValueType::String,
-            Value::Struct(struct_value) => ValueType::Struct(struct_value.definition_key().clone().into_owned()),
+            Value::Struct(struct_value) => ValueType::Struct(struct_value.definition_key().clone()),
         }
     }
 

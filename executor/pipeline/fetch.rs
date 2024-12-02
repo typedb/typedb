@@ -456,7 +456,7 @@ fn execute_attributes_all(
         let label = attribute_type
             .get_label_arc(snapshot.as_ref(), thing_manager.type_manager())
             .map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
-        let leaf = DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Thing(Thing::Attribute(attribute.into_owned()))));
+        let leaf = DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Thing(Thing::Attribute(attribute.clone()))));
 
         let is_bounded_to_one = object
             .type_()
@@ -491,7 +491,7 @@ fn execute_attribute_single(
             .map_err(|source| FetchExecutionError::ConceptRead { source })?;
         if suitable {
             debug_assert!(count <= 1);
-            return Ok(DocumentLeaf::Concept(Concept::Thing(Thing::Attribute(has.attribute().into_owned()))));
+            return Ok(DocumentLeaf::Concept(Concept::Thing(Thing::Attribute(has.attribute().clone()))));
         }
     }
     Ok(DocumentLeaf::Empty)
@@ -516,7 +516,7 @@ fn execute_attributes_list(
         if suitable {
             for _ in 0..count {
                 list.list.push(DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Thing(Thing::Attribute(
-                    has.attribute().into_owned(),
+                    has.attribute().clone(),
                 )))));
             }
         }

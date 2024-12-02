@@ -189,7 +189,7 @@ impl FunctionManager {
             .iter()
             .map(|function| {
                 translate_typeql_function(snapshot, function_index, &function.parsed)
-                    .map(|translated| (function.function_id.clone().into_owned(), translated))
+                    .map(|translated| (function.function_id.clone(), translated))
             })
             .try_collect()
             .map_err(|err| FunctionError::FunctionTranslation { typedb_source: err })

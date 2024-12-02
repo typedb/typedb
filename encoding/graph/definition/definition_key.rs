@@ -57,14 +57,6 @@ impl DefinitionKey {
         )
     }
 
-    pub fn as_reference(&self) -> DefinitionKey {
-        self.clone()
-    }
-
-    pub fn into_owned(self) -> DefinitionKey {
-        self
-    }
-
     pub fn bytes(&self) -> &[u8] {
         &self.bytes
     }
