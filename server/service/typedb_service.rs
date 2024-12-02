@@ -5,13 +5,14 @@
  */
 
 use std::{net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
-
+use std::fmt::format;
 use database::database_manager::DatabaseManager;
 use error::typedb_error;
 use system::concepts::{Credential, PasswordHash, User};
 use tokio::sync::mpsc::channel;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
+use tonic::metadata::MetadataMap;
 use tracing::{event, Level};
 use typedb_protocol::{
     self,
@@ -20,7 +21,8 @@ use typedb_protocol::{
 };
 use user::{errors::UserCreateError, user_manager::UserManager};
 use uuid::Uuid;
-
+use resource::constants::server::{AUTHENTICATOR_USERNAME_FIELD, DEFAULT_USER_NAME};
+use user::permission_manager::PermissionManager;
 use crate::service::{
     error::{IntoGRPCStatus, IntoProtocolErrorMessage, ProtocolError},
     request_parser::{users_create_req, users_update_req},
@@ -166,7 +168,11 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::user_manager::get::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::get::Res>, Status> {
+        let accessor = extract_username_field(request.metadata());
         let get_req = request.into_inner();
+        if !PermissionManager::exec_user_get_permitted(accessor.as_str(), get_req.name.as_str()) {
+            return Err(ServiceError::OperationNotPermitted {}.into_error_message().into_status());
+        }
         match self.user_manager.get(get_req.name.as_str()) {
             Ok(get_result) => {
                 match get_result {
@@ -182,8 +188,12 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
 
     async fn users_all(
         &self,
-        _: Request<typedb_protocol::user_manager::all::Req>,
+        request: Request<typedb_protocol::user_manager::all::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::all::Res>, Status> {
+        let accessor = extract_username_field(request.metadata());
+        if !PermissionManager::exec_user_all_permitted(accessor.as_str()) {
+            return Err(ServiceError::OperationNotPermitted {}.into_error_message().into_status());
+        }
         let users = self.user_manager.all();
         Ok(Response::new(users_all_res(users)))
     }
@@ -202,6 +212,10 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::user_manager::create::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::create::Res>, Status> {
+        let accessor = extract_username_field(request.metadata());
+        if !PermissionManager::exec_user_create_permitted(accessor.as_str()) {
+            return Err(ServiceError::OperationNotPermitted {}.into_error_message().into_status());
+        }
         users_create_req(request)
             .and_then(|(usr, cred)| self.user_manager.create(&usr, &cred))
             .map(|_| Response::new(user_create_res()))
@@ -222,6 +236,10 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::user::delete::Req>,
     ) -> Result<Response<typedb_protocol::user::delete::Res>, Status> {
+        let accessor = extract_username_field(request.metadata());
+        if !PermissionManager::exec_user_delete_allowed(accessor.as_str()) {
+            return Err(ServiceError::OperationNotPermitted {}.into_error_message().into_status());
+        }
         let delete_req = request.into_inner();
         let result = self.user_manager.delete(delete_req.name.as_str());
         match result {
@@ -245,10 +263,18 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
     }
 }
 
+fn extract_username_field(metadata: &MetadataMap) -> String {
+    metadata
+        .get(AUTHENTICATOR_USERNAME_FIELD).map(|u| u.to_str())
+        .expect(format!("Unable to find expected field in the metadata: {}", AUTHENTICATOR_USERNAME_FIELD).as_str())
+        .expect(format!("Unable to parse value from the {} field", AUTHENTICATOR_USERNAME_FIELD).as_str()).to_string()
+}
+
 typedb_error!(
     ServiceError(component = "Server", prefix = "SRV") {
         Unimplemented(1, "Not implemented: {description}", description: String),
-        DatabaseDoesNotExist(2, "Database '{name}' does not exist.", name: String),
-        UserDoesNotExist(3, "User '{name}' does not exist.", name: String),
+        OperationNotPermitted(2, "The user is not permitted to execute the operation"),
+        DatabaseDoesNotExist(3, "Database '{name}' does not exist.", name: String),
+        UserDoesNotExist(4, "User '{name}' does not exist.", name: String),
     }
 );
