@@ -50,7 +50,7 @@ impl DurationBytes {
 }
 
 impl InlineEncodableAttributeID for DurationBytes {
-    const ENCODED_LENGTH: usize = ValueEncodingLength::Long.length();
+    const ENCODED_LENGTH_ID: ValueEncodingLength = ValueEncodingLength::Long;
     const VALUE_TYPE: ValueType = ValueType::Duration;
 
     fn bytes_ref(&self) -> &[u8] {

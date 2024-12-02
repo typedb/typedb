@@ -22,7 +22,6 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
     const HASH_LENGTH: usize = DISAMBIGUATED_HASH_LENGTH - 1;
     const HASH_DISAMBIGUATOR_BYTE_INDEX: usize = Self::HASH_LENGTH;
     const HASH_DISAMBIGUATOR_BYTE_IS_HASH_FLAG: u8 = 0b1000_0000;
-    const KEYSPACE: EncodingKeyspace;
     const FIXED_WIDTH_KEYS: bool;
 
     // write the hash of the value to the start of the byte slice, and return the number of bytes written
@@ -36,6 +35,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
     fn find_existing_or_next_disambiguated_hash<Snapshot>(
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
+        keyspace: EncodingKeyspace,
         key_without_hash: &[u8],
         value_bytes: &[u8],
     ) -> Result<Either<[u8; DISAMBIGUATED_HASH_LENGTH], [u8; DISAMBIGUATED_HASH_LENGTH]>, Arc<SnapshotIteratorError>>
@@ -51,7 +51,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
             value_bytes,
         );
         let hash_bytes = &key_without_tail_byte[key_without_hash.len()..key_without_hash.len() + hash_bytes];
-        match Self::disambiguate(snapshot, key_without_tail_byte.as_ref(), value_bytes)? {
+        match Self::disambiguate(snapshot, keyspace, key_without_tail_byte.as_ref(), value_bytes)? {
             Either::First(tail) => Ok(Either::First(Self::concat_hash_and_tail(hash_bytes, tail))),
             Either::Second(tail) => Ok(Either::Second(Self::concat_hash_and_tail(hash_bytes, tail))),
         }
@@ -67,6 +67,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
     /// return Either<Existing tail, newly allocated tail>
     fn disambiguate<Snapshot>(
         snapshot: &Snapshot,
+        keyspace: EncodingKeyspace,
         key_without_tail_byte: ByteReference,
         value_bytes: &[u8],
     ) -> Result<Either<u8, u8>, Arc<SnapshotIteratorError>>
@@ -75,7 +76,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
     {
         let tail_byte_index = key_without_tail_byte.length();
         let mut iter = snapshot.iterate_range(&KeyRange::new_within(
-            StorageKey::<BUFFER_KEY_INLINE>::new_ref(Self::KEYSPACE, key_without_tail_byte),
+            StorageKey::<BUFFER_KEY_INLINE>::new_ref(keyspace, key_without_tail_byte),
             Self::FIXED_WIDTH_KEYS,
         ));
         let mut next = iter.next().transpose()?;

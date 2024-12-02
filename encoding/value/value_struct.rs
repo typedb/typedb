@@ -266,7 +266,7 @@ impl StructIndexEntry<'static> {
                 // TODO: remove Category since we now encode the value category in the StructAttributeID
                 PrefixID::LENGTH +      // ValueTypeCategory of indexed value
                 TypeID::LENGTH +        // TypeID of Attribute being indexed
-                path_to_field.len() +   // Path to the field
+                2*path_to_field.len() + // Path to the field
                 ValueEncodingLength::Long.length() + // Value for the field.
                 StructAttributeID::LENGTH, // ID of the attribute being indexed
         );
@@ -297,6 +297,7 @@ impl StructIndexEntry<'static> {
 }
 
 impl<'a> StructIndexEntry<'a> {
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::DefaultOptimisedPrefix11;
     const STRING_FIELD_LENGTH: usize = 17;
     const STRING_FIELD_HASHID_LENGTH: usize = 9;
     const STRING_FIELD_HASHED_PREFIX_LENGTH: usize = Self::STRING_FIELD_LENGTH - Self::STRING_FIELD_HASHID_LENGTH;
@@ -321,6 +322,7 @@ impl<'a> StructIndexEntry<'a> {
                 match Self::find_existing_or_next_disambiguated_hash(
                     snapshot,
                     hasher,
+                    Self::KEYSPACE,
                     &prefix_key,
                     string_bytes.bytes().bytes(),
                 )? {
@@ -338,7 +340,6 @@ impl<'a> StructIndexEntry<'a> {
 }
 
 impl<'a> HashedID<{ StructIndexEntry::STRING_FIELD_HASHID_LENGTH }> for StructIndexEntry<'a> {
-    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::DefaultOptimisedPrefix11;
     const FIXED_WIDTH_KEYS: bool = { Prefix::IndexValueToStruct.fixed_width_keys() };
 }
 

@@ -49,7 +49,7 @@ impl DoubleBytes {
 }
 
 impl InlineEncodableAttributeID for DoubleBytes {
-    const ENCODED_LENGTH: usize = ValueEncodingLength::Short.length();
+    const ENCODED_LENGTH_ID: ValueEncodingLength = ValueEncodingLength::Short;
     const VALUE_TYPE: ValueType = ValueType::Double;
 
     fn bytes_ref(&self) -> &[u8] {
