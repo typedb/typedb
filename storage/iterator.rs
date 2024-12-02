@@ -16,6 +16,7 @@ use crate::{
     keyspace::{iterator::KeyspaceRangeIterator, KeyspaceError, KeyspaceId},
     sequence_number::SequenceNumber,
 };
+use crate::keyspace::IteratorPool;
 
 pub(crate) struct MVCCRangeIterator {
     storage_name: Arc<String>,
@@ -34,11 +35,12 @@ impl MVCCRangeIterator {
     //
     pub(crate) fn new<D, const PS: usize>(
         storage: &MVCCStorage<D>,
+        iterpool: &IteratorPool,
         range: KeyRange<StorageKey<'_, PS>>,
         open_sequence_number: SequenceNumber,
     ) -> Self {
         let keyspace = storage.get_keyspace(range.start().get_value().keyspace_id());
-        let iterator = keyspace.iterate_range(range.map(|key| key.into_bytes(), |fixed_width| fixed_width));
+        let iterator = keyspace.iterate_range(iterpool, range.map(|key| key.into_bytes(), |fixed_width| fixed_width));
         MVCCRangeIterator {
             storage_name: storage.name(),
             keyspace_id: keyspace.id(),

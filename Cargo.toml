@@ -9,6 +9,10 @@ features = {}
 	edition = "2021"
 	version = "0.0.0"
 
+[profile.profiling]
+       inherits = "release"
+       debug = true
+
 [dev-dependencies]
 
 	[dev-dependencies.steps]

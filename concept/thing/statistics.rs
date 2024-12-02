@@ -34,6 +34,7 @@ use storage::{
     snapshot::{buffer::OperationsBuffer, write::Write},
     MVCCStorage,
 };
+use storage::keyspace::IteratorPool;
 
 use crate::{
     thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation, ThingAPI},
@@ -439,7 +440,7 @@ fn write_to_delta<D>(
                 }));
 
             if check_storage {
-                if storage.get::<0>(write_key, commit_sequence_number.previous())?.is_some() {
+                if storage.get::<0>(&IteratorPool::new(), write_key, commit_sequence_number.previous())?.is_some() {
                     // exists in storage before PUT is committed
                     Ok(0)
                 } else {

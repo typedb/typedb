@@ -109,8 +109,8 @@ impl WAL {
         DurabilitySequenceNumber::from(self.next_sequence_number.load(Ordering::Relaxed) - 1)
     }
 
-    pub fn request_sync(&self) -> mpsc::Receiver<()> {
-        self.fsync_thread.subscribe_to_next_sync()
+    pub fn request_sync(&self, ack_waits_for_sync: bool) -> mpsc::Receiver<()> {
+        self.fsync_thread.schedule_next_sync_may_subscribe(ack_waits_for_sync)
     }
 }
 
@@ -517,7 +517,7 @@ impl<'a> Iterator for FileRecordIterator<'a> {
 pub struct FsyncThreadContext {
     files: Arc<RwLock<Files>>,
     shutting_down: AtomicBool,
-    signalling: [Mutex<Vec<mpsc::Sender<()>>>; 2],
+    signalling: [Mutex<Vec<Option<mpsc::Sender<()>>>>; 2],
     current_signal: AtomicU8,
 }
 
@@ -538,7 +538,7 @@ impl FsyncThread {
         Self { handle: None, context: Arc::new(context) }
     }
 
-    fn subscribe_to_next_sync(&self) -> mpsc::Receiver<()> {
+    fn schedule_next_sync_may_subscribe(&self, subscribe: bool) -> mpsc::Receiver<()> {
         let (sender, recv) = mpsc::channel();
         let mut vec = self
             .context
@@ -547,7 +547,12 @@ impl FsyncThread {
             .unwrap()
             .lock()
             .unwrap();
-        vec.push(sender);
+        if subscribe {
+            vec.push(Some(sender));
+        } else {
+            vec.push(None);
+            sender.send(()).unwrap_or_log();
+        }
         recv
     }
 
@@ -580,9 +585,10 @@ impl FsyncThread {
         let mut vec = vec_lock.unwrap();
         if !vec.is_empty() {
             context.files.write().unwrap().sync_all();
-            while let Some(sender) = vec.pop() {
-                sender.send(()).unwrap_or_log(); // TODO
-                drop(sender)
+            while let Some(sender_opt) = vec.pop() {
+                if let Some(sender) = sender_opt {
+                    sender.send(()).unwrap_or_log(); // TODO
+                }
             }
         }
     }

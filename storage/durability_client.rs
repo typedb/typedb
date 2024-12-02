@@ -141,7 +141,8 @@ impl WALClient {
 
 impl DurabilityClient for WALClient {
     fn request_sync(&self) -> mpsc::Receiver<()> {
-        self.wal.request_sync()
+        let WAIT_FOR_SYNC = true;
+        self.wal.request_sync(WAIT_FOR_SYNC)
     }
 
     fn register_record_type<Record: DurabilityRecord>(&mut self) {
