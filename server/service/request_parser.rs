@@ -28,5 +28,10 @@ pub fn users_create_req(
 pub fn users_update_req(
     request: Request<typedb_protocol::user::update::Req>,
 ) -> Result<(String, Option<User>, Option<Credential>), UserUpdateError> {
-    todo!()
+    let message = request.into_inner();
+    match message.user {
+        Some(typedb_protocol::User { name: username, password }) =>
+            Ok((message.name, Some(User::new(username)), password.map(|p| Credential::new_password(p.as_str())))),
+        None => Err(UserUpdateError::UserDetailNotProvided {})
+    }
 }

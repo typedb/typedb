@@ -37,6 +37,7 @@ impl UserManager {
             user_repository::get(tx, username).map_err(|query_error| {
                 match query_error {
                     SystemDBError::IllegalQueryInput { .. } => {UserGetError::IllegalUsername {}}
+                    SystemDBError::EmptyUpdate { .. } => { UserGetError::Unexpected {}}
                 }
             })
         )
@@ -55,9 +56,8 @@ impl UserManager {
             }
             Err(user_get_err) => {
                 return match user_get_err {
-                    UserGetError::IllegalUsername { .. } => {
-                        Err(UserCreateError::IllegalUsername {})
-                    }
+                    UserGetError::IllegalUsername { .. } => Err(UserCreateError::IllegalUsername {}),
+                    UserGetError::Unexpected { .. } => Err(UserCreateError::Unexpected {})
                 }
             }
         }
@@ -86,20 +86,24 @@ impl UserManager {
         user: &Option<User>,
         credential: &Option<Credential>,
     ) -> Result<(), UserUpdateError> {
-        let commit =
+        let update_result =
             self.transaction_util.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, db, tx_opts| {
-                let snapshot = user_repository::update(
+                user_repository::update(
                     Arc::into_inner(snapshot).unwrap(),
                     &type_mgr,
                     thing_mgr.clone(),
                     &fn_mgr,
+                    &query_mgr,
                     username,
                     user,
                     credential,
-                );
-                ((), snapshot)
+                )
             });
-        commit.map_err(|e| UserUpdateError::Unexpected {})
+        match update_result {
+            Ok(Ok(())) => { Ok(()) }
+            Ok(Err(_query_error)) => { Err( UserUpdateError::IllegalUsername {}) }
+            Err(_commit_error) => { Err(UserUpdateError::Unexpected {}) }
+        }
     }
 
     pub fn delete(&self, username: &str) -> Result<(), UserDeleteError> {
@@ -114,9 +118,8 @@ impl UserManager {
             }
             Err(user_get_err) => {
                 return match user_get_err {
-                    UserGetError::IllegalUsername { .. } => {
-                        Err(UserDeleteError::IllegalUsername {})
-                    }
+                    UserGetError::IllegalUsername { .. } => Err(UserDeleteError::IllegalUsername {}),
+                    UserGetError::Unexpected { .. } => Err(UserDeleteError::Unexpected {})
                 }
             }
         }

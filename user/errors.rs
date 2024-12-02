@@ -9,6 +9,7 @@ use error::typedb_error;
 typedb_error!(
     pub UserGetError(component = "User create", prefix = "USC") {
         IllegalUsername(1, "Invalid credential supplied"),
+        Unexpected(4, "An unexpected error has occurred in the process of getting a user"),
     }
 );
 
@@ -23,7 +24,9 @@ typedb_error!(
 
 typedb_error!(
     pub UserUpdateError(component = "User update", prefix = "USU") {
-        Unexpected(1, "An unexpected error has occurred in the process of updating a user"),
+        UserDetailNotProvided(1, "User detail not provided"),
+        IllegalUsername(2, "Invalid credential supplied"),
+        Unexpected(3, "An unexpected error has occurred in the process of updating a user"),
     }
 );
 

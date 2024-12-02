@@ -8,6 +8,7 @@ pub const SCHEMA: &str = include_str!("schema.tql");
 
 pub mod user_repository {
     use std::{collections::HashMap, sync::Arc};
+    use std::fmt::format;
     use typeql::common::identifier::is_valid_identifier;
     use answer::variable_value::VariableValue;
     use concept::{thing::thing_manager, type_::type_manager::TypeManager};
@@ -103,19 +104,23 @@ pub mod user_repository {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
+        query_manager: &QueryManager,
         username: &str,
         user: &Option<User>,
         credential: &Option<Credential>,
-    ) -> Arc<WriteSnapshot<WALClient>> {
-        if user.is_some() {
-            todo!("update user detail")
+    ) -> (Result<(), SystemDBError>, Arc<WriteSnapshot<WALClient>>) {
+        let unexpected_error_msg = "An unexpected error occurred when attempting to update a user";
+        match credential {
+            Some(Credential::PasswordType { password_hash: PasswordHash { value: hash } }) => {
+                let query = parse_query(format!(
+                    "match (user: $u, password: $p) isa user-password; $u has name '{username}'; $p has hash $h; delete has $h of $p; insert $p has hash '{password_hash}';"
+                , username = username, password_hash = hash).as_str()).expect(unexpected_error_msg);
+                let (_, snapshot) =
+                    execute_write_pipeline(snapshot, type_manager, thing_manager, function_manager, query_manager, &query.into_pipeline());
+                (Ok(()), snapshot)
+            }
+            None => (Err(SystemDBError::EmptyUpdate {}), Arc::new(snapshot))
         }
-
-        if credential.is_some() {
-            todo!("update credential detail")
-        }
-
-        todo!()
     }
 
     pub fn delete(
@@ -151,7 +156,8 @@ pub mod user_repository {
 
     typedb_error!(
         pub SystemDBError(component = "System database", prefix = "SDB") {
-            IllegalQueryInput(1, "The specified input contains one or more illegal character(s)"),
+            EmptyUpdate(1, "There is nothing to update"),
+            IllegalQueryInput(2, "The specified input contains one or more illegal character(s)"),
         }
     );
 }

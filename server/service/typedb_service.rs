@@ -22,6 +22,7 @@ use typedb_protocol::{
 use user::{errors::UserCreateError, user_manager::UserManager};
 use uuid::Uuid;
 use resource::constants::server::{AUTHENTICATOR_USERNAME_FIELD, DEFAULT_USER_NAME};
+use user::errors::UserUpdateError;
 use user::permission_manager::PermissionManager;
 use crate::service::{
     error::{IntoGRPCStatus, IntoProtocolErrorMessage, ProtocolError},
@@ -226,10 +227,19 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::user::update::Req>,
     ) -> Result<Response<typedb_protocol::user::update::Res>, Status> {
-        users_update_req(request)
-            .and_then(|(username, user, cred)| self.user_manager.update(username.as_str(), &user, &cred))
-            .map(|_| Response::new(user_update_res()))
-            .map_err(|err| err.into_error_message().into_status())
+        let accessor = extract_username_field(request.metadata());
+        match users_update_req(request) {
+            Ok((username, user_update, credential_update)) => {
+                if !PermissionManager::exec_user_update_permitted(accessor.as_str(), username.as_str()) {
+                    return Err(ServiceError::OperationNotPermitted {}.into_error_message().into_status());
+                }
+                match self.user_manager.update(username.as_str(), &user_update, &credential_update) {
+                    Ok(()) => Ok(Response::new(user_update_res())),
+                    Err(user_update_err) => Err(user_update_err.into_error_message().into_status())
+                }
+            }
+            Err(user_update_err) => Err(user_update_err.into_error_message().into_status())
+        }
     }
 
     async fn users_delete(
@@ -237,10 +247,10 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         request: Request<typedb_protocol::user::delete::Req>,
     ) -> Result<Response<typedb_protocol::user::delete::Res>, Status> {
         let accessor = extract_username_field(request.metadata());
-        if !PermissionManager::exec_user_delete_allowed(accessor.as_str()) {
+        let delete_req = request.into_inner();
+        if !PermissionManager::exec_user_delete_allowed(accessor.as_str(), delete_req.name.as_str()) {
             return Err(ServiceError::OperationNotPermitted {}.into_error_message().into_status());
         }
-        let delete_req = request.into_inner();
         let result = self.user_manager.delete(delete_req.name.as_str());
         match result {
             Ok(_) => Ok(Response::new(users_delete_res())),

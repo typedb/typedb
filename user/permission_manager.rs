@@ -19,7 +19,7 @@ impl PermissionManager {
         accessor == DEFAULT_USER_NAME || accessor == subject
     }
 
-    pub fn exec_user_delete_allowed(accessor: &str) -> bool {
-        accessor == DEFAULT_USER_NAME
+    pub fn exec_user_delete_allowed(accessor: &str, subject: &str) -> bool {
+        accessor == DEFAULT_USER_NAME || accessor == subject
     }
 }
