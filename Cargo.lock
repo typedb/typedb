@@ -876,6 +876,7 @@ dependencies = [
  "primitive",
  "rand 0.8.5",
  "resource",
+ "rocksdb",
  "seahash",
  "serde",
  "storage",

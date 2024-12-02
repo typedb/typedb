@@ -7,8 +7,10 @@
 #![deny(unused_must_use)]
 
 use std::ops::Range;
+use rocksdb::{BlockBasedIndexType, BlockBasedOptions, DBCompressionType};
 
 use bytes::{byte_reference::ByteReference, Bytes};
+use bytes::util::MB;
 use storage::{
     key_value::StorageKey,
     keyspace::{KeyspaceId, KeyspaceSet},
@@ -85,6 +87,52 @@ impl KeyspaceSet for EncodingKeyspace {
             EncodingKeyspace::OptimisedPrefix17 => "OptimisedPrefix17",
             EncodingKeyspace::OptimisedPrefix25 => "OptimisedPrefix25",
         }
+    }
+
+    fn rocks_configuration(&self, cache: &rocksdb::Cache) -> rocksdb::Options {
+        let mut options = rocksdb::Options::default();
+        options.create_if_missing(true);
+        options.set_max_background_jobs(10);
+        options.set_target_file_size_base(64  * MB);
+        options.set_write_buffer_size(64 * MB as usize);
+        options.set_max_write_buffer_size_to_maintain(0);
+        options.set_max_write_buffer_number(2);
+        options.set_memtable_whole_key_filtering(false);
+        options.set_compression_per_level(&[
+            DBCompressionType::None,
+            DBCompressionType::None,
+            DBCompressionType::Lz4,
+            DBCompressionType::Lz4,
+            DBCompressionType::Lz4,
+            DBCompressionType::Lz4,
+            DBCompressionType::Lz4,
+        ]);
+
+        let mut block_options = BlockBasedOptions::default();
+        block_options.set_block_cache(&cache);
+        block_options.set_block_restart_interval(16);
+        block_options.set_format_version(5);
+        block_options.set_block_size(16 * 1024);
+        block_options.set_whole_key_filtering(false);
+
+        block_options.set_cache_index_and_filter_blocks(true);
+        block_options.set_pin_l0_filter_and_index_blocks_in_cache(true);
+        block_options.set_pin_top_level_index_and_filter(true);
+        block_options.set_index_type(BlockBasedIndexType::TwoLevelIndexSearch);
+        block_options.set_partition_filters(true);
+
+        options.set_block_based_table_factory(&block_options);
+
+        // TODO: configure bloom filters
+        // match self {
+        //     EncodingKeyspace::DefaultOptimisedPrefix11 => {
+        //     }
+        //     EncodingKeyspace::OptimisedPrefix15 => {}
+        //     EncodingKeyspace::OptimisedPrefix16 => {}
+        //     EncodingKeyspace::OptimisedPrefix17 => {}
+        //     EncodingKeyspace::OptimisedPrefix25 => {}
+        // }
+        options
     }
 }
 

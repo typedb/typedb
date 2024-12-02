@@ -16,3 +16,8 @@
 
 [profile.ci-check.package.rocksdb]
     opt-level = 0
+
+[profile.release]
+    codegen-units = 1
+    lto = "fat"
+    panic = "abort"
