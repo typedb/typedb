@@ -7,7 +7,8 @@
 #![deny(unused_must_use)]
 
 use std::ops::Range;
-use rocksdb::{BlockBasedIndexType, BlockBasedOptions, DBCompressionType};
+use std::thread;
+use rocksdb::{BlockBasedIndexType, BlockBasedOptions, DBCompressionType, SliceTransform};
 
 use bytes::{byte_reference::ByteReference, Bytes};
 use bytes::util::MB;
@@ -91,6 +92,10 @@ impl KeyspaceSet for EncodingKeyspace {
 
     fn rocks_configuration(&self, cache: &rocksdb::Cache) -> rocksdb::Options {
         let mut options = rocksdb::Options::default();
+        
+        options.enable_statistics();
+        options.set_stats_dump_period_sec(100);
+        
         options.create_if_missing(true);
         options.set_max_background_jobs(10);
         options.set_target_file_size_base(64  * MB);
@@ -120,18 +125,28 @@ impl KeyspaceSet for EncodingKeyspace {
         block_options.set_pin_top_level_index_and_filter(true);
         block_options.set_index_type(BlockBasedIndexType::TwoLevelIndexSearch);
         block_options.set_partition_filters(true);
+        block_options.set_optimize_filters_for_memory(true);
+        block_options.set_ribbon_filter(10.0);
+        
+        match self {
+            EncodingKeyspace::DefaultOptimisedPrefix11 => {
+                options.set_prefix_extractor(SliceTransform::create_fixed_prefix(11))
+            }
+            EncodingKeyspace::OptimisedPrefix15 => {
+                options.set_prefix_extractor(SliceTransform::create_fixed_prefix(15))
+            }
+            EncodingKeyspace::OptimisedPrefix16 => {
+                options.set_prefix_extractor(SliceTransform::create_fixed_prefix(16))
+            }
+            EncodingKeyspace::OptimisedPrefix17 => {
+                options.set_prefix_extractor(SliceTransform::create_fixed_prefix(17))
+            }
+            EncodingKeyspace::OptimisedPrefix25 => {
+                options.set_prefix_extractor(SliceTransform::create_fixed_prefix(25))
+            }
+        }
 
         options.set_block_based_table_factory(&block_options);
-
-        // TODO: configure bloom filters
-        // match self {
-        //     EncodingKeyspace::DefaultOptimisedPrefix11 => {
-        //     }
-        //     EncodingKeyspace::OptimisedPrefix15 => {}
-        //     EncodingKeyspace::OptimisedPrefix16 => {}
-        //     EncodingKeyspace::OptimisedPrefix17 => {}
-        //     EncodingKeyspace::OptimisedPrefix25 => {}
-        // }
         options
     }
 }
