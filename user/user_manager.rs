@@ -7,7 +7,7 @@
 use std::sync::Arc;
 
 use database::Database;
-
+use error::TypeDBError;
 use resource::constants::server::DEFAULT_USER_NAME;
 use storage::durability_client::WALClient;
 use system::{
@@ -15,7 +15,7 @@ use system::{
     repositories::user_repository,
     util::transaction_util::TransactionUtil,
 };
-
+use system::repositories::user_repository::SystemDBError;
 use crate::errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateError};
 
 #[derive(Debug)]
@@ -34,7 +34,11 @@ impl UserManager {
 
     pub fn get(&self, username: &str) -> Result<Option<(User, Credential)>, UserGetError> {
         self.transaction_util.read_transaction(|tx|
-            user_repository::get(tx, username).map_err(|_query_error| UserGetError::IllegalUsername {})
+            user_repository::get(tx, username).map_err(|query_error| {
+                match query_error {
+                    SystemDBError::IllegalQueryInput { .. } => {UserGetError::IllegalUsername {}}
+                }
+            })
         )
     }
 
@@ -43,6 +47,20 @@ impl UserManager {
     }
 
     pub fn create(&self, user: &User, credential: &Credential) -> Result<(), UserCreateError> {
+        match self.contains(&user.name) {
+            Ok(contains) => {
+                if contains {
+                    return Err(UserCreateError::UserAlreadyExist {})
+                }
+            }
+            Err(user_get_err) => {
+                return match user_get_err {
+                    UserGetError::IllegalUsername { .. } => {
+                        Err(UserCreateError::IllegalUsername {})
+                    }
+                }
+            }
+        }
         let create_result =
             self.transaction_util.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, db, tx_opts| {
                  user_repository::create(
@@ -87,6 +105,20 @@ impl UserManager {
     pub fn delete(&self, username: &str) -> Result<(), UserDeleteError> {
         if username == DEFAULT_USER_NAME {
             return Err(UserDeleteError::DefaultUserCannotBeDeleted {})
+        }
+        match self.contains(username) {
+            Ok(contains) => {
+                if !contains {
+                    return Err(UserDeleteError::UserDoesNotExist {})
+                }
+            }
+            Err(user_get_err) => {
+                return match user_get_err {
+                    UserGetError::IllegalUsername { .. } => {
+                        Err(UserDeleteError::IllegalUsername {})
+                    }
+                }
+            }
         }
         let delete_result =
             self.transaction_util.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, db, tx_opts| {

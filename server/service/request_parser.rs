@@ -20,7 +20,7 @@ pub fn users_create_req(
             Ok((user, credential))
         }
         _ => {
-            Err(UserCreateError::Unexpected {}) // user object must be supplied
+            Err(UserCreateError::IncompleteUserDetail {})
         }
     }
 }
