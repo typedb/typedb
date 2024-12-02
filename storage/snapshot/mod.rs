@@ -12,5 +12,6 @@ pub use snapshot::{
 pub mod buffer;
 pub mod iterator;
 pub mod lock;
+pub(crate) mod pool;
 mod snapshot;
 pub mod write;

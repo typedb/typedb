@@ -17,6 +17,7 @@ use crate::{
     iterator::MVCCReadError,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
+    keyspace::IteratorPool,
     sequence_number::SequenceNumber,
     snapshot::{
         buffer::{BufferRangeIterator, OperationsBuffer},
@@ -197,6 +198,7 @@ where
 pub struct ReadSnapshot<D> {
     storage: Arc<MVCCStorage<D>>,
     open_sequence_number: SequenceNumber,
+    iterator_pool: IteratorPool<'static>,
 }
 
 impl<D: fmt::Debug> fmt::Debug for ReadSnapshot<D> {
@@ -208,7 +210,7 @@ impl<D: fmt::Debug> fmt::Debug for ReadSnapshot<D> {
 impl<D> ReadSnapshot<D> {
     pub(crate) fn new(storage: Arc<MVCCStorage<D>>, open_sequence_number: SequenceNumber) -> Self {
         // Note: for serialisability, we would need to register the open transaction to the IsolationManager
-        ReadSnapshot { storage, open_sequence_number }
+        ReadSnapshot { storage, open_sequence_number, iterator_pool: IteratorPool::new() }
     }
 
     pub fn close_resources(self) {}
