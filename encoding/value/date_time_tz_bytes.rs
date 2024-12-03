@@ -42,7 +42,7 @@ impl DateTimeTZBytes {
 }
 
 impl InlineEncodableAttributeID for DateTimeTZBytes {
-    const ENCODED_LENGTH: usize = ValueEncodingLength::Long.length();
+    const ENCODED_LENGTH_ID: ValueEncodingLength = ValueEncodingLength::Long;
     const VALUE_TYPE: ValueType = ValueType::DateTimeTZ;
 
     fn bytes_ref(&self) -> &[u8] {

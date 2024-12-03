@@ -31,6 +31,7 @@ pub struct ObjectVertex {
 }
 
 impl ObjectVertex {
+    pub const KEYSPACE: EncodingKeyspace = EncodingKeyspace::DefaultOptimisedPrefix11;
     pub const FIXED_WIDTH_ENCODING: bool = true;
 
     pub const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH + ObjectID::LENGTH;

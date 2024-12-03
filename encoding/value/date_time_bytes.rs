@@ -48,7 +48,7 @@ impl DateTimeBytes {
 }
 
 impl InlineEncodableAttributeID for DateTimeBytes {
-    const ENCODED_LENGTH: usize = ValueEncodingLength::Long.length();
+    const ENCODED_LENGTH_ID: ValueEncodingLength = ValueEncodingLength::Long;
     const VALUE_TYPE: ValueType = ValueType::DateTime;
 
     fn bytes_ref(&self) -> &[u8] {

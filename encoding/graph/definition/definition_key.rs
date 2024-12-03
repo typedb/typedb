@@ -25,7 +25,7 @@ pub struct DefinitionKey {
 }
 
 impl DefinitionKey {
-    pub(crate) const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
+    pub(crate) const KEYSPACE: EncodingKeyspace = EncodingKeyspace::DefaultOptimisedPrefix11;
     pub const FIXED_WIDTH_ENCODING: bool = true;
 
     pub(crate) const LENGTH: usize = PrefixID::LENGTH + DefinitionID::LENGTH;

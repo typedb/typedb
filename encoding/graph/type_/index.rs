@@ -75,7 +75,7 @@ impl<T: Indexable> AsBytes<BUFFER_KEY_INLINE> for IdentifierIndex<T> {
 
 impl<T: Indexable> Keyable<BUFFER_KEY_INLINE> for IdentifierIndex<T> {
     fn keyspace(&self) -> EncodingKeyspace {
-        EncodingKeyspace::Schema
+        EncodingKeyspace::DefaultOptimisedPrefix11
     }
 }
 

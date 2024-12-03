@@ -46,7 +46,7 @@ impl DecimalBytes {
 }
 
 impl InlineEncodableAttributeID for DecimalBytes {
-    const ENCODED_LENGTH: usize = ValueEncodingLength::Long.length();
+    const ENCODED_LENGTH_ID: ValueEncodingLength = ValueEncodingLength::Long;
     const VALUE_TYPE: ValueType = ValueType::Decimal;
 
     fn bytes_ref(&self) -> &[u8] {

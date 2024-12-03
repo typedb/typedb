@@ -425,20 +425,29 @@ impl TransactionService {
 
         let transaction = match transaction_type {
             typedb_protocol::transaction::Type::Read => {
-                Transaction::Read(TransactionRead::open(database, transaction_options).map_err(|typedb_source| {
-                    TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
-                })?)
+                let transaction = spawn_blocking(move ||
+                    TransactionRead::open(database, transaction_options).map_err(|typedb_source| {
+                        TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
+                    })
+                ).await.unwrap()?;
+                Transaction::Read(transaction)
             }
             typedb_protocol::transaction::Type::Write => {
-                Transaction::Write(TransactionWrite::open(database, transaction_options).map_err(|typedb_source| {
-                    TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
-                })?)
+                let transaction = spawn_blocking(move ||
+                    TransactionWrite::open(database, transaction_options).map_err(|typedb_source| {
+                        TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
+                    })
+                ).await.unwrap()?;
+                Transaction::Write(transaction)
             }
-            typedb_protocol::transaction::Type::Schema => Transaction::Schema(
-                TransactionSchema::open(database, transaction_options).map_err(|typedb_source| {
-                    TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
-                })?,
-            ),
+            typedb_protocol::transaction::Type::Schema => {
+                let transaction = spawn_blocking(move ||
+                    TransactionSchema::open(database, transaction_options).map_err(|typedb_source| {
+                        TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
+                    })
+                ).await.unwrap()?;
+                Transaction::Schema(transaction)
+            },
         };
         self.transaction = Some(transaction);
         self.is_open = true;
@@ -477,9 +486,7 @@ impl TransactionService {
                 transaction.commit().map_err(|err| {
                     TransactionServiceError::DataCommitFailed { typedb_source: err }.into_error_message().into_status()
                 })
-            })
-            .await
-            .unwrap(),
+            }).await.unwrap(),
             Transaction::Schema(transaction) => transaction.commit().map_err(|typedb_source| {
                 TransactionServiceError::SchemaCommitFailed { typedb_source }.into_error_message().into_status()
             }),

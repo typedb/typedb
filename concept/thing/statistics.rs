@@ -13,7 +13,7 @@ use bytes::Bytes;
 use durability::DurabilityRecordType;
 use encoding::graph::{
     thing::{
-        edge::{ThingEdgeHas, ThingEdgeLinks, ThingEdgeRolePlayerIndex},
+        edge::{ThingEdgeHas, ThingEdgeLinks, ThingEdgeLinksIndex},
         vertex_attribute::AttributeVertex,
         vertex_object::ObjectVertex,
         ThingVertex,
@@ -221,8 +221,8 @@ impl Statistics {
                     delta,
                 );
                 total_delta += delta;
-            } else if ThingEdgeRolePlayerIndex::is_index(&key) {
-                let edge = ThingEdgeRolePlayerIndex::decode(Bytes::Reference(key.bytes()));
+            } else if ThingEdgeLinksIndex::is_index(&key) {
+                let edge = ThingEdgeLinksIndex::decode(Bytes::Reference(key.bytes()));
                 self.update_indexed_player(Object::new(edge.from()).type_(), Object::new(edge.to()).type_(), delta);
                 // note: don't update total count based on index
             } else if EntityType::is_decodable_from_key(&key) {
